@@ -10,7 +10,7 @@ export function resolveModel(
 	model: string,
 	cfg: AGIConfig,
 ) {
-	// Prefer config-provided API keys if present (server-side only)
+	// Fallback to config file keys if still unset (env preferred, ensureProviderEnv sets env earlier)
 	if (provider === 'openai' && cfg.providers.openai?.apiKey && !process.env.OPENAI_API_KEY) {
 		process.env.OPENAI_API_KEY = cfg.providers.openai.apiKey;
 	}

@@ -1,0 +1,119 @@
+import { intro, outro, select, password, isCancel, cancel, log } from '@clack/prompts';
+import { getAllAuth, setAuth, removeAuth, type ProviderId } from '@/auth/index.ts';
+import { loadConfig } from '@/config/index.ts';
+import { catalog } from '@/providers/catalog.ts';
+
+const PROVIDER_LINKS: Record<ProviderId, { name: string; url: string; env: string }> = {
+  openai: { name: 'OpenAI', url: 'https://platform.openai.com/api-keys', env: 'OPENAI_API_KEY' },
+  anthropic: { name: 'Anthropic', url: 'https://console.anthropic.com/settings/keys', env: 'ANTHROPIC_API_KEY' },
+  google: { name: 'Google AI Studio', url: 'https://aistudio.google.com/app/apikey', env: 'GOOGLE_GENERATIVE_AI_API_KEY' },
+};
+
+export async function runAuth(args: string[]) {
+  const sub = args[0];
+  if (sub === 'login') return runAuthLogin(args.slice(1));
+  if (sub === 'list' || sub === 'ls') return runAuthList(args.slice(1));
+  if (sub === 'logout' || sub === 'rm' || sub === 'remove') return runAuthLogout(args.slice(1));
+  intro('agi auth');
+  log.info('usage: agi auth login|list|logout');
+  outro('');
+}
+
+export async function runAuthList(_args: string[]) {
+  const cfg = await loadConfig(process.cwd());
+  const all = await getAllAuth(cfg.projectRoot);
+  intro('Credentials');
+  const entries = Object.entries(all);
+  if (!entries.length) log.info('No stored credentials');
+  for (const [id, info] of entries) {
+    log.info(`${id}: ${info?.type}`);
+  }
+  // Show active env vars
+  const envActive: Array<string> = [];
+  for (const [pid, meta] of Object.entries(PROVIDER_LINKS) as Array<[ProviderId, any]>) {
+    if (process.env[meta.env]) envActive.push(`${pid} ${meta.env}`);
+  }
+  if (envActive.length) {
+    log.message('Environment');
+    for (const line of envActive) log.info(line);
+  }
+  outro('');
+}
+
+export async function runAuthLogin(_args: string[]) {
+  const cfg = await loadConfig(process.cwd());
+  intro('Add credential');
+  const provider = (await select({
+    message: 'Select provider',
+    options: [
+      { value: 'openai', label: PROVIDER_LINKS.openai.name },
+      { value: 'anthropic', label: PROVIDER_LINKS.anthropic.name },
+      { value: 'google', label: PROVIDER_LINKS.google.name },
+    ],
+  })) as ProviderId | symbol;
+  if (isCancel(provider)) return cancel('Cancelled');
+  const meta = PROVIDER_LINKS[provider as ProviderId];
+  // All providers follow the same flow: show URL, then prompt for key
+  // Default flow for OpenAI and Google: open key page and prompt to paste
+  log.info(`Open in browser: ${meta.url}`);
+  const key = await password({ message: `Paste ${meta.env} here`, validate: (v) => (v && String(v).trim().length > 0 ? undefined : 'Required') });
+  if (isCancel(key)) return cancel('Cancelled');
+  await setAuth(provider as ProviderId, { type: 'api', key: String(key) }, cfg.projectRoot);
+  await ensureProjectConfigDefaults(cfg.projectRoot, provider as ProviderId);
+  log.success('Saved');
+  log.info(`Tip: you can also set ${meta.env} in your environment.`);
+  outro('Done');
+}
+
+export async function runAuthLogout(_args: string[]) {
+  const cfg = await loadConfig(process.cwd());
+  const all = await getAllAuth(cfg.projectRoot);
+  const entries = Object.keys(all) as ProviderId[];
+  intro('Remove credential');
+  if (!entries.length) {
+    log.info('No stored credentials');
+    return outro('');
+  }
+  const selected = (await select({ message: 'Select provider', options: entries.map((id) => ({ value: id, label: PROVIDER_LINKS[id].name })) })) as ProviderId | symbol;
+  if (isCancel(selected)) return cancel('Cancelled');
+  await removeAuth(selected as ProviderId, cfg.projectRoot);
+  log.success('Removed');
+  outro('');
+}
+
+async function openBrowser(url: string) {
+  const platform = process.platform;
+  if (platform === 'darwin') {
+    const proc = Bun.spawn(['open', url]);
+    await proc.exited;
+  } else if (platform === 'win32') {
+    const proc = Bun.spawn(['cmd', '/c', 'start', '', url]);
+    await proc.exited;
+  } else {
+    const proc = Bun.spawn(['xdg-open', url]);
+    await proc.exited;
+  }
+}
+
+async function ensureProjectConfigDefaults(projectRoot: string, provider: ProviderId) {
+  const cfg = await loadConfig(projectRoot);
+  if (cfg.paths.projectConfigPath) return; // already exists, leave as-is
+  const models = catalog[provider]?.models ?? [];
+  const defaultModel = models[0]?.id || (provider === 'anthropic' ? 'claude-3-haiku' : provider === 'openai' ? 'gpt-4o-mini' : 'gemini-1.5-flash');
+  const content = {
+    projectRoot: cfg.projectRoot,
+    defaults: { agent: 'build', provider, model: defaultModel },
+    providers: {
+      openai: { enabled: provider === 'openai' },
+      anthropic: { enabled: provider === 'anthropic' },
+      google: { enabled: provider === 'google' },
+    },
+    paths: cfg.paths,
+  };
+  const path = `${cfg.paths.dataDir}/config.json`;
+  await Bun.write(path, JSON.stringify(content, null, 2));
+  try {
+    const { promises: fs } = await import('node:fs');
+    await fs.chmod(path, 0o600).catch(() => {});
+  } catch {}
+}

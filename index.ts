@@ -2,19 +2,31 @@ import { createApp } from '@/server/index.ts';
 import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
 import { runAsk } from '@/cli/ask.ts';
-import { runSetup } from '@/cli/setup.ts';
+// import { runSetup } from '@/cli/setup.ts';
 import { runSessions } from '@/cli/sessions.ts';
 // Ensure embedded assets are retained in compile builds
 import '@/runtime/assets.ts';
 import { intro, outro, text, isCancel, cancel } from '@clack/prompts';
+import { runAuth } from '@/cli/auth.ts';
+import { loadConfig as loadCfg } from '@/config/index.ts';
+import { isProviderAuthorized } from '@/providers/authorization.ts';
+import { runModels } from '@/cli/models.ts';
+import { runAuth } from '@/cli/auth.ts';
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
 
 async function main() {
+  // Global help (no auth required)
+  const wantsHelp = argv.includes('--help') || argv.includes('-h');
+  if (wantsHelp) {
+    printHelp();
+    return;
+  }
   if (cmd === 'serve') {
 		// Ensure DB exists and migrations are applied before serving
 		const projectRoot = process.cwd();
+		if (!(await ensureSomeAuth(projectRoot))) return;
 		const cfg = await loadConfig(projectRoot);
 		await getDb(cfg.projectRoot);
 
@@ -31,6 +43,7 @@ async function main() {
   if (cmd === 'sessions') {
     const projectIdx = argv.indexOf('--project');
     const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+    if (!(await ensureSomeAuth(projectRoot))) return;
     const json = argv.includes('--json');
     const listFlag = argv.includes('--list');
     // Default behavior: interactive pick unless --list or --json is provided
@@ -41,10 +54,22 @@ async function main() {
     return;
   }
 
+  if (cmd === 'models' || cmd === 'switch') {
+    const projectIdx = argv.indexOf('--project');
+    const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+    if (!(await ensureSomeAuth(projectRoot))) return;
+    await runModels({ project: projectRoot });
+    return;
+  }
+
+  if (cmd === 'auth') {
+    await runAuth(argv.slice(1));
+    return;
+  }
+
   if (cmd === 'setup') {
-    const projectFlagIndex = argv.indexOf('--project');
-    const projectRoot = projectFlagIndex >= 0 ? argv[projectFlagIndex + 1] : process.cwd();
-    await runSetup(projectRoot);
+    // Setup is now just auth login
+    await runAuth(['login']);
     return;
   }
 
@@ -62,6 +87,7 @@ async function main() {
     const model = modelIdx >= 0 ? argv[modelIdx + 1] : undefined;
     const project = projectIdx >= 0 ? argv[projectIdx + 1] : undefined;
     const sessionId = sessionIdx >= 0 ? argv[sessionIdx + 1] : undefined;
+    if (!(await ensureSomeAuth(project ?? process.cwd()))) return;
     await runAsk(prompt, { agent, provider, model, project, last: lastFlag, sessionId });
     return;
   }
@@ -70,24 +96,9 @@ async function main() {
   // Respect flags like --project, --last, --session (and optionally agent/provider/model)
   const projectIdx = argv.indexOf('--project');
   const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+  if (!(await ensureSomeAuth(projectRoot))) return;
   const cfg = await loadConfig(projectRoot);
   await getDb(cfg.projectRoot);
-
-  // Decide whether to run setup wizard
-  const hasProjectCfg = Boolean(cfg.paths.projectConfigPath);
-  const hasGlobalCfg = Boolean(cfg.paths.globalConfigPath);
-  const haveAnyApiKey = Boolean(
-    cfg.providers.openai?.apiKey ||
-    cfg.providers.anthropic?.apiKey ||
-    cfg.providers.google?.apiKey ||
-    process.env.OPENAI_API_KEY ||
-    process.env.ANTHROPIC_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-  );
-
-  if (!(hasProjectCfg || hasGlobalCfg) || !haveAnyApiKey) {
-    await runSetup(projectRoot);
-  }
 
   // Prompt for input if none provided
   intro('agi');
@@ -111,3 +122,47 @@ async function main() {
 }
 
 main();
+
+function printHelp() {
+  const lines = [
+    'Usage: agi [command] [options] [prompt]',
+    '',
+    'Commands:',
+    '  serve                    Start the HTTP server',
+    '  sessions [--list|--json] Manage or pick sessions (default: pick)',
+    '  auth <login|list|logout> Manage provider credentials',
+    '  setup                   Alias for `auth login`',
+    '  models|switch           Pick default provider/model (interactive)',
+    '  chat [--last|--session] Start an interactive chat (if enabled)',
+    '',
+    'One-shot ask:',
+    '  agi "<prompt>" [--agent <name>] [--provider <p>] [--model <m>] [--project <path>] [--last|--session <id>]',
+    '',
+    'Common options:',
+    '  --project <path>         Use project at <path> (default: cwd)',
+    '  --last                   Send to most-recent session',
+    '  --session <id>           Send to a specific session',
+    '  --json | --json-stream   Machine-readable outputs',
+  ];
+  Bun.write(Bun.stdout, lines.join('\n') + '\n');
+}
+
+async function ensureSomeAuth(projectRoot: string): Promise<boolean> {
+  const cfg = await loadCfg(projectRoot);
+  const any = await Promise.all([
+    isProviderAuthorized(cfg, 'openai'),
+    isProviderAuthorized(cfg, 'anthropic'),
+    isProviderAuthorized(cfg, 'google'),
+  ]).then((arr) => arr.some(Boolean));
+  if (!any) {
+    await runAuth(['login']);
+    const cfg2 = await loadCfg(projectRoot);
+    const any2 = await Promise.all([
+      isProviderAuthorized(cfg2, 'openai'),
+      isProviderAuthorized(cfg2, 'anthropic'),
+      isProviderAuthorized(cfg2, 'google'),
+    ]).then((arr) => arr.some(Boolean));
+    return any2;
+  }
+  return true;
+}
