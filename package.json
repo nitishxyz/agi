@@ -9,7 +9,10 @@
 		"test": "bun test",
 		"db:generate": "drizzle-kit generate --config=drizzle.config.ts",
 		"db:reset": "bun run scripts/reset-db.ts",
-		"catalog:update": "bun run scripts/update-catalog.ts"
+		"catalog:update": "bun run scripts/update-catalog.ts",
+		"compile": "mkdir -p dist && bun build --compile ./index.ts --outfile dist/agi",
+		"compile:linux-x64": "mkdir -p dist && bun build --compile --target=bun-linux-x64 ./index.ts --outfile dist/agi-linux-x64",
+		"compile:darwin-arm64": "mkdir -p dist && bun build --compile --target=bun-darwin-arm64 ./index.ts --outfile dist/agi-darwin-arm64"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.2.4",

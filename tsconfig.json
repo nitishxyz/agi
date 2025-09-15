@@ -33,6 +33,7 @@
 			"@/config/*": ["src/config/*"],
 			"@/prompts/*": ["src/prompts/*"],
 			"@/providers/*": ["src/providers/*"],
+			"@/runtime/*": ["src/runtime/*"],
 			"@/server/*": ["src/server/*"]
 		}
 	}

@@ -1,6 +1,7 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import { $ } from 'bun';
+import { embeddedTextAssets } from '@/runtime/assets.ts';
 
 function normalizePath(p: string) {
   const parts = p.replace(/\\/g, '/').split('/');
@@ -29,9 +30,19 @@ export function buildFsTools(projectRoot: string): Array<{ name: string; tool: T
     async execute({ path }: { path: string }) {
       const abs = resolveSafePath(projectRoot, path);
       const f = Bun.file(abs);
-      if (!(await f.exists())) throw new Error(`File not found: ${path}`);
-      const content = await f.text();
-      return { path, content, size: content.length };
+      if (await f.exists()) {
+        const content = await f.text();
+        return { path, content, size: content.length };
+      }
+      // Fallback: if compiled with embedded assets and the requested file
+      // is one of the known text assets, serve from the embedded bundle
+      const embedded = embeddedTextAssets[path];
+      if (embedded) {
+        const ef = Bun.file(embedded);
+        const content = await ef.text();
+        return { path, content, size: content.length };
+      }
+      throw new Error(`File not found: ${path}`);
     },
   });
 
