@@ -1,6 +1,7 @@
 import { createApp } from '@/server/index.ts';
 import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
+import { runAsk } from '@/cli/ask.ts';
 import { runSetup } from '@/cli/setup.ts';
 
 const argv = process.argv.slice(2);
@@ -30,10 +31,19 @@ async function main() {
     return;
   }
 
-  // Placeholder: in future support one-shot prompt: agi "<prompt>"
+  // One-shot: agi "<prompt>" [--agent] [--provider] [--model] [--project]
   if (cmd && !cmd.startsWith('-')) {
-    console.error('One-shot prompt not implemented yet. Use: agi serve');
-    process.exit(1);
+    const prompt = cmd;
+    const agentIdx = argv.indexOf('--agent');
+    const providerIdx = argv.indexOf('--provider');
+    const modelIdx = argv.indexOf('--model');
+    const projectIdx = argv.indexOf('--project');
+    const agent = agentIdx >= 0 ? argv[agentIdx + 1] : undefined;
+    const provider = providerIdx >= 0 ? (argv[providerIdx + 1] as any) : undefined;
+    const model = modelIdx >= 0 ? argv[modelIdx + 1] : undefined;
+    const project = projectIdx >= 0 ? argv[projectIdx + 1] : undefined;
+    await runAsk(prompt, { agent, provider, model, project });
+    return;
   }
 }
 

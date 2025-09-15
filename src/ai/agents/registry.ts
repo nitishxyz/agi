@@ -47,7 +47,16 @@ export async function resolveAgentConfig(projectRoot: string, name: string): Pro
     }
   }
 
-  const tools = (entry?.tools ?? []) as string[];
+  // Default tool access per agent if not explicitly configured
+  let tools = (entry?.tools ?? []) as string[];
+  if (!entry || !entry.tools) {
+    if (name === 'build') {
+      tools = ['fs_read', 'fs_write', 'fs_ls', 'fs_tree', 'finalize'];
+    } else if (name === 'plan') {
+      tools = ['fs_read', 'fs_ls', 'fs_tree', 'finalize'];
+    } else {
+      tools = ['finalize'];
+    }
+  }
   return { name, prompt, tools };
 }
-
