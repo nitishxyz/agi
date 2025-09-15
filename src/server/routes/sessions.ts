@@ -5,6 +5,7 @@ import { sessions } from '@/db/schema/index.ts';
 import { validateProviderModel } from '@/providers/validate.ts';
 import { publish } from '@/server/events/bus.ts';
 import { desc } from 'drizzle-orm';
+import { isProviderAuthorized, ensureProviderEnv } from '@/providers/authorization.ts';
 
 export function registerSessionsRoutes(app: Hono) {
 	// List sessions
@@ -47,6 +48,12 @@ export function registerSessionsRoutes(app: Hono) {
     } catch (err: any) {
       return c.json({ error: String(err?.message ?? err) }, 400);
     }
+    // Enforce provider auth
+    const authorized = await isProviderAuthorized(cfg, row.provider as any);
+    if (!authorized) {
+      return c.json({ error: `Provider ${row.provider} is not configured. Run \`agi auth login\` to add credentials.` }, 400);
+    }
+    await ensureProviderEnv(cfg, row.provider as any);
     await db.insert(sessions).values(row);
     const response = { ...row } as any;
     // keep response shape aligned with GET

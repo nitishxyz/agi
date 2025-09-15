@@ -1,6 +1,8 @@
 import { createApp } from '@/server/index.ts';
 import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
+import { getAllAuth } from '@/auth/index.ts';
+import { catalog } from '@/providers/catalog.ts';
 
 type AskOptions = {
   agent?: string;
@@ -18,6 +20,34 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 
   const baseUrl = process.env.AGI_SERVER_URL || (await startEphemeralServer());
 
+  // Choose an authorized provider/model when not explicitly provided
+  let chosenProvider: 'openai' | 'anthropic' | 'google' = opts.provider ?? cfg.defaults.provider;
+  let chosenModel: string = opts.model ?? cfg.defaults.model;
+  try {
+    const auth = await getAllAuth(projectRoot);
+    const envHas = {
+      openai: Boolean(process.env.OPENAI_API_KEY),
+      anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
+      google: Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY),
+    } as const;
+    const cfgHas = {
+      openai: Boolean(cfg.providers.openai?.apiKey),
+      anthropic: Boolean(cfg.providers.anthropic?.apiKey),
+      google: Boolean(cfg.providers.google?.apiKey),
+    } as const;
+    function authed(p: 'openai' | 'anthropic' | 'google') {
+      return envHas[p] || Boolean((auth as any)[p]?.key) || cfgHas[p];
+    }
+    if (!authed(chosenProvider)) {
+      const order: Array<'openai' | 'anthropic' | 'google'> = ['anthropic', 'openai', 'google'];
+      const alt = order.find((p) => authed(p));
+      if (alt) chosenProvider = alt;
+    }
+    const models = catalog[chosenProvider]?.models ?? [];
+    const ok = models.some((m) => m.id === chosenModel);
+    if (!ok && models.length) chosenModel = models[0].id;
+  } catch {}
+
   // Parse output flags early so we can use them while choosing/creating a session
   const verbose = process.argv.includes('--verbose');
   const summaryEnabled = process.argv.includes('--summary');
@@ -27,8 +57,15 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 
   // Resolve target session
   let sessionId: string | null = null;
+  const startedAt = Date.now();
+  let header: { agent?: string; provider?: string; model?: string; sessionId?: string } = {};
   if (opts.sessionId) {
     sessionId = opts.sessionId;
+    try {
+      const sessions = (await httpJson('GET', `${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`)) as Array<any>;
+      const found = sessions.find((s) => String(s.id) === String(sessionId));
+      if (found) header = { agent: found.agent, provider: found.provider, model: found.model, sessionId };
+    } catch {}
   } else if (opts.last) {
     // Fetch sessions and pick the most recent
     const sessions = (await httpJson('GET', `${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`)) as Array<any>;
@@ -36,27 +73,38 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
       const created = await httpJson('POST', `${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`, {
         title: null,
         agent: opts.agent ?? cfg.defaults.agent,
-        provider: opts.provider ?? cfg.defaults.provider,
-        model: opts.model ?? cfg.defaults.model,
+        provider: chosenProvider,
+        model: chosenModel,
       });
       sessionId = String(created.id);
+      header = { agent: (opts.agent ?? cfg.defaults.agent), provider: chosenProvider, model: chosenModel, sessionId };
     } else {
       sessionId = String(sessions[0].id);
+      header = { agent: sessions[0].agent, provider: sessions[0].provider, model: sessions[0].model, sessionId };
       if (!jsonEnabled && !jsonStreamEnabled) Bun.write(Bun.stderr, `${dim('Using last session')} ${sessions[0].id}\n`);
     }
   } else {
     const created = await httpJson('POST', `${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`, {
       title: null,
       agent: opts.agent ?? cfg.defaults.agent,
-      provider: opts.provider ?? cfg.defaults.provider,
-      model: opts.model ?? cfg.defaults.model,
+      provider: chosenProvider,
+      model: chosenModel,
     });
     sessionId = String(created.id);
+    header = { agent: (opts.agent ?? cfg.defaults.agent), provider: chosenProvider, model: chosenModel, sessionId };
     if (!jsonEnabled && !jsonStreamEnabled) Bun.write(Bun.stderr, `${dim('Created new session')} ${sessionId}\n`);
   }
 
   // Start SSE reader before enqueuing the message to avoid missing early events
   const sse = await connectSSE(`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/stream?project=${encodeURIComponent(projectRoot)}`);
+
+  // Header: show agent/provider/model
+  if (!jsonEnabled && !jsonStreamEnabled) {
+    const p = header.provider ?? chosenProvider;
+    const m = header.model ?? chosenModel;
+    const a = header.agent ?? (opts.agent ?? cfg.defaults.agent);
+    Bun.write(Bun.stderr, `${bold('Context')} ${dim('•')} agent=${a} ${dim('•')} provider=${p} ${dim('•')} model=${m}\n`);
+  }
 
   const enqueueRes = await httpJson('POST', `${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/messages?project=${encodeURIComponent(projectRoot)}`, {
     content: prompt,
@@ -208,6 +256,10 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
     Bun.write(Bun.stdout, JSON.stringify(transcript, null, 2) + '\n');
   } else if (summaryEnabled || finalizeSeen) {
     printSummary(toolCalls, toolResults, filesTouched);
+  }
+  if (!jsonEnabled && !jsonStreamEnabled) {
+    const elapsed = Date.now() - startedAt;
+    Bun.write(Bun.stderr, `${dim(`Done in ${elapsed}ms`)}` + '\n');
   }
 
   // If we started an ephemeral server, stop it

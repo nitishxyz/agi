@@ -4,6 +4,7 @@ import { getDb } from '@/db/index.ts';
 import { messages, messageParts, sessions } from '@/db/schema/index.ts';
 import { eq, inArray } from 'drizzle-orm';
 import { validateProviderModel } from '@/providers/validate.ts';
+import { isProviderAuthorized, ensureProviderEnv } from '@/providers/authorization.ts';
 import { publish } from '@/server/events/bus.ts';
 import { enqueueAssistantRun } from '@/server/runtime/runner.ts';
 
@@ -43,10 +44,14 @@ export function registerSessionMessagesRoutes(app: Hono) {
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
 		const sessionId = c.req.param('id');
-		const body = await c.req.json().catch(() => ({}));
-		const provider = body?.provider ?? cfg.defaults.provider;
-		const modelName = body?.model ?? cfg.defaults.model;
-		const agent = body?.agent ?? cfg.defaults.agent;
+    const body = await c.req.json().catch(() => ({}));
+    // Load session to inherit its provider/model/agent by default
+    const sessionRows = await db.select().from(sessions).where(eq(sessions.id, sessionId));
+    if (!sessionRows.length) return c.json({ error: 'Session not found' }, 404);
+    const sess = sessionRows[0] as any;
+    const provider = body?.provider ?? sess.provider ?? cfg.defaults.provider;
+    const modelName = body?.model ?? sess.model ?? cfg.defaults.model;
+    const agent = body?.agent ?? sess.agent ?? cfg.defaults.agent;
 		const content = body?.content ?? '';
 
     // Validate model capabilities if tools are allowed for this agent
@@ -56,6 +61,12 @@ export function registerSessionMessagesRoutes(app: Hono) {
     } catch (err: any) {
       return c.json({ error: String(err?.message ?? err) }, 400);
     }
+    // Enforce provider auth: only allow providers/models the user authenticated for
+    const authorized = await isProviderAuthorized(cfg, provider);
+    if (!authorized) {
+      return c.json({ error: `Provider ${provider} is not configured. Run \`agi auth login\` to add credentials.` }, 400);
+    }
+    await ensureProviderEnv(cfg, provider);
 
     const now = Date.now();
     const userMessageId = crypto.randomUUID();
