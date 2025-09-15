@@ -39,12 +39,16 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
   const verbose = process.argv.includes('--verbose');
   const summaryEnabled = process.argv.includes('--summary');
   const jsonEnabled = process.argv.includes('--json');
+  const jsonVerbose = process.argv.includes('--json-verbose');
+  const jsonStreamEnabled = process.argv.includes('--json-stream');
 
   let completed = false;
   let finalizeSeen = false;
   let output = '';
-  const toolCalls: Array<{ name: string; args?: unknown }> = [];
-  const toolResults: Array<{ name: string; result?: unknown; artifact?: any }> = [];
+  const assistantChunks: Array<{ ts: number; delta: string }> = [];
+  const toolCalls: Array<{ name: string; args?: unknown; callId?: string; ts: number }> = [];
+  const toolResults: Array<{ name: string; result?: unknown; artifact?: any; callId?: string; ts: number; durationMs?: number }> = [];
+  const callById = new Map<string, number>();
   const filesTouched = new Set<string>();
   try {
     for await (const ev of sse) {
@@ -52,19 +56,34 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
         const data = safeJson(ev.data);
         if (data?.messageId === assistantMessageId && typeof data?.delta === 'string') {
           output += data.delta;
-          // Stream to stdout unless --json; when --json collect only
-          if (!jsonEnabled) Bun.write(Bun.stdout, data.delta);
+          const ts = Date.now();
+          assistantChunks.push({ ts, delta: data.delta });
+          if (jsonStreamEnabled) {
+            Bun.write(Bun.stdout, JSON.stringify({ event: 'assistant.delta', ts, messageId: assistantMessageId, delta: data.delta }) + '\n');
+          } else if (!jsonEnabled) {
+            Bun.write(Bun.stdout, data.delta);
+          }
         }
       } else if (ev.event === 'tool.call') {
         const data = safeJson(ev.data);
         const name = data?.name ?? 'tool';
-        toolCalls.push({ name, args: data?.args });
-        if (!jsonEnabled) printToolCall(name, data?.args, { verbose });
+        const callId = data?.callId as string | undefined;
+        const ts = Date.now();
+        toolCalls.push({ name, args: data?.args, callId, ts });
+        if (callId) callById.set(callId, toolCalls.length - 1);
+        if (jsonStreamEnabled) {
+          Bun.write(Bun.stdout, JSON.stringify({ event: 'tool.call', ts, name, callId, args: data?.args }) + '\n');
+        } else if (!jsonEnabled) {
+          printToolCall(name, data?.args, { verbose });
+        }
       } else if (ev.event === 'tool.delta') {
         const data = safeJson(ev.data);
         const name = data?.name ?? 'tool';
         const channel = data?.channel ?? 'output';
-        if ((channel === 'input' && !verbose) || jsonEnabled) {
+        if (jsonStreamEnabled) {
+          const ts = Date.now();
+          Bun.write(Bun.stdout, JSON.stringify({ event: 'tool.delta', ts, name, channel, delta: data?.delta }) + '\n');
+        } else if ((channel === 'input' && !verbose) || jsonEnabled) {
           // Avoid noisy input-argument streaming by default
         } else {
           const delta = typeof data?.delta === 'string' ? data.delta : JSON.stringify(data?.delta);
@@ -73,24 +92,38 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
       } else if (ev.event === 'tool.result') {
         const data = safeJson(ev.data);
         const name = data?.name ?? 'tool';
-        toolResults.push({ name, result: data?.result, artifact: data?.artifact });
+        const callId = data?.callId as string | undefined;
+        const ts = Date.now();
+        let durationMs: number | undefined;
+        if (callId && callById.has(callId)) {
+          const idx = callById.get(callId)!;
+          const started = toolCalls[idx].ts;
+          durationMs = Math.max(0, ts - started);
+        }
+        toolResults.push({ name, result: data?.result, artifact: data?.artifact, callId, ts, durationMs });
         if (data?.artifact?.kind === 'file_diff' && typeof data?.artifact?.patch === 'string') {
           for (const f of extractFilesFromPatch(String(data.artifact.patch))) filesTouched.add(f);
         }
         if (name === 'fs_write' && data?.result?.path) filesTouched.add(String(data.result.path));
-        if (!jsonEnabled) printToolResult(name, data?.result, data?.artifact, { verbose });
+        if (jsonStreamEnabled) {
+          Bun.write(Bun.stdout, JSON.stringify({ event: 'tool.result', ts, name, callId, durationMs, result: data?.result, artifact: data?.artifact }) + '\n');
+        } else if (!jsonEnabled) {
+          printToolResult(name, data?.result, data?.artifact, { verbose, durationMs });
+        }
         if (name === 'finalize') finalizeSeen = true;
       } else if (ev.event === 'message.completed') {
         const data = safeJson(ev.data);
         if (data?.id === assistantMessageId) {
           completed = true;
+          if (jsonStreamEnabled) Bun.write(Bun.stdout, JSON.stringify({ event: 'assistant.completed', ts: Date.now(), messageId: assistantMessageId }) + '\n');
           break;
         }
       } else if (ev.event === 'error') {
         // Print tool errors etc. to stderr
         const data = safeJson(ev.data);
         const msg = data?.error ?? ev.data;
-        Bun.write(Bun.stderr, `\n[error] ${String(msg)}\n`);
+        if (jsonStreamEnabled) Bun.write(Bun.stdout, JSON.stringify({ event: 'error', ts: Date.now(), error: String(msg) }) + '\n');
+        else Bun.write(Bun.stderr, `\n[error] ${String(msg)}\n`);
       }
     }
   } finally {
@@ -98,22 +131,53 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
   }
 
   // Final newline if we streamed content
-  if (output.length) Bun.write(Bun.stdout, '\n');
+  if (output.length && !jsonEnabled && !jsonStreamEnabled) Bun.write(Bun.stdout, '\n');
 
-  if (jsonEnabled) {
-    const transcript = {
+  if (jsonStreamEnabled) {
+    if (currentServer) currentServer.stop();
+    return;
+  } else if (jsonEnabled) {
+    const toolCounts: Record<string, number> = {};
+    for (const c of toolCalls) toolCounts[c.name] = (toolCounts[c.name] ?? 0) + 1;
+    const diffArtifacts = toolResults
+      .filter((r) => r.artifact?.kind === 'file_diff')
+      .map((r) => ({ name: r.name, summary: r.artifact?.summary }));
+    const toolTimings = toolResults
+      .filter((r) => typeof r.durationMs === 'number')
+      .map((r) => ({ name: r.name, durationMs: r.durationMs }));
+    const totalToolTimeMs = toolTimings.reduce((a, b) => a + (b.durationMs ?? 0), 0);
+    const assistantText = output;
+    const assistantLines = computeAssistantLines(assistantChunks);
+    const assistantSegments = computeAssistantSegments(assistantChunks, toolCalls);
+    const assistantHeadline = (assistantSegments.length
+      ? assistantSegments[0].text
+      : (assistantLines.length ? assistantLines[0].text : assistantText)
+    )?.slice(0, 160) ?? '';
+
+    // Compact transcript by default; include verbose fields only when requested
+    const transcript: any = {
       sessionId,
       assistantMessageId,
       agent: opts.agent ?? cfg.defaults.agent,
       provider: opts.provider ?? cfg.defaults.provider,
       model: opts.model ?? cfg.defaults.model,
-      output,
-      tools: {
-        calls: toolCalls,
-        results: toolResults,
-      },
+      sequence: buildSequence({ prompt, assistantSegments, toolCalls, toolResults }),
       filesTouched: Array.from(filesTouched),
+      summary: {
+        toolCounts,
+        toolTimings,
+        totalToolTimeMs,
+        filesTouched: Array.from(filesTouched),
+        diffArtifacts,
+      },
     };
+    if (jsonVerbose) {
+      transcript.output = assistantText;
+      transcript.assistantChunks = assistantChunks;
+      transcript.assistantLines = assistantLines;
+      transcript.assistantSegments = assistantSegments;
+      transcript.tools = { calls: toolCalls, results: toolResults };
+    }
     Bun.write(Bun.stdout, JSON.stringify(transcript, null, 2) + '\n');
   } else if (summaryEnabled || finalizeSeen) {
     printSummary(toolCalls, toolResults, filesTouched);
@@ -128,7 +192,7 @@ let currentServer: ReturnType<typeof Bun.serve> | null = null;
 async function startEphemeralServer(): Promise<string> {
   if (currentServer) return `http://localhost:${currentServer.port}`;
   const app = createApp();
-  currentServer = Bun.serve({ port: 0, fetch: app.fetch });
+  currentServer = Bun.serve({ port: 0, fetch: app.fetch, idleTimeout: 240 });
   return `http://localhost:${currentServer.port}`;
 }
 
@@ -202,6 +266,91 @@ function truncate(s: string, n: number) {
   return s.slice(0, n - 1) + '…';
 }
 
+function computeAssistantLines(
+  chunks: Array<{ ts: number; delta: string }>,
+): Array<{ index: number; tsStart: number; tsEnd: number; text: string }> {
+  const lines: Array<{ index: number; tsStart: number; tsEnd: number; text: string } > = [];
+  let buffer = '';
+  let startTs = chunks.length ? chunks[0].ts : Date.now();
+  let index = 0;
+  for (const { ts, delta } of chunks) {
+    let remaining = delta;
+    while (remaining.includes('\n')) {
+      const i = remaining.indexOf('\n');
+      const part = remaining.slice(0, i);
+      buffer += part;
+      const text = buffer.trim();
+      if (text.length) lines.push({ index: index++, tsStart: startTs, tsEnd: ts, text });
+      buffer = '';
+      startTs = ts;
+      remaining = remaining.slice(i + 1);
+    }
+    buffer += remaining;
+  }
+  if (buffer.trim().length) {
+    lines.push({ index: index++, tsStart: startTs, tsEnd: chunks.length ? chunks[chunks.length - 1].ts : startTs, text: buffer.trim() });
+  }
+  return lines;
+}
+
+function computeAssistantSegments(
+  chunks: Array<{ ts: number; delta: string }>,
+  calls: Array<{ ts: number }>,
+): Array<{ index: number; tsStart: number; tsEnd: number; text: string }> {
+  const segments: Array<{ index: number; tsStart: number; tsEnd: number; text: string }> = [];
+  if (!chunks.length) return segments;
+  const callTimes = calls.map((c) => c.ts).sort((a, b) => a - b);
+  let buffer = '';
+  let startTs = chunks[0].ts;
+  let segIndex = 0;
+  let callIdx = 0;
+
+  for (const { ts, delta } of chunks) {
+    // If this delta occurs at or after the next tool.call, flush current buffer as a segment
+    while (callIdx < callTimes.length && ts >= callTimes[callIdx]) {
+      if (buffer.trim().length) {
+        segments.push({ index: segIndex++, tsStart: startTs, tsEnd: ts, text: buffer.trim() });
+        buffer = '';
+      }
+      // Start a new segment after the call time
+      startTs = ts;
+      callIdx++;
+    }
+    buffer += delta;
+  }
+  if (buffer.trim().length) {
+    segments.push({ index: segIndex++, tsStart: startTs, tsEnd: chunks[chunks.length - 1].ts, text: buffer.trim() });
+  }
+  return segments;
+}
+
+function buildSequence(args: {
+  prompt: string;
+  assistantSegments: Array<{ index: number; tsStart: number; tsEnd: number; text: string }>;
+  toolCalls: Array<{ name: string; args?: unknown; callId?: string; ts: number }>;
+  toolResults: Array<{ name: string; result?: unknown; artifact?: any; callId?: string; ts: number; durationMs?: number }>;
+}) {
+  const seq: Array<any> = [];
+  // Seed with user prompt
+  seq.push({ type: 'user', ts: (args.assistantSegments[0]?.tsStart) ?? Date.now(), text: args.prompt });
+
+  // Convert assistant lines to events
+  for (const l of args.assistantSegments) {
+    seq.push({ type: 'assistant', tsStart: l.tsStart, tsEnd: l.tsEnd, index: l.index, text: l.text });
+  }
+  // Tool events
+  for (const c of args.toolCalls) seq.push({ type: 'tool.call', ts: c.ts, name: c.name, callId: c.callId, args: c.args });
+  for (const r of args.toolResults) seq.push({ type: 'tool.result', ts: r.ts, name: r.name, callId: r.callId, durationMs: r.durationMs, result: r.result, artifact: r.artifact });
+
+  // Sort by timestamp; assistant events may have tsStart, use that; keep stable within same ts
+  seq.sort((a, b) => {
+    const ta = a.tsStart ?? a.ts ?? 0;
+    const tb = b.tsStart ?? b.ts ?? 0;
+    return ta - tb;
+  });
+  return seq;
+}
+
 function extractFilesFromPatch(patch: string): string[] {
   const lines = patch.split('\n');
   const files: string[] = [];
@@ -262,16 +411,17 @@ function printToolCall(name: string, args?: any, opts?: { verbose?: boolean }) {
   Bun.write(Bun.stderr, `\n${title}\n${dim(preview)}\n`);
 }
 
-function printToolResult(name: string, result?: any, artifact?: any, opts?: { verbose?: boolean }) {
+function printToolResult(name: string, result?: any, artifact?: any, opts?: { verbose?: boolean; durationMs?: number }) {
+  const time = typeof opts?.durationMs === 'number' ? dim(` (${opts.durationMs}ms)`) : '';
   // Special-case pretty formatting for common tools
   if (name === 'fs_tree' && result?.tree) {
-    Bun.write(Bun.stderr, `${bold('↳ tree')} ${dim(result.path ?? '.')}\n`);
+    Bun.write(Bun.stderr, `${bold('↳ tree')} ${dim(result.path ?? '.')}${time}\n`);
     Bun.write(Bun.stderr, `${result.tree}\n`);
     return;
   }
   if (name === 'fs_ls' && Array.isArray(result?.entries)) {
     const entries = result.entries as Array<{ name: string; type: string }>;
-    Bun.write(Bun.stderr, `${bold('↳ ls')} ${dim(result.path ?? '.')}\n`);
+    Bun.write(Bun.stderr, `${bold('↳ ls')} ${dim(result.path ?? '.')}${time}\n`);
     for (const e of entries.slice(0, 100)) {
       Bun.write(Bun.stderr, `  ${e.type === 'dir' ? '📁' : '📄'} ${e.name}\n`);
     }
@@ -281,23 +431,30 @@ function printToolResult(name: string, result?: any, artifact?: any, opts?: { ve
   if (name === 'fs_read' && typeof result?.path === 'string') {
     const content = String(result?.content ?? '');
     const lines = content.split('\n');
-    Bun.write(Bun.stderr, `${bold('↳ read')} ${dim(result.path)} (${lines.length} lines)\n`);
+    Bun.write(Bun.stderr, `${bold('↳ read')} ${dim(result.path)} (${lines.length} lines)${time}\n`);
     const sample = lines.slice(0, 20).join('\n');
     Bun.write(Bun.stderr, `${sample}${lines.length > 20 ? '\n' + dim('…') : ''}\n`);
     return;
   }
   if (name === 'fs_write' && typeof result?.path === 'string') {
-    Bun.write(Bun.stderr, `${bold('↳ wrote')} ${result.path} (${result?.bytes ?? '?'} bytes)\n`);
+    Bun.write(Bun.stderr, `${bold('↳ wrote')} ${result.path} (${result?.bytes ?? '?'} bytes)${time}\n`);
     return;
   }
   if (artifact?.kind === 'file_diff' && typeof artifact?.patch === 'string') {
-    Bun.write(Bun.stderr, `${bold('↳ diff')} ${dim('(unified patch)')}\n`);
-    const patch = artifact.patch.split('\n').slice(0, 80).join('\n');
-    Bun.write(Bun.stderr, `${patch}${artifact.patch.split('\n').length > 80 ? '\n' + dim('…') : ''}\n`);
+    Bun.write(Bun.stderr, `${bold('↳ diff')} ${dim('(unified patch)')}${time}\n`);
+    const rawLines = artifact.patch.split('\n');
+    const shown = rawLines.slice(0, 120);
+    for (const line of shown) {
+      if (line.startsWith('+')) Bun.write(Bun.stderr, `${green(line)}\n`);
+      else if (line.startsWith('-')) Bun.write(Bun.stderr, `${red(line)}\n`);
+      else if (line.startsWith('***')) Bun.write(Bun.stderr, `${dim(line)}\n`);
+      else Bun.write(Bun.stderr, `${line}\n`);
+    }
+    if (rawLines.length > shown.length) Bun.write(Bun.stderr, `${dim('…')}\n`);
     return;
   }
   if (name === 'finalize') {
-    Bun.write(Bun.stderr, `${bold('✓ done')}\n`);
+    Bun.write(Bun.stderr, `${bold('✓ done')}${time}\n`);
     return;
   }
   // Generic fallback

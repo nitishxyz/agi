@@ -1,6 +1,7 @@
 import type { Tool } from 'ai';
 import type { DB } from '@/db/index.ts';
 import { messageParts } from '@/db/schema/index.ts';
+import { eq } from 'drizzle-orm';
 import { publish } from '@/server/events/bus.ts';
 import type { DiscoveredTool } from '@/ai/tools/loader.ts';
 import { getCwd, setCwd, joinRelative } from '@/server/runtime/cwd.ts';
@@ -14,10 +15,14 @@ export type ToolAdapterContext = {
   provider: string;
   model: string;
   projectRoot: string;
+  // Monotonic index allocator shared across runner + tools for this message
+  nextIndex: () => number | Promise<number>;
 };
 
 export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
   const out: Record<string, Tool> = {};
+  const pendingCallIds = new Map<string, string[]>();
+
   for (const { name, tool } of tools) {
     const base = tool;
     out[name] = {
@@ -32,13 +37,19 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
           publish({ type: 'message.part.delta', sessionId: ctx.sessionId, payload: { messageId: ctx.messageId, partId: ctx.assistantPartId, delta } });
           try {
             // Append to the assistant text part content
-            const rows = await ctx.db.select().from(messageParts).where((f, { eq }) => eq(messageParts.id, ctx.assistantPartId));
+            const rows = await ctx.db
+              .select()
+              .from(messageParts)
+              .where(eq(messageParts.id, ctx.assistantPartId));
             if (rows.length) {
               const current = rows[0];
               let obj = { text: '' as string };
               try { obj = JSON.parse(current.content || '{}'); } catch {}
               obj.text = String((obj.text || '') + delta);
-              await ctx.db.update(messageParts).set({ content: JSON.stringify(obj) }).where((f, { eq }) => eq(messageParts.id, ctx.assistantPartId));
+              await ctx.db
+                .update(messageParts)
+                .set({ content: JSON.stringify(obj) })
+                .where(eq(messageParts.id, ctx.assistantPartId));
             }
           } catch {}
         } else {
@@ -49,18 +60,23 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
       },
       async onInputAvailable(options: any) {
         const args = options?.input;
-        publish({ type: 'tool.call', sessionId: ctx.sessionId, payload: { name, args } });
         const callPartId = crypto.randomUUID();
+        // Allocate index and persist before publishing the event to ensure deterministic ordering
+        const index = await ctx.nextIndex();
         await ctx.db.insert(messageParts).values({
           id: callPartId,
           messageId: ctx.messageId,
-          index: Date.now(),
+          index,
           type: 'tool_call',
-          content: JSON.stringify({ name, args }),
+          content: JSON.stringify({ name, args, callId: callPartId }),
           agent: ctx.agent,
           provider: ctx.provider,
           model: ctx.model,
         });
+        publish({ type: 'tool.call', sessionId: ctx.sessionId, payload: { name, args, callId: callPartId } });
+        const list = pendingCallIds.get(name) ?? [];
+        list.push(callPartId);
+        pendingCallIds.set(name, list);
         if (typeof base.onInputAvailable === 'function') {
           await base.onInputAvailable(options);
         }
@@ -97,16 +113,20 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
           result = await res;
         }
         const resultPartId = crypto.randomUUID();
-        const contentObj: any = { name, result };
+        let callId: string | undefined = undefined;
+        const queue = pendingCallIds.get(name);
+        if (queue && queue.length) callId = queue.shift();
+        const contentObj: any = { name, result, callId };
         if (result && typeof result === 'object' && 'artifact' in result) {
           try {
             contentObj.artifact = (result as any).artifact;
           } catch {}
         }
+        const index = await ctx.nextIndex();
         await ctx.db.insert(messageParts).values({
           id: resultPartId,
           messageId: ctx.messageId,
-          index: Date.now(),
+          index,
           type: 'tool_result',
           content: JSON.stringify(contentObj),
           agent: ctx.agent,
