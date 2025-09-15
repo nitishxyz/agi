@@ -70,16 +70,39 @@ export function buildFsTools(projectRoot: string): Array<{ name: string; tool: T
     inputSchema: z.object({ path: z.string().default('.'), depth: z.number().int().min(1).max(5).default(2) }),
     async execute({ path, depth }: { path: string; depth: number }) {
       const start = resolveSafePath(projectRoot, path || '.');
-      // Use find to a limited maxdepth and format relative paths
-      const out = await $`find ${start} -maxdepth ${depth} -print`.text().catch(() => '');
-      const base = start.endsWith('/') ? start : start + '/';
-      const rel = out
-        .split('\n')
-        .filter(Boolean)
-        .map((p) => (p === start ? '.' : p.replace(base, '')))
-        .slice(0, 2000)
-        .join('\n');
-      return { path, depth, tree: rel };
+      const base = start.endsWith('/') ? start.slice(0, -1) : start;
+
+      async function listDir(dir: string): Promise<Array<{ name: string; isDir: boolean }>> {
+        const out = await $`ls -1Ap ${dir}`.text().catch(() => '');
+        const lines = out.split('\n').filter(Boolean);
+        return lines.map((name) => ({ name: name.replace(/\/$/, ''), isDir: name.endsWith('/') }));
+      }
+
+      const lines: string[] = [];
+      async function walk(abs: string, rel: string, level: number, prefix: string) {
+        if (level > depth) return;
+        const entries = await listDir(abs);
+        const maxEntries = 200;
+        const shown = entries.slice(0, maxEntries);
+        const more = entries.length - shown.length;
+        shown.forEach(async (e, idx) => {
+          const isLast = idx === shown.length - 1;
+          const connector = isLast ? '└─ ' : '├─ ';
+          const line = `${prefix}${connector}${e.isDir ? '📁' : '📄'} ${rel ? rel + '/' : ''}${e.name}`;
+          lines.push(line);
+          if (e.isDir && level < depth) {
+            const childAbs = abs + '/' + e.name;
+            const childRel = rel ? rel + '/' + e.name : e.name;
+            const nextPrefix = prefix + (isLast ? '   ' : '│  ');
+            await walk(childAbs, childRel, level + 1, nextPrefix);
+          }
+        });
+        if (more > 0) lines.push(`${prefix}… and ${more} more`);
+      }
+
+      lines.push(`${'📁'} .`);
+      await walk(base, '', 1, '');
+      return { path, depth, tree: lines.join('\n') };
     },
   });
 
