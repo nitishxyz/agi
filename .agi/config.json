@@ -1,0 +1,27 @@
+{
+  "projectRoot": "/Users/bat/dev/dev-tools/agi",
+  "defaults": {
+    "agent": "build",
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-20250514"
+  },
+  "providers": {
+    "openai": {
+      "enabled": false
+    },
+    "anthropic": {
+      "enabled": true,
+      "apiKey": "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"
+    },
+    "google": {
+      "enabled": true,
+      "apiKey": "AIzaSyAQMC3SaZuvg6rC5QZVs4VMb-NkxTAwHak"
+    }
+  },
+  "paths": {
+    "dataDir": "/Users/bat/dev/dev-tools/agi/.agi",
+    "dbPath": "/Users/bat/dev/dev-tools/agi/.agi/agi.sqlite",
+    "projectConfigPath": null,
+    "globalConfigPath": null
+  }
+}

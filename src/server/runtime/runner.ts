@@ -65,6 +65,7 @@ async function runAssistant(opts: RunOpts) {
   const toolset = adaptTools(gated, {
     sessionId: opts.sessionId,
     messageId: opts.assistantMessageId,
+    assistantPartId: opts.assistantPartId,
     db,
     agent: opts.agent,
     provider: opts.provider,
@@ -131,4 +132,3 @@ async function buildHistoryMessages(db: Awaited<ReturnType<typeof getDb>>, sessi
   }
   return out;
 }
-

@@ -28,6 +28,7 @@
 		"baseUrl": ".",
 		"paths": {
 			"@/ai/*": ["src/ai/*"],
+			"@/cli/*": ["src/cli/*"],
 			"@/db/*": ["src/db/*"],
 			"@/config/*": ["src/config/*"],
 			"@/prompts/*": ["src/prompts/*"],
