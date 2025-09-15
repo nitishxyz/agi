@@ -10,7 +10,7 @@ let migratedPaths = new Set<string>();
 export async function getDb(projectRootInput?: string) {
 	const cfg = await loadConfig(projectRootInput);
 	const dbPath = cfg.paths.dbPath;
-  // Data dir is ensured by loadConfig() already.
+	// Data dir is ensured by loadConfig() already.
 
 	const key = dbPath;
 	const cached = dbCache.get(key);
@@ -23,7 +23,7 @@ export async function getDb(projectRootInput?: string) {
 	if (!migratedPaths.has(dbPath)) {
 		try {
 			await migrate(db, { migrationsFolder: 'drizzle' });
-			console.log('✅ Local database migrations completed');
+			// console.log('✅ Local database migrations completed');
 			migratedPaths.add(dbPath);
 		} catch (error) {
 			console.error('❌ Local database migration failed:', error);

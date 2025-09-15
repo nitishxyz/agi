@@ -12,4 +12,11 @@ export const messages = sqliteTable('messages', {
 	provider: text('provider').notNull(),
 	model: text('model').notNull(),
 	createdAt: integer('created_at', { mode: 'number' }).notNull(),
+	// Metadata
+	completedAt: integer('completed_at', { mode: 'number' }),
+	latencyMs: integer('latency_ms'),
+	promptTokens: integer('prompt_tokens'),
+	completionTokens: integer('completion_tokens'),
+	totalTokens: integer('total_tokens'),
+	error: text('error'),
 });

@@ -146,7 +146,12 @@ export function getOpenAPISpec() {
             provider: { $ref: '#/components/schemas/Provider' },
             model: { type: 'string' },
             projectPath: { type: 'string' },
-            createdAt: { type: 'integer', format: 'int64' }
+            createdAt: { type: 'integer', format: 'int64' },
+            lastActiveAt: { type: 'integer', format: 'int64', nullable: true },
+            totalInputTokens: { type: 'integer', nullable: true },
+            totalOutputTokens: { type: 'integer', nullable: true },
+            totalToolTimeMs: { type: 'integer', nullable: true },
+            toolCounts: { type: 'object', additionalProperties: { type: 'integer' }, nullable: true }
           },
           required: ['id', 'agent', 'provider', 'model', 'projectPath', 'createdAt']
         },
@@ -160,7 +165,13 @@ export function getOpenAPISpec() {
             agent: { type: 'string' },
             provider: { $ref: '#/components/schemas/Provider' },
             model: { type: 'string' },
-            createdAt: { type: 'integer', format: 'int64' }
+            createdAt: { type: 'integer', format: 'int64' },
+            completedAt: { type: 'integer', format: 'int64', nullable: true },
+            latencyMs: { type: 'integer', nullable: true },
+            promptTokens: { type: 'integer', nullable: true },
+            completionTokens: { type: 'integer', nullable: true },
+            totalTokens: { type: 'integer', nullable: true },
+            error: { type: 'string', nullable: true }
           },
           required: ['id', 'sessionId', 'role', 'status', 'agent', 'provider', 'model', 'createdAt']
         },
@@ -174,7 +185,12 @@ export function getOpenAPISpec() {
             content: { type: 'string', description: 'JSON-encoded content. For text: {"text": string}. For tool_call: {"name": string, "args": object}. For tool_result: {"name": string, "result"?: any, "artifact"?: Artifact}.' },
             agent: { type: 'string' },
             provider: { $ref: '#/components/schemas/Provider' },
-            model: { type: 'string' }
+            model: { type: 'string' },
+            startedAt: { type: 'integer', format: 'int64', nullable: true },
+            completedAt: { type: 'integer', format: 'int64', nullable: true },
+            toolName: { type: 'string', nullable: true },
+            toolCallId: { type: 'string', nullable: true },
+            toolDurationMs: { type: 'integer', nullable: true }
           },
           required: ['id', 'messageId', 'index', 'type', 'content', 'agent', 'provider', 'model']
         },
@@ -262,4 +278,3 @@ function errorResponse() {
     }
   } as const;
 }
-

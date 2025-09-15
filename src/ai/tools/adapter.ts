@@ -1,6 +1,6 @@
 import type { Tool } from 'ai';
 import type { DB } from '@/db/index.ts';
-import { messageParts } from '@/db/schema/index.ts';
+import { messageParts, sessions } from '@/db/schema/index.ts';
 import { eq } from 'drizzle-orm';
 import { publish } from '@/server/events/bus.ts';
 import type { DiscoveredTool } from '@/ai/tools/loader.ts';
@@ -21,7 +21,7 @@ export type ToolAdapterContext = {
 
 export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
   const out: Record<string, Tool> = {};
-  const pendingCallIds = new Map<string, string[]>();
+  const pendingCalls = new Map<string, { callId: string; startTs: number }[]>();
 
   for (const { name, tool } of tools) {
     const base = tool;
@@ -63,6 +63,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
         const callPartId = crypto.randomUUID();
         // Allocate index and persist before publishing the event to ensure deterministic ordering
         const index = await ctx.nextIndex();
+        const startTs = Date.now();
         await ctx.db.insert(messageParts).values({
           id: callPartId,
           messageId: ctx.messageId,
@@ -72,11 +73,14 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
           agent: ctx.agent,
           provider: ctx.provider,
           model: ctx.model,
+          startedAt: startTs,
+          toolName: name,
+          toolCallId: callPartId,
         });
         publish({ type: 'tool.call', sessionId: ctx.sessionId, payload: { name, args, callId: callPartId } });
-        const list = pendingCallIds.get(name) ?? [];
-        list.push(callPartId);
-        pendingCallIds.set(name, list);
+        const list = pendingCalls.get(name) ?? [];
+        list.push({ callId: callPartId, startTs });
+        pendingCalls.set(name, list);
         if (typeof base.onInputAvailable === 'function') {
           await base.onInputAvailable(options);
         }
@@ -114,8 +118,13 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
         }
         const resultPartId = crypto.randomUUID();
         let callId: string | undefined = undefined;
-        const queue = pendingCallIds.get(name);
-        if (queue && queue.length) callId = queue.shift();
+        let startTs: number | undefined = undefined;
+        const queue = pendingCalls.get(name);
+        if (queue && queue.length) {
+          const meta = queue.shift();
+          callId = meta?.callId;
+          startTs = meta?.startTs;
+        }
         const contentObj: any = { name, result, callId };
         if (result && typeof result === 'object' && 'artifact' in result) {
           try {
@@ -123,6 +132,8 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
           } catch {}
         }
         const index = await ctx.nextIndex();
+        const endTs = Date.now();
+        const dur = typeof startTs === 'number' ? Math.max(0, endTs - startTs) : null;
         await ctx.db.insert(messageParts).values({
           id: resultPartId,
           messageId: ctx.messageId,
@@ -132,7 +143,27 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
           agent: ctx.agent,
           provider: ctx.provider,
           model: ctx.model,
+          startedAt: startTs,
+          completedAt: endTs,
+          toolName: name,
+          toolCallId: callId,
+          toolDurationMs: dur ?? undefined,
         });
+        // Update session aggregates: total tool time and counts per tool
+        try {
+          const sessRows = await ctx.db.select().from(sessions).where(eq(sessions.id, ctx.sessionId));
+          if (sessRows.length) {
+            const row = sessRows[0] as any;
+            const totalToolTimeMs = Number(row.totalToolTimeMs || 0) + (dur ?? 0);
+            let counts: Record<string, number> = {};
+            try { counts = row.toolCountsJson ? JSON.parse(row.toolCountsJson) : {}; } catch {}
+            counts[name] = (counts[name] || 0) + 1;
+            await ctx.db
+              .update(sessions)
+              .set({ totalToolTimeMs, toolCountsJson: JSON.stringify(counts), lastActiveAt: endTs })
+              .where(eq(sessions.id, ctx.sessionId));
+          }
+        } catch {}
         publish({ type: 'tool.result', sessionId: ctx.sessionId, payload: contentObj });
         return result;
       },

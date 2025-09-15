@@ -12,4 +12,11 @@ export const messageParts = sqliteTable('message_parts', {
 	agent: text('agent').notNull(),
 	provider: text('provider').notNull(),
 	model: text('model').notNull(),
+	// Timestamps
+	startedAt: integer('started_at', { mode: 'number' }),
+	completedAt: integer('completed_at', { mode: 'number' }),
+	// Tool metadata (for tool_call/tool_result)
+	toolName: text('tool_name'),
+	toolCallId: text('tool_call_id'),
+	toolDurationMs: integer('tool_duration_ms'),
 });
