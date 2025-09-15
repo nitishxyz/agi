@@ -41,6 +41,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
   const jsonEnabled = process.argv.includes('--json');
 
   let completed = false;
+  let finalizeSeen = false;
   let output = '';
   const toolCalls: Array<{ name: string; args?: unknown }> = [];
   const toolResults: Array<{ name: string; result?: unknown; artifact?: any }> = [];
@@ -58,12 +59,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
         const data = safeJson(ev.data);
         const name = data?.name ?? 'tool';
         toolCalls.push({ name, args: data?.args });
-        if (verbose && !jsonEnabled) {
-          const args = data?.args !== undefined ? truncate(JSON.stringify(data.args), 200) : '';
-          Bun.write(Bun.stderr, `\n[tool.call] ${name} ${args}\n`);
-        } else if (!jsonEnabled) {
-          Bun.write(Bun.stderr, `\n[tool.call] ${name}\n`);
-        }
+        if (!jsonEnabled) printToolCall(name, data?.args, { verbose });
       } else if (ev.event === 'tool.delta') {
         const data = safeJson(ev.data);
         const name = data?.name ?? 'tool';
@@ -72,7 +68,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
           // Avoid noisy input-argument streaming by default
         } else {
           const delta = typeof data?.delta === 'string' ? data.delta : JSON.stringify(data?.delta);
-          if (delta) Bun.write(Bun.stderr, `[tool.delta:${channel}] ${name}: ${truncate(delta, 160)}\n`);
+          if (delta) Bun.write(Bun.stderr, `${dim(`[${channel}]`)} ${cyan(name)} ${dim('›')} ${truncate(delta, 160)}\n`);
         }
       } else if (ev.event === 'tool.result') {
         const data = safeJson(ev.data);
@@ -82,11 +78,8 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
           for (const f of extractFilesFromPatch(String(data.artifact.patch))) filesTouched.add(f);
         }
         if (name === 'fs_write' && data?.result?.path) filesTouched.add(String(data.result.path));
-        if (!jsonEnabled) {
-          const hasArtifact = data?.artifact ? ` artifact=${data.artifact.kind}` : '';
-          const preview = data?.result !== undefined ? truncate(JSON.stringify(data.result), 200) : '';
-          Bun.write(Bun.stderr, `[tool.result] ${name}${hasArtifact} ${preview}\n`);
-        }
+        if (!jsonEnabled) printToolResult(name, data?.result, data?.artifact, { verbose });
+        if (name === 'finalize') finalizeSeen = true;
       } else if (ev.event === 'message.completed') {
         const data = safeJson(ev.data);
         if (data?.id === assistantMessageId) {
@@ -122,7 +115,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
       filesTouched: Array.from(filesTouched),
     };
     Bun.write(Bun.stdout, JSON.stringify(transcript, null, 2) + '\n');
-  } else if (summaryEnabled) {
+  } else if (summaryEnabled || finalizeSeen) {
     printSummary(toolCalls, toolResults, filesTouched);
   }
 
@@ -225,22 +218,90 @@ function printSummary(
   toolResults: Array<{ name: string; result?: unknown; artifact?: any }>,
   filesTouched: Set<string>,
 ) {
-  Bun.write(Bun.stderr, '\n===== Summary =====\n');
+  Bun.write(Bun.stderr, `\n${bold('Summary')}\n`);
   if (toolCalls.length) {
-    Bun.write(Bun.stderr, 'Tools used:\n');
-    for (const c of toolCalls) Bun.write(Bun.stderr, `  - ${c.name}\n`);
+    Bun.write(Bun.stderr, `${bold('Tools used:')}\n`);
+    const counts = new Map<string, number>();
+    for (const c of toolCalls) counts.set(c.name, (counts.get(c.name) ?? 0) + 1);
+    for (const [name, count] of counts) {
+      const suffix = count > 1 ? ` × ${count}` : '';
+      Bun.write(Bun.stderr, `  ${green('•')} ${name}${suffix}\n`);
+    }
   }
   if (filesTouched.size) {
-    Bun.write(Bun.stderr, 'Files touched:\n');
-    for (const f of filesTouched) Bun.write(Bun.stderr, `  - ${f}\n`);
+    Bun.write(Bun.stderr, `${bold('Files touched:')}\n`);
+    for (const f of filesTouched) Bun.write(Bun.stderr, `  ${green('•')} ${f}\n`);
   }
   const diffs = toolResults.filter((r) => r.artifact?.kind === 'file_diff');
   if (diffs.length) {
-    Bun.write(Bun.stderr, 'Diff artifacts:\n');
+    Bun.write(Bun.stderr, `${bold('Diff artifacts:')}\n`);
     for (const d of diffs) {
       const s = d.artifact?.summary;
       const sum = s ? ` (files:${s.files ?? '?'}, +${s.additions ?? '?'}, -${s.deletions ?? '?'})` : '';
-      Bun.write(Bun.stderr, `  - ${d.name}${sum}\n`);
+      Bun.write(Bun.stderr, `  ${yellow('•')} ${d.name}${sum}\n`);
     }
   }
+}
+
+// Pretty printing helpers
+const reset = (s: string) => `\x1b[0m${s}\x1b[0m`;
+const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
+const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
+const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
+const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
+const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
+
+function printToolCall(name: string, args?: any, opts?: { verbose?: boolean }) {
+  const v = opts?.verbose;
+  const title = `${bold('›')} ${cyan(name)} ${dim('running...')}`;
+  if (!args || !v) {
+    Bun.write(Bun.stderr, `\n${title}\n`);
+    return;
+  }
+  const preview = truncate(JSON.stringify(args), 200);
+  Bun.write(Bun.stderr, `\n${title}\n${dim(preview)}\n`);
+}
+
+function printToolResult(name: string, result?: any, artifact?: any, opts?: { verbose?: boolean }) {
+  // Special-case pretty formatting for common tools
+  if (name === 'fs_tree' && result?.tree) {
+    Bun.write(Bun.stderr, `${bold('↳ tree')} ${dim(result.path ?? '.')}\n`);
+    Bun.write(Bun.stderr, `${result.tree}\n`);
+    return;
+  }
+  if (name === 'fs_ls' && Array.isArray(result?.entries)) {
+    const entries = result.entries as Array<{ name: string; type: string }>;
+    Bun.write(Bun.stderr, `${bold('↳ ls')} ${dim(result.path ?? '.')}\n`);
+    for (const e of entries.slice(0, 100)) {
+      Bun.write(Bun.stderr, `  ${e.type === 'dir' ? '📁' : '📄'} ${e.name}\n`);
+    }
+    if (entries.length > 100) Bun.write(Bun.stderr, `${dim(`… and ${entries.length - 100} more`) }\n`);
+    return;
+  }
+  if (name === 'fs_read' && typeof result?.path === 'string') {
+    const content = String(result?.content ?? '');
+    const lines = content.split('\n');
+    Bun.write(Bun.stderr, `${bold('↳ read')} ${dim(result.path)} (${lines.length} lines)\n`);
+    const sample = lines.slice(0, 20).join('\n');
+    Bun.write(Bun.stderr, `${sample}${lines.length > 20 ? '\n' + dim('…') : ''}\n`);
+    return;
+  }
+  if (name === 'fs_write' && typeof result?.path === 'string') {
+    Bun.write(Bun.stderr, `${bold('↳ wrote')} ${result.path} (${result?.bytes ?? '?'} bytes)\n`);
+    return;
+  }
+  if (artifact?.kind === 'file_diff' && typeof artifact?.patch === 'string') {
+    Bun.write(Bun.stderr, `${bold('↳ diff')} ${dim('(unified patch)')}\n`);
+    const patch = artifact.patch.split('\n').slice(0, 80).join('\n');
+    Bun.write(Bun.stderr, `${patch}${artifact.patch.split('\n').length > 80 ? '\n' + dim('…') : ''}\n`);
+    return;
+  }
+  if (name === 'finalize') {
+    Bun.write(Bun.stderr, `${bold('✓ done')}\n`);
+    return;
+  }
+  // Generic fallback
+  const preview = result !== undefined ? truncate(JSON.stringify(result), 200) : '';
+  const suffix = artifact?.kind ? ` ${dim(`artifact=${artifact.kind}`)}` : '';
+  Bun.write(Bun.stderr, `${bold('↳')} ${cyan(name)}${suffix} ${preview}\n`);
 }
