@@ -8,7 +8,7 @@ import { resolveAgentConfig } from '@/ai/agents/registry.ts';
 import { defaultAgentPrompts } from '@/ai/agents/defaults.ts';
 import { discoverProjectTools } from '@/ai/tools/loader.ts';
 import { adaptTools } from '@/ai/tools/adapter.ts';
-import { publish } from '@/server/events/bus.ts';
+import { publish, subscribe } from '@/server/events/bus.ts';
 
 type RunOpts = {
   sessionId: string;
@@ -62,7 +62,7 @@ async function runAssistant(opts: RunOpts) {
   // Build chat history messages from DB (text parts only)
   const history = await buildHistoryMessages(db, opts.sessionId);
 
-  const toolset = adaptTools(gated, {
+  const sharedCtx = {
     sessionId: opts.sessionId,
     messageId: opts.assistantMessageId,
     assistantPartId: opts.assistantPartId,
@@ -71,11 +71,52 @@ async function runAssistant(opts: RunOpts) {
     provider: opts.provider,
     model: opts.model,
     projectRoot: cfg.projectRoot,
-  });
+  };
+  // Initialize a per-message monotonic index allocator
+  let counter = 0;
+  try {
+    const existing = await db.select().from(messageParts).where(eq(messageParts.messageId, opts.assistantMessageId));
+    if (existing.length) {
+      counter = Math.max(...existing.map((p: any) => Number(p.index ?? 0)));
+    }
+  } catch {}
+  sharedCtx.nextIndex = () => {
+    counter += 1;
+    return counter;
+  };
+  const toolset = adaptTools(gated, sharedCtx);
 
   const model = resolveModel(opts.provider as any, opts.model, cfg);
 
+  let currentPartId = opts.assistantPartId;
   let accumulated = '';
+
+  // Rotate assistant text part only on tool.result boundaries for simpler ordering
+  const unsubscribe = subscribe(opts.sessionId, async (evt) => {
+    if (evt.type !== 'tool.result') return;
+    try {
+      // finalize current part by doing nothing special; we already persist text incrementally
+      // start a new text part for subsequent deltas
+      const newPartId = crypto.randomUUID();
+      const index = await sharedCtx.nextIndex();
+      await db.insert(messageParts).values({
+        id: newPartId,
+        messageId: opts.assistantMessageId,
+        index,
+        type: 'text',
+        content: JSON.stringify({ text: '' }),
+        agent: opts.agent,
+        provider: opts.provider,
+        model: opts.model,
+      });
+      // switch accumulation to new part
+      currentPartId = newPartId;
+      sharedCtx.assistantPartId = newPartId;
+      accumulated = '';
+    } catch {
+      // ignore rotation errors to not break the run
+    }
+  });
 
   try {
     const result = streamText({
@@ -89,11 +130,11 @@ async function runAssistant(opts: RunOpts) {
     for await (const delta of result.textStream) {
       if (!delta) continue;
       accumulated += delta;
-      publish({ type: 'message.part.delta', sessionId: opts.sessionId, payload: { messageId: opts.assistantMessageId, partId: opts.assistantPartId, delta } });
+      publish({ type: 'message.part.delta', sessionId: opts.sessionId, payload: { messageId: opts.assistantMessageId, partId: currentPartId, delta } });
       await db
         .update(messageParts)
         .set({ content: JSON.stringify({ text: accumulated }) })
-        .where(eq(messageParts.id, opts.assistantPartId));
+        .where(eq(messageParts.id, currentPartId));
     }
 
     await db.update(messages).set({ status: 'complete' }).where(eq(messages.id, opts.assistantMessageId));
@@ -102,6 +143,22 @@ async function runAssistant(opts: RunOpts) {
     await db.update(messages).set({ status: 'error' }).where(eq(messages.id, opts.assistantMessageId));
     publish({ type: 'error', sessionId: opts.sessionId, payload: { messageId: opts.assistantMessageId, error: String((error as Error)?.message ?? error) } });
     throw error;
+  }
+  finally {
+    try { unsubscribe(); } catch {}
+    // Cleanup any empty assistant text parts
+    try {
+      const parts = await db.select().from(messageParts).where(eq(messageParts.messageId, opts.assistantMessageId));
+      for (const p of parts) {
+        if (p.type === 'text') {
+          let t = '';
+          try { t = JSON.parse(p.content || '{}')?.text || ''; } catch {}
+          if (!t || t.length === 0) {
+            await db.delete(messageParts).where(eq(messageParts.id, p.id as any));
+          }
+        }
+      }
+    } catch {}
   }
 }
 
