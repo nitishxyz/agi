@@ -3,6 +3,8 @@ import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
 import { runAsk } from '@/cli/ask.ts';
 import { runSetup } from '@/cli/setup.ts';
+// Ensure embedded assets are retained in compile builds
+import '@/runtime/assets.ts';
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
