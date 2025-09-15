@@ -99,6 +99,14 @@ async function runAssistant(opts: RunOpts) {
       // start a new text part for subsequent deltas
       const newPartId = crypto.randomUUID();
       const index = await sharedCtx.nextIndex();
+      const nowTs = Date.now();
+      // mark current part completed
+      try {
+        await db
+          .update(messageParts)
+          .set({ completedAt: nowTs })
+          .where(eq(messageParts.id, currentPartId));
+      } catch {}
       await db.insert(messageParts).values({
         id: newPartId,
         messageId: opts.assistantMessageId,
@@ -108,6 +116,7 @@ async function runAssistant(opts: RunOpts) {
         agent: opts.agent,
         provider: opts.provider,
         model: opts.model,
+        startedAt: nowTs,
       });
       // switch accumulation to new part
       currentPartId = newPartId;
@@ -137,10 +146,28 @@ async function runAssistant(opts: RunOpts) {
         .where(eq(messageParts.id, currentPartId));
     }
 
-    await db.update(messages).set({ status: 'complete' }).where(eq(messages.id, opts.assistantMessageId));
+    // Mark message completion and latency
+    let createdAt = undefined as number | undefined;
+    try {
+      const row = await db.select().from(messages).where(eq(messages.id, opts.assistantMessageId));
+      if (row.length) createdAt = Number((row[0] as any).createdAt ?? undefined);
+    } catch {}
+    const finishedAt = Date.now();
+    const latency = typeof createdAt === 'number' ? Math.max(0, finishedAt - createdAt) : null;
+    await db
+      .update(messages)
+      .set({ status: 'complete', completedAt: finishedAt, latencyMs: latency ?? undefined })
+      .where(eq(messages.id, opts.assistantMessageId));
+    // mark last text part completed
+    try {
+      await db
+        .update(messageParts)
+        .set({ completedAt: finishedAt })
+        .where(eq(messageParts.id, currentPartId));
+    } catch {}
     publish({ type: 'message.completed', sessionId: opts.sessionId, payload: { id: opts.assistantMessageId } });
   } catch (error) {
-    await db.update(messages).set({ status: 'error' }).where(eq(messages.id, opts.assistantMessageId));
+    await db.update(messages).set({ status: 'error', error: String((error as Error)?.message ?? error) }).where(eq(messages.id, opts.assistantMessageId));
     publish({ type: 'error', sessionId: opts.sessionId, payload: { messageId: opts.assistantMessageId, error: String((error as Error)?.message ?? error) } });
     throw error;
   }

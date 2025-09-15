@@ -12,12 +12,18 @@ export function registerSessionsRoutes(app: Hono) {
 		const projectRoot = c.req.query('project') || process.cwd();
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
-		const rows = await db
-			.select()
-			.from(sessions)
-			.orderBy(desc(sessions.createdAt));
-		return c.json(rows);
-	});
+    const rows = await db
+      .select()
+      .from(sessions)
+      .orderBy(desc(sessions.createdAt));
+    const normalized = rows.map((r: any) => {
+      let counts: any = undefined;
+      try { counts = r.toolCountsJson ? JSON.parse(r.toolCountsJson) : undefined; } catch {}
+      const { toolCountsJson, ...rest } = r;
+      return counts ? { ...rest, toolCounts: counts } : rest;
+    });
+    return c.json(normalized);
+  });
 
 	// Create session
   app.post('/v1/sessions', async (c) => {
@@ -42,7 +48,9 @@ export function registerSessionsRoutes(app: Hono) {
       return c.json({ error: String(err?.message ?? err) }, 400);
     }
     await db.insert(sessions).values(row);
-    publish({ type: 'session.created', sessionId: id, payload: row });
-    return c.json(row, 201);
+    const response = { ...row } as any;
+    // keep response shape aligned with GET
+    publish({ type: 'session.created', sessionId: id, payload: response });
+    return c.json(response, 201);
   });
 }

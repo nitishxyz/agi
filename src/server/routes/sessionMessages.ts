@@ -1,7 +1,7 @@
 import type { Hono } from 'hono';
 import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
-import { messages, messageParts } from '@/db/schema/index.ts';
+import { messages, messageParts, sessions } from '@/db/schema/index.ts';
 import { eq, inArray } from 'drizzle-orm';
 import { validateProviderModel } from '@/providers/validate.ts';
 import { publish } from '@/server/events/bus.ts';
@@ -94,6 +94,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
       createdAt: Date.now(),
     });
     const assistantPartId = crypto.randomUUID();
+    const startTs = Date.now();
     await db.insert(messageParts).values({
       id: assistantPartId,
       messageId: assistantMessageId,
@@ -103,6 +104,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
       agent,
       provider,
       model: modelName,
+      startedAt: startTs,
     });
     publish({ type: 'message.created', sessionId, payload: { id: assistantMessageId, role: 'assistant' } });
 
@@ -116,6 +118,11 @@ export function registerSessionMessagesRoutes(app: Hono) {
       model: modelName,
       projectRoot: cfg.projectRoot,
     });
+
+    // touch session last active
+    try {
+      await db.update(sessions).set({ lastActiveAt: Date.now() }).where(eq(sessions.id, sessionId));
+    } catch {}
 
     return c.json({ messageId: assistantMessageId }, 202);
   });
