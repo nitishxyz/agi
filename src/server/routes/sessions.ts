@@ -15,7 +15,7 @@ export function registerSessionsRoutes(app: Hono) {
     const rows = await db
       .select()
       .from(sessions)
-      .orderBy(desc(sessions.createdAt));
+      .orderBy(desc(sessions.lastActiveAt), desc(sessions.createdAt));
     const normalized = rows.map((r: any) => {
       let counts: any = undefined;
       try { counts = r.toolCountsJson ? JSON.parse(r.toolCountsJson) : undefined; } catch {}
