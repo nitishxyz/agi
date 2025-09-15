@@ -2,25 +2,40 @@ import type { Hono } from 'hono';
 import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
 import { messages, messageParts } from '@/db/schema/index.ts';
-import { eq } from 'drizzle-orm';
-import { generateText } from 'ai';
-import { resolveModel } from '@/ai/provider.ts';
-import { defaultAgentPrompts } from '@/ai/agents/defaults.ts';
+import { eq, inArray } from 'drizzle-orm';
+import { validateProviderModel } from '@/providers/validate.ts';
+import { publish } from '@/server/events/bus.ts';
+import { enqueueAssistantRun } from '@/server/runtime/runner.ts';
 
 export function registerSessionMessagesRoutes(app: Hono) {
 	// List messages for a session
-	app.get('/v1/sessions/:id/messages', async (c) => {
-		const projectRoot = c.req.query('project') || process.cwd();
-		const cfg = await loadConfig(projectRoot);
-		const db = await getDb(cfg.projectRoot);
-		const id = c.req.param('id');
-		const rows = await db
-			.select()
-			.from(messages)
-			.where(eq(messages.sessionId, id))
-			.orderBy(messages.createdAt);
-		return c.json(rows);
-	});
+  app.get('/v1/sessions/:id/messages', async (c) => {
+    const projectRoot = c.req.query('project') || process.cwd();
+    const cfg = await loadConfig(projectRoot);
+    const db = await getDb(cfg.projectRoot);
+    const id = c.req.param('id');
+    const rows = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.sessionId, id))
+      .orderBy(messages.createdAt);
+    const without = c.req.query('without');
+    if (without !== 'parts') {
+      const ids = rows.map((m) => m.id);
+      const parts = ids.length
+        ? await db.select().from(messageParts).where(inArray(messageParts.messageId, ids))
+        : [];
+      const partsByMsg = new Map<string, any[]>();
+      for (const p of parts) {
+        const arr = partsByMsg.get(p.messageId) ?? [];
+        arr.push(p);
+        partsByMsg.set(p.messageId, arr);
+      }
+      const enriched = rows.map((m) => ({ ...m, parts: (partsByMsg.get(m.id) ?? []).sort((a, b) => a.index - b.index) }));
+      return c.json(enriched);
+    }
+    return c.json(rows);
+  });
 
 	// Post a user message and get assistant reply (non-streaming for v0)
 	app.post('/v1/sessions/:id/messages', async (c) => {
@@ -34,61 +49,74 @@ export function registerSessionMessagesRoutes(app: Hono) {
 		const agent = body?.agent ?? cfg.defaults.agent;
 		const content = body?.content ?? '';
 
-		const now = Date.now();
-		const userMessageId = crypto.randomUUID();
-		await db.insert(messages).values({
-			id: userMessageId,
-			sessionId,
-			role: 'user',
-			status: 'complete',
-			agent,
-			provider,
-			model: modelName,
-			createdAt: now,
-		});
-		await db.insert(messageParts).values({
-			id: crypto.randomUUID(),
-			messageId: userMessageId,
-			index: 0,
-			type: 'text',
-			content: JSON.stringify({ text: String(content) }),
-			agent,
-			provider,
-			model: modelName,
-		});
+    // Validate model capabilities if tools are allowed for this agent
+    const wantsToolCalls = true; // agent toolset may be non-empty
+    try {
+      validateProviderModel(provider, modelName, { wantsToolCalls });
+    } catch (err: any) {
+      return c.json({ error: String(err?.message ?? err) }, 400);
+    }
 
-		const system = defaultAgentPrompts[agent] ?? 'You are a helpful assistant.';
-		const model = resolveModel(provider, modelName, cfg);
-		const { text: assistantText } = await generateText({
-			model,
-			messages: [
-				{ role: 'system', content: system },
-				{ role: 'user', content: String(content) },
-			],
-		});
+    const now = Date.now();
+    const userMessageId = crypto.randomUUID();
+    await db.insert(messages).values({
+      id: userMessageId,
+      sessionId,
+      role: 'user',
+      status: 'complete',
+      agent,
+      provider,
+      model: modelName,
+      createdAt: now,
+    });
+    await db.insert(messageParts).values({
+      id: crypto.randomUUID(),
+      messageId: userMessageId,
+      index: 0,
+      type: 'text',
+      content: JSON.stringify({ text: String(content) }),
+      agent,
+      provider,
+      model: modelName,
+    });
+    publish({ type: 'message.created', sessionId, payload: { id: userMessageId, role: 'user' } });
 
-		const assistantMessageId = crypto.randomUUID();
-		await db.insert(messages).values({
-			id: assistantMessageId,
-			sessionId,
-			role: 'assistant',
-			status: 'complete',
-			agent,
-			provider,
-			model: modelName,
-			createdAt: Date.now(),
-		});
-		await db.insert(messageParts).values({
-			id: crypto.randomUUID(),
-			messageId: assistantMessageId,
-			index: 0,
-			type: 'text',
-			content: JSON.stringify({ text: assistantText }),
-			agent,
-			provider,
-			model: modelName,
-		});
+    // Create assistant message in pending state and an empty part to update as we stream
+    const assistantMessageId = crypto.randomUUID();
+    await db.insert(messages).values({
+      id: assistantMessageId,
+      sessionId,
+      role: 'assistant',
+      status: 'pending',
+      agent,
+      provider,
+      model: modelName,
+      createdAt: Date.now(),
+    });
+    const assistantPartId = crypto.randomUUID();
+    await db.insert(messageParts).values({
+      id: assistantPartId,
+      messageId: assistantMessageId,
+      index: 0,
+      type: 'text',
+      content: JSON.stringify({ text: '' }),
+      agent,
+      provider,
+      model: modelName,
+    });
+    publish({ type: 'message.created', sessionId, payload: { id: assistantMessageId, role: 'assistant' } });
 
-		return c.json({ messageId: assistantMessageId, text: assistantText });
-	});
+    // Enqueue background processing in centralized runner and return immediately
+    enqueueAssistantRun({
+      sessionId,
+      assistantMessageId,
+      assistantPartId,
+      agent,
+      provider,
+      model: modelName,
+      projectRoot: cfg.projectRoot,
+    });
+
+    return c.json({ messageId: assistantMessageId }, 202);
+  });
 }

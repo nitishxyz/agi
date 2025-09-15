@@ -2,6 +2,8 @@ import type { Hono } from 'hono';
 import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
 import { sessions } from '@/db/schema/index.ts';
+import { validateProviderModel } from '@/providers/validate.ts';
+import { publish } from '@/server/events/bus.ts';
 import { desc } from 'drizzle-orm';
 
 export function registerSessionsRoutes(app: Hono) {
@@ -18,23 +20,29 @@ export function registerSessionsRoutes(app: Hono) {
 	});
 
 	// Create session
-	app.post('/v1/sessions', async (c) => {
+  app.post('/v1/sessions', async (c) => {
 		const projectRoot = c.req.query('project') || process.cwd();
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
 		const body = await c.req.json().catch(() => ({}));
 		const id = crypto.randomUUID();
 		const now = Date.now();
-		const row = {
-			id,
-			title: body?.title ?? null,
-			agent: body?.agent ?? cfg.defaults.agent,
-			provider: body?.provider ?? cfg.defaults.provider,
-			model: body?.model ?? cfg.defaults.model,
-			projectPath: cfg.projectRoot,
-			createdAt: now,
-		};
-		await db.insert(sessions).values(row);
-		return c.json(row, 201);
-	});
+    const row = {
+      id,
+      title: body?.title ?? null,
+      agent: body?.agent ?? cfg.defaults.agent,
+      provider: body?.provider ?? cfg.defaults.provider,
+      model: body?.model ?? cfg.defaults.model,
+      projectPath: cfg.projectRoot,
+      createdAt: now,
+    };
+    try {
+      validateProviderModel(row.provider, row.model);
+    } catch (err: any) {
+      return c.json({ error: String(err?.message ?? err) }, 400);
+    }
+    await db.insert(sessions).values(row);
+    publish({ type: 'session.created', sessionId: id, payload: row });
+    return c.json(row, 201);
+  });
 }
