@@ -7,7 +7,9 @@
 		"lint": "bio check",
 		"cli": "bun run index.ts",
 		"test": "bun test",
-		"db:generate": "drizzle-kit generate --config=drizzle.config.ts"
+		"db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+		"db:reset": "bun run scripts/reset-db.ts",
+		"catalog:update": "bun run scripts/update-catalog.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.2.4",
@@ -21,6 +23,7 @@
 		"@ai-sdk/anthropic": "^2.0.16",
 		"@ai-sdk/google": "^2.0.14",
 		"@ai-sdk/openai": "^2.0.30",
+		"@clack/prompts": "^0.11.0",
 		"ai": "^5.0.43",
 		"drizzle-orm": "^0.44.5",
 		"hono": "^4.9.7",

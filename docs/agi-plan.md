@@ -35,6 +35,7 @@ Directory Structure
 - `src/config/` — config loader/merger (global + project)
 - `src/openapi/` — OpenAPI spec and helpers
 - `src/cli/` — CLI commands (`serve`, `ask`)
+  - `src/cli/setup.ts` — interactive first-run setup (providers/models/API keys)
 - `tests/` — unit and integration tests
 - `scripts/` — manual test scripts (curl/bun scripts)
 - `.agi/` — project data and config:
@@ -329,6 +330,12 @@ CLI
   - Uses DB at `.agi/agi.sqlite` in project or provided path.
 - `agi "<prompt>" [--agent <name>] [--provider <p>] [--model <m>] [--project <path>]`
   - Starts ephemeral server (or reuses local instance if detected), creates a session, sends a message, prints streamed output to stdout.
+- `agi setup [--project <path>]`
+  - Interactive setup using `@clack/prompts` to:
+    - Enable providers (OpenAI/Anthropic/Google)
+    - Enter API keys per provider
+    - Pick default provider/model/agent
+  - Writes `.agi/config.json` with defaults and provider configs.
 
 Testing Strategy
 - Unit tests:
@@ -343,6 +350,13 @@ Testing Strategy
 - Scripts:
   - `scripts/smoke-serve.ts` — start server, print URL.
   - `scripts/smoke-ask.ts` — hit one‑shot with a sample prompt and stream output.
+  - `scripts/reset-db.ts` — delete local SQLite DB for fresh migrations.
+
+Setup Flow and Provider Catalog
+- First run: `agi setup` guides through enabling providers, entering API keys, and picking defaults.
+- Provider/model catalog is embedded (`src/providers/catalog.ts`) for offline, stable selection.
+- Server uses config defaults when client omits `agent`/`provider`/`model`.
+- Server sets provider API keys from config to environment variables (server-side only) as needed.
 
 Milestones & Acceptance Criteria
 1) Scaffold & Config Loader

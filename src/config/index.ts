@@ -1,55 +1,56 @@
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
+// Minimal path join to avoid node:path; ensures forward slashes
+function joinPath(...parts: string[]) {
+  return parts
+    .filter(Boolean)
+    .map((p) => p.replace(/\\/g, '/'))
+    .join('/')
+    .replace(/\/+\/+/g, '/');
+}
+
+export type ProviderConfig = { enabled: boolean; apiKey?: string };
 
 export type AGIConfig = {
-	projectRoot: string;
-	defaults: {
-		agent: string;
-		provider: 'openai' | 'anthropic' | 'google';
-		model: string;
-	};
-	providers: {
-		openai: { enabled: boolean };
-		anthropic: { enabled: boolean };
-		google: { enabled: boolean };
-	};
-	paths: {
-		dataDir: string; // .agi
-		dbPath: string; // .agi/agi.sqlite
-		projectConfigPath: string | null;
+  projectRoot: string;
+  defaults: {
+    agent: string;
+    provider: 'openai' | 'anthropic' | 'google';
+    model: string;
+  };
+  providers: {
+    openai: ProviderConfig;
+    anthropic: ProviderConfig;
+    google: ProviderConfig;
+  };
+  paths: {
+    dataDir: string; // .agi
+    dbPath: string; // .agi/agi.sqlite
+    projectConfigPath: string | null;
 		globalConfigPath: string | null;
 	};
 };
 
 const DEFAULTS = {
-	defaults: {
-		agent: 'general',
-		provider: 'openai' as const,
-		model: 'gpt-4o-mini',
-	},
-	providers: {
-		openai: { enabled: true },
-		anthropic: { enabled: true },
-		google: { enabled: true },
-	},
+  defaults: {
+    agent: 'general',
+    provider: 'openai' as const,
+    model: 'gpt-4o-mini',
+  },
+  providers: {
+    openai: { enabled: true },
+    anthropic: { enabled: true },
+    google: { enabled: true },
+  },
 };
 
 export async function loadConfig(
 	projectRootInput?: string,
 ): Promise<AGIConfig> {
-	const projectRoot = projectRootInput
-		? path.resolve(projectRootInput)
-		: process.cwd();
+	const projectRoot = projectRootInput ? String(projectRootInput) : process.cwd();
 
-	const dataDir = path.join(projectRoot, '.agi');
-	const dbPath = path.join(dataDir, 'agi.sqlite');
-	const projectConfigPath = path.join(dataDir, 'config.json');
-	const globalConfigPath = path.join(
-		process.env.HOME || '',
-		'.config',
-		'agi',
-		'config.json',
-	);
+	const dataDir = joinPath(projectRoot, '.agi');
+	const dbPath = joinPath(dataDir, 'agi.sqlite');
+	const projectConfigPath = joinPath(dataDir, 'config.json');
+	const globalConfigPath = joinPath(process.env.HOME || '', '.config', 'agi', 'config.json');
 
 	const projectCfg = await readJsonOptional(projectConfigPath);
 	const globalCfg = await readJsonOptional(globalConfigPath);
@@ -57,7 +58,8 @@ export async function loadConfig(
 	const merged = deepMerge(DEFAULTS, globalCfg, projectCfg);
 
 	// Ensure data dir exists so downstream can open DB
-	await fs.mkdir(dataDir, { recursive: true }).catch(() => {});
+  // Ensure data dir exists. Using Node fs might be replaced when Bun exposes mkdir.
+  await ensureDir(dataDir);
 
 	return {
 		projectRoot,
@@ -77,12 +79,14 @@ export async function loadConfig(
 }
 
 async function readJsonOptional(file: string): Promise<any | undefined> {
-	try {
-		const buf = await fs.readFile(file, 'utf8');
-		return JSON.parse(buf);
-	} catch {
-		return undefined;
-	}
+  const f = Bun.file(file);
+  if (!(await f.exists())) return undefined;
+  try {
+    const buf = await f.text();
+    return JSON.parse(buf);
+  } catch {
+    return undefined;
+  }
 }
 
 function deepMerge<T>(...objects: (T | undefined)[]): T {
@@ -108,10 +112,16 @@ function mergeInto(target: any, source: any) {
 }
 
 async function exists(p: string) {
-	try {
-		await fs.access(p);
-		return true;
-	} catch {
-		return false;
-	}
+  return await Bun.file(p).exists();
+}
+
+async function ensureDir(dir: string) {
+  try {
+    // Attempt to create a marker file to ensure directory exists
+    // If parent directories are missing, fallback to Node fs.
+    await Bun.write(joinPath(dir, '.keep'), '');
+  } catch {
+    const { promises: fs } = await import('node:fs');
+    await fs.mkdir(dir, { recursive: true }).catch(() => {});
+  }
 }

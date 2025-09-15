@@ -1,8 +1,6 @@
 import { Database } from 'bun:sqlite';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
 import { loadConfig } from '@/config/index.ts';
 import * as schema from '@/db/schema/index.ts';
 
@@ -12,7 +10,7 @@ let migratedPaths = new Set<string>();
 export async function getDb(projectRootInput?: string) {
 	const cfg = await loadConfig(projectRootInput);
 	const dbPath = cfg.paths.dbPath;
-	await fs.mkdir(path.dirname(dbPath), { recursive: true }).catch(() => {});
+  // Data dir is ensured by loadConfig() already.
 
 	const key = dbPath;
 	const cached = dbCache.get(key);
