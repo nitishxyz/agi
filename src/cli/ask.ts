@@ -7,6 +7,8 @@ type AskOptions = {
   provider?: 'openai' | 'anthropic' | 'google';
   model?: string;
   project?: string;
+  sessionId?: string;
+  last?: boolean;
 };
 
 export async function runAsk(prompt: string, opts: AskOptions = {}) {
@@ -16,31 +18,56 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 
   const baseUrl = process.env.AGI_SERVER_URL || (await startEphemeralServer());
 
-  const session = await httpJson('POST', `${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`, {
-    title: null,
-    agent: opts.agent ?? cfg.defaults.agent,
-    provider: opts.provider ?? cfg.defaults.provider,
-    model: opts.model ?? cfg.defaults.model,
-  });
+  // Parse output flags early so we can use them while choosing/creating a session
+  const verbose = process.argv.includes('--verbose');
+  const summaryEnabled = process.argv.includes('--summary');
+  const jsonEnabled = process.argv.includes('--json');
+  const jsonVerbose = process.argv.includes('--json-verbose');
+  const jsonStreamEnabled = process.argv.includes('--json-stream');
 
-  const sessionId = session.id as string;
+  // Resolve target session
+  let sessionId: string | null = null;
+  if (opts.sessionId) {
+    sessionId = opts.sessionId;
+  } else if (opts.last) {
+    // Fetch sessions and pick the most recent
+    const sessions = (await httpJson('GET', `${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`)) as Array<any>;
+    if (!sessions.length) {
+      const created = await httpJson('POST', `${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`, {
+        title: null,
+        agent: opts.agent ?? cfg.defaults.agent,
+        provider: opts.provider ?? cfg.defaults.provider,
+        model: opts.model ?? cfg.defaults.model,
+      });
+      sessionId = String(created.id);
+    } else {
+      sessionId = String(sessions[0].id);
+      if (!jsonEnabled && !jsonStreamEnabled) Bun.write(Bun.stderr, `${dim('Using last session')} ${sessions[0].id}\n`);
+    }
+  } else {
+    const created = await httpJson('POST', `${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`, {
+      title: null,
+      agent: opts.agent ?? cfg.defaults.agent,
+      provider: opts.provider ?? cfg.defaults.provider,
+      model: opts.model ?? cfg.defaults.model,
+    });
+    sessionId = String(created.id);
+    if (!jsonEnabled && !jsonStreamEnabled) Bun.write(Bun.stderr, `${dim('Created new session')} ${sessionId}\n`);
+  }
 
   // Start SSE reader before enqueuing the message to avoid missing early events
   const sse = await connectSSE(`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/stream?project=${encodeURIComponent(projectRoot)}`);
 
   const enqueueRes = await httpJson('POST', `${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/messages?project=${encodeURIComponent(projectRoot)}`, {
     content: prompt,
+    // For existing sessions, avoid overriding defaults unless explicitly provided
     agent: opts.agent,
     provider: opts.provider,
     model: opts.model,
   });
   const assistantMessageId = enqueueRes.messageId as string;
 
-  const verbose = process.argv.includes('--verbose');
-  const summaryEnabled = process.argv.includes('--summary');
-  const jsonEnabled = process.argv.includes('--json');
-  const jsonVerbose = process.argv.includes('--json-verbose');
-  const jsonStreamEnabled = process.argv.includes('--json-stream');
+  // flags already parsed above
 
   let completed = false;
   let finalizeSeen = false;

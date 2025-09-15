@@ -40,11 +40,14 @@ async function main() {
     const providerIdx = argv.indexOf('--provider');
     const modelIdx = argv.indexOf('--model');
     const projectIdx = argv.indexOf('--project');
+    const lastFlag = argv.includes('--last');
+    const sessionIdx = argv.indexOf('--session');
     const agent = agentIdx >= 0 ? argv[agentIdx + 1] : undefined;
     const provider = providerIdx >= 0 ? (argv[providerIdx + 1] as any) : undefined;
     const model = modelIdx >= 0 ? argv[modelIdx + 1] : undefined;
     const project = projectIdx >= 0 ? argv[projectIdx + 1] : undefined;
-    await runAsk(prompt, { agent, provider, model, project });
+    const sessionId = sessionIdx >= 0 ? argv[sessionIdx + 1] : undefined;
+    await runAsk(prompt, { agent, provider, model, project, last: lastFlag, sessionId });
     return;
   }
 }
