@@ -3,6 +3,7 @@ import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
 import { runAsk } from '@/cli/ask.ts';
 import { runSetup } from '@/cli/setup.ts';
+import { runSessions } from '@/cli/sessions.ts';
 // Ensure embedded assets are retained in compile builds
 import '@/runtime/assets.ts';
 import { intro, outro, text, isCancel, cancel } from '@clack/prompts';
@@ -24,6 +25,19 @@ async function main() {
 			portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : portEnv || 0;
     const server = Bun.serve({ port, fetch: app.fetch, idleTimeout: 240 });
     console.log(`agi server listening on http://localhost:${server.port}`);
+    return;
+  }
+
+  if (cmd === 'sessions') {
+    const projectIdx = argv.indexOf('--project');
+    const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+    const json = argv.includes('--json');
+    const listFlag = argv.includes('--list');
+    // Default behavior: interactive pick unless --list or --json is provided
+    const pick = !listFlag && !json ? true : argv.includes('--pick');
+    const limitIdx = argv.indexOf('--limit');
+    const limit = limitIdx >= 0 ? Number(argv[limitIdx + 1]) : undefined;
+    await runSessions({ project: projectRoot, json, pick, limit });
     return;
   }
 
