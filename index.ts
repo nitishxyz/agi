@@ -11,16 +11,19 @@ import { runAuth } from '@/cli/auth.ts';
 import { loadConfig as loadCfg } from '@/config/index.ts';
 import { isProviderAuthorized } from '@/providers/authorization.ts';
 import { runModels } from '@/cli/models.ts';
+import { discoverCommands, runDiscoveredCommand } from '@/cli/commands.ts';
 import { runAuth } from '@/cli/auth.ts';
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
 
 async function main() {
-  // Global help (no auth required)
+  // Global help (no auth required) with project command discovery
   const wantsHelp = argv.includes('--help') || argv.includes('-h');
   if (wantsHelp) {
-    printHelp();
+    const projectRoot = process.cwd();
+    const cmds = await discoverCommands(projectRoot).catch(() => ({} as any));
+    printHelp(cmds);
     return;
   }
   if (cmd === 'serve') {
@@ -58,9 +61,12 @@ async function main() {
     const projectIdx = argv.indexOf('--project');
     const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
     if (!(await ensureSomeAuth(projectRoot))) return;
-    await runModels({ project: projectRoot });
+    const local = argv.includes('--local');
+    await runModels({ project: projectRoot, local });
     return;
   }
+
+  // note: commit and other project commands are handled by discovered command dispatcher
 
   if (cmd === 'auth') {
     await runAuth(argv.slice(1));
@@ -71,6 +77,13 @@ async function main() {
     // Setup is now just auth login
     await runAuth(['login']);
     return;
+  }
+
+  // Discovered commands from project manifests
+  if (cmd && !cmd.startsWith('-')) {
+    const projectIdx = argv.indexOf('--project');
+    const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+    if (await runDiscoveredCommand(cmd, argv.slice(1), projectRoot)) return;
   }
 
   // One-shot: agi "<prompt>" [--agent] [--provider] [--model] [--project]
@@ -123,14 +136,14 @@ async function main() {
 
 main();
 
-function printHelp() {
+function printHelp(discovered?: Record<string, { name: string; description?: string }>) {
   const lines = [
     'Usage: agi [command] [options] [prompt]',
     '',
     'Commands:',
     '  serve                    Start the HTTP server',
     '  sessions [--list|--json] Manage or pick sessions (default: pick)',
-    '  auth <login|list|logout> Manage provider credentials',
+    '  auth <login|list|logout> Manage provider credentials (use --local to write/remove local auth)',
     '  setup                   Alias for `auth login`',
     '  models|switch           Pick default provider/model (interactive)',
     '  chat [--last|--session] Start an interactive chat (if enabled)',
@@ -144,6 +157,10 @@ function printHelp() {
     '  --session <id>           Send to a specific session',
     '  --json | --json-stream   Machine-readable outputs',
   ];
+  if (discovered && Object.keys(discovered).length) {
+    lines.push('', 'Project commands:');
+    for (const c of Object.values(discovered)) lines.push(`  ${c.name}  ${c.description ?? ''}`);
+  }
   Bun.write(Bun.stdout, lines.join('\n') + '\n');
 }
 

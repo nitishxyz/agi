@@ -1,6 +1,7 @@
 import type { Tool } from 'ai';
 import { finalizeTool } from '@/ai/tools/builtin/finalize.ts';
 import { buildFsTools } from '@/ai/tools/builtin/fs.ts';
+import { buildGitTools } from '@/ai/tools/builtin/git.ts';
 import { Glob } from 'bun';
 
 export type DiscoveredTool = { name: string; tool: Tool };
@@ -15,6 +16,7 @@ export async function discoverProjectTools(projectRoot: string): Promise<Discove
   const tools: DiscoveredTool[] = [];
   // Built-in tools
   for (const t of buildFsTools(projectRoot)) tools.push(t);
+  for (const t of buildGitTools(projectRoot)) tools.push(t);
   tools.push({ name: 'finalize', tool: finalizeTool });
   for await (const rel of glob.scan({ cwd: projectRoot })) {
     const match = rel.match(/^\.agi\/tools\/([^/]+)\/tool\.ts$/);
