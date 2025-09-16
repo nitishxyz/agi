@@ -9,15 +9,21 @@ export type AgentConfig = {
 type AgentsJson = Record<string, { tools?: string[]; prompt?: string }>;
 
 export async function loadAgentsConfig(projectRoot: string): Promise<AgentsJson> {
-  const file = `${projectRoot}/.agi/agents.json`.replace(/\\/g, '/');
-  const f = Bun.file(file);
-  if (!(await f.exists())) return {};
+  const localPath = `${projectRoot}/.agi/agents.json`.replace(/\\/g, '/');
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const globalPath = `${home}/.agi/agents.json`.replace(/\\/g, '/');
+  let globalCfg: AgentsJson = {};
+  let localCfg: AgentsJson = {};
   try {
-    const text = await f.text();
-    return JSON.parse(text) as AgentsJson;
-  } catch {
-    return {};
-  }
+    const gf = Bun.file(globalPath);
+    if (await gf.exists()) globalCfg = (await gf.json().catch(() => ({}))) as AgentsJson;
+  } catch {}
+  try {
+    const lf = Bun.file(localPath);
+    if (await lf.exists()) localCfg = (await lf.json().catch(() => ({}))) as AgentsJson;
+  } catch {}
+  // Merge: global then local (local overrides global)
+  return { ...globalCfg, ...localCfg };
 }
 
 export async function resolveAgentConfig(projectRoot: string, name: string): Promise<AgentConfig> {
@@ -25,17 +31,21 @@ export async function resolveAgentConfig(projectRoot: string, name: string): Pro
   const entry = agents[name];
   let prompt = defaultAgentPrompts[name] ?? defaultAgentPrompts.general;
 
-  // Project override file (either .agi/agents/<name>/agent.txt or .agi/agents/<name>.txt)
-  const overridePathDir = `${projectRoot}/.agi/agents/${name}/agent.txt`.replace(/\\/g, '/');
-  const overridePathFlat = `${projectRoot}/.agi/agents/${name}.txt`.replace(/\\/g, '/');
-  const fDir = Bun.file(overridePathDir);
-  const fFlat = Bun.file(overridePathFlat);
-  if (await fDir.exists()) {
-    const text = await fDir.text();
-    if (text.trim()) prompt = text;
-  } else if (await fFlat.exists()) {
-    const text = await fFlat.text();
-    if (text.trim()) prompt = text;
+  // Override files: project first, then global
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const localDir = `${projectRoot}/.agi/agents/${name}/agent.txt`.replace(/\\/g, '/');
+  const localFlat = `${projectRoot}/.agi/agents/${name}.txt`.replace(/\\/g, '/');
+  const globalDir = `${home}/.agi/agents/${name}/agent.txt`.replace(/\\/g, '/');
+  const globalFlat = `${home}/.agi/agents/${name}.txt`.replace(/\\/g, '/');
+  const files = [localDir, localFlat, globalDir, globalFlat];
+  for (const p of files) {
+    try {
+      const f = Bun.file(p);
+      if (await f.exists()) {
+        const text = await f.text();
+        if (text.trim()) { prompt = text; break; }
+      }
+    } catch {}
   }
 
   // If agents.json provides a 'prompt' field, accept inline content or a relative/absolute path
@@ -59,7 +69,7 @@ export async function resolveAgentConfig(projectRoot: string, name: string): Pro
       tools = ['fs_read', 'fs_write', 'fs_ls', 'fs_tree', 'finalize'];
     } else if (name === 'plan') {
       tools = ['fs_read', 'fs_ls', 'fs_tree', 'finalize'];
-    } else if (name === 'commit') {
+    } else if (name === 'git' || name === 'commit') {
       tools = ['git_status', 'git_diff', 'git_commit', 'fs_read', 'fs_ls', 'finalize'];
     } else {
       tools = ['finalize'];
