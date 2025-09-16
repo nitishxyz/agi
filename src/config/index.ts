@@ -84,34 +84,47 @@ export async function loadConfig(
 	} satisfies AGIConfig;
 }
 
-async function readJsonOptional(file: string): Promise<any | undefined> {
+type JsonObject = Record<string, unknown>;
+
+async function readJsonOptional(file: string): Promise<JsonObject | undefined> {
 	const f = Bun.file(file);
 	if (!(await f.exists())) return undefined;
 	try {
 		const buf = await f.text();
-		return JSON.parse(buf);
+		const parsed = JSON.parse(buf);
+		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+			return parsed as JsonObject;
+		}
+		return undefined;
 	} catch {
 		return undefined;
 	}
 }
 
-function deepMerge<T>(...objects: (T | undefined)[]): T {
-	const result: any = {};
+function deepMerge<T extends JsonObject>(
+	...objects: Array<JsonObject | undefined>
+): T {
+	const result: JsonObject = {};
 	for (const obj of objects) {
 		if (!obj) continue;
 		mergeInto(result, obj);
 	}
-	return result;
+	return result as T;
 }
 
-function mergeInto(target: any, source: any) {
+function mergeInto(target: JsonObject, source: JsonObject): JsonObject {
 	for (const key of Object.keys(source)) {
-		const sv = (source as any)[key];
-		const tv = (target as any)[key];
+		const sv = source[key];
+		const tv = target[key];
 		if (sv && typeof sv === 'object' && !Array.isArray(sv)) {
-			(target as any)[key] = mergeInto(tv ?? {}, sv);
+			const svObj = sv as JsonObject;
+			const nextTarget =
+				tv && typeof tv === 'object' && !Array.isArray(tv)
+					? (tv as JsonObject)
+					: {};
+			target[key] = mergeInto(nextTarget, svObj);
 		} else {
-			(target as any)[key] = sv;
+			target[key] = sv;
 		}
 	}
 	return target;

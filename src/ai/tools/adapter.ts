@@ -6,6 +6,33 @@ import { publish } from '@/server/events/bus.ts';
 import type { DiscoveredTool } from '@/ai/tools/loader.ts';
 import { getCwd, setCwd, joinRelative } from '@/server/runtime/cwd.ts';
 
+type ToolOnInputStartOptions = Tool['onInputStart'] extends (
+	options: infer Opt,
+) => unknown
+	? Opt
+	: undefined;
+type ToolOnInputDeltaOptions = Tool['onInputDelta'] extends (
+	options: infer Opt,
+) => unknown
+	? Opt
+	: undefined;
+type ToolOnInputAvailableOptions = Tool['onInputAvailable'] extends (
+	options: infer Opt,
+) => unknown
+	? Opt
+	: undefined;
+type ToolExecuteSignature = Tool['execute'] extends (
+	input: infer Input,
+	options: infer Options,
+) => infer Result
+	? { input: Input; options: Options; result: Result }
+	: { input: unknown; options: unknown; result: unknown };
+type ToolExecuteInput = ToolExecuteSignature['input'];
+type ToolExecuteOptions = ToolExecuteSignature['options'] extends never
+	? undefined
+	: ToolExecuteSignature['options'];
+type ToolExecuteReturn = ToolExecuteSignature['result'];
+
 export type ToolAdapterContext = {
 	sessionId: string;
 	messageId: string; // assistant message id to attach parts to
@@ -27,12 +54,13 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 		const base = tool;
 		out[name] = {
 			...base,
-			async onInputStart(options: any) {
+			async onInputStart(options: ToolOnInputStartOptions | undefined) {
 				if (typeof base.onInputStart === 'function')
 					await base.onInputStart(options);
 			},
-			async onInputDelta(options: any) {
-				const delta = options?.inputTextDelta;
+			async onInputDelta(options: ToolOnInputDeltaOptions | undefined) {
+				const delta = (options as { inputTextDelta?: string } | undefined)
+					?.inputTextDelta;
 				// Special handling: if finalize is streaming a 'text' input, treat it as assistant text delta
 				if (name === 'finalize' && typeof delta === 'string' && delta.length) {
 					publish({
@@ -74,8 +102,8 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 						await base.onInputDelta(options);
 				}
 			},
-			async onInputAvailable(options: any) {
-				const args = options?.input;
+			async onInputAvailable(options: ToolOnInputAvailableOptions | undefined) {
+				const args = (options as { input?: unknown } | undefined)?.input;
 				const callPartId = crypto.randomUUID();
 				// Allocate index and persist before publishing the event to ensure deterministic ordering
 				const index = await ctx.nextIndex();
@@ -105,9 +133,9 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					await base.onInputAvailable(options);
 				}
 			},
-			async execute(input: any, options: any) {
+			async execute(input: ToolExecuteInput, options: ToolExecuteOptions) {
 				// Handle session-relative paths and cwd tools
-				let res: any;
+				let res: ToolExecuteReturn | { cwd: string } | null | undefined;
 				const cwd = getCwd(ctx.sessionId);
 				if (name === 'fs_pwd') {
 					res = { cwd };
@@ -117,16 +145,16 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					res = { cwd: next };
 				} else if (name.startsWith('fs_') && typeof input?.path === 'string') {
 					const rel = joinRelative(cwd, String(input.path));
-					input = { ...input, path: rel };
-					res = (base as any).execute?.(input, options);
+					const nextInput = { ...input, path: rel } as ToolExecuteInput;
+					res = base.execute?.(nextInput, options);
 				} else {
-					res = (base as any).execute?.(input, options);
+					res = base.execute?.(input, options);
 				}
-				let result: any = res;
+				let result: unknown = res;
 				// If tool returns an async iterable, stream deltas while accumulating
 				if (res && typeof res === 'object' && Symbol.asyncIterator in res) {
-					const chunks: any[] = [];
-					for await (const chunk of res as AsyncIterable<any>) {
+					const chunks: unknown[] = [];
+					for await (const chunk of res as AsyncIterable<unknown>) {
 						chunks.push(chunk);
 						publish({
 							type: 'tool.delta',
@@ -138,21 +166,32 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					result = chunks.length > 0 ? chunks[chunks.length - 1] : null;
 				} else {
 					// Await promise or passthrough value
-					result = await res;
+					result = await Promise.resolve(res as ToolExecuteReturn);
 				}
 				const resultPartId = crypto.randomUUID();
 				let callId: string | undefined;
 				let startTs: number | undefined;
 				const queue = pendingCalls.get(name);
-				if (queue && queue.length) {
+				if (queue?.length) {
 					const meta = queue.shift();
 					callId = meta?.callId;
 					startTs = meta?.startTs;
 				}
-				const contentObj: any = { name, result, callId };
+				const contentObj: {
+					name: string;
+					result: unknown;
+					callId?: string;
+					artifact?: unknown;
+				} = {
+					name,
+					result,
+					callId,
+				};
 				if (result && typeof result === 'object' && 'artifact' in result) {
 					try {
-						contentObj.artifact = (result as any).artifact;
+						const maybeArtifact = (result as { artifact?: unknown }).artifact;
+						if (maybeArtifact !== undefined)
+							contentObj.artifact = maybeArtifact;
 					} catch {}
 				}
 				const index = await ctx.nextIndex();
@@ -181,7 +220,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 						.from(sessions)
 						.where(eq(sessions.id, ctx.sessionId));
 					if (sessRows.length) {
-						const row = sessRows[0] as any;
+						const row = sessRows[0] as typeof sessions.$inferSelect;
 						const totalToolTimeMs =
 							Number(row.totalToolTimeMs || 0) + (dur ?? 0);
 						let counts: Record<string, number> = {};

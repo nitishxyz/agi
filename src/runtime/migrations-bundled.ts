@@ -4,13 +4,13 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error - Bun import attributes
 import mig0000 from '../../drizzle/0000_tense_shadow_king.sql' with {
-	type: 'file',
+	type: 'text',
 };
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error - Bun import attributes
-import mig0001 from '../../drizzle/0001_past_kabuki.sql' with { type: 'file' };
+import mig0001 from '../../drizzle/0001_past_kabuki.sql' with { type: 'text' };
 
-export const bundledMigrations: Array<{ name: string; path: string }> = [
-	{ name: '0000_tense_shadow_king.sql', path: mig0000 },
-	{ name: '0001_past_kabuki.sql', path: mig0001 },
+export const bundledMigrations: Array<{ name: string; content: string }> = [
+	{ name: '0000_tense_shadow_king.sql', content: mig0000 },
+	{ name: '0001_past_kabuki.sql', content: mig0001 },
 ];

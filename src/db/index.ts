@@ -1,6 +1,5 @@
 import { Database } from 'bun:sqlite';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import { loadConfig } from '@/config/index.ts';
 import * as schema from '@/db/schema/index.ts';
 import { bundledMigrations } from '@/runtime/migrations-bundled.ts';
@@ -23,29 +22,31 @@ export async function getDb(projectRootInput?: string) {
 	// Run migrations once per db path
 	if (!migratedPaths.has(dbPath)) {
 		try {
-			const metaPath = `${cfg.projectRoot}/drizzle/meta/0000_snapshot.json`;
-			const hasFolder = await Bun.file(metaPath).exists();
-			if (hasFolder) {
-				await migrate(db, { migrationsFolder: `${cfg.projectRoot}/drizzle` });
-				// console.log('✅ Database migrations completed (folder)');
-			} else {
-				// Bundled mode: apply embedded SQL files if tables aren't present
-				const haveSessions = sqlite
-					.query(
-						"SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'",
-					)
-					.get() as { name?: string } | undefined;
-				if (!haveSessions?.name) {
+			// Check if sessions table exists
+			const haveSessions = sqlite
+				.query(
+					"SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'",
+				)
+				.get() as { name?: string } | undefined;
+
+			if (!haveSessions?.name) {
+				// Apply bundled migrations in a transaction
+				sqlite.exec('BEGIN TRANSACTION');
+				try {
 					for (const m of bundledMigrations) {
-						const sql = await Bun.file(m.path).text();
-						sqlite.exec(sql);
+						sqlite.exec(m.content);
 					}
+					sqlite.exec('COMMIT');
+				} catch (err) {
+					sqlite.exec('ROLLBACK');
+					throw err;
 				}
-				// console.log('✅ Database migrations completed (bundled)');
 			}
 			migratedPaths.add(dbPath);
 		} catch (error) {
 			console.error('❌ Local database migration failed:', error);
+			// Don't add to migratedPaths if migration failed
+			throw error; // Re-throw to prevent using a partially migrated database
 		}
 	}
 	dbCache.set(key, db);

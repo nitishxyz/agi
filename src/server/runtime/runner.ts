@@ -3,7 +3,7 @@ import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
 import { messages, messageParts } from '@/db/schema/index.ts';
 import { eq, asc } from 'drizzle-orm';
-import { resolveModel } from '@/ai/provider.ts';
+import { resolveModel, type ProviderName } from '@/ai/provider.ts';
 import { resolveAgentConfig } from '@/ai/agents/registry.ts';
 import { defaultAgentPrompts } from '@/ai/agents/defaults.ts';
 import { discoverProjectTools } from '@/ai/tools/loader.ts';
@@ -15,7 +15,7 @@ type RunOpts = {
 	assistantMessageId: string;
 	assistantPartId: string;
 	agent: string;
-	provider: string;
+	provider: ProviderName;
 	model: string;
 	projectRoot: string;
 };
@@ -37,10 +37,11 @@ async function processQueue(sessionId: string) {
 	state.running = true;
 
 	while (state.queue.length > 0) {
-		const job = state.queue.shift()!;
+		const job = state.queue.shift();
+		if (!job) break;
 		try {
 			await runAssistant(job);
-		} catch (err) {
+		} catch (_err) {
 			// Swallow to keep the loop alive; event published by runner
 		}
 	}
@@ -83,7 +84,9 @@ async function runAssistant(opts: RunOpts) {
 			.from(messageParts)
 			.where(eq(messageParts.messageId, opts.assistantMessageId));
 		if (existing.length) {
-			counter = Math.max(...existing.map((p: any) => Number(p.index ?? 0)));
+			const indexes = existing.map((p) => Number(p.index ?? 0));
+			const maxIndex = Math.max(...indexes);
+			if (Number.isFinite(maxIndex)) counter = maxIndex;
 		}
 	} catch {}
 	sharedCtx.nextIndex = () => {
@@ -92,7 +95,7 @@ async function runAssistant(opts: RunOpts) {
 	};
 	const toolset = adaptTools(gated, sharedCtx);
 
-	const model = resolveModel(opts.provider as any, opts.model, cfg);
+	const model = resolveModel(opts.provider, opts.model, cfg);
 
 	let currentPartId = opts.assistantPartId;
 	let accumulated = '';
@@ -168,7 +171,8 @@ async function runAssistant(opts: RunOpts) {
 				.from(messages)
 				.where(eq(messages.id, opts.assistantMessageId));
 			if (row.length)
-				createdAt = Number((row[0] as any).createdAt ?? undefined);
+				createdAt =
+					row[0]?.createdAt != null ? Number(row[0].createdAt) : undefined;
 		} catch {}
 		const finishedAt = Date.now();
 		const latency =
@@ -229,9 +233,7 @@ async function runAssistant(opts: RunOpts) {
 						t = JSON.parse(p.content || '{}')?.text || '';
 					} catch {}
 					if (!t || t.length === 0) {
-						await db
-							.delete(messageParts)
-							.where(eq(messageParts.id, p.id as any));
+						await db.delete(messageParts).where(eq(messageParts.id, p.id));
 					}
 				}
 			}

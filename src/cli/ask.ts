@@ -2,15 +2,88 @@ import { createApp } from '@/server/index.ts';
 import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
 import { getAllAuth } from '@/auth/index.ts';
+import type { ProviderId } from '@/auth/index.ts';
 import { catalog } from '@/providers/catalog.ts';
+import type { Artifact } from '@/ai/artifacts.ts';
 
 type AskOptions = {
 	agent?: string;
-	provider?: 'openai' | 'anthropic' | 'google';
+	provider?: ProviderId;
 	model?: string;
 	project?: string;
 	sessionId?: string;
 	last?: boolean;
+};
+
+type SessionMeta = {
+	id: string | number;
+	agent?: string;
+	provider?: string;
+	model?: string;
+};
+
+type AssistantChunk = { ts: number; delta: string };
+type ToolCallRecord = {
+	name: string;
+	args?: unknown;
+	callId?: string;
+	ts: number;
+};
+type ToolResultRecord = {
+	name: string;
+	result?: unknown;
+	artifact?: Artifact;
+	callId?: string;
+	ts: number;
+	durationMs?: number;
+};
+
+type SequenceEntry =
+	| { type: 'user'; ts: number; text: string }
+	| {
+			type: 'assistant';
+			tsStart: number;
+			tsEnd: number;
+			index: number;
+			text: string;
+	  }
+	| {
+			type: 'tool.call';
+			ts: number;
+			name: string;
+			callId?: string;
+			args?: unknown;
+	  }
+	| {
+			type: 'tool.result';
+			ts: number;
+			name: string;
+			callId?: string;
+			durationMs?: number;
+			result?: unknown;
+			artifact?: Artifact;
+	  };
+
+type Transcript = {
+	sessionId: string | null;
+	assistantMessageId: string;
+	agent: string;
+	provider: ProviderId;
+	model: string;
+	sequence: SequenceEntry[];
+	filesTouched: string[];
+	summary: {
+		toolCounts: Record<string, number>;
+		toolTimings: Array<{ name: string; durationMs?: number }>;
+		totalToolTimeMs: number;
+		filesTouched: string[];
+		diffArtifacts: Array<{ name: string; summary: unknown }>;
+	};
+	output?: string;
+	assistantChunks?: AssistantChunk[];
+	assistantLines?: ReturnType<typeof computeAssistantLines>;
+	assistantSegments?: ReturnType<typeof computeAssistantSegments>;
+	tools?: { calls: ToolCallRecord[]; results: ToolResultRecord[] };
 };
 
 export async function runAsk(prompt: string, opts: AskOptions = {}) {
@@ -21,8 +94,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 	const baseUrl = process.env.AGI_SERVER_URL || (await startEphemeralServer());
 
 	// Choose an authorized provider/model when not explicitly provided
-	let chosenProvider: 'openai' | 'anthropic' | 'google' =
-		opts.provider ?? cfg.defaults.provider;
+	let chosenProvider: ProviderId = opts.provider ?? cfg.defaults.provider;
 	let chosenModel: string = opts.model ?? cfg.defaults.model;
 	try {
 		const auth = await getAllAuth(projectRoot);
@@ -36,15 +108,13 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			anthropic: Boolean(cfg.providers.anthropic?.apiKey),
 			google: Boolean(cfg.providers.google?.apiKey),
 		} as const;
-		function authed(p: 'openai' | 'anthropic' | 'google') {
-			return envHas[p] || Boolean((auth as any)[p]?.key) || cfgHas[p];
+		function authed(p: ProviderId) {
+			const info = auth[p];
+			const hasStored = info?.type === 'api' && Boolean(info.key);
+			return envHas[p] || hasStored || cfgHas[p];
 		}
 		if (!authed(chosenProvider)) {
-			const order: Array<'openai' | 'anthropic' | 'google'> = [
-				'anthropic',
-				'openai',
-				'google',
-			];
+			const order: ProviderId[] = ['anthropic', 'openai', 'google'];
 			const alt = order.find((p) => authed(p));
 			if (alt) chosenProvider = alt;
 		}
@@ -72,10 +142,10 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 	if (opts.sessionId) {
 		sessionId = opts.sessionId;
 		try {
-			const sessions = (await httpJson(
+			const sessions = await httpJson<SessionMeta[]>(
 				'GET',
 				`${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`,
-			)) as Array<any>;
+			);
 			const found = sessions.find((s) => String(s.id) === String(sessionId));
 			if (found)
 				header = {
@@ -87,12 +157,12 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 		} catch {}
 	} else if (opts.last) {
 		// Fetch sessions and pick the most recent
-		const sessions = (await httpJson(
+		const sessions = await httpJson<SessionMeta[]>(
 			'GET',
 			`${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`,
-		)) as Array<any>;
+		);
 		if (!sessions.length) {
-			const created = await httpJson(
+			const created = await httpJson<SessionMeta>(
 				'POST',
 				`${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`,
 				{
@@ -124,7 +194,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 				);
 		}
 	} else {
-		const created = await httpJson(
+		const created = await httpJson<SessionMeta>(
 			'POST',
 			`${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`,
 			{
@@ -161,7 +231,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 		);
 	}
 
-	const enqueueRes = await httpJson(
+	const enqueueRes = await httpJson<{ messageId: string }>(
 		'POST',
 		`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/messages?project=${encodeURIComponent(projectRoot)}`,
 		{
@@ -176,133 +246,130 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 
 	// flags already parsed above
 
-	let completed = false;
 	let finalizeSeen = false;
 	let output = '';
-	const assistantChunks: Array<{ ts: number; delta: string }> = [];
-	const toolCalls: Array<{
-		name: string;
-		args?: unknown;
-		callId?: string;
-		ts: number;
-	}> = [];
-	const toolResults: Array<{
-		name: string;
-		result?: unknown;
-		artifact?: any;
-		callId?: string;
-		ts: number;
-		durationMs?: number;
-	}> = [];
+	const assistantChunks: AssistantChunk[] = [];
+	const toolCalls: ToolCallRecord[] = [];
+	const toolResults: ToolResultRecord[] = [];
 	const callById = new Map<string, number>();
 	const filesTouched = new Set<string>();
 	try {
 		for await (const ev of sse) {
-			if (ev.event === 'message.part.delta') {
+			const eventName = ev.event;
+			if (eventName === 'message.part.delta') {
 				const data = safeJson(ev.data);
-				if (
-					data?.messageId === assistantMessageId &&
-					typeof data?.delta === 'string'
-				) {
-					output += data.delta;
+				const messageId =
+					typeof data?.messageId === 'string' ? data.messageId : undefined;
+				const delta = typeof data?.delta === 'string' ? data.delta : undefined;
+				if (messageId === assistantMessageId && delta) {
+					output += delta;
 					const ts = Date.now();
-					assistantChunks.push({ ts, delta: data.delta });
+					assistantChunks.push({ ts, delta });
 					if (jsonStreamEnabled) {
 						Bun.write(
 							Bun.stdout,
-							JSON.stringify({
+							`${JSON.stringify({
 								event: 'assistant.delta',
 								ts,
 								messageId: assistantMessageId,
-								delta: data.delta,
-							}) + '\n',
+								delta,
+							})}\n`,
 						);
 					} else if (!jsonEnabled) {
-						Bun.write(Bun.stdout, data.delta);
+						Bun.write(Bun.stdout, delta);
 					}
 				}
-			} else if (ev.event === 'tool.call') {
+			} else if (eventName === 'tool.call') {
 				const data = safeJson(ev.data);
-				const name = data?.name ?? 'tool';
-				const callId = data?.callId as string | undefined;
+				const name = typeof data?.name === 'string' ? data.name : 'tool';
+				const callId =
+					typeof data?.callId === 'string' ? data.callId : undefined;
 				const ts = Date.now();
 				toolCalls.push({ name, args: data?.args, callId, ts });
 				if (callId) callById.set(callId, toolCalls.length - 1);
 				if (jsonStreamEnabled) {
 					Bun.write(
 						Bun.stdout,
-						JSON.stringify({
+						`${JSON.stringify({
 							event: 'tool.call',
 							ts,
 							name,
 							callId,
 							args: data?.args,
-						}) + '\n',
+						})}\n`,
 					);
 				} else if (!jsonEnabled) {
 					printToolCall(name, data?.args, { verbose });
 				}
-			} else if (ev.event === 'tool.delta') {
+			} else if (eventName === 'tool.delta') {
 				const data = safeJson(ev.data);
-				const name = data?.name ?? 'tool';
-				const channel = data?.channel ?? 'output';
+				const name = typeof data?.name === 'string' ? data.name : 'tool';
+				const channel =
+					typeof data?.channel === 'string' ? data.channel : 'output';
 				if (jsonStreamEnabled) {
 					const ts = Date.now();
 					Bun.write(
 						Bun.stdout,
-						JSON.stringify({
+						`${JSON.stringify({
 							event: 'tool.delta',
 							ts,
 							name,
 							channel,
 							delta: data?.delta,
-						}) + '\n',
+						})}\n`,
 					);
 				} else if ((channel === 'input' && !verbose) || jsonEnabled) {
 					// Avoid noisy input-argument streaming by default
 				} else {
-					const delta =
+					const deltaValue =
 						typeof data?.delta === 'string'
 							? data.delta
 							: JSON.stringify(data?.delta);
-					if (delta)
+					if (deltaValue)
 						Bun.write(
 							Bun.stderr,
-							`${dim(`[${channel}]`)} ${cyan(name)} ${dim('›')} ${truncate(delta, 160)}\n`,
+							`${dim(`[${channel}]`)} ${cyan(name)} ${dim('›')} ${truncate(deltaValue, 160)}\n`,
 						);
 				}
-			} else if (ev.event === 'tool.result') {
+			} else if (eventName === 'tool.result') {
 				const data = safeJson(ev.data);
-				const name = data?.name ?? 'tool';
-				const callId = data?.callId as string | undefined;
+				const name = typeof data?.name === 'string' ? data.name : 'tool';
+				const callId =
+					typeof data?.callId === 'string' ? data.callId : undefined;
 				const ts = Date.now();
 				let durationMs: number | undefined;
-				if (callId && callById.has(callId)) {
-					const idx = callById.get(callId)!;
-					const started = toolCalls[idx].ts;
-					durationMs = Math.max(0, ts - started);
+				if (callId) {
+					const idx = callById.get(callId);
+					if (idx !== undefined) {
+						const started = toolCalls[idx]?.ts;
+						if (typeof started === 'number') {
+							durationMs = Math.max(0, ts - started);
+						}
+					}
 				}
+				const artifact = data?.artifact as Artifact | undefined;
 				toolResults.push({
 					name,
 					result: data?.result,
-					artifact: data?.artifact,
+					artifact,
 					callId,
 					ts,
 					durationMs,
 				});
 				if (
-					data?.artifact?.kind === 'file_diff' &&
-					typeof data?.artifact?.patch === 'string'
+					artifact?.kind === 'file_diff' &&
+					typeof artifact.patch === 'string'
 				) {
-					for (const f of extractFilesFromPatch(String(data.artifact.patch)))
+					for (const f of extractFilesFromPatch(String(artifact.patch)))
 						filesTouched.add(f);
 				}
-				if (name === 'fs_write' && data?.result?.path)
-					filesTouched.add(String(data.result.path));
+				const resultValue = data?.result as { path?: unknown } | undefined;
+				if (name === 'fs_write' && typeof resultValue?.path === 'string')
+					filesTouched.add(String(resultValue.path));
 				if (jsonStreamEnabled) {
 					Bun.write(
 						Bun.stdout,
-						JSON.stringify({
+						`${JSON.stringify({
 							event: 'tool.result',
 							ts,
 							name,
@@ -310,42 +377,41 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 							durationMs,
 							result: data?.result,
 							artifact: data?.artifact,
-						}) + '\n',
+						})}\n`,
 					);
 				} else if (!jsonEnabled) {
-					printToolResult(name, data?.result, data?.artifact, {
+					printToolResult(name, data?.result, artifact, {
 						verbose,
 						durationMs,
 					});
 				}
 				if (name === 'finalize') finalizeSeen = true;
-			} else if (ev.event === 'message.completed') {
+			} else if (eventName === 'message.completed') {
 				const data = safeJson(ev.data);
-				if (data?.id === assistantMessageId) {
-					completed = true;
+				const completedId = typeof data?.id === 'string' ? data.id : undefined;
+				if (completedId === assistantMessageId) {
 					if (jsonStreamEnabled)
 						Bun.write(
 							Bun.stdout,
-							JSON.stringify({
+							`${JSON.stringify({
 								event: 'assistant.completed',
 								ts: Date.now(),
 								messageId: assistantMessageId,
-							}) + '\n',
+							})}\n`,
 						);
 					break;
 				}
-			} else if (ev.event === 'error') {
-				// Print tool errors etc. to stderr
+			} else if (eventName === 'error') {
 				const data = safeJson(ev.data);
-				const msg = data?.error ?? ev.data;
+				const msg = typeof data?.error === 'string' ? data.error : ev.data;
 				if (jsonStreamEnabled)
 					Bun.write(
 						Bun.stdout,
-						JSON.stringify({
+						`${JSON.stringify({
 							event: 'error',
 							ts: Date.now(),
 							error: String(msg),
-						}) + '\n',
+						})}\n`,
 					);
 				else Bun.write(Bun.stderr, `\n[error] ${String(msg)}\n`);
 			}
@@ -386,7 +452,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			assistantChunks,
 			toolCalls,
 		);
-		const assistantHeadline =
+		const _assistantHeadline =
 			(assistantSegments.length
 				? assistantSegments[0].text
 				: assistantLines.length
@@ -395,12 +461,12 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			)?.slice(0, 160) ?? '';
 
 		// Compact transcript by default; include verbose fields only when requested
-		const transcript: any = {
+		const transcript: Transcript = {
 			sessionId,
 			assistantMessageId,
 			agent: opts.agent ?? cfg.defaults.agent,
-			provider: opts.provider ?? cfg.defaults.provider,
-			model: opts.model ?? cfg.defaults.model,
+			provider: opts.provider ?? chosenProvider,
+			model: opts.model ?? chosenModel,
 			sequence: buildSequence({
 				prompt,
 				assistantSegments,
@@ -423,13 +489,13 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			transcript.assistantSegments = assistantSegments;
 			transcript.tools = { calls: toolCalls, results: toolResults };
 		}
-		Bun.write(Bun.stdout, JSON.stringify(transcript, null, 2) + '\n');
+		Bun.write(Bun.stdout, `${JSON.stringify(transcript, null, 2)}\n`);
 	} else if (summaryEnabled || finalizeSeen) {
 		printSummary(toolCalls, toolResults, filesTouched);
 	}
 	if (!jsonEnabled && !jsonStreamEnabled) {
 		const elapsed = Date.now() - startedAt;
-		Bun.write(Bun.stderr, `${dim(`Done in ${elapsed}ms`)}` + '\n');
+		Bun.write(Bun.stderr, `${dim(`Done in ${elapsed}ms`)}\n`);
 	}
 
 	// If we started an ephemeral server, stop it
@@ -473,8 +539,7 @@ export async function runAskCapture(prompt: string, opts: AskOptions = {}) {
 	const baseUrl = await getOrStartServerUrl();
 
 	// Choose provider/model similar to runAsk
-	let chosenProvider: 'openai' | 'anthropic' | 'google' =
-		opts.provider ?? cfg.defaults.provider;
+	let chosenProvider: ProviderId = opts.provider ?? cfg.defaults.provider;
 	let chosenModel: string = opts.model ?? cfg.defaults.model;
 	try {
 		const auth = await (await import('@/auth/index.ts')).getAllAuth(
@@ -490,15 +555,13 @@ export async function runAskCapture(prompt: string, opts: AskOptions = {}) {
 			anthropic: Boolean(cfg.providers.anthropic?.apiKey),
 			google: Boolean(cfg.providers.google?.apiKey),
 		} as const;
-		function authed(p: 'openai' | 'anthropic' | 'google') {
-			return envHas[p] || Boolean((auth as any)[p]?.key) || cfgHas[p];
+		function authed(p: ProviderId) {
+			const info = auth[p];
+			const hasStored = info?.type === 'api' && Boolean(info.key);
+			return envHas[p] || hasStored || cfgHas[p];
 		}
 		if (!authed(chosenProvider)) {
-			const order: Array<'openai' | 'anthropic' | 'google'> = [
-				'anthropic',
-				'openai',
-				'google',
-			];
+			const order: ProviderId[] = ['anthropic', 'openai', 'google'];
 			const alt = order.find((p) => authed(p));
 			if (alt) chosenProvider = alt;
 		}
@@ -510,7 +573,7 @@ export async function runAskCapture(prompt: string, opts: AskOptions = {}) {
 	} catch {}
 
 	// Create a session
-	const created = await httpJson(
+	const created = await httpJson<SessionMeta>(
 		'POST',
 		`${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`,
 		{
@@ -526,7 +589,7 @@ export async function runAskCapture(prompt: string, opts: AskOptions = {}) {
 	const sse = await connectSSE(
 		`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/stream?project=${encodeURIComponent(projectRoot)}`,
 	);
-	const enqueueRes = await httpJson(
+	const enqueueRes = await httpJson<{ messageId: string }>(
 		'POST',
 		`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/messages?project=${encodeURIComponent(projectRoot)}`,
 		{
@@ -572,8 +635,7 @@ export async function runAskStreamCapture(
 	const baseUrl = await getOrStartServerUrl();
 
 	// Choose provider/model similar to runAsk
-	let chosenProvider: 'openai' | 'anthropic' | 'google' =
-		opts.provider ?? cfg.defaults.provider;
+	let chosenProvider: ProviderId = opts.provider ?? cfg.defaults.provider;
 	let chosenModel: string = opts.model ?? cfg.defaults.model;
 	try {
 		const auth = await (await import('@/auth/index.ts')).getAllAuth(
@@ -589,15 +651,13 @@ export async function runAskStreamCapture(
 			anthropic: Boolean(cfg.providers.anthropic?.apiKey),
 			google: Boolean(cfg.providers.google?.apiKey),
 		} as const;
-		function authed(p: 'openai' | 'anthropic' | 'google') {
-			return envHas[p] || Boolean((auth as any)[p]?.key) || cfgHas[p];
+		function authed(p: ProviderId) {
+			const info = auth[p];
+			const hasStored = info?.type === 'api' && Boolean(info.key);
+			return envHas[p] || hasStored || cfgHas[p];
 		}
 		if (!authed(chosenProvider)) {
-			const order: Array<'openai' | 'anthropic' | 'google'> = [
-				'anthropic',
-				'openai',
-				'google',
-			];
+			const order: ProviderId[] = ['anthropic', 'openai', 'google'];
 			const alt = order.find((p) => authed(p));
 			if (alt) chosenProvider = alt;
 		}
@@ -609,7 +669,7 @@ export async function runAskStreamCapture(
 	} catch {}
 
 	// Create a session
-	const created = await httpJson(
+	const created = await httpJson<SessionMeta>(
 		'POST',
 		`${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`,
 		{
@@ -625,7 +685,7 @@ export async function runAskStreamCapture(
 	const sse = await connectSSE(
 		`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/stream?project=${encodeURIComponent(projectRoot)}`,
 	);
-	const enqueueRes = await httpJson(
+	const enqueueRes = await httpJson<{ messageId: string }>(
 		'POST',
 		`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/messages?project=${encodeURIComponent(projectRoot)}`,
 		{
@@ -639,7 +699,6 @@ export async function runAskStreamCapture(
 
 	let output = '';
 	const verbose = process.argv.includes('--verbose');
-	const callById = new Map<string, number>();
 	const callStarts = new Map<string, number>();
 	try {
 		for await (const ev of sse) {
@@ -657,10 +716,7 @@ export async function runAskStreamCapture(
 				const name = data?.name ?? 'tool';
 				const callId = data?.callId as string | undefined;
 				const ts = Date.now();
-				if (callId) {
-					callById.set(callId, 1);
-					callStarts.set(callId, ts);
-				}
+				if (callId) callStarts.set(callId, ts);
 				printToolCall(name, data?.args, { verbose });
 			} else if (ev.event === 'tool.delta') {
 				const data = safeJson(ev.data);
@@ -707,7 +763,11 @@ export async function runAskStreamCapture(
 }
 
 // Minimal JSON request helper
-async function httpJson(method: string, url: string, body?: unknown) {
+async function httpJson<T>(
+	method: string,
+	url: string,
+	body?: unknown,
+): Promise<T> {
 	const res = await fetch(url, {
 		method,
 		headers: { 'Content-Type': 'application/json' },
@@ -717,7 +777,7 @@ async function httpJson(method: string, url: string, body?: unknown) {
 		const text = await res.text().catch(() => '');
 		throw new Error(`HTTP ${res.status} ${res.statusText}: ${text}`);
 	}
-	return await res.json();
+	return (await res.json()) as T;
 }
 
 // Simple SSE client using fetch + ReadableStream parsing
@@ -732,8 +792,8 @@ async function* sseIterator(resp: Response): AsyncGenerator<SSEEvent> {
 		const { done, value } = await reader.read();
 		if (done) break;
 		buffer += decoder.decode(value, { stream: true });
-		let idx;
-		while ((idx = buffer.indexOf('\n\n')) !== -1) {
+		let idx = buffer.indexOf('\n\n');
+		while (idx !== -1) {
 			const raw = buffer.slice(0, idx);
 			buffer = buffer.slice(idx + 2);
 			const lines = raw.split('\n');
@@ -745,6 +805,7 @@ async function* sseIterator(resp: Response): AsyncGenerator<SSEEvent> {
 					data += (data ? '\n' : '') + line.slice(6);
 			}
 			if (data) yield { event, data };
+			idx = buffer.indexOf('\n\n');
 		}
 	}
 }
@@ -769,17 +830,19 @@ async function connectSSE(url: string) {
 	};
 }
 
-function safeJson(input: string): any {
+function safeJson(input: string): Record<string, unknown> | undefined {
 	try {
-		return JSON.parse(input);
-	} catch {
-		return undefined;
-	}
+		const parsed = JSON.parse(input);
+		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+			return parsed as Record<string, unknown>;
+		}
+	} catch {}
+	return undefined;
 }
 
 function truncate(s: string, n: number) {
 	if (s.length <= n) return s;
-	return s.slice(0, n - 1) + '…';
+	return `${s.slice(0, n - 1)}…`;
 }
 
 function computeAssistantLines(
@@ -868,28 +931,11 @@ function computeAssistantSegments(
 
 function buildSequence(args: {
 	prompt: string;
-	assistantSegments: Array<{
-		index: number;
-		tsStart: number;
-		tsEnd: number;
-		text: string;
-	}>;
-	toolCalls: Array<{
-		name: string;
-		args?: unknown;
-		callId?: string;
-		ts: number;
-	}>;
-	toolResults: Array<{
-		name: string;
-		result?: unknown;
-		artifact?: any;
-		callId?: string;
-		ts: number;
-		durationMs?: number;
-	}>;
-}) {
-	const seq: Array<any> = [];
+	assistantSegments: ReturnType<typeof computeAssistantSegments>;
+	toolCalls: ToolCallRecord[];
+	toolResults: ToolResultRecord[];
+}): SequenceEntry[] {
+	const seq: SequenceEntry[] = [];
 	// Seed with user prompt
 	seq.push({
 		type: 'user',
@@ -929,8 +975,8 @@ function buildSequence(args: {
 
 	// Sort by timestamp; assistant events may have tsStart, use that; keep stable within same ts
 	seq.sort((a, b) => {
-		const ta = a.tsStart ?? a.ts ?? 0;
-		const tb = b.tsStart ?? b.ts ?? 0;
+		const ta = 'tsStart' in a ? a.tsStart : (a.ts ?? 0);
+		const tb = 'tsStart' in b ? b.tsStart : (b.ts ?? 0);
 		return ta - tb;
 	});
 	return seq;
@@ -948,8 +994,8 @@ function extractFilesFromPatch(patch: string): string[] {
 }
 
 function printSummary(
-	toolCalls: Array<{ name: string; args?: unknown }>,
-	toolResults: Array<{ name: string; result?: unknown; artifact?: any }>,
+	toolCalls: ToolCallRecord[],
+	toolResults: ToolResultRecord[],
 	filesTouched: Set<string>,
 ) {
 	Bun.write(Bun.stderr, `\n${bold('Summary')}\n`);
@@ -982,14 +1028,19 @@ function printSummary(
 }
 
 // Pretty printing helpers
-const reset = (s: string) => `\x1b[0m${s}\x1b[0m`;
+const _reset = (s: string) => `\x1b[0m${s}\x1b[0m`;
 const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
 const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
 const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
 const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
 const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
+const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
 
-function printToolCall(name: string, args?: any, opts?: { verbose?: boolean }) {
+function printToolCall(
+	name: string,
+	args?: unknown,
+	opts?: { verbose?: boolean },
+) {
 	const v = opts?.verbose;
 	const title = `${bold('›')} ${cyan(name)} ${dim('running...')}`;
 	if (!args || !v) {
@@ -1002,8 +1053,8 @@ function printToolCall(name: string, args?: any, opts?: { verbose?: boolean }) {
 
 function printToolResult(
 	name: string,
-	result?: any,
-	artifact?: any,
+	result?: unknown,
+	artifact?: Artifact,
 	opts?: { verbose?: boolean; durationMs?: number },
 ) {
 	const time =
@@ -1038,10 +1089,8 @@ function printToolResult(
 			`${bold('↳ read')} ${dim(result.path)} (${lines.length} lines)${time}\n`,
 		);
 		const sample = lines.slice(0, 20).join('\n');
-		Bun.write(
-			Bun.stderr,
-			`${sample}${lines.length > 20 ? '\n' + dim('…') : ''}\n`,
-		);
+		const suffix = lines.length > 20 ? `\n${dim('…')}` : '';
+		Bun.write(Bun.stderr, `${sample}${suffix}\n`);
 		return;
 	}
 	if (name === 'fs_write' && typeof result?.path === 'string') {

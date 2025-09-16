@@ -36,7 +36,8 @@ export async function runModels(
 			return outro('');
 		}
 		// replace vars for subsequent logic
-		(allowed as any).splice(0, allowed.length, ...allowed2);
+		allowed.length = 0;
+		allowed.push(...allowed2);
 	}
 
 	const provider = (await select({

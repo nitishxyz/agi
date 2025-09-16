@@ -24,9 +24,10 @@ export async function discoverProjectTools(
 		const match = rel.match(/^\.agi\/tools\/([^/]+)\/tool\.ts$/);
 		if (!match) continue;
 		const name = sanitizeName(match[1]);
-		const fileUrl = new URL(
-			`file://${projectRoot.endsWith('/') ? projectRoot : projectRoot + '/'}${rel}`,
-		);
+		const rootWithSlash = projectRoot.endsWith('/')
+			? projectRoot
+			: `${projectRoot}/`;
+		const fileUrl = new URL(`file://${rootWithSlash}${rel}`);
 		try {
 			const mod = await import(fileUrl.href);
 			const t: Tool | undefined = mod.default ?? mod.tool;

@@ -9,6 +9,11 @@ import {
 	isProviderAuthorized,
 	ensureProviderEnv,
 } from '@/providers/authorization.ts';
+import type { ProviderId } from '@/auth/index.ts';
+const providerValues = ['openai', 'anthropic', 'google'] as const;
+function isProviderId(value: string): value is ProviderId {
+	return (providerValues as readonly string[]).includes(value);
+}
 
 export function registerSessionsRoutes(app: Hono) {
 	// List sessions
@@ -20,12 +25,17 @@ export function registerSessionsRoutes(app: Hono) {
 			.select()
 			.from(sessions)
 			.orderBy(desc(sessions.lastActiveAt), desc(sessions.createdAt));
-		const normalized = rows.map((r: any) => {
-			let counts: any;
-			try {
-				counts = r.toolCountsJson ? JSON.parse(r.toolCountsJson) : undefined;
-			} catch {}
-			const { toolCountsJson, ...rest } = r;
+		const normalized = rows.map((r) => {
+			let counts: Record<string, unknown> | undefined;
+			if (r.toolCountsJson) {
+				try {
+					const parsed = JSON.parse(r.toolCountsJson);
+					if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+						counts = parsed as Record<string, unknown>;
+					}
+				} catch {}
+			}
+			const { toolCountsJson: _toolCountsJson, ...rest } = r;
 			return counts ? { ...rest, toolCounts: counts } : rest;
 		});
 		return c.json(normalized);
@@ -36,25 +46,35 @@ export function registerSessionsRoutes(app: Hono) {
 		const projectRoot = c.req.query('project') || process.cwd();
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
-		const body = await c.req.json().catch(() => ({}));
+		const body = (await c.req.json().catch(() => ({}))) as Record<
+			string,
+			unknown
+		>;
 		const id = crypto.randomUUID();
 		const now = Date.now();
+		const providerCandidate =
+			typeof body.provider === 'string' ? body.provider : undefined;
+		const provider: ProviderId =
+			providerCandidate && isProviderId(providerCandidate)
+				? providerCandidate
+				: cfg.defaults.provider;
 		const row = {
 			id,
-			title: body?.title ?? null,
-			agent: body?.agent ?? cfg.defaults.agent,
-			provider: body?.provider ?? cfg.defaults.provider,
-			model: body?.model ?? cfg.defaults.model,
+			title: (body.title as string | null | undefined) ?? null,
+			agent: (body.agent as string | undefined) ?? cfg.defaults.agent,
+			provider,
+			model: (body.model as string | undefined) ?? cfg.defaults.model,
 			projectPath: cfg.projectRoot,
 			createdAt: now,
 		};
 		try {
 			validateProviderModel(row.provider, row.model);
-		} catch (err: any) {
-			return c.json({ error: String(err?.message ?? err) }, 400);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			return c.json({ error: message }, 400);
 		}
 		// Enforce provider auth
-		const authorized = await isProviderAuthorized(cfg, row.provider as any);
+		const authorized = await isProviderAuthorized(cfg, row.provider);
 		if (!authorized) {
 			return c.json(
 				{
@@ -63,11 +83,10 @@ export function registerSessionsRoutes(app: Hono) {
 				400,
 			);
 		}
-		await ensureProviderEnv(cfg, row.provider as any);
+		await ensureProviderEnv(cfg, row.provider);
 		await db.insert(sessions).values(row);
-		const response = { ...row } as any;
 		// keep response shape aligned with GET
-		publish({ type: 'session.created', sessionId: id, payload: response });
-		return c.json(response, 201);
+		publish({ type: 'session.created', sessionId: id, payload: row });
+		return c.json(row, 201);
 	});
 }
