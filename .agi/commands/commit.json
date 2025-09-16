@@ -1,0 +1,10 @@
+{
+  "name": "commit",
+  "description": "Generate a Conventional Commit message from staged changes (and commit with confirmation)",
+  "agent": "commit",
+  "promptTemplate": "Draft a Conventional Commit for the staged changes. Notes: {input}",
+  "defaults": { "agent": "commit" },
+  "confirm": { "required": true, "message": "Commit this message now?", "token": "[commit:yes]" },
+  "interactive": true
+}
+

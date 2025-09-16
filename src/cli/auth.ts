@@ -42,6 +42,7 @@ export async function runAuthList(_args: string[]) {
 
 export async function runAuthLogin(_args: string[]) {
   const cfg = await loadConfig(process.cwd());
+  const wantLocal = _args.includes('--local');
   intro('Add credential');
   const provider = (await select({
     message: 'Select provider',
@@ -58,8 +59,9 @@ export async function runAuthLogin(_args: string[]) {
   log.info(`Open in browser: ${meta.url}`);
   const key = await password({ message: `Paste ${meta.env} here`, validate: (v) => (v && String(v).trim().length > 0 ? undefined : 'Required') });
   if (isCancel(key)) return cancel('Cancelled');
-  await setAuth(provider as ProviderId, { type: 'api', key: String(key) }, cfg.projectRoot);
-  await ensureProjectConfigDefaults(cfg.projectRoot, provider as ProviderId);
+  // Store globally by default, or locally when --local is provided
+  await setAuth(provider as ProviderId, { type: 'api', key: String(key) }, cfg.projectRoot, wantLocal ? 'local' : 'global');
+  await ensureGlobalConfigDefaults(provider as ProviderId);
   log.success('Saved');
   log.info(`Tip: you can also set ${meta.env} in your environment.`);
   outro('Done');
@@ -67,6 +69,7 @@ export async function runAuthLogin(_args: string[]) {
 
 export async function runAuthLogout(_args: string[]) {
   const cfg = await loadConfig(process.cwd());
+  const wantLocal = _args.includes('--local');
   const all = await getAllAuth(cfg.projectRoot);
   const entries = Object.keys(all) as ProviderId[];
   intro('Remove credential');
@@ -76,8 +79,8 @@ export async function runAuthLogout(_args: string[]) {
   }
   const selected = (await select({ message: 'Select provider', options: entries.map((id) => ({ value: id, label: PROVIDER_LINKS[id].name })) })) as ProviderId | symbol;
   if (isCancel(selected)) return cancel('Cancelled');
-  await removeAuth(selected as ProviderId, cfg.projectRoot);
-  log.success('Removed');
+  await removeAuth(selected as ProviderId, cfg.projectRoot, wantLocal ? 'local' : 'global');
+  log.success(`Removed${wantLocal ? ' (local)' : ''}`);
   outro('');
 }
 
@@ -95,22 +98,30 @@ async function openBrowser(url: string) {
   }
 }
 
-async function ensureProjectConfigDefaults(projectRoot: string, provider: ProviderId) {
-  const cfg = await loadConfig(projectRoot);
-  if (cfg.paths.projectConfigPath) return; // already exists, leave as-is
+async function ensureGlobalConfigDefaults(provider: ProviderId) {
+  const cfg = await loadConfig(process.cwd());
+  // Determine global config path
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const base = `${home}/.config/agi`.replace(/\\/g, '/');
+  const path = `${base}/config.json`;
+  // If a global config already exists, do not overwrite
+  const f = Bun.file(path);
+  if (await f.exists()) return;
   const models = catalog[provider]?.models ?? [];
   const defaultModel = models[0]?.id || (provider === 'anthropic' ? 'claude-3-haiku' : provider === 'openai' ? 'gpt-4o-mini' : 'gemini-1.5-flash');
   const content = {
-    projectRoot: cfg.projectRoot,
     defaults: { agent: 'build', provider, model: defaultModel },
     providers: {
       openai: { enabled: provider === 'openai' },
       anthropic: { enabled: provider === 'anthropic' },
       google: { enabled: provider === 'google' },
     },
-    paths: cfg.paths,
   };
-  const path = `${cfg.paths.dataDir}/config.json`;
+  // Ensure directory and write file
+  try {
+    const { promises: fs } = await import('node:fs');
+    await fs.mkdir(base, { recursive: true }).catch(() => {});
+  } catch {}
   await Bun.write(path, JSON.stringify(content, null, 2));
   try {
     const { promises: fs } = await import('node:fs');

@@ -25,11 +25,16 @@ export async function resolveAgentConfig(projectRoot: string, name: string): Pro
   const entry = agents[name];
   let prompt = defaultAgentPrompts[name] ?? defaultAgentPrompts.general;
 
-  // Project override file: .agi/agents/<name>/agent.txt
-  const overridePath = `${projectRoot}/.agi/agents/${name}/agent.txt`.replace(/\\/g, '/');
-  const f = Bun.file(overridePath);
-  if (await f.exists()) {
-    const text = await f.text();
+  // Project override file (either .agi/agents/<name>/agent.txt or .agi/agents/<name>.txt)
+  const overridePathDir = `${projectRoot}/.agi/agents/${name}/agent.txt`.replace(/\\/g, '/');
+  const overridePathFlat = `${projectRoot}/.agi/agents/${name}.txt`.replace(/\\/g, '/');
+  const fDir = Bun.file(overridePathDir);
+  const fFlat = Bun.file(overridePathFlat);
+  if (await fDir.exists()) {
+    const text = await fDir.text();
+    if (text.trim()) prompt = text;
+  } else if (await fFlat.exists()) {
+    const text = await fFlat.text();
     if (text.trim()) prompt = text;
   }
 
@@ -54,6 +59,8 @@ export async function resolveAgentConfig(projectRoot: string, name: string): Pro
       tools = ['fs_read', 'fs_write', 'fs_ls', 'fs_tree', 'finalize'];
     } else if (name === 'plan') {
       tools = ['fs_read', 'fs_ls', 'fs_tree', 'finalize'];
+    } else if (name === 'commit') {
+      tools = ['git_status', 'git_diff', 'git_commit', 'fs_read', 'fs_ls', 'finalize'];
     } else {
       tools = ['finalize'];
     }
