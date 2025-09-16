@@ -13,6 +13,9 @@ import { isProviderAuthorized } from '@/providers/authorization.ts';
 import { runModels } from '@/cli/models.ts';
 import { discoverCommands, runDiscoveredCommand } from '@/cli/commands.ts';
 import { runAuth } from '@/cli/auth.ts';
+import { runScaffold } from '@/cli/scaffold.ts';
+import { runToolsList } from '@/cli/tools.ts';
+import { runDoctor } from '@/cli/doctor.ts';
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
@@ -62,6 +65,28 @@ async function main() {
     const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
     const local = argv.includes('--local');
     await runModels({ project: projectRoot, local });
+    return;
+  }
+
+  if (cmd === 'scaffold' || cmd === 'generate') {
+    const projectIdx = argv.indexOf('--project');
+    const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+    const local = argv.includes('--local');
+    await runScaffold({ project: projectRoot, local });
+    return;
+  }
+
+  if (cmd === 'tools') {
+    const projectIdx = argv.indexOf('--project');
+    const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+    await runToolsList({ project: projectRoot });
+    return;
+  }
+
+  if (cmd === 'doctor') {
+    const projectIdx = argv.indexOf('--project');
+    const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+    await runDoctor({ project: projectRoot });
     return;
   }
 
@@ -145,6 +170,9 @@ function printHelp(discovered?: Record<string, { name: string; description?: str
     '  auth <login|list|logout> Manage provider credentials (use --local to write/remove local auth)',
     '  setup                   Alias for `auth login`',
     '  models|switch           Pick default provider/model (interactive)',
+    '  scaffold|generate       Create agent/tool and agents.json entries (interactive)',
+    '  tools                   List discovered tools and agent access',
+    '  doctor                  Diagnose auth, defaults, and agent/tool issues',
     '  chat [--last|--session] Start an interactive chat (if enabled)',
     '',
     'One-shot ask:',

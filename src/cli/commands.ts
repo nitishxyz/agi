@@ -17,21 +17,39 @@ export type CommandManifest = {
 
 export async function discoverCommands(projectRoot: string): Promise<Record<string, CommandManifest>> {
   const commands: Record<string, CommandManifest> = {};
-  // Aggregate file: .agi/commands.json
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+
+  // Helper to merge a manifest map into commands if valid
+  function mergeMap(map: Record<string, CommandManifest> | undefined) {
+    if (!map) return;
+    for (const [k, v] of Object.entries(map)) if (v && (v.name || k) && v.agent) commands[v.name || k] = { name: v.name || k, ...v };
+  }
+  // Helper to read a single file
+  async function readJson(path: string) {
+    try { const f = Bun.file(path); if (await f.exists()) return JSON.parse(await f.text()); } catch {}
+    return undefined;
+  }
+  // 1) Global aggregate
+  mergeMap(await readJson(`${home}/.agi/commands.json`));
+  // 2) Global per-file commands
+  await scanDirInto(`${home}/.agi/commands`, commands);
+  // 3) Project aggregate overrides global
+  mergeMap(await readJson(`${projectRoot}/.agi/commands.json`));
+  // 4) Project per-file overrides global
+  await scanDirInto(`${projectRoot}/.agi/commands`, commands);
+  return commands;
+}
+
+async function scanDirInto(dir: string, commands: Record<string, CommandManifest>) {
   try {
-    const agg = Bun.file(`${projectRoot}/.agi/commands.json`);
-    if (await agg.exists()) {
-      const obj = JSON.parse(await agg.text()) as Record<string, CommandManifest>;
-      for (const [k, v] of Object.entries(obj)) if (v && v.agent) commands[k] = v;
-    }
-  } catch {}
-  // Per-command files: .agi/commands/<name>.json
-  try {
-    const glob = new Glob('.agi/commands/*.json');
-    for await (const rel of glob.scan({ cwd: projectRoot })) {
+    const { promises: fs } = await import('node:fs');
+    const entries = await fs.readdir(dir).catch(() => [] as string[]);
+    for (const file of entries) {
+      if (!file.endsWith('.json')) continue;
       try {
-        const name = rel.split('/').pop()!.replace(/\.json$/i, '');
-        const f = Bun.file(`${projectRoot}/${rel}`);
+        const name = file.replace(/\.json$/i, '');
+        const f = Bun.file(`${dir}/${file}`);
+        if (!(await f.exists())) continue;
         const manifest = JSON.parse(await f.text()) as CommandManifest;
         if (manifest && (manifest.name || name) && manifest.agent) {
           commands[manifest.name || name] = { name: manifest.name || name, ...manifest };
@@ -39,27 +57,6 @@ export async function discoverCommands(projectRoot: string): Promise<Record<stri
       } catch {}
     }
   } catch {}
-  // Fallback: Node fs readdir in case Glob scan fails in some envs
-  if (Object.keys(commands).length === 0) {
-    try {
-      const { promises: fs } = await import('node:fs');
-      const dir = `${projectRoot}/.agi/commands`;
-      const entries = await fs.readdir(dir).catch(() => [] as string[]);
-      for (const file of entries) {
-        if (!file.endsWith('.json')) continue;
-        try {
-          const name = file.replace(/\.json$/i, '');
-          const f = Bun.file(`${dir}/${file}`);
-          if (!(await f.exists())) continue;
-          const manifest = JSON.parse(await f.text()) as CommandManifest;
-          if (manifest && (manifest.name || name) && manifest.agent) {
-            commands[manifest.name || name] = { name: manifest.name || name, ...manifest };
-          }
-        } catch {}
-      }
-    } catch {}
-  }
-  return commands;
 }
 
 export async function runDiscoveredCommand(name: string, argv: string[], projectRoot: string): Promise<boolean> {
