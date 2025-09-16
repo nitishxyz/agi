@@ -60,7 +60,6 @@ async function main() {
   if (cmd === 'models' || cmd === 'switch') {
     const projectIdx = argv.indexOf('--project');
     const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
-    if (!(await ensureSomeAuth(projectRoot))) return;
     const local = argv.includes('--local');
     await runModels({ project: projectRoot, local });
     return;
