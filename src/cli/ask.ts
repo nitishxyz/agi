@@ -209,7 +209,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
   if (output.length && !jsonEnabled && !jsonStreamEnabled) Bun.write(Bun.stdout, '\n');
 
   if (jsonStreamEnabled) {
-    if (currentServer) currentServer.stop();
+    if (!process.env.AGI_SERVER_URL && currentServer) { try { currentServer.stop(); } catch {} currentServer = null; }
     return;
   } else if (jsonEnabled) {
     const toolCounts: Record<string, number> = {};
@@ -263,7 +263,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
   }
 
   // If we started an ephemeral server, stop it
-  if (!process.env.AGI_SERVER_URL && currentServer) currentServer.stop();
+  if (!process.env.AGI_SERVER_URL && currentServer) { try { currentServer.stop(); } catch {} currentServer = null; }
 }
 
 // Ephemeral server support
@@ -273,6 +273,18 @@ async function startEphemeralServer(): Promise<string> {
   const app = createApp();
   currentServer = Bun.serve({ port: 0, fetch: app.fetch, idleTimeout: 240 });
   return `http://localhost:${currentServer.port}`;
+}
+
+export async function getOrStartServerUrl(): Promise<string> {
+  if (process.env.AGI_SERVER_URL) return String(process.env.AGI_SERVER_URL);
+  return await startEphemeralServer();
+}
+
+export async function stopEphemeralServer(): Promise<void> {
+  if (currentServer) {
+    try { currentServer.stop(); } catch {}
+    currentServer = null;
+  }
 }
 
 // Minimal JSON request helper
