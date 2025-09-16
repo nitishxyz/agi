@@ -13,8 +13,7 @@ import AGENTS from '../../AGENTS.md' with { type: 'file' };
 import CLAUDE from '../../CLAUDE.md' with { type: 'file' };
 
 export const embeddedTextAssets: Record<string, string> = {
-  'README.md': README,
-  'AGENTS.md': AGENTS,
-  'CLAUDE.md': CLAUDE,
+	'README.md': README,
+	'AGENTS.md': AGENTS,
+	'CLAUDE.md': CLAUDE,
 };
-
