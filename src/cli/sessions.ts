@@ -2,6 +2,7 @@ import { createApp } from '@/server/index.ts';
 import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
 import { intro, outro, select, text, isCancel, cancel } from '@clack/prompts';
+import { box, table } from '@/cli/ui.ts';
 import { runAsk } from '@/cli/ask.ts';
 
 type SessionsOptions = {
@@ -67,25 +68,15 @@ export async function runSessions(opts: SessionsOptions = {}) {
     return;
   }
 
-  // Pretty print table-like list
-  for (const r of rows) {
-    Bun.write(Bun.stdout, formatRow(r) + '\n');
-  }
+  // Pretty print a simple table
+  const trows = rows.map((r) => [short(r.id), `${r.agent}`, `${r.provider}:${r.model}`, toIso(r.createdAt), r.lastActiveAt ? toIso(r.lastActiveAt) : '-']);
+  box('Sessions', []);
+  table(['ID', 'Agent', 'Provider:Model', 'Created', 'Active'], trows);
   // Stop ephemeral server if we started one
   if (currentServer) { try { currentServer.stop(); } catch {} currentServer = null; }
 }
 
-function formatRow(r: any): string {
-  const id = String(r.id);
-  const agent = r.agent;
-  const prov = r.provider;
-  const model = r.model;
-  const created = toIso(r.createdAt);
-  const active = r.lastActiveAt ? toIso(r.lastActiveAt) : '-';
-  const counts = r.toolCounts ? Object.entries(r.toolCounts).map(([k, v]) => `${k}:${v}`).join(',') : '';
-  const countsStr = counts ? ` tools[${counts}]` : '';
-  return `${id}  ${agent}/${prov}:${model}  created:${created}  lastActive:${active}${countsStr}`;
-}
+const short = (id: string) => String(id).slice(0, 8);
 
 function toIso(n: number): string {
   try { return new Date(Number(n)).toISOString().replace('T', ' ').replace('Z', ''); } catch { return String(n); }

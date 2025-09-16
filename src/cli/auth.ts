@@ -1,4 +1,5 @@
 import { intro, outro, select, password, isCancel, cancel, log } from '@clack/prompts';
+import { box, table, colors } from '@/cli/ui.ts';
 import { getAllAuth, setAuth, removeAuth, type ProviderId } from '@/auth/index.ts';
 import { loadConfig } from '@/config/index.ts';
 import { catalog } from '@/providers/catalog.ts';
@@ -22,22 +23,26 @@ export async function runAuth(args: string[]) {
 export async function runAuthList(_args: string[]) {
   const cfg = await loadConfig(process.cwd());
   const all = await getAllAuth(cfg.projectRoot);
-  intro('Credentials');
   const entries = Object.entries(all);
-  if (!entries.length) log.info('No stored credentials');
-  for (const [id, info] of entries) {
-    log.info(`${id}: ${info?.type}`);
+  const defProv = cfg.defaults.provider;
+  const defModel = cfg.defaults.model;
+  const rows = entries.map(([id, info]) => [
+    id,
+    info?.type ?? '-',
+    id === defProv ? 'yes' : 'no',
+    id === defProv ? defModel : '-',
+  ]);
+  if (rows.length) {
+    box('Credentials', []);
+    table(['Provider', 'Type', 'Default', 'Model'], rows);
+  } else {
+    box('Credentials', [colors.dim('No stored credentials')]);
   }
-  // Show active env vars
-  const envActive: Array<string> = [];
+  const envRows: string[] = [];
   for (const [pid, meta] of Object.entries(PROVIDER_LINKS) as Array<[ProviderId, any]>) {
-    if (process.env[meta.env]) envActive.push(`${pid} ${meta.env}`);
+    if (process.env[meta.env]) envRows.push(`${pid} ${colors.dim(meta.env)}`);
   }
-  if (envActive.length) {
-    log.message('Environment');
-    for (const line of envActive) log.info(line);
-  }
-  outro('');
+  if (envRows.length) box('Environment', envRows);
 }
 
 export async function runAuthLogin(_args: string[]) {
