@@ -4,7 +4,7 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"lint": "bio check",
+		"lint": "biome check",
 		"cli": "bun run index.ts",
 		"test": "bun test",
 		"db:generate": "drizzle-kit generate --config=drizzle.config.ts",

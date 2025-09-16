@@ -3,772 +3,520 @@
 export type ProviderId = 'openai' | 'anthropic' | 'google';
 
 export type ModelInfo = {
-  id: string;
-  label?: string;
-  modalities?: { input?: string[]; output?: string[] };
-  toolCall?: boolean;
-  reasoning?: boolean;
-  attachment?: boolean;
+	id: string;
+	label?: string;
+	modalities?: { input?: string[]; output?: string[] };
+	toolCall?: boolean;
+	reasoning?: boolean;
+	attachment?: boolean;
 };
 
 export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
-  "openai": {
-    "models": [
-      {
-        "id": "codex-mini-latest",
-        "label": "Codex Mini",
-        "modalities": {
-          "input": [
-            "text"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "gpt-3.5-turbo",
-        "label": "GPT-3.5-turbo",
-        "modalities": {
-          "input": [
-            "text"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": false,
-        "reasoning": false,
-        "attachment": false
-      },
-      {
-        "id": "gpt-4",
-        "label": "GPT-4",
-        "modalities": {
-          "input": [
-            "text"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gpt-4-turbo",
-        "label": "GPT-4 Turbo",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gpt-4.1",
-        "label": "GPT-4.1",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gpt-4.1-mini",
-        "label": "GPT-4.1 mini",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gpt-4.1-nano",
-        "label": "GPT-4.1 nano",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gpt-4o",
-        "label": "GPT-4o",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gpt-4o-mini",
-        "label": "GPT-4o mini",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gpt-5",
-        "label": "GPT-5",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "gpt-5-chat-latest",
-        "label": "GPT-5 Chat (latest)",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": false,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "gpt-5-mini",
-        "label": "GPT-5 Mini",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "gpt-5-nano",
-        "label": "GPT-5 Nano",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "o1",
-        "label": "o1",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "o1-mini",
-        "label": "o1-mini",
-        "modalities": {
-          "input": [
-            "text"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": false,
-        "reasoning": true,
-        "attachment": false
-      },
-      {
-        "id": "o1-preview",
-        "label": "o1-preview",
-        "modalities": {
-          "input": [
-            "text"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": false,
-        "reasoning": true,
-        "attachment": false
-      },
-      {
-        "id": "o1-pro",
-        "label": "o1-pro",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "o3",
-        "label": "o3",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "o3-deep-research",
-        "label": "o3-deep-research",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "o3-mini",
-        "label": "o3-mini",
-        "modalities": {
-          "input": [
-            "text"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": false
-      },
-      {
-        "id": "o3-pro",
-        "label": "o3-pro",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "o4-mini",
-        "label": "o4-mini",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "o4-mini-deep-research",
-        "label": "o4-mini-deep-research",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      }
-    ]
-  },
-  "anthropic": {
-    "models": [
-      {
-        "id": "claude-3-5-haiku-20241022",
-        "label": "Claude Haiku 3.5",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "claude-3-5-sonnet-20240620",
-        "label": "Claude Sonnet 3.5",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "claude-3-5-sonnet-20241022",
-        "label": "Claude Sonnet 3.5 v2",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "claude-3-7-sonnet-20250219",
-        "label": "Claude Sonnet 3.7",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "claude-3-haiku-20240307",
-        "label": "Claude Haiku 3",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "claude-3-opus-20240229",
-        "label": "Claude Opus 3",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "claude-3-sonnet-20240229",
-        "label": "Claude Sonnet 3",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "claude-opus-4-1-20250805",
-        "label": "Claude Opus 4.1",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "claude-opus-4-20250514",
-        "label": "Claude Opus 4",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "claude-sonnet-4-20250514",
-        "label": "Claude Sonnet 4",
-        "modalities": {
-          "input": [
-            "text",
-            "image"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      }
-    ]
-  },
-  "google": {
-    "models": [
-      {
-        "id": "gemini-1.5-flash",
-        "label": "Gemini 1.5 Flash",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gemini-1.5-flash-8b",
-        "label": "Gemini 1.5 Flash-8B",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gemini-1.5-pro",
-        "label": "Gemini 1.5 Pro",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gemini-2.0-flash",
-        "label": "Gemini 2.0 Flash",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video",
-            "pdf"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gemini-2.0-flash-lite",
-        "label": "Gemini 2.0 Flash Lite",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video",
-            "pdf"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": false,
-        "attachment": true
-      },
-      {
-        "id": "gemini-2.5-flash",
-        "label": "Gemini 2.5 Flash",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video",
-            "pdf"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "gemini-2.5-flash-lite-preview-06-17",
-        "label": "Gemini 2.5 Flash Lite Preview 06-17",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video",
-            "pdf"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "gemini-2.5-flash-preview-04-17",
-        "label": "Gemini 2.5 Flash Preview 04-17",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video",
-            "pdf"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "gemini-2.5-flash-preview-05-20",
-        "label": "Gemini 2.5 Flash Preview 05-20",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video",
-            "pdf"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "gemini-2.5-pro",
-        "label": "Gemini 2.5 Pro",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video",
-            "pdf"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "gemini-2.5-pro-preview-05-06",
-        "label": "Gemini 2.5 Pro Preview 05-06",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video",
-            "pdf"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      },
-      {
-        "id": "gemini-2.5-pro-preview-06-05",
-        "label": "Gemini 2.5 Pro Preview 06-05",
-        "modalities": {
-          "input": [
-            "text",
-            "image",
-            "audio",
-            "video",
-            "pdf"
-          ],
-          "output": [
-            "text"
-          ]
-        },
-        "toolCall": true,
-        "reasoning": true,
-        "attachment": true
-      }
-    ]
-  }
+	openai: {
+		models: [
+			{
+				id: 'codex-mini-latest',
+				label: 'Codex Mini',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'gpt-3.5-turbo',
+				label: 'GPT-3.5-turbo',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: false,
+				reasoning: false,
+				attachment: false,
+			},
+			{
+				id: 'gpt-4',
+				label: 'GPT-4',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gpt-4-turbo',
+				label: 'GPT-4 Turbo',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gpt-4.1',
+				label: 'GPT-4.1',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gpt-4.1-mini',
+				label: 'GPT-4.1 mini',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gpt-4.1-nano',
+				label: 'GPT-4.1 nano',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gpt-4o',
+				label: 'GPT-4o',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gpt-4o-mini',
+				label: 'GPT-4o mini',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gpt-5',
+				label: 'GPT-5',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'gpt-5-chat-latest',
+				label: 'GPT-5 Chat (latest)',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: false,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'gpt-5-mini',
+				label: 'GPT-5 Mini',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'gpt-5-nano',
+				label: 'GPT-5 Nano',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'o1',
+				label: 'o1',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'o1-mini',
+				label: 'o1-mini',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: false,
+				reasoning: true,
+				attachment: false,
+			},
+			{
+				id: 'o1-preview',
+				label: 'o1-preview',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: false,
+				reasoning: true,
+				attachment: false,
+			},
+			{
+				id: 'o1-pro',
+				label: 'o1-pro',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'o3',
+				label: 'o3',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'o3-deep-research',
+				label: 'o3-deep-research',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'o3-mini',
+				label: 'o3-mini',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+			},
+			{
+				id: 'o3-pro',
+				label: 'o3-pro',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'o4-mini',
+				label: 'o4-mini',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'o4-mini-deep-research',
+				label: 'o4-mini-deep-research',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+		],
+	},
+	anthropic: {
+		models: [
+			{
+				id: 'claude-3-5-haiku-20241022',
+				label: 'Claude Haiku 3.5',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'claude-3-5-sonnet-20240620',
+				label: 'Claude Sonnet 3.5',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'claude-3-5-sonnet-20241022',
+				label: 'Claude Sonnet 3.5 v2',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'claude-3-7-sonnet-20250219',
+				label: 'Claude Sonnet 3.7',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'claude-3-haiku-20240307',
+				label: 'Claude Haiku 3',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'claude-3-opus-20240229',
+				label: 'Claude Opus 3',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'claude-3-sonnet-20240229',
+				label: 'Claude Sonnet 3',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'claude-opus-4-1-20250805',
+				label: 'Claude Opus 4.1',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'claude-opus-4-20250514',
+				label: 'Claude Opus 4',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'claude-sonnet-4-20250514',
+				label: 'Claude Sonnet 4',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+		],
+	},
+	google: {
+		models: [
+			{
+				id: 'gemini-1.5-flash',
+				label: 'Gemini 1.5 Flash',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gemini-1.5-flash-8b',
+				label: 'Gemini 1.5 Flash-8B',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gemini-1.5-pro',
+				label: 'Gemini 1.5 Pro',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gemini-2.0-flash',
+				label: 'Gemini 2.0 Flash',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gemini-2.0-flash-lite',
+				label: 'Gemini 2.0 Flash Lite',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+			},
+			{
+				id: 'gemini-2.5-flash',
+				label: 'Gemini 2.5 Flash',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'gemini-2.5-flash-lite-preview-06-17',
+				label: 'Gemini 2.5 Flash Lite Preview 06-17',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'gemini-2.5-flash-preview-04-17',
+				label: 'Gemini 2.5 Flash Preview 04-17',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'gemini-2.5-flash-preview-05-20',
+				label: 'Gemini 2.5 Flash Preview 05-20',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'gemini-2.5-pro',
+				label: 'Gemini 2.5 Pro',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'gemini-2.5-pro-preview-05-06',
+				label: 'Gemini 2.5 Pro Preview 05-06',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+			{
+				id: 'gemini-2.5-pro-preview-06-05',
+				label: 'Gemini 2.5 Pro Preview 06-05',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+			},
+		],
+	},
 } as const;

@@ -1,0 +1,14 @@
+{
+	"git": {
+		"tools": [
+			"fs_ls",
+			"fs_read",
+			"fs_tree",
+			"git_commit",
+			"git_diff",
+			"git_status",
+			"finalize"
+		],
+		"prompt": ".agi/agents/git.txt"
+	}
+}
