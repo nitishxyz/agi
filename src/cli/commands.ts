@@ -1,7 +1,7 @@
 import { Glob } from 'bun';
 import { intro, outro, text, isCancel, cancel, log, confirm } from '@clack/prompts';
 import { loadConfig } from '@/config/index.ts';
-import { runAsk } from '@/cli/ask.ts';
+import { runAsk, getOrStartServerUrl, stopEphemeralServer } from '@/cli/ask.ts';
 
 export type CommandManifest = {
   name: string;
@@ -87,15 +87,22 @@ export async function runDiscoveredCommand(name: string, argv: string[], project
   const provider = cmd.defaults?.provider;
   const model = cmd.defaults?.model;
 
-  // First run: propose or perform
-  await runAsk(rendered, { project: projectRoot, agent, provider, model });
-
-  // Optional confirm: send follow-up to trigger commit/action token
-  if (cmd.confirm?.required) {
-    const ok = await confirm({ message: cmd.confirm.message || 'Proceed?' });
-    if (isCancel(ok) || !ok) return true;
-    const token = cmd.confirm.token || '[confirm:yes]';
-    await runAsk(token, { project: projectRoot, agent, provider, model, last: true });
+  // Keep one ephemeral server across both runs to avoid port=0 races
+  const prevUrl = process.env.AGI_SERVER_URL;
+  try {
+    process.env.AGI_SERVER_URL = await getOrStartServerUrl();
+    // First run: propose or perform
+    await runAsk(rendered, { project: projectRoot, agent, provider, model });
+    // Optional confirm: send follow-up to trigger action token
+    if (cmd.confirm?.required) {
+      const ok = await confirm({ message: cmd.confirm.message || 'Proceed?' });
+      if (isCancel(ok) || !ok) return true;
+      const token = cmd.confirm.token || '[confirm:yes]';
+      await runAsk(token, { project: projectRoot, agent, provider, model, last: true });
+    }
+  } finally {
+    if (prevUrl !== undefined) process.env.AGI_SERVER_URL = prevUrl; else delete (process.env as any).AGI_SERVER_URL;
+    await stopEphemeralServer().catch(() => {});
   }
   return true;
 }
