@@ -32,8 +32,10 @@ export function createToolResultPayload(
 	result?: unknown,
 	artifact?: Artifact,
 ) {
-	const payload: any = { name };
+	const payload: { name: string; result?: unknown; artifact?: Artifact } = {
+		name,
+	};
 	if (result !== undefined) payload.result = result;
 	if (artifact) payload.artifact = artifact;
-	return payload as { name: string; result?: unknown; artifact?: Artifact };
+	return payload;
 }

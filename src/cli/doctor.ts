@@ -1,15 +1,14 @@
 import { read as readMerged, isAuthorized } from '@/config/manager.ts';
 import { box, table, colors } from '@/cli/ui.ts';
+import type { ProviderId } from '@/auth/index.ts';
+
+type MergedConfig = Awaited<ReturnType<typeof readMerged>>;
 
 export async function runDoctor(opts: { project?: string } = {}) {
 	const projectRoot = opts.project ?? process.cwd();
 	const { cfg, auth } = await readMerged(projectRoot);
 	// Credentials source per provider
-	const providers: Array<'openai' | 'anthropic' | 'google'> = [
-		'openai',
-		'anthropic',
-		'google',
-	];
+	const providers: ProviderId[] = ['openai', 'anthropic', 'google'];
 	const rows: string[][] = [];
 	for (const p of providers) {
 		const source = credSource(p, cfg, auth);
@@ -20,7 +19,10 @@ export async function runDoctor(opts: { project?: string } = {}) {
 	table(['Provider', 'Status', 'Source'], rows);
 
 	const def = cfg.defaults;
-	const defAuth = await isAuthorized(def.provider as any, projectRoot);
+	const providerMatch = providers.find((p) => p === def.provider);
+	const defAuth = providerMatch
+		? await isAuthorized(providerMatch, projectRoot)
+		: false;
 	const defStatus = defAuth ? colors.green('ok') : colors.red('unauthorized');
 	box('Defaults', [
 		`agent: ${def.agent}`,
@@ -61,9 +63,9 @@ export async function runDoctor(opts: { project?: string } = {}) {
 }
 
 function credSource(
-	p: 'openai' | 'anthropic' | 'google',
-	cfg: any,
-	auth: any,
+	p: ProviderId,
+	cfg: MergedConfig['cfg'],
+	auth: MergedConfig['auth'],
 ): string {
 	if (p === 'openai' && process.env.OPENAI_API_KEY) return 'env';
 	if (p === 'anthropic' && process.env.ANTHROPIC_API_KEY) return 'env';

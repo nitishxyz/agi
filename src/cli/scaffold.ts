@@ -9,7 +9,6 @@ import {
 	log,
 	confirm,
 } from '@clack/prompts';
-import { loadConfig } from '@/config/index.ts';
 
 type ScaffoldOptions = { project?: string; local?: boolean };
 
@@ -77,7 +76,7 @@ async function scaffoldAgent(
 	}
 	const agentsPath = `${baseDir}/agents.json`;
 	const current = await readJson(agentsPath).catch(
-		() => ({}) as Record<string, any>,
+		() => ({}) as Record<string, unknown>,
 	);
 	let promptRel: string | undefined;
 	if (wantPrompt) {
@@ -333,14 +332,14 @@ async function listAgents(
 		if (localOnly) {
 			const localAgents = (await Bun.file(`${projectRoot}/.agi/agents.json`)
 				.json()
-				.catch(() => ({}))) as Record<string, any>;
+				.catch(() => ({}))) as Record<string, unknown>;
 			const keys = Object.keys(localAgents);
 			return Array.from(new Set([...defaults, ...keys]));
 		} else {
 			const home = process.env.HOME || process.env.USERPROFILE || '';
 			const globalAgents = (await Bun.file(`${home}/.agi/agents.json`)
 				.json()
-				.catch(() => ({}))) as Record<string, any>;
+				.catch(() => ({}))) as Record<string, unknown>;
 			const keys = Object.keys(globalAgents);
 			return Array.from(new Set([...defaults, ...keys]));
 		}

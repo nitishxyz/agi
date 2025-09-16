@@ -6,13 +6,13 @@ function code(n: number) {
 }
 
 export const colors = {
-	bold: (s: string) => code(1) + s + code(22),
-	dim: (s: string) => code(2) + s + code(22),
-	red: (s: string) => code(31) + s + code(39),
-	green: (s: string) => code(32) + s + code(39),
-	yellow: (s: string) => code(33) + s + code(39),
-	blue: (s: string) => code(34) + s + code(39),
-	cyan: (s: string) => code(36) + s + code(39),
+	bold: (s: string) => `${code(1)}${s}${code(22)}`,
+	dim: (s: string) => `${code(2)}${s}${code(22)}`,
+	red: (s: string) => `${code(31)}${s}${code(39)}`,
+	green: (s: string) => `${code(32)}${s}${code(39)}`,
+	yellow: (s: string) => `${code(33)}${s}${code(39)}`,
+	blue: (s: string) => `${code(34)}${s}${code(39)}`,
+	cyan: (s: string) => `${code(36)}${s}${code(39)}`,
 };
 
 export function box(title: string, bodyLines: string[] | string) {
@@ -22,13 +22,13 @@ export function box(title: string, bodyLines: string[] | string) {
 		Math.max(...contentLines.map((l) => stripAnsi(l).length)) + 2,
 		(process.stdout.columns || 80) - 2,
 	);
-	const top = '┌' + '─'.repeat(width) + '┐';
-	const bot = '└' + '─'.repeat(width) + '┘';
+	const top = `┌${'─'.repeat(width)}┐`;
+	const bot = `└${'─'.repeat(width)}┘`;
 	console.log(top);
 	for (let i = 0; i < contentLines.length; i++) {
 		const raw = contentLines[i];
 		const pad = width - stripAnsi(raw).length;
-		console.log('│ ' + raw + ' '.repeat(pad - 1) + '│');
+		console.log(`│ ${raw}${' '.repeat(pad - 1)}│`);
 	}
 	console.log(bot);
 }
@@ -50,13 +50,24 @@ export function table(headers: string[], rows: string[][]) {
 
 function pad(s: string, w: number) {
 	const len = stripAnsi(s).length;
-	return s + ' '.repeat(Math.max(0, w - len));
+	return `${s}${' '.repeat(Math.max(0, w - len))}`;
 }
 
 function stripAnsi(s: string) {
-	// eslint-disable-next-line no-control-regex
-	return s.replace(
-		/[\u001B\u009B][[\]()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nq-uy=><]/g,
-		'',
-	);
+	let result = '';
+	for (let i = 0; i < s.length; i += 1) {
+		const ch = s[i];
+		if (ch === '\u001B' || ch === '\u009B') {
+			// Skip over CSI sequences until we hit a letter terminator
+			i += 1;
+			while (i < s.length) {
+				const code = s[i];
+				if ((code >= '@' && code <= 'Z') || (code >= 'a' && code <= 'z')) break;
+				i += 1;
+			}
+		} else {
+			result += ch;
+		}
+	}
+	return result;
 }

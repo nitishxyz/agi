@@ -29,7 +29,7 @@ async function collectAgents(projectRoot: string): Promise<string[]> {
 	const defaults = ['general', 'build', 'plan', 'git'];
 	try {
 		const f = Bun.file(`${projectRoot}/.agi/agents.json`);
-		const json = (await f.json().catch(() => ({}))) as Record<string, any>;
+		const json = (await f.json().catch(() => ({}))) as Record<string, unknown>;
 		const keys = Object.keys(json);
 		return Array.from(new Set([...defaults, ...keys]));
 	} catch {

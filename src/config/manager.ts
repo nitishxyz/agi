@@ -24,8 +24,8 @@ export async function isAuthorized(
 	if (provider === 'google' && process.env.GOOGLE_GENERATIVE_AI_API_KEY)
 		return true;
 	const { cfg, auth } = await read(projectRoot);
-	if (auth[provider]?.type === 'api' && (auth[provider] as any).key)
-		return true;
+	const info = auth[provider];
+	if (info?.type === 'api' && info.key) return true;
 	// legacy fallback to config apiKey
 	if (provider === 'openai' && cfg.providers.openai?.apiKey) return true;
 	if (provider === 'anthropic' && cfg.providers.anthropic?.apiKey) return true;
@@ -39,15 +39,24 @@ export async function ensureEnv(
 ): Promise<void> {
 	const { cfg, auth } = await read(projectRoot);
 	if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
-		const key = (auth.openai as any)?.key || cfg.providers.openai?.apiKey;
+		const key =
+			auth.openai?.type === 'api'
+				? auth.openai.key
+				: cfg.providers.openai?.apiKey;
 		if (key) process.env.OPENAI_API_KEY = key;
 	}
 	if (provider === 'anthropic' && !process.env.ANTHROPIC_API_KEY) {
-		const key = (auth.anthropic as any)?.key || cfg.providers.anthropic?.apiKey;
+		const key =
+			auth.anthropic?.type === 'api'
+				? auth.anthropic.key
+				: cfg.providers.anthropic?.apiKey;
 		if (key) process.env.ANTHROPIC_API_KEY = key;
 	}
 	if (provider === 'google' && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-		const key = (auth.google as any)?.key || cfg.providers.google?.apiKey;
+		const key =
+			auth.google?.type === 'api'
+				? auth.google.key
+				: cfg.providers.google?.apiKey;
 		if (key) process.env.GOOGLE_GENERATIVE_AI_API_KEY = key;
 	}
 }

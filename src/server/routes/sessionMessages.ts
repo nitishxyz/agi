@@ -11,6 +11,9 @@ import {
 import { publish } from '@/server/events/bus.ts';
 import { enqueueAssistantRun } from '@/server/runtime/runner.ts';
 
+type MessagePartRow = typeof messageParts.$inferSelect;
+type SessionRow = typeof sessions.$inferSelect;
+
 export function registerSessionMessagesRoutes(app: Hono) {
 	// List messages for a session
 	app.get('/v1/sessions/:id/messages', async (c) => {
@@ -32,11 +35,11 @@ export function registerSessionMessagesRoutes(app: Hono) {
 						.from(messageParts)
 						.where(inArray(messageParts.messageId, ids))
 				: [];
-			const partsByMsg = new Map<string, any[]>();
+			const partsByMsg = new Map<string, MessagePartRow[]>();
 			for (const p of parts) {
-				const arr = partsByMsg.get(p.messageId) ?? [];
-				arr.push(p);
-				partsByMsg.set(p.messageId, arr);
+				const existing = partsByMsg.get(p.messageId);
+				if (existing) existing.push(p);
+				else partsByMsg.set(p.messageId, [p]);
 			}
 			const enriched = rows.map((m) => ({
 				...m,
@@ -60,7 +63,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 			.from(sessions)
 			.where(eq(sessions.id, sessionId));
 		if (!sessionRows.length) return c.json({ error: 'Session not found' }, 404);
-		const sess = sessionRows[0] as any;
+		const sess: SessionRow = sessionRows[0];
 		const provider = body?.provider ?? sess.provider ?? cfg.defaults.provider;
 		const modelName = body?.model ?? sess.model ?? cfg.defaults.model;
 		const agent = body?.agent ?? sess.agent ?? cfg.defaults.agent;
@@ -70,8 +73,9 @@ export function registerSessionMessagesRoutes(app: Hono) {
 		const wantsToolCalls = true; // agent toolset may be non-empty
 		try {
 			validateProviderModel(provider, modelName, { wantsToolCalls });
-		} catch (err: any) {
-			return c.json({ error: String(err?.message ?? err) }, 400);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			return c.json({ error: message }, 400);
 		}
 		// Enforce provider auth: only allow providers/models the user authenticated for
 		const authorized = await isProviderAuthorized(cfg, provider);

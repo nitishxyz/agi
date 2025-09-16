@@ -68,9 +68,10 @@ export async function runAuthList(_args: string[]) {
 		box('Credentials', [colors.dim('No stored credentials')]);
 	}
 	const envRows: string[] = [];
-	for (const [pid, meta] of Object.entries(PROVIDER_LINKS) as Array<
-		[ProviderId, any]
-	>) {
+	const providerEntries = Object.entries(PROVIDER_LINKS) as Array<
+		[ProviderId, (typeof PROVIDER_LINKS)[ProviderId]]
+	>;
+	for (const [pid, meta] of providerEntries) {
 		if (process.env[meta.env]) envRows.push(`${pid} ${colors.dim(meta.env)}`);
 	}
 	if (envRows.length) box('Environment', envRows);
@@ -139,22 +140,7 @@ export async function runAuthLogout(_args: string[]) {
 	outro('');
 }
 
-async function openBrowser(url: string) {
-	const platform = process.platform;
-	if (platform === 'darwin') {
-		const proc = Bun.spawn(['open', url]);
-		await proc.exited;
-	} else if (platform === 'win32') {
-		const proc = Bun.spawn(['cmd', '/c', 'start', '', url]);
-		await proc.exited;
-	} else {
-		const proc = Bun.spawn(['xdg-open', url]);
-		await proc.exited;
-	}
-}
-
 async function ensureGlobalConfigDefaults(provider: ProviderId) {
-	const cfg = await loadConfig(process.cwd());
 	// Determine global config path
 	const home = process.env.HOME || process.env.USERPROFILE || '';
 	const base = `${home}/.agi`.replace(/\\/g, '/');

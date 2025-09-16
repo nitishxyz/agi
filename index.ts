@@ -12,20 +12,37 @@ import { loadConfig as loadCfg } from '@/config/index.ts';
 import { isProviderAuthorized } from '@/providers/authorization.ts';
 import { runModels } from '@/cli/models.ts';
 import { discoverCommands, runDiscoveredCommand } from '@/cli/commands.ts';
-import { runAuth } from '@/cli/auth.ts';
 import { runScaffold } from '@/cli/scaffold.ts';
 import { runToolsList } from '@/cli/tools.ts';
 import { runDoctor } from '@/cli/doctor.ts';
 
-const argv = process.argv.slice(2);
+// Handle both compiled binaries and regular bun execution
+let argv = process.argv.slice(2);
+
+// In compiled binaries, sometimes the binary name appears in argv
+// Remove it if the first argument is just "agi" (the binary name)
+if (argv[0] === 'agi' || argv[0]?.endsWith('/agi')) {
+	argv = argv.slice(1);
+}
+
 const cmd = argv[0];
 
 async function main() {
+	// Debug: Check what arguments we received
+	if (process.env.DEBUG_AGI) {
+		console.log('DEBUG: process.argv:', process.argv);
+		console.log('DEBUG: argv (after cleanup):', argv);
+		console.log('DEBUG: cmd:', cmd);
+	}
+
 	// Global help (no auth required) with project command discovery
 	const wantsHelp = argv.includes('--help') || argv.includes('-h');
 	if (wantsHelp) {
 		const projectRoot = process.cwd();
-		const cmds = await discoverCommands(projectRoot).catch(() => ({}) as any);
+		let cmds: Record<string, { name: string; description?: string }> = {};
+		try {
+			cmds = await discoverCommands(projectRoot);
+		} catch {}
 		printHelp(cmds);
 		return;
 	}
@@ -112,6 +129,9 @@ async function main() {
 
 	// One-shot: agi "<prompt>" [--agent] [--provider] [--model] [--project]
 	if (cmd && !cmd.startsWith('-')) {
+		if (process.env.DEBUG_AGI) {
+			console.log('DEBUG: Entering one-shot mode with cmd:', cmd);
+		}
 		const prompt = cmd;
 		const agentIdx = argv.indexOf('--agent');
 		const providerIdx = argv.indexOf('--provider');
@@ -121,7 +141,9 @@ async function main() {
 		const sessionIdx = argv.indexOf('--session');
 		const agent = agentIdx >= 0 ? argv[agentIdx + 1] : undefined;
 		const provider =
-			providerIdx >= 0 ? (argv[providerIdx + 1] as any) : undefined;
+			providerIdx >= 0
+				? (argv[providerIdx + 1] as 'openai' | 'anthropic' | 'google')
+				: undefined;
 		const model = modelIdx >= 0 ? argv[modelIdx + 1] : undefined;
 		const project = projectIdx >= 0 ? argv[projectIdx + 1] : undefined;
 		const sessionId = sessionIdx >= 0 ? argv[sessionIdx + 1] : undefined;
@@ -139,6 +161,9 @@ async function main() {
 
 	// No non-flag command provided: context-aware interactive mode
 	// Respect flags like --project, --last, --session (and optionally agent/provider/model)
+	if (process.env.DEBUG_AGI) {
+		console.log('DEBUG: Entering interactive mode - will prompt for input');
+	}
 	const projectIdx = argv.indexOf('--project');
 	const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
 	if (!(await ensureSomeAuth(projectRoot))) return;
@@ -161,7 +186,9 @@ async function main() {
 	const sessionIdx = argv.indexOf('--session');
 	const agent = agentIdx >= 0 ? argv[agentIdx + 1] : undefined;
 	const provider =
-		providerIdx >= 0 ? (argv[providerIdx + 1] as any) : undefined;
+		providerIdx >= 0
+			? (argv[providerIdx + 1] as 'openai' | 'anthropic' | 'google')
+			: undefined;
 	const model = modelIdx >= 0 ? argv[modelIdx + 1] : undefined;
 	const sessionId = sessionIdx >= 0 ? argv[sessionIdx + 1] : undefined;
 	await runAsk(prompt, {
@@ -207,7 +234,7 @@ function printHelp(
 		for (const c of Object.values(discovered))
 			lines.push(`  ${c.name}  ${c.description ?? ''}`);
 	}
-	Bun.write(Bun.stdout, lines.join('\n') + '\n');
+	Bun.write(Bun.stdout, `${lines.join('\n')}\n`);
 }
 
 async function ensureSomeAuth(projectRoot: string): Promise<boolean> {

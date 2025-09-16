@@ -11,13 +11,13 @@ function normalizePath(p: string) {
 		if (part === '..') stack.pop();
 		else stack.push(part);
 	}
-	return '/' + stack.join('/');
+	return `/${stack.join('/')}`;
 }
 
 function resolveSafePath(projectRoot: string, p: string) {
 	const root = normalizePath(projectRoot);
-	const abs = normalizePath(root + '/' + (p || '.'));
-	if (!(abs === root || abs.startsWith(root + '/'))) {
+	const abs = normalizePath(`${root}/${p || '.'}`);
+	if (!(abs === root || abs.startsWith(`${root}/`))) {
 		throw new Error(`Path escapes project root: ${p}`);
 	}
 	return abs;
@@ -130,11 +130,11 @@ export function buildFsTools(
 				shown.forEach(async (e, idx) => {
 					const isLast = idx === shown.length - 1;
 					const connector = isLast ? '└─ ' : '├─ ';
-					const line = `${prefix}${connector}${e.isDir ? '📁' : '📄'} ${rel ? rel + '/' : ''}${e.name}`;
+					const line = `${prefix}${connector}${e.isDir ? '📁' : '📄'} ${rel ? `${rel}/` : ''}${e.name}`;
 					lines.push(line);
 					if (e.isDir && level < depth) {
-						const childAbs = abs + '/' + e.name;
-						const childRel = rel ? rel + '/' + e.name : e.name;
+						const childAbs = `${abs}/${e.name}`;
+						const childRel = rel ? `${rel}/${e.name}` : e.name;
 						const nextPrefix = prefix + (isLast ? '   ' : '│  ');
 						await walk(childAbs, childRel, level + 1, nextPrefix);
 					}

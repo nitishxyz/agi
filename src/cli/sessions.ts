@@ -12,6 +12,16 @@ type SessionsOptions = {
 	limit?: number;
 };
 
+type SessionRecord = {
+	id: string | number;
+	agent: string;
+	provider: string;
+	model: string;
+	createdAt: number;
+	lastActiveAt?: number | null;
+	[key: string]: unknown;
+};
+
 export async function runSessions(opts: SessionsOptions = {}) {
 	const projectRoot = opts.project ?? process.cwd();
 	const cfg = await loadConfig(projectRoot);
@@ -21,10 +31,10 @@ export async function runSessions(opts: SessionsOptions = {}) {
 	const list = (await httpJson(
 		'GET',
 		`${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`,
-	)) as Array<any>;
+	)) as SessionRecord[];
 	// De-duplicate by id to avoid any accidental duplicates from the API or client
 	const seen = new Set<string>();
-	const uniq = [] as Array<any>;
+	const uniq: SessionRecord[] = [];
 	for (const r of list) {
 		const id = String(r.id);
 		if (seen.has(id)) continue;
@@ -37,7 +47,7 @@ export async function runSessions(opts: SessionsOptions = {}) {
 			: uniq;
 
 	if (opts.json) {
-		Bun.write(Bun.stdout, JSON.stringify(rows, null, 2) + '\n');
+		Bun.write(Bun.stdout, `${JSON.stringify(rows, null, 2)}\n`);
 		return;
 	}
 
@@ -67,7 +77,7 @@ export async function runSessions(opts: SessionsOptions = {}) {
 		if (isCancel(input)) return cancel('Cancelled');
 		const prompt = String(input ?? '').trim();
 		if (!prompt) {
-			Bun.write(Bun.stdout, String(choice) + '\n');
+			Bun.write(Bun.stdout, `${String(choice)}\n`);
 			outro('');
 			return;
 		}
@@ -78,7 +88,7 @@ export async function runSessions(opts: SessionsOptions = {}) {
 			await runAsk(prompt, { project: projectRoot, sessionId: String(choice) });
 		} finally {
 			if (prev !== undefined) process.env.AGI_SERVER_URL = prev;
-			else delete (process.env as any).AGI_SERVER_URL;
+			else delete process.env.AGI_SERVER_URL;
 			if (currentServer) {
 				try {
 					currentServer.stop();

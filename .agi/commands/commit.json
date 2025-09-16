@@ -1,9 +1,0 @@
-{
-	"name": "commit",
-	"description": "This command generated a commit messages based on the currently stages changes",
-	"agent": "git",
-	"defaults": {
-		"agent": "git"
-	},
-	"prompt": "Create a Conventional Commits message for the staged changes. Requirements: Use format: type(scope?): summary (<= 72 chars) Include a short body with bullet points if helpful then run the commit tool to commit the changes"
-}
