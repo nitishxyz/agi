@@ -10,7 +10,7 @@ type AuthFile = Partial<Record<ProviderId, AuthInfo>>;
 
 function globalAuthPath(): string {
   const home = process.env.HOME || process.env.USERPROFILE || '';
-  return `${home}/.config/agi/auth.json`.replace(/\\/g, '/');
+  return `${home}/.agi/auth.json`.replace(/\\/g, '/');
 }
 
 async function localAuthPath(projectRoot?: string) {

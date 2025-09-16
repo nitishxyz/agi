@@ -102,7 +102,7 @@ async function ensureGlobalConfigDefaults(provider: ProviderId) {
   const cfg = await loadConfig(process.cwd());
   // Determine global config path
   const home = process.env.HOME || process.env.USERPROFILE || '';
-  const base = `${home}/.config/agi`.replace(/\\/g, '/');
+  const base = `${home}/.agi`.replace(/\\/g, '/');
   const path = `${base}/config.json`;
   // If a global config already exists, do not overwrite
   const f = Bun.file(path);

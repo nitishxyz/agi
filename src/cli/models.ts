@@ -2,6 +2,7 @@ import { intro, outro, select, isCancel, cancel, log } from '@clack/prompts';
 import { loadConfig } from '@/config/index.ts';
 import { catalog, type ProviderId } from '@/providers/catalog.ts';
 import { isProviderAuthorized } from '@/providers/authorization.ts';
+import { runAuth } from '@/cli/auth.ts';
 
 export async function runModels(opts: { project?: string; local?: boolean } = {}) {
 	const projectRoot = opts.project ?? process.cwd();
@@ -14,11 +15,21 @@ export async function runModels(opts: { project?: string; local?: boolean } = {}
 	);
 	const allowed = providers.filter((_, i) => authorization[i]);
 
-	intro('Select provider and model');
-	if (!allowed.length) {
-		log.error('No providers configured. Run `agi auth login` first.');
-		return outro('');
-	}
+  intro('Select provider and model');
+  if (!allowed.length) {
+    log.info('No providers configured. Launching auth…');
+    await runAuth(['login']);
+    // Recompute allowed after auth
+    const cfg2 = await loadConfig(projectRoot);
+    const authz2 = await Promise.all((['openai','anthropic','google'] as ProviderId[]).map((p) => isProviderAuthorized(cfg2, p)));
+    const allowed2 = (['openai','anthropic','google'] as ProviderId[]).filter((_, i) => authz2[i]);
+    if (!allowed2.length) {
+      log.error('No credentials added. Aborting.');
+      return outro('');
+    }
+    // replace vars for subsequent logic
+    (allowed as any).splice(0, allowed.length, ...allowed2);
+  }
 
 	const provider = (await select({
 		message: 'Provider',
@@ -58,9 +69,9 @@ export async function runModels(opts: { project?: string; local?: boolean } = {}
 		const path = `${cfg.paths.dataDir}/config.json`;
 		await Bun.write(path, JSON.stringify(next, null, 2));
 	} else {
-		const home = process.env.HOME || process.env.USERPROFILE || '';
-		const base = `${home}/.config/agi`.replace(/\\/g, '/');
-		const path = `${base}/config.json`;
+    const home = process.env.HOME || process.env.USERPROFILE || '';
+    const base = `${home}/.agi`.replace(/\\/g, '/');
+    const path = `${base}/config.json`;
 		const next = {
 			defaults: {
 				agent: cfg.defaults.agent,

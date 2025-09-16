@@ -50,7 +50,7 @@ export async function loadConfig(
 	const dataDir = joinPath(projectRoot, '.agi');
 	const dbPath = joinPath(dataDir, 'agi.sqlite');
 	const projectConfigPath = joinPath(dataDir, 'config.json');
-	const globalConfigPath = joinPath(process.env.HOME || '', '.config', 'agi', 'config.json');
+  const globalConfigPath = joinPath(process.env.HOME || '', '.agi', 'config.json');
 
 	const projectCfg = await readJsonOptional(projectConfigPath);
 	const globalCfg = await readJsonOptional(globalConfigPath);
