@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUMP_TYPE: ${{ github.event_name == 'workflow_dispatch' && inputs.bump || 'patch' }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,7 +44,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Verify npm token
-        if: ${{ secrets.NPM_TOKEN == '' }}
+        if: ${{ env.NPM_TOKEN == '' }}
         run: |
           echo "NPM_TOKEN secret is required to publish" >&2
           exit 1
