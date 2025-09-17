@@ -1045,6 +1045,39 @@ function printToolCall(
 	args?: unknown,
 	opts?: { verbose?: boolean },
 ) {
+	// Special render for progress updates
+	if (name === 'progress_update') {
+		const progressArgs: Record<string, unknown> = isPlainObject(args)
+			? args
+			: {};
+		const msgValue = progressArgs.message;
+		const msg =
+			typeof msgValue === 'string'
+				? msgValue
+				: msgValue != null
+					? String(msgValue)
+					: '';
+		const stageValue = progressArgs.stage;
+		const stage =
+			typeof stageValue === 'string' && stageValue.trim().length
+				? stageValue
+				: 'planning';
+		const pctSource = progressArgs.pct;
+		const pctRaw =
+			typeof pctSource === 'number'
+				? pctSource
+				: typeof pctSource === 'string'
+					? Number.parseFloat(pctSource)
+					: NaN;
+		const pct = Number.isFinite(pctRaw)
+			? Math.max(0, Math.min(100, Math.round(pctRaw)))
+			: undefined;
+		const badge = stageBadge(stage);
+		const bar = pct != null ? ` ${progressBar(pct)} ${dim(`${pct}%`)}` : '';
+		const line = `${badge} ${msg}${bar}`.trim();
+		Bun.write(Bun.stderr, `${line}\n`);
+		return;
+	}
 	const v = opts?.verbose;
 	const title = `${bold('›')} ${cyan(name)} ${dim('running...')}`;
 	if (!args || !v) {
@@ -1061,6 +1094,10 @@ function printToolResult(
 	artifact?: Artifact,
 	opts?: { verbose?: boolean; durationMs?: number },
 ) {
+	if (name === 'progress_update') {
+		// No-op: progress lines are printed on call; avoid cluttering with results
+		return;
+	}
 	const time =
 		typeof opts?.durationMs === 'number' ? dim(` (${opts.durationMs}ms)`) : '';
 	// Special-case pretty formatting for common tools
@@ -1129,4 +1166,31 @@ function printToolResult(
 		result !== undefined ? truncate(JSON.stringify(result), 200) : '';
 	const suffix = artifact?.kind ? ` ${dim(`artifact=${artifact.kind}`)}` : '';
 	Bun.write(Bun.stderr, `${bold('↳')} ${cyan(name)}${suffix} ${preview}\n`);
+}
+
+function stageBadge(stage: string) {
+	switch (stage) {
+		case 'planning':
+			return `${bold('…')} ${dim('[planning]')}`;
+		case 'generating':
+			return `${bold('…')} ${dim('[generating]')}`;
+		case 'writing':
+			return `${bold('…')} ${yellow('[writing]')}`;
+		case 'verifying':
+			return `${bold('…')} ${green('[verifying]')}`;
+		default:
+			return `${bold('…')} ${dim(`[${stage}]`)}`;
+	}
+}
+
+function progressBar(pct: number) {
+	const width = 20;
+	const clamped = Math.max(0, Math.min(100, Math.round(pct)));
+	const filled = Math.round((clamped / 100) * width);
+	const empty = width - filled;
+	return `${green('█'.repeat(filled))}${dim('░'.repeat(empty))}`;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null;
 }

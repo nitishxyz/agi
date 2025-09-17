@@ -1,5 +1,5 @@
 import { intro, outro, text, isCancel, cancel } from '@clack/prompts';
-import { dirname, isAbsolute, join } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 import { runAsk } from '@/cli/ask.ts';
 
 export type CommandManifest = {
@@ -25,35 +25,8 @@ export async function discoverCommands(
 	const commands: Record<string, CommandManifest> = {};
 	const home = process.env.HOME || process.env.USERPROFILE || '';
 
-	// Helper to merge a manifest map into commands if valid
-	function mergeMap(
-		map: Record<string, CommandManifest> | undefined,
-		baseDir?: string,
-	) {
-		if (!map) return;
-		for (const [k, v] of Object.entries(map)) {
-			if (v && (v.name || k) && v.agent) {
-				commands[v.name || k] = { name: v.name || k, ...v, __dir: baseDir };
-			}
-		}
-	}
-	// Helper to read a single file
-	async function readJson(path: string) {
-		try {
-			const f = Bun.file(path);
-			if (await f.exists()) return JSON.parse(await f.text());
-		} catch {}
-		return undefined;
-	}
-	// 1) Global aggregate
-	const globalAggregatePath = `${home}/.agi/commands.json`;
-	mergeMap(await readJson(globalAggregatePath), dirname(globalAggregatePath));
-	// 2) Global per-file commands
+	// Helper to read per-file manifests from a directory
 	await scanDirInto(`${home}/.agi/commands`, commands);
-	// 3) Project aggregate overrides global
-	const projectAggregatePath = `${projectRoot}/.agi/commands.json`;
-	mergeMap(await readJson(projectAggregatePath), dirname(projectAggregatePath));
-	// 4) Project per-file overrides global
 	await scanDirInto(`${projectRoot}/.agi/commands`, commands);
 	return commands;
 }
