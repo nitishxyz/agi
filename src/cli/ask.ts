@@ -490,7 +490,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			transcript.tools = { calls: toolCalls, results: toolResults };
 		}
 		Bun.write(Bun.stdout, `${JSON.stringify(transcript, null, 2)}\n`);
-	} else if (summaryEnabled || finalizeSeen) {
+	} else if (summaryEnabled || finalizeSeen || toolCalls.length) {
 		printSummary(toolCalls, toolResults, filesTouched);
 	}
 	if (!jsonEnabled && !jsonStreamEnabled) {

@@ -10,6 +10,7 @@ import {
 	confirm,
 } from '@clack/prompts';
 import { defaultToolsForAgent } from '@/ai/agents/registry.ts';
+import { discoverProjectTools } from '@/ai/tools/loader.ts';
 
 type ScaffoldOptions = { project?: string; local?: boolean };
 
@@ -108,7 +109,7 @@ async function scaffoldAgent(
 async function scaffoldTool(projectRoot: string, baseDir: string) {
 	const id = await text({
 		message: 'Tool id (slug)',
-		placeholder: 'e.g. git_tag, docker_build',
+		placeholder: 'e.g. git_tag, ripgrep',
 		validate: (v) =>
 			/^[a-zA-Z0-9][a-zA-Z0-9_-]{1,63}$/.test(String(v))
 				? undefined
@@ -122,20 +123,20 @@ async function scaffoldTool(projectRoot: string, baseDir: string) {
 	if (isCancel(desc)) return cancel('Cancelled');
 	const dir = `${baseDir}/tools/${String(id)}`;
 	await ensureDir(dir);
-	const file = `${dir}/tool.ts`;
-	const content = toolTemplate(String(desc));
+	const file = `${dir}/tool.js`;
+	const content = toolTemplate(String(id), String(desc));
 	await Bun.write(file, content);
 	const scope = isGlobalBase(baseDir, projectRoot) ? 'global' : 'local';
 	const display =
 		scope === 'global'
 			? `~/.agi/tools/${String(id)}`
 			: `.agi/tools/${String(id)}`;
-	log.success(`Tool created (${scope}): ${display}/tool.ts`);
+	log.success(`Tool created (${scope}): ${display}/tool.js`);
 	log.info(
-		`Reminder: edit ${display}/tool.ts to implement the execute() logic for this tool.`,
+		`Edit ${display}/tool.js to customize parameters and execution logic.`,
 	);
 	log.info(
-		`Step 2: allow the agent(s) to call it via ${
+		`Remember to allow it in your agent via ${
 			scope === 'global' ? '~/.agi/agents.json' : '.agi/agents.json'
 		}.`,
 	);
@@ -231,7 +232,14 @@ export async function editAgentsConfig(
 	});
 	const options = filteredOptions.map((t) => ({ value: t, label: t }));
 	const allowed = new Set(filteredOptions);
-	const initialValues = (preselect as string[]).filter((t) => allowed.has(t));
+	let initialValues = (preselect as string[]).filter((t) => allowed.has(t));
+	if (
+		mode === 'override' &&
+		initialValues.length === 0 &&
+		builtInAgents.has(key)
+	) {
+		initialValues = defaults.filter((t) => allowed.has(t));
+	}
 	const toolsSel = await multiselect({
 		message:
 			mode === 'append'
@@ -247,15 +255,13 @@ export async function editAgentsConfig(
 		return;
 	}
 	const relPrompt = `agents/${String(agentName)}.txt`;
-	const pth =
-		current[String(agentName)]?.prompt ??
-		(baseDir.endsWith('/.agi') ? `.agi/${relPrompt}` : relPrompt);
+	const pth = current[String(agentName)]?.prompt;
 	const shouldOfferPrompt =
-		!builtInAgents.has(key) || Boolean(current[String(agentName)]?.prompt);
+		!builtInAgents.has(key) || Boolean(pth);
 	let ensurePrompt = false;
 	if (shouldOfferPrompt) {
 		const resp = await confirm({
-			message: `Ensure prompt file exists at ${pth}?`,
+			message: `Ensure prompt file exists at ${pth ?? relPrompt}?`,
 		});
 		if (isCancel(resp)) {
 			cancel('Cancelled');
@@ -264,21 +270,22 @@ export async function editAgentsConfig(
 		ensurePrompt = Boolean(resp);
 	}
 	if (ensurePrompt) {
+		const location = pth ?? (isGlobalBase(baseDir, projectRoot) ? `.agi/${relPrompt}` : relPrompt);
 		let abs: string;
-		if (pth.startsWith('.agi/')) {
+		if (location.startsWith('.agi/')) {
 			if (isGlobalBase(baseDir, projectRoot)) {
-				const relFromAgi = pth.slice('.agi/'.length);
+				const relFromAgi = location.slice('.agi/'.length);
 				abs = `${baseDir}/${relFromAgi}`;
 			} else {
-				abs = `${projectRoot}/${pth}`;
+				abs = `${projectRoot}/${location}`;
 			}
-		} else if (pth.startsWith('~/')) {
+		} else if (location.startsWith('~/')) {
 			const home = process.env.HOME || process.env.USERPROFILE || '';
-			abs = `${home}/${pth.slice(2)}`;
-		} else if (pth.startsWith('/')) {
-			abs = pth;
+			abs = `${home}/${location.slice(2)}`;
+		} else if (location.startsWith('/')) {
+			abs = location;
 		} else {
-			abs = `${baseDir}/${relPrompt}`;
+			abs = `${baseDir}/${location}`;
 		}
 		await ensureDir(abs.substring(0, abs.lastIndexOf('/')));
 		const f = Bun.file(abs);
@@ -290,7 +297,9 @@ export async function editAgentsConfig(
 		tools?: string[];
 		appendTools?: string[];
 		prompt?: string;
-	} = { ...(current[key] ?? {}), prompt: pth };
+	} = { ...(current[key] ?? {}) };
+	if (ensurePrompt) nextEntry.prompt = pth ?? (isGlobalBase(baseDir, projectRoot) ? `.agi/${relPrompt}` : relPrompt);
+	else delete nextEntry.prompt;
 	if (mode === 'append') {
 		const extras = selection.filter((t) => t !== 'finalize');
 		if (extras.length) nextEntry.appendTools = extras;
@@ -403,11 +412,13 @@ async function scaffoldCommand(
 }
 
 export async function listAvailableTools(
-	projectRoot: string,
-	scope: 'local' | 'global',
+	_projectRoot: string,
+	_scope: 'local' | 'global',
 	includeFinalize: boolean,
 ): Promise<string[]> {
-	const builtIns = [
+	const discovered = await discoverProjectTools(_projectRoot).catch(() => []);
+	const names = new Set<string>();
+	const curatedBuiltIns = [
 		'fs_read',
 		'fs_write',
 		'fs_ls',
@@ -416,20 +427,16 @@ export async function listAvailableTools(
 		'git_diff',
 		'git_commit',
 	];
-	if (includeFinalize) builtIns.push('finalize');
-	const out = new Set(builtIns);
-	const { promises: fs } = await import('node:fs');
-	async function ingest(dir: string | null) {
-		if (!dir) return;
-		try {
-			const entries = await fs.readdir(dir).catch(() => [] as string[]);
-			for (const name of entries) out.add(name);
-		} catch {}
+	for (const builtin of curatedBuiltIns)
+		names.add(builtin);
+	for (const { name } of discovered) {
+		if (!includeFinalize && name === 'finalize') continue;
+		if (!curatedBuiltIns.includes(name) && name.startsWith('fs_') && name !== 'fs_read' && name !== 'fs_write' && name !== 'fs_ls' && name !== 'fs_tree')
+			continue;
+		names.add(name);
 	}
-	const home = process.env.HOME || process.env.USERPROFILE || '';
-	if (home) await ingest(`${home}/.agi/tools`);
-	if (scope === 'local') await ingest(`${projectRoot}/.agi/tools`);
-	return Array.from(out).sort();
+	if (includeFinalize) names.add('finalize');
+	return Array.from(names).sort();
 }
 
 async function listAgents(
@@ -488,20 +495,34 @@ function defaultAgentPromptTemplate(name: string): string {
 	return `You are the ${name} agent. Describe your responsibilities here.\n\n- What tools you can use.\n- What the expected output looks like.\n- Always call finalize when done.`;
 }
 
-function toolTemplate(description: string): string {
-	return `import { tool } from 'ai';
-import { z } from 'zod';
+function toolTemplate(id: string, description: string): string {
+	const nameLiteral = JSON.stringify(id);
+	const descLiteral = JSON.stringify(description);
+	return `// Example AGI tool plugin. Adjust parameters and execute() as needed.
+// export default async ({ project, exec, fs }) => ({
+//   name: ${nameLiteral},
+//   description: ${descLiteral},
+//   parameters: {
+//     text: { type: 'string', description: 'Text to echo' },
+//     loud: { type: 'boolean', default: false }
+//   },
+//   async execute({ input }) {
+//     const value = input.loud ? String(input.text).toUpperCase() : input.text;
+//     return { project, value };
+//   }
+// });
 
-export default tool({
-  description: ${JSON.stringify(description)},
-  inputSchema: z.object({
-    query: z.string().describe('Input query'),
-    flag: z.boolean().optional().default(false),
-  }),
-  async execute({ query, flag }: { query: string; flag?: boolean }) {
-    // TODO: implement your tool logic
-    return { ok: true, query, flag: !!flag };
+export default async ({ project }) => ({
+  name: ${nameLiteral},
+  description: ${descLiteral},
+  parameters: {
+    text: { type: 'string', description: 'Text to echo' },
+    loud: { type: 'boolean', default: false }
   },
+  async execute({ input }) {
+    const value = input.loud ? String(input.text).toUpperCase() : input.text;
+    return { project, value };
+  }
 });
 `;
 }
