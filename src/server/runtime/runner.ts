@@ -60,7 +60,11 @@ async function runAssistant(opts: RunOpts) {
 		defaultAgentPrompts[opts.agent] ||
 		'You are a helpful assistant.';
 	const allTools = await discoverProjectTools(cfg.projectRoot);
-	const allowedNames = new Set([...(agentCfg.tools || []), 'finalize']);
+	const allowedNames = new Set([
+		...(agentCfg.tools || []),
+		'finalize',
+		'progress_update',
+	]);
 	const gated = allTools.filter((t) => allowedNames.has(t.name));
 
 	// Build chat history messages from DB (text parts only)

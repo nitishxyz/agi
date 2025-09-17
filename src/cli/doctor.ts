@@ -1,10 +1,13 @@
+import { isAbsolute, join } from 'node:path';
 import { read as readMerged, isAuthorized } from '@/config/manager.ts';
+import { discoverCommands } from '@/cli/commands.ts';
 import { box, colors } from '@/cli/ui.ts';
 import type { ProviderId } from '@/auth/index.ts';
 import { defaultAgentPrompts } from '@/ai/agents/defaults.ts';
 import type { AgentConfigEntry } from '@/ai/agents/registry.ts';
 import { buildFsTools } from '@/ai/tools/builtin/fs.ts';
 import { buildGitTools } from '@/ai/tools/builtin/git.ts';
+import type { CommandManifest } from '@/cli/commands.ts';
 
 type MergedConfig = Awaited<ReturnType<typeof readMerged>>;
 
@@ -111,6 +114,32 @@ export async function runDoctor(opts: { project?: string } = {}) {
 	if (toolLines.length) toolLines.push(' ');
 	toolLines.push(...toolScopes);
 	box('Tools', toolLines);
+
+	const { globalDir, localDir, effectiveNames } =
+		await collectCommands(projectRoot);
+	const commandLines: string[] = [];
+	if (globalDir.path)
+		commandLines.push(
+			colors.dim(`global dir: ${friendlyPath(globalDir.path)}`),
+		);
+	if (localDir.path)
+		commandLines.push(colors.dim(`local dir: ${friendlyPath(localDir.path)}`));
+	const scopeLines = buildScopeLines([
+		['global', globalDir.names],
+		['local', localDir.names],
+		['effective', effectiveNames],
+	]);
+	if (commandLines.length) commandLines.push(' ');
+	commandLines.push(...scopeLines);
+	const detailLines = buildCommandDetailLines([
+		['global', globalDir.entries],
+		['local', localDir.entries],
+	]);
+	if (detailLines.length) {
+		commandLines.push(' ');
+		commandLines.push(...detailLines);
+	}
+	box('Commands', commandLines);
 
 	const agentIssues = detectAgentIssues(
 		globalAgents.entries,
@@ -226,6 +255,179 @@ async function collectTools(projectRoot: string) {
 		localTools: localNames,
 		effectiveTools: effective,
 	};
+}
+
+type CommandPromptInfo = {
+	kind: 'file' | 'inline' | 'template' | 'none';
+	path: string | null;
+	exists: boolean;
+};
+
+type CommandEntry = {
+	name: string;
+	manifestPath: string;
+	prompt: CommandPromptInfo;
+};
+
+type CommandScopeInfo = {
+	path: string | null;
+	names: string[];
+	entries: CommandEntry[];
+};
+
+async function collectCommands(projectRoot: string) {
+	const home = process.env.HOME || process.env.USERPROFILE || '';
+	const globalDir = home ? `${home}/.agi/commands`.replace(/\\/g, '/') : null;
+	const localDir = `${projectRoot}/.agi/commands`.replace(/\\/g, '/');
+	const [globalDirInfo, localDirInfo] = await Promise.all([
+		readCommandDirectory(globalDir, projectRoot),
+		readCommandDirectory(localDir, projectRoot),
+	]);
+	const discovered = await discoverCommands(projectRoot);
+	const effectiveNames = Object.keys(discovered).sort();
+	return {
+		globalDir: globalDirInfo,
+		localDir: localDirInfo,
+		effectiveNames,
+	};
+}
+
+function buildCommandDetailLines(scopes: [string, CommandEntry[]][]): string[] {
+	const limit = 6;
+	const lines: string[] = [];
+	for (const [label, entries] of scopes) {
+		if (!entries.length) continue;
+		lines.push(colors.bold(`${label}:`));
+		const shown = entries.slice(0, limit);
+		for (const entry of shown)
+			lines.push(`• ${entry.name} — ${formatCommandEntry(entry)}`);
+		if (entries.length > shown.length)
+			lines.push(
+				colors.dim(`  ... +${entries.length - shown.length} more in ${label}`),
+			);
+	}
+	return lines;
+}
+
+function formatCommandEntry(entry: CommandEntry) {
+	const manifest = friendlyPath(entry.manifestPath);
+	const parts = [`json: ${manifest}`];
+	if (entry.prompt.kind === 'file') {
+		const promptPath = entry.prompt.path
+			? friendlyPath(entry.prompt.path)
+			: null;
+		parts.push(
+			`prompt: ${promptPath ?? 'unknown'}${entry.prompt.exists ? '' : ' (missing)'}`,
+		);
+	} else if (entry.prompt.kind === 'inline') parts.push('prompt: inline');
+	else if (entry.prompt.kind === 'template') parts.push('prompt: template');
+	return parts.join(', ');
+}
+
+async function readCommandDirectory(
+	dir: string | null,
+	projectRoot: string,
+): Promise<CommandScopeInfo> {
+	if (!dir) return { path: null, names: [], entries: [] };
+	try {
+		const normalizedDir = dir.replace(/\\/g, '/');
+		const { readdir } = await import('node:fs/promises');
+		let files: string[] = [];
+		let exists = true;
+		try {
+			files = await readdir(normalizedDir);
+		} catch {
+			exists = false;
+		}
+		if (!exists) return { path: null, names: [], entries: [] };
+		const entries: CommandEntry[] = [];
+		for (const file of files.sort()) {
+			if (!file.endsWith('.json')) continue;
+			const manifestPath = `${normalizedDir}/${file}`.replace(/\\/g, '/');
+			try {
+				const bunFile = Bun.file(manifestPath);
+				if (!(await bunFile.exists())) continue;
+				const manifest = (await bunFile
+					.json()
+					.catch(() => null)) as CommandManifest | null;
+				if (!manifest || typeof manifest !== 'object') continue;
+				const fallback = file.replace(/\.json$/i, '');
+				const name = manifest.name || fallback;
+				if (!name || !manifest.agent) continue;
+				const prompt = await resolvePromptInfo(manifest, {
+					projectRoot,
+					manifestDir: normalizedDir,
+					fallbackName: fallback,
+				});
+				entries.push({ name, manifestPath, prompt });
+			} catch {}
+		}
+		entries.sort((a, b) => a.name.localeCompare(b.name));
+		return {
+			path: normalizedDir,
+			names: entries.map((e) => e.name),
+			entries,
+		};
+	} catch {
+		return { path: null, names: [], entries: [] };
+	}
+}
+
+async function resolvePromptInfo(
+	manifest: CommandManifest,
+	ctx: {
+		projectRoot: string;
+		manifestDir: string | null;
+		fallbackName?: string;
+	},
+): Promise<CommandPromptInfo> {
+	if (manifest.promptPath) {
+		const { path, exists } = await resolvePromptPath(
+			manifest.promptPath,
+			ctx.manifestDir,
+			ctx.projectRoot,
+		);
+		return { kind: 'file', path, exists };
+	}
+	if (ctx.fallbackName && ctx.manifestDir) {
+		for (const ext of ['.md', '.txt']) {
+			const candidate = `${ctx.manifestDir}/${ctx.fallbackName}${ext}`.replace(
+				/\\/g,
+				'/',
+			);
+			if (await fileExists(candidate))
+				return { kind: 'file', path: candidate, exists: true };
+		}
+	}
+	if (manifest.prompt) return { kind: 'inline', path: null, exists: false };
+	if (manifest.promptTemplate)
+		return { kind: 'template', path: null, exists: false };
+	return { kind: 'none', path: null, exists: false };
+}
+
+async function resolvePromptPath(
+	promptPath: string,
+	manifestDir: string | null,
+	projectRoot: string,
+): Promise<{ path: string; exists: boolean }> {
+	const home = process.env.HOME || process.env.USERPROFILE || '';
+	const expanded =
+		promptPath.startsWith('~/') && home
+			? join(home, promptPath.slice(2))
+			: promptPath;
+	const normalizedInput = expanded.replace(/\\/g, '/');
+	const candidates: string[] = [];
+	if (isAbsolute(normalizedInput)) candidates.push(normalizedInput);
+	else {
+		if (manifestDir) candidates.push(join(manifestDir, normalizedInput));
+		candidates.push(join(projectRoot, normalizedInput));
+	}
+	for (const candidate of candidates) {
+		const normalized = candidate.replace(/\\/g, '/');
+		if (await fileExists(normalized)) return { path: normalized, exists: true };
+	}
+	const fallback = candidates[0]?.replace(/\\/g, '/') ?? normalizedInput;
+	return { path: fallback, exists: false };
 }
 
 async function readAgentsJson(path: string | null) {

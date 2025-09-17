@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { finalizeTool } from '@/ai/tools/builtin/finalize.ts';
 import { buildFsTools } from '@/ai/tools/builtin/fs.ts';
 import { buildGitTools } from '@/ai/tools/builtin/git.ts';
+import { progressUpdateTool } from '@/ai/tools/builtin/progress.ts';
 import { Glob } from 'bun';
 import { dirname, isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -88,6 +89,7 @@ export async function discoverProjectTools(
 	for (const { name, tool } of buildGitTools(projectRoot))
 		tools.set(name, tool);
 	tools.set('finalize', finalizeTool);
+	tools.set('progress_update', progressUpdateTool);
 
 	async function loadFromBase(base: string | null | undefined) {
 		if (!base) return;

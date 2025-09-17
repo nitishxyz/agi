@@ -55,23 +55,18 @@ function mergeAgentEntries(
 	return merged;
 }
 
-const defaultToolSets: Record<string, string[]> = {
-	build: ['fs_read', 'fs_write', 'fs_ls', 'fs_tree', 'finalize'],
-	plan: ['fs_read', 'fs_ls', 'fs_tree', 'finalize'],
-	git: ['git_status', 'git_diff', 'git_commit', 'fs_read', 'fs_ls', 'finalize'],
-	commit: [
-		'git_status',
-		'git_diff',
-		'git_commit',
-		'fs_read',
-		'fs_ls',
-		'finalize',
-	],
+const baseToolSet = ['progress_update', 'finalize'] as const;
+
+const defaultToolExtras: Record<string, string[]> = {
+	build: ['fs_read', 'fs_write', 'fs_ls', 'fs_tree'],
+	plan: ['fs_read', 'fs_ls', 'fs_tree'],
+	git: ['git_status', 'git_diff', 'git_commit', 'fs_read', 'fs_ls'],
+	commit: ['git_status', 'git_diff', 'git_commit', 'fs_read', 'fs_ls'],
 };
 
 export function defaultToolsForAgent(name: string): string[] {
-	if (defaultToolSets[name]) return [...defaultToolSets[name]];
-	return ['finalize'];
+	const extras = defaultToolExtras[name] ? [...defaultToolExtras[name]] : [];
+	return Array.from(new Set([...baseToolSet, ...extras]));
 }
 
 export async function loadAgentsConfig(
@@ -202,7 +197,7 @@ export async function resolveAgentConfig(
 			if (typeof t === 'string' && t.trim()) tools.push(t.trim());
 		}
 	}
-	// Deduplicate and ensure finalize is always available
-	const deduped = Array.from(new Set(tools.concat(['finalize'])));
+	// Deduplicate and ensure base tools are always available
+	const deduped = Array.from(new Set([...tools, ...baseToolSet]));
 	return { name, prompt, tools: deduped };
 }
