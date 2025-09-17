@@ -228,7 +228,10 @@ function extractFinalizeText(input: unknown): string | undefined {
 	if (!input || typeof input !== 'object') return undefined;
 	const obj = input as Record<string, unknown>;
 	if (typeof obj.text === 'string') return obj.text;
-	if (obj.input && typeof (obj.input as Record<string, unknown>).text === 'string')
+	if (
+		obj.input &&
+		typeof (obj.input as Record<string, unknown>).text === 'string'
+	)
 		return String((obj.input as Record<string, unknown>).text);
 	return undefined;
 }

@@ -5,6 +5,7 @@ import { getAllAuth } from '@/auth/index.ts';
 import type { ProviderId } from '@/auth/index.ts';
 import { catalog } from '@/providers/catalog.ts';
 import type { Artifact } from '@/ai/artifacts.ts';
+import { renderMarkdown } from '@/cli/ui.ts';
 
 type AskOptions = {
 	agent?: string;
@@ -424,6 +425,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 	if (output.length && !jsonEnabled && !jsonStreamEnabled)
 		Bun.write(Bun.stdout, '\n');
 
+	const assistantText = output;
 	if (jsonStreamEnabled) {
 		if (!process.env.AGI_SERVER_URL && currentServer) {
 			try {
@@ -446,7 +448,6 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			(a, b) => a + (b.durationMs ?? 0),
 			0,
 		);
-		const assistantText = output;
 		const assistantLines = computeAssistantLines(assistantChunks);
 		const assistantSegments = computeAssistantSegments(
 			assistantChunks,
@@ -491,6 +492,9 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 		}
 		Bun.write(Bun.stdout, `${JSON.stringify(transcript, null, 2)}\n`);
 	} else if (summaryEnabled || finalizeSeen || toolCalls.length) {
+		if (assistantText.trim().length) {
+			Bun.write(Bun.stderr, `${renderMarkdown(assistantText)}\n`);
+		}
 		printSummary(toolCalls, toolResults, filesTouched);
 	}
 	if (!jsonEnabled && !jsonStreamEnabled) {

@@ -28,7 +28,7 @@ describe('agent config merging', () => {
 			await writeFile(
 				join(projectRoot, '.agi', 'agents.json'),
 				JSON.stringify({
-					build: { prompt: '.agi/agents/build.txt' },
+					build: { prompt: '.agi/agents/build.md' },
 				}),
 			);
 

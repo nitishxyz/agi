@@ -17,8 +17,7 @@ describe('box()', () => {
 			expect(() => box('Test', ['content'])).not.toThrow();
 		} finally {
 			console.log = originalLog;
-			if (desc)
-				Object.defineProperty(process.stdout, 'columns', desc);
+			if (desc) Object.defineProperty(process.stdout, 'columns', desc);
 			else delete (process.stdout as { columns?: number }).columns;
 		}
 		expect(logs.length).toBeGreaterThan(0);

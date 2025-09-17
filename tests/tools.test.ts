@@ -41,7 +41,8 @@ describe('discoverProjectTools', () => {
 			expect(names).toContain('git_status');
 			const custom = tools.find((t) => t.name === 'custom_echo');
 			expect(custom).toBeDefined();
-			const result = await custom!.tool.execute({ text: 'hi', uppercase: true });
+			if (!custom) throw new Error('custom tool not discovered');
+			const result = await custom.tool.execute({ text: 'hi', uppercase: true });
 			expect(result).toEqual({ project: projectRoot, value: 'HI' });
 		} finally {
 			if (prevHome === undefined) delete process.env.HOME;
