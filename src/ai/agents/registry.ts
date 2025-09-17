@@ -14,6 +14,47 @@ export type AgentConfigEntry = {
 
 type AgentsJson = Record<string, AgentConfigEntry>;
 
+function normalizeStringList(value: unknown): string[] {
+	if (!Array.isArray(value)) return [];
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const item of value) {
+		if (typeof item !== 'string') continue;
+		const trimmed = item.trim();
+		if (!trimmed || seen.has(trimmed)) continue;
+		seen.add(trimmed);
+		out.push(trimmed);
+	}
+	return out;
+}
+
+function mergeAgentEntries(
+	base: AgentConfigEntry | undefined,
+	override: AgentConfigEntry,
+): AgentConfigEntry {
+	const merged: AgentConfigEntry = {};
+	const baseTools = normalizeStringList(base?.tools);
+	if (baseTools.length) merged.tools = [...baseTools];
+	const baseAppend = normalizeStringList(base?.appendTools);
+	if (baseAppend.length) merged.appendTools = [...baseAppend];
+	if (base && Object.hasOwn(base, 'prompt')) merged.prompt = base.prompt;
+
+	if (Array.isArray(override.tools))
+		merged.tools = normalizeStringList(override.tools);
+	if (Array.isArray(override.appendTools)) {
+		const extras = normalizeStringList(override.appendTools);
+		const union = new Set([...(merged.appendTools ?? []), ...extras]);
+		merged.appendTools = Array.from(union);
+	} else if (
+		Object.hasOwn(override, 'appendTools') &&
+		!Array.isArray(override.appendTools)
+	) {
+		delete merged.appendTools;
+	}
+	if (Object.hasOwn(override, 'prompt')) merged.prompt = override.prompt;
+	return merged;
+}
+
 const defaultToolSets: Record<string, string[]> = {
 	build: ['fs_read', 'fs_write', 'fs_ls', 'fs_tree', 'finalize'],
 	plan: ['fs_read', 'fs_ls', 'fs_tree', 'finalize'],
@@ -51,8 +92,15 @@ export async function loadAgentsConfig(
 		if (await lf.exists())
 			localCfg = (await lf.json().catch(() => ({}))) as AgentsJson;
 	} catch {}
-	// Merge: global then local (local overrides global)
-	return { ...globalCfg, ...localCfg };
+	const merged: AgentsJson = {};
+	for (const [name, entry] of Object.entries(globalCfg)) {
+		merged[name] = mergeAgentEntries(undefined, entry ?? {});
+	}
+	for (const [name, entry] of Object.entries(localCfg)) {
+		const base = merged[name];
+		merged[name] = mergeAgentEntries(base, entry ?? {});
+	}
+	return merged;
 }
 
 export async function resolveAgentConfig(

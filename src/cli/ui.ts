@@ -18,19 +18,30 @@ export const colors = {
 export function box(title: string, bodyLines: string[] | string) {
 	const lines = Array.isArray(bodyLines) ? bodyLines : bodyLines.split('\n');
 	const contentLines = title ? [colors.bold(title), ...lines] : lines;
-	const width = Math.min(
-		Math.max(...contentLines.map((l) => stripAnsi(l).length)) + 2,
-		(process.stdout.columns || 80) - 2,
-	);
+	const printableLengths = contentLines.length
+		? contentLines.map((l) => stripAnsi(l).length)
+		: [0];
+	const maxLen = Math.max(...printableLengths);
+	const desiredWidth = maxLen + 2;
+	const terminalWidth = getTerminalWidth();
+	const width = Math.max(2, Math.min(desiredWidth, terminalWidth ?? desiredWidth));
 	const top = `┌${'─'.repeat(width)}┐`;
 	const bot = `└${'─'.repeat(width)}┘`;
 	console.log(top);
-	for (let i = 0; i < contentLines.length; i++) {
-		const raw = contentLines[i];
-		const pad = width - stripAnsi(raw).length;
-		console.log(`│ ${raw}${' '.repeat(pad - 1)}│`);
+	for (const raw of contentLines) {
+		const visibleLen = stripAnsi(raw).length;
+		const pad = Math.max(0, width - visibleLen);
+		const spacing = ' '.repeat(Math.max(0, pad - 1));
+		console.log(`│ ${raw}${spacing}│`);
 	}
 	console.log(bot);
+}
+
+function getTerminalWidth() {
+	const cols = process.stdout?.columns;
+	if (typeof cols !== 'number' || !Number.isFinite(cols)) return undefined;
+	const adjusted = Math.floor(cols) - 2;
+	return adjusted > 0 ? adjusted : undefined;
 }
 
 export function table(headers: string[], rows: string[][]) {

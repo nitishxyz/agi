@@ -61,46 +61,14 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 			async onInputDelta(options: ToolOnInputDeltaOptions | undefined) {
 				const delta = (options as { inputTextDelta?: string } | undefined)
 					?.inputTextDelta;
-				// Special handling: if finalize is streaming a 'text' input, treat it as assistant text delta
-				if (name === 'finalize' && typeof delta === 'string' && delta.length) {
-					publish({
-						type: 'message.part.delta',
-						sessionId: ctx.sessionId,
-						payload: {
-							messageId: ctx.messageId,
-							partId: ctx.assistantPartId,
-							delta,
-						},
-					});
-					try {
-						// Append to the assistant text part content
-						const rows = await ctx.db
-							.select()
-							.from(messageParts)
-							.where(eq(messageParts.id, ctx.assistantPartId));
-						if (rows.length) {
-							const current = rows[0];
-							let obj = { text: '' as string };
-							try {
-								obj = JSON.parse(current.content || '{}');
-							} catch {}
-							obj.text = String((obj.text || '') + delta);
-							await ctx.db
-								.update(messageParts)
-								.set({ content: JSON.stringify(obj) })
-								.where(eq(messageParts.id, ctx.assistantPartId));
-						}
-					} catch {}
-				} else {
-					// Stream tool argument deltas as events if needed
-					publish({
-						type: 'tool.delta',
-						sessionId: ctx.sessionId,
-						payload: { name, channel: 'input', delta },
-					});
-					if (typeof base.onInputDelta === 'function')
-						await base.onInputDelta(options);
-				}
+				// Stream tool argument deltas as events if needed (finalize handled on input available)
+				publish({
+					type: 'tool.delta',
+					sessionId: ctx.sessionId,
+					payload: { name, channel: 'input', delta },
+				});
+				if (typeof base.onInputDelta === 'function')
+					await base.onInputDelta(options);
 			},
 			async onInputAvailable(options: ToolOnInputAvailableOptions | undefined) {
 				const args = (options as { input?: unknown } | undefined)?.input;
@@ -131,6 +99,11 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				pendingCalls.set(name, list);
 				if (typeof base.onInputAvailable === 'function') {
 					await base.onInputAvailable(options);
+				}
+				if (name === 'finalize') {
+					const text = extractFinalizeText(args);
+					if (typeof text === 'string' && text.length)
+						await appendAssistantText(ctx, text);
 				}
 			},
 			async execute(input: ToolExecuteInput, options: ToolExecuteOptions) {
@@ -248,4 +221,50 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 		} as Tool;
 	}
 	return out;
+}
+
+function extractFinalizeText(input: unknown): string | undefined {
+	if (typeof input === 'string') return input;
+	if (!input || typeof input !== 'object') return undefined;
+	const obj = input as Record<string, unknown>;
+	if (typeof obj.text === 'string') return obj.text;
+	if (obj.input && typeof (obj.input as Record<string, unknown>).text === 'string')
+		return String((obj.input as Record<string, unknown>).text);
+	return undefined;
+}
+
+async function appendAssistantText(ctx: ToolAdapterContext, text: string) {
+	try {
+		const rows = await ctx.db
+			.select()
+			.from(messageParts)
+			.where(eq(messageParts.id, ctx.assistantPartId));
+		let previous = '';
+		if (rows.length) {
+			try {
+				const parsed = JSON.parse(rows[0]?.content ?? '{}');
+				if (parsed && typeof parsed.text === 'string') previous = parsed.text;
+			} catch {}
+		}
+		const addition = text.startsWith(previous)
+			? text.slice(previous.length)
+			: text;
+		if (addition.length) {
+			publish({
+				type: 'message.part.delta',
+				sessionId: ctx.sessionId,
+				payload: {
+					messageId: ctx.messageId,
+					partId: ctx.assistantPartId,
+					delta: addition,
+				},
+			});
+		}
+		await ctx.db
+			.update(messageParts)
+			.set({ content: JSON.stringify({ text }) })
+			.where(eq(messageParts.id, ctx.assistantPartId));
+	} catch {
+		// ignore to keep run alive if we can't persist the text
+	}
 }

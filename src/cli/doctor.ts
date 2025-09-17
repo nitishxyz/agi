@@ -178,7 +178,10 @@ function buildScopeLines(scopes: [string, string[]][]) {
 }
 
 async function collectAgents(projectRoot: string) {
-	const defaults = Object.keys(defaultAgentPrompts).sort();
+	const defaultNames = ['build', 'commit', 'general', 'plan'];
+	const defaults = defaultNames
+		.filter((name) => defaultAgentPrompts[name] !== undefined)
+		.sort();
 	const home = process.env.HOME || process.env.USERPROFILE || '';
 	const globalPath = home
 		? `${home}/.agi/agents.json`.replace(/\\/g, '/')
