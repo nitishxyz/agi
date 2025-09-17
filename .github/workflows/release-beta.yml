@@ -28,6 +28,7 @@ jobs:
       BUMP_TYPE: ${{ github.event_name == 'workflow_dispatch' && inputs.bump || 'prerelease' }}
       PREID: ${{ github.event_name == 'workflow_dispatch' && inputs.preid || 'beta' }}
       DIST_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.preid || 'beta' }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,7 +48,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Verify npm token
-        if: ${{ secrets.NPM_TOKEN == '' }}
+        if: ${{ env.NPM_TOKEN == '' }}
         run: |
           echo "NPM_TOKEN secret is required to publish" >&2
           exit 1
@@ -90,5 +91,5 @@ jobs:
 
       - name: Publish to npm (beta tag)
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
         run: npm publish --access public --tag "$DIST_TAG"

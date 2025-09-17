@@ -16,6 +16,9 @@ import { runScaffold } from '@/cli/scaffold.ts';
 import { runAgents } from '@/cli/agents.ts';
 import { runToolsList } from '@/cli/tools.ts';
 import { runDoctor } from '@/cli/doctor.ts';
+// Load package version for --version flag (works in compiled binary)
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import PKG from './package.json' with { type: 'json' };
 
 // Handle both compiled binaries and regular bun execution
 let argv = process.argv.slice(2);
@@ -34,6 +37,14 @@ async function main() {
 		console.log('DEBUG: process.argv:', process.argv);
 		console.log('DEBUG: argv (after cleanup):', argv);
 		console.log('DEBUG: cmd:', cmd);
+	}
+
+	// Global version/help (no auth required)
+	const wantsVersion = argv.includes('--version') || argv.includes('-v');
+	if (wantsVersion) {
+		const version = (PKG as { version: string }).version;
+		Bun.write(Bun.stdout, `${version}\n`);
+		return;
 	}
 
 	// Global help (no auth required) with project command discovery
@@ -238,6 +249,7 @@ function printHelp(
 		'  --last                   Send to most-recent session',
 		'  --session <id>           Send to a specific session',
 		'  --json | --json-stream   Machine-readable outputs',
+		'  --version, -v            Print version and exit',
 	];
 	if (discovered && Object.keys(discovered).length) {
 		lines.push('', 'Project commands:');
