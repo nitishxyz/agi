@@ -20,15 +20,20 @@ export function buildGitTools(
 			if (!(await inRepo())) throw new Error('Not a git repository');
 			const out = await $`git -C ${projectRoot} status --porcelain=v1`.text();
 			const lines = out.split('\n').filter(Boolean);
-			const staged = lines.filter(
-				(l) => /^[A-Z?][A-Z?]/.test(l) && l[0] !== ' ',
-			);
-			const unstaged = lines.filter(
-				(l) => /^[ A-Z?][A-Z?]/.test(l) && l[0] === ' ',
-			);
+			let staged = 0;
+			let unstaged = 0;
+			for (const line of lines) {
+				const x = line[0];
+				const y = line[1];
+				if (!x || !y) continue;
+				if (x === '!' && y === '!') continue; // ignored files
+				const isUntracked = x === '?' && y === '?';
+				if (x !== ' ' && !isUntracked) staged += 1;
+				if (isUntracked || y !== ' ') unstaged += 1;
+			}
 			return {
-				staged: staged.length,
-				unstaged: unstaged.length,
+				staged,
+				unstaged,
 				raw: lines.slice(0, 200),
 			};
 		},
