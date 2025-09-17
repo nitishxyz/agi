@@ -73,15 +73,39 @@ async function scanDirInto(
 				if (!(await f.exists())) continue;
 				const manifest = JSON.parse(await f.text()) as CommandManifest;
 				if (manifest && (manifest.name || name) && manifest.agent) {
-					commands[manifest.name || name] = {
+					const resolved = {
 						name: manifest.name || name,
 						...manifest,
 						__dir: dir,
-					};
+					} as CommandManifest;
+					if (
+						!resolved.promptPath &&
+						!resolved.prompt &&
+						!resolved.promptTemplate
+					) {
+						const promptCandidate = await findPromptSibling(dir, name);
+						if (promptCandidate) resolved.promptPath = promptCandidate;
+					}
+					commands[resolved.name] = resolved;
 				}
 			} catch {}
 		}
 	} catch {}
+}
+
+async function findPromptSibling(
+	dir: string,
+	name: string,
+): Promise<string | null> {
+	const extensions = ['.md', '.txt'];
+	for (const ext of extensions) {
+		const filename = `${name}${ext}`;
+		try {
+			const file = Bun.file(`${dir}/${filename}`);
+			if (await file.exists()) return filename;
+		} catch {}
+	}
+	return null;
 }
 
 export async function runDiscoveredCommand(
@@ -105,16 +129,45 @@ export async function runDiscoveredCommand(
 		outro('');
 	}
 	const promptSegments: string[] = [];
+	let userInputConsumed = false;
 	const promptPathContent = await loadPromptFromPath(cmd, projectRoot);
-	if (promptPathContent) promptSegments.push(promptPathContent);
-	if (cmd.prompt) promptSegments.push(cmd.prompt);
+	if (promptPathContent) {
+		const hasPlaceholder = promptPathContent.includes('{input}');
+		const segment = hasPlaceholder
+			? promptPathContent.replaceAll('{input}', userInput)
+			: promptPathContent;
+		if (segment.trim()) promptSegments.push(segment);
+		if (hasPlaceholder && userInput) userInputConsumed = true;
+	}
+	if (cmd.prompt) {
+		const hasPlaceholder = cmd.prompt.includes('{input}');
+		const segment = hasPlaceholder
+			? cmd.prompt.replaceAll('{input}', userInput)
+			: cmd.prompt;
+		if (segment.trim()) promptSegments.push(segment);
+		if (hasPlaceholder && userInput) userInputConsumed = true;
+	}
 
 	if (cmd.promptTemplate) {
-		const replaced = cmd.promptTemplate.includes('{input}')
-			? cmd.promptTemplate.replaceAll('{input}', userInput)
-			: [cmd.promptTemplate, userInput].filter(Boolean).join('\n\n');
+		const templateHasPlaceholder = cmd.promptTemplate.includes('{input}');
+		let replaced: string;
+		if (templateHasPlaceholder) {
+			replaced = cmd.promptTemplate.replaceAll('{input}', userInput);
+			if (userInput) userInputConsumed = true;
+		} else {
+			const parts = [cmd.promptTemplate];
+			if (userInput) {
+				parts.push(userInput);
+				userInputConsumed = true;
+			}
+			replaced = parts
+				.filter((part) => part && part.trim().length > 0)
+				.join('\n\n');
+		}
 		if (replaced.trim()) promptSegments.push(replaced);
-	} else if (userInput) {
+	}
+
+	if (!cmd.promptTemplate && userInput && !userInputConsumed) {
 		promptSegments.push(userInput);
 	}
 
@@ -150,7 +203,8 @@ async function loadPromptFromPath(
 	for (const candidate of paths) {
 		try {
 			const file = Bun.file(candidate);
-			if (await file.exists()) return await file.text();
+			if (await file.exists())
+				return (await file.text()).replace(/\r\n?/g, '\n');
 		} catch {}
 	}
 	return null;

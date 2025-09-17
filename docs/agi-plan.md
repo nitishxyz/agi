@@ -42,7 +42,7 @@ Directory Structure
   - `.agi/agi.sqlite` (SQLite database)
   - `.agi/config.json` (project config: defaults, provider enablement)
   - `.agi/agents.json` (project agent registry overrides/additions)
-  - `.agi/agents/<agent>/agent.txt` (agent system prompt override)
+  - `.agi/agents/<agent>/agent.md` (agent system prompt override)
   - `.agi/tools/<tool>/tool.ts` (user tool implementation)
   - `.agi/tools/<tool>/prompt.txt` (optional tool prompt/context)
 
@@ -72,7 +72,7 @@ Agents & Tools
   - `build` — for code/build tasks; gated write/shell tools (initially empty; scaffolded).
   - `plan` — for planning/task breakdown; read‑only tools (initially empty; scaffolded).
 - Agent prompt loading precedence:
-  1) Project override: `.agi/agents/<agent>/agent.txt`
+  1) Project override: `.agi/agents/<agent>/agent.md`
   2) Built‑in default prompt embedded in server
 - Project extensions via `.agi/agents.json` to map agents to allowed tools and prompt paths.
 - Use `appendTools` to add to built-in agent defaults without overriding their core allowlist.
@@ -81,15 +81,15 @@ Agents & Tools
 {
   "general": {
     "tools": ["search", "fs.read"],
-    "prompt": ".agi/agents/general/agent.txt"
+    "prompt": ".agi/agents/general/agent.md"
   },
   "build": {
     "appendTools": ["shell.run"],
-    "prompt": ".agi/agents/build/agent.txt"
+    "prompt": ".agi/agents/build/agent.md"
   },
   "custom-repo": {
     "tools": ["custom-tool"],
-    "prompt": ".agi/agents/custom-repo/agent.txt"
+    "prompt": ".agi/agents/custom-repo/agent.md"
   }
 }
 ```

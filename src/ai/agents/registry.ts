@@ -113,17 +113,42 @@ export async function resolveAgentConfig(
 
 	// Override files: project first, then global
 	const home = process.env.HOME || process.env.USERPROFILE || '';
-	const localDir = `${projectRoot}/.agi/agents/${name}/agent.txt`.replace(
+	const localDirTxt = `${projectRoot}/.agi/agents/${name}/agent.txt`.replace(
 		/\\/g,
 		'/',
 	);
-	const localFlat = `${projectRoot}/.agi/agents/${name}.txt`.replace(
+	const localDirMd = `${projectRoot}/.agi/agents/${name}/agent.md`.replace(
 		/\\/g,
 		'/',
 	);
-	const globalDir = `${home}/.agi/agents/${name}/agent.txt`.replace(/\\/g, '/');
-	const globalFlat = `${home}/.agi/agents/${name}.txt`.replace(/\\/g, '/');
-	const files = [localDir, localFlat, globalDir, globalFlat];
+	const localFlatTxt = `${projectRoot}/.agi/agents/${name}.txt`.replace(
+		/\\/g,
+		'/',
+	);
+	const localFlatMd = `${projectRoot}/.agi/agents/${name}.md`.replace(
+		/\\/g,
+		'/',
+	);
+	const globalDirTxt = `${home}/.agi/agents/${name}/agent.txt`.replace(
+		/\\/g,
+		'/',
+	);
+	const globalDirMd = `${home}/.agi/agents/${name}/agent.md`.replace(
+		/\\/g,
+		'/',
+	);
+	const globalFlatTxt = `${home}/.agi/agents/${name}.txt`.replace(/\\/g, '/');
+	const globalFlatMd = `${home}/.agi/agents/${name}.md`.replace(/\\/g, '/');
+	const files = [
+		localDirMd,
+		localFlatMd,
+		localDirTxt,
+		localFlatTxt,
+		globalDirMd,
+		globalFlatMd,
+		globalDirTxt,
+		globalFlatTxt,
+	];
 	for (const p of files) {
 		try {
 			const f = Bun.file(p);
@@ -140,11 +165,25 @@ export async function resolveAgentConfig(
 	// If agents.json provides a 'prompt' field, accept inline content or a relative/absolute path
 	if (entry?.prompt) {
 		const p = entry.prompt.trim();
-		if (p.endsWith('.txt') || p.startsWith('.') || p.startsWith('/')) {
-			const pf = Bun.file(`${projectRoot}/${p}`.replace(/\\/g, '/'));
-			if (await pf.exists()) {
-				const t = await pf.text();
-				if (t.trim()) prompt = t;
+		if (
+			/[.](md|txt)$/i.test(p) ||
+			p.startsWith('.') ||
+			p.startsWith('/') ||
+			p.startsWith('~/')
+		) {
+			const candidates: string[] = [];
+			if (p.startsWith('~/')) candidates.push(`${home}/${p.slice(2)}`);
+			else if (p.startsWith('/')) candidates.push(p);
+			else candidates.push(`${projectRoot}/${p}`.replace(/\\/g, '/'));
+			for (const candidate of candidates) {
+				const pf = Bun.file(candidate);
+				if (await pf.exists()) {
+					const t = await pf.text();
+					if (t.trim()) {
+						prompt = t;
+						break;
+					}
+				}
 			}
 		} else {
 			prompt = p;

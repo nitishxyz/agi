@@ -85,7 +85,8 @@ export async function discoverProjectTools(
 ): Promise<DiscoveredTool[]> {
 	const tools = new Map<string, Tool>();
 	for (const { name, tool } of buildFsTools(projectRoot)) tools.set(name, tool);
-	for (const { name, tool } of buildGitTools(projectRoot)) tools.set(name, tool);
+	for (const { name, tool } of buildGitTools(projectRoot))
+		tools.set(name, tool);
 	tools.set('finalize', finalizeTool);
 
 	async function loadFromBase(base: string | null | undefined) {
@@ -179,7 +180,9 @@ function resolveExport(mod: Record<string, unknown>) {
 	if (mod.plugin) return mod.plugin;
 	if (mod.Tool) return mod.Tool;
 	const values = Object.values(mod);
-	return values.find((value) => typeof value === 'function' || typeof value === 'object');
+	return values.find(
+		(value) => typeof value === 'function' || typeof value === 'object',
+	);
 }
 
 function resolveExecutor(descriptor: PluginDescriptor): PluginExecutor {
@@ -199,13 +202,15 @@ function createInputSchema(parameters: Record<string, PluginParameter>) {
 	for (const [key, def] of Object.entries(parameters)) {
 		let schema: z.ZodTypeAny;
 		if (def.type === 'string') {
-			schema = def.enum && def.enum.length
-				? z.enum(def.enum as [string, ...string[]])
+			const values = def.enum;
+			schema = values?.length
+				? z.enum(values as [string, ...string[]])
 				: z.string();
 		} else if (def.type === 'number') schema = z.number();
 		else schema = z.boolean();
 		if (def.description) schema = schema.describe(def.description);
-		if (def.default !== undefined) schema = schema.default(def.default as never);
+		if (def.default !== undefined)
+			schema = schema.default(def.default as never);
 		else if (def.optional) schema = schema.optional();
 		shape[key] = schema;
 	}
@@ -247,7 +252,11 @@ function createHelpers(projectRoot: string, toolDir: string) {
 }
 
 function createExec(projectRoot: string): ExecFn {
-	return async (command: string, argsOrOptions?: string[] | ExecOptions, maybeOptions?: ExecOptions) => {
+	return async (
+		command: string,
+		argsOrOptions?: string[] | ExecOptions,
+		maybeOptions?: ExecOptions,
+	) => {
 		let args: string[] = [];
 		let options: ExecOptions = {};
 		if (Array.isArray(argsOrOptions)) {
@@ -255,13 +264,14 @@ function createExec(projectRoot: string): ExecFn {
 			options = maybeOptions ?? {};
 		} else if (argsOrOptions) options = argsOrOptions;
 
-		const cwd = options.cwd ? resolveWithinProject(projectRoot, options.cwd) : projectRoot;
+		const cwd = options.cwd
+			? resolveWithinProject(projectRoot, options.cwd)
+			: projectRoot;
 		const env: Record<string, string> = {};
 		for (const [key, value] of Object.entries(process.env))
 			if (typeof value === 'string') env[key] = value;
 		if (options.env)
-			for (const [key, value] of Object.entries(options.env))
-				env[key] = value;
+			for (const [key, value] of Object.entries(options.env)) env[key] = value;
 
 		const proc = Bun.spawn([command, ...args], {
 			cwd,

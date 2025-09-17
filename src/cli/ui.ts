@@ -15,6 +15,60 @@ export const colors = {
 	cyan: (s: string) => `${code(36)}${s}${code(39)}`,
 };
 
+export function renderMarkdown(markdown: string) {
+	const normalized = markdown.replace(/\r\n/g, '\n');
+	const lines = normalized.split('\n');
+	const rendered: string[] = [];
+	let previousBlank = true;
+	let inCodeBlock = false;
+	let orderedIndex = 1;
+	for (const raw of lines) {
+		const line = raw.replace(/\t/g, '    ');
+		const trimmed = line.trim();
+		if (trimmed.startsWith('```')) {
+			if (!previousBlank) rendered.push('');
+			rendered.push(colors.dim(trimmed));
+			inCodeBlock = !inCodeBlock;
+			previousBlank = false;
+			continue;
+		}
+		if (inCodeBlock) {
+			rendered.push(`  ${line}`);
+			previousBlank = false;
+			continue;
+		}
+		if (!trimmed.length) {
+			if (!previousBlank) rendered.push('');
+			previousBlank = true;
+			orderedIndex = 1;
+			continue;
+		}
+		previousBlank = false;
+		let outputLine = trimmed;
+		const heading = /^#{1,6}\s+/.exec(trimmed);
+		if (heading) {
+			const text = trimmed.replace(/^#{1,6}\s+/, '').trim();
+			outputLine = colors.bold(text.toUpperCase());
+			orderedIndex = 1;
+		} else if (/^>\s+/.test(trimmed)) {
+			outputLine = `${colors.dim('│')} ${trimmed.replace(/^>\s+/, '')}`;
+			orderedIndex = 1;
+		} else if (/^[-*+]\s+/.test(trimmed)) {
+			outputLine = `• ${trimmed.replace(/^[-*+]\s+/, '')}`;
+			orderedIndex = 1;
+		} else if (/^\d+\.\s+/.test(trimmed)) {
+			outputLine = `${orderedIndex}. ${trimmed.replace(/^\d+\.\s+/, '')}`;
+			orderedIndex += 1;
+		} else {
+			orderedIndex = 1;
+		}
+		rendered.push(outputLine);
+	}
+	while (rendered.length && rendered[rendered.length - 1] === '')
+		rendered.pop();
+	return rendered.join('\n');
+}
+
 export function box(title: string, bodyLines: string[] | string) {
 	const lines = Array.isArray(bodyLines) ? bodyLines : bodyLines.split('\n');
 	const contentLines = title ? [colors.bold(title), ...lines] : lines;
@@ -24,7 +78,10 @@ export function box(title: string, bodyLines: string[] | string) {
 	const maxLen = Math.max(...printableLengths);
 	const desiredWidth = maxLen + 2;
 	const terminalWidth = getTerminalWidth();
-	const width = Math.max(2, Math.min(desiredWidth, terminalWidth ?? desiredWidth));
+	const width = Math.max(
+		2,
+		Math.min(desiredWidth, terminalWidth ?? desiredWidth),
+	);
 	const top = `┌${'─'.repeat(width)}┐`;
 	const bot = `└${'─'.repeat(width)}┘`;
 	console.log(top);

@@ -9,6 +9,8 @@ import {
 	log,
 	confirm,
 } from '@clack/prompts';
+import { stdin as input, stdout as output } from 'node:process';
+import { createInterface } from 'node:readline';
 import { defaultToolsForAgent } from '@/ai/agents/registry.ts';
 import { discoverProjectTools } from '@/ai/tools/loader.ts';
 
@@ -70,7 +72,7 @@ async function scaffoldAgent(
 	let createPrompt = false;
 	if (!['general', 'build', 'plan', 'commit'].includes(String(name))) {
 		const wantPrompt = await confirm({
-			message: 'Create prompt file (.agi/agents/<name>.txt)?',
+			message: 'Create prompt file (.agi/agents/<name>.md)?',
 		});
 		if (isCancel(wantPrompt)) {
 			cancel('Cancelled');
@@ -84,7 +86,7 @@ async function scaffoldAgent(
 	);
 	let promptRel: string | undefined;
 	if (createPrompt) {
-		const rel = `agents/${String(name)}.txt`;
+		const rel = `agents/${String(name)}.md`;
 		promptRel = baseDir.endsWith('/.agi') ? `.agi/${rel}` : rel; // if global, store just relative path preferred? we'll write absolute
 		const promptAbs = `${baseDir}/${rel}`;
 		await ensureDir(promptAbs.substring(0, promptAbs.lastIndexOf('/')));
@@ -254,10 +256,9 @@ export async function editAgentsConfig(
 		cancel('Cancelled');
 		return;
 	}
-	const relPrompt = `agents/${String(agentName)}.txt`;
+	const relPrompt = `agents/${String(agentName)}.md`;
 	const pth = current[String(agentName)]?.prompt;
-	const shouldOfferPrompt =
-		!builtInAgents.has(key) || Boolean(pth);
+	const shouldOfferPrompt = !builtInAgents.has(key) || Boolean(pth);
 	let ensurePrompt = false;
 	if (shouldOfferPrompt) {
 		const resp = await confirm({
@@ -270,7 +271,9 @@ export async function editAgentsConfig(
 		ensurePrompt = Boolean(resp);
 	}
 	if (ensurePrompt) {
-		const location = pth ?? (isGlobalBase(baseDir, projectRoot) ? `.agi/${relPrompt}` : relPrompt);
+		const location =
+			pth ??
+			(isGlobalBase(baseDir, projectRoot) ? `.agi/${relPrompt}` : relPrompt);
 		let abs: string;
 		if (location.startsWith('.agi/')) {
 			if (isGlobalBase(baseDir, projectRoot)) {
@@ -298,7 +301,10 @@ export async function editAgentsConfig(
 		appendTools?: string[];
 		prompt?: string;
 	} = { ...(current[key] ?? {}) };
-	if (ensurePrompt) nextEntry.prompt = pth ?? (isGlobalBase(baseDir, projectRoot) ? `.agi/${relPrompt}` : relPrompt);
+	if (ensurePrompt)
+		nextEntry.prompt =
+			pth ??
+			(isGlobalBase(baseDir, projectRoot) ? `.agi/${relPrompt}` : relPrompt);
 	else delete nextEntry.prompt;
 	if (mode === 'append') {
 		const extras = selection.filter((t) => t !== 'finalize');
@@ -380,34 +386,47 @@ async function scaffoldCommand(
 		cancel('Cancelled');
 		return;
 	}
-	const promptInput = await text({
+	const promptResult = await promptMultiline({
 		message:
-			'Prompt instructions (optional, include {input} where user input should go)',
-		placeholder: 'e.g. Review the changes:\n{input}',
+			'Prompt instructions (optional). Type .done on a blank line to finish, .cancel to abort.',
+		placeholder: 'e.g. Review the changes and summarize.\n{input}',
 	});
-	if (isCancel(promptInput)) {
+	if (promptResult.cancelled) {
 		cancel('Cancelled');
 		return;
 	}
 	const dir = `${baseDir}/commands`;
 	await ensureDir(dir);
 	const file = `${dir}/${String(name)}.json`;
-	const instructions = String(promptInput || '').trim();
+	const promptFileName = `${String(name)}.md`;
+	const promptFilePath = `${dir}/${promptFileName}`;
+	const rawPrompt = promptResult.value.replace(/\r/g, '');
+	const instructions = rawPrompt.trimEnd();
 	const manifest: Record<string, unknown> = {
 		name: String(name),
 		description: String(description || ''),
 		agent: agentName,
 		defaults: { agent: agentName },
 	};
-	if (instructions.includes('{input}')) manifest.promptTemplate = instructions;
-	else if (instructions) manifest.prompt = instructions;
+	manifest.promptPath = promptFileName;
 	await Bun.write(file, JSON.stringify(manifest, null, 2));
+	const promptBody = instructions.length
+		? `${instructions}${instructions.endsWith('\n') ? '' : '\n'}`
+		: defaultCommandPromptTemplate(String(name));
+	await Bun.write(promptFilePath, promptBody);
 	const scopeLabel = isGlobalBase(baseDir, projectRoot) ? 'global' : 'local';
 	const display =
 		scopeLabel === 'global'
 			? `~/.agi/commands/${String(name)}.json`
 			: `.agi/commands/${String(name)}.json`;
 	log.success(`Command created (${scopeLabel}): ${display}`);
+	log.info(
+		`Prompt: ${
+			scopeLabel === 'global'
+				? `~/.agi/commands/${promptFileName}`
+				: `.agi/commands/${promptFileName}`
+		}`,
+	);
 	outro('Done');
 }
 
@@ -427,11 +446,17 @@ export async function listAvailableTools(
 		'git_diff',
 		'git_commit',
 	];
-	for (const builtin of curatedBuiltIns)
-		names.add(builtin);
+	for (const builtin of curatedBuiltIns) names.add(builtin);
 	for (const { name } of discovered) {
 		if (!includeFinalize && name === 'finalize') continue;
-		if (!curatedBuiltIns.includes(name) && name.startsWith('fs_') && name !== 'fs_read' && name !== 'fs_write' && name !== 'fs_ls' && name !== 'fs_tree')
+		if (
+			!curatedBuiltIns.includes(name) &&
+			name.startsWith('fs_') &&
+			name !== 'fs_read' &&
+			name !== 'fs_write' &&
+			name !== 'fs_ls' &&
+			name !== 'fs_tree'
+		)
 			continue;
 		names.add(name);
 	}
@@ -488,11 +513,73 @@ async function ensureDir(dir: string) {
 	} catch {}
 }
 
+type MultilinePromptResult =
+	| { cancelled: true; value: string }
+	| { cancelled: false; value: string };
+
+async function promptMultiline({
+	message,
+	placeholder,
+}: {
+	message: string;
+	placeholder?: string;
+}): Promise<MultilinePromptResult> {
+	log.message(message);
+	if (placeholder) log.message(`Example:\n${placeholder}`);
+	log.message('Finish with .done on its own line or .cancel to abort.');
+	const rl = createInterface({ input, output });
+	const lines: string[] = [];
+	let settled = false;
+	function finalize(result: MultilinePromptResult) {
+		if (settled) return result;
+		settled = true;
+		rl.removeAllListeners();
+		// close() triggers the 'close' event, so guard against recursion
+		if (result.cancelled) {
+			try {
+				rl.close();
+			} catch {}
+			return result;
+		}
+		try {
+			rl.close();
+		} catch {}
+		return result;
+	}
+	return await new Promise<MultilinePromptResult>((resolve) => {
+		function done(result: MultilinePromptResult) {
+			const final = finalize(result);
+			resolve(final);
+		}
+		rl.on('line', (line) => {
+			const trimmed = line.trim();
+			if (trimmed === '.cancel') return done({ cancelled: true, value: '' });
+			if (trimmed === '.done')
+				return done({ cancelled: false, value: lines.join('\n') });
+			lines.push(line);
+			rl.setPrompt('… ');
+			rl.prompt();
+		});
+		rl.on('SIGINT', () => done({ cancelled: true, value: '' }));
+		rl.on('close', () => {
+			if (settled) return;
+			settled = true;
+			resolve({ cancelled: false, value: lines.join('\n') });
+		});
+		rl.setPrompt('> ');
+		rl.prompt();
+	});
+}
+
 function defaultAgentPromptTemplate(name: string): string {
 	if (name.toLowerCase() === 'git') {
-		return `You are a Git assistant. Review and commit guidance.\n\n- Use git_status and git_diff to inspect changes.\n- For reviews: summarize and suggest improvements.\n- For commits: draft a Conventional Commits message; require [commit:yes] before git_commit.\n- Stream your findings before finalize.`;
+		return `You are a Git assistant. Review and commit guidance.\n\n- Use git_status and git_diff to inspect changes.\n- For reviews: summarize and suggest improvements.\n- For commits: draft a Conventional Commits message; require [commit:yes] before git_commit.\n- Stream your findings before finalize.\n`;
 	}
-	return `You are the ${name} agent. Describe your responsibilities here.\n\n- What tools you can use.\n- What the expected output looks like.\n- Always call finalize when done.`;
+	return `You are the ${name} agent. Describe your responsibilities here.\n\n- What tools you can use.\n- What the expected output looks like.\n- Always call finalize when done.\n`;
+}
+
+function defaultCommandPromptTemplate(name: string): string {
+	return `# ${name} command\n\nDescribe what this command should do.\n\n- Outline the steps the agent should follow.\n- Mention any tools or context to gather first.\n- Include {input} where the user's input should be referenced.\n`;
 }
 
 function toolTemplate(id: string, description: string): string {
