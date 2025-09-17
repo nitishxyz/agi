@@ -13,6 +13,7 @@ import { isProviderAuthorized } from '@/providers/authorization.ts';
 import { runModels } from '@/cli/models.ts';
 import { discoverCommands, runDiscoveredCommand } from '@/cli/commands.ts';
 import { runScaffold } from '@/cli/scaffold.ts';
+import { runAgents } from '@/cli/agents.ts';
 import { runToolsList } from '@/cli/tools.ts';
 import { runDoctor } from '@/cli/doctor.ts';
 
@@ -82,6 +83,14 @@ async function main() {
 		const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
 		const local = argv.includes('--local');
 		await runModels({ project: projectRoot, local });
+		return;
+	}
+
+	if (cmd === 'agents') {
+		const projectIdx = argv.indexOf('--project');
+		const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+		const local = argv.includes('--local');
+		await runAgents({ project: projectRoot, local });
 		return;
 	}
 
@@ -215,7 +224,8 @@ function printHelp(
 		'  auth <login|list|logout> Manage provider credentials (use --local to write/remove local auth)',
 		'  setup                   Alias for `auth login`',
 		'  models|switch           Pick default provider/model (interactive)',
-		'  scaffold|generate       Create agent/tool and agents.json entries (interactive)',
+		'  scaffold|generate       Create agents, tools, or commands (interactive)',
+		'  agents [--local]        Edit agents.json entries (interactive)',
 		'  tools                   List discovered tools and agent access',
 		'  doctor                  Diagnose auth, defaults, and agent/tool issues',
 		'  chat [--last|--session] Start an interactive chat (if enabled)',

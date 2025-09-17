@@ -6,7 +6,32 @@ export type AgentConfig = {
 	tools: string[]; // allowed tool names
 };
 
-type AgentsJson = Record<string, { tools?: string[]; prompt?: string }>;
+export type AgentConfigEntry = {
+	tools?: string[];
+	appendTools?: string[];
+	prompt?: string;
+};
+
+type AgentsJson = Record<string, AgentConfigEntry>;
+
+const defaultToolSets: Record<string, string[]> = {
+	build: ['fs_read', 'fs_write', 'fs_ls', 'fs_tree', 'finalize'],
+	plan: ['fs_read', 'fs_ls', 'fs_tree', 'finalize'],
+	git: ['git_status', 'git_diff', 'git_commit', 'fs_read', 'fs_ls', 'finalize'],
+	commit: [
+		'git_status',
+		'git_diff',
+		'git_commit',
+		'fs_read',
+		'fs_ls',
+		'finalize',
+	],
+};
+
+export function defaultToolsForAgent(name: string): string[] {
+	if (defaultToolSets[name]) return [...defaultToolSets[name]];
+	return ['finalize'];
+}
 
 export async function loadAgentsConfig(
 	projectRoot: string,
@@ -79,24 +104,18 @@ export async function resolveAgentConfig(
 	}
 
 	// Default tool access per agent if not explicitly configured
-	let tools = (entry?.tools ?? []) as string[];
+	let tools = Array.isArray(entry?.tools)
+		? [...(entry?.tools as string[])]
+		: defaultToolsForAgent(name);
 	if (!entry || !entry.tools) {
-		if (name === 'build') {
-			tools = ['fs_read', 'fs_write', 'fs_ls', 'fs_tree', 'finalize'];
-		} else if (name === 'plan') {
-			tools = ['fs_read', 'fs_ls', 'fs_tree', 'finalize'];
-		} else if (name === 'git' || name === 'commit') {
-			tools = [
-				'git_status',
-				'git_diff',
-				'git_commit',
-				'fs_read',
-				'fs_ls',
-				'finalize',
-			];
-		} else {
-			tools = ['finalize'];
+		tools = defaultToolsForAgent(name);
+	}
+	if (Array.isArray(entry?.appendTools) && entry.appendTools.length) {
+		for (const t of entry.appendTools) {
+			if (typeof t === 'string' && t.trim()) tools.push(t.trim());
 		}
 	}
-	return { name, prompt, tools };
+	// Deduplicate and ensure finalize is always available
+	const deduped = Array.from(new Set(tools.concat(['finalize'])));
+	return { name, prompt, tools: deduped };
 }

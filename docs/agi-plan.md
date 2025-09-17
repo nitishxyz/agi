@@ -75,6 +75,7 @@ Agents & Tools
   1) Project override: `.agi/agents/<agent>/agent.txt`
   2) Built‑in default prompt embedded in server
 - Project extensions via `.agi/agents.json` to map agents to allowed tools and prompt paths.
+- Use `appendTools` to add to built-in agent defaults without overriding their core allowlist.
 - Example `.agi/agents.json`:
 ```json
 {
@@ -83,7 +84,7 @@ Agents & Tools
     "prompt": ".agi/agents/general/agent.txt"
   },
   "build": {
-    "tools": ["fs.read", "fs.write", "shell.run"],
+    "appendTools": ["shell.run"],
     "prompt": ".agi/agents/build/agent.txt"
   },
   "custom-repo": {
