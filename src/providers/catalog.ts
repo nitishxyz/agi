@@ -9,6 +9,13 @@ export type ModelInfo = {
 	toolCall?: boolean;
 	reasoning?: boolean;
 	attachment?: boolean;
+	temperature?: boolean | number;
+	knowledge?: string;
+	releaseDate?: string;
+	lastUpdated?: string;
+	openWeights?: boolean;
+	cost?: { input?: number; output?: number; cacheRead?: number };
+	limit?: { context?: number; output?: number };
 };
 
 export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
@@ -24,6 +31,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: false,
+				knowledge: '2024-04',
+				releaseDate: '2025-05-16',
+				lastUpdated: '2025-05-16',
+				openWeights: false,
+				cost: {
+					input: 1.5,
+					output: 6,
+					cacheRead: 0.375,
+				},
+				limit: {
+					context: 200000,
+					output: 100000,
+				},
 			},
 			{
 				id: 'gpt-3.5-turbo',
@@ -35,6 +56,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: false,
 				reasoning: false,
 				attachment: false,
+				temperature: true,
+				knowledge: '2021-09-01',
+				releaseDate: '2023-03-01',
+				lastUpdated: '2023-11-06',
+				openWeights: false,
+				cost: {
+					input: 0.5,
+					output: 1.5,
+					cacheRead: 1.25,
+				},
+				limit: {
+					context: 16385,
+					output: 4096,
+				},
 			},
 			{
 				id: 'gpt-4',
@@ -46,6 +81,19 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2023-11',
+				releaseDate: '2023-11-06',
+				lastUpdated: '2024-04-09',
+				openWeights: false,
+				cost: {
+					input: 30,
+					output: 60,
+				},
+				limit: {
+					context: 8192,
+					output: 8192,
+				},
 			},
 			{
 				id: 'gpt-4-turbo',
@@ -57,6 +105,19 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2023-12',
+				releaseDate: '2023-11-06',
+				lastUpdated: '2024-04-09',
+				openWeights: false,
+				cost: {
+					input: 10,
+					output: 30,
+				},
+				limit: {
+					context: 128000,
+					output: 4096,
+				},
 			},
 			{
 				id: 'gpt-4.1',
@@ -68,6 +129,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-04',
+				releaseDate: '2025-04-14',
+				lastUpdated: '2025-04-14',
+				openWeights: false,
+				cost: {
+					input: 2,
+					output: 8,
+					cacheRead: 0.5,
+				},
+				limit: {
+					context: 1047576,
+					output: 32768,
+				},
 			},
 			{
 				id: 'gpt-4.1-mini',
@@ -79,6 +154,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-04',
+				releaseDate: '2025-04-14',
+				lastUpdated: '2025-04-14',
+				openWeights: false,
+				cost: {
+					input: 0.4,
+					output: 1.6,
+					cacheRead: 0.1,
+				},
+				limit: {
+					context: 1047576,
+					output: 32768,
+				},
 			},
 			{
 				id: 'gpt-4.1-nano',
@@ -90,6 +179,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-04',
+				releaseDate: '2025-04-14',
+				lastUpdated: '2025-04-14',
+				openWeights: false,
+				cost: {
+					input: 0.1,
+					output: 0.4,
+					cacheRead: 0.03,
+				},
+				limit: {
+					context: 1047576,
+					output: 32768,
+				},
 			},
 			{
 				id: 'gpt-4o',
@@ -101,6 +204,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2023-09',
+				releaseDate: '2024-05-13',
+				lastUpdated: '2024-05-13',
+				openWeights: false,
+				cost: {
+					input: 2.5,
+					output: 10,
+					cacheRead: 1.25,
+				},
+				limit: {
+					context: 128000,
+					output: 16384,
+				},
 			},
 			{
 				id: 'gpt-4o-mini',
@@ -112,6 +229,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2023-09',
+				releaseDate: '2024-07-18',
+				lastUpdated: '2024-07-18',
+				openWeights: false,
+				cost: {
+					input: 0.15,
+					output: 0.6,
+					cacheRead: 0.08,
+				},
+				limit: {
+					context: 128000,
+					output: 16384,
+				},
 			},
 			{
 				id: 'gpt-5',
@@ -123,6 +254,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: false,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-08-07',
+				lastUpdated: '2025-08-07',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.13,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
 			},
 			{
 				id: 'gpt-5-chat-latest',
@@ -134,6 +279,19 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: false,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-08-07',
+				lastUpdated: '2025-08-07',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
 			},
 			{
 				id: 'gpt-5-mini',
@@ -145,6 +303,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: false,
+				knowledge: '2024-05-30',
+				releaseDate: '2025-08-07',
+				lastUpdated: '2025-08-07',
+				openWeights: false,
+				cost: {
+					input: 0.25,
+					output: 2,
+					cacheRead: 0.03,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
 			},
 			{
 				id: 'gpt-5-nano',
@@ -156,6 +328,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: false,
+				knowledge: '2024-05-30',
+				releaseDate: '2025-08-07',
+				lastUpdated: '2025-08-07',
+				openWeights: false,
+				cost: {
+					input: 0.05,
+					output: 0.4,
+					cacheRead: 0.01,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
 			},
 			{
 				id: 'o1',
@@ -167,6 +353,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: false,
+				knowledge: '2023-09',
+				releaseDate: '2024-12-05',
+				lastUpdated: '2024-12-05',
+				openWeights: false,
+				cost: {
+					input: 15,
+					output: 60,
+					cacheRead: 7.5,
+				},
+				limit: {
+					context: 200000,
+					output: 100000,
+				},
 			},
 			{
 				id: 'o1-mini',
@@ -178,6 +378,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: false,
 				reasoning: true,
 				attachment: false,
+				temperature: false,
+				knowledge: '2023-09',
+				releaseDate: '2024-09-12',
+				lastUpdated: '2024-09-12',
+				openWeights: false,
+				cost: {
+					input: 1.1,
+					output: 4.4,
+					cacheRead: 0.55,
+				},
+				limit: {
+					context: 128000,
+					output: 65536,
+				},
 			},
 			{
 				id: 'o1-preview',
@@ -189,6 +403,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: false,
 				reasoning: true,
 				attachment: false,
+				temperature: true,
+				knowledge: '2023-09',
+				releaseDate: '2024-09-12',
+				lastUpdated: '2024-09-12',
+				openWeights: false,
+				cost: {
+					input: 15,
+					output: 60,
+					cacheRead: 7.5,
+				},
+				limit: {
+					context: 128000,
+					output: 32768,
+				},
 			},
 			{
 				id: 'o1-pro',
@@ -200,6 +428,19 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: false,
+				knowledge: '2023-09',
+				releaseDate: '2025-03-19',
+				lastUpdated: '2025-03-19',
+				openWeights: false,
+				cost: {
+					input: 150,
+					output: 600,
+				},
+				limit: {
+					context: 200000,
+					output: 100000,
+				},
 			},
 			{
 				id: 'o3',
@@ -211,6 +452,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: false,
+				knowledge: '2024-05',
+				releaseDate: '2025-04-16',
+				lastUpdated: '2025-04-16',
+				openWeights: false,
+				cost: {
+					input: 2,
+					output: 8,
+					cacheRead: 0.5,
+				},
+				limit: {
+					context: 200000,
+					output: 100000,
+				},
 			},
 			{
 				id: 'o3-deep-research',
@@ -222,6 +477,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: false,
+				knowledge: '2024-05',
+				releaseDate: '2024-06-26',
+				lastUpdated: '2024-06-26',
+				openWeights: false,
+				cost: {
+					input: 10,
+					output: 40,
+					cacheRead: 2.5,
+				},
+				limit: {
+					context: 200000,
+					output: 100000,
+				},
 			},
 			{
 				id: 'o3-mini',
@@ -233,6 +502,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: false,
+				temperature: false,
+				knowledge: '2024-05',
+				releaseDate: '2024-12-20',
+				lastUpdated: '2025-01-29',
+				openWeights: false,
+				cost: {
+					input: 1.1,
+					output: 4.4,
+					cacheRead: 0.55,
+				},
+				limit: {
+					context: 200000,
+					output: 100000,
+				},
 			},
 			{
 				id: 'o3-pro',
@@ -244,6 +527,19 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: false,
+				knowledge: '2024-05',
+				releaseDate: '2025-06-10',
+				lastUpdated: '2025-06-10',
+				openWeights: false,
+				cost: {
+					input: 20,
+					output: 80,
+				},
+				limit: {
+					context: 200000,
+					output: 100000,
+				},
 			},
 			{
 				id: 'o4-mini',
@@ -255,6 +551,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: false,
+				knowledge: '2024-05',
+				releaseDate: '2025-04-16',
+				lastUpdated: '2025-04-16',
+				openWeights: false,
+				cost: {
+					input: 1.1,
+					output: 4.4,
+					cacheRead: 0.28,
+				},
+				limit: {
+					context: 200000,
+					output: 100000,
+				},
 			},
 			{
 				id: 'o4-mini-deep-research',
@@ -266,6 +576,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: false,
+				knowledge: '2024-05',
+				releaseDate: '2024-06-26',
+				lastUpdated: '2024-06-26',
+				openWeights: false,
+				cost: {
+					input: 2,
+					output: 8,
+					cacheRead: 0.5,
+				},
+				limit: {
+					context: 200000,
+					output: 100000,
+				},
 			},
 		],
 	},
@@ -281,6 +605,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-07-31',
+				releaseDate: '2024-10-22',
+				lastUpdated: '2024-10-22',
+				openWeights: false,
+				cost: {
+					input: 0.8,
+					output: 4,
+					cacheRead: 0.08,
+				},
+				limit: {
+					context: 200000,
+					output: 8192,
+				},
 			},
 			{
 				id: 'claude-3-5-sonnet-20240620',
@@ -292,6 +630,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-04-30',
+				releaseDate: '2024-06-20',
+				lastUpdated: '2024-06-20',
+				openWeights: false,
+				cost: {
+					input: 3,
+					output: 15,
+					cacheRead: 0.3,
+				},
+				limit: {
+					context: 200000,
+					output: 8192,
+				},
 			},
 			{
 				id: 'claude-3-5-sonnet-20241022',
@@ -303,6 +655,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-04-30',
+				releaseDate: '2024-10-22',
+				lastUpdated: '2024-10-22',
+				openWeights: false,
+				cost: {
+					input: 3,
+					output: 15,
+					cacheRead: 0.3,
+				},
+				limit: {
+					context: 200000,
+					output: 8192,
+				},
 			},
 			{
 				id: 'claude-3-7-sonnet-20250219',
@@ -314,6 +680,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-10-31',
+				releaseDate: '2025-02-19',
+				lastUpdated: '2025-02-19',
+				openWeights: false,
+				cost: {
+					input: 3,
+					output: 15,
+					cacheRead: 0.3,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
+				},
 			},
 			{
 				id: 'claude-3-haiku-20240307',
@@ -325,6 +705,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2023-08-31',
+				releaseDate: '2024-03-13',
+				lastUpdated: '2024-03-13',
+				openWeights: false,
+				cost: {
+					input: 0.25,
+					output: 1.25,
+					cacheRead: 0.03,
+				},
+				limit: {
+					context: 200000,
+					output: 4096,
+				},
 			},
 			{
 				id: 'claude-3-opus-20240229',
@@ -336,6 +730,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2023-08-31',
+				releaseDate: '2024-02-29',
+				lastUpdated: '2024-02-29',
+				openWeights: false,
+				cost: {
+					input: 15,
+					output: 75,
+					cacheRead: 1.5,
+				},
+				limit: {
+					context: 200000,
+					output: 4096,
+				},
 			},
 			{
 				id: 'claude-3-sonnet-20240229',
@@ -347,6 +755,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2023-08-31',
+				releaseDate: '2024-03-04',
+				lastUpdated: '2024-03-04',
+				openWeights: false,
+				cost: {
+					input: 3,
+					output: 15,
+					cacheRead: 0.3,
+				},
+				limit: {
+					context: 200000,
+					output: 4096,
+				},
 			},
 			{
 				id: 'claude-opus-4-1-20250805',
@@ -358,6 +780,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2025-03-31',
+				releaseDate: '2025-08-05',
+				lastUpdated: '2025-08-05',
+				openWeights: false,
+				cost: {
+					input: 15,
+					output: 75,
+					cacheRead: 1.5,
+				},
+				limit: {
+					context: 200000,
+					output: 32000,
+				},
 			},
 			{
 				id: 'claude-opus-4-20250514',
@@ -369,6 +805,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2025-03-31',
+				releaseDate: '2025-05-22',
+				lastUpdated: '2025-05-22',
+				openWeights: false,
+				cost: {
+					input: 15,
+					output: 75,
+					cacheRead: 1.5,
+				},
+				limit: {
+					context: 200000,
+					output: 32000,
+				},
 			},
 			{
 				id: 'claude-sonnet-4-20250514',
@@ -380,6 +830,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2025-03-31',
+				releaseDate: '2025-05-22',
+				lastUpdated: '2025-05-22',
+				openWeights: false,
+				cost: {
+					input: 3,
+					output: 15,
+					cacheRead: 0.3,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
+				},
 			},
 		],
 	},
@@ -395,6 +859,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-04',
+				releaseDate: '2024-05-14',
+				lastUpdated: '2024-05-14',
+				openWeights: false,
+				cost: {
+					input: 0.075,
+					output: 0.3,
+					cacheRead: 0.01875,
+				},
+				limit: {
+					context: 1000000,
+					output: 8192,
+				},
 			},
 			{
 				id: 'gemini-1.5-flash-8b',
@@ -406,6 +884,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-04',
+				releaseDate: '2024-10-03',
+				lastUpdated: '2024-10-03',
+				openWeights: false,
+				cost: {
+					input: 0.0375,
+					output: 0.15,
+					cacheRead: 0.01,
+				},
+				limit: {
+					context: 1000000,
+					output: 8192,
+				},
 			},
 			{
 				id: 'gemini-1.5-pro',
@@ -417,6 +909,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-04',
+				releaseDate: '2024-02-15',
+				lastUpdated: '2024-02-15',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 5,
+					cacheRead: 0.3125,
+				},
+				limit: {
+					context: 1000000,
+					output: 8192,
+				},
 			},
 			{
 				id: 'gemini-2.0-flash',
@@ -428,6 +934,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-06',
+				releaseDate: '2024-12-11',
+				lastUpdated: '2024-12-11',
+				openWeights: false,
+				cost: {
+					input: 0.1,
+					output: 0.4,
+					cacheRead: 0.025,
+				},
+				limit: {
+					context: 1048576,
+					output: 8192,
+				},
 			},
 			{
 				id: 'gemini-2.0-flash-lite',
@@ -439,6 +959,19 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: false,
 				attachment: true,
+				temperature: true,
+				knowledge: '2024-06',
+				releaseDate: '2024-12-11',
+				lastUpdated: '2024-12-11',
+				openWeights: false,
+				cost: {
+					input: 0.075,
+					output: 0.3,
+				},
+				limit: {
+					context: 1048576,
+					output: 8192,
+				},
 			},
 			{
 				id: 'gemini-2.5-flash',
@@ -450,6 +983,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-03-20',
+				lastUpdated: '2025-06-05',
+				openWeights: false,
+				cost: {
+					input: 0.3,
+					output: 2.5,
+					cacheRead: 0.075,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
 			},
 			{
 				id: 'gemini-2.5-flash-lite-preview-06-17',
@@ -461,6 +1008,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-06-17',
+				lastUpdated: '2025-06-17',
+				openWeights: false,
+				cost: {
+					input: 0.1,
+					output: 0.4,
+					cacheRead: 0.025,
+				},
+				limit: {
+					context: 65536,
+					output: 65536,
+				},
 			},
 			{
 				id: 'gemini-2.5-flash-preview-04-17',
@@ -472,6 +1033,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-04-17',
+				lastUpdated: '2025-04-17',
+				openWeights: false,
+				cost: {
+					input: 0.15,
+					output: 0.6,
+					cacheRead: 0.0375,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
 			},
 			{
 				id: 'gemini-2.5-flash-preview-05-20',
@@ -483,6 +1058,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-05-20',
+				lastUpdated: '2025-05-20',
+				openWeights: false,
+				cost: {
+					input: 0.15,
+					output: 0.6,
+					cacheRead: 0.0375,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
 			},
 			{
 				id: 'gemini-2.5-pro',
@@ -494,6 +1083,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-03-20',
+				lastUpdated: '2025-06-05',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.31,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
 			},
 			{
 				id: 'gemini-2.5-pro-preview-05-06',
@@ -505,6 +1108,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-05-06',
+				lastUpdated: '2025-05-06',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.31,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
 			},
 			{
 				id: 'gemini-2.5-pro-preview-06-05',
@@ -516,6 +1133,20 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-06-05',
+				lastUpdated: '2025-06-05',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.31,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
 			},
 		],
 	},

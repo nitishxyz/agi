@@ -167,6 +167,16 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 							contentObj.artifact = maybeArtifact;
 					} catch {}
 				}
+				// If finalize returns a text payload in the result, stream it as assistant text.
+				try {
+					if (name === 'finalize' && result && typeof result === 'object') {
+						const t = (result as Record<string, unknown>).text;
+						if (typeof t === 'string' && t.trim().length) {
+							await appendAssistantText(ctx, t);
+						}
+					}
+				} catch {}
+
 				const index = await ctx.nextIndex();
 				const endTs = Date.now();
 				const dur =

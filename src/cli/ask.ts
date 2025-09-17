@@ -39,6 +39,14 @@ type ToolResultRecord = {
 	durationMs?: number;
 };
 
+type TokenUsageSummary = {
+	inputTokens?: number;
+	outputTokens?: number;
+	totalTokens?: number;
+	costUsd?: number;
+	finishReason?: string;
+};
+
 type SequenceEntry =
 	| { type: 'user'; ts: number; text: string }
 	| {
@@ -79,7 +87,9 @@ type Transcript = {
 		totalToolTimeMs: number;
 		filesTouched: string[];
 		diffArtifacts: Array<{ name: string; summary: unknown }>;
+		tokenUsage?: TokenUsageSummary;
 	};
+	finishReason?: string;
 	output?: string;
 	assistantChunks?: AssistantChunk[];
 	assistantLines?: ReturnType<typeof computeAssistantLines>;
@@ -254,6 +264,8 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 	const toolResults: ToolResultRecord[] = [];
 	const callById = new Map<string, number>();
 	const filesTouched = new Set<string>();
+	let tokenUsage: TokenUsageSummary | null = null;
+	let finishReason: string | undefined;
 	try {
 		for await (const ev of sse) {
 			const eventName = ev.event;
@@ -391,15 +403,49 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 				const data = safeJson(ev.data);
 				const completedId = typeof data?.id === 'string' ? data.id : undefined;
 				if (completedId === assistantMessageId) {
-					if (jsonStreamEnabled)
-						Bun.write(
-							Bun.stdout,
-							`${JSON.stringify({
-								event: 'assistant.completed',
-								ts: Date.now(),
-								messageId: assistantMessageId,
-							})}\n`,
-						);
+					const usageInput = toNumberOrUndefined(
+						(data?.usage as Record<string, unknown> | undefined)?.inputTokens,
+					);
+					const usageOutput = toNumberOrUndefined(
+						(data?.usage as Record<string, unknown> | undefined)?.outputTokens,
+					);
+					const usageTotal = toNumberOrUndefined(
+						(data?.usage as Record<string, unknown> | undefined)?.totalTokens,
+					);
+					const costUsd = toNumberOrUndefined(data?.costUsd);
+					const finish =
+						typeof data?.finishReason === 'string'
+							? data.finishReason.trim()
+							: '';
+					const usageCandidate: TokenUsageSummary | null =
+						usageInput != null ||
+						usageOutput != null ||
+						usageTotal != null ||
+						costUsd != null ||
+						finish
+							? {
+									inputTokens: usageInput,
+									outputTokens: usageOutput,
+									totalTokens:
+										usageTotal ??
+										(usageInput != null && usageOutput != null
+											? usageInput + usageOutput
+											: undefined),
+									costUsd: costUsd ?? undefined,
+									finishReason: finish || undefined,
+								}
+							: null;
+					if (usageCandidate) tokenUsage = usageCandidate;
+					if (finish) finishReason = finish;
+					if (jsonStreamEnabled) {
+						const payload: Record<string, unknown> = {
+							event: 'assistant.completed',
+							ts: Date.now(),
+							messageId: assistantMessageId,
+						};
+						if (tokenUsage) payload.usage = tokenUsage;
+						Bun.write(Bun.stdout, `${JSON.stringify(payload)}\n`);
+					}
 					break;
 				}
 			} else if (eventName === 'error') {
@@ -481,7 +527,9 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 				totalToolTimeMs,
 				filesTouched: Array.from(filesTouched),
 				diffArtifacts,
+				tokenUsage: tokenUsage ?? undefined,
 			},
+			finishReason,
 		};
 		if (jsonVerbose) {
 			transcript.output = assistantText;
@@ -492,10 +540,12 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 		}
 		Bun.write(Bun.stdout, `${JSON.stringify(transcript, null, 2)}\n`);
 	} else if (summaryEnabled || finalizeSeen || toolCalls.length) {
-		if (assistantText.trim().length) {
+		// Avoid duplicating assistant output: if we streamed deltas already,
+		// don't reprint the full text in the summary.
+		if (assistantChunks.length === 0 && assistantText.trim().length) {
 			Bun.write(Bun.stderr, `${renderMarkdown(assistantText)}\n`);
 		}
-		printSummary(toolCalls, toolResults, filesTouched);
+		printSummary(toolCalls, toolResults, filesTouched, tokenUsage);
 	}
 	if (!jsonEnabled && !jsonStreamEnabled) {
 		const elapsed = Date.now() - startedAt;
@@ -1001,6 +1051,7 @@ function printSummary(
 	toolCalls: ToolCallRecord[],
 	toolResults: ToolResultRecord[],
 	filesTouched: Set<string>,
+	usage?: TokenUsageSummary | null,
 ) {
 	Bun.write(Bun.stderr, `\n${bold('Summary')}\n`);
 	if (toolCalls.length) {
@@ -1028,6 +1079,30 @@ function printSummary(
 				: '';
 			Bun.write(Bun.stderr, `  ${yellow('•')} ${d.name}${sum}\n`);
 		}
+	}
+	if (usage) {
+		const tokenLines: string[] = [];
+		if (usage.inputTokens != null)
+			tokenLines.push(`prompt=${usage.inputTokens}`);
+		if (usage.outputTokens != null)
+			tokenLines.push(`completion=${usage.outputTokens}`);
+		if (usage.totalTokens != null)
+			tokenLines.push(`total=${usage.totalTokens}`);
+		if (tokenLines.length)
+			Bun.write(
+				Bun.stderr,
+				`${bold('Token usage:')} ${tokenLines.join(', ')}\n`,
+			);
+		if (usage.costUsd != null)
+			Bun.write(
+				Bun.stderr,
+				`${bold('Estimated cost:')} ~$${usage.costUsd.toFixed(4)}\n`,
+			);
+		if (usage.finishReason)
+			Bun.write(
+				Bun.stderr,
+				`${bold('Finish reason:')} ${usage.finishReason}\n`,
+			);
 	}
 }
 
@@ -1193,4 +1268,15 @@ function progressBar(pct: number) {
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null;
+}
+
+function toNumberOrUndefined(value: unknown): number | undefined {
+	if (typeof value === 'number' && Number.isFinite(value)) return value;
+	if (typeof value === 'string') {
+		const trimmed = value.trim();
+		if (!trimmed.length) return undefined;
+		const parsed = Number(trimmed);
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return undefined;
 }

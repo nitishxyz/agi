@@ -1,17 +1,16 @@
 // Fetch models catalog and write to src/providers/catalog.ts
-// Usage: bun run scripts/update-catalog.ts
+// Usage: bun run scripts/update-catalog.ts [--from path/to/feed.json]
 
 const SOURCE = 'https://models.dev/api.json';
 const TARGET = 'src/providers/catalog.ts';
 
-type ProviderFeed = Record<
-	string,
-	{
-		id: string;
-		name?: string;
-		models: Record<string, unknown>;
-	}
->;
+interface ProviderFeedEntry {
+	id: string;
+	name?: string;
+	models: Record<string, unknown>;
+}
+
+type ProviderFeed = Record<string, ProviderFeedEntry>;
 
 type ProviderId = 'openai' | 'anthropic' | 'google';
 
@@ -22,6 +21,13 @@ type ModelInfo = {
 	toolCall?: boolean;
 	reasoning?: boolean;
 	attachment?: boolean;
+	temperature?: boolean | number;
+	knowledge?: string;
+	releaseDate?: string;
+	lastUpdated?: string;
+	openWeights?: boolean;
+	cost?: { input?: number; output?: number; cacheRead?: number };
+	limit?: { context?: number; output?: number };
 };
 
 function pickProviders(
@@ -33,20 +39,13 @@ function pickProviders(
 		google: { models: [] },
 	};
 	for (const providerKey of Object.keys(feed)) {
-		const p = feed[providerKey];
-		const key = providerKey as ProviderId;
 		if (!['openai', 'anthropic', 'google'].includes(providerKey)) continue;
+		const entry = feed[providerKey];
+		const key = providerKey as ProviderId;
 		const models: ModelInfo[] = [];
-		for (const mid of Object.keys(p.models || {})) {
-			const m = p.models[mid];
-			models.push({
-				id: String(m.id || mid),
-				label: m.name || undefined,
-				modalities: m.modalities || undefined,
-				toolCall: Boolean(m.tool_call),
-				reasoning: Boolean(m.reasoning),
-				attachment: Boolean(m.attachment),
-			});
+		for (const mid of Object.keys(entry.models || {})) {
+			const raw = entry.models[mid] as Record<string, unknown> | undefined;
+			models.push(mapModel(mid, raw));
 		}
 		models.sort((a, b) => a.id.localeCompare(b.id));
 		out[key] = { models };
@@ -54,9 +53,94 @@ function pickProviders(
 	return out;
 }
 
+function mapModel(id: string, raw?: Record<string, unknown>): ModelInfo {
+	const m = raw ?? {};
+	const info: ModelInfo = { id: String(m.id ?? id) };
+	if (typeof m.name === 'string' && m.name.trim()) info.label = m.name;
+	const modalities = normalizeModalities(m.modalities);
+	if (modalities) info.modalities = modalities;
+	if (hasValue(m.tool_call)) info.toolCall = Boolean(m.tool_call);
+	if (hasValue(m.reasoning)) info.reasoning = Boolean(m.reasoning);
+	if (hasValue(m.attachment)) info.attachment = Boolean(m.attachment);
+	const temperature = normalizeTemperature(m.temperature);
+	if (temperature !== undefined) info.temperature = temperature;
+	if (typeof m.knowledge === 'string' && m.knowledge.trim())
+		info.knowledge = m.knowledge;
+	if (typeof m.release_date === 'string' && m.release_date.trim())
+		info.releaseDate = m.release_date;
+	if (typeof m.last_updated === 'string' && m.last_updated.trim())
+		info.lastUpdated = m.last_updated;
+	if (hasValue(m.open_weights)) info.openWeights = Boolean(m.open_weights);
+	const cost = normalizeCost(m.cost);
+	if (cost) info.cost = cost;
+	const limit = normalizeLimit(m.limit);
+	if (limit) info.limit = limit;
+	return info;
+}
+
+function normalizeModalities(value: unknown) {
+	if (!value || typeof value !== 'object') return undefined;
+	const obj = value as Record<string, unknown>;
+	const input = Array.isArray(obj.input)
+		? obj.input.filter((v) => typeof v === 'string')
+		: undefined;
+	const output = Array.isArray(obj.output)
+		? obj.output.filter((v) => typeof v === 'string')
+		: undefined;
+	if (!input && !output) return undefined;
+	return { input, output };
+}
+
+function normalizeTemperature(value: unknown): boolean | number | undefined {
+	if (typeof value === 'number' && Number.isFinite(value)) return value;
+	if (typeof value === 'boolean') return value;
+	return undefined;
+}
+
+function normalizeCost(value: unknown) {
+	if (!value || typeof value !== 'object') return undefined;
+	const obj = value as Record<string, unknown>;
+	const input = toNumber(obj.input);
+	const output = toNumber(obj.output);
+	const cacheRead = toNumber(obj.cache_read ?? obj.cacheRead);
+	if (input == null && output == null && cacheRead == null) return undefined;
+	return {
+		input: input ?? undefined,
+		output: output ?? undefined,
+		cacheRead: cacheRead ?? undefined,
+	};
+}
+
+function normalizeLimit(value: unknown) {
+	if (!value || typeof value !== 'object') return undefined;
+	const obj = value as Record<string, unknown>;
+	const context = toNumber(obj.context);
+	const output = toNumber(obj.output);
+	if (context == null && output == null) return undefined;
+	return {
+		context: context ?? undefined,
+		output: output ?? undefined,
+	};
+}
+
+function hasValue(value: unknown) {
+	return value !== undefined && value !== null;
+}
+
+function toNumber(value: unknown): number | null {
+	if (typeof value === 'number' && Number.isFinite(value)) return value;
+	if (typeof value === 'string') {
+		const trimmed = value.trim();
+		if (!trimmed.length) return null;
+		const parsed = Number(trimmed);
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return null;
+}
+
 function toTs(catalog: Record<ProviderId, { models: ModelInfo[] }>) {
 	const header = `// AUTO-GENERATED by scripts/update-catalog.ts. Do not edit manually.\n`;
-	const types = `export type ProviderId = 'openai' | 'anthropic' | 'google';\n\nexport type ModelInfo = {\n  id: string;\n  label?: string;\n  modalities?: { input?: string[]; output?: string[] };\n  toolCall?: boolean;\n  reasoning?: boolean;\n  attachment?: boolean;\n};\n`;
+	const types = `export type ProviderId = 'openai' | 'anthropic' | 'google';\n\nexport type ModelInfo = {\n  id: string;\n  label?: string;\n  modalities?: { input?: string[]; output?: string[] };\n  toolCall?: boolean;\n  reasoning?: boolean;\n  attachment?: boolean;\n  temperature?: boolean | number;\n  knowledge?: string;\n  releaseDate?: string;\n  lastUpdated?: string;\n  openWeights?: boolean;\n  cost?: { input?: number; output?: number; cacheRead?: number };\n  limit?: { context?: number; output?: number };\n};\n`;
 	const body = `export const catalog: Record<ProviderId, { models: ModelInfo[] }> = ${JSON.stringify(catalog, null, 2)} as const;\n`;
 	return `${header}\n${types}\n${body}`;
 }
@@ -70,7 +154,7 @@ async function main() {
 		if (!file) throw new Error('--from requires a filepath');
 		console.log(`Reading ${file} ...`);
 		const text = await Bun.file(file).text();
-		feed = JSON.parse(text);
+		feed = JSON.parse(text) as ProviderFeed;
 	} else {
 		console.log(`Fetching ${SOURCE} ...`);
 		const res = await fetch(SOURCE);

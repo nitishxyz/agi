@@ -1,7 +1,7 @@
 import { hasToolCall, streamText, type ModelMessage } from 'ai';
 import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
-import { messages, messageParts } from '@/db/schema/index.ts';
+import { messages, messageParts, sessions } from '@/db/schema/index.ts';
 import { eq, asc } from 'drizzle-orm';
 import { resolveModel, type ProviderName } from '@/ai/provider.ts';
 import { resolveAgentConfig } from '@/ai/agents/registry.ts';
@@ -9,6 +9,7 @@ import { defaultAgentPrompts } from '@/ai/agents/defaults.ts';
 import { discoverProjectTools } from '@/ai/tools/loader.ts';
 import { adaptTools } from '@/ai/tools/adapter.ts';
 import { publish, subscribe } from '@/server/events/bus.ts';
+import { estimateModelCostUsd } from '@/providers/pricing.ts';
 
 type RunOpts = {
 	sessionId: string;
@@ -104,10 +105,18 @@ async function runAssistant(opts: RunOpts) {
 	let currentPartId = opts.assistantPartId;
 	let accumulated = '';
 
+	// Track if the model called finalize; fallback later if not
+	let finalizeObserved = false;
+
 	// Rotate assistant text part only on tool.result boundaries for simpler ordering
 	const unsubscribe = subscribe(opts.sessionId, async (evt) => {
 		if (evt.type !== 'tool.result') return;
 		try {
+			// detect finalize
+			try {
+				const name = (evt.payload as { name?: string } | undefined)?.name;
+				if (name === 'finalize') finalizeObserved = true;
+			} catch {}
 			// finalize current part by doing nothing special; we already persist text incrementally
 			// start a new text part for subsequent deltas
 			const newPartId = crypto.randomUUID();
@@ -148,6 +157,14 @@ async function runAssistant(opts: RunOpts) {
 			messages: history,
 			stopWhen: hasToolCall('finalize'),
 		});
+		let finishReason: string | undefined;
+		let totalUsage:
+			| {
+					inputTokens?: number | null;
+					outputTokens?: number | null;
+					totalTokens?: number | null;
+			  }
+			| undefined;
 
 		for await (const delta of result.textStream) {
 			if (!delta) continue;
@@ -166,6 +183,22 @@ async function runAssistant(opts: RunOpts) {
 				.set({ content: JSON.stringify({ text: accumulated }) })
 				.where(eq(messageParts.id, currentPartId));
 		}
+
+		try {
+			finishReason = await result.finishReason;
+		} catch {}
+		try {
+			totalUsage = await result.totalUsage;
+		} catch {}
+
+		// Ensure finalize is called at least once even if the model forgot
+		try {
+			if (!finalizeObserved && toolset?.finalize) {
+				const text = accumulated?.trim() ? accumulated : undefined;
+				await toolset.finalize.onInputAvailable?.({ input: { text } } as never);
+				await toolset.finalize.execute?.({ text } as never, undefined as never);
+			}
+		} catch {}
 
 		// Mark message completion and latency
 		let createdAt = undefined as number | undefined;
@@ -189,8 +222,43 @@ async function runAssistant(opts: RunOpts) {
 				status: 'complete',
 				completedAt: finishedAt,
 				latencyMs: latency ?? undefined,
+				promptTokens:
+					totalUsage?.inputTokens != null
+						? Number(totalUsage.inputTokens)
+						: undefined,
+				completionTokens:
+					totalUsage?.outputTokens != null
+						? Number(totalUsage.outputTokens)
+						: undefined,
+				totalTokens:
+					totalUsage?.totalTokens != null
+						? Number(totalUsage.totalTokens)
+						: undefined,
 			})
 			.where(eq(messages.id, opts.assistantMessageId));
+		if (totalUsage && (totalUsage.inputTokens || totalUsage.outputTokens)) {
+			try {
+				const sessRows = await db
+					.select()
+					.from(sessions)
+					.where(eq(sessions.id, opts.sessionId));
+				if (sessRows.length) {
+					const row = sessRows[0];
+					const priorInput = Number(row.totalInputTokens ?? 0);
+					const priorOutput = Number(row.totalOutputTokens ?? 0);
+					const nextInput = priorInput + Number(totalUsage.inputTokens ?? 0);
+					const nextOutput = priorOutput + Number(totalUsage.outputTokens ?? 0);
+					await db
+						.update(sessions)
+						.set({
+							totalInputTokens: nextInput,
+							totalOutputTokens: nextOutput,
+							lastActiveAt: finishedAt,
+						})
+						.where(eq(sessions.id, opts.sessionId));
+				}
+			} catch {}
+		}
 		// mark last text part completed
 		try {
 			await db
@@ -198,10 +266,18 @@ async function runAssistant(opts: RunOpts) {
 				.set({ completedAt: finishedAt })
 				.where(eq(messageParts.id, currentPartId));
 		} catch {}
+		const costUsd = totalUsage
+			? estimateModelCostUsd(opts.provider, opts.model, totalUsage)
+			: undefined;
 		publish({
 			type: 'message.completed',
 			sessionId: opts.sessionId,
-			payload: { id: opts.assistantMessageId },
+			payload: {
+				id: opts.assistantMessageId,
+				usage: totalUsage,
+				costUsd,
+				finishReason,
+			},
 		});
 	} catch (error) {
 		await db
