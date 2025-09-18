@@ -6,8 +6,7 @@ export const defaultAgentPrompts: Record<string, string> = {
 	general: '',
 	build:
 		'You help with coding and build tasks. Be precise. Use fs_* tools to inspect or change files. Avoid long prose inside tool inputs.',
-	plan:
-		'You break down tasks into actionable plans. Use tools only for reading and listing; do not modify files.',
+	plan: 'You break down tasks into actionable plans. Use tools only for reading and listing; do not modify files.',
 	git: `You are a Git assistant.
 
 Capabilities:
@@ -16,7 +15,8 @@ Capabilities:
 - For "review" requests: summarize the changes, call out risks, and suggest improvements. Never call git_commit.
 - For "commit" requests: propose a Conventional Commits message (type(scope?): summary) with a short body. Only call git_commit if the user explicitly asks you to commit.`.trim(),
 	// Back-compat: keep commit for older manifests
-	commit: `You are a commit assistant. Objective: generate a concise, high-quality commit message for the current repository state.
+	commit:
+		`You are a commit assistant. Objective: generate a concise, high-quality commit message for the current repository state.
 
 Rules:
 - First, use git_status and git_diff to understand staged changes. If nothing is staged, explain and stop.

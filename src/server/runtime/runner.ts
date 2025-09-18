@@ -56,14 +56,11 @@ async function runAssistant(opts: RunOpts) {
 
 	// Resolve agent prompt and tools
 	const agentCfg = await resolveAgentConfig(cfg.projectRoot, opts.agent);
-    const agentPrompt =
-      agentCfg.prompt ||
-      defaultAgentPrompts[opts.agent] ||
-      '';
-    // Always prepend base instructions; keep agent prompts free of the base text
-    const system = agentPrompt.trim()
-      ? `${baseInstructions.trim()}\n\n${agentPrompt.trim()}`
-      : baseInstructions.trim();
+	const agentPrompt = agentCfg.prompt || defaultAgentPrompts[opts.agent] || '';
+	// Always prepend base instructions; keep agent prompts free of the base text
+	const system = agentPrompt.trim()
+		? `${baseInstructions.trim()}\n\n${agentPrompt.trim()}`
+		: baseInstructions.trim();
 	const allTools = await discoverProjectTools(cfg.projectRoot);
 	const allowedNames = new Set([
 		...(agentCfg.tools || []),
