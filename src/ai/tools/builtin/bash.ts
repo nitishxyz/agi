@@ -1,6 +1,6 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
-import { $ } from 'bun';
+import { spawn } from 'bun';
 
 function normalizePath(p: string) {
 	const parts = p.replace(/\\/g, '/').split('/');
@@ -28,7 +28,7 @@ export function buildBashTool(projectRoot: string): {
 } {
 	const bash = tool({
 		description:
-			"Execute shell commands using Bun's $ template (bash -lc). Returns stdout, stderr, and exitCode. CWD is relative to project root.",
+			'Execute shell commands in a bash -lc subshell. Returns stdout, stderr, and exitCode. CWD is relative to project root.',
 		inputSchema: z
 			.object({
 				cmd: z.string().describe('Shell command to run (bash -lc <cmd>)'),
@@ -53,11 +53,13 @@ export function buildBashTool(projectRoot: string): {
 			allowNonZeroExit?: boolean;
 		}) {
 			const absCwd = resolveSafePath(projectRoot, cwd || '.');
-			const runner = allowNonZeroExit
-				? $({ cwd: absCwd }).nothrow()
-				: $({ cwd: absCwd });
-			const proc = await runner`bash -lc ${cmd}`;
-			const exitCode = proc.exitCode as number;
+			const proc = spawn({
+				cmd: ['bash', '-lc', cmd],
+				cwd: absCwd,
+				stdout: 'pipe',
+				stderr: 'pipe',
+			});
+			const exitCode = await proc.exited;
 			const stdout = await new Response(proc.stdout).text();
 			const stderr = await new Response(proc.stderr).text();
 			if (exitCode !== 0 && !allowNonZeroExit) {
