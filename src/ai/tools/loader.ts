@@ -4,6 +4,7 @@ import { finalizeTool } from '@/ai/tools/builtin/finalize.ts';
 import { buildFsTools } from '@/ai/tools/builtin/fs.ts';
 import { buildGitTools } from '@/ai/tools/builtin/git.ts';
 import { progressUpdateTool } from '@/ai/tools/builtin/progress.ts';
+import { buildBashTool } from '@/ai/tools/builtin/bash.ts';
 import { Glob } from 'bun';
 import { dirname, isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -88,8 +89,11 @@ export async function discoverProjectTools(
 	for (const { name, tool } of buildFsTools(projectRoot)) tools.set(name, tool);
 	for (const { name, tool } of buildGitTools(projectRoot))
 		tools.set(name, tool);
+	// Built-ins
 	tools.set('finalize', finalizeTool);
 	tools.set('progress_update', progressUpdateTool);
+	const bash = buildBashTool(projectRoot);
+	tools.set(bash.name, bash.tool);
 
 	async function loadFromBase(base: string | null | undefined) {
 		if (!base) return;

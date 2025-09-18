@@ -73,7 +73,44 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 			async onInputAvailable(options: ToolOnInputAvailableOptions | undefined) {
 				const args = (options as { input?: unknown } | undefined)?.input;
 				const callPartId = crypto.randomUUID();
-				// Allocate index and persist before publishing the event to ensure deterministic ordering
+
+				// Special-case: progress updates must render instantly. Publish before any DB work.
+				if (name === 'progress_update') {
+					const startTs = Date.now();
+					publish({
+						type: 'tool.call',
+						sessionId: ctx.sessionId,
+						payload: { name, args, callId: callPartId },
+					});
+					const list = pendingCalls.get(name) ?? [];
+					list.push({ callId: callPartId, startTs });
+					pendingCalls.set(name, list);
+					// Optionally persist in the background without blocking ordering
+					(async () => {
+						try {
+							const index = await ctx.nextIndex();
+							await ctx.db.insert(messageParts).values({
+								id: callPartId,
+								messageId: ctx.messageId,
+								index,
+								type: 'tool_call',
+								content: JSON.stringify({ name, args, callId: callPartId }),
+								agent: ctx.agent,
+								provider: ctx.provider,
+								model: ctx.model,
+								startedAt: startTs,
+								toolName: name,
+								toolCallId: callPartId,
+							});
+						} catch {}
+					})();
+					if (typeof base.onInputAvailable === 'function') {
+						await base.onInputAvailable(options);
+					}
+					return;
+				}
+
+				// Default behavior: persist before publishing to keep deterministic ordering
 				const index = await ctx.nextIndex();
 				const startTs = Date.now();
 				await ctx.db.insert(messageParts).values({
@@ -119,6 +156,13 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				} else if (name.startsWith('fs_') && typeof input?.path === 'string') {
 					const rel = joinRelative(cwd, String(input.path));
 					const nextInput = { ...input, path: rel } as ToolExecuteInput;
+					res = base.execute?.(nextInput, options);
+				} else if (name === 'bash') {
+					const needsCwd =
+						!input || typeof (input as Record<string, unknown>).cwd !== 'string';
+					const nextInput = needsCwd
+						? ({ ...(input as Record<string, unknown>), cwd } as ToolExecuteInput)
+						: input;
 					res = base.execute?.(nextInput, options);
 				} else {
 					res = base.execute?.(input, options);
@@ -181,6 +225,37 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				const endTs = Date.now();
 				const dur =
 					typeof startTs === 'number' ? Math.max(0, endTs - startTs) : null;
+
+				// Special-case: keep progress_update result lightweight; publish first, persist best-effort
+				if (name === 'progress_update') {
+					publish({
+						type: 'tool.result',
+						sessionId: ctx.sessionId,
+						payload: contentObj,
+					});
+					// Persist without blocking the event loop
+					(async () => {
+						try {
+							await ctx.db.insert(messageParts).values({
+								id: resultPartId,
+								messageId: ctx.messageId,
+								index,
+								type: 'tool_result',
+								content: JSON.stringify(contentObj),
+								agent: ctx.agent,
+								provider: ctx.provider,
+								model: ctx.model,
+								startedAt: startTs,
+								completedAt: endTs,
+								toolName: name,
+								toolCallId: callId,
+								toolDurationMs: dur ?? undefined,
+							});
+						} catch {}
+					})();
+					return result as ToolExecuteReturn;
+				}
+
 				await ctx.db.insert(messageParts).values({
 					id: resultPartId,
 					messageId: ctx.messageId,

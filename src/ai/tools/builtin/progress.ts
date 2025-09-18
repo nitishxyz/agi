@@ -4,7 +4,14 @@ import { z } from 'zod';
 // Progress update tool: allows the model to emit lightweight status signals
 // without revealing chain-of-thought. The runner/UI should surface these
 // messages immediately.
-const StageEnum = z.enum(['planning', 'generating', 'writing', 'verifying']);
+const StageEnum = z.enum([
+  'planning',
+  'discovering',
+  'generating',
+  'preparing',
+  'writing',
+  'verifying',
+]);
 
 export const progressUpdateTool = tool({
 	description:
