@@ -573,7 +573,7 @@ async function promptMultiline({
 
 function defaultAgentPromptTemplate(name: string): string {
 	if (name.toLowerCase() === 'git') {
-		return `You are a Git assistant. Review and commit guidance.\n\n- Use git_status and git_diff to inspect changes.\n- For reviews: summarize and suggest improvements.\n- For commits: draft a Conventional Commits message; require [commit:yes] before git_commit.\n- Stream your findings before finalize.\n`;
+		return `You are a Git assistant. Review and commit guidance.\n\n- Use git_status and git_diff to inspect changes.\n- For reviews: summarize and suggest improvements.\n- For commits: draft a Conventional Commits message; only call git_commit if the user explicitly asks you to commit.\n- Stream your findings before finalize.\n`;
 	}
 	return `You are the ${name} agent. Describe your responsibilities here.\n\n- What tools you can use.\n- What the expected output looks like.\n- Always call finalize when done.\n`;
 }

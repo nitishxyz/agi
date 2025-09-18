@@ -5,7 +5,7 @@ import { messages, messageParts, sessions } from '@/db/schema/index.ts';
 import { eq, asc } from 'drizzle-orm';
 import { resolveModel, type ProviderName } from '@/ai/provider.ts';
 import { resolveAgentConfig } from '@/ai/agents/registry.ts';
-import { defaultAgentPrompts } from '@/ai/agents/defaults.ts';
+import { baseInstructions, defaultAgentPrompts } from '@/ai/agents/defaults.ts';
 import { discoverProjectTools } from '@/ai/tools/loader.ts';
 import { adaptTools } from '@/ai/tools/adapter.ts';
 import { publish, subscribe } from '@/server/events/bus.ts';
@@ -56,10 +56,14 @@ async function runAssistant(opts: RunOpts) {
 
 	// Resolve agent prompt and tools
 	const agentCfg = await resolveAgentConfig(cfg.projectRoot, opts.agent);
-	const system =
-		agentCfg.prompt ||
-		defaultAgentPrompts[opts.agent] ||
-		'You are a helpful assistant.';
+    const agentPrompt =
+      agentCfg.prompt ||
+      defaultAgentPrompts[opts.agent] ||
+      '';
+    // Always prepend base instructions; keep agent prompts free of the base text
+    const system = agentPrompt.trim()
+      ? `${baseInstructions.trim()}\n\n${agentPrompt.trim()}`
+      : baseInstructions.trim();
 	const allTools = await discoverProjectTools(cfg.projectRoot);
 	const allowedNames = new Set([
 		...(agentCfg.tools || []),
