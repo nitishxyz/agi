@@ -1,104 +1,315 @@
-# agi — AI-powered development assistant (server + CLI)
+# AGI CLI
 
-A Bun-based AGI server and CLI built on AI SDK v5. It streams assistant output, supports tool/function calling, persists sessions in a local SQLite DB, and works with OpenAI, Anthropic, and Google models. Project- and user-specific agents, tools, and commands are discoverable from .agi/ directories.
+A powerful AI-powered development assistant CLI that brings AI agents and tools directly to your terminal. Build, plan, and execute development tasks with intelligent assistance from multiple AI providers.
 
-Highlights
-- Streaming chat and tool calls over HTTP/SSE
-- Local persistence per project in .agi/agi.sqlite (Drizzle + SQLite)
-- Built-in and project-defined tools with artifacts (e.g., file diffs)
-- Progress updates: assistants can emit lightweight status lines (stage tag)
-- Discovered commands: simple JSON manifests with optional prompt files
-- Works with OpenAI, Anthropic, Google via AI SDK v5
+## Features
 
-Requirements
-- Bun 1.2+ installed
-- At least one provider API key: OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_GENERATIVE_AI_API_KEY
+- **Multi-Provider Support**: Seamlessly switch between OpenAI, Anthropic, and Google AI providers
+- **Intelligent Agents**: Specialized agents for different tasks (general, build, plan, commit, etc.)
+- **Extensible Tool System**: Built-in tools for file operations, git, bash commands, and more
+- **Session Management**: Persistent conversation history stored locally in SQLite
+- **Project-Aware**: Maintains context per project with local `.agi` configuration
+- **Streaming Responses**: Real-time AI responses via Server-Sent Events (SSE)
+- **Custom Commands**: Define project-specific commands with custom prompts and agents
+- **HTTP Server Mode**: Run as a server for integration with other tools
 
-Install
-- bun install
+## Installation
 
-Authenticate providers
-- bun run index.ts auth login
-  - Follow prompts to store provider keys (global by default; add --local to write per-project)
+### From NPM
 
-Run the server
-- bun run index.ts serve
-  - Starts the HTTP server (prints http://localhost:<port>) and prepares .agi/agi.sqlite
+```bash
+npm install -g @agi-cli/core
+```
 
-One-shot ask (CLI)
-- bun run index.ts "Explain the repo in two lines" [--agent <name>] [--provider <p>] [--model <m>] [--project <path>] [--last|--session <id>]
+### From Source
 
-Compiled binary (optional)
-- bun run build  → produces dist/agi
-- ./dist/agi serve
-- ./dist/agi "Hello" --agent general
+```bash
+# Clone the repository
+git clone https://github.com/ntishxyz/agi.git
+cd agi
 
-CLI overview
-- serve                    Start the HTTP server
-- sessions [--list|--json] Manage or pick sessions (default: pick)
-- auth <login|list|logout> Manage provider credentials (use --local to write/remove local auth)
-- setup                   Alias for "auth login"
-- models|switch           Pick default provider/model (interactive)
-- scaffold|generate       Create agents, tools, or commands (interactive)
-- agents [--local]        Edit agents.json entries (interactive)
-- tools                   List discovered tools and agent access
-- doctor                  Diagnose auth, defaults, and agent/tool issues
-- chat [--last|--session] Start an interactive chat (if enabled)
+# Install dependencies with Bun
+bun install
 
-Common options
-- --project <path>         Use project at <path> (default: cwd)
-- --last                   Send to most-recent session
-- --session <id>           Send to a specific session
-- --json | --json-stream   Machine-readable outputs
+# Build the CLI
+bun run build
 
-Agents
-- Built-in agents: general, build, plan
-  - Prompts are embedded by default and can be overridden per project via .agi/agents/<agent>/agent.md
-  - Defaults were updated to allow periodic progress updates; long or multi-step tasks may emit non-sensitive status lines
+# Optional: Link globally
+bun link
+```
 
-Tools
-- Built-in tool registry plus project tools in .agi/tools/<tool>/tool.ts
-- New: progress_update tool (lightweight status events)
-  - name: progress_update
-  - input: { message: string (<= 200 chars); pct?: 0–100; stage?: planning|generating|writing|verifying }
-  - purpose: let the assistant surface short status lines without revealing chain-of-thought
-  - CLI render: shows a stage tag like [planning], [discovering], [preparing], [verifying]; no progress bar; results are not echoed to avoid clutter
+## Quick Start
 
-Discovered commands
-- Place JSON manifests in either location; later entries override earlier ones by name:
-  - Global: ~/.agi/commands/*.json
-  - Project: ./.agi/commands/*.json
-- Minimal manifest
-  {
-    "name": "commit",
-    "description": "Propose a Conventional Commits message for staged changes",
-    "agent": "git",
-    "interactive": true
+### Initial Setup
+
+```bash
+# Configure your AI provider credentials
+agi setup
+
+# Or manually configure auth
+agi auth login
+```
+
+### Basic Usage
+
+```bash
+# Ask a one-shot question
+agi "explain this error: TypeError: Cannot read property 'map' of undefined"
+
+# Interactive mode
+agi
+
+# Use a specific agent
+agi "help me write tests" --agent build
+
+# Continue last conversation
+agi "what about edge cases?" --last
+
+# Use a specific provider and model
+agi "refactor this function" --provider anthropic --model claude-3-opus
+```
+
+## Core Commands
+
+### Session Management
+```bash
+agi sessions              # Interactive session picker
+agi sessions --list       # List all sessions
+agi sessions --json       # Output sessions as JSON
+agi sessions --limit 10   # Limit number of sessions shown
+```
+
+### Provider & Model Configuration
+```bash
+agi models               # Interactive provider/model selection
+agi switch               # Alias for models command
+agi auth login           # Configure provider credentials
+agi auth list            # List configured providers
+agi auth logout          # Remove provider credentials
+```
+
+### Agent & Tool Management
+```bash
+agi agents               # List and configure agents
+agi agents --local       # Edit local project agents
+agi tools                # List available tools and agent access
+agi scaffold             # Generate new agents, tools, or commands
+```
+
+### Diagnostics
+```bash
+agi doctor               # Check configuration and diagnose issues
+agi --version            # Show version
+agi --help               # Show help
+```
+
+### Server Mode
+```bash
+agi serve                # Start HTTP server (random port)
+agi serve --port 3000    # Start on specific port
+```
+
+## Project Configuration
+
+AGI uses a `.agi` directory in your project root for configuration and data storage:
+
+```
+.agi/
+├── agi.sqlite           # Local conversation history
+├── config.json          # Project configuration
+├── agents.json          # Agent customizations
+├── agents/              # Custom agent prompts
+│   └── <agent-name>/
+│       └── agent.md
+├── commands/            # Custom command definitions
+│   ├── <command>.json
+│   └── <command>.md
+└── tools/               # Custom tool implementations
+    └── <tool-name>/
+        ├── tool.ts      # Tool implementation
+        └── prompt.txt   # Tool context
+```
+
+### Example config.json
+```json
+{
+  "defaults": {
+    "provider": "anthropic",
+    "model": "claude-3-opus",
+    "agent": "general"
+  },
+  "providers": {
+    "anthropic": {
+      "enabled": true
+    }
   }
-- Prompt sources (precedence inside a manifest):
-  1) promptPath – relative path resolved against manifest dir, then project root; supports ~/ expansion
-  2) prompt – inline string
-  3) promptTemplate – template string; if it contains {input}, it will be replaced; otherwise the user input is appended
-  4) Sibling prompt file: if none of the above are set, a file named <manifestName>.md or .txt next to the manifest is used if present
-- {input} placeholder: replaced with remaining CLI args or interactive input when interactive: true
-- Example tree
-  .agi/commands/
-  ├─ commit.json
-  └─ commit.md
+}
+```
 
-Doctor
-- Prints configuration, provider auth status, agents, tools, and now Commands:
-  - Shows global and local command directories, discovered names, and details per command (json path and prompt origin)
+### Example agents.json
+```json
+{
+  "build": {
+    "tools": ["fs_read", "fs_write", "bash", "git_*"],
+    "prompt": "You are a build automation expert..."
+  },
+  "test": {
+    "tools": ["fs_read", "bash"],
+    "appendTools": ["progress_update"]
+  }
+}
+```
 
-Data storage
-- SQLite DB per project at .agi/agi.sqlite
-- Messages and tool calls/results are persisted; file diff artifacts can be stored inline or as files
+## Custom Commands
 
-Docs
-- See docs/ for deeper details:
-  - docs/ai-sdk-v5.md – SDK usage patterns
-  - docs/tools-and-artifacts.md – authoring tools, artifacts, and diff format
-  - docs/agi-plan.md – architecture plan and conventions
+Create reusable commands for common tasks:
 
-License
-- MIT
+### Example: .agi/commands/commit.json
+```json
+{
+  "name": "commit",
+  "description": "Generate a commit message from staged changes",
+  "agent": "commit",
+  "interactive": true,
+  "promptTemplate": "Generate a commit message for these changes:\n{input}",
+  "confirm": {
+    "required": true,
+    "message": "Proceed with this commit message?"
+  }
+}
+```
+
+Usage:
+```bash
+agi commit
+```
+
+## Built-in Agents
+
+- **general**: General-purpose assistant with broad tool access
+- **build**: Specialized for build tasks, compilation, and project setup
+- **plan**: Strategic planning and architecture decisions
+- **commit**: Git commit message generation
+- **quick**: Fast responses without tool access
+
+## Built-in Tools
+
+- **File System**: `fs_read`, `fs_write`, `fs_list`, `fs_search`
+- **Git Operations**: `git_status`, `git_diff`, `git_commit`, `git_log`
+- **Shell Commands**: `bash` - Execute shell commands safely
+- **Progress Updates**: `progress_update` - Status updates during long operations
+- **Finalization**: `finalize` - Mark task completion
+
+## Environment Variables
+
+```bash
+# Provider API Keys
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_AI_API_KEY=...
+
+# Optional Configuration
+AGI_PROJECT_ROOT=/path/to/project    # Override project detection
+PORT=3000                             # Default server port
+DEBUG_AGI=1                           # Enable debug output
+```
+
+## Development
+
+### Prerequisites
+
+- [Bun](https://bun.sh) runtime (v1.0+)
+- Node.js 18+ (for compatibility)
+- SQLite3
+
+### Project Structure
+
+```
+agi/
+├── src/
+│   ├── ai/              # AI agents, tools, and providers
+│   ├── cli/             # CLI commands and interface
+│   ├── config/          # Configuration management
+│   ├── db/              # Database schemas and migrations
+│   ├── providers/       # AI provider integrations
+│   └── server/          # HTTP server and API routes
+├── tests/               # Test suites
+├── scripts/             # Build and utility scripts
+└── docs/                # Additional documentation
+```
+
+### Running Tests
+
+```bash
+bun test                 # Run all tests
+bun test <pattern>       # Run specific tests
+```
+
+### Building
+
+```bash
+bun run build            # Build standalone binary
+bun run compile:linux-x64    # Cross-compile for Linux
+bun run compile:darwin-arm64 # Cross-compile for macOS ARM
+```
+
+## API Reference
+
+When running in server mode (`agi serve`), the following endpoints are available:
+
+### REST API
+
+- `GET /openapi.json` - OpenAPI specification
+- `GET /health` - Health check
+- `GET /sessions` - List sessions
+- `POST /sessions` - Create session
+- `GET /sessions/:id` - Get session details
+- `POST /sessions/:id/messages` - Send message (SSE response)
+
+### SSE Streaming Format
+
+Messages stream as Server-Sent Events with the following event types:
+- `assistant.delta` - Incremental text chunks
+- `tool.call` - Tool invocation
+- `tool.result` - Tool execution result
+- `usage` - Token usage statistics
+- `error` - Error messages
+
+## Contributing
+
+Contributions are welcome! Please follow these guidelines:
+
+1. Use Bun for all operations (no npm/yarn/pnpm)
+2. Follow the existing code style (Biome for linting)
+3. Keep changes focused and minimal
+4. Update tests for new features
+5. Follow conventions in `AGENTS.md`
+
+### Development Workflow
+
+```bash
+# Install dependencies
+bun install
+
+# Run linter
+bun lint
+
+# Run tests
+bun test
+
+# Test CLI locally
+bun run cli "<prompt>"
+
+# Generate DB migrations
+bun run db:generate
+```
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/ntishxyz/agi/issues)
+- **Documentation**: [docs/](./docs/)
+- **Author**: ntishxyz
