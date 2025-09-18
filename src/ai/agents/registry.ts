@@ -58,7 +58,7 @@ function mergeAgentEntries(
 const baseToolSet = ['progress_update', 'finalize'] as const;
 
 const defaultToolExtras: Record<string, string[]> = {
-	build: ['fs_read', 'fs_write', 'fs_ls', 'fs_tree'],
+	build: ['fs_read', 'fs_write', 'fs_ls', 'fs_tree', 'bash'],
 	plan: ['fs_read', 'fs_ls', 'fs_tree'],
 	git: ['git_status', 'git_diff', 'git_commit', 'fs_read', 'fs_ls'],
 	commit: ['git_status', 'git_diff', 'git_commit', 'fs_read', 'fs_ls'],

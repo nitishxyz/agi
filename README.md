@@ -6,7 +6,7 @@ Highlights
 - Streaming chat and tool calls over HTTP/SSE
 - Local persistence per project in .agi/agi.sqlite (Drizzle + SQLite)
 - Built-in and project-defined tools with artifacts (e.g., file diffs)
-- Progress updates: assistants can emit lightweight status lines (stage + %)
+- Progress updates: assistants can emit lightweight status lines (stage tag)
 - Discovered commands: simple JSON manifests with optional prompt files
 - Works with OpenAI, Anthropic, Google via AI SDK v5
 
@@ -62,7 +62,7 @@ Tools
   - name: progress_update
   - input: { message: string (<= 200 chars); pct?: 0–100; stage?: planning|generating|writing|verifying }
   - purpose: let the assistant surface short status lines without revealing chain-of-thought
-  - CLI render: shows a stage badge and optional progress bar; results are not echoed to avoid clutter
+  - CLI render: shows a stage tag like [planning], [discovering], [preparing], [verifying]; no progress bar; results are not echoed to avoid clutter
 
 Discovered commands
 - Place JSON manifests in either location; later entries override earlier ones by name:

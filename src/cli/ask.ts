@@ -1137,22 +1137,11 @@ function printToolCall(
 			typeof stageValue === 'string' && stageValue.trim().length
 				? stageValue
 				: 'planning';
-		const pctSource = progressArgs.pct;
-		const pctRaw =
-			typeof pctSource === 'number'
-				? pctSource
-				: typeof pctSource === 'string'
-					? Number.parseFloat(pctSource)
-					: NaN;
-		const pct = Number.isFinite(pctRaw)
-			? Math.max(0, Math.min(100, Math.round(pctRaw)))
-			: undefined;
-		const badge = stageBadge(stage);
-		const bar = pct != null ? ` ${progressBar(pct)} ${dim(`${pct}%`)}` : '';
-		const line = `${badge} ${msg}${bar}`.trim();
-		Bun.write(Bun.stderr, `${line}\n`);
-		return;
-	}
+    const badge = stageBadge(stage);
+    const line = `${badge} ${msg}`.trim();
+    Bun.write(Bun.stderr, `${line}\n`);
+    return;
+  }
 	const v = opts?.verbose;
 	const title = `${bold('›')} ${cyan(name)} ${dim('running...')}`;
 	if (!args || !v) {
@@ -1244,26 +1233,22 @@ function printToolResult(
 }
 
 function stageBadge(stage: string) {
-	switch (stage) {
-		case 'planning':
-			return `${bold('…')} ${dim('[planning]')}`;
-		case 'generating':
-			return `${bold('…')} ${dim('[generating]')}`;
-		case 'writing':
-			return `${bold('…')} ${yellow('[writing]')}`;
-		case 'verifying':
-			return `${bold('…')} ${green('[verifying]')}`;
-		default:
-			return `${bold('…')} ${dim(`[${stage}]`)}`;
-	}
-}
-
-function progressBar(pct: number) {
-	const width = 20;
-	const clamped = Math.max(0, Math.min(100, Math.round(pct)));
-	const filled = Math.round((clamped / 100) * width);
-	const empty = width - filled;
-	return `${green('█'.repeat(filled))}${dim('░'.repeat(empty))}`;
+  switch (stage) {
+    case 'planning':
+      return `${dim('[planning]')}`;
+    case 'discovering':
+      return `${dim('[discovering]')}`;
+    case 'generating':
+      return `${dim('[generating]')}`;
+    case 'preparing':
+      return `${yellow('[preparing]')}`;
+    case 'writing':
+      return `${yellow('[writing]')}`;
+    case 'verifying':
+      return `${green('[verifying]')}`;
+    default:
+      return `${dim(`[${stage}]`)}`;
+  }
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
