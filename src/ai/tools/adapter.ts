@@ -159,9 +159,13 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					res = base.execute?.(nextInput, options);
 				} else if (name === 'bash') {
 					const needsCwd =
-						!input || typeof (input as Record<string, unknown>).cwd !== 'string';
+						!input ||
+						typeof (input as Record<string, unknown>).cwd !== 'string';
 					const nextInput = needsCwd
-						? ({ ...(input as Record<string, unknown>), cwd } as ToolExecuteInput)
+						? ({
+								...(input as Record<string, unknown>),
+								cwd,
+							} as ToolExecuteInput)
 						: input;
 					res = base.execute?.(nextInput, options);
 				} else {

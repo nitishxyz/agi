@@ -5,12 +5,12 @@ import { z } from 'zod';
 // without revealing chain-of-thought. The runner/UI should surface these
 // messages immediately.
 const StageEnum = z.enum([
-  'planning',
-  'discovering',
-  'generating',
-  'preparing',
-  'writing',
-  'verifying',
+	'planning',
+	'discovering',
+	'generating',
+	'preparing',
+	'writing',
+	'verifying',
 ]);
 
 export const progressUpdateTool = tool({
