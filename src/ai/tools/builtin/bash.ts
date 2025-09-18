@@ -22,7 +22,10 @@ function resolveSafePath(projectRoot: string, p: string) {
 	return abs;
 }
 
-export function buildBashTool(projectRoot: string): { name: string; tool: Tool } {
+export function buildBashTool(projectRoot: string): {
+	name: string;
+	tool: Tool;
+} {
 	const bash = tool({
 		description:
 			"Execute shell commands using Bun's $ template (bash -lc). Returns stdout, stderr, and exitCode. CWD is relative to project root.",

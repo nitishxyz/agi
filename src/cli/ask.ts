@@ -1122,6 +1122,10 @@ function printToolCall(
 ) {
 	// Special render for progress updates
 	if (name === 'progress_update') {
+		// Ensure progress appears on its own line even if assistant text is mid-line
+		try {
+			Bun.write(Bun.stdout, '\n');
+		} catch {}
 		const progressArgs: Record<string, unknown> = isPlainObject(args)
 			? args
 			: {};
@@ -1137,11 +1141,11 @@ function printToolCall(
 			typeof stageValue === 'string' && stageValue.trim().length
 				? stageValue
 				: 'planning';
-    const badge = stageBadge(stage);
-    const line = `${badge} ${msg}`.trim();
-    Bun.write(Bun.stderr, `${line}\n`);
-    return;
-  }
+		const badge = stageBadge(stage);
+		const line = `${badge} ${msg}`.trim();
+		Bun.write(Bun.stderr, `${line}\n`);
+		return;
+	}
 	const v = opts?.verbose;
 	const title = `${bold('›')} ${cyan(name)} ${dim('running...')}`;
 	if (!args || !v) {
@@ -1233,22 +1237,22 @@ function printToolResult(
 }
 
 function stageBadge(stage: string) {
-  switch (stage) {
-    case 'planning':
-      return `${dim('[planning]')}`;
-    case 'discovering':
-      return `${dim('[discovering]')}`;
-    case 'generating':
-      return `${dim('[generating]')}`;
-    case 'preparing':
-      return `${yellow('[preparing]')}`;
-    case 'writing':
-      return `${yellow('[writing]')}`;
-    case 'verifying':
-      return `${green('[verifying]')}`;
-    default:
-      return `${dim(`[${stage}]`)}`;
-  }
+	switch (stage) {
+		case 'planning':
+			return `${dim('[planning]')}`;
+		case 'discovering':
+			return `${dim('[discovering]')}`;
+		case 'generating':
+			return `${dim('[generating]')}`;
+		case 'preparing':
+			return `${yellow('[preparing]')}`;
+		case 'writing':
+			return `${yellow('[writing]')}`;
+		case 'verifying':
+			return `${green('[verifying]')}`;
+		default:
+			return `${dim(`[${stage}]`)}`;
+	}
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
