@@ -232,7 +232,7 @@ function printHelp(
 		'Commands:',
 		'  serve                    Start the HTTP server',
 		'  sessions [--list|--json] Manage or pick sessions (default: pick)',
-		'  auth <login|list|logout> Manage provider credentials (use --local to write/remove local auth)',
+		'  auth <login|list|logout> Manage provider credentials',
 		'  setup                   Alias for `auth login`',
 		'  models|switch           Pick default provider/model (interactive)',
 		'  scaffold|generate       Create agents, tools, or commands (interactive)',

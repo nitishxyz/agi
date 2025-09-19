@@ -13,13 +13,14 @@ type SessionsOptions = {
 };
 
 type SessionRecord = {
-	id: string | number;
-	agent: string;
-	provider: string;
-	model: string;
-	createdAt: number;
-	lastActiveAt?: number | null;
-	[key: string]: unknown;
+    id: string | number;
+    agent: string;
+    provider: string;
+    model: string;
+    title?: string | null;
+    createdAt: number;
+    lastActiveAt?: number | null;
+    [key: string]: unknown;
 };
 
 export async function runSessions(opts: SessionsOptions = {}) {
@@ -61,13 +62,13 @@ export async function runSessions(opts: SessionsOptions = {}) {
 
 	if (opts.pick) {
 		intro('Select a session');
-		const choice = await select({
-			message: 'Choose a session:',
-			options: rows.map((r) => ({
-				value: r.id as string,
-				label: formatRow(r),
-			})),
-		});
+        const choice = await select({
+            message: 'Choose a session:',
+            options: rows.map((r) => ({
+                value: r.id as string,
+                label: formatRow(r),
+            })),
+        });
 		if (isCancel(choice)) return cancel('Cancelled');
 		// Prompt to send a message to the chosen session; if empty, just print id
 		const input = await text({
@@ -100,15 +101,13 @@ export async function runSessions(opts: SessionsOptions = {}) {
 	}
 
 	// Pretty print a simple table
-	const trows = rows.map((r) => [
-		short(r.id),
-		`${r.agent}`,
-		`${r.provider}:${r.model}`,
-		toIso(r.createdAt),
-		r.lastActiveAt ? toIso(r.lastActiveAt) : '-',
-	]);
-	box('Sessions', []);
-	table(['ID', 'Agent', 'Provider:Model', 'Created', 'Active'], trows);
+    const trows = rows.map((r) => [
+        short(r.id),
+        sessionTitle(r),
+        relativeTime(r.lastActiveAt ?? r.createdAt),
+    ]);
+    box('Sessions', []);
+    table(['ID', 'Title', 'Active'], trows);
 	// Stop ephemeral server if we started one
 	if (currentServer) {
 		try {
@@ -119,6 +118,17 @@ export async function runSessions(opts: SessionsOptions = {}) {
 }
 
 const short = (id: string) => String(id).slice(0, 8);
+
+function agentTitle(name: string): string {
+    const cleaned = String(name || '')
+        .replace(/[._-]+/g, ' ')
+        .trim();
+    if (!cleaned) return '';
+    return cleaned
+        .split(' ')
+        .map((w) => (w ? w[0]!.toUpperCase() + w.slice(1) : w))
+        .join(' ');
+}
 
 function toIso(n: number): string {
 	try {
@@ -147,4 +157,32 @@ async function startEphemeralServer(): Promise<string> {
 	const app = createApp();
 	currentServer = Bun.serve({ port: 0, fetch: app.fetch, idleTimeout: 240 });
 	return `http://localhost:${currentServer.port}`;
+}
+
+function formatRow(r: SessionRecord): string {
+    const id = `[${short(r.id as string)}]`;
+    const title = sessionTitle(r);
+    const when = relativeTime(r.lastActiveAt ?? r.createdAt);
+    return `${id} ${title} • ${when}`;
+}
+
+function sessionTitle(r: SessionRecord): string {
+    const t = r.title && String(r.title).trim();
+    if (t) return String(t);
+    const at = agentTitle(r.agent);
+    return at || 'Untitled';
+}
+
+function relativeTime(ms: number | null | undefined): string {
+    if (!ms) return '-';
+    const now = Date.now();
+    const d = Math.max(0, now - Number(ms));
+    const sec = Math.floor(d / 1000);
+    if (sec < 60) return `${sec}s ago`;
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min}m ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr}h ago`;
+    const day = Math.floor(hr / 24);
+    return `${day}d ago`;
 }

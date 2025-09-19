@@ -1,11 +1,10 @@
-// Minimal path join to avoid node:path; ensures forward slashes
-function joinPath(...parts: string[]) {
-	return parts
-		.filter(Boolean)
-		.map((p) => p.replace(/\\/g, '/'))
-		.join('/')
-		.replace(/\/+\/+/g, '/');
-}
+import {
+  getGlobalConfigPath,
+  getLocalDataDir,
+  ensureDir,
+  fileExists,
+  joinPath,
+} from '@/config/paths.ts';
 
 export type ProviderConfig = { enabled: boolean; apiKey?: string };
 
@@ -49,14 +48,10 @@ export async function loadConfig(
 		? String(projectRootInput)
 		: process.cwd();
 
-	const dataDir = joinPath(projectRoot, '.agi');
+	const dataDir = getLocalDataDir(projectRoot);
 	const dbPath = joinPath(dataDir, 'agi.sqlite');
 	const projectConfigPath = joinPath(dataDir, 'config.json');
-	const globalConfigPath = joinPath(
-		process.env.HOME || '',
-		'.agi',
-		'config.json',
-	);
+	const globalConfigPath = getGlobalConfigPath();
 
 	const projectCfg = await readJsonOptional(projectConfigPath);
 	const globalCfg = await readJsonOptional(globalConfigPath);
@@ -64,7 +59,6 @@ export async function loadConfig(
 	const merged = deepMerge(DEFAULTS, globalCfg, projectCfg);
 
 	// Ensure data dir exists so downstream can open DB
-	// Ensure data dir exists. Using Node fs might be replaced when Bun exposes mkdir.
 	await ensureDir(dataDir);
 
 	return {
@@ -74,10 +68,10 @@ export async function loadConfig(
 		paths: {
 			dataDir,
 			dbPath,
-			projectConfigPath: (await exists(projectConfigPath))
+			projectConfigPath: (await fileExists(projectConfigPath))
 				? projectConfigPath
 				: null,
-			globalConfigPath: (await exists(globalConfigPath))
+			globalConfigPath: (await fileExists(globalConfigPath))
 				? globalConfigPath
 				: null,
 		},
@@ -130,17 +124,4 @@ function mergeInto(target: JsonObject, source: JsonObject): JsonObject {
 	return target;
 }
 
-async function exists(p: string) {
-	return await Bun.file(p).exists();
-}
-
-async function ensureDir(dir: string) {
-	try {
-		// Attempt to create a marker file to ensure directory exists
-		// If parent directories are missing, fallback to Node fs.
-		await Bun.write(joinPath(dir, '.keep'), '');
-	} catch {
-		const { promises: fs } = await import('node:fs');
-		await fs.mkdir(dir, { recursive: true }).catch(() => {});
-	}
-}
+// exists and ensureDir are provided by paths.ts

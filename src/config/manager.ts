@@ -6,6 +6,7 @@ import {
 	type ProviderId,
 	type AuthInfo,
 } from '@/auth/index.ts';
+import { getGlobalConfigDir, getGlobalConfigPath } from '@/config/paths.ts';
 
 export type Scope = 'global' | 'local';
 
@@ -26,10 +27,6 @@ export async function isAuthorized(
 	const { cfg, auth } = await read(projectRoot);
 	const info = auth[provider];
 	if (info?.type === 'api' && info.key) return true;
-	// legacy fallback to config apiKey
-	if (provider === 'openai' && cfg.providers.openai?.apiKey) return true;
-	if (provider === 'anthropic' && cfg.providers.anthropic?.apiKey) return true;
-	if (provider === 'google' && cfg.providers.google?.apiKey) return true;
 	return false;
 }
 
@@ -39,24 +36,15 @@ export async function ensureEnv(
 ): Promise<void> {
 	const { cfg, auth } = await read(projectRoot);
 	if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
-		const key =
-			auth.openai?.type === 'api'
-				? auth.openai.key
-				: cfg.providers.openai?.apiKey;
+		const key = auth.openai?.type === 'api' ? auth.openai.key : undefined;
 		if (key) process.env.OPENAI_API_KEY = key;
 	}
 	if (provider === 'anthropic' && !process.env.ANTHROPIC_API_KEY) {
-		const key =
-			auth.anthropic?.type === 'api'
-				? auth.anthropic.key
-				: cfg.providers.anthropic?.apiKey;
+		const key = auth.anthropic?.type === 'api' ? auth.anthropic.key : undefined;
 		if (key) process.env.ANTHROPIC_API_KEY = key;
 	}
 	if (provider === 'google' && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-		const key =
-			auth.google?.type === 'api'
-				? auth.google.key
-				: cfg.providers.google?.apiKey;
+		const key = auth.google?.type === 'api' ? auth.google.key : undefined;
 		if (key) process.env.GOOGLE_GENERATIVE_AI_API_KEY = key;
 	}
 }
@@ -82,9 +70,8 @@ export async function writeDefaults(
 		await Bun.write(path, JSON.stringify(next, null, 2));
 		return;
 	}
-	const home = process.env.HOME || process.env.USERPROFILE || '';
-	const base = `${home}/.agi`.replace(/\\/g, '/');
-	const path = `${base}/config.json`;
+	const base = getGlobalConfigDir();
+	const path = getGlobalConfigPath();
 	const next = {
 		defaults: {
 			agent: updates.agent ?? cfg.defaults.agent,

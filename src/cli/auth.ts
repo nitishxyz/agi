@@ -16,6 +16,7 @@ import {
 } from '@/auth/index.ts';
 import { loadConfig } from '@/config/index.ts';
 import { catalog } from '@/providers/catalog.ts';
+import { getGlobalConfigDir, getGlobalConfigPath } from '@/config/paths.ts';
 
 const PROVIDER_LINKS: Record<
 	ProviderId,
@@ -100,13 +101,14 @@ export async function runAuthLogin(_args: string[]) {
 			v && String(v).trim().length > 0 ? undefined : 'Required',
 	});
 	if (isCancel(key)) return cancel('Cancelled');
-	// Store globally by default, or locally when --local is provided
+	// Store credentials in secure global location (local storage is no longer supported)
 	await setAuth(
 		provider as ProviderId,
 		{ type: 'api', key: String(key) },
 		cfg.projectRoot,
-		wantLocal ? 'local' : 'global',
+		'global',
 	);
+	if (wantLocal) log.warn('Local credential storage is disabled; saved to secure global location.');
 	await ensureGlobalConfigDefaults(provider as ProviderId);
 	log.success('Saved');
 	log.info(`Tip: you can also set ${meta.env} in your environment.`);
@@ -131,20 +133,16 @@ export async function runAuthLogout(_args: string[]) {
 		})),
 	})) as ProviderId | symbol;
 	if (isCancel(selected)) return cancel('Cancelled');
-	await removeAuth(
-		selected as ProviderId,
-		cfg.projectRoot,
-		wantLocal ? 'local' : 'global',
-	);
-	log.success(`Removed${wantLocal ? ' (local)' : ''}`);
+	await removeAuth(selected as ProviderId, cfg.projectRoot, 'global');
+	if (wantLocal) log.warn('Local credential storage is disabled; removed from secure global location.');
+	log.success('Removed');
 	outro('');
 }
 
 async function ensureGlobalConfigDefaults(provider: ProviderId) {
-	// Determine global config path
-	const home = process.env.HOME || process.env.USERPROFILE || '';
-	const base = `${home}/.agi`.replace(/\\/g, '/');
-	const path = `${base}/config.json`;
+	// Determine global config path (XDG config)
+	const base = getGlobalConfigDir();
+	const path = getGlobalConfigPath();
 	// If a global config already exists, do not overwrite
 	const f = Bun.file(path);
 	if (await f.exists()) return;

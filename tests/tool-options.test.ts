@@ -26,9 +26,10 @@ describe('listAvailableTools', () => {
 		const prevProfile = process.env.USERPROFILE;
 		process.env.HOME = home;
 		process.env.USERPROFILE = home;
+		process.env.XDG_CONFIG_HOME = join(home, '.config');
 
 		try {
-			const toolDir = join(home, '.agi', 'tools', 'custom_thing');
+			const toolDir = join(home, '.config', 'agi', 'tools', 'custom_thing');
 			await mkdir(toolDir, { recursive: true });
 			await writeFile(join(toolDir, 'tool.js'), pluginSource);
 
