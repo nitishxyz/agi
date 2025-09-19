@@ -160,10 +160,10 @@ async function main() {
 		const lastFlag = argv.includes('--last');
 		const sessionIdx = argv.indexOf('--session');
 		const agent = agentIdx >= 0 ? argv[agentIdx + 1] : undefined;
-		const provider =
-			providerIdx >= 0
-				? (argv[providerIdx + 1] as 'openai' | 'anthropic' | 'google')
-				: undefined;
+        const provider =
+            providerIdx >= 0
+                ? (argv[providerIdx + 1] as 'openai' | 'anthropic' | 'google' | 'openrouter')
+                : undefined;
 		const model = modelIdx >= 0 ? argv[modelIdx + 1] : undefined;
 		const project = projectIdx >= 0 ? argv[projectIdx + 1] : undefined;
 		const sessionId = sessionIdx >= 0 ? argv[sessionIdx + 1] : undefined;
@@ -205,10 +205,10 @@ async function main() {
 	const lastFlag = argv.includes('--last');
 	const sessionIdx = argv.indexOf('--session');
 	const agent = agentIdx >= 0 ? argv[agentIdx + 1] : undefined;
-	const provider =
-		providerIdx >= 0
-			? (argv[providerIdx + 1] as 'openai' | 'anthropic' | 'google')
-			: undefined;
+    const provider =
+        providerIdx >= 0
+            ? (argv[providerIdx + 1] as 'openai' | 'anthropic' | 'google' | 'openrouter')
+            : undefined;
 	const model = modelIdx >= 0 ? argv[modelIdx + 1] : undefined;
 	const sessionId = sessionIdx >= 0 ? argv[sessionIdx + 1] : undefined;
 	await runAsk(prompt, {
@@ -260,21 +260,23 @@ function printHelp(
 }
 
 async function ensureSomeAuth(projectRoot: string): Promise<boolean> {
-	const cfg = await loadCfg(projectRoot);
-	const any = await Promise.all([
-		isProviderAuthorized(cfg, 'openai'),
-		isProviderAuthorized(cfg, 'anthropic'),
-		isProviderAuthorized(cfg, 'google'),
-	]).then((arr) => arr.some(Boolean));
-	if (!any) {
-		await runAuth(['login']);
-		const cfg2 = await loadCfg(projectRoot);
-		const any2 = await Promise.all([
-			isProviderAuthorized(cfg2, 'openai'),
-			isProviderAuthorized(cfg2, 'anthropic'),
-			isProviderAuthorized(cfg2, 'google'),
-		]).then((arr) => arr.some(Boolean));
-		return any2;
-	}
-	return true;
+    const cfg = await loadCfg(projectRoot);
+    const any = await Promise.all([
+        isProviderAuthorized(cfg, 'openai'),
+        isProviderAuthorized(cfg, 'anthropic'),
+        isProviderAuthorized(cfg, 'google'),
+        isProviderAuthorized(cfg, 'openrouter'),
+    ]).then((arr) => arr.some(Boolean));
+    if (!any) {
+        await runAuth(['login']);
+        const cfg2 = await loadCfg(projectRoot);
+        const any2 = await Promise.all([
+            isProviderAuthorized(cfg2, 'openai'),
+            isProviderAuthorized(cfg2, 'anthropic'),
+            isProviderAuthorized(cfg2, 'google'),
+            isProviderAuthorized(cfg2, 'openrouter'),
+        ]).then((arr) => arr.some(Boolean));
+        return any2;
+    }
+    return true;
 }

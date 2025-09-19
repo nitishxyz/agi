@@ -57,6 +57,7 @@
 		"@ai-sdk/google": "^2.0.14",
 		"@ai-sdk/openai": "^2.0.30",
 		"@clack/prompts": "^0.11.0",
+		"@openrouter/ai-sdk-provider": "^1.2.0",
 		"ai": "^5.0.43",
 		"drizzle-orm": "^0.44.5",
 		"hono": "^4.9.7",

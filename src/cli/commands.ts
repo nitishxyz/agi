@@ -10,11 +10,11 @@ export type CommandManifest = {
 	prompt?: string; // inline prompt override
 	promptPath?: string; // relative path to prompt text
 	promptTemplate?: string; // e.g., "Draft a message: {input}"
-	defaults?: {
-		provider?: 'openai' | 'anthropic' | 'google';
-		model?: string;
-		agent?: string;
-	};
+    defaults?: {
+        provider?: 'openai' | 'anthropic' | 'google' | 'openrouter';
+        model?: string;
+        agent?: string;
+    };
 	confirm?: { required?: boolean; message?: string; token?: string };
 	interactive?: boolean; // if true and no input, prompt user for {input}
 	__dir?: string; // resolved directory for loading promptPath
