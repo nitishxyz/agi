@@ -37,10 +37,10 @@ describe('listAvailableTools', () => {
 			expect(tools).toContain('fs_read');
 			expect(tools).not.toContain('fs_cd');
 			expect(tools).not.toContain('fs_pwd');
-            const withFinalize = await listAvailableTools(projectRoot, 'local', true);
-            expect(withFinalize).toContain('finish');
-			const noDupes = new Set(withFinalize);
-			expect(noDupes.size).toBe(withFinalize.length);
+			const withFinish = await listAvailableTools(projectRoot, 'local', true);
+			expect(withFinish).toContain('finish');
+			const noDupes = new Set(withFinish);
+			expect(noDupes.size).toBe(withFinish.length);
 		} finally {
 			if (prevHome === undefined) delete process.env.HOME;
 			else process.env.HOME = prevHome;
