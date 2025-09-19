@@ -10,7 +10,7 @@ import {
 } from '@/providers/authorization.ts';
 import { publish } from '@/server/events/bus.ts';
 import { generateText } from 'ai';
-import { resolveModel } from '@/ai/provider.ts';
+import { resolveModel, type ProviderName } from '@/ai/provider.ts';
 import { enqueueAssistantRun } from '@/server/runtime/runner.ts';
 
 type MessagePartRow = typeof messageParts.$inferSelect;
@@ -149,7 +149,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 
 				// Background: ask the model for a concise title
 				const cfg = await loadConfig(projectRoot);
-				const model = resolveModel(provider, modelName, cfg);
+				const model = await resolveModel(provider as ProviderName, modelName, cfg);
 				const promptText = String(content ?? '').slice(0, 2000);
 				const sys = [
 					"Create a short, descriptive session title from the user's request.",
@@ -158,11 +158,11 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				].join(' ');
 				let modelTitle = '';
 				try {
-					const out = await generateText({
-						model,
-						system: sys,
-						prompt: promptText,
-					});
+				const out = await generateText({
+					model,
+					system: sys,
+					prompt: promptText,
+				});
 					modelTitle = (out?.text || '').trim();
 				} catch {}
 				if (!modelTitle) return;

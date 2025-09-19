@@ -1,4 +1,3 @@
-import { loadConfig } from '@/config/index.ts';
 import { getSecureAuthPath, ensureDir } from '@/config/paths.ts';
 
 export type ProviderId = 'openai' | 'anthropic' | 'google';

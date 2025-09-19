@@ -5,7 +5,7 @@ import { google } from '@ai-sdk/google';
 
 export type ProviderName = 'openai' | 'anthropic' | 'google';
 
-export function resolveModel(
+export async function resolveModel(
 	provider: ProviderName,
 	model: string,
 	cfg: AGIConfig,
