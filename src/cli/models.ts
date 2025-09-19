@@ -12,7 +12,12 @@ export async function runModels(
 	const cfg = await loadConfig(projectRoot);
 
 	// Build list of authorized providers only
-    const providers: ProviderId[] = ['openai', 'anthropic', 'google', 'openrouter'];
+	const providers: ProviderId[] = [
+		'openai',
+		'anthropic',
+		'google',
+		'openrouter',
+	];
 	const authorization = await Promise.all(
 		providers.map((p) => isProviderAuthorized(cfg, p)),
 	);
@@ -24,11 +29,16 @@ export async function runModels(
 		await runAuth(['login']);
 		// Recompute allowed after auth
 		const cfg2 = await loadConfig(projectRoot);
-        const allProviders = ['openai', 'anthropic', 'google', 'openrouter'] as ProviderId[];
-        const authz2 = await Promise.all(
-            allProviders.map((p) => isProviderAuthorized(cfg2, p)),
-        );
-        const allowed2 = allProviders.filter((_, i) => authz2[i]);
+		const allProviders = [
+			'openai',
+			'anthropic',
+			'google',
+			'openrouter',
+		] as ProviderId[];
+		const authz2 = await Promise.all(
+			allProviders.map((p) => isProviderAuthorized(cfg2, p)),
+		);
+		const allowed2 = allProviders.filter((_, i) => authz2[i]);
 		if (!allowed2.length) {
 			log.error('No credentials added. Aborting.');
 			return outro('');

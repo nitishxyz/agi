@@ -15,7 +15,7 @@ type PricingEntry = {
 };
 
 const pricingTable: Record<ProviderName, PricingEntry[]> = {
-    openai: [
+	openai: [
 		{
 			match: (model) => model.includes('gpt-4o-mini'),
 			inputPerMillion: 0.15,
@@ -36,8 +36,8 @@ const pricingTable: Record<ProviderName, PricingEntry[]> = {
 			inputPerMillion: 5,
 			outputPerMillion: 15,
 		},
-    ],
-    anthropic: [
+	],
+	anthropic: [
 		{
 			match: (model) => model.includes('claude-3-haiku'),
 			inputPerMillion: 0.25,
@@ -53,8 +53,8 @@ const pricingTable: Record<ProviderName, PricingEntry[]> = {
 			inputPerMillion: 15,
 			outputPerMillion: 75,
 		},
-    ],
-    google: [
+	],
+	google: [
 		{
 			match: (model) => model.includes('gemini-1.5-flash'),
 			inputPerMillion: 0.35,
@@ -65,10 +65,10 @@ const pricingTable: Record<ProviderName, PricingEntry[]> = {
 			inputPerMillion: 3.5,
 			outputPerMillion: 10.5,
 		},
-    ],
-    openrouter: [
-        // Prefer catalog pricing; keep empty to defer to catalog or undefined
-    ],
+	],
+	openrouter: [
+		// Prefer catalog pricing; keep empty to defer to catalog or undefined
+	],
 };
 
 function findPricing(

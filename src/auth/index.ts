@@ -14,16 +14,16 @@ export type AuthInfo = ApiAuth | OAuthAuth; // room for wellknown later
 type AuthFile = Partial<Record<ProviderId, AuthInfo>>;
 
 function globalAuthPath(): string {
-  return getSecureAuthPath();
+	return getSecureAuthPath();
 }
 
 // Local auth is no longer supported for security; use only global secure path
 
 export async function getAllAuth(_projectRoot?: string): Promise<AuthFile> {
-  // Only the secure global auth file is used
-  const globalFile = Bun.file(globalAuthPath());
-  const globalData = (await globalFile.json().catch(() => ({}))) as AuthFile;
-  return { ...globalData };
+	// Only the secure global auth file is used
+	const globalFile = Bun.file(globalAuthPath());
+	const globalData = (await globalFile.json().catch(() => ({}))) as AuthFile;
+	return { ...globalData };
 }
 
 export async function getAuth(

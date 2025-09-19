@@ -14,43 +14,43 @@ export async function runSetup(projectRoot?: string) {
 	const cfg = await loadConfig(projectRoot);
 	intro('AGI setup');
 
-    const providersPicked = (await multiselect({
-        message: 'Enable providers:',
-        options: [
-            { value: 'openai', label: 'OpenAI' },
-            { value: 'anthropic', label: 'Anthropic' },
-            { value: 'google', label: 'Google (Gemini)' },
-            { value: 'openrouter', label: 'OpenRouter' },
-        ],
-        initialValues: Object.entries(cfg.providers)
-            .filter(([, v]) => v.enabled)
-            .map(([k]) => k),
-    })) as ProviderId[] | symbol;
+	const providersPicked = (await multiselect({
+		message: 'Enable providers:',
+		options: [
+			{ value: 'openai', label: 'OpenAI' },
+			{ value: 'anthropic', label: 'Anthropic' },
+			{ value: 'google', label: 'Google (Gemini)' },
+			{ value: 'openrouter', label: 'OpenRouter' },
+		],
+		initialValues: Object.entries(cfg.providers)
+			.filter(([, v]) => v.enabled)
+			.map(([k]) => k),
+	})) as ProviderId[] | symbol;
 	if (isCancel(providersPicked)) return cancel('Setup cancelled');
 
-    const providers: Record<ProviderId, { enabled: boolean; apiKey?: string }> = {
-        openai: { enabled: false },
-        anthropic: { enabled: false },
-        google: { enabled: false },
-        openrouter: { enabled: false },
-    };
+	const providers: Record<ProviderId, { enabled: boolean; apiKey?: string }> = {
+		openai: { enabled: false },
+		anthropic: { enabled: false },
+		google: { enabled: false },
+		openrouter: { enabled: false },
+	};
 	for (const p of providersPicked as ProviderId[]) providers[p].enabled = true;
 
 	// Collect API keys for enabled providers
-    for (const p of Object.keys(providers) as ProviderId[]) {
-        if (!providers[p].enabled) continue;
-        const keyLabel =
-            p === 'openai'
-                ? 'OPENAI_API_KEY'
-                : p === 'anthropic'
-                    ? 'ANTHROPIC_API_KEY'
-                    : p === 'google'
-                        ? 'GOOGLE_GENERATIVE_AI_API_KEY'
-                        : 'OPENROUTER_API_KEY';
-        const key = await text({
-            message: `Enter ${keyLabel} (leave empty to skip)`,
-            initialValue: '',
-        });
+	for (const p of Object.keys(providers) as ProviderId[]) {
+		if (!providers[p].enabled) continue;
+		const keyLabel =
+			p === 'openai'
+				? 'OPENAI_API_KEY'
+				: p === 'anthropic'
+					? 'ANTHROPIC_API_KEY'
+					: p === 'google'
+						? 'GOOGLE_GENERATIVE_AI_API_KEY'
+						: 'OPENROUTER_API_KEY';
+		const key = await text({
+			message: `Enter ${keyLabel} (leave empty to skip)`,
+			initialValue: '',
+		});
 		if (isCancel(key)) return cancel('Setup cancelled');
 		if (String(key).trim()) providers[p].apiKey = String(key).trim();
 	}
@@ -90,21 +90,21 @@ export async function runSetup(projectRoot?: string) {
 	})) as string | symbol;
 	if (isCancel(defaultAgent)) return cancel('Setup cancelled');
 
-    const next = {
-        projectRoot: cfg.projectRoot,
-        defaults: {
-            agent: String(defaultAgent),
-            provider: defaultProvider as ProviderId,
-            model: String(defaultModel),
-        },
-        providers: {
-            openai: providers.openai,
-            anthropic: providers.anthropic,
-            google: providers.google,
-            openrouter: providers.openrouter,
-        },
-        paths: cfg.paths,
-    };
+	const next = {
+		projectRoot: cfg.projectRoot,
+		defaults: {
+			agent: String(defaultAgent),
+			provider: defaultProvider as ProviderId,
+			model: String(defaultModel),
+		},
+		providers: {
+			openai: providers.openai,
+			anthropic: providers.anthropic,
+			google: providers.google,
+			openrouter: providers.openrouter,
+		},
+		paths: cfg.paths,
+	};
 
 	const configPath =
 		cfg.paths.projectConfigPath || `${cfg.paths.dataDir}/config.json`;
