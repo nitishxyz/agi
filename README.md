@@ -30,7 +30,7 @@ npm install -g @agi-cli/core
 
 ```bash
 # Clone the repository
-git clone https://github.com/ntishxyz/agi.git
+git clone https://github.com/nitishxyz/agi.git
 cd agi
 
 # Install dependencies with Bun
@@ -451,10 +451,10 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/ntishxyz/agi/issues)
+- **Issues**: [GitHub Issues](https://github.com/nitishxyz/agi/issues)
 - **Documentation**: [docs/](./docs/)
-- **Author**: ntishxyz
-- **Homepage**: [https://github.com/ntishxyz/agi](https://github.com/ntishxyz/agi)
+- **Author**: nitishxyz
+- **Homepage**: [https://github.com/nitishxyz/agi](https://github.com/nitishxyz/agi)
 
 ---
 

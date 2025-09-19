@@ -5,7 +5,7 @@ set -e
 # Usage: curl -fsSL https://install.agi.nitish.sh | sh
 # Optional: AGI_VERSION=v0.1.8 curl -fsSL https://install.agi.nitish.sh | sh
 
-REPO="ntishxyz/agi"
+REPO="nitishxyz/agi"
 BIN_NAME="agi"
 VERSION="${AGI_VERSION:-latest}"
 

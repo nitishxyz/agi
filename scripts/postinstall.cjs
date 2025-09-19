@@ -43,7 +43,7 @@ function getRepo() {
       }
     }
   } catch {}
-  return process.env.AGI_REPO || "ntishxyz/agi";
+  return process.env.AGI_REPO || "nitishxyz/agi";
 }
 
 function getVersion() {

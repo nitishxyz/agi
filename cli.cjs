@@ -78,7 +78,7 @@ async function ensureBinary() {
         ? repository.replace(/^github:/, "")
         : repository.url &&
           (repository.url.match(/github\.com[:/](.+?)\.git$/) || [])[1])) ||
-    "ntishxyz/agi";
+    "nitishxyz/agi";
   if (!version) return null;
   const asset = path.basename(vp);
   const url = `https://github.com/${repo}/releases/download/v${version}/${asset}`;
