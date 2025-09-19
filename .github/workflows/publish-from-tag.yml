@@ -1,0 +1,163 @@
+name: Publish From Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to publish (e.g., v0.2.0)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-binaries-from-tag:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - os: darwin
+            arch: x64
+            runner: macos-latest
+          - os: darwin
+            arch: arm64
+            runner: macos-latest
+          - os: linux
+            arch: x64
+            runner: ubuntu-latest
+          - os: linux
+            arch: arm64
+            runner: ubuntu-latest
+          - os: windows
+            arch: x64
+            runner: windows-latest
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install deps
+        run: bun install
+
+      - name: Build platform binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ matrix.os }}-${{ matrix.arch }}" in
+            darwin-arm64)
+              bun run build:bin:darwin-arm64
+              ;;
+            darwin-x64)
+              bun run build:bin:darwin-x64
+              ;;
+            linux-x64)
+              bun run build:bin:linux-x64
+              ;;
+            linux-arm64)
+              bun run build:bin:linux-arm64
+              ;;
+            windows-x64)
+              bun run build:bin:windows-x64
+              ;;
+          esac
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agi-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/agi-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}
+
+  github-release-from-tag:
+    needs: build-binaries-from-tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p ./release
+          find ./artifacts -type f -exec cp {} ./release/ \;
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          name: "AGI ${{ github.event.inputs.tag }}"
+          body: |
+            Prebuilt binaries for ${{ github.event.inputs.tag }}.
+          files: ./release/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-npm-from-tag:
+    runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    needs: [github-release-from-tag]
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Configure npm auth
+        if: ${{ env.NPM_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf "//registry.npmjs.org/:_authToken=%s\n" "$NPM_TOKEN" > .npmrc
+          echo "always-auth=true" >> .npmrc
+
+      - name: Verify token and version match
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${NPM_TOKEN}" ]; then
+            echo "NPM_TOKEN is not set; cannot publish" >&2
+            exit 1
+          fi
+          TAG="${{ github.event.inputs.tag }}"
+          PKG_VERSION=$(jq -r .version package.json)
+          if [ "v${PKG_VERSION}" != "$TAG" ]; then
+            echo "Tag ($TAG) does not match package.json version (v${PKG_VERSION})" >&2
+            exit 1
+          fi
+
+      - name: Regenerate clean lockfile
+        shell: bash
+        run: |
+          rm -f bun.lock
+          bun install
+
+      - name: Ensure CLI entry is executable
+        shell: bash
+        run: |
+          chmod +x cli.cjs || true
+
+      - name: Publish to npm (Bun)
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun publish --access public --tag latest
