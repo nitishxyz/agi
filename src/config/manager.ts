@@ -17,36 +17,42 @@ export async function read(projectRoot?: string) {
 }
 
 export async function isAuthorized(
-	provider: ProviderId,
-	projectRoot?: string,
+    provider: ProviderId,
+    projectRoot?: string,
 ): Promise<boolean> {
-	if (provider === 'openai' && process.env.OPENAI_API_KEY) return true;
-	if (provider === 'anthropic' && process.env.ANTHROPIC_API_KEY) return true;
-	if (provider === 'google' && process.env.GOOGLE_GENERATIVE_AI_API_KEY)
-		return true;
-	const { auth } = await read(projectRoot);
-	const info = auth[provider];
-	if (info?.type === 'api' && info.key) return true;
-	return false;
+    if (provider === 'openai' && process.env.OPENAI_API_KEY) return true;
+    if (provider === 'anthropic' && process.env.ANTHROPIC_API_KEY) return true;
+    if (provider === 'google' && process.env.GOOGLE_GENERATIVE_AI_API_KEY)
+        return true;
+    if (provider === 'openrouter' && process.env.OPENROUTER_API_KEY)
+        return true;
+    const { auth } = await read(projectRoot);
+    const info = auth[provider];
+    if (info?.type === 'api' && info.key) return true;
+    return false;
 }
 
 export async function ensureEnv(
-	provider: ProviderId,
-	projectRoot?: string,
+    provider: ProviderId,
+    projectRoot?: string,
 ): Promise<void> {
-	const { auth } = await read(projectRoot);
-	if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
-		const key = auth.openai?.type === 'api' ? auth.openai.key : undefined;
-		if (key) process.env.OPENAI_API_KEY = key;
-	}
-	if (provider === 'anthropic' && !process.env.ANTHROPIC_API_KEY) {
-		const key = auth.anthropic?.type === 'api' ? auth.anthropic.key : undefined;
-		if (key) process.env.ANTHROPIC_API_KEY = key;
-	}
-	if (provider === 'google' && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-		const key = auth.google?.type === 'api' ? auth.google.key : undefined;
-		if (key) process.env.GOOGLE_GENERATIVE_AI_API_KEY = key;
-	}
+    const { auth } = await read(projectRoot);
+    if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
+        const key = auth.openai?.type === 'api' ? auth.openai.key : undefined;
+        if (key) process.env.OPENAI_API_KEY = key;
+    }
+    if (provider === 'anthropic' && !process.env.ANTHROPIC_API_KEY) {
+        const key = auth.anthropic?.type === 'api' ? auth.anthropic.key : undefined;
+        if (key) process.env.ANTHROPIC_API_KEY = key;
+    }
+    if (provider === 'google' && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+        const key = auth.google?.type === 'api' ? auth.google.key : undefined;
+        if (key) process.env.GOOGLE_GENERATIVE_AI_API_KEY = key;
+    }
+    if (provider === 'openrouter' && !process.env.OPENROUTER_API_KEY) {
+        const key = auth.openrouter?.type === 'api' ? auth.openrouter.key : undefined;
+        if (key) process.env.OPENROUTER_API_KEY = key;
+    }
 }
 
 export async function writeDefaults(

@@ -19,24 +19,29 @@ import { catalog } from '@/providers/catalog.ts';
 import { getGlobalConfigDir, getGlobalConfigPath } from '@/config/paths.ts';
 
 const PROVIDER_LINKS: Record<
-	ProviderId,
-	{ name: string; url: string; env: string }
+    ProviderId,
+    { name: string; url: string; env: string }
 > = {
-	openai: {
-		name: 'OpenAI',
-		url: 'https://platform.openai.com/api-keys',
-		env: 'OPENAI_API_KEY',
-	},
-	anthropic: {
-		name: 'Anthropic',
-		url: 'https://console.anthropic.com/settings/keys',
-		env: 'ANTHROPIC_API_KEY',
-	},
-	google: {
-		name: 'Google AI Studio',
-		url: 'https://aistudio.google.com/app/apikey',
-		env: 'GOOGLE_GENERATIVE_AI_API_KEY',
-	},
+    openai: {
+        name: 'OpenAI',
+        url: 'https://platform.openai.com/api-keys',
+        env: 'OPENAI_API_KEY',
+    },
+    anthropic: {
+        name: 'Anthropic',
+        url: 'https://console.anthropic.com/settings/keys',
+        env: 'ANTHROPIC_API_KEY',
+    },
+    google: {
+        name: 'Google AI Studio',
+        url: 'https://aistudio.google.com/app/apikey',
+        env: 'GOOGLE_GENERATIVE_AI_API_KEY',
+    },
+    openrouter: {
+        name: 'OpenRouter',
+        url: 'https://openrouter.ai/keys',
+        env: 'OPENROUTER_API_KEY',
+    },
 };
 
 export async function runAuth(args: string[]) {
@@ -82,14 +87,15 @@ export async function runAuthLogin(_args: string[]) {
 	const cfg = await loadConfig(process.cwd());
 	const wantLocal = _args.includes('--local');
 	intro('Add credential');
-	const provider = (await select({
-		message: 'Select provider',
-		options: [
-			{ value: 'openai', label: PROVIDER_LINKS.openai.name },
-			{ value: 'anthropic', label: PROVIDER_LINKS.anthropic.name },
-			{ value: 'google', label: PROVIDER_LINKS.google.name },
-		],
-	})) as ProviderId | symbol;
+    const provider = (await select({
+        message: 'Select provider',
+        options: [
+            { value: 'openai', label: PROVIDER_LINKS.openai.name },
+            { value: 'anthropic', label: PROVIDER_LINKS.anthropic.name },
+            { value: 'google', label: PROVIDER_LINKS.google.name },
+            { value: 'openrouter', label: PROVIDER_LINKS.openrouter.name },
+        ],
+    })) as ProviderId | symbol;
 	if (isCancel(provider)) return cancel('Cancelled');
 	const meta = PROVIDER_LINKS[provider as ProviderId];
 	// All providers follow the same flow: show URL, then prompt for key
@@ -145,22 +151,25 @@ async function ensureGlobalConfigDefaults(provider: ProviderId) {
 	// If a global config already exists, do not overwrite
 	const f = Bun.file(path);
 	if (await f.exists()) return;
-	const models = catalog[provider]?.models ?? [];
-	const defaultModel =
-		models[0]?.id ||
-		(provider === 'anthropic'
-			? 'claude-3-haiku'
-			: provider === 'openai'
-				? 'gpt-4o-mini'
-				: 'gemini-1.5-flash');
-	const content = {
-		defaults: { agent: 'build', provider, model: defaultModel },
-		providers: {
-			openai: { enabled: provider === 'openai' },
-			anthropic: { enabled: provider === 'anthropic' },
-			google: { enabled: provider === 'google' },
-		},
-	};
+    const models = catalog[provider]?.models ?? [];
+    const defaultModel =
+        models[0]?.id ||
+        (provider === 'anthropic'
+            ? 'claude-3-haiku'
+            : provider === 'openai'
+                ? 'gpt-4o-mini'
+                : provider === 'google'
+                    ? 'gemini-1.5-flash'
+                    : 'anthropic/claude-3.5-sonnet');
+    const content = {
+        defaults: { agent: 'build', provider, model: defaultModel },
+        providers: {
+            openai: { enabled: provider === 'openai' },
+            anthropic: { enabled: provider === 'anthropic' },
+            google: { enabled: provider === 'google' },
+            openrouter: { enabled: provider === 'openrouter' },
+        },
+    };
 	// Ensure directory and write file
 	try {
 		const { promises: fs } = await import('node:fs');

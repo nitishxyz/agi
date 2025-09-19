@@ -1,6 +1,6 @@
 import { getSecureAuthPath, ensureDir } from '@/config/paths.ts';
 
-export type ProviderId = 'openai' | 'anthropic' | 'google';
+export type ProviderId = 'openai' | 'anthropic' | 'google' | 'openrouter';
 
 type ApiAuth = { type: 'api'; key: string };
 type OAuthAuth = {

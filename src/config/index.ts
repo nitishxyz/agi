@@ -9,17 +9,18 @@ import {
 export type ProviderConfig = { enabled: boolean; apiKey?: string };
 
 export type AGIConfig = {
-	projectRoot: string;
-	defaults: {
-		agent: string;
-		provider: 'openai' | 'anthropic' | 'google';
-		model: string;
-	};
-	providers: {
-		openai: ProviderConfig;
-		anthropic: ProviderConfig;
-		google: ProviderConfig;
-	};
+    projectRoot: string;
+    defaults: {
+        agent: string;
+        provider: 'openai' | 'anthropic' | 'google' | 'openrouter';
+        model: string;
+    };
+    providers: {
+        openai: ProviderConfig;
+        anthropic: ProviderConfig;
+        google: ProviderConfig;
+        openrouter: ProviderConfig;
+    };
 	paths: {
 		dataDir: string; // .agi
 		dbPath: string; // .agi/agi.sqlite
@@ -29,16 +30,17 @@ export type AGIConfig = {
 };
 
 const DEFAULTS = {
-	defaults: {
-		agent: 'general',
-		provider: 'openai' as const,
-		model: 'gpt-4o-mini',
-	},
-	providers: {
-		openai: { enabled: true },
-		anthropic: { enabled: true },
-		google: { enabled: true },
-	},
+    defaults: {
+        agent: 'general',
+        provider: 'openai' as const,
+        model: 'gpt-4o-mini',
+    },
+    providers: {
+        openai: { enabled: true },
+        anthropic: { enabled: true },
+        google: { enabled: true },
+        openrouter: { enabled: false },
+    },
 };
 
 export async function loadConfig(

@@ -21,7 +21,7 @@ export async function runDoctor(opts: { project?: string } = {}) {
 	const projectRoot = opts.project ?? process.cwd();
 	const { cfg, auth } = await readMerged(projectRoot);
 	// Credentials source per provider (only show configured/default providers)
-	const providers: ProviderId[] = ['openai', 'anthropic', 'google'];
+    const providers: ProviderId[] = ['openai', 'anthropic', 'google', 'openrouter'];
 	const providerMeta = await Promise.all(
 		providers.map(async (p) => {
 			const ok = await isAuthorized(p, projectRoot);
