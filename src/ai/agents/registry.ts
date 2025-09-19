@@ -55,7 +55,7 @@ function mergeAgentEntries(
 	return merged;
 }
 
-const baseToolSet = ['progress_update', 'finalize'] as const;
+const baseToolSet = ['progress_update', 'finish'] as const;
 
 const defaultToolExtras: Record<string, string[]> = {
 	build: [

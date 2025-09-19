@@ -1,6 +1,6 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
-import { finalizeTool } from '@/ai/tools/builtin/finalize.ts';
+import { finishTool } from '@/ai/tools/builtin/finish.ts';
 import { buildFsTools } from '@/ai/tools/builtin/fs.ts';
 import { buildGitTools } from '@/ai/tools/builtin/git.ts';
 import { progressUpdateTool } from '@/ai/tools/builtin/progress.ts';
@@ -89,9 +89,9 @@ export async function discoverProjectTools(
 	for (const { name, tool } of buildFsTools(projectRoot)) tools.set(name, tool);
 	for (const { name, tool } of buildGitTools(projectRoot))
 		tools.set(name, tool);
-	// Built-ins
-	tools.set('finalize', finalizeTool);
-	tools.set('progress_update', progressUpdateTool);
+    // Built-ins
+    tools.set('finish', finishTool);
+    tools.set('progress_update', progressUpdateTool);
 	const bash = buildBashTool(projectRoot);
 	tools.set(bash.name, bash.tool);
 

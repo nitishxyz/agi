@@ -62,11 +62,11 @@ async function runAssistant(opts: RunOpts) {
 		? `${baseInstructions.trim()}\n\n${agentPrompt.trim()}`
 		: baseInstructions.trim();
 	const allTools = await discoverProjectTools(cfg.projectRoot);
-	const allowedNames = new Set([
-		...(agentCfg.tools || []),
-		'finalize',
-		'progress_update',
-	]);
+    const allowedNames = new Set([
+        ...(agentCfg.tools || []),
+        'finish',
+        'progress_update',
+    ]);
 	const gated = allTools.filter((t) => allowedNames.has(t.name));
 
 	// Build chat history messages from DB (text parts only)
@@ -106,19 +106,19 @@ async function runAssistant(opts: RunOpts) {
 	let currentPartId = opts.assistantPartId;
 	let accumulated = '';
 
-	// Track if the model called finalize; fallback later if not
-	let finalizeObserved = false;
+    // Track if the model called finish; fallback later if not
+    let finishObserved = false;
 
 	// Rotate assistant text part only on tool.result boundaries for simpler ordering
 	const unsubscribe = subscribe(opts.sessionId, async (evt) => {
 		if (evt.type !== 'tool.result') return;
 		try {
-			// detect finalize
-			try {
-				const name = (evt.payload as { name?: string } | undefined)?.name;
-				if (name === 'finalize') finalizeObserved = true;
-			} catch {}
-			// finalize current part by doing nothing special; we already persist text incrementally
+            // detect finish
+            try {
+                const name = (evt.payload as { name?: string } | undefined)?.name;
+                if (name === 'finish') finishObserved = true;
+            } catch {}
+            // finalize current part by doing nothing special; we already persist text incrementally
 			// start a new text part for subsequent deltas
 			const newPartId = crypto.randomUUID();
 			const index = await sharedCtx.nextIndex();
@@ -151,13 +151,13 @@ async function runAssistant(opts: RunOpts) {
 	});
 
 	try {
-		const result = streamText({
-			model,
-			tools: toolset,
-			system,
-			messages: history,
-			stopWhen: hasToolCall('finalize'),
-		});
+        const result = streamText({
+            model,
+            tools: toolset,
+            system,
+            messages: history,
+            stopWhen: hasToolCall('finish'),
+        });
 		let finishReason: string | undefined;
 		let totalUsage:
 			| {
@@ -192,14 +192,14 @@ async function runAssistant(opts: RunOpts) {
 			totalUsage = await result.totalUsage;
 		} catch {}
 
-		// Ensure finalize is called at least once even if the model forgot
-		try {
-			if (!finalizeObserved && toolset?.finalize) {
-				const text = accumulated?.trim() ? accumulated : undefined;
-				await toolset.finalize.onInputAvailable?.({ input: { text } } as never);
-				await toolset.finalize.execute?.({ text } as never, undefined as never);
-			}
-		} catch {}
+        // Ensure finish is called at least once even if the model forgot
+        try {
+            if (!finishObserved && toolset?.finish) {
+                const text = accumulated?.trim() ? accumulated : undefined;
+                await toolset.finish.onInputAvailable?.({ input: { text } } as never);
+                await toolset.finish.execute?.({ text } as never, undefined as never);
+            }
+        } catch {}
 
 		// Mark message completion and latency
 		let createdAt = undefined as number | undefined;
