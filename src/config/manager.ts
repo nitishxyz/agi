@@ -24,7 +24,7 @@ export async function isAuthorized(
 	if (provider === 'anthropic' && process.env.ANTHROPIC_API_KEY) return true;
 	if (provider === 'google' && process.env.GOOGLE_GENERATIVE_AI_API_KEY)
 		return true;
-	const { cfg, auth } = await read(projectRoot);
+	const { auth } = await read(projectRoot);
 	const info = auth[provider];
 	if (info?.type === 'api' && info.key) return true;
 	return false;
@@ -34,7 +34,7 @@ export async function ensureEnv(
 	provider: ProviderId,
 	projectRoot?: string,
 ): Promise<void> {
-	const { cfg, auth } = await read(projectRoot);
+	const { auth } = await read(projectRoot);
 	if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
 		const key = auth.openai?.type === 'api' ? auth.openai.key : undefined;
 		if (key) process.env.OPENAI_API_KEY = key;

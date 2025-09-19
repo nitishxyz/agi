@@ -101,7 +101,6 @@ export async function runAuthLogin(_args: string[]) {
 			v && String(v).trim().length > 0 ? undefined : 'Required',
 	});
 	if (isCancel(key)) return cancel('Cancelled');
-	// Store credentials in secure global location (local storage is no longer supported)
 	await setAuth(
 		provider as ProviderId,
 		{ type: 'api', key: String(key) },

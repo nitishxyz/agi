@@ -6,6 +6,7 @@ import { eq, asc } from 'drizzle-orm';
 import { resolveModel, type ProviderName } from '@/ai/provider.ts';
 import { resolveAgentConfig } from '@/ai/agents/registry.ts';
 import { baseInstructions, defaultAgentPrompts } from '@/ai/agents/defaults.ts';
+import { providerBasePrompt } from '@/prompts/providers.ts';
 import { discoverProjectTools } from '@/ai/tools/loader.ts';
 import { adaptTools } from '@/ai/tools/adapter.ts';
 import { publish, subscribe } from '@/server/events/bus.ts';
@@ -57,10 +58,10 @@ async function runAssistant(opts: RunOpts) {
 	// Resolve agent prompt and tools
 	const agentCfg = await resolveAgentConfig(cfg.projectRoot, opts.agent);
 	const agentPrompt = agentCfg.prompt || defaultAgentPrompts[opts.agent] || '';
-	// Always prepend base instructions; keep agent prompts free of the base text
-	const system = agentPrompt.trim()
-		? `${baseInstructions.trim()}\n\n${agentPrompt.trim()}`
-		: baseInstructions.trim();
+	const providerPrompt = await providerBasePrompt(opts.provider, opts.model, cfg.projectRoot);
+	// Compose provider-specific base, then global base instructions, then agent prompt.
+	const parts = [providerPrompt.trim(), baseInstructions.trim(), agentPrompt.trim()].filter(Boolean);
+	const system = parts.join('\n\n');
 	const allTools = await discoverProjectTools(cfg.projectRoot);
 	const allowedNames = new Set([
 		...(agentCfg.tools || []),
@@ -101,7 +102,7 @@ async function runAssistant(opts: RunOpts) {
 	};
 	const toolset = adaptTools(gated, sharedCtx);
 
-	const model = resolveModel(opts.provider, opts.model, cfg);
+	const model = await resolveModel(opts.provider, opts.model, cfg);
 
 	let currentPartId = opts.assistantPartId;
 	let accumulated = '';

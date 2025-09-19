@@ -121,8 +121,8 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 		} as const;
 		function authed(p: ProviderId) {
 			const info = auth[p];
-			const hasStored = info?.type === 'api' && Boolean(info.key);
-			return envHas[p] || hasStored || cfgHas[p];
+			const hasStoredApi = info?.type === 'api' && Boolean(info.key);
+			return envHas[p] || hasStoredApi || cfgHas[p];
 		}
 		if (!authed(chosenProvider)) {
 			const order: ProviderId[] = ['anthropic', 'openai', 'google'];
@@ -611,8 +611,8 @@ export async function runAskCapture(prompt: string, opts: AskOptions = {}) {
 		} as const;
 		function authed(p: ProviderId) {
 			const info = auth[p];
-			const hasStored = info?.type === 'api' && Boolean(info.key);
-			return envHas[p] || hasStored || cfgHas[p];
+			const hasStoredApi = info?.type === 'api' && Boolean(info.key);
+			return envHas[p] || hasStoredApi || cfgHas[p];
 		}
 		if (!authed(chosenProvider)) {
 			const order: ProviderId[] = ['anthropic', 'openai', 'google'];
