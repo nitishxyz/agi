@@ -7,7 +7,7 @@ import { catalog } from '@/providers/catalog.ts';
 import type { Artifact } from '@/ai/artifacts.ts';
 import { renderMarkdown } from '@/cli/ui.ts';
 
-type AskOptions = {
+export type AskOptions = {
 	agent?: string;
 	provider?: ProviderId;
 	model?: string;
@@ -211,8 +211,16 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			{
 				title: null,
 				agent: opts.agent ?? cfg.defaults.agent,
-				provider: chosenProvider,
-				model: chosenModel,
+				provider:
+					(opts.provider as ProviderId | undefined) ??
+					(chosenProvider as ProviderId),
+				model:
+					// If provider override is given without a model, pick that provider's default model
+					opts.model ??
+					(opts.provider
+						? catalog[opts.provider as ProviderId]?.models?.[0]?.id
+						: undefined) ??
+					chosenModel,
 			},
 		);
 		sessionId = String(created.id);
@@ -226,16 +234,62 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			Bun.write(Bun.stderr, `${dim('Created new session')} ${sessionId}\n`);
 	}
 
+	// Decide effective provider/model for this message based on overrides and session defaults
+	function providerHasModel(p: ProviderId, m: string | undefined) {
+		if (!m) return false;
+		const models = catalog[p]?.models ?? [];
+		return models.some((x) => x.id === m);
+	}
+	const userProvider = opts.provider as ProviderId | undefined;
+	const userModel = opts.model as string | undefined;
+	const sessionProvider = (header.provider ?? undefined) as
+		| ProviderId
+		| undefined;
+	const sessionModel = header.model ?? undefined;
+
+	let finalProvider: ProviderId | undefined;
+	let finalModel: string | undefined;
+	if (userProvider) {
+		finalProvider = userProvider;
+		// prefer explicit model if valid, else keep session model if compatible, else provider default
+		if (userModel && providerHasModel(userProvider, userModel))
+			finalModel = userModel;
+		else if (providerHasModel(userProvider, sessionModel))
+			finalModel = sessionModel as string;
+		else finalModel = catalog[userProvider]?.models?.[0]?.id;
+	} else if (userModel) {
+		// find a provider supporting this model
+		const provOrder: ProviderId[] = [
+			'anthropic',
+			'openai',
+			'google',
+			'openrouter',
+		];
+		const inferred = provOrder.find((p) => providerHasModel(p, userModel));
+		if (inferred) {
+			finalProvider = inferred;
+			finalModel = userModel;
+		} else {
+			finalProvider = (sessionProvider ?? chosenProvider) as ProviderId;
+			finalModel = (sessionModel ?? chosenModel) as string;
+		}
+	} else {
+		finalProvider = (sessionProvider ?? chosenProvider) as ProviderId;
+		finalModel = (sessionModel ?? chosenModel) as string;
+	}
+
+	const overridesProvided = Boolean(userProvider || userModel);
+
 	// Start SSE reader before enqueuing the message to avoid missing early events
 	const sse = await connectSSE(
 		`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/stream?project=${encodeURIComponent(projectRoot)}`,
 	);
 
-	// Header: show agent/provider/model
+	// Header: show effective agent/provider/model using final values
 	if (!jsonEnabled && !jsonStreamEnabled) {
-		const p = header.provider ?? chosenProvider;
-		const m = header.model ?? chosenModel;
-		const a = header.agent ?? opts.agent ?? cfg.defaults.agent;
+		const a = opts.agent ?? header.agent ?? cfg.defaults.agent;
+		const p = finalProvider ?? chosenProvider;
+		const m = finalModel ?? chosenModel;
 		Bun.write(
 			Bun.stderr,
 			`${bold('Context')} ${dim('•')} agent=${a} ${dim('•')} provider=${p} ${dim('•')} model=${m}\n`,
@@ -249,8 +303,8 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			content: prompt,
 			// For existing sessions, avoid overriding defaults unless explicitly provided
 			agent: opts.agent,
-			provider: opts.provider,
-			model: opts.model,
+			provider: overridesProvided ? finalProvider : undefined,
+			model: overridesProvided ? finalModel : undefined,
 		},
 	);
 	const assistantMessageId = enqueueRes.messageId as string;
@@ -583,6 +637,10 @@ export async function stopEphemeralServer(): Promise<void> {
 		currentServer = null;
 	}
 }
+
+// Compute final agent/provider/model for header display based on precedence:
+// CLI opts > session header > chosen/config defaults
+// moved to '@/cli/context.ts' for testability
 
 // Capture-only variant used by command dispatcher: returns the assistant text without printing
 export async function runAskCapture(prompt: string, opts: AskOptions = {}) {
