@@ -17,11 +17,30 @@
 
 ## Installation
 
-### From NPM
+### Using curl (recommended)
 
 ```bash
-npm install -g @agi-cli/core
+curl -fsSL https://install.agi.nitish.sh | sh
 ```
+
+- Installs the correct prebuilt binary for your OS/arch.
+- Uses `/usr/local/bin` when writable; otherwise falls back to `$HOME/.local/bin`.
+- If needed, add the chosen directory to your `PATH`.
+
+Pin a specific version:
+
+```bash
+AGI_VERSION=v0.1.9 curl -fsSL https://install.agi.nitish.sh | sh
+```
+
+### Via Bun (global package)
+
+```bash
+bun pm -g trust @agi-cli/core   # allow postinstall to fetch the binary
+bun install -g @agi-cli/core
+```
+
+After install, the first `agi` run will download the matching binary if it’s missing.
 
 ### From Source
 
