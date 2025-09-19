@@ -19,7 +19,7 @@ type ScaffoldOptions = { project?: string; local?: boolean };
 
 export async function runScaffold(opts: ScaffoldOptions = {}) {
 	const projectRoot = (opts.project ?? process.cwd()).replace(/\\/g, '/');
-    const baseDir = opts.local ? `${projectRoot}/.agi` : getGlobalConfigDir();
+	const baseDir = opts.local ? `${projectRoot}/.agi` : getGlobalConfigDir();
 	const scopeLabel = opts.local ? 'local' : 'global';
 	intro(`Scaffold (${scopeLabel})`);
 	const kind = await select({
@@ -69,7 +69,7 @@ async function scaffoldAgent(
 	}
 
 	let createPrompt = false;
-    if (!['general', 'build', 'plan'].includes(String(name))) {
+	if (!['general', 'build', 'plan'].includes(String(name))) {
 		const wantPrompt = await confirm({
 			message: 'Create prompt file (.agi/agents/<name>.md)?',
 		});
@@ -128,19 +128,19 @@ async function scaffoldTool(projectRoot: string, baseDir: string) {
 	const content = toolTemplate(String(id), String(desc));
 	await Bun.write(file, content);
 	const scope = isGlobalBase(baseDir, projectRoot) ? 'global' : 'local';
-    const home = getHomeDir();
-    const displayBase = baseDir.startsWith(home)
-        ? baseDir.replace(home, '~')
-        : baseDir;
-    const display = `${displayBase}/tools/${String(id)}`;
+	const home = getHomeDir();
+	const displayBase = baseDir.startsWith(home)
+		? baseDir.replace(home, '~')
+		: baseDir;
+	const display = `${displayBase}/tools/${String(id)}`;
 	log.success(`Tool created (${scope}): ${display}/tool.js`);
 	log.info(
 		`Edit ${display}/tool.js to customize parameters and execution logic.`,
 	);
-    const agentsFile = baseDir.startsWith(home)
-        ? `${baseDir.replace(home, '~')}/agents.json`
-        : `${baseDir}/agents.json`;
-    log.info(`Remember to allow it in your agent via ${agentsFile}.`);
+	const agentsFile = baseDir.startsWith(home)
+		? `${baseDir.replace(home, '~')}/agents.json`
+		: `${baseDir}/agents.json`;
+	log.info(`Remember to allow it in your agent via ${agentsFile}.`);
 	outro('Done');
 }
 
@@ -155,7 +155,7 @@ export async function editAgentsConfig(
 		string,
 		{ tools?: string[]; appendTools?: string[]; prompt?: string }
 	>;
-    const builtInList = ['general', 'build', 'plan'];
+	const builtInList = ['general', 'build', 'plan'];
 	const names = Object.keys(current);
 	const selectable = Array.from(new Set([...builtInList, ...names])).sort();
 	let agentName = await select({
@@ -190,7 +190,7 @@ export async function editAgentsConfig(
 	const key = String(agentName);
 	const entry = current[key] ?? {};
 	const scope = isGlobalBase(baseDir, projectRoot) ? 'global' : 'local';
-    const builtInAgents = new Set(['general', 'build', 'plan']);
+	const builtInAgents = new Set(['general', 'build', 'plan']);
 	const defaults = defaultToolsForAgent(key).filter((t) => t !== 'finish');
 	const hasOverride = Array.isArray(entry.tools);
 	const existingAppend = Array.isArray(entry.appendTools)
@@ -270,9 +270,9 @@ export async function editAgentsConfig(
 		ensurePrompt = Boolean(resp);
 	}
 	if (ensurePrompt) {
-    const location =
-            pth ??
-            (isGlobalBase(baseDir, projectRoot) ? `.agi/${relPrompt}` : relPrompt);
+		const location =
+			pth ??
+			(isGlobalBase(baseDir, projectRoot) ? `.agi/${relPrompt}` : relPrompt);
 		let abs: string;
 		if (location.startsWith('.agi/')) {
 			if (isGlobalBase(baseDir, projectRoot)) {
@@ -282,7 +282,7 @@ export async function editAgentsConfig(
 				abs = `${projectRoot}/${location}`;
 			}
 		} else if (location.startsWith('~/')) {
-    const home = getHomeDir();
+			const home = getHomeDir();
 			abs = `${home}/${location.slice(2)}`;
 		} else if (location.startsWith('/')) {
 			abs = location;
@@ -318,11 +318,11 @@ export async function editAgentsConfig(
 	current[key] = nextEntry;
 	await ensureDir(agentsPath.substring(0, agentsPath.lastIndexOf('/')));
 	await Bun.write(agentsPath, JSON.stringify(current, null, 2));
-    const home2 = getHomeDir();
-    const agentsDisplay = baseDir.startsWith(home2)
-        ? `${baseDir.replace(home2, '~')}/agents.json`
-        : `${baseDir}/agents.json`;
-    log.success(`Updated ${agentsDisplay} for ${key} (${mode})`);
+	const home2 = getHomeDir();
+	const agentsDisplay = baseDir.startsWith(home2)
+		? `${baseDir.replace(home2, '~')}/agents.json`
+		: `${baseDir}/agents.json`;
+	log.success(`Updated ${agentsDisplay} for ${key} (${mode})`);
 	outro('Done');
 }
 
@@ -413,14 +413,14 @@ async function scaffoldCommand(
 		? `${instructions}${instructions.endsWith('\n') ? '' : '\n'}`
 		: defaultCommandPromptTemplate(String(name));
 	await Bun.write(promptFilePath, promptBody);
-    const scopeLabel = isGlobalBase(baseDir, projectRoot) ? 'global' : 'local';
-    const home3 = getHomeDir();
-    const displayBase2 = baseDir.startsWith(home3)
-        ? baseDir.replace(home3, '~')
-        : baseDir;
-    const display = `${displayBase2}/commands/${String(name)}.json`;
+	const scopeLabel = isGlobalBase(baseDir, projectRoot) ? 'global' : 'local';
+	const home3 = getHomeDir();
+	const displayBase2 = baseDir.startsWith(home3)
+		? baseDir.replace(home3, '~')
+		: baseDir;
+	const display = `${displayBase2}/commands/${String(name)}.json`;
 	log.success(`Command created (${scopeLabel}): ${display}`);
-    log.info(`Prompt: ${displayBase2}/commands/${promptFileName}`);
+	log.info(`Prompt: ${displayBase2}/commands/${promptFileName}`);
 	outro('Done');
 }
 
@@ -466,15 +466,15 @@ async function listAgents(
 	// Do not include optional built-ins like 'git' unless explicitly configured.
 	const defaults = ['general', 'build', 'plan'];
 	const names = new Set(defaults);
-	const home = process.env.HOME || process.env.USERPROFILE || '';
-    try {
-        const { getGlobalAgentsJsonPath } = await import('@/config/paths.ts');
-        const globalAgents = (await Bun.file(getGlobalAgentsJsonPath())
-            .json()
-            .catch(() => ({}))) as Record<string, unknown>;
-        if (scope === 'local' || scope === 'global')
-            for (const key of Object.keys(globalAgents)) names.add(key);
-    } catch {}
+	const _home = process.env.HOME || process.env.USERPROFILE || '';
+	try {
+		const { getGlobalAgentsJsonPath } = await import('@/config/paths.ts');
+		const globalAgents = (await Bun.file(getGlobalAgentsJsonPath())
+			.json()
+			.catch(() => ({}))) as Record<string, unknown>;
+		if (scope === 'local' || scope === 'global')
+			for (const key of Object.keys(globalAgents)) names.add(key);
+	} catch {}
 	if (scope === 'local') {
 		try {
 			const localAgents = (await Bun.file(`${projectRoot}/.agi/agents.json`)

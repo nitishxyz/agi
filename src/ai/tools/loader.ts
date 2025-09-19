@@ -90,13 +90,13 @@ export async function discoverProjectTools(
 	for (const { name, tool } of buildFsTools(projectRoot)) tools.set(name, tool);
 	for (const { name, tool } of buildGitTools(projectRoot))
 		tools.set(name, tool);
-    // Built-ins
-    tools.set('finish', finishTool);
-    tools.set('progress_update', progressUpdateTool);
+	// Built-ins
+	tools.set('finish', finishTool);
+	tools.set('progress_update', progressUpdateTool);
 	const bash = buildBashTool(projectRoot);
 	tools.set(bash.name, bash.tool);
 
-async function loadFromBase(base: string | null | undefined) {
+	async function loadFromBase(base: string | null | undefined) {
 		if (!base) return;
 		try {
 			await fs.readdir(base);
@@ -129,15 +129,20 @@ async function loadFromBase(base: string | null | undefined) {
 				const candidate = await fs
 					.stat(js)
 					.then(() => js)
-					.catch(async () =>
-						await fs
-							.stat(mjs)
-							.then(() => mjs)
-							.catch(() => null),
+					.catch(
+						async () =>
+							await fs
+								.stat(mjs)
+								.then(() => mjs)
+								.catch(() => null),
 					);
 				if (!candidate) continue;
 				try {
-					const plugin = await loadPlugin(candidate.replace(/\\/g, '/'), folder, projectRoot);
+					const plugin = await loadPlugin(
+						candidate.replace(/\\/g, '/'),
+						folder,
+						projectRoot,
+					);
 					if (plugin) tools.set(plugin.name, plugin.tool);
 				} catch {}
 			}

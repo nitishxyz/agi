@@ -10,24 +10,24 @@ export type CommandManifest = {
 	prompt?: string; // inline prompt override
 	promptPath?: string; // relative path to prompt text
 	promptTemplate?: string; // e.g., "Draft a message: {input}"
-    defaults?: {
-        provider?: 'openai' | 'anthropic' | 'google' | 'openrouter';
-        model?: string;
-        agent?: string;
-    };
+	defaults?: {
+		provider?: 'openai' | 'anthropic' | 'google' | 'openrouter';
+		model?: string;
+		agent?: string;
+	};
 	confirm?: { required?: boolean; message?: string; token?: string };
 	interactive?: boolean; // if true and no input, prompt user for {input}
 	__dir?: string; // resolved directory for loading promptPath
 };
 
 export async function discoverCommands(
-    projectRoot: string,
+	projectRoot: string,
 ): Promise<Record<string, CommandManifest>> {
-    const commands: Record<string, CommandManifest> = {};
-    // Helper to read per-file manifests from a directory
-    await scanDirInto(getGlobalCommandsDir(), commands);
-    await scanDirInto(`${projectRoot}/.agi/commands`, commands);
-    return commands;
+	const commands: Record<string, CommandManifest> = {};
+	// Helper to read per-file manifests from a directory
+	await scanDirInto(getGlobalCommandsDir(), commands);
+	await scanDirInto(`${projectRoot}/.agi/commands`, commands);
+	return commands;
 }
 
 async function scanDirInto(

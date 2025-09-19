@@ -9,10 +9,10 @@ import { buildFsTools } from '@/ai/tools/builtin/fs.ts';
 import { buildGitTools } from '@/ai/tools/builtin/git.ts';
 import type { CommandManifest } from '@/cli/commands.ts';
 import {
-  getSecureAuthPath,
-  getGlobalAgentsJsonPath,
-  getGlobalToolsDir,
-  getGlobalCommandsDir,
+	getSecureAuthPath,
+	getGlobalAgentsJsonPath,
+	getGlobalToolsDir,
+	getGlobalCommandsDir,
 } from '@/config/paths.ts';
 
 type MergedConfig = Awaited<ReturnType<typeof readMerged>>;
@@ -21,7 +21,12 @@ export async function runDoctor(opts: { project?: string } = {}) {
 	const projectRoot = opts.project ?? process.cwd();
 	const { cfg, auth } = await readMerged(projectRoot);
 	// Credentials source per provider (only show configured/default providers)
-    const providers: ProviderId[] = ['openai', 'anthropic', 'google', 'openrouter'];
+	const providers: ProviderId[] = [
+		'openai',
+		'anthropic',
+		'google',
+		'openrouter',
+	];
 	const providerMeta = await Promise.all(
 		providers.map(async (p) => {
 			const ok = await isAuthorized(p, projectRoot);
@@ -151,15 +156,15 @@ export async function runDoctor(opts: { project?: string } = {}) {
 	else box('Agent Checks', [colors.green('No agent config issues detected')]);
 
 	// Suggestions
-    const sugg: string[] = [];
+	const sugg: string[] = [];
 	if (!defAuth)
 		sugg.push(
 			`Run: agi auth login (${def.provider}) or switch defaults: agi models`,
 		);
-    if (agentIssues.length)
-        sugg.push(
-            `Review agents.json (appendTools/tools) to ensure finish remains allowed.`,
-        );
+	if (agentIssues.length)
+		sugg.push(
+			`Review agents.json (appendTools/tools) to ensure finish remains allowed.`,
+		);
 	if (sugg.length) box('Suggestions', sugg);
 	else box('Suggestions', [colors.green('No obvious issues found')]);
 }
@@ -171,16 +176,16 @@ async function describeProvider(
 ) {
 	const envVar = providerEnvVar(provider);
 	const envConfigured = envVar ? !!process.env[envVar] : false;
-    const locations = await detectAuthLocations(provider, cfg);
-    const sources: string[] = [];
-    if (envConfigured && envVar) sources.push(`env: ${envVar}`);
-    if (locations.global)
-        sources.push(`auth.json: ${friendlyPath(locations.global)}`);
-    const configured =
-        envConfigured ||
-        Boolean(locations.global) ||
-        cfg.defaults.provider === provider ||
-        Boolean(auth?.[provider]?.key);
+	const locations = await detectAuthLocations(provider, cfg);
+	const sources: string[] = [];
+	if (envConfigured && envVar) sources.push(`env: ${envVar}`);
+	if (locations.global)
+		sources.push(`auth.json: ${friendlyPath(locations.global)}`);
+	const configured =
+		envConfigured ||
+		Boolean(locations.global) ||
+		cfg.defaults.provider === provider ||
+		Boolean(auth?.[provider]?.key);
 	return { provider, sources: Array.from(new Set(sources)), configured };
 }
 
@@ -202,11 +207,11 @@ function buildScopeLines(scopes: [string, string[]][]) {
 }
 
 async function collectAgents(projectRoot: string) {
-    const defaultNames = ['build', 'general', 'plan'];
+	const defaultNames = ['build', 'general', 'plan'];
 	const defaults = defaultNames
 		.filter((name) => defaultAgentPrompts[name] !== undefined)
 		.sort();
-    const globalPath = getGlobalAgentsJsonPath();
+	const globalPath = getGlobalAgentsJsonPath();
 	const localPath = `${projectRoot}/.agi/agents.json`.replace(/\\/g, '/');
 	const globalEntries = await readAgentsJson(globalPath);
 	const localEntries = await readAgentsJson(localPath);
@@ -226,14 +231,14 @@ async function collectAgents(projectRoot: string) {
 }
 
 async function collectTools(projectRoot: string) {
-    const defaults = Array.from(
-        new Set([
-            ...buildFsTools(projectRoot).map((t) => t.name),
-            ...buildGitTools(projectRoot).map((t) => t.name),
-            'finish',
-        ]),
-    ).sort();
-    const globalDir = getGlobalToolsDir();
+	const defaults = Array.from(
+		new Set([
+			...buildFsTools(projectRoot).map((t) => t.name),
+			...buildGitTools(projectRoot).map((t) => t.name),
+			'finish',
+		]),
+	).sort();
+	const globalDir = getGlobalToolsDir();
 	const localDir = `${projectRoot}/.agi/tools`.replace(/\\/g, '/');
 	const globalNames = await listToolDirectories(globalDir);
 	const localNames = await listToolDirectories(localDir);
@@ -267,7 +272,7 @@ type CommandScopeInfo = {
 };
 
 async function collectCommands(projectRoot: string) {
-    const globalDir = getGlobalCommandsDir();
+	const globalDir = getGlobalCommandsDir();
 	const localDir = `${projectRoot}/.agi/commands`.replace(/\\/g, '/');
 	const [globalDirInfo, localDirInfo] = await Promise.all([
 		readCommandDirectory(globalDir, projectRoot),
@@ -469,16 +474,16 @@ function detectAgentIssues(
 	localEntries: Record<string, AgentConfigEntry>,
 ) {
 	const issues: string[] = [];
-    for (const [scope, entries] of [
-        ['global', globalEntries] as const,
-        ['local', localEntries] as const,
-    ]) {
-        for (const [name, entry] of Object.entries(entries)) {
-            if (Array.isArray(entry.tools) && !entry.tools.includes('finish'))
-                issues.push(`${scope}:${name} override missing finish`);
-        }
-    }
-    return issues;
+	for (const [scope, entries] of [
+		['global', globalEntries] as const,
+		['local', localEntries] as const,
+	]) {
+		for (const [name, entry] of Object.entries(entries)) {
+			if (Array.isArray(entry.tools) && !entry.tools.includes('finish'))
+				issues.push(`${scope}:${name} override missing finish`);
+		}
+	}
+	return issues;
 }
 
 function friendlyPath(path: string | null) {
@@ -498,7 +503,7 @@ function providerEnvVar(p: ProviderId) {
 
 async function detectAuthLocations(
 	provider: ProviderId,
-	cfg: MergedConfig['cfg'],
+	_cfg: MergedConfig['cfg'],
 ) {
 	const locations: { global?: string; local?: string } = {};
 	const globalPath = getSecureAuthPath();
@@ -506,7 +511,6 @@ async function detectAuthLocations(
 		locations.global = globalPath;
 	return locations;
 }
-
 
 async function fileHasProvider(path: string, provider: ProviderId) {
 	try {

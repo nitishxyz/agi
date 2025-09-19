@@ -11,4 +11,3 @@ export const finishTool = tool({
 		return { done: true, text } as const;
 	},
 });
-

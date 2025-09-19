@@ -58,9 +58,17 @@ async function runAssistant(opts: RunOpts) {
 	// Resolve agent prompt and tools
 	const agentCfg = await resolveAgentConfig(cfg.projectRoot, opts.agent);
 	const agentPrompt = agentCfg.prompt || defaultAgentPrompts[opts.agent] || '';
-	const providerPrompt = await providerBasePrompt(opts.provider, opts.model, cfg.projectRoot);
+	const providerPrompt = await providerBasePrompt(
+		opts.provider,
+		opts.model,
+		cfg.projectRoot,
+	);
 	// Compose provider-specific base, then global base instructions, then agent prompt.
-	const parts = [providerPrompt.trim(), baseInstructions.trim(), agentPrompt.trim()].filter(Boolean);
+	const parts = [
+		providerPrompt.trim(),
+		baseInstructions.trim(),
+		agentPrompt.trim(),
+	].filter(Boolean);
 	const system = parts.join('\n\n');
 	const allTools = await discoverProjectTools(cfg.projectRoot);
 	const allowedNames = new Set([
