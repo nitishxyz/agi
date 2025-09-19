@@ -88,8 +88,23 @@ export async function runDiscoveredCommand(
 	const cmds = await discoverCommands(projectRoot);
 	const cmd = cmds[name];
 	if (!cmd) return false;
-	// Build input text from remaining args
-	const inputTokens = argv.filter((a) => !a.startsWith('--'));
+	// Parse flags and build input text from remaining args (excluding flag values)
+	const flagsWithValues = new Set([
+		'--provider',
+		'--model',
+		'--agent',
+		'--project',
+		'--session',
+	]);
+	const inputTokens: string[] = [];
+	for (let i = 0; i < argv.length; i++) {
+		const a = argv[i];
+		if (a.startsWith('--')) {
+			if (flagsWithValues.has(a)) i++;
+			continue;
+		}
+		inputTokens.push(a);
+	}
 	let userInput = inputTokens.join(' ').trim();
 	if (!userInput && cmd.interactive) {
 		intro(cmd.name);
@@ -148,11 +163,38 @@ export async function runDiscoveredCommand(
 		.join('\n\n');
 	const prompt = rendered.trim().length > 0 ? rendered : userInput;
 
-	const agent = cmd.defaults?.agent || cmd.agent;
-	const provider = cmd.defaults?.provider;
-	const model = cmd.defaults?.model;
+	// CLI overrides for provider/model/agent
+	const agentFlagIdx = argv.indexOf('--agent');
+	const providerFlagIdx = argv.indexOf('--provider');
+	const modelFlagIdx = argv.indexOf('--model');
+	const sessionFlagIdx = argv.indexOf('--session');
+	const lastFlag = argv.includes('--last');
 
-	await runAsk(prompt, { project: projectRoot, agent, provider, model });
+	const agent =
+		(agentFlagIdx >= 0 ? argv[agentFlagIdx + 1] : undefined) ||
+		cmd.defaults?.agent ||
+		cmd.agent;
+	const provider =
+		(providerFlagIdx >= 0
+			? (argv[providerFlagIdx + 1] as
+					| 'openai'
+					| 'anthropic'
+					| 'google'
+					| 'openrouter')
+			: undefined) || cmd.defaults?.provider;
+	const model =
+		(modelFlagIdx >= 0 ? argv[modelFlagIdx + 1] : undefined) ||
+		cmd.defaults?.model;
+	const sessionId = sessionFlagIdx >= 0 ? argv[sessionFlagIdx + 1] : undefined;
+
+	await runAsk(prompt, {
+		project: projectRoot,
+		agent,
+		provider,
+		model,
+		last: lastFlag,
+		sessionId,
+	});
 	return true;
 }
 
