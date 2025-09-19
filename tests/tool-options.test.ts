@@ -37,8 +37,8 @@ describe('listAvailableTools', () => {
 			expect(tools).toContain('fs_read');
 			expect(tools).not.toContain('fs_cd');
 			expect(tools).not.toContain('fs_pwd');
-			const withFinalize = await listAvailableTools(projectRoot, 'local', true);
-			expect(withFinalize).toContain('finalize');
+            const withFinalize = await listAvailableTools(projectRoot, 'local', true);
+            expect(withFinalize).toContain('finish');
 			const noDupes = new Set(withFinalize);
 			expect(noDupes.size).toBe(withFinalize.length);
 		} finally {

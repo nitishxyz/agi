@@ -150,15 +150,15 @@ export async function runDoctor(opts: { project?: string } = {}) {
 	else box('Agent Checks', [colors.green('No agent config issues detected')]);
 
 	// Suggestions
-	const sugg: string[] = [];
+    const sugg: string[] = [];
 	if (!defAuth)
 		sugg.push(
 			`Run: agi auth login (${def.provider}) or switch defaults: agi models`,
 		);
-	if (agentIssues.length)
-		sugg.push(
-			`Review agents.json (appendTools/tools) to ensure finalize remains allowed.`,
-		);
+    if (agentIssues.length)
+        sugg.push(
+            `Review agents.json (appendTools/tools) to ensure finish remains allowed.`,
+        );
 	if (sugg.length) box('Suggestions', sugg);
 	else box('Suggestions', [colors.green('No obvious issues found')]);
 }
@@ -234,13 +234,13 @@ async function collectAgents(projectRoot: string) {
 }
 
 async function collectTools(projectRoot: string) {
-	const defaults = Array.from(
-		new Set([
-			...buildFsTools(projectRoot).map((t) => t.name),
-			...buildGitTools(projectRoot).map((t) => t.name),
-			'finalize',
-		]),
-	).sort();
+    const defaults = Array.from(
+        new Set([
+            ...buildFsTools(projectRoot).map((t) => t.name),
+            ...buildGitTools(projectRoot).map((t) => t.name),
+            'finish',
+        ]),
+    ).sort();
 	const home = process.env.HOME || process.env.USERPROFILE || '';
 	const globalDir = home ? `${home}/.agi/tools`.replace(/\\/g, '/') : null;
 	const localDir = `${projectRoot}/.agi/tools`.replace(/\\/g, '/');
@@ -479,16 +479,16 @@ function detectAgentIssues(
 	localEntries: Record<string, AgentConfigEntry>,
 ) {
 	const issues: string[] = [];
-	for (const [scope, entries] of [
-		['global', globalEntries] as const,
-		['local', localEntries] as const,
-	]) {
-		for (const [name, entry] of Object.entries(entries)) {
-			if (Array.isArray(entry.tools) && !entry.tools.includes('finalize'))
-				issues.push(`${scope}:${name} override missing finalize`);
-		}
-	}
-	return issues;
+    for (const [scope, entries] of [
+        ['global', globalEntries] as const,
+        ['local', localEntries] as const,
+    ]) {
+        for (const [name, entry] of Object.entries(entries)) {
+            if (Array.isArray(entry.tools) && !entry.tools.includes('finish'))
+                issues.push(`${scope}:${name} override missing finish`);
+        }
+    }
+    return issues;
 }
 
 function friendlyPath(path: string | null) {

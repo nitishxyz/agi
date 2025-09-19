@@ -61,7 +61,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 			async onInputDelta(options: ToolOnInputDeltaOptions | undefined) {
 				const delta = (options as { inputTextDelta?: string } | undefined)
 					?.inputTextDelta;
-				// Stream tool argument deltas as events if needed (finalize handled on input available)
+            // Stream tool argument deltas as events if needed (finish handled on input available)
 				publish({
 					type: 'tool.delta',
 					sessionId: ctx.sessionId,
@@ -137,11 +137,11 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				if (typeof base.onInputAvailable === 'function') {
 					await base.onInputAvailable(options);
 				}
-				if (name === 'finalize') {
-					const text = extractFinalizeText(args);
-					if (typeof text === 'string' && text.length)
-						await appendAssistantText(ctx, text);
-				}
+                if (name === 'finish') {
+                    const text = extractFinishText(args);
+                    if (typeof text === 'string' && text.length)
+                        await appendAssistantText(ctx, text);
+                }
 			},
 			async execute(input: ToolExecuteInput, options: ToolExecuteOptions) {
 				// Handle session-relative paths and cwd tools
@@ -215,15 +215,15 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 							contentObj.artifact = maybeArtifact;
 					} catch {}
 				}
-				// If finalize returns a text payload in the result, stream it as assistant text.
-				try {
-					if (name === 'finalize' && result && typeof result === 'object') {
-						const t = (result as Record<string, unknown>).text;
-						if (typeof t === 'string' && t.trim().length) {
-							await appendAssistantText(ctx, t);
-						}
-					}
-				} catch {}
+                // If finish returns a text payload in the result, stream it as assistant text.
+                try {
+                    if (name === 'finish' && result && typeof result === 'object') {
+                        const t = (result as Record<string, unknown>).text;
+                        if (typeof t === 'string' && t.trim().length) {
+                            await appendAssistantText(ctx, t);
+                        }
+                    }
+                } catch {}
 
 				const index = await ctx.nextIndex();
 				const endTs = Date.now();
@@ -312,17 +312,17 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 	return out;
 }
 
-function extractFinalizeText(input: unknown): string | undefined {
-	if (typeof input === 'string') return input;
-	if (!input || typeof input !== 'object') return undefined;
-	const obj = input as Record<string, unknown>;
-	if (typeof obj.text === 'string') return obj.text;
-	if (
-		obj.input &&
-		typeof (obj.input as Record<string, unknown>).text === 'string'
-	)
-		return String((obj.input as Record<string, unknown>).text);
-	return undefined;
+function extractFinishText(input: unknown): string | undefined {
+    if (typeof input === 'string') return input;
+    if (!input || typeof input !== 'object') return undefined;
+    const obj = input as Record<string, unknown>;
+    if (typeof obj.text === 'string') return obj.text;
+    if (
+        obj.input &&
+        typeof (obj.input as Record<string, unknown>).text === 'string'
+    )
+        return String((obj.input as Record<string, unknown>).text);
+    return undefined;
 }
 
 async function appendAssistantText(ctx: ToolAdapterContext, text: string) {

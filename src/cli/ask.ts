@@ -257,7 +257,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 
 	// flags already parsed above
 
-	let finalizeSeen = false;
+    let finishSeen = false;
 	let output = '';
 	const assistantChunks: AssistantChunk[] = [];
 	const toolCalls: ToolCallRecord[] = [];
@@ -398,7 +398,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 						durationMs,
 					});
 				}
-				if (name === 'finalize') finalizeSeen = true;
+                if (name === 'finish') finishSeen = true;
 			} else if (eventName === 'message.completed') {
 				const data = safeJson(ev.data);
 				const completedId = typeof data?.id === 'string' ? data.id : undefined;
@@ -539,7 +539,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			transcript.tools = { calls: toolCalls, results: toolResults };
 		}
 		Bun.write(Bun.stdout, `${JSON.stringify(transcript, null, 2)}\n`);
-	} else if (summaryEnabled || finalizeSeen || toolCalls.length) {
+    } else if (summaryEnabled || finishSeen || toolCalls.length) {
 		// Avoid duplicating assistant output: if we streamed deltas already,
 		// don't reprint the full text in the summary.
 		if (assistantChunks.length === 0 && assistantText.trim().length) {
@@ -1225,10 +1225,10 @@ function printToolResult(
 		if (rawLines.length > shown.length) Bun.write(Bun.stderr, `${dim('…')}\n`);
 		return;
 	}
-	if (name === 'finalize') {
-		Bun.write(Bun.stderr, `${bold('✓ done')}${time}\n`);
-		return;
-	}
+    if (name === 'finish') {
+        Bun.write(Bun.stderr, `${bold('✓ done')}${time}\n`);
+        return;
+    }
 	// Generic fallback
 	const preview =
 		result !== undefined ? truncate(JSON.stringify(result), 200) : '';
