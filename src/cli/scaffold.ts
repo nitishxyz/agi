@@ -56,9 +56,8 @@ async function scaffoldAgent(
 		return false;
 	}
 	const tools = await multiselect({
-    message:
-        'Select tools to allow for this agent (finish is always included)',
-    // built-ins (excluding finish) + discovered custom ids under .agi/tools/
+		message: 'Select tools to allow for this agent (finish is always included)',
+		// built-ins (excluding finish) + discovered custom ids under .agi/tools/
 		options: (await listAvailableTools(projectRoot, scope, false)).map((t) => ({
 			value: t,
 			label: t,
@@ -93,8 +92,8 @@ async function scaffoldAgent(
 		const template = defaultAgentPromptTemplate(String(name));
 		await Bun.write(promptAbs, template);
 	}
-    // Always include finish in tool allowlist
-    const toolList = Array.from(new Set([...(tools as string[]), 'finish']));
+	// Always include finish in tool allowlist
+	const toolList = Array.from(new Set([...(tools as string[]), 'finish']));
 	current[String(name)] = {
 		...(current[String(name)] ?? {}),
 		tools: toolList,
@@ -192,10 +191,10 @@ export async function editAgentsConfig(
 	const entry = current[key] ?? {};
 	const scope = isGlobalBase(baseDir, projectRoot) ? 'global' : 'local';
 	const builtInAgents = new Set(['general', 'build', 'plan', 'commit']);
-    const defaults = defaultToolsForAgent(key).filter((t) => t !== 'finish');
+	const defaults = defaultToolsForAgent(key).filter((t) => t !== 'finish');
 	const hasOverride = Array.isArray(entry.tools);
 	const existingAppend = Array.isArray(entry.appendTools)
-        ? entry.appendTools.filter((t) => t !== 'finish')
+		? entry.appendTools.filter((t) => t !== 'finish')
 		: [];
 	let mode: 'append' | 'override';
 	if (hasOverride) mode = 'override';
@@ -208,7 +207,7 @@ export async function editAgentsConfig(
 			message:
 				mode === 'append'
 					? `Append extra tools to ${key}'s defaults? (defaults: ${
-                    defaults.length ? defaults.join(', ') : 'finish'
+							defaults.length ? defaults.join(', ') : 'finish'
 						})`
 					: `Override ${key}'s default tools?`,
 		});
@@ -222,7 +221,7 @@ export async function editAgentsConfig(
 	const preselect =
 		mode === 'append'
 			? existingAppend
-            : (entry.tools ?? []).filter((t) => t !== 'finish');
+			: (entry.tools ?? []).filter((t) => t !== 'finish');
 	const optionValues = await listAvailableTools(projectRoot, scope, false);
 	const baseDefaults = new Set(defaults);
 	const filteredOptions = optionValues.filter((tool) => {
@@ -246,9 +245,9 @@ export async function editAgentsConfig(
 		message:
 			mode === 'append'
 				? `Extra tools to append for ${key} (defaults: ${
-                    defaults.length ? defaults.join(', ') : 'finish'
+						defaults.length ? defaults.join(', ') : 'finish'
 					})`
-            : `Tools for ${key} (finish is always included)`,
+				: `Tools for ${key} (finish is always included)`,
 		options,
 		initialValues,
 	});
@@ -307,12 +306,12 @@ export async function editAgentsConfig(
 			(isGlobalBase(baseDir, projectRoot) ? `.agi/${relPrompt}` : relPrompt);
 	else delete nextEntry.prompt;
 	if (mode === 'append') {
-    const extras = selection.filter((t) => t !== 'finish');
+		const extras = selection.filter((t) => t !== 'finish');
 		if (extras.length) nextEntry.appendTools = extras;
 		else delete nextEntry.appendTools;
 		delete nextEntry.tools;
 	} else {
-        const finalTools = Array.from(new Set([...selection, 'finish']));
+		const finalTools = Array.from(new Set([...selection, 'finish']));
 		nextEntry.tools = finalTools;
 		delete nextEntry.appendTools;
 	}
@@ -433,7 +432,7 @@ async function scaffoldCommand(
 export async function listAvailableTools(
 	_projectRoot: string,
 	_scope: 'local' | 'global',
-    includeFinalize: boolean,
+	includeFinish: boolean,
 ): Promise<string[]> {
 	const discovered = await discoverProjectTools(_projectRoot).catch(() => []);
 	const names = new Set<string>();
@@ -448,7 +447,7 @@ export async function listAvailableTools(
 	];
 	for (const builtin of curatedBuiltIns) names.add(builtin);
 	for (const { name } of discovered) {
-        if (!includeFinalize && name === 'finish') continue;
+		if (!includeFinish && name === 'finish') continue;
 		if (
 			!curatedBuiltIns.includes(name) &&
 			name.startsWith('fs_') &&
@@ -460,7 +459,7 @@ export async function listAvailableTools(
 			continue;
 		names.add(name);
 	}
-    if (includeFinalize) names.add('finish');
+	if (includeFinish) names.add('finish');
 	return Array.from(names).sort();
 }
 
@@ -530,7 +529,7 @@ async function promptMultiline({
 	const rl = createInterface({ input, output });
 	const lines: string[] = [];
 	let settled = false;
-    function finalize(result: MultilinePromptResult) {
+	function finish(result: MultilinePromptResult) {
 		if (settled) return result;
 		settled = true;
 		rl.removeAllListeners();
@@ -548,7 +547,7 @@ async function promptMultiline({
 	}
 	return await new Promise<MultilinePromptResult>((resolve) => {
 		function done(result: MultilinePromptResult) {
-			const final = finalize(result);
+			const final = finish(result);
 			resolve(final);
 		}
 		rl.on('line', (line) => {
@@ -573,9 +572,9 @@ async function promptMultiline({
 
 function defaultAgentPromptTemplate(name: string): string {
 	if (name.toLowerCase() === 'git') {
-        return `You are a Git assistant. Review and commit guidance.\n\n- Use git_status and git_diff to inspect changes.\n- For reviews: summarize and suggest improvements.\n- For commits: draft a Conventional Commits message; only call git_commit if the user explicitly asks you to commit.\n- Stream your findings before finish.\n`;
+		return `You are a Git assistant. Review and commit guidance.\n\n- Use git_status and git_diff to inspect changes.\n- For reviews: summarize and suggest improvements.\n- For commits: draft a Conventional Commits message; only call git_commit if the user explicitly asks you to commit.\n- Stream your findings before finish.\n`;
 	}
-    return `You are the ${name} agent. Describe your responsibilities here.\n\n- What tools you can use.\n- What the expected output looks like.\n- Always call finish when done.\n`;
+	return `You are the ${name} agent. Describe your responsibilities here.\n\n- What tools you can use.\n- What the expected output looks like.\n- Always call finish when done.\n`;
 }
 
 function defaultCommandPromptTemplate(name: string): string {
