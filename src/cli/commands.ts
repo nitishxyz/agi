@@ -1,6 +1,7 @@
 import { intro, outro, text, isCancel, cancel } from '@clack/prompts';
 import { isAbsolute, join } from 'node:path';
 import { runAsk } from '@/cli/ask.ts';
+import { getGlobalCommandsDir } from '@/config/paths.ts';
 
 export type CommandManifest = {
 	name: string;
@@ -20,15 +21,13 @@ export type CommandManifest = {
 };
 
 export async function discoverCommands(
-	projectRoot: string,
+    projectRoot: string,
 ): Promise<Record<string, CommandManifest>> {
-	const commands: Record<string, CommandManifest> = {};
-	const home = process.env.HOME || process.env.USERPROFILE || '';
-
-	// Helper to read per-file manifests from a directory
-	await scanDirInto(`${home}/.agi/commands`, commands);
-	await scanDirInto(`${projectRoot}/.agi/commands`, commands);
-	return commands;
+    const commands: Record<string, CommandManifest> = {};
+    // Helper to read per-file manifests from a directory
+    await scanDirInto(getGlobalCommandsDir(), commands);
+    await scanDirInto(`${projectRoot}/.agi/commands`, commands);
+    return commands;
 }
 
 async function scanDirInto(

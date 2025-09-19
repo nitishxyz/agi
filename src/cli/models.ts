@@ -1,6 +1,7 @@
 import { intro, outro, select, isCancel, cancel, log } from '@clack/prompts';
 import { loadConfig } from '@/config/index.ts';
 import { catalog, type ProviderId } from '@/providers/catalog.ts';
+import { getGlobalConfigDir, getGlobalConfigPath } from '@/config/paths.ts';
 import { isProviderAuthorized } from '@/providers/authorization.ts';
 import { runAuth } from '@/cli/auth.ts';
 
@@ -78,9 +79,8 @@ export async function runModels(
 		const path = `${cfg.paths.dataDir}/config.json`;
 		await Bun.write(path, JSON.stringify(next, null, 2));
 	} else {
-		const home = process.env.HOME || process.env.USERPROFILE || '';
-		const base = `${home}/.agi`.replace(/\\/g, '/');
-		const path = `${base}/config.json`;
+		const base = getGlobalConfigDir();
+		const path = getGlobalConfigPath();
 		const next = {
 			defaults: {
 				agent: cfg.defaults.agent,

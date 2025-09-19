@@ -9,6 +9,7 @@ import { Glob } from 'bun';
 import { dirname, isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promises as fs } from 'node:fs';
+import { getGlobalConfigDir } from '@/config/paths.ts';
 
 export type DiscoveredTool = { name: string; tool: Tool };
 
@@ -80,7 +81,7 @@ type FsHelpers = {
 	exists: (path: string) => Promise<boolean>;
 };
 
-const pluginPatterns = ['.agi/tools/*/tool.js', '.agi/tools/*/tool.mjs'];
+const pluginPatterns = ['tools/*/tool.js', 'tools/*/tool.mjs'];
 
 export async function discoverProjectTools(
 	projectRoot: string,
@@ -95,12 +96,17 @@ export async function discoverProjectTools(
 	const bash = buildBashTool(projectRoot);
 	tools.set(bash.name, bash.tool);
 
-	async function loadFromBase(base: string | null | undefined) {
+async function loadFromBase(base: string | null | undefined) {
 		if (!base) return;
+		try {
+			await fs.readdir(base);
+		} catch {
+			return;
+		}
 		for (const pattern of pluginPatterns) {
 			const glob = new Glob(pattern, { dot: true });
 			for await (const rel of glob.scan({ cwd: base, dot: true })) {
-				const match = rel.match(/^\.agi\/tools\/([^/]+)\/tool\.(m?js)$/);
+				const match = rel.match(/^tools\/([^/]+)\/tool\.(m?js)$/);
 				if (!match) continue;
 				const folder = match[1];
 				const absPath = join(base, rel).replace(/\\/g, '/');
@@ -113,11 +119,33 @@ export async function discoverProjectTools(
 				}
 			}
 		}
+		// Fallback: manual directory scan
+		try {
+			const toolsDir = join(base, 'tools');
+			const entries = await fs.readdir(toolsDir).catch(() => [] as string[]);
+			for (const folder of entries) {
+				const js = join(toolsDir, folder, 'tool.js');
+				const mjs = join(toolsDir, folder, 'tool.mjs');
+				const candidate = await fs
+					.stat(js)
+					.then(() => js)
+					.catch(async () =>
+						await fs
+							.stat(mjs)
+							.then(() => mjs)
+							.catch(() => null),
+					);
+				if (!candidate) continue;
+				try {
+					const plugin = await loadPlugin(candidate.replace(/\\/g, '/'), folder, projectRoot);
+					if (plugin) tools.set(plugin.name, plugin.tool);
+				} catch {}
+			}
+		} catch {}
 	}
 
-	const home = process.env.HOME || process.env.USERPROFILE || '';
-	await loadFromBase(home || null);
-	await loadFromBase(projectRoot);
+	await loadFromBase(getGlobalConfigDir());
+	await loadFromBase(join(projectRoot, '.agi'));
 	return Array.from(tools.entries()).map(([name, tool]) => ({ name, tool }));
 }
 

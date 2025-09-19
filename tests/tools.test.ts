@@ -26,11 +26,13 @@ describe('discoverProjectTools', () => {
 		await mkdir(homeDir, { recursive: true });
 		const prevHome = process.env.HOME;
 		const prevProfile = process.env.USERPROFILE;
+		const prevXdg = process.env.XDG_CONFIG_HOME;
 		process.env.HOME = homeDir;
 		process.env.USERPROFILE = homeDir;
+		process.env.XDG_CONFIG_HOME = join(homeDir, '.config');
 
 		try {
-			const globalToolDir = join(homeDir, '.agi', 'tools', 'custom');
+			const globalToolDir = join(homeDir, '.config', 'agi', 'tools', 'custom');
 			await mkdir(globalToolDir, { recursive: true });
 			await writeFile(join(globalToolDir, 'tool.js'), pluginSource);
 
@@ -49,6 +51,8 @@ describe('discoverProjectTools', () => {
 			else process.env.HOME = prevHome;
 			if (prevProfile === undefined) delete process.env.USERPROFILE;
 			else process.env.USERPROFILE = prevProfile;
+			if (prevXdg === undefined) delete process.env.XDG_CONFIG_HOME;
+			else process.env.XDG_CONFIG_HOME = prevXdg;
 			await rm(workspaceRoot, { recursive: true, force: true });
 		}
 	});

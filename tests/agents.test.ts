@@ -15,11 +15,12 @@ describe('agent config merging', () => {
 		const prevProfile = process.env.USERPROFILE;
 		process.env.HOME = homeDir;
 		process.env.USERPROFILE = homeDir;
+		process.env.XDG_CONFIG_HOME = join(homeDir, '.config');
 
 		try {
-			await mkdir(join(homeDir, '.agi'), { recursive: true });
+			await mkdir(join(homeDir, '.config', 'agi'), { recursive: true });
 			await writeFile(
-				join(homeDir, '.agi', 'agents.json'),
+				join(homeDir, '.config', 'agi', 'agents.json'),
 				JSON.stringify({
 					build: { appendTools: ['ripgrep'] },
 				}),

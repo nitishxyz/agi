@@ -1,4 +1,8 @@
 import { defaultAgentPrompts } from '@/ai/agents/defaults.ts';
+import {
+  getGlobalAgentsJsonPath,
+  getGlobalAgentsDir,
+} from '@/config/paths.ts';
 
 export type AgentConfig = {
 	name: string;
@@ -78,11 +82,10 @@ export function defaultToolsForAgent(name: string): string[] {
 }
 
 export async function loadAgentsConfig(
-	projectRoot: string,
+    projectRoot: string,
 ): Promise<AgentsJson> {
-	const localPath = `${projectRoot}/.agi/agents.json`.replace(/\\/g, '/');
-	const home = process.env.HOME || process.env.USERPROFILE || '';
-	const globalPath = `${home}/.agi/agents.json`.replace(/\\/g, '/');
+    const localPath = `${projectRoot}/.agi/agents.json`.replace(/\\/g, '/');
+    const globalPath = getGlobalAgentsJsonPath();
 	let globalCfg: AgentsJson = {};
 	let localCfg: AgentsJson = {};
 	try {
@@ -107,15 +110,15 @@ export async function loadAgentsConfig(
 }
 
 export async function resolveAgentConfig(
-	projectRoot: string,
-	name: string,
+    projectRoot: string,
+    name: string,
 ): Promise<AgentConfig> {
 	const agents = await loadAgentsConfig(projectRoot);
 	const entry = agents[name];
 	let prompt = defaultAgentPrompts[name] ?? defaultAgentPrompts.general;
 
 	// Override files: project first, then global
-	const home = process.env.HOME || process.env.USERPROFILE || '';
+    const globalAgentsDir = getGlobalAgentsDir();
 	const localDirTxt = `${projectRoot}/.agi/agents/${name}/agent.txt`.replace(
 		/\\/g,
 		'/',
@@ -132,16 +135,16 @@ export async function resolveAgentConfig(
 		/\\/g,
 		'/',
 	);
-	const globalDirTxt = `${home}/.agi/agents/${name}/agent.txt`.replace(
-		/\\/g,
-		'/',
-	);
-	const globalDirMd = `${home}/.agi/agents/${name}/agent.md`.replace(
-		/\\/g,
-		'/',
-	);
-	const globalFlatTxt = `${home}/.agi/agents/${name}.txt`.replace(/\\/g, '/');
-	const globalFlatMd = `${home}/.agi/agents/${name}.md`.replace(/\\/g, '/');
+    const globalDirTxt = `${globalAgentsDir}/${name}/agent.txt`.replace(
+        /\\/g,
+        '/',
+    );
+    const globalDirMd = `${globalAgentsDir}/${name}/agent.md`.replace(
+        /\\/g,
+        '/',
+    );
+    const globalFlatTxt = `${globalAgentsDir}/${name}.txt`.replace(/\\/g, '/');
+    const globalFlatMd = `${globalAgentsDir}/${name}.md`.replace(/\\/g, '/');
 	const files = [
 		localDirMd,
 		localFlatMd,
@@ -166,18 +169,21 @@ export async function resolveAgentConfig(
 	}
 
 	// If agents.json provides a 'prompt' field, accept inline content or a relative/absolute path
-	if (entry?.prompt) {
-		const p = entry.prompt.trim();
-		if (
-			/[.](md|txt)$/i.test(p) ||
-			p.startsWith('.') ||
-			p.startsWith('/') ||
-			p.startsWith('~/')
-		) {
-			const candidates: string[] = [];
-			if (p.startsWith('~/')) candidates.push(`${home}/${p.slice(2)}`);
-			else if (p.startsWith('/')) candidates.push(p);
-			else candidates.push(`${projectRoot}/${p}`.replace(/\\/g, '/'));
+    if (entry?.prompt) {
+        const p = entry.prompt.trim();
+        if (
+            /[.](md|txt)$/i.test(p) ||
+            p.startsWith('.') ||
+            p.startsWith('/') ||
+            p.startsWith('~/')
+        ) {
+            const candidates: string[] = [];
+            if (p.startsWith('~/')) {
+                const home = process.env.HOME || process.env.USERPROFILE || '';
+                candidates.push(`${home}/${p.slice(2)}`);
+            }
+            else if (p.startsWith('/')) candidates.push(p);
+            else candidates.push(`${projectRoot}/${p}`.replace(/\\/g, '/'));
 			for (const candidate of candidates) {
 				const pf = Bun.file(candidate);
 				if (await pf.exists()) {

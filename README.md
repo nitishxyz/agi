@@ -6,7 +6,7 @@
 ## Features
 
 - 🤖 **Multi-Provider Support**: Seamlessly switch between OpenAI, Anthropic, and Google AI
-- 🎯 **Specialized Agents**: Purpose-built agents for different tasks (general, build, plan, commit, quick)
+- 🎯 **Specialized Agents**: Purpose-built agents for different tasks (general, build, plan, git)
 - 🔧 **Extensible Tool System**: Built-in tools for file operations, git, bash commands with project-specific extensions
 - 💾 **Session Management**: Persistent conversation history stored locally in SQLite
 - 📁 **Project-Aware**: Maintains context per project with local `.agi` configuration
@@ -186,8 +186,7 @@ agi serve --port 3000    # Start on specific port
 | **general** | General-purpose assistant | Minimal tool access |
 | **build** | Code generation and build tasks | File system, bash, git |
 | **plan** | Strategic planning and architecture | Read-only tools |
-| **commit** | Git commit message generation | Git tools |
-| **quick** | Fast responses | No tool access |
+| **git** | Git operations and review | Git tools, file reading |
 
 ## Built-in Tools
 
