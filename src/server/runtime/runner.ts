@@ -108,55 +108,26 @@ async function runAssistant(opts: RunOpts) {
 		counter += 1;
 		return counter;
 	};
+	// initialize current step index for tools
+	// @ts-expect-error augment at runtime
+	sharedCtx.stepIndex = 0;
 	const toolset = adaptTools(gated, sharedCtx);
 
 	const model = await resolveModel(opts.provider, opts.model, cfg);
 
 	let currentPartId = opts.assistantPartId;
 	let accumulated = '';
+	let stepIndex = 0;
 
 	// Track if the model called finish; fallback later if not
 	let finishObserved = false;
-
-	// Rotate assistant text part only on tool.result boundaries for simpler ordering
-	const unsubscribe = subscribe(opts.sessionId, async (evt) => {
+	// Lightweight subscription to flip finishObserved when finish tool completes
+	const unsubscribeFinish = subscribe(opts.sessionId, (evt) => {
 		if (evt.type !== 'tool.result') return;
 		try {
-			// detect finish
-			try {
-				const name = (evt.payload as { name?: string } | undefined)?.name;
-				if (name === 'finish') finishObserved = true;
-			} catch {}
-			// finish current part by doing nothing special; we already persist text incrementally
-			// start a new text part for subsequent deltas
-			const newPartId = crypto.randomUUID();
-			const index = await sharedCtx.nextIndex();
-			const nowTs = Date.now();
-			// mark current part completed
-			try {
-				await db
-					.update(messageParts)
-					.set({ completedAt: nowTs })
-					.where(eq(messageParts.id, currentPartId));
-			} catch {}
-			await db.insert(messageParts).values({
-				id: newPartId,
-				messageId: opts.assistantMessageId,
-				index,
-				type: 'text',
-				content: JSON.stringify({ text: '' }),
-				agent: opts.agent,
-				provider: opts.provider,
-				model: opts.model,
-				startedAt: nowTs,
-			});
-			// switch accumulation to new part
-			currentPartId = newPartId;
-			sharedCtx.assistantPartId = newPartId;
-			accumulated = '';
-		} catch {
-			// ignore rotation errors to not break the run
-		}
+			const name = (evt.payload as { name?: string } | undefined)?.name;
+			if (name === 'finish') finishObserved = true;
+		} catch {}
 	});
 
 	try {
@@ -166,16 +137,193 @@ async function runAssistant(opts: RunOpts) {
 			system,
 			messages: history,
 			stopWhen: hasToolCall('finish'),
-		});
-		let finishReason: string | undefined;
-		let totalUsage:
-			| {
-					inputTokens?: number | null;
-					outputTokens?: number | null;
-					totalTokens?: number | null;
-			  }
-			| undefined;
+			onStepFinish: async (step) => {
+				// close current text part and start a new one for the next step
+				const finishedAt = Date.now();
+				try {
+					await db
+						.update(messageParts)
+						.set({ completedAt: finishedAt })
+						.where(eq(messageParts.id, currentPartId));
+				} catch {}
 
+				// publish step info for observability
+				try {
+					publish({
+						type: 'finish-step',
+						sessionId: opts.sessionId,
+						payload: {
+							stepIndex,
+							usage: step.usage,
+							finishReason: step.finishReason,
+							response: step.response,
+						},
+					});
+					if (step.usage) {
+						publish({
+							type: 'usage',
+							sessionId: opts.sessionId,
+							payload: { stepIndex, ...step.usage },
+						});
+					}
+				} catch {}
+
+				// rotate to a fresh text part so next deltas have a clean container
+				try {
+					// increment step index for the next assistant segment
+					stepIndex += 1;
+					const newPartId = crypto.randomUUID();
+					const index = await sharedCtx.nextIndex();
+					const nowTs = Date.now();
+					await db.insert(messageParts).values({
+						id: newPartId,
+						messageId: opts.assistantMessageId,
+						index,
+						stepIndex,
+						type: 'text',
+						content: JSON.stringify({ text: '' }),
+						agent: opts.agent,
+						provider: opts.provider,
+						model: opts.model,
+						startedAt: nowTs,
+					});
+					currentPartId = newPartId;
+					sharedCtx.assistantPartId = newPartId;
+					// expose current step index to tool adapter
+					// @ts-expect-error augment at runtime
+					sharedCtx.stepIndex = stepIndex;
+					accumulated = '';
+				} catch {}
+			},
+			onError: async (err) => {
+				await db
+					.update(messages)
+					.set({
+						status: 'error',
+						error: String((err as Error)?.message ?? err),
+					})
+					.where(eq(messages.id, opts.assistantMessageId));
+				publish({
+					type: 'error',
+					sessionId: opts.sessionId,
+					payload: {
+						messageId: opts.assistantMessageId,
+						error: String((err as Error)?.message ?? err),
+					},
+				});
+			},
+			onAbort: async () => {
+				await db
+					.update(messages)
+					.set({ status: 'error', error: 'aborted' })
+					.where(eq(messages.id, opts.assistantMessageId));
+				publish({
+					type: 'error',
+					sessionId: opts.sessionId,
+					payload: { messageId: opts.assistantMessageId, error: 'aborted' },
+				});
+			},
+			onFinish: async (fin) => {
+				// Ensure finish is called at least once even if the model forgot
+				try {
+					if (!finishObserved && toolset?.finish) {
+						const text = accumulated?.trim() ? accumulated : undefined;
+						await toolset.finish.onInputAvailable?.({
+							input: { text },
+						} as never);
+						await toolset.finish.execute?.(
+							{ text } as never,
+							undefined as never,
+						);
+					}
+				} catch {}
+
+				// Mark message completion and latency
+				let createdAt = undefined as number | undefined;
+				try {
+					const row = await db
+						.select()
+						.from(messages)
+						.where(eq(messages.id, opts.assistantMessageId));
+					if (row.length)
+						createdAt =
+							row[0]?.createdAt != null ? Number(row[0].createdAt) : undefined;
+				} catch {}
+				const finishedAt = Date.now();
+				const latency =
+					typeof createdAt === 'number'
+						? Math.max(0, finishedAt - createdAt)
+						: null;
+
+				await db
+					.update(messages)
+					.set({
+						status: 'complete',
+						completedAt: finishedAt,
+						latencyMs: latency ?? undefined,
+						promptTokens:
+							fin.usage?.inputTokens != null
+								? Number(fin.usage.inputTokens)
+								: undefined,
+						completionTokens:
+							fin.usage?.outputTokens != null
+								? Number(fin.usage.outputTokens)
+								: undefined,
+						totalTokens:
+							fin.usage?.totalTokens != null
+								? Number(fin.usage.totalTokens)
+								: undefined,
+					})
+					.where(eq(messages.id, opts.assistantMessageId));
+
+				if (fin.usage && (fin.usage.inputTokens || fin.usage.outputTokens)) {
+					try {
+						const sessRows = await db
+							.select()
+							.from(sessions)
+							.where(eq(sessions.id, opts.sessionId));
+						if (sessRows.length) {
+							const row = sessRows[0];
+							const priorInput = Number(row.totalInputTokens ?? 0);
+							const priorOutput = Number(row.totalOutputTokens ?? 0);
+							const nextInput = priorInput + Number(fin.usage.inputTokens ?? 0);
+							const nextOutput =
+								priorOutput + Number(fin.usage.outputTokens ?? 0);
+							await db
+								.update(sessions)
+								.set({
+									totalInputTokens: nextInput,
+									totalOutputTokens: nextOutput,
+									lastActiveAt: finishedAt,
+								})
+								.where(eq(sessions.id, opts.sessionId));
+						}
+					} catch {}
+				}
+
+				// mark last text part completed
+				try {
+					await db
+						.update(messageParts)
+						.set({ completedAt: finishedAt })
+						.where(eq(messageParts.id, currentPartId));
+				} catch {}
+
+				const costUsd = fin.usage
+					? estimateModelCostUsd(opts.provider, opts.model, fin.usage)
+					: undefined;
+				publish({
+					type: 'message.completed',
+					sessionId: opts.sessionId,
+					payload: {
+						id: opts.assistantMessageId,
+						usage: fin.usage,
+						costUsd,
+						finishReason: fin.finishReason,
+					},
+				});
+			},
+		});
 		for await (const delta of result.textStream) {
 			if (!delta) continue;
 			accumulated += delta;
@@ -185,6 +333,7 @@ async function runAssistant(opts: RunOpts) {
 				payload: {
 					messageId: opts.assistantMessageId,
 					partId: currentPartId,
+					stepIndex,
 					delta,
 				},
 			});
@@ -193,102 +342,6 @@ async function runAssistant(opts: RunOpts) {
 				.set({ content: JSON.stringify({ text: accumulated }) })
 				.where(eq(messageParts.id, currentPartId));
 		}
-
-		try {
-			finishReason = await result.finishReason;
-		} catch {}
-		try {
-			totalUsage = await result.totalUsage;
-		} catch {}
-
-		// Ensure finish is called at least once even if the model forgot
-		try {
-			if (!finishObserved && toolset?.finish) {
-				const text = accumulated?.trim() ? accumulated : undefined;
-				await toolset.finish.onInputAvailable?.({ input: { text } } as never);
-				await toolset.finish.execute?.({ text } as never, undefined as never);
-			}
-		} catch {}
-
-		// Mark message completion and latency
-		let createdAt = undefined as number | undefined;
-		try {
-			const row = await db
-				.select()
-				.from(messages)
-				.where(eq(messages.id, opts.assistantMessageId));
-			if (row.length)
-				createdAt =
-					row[0]?.createdAt != null ? Number(row[0].createdAt) : undefined;
-		} catch {}
-		const finishedAt = Date.now();
-		const latency =
-			typeof createdAt === 'number'
-				? Math.max(0, finishedAt - createdAt)
-				: null;
-		await db
-			.update(messages)
-			.set({
-				status: 'complete',
-				completedAt: finishedAt,
-				latencyMs: latency ?? undefined,
-				promptTokens:
-					totalUsage?.inputTokens != null
-						? Number(totalUsage.inputTokens)
-						: undefined,
-				completionTokens:
-					totalUsage?.outputTokens != null
-						? Number(totalUsage.outputTokens)
-						: undefined,
-				totalTokens:
-					totalUsage?.totalTokens != null
-						? Number(totalUsage.totalTokens)
-						: undefined,
-			})
-			.where(eq(messages.id, opts.assistantMessageId));
-		if (totalUsage && (totalUsage.inputTokens || totalUsage.outputTokens)) {
-			try {
-				const sessRows = await db
-					.select()
-					.from(sessions)
-					.where(eq(sessions.id, opts.sessionId));
-				if (sessRows.length) {
-					const row = sessRows[0];
-					const priorInput = Number(row.totalInputTokens ?? 0);
-					const priorOutput = Number(row.totalOutputTokens ?? 0);
-					const nextInput = priorInput + Number(totalUsage.inputTokens ?? 0);
-					const nextOutput = priorOutput + Number(totalUsage.outputTokens ?? 0);
-					await db
-						.update(sessions)
-						.set({
-							totalInputTokens: nextInput,
-							totalOutputTokens: nextOutput,
-							lastActiveAt: finishedAt,
-						})
-						.where(eq(sessions.id, opts.sessionId));
-				}
-			} catch {}
-		}
-		// mark last text part completed
-		try {
-			await db
-				.update(messageParts)
-				.set({ completedAt: finishedAt })
-				.where(eq(messageParts.id, currentPartId));
-		} catch {}
-		const costUsd = totalUsage
-			? estimateModelCostUsd(opts.provider, opts.model, totalUsage)
-			: undefined;
-		publish({
-			type: 'message.completed',
-			sessionId: opts.sessionId,
-			payload: {
-				id: opts.assistantMessageId,
-				usage: totalUsage,
-				costUsd,
-				finishReason,
-			},
-		});
 	} catch (error) {
 		await db
 			.update(messages)
@@ -308,7 +361,7 @@ async function runAssistant(opts: RunOpts) {
 		throw error;
 	} finally {
 		try {
-			unsubscribe();
+			unsubscribeFinish();
 		} catch {}
 		// Cleanup any empty assistant text parts
 		try {

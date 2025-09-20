@@ -44,6 +44,8 @@ export type ToolAdapterContext = {
 	projectRoot: string;
 	// Monotonic index allocator shared across runner + tools for this message
 	nextIndex: () => number | Promise<number>;
+	// Current step index provided by runner (increments on onStepFinish)
+	stepIndex?: number;
 };
 
 export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
@@ -65,7 +67,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				publish({
 					type: 'tool.delta',
 					sessionId: ctx.sessionId,
-					payload: { name, channel: 'input', delta },
+					payload: { name, channel: 'input', delta, stepIndex: ctx.stepIndex },
 				});
 				if (typeof base.onInputDelta === 'function')
 					await base.onInputDelta(options);
@@ -80,7 +82,12 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					publish({
 						type: 'tool.call',
 						sessionId: ctx.sessionId,
-						payload: { name, args, callId: callPartId },
+						payload: {
+							name,
+							args,
+							callId: callPartId,
+							stepIndex: ctx.stepIndex,
+						},
 					});
 					const list = pendingCalls.get(name) ?? [];
 					list.push({ callId: callPartId, startTs });
@@ -93,6 +100,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 								id: callPartId,
 								messageId: ctx.messageId,
 								index,
+								stepIndex: ctx.stepIndex,
 								type: 'tool_call',
 								content: JSON.stringify({ name, args, callId: callPartId }),
 								agent: ctx.agent,
@@ -117,6 +125,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					id: callPartId,
 					messageId: ctx.messageId,
 					index,
+					stepIndex: ctx.stepIndex,
 					type: 'tool_call',
 					content: JSON.stringify({ name, args, callId: callPartId }),
 					agent: ctx.agent,
@@ -180,7 +189,12 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 						publish({
 							type: 'tool.delta',
 							sessionId: ctx.sessionId,
-							payload: { name, channel: 'output', delta: chunk },
+							payload: {
+								name,
+								channel: 'output',
+								delta: chunk,
+								stepIndex: ctx.stepIndex,
+							},
 						});
 					}
 					// Prefer the last chunk as the result if present, otherwise the entire array
@@ -235,7 +249,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					publish({
 						type: 'tool.result',
 						sessionId: ctx.sessionId,
-						payload: contentObj,
+						payload: { ...contentObj, stepIndex: ctx.stepIndex },
 					});
 					// Persist without blocking the event loop
 					(async () => {
@@ -244,6 +258,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 								id: resultPartId,
 								messageId: ctx.messageId,
 								index,
+								stepIndex: ctx.stepIndex,
 								type: 'tool_result',
 								content: JSON.stringify(contentObj),
 								agent: ctx.agent,
@@ -264,6 +279,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					id: resultPartId,
 					messageId: ctx.messageId,
 					index,
+					stepIndex: ctx.stepIndex,
 					type: 'tool_result',
 					content: JSON.stringify(contentObj),
 					agent: ctx.agent,
@@ -303,7 +319,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				publish({
 					type: 'tool.result',
 					sessionId: ctx.sessionId,
-					payload: contentObj,
+					payload: { ...contentObj, stepIndex: ctx.stepIndex },
 				});
 				return result;
 			},

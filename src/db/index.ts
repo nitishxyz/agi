@@ -19,34 +19,52 @@ export async function getDb(projectRootInput?: string) {
 	const sqlite = new Database(dbPath, { create: true });
 	const db = drizzle(sqlite, { schema });
 
-	// Run migrations once per db path
+	// Run migrations once per db path (apply any not yet applied)
 	if (!migratedPaths.has(dbPath)) {
 		try {
-			// Check if sessions table exists
-			const haveSessions = sqlite
-				.query(
-					"SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'",
-				)
-				.get() as { name?: string } | undefined;
+			// Ensure migrations tracking table exists
+			sqlite.exec(
+				'CREATE TABLE IF NOT EXISTS agi_migrations (name TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)',
+			);
 
-			if (!haveSessions?.name) {
-				// Apply bundled migrations in a transaction
-				sqlite.exec('BEGIN TRANSACTION');
+			// Read applied migrations
+			const appliedRows = sqlite
+				.query('SELECT name FROM agi_migrations')
+				.all() as Array<{ name: string }>;
+			const applied = new Set(appliedRows.map((r) => r.name));
+
+			for (const m of bundledMigrations) {
+				if (applied.has(m.name)) continue;
 				try {
-					for (const m of bundledMigrations) {
-						sqlite.exec(m.content);
-					}
+					sqlite.exec('BEGIN TRANSACTION');
+					sqlite.exec(m.content);
 					sqlite.exec('COMMIT');
+					sqlite
+						.query(
+							'INSERT INTO agi_migrations (name, applied_at) VALUES (?, ?)',
+						)
+						.run(m.name, Date.now());
 				} catch (err) {
+					// If migration fails due to already-applied schema (e.g., table exists / duplicate column), mark as applied and continue.
 					sqlite.exec('ROLLBACK');
+					const msg = String((err as Error)?.message ?? err);
+					const benign =
+						msg.includes('already exists') || msg.includes('duplicate column');
+					if (benign) {
+						sqlite
+							.query(
+								'INSERT OR IGNORE INTO agi_migrations (name, applied_at) VALUES (?, ?)',
+							)
+							.run(m.name, Date.now());
+						continue;
+					}
 					throw err;
 				}
 			}
 			migratedPaths.add(dbPath);
 		} catch (error) {
 			console.error('❌ Local database migration failed:', error);
-			// Don't add to migratedPaths if migration failed
-			throw error; // Re-throw to prevent using a partially migrated database
+			throw error;
 		}
 	}
 	dbCache.set(key, db);

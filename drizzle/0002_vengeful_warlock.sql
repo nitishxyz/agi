@@ -1,0 +1,1 @@
+ALTER TABLE `message_parts` ADD `step_index` integer;

@@ -317,7 +317,8 @@ The server streams responses as Server-Sent Events with these event types:
 - `assistant.delta` - Incremental text chunks from the assistant
 - `tool.call` - Tool invocation notification
 - `tool.result` - Tool execution result
-- `usage` - Token usage statistics
+- `finish-step` - Step boundary with `{ usage, finishReason, response }`
+- `usage` - Token usage statistics (may emit per-step)
 - `error` - Error messages
 
 ## Development

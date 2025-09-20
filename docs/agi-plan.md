@@ -306,10 +306,12 @@ Streaming & Events
 - SSE endpoint per session emits structured events for UI clients:
   - `session.created` — payload: session
   - `message.created` — payload: message
-  - `message.part.delta` — payload: { partId, type, delta }
+  - `message.part.delta` — payload: { partId, type, delta, stepIndex }
+  - `finish-step` — payload: { stepIndex, usage, finishReason, response }
   - `message.completed` — payload: message with final parts
   - `tool.call` — payload: { name, args }
   - `tool.result` — payload: { name, result }
+  - `usage` — payload: { stepIndex?, inputTokens?, outputTokens?, totalTokens?, ... }
   - `error` — payload: { message }
 
 API Endpoints (v1)

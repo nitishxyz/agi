@@ -211,6 +211,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 			id: assistantPartId,
 			messageId: assistantMessageId,
 			index: 0,
+			stepIndex: 0,
 			type: 'text',
 			content: JSON.stringify({ text: '' }),
 			agent,

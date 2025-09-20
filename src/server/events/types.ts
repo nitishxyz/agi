@@ -6,6 +6,8 @@ export type AGIEventType =
 	| 'tool.call'
 	| 'tool.delta'
 	| 'tool.result'
+	| 'finish-step'
+	| 'usage'
 	| 'error'
 	| 'heartbeat';
 

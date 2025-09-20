@@ -45,12 +45,11 @@ What gets persisted
 - If the tool streams output (AsyncIterable), the adapter emits `tool.delta` SSE events per chunk and persists the final `tool_result` once finished.
 
 SSE events
-- `tool.call` — `{ name, args }`
-- `tool.delta` — `{ name, channel: 'input'|'output', delta }`
-- `tool.result` — `{ name, result?, artifact? }`
+- `tool.call` — `{ name, args, stepIndex }`
+- `tool.delta` — `{ name, channel: 'input'|'output', delta, stepIndex }`
+- `tool.result` — `{ name, result?, artifact?, stepIndex }`
 
 Guidelines
 - Prefer returning a single `artifact` object for diffs; keep it small and self‑contained.
 - Use unified patch format inside `artifact.patch` for maximum compatibility with renderers.
 - For very large diffs, consider chunking or follow-up tools to fetch details.
-

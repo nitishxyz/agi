@@ -7,6 +7,7 @@ export const messageParts = sqliteTable('message_parts', {
 		.notNull()
 		.references(() => messages.id, { onDelete: 'cascade' }),
 	index: integer('index').notNull(),
+	stepIndex: integer('step_index'),
 	type: text('type').notNull(), // 'text' | 'tool_call' | 'tool_result' | 'image' | 'error'
 	content: text('content').notNull(), // JSON string
 	agent: text('agent').notNull(),
