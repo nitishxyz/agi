@@ -5,11 +5,11 @@ import { messages, messageParts, sessions } from '@/db/schema/index.ts';
 import { eq, asc } from 'drizzle-orm';
 import { resolveModel, type ProviderName } from '@/ai/provider.ts';
 import { resolveAgentConfig } from '@/ai/agents/registry.ts';
-import { baseInstructions, defaultAgentPrompts } from '@/ai/agents/defaults.ts';
-import { providerBasePrompt } from '@/prompts/providers.ts';
+import { composeSystemPrompt } from '@/server/runtime/prompt.ts';
 import { discoverProjectTools } from '@/ai/tools/loader.ts';
 import { adaptTools } from '@/ai/tools/adapter.ts';
 import { publish, subscribe } from '@/server/events/bus.ts';
+import { debugLog } from '@/runtime/debug.ts';
 import { estimateModelCostUsd } from '@/providers/pricing.ts';
 
 type RunOpts = {
@@ -20,6 +20,7 @@ type RunOpts = {
 	provider: ProviderName;
 	model: string;
 	projectRoot: string;
+	oneShot?: boolean;
 };
 
 type RunnerState = { queue: RunOpts[]; running: boolean };
@@ -57,19 +58,16 @@ async function runAssistant(opts: RunOpts) {
 
 	// Resolve agent prompt and tools
 	const agentCfg = await resolveAgentConfig(cfg.projectRoot, opts.agent);
-	const agentPrompt = agentCfg.prompt || defaultAgentPrompts[opts.agent] || '';
-	const providerPrompt = await providerBasePrompt(
-		opts.provider,
-		opts.model,
-		cfg.projectRoot,
-	);
-	// Compose provider-specific base, then global base instructions, then agent prompt.
-	const parts = [
-		providerPrompt.trim(),
-		baseInstructions.trim(),
-		agentPrompt.trim(),
-	].filter(Boolean);
-	const system = parts.join('\n\n');
+	const agentPrompt = agentCfg.prompt || '';
+	const system = await composeSystemPrompt({
+		provider: opts.provider,
+		model: opts.model,
+		projectRoot: cfg.projectRoot,
+		agentPrompt,
+		oneShot: opts.oneShot,
+	});
+	debugLog('[system] composed prompt (provider+base+agent):');
+	debugLog(system);
 	const allTools = await discoverProjectTools(cfg.projectRoot);
 	const allowedNames = new Set([
 		...(agentCfg.tools || []),

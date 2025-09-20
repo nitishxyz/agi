@@ -3,7 +3,6 @@ import { read as readMerged, isAuthorized } from '@/config/manager.ts';
 import { discoverCommands } from '@/cli/commands.ts';
 import { box, colors } from '@/cli/ui.ts';
 import type { ProviderId } from '@/auth/index.ts';
-import { defaultAgentPrompts } from '@/ai/agents/defaults.ts';
 import type { AgentConfigEntry } from '@/ai/agents/registry.ts';
 import { buildFsTools } from '@/ai/tools/builtin/fs.ts';
 import { buildGitTools } from '@/ai/tools/builtin/git.ts';
@@ -207,10 +206,23 @@ function buildScopeLines(scopes: [string, string[]][]) {
 }
 
 async function collectAgents(projectRoot: string) {
-	const defaultNames = ['build', 'general', 'plan'];
-	const defaults = defaultNames
-		.filter((name) => defaultAgentPrompts[name] !== undefined)
-		.sort();
+	// Read code-backed agent prompt names under src/prompts/agents
+	let defaults: string[] = [];
+	try {
+		const { readdir } = await import('node:fs/promises');
+		const dir = 'src/prompts/agents';
+		const entries = await readdir(dir).catch(() => [] as string[]);
+		const names = new Set<string>();
+		for (const file of entries) {
+			if (!/\.(md|txt)$/i.test(file)) continue;
+			const base = file.replace(/\.(md|txt)$/i, '');
+			if (base.trim()) names.add(base.trim());
+		}
+		defaults = Array.from(names).sort();
+	} catch {
+		defaults = [];
+	}
+	if (!defaults.includes('build')) defaults.push('build');
 	const globalPath = getGlobalAgentsJsonPath();
 	const localPath = `${projectRoot}/.agi/agents.json`.replace(/\\/g, '/');
 	const globalEntries = await readAgentsJson(globalPath);

@@ -296,6 +296,8 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 		);
 	}
 
+	// One-shot mode: when not targeting an existing or last session
+	const isOneShot = !opts.sessionId && !opts.last;
 	const enqueueRes = await httpJson<{ messageId: string }>(
 		'POST',
 		`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/messages?project=${encodeURIComponent(projectRoot)}`,
@@ -305,6 +307,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			agent: opts.agent,
 			provider: overridesProvided ? finalProvider : undefined,
 			model: overridesProvided ? finalModel : undefined,
+			oneShot: isOneShot,
 		},
 	);
 	const assistantMessageId = enqueueRes.messageId as string;

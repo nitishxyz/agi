@@ -234,6 +234,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 			provider,
 			model: modelName,
 			projectRoot: cfg.projectRoot,
+			oneShot: Boolean(body?.oneShot),
 		});
 
 		// touch session last active

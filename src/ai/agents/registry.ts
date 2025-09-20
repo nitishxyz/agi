@@ -1,5 +1,5 @@
-import { defaultAgentPrompts } from '@/ai/agents/defaults.ts';
 import { getGlobalAgentsJsonPath, getGlobalAgentsDir } from '@/config/paths.ts';
+import { debugLog } from '@/runtime/debug.ts';
 
 export type AgentConfig = {
 	name: string;
@@ -112,7 +112,12 @@ export async function resolveAgentConfig(
 ): Promise<AgentConfig> {
 	const agents = await loadAgentsConfig(projectRoot);
 	const entry = agents[name];
-	let prompt = defaultAgentPrompts[name] ?? defaultAgentPrompts.general;
+	let prompt = '';
+	let promptSource: string = 'none';
+
+	// Code defaults: repo-provided agent prompts (do not override project files)
+	const codeTxt = `src/prompts/agents/${name}.txt`.replace(/\\/g, '/');
+	const codeMd = `src/prompts/agents/${name}.md`.replace(/\\/g, '/');
 
 	// Override files: project first, then global
 	const globalAgentsDir = getGlobalAgentsDir();
@@ -148,6 +153,8 @@ export async function resolveAgentConfig(
 		globalFlatMd,
 		globalDirTxt,
 		globalFlatTxt,
+		codeMd,
+		codeTxt,
 	];
 	for (const p of files) {
 		try {
@@ -156,6 +163,7 @@ export async function resolveAgentConfig(
 				const text = await f.text();
 				if (text.trim()) {
 					prompt = text;
+					promptSource = `file:${p}`;
 					break;
 				}
 			}
@@ -183,12 +191,34 @@ export async function resolveAgentConfig(
 					const t = await pf.text();
 					if (t.trim()) {
 						prompt = t;
+						promptSource = `agents.json:file:${candidate}`;
 						break;
 					}
 				}
 			}
 		} else {
 			prompt = p;
+			promptSource = 'agents.json:inline';
+		}
+	}
+
+	// Fallback: use code-backed build agent prompt
+	if (!prompt) {
+		for (const candidate of [
+			`src/prompts/agents/build.md`,
+			`src/prompts/agents/build.txt`,
+		]) {
+			try {
+				const f = Bun.file(candidate);
+				if (await f.exists()) {
+					const t = await f.text();
+					if (t.trim()) {
+						prompt = t;
+						promptSource = `fallback:code:${candidate}`;
+						break;
+					}
+				}
+			} catch {}
 		}
 	}
 
@@ -206,5 +236,7 @@ export async function resolveAgentConfig(
 	}
 	// Deduplicate and ensure base tools are always available
 	const deduped = Array.from(new Set([...tools, ...baseToolSet]));
+	debugLog(`[agent] ${name} prompt source: ${promptSource}`);
+	debugLog(`[agent] ${name} prompt:\n${prompt}`);
 	return { name, prompt, tools: deduped };
 }
