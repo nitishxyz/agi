@@ -387,8 +387,8 @@ bun run catalog:update
 bun run build
 
 # Cross-compile for other platforms
-bun run compile:linux-x64
-bun run compile:darwin-arm64
+bun run build:bin:linux-x64
+bun run build:bin:darwin-arm64
 ```
 
 ### Testing
