@@ -43,10 +43,30 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				if (existing) existing.push(p);
 				else partsByMsg.set(p.messageId, [p]);
 			}
-			const enriched = rows.map((m) => ({
-				...m,
-				parts: (partsByMsg.get(m.id) ?? []).sort((a, b) => a.index - b.index),
-			}));
+			const wantParsed = (() => {
+				const q = (c.req.query('parsed') || '').toLowerCase();
+				return q === '1' || q === 'true' || q === 'yes';
+			})();
+			function parseContent(raw: string): Record<string, unknown> | string {
+				try {
+					const v = JSON.parse(String(raw ?? ''));
+					if (v && typeof v === 'object' && !Array.isArray(v))
+						return v as Record<string, unknown>;
+				} catch {}
+				return raw;
+			}
+			const enriched = rows.map((m) => {
+				const parts = (partsByMsg.get(m.id) ?? []).sort(
+					(a, b) => a.index - b.index,
+				);
+				const mapped = parts.map((p) => {
+					const parsed = parseContent(p.content);
+					return wantParsed
+						? { ...p, content: parsed }
+						: { ...p, contentJson: parsed };
+				});
+				return { ...m, parts: mapped };
+			});
 			return c.json(enriched);
 		}
 		return c.json(rows);

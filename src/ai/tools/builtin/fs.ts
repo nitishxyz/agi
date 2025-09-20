@@ -81,7 +81,6 @@ export function buildFsTools(
 			} catch {}
 			await Bun.write(abs, content);
 			const artifact = await buildWriteArtifact(
-				projectRoot,
 				path,
 				existed,
 				oldText,
@@ -194,46 +193,45 @@ export function buildFsTools(
 }
 
 async function buildWriteArtifact(
-    projectRoot: string,
-    relPath: string,
-    _existed: boolean,
-    oldText: string,
-    newText: string,
+	relPath: string,
+	_existed: boolean,
+	oldText: string,
+	newText: string,
 ) {
-    // Prefer library-generated unified diff for better hunk formatting
-    let patch = '';
-    try {
-        // Use a/ and b/ prefixes so headers look familiar
-        patch = createTwoFilesPatch(
-            `a/${relPath}`,
-            `b/${relPath}`,
-            String(oldText ?? ''),
-            String(newText ?? ''),
-            '',
-            '',
-            { context: 3 },
-        );
-    } catch {}
-    if (!patch || !patch.trim().length) {
-        // Fallback: extremely compact synthetic patch
-        const header = _existed ? 'Update File' : 'Add File';
-        const oldLines = String(oldText ?? '').split('\n');
-        const newLines = String(newText ?? '').split('\n');
-        const lines: string[] = [];
-        lines.push('*** Begin Patch');
-        lines.push(`*** ${header}: ${relPath}`);
-        lines.push('@@');
-        if (_existed) for (const l of oldLines) lines.push(`-${l}`);
-        for (const l of newLines) lines.push(`+${l}`);
-        lines.push('*** End Patch');
-        patch = lines.join('\n');
-    }
-    const { additions, deletions } = summarizePatchCounts(patch);
-    return {
-        kind: 'file_diff',
-        patch,
-        summary: { files: 1, additions, deletions },
-    } as const;
+	// Prefer library-generated unified diff for better hunk formatting
+	let patch = '';
+	try {
+		// Use a/ and b/ prefixes so headers look familiar
+		patch = createTwoFilesPatch(
+			`a/${relPath}`,
+			`b/${relPath}`,
+			String(oldText ?? ''),
+			String(newText ?? ''),
+			'',
+			'',
+			{ context: 3 },
+		);
+	} catch {}
+	if (!patch || !patch.trim().length) {
+		// Fallback: extremely compact synthetic patch
+		const header = _existed ? 'Update File' : 'Add File';
+		const oldLines = String(oldText ?? '').split('\n');
+		const newLines = String(newText ?? '').split('\n');
+		const lines: string[] = [];
+		lines.push('*** Begin Patch');
+		lines.push(`*** ${header}: ${relPath}`);
+		lines.push('@@');
+		if (_existed) for (const l of oldLines) lines.push(`-${l}`);
+		for (const l of newLines) lines.push(`+${l}`);
+		lines.push('*** End Patch');
+		patch = lines.join('\n');
+	}
+	const { additions, deletions } = summarizePatchCounts(patch);
+	return {
+		kind: 'file_diff',
+		patch,
+		summary: { files: 1, additions, deletions },
+	} as const;
 }
 
 function summarizePatchCounts(patch: string): {
@@ -253,8 +251,4 @@ function summarizePatchCounts(patch: string): {
 		else if (line.startsWith('-')) dels += 1;
 	}
 	return { additions: adds, deletions: dels };
-}
-
-function escapeRegExp(s: string) {
-	return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

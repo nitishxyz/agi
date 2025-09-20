@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { $ } from 'bun';
 
 export function buildApplyPatchTool(projectRoot: string): {
-    name: string;
-    tool: Tool;
+	name: string;
+	tool: Tool;
 } {
-    const applyPatch = tool({
+	const applyPatch = tool({
 		description:
 			'Apply a unified diff patch to the project. Expects standard unified diff (---/+++/@@) format. Uses git apply under the hood.',
 		inputSchema: z.object({
@@ -32,34 +32,35 @@ export function buildApplyPatchTool(projectRoot: string): {
 			} catch {}
 			const file = `${dir}/patch-${Date.now()}.diff`;
 			await Bun.write(file, patch);
-            const summary = summarizePatch(patch);
-            // Try -p1 first for canonical git-style patches (a/ b/ prefixes), then fall back to -p0.
-            const baseArgs = ['apply', '--whitespace=nowarn'];
-            const rejectArg = allowRejects ? ['--reject'] : [];
-            const tries: Array<string[]> = [
-                [...baseArgs, ...rejectArg, '-p1'],
-                [...baseArgs, ...rejectArg, '-p0'],
-            ];
-            for (const args of tries) {
-                const cmd = ['git', '-C', projectRoot, ...args, file];
-                const proc = await $`${cmd}`.quiet().nothrow();
-                const out = await proc.text();
-                if (proc.exitCode === 0) {
-                    return {
-                        ok: true,
-                        output: out?.trim() ?? '',
-                        artifact: { kind: 'file_diff', patch, summary },
-                    } as const;
-                }
-            }
-            // If both attempts fail, return error output from the last try
-            return {
-                ok: false,
-                error: 'git apply failed (tried -p1 and -p0) — ensure paths match project root',
-                artifact: { kind: 'file_diff', patch, summary },
-            } as const;
-        },
-    });
+			const summary = summarizePatch(patch);
+			// Try -p1 first for canonical git-style patches (a/ b/ prefixes), then fall back to -p0.
+			const baseArgs = ['apply', '--whitespace=nowarn'];
+			const rejectArg = allowRejects ? ['--reject'] : [];
+			const tries: Array<string[]> = [
+				[...baseArgs, ...rejectArg, '-p1'],
+				[...baseArgs, ...rejectArg, '-p0'],
+			];
+			for (const args of tries) {
+				const cmd = ['git', '-C', projectRoot, ...args, file];
+				const proc = await $`${cmd}`.quiet().nothrow();
+				const out = await proc.text();
+				if (proc.exitCode === 0) {
+					return {
+						ok: true,
+						output: out?.trim() ?? '',
+						artifact: { kind: 'file_diff', patch, summary },
+					} as const;
+				}
+			}
+			// If both attempts fail, return error output from the last try
+			return {
+				ok: false,
+				error:
+					'git apply failed (tried -p1 and -p0) — ensure paths match project root',
+				artifact: { kind: 'file_diff', patch, summary },
+			} as const;
+		},
+	});
 	return { name: 'apply_patch', tool: applyPatch };
 }
 
