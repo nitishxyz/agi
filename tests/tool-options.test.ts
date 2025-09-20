@@ -35,9 +35,9 @@ describe('listAvailableTools', () => {
 
 			const tools = await listAvailableTools(projectRoot, 'local', false);
 			expect(tools).toContain('custom_thing');
-			expect(tools).toContain('fs_read');
-			expect(tools).not.toContain('fs_cd');
-			expect(tools).not.toContain('fs_pwd');
+			expect(tools).toContain('read');
+			expect(tools).not.toContain('cd');
+			expect(tools).not.toContain('pwd');
 			const withFinish = await listAvailableTools(projectRoot, 'local', true);
 			expect(withFinish).toContain('finish');
 			const noDupes = new Set(withFinish);

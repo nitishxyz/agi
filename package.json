@@ -59,6 +59,7 @@
 		"@clack/prompts": "^0.11.0",
 		"@openrouter/ai-sdk-provider": "^1.2.0",
 		"ai": "^5.0.43",
+		"diff": "^8.0.2",
 		"drizzle-orm": "^0.44.5",
 		"hono": "^4.9.7",
 		"opencode-anthropic-auth": "^0.0.2",

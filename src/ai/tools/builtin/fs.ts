@@ -2,6 +2,7 @@ import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import { $ } from 'bun';
 import { embeddedTextAssets } from '@/runtime/assets.ts';
+import { createTwoFilesPatch } from 'diff';
 
 function normalizePath(p: string) {
 	const parts = p.replace(/\\/g, '/').split('/');
@@ -71,8 +72,22 @@ export function buildFsTools(
 			if (createDirs) {
 				await $`mkdir -p ${abs.slice(0, abs.lastIndexOf('/'))}`;
 			}
+			let existed = false;
+			let oldText = '';
+			try {
+				const f = Bun.file(abs);
+				existed = await f.exists();
+				if (existed) oldText = await f.text();
+			} catch {}
 			await Bun.write(abs, content);
-			return { path, bytes: content.length };
+			const artifact = await buildWriteArtifact(
+				projectRoot,
+				path,
+				existed,
+				oldText,
+				content,
+			);
+			return { path, bytes: content.length, artifact } as const;
 		},
 	});
 
@@ -169,11 +184,77 @@ export function buildFsTools(
 	});
 
 	return [
-		{ name: 'fs_read', tool: read },
-		{ name: 'fs_write', tool: write },
-		{ name: 'fs_ls', tool: ls },
-		{ name: 'fs_tree', tool: tree },
-		{ name: 'fs_pwd', tool: pwd },
-		{ name: 'fs_cd', tool: cd },
+		{ name: 'read', tool: read },
+		{ name: 'write', tool: write },
+		{ name: 'ls', tool: ls },
+		{ name: 'tree', tool: tree },
+		{ name: 'pwd', tool: pwd },
+		{ name: 'cd', tool: cd },
 	];
+}
+
+async function buildWriteArtifact(
+    projectRoot: string,
+    relPath: string,
+    _existed: boolean,
+    oldText: string,
+    newText: string,
+) {
+    // Prefer library-generated unified diff for better hunk formatting
+    let patch = '';
+    try {
+        // Use a/ and b/ prefixes so headers look familiar
+        patch = createTwoFilesPatch(
+            `a/${relPath}`,
+            `b/${relPath}`,
+            String(oldText ?? ''),
+            String(newText ?? ''),
+            '',
+            '',
+            { context: 3 },
+        );
+    } catch {}
+    if (!patch || !patch.trim().length) {
+        // Fallback: extremely compact synthetic patch
+        const header = _existed ? 'Update File' : 'Add File';
+        const oldLines = String(oldText ?? '').split('\n');
+        const newLines = String(newText ?? '').split('\n');
+        const lines: string[] = [];
+        lines.push('*** Begin Patch');
+        lines.push(`*** ${header}: ${relPath}`);
+        lines.push('@@');
+        if (_existed) for (const l of oldLines) lines.push(`-${l}`);
+        for (const l of newLines) lines.push(`+${l}`);
+        lines.push('*** End Patch');
+        patch = lines.join('\n');
+    }
+    const { additions, deletions } = summarizePatchCounts(patch);
+    return {
+        kind: 'file_diff',
+        patch,
+        summary: { files: 1, additions, deletions },
+    } as const;
+}
+
+function summarizePatchCounts(patch: string): {
+	additions: number;
+	deletions: number;
+} {
+	let adds = 0;
+	let dels = 0;
+	for (const line of String(patch || '').split('\n')) {
+		if (
+			line.startsWith('+++') ||
+			line.startsWith('---') ||
+			line.startsWith('diff ')
+		)
+			continue;
+		if (line.startsWith('+')) adds += 1;
+		else if (line.startsWith('-')) dels += 1;
+	}
+	return { additions: adds, deletions: dels };
+}
+
+function escapeRegExp(s: string) {
+	return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

@@ -136,6 +136,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 
 	// Parse output flags early so we can use them while choosing/creating a session
 	const verbose = process.argv.includes('--verbose');
+	const readVerbose = process.argv.includes('--read-verbose');
 	const summaryEnabled = process.argv.includes('--summary');
 	const jsonEnabled = process.argv.includes('--json');
 	const jsonVerbose = process.argv.includes('--json-verbose');
@@ -380,26 +381,10 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 					const ts = Date.now();
 					Bun.write(
 						Bun.stdout,
-						`${JSON.stringify({
-							event: 'tool.delta',
-							ts,
-							name,
-							channel,
-							delta: data?.delta,
-						})}\n`,
+						`${JSON.stringify({ event: 'tool.delta', ts, name, channel, delta: data?.delta })}\n`,
 					);
-				} else if ((channel === 'input' && !verbose) || jsonEnabled) {
-					// Avoid noisy input-argument streaming by default
 				} else {
-					const deltaValue =
-						typeof data?.delta === 'string'
-							? data.delta
-							: JSON.stringify(data?.delta);
-					if (deltaValue)
-						Bun.write(
-							Bun.stderr,
-							`${dim(`[${channel}]`)} ${cyan(name)} ${dim('›')} ${truncate(deltaValue, 160)}\n`,
-						);
+					// Suppress tool delta output by default in CLI
 				}
 			} else if (eventName === 'tool.result') {
 				const data = safeJson(ev.data);
@@ -434,7 +419,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 						filesTouched.add(f);
 				}
 				const resultValue = data?.result as { path?: unknown } | undefined;
-				if (name === 'fs_write' && typeof resultValue?.path === 'string')
+				if (name === 'write' && typeof resultValue?.path === 'string')
 					filesTouched.add(String(resultValue.path));
 				if (jsonStreamEnabled) {
 					Bun.write(
@@ -450,10 +435,48 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 						})}\n`,
 					);
 				} else if (!jsonEnabled) {
-					printToolResult(name, data?.result, artifact, {
-						verbose,
-						durationMs,
-					});
+					const READ_ONLY_TOOLS = new Set([
+						'read',
+						'ls',
+						'tree',
+						'ripgrep',
+						'git_diff',
+						'git_status',
+					]);
+					const MUTATING_TOOLS = new Set(['write', 'apply_patch', 'edit']);
+					if (name === 'progress_update') {
+						// Suppress redundant "done" line for progress updates
+                } else if (readVerbose && READ_ONLY_TOOLS.has(name)) {
+                    printToolResult(name, data?.result, artifact, {
+                        verbose,
+                        durationMs,
+                    });
+                } else if (
+                    MUTATING_TOOLS.has(name) ||
+                    (artifact &&
+                        typeof artifact === 'object' &&
+                        (artifact as Artifact).kind === 'file_diff')
+                ) {
+                    printToolResult(name, data?.result, artifact, {
+                        verbose,
+                        durationMs,
+                    });
+                } else if (name === 'bash') {
+                    // Always show bash output if available for clarity
+                    printToolResult(name, data?.result, artifact, {
+                        verbose,
+                        durationMs,
+                    });
+                } else {
+                    const timeStr =
+                        typeof durationMs === 'number'
+                            ? ` ${dim(`(${durationMs}ms)`)}`
+                            : '';
+						Bun.write(
+							Bun.stderr,
+							`${bold('›')} ${cyan(name)} ${dim('›')} done${timeStr}\n\n`,
+						);
+					}
 				}
 				if (name === 'finish') finishSeen = true;
 			} else if (eventName === 'message.completed') {
@@ -1098,14 +1121,43 @@ function buildSequence(args: {
 }
 
 function extractFilesFromPatch(patch: string): string[] {
-	const lines = patch.split('\n');
-	const files: string[] = [];
-	const re = /^\*\*\*\s+(Add|Update|Delete) File:\s+(.+)$/;
-	for (const line of lines) {
-		const m = line.match(re);
-		if (m) files.push(m[2]);
-	}
-	return files;
+    const lines = String(patch || '').split('\n');
+    const files: string[] = [];
+    const codexRe = /^\*\*\*\s+(Add|Update|Delete) File:\s+(.+)$/;
+    const diffGitRe = /^diff --git\s+a\/(.+?)\s+b\/(.+?)$/;
+    const minusRe = /^---\s+a\/(.+)$/;
+    const plusRe = /^\+\+\+\s+b\/(.+)$/;
+    for (const line of lines) {
+        let m = line.match(codexRe);
+        if (m) {
+            files.push(m[2]);
+            continue;
+        }
+        m = line.match(diffGitRe);
+        if (m) {
+            files.push(m[1]);
+            continue;
+        }
+        m = line.match(minusRe);
+        if (m) {
+            files.push(m[1]);
+            continue;
+        }
+        m = line.match(plusRe);
+        if (m) {
+            files.push(m[1]);
+            continue;
+        }
+    }
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const f of files) {
+        if (!seen.has(f)) {
+            seen.add(f);
+            out.push(f);
+        }
+    }
+    return out;
 }
 
 function printSummary(
@@ -1177,9 +1229,9 @@ const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
 const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
 
 function printToolCall(
-	name: string,
-	args?: unknown,
-	opts?: { verbose?: boolean },
+    name: string,
+    args?: unknown,
+    opts?: { verbose?: boolean },
 ) {
 	// Special render for progress updates
 	if (name === 'progress_update') {
@@ -1208,13 +1260,38 @@ function printToolCall(
 		return;
 	}
 	const v = opts?.verbose;
-	const title = `${bold('›')} ${cyan(name)} ${dim('running...')}`;
-	if (!args || !v) {
-		Bun.write(Bun.stderr, `\n${title}\n`);
-		return;
-	}
-	const preview = truncate(JSON.stringify(args), 200);
-	Bun.write(Bun.stderr, `\n${title}\n${dim(preview)}\n`);
+	// Build a concise summary for common tools
+	let summary = '';
+	const a = (
+		isPlainObject(args) ? (args as Record<string, unknown>) : {}
+	) as Record<string, unknown>;
+    if (name === 'read' && typeof a.path === 'string') summary = String(a.path);
+    else if ((name === 'ls' || name === 'tree') && typeof a.path === 'string')
+        summary = String(a.path || '.');
+    else if (name === 'write' && typeof a.path === 'string')
+        summary = String(a.path);
+    else if (name === 'edit' && typeof a.path === 'string')
+        summary = String(a.path);
+    else if (name === 'bash' && typeof a.cmd === 'string') {
+        const cmd = String(a.cmd).split('\n')[0] ?? '';
+        const cwd = typeof a.cwd === 'string' ? a.cwd : undefined;
+        const cwdSuffix = cwd && cwd !== '.' ? ` ${dim(`(cwd=${cwd})`)}` : '';
+        summary = `${truncate(cmd, 200)}${cwdSuffix}`;
+    }
+    else if (name === 'apply_patch' && typeof a.patch === 'string') {
+        const files = extractFilesFromPatch(String(a.patch));
+        if (files.length === 1) summary = files[0];
+        else if (files.length > 1)
+            summary = `${files[0]} ${dim(`(+${files.length - 1} more)`)}`;
+	} else if (name === 'ripgrep' && typeof a.query === 'string')
+		summary = String(a.query);
+	else if (name === 'git_diff') summary = a.all ? 'all' : 'staged';
+	else if (v && args) summary = truncate(JSON.stringify(args), 120);
+	const title = summary
+		? `${bold('›')} ${cyan(name)} ${dim('›')} ${summary}`
+		: `${bold('›')} ${cyan(name)}`;
+	// Ensure this line stands alone
+	Bun.write(Bun.stderr, `\n${title}\n`);
 }
 
 function printToolResult(
@@ -1224,13 +1301,13 @@ function printToolResult(
 	opts?: { verbose?: boolean; durationMs?: number },
 ) {
 	if (name === 'progress_update') {
-		// No-op: progress lines are printed on call; avoid cluttering with results
+		// Suppress result printing for progress to avoid redundancy
 		return;
 	}
 	const time =
 		typeof opts?.durationMs === 'number' ? dim(` (${opts.durationMs}ms)`) : '';
 	// Special-case pretty formatting for common tools
-	if (name === 'fs_tree' && result?.tree) {
+	if (name === 'tree' && result?.tree) {
 		Bun.write(
 			Bun.stderr,
 			`${bold('↳ tree')} ${dim(result.path ?? '.')}${time}\n`,
@@ -1238,7 +1315,7 @@ function printToolResult(
 		Bun.write(Bun.stderr, `${result.tree}\n`);
 		return;
 	}
-	if (name === 'fs_ls' && Array.isArray(result?.entries)) {
+	if (name === 'ls' && Array.isArray(result?.entries)) {
 		const entries = result.entries as Array<{ name: string; type: string }>;
 		Bun.write(
 			Bun.stderr,
@@ -1251,7 +1328,7 @@ function printToolResult(
 			Bun.write(Bun.stderr, `${dim(`… and ${entries.length - 100} more`)}\n`);
 		return;
 	}
-	if (name === 'fs_read' && typeof result?.path === 'string') {
+	if (name === 'read' && typeof result?.path === 'string') {
 		const content = String(result?.content ?? '');
 		const lines = content.split('\n');
 		Bun.write(
@@ -1263,29 +1340,58 @@ function printToolResult(
 		Bun.write(Bun.stderr, `${sample}${suffix}\n`);
 		return;
 	}
-	if (name === 'fs_write' && typeof result?.path === 'string') {
+	if (name === 'write' && typeof result?.path === 'string') {
 		Bun.write(
 			Bun.stderr,
 			`${bold('↳ wrote')} ${result.path} (${result?.bytes ?? '?'} bytes)${time}\n`,
 		);
-		return;
+		// Do not return; also print any diff artifact below for visibility
 	}
-	if (artifact?.kind === 'file_diff' && typeof artifact?.patch === 'string') {
-		Bun.write(
-			Bun.stderr,
-			`${bold('↳ diff')} ${dim('(unified patch)')}${time}\n`,
-		);
-		const rawLines = artifact.patch.split('\n');
-		const shown = rawLines.slice(0, 120);
-		for (const line of shown) {
-			if (line.startsWith('+')) Bun.write(Bun.stderr, `${green(line)}\n`);
-			else if (line.startsWith('-')) Bun.write(Bun.stderr, `${red(line)}\n`);
-			else if (line.startsWith('***')) Bun.write(Bun.stderr, `${dim(line)}\n`);
-			else Bun.write(Bun.stderr, `${line}\n`);
-		}
-		if (rawLines.length > shown.length) Bun.write(Bun.stderr, `${dim('…')}\n`);
-		return;
-	}
+    if (artifact?.kind === 'file_diff' && typeof artifact?.patch === 'string') {
+        // Detect patch format for more accurate labeling
+        const pf = detectPatchFormat(artifact.patch);
+        const label = pf === 'unified' ? '(unified patch)' : '(patch)';
+        Bun.write(
+            Bun.stderr,
+            `${bold('↳ diff')} ${dim(label)}${time}\n`,
+        );
+        const rawLines = artifact.patch.split('\n');
+        const shown = rawLines.slice(0, 120);
+        for (const line of shown) {
+            if (line.startsWith('+') && !line.startsWith('+++')) Bun.write(Bun.stderr, `${green(line)}\n`);
+            else if (line.startsWith('-') && !line.startsWith('---')) Bun.write(Bun.stderr, `${red(line)}\n`);
+            else if (
+                line.startsWith('***') ||
+                line.startsWith('diff --git') ||
+                line.startsWith('index ') ||
+                line.startsWith('--- ') ||
+                line.startsWith('+++ ') ||
+                line.startsWith('@@ ')
+            )
+                Bun.write(Bun.stderr, `${dim(line)}\n`);
+            else Bun.write(Bun.stderr, `${line}\n`);
+        }
+        if (rawLines.length > shown.length) Bun.write(Bun.stderr, `${dim('…')}\n`);
+        return;
+    }
+    if (name === 'bash') {
+        // Pretty print bash output if present
+        const r = (result ?? {}) as { stdout?: unknown; stderr?: unknown; exitCode?: unknown };
+        const stdout = typeof r.stdout === 'string' ? r.stdout : '';
+        const stderr = typeof r.stderr === 'string' ? r.stderr : '';
+        const hasOut = Boolean(stdout?.length || stderr?.length);
+        Bun.write(Bun.stderr, `${bold('↳ bash')}${time}\n`);
+        if (hasOut) {
+            const outLines = String(stdout || '').split('\n').slice(0, 200);
+            for (const l of outLines) Bun.write(Bun.stderr, `${l}\n`);
+            const errLines = String(stderr || '').split('\n').slice(0, 200);
+            for (const l of errLines) if (l) Bun.write(Bun.stderr, `${red(l)}\n`);
+            if (String(stdout || '').split('\n').length > 200 || String(stderr || '').split('\n').length > 200) {
+                Bun.write(Bun.stderr, `${dim('…')}\n`);
+            }
+        }
+        return;
+    }
 	if (name === 'finish') {
 		Bun.write(Bun.stderr, `${bold('✓ done')}${time}\n`);
 		return;
@@ -1314,6 +1420,13 @@ function stageBadge(stage: string) {
 		default:
 			return `${dim(`[${stage}]`)}`;
 	}
+}
+
+function detectPatchFormat(patch: string): 'unified' | 'enveloped' | 'unknown' {
+    const s = String(patch || '');
+    if (s.includes('*** Begin Patch')) return 'enveloped';
+    if (/(^|\n)diff --git\s+/m.test(s) || (/(^|\n)---\s+/m.test(s) && /(^|\n)\+\+\+\s+/m.test(s))) return 'unified';
+    return 'unknown';
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

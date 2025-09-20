@@ -60,17 +60,20 @@ const baseToolSet = ['progress_update', 'finish'] as const;
 
 const defaultToolExtras: Record<string, string[]> = {
 	build: [
-		'fs_read',
-		'fs_write',
-		'fs_ls',
-		'fs_tree',
+		'read',
+		'write',
+		'ls',
+		'tree',
 		'bash',
 		'git_status',
 		'git_diff',
+		'ripgrep',
+		'apply_patch',
+		'update_plan',
 	],
-	plan: ['fs_read', 'fs_ls', 'fs_tree'],
-	git: ['git_status', 'git_diff', 'git_commit', 'fs_read', 'fs_ls'],
-	commit: ['git_status', 'git_diff', 'git_commit', 'fs_read', 'fs_ls'],
+	plan: ['read', 'ls', 'tree', 'ripgrep', 'update_plan'],
+	git: ['git_status', 'git_diff', 'git_commit', 'read', 'ls'],
+	commit: ['git_status', 'git_diff', 'git_commit', 'read', 'ls'],
 };
 
 export function defaultToolsForAgent(name: string): string[] {

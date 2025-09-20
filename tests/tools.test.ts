@@ -39,7 +39,7 @@ describe('discoverProjectTools', () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const names = tools.map((t) => t.name).sort();
 			expect(names).toContain('custom_echo');
-			expect(names).toContain('fs_read');
+			expect(names).toContain('read');
 			expect(names).toContain('git_status');
 			const custom = tools.find((t) => t.name === 'custom_echo');
 			expect(custom).toBeDefined();

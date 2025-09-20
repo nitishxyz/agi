@@ -4,7 +4,7 @@ import { getDb } from '@/db/index.ts';
 import { sessions } from '@/db/schema/index.ts';
 import { validateProviderModel } from '@/providers/validate.ts';
 import { publish } from '@/server/events/bus.ts';
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import {
 	isProviderAuthorized,
 	ensureProviderEnv,
@@ -21,9 +21,11 @@ export function registerSessionsRoutes(app: Hono) {
 		const projectRoot = c.req.query('project') || process.cwd();
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
+		// Only return sessions for this project
 		const rows = await db
 			.select()
 			.from(sessions)
+			.where(eq(sessions.projectPath, cfg.projectRoot))
 			.orderBy(desc(sessions.lastActiveAt), desc(sessions.createdAt));
 		const normalized = rows.map((r) => {
 			let counts: Record<string, unknown> | undefined;

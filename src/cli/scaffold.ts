@@ -432,10 +432,13 @@ export async function listAvailableTools(
 	const discovered = await discoverProjectTools(_projectRoot).catch(() => []);
 	const names = new Set<string>();
 	const curatedBuiltIns = [
-		'fs_read',
-		'fs_write',
-		'fs_ls',
-		'fs_tree',
+		'read',
+		'write',
+		'ls',
+		'tree',
+		'ripgrep',
+		'apply_patch',
+		'update_plan',
 		'git_status',
 		'git_diff',
 		'git_commit',
@@ -443,15 +446,8 @@ export async function listAvailableTools(
 	for (const builtin of curatedBuiltIns) names.add(builtin);
 	for (const { name } of discovered) {
 		if (!includeFinish && name === 'finish') continue;
-		if (
-			!curatedBuiltIns.includes(name) &&
-			name.startsWith('fs_') &&
-			name !== 'fs_read' &&
-			name !== 'fs_write' &&
-			name !== 'fs_ls' &&
-			name !== 'fs_tree'
-		)
-			continue;
+		// Hide internal helpers
+		if (name === 'pwd' || name === 'cd' || name === 'progress_update') continue;
 		names.add(name);
 	}
 	if (includeFinish) names.add('finish');

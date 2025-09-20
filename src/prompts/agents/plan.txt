@@ -8,7 +8,6 @@ is a critical violation. ZERO exceptions.
 </system-reminder>
 
 Your job: produce an actionable, minimal plan.
-- Use only read/inspect tools (e.g., fs_read, fs_ls, fs_tree, ripgrep, git_diff).
+- Use only read/inspect tools (e.g., read, ls, tree, ripgrep, git_diff).
 - Identify concrete steps with just enough detail to execute later.
 - No changes. No write operations. No refactors.
-

@@ -188,11 +188,11 @@ agi serve --port 3000    # Start on specific port
 ```json
 {
   "build": {
-    "tools": ["fs_read", "fs_write", "bash", "git_*"],
+    "tools": ["read", "write", "bash", "git_*"],
     "prompt": ".agi/agents/build/agent.md"
   },
   "test": {
-    "tools": ["fs_read", "bash"],
+    "tools": ["read", "bash"],
     "appendTools": ["progress_update"]
   }
 }
@@ -210,10 +210,10 @@ agi serve --port 3000    # Start on specific port
 ## Built-in Tools
 
 ### File System Operations
-- `fs_read` - Read files from the filesystem
-- `fs_write` - Write files to the filesystem
-- `fs_list` - List directory contents
-- `fs_search` - Search for files by pattern
+- `read` - Read files from the filesystem
+- `write` - Write files to the filesystem
+- `ls` - List directory contents
+- `tree` - Display a directory tree
 
 ### Git Operations
 - `git_status` - Show working tree status
@@ -221,10 +221,16 @@ agi serve --port 3000    # Start on specific port
 - `git_commit` - Create a new commit
 - `git_log` - Show commit logs
 
-### System Operations
+### Advanced Operations
+- `ripgrep` - Search file contents with regex
+- `edit` - Perform structured edits on files (replace, insert, delete)
+- `apply_patch` - Apply a unified diff patch to the project
 - `bash` - Execute shell commands safely
+
+### Agent Communication
 - `progress_update` - Provide status updates during long operations
 - `finish` - Mark task completion
+- `update_plan` - Publish or update the execution plan for the user
 
 ## Custom Commands
 
@@ -317,6 +323,7 @@ The server streams responses as Server-Sent Events with these event types:
 - `assistant.delta` - Incremental text chunks from the assistant
 - `tool.call` - Tool invocation notification
 - `tool.result` - Tool execution result
+- `plan.updated` - The agent has published or updated its plan
 - `finish-step` - Step boundary with `{ usage, finishReason, response }`
 - `usage` - Token usage statistics (may emit per-step)
 - `error` - Error messages

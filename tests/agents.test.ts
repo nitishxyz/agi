@@ -35,7 +35,7 @@ describe('agent config merging', () => {
 
 			const cfg = await resolveAgentConfig(projectRoot, 'build');
 			expect(cfg.tools).toContain('ripgrep');
-			expect(cfg.tools).toContain('fs_read');
+			expect(cfg.tools).toContain('read');
 		} finally {
 			if (prevHome === undefined) delete process.env.HOME;
 			else process.env.HOME = prevHome;

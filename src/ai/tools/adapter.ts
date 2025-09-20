@@ -156,15 +156,24 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				// Handle session-relative paths and cwd tools
 				let res: ToolExecuteReturn | { cwd: string } | null | undefined;
 				const cwd = getCwd(ctx.sessionId);
-				if (name === 'fs_pwd') {
+				if (name === 'pwd') {
 					res = { cwd };
-				} else if (name === 'fs_cd') {
+				} else if (name === 'cd') {
 					const next = joinRelative(cwd, String(input?.path ?? '.'));
 					setCwd(ctx.sessionId, next);
 					res = { cwd: next };
-				} else if (name.startsWith('fs_') && typeof input?.path === 'string') {
-					const rel = joinRelative(cwd, String(input.path));
-					const nextInput = { ...input, path: rel } as ToolExecuteInput;
+				} else if (
+					['read', 'write', 'ls', 'tree'].includes(name) &&
+					typeof input?.path === 'string'
+				) {
+					const rel = joinRelative(
+						cwd,
+						String((input as Record<string, unknown>).path),
+					);
+					const nextInput = {
+						...(input as Record<string, unknown>),
+						path: rel,
+					} as ToolExecuteInput;
 					res = base.execute?.(nextInput, options);
 				} else if (name === 'bash') {
 					const needsCwd =
@@ -321,6 +330,20 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					sessionId: ctx.sessionId,
 					payload: { ...contentObj, stepIndex: ctx.stepIndex },
 				});
+				if (name === 'update_plan') {
+					try {
+						const result = (contentObj as { result?: unknown }).result as
+							| { items?: unknown; note?: unknown }
+							| undefined;
+						if (result && Array.isArray(result.items)) {
+							publish({
+								type: 'plan.updated',
+								sessionId: ctx.sessionId,
+								payload: { items: result.items, note: result.note },
+							});
+						}
+					} catch {}
+				}
 				return result;
 			},
 		} as Tool;
