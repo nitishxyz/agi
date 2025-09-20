@@ -1,6 +1,10 @@
 {
   "name": "@agi-cli/core",
+<<<<<<< Updated upstream
   "version": "0.1.10",
+=======
+  "version": "0.1.12",
+>>>>>>> Stashed changes
   "description": "AI-powered development assistant CLI",
   "author": "ntishxyz",
   "license": "MIT",
