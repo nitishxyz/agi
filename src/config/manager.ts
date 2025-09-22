@@ -25,6 +25,7 @@ export async function isAuthorized(
 	if (provider === 'google' && process.env.GOOGLE_GENERATIVE_AI_API_KEY)
 		return true;
 	if (provider === 'openrouter' && process.env.OPENROUTER_API_KEY) return true;
+	if (provider === 'opencode' && process.env.OPENCODE_API_KEY) return true;
 	const { auth } = await read(projectRoot);
 	const info = auth[provider];
 	if (info?.type === 'api' && info.key) return true;
@@ -52,6 +53,10 @@ export async function ensureEnv(
 		const key =
 			auth.openrouter?.type === 'api' ? auth.openrouter.key : undefined;
 		if (key) process.env.OPENROUTER_API_KEY = key;
+	}
+	if (provider === 'opencode' && !process.env.OPENCODE_API_KEY) {
+		const key = auth.opencode?.type === 'api' ? auth.opencode.key : undefined;
+		if (key) process.env.OPENCODE_API_KEY = key;
 	}
 }
 

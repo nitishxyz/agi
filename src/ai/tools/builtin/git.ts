@@ -47,7 +47,10 @@ export function buildGitTools(
 		inputSchema: z.object({ all: z.boolean().optional().default(false) }),
 		async execute({ all }: { all?: boolean }) {
 			if (!(await inRepo())) throw new Error('Not a git repository');
-			const args = all ? ['diff'] : ['diff', '--staged'];
+			// When all=true, show full working tree diff relative to HEAD
+			// so both staged and unstaged changes are included. Otherwise,
+			// show only the staged diff (index vs HEAD).
+			const args = all ? ['diff', 'HEAD'] : ['diff', '--staged'];
 			const out = await $`git -C ${projectRoot} ${args}`.text();
 			const limited = out.split('\n').slice(0, 5000).join('\n');
 			return { all: !!all, patch: limited };

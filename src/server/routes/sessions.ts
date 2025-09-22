@@ -10,7 +10,13 @@ import {
 	ensureProviderEnv,
 } from '@/providers/authorization.ts';
 import type { ProviderId } from '@/auth/index.ts';
-const providerValues = ['openai', 'anthropic', 'google'] as const;
+const providerValues = [
+	'openai',
+	'anthropic',
+	'google',
+	'openrouter',
+	'opencode',
+] as const;
 function isProviderId(value: string): value is ProviderId {
 	return (providerValues as readonly string[]).includes(value);
 }

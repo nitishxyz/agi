@@ -166,7 +166,10 @@ export function getOpenAPISpec() {
 		},
 		components: {
 			schemas: {
-				Provider: { type: 'string', enum: ['openai', 'anthropic', 'google'] },
+				Provider: {
+					type: 'string',
+					enum: ['openai', 'anthropic', 'google', 'openrouter', 'opencode'],
+				},
 				Session: {
 					type: 'object',
 					properties: {

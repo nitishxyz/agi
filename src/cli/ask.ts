@@ -113,11 +113,15 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			openai: Boolean(process.env.OPENAI_API_KEY),
 			anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
 			google: Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY),
+			opencode: Boolean(process.env.OPENCODE_API_KEY),
+			openrouter: Boolean(process.env.OPENROUTER_API_KEY),
 		} as const;
 		const cfgHas = {
 			openai: Boolean(cfg.providers.openai?.apiKey),
 			anthropic: Boolean(cfg.providers.anthropic?.apiKey),
 			google: Boolean(cfg.providers.google?.apiKey),
+			opencode: Boolean(cfg.providers.opencode?.apiKey),
+			openrouter: Boolean(cfg.providers.openrouter?.apiKey),
 		} as const;
 		function authed(p: ProviderId) {
 			const info = auth[p];
@@ -125,7 +129,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			return envHas[p] || hasStoredApi || cfgHas[p];
 		}
 		if (!authed(chosenProvider)) {
-			const order: ProviderId[] = ['anthropic', 'openai', 'google'];
+			const order: ProviderId[] = ['anthropic', 'openai', 'google', 'opencode'];
 			const alt = order.find((p) => authed(p));
 			if (alt) chosenProvider = alt;
 		}
@@ -265,6 +269,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			'openai',
 			'google',
 			'openrouter',
+			'opencode',
 		];
 		const inferred = provOrder.find((p) => providerHasModel(p, userModel));
 		if (inferred) {
@@ -530,17 +535,34 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 				}
 			} else if (eventName === 'error') {
 				const data = safeJson(ev.data);
-				const msg = typeof data?.error === 'string' ? data.error : ev.data;
+				let errorMessage: string;
+
+				if (typeof data?.error === 'string') {
+					errorMessage = data.error;
+				} else if (data && typeof data === 'object') {
+					// Handle error objects with proper serialization
+					const parts: string[] = [];
+					if (data.error) parts.push(String(data.error));
+					if (data.message) parts.push(String(data.message));
+					if (data.details && typeof data.details === 'object') {
+						parts.push(`Details: ${JSON.stringify(data.details, null, 2)}`);
+					}
+					errorMessage =
+						parts.length > 0 ? parts.join('\n') : JSON.stringify(data, null, 2);
+				} else {
+					errorMessage = String(ev.data);
+				}
+
 				if (jsonStreamEnabled)
 					Bun.write(
 						Bun.stdout,
 						`${JSON.stringify({
 							event: 'error',
 							ts: Date.now(),
-							error: String(msg),
+							error: errorMessage,
 						})}\n`,
 					);
-				else Bun.write(Bun.stderr, `\n[error] ${String(msg)}\n`);
+				else Bun.write(Bun.stderr, `\n[error] ${errorMessage}\n`);
 			}
 		}
 	} finally {
@@ -687,11 +709,15 @@ export async function runAskCapture(prompt: string, opts: AskOptions = {}) {
 			openai: Boolean(process.env.OPENAI_API_KEY),
 			anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
 			google: Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY),
+			opencode: Boolean(process.env.OPENCODE_API_KEY),
+			openrouter: Boolean(process.env.OPENROUTER_API_KEY),
 		} as const;
 		const cfgHas = {
 			openai: Boolean(cfg.providers.openai?.apiKey),
 			anthropic: Boolean(cfg.providers.anthropic?.apiKey),
 			google: Boolean(cfg.providers.google?.apiKey),
+			opencode: Boolean(cfg.providers.opencode?.apiKey),
+			openrouter: Boolean(cfg.providers.openrouter?.apiKey),
 		} as const;
 		function authed(p: ProviderId) {
 			const info = auth[p];
@@ -699,7 +725,7 @@ export async function runAskCapture(prompt: string, opts: AskOptions = {}) {
 			return envHas[p] || hasStoredApi || cfgHas[p];
 		}
 		if (!authed(chosenProvider)) {
-			const order: ProviderId[] = ['anthropic', 'openai', 'google'];
+			const order: ProviderId[] = ['anthropic', 'openai', 'google', 'opencode'];
 			const alt = order.find((p) => authed(p));
 			if (alt) chosenProvider = alt;
 		}
@@ -783,11 +809,15 @@ export async function runAskStreamCapture(
 			openai: Boolean(process.env.OPENAI_API_KEY),
 			anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
 			google: Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY),
+			opencode: Boolean(process.env.OPENCODE_API_KEY),
+			openrouter: Boolean(process.env.OPENROUTER_API_KEY),
 		} as const;
 		const cfgHas = {
 			openai: Boolean(cfg.providers.openai?.apiKey),
 			anthropic: Boolean(cfg.providers.anthropic?.apiKey),
 			google: Boolean(cfg.providers.google?.apiKey),
+			opencode: Boolean(cfg.providers.opencode?.apiKey),
+			openrouter: Boolean(cfg.providers.openrouter?.apiKey),
 		} as const;
 		function authed(p: ProviderId) {
 			const info = auth[p];
@@ -795,7 +825,7 @@ export async function runAskStreamCapture(
 			return envHas[p] || hasStored || cfgHas[p];
 		}
 		if (!authed(chosenProvider)) {
-			const order: ProviderId[] = ['anthropic', 'openai', 'google'];
+			const order: ProviderId[] = ['anthropic', 'openai', 'google', 'opencode'];
 			const alt = order.find((p) => authed(p));
 			if (alt) chosenProvider = alt;
 		}

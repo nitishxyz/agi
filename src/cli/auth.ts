@@ -42,6 +42,11 @@ const PROVIDER_LINKS: Record<
 		url: 'https://openrouter.ai/keys',
 		env: 'OPENROUTER_API_KEY',
 	},
+	opencode: {
+		name: 'OpenCode',
+		url: 'https://opencode.ai',
+		env: 'OPENCODE_API_KEY',
+	},
 };
 
 export async function runAuth(args: string[]) {
@@ -94,6 +99,7 @@ export async function runAuthLogin(_args: string[]) {
 			{ value: 'anthropic', label: PROVIDER_LINKS.anthropic.name },
 			{ value: 'google', label: PROVIDER_LINKS.google.name },
 			{ value: 'openrouter', label: PROVIDER_LINKS.openrouter.name },
+			{ value: 'opencode', label: PROVIDER_LINKS.opencode.name },
 		],
 	})) as ProviderId | symbol;
 	if (isCancel(provider)) return cancel('Cancelled');
@@ -174,6 +180,7 @@ async function ensureGlobalConfigDefaults(provider: ProviderId) {
 			anthropic: { enabled: provider === 'anthropic' },
 			google: { enabled: provider === 'google' },
 			openrouter: { enabled: provider === 'openrouter' },
+			opencode: { enabled: provider === 'opencode' },
 		},
 	};
 	// Ensure directory and write file

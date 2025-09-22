@@ -53,7 +53,7 @@ export async function providerBasePrompt(
 	}
 
 	// 2) Provider-family fallback for openrouter and similar routers
-	if (id === 'openrouter' && modelId) {
+	if ((id === 'openrouter' || id === 'opencode') && modelId) {
 		const family = inferFamilyFromModel(modelId);
 		if (family) {
 			const familyPath = `src/prompts/providers/${family}.txt`;

@@ -69,6 +69,9 @@ const pricingTable: Record<ProviderName, PricingEntry[]> = {
 	openrouter: [
 		// Prefer catalog pricing; keep empty to defer to catalog or undefined
 	],
+	opencode: [
+		// Pricing from catalog entries; leave empty here
+	],
 };
 
 function findPricing(

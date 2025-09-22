@@ -29,6 +29,7 @@ export async function runModels(
 		'anthropic',
 		'google',
 		'openrouter',
+		'opencode',
 	];
 	const authorization = await Promise.all(
 		providers.map((p) => isProviderAuthorized(cfg, p)),
@@ -46,6 +47,7 @@ export async function runModels(
 			'anthropic',
 			'google',
 			'openrouter',
+			'opencode',
 		] as ProviderId[];
 		const authz2 = await Promise.all(
 			allProviders.map((p) => isProviderAuthorized(cfg2, p)),

@@ -25,6 +25,7 @@ export async function runDoctor(opts: { project?: string } = {}) {
 		'anthropic',
 		'google',
 		'openrouter',
+		'opencode',
 	];
 	const providerMeta = await Promise.all(
 		providers.map(async (p) => {
@@ -510,6 +511,7 @@ function providerEnvVar(p: ProviderId) {
 	if (p === 'openai') return 'OPENAI_API_KEY';
 	if (p === 'anthropic') return 'ANTHROPIC_API_KEY';
 	if (p === 'google') return 'GOOGLE_GENERATIVE_AI_API_KEY';
+	if (p === 'opencode') return 'OPENCODE_API_KEY';
 	return null;
 }
 

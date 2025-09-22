@@ -21,6 +21,7 @@ export async function runSetup(projectRoot?: string) {
 			{ value: 'anthropic', label: 'Anthropic' },
 			{ value: 'google', label: 'Google (Gemini)' },
 			{ value: 'openrouter', label: 'OpenRouter' },
+			{ value: 'opencode', label: 'OpenCode' },
 		],
 		initialValues: Object.entries(cfg.providers)
 			.filter(([, v]) => v.enabled)
@@ -33,6 +34,7 @@ export async function runSetup(projectRoot?: string) {
 		anthropic: { enabled: false },
 		google: { enabled: false },
 		openrouter: { enabled: false },
+		opencode: { enabled: false },
 	};
 	for (const p of providersPicked as ProviderId[]) providers[p].enabled = true;
 
@@ -46,7 +48,9 @@ export async function runSetup(projectRoot?: string) {
 					? 'ANTHROPIC_API_KEY'
 					: p === 'google'
 						? 'GOOGLE_GENERATIVE_AI_API_KEY'
-						: 'OPENROUTER_API_KEY';
+						: p === 'openrouter'
+							? 'OPENROUTER_API_KEY'
+							: 'OPENCODE_API_KEY';
 		const key = await text({
 			message: `Enter ${keyLabel} (leave empty to skip)`,
 			initialValue: '',
@@ -102,6 +106,7 @@ export async function runSetup(projectRoot?: string) {
 			anthropic: providers.anthropic,
 			google: providers.google,
 			openrouter: providers.openrouter,
+			opencode: providers.opencode,
 		},
 		paths: cfg.paths,
 	};

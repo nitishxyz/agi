@@ -12,6 +12,68 @@ import { publish, subscribe } from '@/server/events/bus.ts';
 import { debugLog } from '@/runtime/debug.ts';
 import { estimateModelCostUsd } from '@/providers/pricing.ts';
 
+function toErrorPayload(err: unknown): {
+	message: string;
+	details?: Record<string, unknown>;
+} {
+	// Derive the best human-friendly message and optional details
+	const asAny = err as Record<string, any> | undefined;
+
+	// Try multiple sources for a human-readable message
+	let message = '';
+
+	if (asAny && typeof asAny.message === 'string' && asAny.message) {
+		message = asAny.message;
+	} else if (typeof err === 'string') {
+		message = err as string;
+	} else if (asAny && typeof asAny.error === 'string' && asAny.error) {
+		message = asAny.error;
+	} else if (
+		asAny &&
+		typeof asAny.responseBody === 'string' &&
+		asAny.responseBody
+	) {
+		// For API errors, use responseBody which often contains the actual error
+		message = asAny.responseBody;
+	} else if (asAny && asAny.statusCode && asAny.url) {
+		// Construct a meaningful message for HTTP errors
+		message = `HTTP ${asAny.statusCode} error at ${asAny.url}`;
+	} else if (asAny && asAny.name) {
+		// Use the error name as a fallback
+		message = String(asAny.name);
+	} else {
+		// Last resort: try to extract something meaningful
+		try {
+			message = JSON.stringify(err, null, 2);
+		} catch {
+			message = String(err);
+		}
+	}
+
+	const details: Record<string, unknown> = {};
+	if (asAny && typeof asAny === 'object') {
+		for (const key of ['name', 'code', 'status', 'statusCode', 'type']) {
+			if (asAny[key] != null) details[key] = asAny[key];
+		}
+		if (asAny.cause) {
+			const c = asAny.cause as any;
+			details.cause = {
+				message: typeof c?.message === 'string' ? c.message : undefined,
+				code: c?.code,
+				status: c?.status ?? c?.statusCode,
+			};
+		}
+		// Include response data if present (common in HTTP errors)
+		if (asAny.response?.status)
+			details.response = {
+				status: asAny.response.status,
+				statusText: asAny.response.statusText,
+			};
+		if (asAny.data && typeof asAny.data === 'object') details.data = asAny.data;
+	}
+	return Object.keys(details).length ? { message, details } : { message };
+}
+
 type RunOpts = {
 	sessionId: string;
 	assistantMessageId: string;
@@ -194,11 +256,12 @@ async function runAssistant(opts: RunOpts) {
 				} catch {}
 			},
 			onError: async (err) => {
+				const payload = toErrorPayload(err);
 				await db
 					.update(messages)
 					.set({
 						status: 'error',
-						error: String((err as Error)?.message ?? err),
+						error: payload.message,
 					})
 					.where(eq(messages.id, opts.assistantMessageId));
 				publish({
@@ -206,7 +269,8 @@ async function runAssistant(opts: RunOpts) {
 					sessionId: opts.sessionId,
 					payload: {
 						messageId: opts.assistantMessageId,
-						error: String((err as Error)?.message ?? err),
+						error: payload.message,
+						details: payload.details,
 					},
 				});
 			},
@@ -341,11 +405,12 @@ async function runAssistant(opts: RunOpts) {
 				.where(eq(messageParts.id, currentPartId));
 		}
 	} catch (error) {
+		const errorPayload = toErrorPayload(error);
 		await db
 			.update(messages)
 			.set({
 				status: 'error',
-				error: String((error as Error)?.message ?? error),
+				error: errorPayload.message,
 			})
 			.where(eq(messages.id, opts.assistantMessageId));
 		publish({
@@ -353,7 +418,8 @@ async function runAssistant(opts: RunOpts) {
 			sessionId: opts.sessionId,
 			payload: {
 				messageId: opts.assistantMessageId,
-				error: String((error as Error)?.message ?? error),
+				error: errorPayload.message,
+				details: errorPayload.details,
 			},
 		});
 		throw error;

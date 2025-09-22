@@ -12,7 +12,7 @@ export type AGIConfig = {
 	projectRoot: string;
 	defaults: {
 		agent: string;
-		provider: 'openai' | 'anthropic' | 'google' | 'openrouter';
+		provider: 'openai' | 'anthropic' | 'google' | 'openrouter' | 'opencode';
 		model: string;
 	};
 	providers: {
@@ -20,6 +20,7 @@ export type AGIConfig = {
 		anthropic: ProviderConfig;
 		google: ProviderConfig;
 		openrouter: ProviderConfig;
+		opencode: ProviderConfig;
 	};
 	paths: {
 		dataDir: string; // .agi
@@ -40,6 +41,7 @@ const DEFAULTS = {
 		anthropic: { enabled: true },
 		google: { enabled: true },
 		openrouter: { enabled: false },
+		opencode: { enabled: false },
 	},
 };
 
