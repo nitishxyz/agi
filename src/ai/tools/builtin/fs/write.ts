@@ -1,7 +1,12 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import { $ } from 'bun';
-import { buildWriteArtifact, resolveSafePath, expandTilde, isAbsoluteLike } from './util.ts';
+import {
+	buildWriteArtifact,
+	resolveSafePath,
+	expandTilde,
+	isAbsoluteLike,
+} from './util.ts';
 import DESCRIPTION from './write.txt' with { type: 'text' };
 
 // description imported above

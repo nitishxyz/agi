@@ -13,10 +13,9 @@ function expandTilde(p: string) {
 }
 
 export function buildGrepTool(projectRoot: string): {
-    name: string;
-    tool: Tool;
+	name: string;
+	tool: Tool;
 } {
-
 	const grep = tool({
 		description: DESCRIPTION,
 		inputSchema: z.object({
