@@ -483,11 +483,12 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 						);
 					}
 				}
-					if (name === 'finish') finishSeen = true;
-				} else if (eventName === 'plan.updated') {
-					const data = safeJson(ev.data);
-					if (!jsonEnabled && !jsonStreamEnabled) printPlan(data?.items, data?.note);
-				} else if (eventName === 'message.completed') {
+				if (name === 'finish') finishSeen = true;
+			} else if (eventName === 'plan.updated') {
+				const data = safeJson(ev.data);
+				if (!jsonEnabled && !jsonStreamEnabled)
+					printPlan(data?.items, data?.note);
+			} else if (eventName === 'message.completed') {
 				const data = safeJson(ev.data);
 				const completedId = typeof data?.id === 'string' ? data.id : undefined;
 				if (completedId === assistantMessageId) {
@@ -906,9 +907,9 @@ export async function runAskStreamCapture(
 							`${dim(`[${channel}]`)} ${cyan(name)} ${dim('›')} ${truncate(delta, 160)}\n`,
 						);
 				}
-				} else if (ev.event === 'tool.result') {
-					const data = safeJson(ev.data);
-					const name = data?.name ?? 'tool';
+			} else if (ev.event === 'tool.result') {
+				const data = safeJson(ev.data);
+				const name = data?.name ?? 'tool';
 				const callId = data?.callId as string | undefined;
 				let durationMs: number | undefined;
 				if (callId && callStarts.has(callId)) {
@@ -920,11 +921,11 @@ export async function runAskStreamCapture(
 				printToolResult(name, data?.result, data?.artifact, {
 					verbose,
 					durationMs,
-					});
-				} else if (ev.event === 'plan.updated') {
-					const data = safeJson(ev.data);
-					printPlan(data?.items, data?.note);
-				} else if (ev.event === 'message.completed') {
+				});
+			} else if (ev.event === 'plan.updated') {
+				const data = safeJson(ev.data);
+				printPlan(data?.items, data?.note);
+			} else if (ev.event === 'message.completed') {
 				const data = safeJson(ev.data);
 				if (data?.id === assistantMessageId) break;
 			}
@@ -1259,25 +1260,35 @@ function printPlan(items: unknown, note?: unknown) {
 	try {
 		if (!Array.isArray(items)) return;
 		Bun.write(Bun.stderr, `\n${bold('Plan')}\n`);
-		for (const it of items as Array<{ step?: unknown; status?: unknown }>) {
-			const step = typeof it?.step === 'string' ? it.step : String(it?.step ?? '');
-			const status = String(it?.status ?? '').toLowerCase();
-			const icon =
-				status === 'completed'
-					? '✓'
-					: status === 'in_progress'
-						? '…'
-						: '•';
-			const statusLabel =
-				status === 'completed'
-					? green('[done]')
-					: status === 'in_progress'
-						? yellow('[in progress]')
-						: dim('[pending]');
-			Bun.write(Bun.stderr, `  ${icon} ${step} ${dim(statusLabel)}\n`);
+		for (const it of items) {
+			// Handle both string items and object items with step/status
+			let step = '';
+			let status = '';
+
+			if (typeof it === 'string') {
+				step = it;
+				status = 'pending';
+			} else if (typeof it === 'object' && it !== null) {
+				const obj = it as { step?: unknown; status?: unknown };
+				step = typeof obj.step === 'string' ? obj.step : String(obj.step ?? '');
+				status = String(obj.status ?? '').toLowerCase();
+			}
+
+			// Skip empty steps
+			if (!step || !step.trim()) continue;
+
+			const checkbox = status === 'completed' ? '[x]' : '[ ]';
+			let line = `${checkbox} ${step}`;
+
+			// Add status indicator for in-progress items
+			if (status === 'in_progress') {
+				line += ` ${yellow('...')}`;
+			}
+
+			Bun.write(Bun.stderr, `${line}\n`);
 		}
 		if (typeof note === 'string' && note.trim().length)
-			Bun.write(Bun.stderr, `${dim(note.trim())}\n`);
+			Bun.write(Bun.stderr, `\n${dim(note.trim())}\n`);
 		Bun.write(Bun.stderr, '\n');
 	} catch {}
 }
