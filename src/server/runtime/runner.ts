@@ -313,58 +313,79 @@ async function runAssistant(opts: RunOpts) {
 			onFinish: async (fin) => {
 				// Ensure finish is called at least once even if the model forgot
 				try {
-					if (!finishObserved && toolset?.finish) {
-						const text = accumulated?.trim() ? accumulated : undefined;
-						await toolset.finish.onInputAvailable?.({
-							input: { text },
-						} as never);
-						await toolset.finish.execute?.(
-							{ text } as never,
-							undefined as never,
+					if (!finishObserved && toolset?.finish?.execute) {
+						const finishPartId = crypto.randomUUID();
+						const now = Date.now();
+						const idx = await sharedCtx.nextIndex();
+						await db.insert(messageParts).values({
+							id: finishPartId,
+							messageId: opts.assistantMessageId,
+							index: idx,
+							stepIndex,
+							type: 'tool_call',
+							content: JSON.stringify({
+								name: 'finish',
+								args: { text: '' },
+								callId: finishPartId,
+							}),
+							agent: opts.agent,
+							provider: opts.provider,
+							model: opts.model,
+							startedAt: now,
+							toolName: 'finish',
+							toolCallId: finishPartId,
+						});
+						publish({
+							type: 'tool.call',
+							sessionId: opts.sessionId,
+							payload: {
+								name: 'finish',
+								args: { text: '' },
+								callId: finishPartId,
+							},
+						});
+						await toolset.finish.execute(
+							{ text: '' },
+							// Pass AI SDK options
+							{} as never,
 						);
+						const resultPartId = crypto.randomUUID();
+						const idx2 = await sharedCtx.nextIndex();
+						await db.insert(messageParts).values({
+							id: resultPartId,
+							messageId: opts.assistantMessageId,
+							index: idx2,
+							stepIndex,
+							type: 'tool_result',
+							content: JSON.stringify({
+								name: 'finish',
+								result: { done: true, text: '' },
+								callId: finishPartId,
+							}),
+							agent: opts.agent,
+							provider: opts.provider,
+							model: opts.model,
+							startedAt: now,
+							completedAt: Date.now(),
+							toolName: 'finish',
+							toolCallId: finishPartId,
+							toolDurationMs: Date.now() - now,
+						});
+						publish({
+							type: 'tool.result',
+							sessionId: opts.sessionId,
+							payload: {
+								name: 'finish',
+								result: { done: true, text: '' },
+								callId: finishPartId,
+							},
+						});
 					}
 				} catch {}
 
-				// Mark message completion and latency
-				let createdAt = undefined as number | undefined;
+				// Update session token totals
 				try {
-					const row = await db
-						.select()
-						.from(messages)
-						.where(eq(messages.id, opts.assistantMessageId));
-					if (row.length)
-						createdAt =
-							row[0]?.createdAt != null ? Number(row[0].createdAt) : undefined;
-				} catch {}
-				const finishedAt = Date.now();
-				const latency =
-					typeof createdAt === 'number'
-						? Math.max(0, finishedAt - createdAt)
-						: null;
-
-				await db
-					.update(messages)
-					.set({
-						status: 'complete',
-						completedAt: finishedAt,
-						latencyMs: latency ?? undefined,
-						promptTokens:
-							fin.usage?.inputTokens != null
-								? Number(fin.usage.inputTokens)
-								: undefined,
-						completionTokens:
-							fin.usage?.outputTokens != null
-								? Number(fin.usage.outputTokens)
-								: undefined,
-						totalTokens:
-							fin.usage?.totalTokens != null
-								? Number(fin.usage.totalTokens)
-								: undefined,
-					})
-					.where(eq(messages.id, opts.assistantMessageId));
-
-				if (fin.usage && (fin.usage.inputTokens || fin.usage.outputTokens)) {
-					try {
+					if (fin.usage) {
 						const sessRows = await db
 							.select()
 							.from(sessions)
@@ -381,19 +402,29 @@ async function runAssistant(opts: RunOpts) {
 								.set({
 									totalInputTokens: nextInput,
 									totalOutputTokens: nextOutput,
-									lastActiveAt: finishedAt,
 								})
 								.where(eq(sessions.id, opts.sessionId));
 						}
-					} catch {}
-				}
+					}
+				} catch {}
 
-				// mark last text part completed
+				// Complete the assistant message
 				try {
+					const vals: Record<string, unknown> = {
+						status: 'complete',
+						completedAt: Date.now(),
+					};
+					if (fin.usage) {
+						vals.promptTokens = fin.usage.inputTokens;
+						vals.completionTokens = fin.usage.outputTokens;
+						vals.totalTokens =
+							fin.usage.totalTokens ??
+							(vals.promptTokens as number) + (vals.completionTokens as number);
+					}
 					await db
-						.update(messageParts)
-						.set({ completedAt: finishedAt })
-						.where(eq(messageParts.id, currentPartId));
+						.update(messages)
+						.set(vals)
+						.where(eq(messages.id, opts.assistantMessageId));
 				} catch {}
 
 				const costUsd = fin.usage
@@ -484,6 +515,7 @@ async function buildHistoryMessages(
 		.orderBy(asc(messages.createdAt));
 
 	const ui: UIMessage[] = [];
+
 	for (const m of rows) {
 		const parts = await db
 			.select()
@@ -492,6 +524,7 @@ async function buildHistoryMessages(
 			.orderBy(asc(messageParts.index));
 
 		if (m.role === 'user') {
+			// User messages only contain text
 			const uparts: UIMessage['parts'] = [];
 			for (const p of parts) {
 				if (p.type !== 'text') continue;
@@ -501,30 +534,47 @@ async function buildHistoryMessages(
 					if (t) uparts.push({ type: 'text', text: t });
 				} catch {}
 			}
-			if (uparts.length) ui.push({ id: m.id, role: 'user', parts: uparts });
+			if (uparts.length) {
+				ui.push({ id: m.id, role: 'user', parts: uparts });
+			}
 			continue;
 		}
 
 		if (m.role === 'assistant') {
-			const aparts: UIMessage['parts'] = [];
-			const callArgsById = new Map<string, unknown>();
-			const resultsByCallId = new Map<string, unknown>();
-			let incompletePairs = 0;
+			// For assistant messages, we need to split into two parts:
+			// 1. Assistant message with text and tool calls
+			// 2. User message with tool results (if there are any)
 
-			// First pass: capture tool call inputs and results by callId
+			const assistantParts: UIMessage['parts'] = [];
+			const toolCalls: Array<{ name: string; callId: string; args: unknown }> =
+				[];
+			const toolResults: Array<{
+				name: string;
+				callId: string;
+				result: unknown;
+			}> = [];
+
+			// Collect all parts
 			for (const p of parts) {
-				if (p.type === 'tool_call') {
+				if (p.type === 'text') {
+					try {
+						const obj = JSON.parse(p.content ?? '{}');
+						const t = String(obj.text ?? '');
+						if (t) assistantParts.push({ type: 'text', text: t });
+					} catch {}
+				} else if (p.type === 'tool_call') {
 					try {
 						const obj = JSON.parse(p.content ?? '{}') as {
 							name?: string;
 							callId?: string;
 							args?: unknown;
 						};
-						if (obj.callId) {
-							callArgsById.set(obj.callId, obj.args);
-							debugLog(
-								`[buildHistoryMessages] Found tool_call: ${obj.name} (${obj.callId})`,
-							);
+						if (obj.callId && obj.name) {
+							toolCalls.push({
+								name: obj.name,
+								callId: obj.callId,
+								args: obj.args,
+							});
 						}
 					} catch {}
 				} else if (p.type === 'tool_result') {
@@ -535,101 +585,107 @@ async function buildHistoryMessages(
 							result?: unknown;
 						};
 						if (obj.callId) {
-							resultsByCallId.set(obj.callId, obj.result);
-							debugLog(
-								`[buildHistoryMessages] Found tool_result for ${obj.callId}`,
-							);
+							toolResults.push({
+								name: obj.name ?? 'tool',
+								callId: obj.callId,
+								result: obj.result,
+							});
 						}
 					} catch {}
 				}
 			}
 
-			// Count incomplete pairs
-			for (const [callId] of callArgsById) {
-				if (!resultsByCallId.has(callId)) {
-					incompletePairs++;
-				}
-			}
+			// Check if all tool calls have results
+			const hasIncompleteTools = toolCalls.some(
+				(call) => !toolResults.find((result) => result.callId === call.callId),
+			);
 
-			if (incompletePairs > 0) {
-				debugLog(
-					`[buildHistoryMessages] Filtering out ${incompletePairs} incomplete tool call/result pairs`,
-				);
-			}
-
-			// Second pass: include text and ONLY completed tool call/result pairs in order
-			// We process tool_call parts (not tool_result) and pair them with their results
-			for (const p of parts) {
-				if (p.type === 'text') {
-					try {
-						const obj = JSON.parse(p.content ?? '{}');
-						const t = String(obj.text ?? '');
-						if (t) aparts.push({ type: 'text', text: t });
-					} catch {}
-					continue;
-				}
-
-				// Process tool_call parts and pair with their results
-				if (p.type === 'tool_call') {
-					try {
-						const obj = JSON.parse(p.content ?? '{}') as {
-							name?: string;
-							callId?: string;
-							args?: unknown;
-						};
-						const callId = obj.callId ?? '';
-						const name = (obj.name ?? 'tool').toString();
-
-						// Check if this call has a result
-						if (callId && resultsByCallId.has(callId)) {
-							const toolType = `tool-${name}` as `tool-${string}`;
-							const result = resultsByCallId.get(callId);
-
-							const outputStr = (() => {
-								if (typeof result === 'string') return result;
-								try {
-									return JSON.stringify(result);
-								} catch {
-									return String(result);
-								}
-							})();
-
-							// Add as a completed tool part with input and output
-							aparts.push({
-								type: toolType,
-								state: 'output-available',
-								toolCallId: callId,
-								input: obj.args,
-								output: outputStr,
-							} as never);
-						}
-					} catch {}
-				}
-				// Skip tool_result parts as they're already processed above
-			}
-
-			// Check if this assistant message has any incomplete tool calls
-			// (calls without results). If so, we skip the entire message.
-			let hasIncompleteCalls = false;
-			for (const [callId] of callArgsById) {
-				if (!resultsByCallId.has(callId)) {
-					hasIncompleteCalls = true;
-					break;
-				}
-			}
-
-			// Only include the assistant message if:
-			// 1. It has parts (text or completed tool pairs), AND
-			// 2. It doesn't have any incomplete tool calls
-			if (aparts.length && !hasIncompleteCalls) {
-				ui.push({ id: m.id, role: 'assistant', parts: aparts });
-			} else if (hasIncompleteCalls) {
+			if (hasIncompleteTools) {
+				// Skip this assistant message entirely if it has incomplete tool calls
 				debugLog(
 					`[buildHistoryMessages] Skipping assistant message ${m.id} with incomplete tool calls`,
 				);
+				continue;
+			}
+
+			// Add tool calls to assistant message
+			for (const call of toolCalls) {
+				const toolType = `tool-${call.name}` as `tool-${string}`;
+				const result = toolResults.find((r) => r.callId === call.callId);
+
+				if (result) {
+					// Add the tool call with its result as a completed tool part
+					const outputStr = (() => {
+						const r = result.result;
+						if (typeof r === 'string') return r;
+						try {
+							return JSON.stringify(r);
+						} catch {
+							return String(r);
+						}
+					})();
+
+					assistantParts.push({
+						type: toolType,
+						state: 'output-available',
+						toolCallId: call.callId,
+						input: call.args,
+						output: outputStr,
+					} as never);
+				}
+			}
+
+			// Add the assistant message if it has content
+			if (assistantParts.length) {
+				ui.push({
+					id: m.id,
+					role: 'assistant',
+					parts: assistantParts,
+				});
 			}
 		}
 	}
 
 	return convertToModelMessages(ui);
+}
+
+async function appendAssistantText(ctx: any, text: string) {
+	// Append text to current assistant part
+	try {
+		const parts = await ctx.db
+			.select()
+			.from(messageParts)
+			.where(eq(messageParts.id, ctx.assistantPartId));
+		if (parts.length) {
+			const existing = parts[0];
+			let current = '';
+			try {
+				current = JSON.parse(existing.content ?? '{}')?.text || '';
+			} catch {}
+			const updated = current + text;
+			await ctx.db
+				.update(messageParts)
+				.set({ content: JSON.stringify({ text: updated }) })
+				.where(eq(messageParts.id, ctx.assistantPartId));
+			publish({
+				type: 'message.part.delta',
+				sessionId: ctx.sessionId,
+				payload: {
+					messageId: ctx.messageId,
+					partId: ctx.assistantPartId,
+					stepIndex: ctx.stepIndex,
+					delta: text,
+				},
+			});
+		}
+	} catch {}
+}
+
+function extractFinishText(args: unknown): string | undefined {
+	try {
+		const obj = args as { text?: unknown } | undefined;
+		const text = obj?.text;
+		if (typeof text === 'string') return text;
+	} catch {}
+	return undefined;
 }
