@@ -118,23 +118,8 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					return;
 				}
 
-				// Default behavior: persist before publishing to keep deterministic ordering
-				const index = await ctx.nextIndex();
+				// Publish promptly so UI shows the call header before results
 				const startTs = Date.now();
-				await ctx.db.insert(messageParts).values({
-					id: callPartId,
-					messageId: ctx.messageId,
-					index,
-					stepIndex: ctx.stepIndex,
-					type: 'tool_call',
-					content: JSON.stringify({ name, args, callId: callPartId }),
-					agent: ctx.agent,
-					provider: ctx.provider,
-					model: ctx.model,
-					startedAt: startTs,
-					toolName: name,
-					toolCallId: callPartId,
-				});
 				publish({
 					type: 'tool.call',
 					sessionId: ctx.sessionId,
@@ -143,6 +128,26 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				const list = pendingCalls.get(name) ?? [];
 				list.push({ callId: callPartId, startTs });
 				pendingCalls.set(name, list);
+				// Persist best-effort in the background to avoid delaying output
+				(async () => {
+					try {
+						const index = await ctx.nextIndex();
+						await ctx.db.insert(messageParts).values({
+							id: callPartId,
+							messageId: ctx.messageId,
+							index,
+							stepIndex: ctx.stepIndex,
+							type: 'tool_call',
+							content: JSON.stringify({ name, args, callId: callPartId }),
+							agent: ctx.agent,
+							provider: ctx.provider,
+							model: ctx.model,
+							startedAt: startTs,
+							toolName: name,
+							toolCallId: callPartId,
+						});
+					} catch {}
+				})();
 				if (typeof base.onInputAvailable === 'function') {
 					await base.onInputAvailable(options);
 				}

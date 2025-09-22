@@ -483,8 +483,11 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 						);
 					}
 				}
-				if (name === 'finish') finishSeen = true;
-			} else if (eventName === 'message.completed') {
+					if (name === 'finish') finishSeen = true;
+				} else if (eventName === 'plan.updated') {
+					const data = safeJson(ev.data);
+					if (!jsonEnabled && !jsonStreamEnabled) printPlan(data?.items, data?.note);
+				} else if (eventName === 'message.completed') {
 				const data = safeJson(ev.data);
 				const completedId = typeof data?.id === 'string' ? data.id : undefined;
 				if (completedId === assistantMessageId) {
@@ -903,9 +906,9 @@ export async function runAskStreamCapture(
 							`${dim(`[${channel}]`)} ${cyan(name)} ${dim('›')} ${truncate(delta, 160)}\n`,
 						);
 				}
-			} else if (ev.event === 'tool.result') {
-				const data = safeJson(ev.data);
-				const name = data?.name ?? 'tool';
+				} else if (ev.event === 'tool.result') {
+					const data = safeJson(ev.data);
+					const name = data?.name ?? 'tool';
 				const callId = data?.callId as string | undefined;
 				let durationMs: number | undefined;
 				if (callId && callStarts.has(callId)) {
@@ -917,8 +920,11 @@ export async function runAskStreamCapture(
 				printToolResult(name, data?.result, data?.artifact, {
 					verbose,
 					durationMs,
-				});
-			} else if (ev.event === 'message.completed') {
+					});
+				} else if (ev.event === 'plan.updated') {
+					const data = safeJson(ev.data);
+					printPlan(data?.items, data?.note);
+				} else if (ev.event === 'message.completed') {
 				const data = safeJson(ev.data);
 				if (data?.id === assistantMessageId) break;
 			}
@@ -1248,6 +1254,34 @@ function printSummary(
 	}
 }
 
+// Render plan updates emitted by update_plan tool
+function printPlan(items: unknown, note?: unknown) {
+	try {
+		if (!Array.isArray(items)) return;
+		Bun.write(Bun.stderr, `\n${bold('Plan')}\n`);
+		for (const it of items as Array<{ step?: unknown; status?: unknown }>) {
+			const step = typeof it?.step === 'string' ? it.step : String(it?.step ?? '');
+			const status = String(it?.status ?? '').toLowerCase();
+			const icon =
+				status === 'completed'
+					? '✓'
+					: status === 'in_progress'
+						? '…'
+						: '•';
+			const statusLabel =
+				status === 'completed'
+					? green('[done]')
+					: status === 'in_progress'
+						? yellow('[in progress]')
+						: dim('[pending]');
+			Bun.write(Bun.stderr, `  ${icon} ${step} ${dim(statusLabel)}\n`);
+		}
+		if (typeof note === 'string' && note.trim().length)
+			Bun.write(Bun.stderr, `${dim(note.trim())}\n`);
+		Bun.write(Bun.stderr, '\n');
+	} catch {}
+}
+
 // Pretty printing helpers
 const _reset = (s: string) => `\x1b[0m${s}\x1b[0m`;
 const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
@@ -1328,6 +1362,10 @@ function printToolResult(
 	artifact?: Artifact,
 	opts?: { verbose?: boolean; durationMs?: number },
 ) {
+	if (name === 'update_plan') {
+		// Plan content is rendered via plan.updated events; avoid duplicate JSON dumps
+		return;
+	}
 	if (name === 'progress_update') {
 		// Suppress result printing for progress to avoid redundancy
 		return;

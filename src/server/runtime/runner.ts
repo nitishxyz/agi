@@ -1,4 +1,10 @@
-import { hasToolCall, streamText, type ModelMessage } from 'ai';
+import {
+	hasToolCall,
+	streamText,
+	type ModelMessage,
+	convertToModelMessages,
+	type UIMessage,
+} from 'ai';
 import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
 import { messages, messageParts, sessions } from '@/db/schema/index.ts';
@@ -13,67 +19,85 @@ import { debugLog } from '@/runtime/debug.ts';
 import { estimateModelCostUsd } from '@/providers/pricing.ts';
 
 function toErrorPayload(err: unknown): {
-    message: string;
-    details?: Record<string, unknown>;
+	message: string;
+	details?: Record<string, unknown>;
 } {
-    // Derive the best human-friendly message and optional details
-    const asObj = (err && typeof err === 'object'
-        ? (err as Record<string, unknown>)
-        : undefined);
+	// Derive the best human-friendly message and optional details
+	const asObj =
+		err && typeof err === 'object'
+			? (err as Record<string, unknown>)
+			: undefined;
 
 	// Try multiple sources for a human-readable message
 	let message = '';
 
-    if (asObj && typeof asObj.message === 'string' && asObj.message) {
-        message = asObj.message as string;
-    } else if (typeof err === 'string') {
-        message = err as string;
-    } else if (asObj && typeof asObj.error === 'string' && asObj.error) {
-        message = asObj.error as string;
-    } else if (
-        asObj &&
-        typeof asObj.responseBody === 'string' &&
-        asObj.responseBody
-    ) {
-        // For API errors, use responseBody which often contains the actual error
-        message = asObj.responseBody as string;
-    } else if (asObj?.statusCode && (asObj as { url?: unknown }).url) {
-        // Construct a meaningful message for HTTP errors
-        message = `HTTP ${String(asObj.statusCode)} error at ${String((asObj as { url?: unknown }).url)}`;
-    } else if (asObj?.name) {
-        // Use the error name as a fallback
-        message = String(asObj.name);
-    } else {
-        // Last resort: try to extract something meaningful
-        try {
-            message = JSON.stringify(err, null, 2);
-        } catch {
-            message = String(err);
-        }
-    }
+	if (asObj && typeof asObj.message === 'string' && asObj.message) {
+		message = asObj.message as string;
+	} else if (typeof err === 'string') {
+		message = err as string;
+	} else if (asObj && typeof asObj.error === 'string' && asObj.error) {
+		message = asObj.error as string;
+	} else if (
+		asObj &&
+		typeof asObj.responseBody === 'string' &&
+		asObj.responseBody
+	) {
+		// For API errors, use responseBody which often contains the actual error
+		message = asObj.responseBody as string;
+	} else if (asObj?.statusCode && (asObj as { url?: unknown }).url) {
+		// Construct a meaningful message for HTTP errors
+		message = `HTTP ${String(asObj.statusCode)} error at ${String((asObj as { url?: unknown }).url)}`;
+	} else if (asObj?.name) {
+		// Use the error name as a fallback
+		message = String(asObj.name);
+	} else {
+		// Last resort: try to extract something meaningful
+		try {
+			message = JSON.stringify(err, null, 2);
+		} catch {
+			message = String(err);
+		}
+	}
 
-    const details: Record<string, unknown> = {};
-    if (asObj && typeof asObj === 'object') {
-        for (const key of ['name', 'code', 'status', 'statusCode', 'type']) {
-            if (asObj[key] != null) details[key] = asObj[key];
-        }
-        if (asObj.cause) {
-            const c = asObj.cause as Record<string, unknown> | undefined;
-            details.cause = {
-                message: typeof c?.message === 'string' ? (c.message as string) : undefined,
-                code: (c as { code?: unknown })?.code,
-                status: (c as { status?: unknown; statusCode?: unknown })?.status ?? (c as { statusCode?: unknown })?.statusCode,
-            };
-        }
-        // Include response data if present (common in HTTP errors)
-        if ((asObj as { response?: { status?: unknown; statusText?: unknown } })?.response?.status)
-            details.response = {
-                status: (asObj as { response?: { status?: unknown; statusText?: unknown } }).response?.status,
-                statusText: (asObj as { response?: { status?: unknown; statusText?: unknown } }).response?.statusText,
-            };
-        if ((asObj as { data?: unknown })?.data && typeof (asObj as { data?: unknown }).data === 'object') details.data = (asObj as { data?: unknown }).data as Record<string, unknown>;
-    }
-    return Object.keys(details).length ? { message, details } : { message };
+	const details: Record<string, unknown> = {};
+	if (asObj && typeof asObj === 'object') {
+		for (const key of ['name', 'code', 'status', 'statusCode', 'type']) {
+			if (asObj[key] != null) details[key] = asObj[key];
+		}
+		if (asObj.cause) {
+			const c = asObj.cause as Record<string, unknown> | undefined;
+			details.cause = {
+				message:
+					typeof c?.message === 'string' ? (c.message as string) : undefined,
+				code: (c as { code?: unknown })?.code,
+				status:
+					(c as { status?: unknown; statusCode?: unknown })?.status ??
+					(c as { statusCode?: unknown })?.statusCode,
+			};
+		}
+		// Include response data if present (common in HTTP errors)
+		if (
+			(asObj as { response?: { status?: unknown; statusText?: unknown } })
+				?.response?.status
+		)
+			details.response = {
+				status: (
+					asObj as { response?: { status?: unknown; statusText?: unknown } }
+				).response?.status,
+				statusText: (
+					asObj as { response?: { status?: unknown; statusText?: unknown } }
+				).response?.statusText,
+			};
+		if (
+			(asObj as { data?: unknown })?.data &&
+			typeof (asObj as { data?: unknown }).data === 'object'
+		)
+			details.data = (asObj as { data?: unknown }).data as Record<
+				string,
+				unknown
+			>;
+	}
+	return Object.keys(details).length ? { message, details } : { message };
 }
 
 type RunOpts = {
@@ -143,7 +167,7 @@ async function runAssistant(opts: RunOpts) {
 	// Build chat history messages from DB (text parts only)
 	const history = await buildHistoryMessages(db, opts.sessionId);
 
-	const sharedCtx = {
+	const sharedCtx: any = {
 		sessionId: opts.sessionId,
 		messageId: opts.assistantMessageId,
 		assistantPartId: opts.assistantPartId,
@@ -171,7 +195,6 @@ async function runAssistant(opts: RunOpts) {
 		return counter;
 	};
 	// initialize current step index for tools
-	// @ts-expect-error augment at runtime
 	sharedCtx.stepIndex = 0;
 	const toolset = adaptTools(gated, sharedCtx);
 
@@ -193,14 +216,14 @@ async function runAssistant(opts: RunOpts) {
 	});
 
 	try {
-    const result = streamText({
-        model,
-        tools: toolset,
-        // Only include `system` when non-empty to avoid provider errors
-        ...(String(system || '').trim() ? { system } : {}),
-        messages: history,
-        stopWhen: hasToolCall('finish'),
-        onStepFinish: async (step) => {
+		const result = streamText({
+			model,
+			tools: toolset,
+			// Only include `system` when non-empty to avoid provider errors
+			...(String(system || '').trim() ? { system } : {}),
+			messages: history,
+			stopWhen: hasToolCall('finish'),
+			onStepFinish: async (step) => {
 				// close current text part and start a new one for the next step
 				const finishedAt = Date.now();
 				try {
@@ -253,7 +276,6 @@ async function runAssistant(opts: RunOpts) {
 					currentPartId = newPartId;
 					sharedCtx.assistantPartId = newPartId;
 					// expose current step index to tool adapter
-					// @ts-expect-error augment at runtime
 					sharedCtx.stepIndex = stepIndex;
 					accumulated = '';
 				} catch {}
@@ -348,7 +370,7 @@ async function runAssistant(opts: RunOpts) {
 							.from(sessions)
 							.where(eq(sessions.id, opts.sessionId));
 						if (sessRows.length) {
-							const row = sessRows[0];
+							const row = sessRows[0]!;
 							const priorInput = Number(row.totalInputTokens ?? 0);
 							const priorOutput = Number(row.totalOutputTokens ?? 0);
 							const nextInput = priorInput + Number(fin.usage.inputTokens ?? 0);
@@ -455,83 +477,144 @@ async function buildHistoryMessages(
 	db: Awaited<ReturnType<typeof getDb>>,
 	sessionId: string,
 ): Promise<ModelMessage[]> {
-	const msgs = await db
+	const rows = await db
 		.select()
 		.from(messages)
 		.where(eq(messages.sessionId, sessionId))
 		.orderBy(asc(messages.createdAt));
-	const out: ModelMessage[] = [];
-	for (const m of msgs) {
+
+	const ui: UIMessage[] = [];
+	for (const m of rows) {
 		const parts = await db
 			.select()
 			.from(messageParts)
 			.where(eq(messageParts.messageId, m.id))
 			.orderBy(asc(messageParts.index));
+
 		if (m.role === 'user') {
-			// Users only: stitch text parts (ignore any other types if present)
-			const text = parts
-				.filter((p) => p.type === 'text')
-				.map((p) => {
-					try {
-						const obj = JSON.parse(p.content ?? '{}');
-						return String(obj.text ?? '');
-					} catch {
-						return '';
-					}
-				})
-				.join('');
-			if (text.trim().length) out.push({ role: 'user', content: text });
+			const uparts: UIMessage['parts'] = [];
+			for (const p of parts) {
+				if (p.type !== 'text') continue;
+				try {
+					const obj = JSON.parse(p.content ?? '{}');
+					const t = String(obj.text ?? '');
+					if (t) uparts.push({ type: 'text', text: t });
+				} catch {}
+			}
+			if (uparts.length) ui.push({ id: m.id, role: 'user', parts: uparts });
 			continue;
 		}
+
 		if (m.role === 'assistant') {
-			// Assistants: include ALL parts in order — text, tool_call, tool_result — verbatim
-			const chunks: string[] = [];
+			const aparts: UIMessage['parts'] = [];
+			const callArgsById = new Map<string, unknown>();
+			const resultsByCallId = new Map<string, unknown>();
+			let incompletePairs = 0;
+
+			// First pass: capture tool call inputs and results by callId
+			for (const p of parts) {
+				if (p.type === 'tool_call') {
+					try {
+						const obj = JSON.parse(p.content ?? '{}') as {
+							callId?: string;
+							args?: unknown;
+						};
+						if (obj.callId) callArgsById.set(obj.callId, obj.args);
+					} catch {}
+				} else if (p.type === 'tool_result') {
+					try {
+						const obj = JSON.parse(p.content ?? '{}') as {
+							callId?: string;
+							result?: unknown;
+						};
+						if (obj.callId) resultsByCallId.set(obj.callId, obj.result);
+					} catch {}
+				}
+			}
+
+			// Count incomplete pairs
+			for (const [callId] of callArgsById) {
+				if (!resultsByCallId.has(callId)) {
+					incompletePairs++;
+				}
+			}
+
+			if (incompletePairs > 0) {
+				debugLog(
+					`[buildHistoryMessages] Filtering out ${incompletePairs} incomplete tool call/result pairs`,
+				);
+			}
+
+			// Second pass: include text and ONLY completed tool call/result pairs in order
 			for (const p of parts) {
 				if (p.type === 'text') {
 					try {
 						const obj = JSON.parse(p.content ?? '{}');
 						const t = String(obj.text ?? '');
-						if (t) chunks.push(t);
+						if (t) aparts.push({ type: 'text', text: t });
 					} catch {}
-				} else if (p.type === 'tool_call') {
+					continue;
+				}
+				if (p.type === 'tool_result') {
 					try {
 						const obj = JSON.parse(p.content ?? '{}') as {
 							name?: string;
-							args?: unknown;
 							callId?: string;
-						};
-						const name = obj.name ?? 'tool';
-						const argsPretty = JSON.stringify(obj.args ?? {}, null, 2);
-						chunks.push(`Tool call: ${name}\nArgs:\n${argsPretty}`);
-					} catch {}
-				} else if (p.type === 'tool_result') {
-					try {
-						const obj = JSON.parse(p.content ?? '{}') as {
-							name?: string;
 							result?: unknown;
-							artifact?: unknown;
 						};
-						const name = obj.name ?? 'tool';
-						const resultPretty = JSON.stringify(obj.result ?? {}, null, 2);
-						chunks.push(`Tool result: ${name}\nResult:\n${resultPretty}`);
-						if (obj.artifact !== undefined) {
-							const art = obj.artifact as Record<string, unknown>;
-							const patch =
-								typeof art?.patch === 'string' ? art.patch : undefined;
-							if (patch?.trim().length) {
-								chunks.push(`Artifact patch:\n${patch}`);
-							} else {
-								const artPretty = JSON.stringify(art ?? {}, null, 2);
-								chunks.push(`Artifact:\n${artPretty}`);
+						const name = (obj.name ?? 'tool').toString();
+						const toolType = `tool-${name}` as `tool-${string}`;
+						const callId = obj.callId ?? '';
+
+						// Only include results that have both a call AND a result
+						const input = callId ? callArgsById.get(callId) : undefined;
+						const hasResult = callId ? resultsByCallId.has(callId) : false;
+
+						// Skip if we don't have both call and result
+						if (!callId || input === undefined || !hasResult) continue;
+
+						const outputStr = (() => {
+							const r = obj.result;
+							if (typeof r === 'string') return r;
+							try {
+								return JSON.stringify(r);
+							} catch {
+								return String(r);
 							}
-						}
+						})();
+						aparts.push({
+							type: toolType,
+							state: 'output-available',
+							toolCallId: callId,
+							input,
+							output: outputStr,
+						} as never);
 					} catch {}
 				}
 			}
-			const body = chunks.join('\n\n');
-			if (body.trim().length) out.push({ role: 'assistant', content: body });
+
+			// Check if this assistant message has any incomplete tool calls
+			// (calls without results). If so, we skip the entire message.
+			let hasIncompleteCalls = false;
+			for (const [callId] of callArgsById) {
+				if (!resultsByCallId.has(callId)) {
+					hasIncompleteCalls = true;
+					break;
+				}
+			}
+
+			// Only include the assistant message if:
+			// 1. It has parts (text or completed tool pairs), AND
+			// 2. It doesn't have any incomplete tool calls
+			if (aparts.length && !hasIncompleteCalls) {
+				ui.push({ id: m.id, role: 'assistant', parts: aparts });
+			} else if (hasIncompleteCalls) {
+				debugLog(
+					`[buildHistoryMessages] Skipping assistant message ${m.id} with incomplete tool calls`,
+				);
+			}
 		}
-		// ignore other roles (system handled via `system` field)
 	}
-	return out;
+
+	return convertToModelMessages(ui);
 }
