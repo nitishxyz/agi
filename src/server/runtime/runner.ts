@@ -516,18 +516,30 @@ async function buildHistoryMessages(
 				if (p.type === 'tool_call') {
 					try {
 						const obj = JSON.parse(p.content ?? '{}') as {
+							name?: string;
 							callId?: string;
 							args?: unknown;
 						};
-						if (obj.callId) callArgsById.set(obj.callId, obj.args);
+						if (obj.callId) {
+							callArgsById.set(obj.callId, obj.args);
+							debugLog(
+								`[buildHistoryMessages] Found tool_call: ${obj.name} (${obj.callId})`,
+							);
+						}
 					} catch {}
 				} else if (p.type === 'tool_result') {
 					try {
 						const obj = JSON.parse(p.content ?? '{}') as {
+							name?: string;
 							callId?: string;
 							result?: unknown;
 						};
-						if (obj.callId) resultsByCallId.set(obj.callId, obj.result);
+						if (obj.callId) {
+							resultsByCallId.set(obj.callId, obj.result);
+							debugLog(
+								`[buildHistoryMessages] Found tool_result for ${obj.callId}`,
+							);
+						}
 					} catch {}
 				}
 			}
@@ -546,6 +558,7 @@ async function buildHistoryMessages(
 			}
 
 			// Second pass: include text and ONLY completed tool call/result pairs in order
+			// We process tool_call parts (not tool_result) and pair them with their results
 			for (const p of parts) {
 				if (p.type === 'text') {
 					try {
@@ -555,42 +568,44 @@ async function buildHistoryMessages(
 					} catch {}
 					continue;
 				}
-				if (p.type === 'tool_result') {
+
+				// Process tool_call parts and pair with their results
+				if (p.type === 'tool_call') {
 					try {
 						const obj = JSON.parse(p.content ?? '{}') as {
 							name?: string;
 							callId?: string;
-							result?: unknown;
+							args?: unknown;
 						};
-						const name = (obj.name ?? 'tool').toString();
-						const toolType = `tool-${name}` as `tool-${string}`;
 						const callId = obj.callId ?? '';
+						const name = (obj.name ?? 'tool').toString();
 
-						// Only include results that have both a call AND a result
-						const input = callId ? callArgsById.get(callId) : undefined;
-						const hasResult = callId ? resultsByCallId.has(callId) : false;
+						// Check if this call has a result
+						if (callId && resultsByCallId.has(callId)) {
+							const toolType = `tool-${name}` as `tool-${string}`;
+							const result = resultsByCallId.get(callId);
 
-						// Skip if we don't have both call and result
-						if (!callId || input === undefined || !hasResult) continue;
+							const outputStr = (() => {
+								if (typeof result === 'string') return result;
+								try {
+									return JSON.stringify(result);
+								} catch {
+									return String(result);
+								}
+							})();
 
-						const outputStr = (() => {
-							const r = obj.result;
-							if (typeof r === 'string') return r;
-							try {
-								return JSON.stringify(r);
-							} catch {
-								return String(r);
-							}
-						})();
-						aparts.push({
-							type: toolType,
-							state: 'output-available',
-							toolCallId: callId,
-							input,
-							output: outputStr,
-						} as never);
+							// Add as a completed tool part with input and output
+							aparts.push({
+								type: toolType,
+								state: 'output-available',
+								toolCallId: callId,
+								input: obj.args,
+								output: outputStr,
+							} as never);
+						}
 					} catch {}
 				}
+				// Skip tool_result parts as they're already processed above
 			}
 
 			// Check if this assistant message has any incomplete tool calls
