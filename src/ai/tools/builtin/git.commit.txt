@@ -1,0 +1,6 @@
+- Create a git commit with the provided message
+- Supports `amend` and `signoff` flags
+
+Usage tips:
+- Only commit after explicit user approval
+- Consider including scope and brief rationale in the message

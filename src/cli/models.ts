@@ -1,6 +1,18 @@
-import { intro, outro, select, isCancel, cancel, log, text } from '@clack/prompts';
+import {
+	intro,
+	outro,
+	select,
+	isCancel,
+	cancel,
+	log,
+	text,
+} from '@clack/prompts';
 import { loadConfig } from '@/config/index.ts';
-import { catalog, type ProviderId, type ModelInfo } from '@/providers/catalog.ts';
+import {
+	catalog,
+	type ProviderId,
+	type ModelInfo,
+} from '@/providers/catalog.ts';
 import { getGlobalConfigDir, getGlobalConfigPath } from '@/config/paths.ts';
 import { isProviderAuthorized } from '@/providers/authorization.ts';
 import { runAuth } from '@/cli/auth.ts';
@@ -93,7 +105,9 @@ export async function runModels(
 				placeholder: 'e.g., claude, gpt-4o, reasoning',
 			});
 			if (!isCancel(q)) {
-				const needle = String(q || '').trim().toLowerCase();
+				const needle = String(q || '')
+					.trim()
+					.toLowerCase();
 				if (needle.length) {
 					filtered = uniq.filter((m) => {
 						const label = (m.label || '').toLowerCase();
@@ -128,15 +142,14 @@ export async function runModels(
 		const total = items.length;
 		if (total <= pageSize) {
 			return (await select({ message, options: items, initialValue })) as
-				|string
+				| string
 				| symbol;
 		}
 		const lastIndex = Math.max(
 			0,
 			items.findIndex((i) => i.value === initialValue),
 		);
-		let page =
-			lastIndex > -1 ? Math.floor(lastIndex / pageSize) : 0;
+		let page = lastIndex > -1 ? Math.floor(lastIndex / pageSize) : 0;
 		const totalPages = Math.ceil(total / pageSize);
 		while (true) {
 			const start = page * pageSize;
@@ -145,12 +158,11 @@ export async function runModels(
 			const hasNext = page < totalPages - 1;
 			const nav: Array<{ value: string; label: string }> = [];
 			if (hasPrev) nav.push({ value: '__prev__', label: '‹ Previous' });
-			nav.push(
-				...pageItems.map((x) => ({ value: x.value, label: x.label })),
-			);
+			nav.push(...pageItems.map((x) => ({ value: x.value, label: x.label })));
 			if (hasNext) nav.push({ value: '__next__', label: 'Next ›' });
-			const initOnPage =
-				pageItems.some((i) => i.value === initialValue) ? initialValue : undefined;
+			const initOnPage = pageItems.some((i) => i.value === initialValue)
+				? initialValue
+				: undefined;
 			const choice = (await select({
 				message: `${message} (${page + 1}/${totalPages})`,
 				options: nav,
@@ -169,12 +181,9 @@ export async function runModels(
 		}
 	}
 
-	const model = (await pagedSelect(
-		options,
-		'Model',
-		6,
-		initial,
-	)) as string | symbol;
+	const model = (await pagedSelect(options, 'Model', 6, initial)) as
+		| string
+		| symbol;
 	if (isCancel(model)) return cancel('Cancelled');
 
 	// Write updated defaults: global by default, local when --local

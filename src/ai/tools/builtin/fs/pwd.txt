@@ -1,0 +1,5 @@
+- Return the current working directory (relative to the project root)
+- The runner maintains a per-session cwd; this tool reports it
+
+Usage tip:
+- Combine with the CD tool to navigate within the workspace

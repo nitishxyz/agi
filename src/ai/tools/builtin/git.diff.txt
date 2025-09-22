@@ -1,0 +1,5 @@
+- Show git diff
+- By default shows staged changes; set `all=true` for full working tree diff
+
+Usage tips:
+- Use with `git_status` to preview changes before committing

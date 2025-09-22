@@ -1,0 +1,7 @@
+- Execute a shell command using `bash -lc`
+- Returns `stdout`, `stderr`, and `exitCode`
+- `cwd` is relative to the project root and sandboxed within it
+
+Usage tips:
+- Chain multiple commands with `&&` to fail-fast
+- For long outputs, consider redirecting to a file and reading it

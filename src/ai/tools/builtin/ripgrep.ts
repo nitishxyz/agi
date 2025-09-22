@@ -2,14 +2,14 @@ import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import { $ } from 'bun';
 import { join } from 'node:path';
+import DESCRIPTION from './ripgrep.txt' with { type: 'text' };
 
 export function buildRipgrepTool(projectRoot: string): {
 	name: string;
 	tool: Tool;
 } {
 	const rg = tool({
-		description:
-			'Search files using ripgrep (rg). Returns matches with file, line, and text.',
+		description: DESCRIPTION,
 		inputSchema: z.object({
 			query: z.string().min(1).describe('Search pattern (regex by default)'),
 			path: z

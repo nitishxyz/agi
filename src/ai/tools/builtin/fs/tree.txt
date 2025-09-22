@@ -1,0 +1,8 @@
+- Render a shallow directory tree from a starting path
+- Accepts absolute, home, or project-relative paths
+- Skips common build/cache folders (node_modules, dist, .git, etc.) by default
+- Depth is capped to avoid excessive output (1–5)
+
+Usage tips:
+- Use the LS tool for a flat listing of one directory
+- Use the Glob and Grep tools for file pattern and content searches respectively

@@ -1,11 +1,13 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import { finishTool } from '@/ai/tools/builtin/finish.ts';
-import { buildFsTools } from '@/ai/tools/builtin/fs.ts';
+import { buildFsTools } from '@/ai/tools/builtin/fs/index.ts';
 import { buildGitTools } from '@/ai/tools/builtin/git.ts';
 import { progressUpdateTool } from '@/ai/tools/builtin/progress.ts';
 import { buildBashTool } from '@/ai/tools/builtin/bash.ts';
 import { buildRipgrepTool } from '@/ai/tools/builtin/ripgrep.ts';
+import { buildGrepTool } from '@/ai/tools/builtin/grep.ts';
+import { buildGlobTool } from '@/ai/tools/builtin/glob.ts';
 import { buildApplyPatchTool } from '@/ai/tools/builtin/patch.ts';
 import { updatePlanTool } from '@/ai/tools/builtin/plan.ts';
 import { editTool } from '@/ai/tools/builtin/edit.ts';
@@ -102,6 +104,10 @@ export async function discoverProjectTools(
 	// Search
 	const rg = buildRipgrepTool(projectRoot);
 	tools.set(rg.name, rg.tool);
+	const grep = buildGrepTool(projectRoot);
+	tools.set(grep.name, grep.tool);
+	const glob = buildGlobTool(projectRoot);
+	tools.set(glob.name, glob.tool);
 	// Patch/apply
 	const ap = buildApplyPatchTool(projectRoot);
 	tools.set(ap.name, ap.tool);

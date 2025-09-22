@@ -1,0 +1,7 @@
+- Apply a unified diff patch (`*** Begin Patch`/`*** Update File`/`---`/`+++`/`@@`)
+- Uses `git apply` under the hood; tries `-p1` then `-p0`
+- Returns an artifact summary and any output from `git apply`
+
+Usage tips:
+- Ensure paths in the patch match the project root (prefer `a/` and `b/` prefixes)
+- For small edits, consider the Edit or Write tools instead

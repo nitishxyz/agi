@@ -1,0 +1,5 @@
+- Change the current working directory (relative to the project root)
+- The runner enforces boundaries; this tool only requests a new cwd
+
+Usage tip:
+- Use PWD to verify the current directory

@@ -1,5 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import DESCRIPTION from './progress.txt' with { type: 'text' };
 
 // Progress update tool: allows the model to emit lightweight status signals
 // without revealing chain-of-thought. The runner/UI should surface these
@@ -14,8 +15,7 @@ const StageEnum = z.enum([
 ]);
 
 export const progressUpdateTool = tool({
-	description:
-		'Emit a progress/status update for the current task. Intended for short, generic user-facing messages.',
+	description: DESCRIPTION,
 	inputSchema: z.object({
 		message: z
 			.string()

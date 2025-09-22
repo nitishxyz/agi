@@ -1,14 +1,14 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import { $ } from 'bun';
+import DESCRIPTION from './patch.txt' with { type: 'text' };
 
 export function buildApplyPatchTool(projectRoot: string): {
 	name: string;
 	tool: Tool;
 } {
 	const applyPatch = tool({
-		description:
-			'Apply a unified diff patch to the project. Expects standard unified diff (---/+++/@@) format. Uses git apply under the hood.',
+		description: DESCRIPTION,
 		inputSchema: z.object({
 			patch: z.string().min(1).describe('Unified diff patch content'),
 			allowRejects: z

@@ -1,6 +1,7 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import { spawn } from 'bun';
+import DESCRIPTION from './bash.txt' with { type: 'text' };
 
 function normalizePath(p: string) {
 	const parts = p.replace(/\\/g, '/').split('/');
@@ -27,8 +28,7 @@ export function buildBashTool(projectRoot: string): {
 	tool: Tool;
 } {
 	const bash = tool({
-		description:
-			'Execute shell commands in a bash -lc subshell. Returns stdout, stderr, and exitCode. CWD is relative to project root.',
+		description: DESCRIPTION,
 		inputSchema: z
 			.object({
 				cmd: z.string().describe('Shell command to run (bash -lc <cmd>)'),

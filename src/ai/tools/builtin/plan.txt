@@ -1,0 +1,6 @@
+- Publish or update the current execution plan
+- Displays ordered steps and optional note/context to the user
+
+Usage tips:
+- Keep steps concise (imperative verbs) and reflect progress updates
+- Update the plan whenever scope changes or new steps emerge

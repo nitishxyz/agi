@@ -1,0 +1,7 @@
+- Emit a short, user-facing progress/status update
+- Supports optional `pct` (0–100) and `stage` indicators
+- Lightweight; intended for immediate UI display
+
+Usage tips:
+- Keep messages short (<= 200 chars) and informative
+- Use multiple updates during long-running tasks

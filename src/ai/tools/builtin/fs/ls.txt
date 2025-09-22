@@ -1,0 +1,8 @@
+- Lists files and directories in a given path (non-recursive)
+- Accepts absolute ('/...'), home ('~/...'), or project-relative paths
+- Hides common build and cache folders by default (node_modules, dist, .git, etc.)
+- Optional ignore patterns allow further filtering of directory names
+
+Usage tips:
+- Prefer the Glob tool for pattern-based discovery and Grep for content search
+- Use the Tree tool for a hierarchical view with limited depth

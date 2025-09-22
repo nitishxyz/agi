@@ -1,6 +1,9 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import { $ } from 'bun';
+import GIT_STATUS_DESCRIPTION from './git.status.txt' with { type: 'text' };
+import GIT_DIFF_DESCRIPTION from './git.diff.txt' with { type: 'text' };
+import GIT_COMMIT_DESCRIPTION from './git.commit.txt' with { type: 'text' };
 
 export function buildGitTools(
 	projectRoot: string,
@@ -14,7 +17,7 @@ export function buildGitTools(
 	}
 
 	const git_status = tool({
-		description: 'Show git status (porcelain, staged/unstaged summary).',
+		description: GIT_STATUS_DESCRIPTION,
 		inputSchema: z.object({}).optional(),
 		async execute() {
 			if (!(await inRepo())) throw new Error('Not a git repository');
@@ -40,8 +43,7 @@ export function buildGitTools(
 	});
 
 	const git_diff = tool({
-		description:
-			'Get git diff. By default staged changes only. Use all=true for full working tree.',
+		description: GIT_DIFF_DESCRIPTION,
 		inputSchema: z.object({ all: z.boolean().optional().default(false) }),
 		async execute({ all }: { all?: boolean }) {
 			if (!(await inRepo())) throw new Error('Not a git repository');
@@ -53,8 +55,7 @@ export function buildGitTools(
 	});
 
 	const git_commit = tool({
-		description:
-			'Create a git commit with the given message. Only call when the user has approved.',
+		description: GIT_COMMIT_DESCRIPTION,
 		inputSchema: z.object({
 			message: z.string().min(5),
 			amend: z.boolean().optional().default(false),

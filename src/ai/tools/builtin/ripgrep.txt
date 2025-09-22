@@ -1,0 +1,7 @@
+- Search files using ripgrep (rg) with regex patterns
+- Returns a flat list of matches with `file`, `line`, and `text`
+- Supports include globs and case-insensitive search
+
+Usage tips:
+- Use the Grep tool for a friendly summary grouped by file
+- Use the Glob tool first to limit the search set if needed

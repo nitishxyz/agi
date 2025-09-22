@@ -77,7 +77,7 @@ async function runAssistant(opts: RunOpts) {
 	const gated = allTools.filter((t) => allowedNames.has(t.name));
 
 	// Build chat history messages from DB (text parts only)
-	const history = await buildHistoryMessages(db, opts.sessionId);
+    const history = await buildHistoryMessages(db, opts.sessionId);
 
 	const sharedCtx = {
 		sessionId: opts.sessionId,
@@ -383,36 +383,86 @@ async function runAssistant(opts: RunOpts) {
 }
 
 async function buildHistoryMessages(
-	db: Awaited<ReturnType<typeof getDb>>,
-	sessionId: string,
+    db: Awaited<ReturnType<typeof getDb>>,
+    sessionId: string,
 ): Promise<ModelMessage[]> {
-	const msgs = await db
-		.select()
-		.from(messages)
-		.where(eq(messages.sessionId, sessionId))
-		.orderBy(asc(messages.createdAt));
-	const out: ModelMessage[] = [];
-	for (const m of msgs) {
-		const parts = await db
-			.select()
-			.from(messageParts)
-			.where(eq(messageParts.messageId, m.id))
-			.orderBy(asc(messageParts.index));
-		const texts = parts
-			.filter((p) => p.type === 'text')
-			.map((p) => {
-				try {
-					const obj = JSON.parse(p.content ?? '{}');
-					return String(obj.text ?? '');
-				} catch {
-					return '';
-				}
-			})
-			.join('');
-		if (!texts) continue;
-		if (m.role === 'user') out.push({ role: 'user', content: texts });
-		if (m.role === 'assistant') out.push({ role: 'assistant', content: texts });
-		// ignore system/tool roles here (system handled via `system` field)
-	}
-	return out;
+    const msgs = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.sessionId, sessionId))
+        .orderBy(asc(messages.createdAt));
+    const out: ModelMessage[] = [];
+    for (const m of msgs) {
+        const parts = await db
+            .select()
+            .from(messageParts)
+            .where(eq(messageParts.messageId, m.id))
+            .orderBy(asc(messageParts.index));
+        if (m.role === 'user') {
+            // Users only: stitch text parts (ignore any other types if present)
+            const text = parts
+                .filter((p) => p.type === 'text')
+                .map((p) => {
+                    try {
+                        const obj = JSON.parse(p.content ?? '{}');
+                        return String(obj.text ?? '');
+                    } catch {
+                        return '';
+                    }
+                })
+                .join('');
+            if (text.trim().length) out.push({ role: 'user', content: text });
+            continue;
+        }
+        if (m.role === 'assistant') {
+            // Assistants: include ALL parts in order — text, tool_call, tool_result — verbatim
+            const chunks: string[] = [];
+            for (const p of parts) {
+                if (p.type === 'text') {
+                    try {
+                        const obj = JSON.parse(p.content ?? '{}');
+                        const t = String(obj.text ?? '');
+                        if (t) chunks.push(t);
+                    } catch {}
+                } else if (p.type === 'tool_call') {
+                    try {
+                        const obj = JSON.parse(p.content ?? '{}') as {
+                            name?: string;
+                            args?: unknown;
+                            callId?: string;
+                        };
+                        const name = obj.name ?? 'tool';
+                        const argsPretty = JSON.stringify(obj.args ?? {}, null, 2);
+                        chunks.push(`Tool call: ${name}\nArgs:\n${argsPretty}`);
+                    } catch {}
+                } else if (p.type === 'tool_result') {
+                    try {
+                        const obj = JSON.parse(p.content ?? '{}') as {
+                            name?: string;
+                            result?: unknown;
+                            artifact?: unknown;
+                        };
+                        const name = obj.name ?? 'tool';
+                        const resultPretty = JSON.stringify(obj.result ?? {}, null, 2);
+                        chunks.push(`Tool result: ${name}\nResult:\n${resultPretty}`);
+                        if (obj.artifact !== undefined) {
+                            const art = obj.artifact as Record<string, unknown>;
+                            const patch = typeof art?.patch === 'string' ? art.patch : undefined;
+                            if (patch && patch.trim().length) {
+                                chunks.push(`Artifact patch:\n${patch}`);
+                            } else {
+                                const artPretty = JSON.stringify(art ?? {}, null, 2);
+                                chunks.push(`Artifact:\n${artPretty}`);
+                            }
+                        }
+                    } catch {}
+                }
+            }
+            const body = chunks.join('\n\n');
+            if (body.trim().length) out.push({ role: 'assistant', content: body });
+            continue;
+        }
+        // ignore other roles (system handled via `system` field)
+    }
+    return out;
 }

@@ -1,0 +1,5 @@
+- Signal that the task is complete
+- Optionally include a final `text` message to present to the user
+
+Usage tips:
+- Ensure all necessary outputs are already saved/emitted before finishing

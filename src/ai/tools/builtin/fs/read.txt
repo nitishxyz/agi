@@ -1,0 +1,8 @@
+- Read a text file from the workspace
+- Accepts absolute ('/...'), home ('~/...'), or project-relative paths
+- Returns file text and size in bytes
+- May serve embedded text assets for some paths (internal optimization)
+
+Usage tips:
+- Prefer relative project paths when possible (more portable)
+- For large files or searches, use the Grep or Ripgrep tool

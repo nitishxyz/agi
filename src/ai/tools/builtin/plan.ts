@@ -1,9 +1,9 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
+import DESCRIPTION from './plan.txt' with { type: 'text' };
 
 export const updatePlanTool: Tool = tool({
-	description:
-		'Update or publish the current execution plan. Use to show steps and progress to the user.',
+	description: DESCRIPTION,
 	inputSchema: z.object({
 		items: z
 			.array(z.string().min(1))

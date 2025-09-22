@@ -1,5 +1,6 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
+import DESCRIPTION from './edit.txt' with { type: 'text' };
 
 const replaceOp = z.object({
 	type: z.literal('replace'),
@@ -37,8 +38,7 @@ const opSchema = z.discriminatedUnion('type', [
 ]);
 
 export const editTool: Tool = tool({
-	description:
-		'Edit a file using structured operations (replace, insert, delete_range). Paths are relative to project root.',
+	description: DESCRIPTION,
 	inputSchema: z.object({
 		path: z.string().min(1),
 		ops: z.array(opSchema).min(1),

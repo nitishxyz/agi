@@ -1,0 +1,8 @@
+- Fast file pattern matching powered by ripgrep (rg)
+- Supports glob patterns like "**/*.js" or "src/**/*.ts"
+- Returns absolute file paths sorted by modification time
+- Skips common build and cache folders by default; add 'ignore' patterns to refine
+
+Usage tips:
+- Use the Grep tool for content searches
+- Omit 'path' to search from the project root; set a subdirectory to narrow results

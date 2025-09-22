@@ -1,0 +1,5 @@
+- Show git status in porcelain v1 format summary
+- Reports staged and unstaged counts and a capped raw list
+
+Usage tips:
+- Use before committing to understand working tree changes

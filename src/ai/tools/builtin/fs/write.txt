@@ -1,0 +1,8 @@
+- Write text to a file in the workspace
+- Creates the file if it does not exist (when allowed)
+- Only writes within the project root; absolute paths are rejected
+- Returns a compact patch artifact summarizing the change
+
+Usage tips:
+- Prefer idempotent writes by providing the full intended content
+- For localized edits, consider the Edit tool with structured operations

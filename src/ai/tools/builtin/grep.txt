@@ -1,0 +1,9 @@
+- Fast content search tool powered by ripgrep (rg)
+- Supports full regex syntax (e.g., "log.*Error", "function\\s+\\w+")
+- Optional include glob to filter files (e.g., "*.js", "*.{ts,tsx}")
+- Returns files with at least one match and line previews, sorted by modification time
+- Skips common build and cache folders by default; add 'ignore' patterns to refine
+
+Usage tips:
+- For counting matches, use the Bash tool with rg directly (do not use grep)
+- Batch multiple searches when exploring a codebase broadly

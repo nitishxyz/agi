@@ -4,7 +4,7 @@ import { discoverCommands } from '@/cli/commands.ts';
 import { box, colors } from '@/cli/ui.ts';
 import type { ProviderId } from '@/auth/index.ts';
 import type { AgentConfigEntry } from '@/ai/agents/registry.ts';
-import { buildFsTools } from '@/ai/tools/builtin/fs.ts';
+import { buildFsTools } from '@/ai/tools/builtin/fs/index.ts';
 import { buildGitTools } from '@/ai/tools/builtin/git.ts';
 import type { CommandManifest } from '@/cli/commands.ts';
 import {
