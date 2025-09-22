@@ -13,65 +13,67 @@ import { debugLog } from '@/runtime/debug.ts';
 import { estimateModelCostUsd } from '@/providers/pricing.ts';
 
 function toErrorPayload(err: unknown): {
-	message: string;
-	details?: Record<string, unknown>;
+    message: string;
+    details?: Record<string, unknown>;
 } {
-	// Derive the best human-friendly message and optional details
-	const asAny = err as Record<string, any> | undefined;
+    // Derive the best human-friendly message and optional details
+    const asObj = (err && typeof err === 'object'
+        ? (err as Record<string, unknown>)
+        : undefined);
 
 	// Try multiple sources for a human-readable message
 	let message = '';
 
-	if (asAny && typeof asAny.message === 'string' && asAny.message) {
-		message = asAny.message;
-	} else if (typeof err === 'string') {
-		message = err as string;
-	} else if (asAny && typeof asAny.error === 'string' && asAny.error) {
-		message = asAny.error;
-	} else if (
-		asAny &&
-		typeof asAny.responseBody === 'string' &&
-		asAny.responseBody
-	) {
-		// For API errors, use responseBody which often contains the actual error
-		message = asAny.responseBody;
-	} else if (asAny && asAny.statusCode && asAny.url) {
-		// Construct a meaningful message for HTTP errors
-		message = `HTTP ${asAny.statusCode} error at ${asAny.url}`;
-	} else if (asAny && asAny.name) {
-		// Use the error name as a fallback
-		message = String(asAny.name);
-	} else {
-		// Last resort: try to extract something meaningful
-		try {
-			message = JSON.stringify(err, null, 2);
-		} catch {
-			message = String(err);
-		}
-	}
+    if (asObj && typeof asObj.message === 'string' && asObj.message) {
+        message = asObj.message as string;
+    } else if (typeof err === 'string') {
+        message = err as string;
+    } else if (asObj && typeof asObj.error === 'string' && asObj.error) {
+        message = asObj.error as string;
+    } else if (
+        asObj &&
+        typeof asObj.responseBody === 'string' &&
+        asObj.responseBody
+    ) {
+        // For API errors, use responseBody which often contains the actual error
+        message = asObj.responseBody as string;
+    } else if (asObj?.statusCode && (asObj as { url?: unknown }).url) {
+        // Construct a meaningful message for HTTP errors
+        message = `HTTP ${String(asObj.statusCode)} error at ${String((asObj as { url?: unknown }).url)}`;
+    } else if (asObj?.name) {
+        // Use the error name as a fallback
+        message = String(asObj.name);
+    } else {
+        // Last resort: try to extract something meaningful
+        try {
+            message = JSON.stringify(err, null, 2);
+        } catch {
+            message = String(err);
+        }
+    }
 
-	const details: Record<string, unknown> = {};
-	if (asAny && typeof asAny === 'object') {
-		for (const key of ['name', 'code', 'status', 'statusCode', 'type']) {
-			if (asAny[key] != null) details[key] = asAny[key];
-		}
-		if (asAny.cause) {
-			const c = asAny.cause as any;
-			details.cause = {
-				message: typeof c?.message === 'string' ? c.message : undefined,
-				code: c?.code,
-				status: c?.status ?? c?.statusCode,
-			};
-		}
-		// Include response data if present (common in HTTP errors)
-		if (asAny.response?.status)
-			details.response = {
-				status: asAny.response.status,
-				statusText: asAny.response.statusText,
-			};
-		if (asAny.data && typeof asAny.data === 'object') details.data = asAny.data;
-	}
-	return Object.keys(details).length ? { message, details } : { message };
+    const details: Record<string, unknown> = {};
+    if (asObj && typeof asObj === 'object') {
+        for (const key of ['name', 'code', 'status', 'statusCode', 'type']) {
+            if (asObj[key] != null) details[key] = asObj[key];
+        }
+        if (asObj.cause) {
+            const c = asObj.cause as Record<string, unknown> | undefined;
+            details.cause = {
+                message: typeof c?.message === 'string' ? (c.message as string) : undefined,
+                code: (c as { code?: unknown })?.code,
+                status: (c as { status?: unknown; statusCode?: unknown })?.status ?? (c as { statusCode?: unknown })?.statusCode,
+            };
+        }
+        // Include response data if present (common in HTTP errors)
+        if ((asObj as { response?: { status?: unknown; statusText?: unknown } })?.response?.status)
+            details.response = {
+                status: (asObj as { response?: { status?: unknown; statusText?: unknown } }).response?.status,
+                statusText: (asObj as { response?: { status?: unknown; statusText?: unknown } }).response?.statusText,
+            };
+        if ((asObj as { data?: unknown })?.data && typeof (asObj as { data?: unknown }).data === 'object') details.data = (asObj as { data?: unknown }).data as Record<string, unknown>;
+    }
+    return Object.keys(details).length ? { message, details } : { message };
 }
 
 type RunOpts = {
@@ -191,13 +193,14 @@ async function runAssistant(opts: RunOpts) {
 	});
 
 	try {
-		const result = streamText({
-			model,
-			tools: toolset,
-			system,
-			messages: history,
-			stopWhen: hasToolCall('finish'),
-			onStepFinish: async (step) => {
+    const result = streamText({
+        model,
+        tools: toolset,
+        // Only include `system` when non-empty to avoid provider errors
+        ...(String(system || '').trim() ? { system } : {}),
+        messages: history,
+        stopWhen: hasToolCall('finish'),
+        onStepFinish: async (step) => {
 				// close current text part and start a new one for the next step
 				const finishedAt = Date.now();
 				try {

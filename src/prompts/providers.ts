@@ -2,6 +2,16 @@
 // Loads src/prompts/providers/<provider>.txt and returns its contents (trimmed).
 
 import { debugLog } from '@/runtime/debug.ts';
+// Embed default provider prompts into the binary via text imports
+// Only user-defined overrides should be read from disk.
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import PROVIDER_OPENAI from './providers/openai.txt' with { type: 'text' };
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import PROVIDER_ANTHROPIC from './providers/anthropic.txt' with { type: 'text' };
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import PROVIDER_GOOGLE from './providers/google.txt' with { type: 'text' };
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import PROVIDER_DEFAULT from './providers/default.txt' with { type: 'text' };
 
 function sanitizeModelId(modelId: string): string {
 	return modelId
@@ -34,11 +44,11 @@ async function readIfExists(path: string): Promise<string | undefined> {
 }
 
 export async function providerBasePrompt(
-	provider: string,
-	modelId: string | undefined,
-	_projectRoot: string,
+    provider: string,
+    modelId: string | undefined,
+    _projectRoot: string,
 ): Promise<string> {
-	const id = String(provider || '').toLowerCase();
+    const id = String(provider || '').toLowerCase();
 
 	// 1) Model-specific override: src/prompts/models/<sanitizedModel>.txt
 	if (modelId) {
@@ -52,40 +62,53 @@ export async function providerBasePrompt(
 		}
 	}
 
-	// 2) Provider-family fallback for openrouter and similar routers
-	if ((id === 'openrouter' || id === 'opencode') && modelId) {
-		const family = inferFamilyFromModel(modelId);
-		if (family) {
-			const familyPath = `src/prompts/providers/${family}.txt`;
-			const familyText = await readIfExists(familyPath);
-			if (familyText) {
-				debugLog(
-					`[provider] base prompt source: file:${familyPath} (family from model: ${modelId})`,
-				);
-				debugLog(`[provider] base prompt for family ${family}:\n${familyText}`);
-				return familyText;
-			}
-		}
-	}
+    // 2) Provider-family fallback for openrouter/opencode using embedded defaults
+    if ((id === 'openrouter' || id === 'opencode') && modelId) {
+        const family = inferFamilyFromModel(modelId);
+        if (family) {
+            const embedded = (
+                family === 'openai'
+                    ? PROVIDER_OPENAI
+                    : family === 'anthropic'
+                      ? PROVIDER_ANTHROPIC
+                      : family === 'google'
+                        ? PROVIDER_GOOGLE
+                        : PROVIDER_DEFAULT
+            ).trim();
+            debugLog(
+                `[provider] base prompt source: embedded:${family}.txt (family from model: ${modelId})`,
+            );
+            debugLog(`[provider] base prompt for family ${family}:\n${embedded}`);
+            return embedded;
+        }
+    }
 
-	// 3) Provider-specific prompt: src/prompts/providers/<provider>.txt
-	const providerPath = `src/prompts/providers/${id}.txt`;
-	const providerText = await readIfExists(providerPath);
-	if (providerText) {
-		debugLog(`[provider] base prompt source: file:${providerPath}`);
-		debugLog(`[provider] base prompt for ${id}:\n${providerText}`);
-		return providerText;
-	}
+    // 3) Provider-specific embedded defaults for known providers
+    if (id === 'openai') {
+        const txt = PROVIDER_OPENAI.trim();
+        debugLog('[provider] base prompt source: embedded:providers/openai.txt');
+        return txt;
+    }
+    if (id === 'anthropic') {
+        const txt = PROVIDER_ANTHROPIC.trim();
+        debugLog('[provider] base prompt source: embedded:providers/anthropic.txt');
+        return txt;
+    }
+    if (id === 'google') {
+        const txt = PROVIDER_GOOGLE.trim();
+        debugLog('[provider] base prompt source: embedded:providers/google.txt');
+        return txt;
+    }
+    // If a project adds a custom provider file, allow reading it from disk (user-defined)
+    const providerPath = `src/prompts/providers/${id}.txt`;
+    const providerText = await readIfExists(providerPath);
+    if (providerText) {
+        debugLog(`[provider] base prompt source: file:${providerPath}`);
+        debugLog(`[provider] base prompt for ${id}:\n${providerText}`);
+        return providerText;
+    }
 
 	// 4) Generic default
-	const defaultPath = 'src/prompts/providers/default.txt';
-	const defaultText = await readIfExists(defaultPath);
-	if (defaultText) {
-		debugLog(`[provider] base prompt source: file:${defaultPath}`);
-		debugLog(`[provider] base prompt (default):\n${defaultText}`);
-		return defaultText;
-	}
-
-	debugLog(`[provider] base prompt source: (none found) for ${id}`);
-	return '';
+    debugLog('[provider] base prompt source: embedded:providers/default.txt');
+    return PROVIDER_DEFAULT.trim();
 }
