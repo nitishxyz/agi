@@ -24,30 +24,55 @@ function resolveSafePath(projectRoot: string, p: string) {
 	return abs;
 }
 
+function expandTilde(p: string): string {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  if (!home) return p;
+  if (p === '~') return home;
+  if (p.startsWith('~/')) return `${home}/${p.slice(2)}`;
+  return p;
+}
+
+function isAbsoluteLike(p: string): boolean {
+  return p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p);
+}
+
 export function buildFsTools(
 	projectRoot: string,
 ): Array<{ name: string; tool: Tool }> {
 	const read: Tool = tool({
 		description: 'Read a text file from the project',
 		inputSchema: z.object({
-			path: z.string().describe('Relative file path within the project'),
+			path: z
+				.string()
+				.describe(
+					"File path. Relative to project root by default; absolute ('/...') and home ('~/...') paths are allowed for reads.",
+				),
 		}),
 		async execute({ path }: { path: string }) {
-			const abs = resolveSafePath(projectRoot, path);
+			const req = expandTilde(path);
+			if (isAbsoluteLike(req)) {
+				const f = Bun.file(req);
+				if (await f.exists()) {
+					const content = await f.text();
+					return { path: req, content, size: content.length };
+				}
+				throw new Error(`File not found: ${req}`);
+			}
+			const abs = resolveSafePath(projectRoot, req);
 			const f = Bun.file(abs);
 			if (await f.exists()) {
 				const content = await f.text();
-				return { path, content, size: content.length };
+				return { path: req, content, size: content.length };
 			}
 			// Fallback: if compiled with embedded assets and the requested file
 			// is one of the known text assets, serve from the embedded bundle
-			const embedded = embeddedTextAssets[path];
+			const embedded = embeddedTextAssets[req];
 			if (embedded) {
 				const ef = Bun.file(embedded);
 				const content = await ef.text();
-				return { path, content, size: content.length };
+				return { path: req, content, size: content.length };
 			}
-			throw new Error(`File not found: ${path}`);
+			throw new Error(`File not found: ${req}`);
 		},
 	});
 
@@ -55,7 +80,11 @@ export function buildFsTools(
 		description:
 			'Write text to a file in the project (creates file if missing)',
 		inputSchema: z.object({
-			path: z.string().describe('Relative file path within the project'),
+			path: z
+				.string()
+				.describe(
+					"Relative file path within the project. Writes outside the project are not allowed.",
+				),
 			content: z.string().describe('Text content to write'),
 			createDirs: z.boolean().optional().default(true),
 		}),
@@ -68,7 +97,13 @@ export function buildFsTools(
 			content: string;
 			createDirs?: boolean;
 		}) {
-			const abs = resolveSafePath(projectRoot, path);
+			const req = expandTilde(path);
+			if (isAbsoluteLike(req)) {
+				throw new Error(
+					`Refusing to write outside project root: ${req}. Use a relative path within the project.`,
+				);
+			}
+			const abs = resolveSafePath(projectRoot, req);
 			if (createDirs) {
 				await $`mkdir -p ${abs.slice(0, abs.lastIndexOf('/'))}`;
 			}
@@ -81,30 +116,42 @@ export function buildFsTools(
 			} catch {}
 			await Bun.write(abs, content);
 			const artifact = await buildWriteArtifact(
-				path,
+				req,
 				existed,
 				oldText,
 				content,
 			);
-			return { path, bytes: content.length, artifact } as const;
+			return { path: req, bytes: content.length, artifact } as const;
 		},
 	});
 
 	const ls: Tool = tool({
 		description: 'List files and directories at a path',
 		inputSchema: z.object({
-			path: z.string().default('.').describe('Relative directory path'),
+			path: z
+				.string()
+				.default('.')
+				.describe(
+					"Directory path. Relative to project root by default; absolute ('/...') and home ('~/...') paths are allowed.",
+				),
 		}),
 		async execute({ path }: { path: string }) {
-			const abs = resolveSafePath(projectRoot, path || '.');
-			// Use ls -1p to mark directories with trailing '/'
-			const out = await $`ls -1p ${abs}`.text().catch(() => '');
-			const lines = out.split('\n').filter(Boolean);
+			const req = expandTilde(path || '.');
+			const abs = isAbsoluteLike(req)
+				? req
+				: resolveSafePath(projectRoot, req || '.');
+			// Prefer Node fs to avoid shell quirks; fall back to ls if needed
+			const { exitCode, stdout, stderr } = await $`ls -1p ${abs}`.nothrow();
+			if (exitCode !== 0) {
+				const msg = String(stderr || stdout || 'ls failed').trim();
+				throw new Error(`ls failed for ${req}: ${msg}`);
+			}
+			const lines = stdout.split('\n').filter(Boolean);
 			const entries = lines.map((name) => ({
 				name: name.replace(/\/$/, ''),
 				type: name.endsWith('/') ? 'dir' : 'file',
 			}));
-			return { path, entries };
+			return { path: req, entries };
 		},
 	});
 
@@ -115,14 +162,21 @@ export function buildFsTools(
 			depth: z.number().int().min(1).max(5).default(2),
 		}),
 		async execute({ path, depth }: { path: string; depth: number }) {
-			const start = resolveSafePath(projectRoot, path || '.');
+			const req = expandTilde(path || '.');
+			const start = isAbsoluteLike(req)
+				? req
+				: resolveSafePath(projectRoot, req || '.');
 			const base = start.endsWith('/') ? start.slice(0, -1) : start;
 
 			async function listDir(
 				dir: string,
 			): Promise<Array<{ name: string; isDir: boolean }>> {
-				const out = await $`ls -1Ap ${dir}`.text().catch(() => '');
-				const lines = out.split('\n').filter(Boolean);
+				const { exitCode, stdout, stderr } = await $`ls -1Ap ${dir}`.nothrow();
+				if (exitCode !== 0) {
+					const msg = String(stderr || stdout || 'ls failed').trim();
+					throw new Error(`tree failed listing ${dir}: ${msg}`);
+				}
+				const lines = stdout.split('\n').filter(Boolean);
 				return lines.map((name) => ({
 					name: name.replace(/\/$/, ''),
 					isDir: name.endsWith('/'),
@@ -158,7 +212,7 @@ export function buildFsTools(
 
 			lines.push(`${'📁'} .`);
 			await walk(base, '', 1, '');
-			return { path, depth, tree: lines.join('\n') };
+			return { path: req, depth, tree: lines.join('\n') };
 		},
 	});
 

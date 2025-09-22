@@ -22,12 +22,21 @@ export async function runScaffold(opts: ScaffoldOptions = {}) {
 	const baseDir = opts.local ? `${projectRoot}/.agi` : getGlobalConfigDir();
 	const scopeLabel = opts.local ? 'local' : 'global';
 	intro(`Scaffold (${scopeLabel})`);
+	const homeForLabel = getHomeDir();
+	const baseLabel = opts.local
+		? '.agi'
+		: baseDir.startsWith(homeForLabel)
+			? baseDir.replace(homeForLabel, '~')
+			: baseDir;
 	const kind = await select({
 		message: 'What do you want to scaffold?',
 		options: [
 			{ value: 'agent', label: 'Agent' },
 			{ value: 'tool', label: 'Tool' },
-			{ value: 'command', label: 'Command (manifest under .agi/commands/)' },
+			{
+				value: 'command',
+				label: `Command (manifest under ${baseLabel}/commands/)`,
+			},
 		],
 	});
 	if (isCancel(kind)) return cancel('Cancelled');
@@ -70,8 +79,12 @@ async function scaffoldAgent(
 
 	let createPrompt = false;
 	if (!['general', 'build', 'plan'].includes(String(name))) {
+		const home = getHomeDir();
+		const displayBase = baseDir.startsWith(home)
+			? baseDir.replace(home, '~')
+			: baseDir;
 		const wantPrompt = await confirm({
-			message: 'Create prompt file (.agi/agents/<name>.md)?',
+			message: `Create prompt file (${displayBase}/agents/${String(name)}.md)?`,
 		});
 		if (isCancel(wantPrompt)) {
 			cancel('Cancelled');
@@ -92,8 +105,8 @@ async function scaffoldAgent(
 		const template = defaultAgentPromptTemplate(String(name));
 		await Bun.write(promptAbs, template);
 	}
-	// Always include finish in tool allowlist
-	const toolList = Array.from(new Set([...(tools as string[]), 'finish']));
+	// Do not persist 'finish' in agents.json; it is implicitly allowed at runtime
+	const toolList = Array.from(new Set([...(tools as string[])]));
 	current[String(name)] = {
 		...(current[String(name)] ?? {}),
 		tools: toolList,

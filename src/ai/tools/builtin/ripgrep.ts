@@ -1,6 +1,7 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import { $ } from 'bun';
+import { join } from 'node:path';
 
 export function buildRipgrepTool(projectRoot: string): {
 	name: string;
@@ -36,7 +37,16 @@ export function buildRipgrepTool(projectRoot: string): {
 			glob?: string[];
 			maxResults?: number;
 		}) {
-			const target = path?.trim() ? `${projectRoot}/${path}` : projectRoot;
+			function expandTilde(p: string) {
+				const home = process.env.HOME || process.env.USERPROFILE || '';
+				if (!home) return p;
+				if (p === '~') return home;
+				if (p.startsWith('~/')) return `${home}/${p.slice(2)}`;
+				return p;
+			}
+			const p = expandTilde(String(path ?? '.')).trim();
+			const isAbs = p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p);
+			const target = p ? (isAbs ? p : join(projectRoot, p)) : projectRoot;
 			const args = ['--no-heading', '--line-number', '--color=never'];
 			if (ignoreCase) args.push('-i');
 			if (Array.isArray(glob)) for (const g of glob) args.push('-g', g);
