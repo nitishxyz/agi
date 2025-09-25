@@ -59,8 +59,7 @@ describe('session creation respects agent provider/model', () => {
 			else process.env.USERPROFILE = prevProfile;
 			if (prevXdg === undefined) delete process.env.XDG_CONFIG_HOME;
 			else process.env.XDG_CONFIG_HOME = prevXdg;
-			if (prevAnthropic === undefined)
-				delete process.env.ANTHROPIC_API_KEY;
+			if (prevAnthropic === undefined) delete process.env.ANTHROPIC_API_KEY;
 			else process.env.ANTHROPIC_API_KEY = prevAnthropic;
 			await rm(root, { recursive: true, force: true });
 		}

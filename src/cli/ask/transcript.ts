@@ -124,8 +124,8 @@ export function buildSequence(args: {
 		});
 
 	seq.sort((a, b) => {
-		const ta = 'tsStart' in a ? a.tsStart : a.ts ?? 0;
-		const tb = 'tsStart' in b ? b.tsStart : b.ts ?? 0;
+		const ta = 'tsStart' in a ? a.tsStart : (a.ts ?? 0);
+		const tb = 'tsStart' in b ? b.tsStart : (b.ts ?? 0);
 		return ta - tb;
 	});
 	return seq;
@@ -192,8 +192,7 @@ export function summarizeTools(
 	toolResults: ToolResultRecord[],
 ) {
 	const toolCounts: Record<string, number> = {};
-	for (const c of toolCalls)
-		toolCounts[c.name] = (toolCounts[c.name] ?? 0) + 1;
+	for (const c of toolCalls) toolCounts[c.name] = (toolCounts[c.name] ?? 0) + 1;
 	const toolTimings = toolResults
 		.filter((r) => typeof r.durationMs === 'number')
 		.map((r) => ({ name: r.name, durationMs: r.durationMs ?? 0 }));
@@ -204,9 +203,7 @@ export function summarizeTools(
 	return { toolCounts, toolTimings, totalToolTimeMs } satisfies UsageAggregate;
 }
 
-export function collectDiffArtifacts(
-	toolResults: ToolResultRecord[],
-) {
+export function collectDiffArtifacts(toolResults: ToolResultRecord[]) {
 	return toolResults
 		.filter((r) => r.artifact?.kind === 'file_diff')
 		.map((r) => ({ name: r.name, summary: r.artifact?.summary }));

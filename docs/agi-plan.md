@@ -1,3 +1,5 @@
+[← Back to README](../README.md) • [Docs Index](./index.md)
+
 AGI Server Plan
 
 Summary

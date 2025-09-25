@@ -1,3 +1,5 @@
+[← Back to README](../README.md) • [Docs Index](./index.md)
+
 # Streaming Overhaul (AI SDK v5)
 
 Purpose: adopt AI SDK v5 streaming callbacks to make assistant streaming, DB persistence, and SSE events more robust and observable without breaking existing clients.

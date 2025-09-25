@@ -63,9 +63,7 @@ export async function httpJson<T>(
 	return (await res.json()) as T;
 }
 
-export function safeJson(
-	input: string,
-): Record<string, unknown> | undefined {
+export function safeJson(input: string): Record<string, unknown> | undefined {
 	try {
 		const parsed = JSON.parse(input);
 		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {

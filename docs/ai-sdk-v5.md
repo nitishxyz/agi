@@ -1,3 +1,5 @@
+[← Back to README](../README.md) • [Docs Index](./index.md)
+
 AI SDK v5 Cheat Sheet
 
 Purpose: quick, practical reminders for the latest AI SDK (ai@5.x) APIs we use across Bun/Node, Hono, and server contexts.

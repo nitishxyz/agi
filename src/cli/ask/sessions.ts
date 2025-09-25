@@ -87,8 +87,7 @@ export async function resolveSession(args: {
 				model: created.model ?? model,
 				sessionId,
 			};
-			if (!jsonMode)
-				message = { kind: 'created', sessionId };
+			if (!jsonMode) message = { kind: 'created', sessionId };
 		} else {
 			sessionId = String(sessions[0].id);
 			header = {
@@ -97,11 +96,9 @@ export async function resolveSession(args: {
 				model: sessions[0].model,
 				sessionId,
 			};
-			if (header.provider)
-				provider = header.provider as ProviderId;
+			if (header.provider) provider = header.provider as ProviderId;
 			if (header.model) model = header.model;
-			if (!jsonMode)
-				message = { kind: 'last', sessionId };
+			if (!jsonMode) message = { kind: 'last', sessionId };
 		}
 	} else {
 		const created = await httpJson<SessionMeta>(
@@ -113,9 +110,7 @@ export async function resolveSession(args: {
 				provider: providerOverride,
 				model:
 					modelOverride ??
-					(opts.provider
-						? catalogFirstModel(opts.provider)
-						: undefined),
+					(opts.provider ? catalogFirstModel(opts.provider) : undefined),
 			},
 		);
 		sessionId = String(created.id);
@@ -127,8 +122,7 @@ export async function resolveSession(args: {
 			model: created.model ?? model,
 			sessionId,
 		};
-		if (!jsonMode)
-			message = { kind: 'created', sessionId };
+		if (!jsonMode) message = { kind: 'created', sessionId };
 	}
 
 	return {

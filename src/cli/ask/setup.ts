@@ -45,7 +45,9 @@ export type AskEnvironment = {
 	agentModelDefault: string;
 } & ProviderState;
 
-export async function prepareAskEnvironment(opts: AskOptions): Promise<AskEnvironment> {
+export async function prepareAskEnvironment(
+	opts: AskOptions,
+): Promise<AskEnvironment> {
 	const projectRoot = opts.project ?? process.cwd();
 	const cfg = await loadConfig(projectRoot);
 	await getDb(cfg.projectRoot);
@@ -102,12 +104,7 @@ async function ensureAuthorizedProvider(
 			return envHas[p] || hasStoredApi || cfgHas[p];
 		};
 		if (!authed(chosenProvider)) {
-			const order: ProviderId[] = [
-				'anthropic',
-				'openai',
-				'google',
-				'opencode',
-			];
+			const order: ProviderId[] = ['anthropic', 'openai', 'google', 'opencode'];
 			const alt = order.find((p) => authed(p));
 			if (alt) chosenProvider = alt;
 		}

@@ -77,7 +77,7 @@ export function registerSessionsRoutes(app: Hono) {
 		const model =
 			modelCandidate && modelCandidate.length
 				? modelCandidate
-				: agentCfg.model ?? cfg.defaults.model;
+				: (agentCfg.model ?? cfg.defaults.model);
 		const row = {
 			id,
 			title: (body.title as string | null | undefined) ?? null,

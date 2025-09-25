@@ -146,11 +146,14 @@ export function printPlan(items: unknown, note?: unknown) {
 
 			if (!step || !step.trim()) continue;
 
-			const checkbox = status === 'completed' ? '[x]' : '[ ]';
-			let line = `${checkbox} ${step}`;
+			let line = '';
 
-			if (status === 'in_progress') {
-				line += ` ${yellow('...')}`;
+			if (status === 'completed') {
+				line = green(`[x] ${step}`);
+			} else if (status === 'in_progress') {
+				line = yellow(`[ ] ${step}`);
+			} else {
+				line = `[ ] ${step}`;
 			}
 
 			writeStderr(`${line}\n`);
