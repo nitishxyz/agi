@@ -1,6 +1,6 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
-import { $ } from 'bun';
+import { spawn } from 'bun';
 import { expandTilde, isAbsoluteLike, resolveSafePath } from './util.ts';
 import DESCRIPTION from './ls.txt' with { type: 'text' };
 import { toIgnoredBasenames } from '@/ai/tools/builtin/ignore.ts';
@@ -27,19 +27,29 @@ export function buildLsTool(projectRoot: string): { name: string; tool: Tool } {
 			const abs = isAbsoluteLike(req)
 				? req
 				: resolveSafePath(projectRoot, req || '.');
-			const { exitCode, stdout, stderr } = await $`ls -1p ${abs}`.nothrow();
-			if (exitCode !== 0) {
-				const msg = String(stderr || stdout || 'ls failed').trim();
-				throw new Error(`ls failed for ${req}: ${msg}`);
-			}
-			const lines = stdout.split('\n').filter(Boolean);
 			const ignored = toIgnoredBasenames(ignore);
-			const entries = lines
-				.map((name) => ({
-					name: name.replace(/\/$/, ''),
-					type: name.endsWith('/') ? 'dir' : 'file',
+			const proc = spawn({
+				cmd: ['ls', '-1p'],
+				cwd: abs,
+				stdout: 'pipe',
+				stderr: 'pipe',
+			});
+			const exitCode = await proc.exited;
+			const stdout = await new Response(proc.stdout).text();
+			const stderr = await new Response(proc.stderr).text();
+			if (exitCode !== 0) {
+				const message = (stderr || stdout || 'ls failed').trim();
+				throw new Error(`ls failed for ${req}: ${message}`);
+			}
+			const entries = stdout
+				.split('\n')
+				.map((line) => line.trim())
+				.filter((line) => line.length > 0 && !line.startsWith('.'))
+				.map((line) => ({
+					name: line.replace(/\/$/, ''),
+					type: line.endsWith('/') ? 'dir' : 'file',
 				}))
-				.filter((e) => !(e.type === 'dir' && ignored.has(e.name)));
+				.filter((entry) => !(entry.type === 'dir' && ignored.has(entry.name)));
 			return { path: req, entries };
 		},
 	});

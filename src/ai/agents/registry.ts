@@ -1,5 +1,7 @@
 import { getGlobalAgentsJsonPath, getGlobalAgentsDir } from '@/config/paths.ts';
 import { debugLog } from '@/runtime/debug.ts';
+import type { ProviderName } from '@/ai/provider.ts';
+import { catalog } from '@/providers/catalog.ts';
 // Embed default agent prompts; only user overrides read from disk.
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import AGENT_BUILD from '../../prompts/agents/build.txt' with { type: 'text' };
@@ -12,12 +14,16 @@ export type AgentConfig = {
 	name: string;
 	prompt: string;
 	tools: string[]; // allowed tool names
+	provider?: ProviderName;
+	model?: string;
 };
 
 export type AgentConfigEntry = {
 	tools?: string[];
 	appendTools?: string[];
 	prompt?: string;
+	provider?: string;
+	model?: string;
 };
 
 type AgentsJson = Record<string, AgentConfigEntry>;
@@ -36,6 +42,25 @@ function normalizeStringList(value: unknown): string[] {
 	return out;
 }
 
+const providerValues = new Set<ProviderName>(
+	Object.keys(catalog) as ProviderName[],
+);
+
+function normalizeProvider(value: unknown): ProviderName | undefined {
+	if (typeof value !== 'string') return undefined;
+	const trimmed = value.trim().toLowerCase();
+	if (!trimmed) return undefined;
+	return providerValues.has(trimmed as ProviderName)
+		? (trimmed as ProviderName)
+		: undefined;
+}
+
+function normalizeModel(value: unknown): string | undefined {
+	if (typeof value !== 'string') return undefined;
+	const trimmed = value.trim();
+	return trimmed.length ? trimmed : undefined;
+}
+
 function mergeAgentEntries(
 	base: AgentConfigEntry | undefined,
 	override: AgentConfigEntry,
@@ -46,6 +71,10 @@ function mergeAgentEntries(
 	const baseAppend = normalizeStringList(base?.appendTools);
 	if (baseAppend.length) merged.appendTools = [...baseAppend];
 	if (base && Object.hasOwn(base, 'prompt')) merged.prompt = base.prompt;
+	if (base && Object.hasOwn(base, 'provider'))
+		merged.provider = normalizeProvider(base.provider);
+	if (base && Object.hasOwn(base, 'model'))
+		merged.model = normalizeModel(base.model);
 
 	if (Array.isArray(override.tools))
 		merged.tools = normalizeStringList(override.tools);
@@ -60,6 +89,17 @@ function mergeAgentEntries(
 		delete merged.appendTools;
 	}
 	if (Object.hasOwn(override, 'prompt')) merged.prompt = override.prompt;
+
+	if (Object.hasOwn(override, 'provider')) {
+		const normalized = normalizeProvider(override.provider);
+		if (normalized) merged.provider = normalized;
+		else delete merged.provider;
+	}
+	if (Object.hasOwn(override, 'model')) {
+		const normalized = normalizeModel(override.model);
+		if (normalized) merged.model = normalized;
+		else delete merged.model;
+	}
 	return merged;
 }
 
@@ -238,7 +278,15 @@ export async function resolveAgentConfig(
 	}
 	// Deduplicate and ensure base tools are always available
 	const deduped = Array.from(new Set([...tools, ...baseToolSet]));
+	const provider = normalizeProvider(entry?.provider);
+	const model = normalizeModel(entry?.model);
     debugLog(`[agent] ${name} prompt source: ${promptSource}`);
     debugLog(`[agent] ${name} prompt:\n${prompt}`);
-    return { name, prompt, tools: deduped };
+    return {
+		name,
+		prompt,
+		tools: deduped,
+		provider,
+		model,
+	};
 }

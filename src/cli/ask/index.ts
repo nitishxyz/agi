@@ -1,16 +1,14 @@
+export { runAsk } from './run.ts';
+export { runAskCapture, runAskStreamCapture } from './capture.ts';
 export {
-	runAsk,
-	runAskCapture,
-	runAskStreamCapture,
 	getOrStartServerUrl,
 	startEphemeralServer,
 	stopEphemeralServer,
-} from '@/cli/ask/index.ts';
-
+} from './server.ts';
 export type {
 	AskOptions,
 	Transcript,
 	ToolCallRecord,
 	ToolResultRecord,
 	TokenUsageSummary,
-} from '@/cli/ask/index.ts';
+} from './types.ts';

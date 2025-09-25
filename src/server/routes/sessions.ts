@@ -10,6 +10,7 @@ import {
 	ensureProviderEnv,
 } from '@/providers/authorization.ts';
 import type { ProviderId } from '@/auth/index.ts';
+import { resolveAgentConfig } from '@/ai/agents/registry.ts';
 const providerValues = [
 	'openai',
 	'anthropic',
@@ -60,18 +61,29 @@ export function registerSessionsRoutes(app: Hono) {
 		>;
 		const id = crypto.randomUUID();
 		const now = Date.now();
+		const agent = (body.agent as string | undefined) ?? cfg.defaults.agent;
+		const agentCfg = await resolveAgentConfig(cfg.projectRoot, agent);
 		const providerCandidate =
 			typeof body.provider === 'string' ? body.provider : undefined;
-		const provider: ProviderId =
-			providerCandidate && isProviderId(providerCandidate)
-				? providerCandidate
-				: cfg.defaults.provider;
+		const provider: ProviderId = (() => {
+			if (providerCandidate && isProviderId(providerCandidate))
+				return providerCandidate;
+			if (agentCfg.provider && isProviderId(agentCfg.provider))
+				return agentCfg.provider;
+			return cfg.defaults.provider;
+		})();
+		const modelCandidate =
+			typeof body.model === 'string' ? body.model.trim() : undefined;
+		const model =
+			modelCandidate && modelCandidate.length
+				? modelCandidate
+				: agentCfg.model ?? cfg.defaults.model;
 		const row = {
 			id,
 			title: (body.title as string | null | undefined) ?? null,
-			agent: (body.agent as string | undefined) ?? cfg.defaults.agent,
+			agent,
 			provider,
-			model: (body.model as string | undefined) ?? cfg.defaults.model,
+			model,
 			projectPath: cfg.projectRoot,
 			createdAt: now,
 		};

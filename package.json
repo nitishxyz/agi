@@ -66,12 +66,15 @@
     "diff": "^8.0.2",
     "drizzle-orm": "^0.44.5",
     "hono": "^4.9.7",
+    "marked": "^16.3.0",
+    "marked-terminal": "^7.3.0",
     "opencode-anthropic-auth": "^0.0.2",
     "zod": "^4.1.8"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
     "@types/bun": "latest",
+    "@types/marked-terminal": "^6.1.1",
     "drizzle-kit": "^0.31.4"
   },
   "peerDependencies": {

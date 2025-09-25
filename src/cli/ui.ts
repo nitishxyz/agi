@@ -1,4 +1,22 @@
-// Minimal UI utilities for non-interactive output (no external deps)
+// UI utilities with enhanced markdown rendering
+
+import { marked } from 'marked';
+import TerminalRenderer from 'marked-terminal';
+
+// Configure marked with terminal renderer
+const terminalRenderer = new TerminalRenderer({
+	showSectionPrefix: false,
+	width: process.stdout.columns || 80,
+	reflowText: true,
+	tab: 2,
+	emoji: true,
+	unescape: true,
+} as any);
+
+// Set the renderer directly
+marked.setOptions({
+	renderer: terminalRenderer as any,
+});
 
 const ESC = '\u001b[';
 function code(n: number) {
@@ -16,6 +34,23 @@ export const colors = {
 };
 
 export function renderMarkdown(markdown: string) {
+	try {
+		// Use marked-terminal for rich markdown rendering
+		const result = marked(markdown);
+		// Handle both sync and async versions of marked
+		if (typeof result === 'string') {
+			return result.trimEnd();
+		}
+		// For async version (shouldn't happen with terminal renderer, but safe fallback)
+		return renderMarkdownFallback(markdown);
+	} catch (err) {
+		// Fallback to basic rendering if marked fails
+		return renderMarkdownFallback(markdown);
+	}
+}
+
+// Keep the original basic renderer as fallback
+function renderMarkdownFallback(markdown: string) {
 	const normalized = markdown.replace(/\r\n/g, '\n');
 	const lines = normalized.split('\n');
 	const rendered: string[] = [];
@@ -130,7 +165,11 @@ function stripAnsi(s: string) {
 			i += 1;
 			while (i < s.length) {
 				const code = s[i];
-				if ((code >= '@' && code <= 'Z') || (code >= 'a' && code <= 'z')) break;
+				if (
+					code &&
+					((code >= '@' && code <= 'Z') || (code >= 'a' && code <= 'z'))
+				)
+					break;
 				i += 1;
 			}
 		} else {

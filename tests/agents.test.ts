@@ -44,4 +44,51 @@ describe('agent config merging', () => {
 			await rm(workspaceRoot, { recursive: true, force: true });
 		}
 	});
+
+	it('resolves provider and model from configuration layers', async () => {
+		const workspaceRoot = await mkdtemp(join(tmpdir(), 'agi-agents-'));
+		const projectRoot = join(workspaceRoot, 'project');
+		const homeDir = join(workspaceRoot, 'home');
+		await mkdir(projectRoot, { recursive: true });
+		await mkdir(homeDir, { recursive: true });
+		const prevHome = process.env.HOME;
+		const prevProfile = process.env.USERPROFILE;
+		const prevXdg = process.env.XDG_CONFIG_HOME;
+		process.env.HOME = homeDir;
+		process.env.USERPROFILE = homeDir;
+		process.env.XDG_CONFIG_HOME = join(homeDir, '.config');
+		try {
+			const globalAgiDir = join(homeDir, '.config', 'agi');
+			await mkdir(globalAgiDir, { recursive: true });
+			await writeFile(
+				join(globalAgiDir, 'agents.json'),
+				JSON.stringify({
+					coder: {
+						provider: 'anthropic',
+						model: 'claude-3-sonnet-20240229',
+					},
+				}),
+			);
+			await mkdir(join(projectRoot, '.agi'), { recursive: true });
+			await writeFile(
+				join(projectRoot, '.agi', 'agents.json'),
+				JSON.stringify({
+					coder: {
+						model: 'claude-3-5-sonnet-20241022',
+					},
+				}),
+			);
+			const cfg = await resolveAgentConfig(projectRoot, 'coder');
+			expect(cfg.provider).toBe('anthropic');
+			expect(cfg.model).toBe('claude-3-5-sonnet-20241022');
+		} finally {
+			if (prevHome === undefined) delete process.env.HOME;
+			else process.env.HOME = prevHome;
+			if (prevProfile === undefined) delete process.env.USERPROFILE;
+			else process.env.USERPROFILE = prevProfile;
+			if (prevXdg === undefined) delete process.env.XDG_CONFIG_HOME;
+			else process.env.XDG_CONFIG_HOME = prevXdg;
+			await rm(workspaceRoot, { recursive: true, force: true });
+		}
+	});
 });

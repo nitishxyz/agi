@@ -1,23 +1,27 @@
 import { createTwoFilesPatch } from 'diff';
+import { resolve as resolvePath } from 'node:path';
 
-export function normalizePath(p: string) {
-	const parts = p.replace(/\\/g, '/').split('/');
-	const stack: string[] = [];
-	for (const part of parts) {
-		if (!part || part === '.') continue;
-		if (part === '..') stack.pop();
-		else stack.push(part);
-	}
-	return `/${stack.join('/')}`;
+function normalizeForComparison(value: string) {
+	const withForwardSlashes = value.replace(/\\/g, '/');
+	return process.platform === 'win32'
+		? withForwardSlashes.toLowerCase()
+		: withForwardSlashes;
 }
 
 export function resolveSafePath(projectRoot: string, p: string) {
-	const root = normalizePath(projectRoot);
-	const abs = normalizePath(`${root}/${p || '.'}`);
-	if (!(abs === root || abs.startsWith(`${root}/`))) {
-		throw new Error(`Path escapes project root: ${p}`);
-	}
-	return abs;
+	const root = resolvePath(projectRoot);
+	const target = resolvePath(root, p || '.');
+	const rootNorm = (() => {
+		const normalized = normalizeForComparison(root);
+		if (normalized === '/') return '/';
+		return normalized.replace(/[\\/]+$/, '');
+	})();
+	const targetNorm = normalizeForComparison(target);
+	const rootWithSlash = rootNorm === '/' ? '/' : `${rootNorm}/`;
+	const inProject =
+		targetNorm === rootNorm || targetNorm.startsWith(rootWithSlash);
+	if (!inProject) throw new Error(`Path escapes project root: ${p}`);
+	return target;
 }
 
 export function expandTilde(p: string): string {

@@ -74,7 +74,7 @@ Agents & Tools
 - Agent prompt loading precedence:
   1) Project override: `.agi/agents/<agent>/agent.md`
   2) Built‑in default prompt embedded in server
-- Project extensions via `.agi/agents.json` to map agents to allowed tools and prompt paths.
+- Project extensions via `.agi/agents.json` to map agents to allowed tools, prompts, and default provider/model.
 - Use `appendTools` to add to built-in agent defaults without overriding their core allowlist.
 - Example `.agi/agents.json`:
 ```json
@@ -87,10 +87,12 @@ Agents & Tools
     "appendTools": ["shell.run"],
     "prompt": ".agi/agents/build/agent.md"
   },
-  "custom-repo": {
-    "tools": ["custom-tool"],
-    "prompt": ".agi/agents/custom-repo/agent.md"
-  }
+"custom-repo": {
+  "provider": "anthropic",
+  "model": "claude-3-5-sonnet-20241022",
+  "tools": ["custom-tool"],
+  "prompt": ".agi/agents/custom-repo/agent.md"
+}
 }
 ```
 - Tool interface for built‑in and user tools (TypeScript):
