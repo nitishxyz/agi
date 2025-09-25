@@ -97,8 +97,7 @@ export function printSummary(
 	}
 	if (filesTouched.size) {
 		writeStderr(`${bold('Files touched:')}\n`);
-		for (const f of filesTouched)
-			writeStderr(`  ${green('•')} ${f}\n`);
+		for (const f of filesTouched) writeStderr(`  ${green('•')} ${f}\n`);
 	}
 	const diffs = toolResults.filter((r) => r.artifact?.kind === 'file_diff');
 	if (diffs.length) {
@@ -251,7 +250,8 @@ export function printToolResult(
 		hasAdditionalResult = true;
 	}
 	if (errorText) {
-		if (!opts?.skipErrorLog) logToolError(name, errorText, { durationMs: opts?.durationMs });
+		if (!opts?.skipErrorLog)
+			logToolError(name, errorText, { durationMs: opts?.durationMs });
 		if (!hasArtifact && !hasAdditionalResult) return;
 	}
 	if (
@@ -295,7 +295,9 @@ export function printToolResult(
 		const path = String(Reflect.get(result, 'path'));
 		const content = String(Reflect.get(result, 'content') ?? '');
 		const lines = content.split('\n');
-		writeStderr(`${bold('↳ read')} ${dim(path)} (${lines.length} lines)${time}\n`);
+		writeStderr(
+			`${bold('↳ read')} ${dim(path)} (${lines.length} lines)${time}\n`,
+		);
 		const sample = lines.slice(0, 20).join('\n');
 		const suffix = lines.length > 20 ? `\n${dim('…')}` : '';
 		writeStderr(`${sample}${suffix}\n`);
@@ -345,8 +347,8 @@ export function printToolResult(
 		return;
 	}
 	if (name === 'bash' && result && typeof result === 'object') {
-		const MAX_OUTPUT_LINES = 80;
-		const MAX_OUTPUT_CHARS = 6000;
+		const MAX_OUTPUT_LINES = 7; // Reduced from 80 to 7 for concise display
+		const MAX_OUTPUT_CHARS = 500; // Reduced from 6000 to 500 for concise display
 		const stdout = String(Reflect.get(result, 'stdout') ?? '');
 		const stderr = String(Reflect.get(result, 'stderr') ?? '');
 		const exitCode = Reflect.get(result, 'exitCode');
@@ -356,7 +358,8 @@ export function printToolResult(
 			colorize?: (value: string) => string,
 		) => {
 			const lines = raw.split('\n');
-			const overLineLimit = lines.length > MAX_OUTPUT_LINES;
+			const totalLines = lines.length;
+			const overLineLimit = totalLines > MAX_OUTPUT_LINES;
 			const limitedLines = overLineLimit
 				? lines.slice(0, MAX_OUTPUT_LINES)
 				: lines;
@@ -366,11 +369,15 @@ export function printToolResult(
 			const truncated = overLineLimit || overCharLimit;
 			if (!text.trim()) return;
 			const body = colorize ? colorize(text) : text;
-			writeStderr(`${bold(label)}${time}\n${body}${text.endsWith('\n') ? '' : '\n'}`);
+			writeStderr(
+				`${bold(label)}${time}\n${body}${text.endsWith('\n') ? '' : '\n'}`,
+			);
 			if (truncated) {
-				writeStderr(
-					`${dim('… output truncated; rerun with --json or --json-stream for full logs')}\n`,
-				);
+				const lineInfo =
+					totalLines > MAX_OUTPUT_LINES
+						? ` (${totalLines - MAX_OUTPUT_LINES} more lines)`
+						: '';
+				writeStderr(`${dim(`… truncated${lineInfo}`)}\n`);
 			}
 		};
 		if (stdout.trim()) truncateBlock('↳ bash stdout', stdout);

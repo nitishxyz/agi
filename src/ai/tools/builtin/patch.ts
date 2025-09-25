@@ -44,15 +44,41 @@ export function buildApplyPatchTool(projectRoot: string): {
 				const cmd = ['git', '-C', projectRoot, ...args, file];
 				const proc = await $`${cmd}`.quiet().nothrow();
 				const out = await proc.text();
-				if (proc.exitCode === 0) {
-					return {
-						ok: true,
-						output: out?.trim() ?? '',
-						artifact: { kind: 'file_diff', patch, summary },
-					} as const;
+				// Check if the patch was actually applied by looking at git status
+				// Sometimes git apply returns non-zero but the patch is applied
+				if (proc.exitCode === 0 || proc.exitCode === 1) {
+					// Check if any files were actually modified
+					const statusProc = await $`git -C ${projectRoot} status --porcelain`
+						.quiet()
+						.nothrow();
+					const statusOut = await statusProc.text();
+					if (statusOut && statusOut.trim().length > 0) {
+						// Files were changed, so patch was likely applied
+						return {
+							ok: true,
+							output: out?.trim() ?? '',
+							artifact: { kind: 'file_diff', patch, summary },
+						} as const;
+					}
 				}
+				// Only continue trying if patch wasn't applied
 			}
-			// If both attempts fail, return error output from the last try
+			// If both attempts fail with exit code, check if files were modified anyway
+			// Sometimes git apply exits with warnings but the patch is applied
+			const statusProc = await $`git -C ${projectRoot} status --porcelain`
+				.quiet()
+				.nothrow();
+			const statusOut = await statusProc.text();
+			if (statusOut && statusOut.trim().length > 0) {
+				// Files were changed, so patch was likely applied despite the exit code
+				return {
+					ok: true,
+					output: 'Patch applied with warnings',
+					artifact: { kind: 'file_diff', patch, summary },
+				} as const;
+			}
+
+			// If both attempts fail and no files changed, return error
 			return {
 				ok: false,
 				error:

@@ -276,8 +276,24 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		await sse.close();
 	}
 
-	if (state.output.length && !flags.jsonEnabled && !flags.jsonStreamEnabled)
+	// Render markdown if we buffered the output
+	// Default to streaming for real-time feedback
+	const useMarkdownBuffer = process.env.AGI_RENDER_MARKDOWN === '1';
+	if (
+		useMarkdownBuffer &&
+		state.output.length &&
+		!flags.jsonEnabled &&
+		!flags.jsonStreamEnabled
+	) {
+		Bun.write(Bun.stdout, `${renderMarkdown(state.output)}\n`);
+	} else if (
+		state.output.length &&
+		!flags.jsonEnabled &&
+		!flags.jsonStreamEnabled
+	) {
+		// Just add newline if we streamed the output
 		Bun.write(Bun.stdout, '\n');
+	}
 
 	return state;
 
@@ -301,7 +317,14 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 				})}\n`,
 			);
 		} else if (!flags.jsonEnabled) {
-			Bun.write(Bun.stdout, delta);
+			// Check if we should buffer for markdown rendering
+			// Default to streaming for real-time feedback
+			const useMarkdownBuffer = process.env.AGI_RENDER_MARKDOWN === '1';
+			if (!useMarkdownBuffer) {
+				// Stream raw output for real-time display (default)
+				Bun.write(Bun.stdout, delta);
+			}
+			// If buffering, output will be rendered after completion
 		}
 	}
 
@@ -400,11 +423,21 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 			typeof data?.error === 'string' && data.error.trim().length
 				? data.error
 				: undefined;
+		// Special handling for apply_patch which uses 'ok' field
+		const isApplyPatchOk =
+			name === 'apply_patch' &&
+			resultObject &&
+			Reflect.get(resultObject, 'ok') === true;
+
 		const hasErrorResult =
 			Boolean(
 				resultObject &&
+					// Don't treat apply_patch as error if ok is true, even if it has error field
+					!(name === 'apply_patch' && isApplyPatchOk) &&
 					(Reflect.has(resultObject, 'error') ||
-						Reflect.get(resultObject, 'success') === false),
+						Reflect.get(resultObject, 'success') === false ||
+						(name === 'apply_patch' &&
+							Reflect.get(resultObject, 'ok') === false)),
 			) || Boolean(topLevelError);
 		if (name === 'write' && typeof resultValue?.path === 'string')
 			state.filesTouched.add(String(resultValue.path));

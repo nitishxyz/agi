@@ -8,6 +8,7 @@
 - 🤖 **Multi-Provider Support**: Seamlessly switch between OpenAI, Anthropic, and Google AI
 - 🎯 **Specialized Agents**: Purpose-built agents for different tasks (general, build, plan, git)
 - 🔧 **Extensible Tool System**: Built-in tools for file operations, git, bash commands with project-specific extensions
+- 📝 **Rich Markdown Output**: Optional pretty markdown rendering in the terminal
 - 💾 **Session Management**: Persistent conversation history stored locally in SQLite
 - 📁 **Project-Aware**: Maintains context per project with local `.agi` configuration
 - 🌊 **Real-time Streaming**: Live AI responses via Server-Sent Events (SSE)
@@ -62,6 +63,12 @@ bun run build
 bun link
 ```
 
+Optional: Pretty-print markdown output when running from source
+
+```bash
+./agi-markdown "<prompt>"
+```
+
 ## Quick Start
 
 ### Initial Setup
@@ -92,6 +99,27 @@ agi "what about edge cases?" --last
 # Use a specific provider and model
 agi "refactor this function" --provider anthropic --model claude-3-opus
 ```
+
+## Output & Rendering
+
+AGI provides two output modes for assistant responses:
+
+**Streaming Mode (Default)**
+- Real-time output as text is generated
+- See immediate feedback that the assistant is working
+- Plain text without markdown formatting
+- Best for interactive use and seeing progress
+
+**Markdown Mode** 
+- Enable with `AGI_RENDER_MARKDOWN=1` or use `./agi-markdown` wrapper
+- Buffered output appears all at once after completion
+- Rich formatting: headers, **bold**, *italic*, lists, code blocks
+- Best for documentation, final outputs, pretty results
+
+**Other Options**
+- JSON output: `--json` for structured result, `--json-stream` for streaming
+- Bash output: Limited to 7 lines (use `--json` for full output)
+- Plans: Show `[ ]` pending, `[x]` complete, `...` in progress
 
 ## Core Commands
 
@@ -300,6 +328,7 @@ AGI_PROJECT_ROOT=/path/to/project    # Override project detection
 PORT=3000                             # Default server port
 DEBUG_AGI=1                           # Enable debug output
 DB_FILE_NAME=.agi/agi.sqlite         # Database file location
+AGI_RENDER_MARKDOWN=0                # Disable markdown (default is enabled)
 ```
 
 ## API Reference
