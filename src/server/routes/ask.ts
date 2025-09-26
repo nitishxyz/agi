@@ -1,5 +1,8 @@
 import type { Hono } from 'hono';
-import { handleAskRequest } from '@/server/runtime/askService.ts';
+import {
+	AskServiceError,
+	handleAskRequest,
+} from '@/server/runtime/askService.ts';
 
 export function registerAskRoutes(app: Hono) {
 	app.post('/v1/ask', async (c) => {
@@ -26,6 +29,9 @@ export function registerAskRoutes(app: Hono) {
 			});
 			return c.json(response, 202);
 		} catch (err) {
+			if (err instanceof AskServiceError) {
+				return c.json({ error: err.message }, err.status);
+			}
 			const message = err instanceof Error ? err.message : String(err);
 			return c.json({ error: message }, 400);
 		}

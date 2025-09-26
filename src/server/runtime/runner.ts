@@ -16,7 +16,7 @@ import { discoverProjectTools } from '@/ai/tools/loader.ts';
 import { adaptTools } from '@/ai/tools/adapter.ts';
 import type { ToolAdapterContext } from '@/ai/tools/adapter.ts';
 import { publish, subscribe } from '@/server/events/bus.ts';
-import { debugLog } from '@/runtime/debug.ts';
+import { debugLog, time } from '@/runtime/debug.ts';
 import { estimateModelCostUsd } from '@/providers/pricing.ts';
 
 function toErrorPayload(err: unknown): {
@@ -144,12 +144,17 @@ async function processQueue(sessionId: string) {
 }
 
 async function runAssistant(opts: RunOpts) {
+	const cfgTimer = time('runner:loadConfig+db');
 	const cfg = await loadConfig(opts.projectRoot);
 	const db = await getDb(cfg.projectRoot);
+	cfgTimer.end();
 
 	// Resolve agent prompt and tools
+	const agentTimer = time('runner:resolveAgentConfig');
 	const agentCfg = await resolveAgentConfig(cfg.projectRoot, opts.agent);
+	agentTimer.end({ agent: opts.agent });
 	const agentPrompt = agentCfg.prompt || '';
+	const systemTimer = time('runner:composeSystemPrompt');
 	const system = await composeSystemPrompt({
 		provider: opts.provider,
 		model: opts.model,
@@ -157,9 +162,12 @@ async function runAssistant(opts: RunOpts) {
 		agentPrompt,
 		oneShot: opts.oneShot,
 	});
+	systemTimer.end();
 	debugLog('[system] composed prompt (provider+base+agent):');
 	debugLog(system);
+	const toolsTimer = time('runner:discoverTools');
 	const allTools = await discoverProjectTools(cfg.projectRoot);
+	toolsTimer.end({ count: allTools.length });
 	const allowedNames = new Set([
 		...(agentCfg.tools || []),
 		'finish',
@@ -168,8 +176,12 @@ async function runAssistant(opts: RunOpts) {
 	const gated = allTools.filter((t) => allowedNames.has(t.name));
 
 	// Build chat history messages from DB (text parts only)
+	const historyTimer = time('runner:buildHistory');
 	const history = await buildHistoryMessages(db, opts.sessionId);
+	historyTimer.end({ messages: history.length });
 
+	const firstToolTimer = time('runner:first-tool-call');
+	let firstToolSeen = false;
 	const sharedCtx: RunnerToolContext = {
 		nextIndex: async () => 0,
 		stepIndex: 0,
@@ -181,6 +193,11 @@ async function runAssistant(opts: RunOpts) {
 		provider: opts.provider,
 		model: opts.model,
 		projectRoot: cfg.projectRoot,
+		onFirstToolCall: () => {
+			if (firstToolSeen) return;
+			firstToolSeen = true;
+			firstToolTimer.end();
+		},
 	};
 	// Initialize a per-message monotonic index allocator
 	let counter = 0;
@@ -203,7 +220,9 @@ async function runAssistant(opts: RunOpts) {
 	sharedCtx.stepIndex = 0;
 	const toolset = adaptTools(gated, sharedCtx);
 
+	const modelTimer = time('runner:resolveModel');
 	const model = await resolveModel(opts.provider, opts.model, cfg);
+	modelTimer.end();
 
 	let currentPartId = opts.assistantPartId;
 	let accumulated = '';
@@ -220,6 +239,8 @@ async function runAssistant(opts: RunOpts) {
 		} catch {}
 	});
 
+	const streamStartTimer = time('runner:first-delta');
+	let firstDeltaSeen = false;
 	try {
 		const result = streamText({
 			model,
@@ -449,6 +470,10 @@ async function runAssistant(opts: RunOpts) {
 		});
 		for await (const delta of result.textStream) {
 			if (!delta) continue;
+			if (!firstDeltaSeen) {
+				firstDeltaSeen = true;
+				streamStartTimer.end();
+			}
 			accumulated += delta;
 			publish({
 				type: 'message.part.delta',
@@ -485,6 +510,7 @@ async function runAssistant(opts: RunOpts) {
 		});
 		throw error;
 	} finally {
+		if (!firstToolSeen) firstToolTimer.end({ skipped: true });
 		try {
 			unsubscribeFinish();
 		} catch {}

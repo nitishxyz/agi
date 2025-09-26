@@ -6,7 +6,10 @@ import {
 	getLastSession,
 	getSessionById,
 } from '@/server/runtime/sessionManager.ts';
-import { selectProviderAndModel } from '@/server/runtime/providerSelection.ts';
+import {
+	selectProviderAndModel,
+	type ProviderSelection,
+} from '@/server/runtime/providerSelection.ts';
 import { resolveAgentConfig } from '@/ai/agents/registry.ts';
 import { dispatchAssistantMessage } from '@/server/runtime/messageService.ts';
 import { validateProviderModel } from '@/providers/validate.ts';
@@ -17,6 +20,16 @@ import {
 import type { ProviderId } from '@/providers/catalog.ts';
 import { isProviderId } from '@/providers/utils.ts';
 import { sessions } from '@/db/schema/index.ts';
+import { time } from '@/runtime/debug.ts';
+
+export class AskServiceError extends Error {
+	status: number;
+
+	constructor(message: string, status = 400) {
+		super(message);
+		this.status = status;
+	}
+}
 
 export type AskServerRequest = {
 	projectRoot?: string;
@@ -49,9 +62,21 @@ type SessionRow = typeof import('@/db/schema/index.ts').sessions.$inferSelect;
 export async function handleAskRequest(
 	request: AskServerRequest,
 ): Promise<AskServerResponse> {
+	try {
+		return await processAskRequest(request);
+	} catch (err) {
+		throw normalizeAskServiceError(err);
+	}
+}
+
+async function processAskRequest(
+	request: AskServerRequest,
+): Promise<AskServerResponse> {
 	const projectRoot = request.projectRoot || process.cwd();
+	const configTimer = time('ask:loadConfig+db');
 	const cfg = await loadConfig(projectRoot);
 	const db = await getDb(cfg.projectRoot);
+	configTimer.end();
 
 	let session: SessionRow | undefined;
 	let messageIndicator: AskServerResponse['message'];
@@ -62,7 +87,9 @@ export async function handleAskRequest(
 			projectPath: cfg.projectRoot,
 			sessionId: request.sessionId,
 		});
-		if (!session) throw new Error(`Session not found: ${request.sessionId}`);
+		if (!session) {
+			throw new AskServiceError(`Session not found: ${request.sessionId}`, 404);
+		}
 	} else if (request.last) {
 		session = await getLastSession({ db, projectPath: cfg.projectRoot });
 		if (session) {
@@ -78,7 +105,9 @@ export async function handleAskRequest(
 		return cfg.defaults.agent;
 	})();
 
+	const agentTimer = time('ask:resolveAgentConfig');
 	const agentCfg = await resolveAgentConfig(cfg.projectRoot, agentName);
+	agentTimer.end({ agent: agentName });
 	const agentProviderDefault = isProviderId(agentCfg.provider)
 		? agentCfg.provider
 		: cfg.defaults.provider;
@@ -88,15 +117,24 @@ export async function handleAskRequest(
 		? (request.provider as ProviderId)
 		: undefined;
 
-	const providerSelection = await selectProviderAndModel({
-		cfg,
-		agentProviderDefault,
-		agentModelDefault,
-		explicitProvider,
-		explicitModel: request.model,
-	});
+	let providerSelection: ProviderSelection;
+	const selectTimer = time('ask:selectProviderModel');
+	try {
+		providerSelection = await selectProviderAndModel({
+			cfg,
+			agentProviderDefault,
+			agentModelDefault,
+			explicitProvider,
+			explicitModel: request.model,
+		});
+		selectTimer.end({ provider: providerSelection.provider });
+	} catch (err) {
+		selectTimer.end();
+		throw normalizeAskServiceError(err);
+	}
 
 	if (!session) {
+		const createTimer = time('ask:createSession');
 		const newSession = await createSession({
 			db,
 			cfg,
@@ -105,10 +143,12 @@ export async function handleAskRequest(
 			model: providerSelection.model,
 			title: null,
 		});
+		createTimer.end();
 		session = newSession;
 		messageIndicator = { kind: 'created', sessionId: newSession.id };
 	}
-	if (!session) throw new Error('Failed to resolve or create session.');
+	if (!session)
+		throw new AskServiceError('Failed to resolve or create session.', 500);
 
 	const overridesProvided = Boolean(request.provider || request.model);
 
@@ -188,4 +228,47 @@ export async function handleAskRequest(
 		assistantMessageId: assistantMessage.assistantMessageId,
 		message: messageIndicator,
 	};
+}
+
+function normalizeAskServiceError(err: unknown): AskServiceError {
+	if (err instanceof AskServiceError) return err;
+	if (err instanceof Error) {
+		const status = inferStatus(err);
+		const message = err.message || 'Unknown error';
+		return new AskServiceError(message, status);
+	}
+	return new AskServiceError(String(err ?? 'Unknown error'));
+}
+
+export function inferStatus(err: Error): number {
+	const anyErr = err as { status?: unknown; code?: unknown };
+	if (typeof anyErr.status === 'number') {
+		const s = anyErr.status;
+		if (Number.isFinite(s) && s >= 400 && s < 600) return s;
+	}
+	if (typeof anyErr.code === 'number') {
+		const s = anyErr.code;
+		if (Number.isFinite(s) && s >= 400 && s < 600) return s;
+	}
+	const derived = deriveStatusFromMessage(err.message || '');
+	return derived ?? 400;
+}
+
+const STATUS_PATTERNS: Array<{ regex: RegExp; status: number }> = [
+	{ regex: /not found/i, status: 404 },
+	{ regex: /missing credentials/i, status: 401 },
+	{ regex: /unauthorized/i, status: 401 },
+	{ regex: /not configured/i, status: 401 },
+	{ regex: /authorized providers/i, status: 401 },
+	{ regex: /forbidden/i, status: 403 },
+	{ regex: /timeout/i, status: 504 },
+];
+
+export function deriveStatusFromMessage(message: string): number | undefined {
+	const trimmed = message.trim();
+	if (!trimmed) return undefined;
+	for (const { regex, status } of STATUS_PATTERNS) {
+		if (regex.test(trimmed)) return status;
+	}
+	return undefined;
 }

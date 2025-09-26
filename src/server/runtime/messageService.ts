@@ -56,7 +56,7 @@ export async function dispatchAssistantMessage(
 		payload: { id: userMessageId, role: 'user' },
 	});
 
-	void updateSessionTitle({ cfg, db, sessionId, content });
+	enqueueSessionTitle({ cfg, db, sessionId, content });
 
 	const assistantMessageId = crypto.randomUUID();
 	await db.insert(messages).values({
@@ -103,6 +103,53 @@ export async function dispatchAssistantMessage(
 	void touchSessionLastActive({ db, sessionId });
 
 	return { assistantMessageId };
+}
+
+const TITLE_CONCURRENCY_LIMIT = 1;
+const titleQueue: Array<() => void> = [];
+let titleActiveCount = 0;
+const titleInFlight = new Set<string>();
+const titlePending = new Set<string>();
+
+function scheduleSessionTitle(args: {
+	cfg: AGIConfig;
+	db: DB;
+	sessionId: string;
+	content: unknown;
+}): void {
+	const { sessionId } = args;
+	if (titleInFlight.has(sessionId)) return;
+	titleInFlight.add(sessionId);
+	void (async () => {
+		try {
+			const alreadyTitled = await sessionHasTitle(args.db, sessionId);
+			if (alreadyTitled) return;
+			await withTitleSlot(() => updateSessionTitle(args));
+		} catch {
+			// Swallow title generation errors; they are non-blocking.
+		} finally {
+			titleInFlight.delete(sessionId);
+		}
+	})();
+}
+
+function enqueueSessionTitle(args: {
+	cfg: AGIConfig;
+	db: DB;
+	sessionId: string;
+	content: unknown;
+}) {
+	const { sessionId } = args;
+	if (titlePending.has(sessionId) || titleInFlight.has(sessionId)) return;
+	titlePending.add(sessionId);
+	Promise.resolve()
+		.then(() => {
+			titlePending.delete(sessionId);
+			scheduleSessionTitle(args);
+		})
+		.catch(() => {
+			titlePending.delete(sessionId);
+		});
 }
 
 async function updateSessionTitle(args: {
@@ -178,6 +225,51 @@ async function updateSessionTitle(args: {
 			payload: { title: modelTitle },
 		});
 	} catch {}
+}
+
+async function withTitleSlot<T>(fn: () => Promise<T>): Promise<T> {
+	await acquireTitleSlot();
+	try {
+		return await fn();
+	} finally {
+		releaseTitleSlot();
+	}
+}
+
+async function sessionHasTitle(db: DB, sessionId: string): Promise<boolean> {
+	try {
+		const rows = await db
+			.select({ title: sessions.title })
+			.from(sessions)
+			.where(eq(sessions.id, sessionId))
+			.limit(1);
+		if (!rows.length) return false;
+		const title = rows[0]?.title;
+		return typeof title === 'string' && title.trim().length > 0;
+	} catch {
+		return false;
+	}
+}
+
+function acquireTitleSlot(): Promise<void> {
+	if (titleActiveCount < TITLE_CONCURRENCY_LIMIT) {
+		titleActiveCount += 1;
+		return Promise.resolve();
+	}
+	return new Promise((resolve) => {
+		titleQueue.push(() => {
+			titleActiveCount += 1;
+			resolve();
+		});
+	});
+}
+
+function releaseTitleSlot(): void {
+	if (titleActiveCount > 0) titleActiveCount -= 1;
+	const next = titleQueue.shift();
+	if (next) {
+		next();
+	}
 }
 
 async function touchSessionLastActive(args: { db: DB; sessionId: string }) {

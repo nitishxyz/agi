@@ -42,6 +42,7 @@ type ToolExecuteReturn = ToolExecuteSignature['result'];
 export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 	const out: Record<string, Tool> = {};
 	const pendingCalls = new Map<string, { callId: string; startTs: number }[]>();
+	let firstToolCallReported = false;
 
 	for (const { name, tool } of tools) {
 		const base = tool;
@@ -66,6 +67,16 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 			async onInputAvailable(options: ToolOnInputAvailableOptions | undefined) {
 				const args = (options as { input?: unknown } | undefined)?.input;
 				const callPartId = crypto.randomUUID();
+
+				if (
+					!firstToolCallReported &&
+					typeof ctx.onFirstToolCall === 'function'
+				) {
+					firstToolCallReported = true;
+					try {
+						ctx.onFirstToolCall();
+					} catch {}
+				}
 
 				// Special-case: progress updates must render instantly. Publish before any DB work.
 				if (name === 'progress_update') {

@@ -190,6 +190,16 @@ export async function runModels(
 
 	// Write updated defaults: global by default, local when --local
 	const targetLocal = !!opts.local;
+	const enableProvider = <T extends Record<string, unknown>>(
+		providers: T,
+		name: ProviderId,
+	): T => {
+		const current = providers[name] as { enabled?: boolean } | undefined;
+		return {
+			...providers,
+			[name]: { ...(current ?? {}), enabled: true },
+		};
+	};
 	if (targetLocal) {
 		const next = {
 			projectRoot: cfg.projectRoot,
@@ -198,7 +208,7 @@ export async function runModels(
 				provider: provider as ProviderId,
 				model: String(model),
 			},
-			providers: cfg.providers,
+			providers: enableProvider(cfg.providers, provider as ProviderId),
 			paths: cfg.paths,
 		};
 		const path = `${cfg.paths.dataDir}/config.json`;
@@ -212,7 +222,7 @@ export async function runModels(
 				provider: provider as ProviderId,
 				model: String(model),
 			},
-			providers: cfg.providers,
+			providers: enableProvider(cfg.providers, provider as ProviderId),
 		};
 		try {
 			const { promises: fs } = await import('node:fs');

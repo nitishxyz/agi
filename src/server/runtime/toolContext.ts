@@ -14,6 +14,7 @@ export type ToolAdapterContext = {
 	projectRoot: string;
 	nextIndex: () => number | Promise<number>;
 	stepIndex?: number;
+	onFirstToolCall?: () => void;
 };
 
 export function extractFinishText(input: unknown): string | undefined {
