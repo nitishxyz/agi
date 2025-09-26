@@ -74,10 +74,9 @@ export function registerSessionsRoutes(app: Hono) {
 		})();
 		const modelCandidate =
 			typeof body.model === 'string' ? body.model.trim() : undefined;
-		const model =
-			modelCandidate && modelCandidate.length
-				? modelCandidate
-				: (agentCfg.model ?? cfg.defaults.model);
+		const model = modelCandidate?.length
+			? modelCandidate
+			: (agentCfg.model ?? cfg.defaults.model);
 		const row = {
 			id,
 			title: (body.title as string | null | undefined) ?? null,

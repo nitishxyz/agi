@@ -92,8 +92,6 @@ async function ensureAuthorizedProvider(
 	explicitModel: string | undefined,
 ): Promise<ProviderState> {
 	let { chosenProvider, chosenModel } = state;
-	let providerOverride: ProviderId | undefined;
-	let modelOverride: string | undefined;
 	try {
 		const auth = await getAllAuth(projectRoot);
 		const envHas = collectEnvAuth();
@@ -113,10 +111,10 @@ async function ensureAuthorizedProvider(
 		if (!ok && models.length) chosenModel = models[0].id;
 	} catch {}
 
-	providerOverride =
+	const providerOverride =
 		explicitProvider ??
 		(chosenProvider !== agentProviderDefault ? chosenProvider : undefined);
-	modelOverride =
+	const modelOverride =
 		explicitModel ??
 		(chosenModel !== agentModelDefault ? chosenModel : undefined);
 

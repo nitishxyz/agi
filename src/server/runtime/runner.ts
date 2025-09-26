@@ -14,6 +14,7 @@ import { resolveAgentConfig } from '@/ai/agents/registry.ts';
 import { composeSystemPrompt } from '@/server/runtime/prompt.ts';
 import { discoverProjectTools } from '@/ai/tools/loader.ts';
 import { adaptTools } from '@/ai/tools/adapter.ts';
+import type { ToolAdapterContext } from '@/ai/tools/adapter.ts';
 import { publish, subscribe } from '@/server/events/bus.ts';
 import { debugLog } from '@/runtime/debug.ts';
 import { estimateModelCostUsd } from '@/providers/pricing.ts';
@@ -114,6 +115,8 @@ type RunOpts = {
 type RunnerState = { queue: RunOpts[]; running: boolean };
 const runners = new Map<string, RunnerState>();
 
+type RunnerToolContext = ToolAdapterContext & { stepIndex: number };
+
 export function enqueueAssistantRun(opts: RunOpts) {
 	const state = runners.get(opts.sessionId) ?? { queue: [], running: false };
 	state.queue.push(opts);
@@ -167,7 +170,9 @@ async function runAssistant(opts: RunOpts) {
 	// Build chat history messages from DB (text parts only)
 	const history = await buildHistoryMessages(db, opts.sessionId);
 
-	const sharedCtx: any = {
+	const sharedCtx: RunnerToolContext = {
+		nextIndex: async () => 0,
+		stepIndex: 0,
 		sessionId: opts.sessionId,
 		messageId: opts.assistantMessageId,
 		assistantPartId: opts.assistantPartId,
@@ -390,8 +395,8 @@ async function runAssistant(opts: RunOpts) {
 							.select()
 							.from(sessions)
 							.where(eq(sessions.id, opts.sessionId));
-						if (sessRows.length) {
-							const row = sessRows[0]!;
+						if (sessRows.length > 0 && sessRows[0]) {
+							const row = sessRows[0];
 							const priorInput = Number(row.totalInputTokens ?? 0);
 							const priorOutput = Number(row.totalOutputTokens ?? 0);
 							const nextInput = priorInput + Number(fin.usage.inputTokens ?? 0);
@@ -649,7 +654,7 @@ async function buildHistoryMessages(
 	return convertToModelMessages(ui);
 }
 
-async function appendAssistantText(ctx: any, text: string) {
+async function _appendAssistantText(ctx: ToolAdapterContext, text: string) {
 	// Append text to current assistant part
 	try {
 		const parts = await ctx.db
@@ -658,6 +663,7 @@ async function appendAssistantText(ctx: any, text: string) {
 			.where(eq(messageParts.id, ctx.assistantPartId));
 		if (parts.length) {
 			const existing = parts[0];
+			if (!existing) return;
 			let current = '';
 			try {
 				current = JSON.parse(existing.content ?? '{}')?.text || '';
@@ -681,7 +687,8 @@ async function appendAssistantText(ctx: any, text: string) {
 	} catch {}
 }
 
-function extractFinishText(args: unknown): string | undefined {
+// Helper to coerce finish tool args into a string when available
+function _extractFinishText(args: unknown): string | undefined {
 	try {
 		const obj = args as { text?: unknown } | undefined;
 		const text = obj?.text;

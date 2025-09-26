@@ -1,21 +1,36 @@
 // UI utilities with enhanced markdown rendering
 
-import { marked } from 'marked';
+import { marked, type Renderer } from 'marked';
 import TerminalRenderer from 'marked-terminal';
 
+type TerminalRendererOptions = {
+	showSectionPrefix?: boolean;
+	width?: number;
+	reflowText?: boolean;
+	tab?: number;
+	emoji?: boolean;
+	unescape?: boolean;
+};
+
+type TerminalRendererConstructor = new (
+	options?: TerminalRendererOptions,
+) => Renderer;
+
 // Configure marked with terminal renderer
-const terminalRenderer = new TerminalRenderer({
+const terminalRenderer = new (
+	TerminalRenderer as unknown as TerminalRendererConstructor
+)({
 	showSectionPrefix: false,
 	width: process.stdout.columns || 80,
 	reflowText: true,
 	tab: 2,
 	emoji: true,
 	unescape: true,
-} as any);
+} satisfies TerminalRendererOptions);
 
 // Set the renderer directly
 marked.setOptions({
-	renderer: terminalRenderer as any,
+	renderer: terminalRenderer,
 });
 
 const ESC = '\u001b[';
@@ -43,7 +58,7 @@ export function renderMarkdown(markdown: string) {
 		}
 		// For async version (shouldn't happen with terminal renderer, but safe fallback)
 		return renderMarkdownFallback(markdown);
-	} catch (err) {
+	} catch (_err) {
 		// Fallback to basic rendering if marked fails
 		return renderMarkdownFallback(markdown);
 	}

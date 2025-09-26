@@ -4,8 +4,6 @@ import { renderMarkdown } from '@/cli/ui.ts';
 import {
 	bold,
 	dim,
-	cyan,
-	red,
 	printPlan,
 	printSummary,
 	printToolCall,

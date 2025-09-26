@@ -3,6 +3,129 @@ import { z } from 'zod';
 import { $ } from 'bun';
 import DESCRIPTION from './patch.txt' with { type: 'text' };
 
+/**
+ * Apply enveloped patch by directly modifying files
+ */
+async function applyEnvelopedPatch(projectRoot: string, patch: string) {
+	const lines = patch.split('\n');
+	let currentFile: string | null = null;
+	let operation: 'add' | 'update' | 'delete' | null = null;
+	let fileContent: string[] = [];
+	let inHunk = false;
+
+	for (const line of lines) {
+		if (line === '*** Begin Patch' || line === '*** End Patch') {
+			continue;
+		}
+
+		if (line.startsWith('*** Add File:')) {
+			currentFile = line.replace('*** Add File:', '').trim();
+			operation = 'add';
+			fileContent = [];
+			inHunk = false;
+		} else if (line.startsWith('*** Update File:')) {
+			currentFile = line.replace('*** Update File:', '').trim();
+			operation = 'update';
+			fileContent = [];
+			inHunk = false;
+		} else if (line.startsWith('*** Delete File:')) {
+			currentFile = line.replace('*** Delete File:', '').trim();
+			operation = 'delete';
+			fileContent = [];
+			inHunk = false;
+		} else if (line === '@@' && currentFile) {
+			inHunk = !inHunk;
+			if (!inHunk && currentFile && operation) {
+				// Apply the changes to this file
+				const fullPath = `${projectRoot}/${currentFile}`;
+
+				if (operation === 'delete') {
+					try {
+						await Bun.write(fullPath, '');
+					} catch (e) {
+						return {
+							ok: false,
+							error: `Failed to delete ${currentFile}: ${e}`,
+						};
+					}
+				} else if (operation === 'add') {
+					// For add, only use lines starting with +
+					const newContent = fileContent
+						.filter((l) => l.startsWith('+'))
+						.map((l) => l.substring(1))
+						.join('\n');
+					try {
+						await Bun.write(fullPath, newContent);
+					} catch (e) {
+						return {
+							ok: false,
+							error: `Failed to create ${currentFile}: ${e}`,
+						};
+					}
+				} else if (operation === 'update') {
+					// For update, this is trickier - we need to match and replace
+					// This simple implementation replaces the entire file
+					try {
+						// Read existing file
+						let existingContent = '';
+						try {
+							const file = Bun.file(fullPath);
+							existingContent = await file.text();
+						} catch {
+							// File doesn't exist yet
+						}
+
+						// Get the old content (lines starting with -)
+						const oldLines = fileContent
+							.filter((l) => l.startsWith('-'))
+							.map((l) => l.substring(1));
+
+						// Get the new content (lines starting with +)
+						const newLines = fileContent
+							.filter((l) => l.startsWith('+'))
+							.map((l) => l.substring(1));
+
+						// Simple replacement: if old content is empty, append
+						// Otherwise try to replace old with new
+						let newContent = existingContent;
+						if (oldLines.length > 0) {
+							const oldText = oldLines.join('\n');
+							const newText = newLines.join('\n');
+							if (existingContent.includes(oldText)) {
+								newContent = existingContent.replace(oldText, newText);
+							} else {
+								// Can't find exact match, this is where enveloped format fails
+								return {
+									ok: false,
+									error: `Cannot find content to replace in ${currentFile}`,
+								};
+							}
+						} else if (newLines.length > 0) {
+							// Just appending new lines
+							newContent =
+								existingContent +
+								(existingContent.endsWith('\n') ? '' : '\n') +
+								newLines.join('\n');
+						}
+
+						await Bun.write(fullPath, newContent);
+					} catch (e) {
+						return {
+							ok: false,
+							error: `Failed to update ${currentFile}: ${e}`,
+						};
+					}
+				}
+				fileContent = [];
+			}
+		} else if (inHunk) {
+			fileContent.push(line);
+		}
+	}
+
+	return { ok: true };
+}
+
 export function buildApplyPatchTool(projectRoot: string): {
 	name: string;
 	tool: Tool;
@@ -26,6 +149,32 @@ export function buildApplyPatchTool(projectRoot: string): {
 			patch: string;
 			allowRejects?: boolean;
 		}) {
+			// Check if this is an enveloped patch format
+			const isEnveloped =
+				patch.includes('*** Begin Patch') ||
+				patch.includes('*** Add File:') ||
+				patch.includes('*** Update File:');
+
+			if (isEnveloped) {
+				// Handle enveloped patches directly
+				const result = await applyEnvelopedPatch(projectRoot, patch);
+				const summary = summarizePatch(patch);
+				if (result.ok) {
+					return {
+						ok: true,
+						output: 'Applied enveloped patch',
+						artifact: { kind: 'file_diff', patch, summary },
+					} as const;
+				} else {
+					return {
+						ok: false,
+						error: result.error || 'Failed to apply enveloped patch',
+						artifact: { kind: 'file_diff', patch, summary },
+					} as const;
+				}
+			}
+
+			// For unified diffs, use git apply as before
 			const dir = `${projectRoot}/.agi/tmp`;
 			try {
 				await $`mkdir -p ${dir}`;
