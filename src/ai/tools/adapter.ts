@@ -1,10 +1,16 @@
 import type { Tool } from 'ai';
-import type { DB } from '@/db/index.ts';
 import { messageParts, sessions } from '@/db/schema/index.ts';
 import { eq } from 'drizzle-orm';
 import { publish } from '@/server/events/bus.ts';
 import type { DiscoveredTool } from '@/ai/tools/loader.ts';
 import { getCwd, setCwd, joinRelative } from '@/server/runtime/cwd.ts';
+import {
+	appendAssistantText,
+	extractFinishText,
+	type ToolAdapterContext,
+} from '@/server/runtime/toolContext.ts';
+
+export type { ToolAdapterContext } from '@/server/runtime/toolContext.ts';
 
 type ToolOnInputStartOptions = Tool['onInputStart'] extends (
 	options: infer Opt,
@@ -32,21 +38,6 @@ type ToolExecuteOptions = ToolExecuteSignature['options'] extends never
 	? undefined
 	: ToolExecuteSignature['options'];
 type ToolExecuteReturn = ToolExecuteSignature['result'];
-
-export type ToolAdapterContext = {
-	sessionId: string;
-	messageId: string; // assistant message id to attach parts to
-	assistantPartId: string;
-	db: DB;
-	agent: string;
-	provider: string;
-	model: string;
-	projectRoot: string;
-	// Monotonic index allocator shared across runner + tools for this message
-	nextIndex: () => number | Promise<number>;
-	// Current step index provided by runner (increments on onStepFinish)
-	stepIndex?: number;
-};
 
 export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 	const out: Record<string, Tool> = {};
@@ -354,53 +345,4 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 		} as Tool;
 	}
 	return out;
-}
-
-function extractFinishText(input: unknown): string | undefined {
-	if (typeof input === 'string') return input;
-	if (!input || typeof input !== 'object') return undefined;
-	const obj = input as Record<string, unknown>;
-	if (typeof obj.text === 'string') return obj.text;
-	if (
-		obj.input &&
-		typeof (obj.input as Record<string, unknown>).text === 'string'
-	)
-		return String((obj.input as Record<string, unknown>).text);
-	return undefined;
-}
-
-async function appendAssistantText(ctx: ToolAdapterContext, text: string) {
-	try {
-		const rows = await ctx.db
-			.select()
-			.from(messageParts)
-			.where(eq(messageParts.id, ctx.assistantPartId));
-		let previous = '';
-		if (rows.length) {
-			try {
-				const parsed = JSON.parse(rows[0]?.content ?? '{}');
-				if (parsed && typeof parsed.text === 'string') previous = parsed.text;
-			} catch {}
-		}
-		const addition = text.startsWith(previous)
-			? text.slice(previous.length)
-			: text;
-		if (addition.length) {
-			publish({
-				type: 'message.part.delta',
-				sessionId: ctx.sessionId,
-				payload: {
-					messageId: ctx.messageId,
-					partId: ctx.assistantPartId,
-					delta: addition,
-				},
-			});
-		}
-		await ctx.db
-			.update(messageParts)
-			.set({ content: JSON.stringify({ text }) })
-			.where(eq(messageParts.id, ctx.assistantPartId));
-	} catch {
-		// ignore to keep run alive if we can't persist the text
-	}
 }

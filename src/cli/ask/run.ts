@@ -20,6 +20,7 @@ import {
 } from './transcript.ts';
 import type {
 	AskOptions,
+	AskHandshake,
 	AssistantChunk,
 	ToolCallRecord,
 	ToolResultRecord,
@@ -27,8 +28,6 @@ import type {
 	Transcript,
 } from './types.ts';
 import { connectSSE, httpJson, safeJson } from './http.ts';
-import { prepareAskEnvironment } from './setup.ts';
-import { resolveSession } from './sessions.ts';
 import { startEphemeralServer, stopEphemeralServer } from './server.ts';
 
 const READ_ONLY_TOOLS = new Set([
@@ -62,158 +61,144 @@ function extractToolErrorMessage(
 
 export async function runAsk(prompt: string, opts: AskOptions = {}) {
 	const startedAt = Date.now();
-	const env = await prepareAskEnvironment(opts);
+	const projectRoot = opts.project ?? process.cwd();
 	const baseUrl = process.env.AGI_SERVER_URL
 		? String(process.env.AGI_SERVER_URL)
 		: await startEphemeralServer();
 
 	const flags = parseFlags(process.argv);
 	const jsonMode = flags.jsonEnabled || flags.jsonStreamEnabled;
-	const overridesProvided = Boolean(opts.provider || opts.model);
 
-	const session = await resolveSession({
-		baseUrl,
-		projectRoot: env.projectRoot,
-		opts,
-		defaultAgent: env.agent,
-		providerOverride: env.providerOverride,
-		modelOverride: env.modelOverride,
-		chosenProvider: env.chosenProvider,
-		chosenModel: env.chosenModel,
-		jsonMode,
-	});
-
-	const finalProvider = session.provider;
-	const finalModel = session.model;
-
-	announceContext({
-		opts,
-		header: session.header,
-		defaults: {
-			agent: env.agent,
-			provider: finalProvider,
-			model: finalModel,
-		},
-		jsonMode,
-	});
-
-	if (session.message && !jsonMode) {
-		const label =
-			session.message.kind === 'created'
-				? 'Created new session'
-				: 'Using last session';
-		Bun.write(Bun.stderr, `${dim(label)} ${session.message.sessionId}\n`);
-	}
-
-	const sseUrl = `${baseUrl}/v1/sessions/${encodeURIComponent(session.sessionId)}/stream?project=${encodeURIComponent(env.projectRoot)}`;
-	const sse = await connectSSE(sseUrl);
-
-	const isOneShot = !opts.sessionId && !opts.last;
-	const enqueueRes = await httpJson<{ messageId: string }>(
-		'POST',
-		`${baseUrl}/v1/sessions/${encodeURIComponent(session.sessionId)}/messages?project=${encodeURIComponent(env.projectRoot)}`,
-		{
-			content: prompt,
-			agent: opts.agent,
-			provider: overridesProvided ? finalProvider : undefined,
-			model: overridesProvided ? finalModel : undefined,
-			oneShot: isOneShot,
-		},
-	).catch(async (error) => {
-		await sse.close();
-		throw error;
-	});
-	const assistantMessageId = enqueueRes.messageId as string;
-
-	const streamResult = await consumeAskStream({
-		sse,
-		assistantMessageId,
-		jsonEnabled: flags.jsonEnabled,
-		jsonStreamEnabled: flags.jsonStreamEnabled,
-		verbose: flags.verbose,
-		readVerbose: flags.readVerbose,
-	});
-
-	if (flags.jsonStreamEnabled) {
-		await maybeStopEphemeral();
-		return;
-	}
-
-	if (flags.jsonEnabled) {
-		const { toolCounts, toolTimings, totalToolTimeMs } = summarizeTools(
-			streamResult.toolCalls,
-			streamResult.toolResults,
-		);
-		const assistantLines = computeAssistantLines(streamResult.assistantChunks);
-		const assistantSegments = computeAssistantSegments(
-			streamResult.assistantChunks,
-			streamResult.toolCalls,
-		);
-		const transcript: Transcript = {
-			sessionId: session.sessionId,
-			assistantMessageId,
-			agent: opts.agent ?? env.agent,
-			provider: opts.provider ?? finalProvider,
-			model: opts.model ?? finalModel,
-			sequence: buildSequence({
+	let sse: SSEConnection | null = null;
+	try {
+		const handshake = await httpJson<AskHandshake>(
+			'POST',
+			`${baseUrl}/v1/ask?project=${encodeURIComponent(projectRoot)}`,
+			{
 				prompt,
-				assistantSegments,
-				toolCalls: streamResult.toolCalls,
-				toolResults: streamResult.toolResults,
-			}),
-			filesTouched: Array.from(streamResult.filesTouched),
-			summary: {
-				toolCounts,
-				toolTimings,
-				totalToolTimeMs,
-				filesTouched: Array.from(streamResult.filesTouched),
-				diffArtifacts: collectDiffArtifacts(streamResult.toolResults),
-				tokenUsage: streamResult.tokenUsage ?? undefined,
+				agent: opts.agent,
+				provider: opts.provider,
+				model: opts.model,
+				sessionId: opts.sessionId,
+				last: opts.last,
+				jsonMode,
 			},
-			finishReason: streamResult.finishReason,
-		};
-		if (flags.jsonVerbose) {
-			transcript.output = streamResult.output;
-			transcript.assistantChunks = streamResult.assistantChunks;
-			transcript.assistantLines = assistantLines;
-			transcript.assistantSegments = assistantSegments;
-			transcript.tools = {
-				calls: streamResult.toolCalls,
-				results: streamResult.toolResults,
-			};
-		}
-		Bun.write(Bun.stdout, `${JSON.stringify(transcript, null, 2)}\n`);
-		await maybeStopEphemeral();
-		return;
-	}
-
-	if (
-		streamResult.assistantChunks.length === 0 &&
-		streamResult.output.trim().length
-	) {
-		Bun.write(Bun.stderr, `${renderMarkdown(streamResult.output)}\n`);
-	}
-
-	if (
-		flags.summaryEnabled ||
-		streamResult.finishSeen ||
-		streamResult.toolCalls.length
-	) {
-		printSummary(
-			streamResult.toolCalls,
-			streamResult.toolResults,
-			streamResult.filesTouched,
-			streamResult.tokenUsage,
 		);
+
+		announceContext({
+			opts,
+			header: handshake.header,
+			defaults: {
+				agent: handshake.agent,
+				provider: handshake.provider,
+				model: handshake.model,
+			},
+			jsonMode,
+		});
+
+		if (handshake.message && !jsonMode) {
+			const label =
+				handshake.message.kind === 'created'
+					? 'Created new session'
+					: 'Using last session';
+			Bun.write(Bun.stderr, `${dim(label)} ${handshake.message.sessionId}\n`);
+		}
+
+		const sseUrl = `${baseUrl}/v1/sessions/${encodeURIComponent(handshake.sessionId)}/stream?project=${encodeURIComponent(projectRoot)}`;
+		sse = await connectSSE(sseUrl);
+
+		const streamResult = await consumeAskStream({
+			sse,
+			assistantMessageId: handshake.assistantMessageId,
+			jsonEnabled: flags.jsonEnabled,
+			jsonStreamEnabled: flags.jsonStreamEnabled,
+			verbose: flags.verbose,
+			readVerbose: flags.readVerbose,
+		});
+		sse = null;
+
+		if (flags.jsonStreamEnabled) return;
+
+		if (flags.jsonEnabled) {
+			const { toolCounts, toolTimings, totalToolTimeMs } = summarizeTools(
+				streamResult.toolCalls,
+				streamResult.toolResults,
+			);
+			const assistantLines = computeAssistantLines(
+				streamResult.assistantChunks,
+			);
+			const assistantSegments = computeAssistantSegments(
+				streamResult.assistantChunks,
+				streamResult.toolCalls,
+			);
+			const transcript: Transcript = {
+				sessionId: handshake.sessionId,
+				assistantMessageId: handshake.assistantMessageId,
+				agent: handshake.agent,
+				provider: handshake.provider,
+				model: handshake.model,
+				sequence: buildSequence({
+					prompt,
+					assistantSegments,
+					toolCalls: streamResult.toolCalls,
+					toolResults: streamResult.toolResults,
+				}),
+				filesTouched: Array.from(streamResult.filesTouched),
+				summary: {
+					toolCounts,
+					toolTimings,
+					totalToolTimeMs,
+					filesTouched: Array.from(streamResult.filesTouched),
+					diffArtifacts: collectDiffArtifacts(streamResult.toolResults),
+					tokenUsage: streamResult.tokenUsage ?? undefined,
+				},
+				finishReason: streamResult.finishReason,
+			};
+			if (flags.jsonVerbose) {
+				transcript.output = streamResult.output;
+				transcript.assistantChunks = streamResult.assistantChunks;
+				transcript.assistantLines = assistantLines;
+				transcript.assistantSegments = assistantSegments;
+				transcript.tools = {
+					calls: streamResult.toolCalls,
+					results: streamResult.toolResults,
+				};
+			}
+			Bun.write(Bun.stdout, `${JSON.stringify(transcript, null, 2)}\n`);
+			return;
+		}
+
+		if (
+			streamResult.assistantChunks.length === 0 &&
+			streamResult.output.trim().length
+		) {
+			Bun.write(Bun.stderr, `${renderMarkdown(streamResult.output)}\n`);
+		}
+
+		if (
+			flags.summaryEnabled ||
+			streamResult.finishSeen ||
+			streamResult.toolCalls.length
+		) {
+			printSummary(
+				streamResult.toolCalls,
+				streamResult.toolResults,
+				streamResult.filesTouched,
+				streamResult.tokenUsage,
+			);
+		}
+
+		Bun.write(Bun.stderr, `${dim(`Done in ${Date.now() - startedAt}ms`)}\n`);
+	} finally {
+		try {
+			await sse?.close();
+		} catch {}
+		await maybeStopEphemeral();
 	}
+}
 
-	Bun.write(Bun.stderr, `${dim(`Done in ${Date.now() - startedAt}ms`)}\n`);
-
-	await maybeStopEphemeral();
-
-	async function maybeStopEphemeral() {
-		if (!process.env.AGI_SERVER_URL) await stopEphemeralServer();
-	}
+async function maybeStopEphemeral() {
+	if (!process.env.AGI_SERVER_URL) await stopEphemeralServer();
 }
 
 type StreamState = {

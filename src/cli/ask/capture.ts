@@ -1,5 +1,4 @@
-import type { AskOptions } from './types.ts';
-import { prepareAskEnvironment } from './setup.ts';
+import type { AskHandshake, AskOptions } from './types.ts';
 import { getOrStartServerUrl } from './server.ts';
 import { httpJson, safeJson, connectSSE } from './http.ts';
 import { printToolCall, printToolResult, dim, logToolError } from './render.ts';
@@ -33,93 +32,29 @@ function extractToolErrorMessage(
 	return undefined;
 }
 
-export async function runAskCapture(prompt: string, opts: AskOptions = {}) {
-	const env = await prepareAskEnvironment(opts);
-	const baseUrl = await getOrStartServerUrl();
-	const created = await httpJson<{ id: string | number }>(
-		'POST',
-		`${baseUrl}/v1/sessions?project=${encodeURIComponent(env.projectRoot)}`,
-		{
-			title: null,
-			agent: env.agent,
-			provider: env.providerOverride,
-			model: env.modelOverride,
-		},
-	);
-	const sessionId = String(created.id);
-
-	const sse = await connectSSE(
-		`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/stream?project=${encodeURIComponent(env.projectRoot)}`,
-	);
-
-	const enqueueRes = await httpJson<{ messageId: string }>(
-		'POST',
-		`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/messages?project=${encodeURIComponent(env.projectRoot)}`,
-		{
-			content: prompt,
-			agent: opts.agent,
-			provider: opts.provider,
-			model: opts.model,
-		},
-	);
-	const assistantMessageId = enqueueRes.messageId as string;
-
-	let output = '';
-	try {
-		for await (const ev of sse) {
-			if (ev.event === 'message.part.delta') {
-				const data = safeJson(ev.data);
-				if (
-					data?.messageId === assistantMessageId &&
-					typeof data?.delta === 'string'
-				) {
-					output += data.delta;
-				}
-			} else if (ev.event === 'message.completed') {
-				const data = safeJson(ev.data);
-				if (data?.id === assistantMessageId) break;
-			}
-		}
-	} finally {
-		await sse.close();
-	}
-
-	return { sessionId, text: output };
-}
-
 export async function runAskStreamCapture(
 	prompt: string,
 	opts: AskOptions = {},
 ) {
-	const env = await prepareAskEnvironment(opts);
+	const projectRoot = opts.project ?? process.cwd();
 	const baseUrl = await getOrStartServerUrl();
-	const created = await httpJson<{ id: string | number }>(
+	const handshake = await httpJson<AskHandshake>(
 		'POST',
-		`${baseUrl}/v1/sessions?project=${encodeURIComponent(env.projectRoot)}`,
+		`${baseUrl}/v1/ask?project=${encodeURIComponent(projectRoot)}`,
 		{
-			title: null,
-			agent: env.agent,
-			provider: env.providerOverride,
-			model: env.modelOverride,
-		},
-	);
-	const sessionId = String(created.id);
-
-	const sse = await connectSSE(
-		`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/stream?project=${encodeURIComponent(env.projectRoot)}`,
-	);
-
-	const enqueueRes = await httpJson<{ messageId: string }>(
-		'POST',
-		`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/messages?project=${encodeURIComponent(env.projectRoot)}`,
-		{
-			content: prompt,
+			prompt,
 			agent: opts.agent,
 			provider: opts.provider,
 			model: opts.model,
+			sessionId: opts.sessionId,
+			last: opts.last,
 		},
 	);
-	const assistantMessageId = enqueueRes.messageId as string;
+
+	const sse = await connectSSE(
+		`${baseUrl}/v1/sessions/${encodeURIComponent(handshake.sessionId)}/stream?project=${encodeURIComponent(projectRoot)}`,
+	);
+	const assistantMessageId = handshake.assistantMessageId;
 
 	let output = '';
 	const verbose = process.argv.includes('--verbose');
@@ -232,7 +167,7 @@ export async function runAskStreamCapture(
 	}
 
 	if (output.length) Bun.write(Bun.stdout, '\n');
-	return { sessionId, text: output };
+	return { sessionId: handshake.sessionId, text: output };
 }
 
 function truncate(value: string, max: number) {

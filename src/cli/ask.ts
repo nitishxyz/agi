@@ -1,6 +1,5 @@
 export {
 	runAsk,
-	runAskCapture,
 	runAskStreamCapture,
 	getOrStartServerUrl,
 	startEphemeralServer,

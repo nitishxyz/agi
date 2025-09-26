@@ -1,3 +1,5 @@
+import { providerIds } from '@/providers/utils.ts';
+
 export function getOpenAPISpec() {
 	const spec = {
 		openapi: '3.0.3',
@@ -7,8 +9,80 @@ export function getOpenAPISpec() {
 			description:
 				'Server-side API for AGI sessions, messages, and streaming events. All AI work runs on the server. Streaming uses SSE.',
 		},
-		tags: [{ name: 'sessions' }, { name: 'messages' }, { name: 'stream' }],
+		tags: [
+			{ name: 'sessions' },
+			{ name: 'messages' },
+			{ name: 'stream' },
+			{ name: 'ask' },
+		],
 		paths: {
+			'/v1/ask': {
+				post: {
+					tags: ['ask'],
+					operationId: 'ask',
+					summary: 'Send a prompt using the ask service',
+					description:
+						'Streamlined endpoint used by the CLI to send prompts and receive assistant responses. Creates sessions as needed and reuses the last session when requested.',
+					parameters: [projectQueryParam()],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									type: 'object',
+									required: ['prompt'],
+									properties: {
+										prompt: {
+											type: 'string',
+											description: 'User prompt to send to the assistant.',
+										},
+										agent: {
+											type: 'string',
+											description:
+												'Optional agent name to use for this request.',
+										},
+										provider: {
+											$ref: '#/components/schemas/Provider',
+											description:
+												'Optional provider override. When omitted the agent and config defaults apply.',
+										},
+										model: {
+											type: 'string',
+											description:
+												'Optional model override for the selected provider.',
+										},
+										sessionId: {
+											type: 'string',
+											description: 'Send the prompt to a specific session.',
+										},
+										last: {
+											type: 'boolean',
+											description:
+												'If true, reuse the most recent session for the project.',
+										},
+										jsonMode: {
+											type: 'boolean',
+											description:
+												'Request structured JSON output when supported by the agent.',
+										},
+									},
+								},
+							},
+						},
+					},
+					responses: {
+						202: {
+							description: 'Accepted',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AskResponse' },
+								},
+							},
+						},
+						400: errorResponse(),
+					},
+				},
+			},
 			'/v1/sessions': {
 				get: {
 					tags: ['sessions'],
@@ -168,7 +242,53 @@ export function getOpenAPISpec() {
 			schemas: {
 				Provider: {
 					type: 'string',
-					enum: ['openai', 'anthropic', 'google', 'openrouter', 'opencode'],
+					enum: providerIds,
+				},
+				AskResponse: {
+					type: 'object',
+					properties: {
+						sessionId: { type: 'string' },
+						header: { $ref: '#/components/schemas/AskResponseHeader' },
+						provider: { $ref: '#/components/schemas/Provider' },
+						model: { type: 'string' },
+						agent: { type: 'string' },
+						assistantMessageId: { type: 'string' },
+						message: {
+							$ref: '#/components/schemas/AskResponseMessage',
+							nullable: true,
+							description:
+								'Present when the request created a new session or reused the last session for the project.',
+						},
+					},
+					required: [
+						'sessionId',
+						'header',
+						'provider',
+						'model',
+						'agent',
+						'assistantMessageId',
+					],
+				},
+				AskResponseHeader: {
+					type: 'object',
+					properties: {
+						sessionId: { type: 'string' },
+						agent: { type: 'string', nullable: true },
+						provider: {
+							$ref: '#/components/schemas/Provider',
+							nullable: true,
+						},
+						model: { type: 'string', nullable: true },
+					},
+					required: ['sessionId'],
+				},
+				AskResponseMessage: {
+					type: 'object',
+					properties: {
+						kind: { type: 'string', enum: ['created', 'last'] },
+						sessionId: { type: 'string' },
+					},
+					required: ['kind', 'sessionId'],
 				},
 				Session: {
 					type: 'object',

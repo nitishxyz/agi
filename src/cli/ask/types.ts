@@ -10,6 +10,21 @@ export type AskOptions = {
 	last?: boolean;
 };
 
+export type AskHandshake = {
+	sessionId: string;
+	header: {
+		agent?: string;
+		provider?: string;
+		model?: string;
+		sessionId: string;
+	};
+	provider: ProviderId;
+	model: string;
+	agent: string;
+	assistantMessageId: string;
+	message?: { kind: 'created' | 'last'; sessionId: string };
+};
+
 export type SessionMeta = {
 	id: string | number;
 	agent?: string;

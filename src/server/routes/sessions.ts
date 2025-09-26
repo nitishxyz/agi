@@ -2,25 +2,11 @@ import type { Hono } from 'hono';
 import { loadConfig } from '@/config/index.ts';
 import { getDb } from '@/db/index.ts';
 import { sessions } from '@/db/schema/index.ts';
-import { validateProviderModel } from '@/providers/validate.ts';
-import { publish } from '@/server/events/bus.ts';
 import { desc, eq } from 'drizzle-orm';
-import {
-	isProviderAuthorized,
-	ensureProviderEnv,
-} from '@/providers/authorization.ts';
-import type { ProviderId } from '@/auth/index.ts';
+import type { ProviderId } from '@/providers/catalog.ts';
+import { isProviderId } from '@/providers/utils.ts';
 import { resolveAgentConfig } from '@/ai/agents/registry.ts';
-const providerValues = [
-	'openai',
-	'anthropic',
-	'google',
-	'openrouter',
-	'opencode',
-] as const;
-function isProviderId(value: string): value is ProviderId {
-	return (providerValues as readonly string[]).includes(value);
-}
+import { createSession as createSessionRow } from '@/server/runtime/sessionManager.ts';
 
 export function registerSessionsRoutes(app: Hono) {
 	// List sessions
@@ -59,8 +45,6 @@ export function registerSessionsRoutes(app: Hono) {
 			string,
 			unknown
 		>;
-		const id = crypto.randomUUID();
-		const now = Date.now();
 		const agent = (body.agent as string | undefined) ?? cfg.defaults.agent;
 		const agentCfg = await resolveAgentConfig(cfg.projectRoot, agent);
 		const providerCandidate =
@@ -77,35 +61,19 @@ export function registerSessionsRoutes(app: Hono) {
 		const model = modelCandidate?.length
 			? modelCandidate
 			: (agentCfg.model ?? cfg.defaults.model);
-		const row = {
-			id,
-			title: (body.title as string | null | undefined) ?? null,
-			agent,
-			provider,
-			model,
-			projectPath: cfg.projectRoot,
-			createdAt: now,
-		};
 		try {
-			validateProviderModel(row.provider, row.model);
+			const row = await createSessionRow({
+				db,
+				cfg,
+				agent,
+				provider,
+				model,
+				title: (body.title as string | null | undefined) ?? null,
+			});
+			return c.json(row, 201);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			return c.json({ error: message }, 400);
 		}
-		// Enforce provider auth
-		const authorized = await isProviderAuthorized(cfg, row.provider);
-		if (!authorized) {
-			return c.json(
-				{
-					error: `Provider ${row.provider} is not configured. Run \`agi auth login\` to add credentials.`,
-				},
-				400,
-			);
-		}
-		await ensureProviderEnv(cfg, row.provider);
-		await db.insert(sessions).values(row);
-		// keep response shape aligned with GET
-		publish({ type: 'session.created', sessionId: id, payload: row });
-		return c.json(row, 201);
 	});
 }

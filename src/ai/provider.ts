@@ -1,16 +1,12 @@
 import type { AGIConfig } from '@/config/index.ts';
+import type { ProviderId } from '@/providers/catalog.ts';
 import { openai, createOpenAI } from '@ai-sdk/openai';
 import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-export type ProviderName =
-	| 'openai'
-	| 'anthropic'
-	| 'google'
-	| 'openrouter'
-	| 'opencode';
+export type ProviderName = ProviderId;
 
 function getOpenRouterInstance() {
 	const apiKey = process.env.OPENROUTER_API_KEY ?? '';

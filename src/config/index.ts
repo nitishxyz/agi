@@ -5,6 +5,7 @@ import {
 	fileExists,
 	joinPath,
 } from '@/config/paths.ts';
+import type { ProviderId } from '@/providers/catalog.ts';
 
 export type ProviderConfig = { enabled: boolean; apiKey?: string };
 
@@ -12,16 +13,10 @@ export type AGIConfig = {
 	projectRoot: string;
 	defaults: {
 		agent: string;
-		provider: 'openai' | 'anthropic' | 'google' | 'openrouter' | 'opencode';
+		provider: ProviderId;
 		model: string;
 	};
-	providers: {
-		openai: ProviderConfig;
-		anthropic: ProviderConfig;
-		google: ProviderConfig;
-		openrouter: ProviderConfig;
-		opencode: ProviderConfig;
-	};
+	providers: Record<ProviderId, ProviderConfig>;
 	paths: {
 		dataDir: string; // .agi
 		dbPath: string; // .agi/agi.sqlite
@@ -30,10 +25,13 @@ export type AGIConfig = {
 	};
 };
 
-const DEFAULTS = {
+const DEFAULTS: {
+	defaults: AGIConfig['defaults'];
+	providers: AGIConfig['providers'];
+} = {
 	defaults: {
 		agent: 'general',
-		provider: 'openai' as const,
+		provider: 'openai',
 		model: 'gpt-4o-mini',
 	},
 	providers: {
