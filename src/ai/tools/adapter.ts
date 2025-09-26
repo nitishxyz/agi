@@ -1,32 +1,17 @@
 import type { Tool } from 'ai';
-import { messageParts, sessions } from '@/db/schema/index.ts';
+import { messageParts, sessions } from '@/db/schema/index';
 import { eq } from 'drizzle-orm';
-import { publish } from '@/server/events/bus.ts';
-import type { DiscoveredTool } from '@/ai/tools/loader.ts';
-import { getCwd, setCwd, joinRelative } from '@/server/runtime/cwd.ts';
+import { publish } from '@/server/events/bus';
+import type { DiscoveredTool } from '@/ai/tools/loader';
+import { getCwd, setCwd, joinRelative } from '@/server/runtime/cwd';
 import {
 	appendAssistantText,
 	extractFinishText,
 	type ToolAdapterContext,
-} from '@/server/runtime/toolContext.ts';
+} from '@/server/runtime/toolContext';
 
-export type { ToolAdapterContext } from '@/server/runtime/toolContext.ts';
+export type { ToolAdapterContext } from '@/server/runtime/toolContext';
 
-type ToolOnInputStartOptions = Tool['onInputStart'] extends (
-	options: infer Opt,
-) => unknown
-	? Opt
-	: undefined;
-type ToolOnInputDeltaOptions = Tool['onInputDelta'] extends (
-	options: infer Opt,
-) => unknown
-	? Opt
-	: undefined;
-type ToolOnInputAvailableOptions = Tool['onInputAvailable'] extends (
-	options: infer Opt,
-) => unknown
-	? Opt
-	: undefined;
 type ToolExecuteSignature = Tool['execute'] extends (
 	input: infer Input,
 	options: infer Options,
@@ -48,11 +33,12 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 		const base = tool;
 		out[name] = {
 			...base,
-			async onInputStart(options: ToolOnInputStartOptions | undefined) {
+			async onInputStart(options: unknown) {
 				if (typeof base.onInputStart === 'function')
-					await base.onInputStart(options);
+					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+					await base.onInputStart(options as any);
 			},
-			async onInputDelta(options: ToolOnInputDeltaOptions | undefined) {
+			async onInputDelta(options: unknown) {
 				const delta = (options as { inputTextDelta?: string } | undefined)
 					?.inputTextDelta;
 				// Stream tool argument deltas as events if needed (finish handled on input available)
@@ -62,9 +48,10 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					payload: { name, channel: 'input', delta, stepIndex: ctx.stepIndex },
 				});
 				if (typeof base.onInputDelta === 'function')
-					await base.onInputDelta(options);
+					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+					await base.onInputDelta(options as any);
 			},
-			async onInputAvailable(options: ToolOnInputAvailableOptions | undefined) {
+			async onInputAvailable(options: unknown) {
 				const args = (options as { input?: unknown } | undefined)?.input;
 				const callPartId = crypto.randomUUID();
 
@@ -115,7 +102,8 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 						} catch {}
 					})();
 					if (typeof base.onInputAvailable === 'function') {
-						await base.onInputAvailable(options);
+						// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+						await base.onInputAvailable(options as any);
 					}
 					return;
 				}
@@ -151,7 +139,8 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					} catch {}
 				})();
 				if (typeof base.onInputAvailable === 'function') {
-					await base.onInputAvailable(options);
+					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+					await base.onInputAvailable(options as any);
 				}
 				if (name === 'finish') {
 					const text = extractFinishText(args);
@@ -166,12 +155,15 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				if (name === 'pwd') {
 					res = { cwd };
 				} else if (name === 'cd') {
-					const next = joinRelative(cwd, String(input?.path ?? '.'));
+					const next = joinRelative(
+						cwd,
+						String((input as Record<string, unknown>)?.path ?? '.'),
+					);
 					setCwd(ctx.sessionId, next);
 					res = { cwd: next };
 				} else if (
 					['read', 'write', 'ls', 'tree'].includes(name) &&
-					typeof input?.path === 'string'
+					typeof (input as Record<string, unknown>)?.path === 'string'
 				) {
 					const rel = joinRelative(
 						cwd,
@@ -181,7 +173,8 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 						...(input as Record<string, unknown>),
 						path: rel,
 					} as ToolExecuteInput;
-					res = base.execute?.(nextInput, options);
+					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+					res = base.execute?.(nextInput, options as any);
 				} else if (name === 'bash') {
 					const needsCwd =
 						!input ||
@@ -192,9 +185,11 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 								cwd,
 							} as ToolExecuteInput)
 						: input;
-					res = base.execute?.(nextInput, options);
+					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+					res = base.execute?.(nextInput, options as any);
 				} else {
-					res = base.execute?.(input, options);
+					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+					res = base.execute?.(input, options as any);
 				}
 				let result: unknown = res;
 				// If tool returns an async iterable, stream deltas while accumulating
