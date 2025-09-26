@@ -11,119 +11,128 @@ async function applyEnvelopedPatch(projectRoot: string, patch: string) {
 	let currentFile: string | null = null;
 	let operation: 'add' | 'update' | 'delete' | null = null;
 	let fileContent: string[] = [];
-	let inHunk = false;
+
+	async function applyCurrentFile() {
+		if (!currentFile || !operation) return { ok: true };
+
+		const fullPath = `${projectRoot}/${currentFile}`;
+
+		if (operation === 'delete') {
+			try {
+				await Bun.write(fullPath, '');
+			} catch (e) {
+				return {
+					ok: false,
+					error: `Failed to delete ${currentFile}: ${e instanceof Error ? e.message : String(e)}`,
+				};
+			}
+		} else if (operation === 'add') {
+			// For add, only use lines starting with +
+			const newContent = fileContent
+				.filter((l) => l.startsWith('+'))
+				.map((l) => l.substring(1))
+				.join('\n');
+			try {
+				await Bun.write(fullPath, newContent);
+			} catch (e) {
+				return {
+					ok: false,
+					error: `Failed to create ${currentFile}: ${e instanceof Error ? e.message : String(e)}`,
+				};
+			}
+		} else if (operation === 'update') {
+			try {
+				// Read existing file
+				let existingContent = '';
+				try {
+					const file = Bun.file(fullPath);
+					existingContent = await file.text();
+				} catch {
+					// File doesn't exist yet
+				}
+
+				// Get the old content (lines starting with -)
+				const oldLines = fileContent
+					.filter((l) => l.startsWith('-'))
+					.map((l) => l.substring(1));
+
+				// Get the new content (lines starting with +)
+				const newLines = fileContent
+					.filter((l) => l.startsWith('+'))
+					.map((l) => l.substring(1));
+
+				// Simple replacement: if old content is empty, append
+				// Otherwise try to replace old with new
+				let newContent = existingContent;
+				if (oldLines.length > 0) {
+					const oldText = oldLines.join('\n');
+					const newText = newLines.join('\n');
+					if (existingContent.includes(oldText)) {
+						newContent = existingContent.replace(oldText, newText);
+					} else {
+						// Can't find exact match, this is where enveloped format fails
+						return {
+							ok: false,
+							error: `Cannot find content to replace in ${currentFile}`,
+						};
+					}
+				} else if (newLines.length > 0) {
+					// Just appending new lines
+					newContent =
+						existingContent +
+						(existingContent.endsWith('\n') ? '' : '\n') +
+						newLines.join('\n');
+				}
+
+				await Bun.write(fullPath, newContent);
+			} catch (e) {
+				return {
+					ok: false,
+					error: `Failed to update ${currentFile}: ${e instanceof Error ? e.message : String(e)}`,
+				};
+			}
+		}
+		return { ok: true };
+	}
 
 	for (const line of lines) {
 		if (line === '*** Begin Patch' || line === '*** End Patch') {
 			continue;
 		}
 
-		if (line.startsWith('*** Add File:')) {
-			currentFile = line.replace('*** Add File:', '').trim();
-			operation = 'add';
-			fileContent = [];
-			inHunk = false;
-		} else if (line.startsWith('*** Update File:')) {
-			currentFile = line.replace('*** Update File:', '').trim();
-			operation = 'update';
-			fileContent = [];
-			inHunk = false;
-		} else if (line.startsWith('*** Delete File:')) {
-			currentFile = line.replace('*** Delete File:', '').trim();
-			operation = 'delete';
-			fileContent = [];
-			inHunk = false;
-		} else if (line === '@@' && currentFile) {
-			inHunk = !inHunk;
-			if (!inHunk && currentFile && operation) {
-				// Apply the changes to this file
-				const fullPath = `${projectRoot}/${currentFile}`;
+		if (
+			line.startsWith('*** Add File:') ||
+			line.startsWith('*** Update File:') ||
+			line.startsWith('*** Delete File:')
+		) {
+			// Apply previous file if any
+			const result = await applyCurrentFile();
+			if (!result.ok) return result;
 
-				if (operation === 'delete') {
-					try {
-						await Bun.write(fullPath, '');
-					} catch (e) {
-						return {
-							ok: false,
-							error: `Failed to delete ${currentFile}: ${e}`,
-						};
-					}
-				} else if (operation === 'add') {
-					// For add, only use lines starting with +
-					const newContent = fileContent
-						.filter((l) => l.startsWith('+'))
-						.map((l) => l.substring(1))
-						.join('\n');
-					try {
-						await Bun.write(fullPath, newContent);
-					} catch (e) {
-						return {
-							ok: false,
-							error: `Failed to create ${currentFile}: ${e}`,
-						};
-					}
-				} else if (operation === 'update') {
-					// For update, this is trickier - we need to match and replace
-					// This simple implementation replaces the entire file
-					try {
-						// Read existing file
-						let existingContent = '';
-						try {
-							const file = Bun.file(fullPath);
-							existingContent = await file.text();
-						} catch {
-							// File doesn't exist yet
-						}
-
-						// Get the old content (lines starting with -)
-						const oldLines = fileContent
-							.filter((l) => l.startsWith('-'))
-							.map((l) => l.substring(1));
-
-						// Get the new content (lines starting with +)
-						const newLines = fileContent
-							.filter((l) => l.startsWith('+'))
-							.map((l) => l.substring(1));
-
-						// Simple replacement: if old content is empty, append
-						// Otherwise try to replace old with new
-						let newContent = existingContent;
-						if (oldLines.length > 0) {
-							const oldText = oldLines.join('\n');
-							const newText = newLines.join('\n');
-							if (existingContent.includes(oldText)) {
-								newContent = existingContent.replace(oldText, newText);
-							} else {
-								// Can't find exact match, this is where enveloped format fails
-								return {
-									ok: false,
-									error: `Cannot find content to replace in ${currentFile}`,
-								};
-							}
-						} else if (newLines.length > 0) {
-							// Just appending new lines
-							newContent =
-								existingContent +
-								(existingContent.endsWith('\n') ? '' : '\n') +
-								newLines.join('\n');
-						}
-
-						await Bun.write(fullPath, newContent);
-					} catch (e) {
-						return {
-							ok: false,
-							error: `Failed to update ${currentFile}: ${e}`,
-						};
-					}
-				}
-				fileContent = [];
+			// Start new file
+			if (line.startsWith('*** Add File:')) {
+				currentFile = line.replace('*** Add File:', '').trim();
+				operation = 'add';
+			} else if (line.startsWith('*** Update File:')) {
+				currentFile = line.replace('*** Update File:', '').trim();
+				operation = 'update';
+			} else if (line.startsWith('*** Delete File:')) {
+				currentFile = line.replace('*** Delete File:', '').trim();
+				operation = 'delete';
 			}
-		} else if (inHunk) {
+			fileContent = [];
+		} else if (
+			currentFile &&
+			(line.startsWith('+') || line.startsWith('-') || line.startsWith(' '))
+		) {
+			// Collect patch content lines
 			fileContent.push(line);
 		}
 	}
 
-	return { ok: true };
+	// Apply the last file
+	const result = await applyCurrentFile();
+	return result;
 }
 
 export function buildApplyPatchTool(projectRoot: string): {
@@ -189,10 +198,16 @@ export function buildApplyPatchTool(projectRoot: string): {
 				[...baseArgs, ...rejectArg, '-p1'],
 				[...baseArgs, ...rejectArg, '-p0'],
 			];
+			let lastError = '';
 			for (const args of tries) {
 				const cmd = ['git', '-C', projectRoot, ...args, file];
 				const proc = await $`${cmd}`.quiet().nothrow();
 				const out = await proc.text();
+				// Capture error output for later use
+				if (proc.exitCode !== 0) {
+					lastError = out || `git apply failed with exit code ${proc.exitCode}`;
+				}
+
 				// Check if the patch was actually applied by looking at git status
 				// Sometimes git apply returns non-zero but the patch is applied
 				if (proc.exitCode === 0 || proc.exitCode === 1) {
@@ -231,6 +246,7 @@ export function buildApplyPatchTool(projectRoot: string): {
 			return {
 				ok: false,
 				error:
+					lastError ||
 					'git apply failed (tried -p1 and -p0) — ensure paths match project root',
 				artifact: { kind: 'file_diff', patch, summary },
 			} as const;
