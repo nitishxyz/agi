@@ -71,9 +71,11 @@ async function applyEnvelopedPatch(projectRoot: string, patch: string) {
 						newContent = existingContent.replace(oldText, newText);
 					} else {
 						// Can't find exact match, this is where enveloped format fails
+						// Provide more context about what couldn't be found
+						const preview = oldText.substring(0, 100);
 						return {
 							ok: false,
-							error: `Cannot find content to replace in ${currentFile}`,
+							error: `Cannot find content to replace in ${currentFile}. Looking for: "${preview}${oldText.length > 100 ? '...' : ''}"`,
 						};
 					}
 				} else if (newLines.length > 0) {
@@ -242,12 +244,14 @@ export function buildApplyPatchTool(projectRoot: string): {
 				} as const;
 			}
 
-			// If both attempts fail and no files changed, return error
+			// If both attempts fail and no files changed, return error with more context
+			const errorDetails = lastError.includes('patch does not apply')
+				? 'The patch cannot be applied because the target content has changed or does not match. The file may have been modified since the patch was created.'
+				: lastError ||
+					'git apply failed (tried -p1 and -p0) — ensure paths match project root';
 			return {
 				ok: false,
-				error:
-					lastError ||
-					'git apply failed (tried -p1 and -p0) — ensure paths match project root',
+				error: errorDetails,
 				artifact: { kind: 'file_diff', patch, summary },
 			} as const;
 		},

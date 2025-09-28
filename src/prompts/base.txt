@@ -10,3 +10,5 @@ File Editing Best Practices:
 - Each edit operation re-reads the file, so ops within a single edit call are applied sequentially to the latest content
 - If you need to make edits based on previous edits, ensure they're in the same edit call or re-read the file between calls
 - Never assume file content remains unchanged between separate edit operations
+- When using apply_patch, ensure the patch is based on the current file content, not stale versions
+- If a patch fails, read the file first to understand its current state before generating a new patch
