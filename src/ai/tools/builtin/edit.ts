@@ -63,6 +63,7 @@ export const editTool: Tool = tool({
 
 		for (const op of ops) {
 			if (op.type === 'replace') {
+				const originalText = text;
 				if (op.regex) {
 					const re = new RegExp(op.find, op.flags || 'g');
 					if (op.count && op.count > 0) {
@@ -76,6 +77,12 @@ export const editTool: Tool = tool({
 						});
 					} else text = text.replace(re, op.replace);
 				} else {
+					// Check if the text to find exists
+					if (!text.includes(op.find)) {
+						console.warn(
+							`Warning: Text not found for replace operation: "${op.find.substring(0, 50)}${op.find.length > 50 ? '...' : ''}"`,
+						);
+					}
 					if (op.count && op.count > 0) {
 						let remaining = op.count as number;
 						let idx = text.indexOf(op.find);
@@ -91,7 +98,10 @@ export const editTool: Tool = tool({
 						text = text.split(op.find).join(op.replace);
 					}
 				}
-				applied += 1;
+				// Only count as applied if text actually changed
+				if (text !== originalText) {
+					applied += 1;
+				}
 			} else if (op.type === 'insert') {
 				if (op.position === 'start') {
 					text = `${op.content}${text}`;
