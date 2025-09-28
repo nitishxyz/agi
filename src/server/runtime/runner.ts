@@ -632,10 +632,13 @@ async function buildHistoryMessages(
 			);
 
 			if (hasIncompleteTools) {
-				// Skip this assistant message entirely if it has incomplete tool calls
+				// Include text even if tools are incomplete
 				debugLog(
-					`[buildHistoryMessages] Skipping assistant message ${m.id} with incomplete tool calls`,
+					`[buildHistoryMessages] Incomplete tool calls for assistant message ${m.id}, pushing text only`,
 				);
+				if (assistantParts.length) {
+					ui.push({ id: m.id, role: 'assistant', parts: assistantParts });
+				}
 				continue;
 			}
 
@@ -668,11 +671,21 @@ async function buildHistoryMessages(
 
 			// Add the assistant message if it has content
 			if (assistantParts.length) {
-				ui.push({
-					id: m.id,
-					role: 'assistant',
-					parts: assistantParts,
-				});
+				ui.push({ id: m.id, role: 'assistant', parts: assistantParts });
+
+				// Emit separate user message for tool results
+				if (toolResults.length) {
+					const userParts: UIMessage['parts'] = toolResults.map((r) => {
+						const out =
+							typeof r.result === 'string'
+								? r.result
+								: JSON.stringify(r.result);
+						return { type: 'text', text: out };
+					});
+					if (userParts.length) {
+						ui.push({ id: m.id, role: 'user', parts: userParts });
+					}
+				}
 			}
 		}
 	}
