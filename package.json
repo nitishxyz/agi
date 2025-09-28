@@ -1,6 +1,6 @@
 {
 	"name": "@agi-cli/core",
-	"version": "0.1.21",
+	"version": "0.1.22",
 	"description": "AI-powered development assistant CLI",
 	"author": "ntishxyz",
 	"license": "MIT",
