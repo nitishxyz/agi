@@ -20,6 +20,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
       - name: Determine release version (bump if needed)
         id: determine_version
         shell: bash
@@ -37,9 +44,11 @@ jobs:
             tmpfile=$(mktemp)
             jq ".version = \"${NEW_VERSION}\"" package.json > "$tmpfile"
             mv "$tmpfile" package.json
+            # Apply lint fixes before committing bump
+            bun lint --fix
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
-            git add package.json
+            git add .
             git commit -m "chore: bump version to ${NEW_VERSION} [skip ci]"
             # Push back to the current branch
             BRANCH=$(git rev-parse --abbrev-ref HEAD)

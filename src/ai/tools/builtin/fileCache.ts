@@ -9,7 +9,7 @@ export function getFileCache(sessionId: string): Map<string, string> {
 	if (!fileContentCache.has(sessionId)) {
 		fileContentCache.set(sessionId, new Map());
 	}
-	return fileContentCache.get(sessionId)!;
+	return fileContentCache.get(sessionId) as Map<string, string>;
 }
 
 export function updateFileCache(
