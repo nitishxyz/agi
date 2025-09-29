@@ -149,19 +149,43 @@ async function runAssistant(opts: RunOpts) {
 	const db = await getDb(cfg.projectRoot);
 	cfgTimer.end();
 
-	// Resolve agent prompt and tools
 	const agentTimer = time('runner:resolveAgentConfig');
 	const agentCfg = await resolveAgentConfig(cfg.projectRoot, opts.agent);
 	agentTimer.end({ agent: opts.agent });
 	const agentPrompt = agentCfg.prompt || '';
 	const systemTimer = time('runner:composeSystemPrompt');
-	const system = await composeSystemPrompt({
-		provider: opts.provider,
-		model: opts.model,
-		projectRoot: cfg.projectRoot,
-		agentPrompt,
-		oneShot: opts.oneShot,
-	});
+	const { getAuth } = await import('@/auth/index.ts');
+	const { getProviderSpoofPrompt } = await import('@/server/runtime/prompt.ts');
+	const auth = await getAuth(opts.provider, cfg.projectRoot);
+	const needsSpoof = auth?.type === 'oauth';
+	const spoofPrompt = needsSpoof
+		? getProviderSpoofPrompt(opts.provider)
+		: undefined;
+
+	let system: string;
+	let additionalSystemMessages: Array<{ role: 'system'; content: string }> = [];
+
+	if (spoofPrompt) {
+		system = spoofPrompt;
+		const fullPrompt = await composeSystemPrompt({
+			provider: opts.provider,
+			model: opts.model,
+			projectRoot: cfg.projectRoot,
+			agentPrompt,
+			oneShot: opts.oneShot,
+			spoofPrompt: undefined,
+		});
+		additionalSystemMessages = [{ role: 'system', content: fullPrompt }];
+	} else {
+		system = await composeSystemPrompt({
+			provider: opts.provider,
+			model: opts.model,
+			projectRoot: cfg.projectRoot,
+			agentPrompt,
+			oneShot: opts.oneShot,
+			spoofPrompt: undefined,
+		});
+	}
 	systemTimer.end();
 	debugLog('[system] composed prompt (provider+base+agent):');
 	debugLog(system);
@@ -179,6 +203,14 @@ async function runAssistant(opts: RunOpts) {
 	const historyTimer = time('runner:buildHistory');
 	const history = await buildHistoryMessages(db, opts.sessionId);
 	historyTimer.end({ messages: history.length });
+
+	// Only prepend system instructions if this is the first message in the session
+	// (OAuth needs system instructions as a message, but only once)
+	const isFirstMessage = history.length === 0;
+	const messagesWithSystemInstructions = [
+		...(isFirstMessage ? additionalSystemMessages : []),
+		...history,
+	];
 
 	const firstToolTimer = time('runner:first-tool-call');
 	let firstToolSeen = false;
@@ -247,7 +279,7 @@ async function runAssistant(opts: RunOpts) {
 			tools: toolset,
 			// Only include `system` when non-empty to avoid provider errors
 			...(String(system || '').trim() ? { system } : {}),
-			messages: history,
+			messages: messagesWithSystemInstructions,
 			stopWhen: hasToolCall('finish'),
 			onStepFinish: async (step) => {
 				// close current text part and start a new one for the next step

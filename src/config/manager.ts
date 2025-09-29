@@ -27,6 +27,7 @@ export async function isAuthorized(
 	const { auth } = await read(projectRoot);
 	const info = auth[provider];
 	if (info?.type === 'api' && info.key) return true;
+	if (info?.type === 'oauth' && info.refresh && info.access) return true;
 	return false;
 }
 

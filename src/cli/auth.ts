@@ -6,6 +6,7 @@ import {
 	isCancel,
 	cancel,
 	log,
+	text,
 } from '@clack/prompts';
 import { box, table, colors } from '@/cli/ui.ts';
 import {
@@ -17,6 +18,12 @@ import {
 import { loadConfig } from '@/config/index.ts';
 import { catalog } from '@/providers/catalog.ts';
 import { getGlobalConfigDir, getGlobalConfigPath } from '@/config/paths.ts';
+import {
+	authorize,
+	exchange,
+	openAuthUrl,
+	createApiKey,
+} from '@/auth/oauth.ts';
 
 const PROVIDER_LINKS: Record<
 	ProviderId,
@@ -103,9 +110,12 @@ export async function runAuthLogin(_args: string[]) {
 		],
 	})) as ProviderId | symbol;
 	if (isCancel(provider)) return cancel('Cancelled');
+
+	if (provider === 'anthropic') {
+		return await runAuthLoginAnthropic(cfg, wantLocal);
+	}
+
 	const meta = PROVIDER_LINKS[provider as ProviderId];
-	// All providers follow the same flow: show URL, then prompt for key
-	// Default flow for OpenAI and Google: open key page and prompt to paste
 	log.info(`Open in browser: ${meta.url}`);
 	const key = await password({
 		message: `Paste ${meta.env} here`,
@@ -127,6 +137,132 @@ export async function runAuthLogin(_args: string[]) {
 	log.success('Saved');
 	log.info(`Tip: you can also set ${meta.env} in your environment.`);
 	outro('Done');
+}
+
+async function runAuthLoginAnthropic(
+	cfg: Awaited<ReturnType<typeof loadConfig>>,
+	wantLocal: boolean,
+) {
+	try {
+		const authMethod = (await select({
+			message: 'Select authentication method',
+			options: [
+				{ value: 'max', label: 'Claude Pro/Max (Free with subscription)' },
+				{ value: 'console', label: 'Create API Key (Console OAuth)' },
+				{ value: 'manual', label: 'Manually enter API Key' },
+			],
+		})) as 'max' | 'console' | 'manual' | symbol;
+
+		if (isCancel(authMethod)) return cancel('Cancelled');
+
+		if (authMethod === 'manual') {
+			const meta = PROVIDER_LINKS.anthropic;
+			log.info(`Open in browser: ${meta.url}`);
+			const key = await password({
+				message: `Paste ${meta.env} here`,
+				validate: (v) =>
+					v && String(v).trim().length > 0 ? undefined : 'Required',
+			});
+			if (isCancel(key)) return cancel('Cancelled');
+			await setAuth(
+				'anthropic',
+				{ type: 'api', key: String(key) },
+				cfg.projectRoot,
+				'global',
+			);
+			if (wantLocal)
+				log.warn(
+					'Local credential storage is disabled; saved to secure global location.',
+				);
+			await ensureGlobalConfigDefaults('anthropic');
+			log.success('Saved');
+			log.info(
+				`Tip: you can also set ${PROVIDER_LINKS.anthropic.env} in your environment.`,
+			);
+			return outro('Done');
+		}
+
+		const oauthMode: 'max' | 'console' =
+			authMethod === 'console' ? 'console' : 'max';
+		const { url, verifier } = await authorize(oauthMode);
+
+		log.info('Opening browser for authorization...');
+		log.info(`URL: ${url}\n`);
+
+		const opened = await openAuthUrl(url);
+		if (!opened) {
+			log.warn(
+				'⚠️  Could not open browser automatically. Please visit the URL above manually.\n',
+			);
+		}
+
+		log.info("After authorizing, you'll be redirected to a URL like:");
+		log.info(
+			'https://console.anthropic.com/oauth/code/callback?code=ABC123#XYZ789&state=...\n',
+		);
+
+		const code = await text({
+			message: 'Paste the full code (including the part after #):',
+			validate: (v) =>
+				v && String(v).includes('#') ? undefined : 'Code must include #',
+		});
+
+		if (isCancel(code) || !code) return cancel('Cancelled');
+
+		log.info('\n🔄 Exchanging authorization code for tokens...');
+
+		try {
+			const tokens = await exchange(String(code), verifier);
+
+			if (oauthMode === 'console') {
+				log.info('🔑 Creating API key...');
+				const apiKey = await createApiKey(tokens.access);
+				await setAuth(
+					'anthropic',
+					{ type: 'api', key: apiKey },
+					cfg.projectRoot,
+					'global',
+				);
+				log.success('API key created and saved!');
+			} else {
+				await setAuth(
+					'anthropic',
+					{
+						type: 'oauth',
+						refresh: tokens.refresh,
+						access: tokens.access,
+						expires: tokens.expires,
+					},
+					cfg.projectRoot,
+					'global',
+				);
+				log.success('OAuth tokens saved!');
+				log.info(`Token expires: ${new Date(tokens.expires).toLocaleString()}`);
+			}
+
+			if (wantLocal)
+				log.warn(
+					'Local credential storage is disabled; saved to secure global location.',
+				);
+
+			await ensureGlobalConfigDefaults('anthropic');
+			outro('Done');
+		} catch (error: unknown) {
+			const message =
+				error instanceof Error ? error.message : 'Unknown error occurred';
+			log.error(`Authentication failed: ${message}`);
+			outro('Failed');
+		}
+	} catch (error: unknown) {
+		const message =
+			error instanceof Error
+				? `${error.message}\n${error.stack || ''}`
+				: String(error);
+		console.error('\n[ERROR] Caught in runAuthLoginAnthropic:', message);
+		log.error(`Failed to initialize authentication: ${message}`);
+		outro('Failed');
+		process.exit(1);
+	}
 }
 
 export async function runAuthLogout(_args: string[]) {

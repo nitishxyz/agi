@@ -7,8 +7,8 @@ type ApiAuth = { type: 'api'; key: string };
 type OAuthAuth = {
 	type: 'oauth';
 	access: string;
-	refresh?: string;
-	expires?: number;
+	refresh: string;
+	expires: number;
 };
 export type AuthInfo = ApiAuth | OAuthAuth; // room for wellknown later
 

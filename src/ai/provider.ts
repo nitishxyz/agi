@@ -5,6 +5,9 @@ import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { getAuth } from '@/auth/index.ts';
+import { refreshToken } from '@/auth/oauth.ts';
+import { setAuth } from '@/auth/index.ts';
 
 export type ProviderName = ProviderId;
 
@@ -13,45 +16,122 @@ function getOpenRouterInstance() {
 	return createOpenRouter({ apiKey });
 }
 
+async function getAnthropicInstance(cfg: AGIConfig) {
+	const auth = await getAuth('anthropic', cfg.projectRoot);
+
+	if (auth?.type === 'oauth') {
+		let currentAuth = auth;
+
+		if (currentAuth.expires < Date.now()) {
+			const tokens = await refreshToken(currentAuth.refresh);
+			await setAuth(
+				'anthropic',
+				{
+					type: 'oauth',
+					refresh: tokens.refresh,
+					access: tokens.access,
+					expires: tokens.expires,
+				},
+				cfg.projectRoot,
+				'global',
+			);
+			currentAuth = {
+				type: 'oauth',
+				refresh: tokens.refresh,
+				access: tokens.access,
+				expires: tokens.expires,
+			};
+		}
+
+		const customFetch = async (
+			input: string | URL | Request,
+			init?: RequestInit,
+		) => {
+			const initHeaders = init?.headers;
+			const headers: Record<string, string> = {};
+
+			if (initHeaders) {
+				if (initHeaders instanceof Headers) {
+					initHeaders.forEach((value, key) => {
+						if (key.toLowerCase() !== 'x-api-key') {
+							headers[key] = value;
+						}
+					});
+				} else if (Array.isArray(initHeaders)) {
+					for (const [key, value] of initHeaders) {
+						if (
+							key &&
+							key.toLowerCase() !== 'x-api-key' &&
+							typeof value === 'string'
+						) {
+							headers[key] = value;
+						}
+					}
+				} else {
+					for (const [key, value] of Object.entries(initHeaders)) {
+						if (
+							key.toLowerCase() !== 'x-api-key' &&
+							typeof value === 'string'
+						) {
+							headers[key] = value;
+						}
+					}
+				}
+			}
+
+			headers.authorization = `Bearer ${currentAuth.access}`;
+			headers['anthropic-beta'] =
+				'oauth-2025-04-20,claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14';
+
+			return fetch(input, {
+				...init,
+				headers,
+			});
+		};
+		return createAnthropic({
+			apiKey: '',
+			fetch: customFetch as typeof fetch,
+		});
+	}
+
+	return anthropic;
+}
+
 export async function resolveModel(
 	provider: ProviderName,
 	model: string,
-	_cfg: AGIConfig,
+	cfg: AGIConfig,
 ) {
 	if (provider === 'openai') return openai(model);
-	if (provider === 'anthropic') return anthropic(model);
+	if (provider === 'anthropic') {
+		const instance = await getAnthropicInstance(cfg);
+		return instance(model);
+	}
 	if (provider === 'google') return google(model);
 	if (provider === 'openrouter') {
-		// Prefer chat models for AI SDK v5 generate/streamText
 		const openrouter = getOpenRouterInstance();
 		return openrouter.chat(model);
 	}
 	if (provider === 'opencode') {
-		// opencode is a multi-backend router with different endpoint flavors
-		// Map models to the appropriate SDK with a shared base URL
 		const baseURL = 'https://opencode.ai/zen/v1';
 		const apiKey = process.env.OPENCODE_API_KEY ?? '';
 
-		// Lazily create instances so we reuse connections
-		const ocOpenAI = createOpenAI({ apiKey, baseURL }); // uses /responses
-		const ocAnthropic = createAnthropic({ apiKey, baseURL }); // uses /messages
+		const ocOpenAI = createOpenAI({ apiKey, baseURL });
+		const ocAnthropic = createAnthropic({ apiKey, baseURL });
 		const ocCompat = createOpenAICompatible({
 			name: 'opencode',
-			baseURL, // uses /chat/completions
+			baseURL,
 			headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
 		});
 
 		const id = model.toLowerCase();
-		// Anthropic family
 		if (id.includes('claude')) return ocAnthropic(model);
-		// OpenAI-compatible chat completions family
 		if (
 			id.includes('qwen3-coder') ||
 			id.includes('grok-code') ||
 			id.includes('kimi-k2')
 		)
-			return ocCompat.chat(model);
-		// Default to OpenAI Responses flavor (e.g., gpt-5)
+			return ocCompat(model);
 		return ocOpenAI(model);
 	}
 	throw new Error(`Unsupported provider: ${provider}`);

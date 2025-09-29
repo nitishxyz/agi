@@ -229,6 +229,17 @@ async function main() {
 	});
 }
 
+process.on('unhandledRejection', (reason, promise) => {
+	console.error('\n[FATAL] Unhandled Promise Rejection:', reason);
+	console.error('Promise:', promise);
+	process.exit(1);
+});
+
+process.on('uncaughtException', (error) => {
+	console.error('\n[FATAL] Uncaught Exception:', error);
+	process.exit(1);
+});
+
 main();
 
 function printHelp(

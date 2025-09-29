@@ -1,9 +1,13 @@
 import { providerBasePrompt } from '@/prompts/providers.ts';
-// Embed default base and one-shot prompts; only user overrides read from disk.
+import { composeEnvironmentAndInstructions } from '@/server/runtime/environment.ts';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import BASE_PROMPT from '../../prompts/base.txt' with { type: 'text' };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import ONESHOT_PROMPT from '../../prompts/modes/oneshot.txt' with {
+	type: 'text',
+};
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import ANTHROPIC_SPOOF_PROMPT from '../../prompts/providers/anthropicSpoof.txt' with {
 	type: 'text',
 };
 
@@ -13,20 +17,27 @@ export async function composeSystemPrompt(options: {
 	projectRoot: string;
 	agentPrompt: string;
 	oneShot?: boolean;
+	spoofPrompt?: string;
+	includeEnvironment?: boolean;
 }): Promise<string> {
+	if (options.spoofPrompt) {
+		return options.spoofPrompt.trim();
+	}
+
+	const parts: string[] = [];
+
 	const providerPrompt = await providerBasePrompt(
 		options.provider,
 		options.model,
 		options.projectRoot,
 	);
-	// Use embedded defaults; do not rely on filesystem for code-backed prompts
 	const baseInstructions = (BASE_PROMPT || '').trim();
 
-	const parts = [
+	parts.push(
 		providerPrompt.trim(),
 		baseInstructions.trim(),
 		options.agentPrompt.trim(),
-	].filter(Boolean);
+	);
 
 	if (options.oneShot) {
 		const oneShotBlock =
@@ -39,15 +50,28 @@ export async function composeSystemPrompt(options: {
 		parts.push(oneShotBlock);
 	}
 
-	const composed = parts.join('\n\n').trim();
+	if (options.includeEnvironment !== false) {
+		const envAndInstructions = await composeEnvironmentAndInstructions(
+			options.projectRoot,
+		);
+		if (envAndInstructions) {
+			parts.push(envAndInstructions);
+		}
+	}
+
+	const composed = parts.filter(Boolean).join('\n\n').trim();
 	if (composed) return composed;
 
-	// Hard fallback to ensure providers that require a non-empty system block don't fail.
-	// Keep this minimal to avoid extra tokens when code-backed prompts are unavailable
-	// (e.g., in single-binary installs without embedded prompt assets).
 	return [
 		'You are a concise, friendly coding agent.',
 		'Be precise and actionable. Use tools when needed, prefer small diffs.',
 		'Stream your answer; call finish when done.',
 	].join(' ');
+}
+
+export function getProviderSpoofPrompt(provider: string): string | undefined {
+	if (provider === 'anthropic') {
+		return (ANTHROPIC_SPOOF_PROMPT || '').trim();
+	}
+	return undefined;
 }
