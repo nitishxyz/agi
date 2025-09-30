@@ -254,14 +254,9 @@ async function runAuthLoginAnthropic(
 			outro('Failed');
 		}
 	} catch (error: unknown) {
-		const message =
-			error instanceof Error
-				? `${error.message}\n${error.stack || ''}`
-				: String(error);
-		console.error('\n[ERROR] Caught in runAuthLoginAnthropic:', message);
+		const message = error instanceof Error ? error.message : String(error);
 		log.error(`Failed to initialize authentication: ${message}`);
 		outro('Failed');
-		process.exit(1);
 	}
 }
 

@@ -1,9 +1,29 @@
-import { generatePKCE } from '@openauthjs/openauth/pkce';
 import { spawn } from 'node:child_process';
+import { randomBytes, createHash } from 'node:crypto';
 
 const CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
 
 type Mode = 'max' | 'console';
+
+// Custom PKCE implementation using synchronous crypto
+function generatePKCE() {
+	// Generate random verifier (43-128 characters, base64url encoded)
+	const verifier = randomBytes(32)
+		.toString('base64')
+		.replace(/\+/g, '-')
+		.replace(/\//g, '_')
+		.replace(/=/g, '');
+
+	// Generate challenge from verifier (SHA-256 hash, base64url encoded)
+	const challenge = createHash('sha256')
+		.update(verifier)
+		.digest('base64')
+		.replace(/\+/g, '-')
+		.replace(/\//g, '_')
+		.replace(/=/g, '');
+
+	return { verifier, challenge };
+}
 
 async function openBrowser(url: string) {
 	const platform = process.platform;
@@ -32,7 +52,7 @@ async function openBrowser(url: string) {
 }
 
 export async function authorize(mode: Mode) {
-	const pkce = await generatePKCE();
+	const pkce = generatePKCE();
 
 	const url = new URL(
 		`https://${mode === 'console' ? 'console.anthropic.com' : 'claude.ai'}/oauth/authorize`,
