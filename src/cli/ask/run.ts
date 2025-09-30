@@ -101,7 +101,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 				handshake.message.kind === 'created'
 					? 'Created new session'
 					: 'Using last session';
-			Bun.write(Bun.stderr, `${dim(label)} ${handshake.message.sessionId}\n`);
+			Bun.write(Bun.stderr, `${dim(label)} ${handshake.message.sessionId}\n\n`);
 		}
 
 		const sseUrl = `${baseUrl}/v1/sessions/${encodeURIComponent(handshake.sessionId)}/stream?project=${encodeURIComponent(projectRoot)}`;
@@ -445,7 +445,8 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		const shouldRenderResult =
 			name === 'progress_update'
 				? false
-				: name === 'tree' ||
+				: name === 'finish' ||
+					name === 'tree' ||
 					MUTATING_TOOLS.has(name) ||
 					name === 'bash' ||
 					hasDiffArtifact ||
