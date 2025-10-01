@@ -1,0 +1,30 @@
+{
+	"name": "@agi-cli/config",
+	"version": "0.1.0",
+	"description": "Configuration management for AGI CLI",
+	"type": "module",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"exports": {
+		".": {
+			"import": "./src/index.ts",
+			"types": "./src/index.ts"
+		},
+		"./paths": {
+			"import": "./src/paths.ts",
+			"types": "./src/paths.ts"
+		},
+		"./manager": {
+			"import": "./src/manager.ts",
+			"types": "./src/manager.ts"
+		}
+	},
+	"scripts": {
+		"dev": "bun run src/index.ts",
+		"test": "bun test"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5"
+	}
+}

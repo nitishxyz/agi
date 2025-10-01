@@ -1,7 +1,8 @@
 {
-	"name": "@agi-cli/core",
+	"name": "agi-monorepo",
 	"version": "0.1.26",
-	"description": "AI-powered development assistant CLI",
+	"private": true,
+	"description": "AI-powered development assistant CLI - monorepo",
 	"author": "ntishxyz",
 	"license": "MIT",
 	"homepage": "https://github.com/ntishxyz/agi#readme",
@@ -24,24 +25,15 @@
 		"gpt"
 	],
 	"type": "module",
-	"module": "index.ts",
-	"bin": {
-		"agi": "./dist/agi"
-	},
-	"files": [
-		"dist/",
-		"src/",
-		"index.ts",
-		"README.md",
-		"LICENSE"
+	"workspaces": [
+		"packages/*",
+		"apps/*",
+		"examples/*"
 	],
-	"publishConfig": {
-		"access": "public"
-	},
 	"scripts": {
 		"lint": "biome check",
 		"cli": "bun run index.ts",
-		"test": "bun test",
+		"test": "bun test --recursive",
 		"db:generate": "drizzle-kit generate --config=drizzle.config.ts",
 		"db:reset": "bun run scripts/reset-db.ts",
 		"catalog:update": "bun run scripts/update-catalog.ts",
@@ -52,6 +44,12 @@
 		"build:bin:linux-arm64": "mkdir -p dist && bun build --compile --target=bun-linux-arm64 ./index.ts --outfile dist/agi-linux-arm64",
 		"build:bin:windows-x64": "mkdir -p dist && bun build --compile --target=bun-windows-x64 ./index.ts --outfile dist/agi-windows-x64.exe",
 		"build": "bun run compile",
+		"build:packages": "bun run --filter './packages/*' build",
+		"build:apps": "bun run --filter './apps/*' build",
+		"build:all": "bun run build:packages && bun run build:apps",
+		"dev:sdk": "bun run --filter @agi-cli/sdk dev",
+		"dev:cli": "bun run --filter @agi-cli/cli dev",
+		"dev:server": "bun run --filter @agi-cli/server dev",
 		"prepublishOnly": "bun run compile",
 		"version:bump": "bun run scripts/bump-version.ts"
 	},

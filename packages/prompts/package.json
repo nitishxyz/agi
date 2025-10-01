@@ -1,0 +1,22 @@
+{
+	"name": "@agi-cli/prompts",
+	"version": "0.1.0",
+	"description": "System prompts and templates for AGI CLI",
+	"type": "module",
+	"main": "./src/providers.ts",
+	"types": "./src/providers.ts",
+	"exports": {
+		".": {
+			"import": "./src/providers.ts",
+			"types": "./src/providers.ts"
+		}
+	},
+	"scripts": {
+		"dev": "bun run src/providers.ts",
+		"test": "bun test"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5"
+	}
+}

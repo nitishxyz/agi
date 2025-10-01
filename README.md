@@ -15,6 +15,7 @@ A powerful AI-powered development assistant CLI that brings intelligent agents a
 - Contributing — docs/contributing.md
 - Troubleshooting — docs/troubleshooting.md
 - Docs Index — docs/index.md
+- **🏗️ Monorepo Migration** — [Overview](./MONOREPO_OVERVIEW.md) | [Full Guide](./MONOREPO_MIGRATION_GUIDE.md)
 
 ## Features
 
@@ -57,6 +58,28 @@ All docs live under `docs/`. Start here: docs/index.md
 - Configuration reference: docs/configuration.md
 - Development workflow: docs/development.md
 
+## Roadmap
+
+### Monorepo Refactoring 🏗️
+
+We're planning to refactor AGI into a modular monorepo that will enable:
+
+**For External Developers**:
+- 📦 Standalone SDK: `npm install @agi-cli/sdk`
+- 🔧 Embed AI agents in any Node.js/Bun/Deno project
+- 🛠️ Create custom tools and agents
+- 🚀 High-level API without implementation complexity
+
+**For AGI Development**:
+- 🏗️ Clean architecture with clear boundaries
+- 🧪 Easier testing and maintenance
+- 🔄 Parallel development on CLI, TUI, web interfaces
+- 📈 Better scalability and extensibility
+
+**Read more**: [Overview](./MONOREPO_OVERVIEW.md) | [Full Migration Guide](./MONOREPO_MIGRATION_GUIDE.md)
+
+**Timeline**: Estimated 10-12 days of focused development work
+
 ## Contributing
 
 Please read AGENTS.md for contributor conventions. See docs/contributing.md for a quick summary.
@@ -75,8 +98,3 @@ MIT License — see LICENSE for details
 ---
 
 Built with ❤️ using Bun, Hono, and AI SDK
-
-# Test
-new line
-# End
-<!-- fin. -->

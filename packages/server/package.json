@@ -1,0 +1,32 @@
+{
+	"name": "@agi-cli/server",
+	"version": "0.1.0",
+	"description": "HTTP API server for AGI CLI",
+	"type": "module",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"exports": {
+		".": {
+			"import": "./src/index.ts",
+			"types": "./src/index.ts"
+		}
+	},
+	"scripts": {
+		"dev": "bun run src/index.ts",
+		"test": "bun test"
+	},
+	"dependencies": {
+		"@agi-cli/sdk": "workspace:*",
+		"@agi-cli/config": "workspace:*",
+		"@agi-cli/auth": "workspace:*",
+		"@agi-cli/database": "workspace:*",
+		"@agi-cli/prompts": "workspace:*",
+		"@agi-cli/providers": "workspace:*",
+		"hono": "^4.9.7",
+		"drizzle-orm": "^0.44.5"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5"
+	}
+}
