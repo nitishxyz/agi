@@ -6,6 +6,8 @@ import {
 	chmodSync,
 	mkdirSync,
 	statSync,
+	readFileSync,
+	appendFileSync,
 } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -119,6 +121,49 @@ function downloadWithProgress(url, dest) {
 	});
 }
 
+function updateShellProfile(userBin) {
+	// Skip on Windows
+	if (platform() === 'win32') return;
+
+	const shell = process.env.SHELL || '';
+	let configFile;
+	let shellType;
+
+	if (shell.includes('zsh')) {
+		configFile = resolve(homedir(), '.zshrc');
+		shellType = 'zsh';
+	} else if (shell.includes('bash')) {
+		configFile = resolve(homedir(), '.bashrc');
+		shellType = 'bash';
+	} else {
+		configFile = resolve(homedir(), '.profile');
+		shellType = 'shell';
+	}
+
+	const pathExport = 'export PATH="$HOME/.local/bin:$PATH"';
+
+	try {
+		let fileContent = '';
+		if (existsSync(configFile)) {
+			fileContent = readFileSync(configFile, 'utf8');
+		}
+
+		// Check if .local/bin is already in the config file
+		if (fileContent.includes('.local/bin')) {
+			console.log(`✓ PATH already configured in ${configFile}`);
+			return;
+		}
+
+		// Add the PATH export
+		appendFileSync(configFile, `\n${pathExport}\n`);
+		console.log(`✓ Added ${userBin} to PATH in ${configFile}`);
+		console.log(`✓ Restart your ${shellType} or run: source ${configFile}`);
+	} catch (error) {
+		// Silently fail if we can't update the profile
+		console.log(`⚠️  Could not automatically update ${configFile}`);
+	}
+}
+
 async function install() {
 	try {
 		const { os, arch: architecture, ext } = getPlatformInfo();
@@ -143,6 +188,7 @@ async function install() {
 
 			const pathDirs = (process.env.PATH || '').split(':');
 			if (!pathDirs.includes(userBin)) {
+				updateShellProfile(userBin);
 				console.log(`\n⚠️  Add ${userBin} to your PATH:`);
 				console.log(
 					`   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc`,
@@ -150,6 +196,8 @@ async function install() {
 				console.log(
 					`   Or for zsh: echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc`,
 				);
+			} else {
+				console.log(`✓ ${userBin} already in PATH`);
 			}
 		} else {
 			console.log(`\n✓ Installed to ${binPath}`);
