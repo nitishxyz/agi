@@ -19,6 +19,7 @@ export async function composeSystemPrompt(options: {
 	oneShot?: boolean;
 	spoofPrompt?: string;
 	includeEnvironment?: boolean;
+	includeProjectTree?: boolean;
 }): Promise<string> {
 	if (options.spoofPrompt) {
 		return options.spoofPrompt.trim();
@@ -53,6 +54,7 @@ export async function composeSystemPrompt(options: {
 	if (options.includeEnvironment !== false) {
 		const envAndInstructions = await composeEnvironmentAndInstructions(
 			options.projectRoot,
+			{ includeProjectTree: options.includeProjectTree },
 		);
 		if (envAndInstructions) {
 			parts.push(envAndInstructions);

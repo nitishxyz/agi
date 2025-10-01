@@ -33,13 +33,13 @@ export async function getProjectTree(projectRoot: string): Promise<string> {
 		const execAsync = promisify(exec);
 
 		const { stdout } = await execAsync(
-			'git ls-files 2>/dev/null || find . -type f -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*" 2>/dev/null | head -200',
+			'git ls-files 2>/dev/null || find . -type f -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*" 2>/dev/null | head -100',
 			{ cwd: projectRoot, maxBuffer: 1024 * 1024 },
 		);
 
 		if (!stdout.trim()) return '';
 
-		const files = stdout.trim().split('\n').slice(0, 200);
+		const files = stdout.trim().split('\n').slice(0, 100);
 		return `<project>\n${files.join('\n')}\n</project>`;
 	} catch {
 		return '';
@@ -108,15 +108,18 @@ export async function loadInstructionFiles(
 
 export async function composeEnvironmentAndInstructions(
 	projectRoot: string,
+	options?: { includeProjectTree?: boolean },
 ): Promise<string> {
 	const parts: string[] = [];
 
 	const envContext = await getEnvironmentContext(projectRoot);
 	parts.push(envContext);
 
-	const projectTree = await getProjectTree(projectRoot);
-	if (projectTree) {
-		parts.push(projectTree);
+	if (options?.includeProjectTree !== false) {
+		const projectTree = await getProjectTree(projectRoot);
+		if (projectTree) {
+			parts.push(projectTree);
+		}
 	}
 
 	const customInstructions = await loadInstructionFiles(projectRoot);

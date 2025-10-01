@@ -18,88 +18,7 @@ import type { ToolAdapterContext } from '@/ai/tools/adapter.ts';
 import { publish, subscribe } from '@/server/events/bus.ts';
 import { debugLog, time } from '@/runtime/debug.ts';
 import { estimateModelCostUsd } from '@/providers/pricing.ts';
-
-function toErrorPayload(err: unknown): {
-	message: string;
-	details?: Record<string, unknown>;
-} {
-	// Derive the best human-friendly message and optional details
-	const asObj =
-		err && typeof err === 'object'
-			? (err as Record<string, unknown>)
-			: undefined;
-
-	// Try multiple sources for a human-readable message
-	let message = '';
-
-	if (asObj && typeof asObj.message === 'string' && asObj.message) {
-		message = asObj.message as string;
-	} else if (typeof err === 'string') {
-		message = err as string;
-	} else if (asObj && typeof asObj.error === 'string' && asObj.error) {
-		message = asObj.error as string;
-	} else if (
-		asObj &&
-		typeof asObj.responseBody === 'string' &&
-		asObj.responseBody
-	) {
-		// For API errors, use responseBody which often contains the actual error
-		message = asObj.responseBody as string;
-	} else if (asObj?.statusCode && (asObj as { url?: unknown }).url) {
-		// Construct a meaningful message for HTTP errors
-		message = `HTTP ${String(asObj.statusCode)} error at ${String((asObj as { url?: unknown }).url)}`;
-	} else if (asObj?.name) {
-		// Use the error name as a fallback
-		message = String(asObj.name);
-	} else {
-		// Last resort: try to extract something meaningful
-		try {
-			message = JSON.stringify(err, null, 2);
-		} catch {
-			message = String(err);
-		}
-	}
-
-	const details: Record<string, unknown> = {};
-	if (asObj && typeof asObj === 'object') {
-		for (const key of ['name', 'code', 'status', 'statusCode', 'type']) {
-			if (asObj[key] != null) details[key] = asObj[key];
-		}
-		if (asObj.cause) {
-			const c = asObj.cause as Record<string, unknown> | undefined;
-			details.cause = {
-				message:
-					typeof c?.message === 'string' ? (c.message as string) : undefined,
-				code: (c as { code?: unknown })?.code,
-				status:
-					(c as { status?: unknown; statusCode?: unknown })?.status ??
-					(c as { statusCode?: unknown })?.statusCode,
-			};
-		}
-		// Include response data if present (common in HTTP errors)
-		if (
-			(asObj as { response?: { status?: unknown; statusText?: unknown } })
-				?.response?.status
-		)
-			details.response = {
-				status: (
-					asObj as { response?: { status?: unknown; statusText?: unknown } }
-				).response?.status,
-				statusText: (
-					asObj as { response?: { status?: unknown; statusText?: unknown } }
-				).response?.statusText,
-			};
-		if (
-			(asObj as { data?: unknown })?.data &&
-			typeof (asObj as { data?: unknown }).data === 'object'
-		)
-			details.data = (asObj as { data?: unknown }).data as Record<
-				string,
-				unknown
-			>;
-	}
-	return Object.keys(details).length ? { message, details } : { message };
-}
+import { catalog } from '@/providers/catalog.ts';
 
 type RunOpts = {
 	sessionId: string;
@@ -143,6 +62,315 @@ async function processQueue(sessionId: string) {
 	state.running = false;
 }
 
+function getMaxOutputTokens(
+	provider: ProviderName,
+	modelId: string,
+): number | undefined {
+	try {
+		const providerCatalog = catalog[provider];
+		if (!providerCatalog) {
+			debugLog(`[maxOutputTokens] No catalog found for provider: ${provider}`);
+			return undefined;
+		}
+		const modelInfo = providerCatalog.models.find((m) => m.id === modelId);
+		if (!modelInfo) {
+			debugLog(
+				`[maxOutputTokens] No model info found for: ${modelId} in provider: ${provider}`,
+			);
+			return undefined;
+		}
+		const outputLimit = modelInfo.limit?.output;
+		debugLog(
+			`[maxOutputTokens] Provider: ${provider}, Model: ${modelId}, Limit: ${outputLimit}`,
+		);
+		return outputLimit;
+	} catch (err) {
+		debugLog(`[maxOutputTokens] Error looking up limit: ${err}`);
+		return undefined;
+	}
+}
+
+function toErrorPayload(err: unknown): {
+	message: string;
+	details?: Record<string, unknown>;
+} {
+	const asObj =
+		err && typeof err === 'object'
+			? (err as Record<string, unknown>)
+			: undefined;
+	let message = '';
+
+	if (asObj && typeof asObj.message === 'string' && asObj.message) {
+		message = asObj.message as string;
+	} else if (typeof err === 'string') {
+		message = err as string;
+	} else if (asObj && typeof asObj.error === 'string' && asObj.error) {
+		message = asObj.error as string;
+	} else if (
+		asObj &&
+		typeof asObj.responseBody === 'string' &&
+		asObj.responseBody
+	) {
+		message = asObj.responseBody as string;
+	} else if (asObj?.statusCode && (asObj as { url?: unknown }).url) {
+		message = `HTTP ${String(asObj.statusCode)} error at ${String((asObj as { url?: unknown }).url)}`;
+	} else if (asObj?.name) {
+		message = String(asObj.name);
+	} else {
+		try {
+			message = JSON.stringify(err, null, 2);
+		} catch {
+			message = String(err);
+		}
+	}
+
+	const details: Record<string, unknown> = {};
+	if (asObj && typeof asObj === 'object') {
+		for (const key of ['name', 'code', 'status', 'statusCode', 'type']) {
+			if (asObj[key] != null) details[key] = asObj[key];
+		}
+		if (asObj.cause) {
+			const c = asObj.cause as Record<string, unknown> | undefined;
+			details.cause = {
+				message:
+					typeof c?.message === 'string' ? (c.message as string) : undefined,
+				code: (c as { code?: unknown })?.code,
+				status:
+					(c as { status?: unknown; statusCode?: unknown })?.status ??
+					(c as { statusCode?: unknown })?.statusCode,
+			};
+		}
+		if (
+			(asObj as { response?: { status?: unknown; statusText?: unknown } })
+				?.response?.status
+		)
+			details.response = {
+				status: (
+					asObj as { response?: { status?: unknown; statusText?: unknown } }
+				).response?.status,
+				statusText: (
+					asObj as { response?: { status?: unknown; statusText?: unknown } }
+				).response?.statusText,
+			};
+		if (
+			(asObj as { data?: unknown })?.data &&
+			typeof (asObj as { data?: unknown }).data === 'object'
+		)
+			details.data = (asObj as { data?: unknown }).data as Record<
+				string,
+				unknown
+			>;
+	}
+	return Object.keys(details).length ? { message, details } : { message };
+}
+
+async function setupToolContext(
+	opts: RunOpts,
+	db: Awaited<ReturnType<typeof getDb>>,
+) {
+	const firstToolTimer = time('runner:first-tool-call');
+	let firstToolSeen = false;
+
+	const sharedCtx: RunnerToolContext = {
+		nextIndex: async () => 0,
+		stepIndex: 0,
+		sessionId: opts.sessionId,
+		messageId: opts.assistantMessageId,
+		assistantPartId: opts.assistantPartId,
+		db,
+		agent: opts.agent,
+		provider: opts.provider,
+		model: opts.model,
+		projectRoot: opts.projectRoot,
+		onFirstToolCall: () => {
+			if (firstToolSeen) return;
+			firstToolSeen = true;
+			firstToolTimer.end();
+		},
+	};
+
+	let counter = 0;
+	try {
+		const existing = await db
+			.select()
+			.from(messageParts)
+			.where(eq(messageParts.messageId, opts.assistantMessageId));
+		if (existing.length) {
+			const indexes = existing.map((p) => Number(p.index ?? 0));
+			const maxIndex = Math.max(...indexes);
+			if (Number.isFinite(maxIndex)) counter = maxIndex;
+		}
+	} catch {}
+
+	sharedCtx.nextIndex = () => {
+		counter += 1;
+		return counter;
+	};
+
+	return { sharedCtx, firstToolTimer, firstToolSeen: () => firstToolSeen };
+}
+
+async function ensureFinishToolCalled(
+	finishObserved: boolean,
+	toolset: ReturnType<typeof adaptTools>,
+	opts: RunOpts,
+	sharedCtx: RunnerToolContext,
+	stepIndex: number,
+	db: Awaited<ReturnType<typeof getDb>>,
+) {
+	if (finishObserved || !toolset?.finish?.execute) return;
+
+	const finishPartId = crypto.randomUUID();
+	const now = Date.now();
+	const idx = await sharedCtx.nextIndex();
+
+	await db.insert(messageParts).values({
+		id: finishPartId,
+		messageId: opts.assistantMessageId,
+		index: idx,
+		stepIndex,
+		type: 'tool_call',
+		content: JSON.stringify({
+			name: 'finish',
+			args: { text: '' },
+			callId: finishPartId,
+		}),
+		agent: opts.agent,
+		provider: opts.provider,
+		model: opts.model,
+		startedAt: now,
+		toolName: 'finish',
+		toolCallId: finishPartId,
+	});
+
+	publish({
+		type: 'tool.call',
+		sessionId: opts.sessionId,
+		payload: {
+			name: 'finish',
+			args: { text: '' },
+			callId: finishPartId,
+		},
+	});
+
+	await toolset.finish.execute({ text: '' }, {} as never);
+
+	const resultPartId = crypto.randomUUID();
+	const idx2 = await sharedCtx.nextIndex();
+
+	await db.insert(messageParts).values({
+		id: resultPartId,
+		messageId: opts.assistantMessageId,
+		index: idx2,
+		stepIndex,
+		type: 'tool_result',
+		content: JSON.stringify({
+			name: 'finish',
+			result: { done: true, text: '' },
+			callId: finishPartId,
+		}),
+		agent: opts.agent,
+		provider: opts.provider,
+		model: opts.model,
+		startedAt: now,
+		completedAt: Date.now(),
+		toolName: 'finish',
+		toolCallId: finishPartId,
+		toolDurationMs: Date.now() - now,
+	});
+
+	publish({
+		type: 'tool.result',
+		sessionId: opts.sessionId,
+		payload: {
+			name: 'finish',
+			result: { done: true, text: '' },
+			callId: finishPartId,
+		},
+	});
+}
+
+async function updateSessionTokens(
+	fin: { usage?: { inputTokens?: number; outputTokens?: number } },
+	opts: RunOpts,
+	db: Awaited<ReturnType<typeof getDb>>,
+) {
+	if (!fin.usage) return;
+
+	const sessRows = await db
+		.select()
+		.from(sessions)
+		.where(eq(sessions.id, opts.sessionId));
+
+	if (sessRows.length > 0 && sessRows[0]) {
+		const row = sessRows[0];
+		const priorInput = Number(row.totalInputTokens ?? 0);
+		const priorOutput = Number(row.totalOutputTokens ?? 0);
+		const nextInput = priorInput + Number(fin.usage.inputTokens ?? 0);
+		const nextOutput = priorOutput + Number(fin.usage.outputTokens ?? 0);
+
+		await db
+			.update(sessions)
+			.set({
+				totalInputTokens: nextInput,
+				totalOutputTokens: nextOutput,
+			})
+			.where(eq(sessions.id, opts.sessionId));
+	}
+}
+
+async function completeAssistantMessage(
+	fin: {
+		usage?: {
+			inputTokens?: number;
+			outputTokens?: number;
+			totalTokens?: number;
+		};
+	},
+	opts: RunOpts,
+	db: Awaited<ReturnType<typeof getDb>>,
+) {
+	const vals: Record<string, unknown> = {
+		status: 'complete',
+		completedAt: Date.now(),
+	};
+
+	if (fin.usage) {
+		vals.promptTokens = fin.usage.inputTokens;
+		vals.completionTokens = fin.usage.outputTokens;
+		vals.totalTokens =
+			fin.usage.totalTokens ??
+			(vals.promptTokens as number) + (vals.completionTokens as number);
+	}
+
+	await db
+		.update(messages)
+		.set(vals)
+		.where(eq(messages.id, opts.assistantMessageId));
+}
+
+async function cleanupEmptyTextParts(
+	opts: RunOpts,
+	db: Awaited<ReturnType<typeof getDb>>,
+) {
+	const parts = await db
+		.select()
+		.from(messageParts)
+		.where(eq(messageParts.messageId, opts.assistantMessageId));
+
+	for (const p of parts) {
+		if (p.type === 'text') {
+			let t = '';
+			try {
+				t = JSON.parse(p.content || '{}')?.text || '';
+			} catch {}
+			if (!t || t.length === 0) {
+				await db.delete(messageParts).where(eq(messageParts.id, p.id));
+			}
+		}
+	}
+}
+
 async function runAssistant(opts: RunOpts) {
 	const cfgTimer = time('runner:loadConfig+db');
 	const cfg = await loadConfig(opts.projectRoot);
@@ -152,7 +380,15 @@ async function runAssistant(opts: RunOpts) {
 	const agentTimer = time('runner:resolveAgentConfig');
 	const agentCfg = await resolveAgentConfig(cfg.projectRoot, opts.agent);
 	agentTimer.end({ agent: opts.agent });
+
 	const agentPrompt = agentCfg.prompt || '';
+
+	const historyTimer = time('runner:buildHistory');
+	const history = await buildHistoryMessages(db, opts.sessionId);
+	historyTimer.end({ messages: history.length });
+
+	const isFirstMessage = history.length === 0;
+
 	const systemTimer = time('runner:composeSystemPrompt');
 	const { getAuth } = await import('@/auth/index.ts');
 	const { getProviderSpoofPrompt } = await import('@/server/runtime/prompt.ts');
@@ -174,6 +410,7 @@ async function runAssistant(opts: RunOpts) {
 			agentPrompt,
 			oneShot: opts.oneShot,
 			spoofPrompt: undefined,
+			includeProjectTree: isFirstMessage,
 		});
 		additionalSystemMessages = [{ role: 'system', content: fullPrompt }];
 	} else {
@@ -184,11 +421,13 @@ async function runAssistant(opts: RunOpts) {
 			agentPrompt,
 			oneShot: opts.oneShot,
 			spoofPrompt: undefined,
+			includeProjectTree: isFirstMessage,
 		});
 	}
 	systemTimer.end();
 	debugLog('[system] composed prompt (provider+base+agent):');
 	debugLog(system);
+
 	const toolsTimer = time('runner:discoverTools');
 	const allTools = await discoverProjectTools(cfg.projectRoot);
 	toolsTimer.end({ count: allTools.length });
@@ -198,71 +437,28 @@ async function runAssistant(opts: RunOpts) {
 		'progress_update',
 	]);
 	const gated = allTools.filter((t) => allowedNames.has(t.name));
-
-	// Build chat history messages from DB (text parts only)
-	const historyTimer = time('runner:buildHistory');
-	const history = await buildHistoryMessages(db, opts.sessionId);
-	historyTimer.end({ messages: history.length });
-
-	// Only prepend system instructions if this is the first message in the session
-	// (OAuth needs system instructions as a message, but only once)
-	const isFirstMessage = history.length === 0;
 	const messagesWithSystemInstructions = [
 		...(isFirstMessage ? additionalSystemMessages : []),
 		...history,
 	];
 
-	const firstToolTimer = time('runner:first-tool-call');
-	let firstToolSeen = false;
-	const sharedCtx: RunnerToolContext = {
-		nextIndex: async () => 0,
-		stepIndex: 0,
-		sessionId: opts.sessionId,
-		messageId: opts.assistantMessageId,
-		assistantPartId: opts.assistantPartId,
+	const { sharedCtx, firstToolTimer, firstToolSeen } = await setupToolContext(
+		opts,
 		db,
-		agent: opts.agent,
-		provider: opts.provider,
-		model: opts.model,
-		projectRoot: cfg.projectRoot,
-		onFirstToolCall: () => {
-			if (firstToolSeen) return;
-			firstToolSeen = true;
-			firstToolTimer.end();
-		},
-	};
-	// Initialize a per-message monotonic index allocator
-	let counter = 0;
-	try {
-		const existing = await db
-			.select()
-			.from(messageParts)
-			.where(eq(messageParts.messageId, opts.assistantMessageId));
-		if (existing.length) {
-			const indexes = existing.map((p) => Number(p.index ?? 0));
-			const maxIndex = Math.max(...indexes);
-			if (Number.isFinite(maxIndex)) counter = maxIndex;
-		}
-	} catch {}
-	sharedCtx.nextIndex = () => {
-		counter += 1;
-		return counter;
-	};
-	// initialize current step index for tools
-	sharedCtx.stepIndex = 0;
+	);
 	const toolset = adaptTools(gated, sharedCtx);
 
 	const modelTimer = time('runner:resolveModel');
 	const model = await resolveModel(opts.provider, opts.model, cfg);
 	modelTimer.end();
 
+	const maxOutputTokens = getMaxOutputTokens(opts.provider, opts.model);
+
 	let currentPartId = opts.assistantPartId;
 	let accumulated = '';
 	let stepIndex = 0;
 
-	// Track if the model called finish; fallback later if not
 	let finishObserved = false;
-	// Lightweight subscription to flip finishObserved when finish tool completes
 	const unsubscribeFinish = subscribe(opts.sessionId, (evt) => {
 		if (evt.type !== 'tool.result') return;
 		try {
@@ -273,16 +469,17 @@ async function runAssistant(opts: RunOpts) {
 
 	const streamStartTimer = time('runner:first-delta');
 	let firstDeltaSeen = false;
+	debugLog(`[streamText] Calling with maxOutputTokens: ${maxOutputTokens}`);
+
 	try {
 		const result = streamText({
 			model,
 			tools: toolset,
-			// Only include `system` when non-empty to avoid provider errors
 			...(String(system || '').trim() ? { system } : {}),
 			messages: messagesWithSystemInstructions,
+			...(maxOutputTokens ? { maxOutputTokens } : {}),
 			stopWhen: hasToolCall('finish'),
 			onStepFinish: async (step) => {
-				// close current text part and start a new one for the next step
 				const finishedAt = Date.now();
 				try {
 					await db
@@ -291,7 +488,6 @@ async function runAssistant(opts: RunOpts) {
 						.where(eq(messageParts.id, currentPartId));
 				} catch {}
 
-				// publish step info for observability
 				try {
 					publish({
 						type: 'finish-step',
@@ -312,9 +508,7 @@ async function runAssistant(opts: RunOpts) {
 					}
 				} catch {}
 
-				// rotate to a fresh text part so next deltas have a clean container
 				try {
-					// increment step index for the next assistant segment
 					stepIndex += 1;
 					const newPartId = crypto.randomUUID();
 					const index = await sharedCtx.nextIndex();
@@ -333,7 +527,6 @@ async function runAssistant(opts: RunOpts) {
 					});
 					currentPartId = newPartId;
 					sharedCtx.assistantPartId = newPartId;
-					// expose current step index to tool adapter
 					sharedCtx.stepIndex = stepIndex;
 					accumulated = '';
 				} catch {}
@@ -369,120 +562,23 @@ async function runAssistant(opts: RunOpts) {
 				});
 			},
 			onFinish: async (fin) => {
-				// Ensure finish is called at least once even if the model forgot
 				try {
-					if (!finishObserved && toolset?.finish?.execute) {
-						const finishPartId = crypto.randomUUID();
-						const now = Date.now();
-						const idx = await sharedCtx.nextIndex();
-						await db.insert(messageParts).values({
-							id: finishPartId,
-							messageId: opts.assistantMessageId,
-							index: idx,
-							stepIndex,
-							type: 'tool_call',
-							content: JSON.stringify({
-								name: 'finish',
-								args: { text: '' },
-								callId: finishPartId,
-							}),
-							agent: opts.agent,
-							provider: opts.provider,
-							model: opts.model,
-							startedAt: now,
-							toolName: 'finish',
-							toolCallId: finishPartId,
-						});
-						publish({
-							type: 'tool.call',
-							sessionId: opts.sessionId,
-							payload: {
-								name: 'finish',
-								args: { text: '' },
-								callId: finishPartId,
-							},
-						});
-						await toolset.finish.execute(
-							{ text: '' },
-							// Pass AI SDK options
-							{} as never,
-						);
-						const resultPartId = crypto.randomUUID();
-						const idx2 = await sharedCtx.nextIndex();
-						await db.insert(messageParts).values({
-							id: resultPartId,
-							messageId: opts.assistantMessageId,
-							index: idx2,
-							stepIndex,
-							type: 'tool_result',
-							content: JSON.stringify({
-								name: 'finish',
-								result: { done: true, text: '' },
-								callId: finishPartId,
-							}),
-							agent: opts.agent,
-							provider: opts.provider,
-							model: opts.model,
-							startedAt: now,
-							completedAt: Date.now(),
-							toolName: 'finish',
-							toolCallId: finishPartId,
-							toolDurationMs: Date.now() - now,
-						});
-						publish({
-							type: 'tool.result',
-							sessionId: opts.sessionId,
-							payload: {
-								name: 'finish',
-								result: { done: true, text: '' },
-								callId: finishPartId,
-							},
-						});
-					}
+					await ensureFinishToolCalled(
+						finishObserved,
+						toolset,
+						opts,
+						sharedCtx,
+						stepIndex,
+						db,
+					);
 				} catch {}
 
-				// Update session token totals
 				try {
-					if (fin.usage) {
-						const sessRows = await db
-							.select()
-							.from(sessions)
-							.where(eq(sessions.id, opts.sessionId));
-						if (sessRows.length > 0 && sessRows[0]) {
-							const row = sessRows[0];
-							const priorInput = Number(row.totalInputTokens ?? 0);
-							const priorOutput = Number(row.totalOutputTokens ?? 0);
-							const nextInput = priorInput + Number(fin.usage.inputTokens ?? 0);
-							const nextOutput =
-								priorOutput + Number(fin.usage.outputTokens ?? 0);
-							await db
-								.update(sessions)
-								.set({
-									totalInputTokens: nextInput,
-									totalOutputTokens: nextOutput,
-								})
-								.where(eq(sessions.id, opts.sessionId));
-						}
-					}
+					await updateSessionTokens(fin, opts, db);
 				} catch {}
 
-				// Complete the assistant message
 				try {
-					const vals: Record<string, unknown> = {
-						status: 'complete',
-						completedAt: Date.now(),
-					};
-					if (fin.usage) {
-						vals.promptTokens = fin.usage.inputTokens;
-						vals.completionTokens = fin.usage.outputTokens;
-						vals.totalTokens =
-							fin.usage.totalTokens ??
-							(vals.promptTokens as number) + (vals.completionTokens as number);
-					}
-					await db
-						.update(messages)
-						.set(vals)
-						.where(eq(messages.id, opts.assistantMessageId));
+					await completeAssistantMessage(fin, opts, db);
 				} catch {}
 
 				const costUsd = fin.usage
@@ -500,6 +596,7 @@ async function runAssistant(opts: RunOpts) {
 				});
 			},
 		});
+
 		for await (const delta of result.textStream) {
 			if (!delta) continue;
 			if (!firstDeltaSeen) {
@@ -542,27 +639,12 @@ async function runAssistant(opts: RunOpts) {
 		});
 		throw error;
 	} finally {
-		if (!firstToolSeen) firstToolTimer.end({ skipped: true });
+		if (!firstToolSeen()) firstToolTimer.end({ skipped: true });
 		try {
 			unsubscribeFinish();
 		} catch {}
-		// Cleanup any empty assistant text parts
 		try {
-			const parts = await db
-				.select()
-				.from(messageParts)
-				.where(eq(messageParts.messageId, opts.assistantMessageId));
-			for (const p of parts) {
-				if (p.type === 'text') {
-					let t = '';
-					try {
-						t = JSON.parse(p.content || '{}')?.text || '';
-					} catch {}
-					if (!t || t.length === 0) {
-						await db.delete(messageParts).where(eq(messageParts.id, p.id));
-					}
-				}
-			}
+			await cleanupEmptyTextParts(opts, db);
 		} catch {}
 	}
 }
@@ -587,7 +669,6 @@ async function buildHistoryMessages(
 			.orderBy(asc(messageParts.index));
 
 		if (m.role === 'user') {
-			// User messages only contain text
 			const uparts: UIMessage['parts'] = [];
 			for (const p of parts) {
 				if (p.type !== 'text') continue;
@@ -604,10 +685,6 @@ async function buildHistoryMessages(
 		}
 
 		if (m.role === 'assistant') {
-			// For assistant messages, we need to split into two parts:
-			// 1. Assistant message with text and tool calls
-			// 2. User message with tool results (if there are any)
-
 			const assistantParts: UIMessage['parts'] = [];
 			const toolCalls: Array<{ name: string; callId: string; args: unknown }> =
 				[];
@@ -617,7 +694,6 @@ async function buildHistoryMessages(
 				result: unknown;
 			}> = [];
 
-			// Collect all parts
 			for (const p of parts) {
 				if (p.type === 'text') {
 					try {
@@ -658,13 +734,11 @@ async function buildHistoryMessages(
 				}
 			}
 
-			// Check if all tool calls have results
 			const hasIncompleteTools = toolCalls.some(
 				(call) => !toolResults.find((result) => result.callId === call.callId),
 			);
 
 			if (hasIncompleteTools) {
-				// Include text even if tools are incomplete
 				debugLog(
 					`[buildHistoryMessages] Incomplete tool calls for assistant message ${m.id}, pushing text only`,
 				);
@@ -674,13 +748,11 @@ async function buildHistoryMessages(
 				continue;
 			}
 
-			// Add tool calls to assistant message
 			for (const call of toolCalls) {
 				const toolType = `tool-${call.name}` as `tool-${string}`;
 				const result = toolResults.find((r) => r.callId === call.callId);
 
 				if (result) {
-					// Add the tool call with its result as a completed tool part
 					const outputStr = (() => {
 						const r = result.result;
 						if (typeof r === 'string') return r;
@@ -701,11 +773,9 @@ async function buildHistoryMessages(
 				}
 			}
 
-			// Add the assistant message if it has content
 			if (assistantParts.length) {
 				ui.push({ id: m.id, role: 'assistant', parts: assistantParts });
 
-				// Emit separate user message for tool results
 				if (toolResults.length) {
 					const userParts: UIMessage['parts'] = toolResults.map((r) => {
 						const out =
