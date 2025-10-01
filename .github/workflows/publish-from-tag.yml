@@ -49,21 +49,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cd apps/cli
           case "${{ matrix.os }}-${{ matrix.arch }}" in
             darwin-arm64)
-              bun run build:bin:darwin-arm64
+              bun run build:darwin-arm64
               ;;
             darwin-x64)
-              bun run build:bin:darwin-x64
+              bun run build:darwin-x64
               ;;
             linux-x64)
-              bun run build:bin:linux-x64
+              bun run build:linux-x64
               ;;
             linux-arm64)
-              bun run build:bin:linux-arm64
+              bun run build:linux-arm64
               ;;
             windows-x64)
-              bun run build:bin:windows-x64
+              bun run build:windows-x64
               ;;
           esac
 
@@ -71,7 +72,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: agi-${{ matrix.os }}-${{ matrix.arch }}
-          path: dist/agi-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}
+          path: apps/cli/dist/agi-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}
 
   github-release-from-tag:
     needs: build-binaries-from-tag
@@ -139,9 +140,9 @@ jobs:
             exit 1
           fi
           TAG="${{ github.event.inputs.tag }}"
-          PKG_VERSION=$(jq -r .version package.json)
-          if [ "v${PKG_VERSION}" != "$TAG" ]; then
-            echo "Tag ($TAG) does not match package.json version (v${PKG_VERSION})" >&2
+          CLI_VERSION=$(jq -r .version apps/cli/package.json)
+          if [ "v${CLI_VERSION}" != "$TAG" ]; then
+            echo "Tag ($TAG) does not match CLI version (v${CLI_VERSION})" >&2
             exit 1
           fi
 
@@ -151,13 +152,20 @@ jobs:
           rm -f bun.lock
           bun install
 
-      - name: Ensure CLI entry is executable
-        shell: bash
-        run: |
-          chmod +x cli.cjs || true
-
-      - name: Publish to npm (Bun)
+      - name: Publish CLI to npm
         shell: bash
         run: |
           set -euo pipefail
+          cd apps/cli
+          # Build the binary first
+          bun run build
+          # Publish CLI package
+          bun publish --access public --tag latest
+
+      - name: Publish SDK to npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd packages/sdk
+          # Publish SDK package
           bun publish --access public --tag latest

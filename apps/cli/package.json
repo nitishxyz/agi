@@ -4,10 +4,34 @@
 	"description": "AI-powered development assistant CLI",
 	"author": "ntishxyz",
 	"license": "MIT",
+	"homepage": "https://github.com/ntishxyz/agi#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ntishxyz/agi.git",
+		"directory": "apps/cli"
+	},
+	"bugs": {
+		"url": "https://github.com/ntishxyz/agi/issues"
+	},
+	"keywords": [
+		"ai",
+		"cli",
+		"development",
+		"assistant",
+		"code-review",
+		"anthropic",
+		"openai",
+		"gemini"
+	],
 	"type": "module",
 	"bin": {
 		"agi": "./dist/agi"
 	},
+	"files": [
+		"dist/agi*",
+		"README.md",
+		"LICENSE"
+	],
 	"scripts": {
 		"dev": "bun run index.ts",
 		"build": "bun build --compile ./index.ts --outfile dist/agi",
@@ -15,7 +39,8 @@
 		"build:darwin-x64": "mkdir -p dist && bun build --compile --target=bun-darwin-x64 ./index.ts --outfile dist/agi-darwin-x64",
 		"build:linux-x64": "mkdir -p dist && bun build --compile --target=bun-linux-x64 ./index.ts --outfile dist/agi-linux-x64",
 		"build:linux-arm64": "mkdir -p dist && bun build --compile --target=bun-linux-arm64 ./index.ts --outfile dist/agi-linux-arm64",
-		"build:windows-x64": "mkdir -p dist && bun build --compile --target=bun-windows-x64 ./index.ts --outfile dist/agi-windows-x64.exe"
+		"build:windows-x64": "mkdir -p dist && bun build --compile --target=bun-windows-x64 ./index.ts --outfile dist/agi-windows-x64.exe",
+		"prepublishOnly": "bun run build"
 	},
 	"dependencies": {
 		"@agi-cli/sdk": "workspace:*",
