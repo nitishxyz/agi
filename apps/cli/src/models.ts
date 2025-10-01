@@ -7,10 +7,10 @@ import {
 	log,
 	text,
 } from '@clack/prompts';
-import { loadConfig } from '@agi-cli/config';
-import { catalog, type ProviderId, type ModelInfo } from '@agi-cli/providers';
+import { loadConfig } from '@agi-cli/sdk';
+import { catalog, type ProviderId, type ModelInfo } from '@agi-cli/sdk';
 import { getGlobalConfigDir, getGlobalConfigPath } from '@agi-cli/config/paths';
-import { isProviderAuthorized } from '@agi-cli/providers';
+import { isProviderAuthorized } from '@agi-cli/sdk';
 import { runAuth } from './auth.ts';
 
 export async function runModels(

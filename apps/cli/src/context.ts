@@ -1,4 +1,4 @@
-import type { ProviderId } from '@agi-cli/providers';
+import type { ProviderId } from '@agi-cli/sdk';
 import type { AskOptions } from './ask.ts';
 
 // Compute final agent/provider/model for header display based on precedence:

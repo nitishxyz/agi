@@ -7,8 +7,8 @@ import {
 	isCancel,
 	cancel,
 } from '@clack/prompts';
-import { loadConfig } from '@agi-cli/config';
-import { catalog, type ProviderId } from '@agi-cli/providers';
+import { loadConfig } from '@agi-cli/sdk';
+import { catalog, type ProviderId } from '@agi-cli/sdk';
 
 export async function runSetup(projectRoot?: string) {
 	const cfg = await loadConfig(projectRoot);

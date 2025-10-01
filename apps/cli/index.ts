@@ -1,19 +1,21 @@
-import { createApp } from '@agi-cli/server';
-import { loadConfig } from '@agi-cli/config';
-import { getDb } from '@agi-cli/database';
+import {
+	createServer,
+	loadConfig,
+	getDb,
+	isProviderAuthorized,
+} from '@agi-cli/sdk';
 import { runAsk } from './src/ask.ts';
-// import { runSetup } from './src/setup.ts';
 import { runSessions } from './src/sessions.ts';
 import { intro, outro, text, isCancel, cancel } from '@clack/prompts';
 import { runAuth } from './src/auth.ts';
-import { loadConfig as loadCfg } from '@agi-cli/config';
-import { isProviderAuthorized } from '@agi-cli/providers';
 import { runModels } from './src/models.ts';
 import { discoverCommands, runDiscoveredCommand } from './src/commands.ts';
 import { runScaffold } from './src/scaffold.ts';
 import { runAgents } from './src/agents.ts';
 import { runToolsList } from './src/tools.ts';
 import { runDoctor } from './src/doctor.ts';
+
+const createApp = createServer;
 // Load package version for --version flag (works in compiled binary)
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import PKG from './package.json' with { type: 'json' };
@@ -75,7 +77,9 @@ async function main() {
 
 	if (cmd === 'sessions') {
 		const projectIdx = argv.indexOf('--project');
-		const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+		const projectRoot = (
+			projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd()
+		) as string;
 		if (!(await ensureSomeAuth(projectRoot))) return;
 		const json = argv.includes('--json');
 		const listFlag = argv.includes('--list');
@@ -141,7 +145,9 @@ async function main() {
 	// Discovered commands from project manifests
 	if (cmd && !cmd.startsWith('-')) {
 		const projectIdx = argv.indexOf('--project');
-		const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+		const projectRoot = (
+			projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd()
+		) as string;
 		if (await runDiscoveredCommand(cmd, argv.slice(1), projectRoot)) return;
 	}
 
@@ -187,7 +193,9 @@ async function main() {
 		console.log('DEBUG: Entering interactive mode - will prompt for input');
 	}
 	const projectIdx = argv.indexOf('--project');
-	const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+	const projectRoot = (
+		projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd()
+	) as string;
 	if (!(await ensureSomeAuth(projectRoot))) return;
 	const cfg = await loadConfig(projectRoot);
 	await getDb(cfg.projectRoot);
@@ -277,7 +285,7 @@ function printHelp(
 }
 
 async function ensureSomeAuth(projectRoot: string): Promise<boolean> {
-	const cfg = await loadCfg(projectRoot);
+	const cfg = await loadConfig(projectRoot);
 	const any = await Promise.all([
 		isProviderAuthorized(cfg, 'openai'),
 		isProviderAuthorized(cfg, 'anthropic'),
@@ -286,7 +294,7 @@ async function ensureSomeAuth(projectRoot: string): Promise<boolean> {
 	]).then((arr) => arr.some(Boolean));
 	if (!any) {
 		await runAuth(['login']);
-		const cfg2 = await loadCfg(projectRoot);
+		const cfg2 = await loadConfig(projectRoot);
 		const any2 = await Promise.all([
 			isProviderAuthorized(cfg2, 'openai'),
 			isProviderAuthorized(cfg2, 'anthropic'),

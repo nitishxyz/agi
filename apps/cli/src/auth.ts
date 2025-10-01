@@ -22,9 +22,9 @@ import {
 	createOAuthUrl,
 	waitForCallback,
 	getCallbackPort,
-} from '@agi-cli/auth';
-import { loadConfig } from '@agi-cli/config';
-import { catalog } from '@agi-cli/providers';
+} from '@agi-cli/sdk';
+import { loadConfig } from '@agi-cli/sdk';
+import { catalog } from '@agi-cli/sdk';
 import { getGlobalConfigDir, getGlobalConfigPath } from '@agi-cli/config/paths';
 
 const PROVIDER_LINKS: Record<

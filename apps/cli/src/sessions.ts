@@ -1,6 +1,6 @@
-import { createApp } from '@agi-cli/server';
-import { loadConfig } from '@agi-cli/config';
-import { getDb } from '@agi-cli/database';
+import { createServer } from '@agi-cli/sdk';
+import { loadConfig } from '@agi-cli/sdk';
+import { getDb } from '@agi-cli/sdk';
 import { intro, outro, select, text, isCancel, cancel } from '@clack/prompts';
 import { box, table } from './ui.ts';
 import { runAsk } from './ask.ts';
@@ -154,7 +154,7 @@ async function httpJson(method: string, url: string, body?: unknown) {
 let currentServer: ReturnType<typeof Bun.serve> | null = null;
 async function startEphemeralServer(): Promise<string> {
 	if (currentServer) return `http://localhost:${currentServer.port}`;
-	const app = createApp();
+	const app = createServer();
 	currentServer = Bun.serve({ port: 0, fetch: app.fetch, idleTimeout: 240 });
 	return `http://localhost:${currentServer.port}`;
 }

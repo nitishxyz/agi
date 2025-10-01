@@ -1,4 +1,4 @@
-import { loadConfig } from '@agi-cli/config';
+import { loadConfig } from '@agi-cli/sdk';
 import { resolveAgentConfig } from '@agi-cli/server/runtime/agentRegistry';
 import { discoverProjectTools } from '@agi-cli/sdk';
 import { box, table } from './ui.ts';

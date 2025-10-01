@@ -44,12 +44,6 @@
 	},
 	"dependencies": {
 		"@agi-cli/sdk": "workspace:*",
-		"@agi-cli/config": "workspace:*",
-		"@agi-cli/auth": "workspace:*",
-		"@agi-cli/database": "workspace:*",
-		"@agi-cli/server": "workspace:*",
-		"@agi-cli/prompts": "workspace:*",
-		"@agi-cli/providers": "workspace:*",
 		"@clack/prompts": "^0.11.0",
 		"marked": "^16.3.0",
 		"marked-terminal": "^7.3.0",
