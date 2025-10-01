@@ -25,13 +25,13 @@
 	],
 	"type": "module",
 	"bin": {
-		"agi": "./install.js"
+		"agi": "./start.js"
 	},
 	"files": [
-		"install.js",
+		"start.js",
 		"README.md"
 	],
 	"scripts": {
-		"postinstall": "node install.js"
+		"postinstall": "node start.js"
 	}
 }
