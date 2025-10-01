@@ -1,6 +1,6 @@
 {
 	"name": "@agi-cli/sdk",
-	"version": "0.1.26",
+	"version": "0.1.27",
 	"description": "AI agent SDK for building intelligent assistants",
 	"author": "ntishxyz",
 	"license": "MIT",

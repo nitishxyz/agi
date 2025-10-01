@@ -131,7 +131,7 @@ jobs:
           printf "//registry.npmjs.org/:_authToken=%s\n" "$NPM_TOKEN" > .npmrc
           echo "always-auth=true" >> .npmrc
 
-      - name: Verify token and version match
+      - name: Verify token and versions match
         shell: bash
         run: |
           set -euo pipefail
@@ -141,10 +141,21 @@ jobs:
           fi
           TAG="${{ github.event.inputs.tag }}"
           CLI_VERSION=$(jq -r .version apps/cli/package.json)
+          SDK_VERSION=$(jq -r .version packages/sdk/package.json)
+          
           if [ "v${CLI_VERSION}" != "$TAG" ]; then
             echo "Tag ($TAG) does not match CLI version (v${CLI_VERSION})" >&2
             exit 1
           fi
+          
+          if [ "${CLI_VERSION}" != "${SDK_VERSION}" ]; then
+            echo "CLI version (${CLI_VERSION}) does not match SDK version (${SDK_VERSION})" >&2
+            echo "Both packages should be updated to the same version in the chore commit before tagging" >&2
+            exit 1
+          fi
+          
+          echo "✓ Tag matches CLI version: ${CLI_VERSION}"
+          echo "✓ SDK version matches CLI version: ${SDK_VERSION}"
 
       - name: Regenerate clean lockfile
         shell: bash
