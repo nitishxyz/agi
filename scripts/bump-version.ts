@@ -141,6 +141,28 @@ function printUsage() {
 	);
 }
 
+function updatePackageVersion(
+	packagePath: string,
+	nextVersion: string,
+	dryRun: boolean,
+): void {
+	const packageJson = JSON.parse(readFileSync(packagePath, 'utf8')) as {
+		version?: string;
+	};
+
+	if (!packageJson.version) {
+		throw new Error(`${packagePath} is missing a version field`);
+	}
+
+	if (!dryRun) {
+		packageJson.version = nextVersion;
+		writeFileSync(packagePath, `${JSON.stringify(packageJson, null, '\t')}\n`);
+		console.log(`✓ Updated ${packagePath} to ${nextVersion}`);
+	} else {
+		console.log(`[DRY RUN] Would update ${packagePath} to ${nextVersion}`);
+	}
+}
+
 function main() {
 	const { type, preid, dryRun } = parseArgs(process.argv.slice(2));
 	if (!type) {
@@ -148,25 +170,35 @@ function main() {
 		throw new Error('--type is required');
 	}
 
-	const packagePath = resolve(process.cwd(), 'package.json');
-	const packageJson = JSON.parse(readFileSync(packagePath, 'utf8')) as {
+	const rootPackagePath = resolve(process.cwd(), 'package.json');
+	const rootPackageJson = JSON.parse(
+		readFileSync(rootPackagePath, 'utf8'),
+	) as {
 		version?: string;
 	};
 
-	if (!packageJson.version) {
-		throw new Error('package.json is missing a version field');
+	if (!rootPackageJson.version) {
+		throw new Error('Root package.json is missing a version field');
 	}
 
-	const nextVersion = incrementVersion(packageJson.version, type, preid);
+	const nextVersion = incrementVersion(rootPackageJson.version, type, preid);
 
-	if (!dryRun) {
-		packageJson.version = nextVersion;
-		writeFileSync(packagePath, `${JSON.stringify(packageJson, null, '\t')}\n`);
-	} else {
-		console.error('Dry run enabled, not writing package.json');
+	if (dryRun) {
+		console.log('=== DRY RUN MODE ===\n');
 	}
 
-	console.log(nextVersion);
+	// Update root package.json
+	updatePackageVersion(rootPackagePath, nextVersion, dryRun);
+
+	// Update CLI package.json
+	const cliPackagePath = resolve(process.cwd(), 'apps/cli/package.json');
+	updatePackageVersion(cliPackagePath, nextVersion, dryRun);
+
+	// Update SDK package.json
+	const sdkPackagePath = resolve(process.cwd(), 'packages/sdk/package.json');
+	updatePackageVersion(sdkPackagePath, nextVersion, dryRun);
+
+	console.log(`\n✓ All packages updated to version: ${nextVersion}`);
 }
 
 main();

@@ -1,82 +1,82 @@
 {
-	"name": "agi-monorepo",
-	"version": "0.1.26",
-	"private": true,
-	"description": "AI-powered development assistant CLI - monorepo",
-	"author": "ntishxyz",
-	"license": "MIT",
-	"homepage": "https://github.com/ntishxyz/agi#readme",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/ntishxyz/agi.git"
-	},
-	"bugs": {
-		"url": "https://github.com/ntishxyz/agi/issues"
-	},
-	"keywords": [
-		"ai",
-		"cli",
-		"development",
-		"assistant",
-		"commit",
-		"code-review",
-		"gemini",
-		"anthropic",
-		"gpt"
-	],
-	"type": "module",
-	"workspaces": [
-		"packages/*",
-		"apps/*",
-		"examples/*"
-	],
-	"scripts": {
-		"lint": "biome check",
-		"cli": "bun run index.ts",
-		"test": "bun test --recursive",
-		"db:generate": "drizzle-kit generate --config=drizzle.config.ts",
-		"db:reset": "bun run scripts/reset-db.ts",
-		"catalog:update": "bun run scripts/update-catalog.ts",
-		"compile": "mkdir -p dist && bun build --compile ./index.ts --outfile dist/agi",
-		"build:bin:darwin-arm64": "mkdir -p dist && bun build --compile --target=bun-darwin-arm64 ./index.ts --outfile dist/agi-darwin-arm64",
-		"build:bin:darwin-x64": "mkdir -p dist && bun build --compile --target=bun-darwin-x64 ./index.ts --outfile dist/agi-darwin-x64",
-		"build:bin:linux-x64": "mkdir -p dist && bun build --compile --target=bun-linux-x64 ./index.ts --outfile dist/agi-linux-x64",
-		"build:bin:linux-arm64": "mkdir -p dist && bun build --compile --target=bun-linux-arm64 ./index.ts --outfile dist/agi-linux-arm64",
-		"build:bin:windows-x64": "mkdir -p dist && bun build --compile --target=bun-windows-x64 ./index.ts --outfile dist/agi-windows-x64.exe",
-		"build": "bun run compile",
-		"build:packages": "bun run --filter './packages/*' build",
-		"build:apps": "bun run --filter './apps/*' build",
-		"build:all": "bun run build:packages && bun run build:apps",
-		"dev:sdk": "bun run --filter @agi-cli/sdk dev",
-		"dev:cli": "bun run --filter @agi-cli/cli dev",
-		"dev:server": "bun run --filter @agi-cli/server dev",
-		"prepublishOnly": "bun run compile",
-		"version:bump": "bun run scripts/bump-version.ts"
-	},
-	"dependencies": {
-		"@ai-sdk/anthropic": "^2.0.16",
-		"@ai-sdk/google": "^2.0.14",
-		"@ai-sdk/openai": "^2.0.30",
-		"@ai-sdk/openai-compatible": "^1.0.18",
-		"@clack/prompts": "^0.11.0",
-		"@openauthjs/openauth": "^0.4.3",
-		"@openrouter/ai-sdk-provider": "^1.2.0",
-		"ai": "^5.0.43",
-		"diff": "^8.0.2",
-		"drizzle-orm": "^0.44.5",
-		"hono": "^4.9.7",
-		"marked": "^16.3.0",
-		"marked-terminal": "^7.3.0",
-		"opencode-anthropic-auth": "^0.0.2",
-		"zod": "^4.1.8"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "2.2.4",
-		"@types/bun": "latest",
-		"@types/marked-terminal": "^6.1.1",
-		"drizzle-kit": "^0.31.4"
-	},
-	"peerDependencies": {
-		"typescript": "^5"
-	}
+  "name": "agi-monorepo",
+  "version": "0.1.28",
+  "private": true,
+  "description": "AI-powered development assistant CLI - monorepo",
+  "author": "ntishxyz",
+  "license": "MIT",
+  "homepage": "https://github.com/ntishxyz/agi#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ntishxyz/agi.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ntishxyz/agi/issues"
+  },
+  "keywords": [
+    "ai",
+    "cli",
+    "development",
+    "assistant",
+    "commit",
+    "code-review",
+    "gemini",
+    "anthropic",
+    "gpt"
+  ],
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "lint": "biome check",
+    "cli": "bun run index.ts",
+    "test": "bun test --recursive",
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:reset": "bun run scripts/reset-db.ts",
+    "catalog:update": "bun run scripts/update-catalog.ts",
+    "compile": "mkdir -p dist && bun build --compile ./index.ts --outfile dist/agi",
+    "build:bin:darwin-arm64": "mkdir -p dist && bun build --compile --target=bun-darwin-arm64 ./index.ts --outfile dist/agi-darwin-arm64",
+    "build:bin:darwin-x64": "mkdir -p dist && bun build --compile --target=bun-darwin-x64 ./index.ts --outfile dist/agi-darwin-x64",
+    "build:bin:linux-x64": "mkdir -p dist && bun build --compile --target=bun-linux-x64 ./index.ts --outfile dist/agi-linux-x64",
+    "build:bin:linux-arm64": "mkdir -p dist && bun build --compile --target=bun-linux-arm64 ./index.ts --outfile dist/agi-linux-arm64",
+    "build:bin:windows-x64": "mkdir -p dist && bun build --compile --target=bun-windows-x64 ./index.ts --outfile dist/agi-windows-x64.exe",
+    "build": "bun run compile",
+    "build:packages": "bun run --filter './packages/*' build",
+    "build:apps": "bun run --filter './apps/*' build",
+    "build:all": "bun run build:packages && bun run build:apps",
+    "dev:sdk": "bun run --filter @agi-cli/sdk dev",
+    "dev:cli": "bun run --filter @agi-cli/cli dev",
+    "dev:server": "bun run --filter @agi-cli/server dev",
+    "prepublishOnly": "bun run compile",
+    "version:bump": "bun run scripts/bump-version.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.16",
+    "@ai-sdk/google": "^2.0.14",
+    "@ai-sdk/openai": "^2.0.30",
+    "@ai-sdk/openai-compatible": "^1.0.18",
+    "@clack/prompts": "^0.11.0",
+    "@openauthjs/openauth": "^0.4.3",
+    "@openrouter/ai-sdk-provider": "^1.2.0",
+    "ai": "^5.0.43",
+    "diff": "^8.0.2",
+    "drizzle-orm": "^0.44.5",
+    "hono": "^4.9.7",
+    "marked": "^16.3.0",
+    "marked-terminal": "^7.3.0",
+    "opencode-anthropic-auth": "^0.0.2",
+    "zod": "^4.1.8"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.4",
+    "@types/bun": "latest",
+    "@types/marked-terminal": "^6.1.1",
+    "drizzle-kit": "^0.31.4"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
 }
