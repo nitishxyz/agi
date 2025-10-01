@@ -4,15 +4,19 @@ This document describes how to publish the AGI CLI and SDK packages.
 
 ## Packages
 
-### `@agi-cli/cli`
-The main CLI application that users install.
-- **Location:** `apps/cli/`
-- **Package name:** `@agi-cli/cli`
-- **Binary:** Standalone executable (61MB)
-- **Publishes:** npm + GitHub releases with binaries
+### `@agi-cli/install`
+
+npm installer package that downloads the AGI CLI binary.
+
+- **Location:** `apps/install/`
+- **Package name:** `@agi-cli/install`
+- **Purpose:** Simplify global installation via npm/bun
+- **Publishes:** npm only (no binaries)
 
 ### `@agi-cli/sdk`
+
 The core SDK for building AI agents and tools.
+
 - **Location:** `packages/sdk/`
 - **Package name:** `@agi-cli/sdk`
 - **Purpose:** Library for developers building custom agents
@@ -29,15 +33,17 @@ git push origin main
 ```
 
 **What happens:**
-1. Checks CLI version in `apps/cli/package.json`
+
+1. Checks install version in `apps/install/package.json`
 2. If tag exists, auto-bumps patch version
-3. Builds binaries for all platforms:
+3. Updates version across all packages (sync)
+4. Builds binaries for all platforms:
    - macOS (x64, ARM64)
    - Linux (x64, ARM64)
    - Windows (x64)
-4. Creates GitHub release with binaries
-5. Publishes `@agi-cli/cli` to npm
-6. Publishes `@agi-cli/sdk` to npm
+5. Creates GitHub release with binaries
+6. Publishes `@agi-cli/install` to npm
+7. Publishes `@agi-cli/sdk` to npm
 
 **Workflow:** `.github/workflows/release-binaries.yml`
 
@@ -48,22 +54,23 @@ git push origin main
 Publish a specific git tag:
 
 ```bash
-# 1. Update version in apps/cli/package.json and packages/sdk/package.json
+# 1. Update version in package.json files
 # 2. Commit and create tag
-git tag v0.1.27
-git push origin v0.1.27
+git tag v0.1.29
+git push origin v0.1.29
 
 # 3. Trigger workflow in GitHub Actions UI:
 #    - Go to Actions > "Publish From Tag"
 #    - Click "Run workflow"
-#    - Enter tag: v0.1.27
+#    - Enter tag: v0.1.29
 ```
 
 **What happens:**
+
 1. Checks out the specific tag
 2. Builds binaries for all platforms
 3. Creates GitHub release with binaries
-4. Publishes both packages to npm
+4. Publishes `@agi-cli/install` and `@agi-cli/sdk` to npm
 
 **Workflow:** `.github/workflows/publish-from-tag.yml`
 
@@ -72,28 +79,48 @@ git push origin v0.1.27
 ## Version Management
 
 ### Version Sync
-Keep versions synchronized across:
-- `apps/cli/package.json` (CLI version)
+
+Versions are automatically synchronized across packages by the `scripts/bump-version.ts` script:
+
+- `apps/install/package.json` (installer version - source of truth for publishing)
+- `apps/cli/package.json` (CLI version - kept in sync but not published)
 - `packages/sdk/package.json` (SDK version)
+
+**Important:** The CI will sync all package versions automatically.
 
 ### Version Bumping
 
 **Automatic (via CI):**
+
 ```bash
 # Push to main - CI auto-bumps if tag exists
 git push origin main
 ```
 
+The CI workflow will:
+
+1. Check if current version tag exists
+2. If exists, bump patch version (0.1.28 → 0.1.29)
+3. Update all package.json files
+4. Create commit with `[skip ci]`
+5. Create new tag
+6. Trigger release workflow
+
 **Manual:**
+
 ```bash
-# Update both package.json files
-vim apps/cli/package.json     # Update "version"
-vim packages/sdk/package.json  # Update "version"
+# Run version bump script
+bun run scripts/bump-version.ts 0.1.29
+
+# Or manually update package.json files
+vim apps/cli/package.json        # Update "version"
+vim apps/install/package.json    # Update "version"
+vim packages/sdk/package.json    # Update "version"
 
 # Commit and tag
 git add .
-git commit -m "chore: bump version to 0.1.27"
-git tag v0.1.27
+git commit -m "chore: bump version to 0.1.29"
+git tag v0.1.29
 git push origin main --tags
 ```
 
@@ -127,6 +154,7 @@ bun run build:windows-x64        # Windows x64
 ```
 
 ### Output Location
+
 - All binaries: `apps/cli/dist/`
 - Default: `dist/agi`
 - Platform-specific: `dist/agi-{os}-{arch}`
@@ -138,11 +166,13 @@ bun run build:windows-x64        # Windows x64
 ### Binary Build Process
 
 1. **Install dependencies:**
+
    ```bash
    bun install
    ```
 
 2. **Build for each platform:**
+
    ```bash
    cd apps/cli
    bun run build:{platform}
@@ -155,14 +185,15 @@ bun run build:windows-x64        # Windows x64
 ### npm Publish Process
 
 1. **Configure npm authentication:**
+
    ```bash
    echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
    ```
 
-2. **Publish CLI:**
+2. **Publish installer:**
+
    ```bash
-   cd apps/cli
-   bun run build  # Build default binary
+   cd apps/install
    bun publish --access public --tag latest
    ```
 
@@ -179,20 +210,23 @@ bun run build:windows-x64        # Windows x64
 After publishing, verify:
 
 ### 1. GitHub Release
+
 - Go to: https://github.com/ntishxyz/agi/releases
 - Check: All platform binaries attached
 - Test: Download and run binary
 
 ### 2. npm Packages
 
-**CLI:**
+**Installer:**
+
 ```bash
-npm view @agi-cli/cli
-npm install -g @agi-cli/cli
+npm view @agi-cli/install
+npm install -g @agi-cli/install
 agi --version
 ```
 
 **SDK:**
+
 ```bash
 npm view @agi-cli/sdk
 npm install @agi-cli/sdk
@@ -205,6 +239,7 @@ npm install @agi-cli/sdk
 ### Build Fails
 
 **Check:**
+
 1. All packages compile: `bun run build:all`
 2. TypeScript errors: `bun lint`
 3. Dependencies installed: `bun install`
@@ -212,16 +247,27 @@ npm install @agi-cli/sdk
 ### npm Publish Fails
 
 **Check:**
+
 1. `NPM_TOKEN` secret is set
 2. Version doesn't already exist on npm
 3. Package.json has correct `name` and `version`
+4. All package versions are synchronized
 
 ### Binary Doesn't Work
 
 **Check:**
+
 1. Build output includes all 684 modules
 2. Binary is executable: `chmod +x apps/cli/dist/agi`
 3. Test locally first: `cd apps/cli && bun run build`
+
+### Version Sync Issues
+
+**Check:**
+
+1. All package.json files have matching versions
+2. Run version sync script: `bun run scripts/bump-version.ts`
+3. Check git tags: `git tag -l`
 
 ---
 
@@ -233,7 +279,7 @@ Before releasing:
 - [ ] Test CLI locally: `cd apps/cli && bun run dev`
 - [ ] Test build: `cd apps/cli && bun run build`
 - [ ] Test binary: `./apps/cli/dist/agi --version`
-- [ ] Verify version in both package.json files
+- [ ] Verify version sync across all packages
 - [ ] Run tests: `bun test`
 - [ ] Commit all changes
 - [ ] Push to main or create tag
@@ -245,10 +291,14 @@ Before releasing:
 ```
 agi/
 ├── apps/
-│   └── cli/
-│       ├── dist/              # Build output
-│       ├── package.json       # CLI version, bin entry
-│       └── index.ts          # CLI entry point
+│   ├── cli/
+│   │   ├── dist/              # Build output
+│   │   ├── package.json       # CLI version, bin entry
+│   │   └── index.ts          # CLI entry point
+│   └── install/
+│       ├── install.js        # Postinstall script
+│       ├── package.json      # Installer config
+│       └── README.md         # Installer docs
 ├── packages/
 │   └── sdk/
 │       ├── src/              # SDK source
@@ -261,25 +311,64 @@ agi/
 
 ---
 
+## Installation Flow
+
+### User installs via npm
+
+```
+User: npm install -g @agi-cli/install
+  ↓
+npm: Download @agi-cli/install package
+  ↓
+npm: Run postinstall (apps/install/install.js)
+  ↓
+Script: Detect platform (darwin-arm64, linux-x64, etc.)
+  ↓
+Script: Download binary from https://install.agi.nitish.sh
+  ↓
+Script: Install to /usr/local/bin or ~/.local/bin
+  ↓
+User: agi --version ✓
+```
+
+### Installer Package Benefits
+
+1. **Standard npm workflow**: Familiar to developers
+2. **Automatic updates**: `npm update -g @agi-cli/install`
+3. **Cross-platform**: Works on all platforms
+4. **Small package size**: ~560 bytes (downloads binary separately)
+5. **PATH management**: Handles installation directory automatically
+
+---
+
 ## Post-Release
 
 After successful release:
 
 1. **Announce release** (if needed)
 2. **Update documentation** (if needed)
-3. **Test installation:**
+3. **Test all installation methods:**
+
    ```bash
-   npm install -g @agi-cli/cli@latest
+   # Test npm install
+   npm install -g @agi-cli/install@latest
+   agi --version
+
+   # Test curl install
+   curl -fsSL https://install.agi.nitish.sh | sh
    agi --version
    ```
+
 4. **Monitor for issues** in GitHub Issues
 
 ---
 
 ## Summary
 
-- **Push to main** → Auto-release both packages
+- **Two packages published to npm:** `@agi-cli/install` (installer), `@agi-cli/sdk` (library)
+- **Binaries published to GitHub releases:** Platform-specific CLI binaries
+- **Push to main** → Auto-release all packages with version sync
 - **Manual tag** → Release specific version
-- **Two packages published:** CLI (binary) + SDK (library)
 - **All platforms supported:** macOS, Linux, Windows (x64, ARM64)
-- **Automated via GitHub Actions**
+- **Automated via GitHub Actions** with version synchronization
+- **npm installer package** provides easiest installation experience

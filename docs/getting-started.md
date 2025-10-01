@@ -4,7 +4,27 @@
 
 ## Installation
 
-### Using curl (recommended)
+### Recommended: npm or bun (global install)
+
+The easiest way to install AGI is via npm or bun:
+
+```bash
+npm install -g @agi-cli/install
+# or
+bun install -g @agi-cli/install
+```
+
+This will automatically:
+- Download the correct prebuilt binary for your OS and architecture
+- Install it to your system PATH
+- Make the `agi` command available globally
+
+**Supported platforms:**
+- macOS (x64, ARM64/Apple Silicon)
+- Linux (x64, ARM64)
+- Windows (x64)
+
+### Alternative: Direct binary install via curl
 
 ```bash
 curl -fsSL https://install.agi.nitish.sh | sh
@@ -17,17 +37,8 @@ curl -fsSL https://install.agi.nitish.sh | sh
 Pin a specific version:
 
 ```bash
-AGI_VERSION=v0.1.9 curl -fsSL https://install.agi.nitish.sh | sh
+AGI_VERSION=v0.1.29 curl -fsSL https://install.agi.nitish.sh | sh
 ```
-
-### Via Bun (global package)
-
-```bash
-bun pm -g trust @agi-cli/core   # allow postinstall to fetch the binary
-bun install -g @agi-cli/core
-```
-
-After install, the first `agi` run will download the matching binary if it’s missing.
 
 ### From Source
 
@@ -42,10 +53,11 @@ cd agi
 bun install
 
 # Build the CLI binary
+cd apps/cli
 bun run build
 
-# Optional: Link globally for system-wide access
-bun link
+# The binary will be at apps/cli/dist/agi
+# Optional: Add to PATH or link globally
 ```
 
 Optional: Pretty-print markdown output when running from source
@@ -82,7 +94,7 @@ agi "help me write tests" --agent build
 agi "what about edge cases?" --last
 
 # Use a specific provider and model
-agi "refactor this function" --provider anthropic --model claude-3-opus
+agi "refactor this function" --provider anthropic --model claude-sonnet-4
 ```
 
 ## Output & Rendering
@@ -105,3 +117,71 @@ AGI provides two output modes for assistant responses:
 - JSON output: `--json` for structured result, `--json-stream` for streaming
 - Bash output: Limited to 7 lines (use `--json` for full output)
 - Plans: Show `[ ]` pending, `[x]` complete, `...` in progress
+
+## Verifying Installation
+
+After installation, verify AGI is working:
+
+```bash
+# Check version
+agi --version
+
+# Test basic functionality
+agi "hello, can you hear me?"
+
+# Check available agents
+agi agents
+
+# View available models
+agi models
+```
+
+## Next Steps
+
+- **Configuration**: See [configuration.md](./configuration.md) for detailed config options
+- **Usage**: See [usage.md](./usage.md) for command examples
+- **Agents & Tools**: See [agents-tools.md](./agents-tools.md) for built-in capabilities
+- **Customization**: See [customization.md](./customization.md) for custom commands and tools
+- **SDK**: See [../packages/sdk/README.md](../packages/sdk/README.md) for embedding AGI in your projects
+
+## Troubleshooting
+
+### Command not found after installation
+
+If `agi` is not found after installation:
+
+1. **Check installation location** (curl method):
+   - Look for messages during installation about where the binary was placed
+   - Common locations: `/usr/local/bin/agi` or `~/.local/bin/agi`
+
+2. **Add to PATH** if needed:
+   ```bash
+   # For ~/.local/bin
+   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+3. **For npm/bun install issues**:
+   ```bash
+   # Check if package was installed
+   npm list -g @agi-cli/install
+   
+   # Reinstall if needed
+   npm uninstall -g @agi-cli/install
+   npm install -g @agi-cli/install
+   ```
+
+### Binary not executable
+
+If you get a permission error:
+
+```bash
+chmod +x $(which agi)
+# or
+chmod +x /path/to/agi
+```
+
+### Other issues
+
+See [troubleshooting.md](./troubleshooting.md) for more help, or file an issue at:
+https://github.com/nitishxyz/agi/issues

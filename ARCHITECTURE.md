@@ -4,12 +4,13 @@ This document describes the monorepo architecture of the AGI CLI project.
 
 ## Project Structure
 
-AGI CLI is organized as a **Bun workspace monorepo** with 8 packages and 1 application:
+AGI CLI is organized as a **Bun workspace monorepo** with 7 packages and 2 applications:
 
 ```
 agi/
 ├── apps/
-│   └── cli/                    # AGI CLI application (main binary)
+│   ├── cli/                    # AGI CLI application (main binary)
+│   └── install/                # npm installer package
 ├── packages/
 │   ├── auth/                   # Authentication & credential management
 │   ├── config/                 # Configuration system
@@ -17,13 +18,42 @@ agi/
 │   ├── prompts/                # System prompts for agents
 │   ├── providers/              # AI provider catalog & utilities
 │   ├── sdk/                    # Core SDK (tools, streaming, agents)
-│   ├── server/                 # HTTP server (Hono-based)
-│   └── prompts/                # Prompt templates
+│   └── server/                 # HTTP server (Hono-based)
 ├── package.json                # Workspace root configuration
 └── bun.lock
 ```
 
 ## Package Descriptions
+
+### `@agi-cli/install` (Application)
+
+**Purpose:** npm installer package that downloads and installs the AGI CLI binary.
+
+**Key Features:**
+
+- Lightweight installer (~560 bytes)
+- Downloads platform-specific binary from install script
+- Supports npm and bun global installation
+- Handles all supported platforms (macOS, Linux, Windows)
+
+**Installation:**
+
+```bash
+npm install -g @agi-cli/install
+# or
+bun install -g @agi-cli/install
+```
+
+**How it works:**
+1. User runs `npm install -g @agi-cli/install`
+2. Postinstall script (`install.js`) runs automatically
+3. Detects platform and architecture
+4. Downloads binary from `https://install.agi.nitish.sh`
+5. Installs to system PATH
+
+**Dependencies:** None (standalone installer)
+
+---
 
 ### `@agi-cli/auth`
 
@@ -185,6 +215,8 @@ agi/
 
 **Purpose:** CLI application - the main user-facing interface.
 
+**Note:** This package is NOT published to npm. It's only used internally to build platform-specific binaries that are published to GitHub releases.
+
 **Key Features:**
 
 - Interactive commands (`auth`, `models`, `sessions`, `scaffold`)
@@ -205,28 +237,34 @@ agi/
 ## Dependency Graph
 
 ```
-                    ┌─────────┐
-                    │   cli   │ (app)
-                    └────┬────┘
-                         │
-         ┌───────────────┼───────────────┐
-         │               │               │
-    ┌────▼────┐     ┌───▼────┐     ┌───▼─────┐
-    │ server  │     │  sdk   │     │ prompts │
-    └────┬────┘     └───┬────┘     └─────────┘
-         │              │
-         └──────┬───────┘
-                │
-         ┌──────┼───────┬─────────┐
-         │      │       │         │
-    ┌────▼──┐ ┌▼─────┐ ┌▼────────┐ ┌──────────┐
-    │ auth  │ │config│ │providers│ │ database │
-    └───────┘ └──────┘ └─────────┘ └──────────┘
+                 ┌─────────┐
+                 │ install │ (installer app)
+                 └─────────┘
+                      │
+                      │ (downloads binary)
+                      ▼
+                 ┌─────────┐
+                 │   cli   │ (main app)
+                 └────┬────┘
+                      │
+      ┌───────────────┼───────────────┐
+      │               │               │
+ ┌────▼────┐     ┌───▼────┐     ┌───▼─────┐
+ │ server  │     │  sdk   │     │ prompts │
+ └────┬────┘     └───┬────┘     └─────────┘
+      │              │
+      └──────┬───────┘
+             │
+      ┌──────┼───────┬─────────┐
+      │      │       │         │
+ ┌────▼──┐ ┌▼─────┐ ┌▼────────┐ ┌──────────┐
+ │ auth  │ │config│ │providers│ │ database │
+ └───────┘ └──────┘ └─────────┘ └──────────┘
 ```
 
 **Dependency Rules:**
 
-- **Level 0** (no deps): `database`, `providers`, `prompts`
+- **Level 0** (no deps): `database`, `providers`, `prompts`, `install` (standalone)
 - **Level 1**: `auth` → config, providers
 - **Level 1**: `config` → providers, auth
 - **Level 2**: `sdk` → auth, config, providers, database
@@ -386,6 +424,12 @@ bun lint
 - Bun workspace provides fast installs
 - Single 61MB binary bundles everything
 
+### Easy Distribution
+
+- npm installer package for simple installation
+- Binary releases for all platforms
+- SDK package for embedding in other projects
+
 ---
 
 ## Binary Build
@@ -443,6 +487,56 @@ AGI CLI uses a three-level configuration system:
 
 ---
 
+## Installation Methods
+
+AGI CLI supports multiple installation methods:
+
+### 1. npm/bun Installer (Recommended)
+
+```bash
+npm install -g @agi-cli/install
+```
+
+- Easiest for most users
+- Automatic platform detection
+- Handles PATH setup
+- Works with standard npm/bun workflows
+
+### 2. Direct Binary Download
+
+```bash
+curl -fsSL https://install.agi.nitish.sh | sh
+```
+
+- Direct install without npm
+- Good for CI/CD environments
+- Supports version pinning
+
+### 3. From Source
+
+```bash
+git clone https://github.com/nitishxyz/agi.git
+cd agi
+bun install
+cd apps/cli
+bun run build
+```
+
+- For contributors and developers
+- Latest development version
+- Full control over build process
+
+---
+
 ## Summary
 
-AGI CLI is a well-structured monorepo with clear boundaries, explicit dependencies, and a logical package hierarchy. The architecture supports both CLI and server modes, is fully testable, and produces a single self-contained binary for distribution.
+AGI CLI is a well-structured monorepo with clear boundaries, explicit dependencies, and a logical package hierarchy. The architecture supports:
+
+- **Multiple installation methods** (npm, curl, source)
+- **CLI and server modes** for different use cases
+- **Embeddable SDK** for integration into other projects
+- **Full testability** with isolated packages
+- **Single self-contained binary** for distribution
+- **Automated CI/CD** with version synchronization
+
+The addition of the `@agi-cli/install` package provides a streamlined installation experience while maintaining flexibility for advanced users.
