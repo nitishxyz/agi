@@ -41,9 +41,7 @@ function findBinaryInPath() {
 						return binPath;
 					}
 				}
-			} catch (err) {
-				continue;
-			}
+			} catch (err) {}
 		}
 	}
 	return null;
