@@ -171,9 +171,7 @@ function main() {
 	}
 
 	const rootPackagePath = resolve(process.cwd(), 'package.json');
-	const rootPackageJson = JSON.parse(
-		readFileSync(rootPackagePath, 'utf8'),
-	) as {
+	const rootPackageJson = JSON.parse(readFileSync(rootPackagePath, 'utf8')) as {
 		version?: string;
 	};
 
