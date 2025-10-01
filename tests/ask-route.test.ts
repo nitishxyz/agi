@@ -1,12 +1,12 @@
 import { describe, expect, test, mock } from 'bun:test';
 import { Hono } from 'hono';
-import { AskServiceError } from '@/server/runtime/askService.ts';
+import { AskServiceError } from '@agi-cli/server';
 
 const handleAskRequestMock = mock(async () => {
 	throw new AskServiceError('Unauthorized provider', 401);
 });
 
-mock.module('@/server/runtime/askService.ts', () => ({
+mock.module('@agi-cli/server/runtime/askService.ts', () => ({
 	handleAskRequest: handleAskRequestMock,
 	AskServiceError,
 }));
@@ -16,7 +16,7 @@ describe('registerAskRoutes error handling', () => {
 		handleAskRequestMock.mockImplementationOnce(async () => {
 			throw new AskServiceError('Unauthorized provider', 401);
 		});
-		const { registerAskRoutes } = await import('@/server/routes/ask.ts');
+		const { registerAskRoutes } = await import('@agi-cli/server/routes/ask.ts');
 		const app = new Hono();
 		registerAskRoutes(app);
 
@@ -35,7 +35,7 @@ describe('registerAskRoutes error handling', () => {
 		handleAskRequestMock.mockImplementationOnce(async () => {
 			throw new Error('Boom');
 		});
-		const { registerAskRoutes } = await import('@/server/routes/ask.ts');
+		const { registerAskRoutes } = await import('@agi-cli/server/routes/ask.ts');
 		const app = new Hono();
 		registerAskRoutes(app);
 

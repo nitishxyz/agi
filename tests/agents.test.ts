@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { resolveAgentConfig } from '../src/ai/agents/registry.ts';
+import { resolveAgentConfig } from '@agi-cli/server';
 
 describe('agent config merging', () => {
 	it('combines default and appended tools from global and local configs', async () => {

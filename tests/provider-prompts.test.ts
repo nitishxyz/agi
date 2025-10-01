@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { providerBasePrompt } from '@/prompts/providers.ts';
+import { providerBasePrompt } from '@agi-cli/prompts';
 
 describe('provider base prompts', () => {
 	it('falls back to default when provider file missing', async () => {

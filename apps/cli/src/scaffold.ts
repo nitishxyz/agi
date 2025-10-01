@@ -442,7 +442,11 @@ export async function listAvailableTools(
 	_scope: 'local' | 'global',
 	includeFinish: boolean,
 ): Promise<string[]> {
-	const discovered = await discoverProjectTools(_projectRoot).catch(() => []);
+	const globalConfigDir = getGlobalConfigDir();
+	const discovered = await discoverProjectTools(
+		_projectRoot,
+		globalConfigDir,
+	).catch(() => []);
 	const names = new Set<string>();
 	const curatedBuiltIns = [
 		'read',

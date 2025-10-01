@@ -9,7 +9,11 @@
 		".": {
 			"import": "./src/providers.ts",
 			"types": "./src/providers.ts"
-		}
+		},
+		"./base.txt": "./src/base.txt",
+		"./agents/*.txt": "./src/agents/*.txt",
+		"./modes/*.txt": "./src/modes/*.txt",
+		"./providers/*.txt": "./src/providers/*.txt"
 	},
 	"scripts": {
 		"dev": "bun run src/providers.ts",

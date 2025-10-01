@@ -32,6 +32,10 @@ export type { ProviderId, ModelInfo } from '@agi-cli/providers';
 export { discoverProjectTools } from './tools/loader.ts';
 export type { DiscoveredTool } from './tools/loader.ts';
 
+// Re-export for testing/advanced usage
+export { buildFsTools } from './tools/builtin/fs/index.ts';
+export { buildGitTools } from './tools/builtin/git.ts';
+
 // =======================
 // Streaming & Artifacts
 // =======================
@@ -88,3 +92,18 @@ export type { AgentConfig, AgentConfigEntry } from './agent/types.ts';
 // Schema Validation
 // =======================
 export { z } from 'zod';
+
+// =======================
+// Error Handling
+// =======================
+export {
+	AGIError,
+	AuthError,
+	ConfigError,
+	ToolError,
+	ProviderError,
+	DatabaseError,
+	ValidationError,
+	NotFoundError,
+	ServiceError,
+} from './errors.ts';

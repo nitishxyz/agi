@@ -9,6 +9,18 @@
 		".": {
 			"import": "./src/index.ts",
 			"types": "./src/index.ts"
+		},
+		"./runtime/agentRegistry": {
+			"import": "./src/runtime/agentRegistry.ts",
+			"types": "./src/runtime/agentRegistry.ts"
+		},
+		"./runtime/askService.ts": {
+			"import": "./src/runtime/askService.ts",
+			"types": "./src/runtime/askService.ts"
+		},
+		"./routes/ask.ts": {
+			"import": "./src/routes/ask.ts",
+			"types": "./src/routes/ask.ts"
 		}
 	},
 	"scripts": {

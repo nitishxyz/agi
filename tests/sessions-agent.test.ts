@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { Hono } from 'hono';
-import { registerSessionsRoutes } from '@/server/routes/sessions.ts';
+import { registerSessionsRoutes } from '@agi-cli/server';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';

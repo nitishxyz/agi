@@ -1,5 +1,5 @@
 import { describe, expect, test, mock } from 'bun:test';
-import { runAskStreamCapture } from '@/cli/ask/capture.ts';
+import { runAskStreamCapture } from '@agi-cli/cli/src/ask/capture.ts';
 
 const encoder = new TextEncoder();
 

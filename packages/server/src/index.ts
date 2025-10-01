@@ -23,3 +23,18 @@ export default {
 export function createApp() {
 	return app;
 }
+
+// Re-export commonly used runtime modules for testing
+export {
+	resolveAgentConfig,
+	defaultToolsForAgent,
+} from './runtime/agentRegistry.ts';
+export { composeSystemPrompt } from './runtime/prompt.ts';
+export {
+	AskServiceError,
+	handleAskRequest,
+	deriveStatusFromMessage,
+	inferStatus,
+} from './runtime/askService.ts';
+export { registerSessionsRoutes } from './routes/sessions.ts';
+export { registerAskRoutes } from './routes/ask.ts';

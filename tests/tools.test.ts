@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { discoverProjectTools } from '../src/ai/tools/loader.ts';
+import { discoverProjectTools } from '@agi-cli/sdk';
 
 const pluginSource = `export default async ({ project }) => ({
   name: 'custom_echo',
@@ -36,7 +36,8 @@ describe('discoverProjectTools', () => {
 			await mkdir(globalToolDir, { recursive: true });
 			await writeFile(join(globalToolDir, 'tool.js'), pluginSource);
 
-			const tools = await discoverProjectTools(projectRoot);
+			const globalConfigDir = join(homeDir, '.config', 'agi');
+			const tools = await discoverProjectTools(projectRoot, globalConfigDir);
 			const names = tools.map((t) => t.name).sort();
 			expect(names).toContain('custom_echo');
 			expect(names).toContain('read');

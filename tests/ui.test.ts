@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { box } from '../src/cli/ui.ts';
+import { box } from '@agi-cli/cli/src/ui.ts';
 
 describe('box()', () => {
 	it('does not throw when columns are tiny', () => {

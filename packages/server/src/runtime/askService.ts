@@ -23,11 +23,22 @@ import { sessions } from '@agi-cli/database/schema';
 import { time } from './debug.ts';
 
 export class AskServiceError extends Error {
-	status: number;
-
-	constructor(message: string, status = 400) {
+	constructor(
+		message: string,
+		public status = 400,
+		public code = 'ASK_SERVICE_ERROR',
+	) {
 		super(message);
-		this.status = status;
+		this.name = 'AskServiceError';
+	}
+
+	toJSON() {
+		return {
+			name: this.name,
+			message: this.message,
+			code: this.code,
+			status: this.status,
+		};
 	}
 }
 

@@ -20,6 +20,14 @@
 		".": {
 			"import": "./src/index.ts",
 			"types": "./src/index.ts"
+		},
+		"./tools/builtin/fs": {
+			"import": "./src/tools/builtin/fs/index.ts",
+			"types": "./src/tools/builtin/fs/index.ts"
+		},
+		"./tools/builtin/git": {
+			"import": "./src/tools/builtin/git.ts",
+			"types": "./src/tools/builtin/git.ts"
 		}
 	},
 	"files": [

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { listAvailableTools } from '../src/cli/scaffold.ts';
+import { listAvailableTools } from '@agi-cli/cli/src/scaffold.ts';
 
 const pluginSource = `export default async () => ({
   name: 'custom_thing',

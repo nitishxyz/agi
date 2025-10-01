@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { loadConfig } from '../src/config/index.ts';
+import { loadConfig } from '@agi-cli/sdk';
 
 describe('config loader', () => {
 	it('loads defaults when no config files present', async () => {
