@@ -1,0 +1,37 @@
+{
+	"name": "@agi-cli/install",
+	"version": "0.1.29",
+	"description": "AI-powered development assistant CLI - npm installer",
+	"author": "ntishxyz",
+	"license": "MIT",
+	"homepage": "https://github.com/ntishxyz/agi#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ntishxyz/agi.git",
+		"directory": "apps/install"
+	},
+	"bugs": {
+		"url": "https://github.com/ntishxyz/agi/issues"
+	},
+	"keywords": [
+		"ai",
+		"cli",
+		"development",
+		"assistant",
+		"code-review",
+		"anthropic",
+		"openai",
+		"gemini"
+	],
+	"type": "module",
+	"bin": {
+		"agi": "./install.js"
+	},
+	"files": [
+		"install.js",
+		"README.md"
+	],
+	"scripts": {
+		"postinstall": "node install.js"
+	}
+}

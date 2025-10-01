@@ -140,22 +140,22 @@ jobs:
             exit 1
           fi
           TAG="${{ github.event.inputs.tag }}"
-          CLI_VERSION=$(jq -r .version apps/cli/package.json)
+          INSTALL_VERSION=$(jq -r .version apps/install/package.json)
           SDK_VERSION=$(jq -r .version packages/sdk/package.json)
           
-          if [ "v${CLI_VERSION}" != "$TAG" ]; then
-            echo "Tag ($TAG) does not match CLI version (v${CLI_VERSION})" >&2
+          if [ "v${INSTALL_VERSION}" != "$TAG" ]; then
+            echo "Tag ($TAG) does not match install version (v${INSTALL_VERSION})" >&2
             exit 1
           fi
           
-          if [ "${CLI_VERSION}" != "${SDK_VERSION}" ]; then
-            echo "CLI version (${CLI_VERSION}) does not match SDK version (${SDK_VERSION})" >&2
+          if [ "${INSTALL_VERSION}" != "${SDK_VERSION}" ]; then
+            echo "Install version (${INSTALL_VERSION}) does not match SDK version (${SDK_VERSION})" >&2
             echo "Both packages should be updated to the same version in the chore commit before tagging" >&2
             exit 1
           fi
           
-          echo "✓ Tag matches CLI version: ${CLI_VERSION}"
-          echo "✓ SDK version matches CLI version: ${SDK_VERSION}"
+          echo "✓ Tag matches install version: ${INSTALL_VERSION}"
+          echo "✓ SDK version matches install version: ${SDK_VERSION}"
 
       - name: Regenerate clean lockfile
         shell: bash
@@ -163,14 +163,12 @@ jobs:
           rm -f bun.lock
           bun install
 
-      - name: Publish CLI to npm
+      - name: Publish install package to npm
         shell: bash
         run: |
           set -euo pipefail
-          cd apps/cli
-          # Build the binary first
-          bun run build
-          # Publish CLI package
+          cd apps/install
+          # Publish install package
           bun publish --access public --tag latest
 
       - name: Publish SDK to npm

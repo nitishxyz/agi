@@ -32,7 +32,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          CURRENT_VERSION=$(jq -r .version apps/cli/package.json)
+          CURRENT_VERSION=$(jq -r .version apps/install/package.json)
           if git rev-parse "v${CURRENT_VERSION}" >/dev/null 2>&1; then
             echo "Current tag v${CURRENT_VERSION} exists; bumping patch version"
             MAJOR=$(echo "$CURRENT_VERSION" | awk -F. '{print $1}')
@@ -51,6 +51,11 @@ jobs:
             tmpfile=$(mktemp)
             jq ".version = \"${NEW_VERSION}\"" apps/cli/package.json > "$tmpfile"
             mv "$tmpfile" apps/cli/package.json
+            
+            echo "Updating install package.json to ${NEW_VERSION}"
+            tmpfile=$(mktemp)
+            jq ".version = \"${NEW_VERSION}\"" apps/install/package.json > "$tmpfile"
+            mv "$tmpfile" apps/install/package.json
             
             echo "Updating SDK package.json to ${NEW_VERSION}"
             tmpfile=$(mktemp)
@@ -209,25 +214,24 @@ jobs:
       - name: Verify versions match
         shell: bash
         run: |
-          CLI_VERSION=$(jq -r .version apps/cli/package.json)
+          INSTALL_VERSION=$(jq -r .version apps/install/package.json)
           SDK_VERSION=$(jq -r .version packages/sdk/package.json)
           
-          if [ "${CLI_VERSION}" != "${SDK_VERSION}" ]; then
-            echo "CLI version (${CLI_VERSION}) does not match SDK version (${SDK_VERSION})" >&2
+          if [ "${INSTALL_VERSION}" != "${SDK_VERSION}" ]; then
+            echo "Install version (${INSTALL_VERSION}) does not match SDK version (${SDK_VERSION})" >&2
             exit 1
           fi
           
-          echo "✓ CLI and SDK versions match: ${CLI_VERSION}"
+          echo "✓ Install and SDK versions match: ${INSTALL_VERSION}"
 
-      - name: Publish CLI to npm
+      - name: Publish install package to npm
         env:
           VERSION: ${{ needs.check-version.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          cd apps/cli
-          echo "Publishing @agi-cli/cli@${VERSION} to npm..."
-          bun run build
+          cd apps/install
+          echo "Publishing @agi-cli/install@${VERSION} to npm..."
           bun publish --access public --tag latest
 
       - name: Publish SDK to npm
