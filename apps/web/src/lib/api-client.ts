@@ -68,6 +68,21 @@ class ApiClient {
 	getStreamUrl(sessionId: string): string {
 		return `${this.baseUrl}/v1/sessions/${sessionId}/stream`;
 	}
+
+	async getConfig(): Promise<{
+		agents: string[];
+		providers: string[];
+		defaults: { agent: string; provider: string; model: string };
+	}> {
+		return this.request('/v1/config');
+	}
+
+	async getModels(provider: string): Promise<{
+		models: Array<{ id: string; label: string; toolCall?: boolean }>;
+		default: string;
+	}> {
+		return this.request(`/v1/config/providers/${provider}/models`);
+	}
 }
 
 export const apiClient = new ApiClient(config.apiBaseUrl);

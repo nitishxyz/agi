@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppLayout } from './components/layout/AppLayout';
 import { SessionList } from './components/sessions/SessionList';
 import { MessageThread } from './components/messages/MessageThread';
 import { ChatInput } from './components/chat/ChatInput';
+import { ConfigModal } from './components/chat/ConfigModal';
 import { useSessions, useCreateSession } from './hooks/useSessions';
 import { useMessages, useSendMessage } from './hooks/useMessages';
 import { useSessionStream } from './hooks/useSessionStream';
@@ -19,6 +20,11 @@ const queryClient = new QueryClient({
 
 function AppContent() {
 	const [activeSessionId, setActiveSessionId] = useState<string>();
+	const [agent, setAgent] = useState('');
+	const [provider, setProvider] = useState('');
+	const [model, setModel] = useState('');
+	const [isConfigOpen, setIsConfigOpen] = useState(false);
+	const [inputKey, setInputKey] = useState(0);
 
 	const { data: sessions = [], isLoading: sessionsLoading } = useSessions();
 	const { data: messages = [], isLoading: messagesLoading } =
@@ -27,6 +33,11 @@ function AppContent() {
 	const sendMessage = useSendMessage(activeSessionId || '');
 
 	useSessionStream(activeSessionId);
+
+	useEffect(() => {
+		setInputKey((prev) => prev + 1);
+		// biome-ignore lint/correctness/useExhaustiveDependencies: remount input on session change
+	}, [activeSessionId]);
 
 	const handleNewSession = async () => {
 		try {
@@ -43,7 +54,12 @@ function AppContent() {
 		if (!activeSessionId) return;
 
 		try {
-			await sendMessage.mutateAsync({ content });
+			await sendMessage.mutateAsync({
+				content,
+				agent: agent || undefined,
+				provider: provider || undefined,
+				model: model || undefined,
+			});
 		} catch (error) {
 			console.error('Failed to send message:', error);
 		}
@@ -77,9 +93,21 @@ function AppContent() {
 					) : (
 						<MessageThread messages={messages} />
 					)}
+					<ConfigModal
+						isOpen={isConfigOpen}
+						onClose={() => setIsConfigOpen(false)}
+						agent={agent}
+						provider={provider}
+						model={model}
+						onAgentChange={setAgent}
+						onProviderChange={setProvider}
+						onModelChange={setModel}
+					/>
 					<ChatInput
+						key={inputKey}
 						onSend={handleSendMessage}
 						disabled={sendMessage.isPending}
+						onConfigClick={() => setIsConfigOpen(true)}
 					/>
 				</>
 			) : (

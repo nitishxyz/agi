@@ -15,6 +15,7 @@ import { FinishRenderer } from './FinishRenderer';
 import { GenericRenderer } from './GenericRenderer';
 import { DebugRenderer } from './DebugRenderer';
 import { UpdatePlanRenderer } from './UpdatePlanRenderer';
+import { ProgressUpdateRenderer } from './ProgressUpdateRenderer';
 
 interface ToolResultRendererProps {
 	toolName: string;
@@ -71,6 +72,8 @@ export function ToolResultRenderer({
 			return <FinishRenderer {...props} />;
 		case 'update_plan':
 			return <UpdatePlanRenderer {...props} />;
+		case 'progress_update':
+			return <ProgressUpdateRenderer {...props} />;
 		default:
 			return <GenericRenderer {...props} toolName={toolName} />;
 	}

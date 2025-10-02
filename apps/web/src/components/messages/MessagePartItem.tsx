@@ -22,19 +22,40 @@ interface MessagePartItemProps {
 	showLine: boolean;
 	isFirstPart: boolean;
 	isLastToolCall?: boolean;
+	isLastProgressUpdate?: boolean;
 }
 
 export function MessagePartItem({
 	part,
 	showLine,
 	isLastToolCall,
+	isLastProgressUpdate,
 }: MessagePartItemProps) {
 	if (part.type === 'tool_call' && !isLastToolCall) {
 		return null;
 	}
 
-	if (part.type === 'tool_result' && part.toolName === 'progress_update') {
+	// Hide progress_update unless it's the last one (before finish)
+	if (
+		part.type === 'tool_result' &&
+		part.toolName === 'progress_update' &&
+		!isLastProgressUpdate
+	) {
 		return null;
+	}
+
+	// Hide empty text parts
+	if (part.type === 'text') {
+		const data = part.contentJson || part.content;
+		let content = '';
+		if (data && typeof data === 'object' && 'text' in data) {
+			content = String(data.text);
+		} else if (typeof data === 'string') {
+			content = data;
+		}
+		if (!content || !content.trim()) {
+			return null;
+		}
 	}
 
 	const renderIcon = () => {
@@ -112,7 +133,7 @@ export function MessagePartItem({
 			}
 
 			return (
-				<div className="text-base text-foreground/90 leading-relaxed prose prose-invert prose-base max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+				<div className="text-base text-foreground/90 leading-relaxed markdown-content">
 					<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
 				</div>
 			);

@@ -1,21 +1,27 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { KeyboardEvent } from 'react';
-import { Send } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Send, MoreVertical } from 'lucide-react';
 import { Input } from '../ui/Input';
 
 interface ChatInputProps {
 	onSend: (message: string) => void;
 	disabled?: boolean;
+	onConfigClick?: () => void;
 }
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 	const [message, setMessage] = useState('');
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		inputRef.current?.focus();
+	}, []);
 
 	const handleSend = () => {
 		if (message.trim() && !disabled) {
 			onSend(message);
 			setMessage('');
+			inputRef.current?.focus();
 		}
 	};
 
@@ -27,24 +33,39 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 	};
 
 	return (
-		<div className="absolute bottom-0 left-0 right-0 pt-16 pb-8 px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none">
+		<div className="absolute bottom-0 left-0 right-0 pt-16 pb-8 px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-50">
 			<div className="max-w-3xl mx-auto pointer-events-auto">
-				<div className="flex gap-2 bg-muted rounded-full border border-border p-1">
+				<div className="flex items-center gap-1 bg-muted rounded-full border border-border p-1 focus-within:border-white transition-colors">
+					{onConfigClick && (
+						<button
+							type="button"
+							onClick={onConfigClick}
+							className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-background/50 transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
+						>
+							<MoreVertical className="w-4 h-4" />
+						</button>
+					)}
 					<Input
+						ref={inputRef}
 						value={message}
 						onChange={(e) => setMessage(e.target.value)}
 						onKeyDown={handleKeyDown}
 						placeholder="Type a message..."
 						disabled={disabled}
-						className="border-0 bg-transparent focus:ring-0 px-4"
+						className="border-0 bg-transparent pl-1 pr-2"
 					/>
-					<Button
+					<button
+						type="button"
 						onClick={handleSend}
 						disabled={disabled || !message.trim()}
-						className="rounded-full"
+						className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors flex-shrink-0 ${
+							message.trim()
+								? 'bg-white hover:bg-white/90 text-black'
+								: 'bg-transparent text-muted-foreground'
+						}`}
 					>
 						<Send className="w-4 h-4" />
-					</Button>
+					</button>
 				</div>
 			</div>
 		</div>

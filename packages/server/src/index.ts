@@ -7,6 +7,7 @@ import { registerSessionsRoutes } from './routes/sessions.ts';
 import { registerSessionMessagesRoutes } from './routes/session-messages.ts';
 import { registerSessionStreamRoute } from './routes/session-stream.ts';
 import { registerAskRoutes } from './routes/ask.ts';
+import { registerConfigRoutes } from './routes/config.ts';
 
 function initApp() {
 	const app = new Hono();
@@ -27,6 +28,7 @@ function initApp() {
 	registerSessionMessagesRoutes(app);
 	registerSessionStreamRoute(app);
 	registerAskRoutes(app);
+	registerConfigRoutes(app);
 
 	return app;
 }
@@ -67,6 +69,7 @@ export function createStandaloneApp(config?: StandaloneAppConfig) {
 	registerSessionMessagesRoutes(honoApp);
 	registerSessionStreamRoute(honoApp);
 	registerAskRoutes(honoApp);
+	registerConfigRoutes(honoApp);
 
 	return honoApp;
 }
