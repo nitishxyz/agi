@@ -301,10 +301,10 @@ async function checkAndUpdateVersion(binaryPath) {
 }
 
 async function main() {
-	// if (isInWorkspace()) {
-	// 	console.log('Detected workspace environment, skipping install script.');
-	// 	return;
-	// }
+	if (isInWorkspace()) {
+		console.log('Detected workspace environment, skipping install script.');
+		return;
+	}
 
 	let binaryPath = findBinaryInPath();
 
