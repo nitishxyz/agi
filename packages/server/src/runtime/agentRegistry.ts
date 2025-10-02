@@ -166,7 +166,24 @@ export async function loadAgentsConfig(
 export async function resolveAgentConfig(
 	projectRoot: string,
 	name: string,
+	inlineConfig?: {
+		prompt?: string;
+		tools?: string[];
+		provider?: string;
+		model?: string;
+	},
 ): Promise<AgentConfig> {
+	if (inlineConfig?.prompt) {
+		const provider = normalizeProvider(inlineConfig.provider);
+		const model = normalizeModel(inlineConfig.model);
+		return {
+			name,
+			prompt: inlineConfig.prompt,
+			tools: inlineConfig.tools ?? defaultToolsForAgent(name),
+			provider,
+			model,
+		};
+	}
 	const agents = await loadAgentsConfig(projectRoot);
 	const entry = agents[name];
 	let prompt = '';

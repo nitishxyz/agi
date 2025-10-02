@@ -42,6 +42,17 @@ export class AskServiceError extends Error {
 	}
 }
 
+export type InjectableConfig = {
+	provider?: string;
+	model?: string;
+	apiKey?: string;
+	agent?: string;
+};
+
+export type InjectableCredentials = Partial<
+	Record<ProviderId, { apiKey: string }>
+>;
+
 export type AskServerRequest = {
 	projectRoot?: string;
 	prompt: string;
@@ -51,6 +62,11 @@ export type AskServerRequest = {
 	sessionId?: string;
 	last?: boolean;
 	jsonMode?: boolean;
+	skipFileConfig?: boolean;
+	config?: InjectableConfig;
+	credentials?: InjectableCredentials;
+	agentPrompt?: string;
+	tools?: string[];
 };
 
 export type AskServerResponse = {
@@ -86,7 +102,52 @@ async function processAskRequest(
 ): Promise<AskServerResponse> {
 	const projectRoot = request.projectRoot || process.cwd();
 	const configTimer = time('ask:loadConfig+db');
-	const cfg = await loadConfig(projectRoot);
+
+	let cfg: import('@agi-cli/config').AGIConfig;
+
+	if (request.skipFileConfig || request.config) {
+		const injectedProvider = (request.config?.provider ||
+			request.provider ||
+			'openai') as ProviderId;
+		const injectedModel =
+			request.config?.model || request.model || 'gpt-4o-mini';
+		const injectedAgent = request.config?.agent || request.agent || 'general';
+
+		cfg = {
+			projectRoot,
+			defaults: {
+				provider: injectedProvider,
+				model: injectedModel,
+				agent: injectedAgent,
+			},
+			providers: {
+				openai: { enabled: true },
+				anthropic: { enabled: true },
+				google: { enabled: true },
+				openrouter: { enabled: true },
+				opencode: { enabled: true },
+			},
+			paths: {
+				dataDir: `${projectRoot}/.agi`,
+				dbPath: `${projectRoot}/.agi/agi.sqlite`,
+				projectConfigPath: null,
+				globalConfigPath: null,
+			},
+		};
+
+		if (request.credentials) {
+			for (const [provider, creds] of Object.entries(request.credentials)) {
+				const envKey = `${provider.toUpperCase()}_API_KEY`;
+				process.env[envKey] = creds.apiKey;
+			}
+		} else if (request.config?.apiKey) {
+			const envKey = `${injectedProvider.toUpperCase()}_API_KEY`;
+			process.env[envKey] = request.config.apiKey;
+		}
+	} else {
+		cfg = await loadConfig(projectRoot);
+	}
+
 	const db = await getDb(cfg.projectRoot);
 	configTimer.end();
 
@@ -118,7 +179,17 @@ async function processAskRequest(
 	})();
 
 	const agentTimer = time('ask:resolveAgentConfig');
-	const agentCfg = await resolveAgentConfig(cfg.projectRoot, agentName);
+	const agentCfg = request.agentPrompt
+		? {
+				name: agentName,
+				prompt: request.agentPrompt,
+				tools: request.tools ?? ['progress_update', 'finish'],
+				provider: isProviderId(request.provider)
+					? (request.provider as ProviderId)
+					: undefined,
+				model: request.model,
+			}
+		: await resolveAgentConfig(cfg.projectRoot, agentName);
 	agentTimer.end({ agent: agentName });
 	const agentProviderDefault = isProviderId(agentCfg.provider)
 		? agentCfg.provider
@@ -138,6 +209,9 @@ async function processAskRequest(
 			agentModelDefault,
 			explicitProvider,
 			explicitModel: request.model,
+			skipAuth: Boolean(
+				request.skipFileConfig || request.config || request.credentials,
+			),
 		});
 		selectTimer.end({ provider: providerSelection.provider });
 	} catch (err) {
@@ -209,7 +283,10 @@ async function processAskRequest(
 	}
 
 	validateProviderModel(providerForMessage, modelForMessage);
-	await ensureProviderEnv(cfg, providerForMessage);
+
+	if (!request.skipFileConfig && !request.config && !request.credentials) {
+		await ensureProviderEnv(cfg, providerForMessage);
+	}
 
 	const assistantMessage = await dispatchAssistantMessage({
 		cfg,

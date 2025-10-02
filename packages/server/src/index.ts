@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { ProviderId } from '@agi-cli/providers';
 import { registerRootRoutes } from './routes/root.ts';
 import { registerOpenApiRoute } from './routes/openapi.ts';
 import { registerSessionsRoutes } from './routes/sessions.ts';
@@ -22,6 +23,45 @@ export default {
 
 export function createApp() {
 	return app;
+}
+
+export type StandaloneAppConfig = {
+	provider?: ProviderId;
+	model?: string;
+	defaultAgent?: string;
+};
+
+export function createStandaloneApp(config?: StandaloneAppConfig) {
+	const honoApp = new Hono();
+
+	registerRootRoutes(honoApp);
+	registerOpenApiRoute(honoApp);
+	registerSessionsRoutes(honoApp);
+	registerSessionMessagesRoutes(honoApp);
+	registerSessionStreamRoute(honoApp);
+	registerAskRoutes(honoApp);
+
+	return honoApp;
+}
+
+export type EmbeddedAppConfig = {
+	provider: ProviderId;
+	model: string;
+	apiKey: string;
+	agent?: string;
+};
+
+export function createEmbeddedApp(config: EmbeddedAppConfig) {
+	const honoApp = new Hono();
+
+	registerRootRoutes(honoApp);
+	registerOpenApiRoute(honoApp);
+	registerSessionsRoutes(honoApp);
+	registerSessionMessagesRoutes(honoApp);
+	registerSessionStreamRoute(honoApp);
+	registerAskRoutes(honoApp);
+
+	return honoApp;
 }
 
 // Re-export commonly used runtime modules for testing

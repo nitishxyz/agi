@@ -22,6 +22,7 @@ type SelectionInput = {
 	agentModelDefault: string;
 	explicitProvider?: ProviderId;
 	explicitModel?: string;
+	skipAuth?: boolean;
 };
 
 export type ProviderSelection = {
@@ -40,13 +41,16 @@ export async function selectProviderAndModel(
 		agentModelDefault,
 		explicitProvider,
 		explicitModel,
+		skipAuth,
 	} = input;
 
-	const provider = await pickAuthorizedProvider({
-		cfg,
-		candidate: explicitProvider ?? agentProviderDefault,
-		explicitProvider,
-	});
+	const provider = skipAuth
+		? (explicitProvider ?? agentProviderDefault)
+		: await pickAuthorizedProvider({
+				cfg,
+				candidate: explicitProvider ?? agentProviderDefault,
+				explicitProvider,
+			});
 
 	if (!provider) {
 		throw new Error(

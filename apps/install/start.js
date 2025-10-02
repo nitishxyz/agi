@@ -49,6 +49,91 @@ function findBinaryInPath() {
 	return null;
 }
 
+function getVersion(binaryPath) {
+	try {
+		const result = spawnSync(binaryPath, ['--version'], { encoding: 'utf8' });
+		if (result.status === 0 && result.stdout) {
+			// Extract version number from output (e.g., "agi 1.2.3" -> "1.2.3")
+			const match = result.stdout.trim().match(/[\d.]+/);
+			return match ? match[0] : null;
+		}
+	} catch (err) {
+		// If we can't get version, return null
+	}
+	return null;
+}
+
+function getLatestVersion() {
+	return new Promise((resolve, reject) => {
+		const url = `https://api.github.com/repos/${REPO}/releases/latest`;
+
+		get(
+			url,
+			{
+				headers: {
+					'User-Agent': 'agi-installer',
+				},
+			},
+			(response) => {
+				if (response.statusCode === 302 || response.statusCode === 301) {
+					// Follow redirect
+					get(
+						response.headers.location,
+						{
+							headers: {
+								'User-Agent': 'agi-installer',
+							},
+						},
+						handleResponse,
+					);
+				} else {
+					handleResponse(response);
+				}
+
+				function handleResponse(res) {
+					let data = '';
+
+					res.on('data', (chunk) => {
+						data += chunk;
+					});
+
+					res.on('end', () => {
+						try {
+							const json = JSON.parse(data);
+							if (json.tag_name) {
+								// Remove 'v' prefix if present (e.g., "v1.2.3" -> "1.2.3")
+								const version = json.tag_name.replace(/^v/, '');
+								resolve(version);
+							} else {
+								reject(new Error('No tag_name in response'));
+							}
+						} catch (err) {
+							reject(err);
+						}
+					});
+				}
+			},
+		).on('error', reject);
+	});
+}
+
+function compareVersions(v1, v2) {
+	if (!v1 || !v2) return null;
+
+	const parts1 = v1.split('.').map(Number);
+	const parts2 = v2.split('.').map(Number);
+
+	for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+		const part1 = parts1[i] || 0;
+		const part2 = parts2[i] || 0;
+
+		if (part1 > part2) return 1;
+		if (part1 < part2) return -1;
+	}
+
+	return 0; // Equal
+}
+
 function getPlatformInfo() {
 	const platformMap = {
 		darwin: 'darwin',
@@ -213,15 +298,62 @@ async function install() {
 	}
 }
 
+async function checkAndUpdateVersion(binaryPath) {
+	try {
+		const currentVersion = getVersion(binaryPath);
+
+		if (!currentVersion) {
+			console.log('⚠️  Could not determine current version');
+			return { needsUpdate: false, binaryPath };
+		}
+
+		console.log(`Current version: ${currentVersion}`);
+		console.log('Checking for updates...');
+
+		const latestVersion = await getLatestVersion();
+		console.log(`Latest version: ${latestVersion}`);
+
+		const comparison = compareVersions(currentVersion, latestVersion);
+
+		if (comparison < 0) {
+			// Current version is older
+			console.log(
+				`\n🔄 New version available: ${currentVersion} → ${latestVersion}`,
+			);
+			console.log('Updating...\n');
+			const newBinaryPath = await install();
+			return { needsUpdate: true, binaryPath: newBinaryPath };
+		} else if (comparison > 0) {
+			// Current version is newer (dev version?)
+			console.log(
+				`✓ You have a newer version (${currentVersion}) than the latest release`,
+			);
+			return { needsUpdate: false, binaryPath };
+		} else {
+			// Versions match
+			console.log('✓ You have the latest version');
+			return { needsUpdate: false, binaryPath };
+		}
+	} catch (error) {
+		console.log(`⚠️  Could not check for updates: ${error.message}`);
+		return { needsUpdate: false, binaryPath };
+	}
+}
+
 async function main() {
 	if (isInWorkspace()) {
 		console.log('Detected workspace environment, skipping install script.');
 		return;
 	}
 
-	const binaryPath = findBinaryInPath();
+	let binaryPath = findBinaryInPath();
 
 	if (binaryPath) {
+		// Binary exists, check version
+		const { needsUpdate, binaryPath: updatedPath } =
+			await checkAndUpdateVersion(binaryPath);
+		binaryPath = updatedPath;
+
 		const child = spawn(binaryPath, process.argv.slice(2), {
 			stdio: 'inherit',
 		});
@@ -230,6 +362,7 @@ async function main() {
 			process.exit(code || 0);
 		});
 	} else {
+		// No binary found, install fresh
 		const installedPath = await install();
 
 		if (process.argv.length > 2) {
