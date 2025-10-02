@@ -64,57 +64,17 @@ function getVersion(binaryPath) {
 }
 
 function getLatestVersion() {
-	return new Promise((resolve, reject) => {
-		const url = `https://api.github.com/repos/${REPO}/releases/latest`;
+	const __dirname = dirname(fileURLToPath(import.meta.url));
+	const packageJsonPath = resolve(__dirname, 'package.json');
 
-		get(
-			url,
-			{
-				headers: {
-					'User-Agent': 'agi-installer',
-				},
-			},
-			(response) => {
-				if (response.statusCode === 302 || response.statusCode === 301) {
-					// Follow redirect
-					get(
-						response.headers.location,
-						{
-							headers: {
-								'User-Agent': 'agi-installer',
-							},
-						},
-						handleResponse,
-					);
-				} else {
-					handleResponse(response);
-				}
-
-				function handleResponse(res) {
-					let data = '';
-
-					res.on('data', (chunk) => {
-						data += chunk;
-					});
-
-					res.on('end', () => {
-						try {
-							const json = JSON.parse(data);
-							if (json.tag_name) {
-								// Remove 'v' prefix if present (e.g., "v1.2.3" -> "1.2.3")
-								const version = json.tag_name.replace(/^v/, '');
-								resolve(version);
-							} else {
-								reject(new Error('No tag_name in response'));
-							}
-						} catch (err) {
-							reject(err);
-						}
-					});
-				}
-			},
-		).on('error', reject);
-	});
+	try {
+		const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+		return Promise.resolve(packageJson.version);
+	} catch (err) {
+		return Promise.reject(
+			new Error(`Could not read package.json version: ${err.message}`),
+		);
+	}
 }
 
 function compareVersions(v1, v2) {
@@ -341,10 +301,10 @@ async function checkAndUpdateVersion(binaryPath) {
 }
 
 async function main() {
-	if (isInWorkspace()) {
-		console.log('Detected workspace environment, skipping install script.');
-		return;
-	}
+	// if (isInWorkspace()) {
+	// 	console.log('Detected workspace environment, skipping install script.');
+	// 	return;
+	// }
 
 	let binaryPath = findBinaryInPath();
 
