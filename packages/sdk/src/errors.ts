@@ -88,7 +88,7 @@ export class NotFoundError extends AGIError {
 }
 
 /**
- * Service errors from askService, sessionManager, etc.
+ * Service errors from ask-service, session-manager, etc.
  */
 export class ServiceError extends AGIError {
 	constructor(

@@ -5,13 +5,13 @@ import {
 	createSession,
 	getLastSession,
 	getSessionById,
-} from './sessionManager.ts';
+} from './session-manager.ts';
 import {
 	selectProviderAndModel,
 	type ProviderSelection,
-} from './providerSelection.ts';
-import { resolveAgentConfig } from './agentRegistry.ts';
-import { dispatchAssistantMessage } from './messageService.ts';
+} from './provider-selection.ts';
+import { resolveAgentConfig } from './agent-registry.ts';
+import { dispatchAssistantMessage } from './message-service.ts';
 import {
 	validateProviderModel,
 	isProviderAuthorized,

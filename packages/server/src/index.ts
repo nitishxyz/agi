@@ -3,8 +3,8 @@ import type { ProviderId } from '@agi-cli/providers';
 import { registerRootRoutes } from './routes/root.ts';
 import { registerOpenApiRoute } from './routes/openapi.ts';
 import { registerSessionsRoutes } from './routes/sessions.ts';
-import { registerSessionMessagesRoutes } from './routes/sessionMessages.ts';
-import { registerSessionStreamRoute } from './routes/sessionStream.ts';
+import { registerSessionMessagesRoutes } from './routes/session-messages.ts';
+import { registerSessionStreamRoute } from './routes/session-stream.ts';
 import { registerAskRoutes } from './routes/ask.ts';
 
 const app = new Hono();
@@ -68,13 +68,13 @@ export function createEmbeddedApp(config: EmbeddedAppConfig) {
 export {
 	resolveAgentConfig,
 	defaultToolsForAgent,
-} from './runtime/agentRegistry.ts';
+} from './runtime/agent-registry.ts';
 export { composeSystemPrompt } from './runtime/prompt.ts';
 export {
 	AskServiceError,
 	handleAskRequest,
 	deriveStatusFromMessage,
 	inferStatus,
-} from './runtime/askService.ts';
+} from './runtime/ask-service.ts';
 export { registerSessionsRoutes } from './routes/sessions.ts';
 export { registerAskRoutes } from './routes/ask.ts';

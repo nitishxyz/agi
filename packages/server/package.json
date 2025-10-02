@@ -10,13 +10,13 @@
 			"import": "./src/index.ts",
 			"types": "./src/index.ts"
 		},
-		"./runtime/agentRegistry": {
-			"import": "./src/runtime/agentRegistry.ts",
-			"types": "./src/runtime/agentRegistry.ts"
+		"./runtime/agent-registry": {
+			"import": "./src/runtime/agent-registry.ts",
+			"types": "./src/runtime/agent-registry.ts"
 		},
-		"./runtime/askService.ts": {
-			"import": "./src/runtime/askService.ts",
-			"types": "./src/runtime/askService.ts"
+		"./runtime/ask-service.ts": {
+			"import": "./src/runtime/ask-service.ts",
+			"types": "./src/runtime/ask-service.ts"
 		},
 		"./routes/ask.ts": {
 			"import": "./src/routes/ask.ts",

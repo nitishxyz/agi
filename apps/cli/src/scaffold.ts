@@ -11,7 +11,7 @@ import {
 } from '@clack/prompts';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline';
-import { defaultToolsForAgent } from '@agi-cli/server/runtime/agentRegistry';
+import { defaultToolsForAgent } from '@agi-cli/server/runtime/agent-registry';
 import { discoverProjectTools } from '@agi-cli/sdk';
 import { getGlobalConfigDir, getHomeDir } from '@agi-cli/config/paths';
 

@@ -5,8 +5,8 @@ import { sessions } from '@agi-cli/database/schema';
 import { desc, eq } from 'drizzle-orm';
 import type { ProviderId } from '@agi-cli/providers';
 import { isProviderId } from '@agi-cli/providers';
-import { resolveAgentConfig } from '../runtime/agentRegistry.ts';
-import { createSession as createSessionRow } from '../runtime/sessionManager.ts';
+import { resolveAgentConfig } from '../runtime/agent-registry.ts';
+import { createSession as createSessionRow } from '../runtime/session-manager.ts';
 
 export function registerSessionsRoutes(app: Hono) {
 	// List sessions

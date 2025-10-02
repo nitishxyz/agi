@@ -3,8 +3,8 @@ import type {
 	AskServerRequest,
 	InjectableConfig,
 	InjectableCredentials,
-} from '../runtime/askService.ts';
-import { AskServiceError, handleAskRequest } from '../runtime/askService.ts';
+} from '../runtime/ask-service.ts';
+import { AskServiceError, handleAskRequest } from '../runtime/ask-service.ts';
 
 export function registerAskRoutes(app: Hono) {
 	app.post('/v1/ask', async (c) => {

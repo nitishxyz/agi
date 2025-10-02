@@ -8,9 +8,9 @@ import {
 	appendAssistantText,
 	extractFinishText,
 	type ToolAdapterContext,
-} from '../runtime/toolContext.ts';
+} from '../runtime/tool-context.ts';
 
-export type { ToolAdapterContext } from '../runtime/toolContext.ts';
+export type { ToolAdapterContext } from '../runtime/tool-context.ts';
 
 type ToolExecuteSignature = Tool['execute'] extends (
 	input: infer Input,

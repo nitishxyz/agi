@@ -10,7 +10,7 @@ import { getDb } from '@agi-cli/database';
 import { messages, messageParts, sessions } from '@agi-cli/database/schema';
 import { eq, asc } from 'drizzle-orm';
 import { resolveModel, type ProviderName } from './provider.ts';
-import { resolveAgentConfig } from './agentRegistry.ts';
+import { resolveAgentConfig } from './agent-registry.ts';
 import { composeSystemPrompt } from './prompt.ts';
 import { discoverProjectTools } from '@agi-cli/sdk';
 import { adaptTools } from '../tools/adapter.ts';

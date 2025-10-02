@@ -3,7 +3,7 @@ import { read as readMerged, isAuthorized } from '@agi-cli/config/manager';
 import { discoverCommands } from './commands.ts';
 import { box, colors } from './ui.ts';
 import type { ProviderId } from '@agi-cli/sdk';
-import type { AgentConfigEntry } from '@agi-cli/server/runtime/agentRegistry';
+import type { AgentConfigEntry } from '@agi-cli/server/runtime/agent-registry';
 import { buildFsTools } from '@agi-cli/sdk/tools/builtin/fs';
 import { buildGitTools } from '@agi-cli/sdk/tools/builtin/git';
 import type { CommandManifest } from './commands.ts';

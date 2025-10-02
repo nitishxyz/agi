@@ -6,7 +6,7 @@ const handleAskRequestMock = mock(async () => {
 	throw new AskServiceError('Unauthorized provider', 401);
 });
 
-mock.module('@agi-cli/server/runtime/askService.ts', () => ({
+mock.module('@agi-cli/server/runtime/ask-service.ts', () => ({
 	handleAskRequest: handleAskRequestMock,
 	AskServiceError,
 }));
