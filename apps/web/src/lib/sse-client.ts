@@ -59,8 +59,6 @@ export class SSEClient {
 						} else if (line.startsWith('data: ')) {
 							data += (data ? '\n' : '') + line.slice(6);
 						} else if (line.startsWith(':')) {
-							// Comment/heartbeat - ignore
-							continue;
 						}
 					}
 

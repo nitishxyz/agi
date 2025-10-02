@@ -6,33 +6,59 @@ import {
 	GitCommit,
 	Check,
 	Terminal,
+	FileText,
+	FileEdit,
+	Search,
+	FolderTree,
+	List,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { MessagePart } from '../../types/api';
+import { ToolResultRenderer, type ContentJson } from './renderers';
 
 interface MessagePartItemProps {
 	part: MessagePart;
 	showLine: boolean;
 	isFirstPart: boolean;
-	hasResult?: boolean;
+	isLastToolCall?: boolean;
 }
 
 export function MessagePartItem({
 	part,
 	showLine,
-	hasResult,
+	isLastToolCall,
 }: MessagePartItemProps) {
-	if (part.type === 'tool_call' && hasResult) {
+	if (part.type === 'tool_call' && !isLastToolCall) {
+		return null;
+	}
+
+	if (part.type === 'tool_result' && part.toolName === 'progress_update') {
 		return null;
 	}
 
 	const renderIcon = () => {
 		if (part.type === 'tool_call') {
-			return <Loader2 className="h-3 w-3 text-amber-400 animate-spin" />;
+			return <Loader2 className="h-4 w-4 text-amber-400 animate-spin" />;
 		}
 
 		if (part.type === 'tool_result') {
 			const toolName = part.toolName || '';
+			if (toolName === 'read')
+				return <FileText className="h-4 w-4 text-blue-400" />;
+			if (toolName === 'write')
+				return <FileEdit className="h-4 w-4 text-green-400" />;
+			if (toolName === 'edit')
+				return <FileEdit className="h-4 w-4 text-purple-400" />;
+			if (toolName === 'ls') return <List className="h-4 w-4 text-cyan-400" />;
+			if (toolName === 'tree')
+				return <FolderTree className="h-4 w-4 text-cyan-400" />;
+			if (toolName === 'bash')
+				return <Terminal className="h-4 w-4 text-zinc-400" />;
+			if (toolName === 'ripgrep' || toolName === 'grep' || toolName === 'glob')
+				return <Search className="h-4 w-4 text-yellow-400" />;
+			if (toolName === 'apply_patch')
+				return <Diff className="h-4 w-4 text-purple-400" />;
 			if (toolName === 'git_status')
 				return <GitBranch className="h-4 w-4 text-blue-400" />;
 			if (toolName === 'git_diff')
@@ -44,7 +70,33 @@ export function MessagePartItem({
 			return <Terminal className="h-4 w-4 text-zinc-400" />;
 		}
 
-		return <Sparkles className="h-3 w-3 text-violet-400" />;
+		return <Sparkles className="h-4 w-4 text-violet-400" />;
+	};
+
+	const renderToolResult = () => {
+		const toolName = part.toolName || '';
+
+		let contentJson: ContentJson;
+		try {
+			if (part.contentJson && typeof part.contentJson === 'object') {
+				contentJson = part.contentJson as ContentJson;
+			} else if (typeof part.content === 'string') {
+				contentJson = JSON.parse(part.content);
+			} else {
+				contentJson = {};
+			}
+		} catch {
+			contentJson = { result: part.content } as ContentJson;
+		}
+
+		return (
+			<ToolResultRenderer
+				toolName={toolName}
+				contentJson={contentJson}
+				toolDurationMs={part.toolDurationMs}
+				debug={false}
+			/>
+		);
 	};
 
 	const renderContent = () => {
@@ -60,8 +112,8 @@ export function MessagePartItem({
 			}
 
 			return (
-				<div className="text-sm text-foreground/90 leading-relaxed prose prose-invert prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 bg-muted/30 border border-border/50 rounded-xl px-4 py-3">
-					<ReactMarkdown>{content}</ReactMarkdown>
+				<div className="text-base text-foreground/90 leading-relaxed prose prose-invert prose-base max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+					<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
 				</div>
 			);
 		}
@@ -76,71 +128,24 @@ export function MessagePartItem({
 		}
 
 		if (part.type === 'tool_result') {
-			const toolName = part.toolName || '';
-
-			if (toolName === 'finish') {
-				return (
-					<div className="text-xs font-mono text-green-400">
-						<span>Done</span>
-						{part.toolDurationMs && (
-							<span className="ml-2 text-zinc-600">
-								({part.toolDurationMs}ms)
-							</span>
-						)}
-					</div>
-				);
-			}
-
-			let result = '';
-			try {
-				const data =
-					typeof part.content === 'string'
-						? JSON.parse(part.content)
-						: part.contentJson;
-				if (data?.result) {
-					result =
-						typeof data.result === 'object'
-							? JSON.stringify(data.result, null, 2)
-							: String(data.result);
-				}
-			} catch {
-				result = String(part.content);
-			}
-
-			return (
-				<div className="text-xs font-mono">
-					<div className="text-zinc-400">
-						<span>{toolName}</span>
-						{part.toolDurationMs && (
-							<span className="ml-2 text-zinc-600">
-								({part.toolDurationMs}ms)
-							</span>
-						)}
-					</div>
-					{result && (
-						<pre className="mt-1 max-h-64 overflow-x-auto text-xs text-zinc-400">
-							<code>{result}</code>
-						</pre>
-					)}
-				</div>
-			);
+			return renderToolResult();
 		}
 
 		return null;
 	};
 
 	return (
-		<div className="flex gap-4 pb-2 relative">
+		<div className="flex gap-3 pb-2 relative">
 			{/* Icon with vertical line */}
-			<div className="flex-shrink-0 w-8 flex items-start justify-center pt-1 relative">
-				<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full relative z-10 bg-background">
+			<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
+				<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative z-10 bg-background">
 					{renderIcon()}
 				</div>
 				{/* Vertical line */}
 				{showLine && (
 					<div
 						className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-border z-0"
-						style={{ top: '2.25rem', bottom: '-0.5rem' }}
+						style={{ top: '1.25rem', bottom: '-0.5rem' }}
 					/>
 				)}
 			</div>

@@ -49,9 +49,7 @@ class ApiClient {
 	}
 
 	async getMessages(sessionId: string): Promise<Message[]> {
-		return this.request<Message[]>(
-			`/v1/sessions/${sessionId}/messages?parsed=true`,
-		);
+		return this.request<Message[]>(`/v1/sessions/${sessionId}/messages`);
 	}
 
 	async sendMessage(
