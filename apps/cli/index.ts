@@ -69,7 +69,7 @@ async function main() {
 		const portEnv = process.env.PORT ? Number(process.env.PORT) : 0;
 		const portFlagIndex = argv.indexOf('--port');
 		const port =
-			portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : portEnv || 0;
+			portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : portEnv || 9100;
 		const server = Bun.serve({ port, fetch: app.fetch, idleTimeout: 240 });
 		console.log(`agi server listening on http://localhost:${server.port}`);
 		return;

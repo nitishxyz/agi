@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import type { ProviderId } from '@agi-cli/providers';
 import { registerRootRoutes } from './routes/root.ts';
 import { registerOpenApiRoute } from './routes/openapi.ts';
@@ -7,14 +8,30 @@ import { registerSessionMessagesRoutes } from './routes/session-messages.ts';
 import { registerSessionStreamRoute } from './routes/session-stream.ts';
 import { registerAskRoutes } from './routes/ask.ts';
 
-const app = new Hono();
+function initApp() {
+	const app = new Hono();
 
-registerRootRoutes(app);
-registerOpenApiRoute(app);
-registerSessionsRoutes(app);
-registerSessionMessagesRoutes(app);
-registerSessionStreamRoute(app);
-registerAskRoutes(app);
+	if (process.env.NODE_ENV === 'development') {
+		app.use(
+			'*',
+			cors({
+				origin: ['http://localhost:5173', 'http://localhost:5174'],
+				credentials: true,
+			}),
+		);
+	}
+
+	registerRootRoutes(app);
+	registerOpenApiRoute(app);
+	registerSessionsRoutes(app);
+	registerSessionMessagesRoutes(app);
+	registerSessionStreamRoute(app);
+	registerAskRoutes(app);
+
+	return app;
+}
+
+const app = initApp();
 
 export default {
 	port: 0,
@@ -33,6 +50,16 @@ export type StandaloneAppConfig = {
 
 export function createStandaloneApp(config?: StandaloneAppConfig) {
 	const honoApp = new Hono();
+
+	if (process.env.NODE_ENV === 'development') {
+		honoApp.use(
+			'*',
+			cors({
+				origin: ['http://localhost:5173', 'http://localhost:5174'],
+				credentials: true,
+			}),
+		);
+	}
 
 	registerRootRoutes(honoApp);
 	registerOpenApiRoute(honoApp);
@@ -54,6 +81,16 @@ export type EmbeddedAppConfig = {
 export function createEmbeddedApp(config: EmbeddedAppConfig) {
 	const honoApp = new Hono();
 
+	if (process.env.NODE_ENV === 'development') {
+		honoApp.use(
+			'*',
+			cors({
+				origin: ['http://localhost:5173', 'http://localhost:5174'],
+				credentials: true,
+			}),
+		);
+	}
+
 	registerRootRoutes(honoApp);
 	registerOpenApiRoute(honoApp);
 	registerSessionsRoutes(honoApp);
@@ -64,7 +101,6 @@ export function createEmbeddedApp(config: EmbeddedAppConfig) {
 	return honoApp;
 }
 
-// Re-export commonly used runtime modules for testing
 export {
 	resolveAgentConfig,
 	defaultToolsForAgent,

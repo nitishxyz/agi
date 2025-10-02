@@ -163,3 +163,23 @@ MIT License — see LICENSE for details
 ---
 
 Built with ❤️ using Bun, Hono, and AI SDK
+
+
+## Web App Development
+
+To run the web interface:
+
+1. Start the AGI server (in one terminal):
+   ```bash
+   NODE_ENV=development agi serve
+   ```
+
+2. Start the web app (in another terminal):
+   ```bash
+   cd apps/web
+   bun dev
+   ```
+
+3. Open http://localhost:5173 in your browser
+
+The web app connects to the AGI server at http://localhost:9100 by default.
