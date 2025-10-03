@@ -30,163 +30,170 @@ function getLoadingMessage(messageId: string) {
 }
 
 // Memoize the component to prevent re-renders when props haven't changed
-export const AssistantMessageGroup = memo(function AssistantMessageGroup({
-	message,
-	showHeader,
-	hasNextAssistantMessage,
-}: AssistantMessageGroupProps) {
-	const parts = message.parts || [];
-	const hasFinish = parts.some((part) => part.toolName === 'finish');
-	const latestProgressUpdateIndex = parts.reduce(
-		(lastIndex, part, index) =>
-			part.type === 'tool_result' && part.toolName === 'progress_update'
-				? index
-				: lastIndex,
-		-1,
-	);
-	const latestProgressUpdatePart =
-		latestProgressUpdateIndex >= 0 ? parts[latestProgressUpdateIndex] : null;
-	const hasVisibleNonProgressParts = parts.some(
-		(part) =>
-			!(part.type === 'tool_result' && part.toolName === 'progress_update'),
-	);
-	const firstVisiblePartIndex = parts.findIndex(
-		(part) =>
-			!(part.type === 'tool_result' && part.toolName === 'progress_update'),
-	);
-	const shouldShowProgressUpdate =
-		message.status === 'pending' &&
-		!hasFinish &&
-		Boolean(latestProgressUpdatePart);
-	const shouldShowLoadingFallback =
-		message.status === 'pending' && !hasFinish && !latestProgressUpdatePart;
-	const formatTime = (ts?: number) => {
-		if (!ts) return '';
-		const date = new Date(ts);
-		return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-	};
+export const AssistantMessageGroup = memo(
+	function AssistantMessageGroup({
+		message,
+		showHeader,
+		hasNextAssistantMessage,
+	}: AssistantMessageGroupProps) {
+		const parts = message.parts || [];
+		const hasFinish = parts.some((part) => part.toolName === 'finish');
+		const latestProgressUpdateIndex = parts.reduce(
+			(lastIndex, part, index) =>
+				part.type === 'tool_result' && part.toolName === 'progress_update'
+					? index
+					: lastIndex,
+			-1,
+		);
+		const latestProgressUpdatePart =
+			latestProgressUpdateIndex >= 0 ? parts[latestProgressUpdateIndex] : null;
+		const hasVisibleNonProgressParts = parts.some(
+			(part) =>
+				!(part.type === 'tool_result' && part.toolName === 'progress_update'),
+		);
+		const firstVisiblePartIndex = parts.findIndex(
+			(part) =>
+				!(part.type === 'tool_result' && part.toolName === 'progress_update'),
+		);
+		const shouldShowProgressUpdate =
+			message.status === 'pending' &&
+			!hasFinish &&
+			Boolean(latestProgressUpdatePart);
+		const shouldShowLoadingFallback =
+			message.status === 'pending' && !hasFinish && !latestProgressUpdatePart;
+		const formatTime = (ts?: number) => {
+			if (!ts) return '';
+			const date = new Date(ts);
+			return date.toLocaleTimeString([], {
+				hour: '2-digit',
+				minute: '2-digit',
+			});
+		};
 
-	return (
-		<div className="relative">
-			{/* Header with avatar */}
-			{showHeader && (
-				<div className="pb-2">
-					<div className="inline-flex items-center bg-violet-500/10 border border-violet-500/30 dark:bg-violet-500/5 dark:border-violet-500/20 rounded-full pr-4">
-						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-violet-500/50 bg-violet-500/20 dark:bg-violet-500/10">
-							<Sparkles className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
-						</div>
-						<div className="flex items-center gap-2 text-sm text-muted-foreground pl-3">
-							{message.agent && (
-								<span className="font-medium text-violet-700 dark:text-violet-300">
-									{message.agent}
-								</span>
-							)}
-							{message.agent && message.provider && <span>·</span>}
-							{message.provider && (
-								<span className="text-muted-foreground">
-									{message.provider}
-								</span>
-							)}
-							{message.model && <span>·</span>}
-							{message.model && (
-								<span className="text-muted-foreground">{message.model}</span>
-							)}
-							{message.createdAt && <span>·</span>}
-							{message.createdAt && (
-								<span className="text-muted-foreground">
-									{formatTime(message.createdAt)}
-								</span>
-							)}
+		return (
+			<div className="relative">
+				{/* Header with avatar */}
+				{showHeader && (
+					<div className="pb-2">
+						<div className="inline-flex items-center bg-violet-500/10 border border-violet-500/30 dark:bg-violet-500/5 dark:border-violet-500/20 rounded-full pr-4">
+							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-violet-500/50 bg-violet-500/20 dark:bg-violet-500/10">
+								<Sparkles className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
+							</div>
+							<div className="flex items-center gap-2 text-sm text-muted-foreground pl-3">
+								{message.agent && (
+									<span className="font-medium text-violet-700 dark:text-violet-300">
+										{message.agent}
+									</span>
+								)}
+								{message.agent && message.provider && <span>·</span>}
+								{message.provider && (
+									<span className="text-muted-foreground">
+										{message.provider}
+									</span>
+								)}
+								{message.model && <span>·</span>}
+								{message.model && (
+									<span className="text-muted-foreground">{message.model}</span>
+								)}
+								{message.createdAt && <span>·</span>}
+								{message.createdAt && (
+									<span className="text-muted-foreground">
+										{formatTime(message.createdAt)}
+									</span>
+								)}
+							</div>
 						</div>
 					</div>
-				</div>
-			)}
+				)}
 
-			{/* Message parts with timeline */}
-			<div className="relative ml-1">
-				{parts.map((part, index) => {
-					const isLastPart = index === parts.length - 1;
-					const showLine = !isLastPart || hasNextAssistantMessage;
-					const isLastToolCall = part.type === 'tool_call' && isLastPart;
-					const isProgressUpdate =
-						part.type === 'tool_result' && part.toolName === 'progress_update';
+				{/* Message parts with timeline */}
+				<div className="relative ml-1">
+					{parts.map((part, index) => {
+						const isLastPart = index === parts.length - 1;
+						const showLine = !isLastPart || hasNextAssistantMessage;
+						const isLastToolCall = part.type === 'tool_call' && isLastPart;
+						const isProgressUpdate =
+							part.type === 'tool_result' &&
+							part.toolName === 'progress_update';
 
-					if (isProgressUpdate) {
-						return null;
-					}
+						if (isProgressUpdate) {
+							return null;
+						}
 
-					return (
+						return (
+							<MessagePartItem
+								key={part.id}
+								part={part}
+								showLine={showLine}
+								isFirstPart={index === firstVisiblePartIndex && !showHeader}
+								isLastToolCall={isLastToolCall}
+							/>
+						);
+					})}
+
+					{shouldShowProgressUpdate && latestProgressUpdatePart && (
 						<MessagePartItem
-							key={part.id}
-							part={part}
-							showLine={showLine}
-							isFirstPart={index === firstVisiblePartIndex && !showHeader}
-							isLastToolCall={isLastToolCall}
+							key={latestProgressUpdatePart.id}
+							part={latestProgressUpdatePart}
+							showLine={hasNextAssistantMessage}
+							isFirstPart={!hasVisibleNonProgressParts && !showHeader}
+							isLastProgressUpdate
 						/>
-					);
-				})}
+					)}
 
-				{shouldShowProgressUpdate && latestProgressUpdatePart && (
-					<MessagePartItem
-						key={latestProgressUpdatePart.id}
-						part={latestProgressUpdatePart}
-						showLine={hasNextAssistantMessage}
-						isFirstPart={!hasVisibleNonProgressParts && !showHeader}
-						isLastProgressUpdate
-					/>
-				)}
-
-				{/* Show loading state if message is incomplete and no progress/finish */}
-				{shouldShowLoadingFallback && (
-					<div className="flex gap-3 pb-2 relative">
-						<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
-							<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative z-10 bg-card text-violet-700 dark:bg-background dark:text-violet-300">
-								<Sparkles className="h-4 w-4" />
+					{/* Show loading state if message is incomplete and no progress/finish */}
+					{shouldShowLoadingFallback && (
+						<div className="flex gap-3 pb-2 relative">
+							<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
+								<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative z-10 bg-card text-violet-700 dark:bg-background dark:text-violet-300">
+									<Sparkles className="h-4 w-4" />
+								</div>
+							</div>
+							<div className="flex-1 pt-0.5">
+								<div className="text-base text-foreground animate-pulse">
+									{getLoadingMessage(message.id)}
+								</div>
 							</div>
 						</div>
-						<div className="flex-1 pt-0.5">
-							<div className="text-base text-foreground animate-pulse">
-								{getLoadingMessage(message.id)}
-							</div>
-						</div>
-					</div>
-				)}
+					)}
+				</div>
 			</div>
-		</div>
-	);
-}, (prevProps, nextProps) => {
-	// Custom comparison function for better memoization
-	// Only re-render if the message content or display props have actually changed
-	const prevParts = prevProps.message.parts || [];
-	const nextParts = nextProps.message.parts || [];
-	
-	// Check if parts have changed
-	if (prevParts.length !== nextParts.length) {
-		return false;
-	}
-	
-	// Check each part's content
-	for (let i = 0; i < prevParts.length; i++) {
-		const prevPart = prevParts[i];
-		const nextPart = nextParts[i];
-		if (
-			prevPart.id !== nextPart.id ||
-			prevPart.content !== nextPart.content ||
-			prevPart.contentJson !== nextPart.contentJson ||
-			prevPart.ephemeral !== nextPart.ephemeral ||
-			prevPart.completedAt !== nextPart.completedAt
-		) {
+		);
+	},
+	(prevProps, nextProps) => {
+		// Custom comparison function for better memoization
+		// Only re-render if the message content or display props have actually changed
+		const prevParts = prevProps.message.parts || [];
+		const nextParts = nextProps.message.parts || [];
+
+		// Check if parts have changed
+		if (prevParts.length !== nextParts.length) {
 			return false;
 		}
-	}
-	
-	// Check message-level props
-	return (
-		prevProps.message.id === nextProps.message.id &&
-		prevProps.message.status === nextProps.message.status &&
-		prevProps.message.completedAt === nextProps.message.completedAt &&
-		prevProps.showHeader === nextProps.showHeader &&
-		prevProps.hasNextAssistantMessage === nextProps.hasNextAssistantMessage &&
-		prevProps.isLastMessage === nextProps.isLastMessage
-	);
-});
+
+		// Check each part's content
+		for (let i = 0; i < prevParts.length; i++) {
+			const prevPart = prevParts[i];
+			const nextPart = nextParts[i];
+			if (
+				prevPart.id !== nextPart.id ||
+				prevPart.content !== nextPart.content ||
+				prevPart.contentJson !== nextPart.contentJson ||
+				prevPart.ephemeral !== nextPart.ephemeral ||
+				prevPart.completedAt !== nextPart.completedAt
+			) {
+				return false;
+			}
+		}
+
+		// Check message-level props
+		return (
+			prevProps.message.id === nextProps.message.id &&
+			prevProps.message.status === nextProps.message.status &&
+			prevProps.message.completedAt === nextProps.message.completedAt &&
+			prevProps.showHeader === nextProps.showHeader &&
+			prevProps.hasNextAssistantMessage === nextProps.hasNextAssistantMessage &&
+			prevProps.isLastMessage === nextProps.isLastMessage
+		);
+	},
+);
