@@ -9,17 +9,20 @@ Formatting and Linting
 Modular Structure
 - Prefer many small, focused modules over large files.
 - One route module per endpoint group (or per endpoint if it grows).
-- One schema/table per file under `src/db/schema/`, re-exported via `src/db/schema.ts` and `src/db/schema/index.ts`.
+- One schema/table per file under `packages/database/src/schema/`, re-exported via index.
 - Avoid circular dependencies. If a module grows beyond ~200–300 lines, consider refactoring.
 
-Path Aliases
-- Use `tsconfig.json` path aliases for imports instead of deep relative paths:
-  - `@/ai/*` → `src/ai/*`
-  - `@/db/*` → `src/db/*`
-  - `@/config/*` → `src/config/*`
-  - `@/prompts/*` → `src/prompts/*`
-  - `@/providers/*` → `src/providers/*`
-  - `@/server/*` → `src/server/*`
+Monorepo Package Imports
+- Use workspace package imports for cross-package dependencies:
+  - `@agi-cli/auth` - Authentication & credentials
+  - `@agi-cli/config` - Configuration system
+  - `@agi-cli/database` - SQLite + Drizzle ORM
+  - `@agi-cli/prompts` - System prompts
+  - `@agi-cli/providers` - AI provider catalog
+  - `@agi-cli/sdk` - Core SDK (tools, streaming, agents)
+  - `@agi-cli/server` - HTTP server
+- Use relative imports (`./`, `../`) within the same package only.
+- Never use `@/` path aliases (removed during monorepo migration).
 
 Runtime and Tooling
 - Use Bun for everything: scripts, running, building, testing, linting.
@@ -27,22 +30,30 @@ Runtime and Tooling
 - Tests must use `bun:test` and live in `tests/`.
 
 Database and Migrations
-- SQLite via Drizzle ORM. Schema lives under `src/db/schema/`.
-- Migrations are generated with Drizzle Kit into `./drizzle/`.
+- SQLite via Drizzle ORM. Schema lives under `packages/database/src/schema/`.
+- Migrations are generated with Drizzle Kit into `packages/database/drizzle/`.
 - The server ensures the database exists and runs migrations on startup.
 
 API and Server
-- Hono app. Each endpoint belongs in its own module under `src/server/routes/`.
-- Expose OpenAPI at `/openapi.json`. Keep the spec in code (`src/openapi/`) and serve JSON.
+- Hono app. Each endpoint belongs in its own module under `packages/server/src/routes/`.
+- Expose OpenAPI at `/openapi.json`. Keep the spec in code and serve JSON.
 - Streaming uses SSE; prefer AI SDK helpers for stream responses when possible.
 
 AI SDK and Agents
 - Use AI SDK v5 APIs (`generateText`, `streamText`, `generateObject`, `streamObject`, `tool`, `embed`, `rerank`).
-- Support provider switching (OpenAI, Anthropic, Google) on the server side only.
-- Agents and tools are modular; load defaults from `src/ai` and allow project overrides under `.agi/`.
+- Support provider switching (OpenAI, Anthropic, Google, OpenRouter, OpenCode) via `@agi-cli/providers`.
+- Agents and tools are modular; load defaults from `packages/sdk/src/tools/` and allow project overrides under `.agi/`.
 
 Commits and Changes
 - Make minimal, focused changes. Avoid unrelated refactors.
 - Keep filenames, public APIs, and structure stable unless the change is required by the task.
-- Update small docs (`docs/`) when adding features or changing conventions.
+- Update relevant docs (`docs/`, `README.md`, `ARCHITECTURE.md`) when adding features or changing conventions.
 
+Package Development
+- Each package under `packages/` should have:
+  - Clear single responsibility
+  - Proper exports in package.json
+  - tsconfig.json extending `../../tsconfig.base.json`
+  - README.md for public packages (sdk, server)
+- Follow the dependency graph levels documented in ARCHITECTURE.md.
+- No circular dependencies between packages.
