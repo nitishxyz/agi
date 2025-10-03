@@ -212,81 +212,25 @@ async function setupToolContext(
 async function ensureFinishToolCalled(
 	finishObserved: boolean,
 	toolset: ReturnType<typeof adaptTools>,
-	opts: RunOpts,
 	sharedCtx: RunnerToolContext,
 	stepIndex: number,
-	db: Awaited<ReturnType<typeof getDb>>,
 ) {
 	if (finishObserved || !toolset?.finish?.execute) return;
 
-	const finishPartId = crypto.randomUUID();
-	const now = Date.now();
-	const idx = await sharedCtx.nextIndex();
+	const finishInput = { text: '' } as const;
+	const callOptions = { input: finishInput } as const;
 
-	await db.insert(messageParts).values({
-		id: finishPartId,
-		messageId: opts.assistantMessageId,
-		index: idx,
-		stepIndex,
-		type: 'tool_call',
-		content: JSON.stringify({
-			name: 'finish',
-			args: { text: '' },
-			callId: finishPartId,
-		}),
-		agent: opts.agent,
-		provider: opts.provider,
-		model: opts.model,
-		startedAt: now,
-		toolName: 'finish',
-		toolCallId: finishPartId,
-	});
+	sharedCtx.stepIndex = stepIndex;
 
-	publish({
-		type: 'tool.call',
-		sessionId: opts.sessionId,
-		payload: {
-			name: 'finish',
-			args: { text: '' },
-			callId: finishPartId,
-		},
-	});
+	try {
+		await toolset.finish.onInputStart?.(callOptions);
+	} catch {}
 
-	await toolset.finish.execute({ text: '' }, {} as never);
+	try {
+		await toolset.finish.onInputAvailable?.(callOptions);
+	} catch {}
 
-	const resultPartId = crypto.randomUUID();
-	const idx2 = await sharedCtx.nextIndex();
-
-	await db.insert(messageParts).values({
-		id: resultPartId,
-		messageId: opts.assistantMessageId,
-		index: idx2,
-		stepIndex,
-		type: 'tool_result',
-		content: JSON.stringify({
-			name: 'finish',
-			result: { done: true, text: '' },
-			callId: finishPartId,
-		}),
-		agent: opts.agent,
-		provider: opts.provider,
-		model: opts.model,
-		startedAt: now,
-		completedAt: Date.now(),
-		toolName: 'finish',
-		toolCallId: finishPartId,
-		toolDurationMs: Date.now() - now,
-	});
-
-	publish({
-		type: 'tool.result',
-		sessionId: opts.sessionId,
-		payload: {
-			name: 'finish',
-			result: { done: true, text: '' },
-			callId: finishPartId,
-		},
-	});
+	await toolset.finish.execute(finishInput, {} as never);
 }
 
 async function updateSessionTokens(
@@ -565,10 +509,8 @@ async function runAssistant(opts: RunOpts) {
 					await ensureFinishToolCalled(
 						finishObserved,
 						toolset,
-						opts,
 						sharedCtx,
 						stepIndex,
-						db,
 					);
 				} catch {}
 

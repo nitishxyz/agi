@@ -58,6 +58,23 @@ export function MessagePartItem({
 		}
 	}
 
+	const isToolMessage =
+		part.type === 'tool_call' || part.type === 'tool_result';
+
+	const contentClasses = ['flex-1'];
+
+	if (isToolMessage) {
+	contentClasses.push('pt-0.5', 'mt-[1px]');
+	} else {
+		contentClasses.push('pt-0');
+	}
+
+	if (part.type === 'text') {
+		contentClasses.push('-mt-0.5');
+	}
+
+	const contentClassName = contentClasses.join(' ');
+
 	const renderIcon = () => {
 		if (part.type === 'tool_call') {
 			return <Loader2 className="h-4 w-4 text-amber-600 dark:text-amber-300 animate-spin" />;
@@ -172,7 +189,9 @@ export function MessagePartItem({
 			</div>
 
 			{/* Content */}
-			<div className="flex-1 pt-0.5">{renderContent()}</div>
+			<div className={contentClassName}>
+				{renderContent()}
+			</div>
 		</div>
 	);
 }

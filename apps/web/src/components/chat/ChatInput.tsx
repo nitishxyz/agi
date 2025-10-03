@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent, ChangeEvent } from 'react';
 import { ArrowUp, MoreVertical } from 'lucide-react';
-import { Input } from '../ui/Input';
+import { Textarea } from '../ui/Textarea';
 
 interface ChatInputProps {
 	onSend: (message: string) => void;
@@ -11,21 +11,44 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 	const [message, setMessage] = useState('');
-	const inputRef = useRef<HTMLInputElement>(null);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 	useEffect(() => {
-		inputRef.current?.focus();
+		textareaRef.current?.focus();
 	}, []);
+
+	// Auto-resize textarea based on content
+	const adjustTextareaHeight = () => {
+		const textarea = textareaRef.current;
+		if (textarea) {
+			// Reset height to auto to get the correct scrollHeight
+			textarea.style.height = 'auto';
+			// Set height to scrollHeight (content height)
+			textarea.style.height = `${textarea.scrollHeight}px`;
+		}
+	};
+
+	useEffect(() => {
+		adjustTextareaHeight();
+	}, [message]);
 
 	const handleSend = () => {
 		if (message.trim() && !disabled) {
 			onSend(message);
 			setMessage('');
-			inputRef.current?.focus();
+			// Reset textarea height after sending
+			if (textareaRef.current) {
+				textareaRef.current.style.height = 'auto';
+			}
+			textareaRef.current?.focus();
 		}
 	};
 
-	const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+	const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+		setMessage(e.target.value);
+	};
+
+	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
 			handleSend();
@@ -35,7 +58,7 @@ export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 	return (
 		<div className="absolute bottom-0 left-0 right-0 pt-16 pb-8 px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-50">
 			<div className="max-w-3xl mx-auto pointer-events-auto">
-			<div className="flex items-center gap-1 bg-card rounded-full border border-border p-1 focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40 transition-colors">
+				<div className="flex items-end gap-1 bg-card rounded-3xl border border-border p-1 focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40 transition-colors">
 					{onConfigClick && (
 						<button
 							type="button"
@@ -45,14 +68,16 @@ export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 							<MoreVertical className="w-4 h-4" />
 						</button>
 					)}
-					<Input
-						ref={inputRef}
+					<Textarea
+						ref={textareaRef}
 						value={message}
-						onChange={(e) => setMessage(e.target.value)}
+						onChange={handleChange}
 						onKeyDown={handleKeyDown}
 						placeholder="Type a message..."
 						disabled={disabled}
-						className="border-0 bg-transparent pl-1 pr-2"
+						rows={1}
+						className="border-0 bg-transparent pl-1 pr-2 py-2 max-h-[200px] overflow-y-auto leading-normal resize-none scrollbar-hide"
+						style={{ height: '2.5rem' }}
 					/>
 					<button
 						type="button"

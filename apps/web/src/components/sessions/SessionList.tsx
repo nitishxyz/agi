@@ -21,7 +21,7 @@ export function SessionList({
 	}
 
 	return (
-		<div className="flex flex-col gap-1 px-2 py-2">
+		<div className="flex flex-col gap-1 px-2 py-2 overflow-y-auto scrollbar-hide">
 			{sessions.map((session) => (
 				<SessionItem
 					key={session.id}

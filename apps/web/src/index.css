@@ -125,13 +125,17 @@ code {
 	color: var(--code-foreground);
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+	-ms-overflow-style: none; /* IE and Edge */
+	scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none; /* Chrome, Safari and Opera */
+}
+
 .markdown-content {
-	& > *:first-child {
-		margin-top: 0;
-	}
-	& > *:last-child {
-		margin-bottom: 0;
-	}
 	h1 {
 		font-size: 1.875rem;
 		font-weight: 700;
@@ -244,4 +248,25 @@ code {
 		background-color: hsl(var(--muted));
 		font-weight: 600;
 	}
+	& > *:first-child {
+		margin-top: 0;
+	}
+	& > *:last-child {
+		margin-bottom: 0;
+	}
+	& > p:first-child,
+	& > ul:first-child,
+	& > ol:first-child,
+	& > pre:first-child,
+	& > blockquote:first-child {
+		margin-top: 0;
+	}
+	& > p:last-child,
+	& > ul:last-child,
+	& > ol:last-child,
+	& > pre:last-child,
+	& > blockquote:last-child {
+		margin-bottom: 0;
+	}
+
 }
