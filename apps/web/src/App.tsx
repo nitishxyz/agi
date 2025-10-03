@@ -10,11 +10,15 @@ import { useMessages, useSendMessage } from './hooks/useMessages';
 import { useSessionStream } from './hooks/useSessionStream';
 import { useTheme } from './hooks/useTheme';
 
+// Configure QueryClient with structural sharing enabled for better performance
 const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
 			refetchOnWindowFocus: false,
 			retry: 1,
+			// Enable structural sharing (default is true, but being explicit)
+			// This ensures that unchanged data retains the same object references
+			structuralSharing: true,
 		},
 	},
 });

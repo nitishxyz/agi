@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Sparkles } from 'lucide-react';
 import type { Message } from '../../types/api';
 import { MessagePartItem } from './MessagePartItem';
@@ -28,7 +29,8 @@ function getLoadingMessage(messageId: string) {
 	return loadingMessages[hash % loadingMessages.length];
 }
 
-export function AssistantMessageGroup({
+// Memoize the component to prevent re-renders when props haven't changed
+export const AssistantMessageGroup = memo(function AssistantMessageGroup({
 	message,
 	showHeader,
 	hasNextAssistantMessage,
@@ -152,4 +154,39 @@ export function AssistantMessageGroup({
 			</div>
 		</div>
 	);
-}
+}, (prevProps, nextProps) => {
+	// Custom comparison function for better memoization
+	// Only re-render if the message content or display props have actually changed
+	const prevParts = prevProps.message.parts || [];
+	const nextParts = nextProps.message.parts || [];
+	
+	// Check if parts have changed
+	if (prevParts.length !== nextParts.length) {
+		return false;
+	}
+	
+	// Check each part's content
+	for (let i = 0; i < prevParts.length; i++) {
+		const prevPart = prevParts[i];
+		const nextPart = nextParts[i];
+		if (
+			prevPart.id !== nextPart.id ||
+			prevPart.content !== nextPart.content ||
+			prevPart.contentJson !== nextPart.contentJson ||
+			prevPart.ephemeral !== nextPart.ephemeral ||
+			prevPart.completedAt !== nextPart.completedAt
+		) {
+			return false;
+		}
+	}
+	
+	// Check message-level props
+	return (
+		prevProps.message.id === nextProps.message.id &&
+		prevProps.message.status === nextProps.message.status &&
+		prevProps.message.completedAt === nextProps.message.completedAt &&
+		prevProps.showHeader === nextProps.showHeader &&
+		prevProps.hasNextAssistantMessage === nextProps.hasNextAssistantMessage &&
+		prevProps.isLastMessage === nextProps.isLastMessage
+	);
+});

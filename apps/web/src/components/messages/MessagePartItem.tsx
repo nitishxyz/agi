@@ -12,7 +12,7 @@ import {
 	FolderTree,
 	List,
 } from 'lucide-react';
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, memo, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { MessagePart } from '../../types/api';
@@ -117,7 +117,8 @@ interface MessagePartItemProps {
 	isLastProgressUpdate?: boolean;
 }
 
-export function MessagePartItem({
+// Memoize the component to prevent re-renders when props haven't changed
+export const MessagePartItem = memo(function MessagePartItem({
 	part,
 	showLine,
 	isLastToolCall,
@@ -355,4 +356,17 @@ export function MessagePartItem({
 			<div className={contentClassName}>{renderContent()}</div>
 		</div>
 	);
-}
+}, (prevProps, nextProps) => {
+	// Custom comparison function for better memoization
+	// Only re-render if the part content, showLine, or flags have actually changed
+	return (
+		prevProps.part.id === nextProps.part.id &&
+		prevProps.part.content === nextProps.part.content &&
+		prevProps.part.contentJson === nextProps.part.contentJson &&
+		prevProps.part.ephemeral === nextProps.part.ephemeral &&
+		prevProps.part.completedAt === nextProps.part.completedAt &&
+		prevProps.showLine === nextProps.showLine &&
+		prevProps.isLastToolCall === nextProps.isLastToolCall &&
+		prevProps.isLastProgressUpdate === nextProps.isLastProgressUpdate
+	);
+});

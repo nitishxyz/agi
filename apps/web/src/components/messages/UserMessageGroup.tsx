@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -8,7 +9,8 @@ interface UserMessageGroupProps {
 	isFirst: boolean;
 }
 
-export function UserMessageGroup({ message }: UserMessageGroupProps) {
+// Memoize the component to prevent re-renders when props haven't changed
+export const UserMessageGroup = memo(function UserMessageGroup({ message }: UserMessageGroupProps) {
 	const parts = message.parts || [];
 	const firstPart = parts[0];
 
@@ -53,4 +55,16 @@ export function UserMessageGroup({ message }: UserMessageGroupProps) {
 			</div>
 		</div>
 	);
-}
+}, (prevProps, nextProps) => {
+	// Custom comparison function for better memoization
+	// User messages don't change after creation, so we only need to check the message ID
+	const prevFirstPart = prevProps.message.parts?.[0];
+	const nextFirstPart = nextProps.message.parts?.[0];
+	
+	return (
+		prevProps.message.id === nextProps.message.id &&
+		prevFirstPart?.content === nextFirstPart?.content &&
+		prevFirstPart?.contentJson === nextFirstPart?.contentJson &&
+		prevProps.message.createdAt === nextProps.message.createdAt
+	);
+});

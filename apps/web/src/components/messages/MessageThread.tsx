@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { ArrowDown } from 'lucide-react';
 import type { Message } from '../../types/api';
 import { AssistantMessageGroup } from './AssistantMessageGroup';
@@ -40,18 +40,23 @@ export function MessageThread({ messages }: MessageThreadProps) {
 
 		bottomRef.current?.scrollIntoView({ behavior: behavior as ScrollBehavior });
 		lastScrollHeightRef.current = container.scrollHeight;
-	}, [autoScroll]);
+	}, [messages, autoScroll]);
 
 	// Force scroll on new message (length change)
 	useEffect(() => {
 		// Re-enable auto-scroll when a new message arrives
 		setAutoScroll(true);
-	}, []);
+	}, [messages.length]);
 
 	const scrollToBottom = () => {
 		setAutoScroll(true);
 		bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
 	};
+
+	// Memoize filtered messages to avoid recalculating on every render
+	const filteredMessages = useMemo(() => {
+		return messages.filter((message) => message.role !== 'system');
+	}, [messages]);
 
 	if (messages.length === 0) {
 		return (
@@ -60,10 +65,6 @@ export function MessageThread({ messages }: MessageThreadProps) {
 			</div>
 		);
 	}
-
-	const filteredMessages = messages.filter(
-		(message) => message.role !== 'system',
-	);
 
 	return (
 		<div className="absolute inset-0 flex flex-col">
