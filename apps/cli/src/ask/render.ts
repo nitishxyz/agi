@@ -74,6 +74,42 @@ export function detectPatchFormat(
 	return 'unknown';
 }
 
+function extractCommandFromPayload(
+	args?: unknown,
+	result?: unknown,
+): string | null {
+	const lookup = (source: unknown, keys: string[]) => {
+		if (!source || typeof source !== 'object') return null;
+		const rec = source as Record<string, unknown>;
+		for (const key of keys) {
+			const value = rec[key];
+			if (typeof value === 'string') {
+				const trimmed = value.trim();
+				if (trimmed.length) return trimmed;
+			}
+		}
+		return null;
+	};
+	return (
+		lookup(args, ['cmd', 'command', 'script', 'input']) ??
+		lookup(result, ['cmd', 'command', 'script', 'input'])
+	);
+}
+
+function extractCwdFromPayload(
+	args?: unknown,
+	result?: unknown,
+): string | null {
+	const lookup = (source: unknown) => {
+		if (!source || typeof source !== 'object') return null;
+		const value = (source as Record<string, unknown>).cwd;
+		if (typeof value !== 'string') return null;
+		const trimmed = value.trim();
+		return trimmed.length ? trimmed : null;
+	};
+	return lookup(args) ?? lookup(result);
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null;
 }
@@ -234,6 +270,7 @@ export function printToolResult(
 		durationMs?: number;
 		error?: string;
 		skipErrorLog?: boolean;
+		args?: unknown;
 	},
 ) {
 	if (name === 'update_plan' || name === 'progress_update') return;
@@ -355,6 +392,24 @@ export function printToolResult(
 		const stdout = String(Reflect.get(result, 'stdout') ?? '');
 		const stderr = String(Reflect.get(result, 'stderr') ?? '');
 		const exitCode = Reflect.get(result, 'exitCode');
+		const command = extractCommandFromPayload(opts?.args, result);
+		const cwd = extractCwdFromPayload(opts?.args, result);
+		const segments: string[] = [];
+		if (command) segments.push(dim(truncate(command, 160)));
+		if (cwd && cwd !== '.') segments.push(dim(`cwd=${cwd}`));
+		if (typeof exitCode === 'number') {
+			segments.push(
+				exitCode === 0 ? green(`exit ${exitCode}`) : red(`exit ${exitCode}`),
+			);
+		} else if (exitCode !== undefined && exitCode !== null) {
+			segments.push(dim(`exit ${exitCode}`));
+		}
+		const header = segments.length
+			? `${bold('↳ bash')} ${segments
+					.map((segment) => `${dim('·')} ${segment}`)
+					.join(' ')}${time}`
+			: `${bold('↳ bash')}${time}`;
+		writeStderr(`${header}\n`);
 		const truncateBlock = (
 			label: string,
 			raw: string,
@@ -385,8 +440,6 @@ export function printToolResult(
 		};
 		if (stdout.trim()) truncateBlock('↳ bash stdout', stdout);
 		if (stderr.trim()) truncateBlock('↳ bash stderr', stderr, red);
-		if (typeof exitCode === 'number')
-			writeStderr(`${bold('↳ bash exit')} ${exitCode}${time}\n`);
 		return;
 	}
 	if (name === 'finish') {

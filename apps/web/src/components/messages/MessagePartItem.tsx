@@ -12,6 +12,7 @@ import {
 	FolderTree,
 	List,
 } from 'lucide-react';
+import { Fragment, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { MessagePart } from '../../types/api';
@@ -43,6 +44,20 @@ function getToolCallArgs(
 		return args as Record<string, unknown>;
 	}
 	return undefined;
+}
+
+function getPrimaryCommand(
+	args: Record<string, unknown> | undefined,
+): string | null {
+	if (!args) return null;
+	const candidates = ['cmd', 'command', 'script', 'input'];
+	for (const key of candidates) {
+		const value = args[key];
+		if (typeof value === 'string' && value.trim().length > 0) {
+			return value.trim();
+		}
+	}
+	return null;
 }
 
 function normalizeToolTarget(
@@ -269,28 +284,46 @@ export function MessagePartItem({
 			const args = getToolCallArgs(part);
 			const primary = normalizeToolTarget(rawToolName, args);
 			const argsPreview = formatArgsPreview(args, primary?.key);
+			const command = rawToolName === 'bash' ? getPrimaryCommand(args) : null;
+			const segments: Array<{ key: string; node: ReactNode }> = [];
+			if (command) {
+				segments.push({
+					key: 'cmd',
+					node: <code className="font-mono text-foreground/90">{command}</code>,
+				});
+			} else if (primary) {
+				segments.push({
+					key: 'primary',
+					node: (
+						<code className="font-mono text-foreground/85">
+							{primary.value}
+						</code>
+					),
+				});
+			}
+			if (argsPreview) {
+				segments.push({
+					key: 'args',
+					node: <span className="text-muted-foreground/80">{argsPreview}</span>,
+				});
+			}
+			segments.push({
+				key: 'running',
+				node: <span className="text-muted-foreground/75">running…</span>,
+			});
 			const containerClasses = [
-				'flex flex-col gap-1 text-xs font-mono text-amber-700 dark:text-amber-200',
+				'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground/80',
 			];
 			if (part.ephemeral) containerClasses.push('animate-pulse');
 			return (
 				<div className={containerClasses.join(' ')}>
-					<div className="flex items-center gap-2 uppercase tracking-[0.2em] text-amber-500/80 dark:text-amber-200/80">
-						<span>{toolLabel}</span>
-						<span className="lowercase text-amber-600/80 dark:text-amber-100/70">
-							running…
-						</span>
-					</div>
-					{primary && (
-						<div className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-amber-700 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-100 break-all">
-							{primary.value}
-						</div>
-					)}
-					{argsPreview && (
-						<div className="text-[0.7rem] text-amber-600/90 dark:text-amber-100/70 break-words">
-							{argsPreview}
-						</div>
-					)}
+					<span className="font-medium text-foreground">{toolLabel}</span>
+					{segments.map((segment) => (
+						<Fragment key={segment.key}>
+							<span className="text-muted-foreground/65">·</span>
+							{segment.node}
+						</Fragment>
+					))}
 				</div>
 			);
 		}

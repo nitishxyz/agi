@@ -24,9 +24,28 @@ type ToolExecuteOptions = ToolExecuteSignature['options'] extends never
 	: ToolExecuteSignature['options'];
 type ToolExecuteReturn = ToolExecuteSignature['result'];
 
+type PendingCallMeta = {
+	callId: string;
+	startTs: number;
+	stepIndex?: number;
+	args?: unknown;
+};
+
+function getPendingQueue(
+	map: Map<string, PendingCallMeta[]>,
+	name: string,
+): PendingCallMeta[] {
+	let queue = map.get(name);
+	if (!queue) {
+		queue = [];
+		map.set(name, queue);
+	}
+	return queue;
+}
+
 export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 	const out: Record<string, Tool> = {};
-	const pendingCalls = new Map<string, { callId: string; startTs: number }[]>();
+	const pendingCalls = new Map<string, PendingCallMeta[]>();
 	let firstToolCallReported = false;
 
 	for (const { name, tool } of tools) {
@@ -34,6 +53,12 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 		out[name] = {
 			...base,
 			async onInputStart(options: unknown) {
+				const queue = getPendingQueue(pendingCalls, name);
+				queue.push({
+					callId: crypto.randomUUID(),
+					startTs: Date.now(),
+					stepIndex: ctx.stepIndex,
+				});
 				if (typeof base.onInputStart === 'function')
 					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
 					await base.onInputStart(options as any);
@@ -41,11 +66,19 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 			async onInputDelta(options: unknown) {
 				const delta = (options as { inputTextDelta?: string } | undefined)
 					?.inputTextDelta;
+				const queue = pendingCalls.get(name);
+				const meta = queue?.length ? queue[queue.length - 1] : undefined;
 				// Stream tool argument deltas as events if needed (finish handled on input available)
 				publish({
 					type: 'tool.delta',
 					sessionId: ctx.sessionId,
-					payload: { name, channel: 'input', delta, stepIndex: ctx.stepIndex },
+					payload: {
+						name,
+						channel: 'input',
+						delta,
+						stepIndex: meta?.stepIndex ?? ctx.stepIndex,
+						callId: meta?.callId,
+					},
 				});
 				if (typeof base.onInputDelta === 'function')
 					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
@@ -53,7 +86,21 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 			},
 			async onInputAvailable(options: unknown) {
 				const args = (options as { input?: unknown } | undefined)?.input;
+				const queue = getPendingQueue(pendingCalls, name);
+				let meta = queue.length ? queue[queue.length - 1] : undefined;
+				if (!meta) {
+					meta = {
+						callId: crypto.randomUUID(),
+						startTs: Date.now(),
+						stepIndex: ctx.stepIndex,
+					};
+					queue.push(meta);
+				}
+				meta.stepIndex = ctx.stepIndex;
+				meta.args = args;
+				const callId = meta.callId;
 				const callPartId = crypto.randomUUID();
+				const startTs = meta.startTs;
 
 				if (
 					!firstToolCallReported &&
@@ -67,20 +114,16 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 
 				// Special-case: progress updates must render instantly. Publish before any DB work.
 				if (name === 'progress_update') {
-					const startTs = Date.now();
 					publish({
 						type: 'tool.call',
 						sessionId: ctx.sessionId,
 						payload: {
 							name,
 							args,
-							callId: callPartId,
+							callId,
 							stepIndex: ctx.stepIndex,
 						},
 					});
-					const list = pendingCalls.get(name) ?? [];
-					list.push({ callId: callPartId, startTs });
-					pendingCalls.set(name, list);
 					// Optionally persist in the background without blocking ordering
 					(async () => {
 						try {
@@ -91,13 +134,13 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 								index,
 								stepIndex: ctx.stepIndex,
 								type: 'tool_call',
-								content: JSON.stringify({ name, args, callId: callPartId }),
+								content: JSON.stringify({ name, args, callId }),
 								agent: ctx.agent,
 								provider: ctx.provider,
 								model: ctx.model,
 								startedAt: startTs,
 								toolName: name,
-								toolCallId: callPartId,
+								toolCallId: callId,
 							});
 						} catch {}
 					})();
@@ -109,15 +152,11 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				}
 
 				// Publish promptly so UI shows the call header before results
-				const startTs = Date.now();
 				publish({
 					type: 'tool.call',
 					sessionId: ctx.sessionId,
-					payload: { name, args, callId: callPartId },
+					payload: { name, args, callId, stepIndex: ctx.stepIndex },
 				});
-				const list = pendingCalls.get(name) ?? [];
-				list.push({ callId: callPartId, startTs });
-				pendingCalls.set(name, list);
 				// Persist best-effort in the background to avoid delaying output
 				(async () => {
 					try {
@@ -128,13 +167,13 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 							index,
 							stepIndex: ctx.stepIndex,
 							type: 'tool_call',
-							content: JSON.stringify({ name, args, callId: callPartId }),
+							content: JSON.stringify({ name, args, callId }),
 							agent: ctx.agent,
 							provider: ctx.provider,
 							model: ctx.model,
 							startedAt: startTs,
 							toolName: name,
-							toolCallId: callPartId,
+							toolCallId: callId,
 						});
 					} catch {}
 				})();
@@ -149,6 +188,12 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				}
 			},
 			async execute(input: ToolExecuteInput, options: ToolExecuteOptions) {
+				const queue = pendingCalls.get(name);
+				const meta = queue?.shift();
+				if (queue && queue.length === 0) pendingCalls.delete(name);
+				const callIdFromQueue = meta?.callId;
+				const startTsFromQueue = meta?.startTs;
+				const stepIndexForEvent = meta?.stepIndex ?? ctx.stepIndex;
 				// Handle session-relative paths and cwd tools
 				let res: ToolExecuteReturn | { cwd: string } | null | undefined;
 				const cwd = getCwd(ctx.sessionId);
@@ -204,7 +249,8 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 								name,
 								channel: 'output',
 								delta: chunk,
-								stepIndex: ctx.stepIndex,
+								stepIndex: stepIndexForEvent,
+								callId: callIdFromQueue,
 							},
 						});
 					}
@@ -215,24 +261,22 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					result = await Promise.resolve(res as ToolExecuteReturn);
 				}
 				const resultPartId = crypto.randomUUID();
-				let callId: string | undefined;
-				let startTs: number | undefined;
-				const queue = pendingCalls.get(name);
-				if (queue?.length) {
-					const meta = queue.shift();
-					callId = meta?.callId;
-					startTs = meta?.startTs;
-				}
+				const callId = callIdFromQueue;
+				const startTs = startTsFromQueue;
 				const contentObj: {
 					name: string;
 					result: unknown;
 					callId?: string;
 					artifact?: unknown;
+					args?: unknown;
 				} = {
 					name,
 					result,
 					callId,
 				};
+				if (meta?.args !== undefined) {
+					contentObj.args = meta.args;
+				}
 				if (result && typeof result === 'object' && 'artifact' in result) {
 					try {
 						const maybeArtifact = (result as { artifact?: unknown }).artifact;
@@ -260,7 +304,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					publish({
 						type: 'tool.result',
 						sessionId: ctx.sessionId,
-						payload: { ...contentObj, stepIndex: ctx.stepIndex },
+						payload: { ...contentObj, stepIndex: stepIndexForEvent },
 					});
 					// Persist without blocking the event loop
 					(async () => {
@@ -269,7 +313,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 								id: resultPartId,
 								messageId: ctx.messageId,
 								index,
-								stepIndex: ctx.stepIndex,
+								stepIndex: stepIndexForEvent,
 								type: 'tool_result',
 								content: JSON.stringify(contentObj),
 								agent: ctx.agent,
@@ -290,7 +334,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					id: resultPartId,
 					messageId: ctx.messageId,
 					index,
-					stepIndex: ctx.stepIndex,
+					stepIndex: stepIndexForEvent,
 					type: 'tool_result',
 					content: JSON.stringify(contentObj),
 					agent: ctx.agent,
@@ -330,7 +374,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 				publish({
 					type: 'tool.result',
 					sessionId: ctx.sessionId,
-					payload: { ...contentObj, stepIndex: ctx.stepIndex },
+					payload: { ...contentObj, stepIndex: stepIndexForEvent },
 				});
 				if (name === 'update_plan') {
 					try {

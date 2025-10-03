@@ -8,18 +8,55 @@ export function BashRenderer({
 	onToggle,
 }: RendererProps) {
 	const result = contentJson.result || {};
+	const args = (contentJson as { args?: unknown }).args;
 	const stdout = String(result.stdout || '');
 	const stderr = String(result.stderr || '');
-	const exitCode = Number(result.exitCode ?? 0);
-	const hasOutput = stdout || stderr;
+	const exitCodeRaw = result.exitCode;
+	const exitCode =
+		exitCodeRaw === null || exitCodeRaw === undefined
+			? null
+			: Number(exitCodeRaw || 0);
+	const hasOutput = Boolean(stdout || stderr);
 	const timeStr = toolDurationMs ? `${toolDurationMs}ms` : '';
+	const command = (() => {
+		const fromArgs =
+			(() => {
+				if (!args || typeof args !== 'object') return null;
+				const rec = args as Record<string, unknown>;
+				for (const key of ['cmd', 'command', 'script', 'input']) {
+					const value = rec[key];
+					if (typeof value === 'string' && value.trim().length > 0) {
+						return value.trim();
+					}
+				}
+				return null;
+			})() ??
+			(() => {
+				if (!result || typeof result !== 'object') return null;
+				const rec = result as Record<string, unknown>;
+				for (const key of ['cmd', 'command', 'script', 'input']) {
+					const value = rec[key];
+					if (typeof value === 'string' && value.trim().length > 0) {
+						return value.trim();
+					}
+				}
+				return null;
+			})();
+		return fromArgs ?? '';
+	})();
+
+	const exitLabel = exitCode === null ? 'exit ?' : `exit ${exitCode}`;
+	const exitClass =
+		exitCode === null || exitCode === 0
+			? 'text-emerald-700 dark:text-emerald-300'
+			: 'text-red-600 dark:text-red-300';
 
 	return (
 		<div className="text-xs">
 			<button
 				type="button"
 				onClick={() => hasOutput && onToggle()}
-				className={`flex items-center gap-2 text-muted-foreground ${hasOutput ? 'hover:text-foreground transition-colors' : ''}`}
+				className={`flex flex-wrap items-center gap-2 text-foreground/80 transition-colors ${hasOutput ? 'hover:text-foreground' : ''}`}
 			>
 				{hasOutput &&
 					(isExpanded ? (
@@ -28,18 +65,25 @@ export function BashRenderer({
 						<ChevronRight className="h-3 w-3" />
 					))}
 				{!hasOutput && <div className="w-3" />}
-				<span className="font-medium">bash</span>
-				<span className="text-muted-foreground/70">·</span>
-				<span
-					className={
-						exitCode === 0
-							? 'text-emerald-700 dark:text-emerald-300'
-							: 'text-red-600 dark:text-red-300'
-					}
-				>
-					exit {exitCode}
-				</span>
-				<span className="text-muted-foreground/80">· {timeStr}</span>
+				<span className="font-medium text-foreground">bash</span>
+				{command && (
+					<>
+						<span className="text-muted-foreground/70">·</span>
+						<code className="font-mono text-foreground/90">{command}</code>
+					</>
+				)}
+				{exitLabel && (
+					<>
+						<span className="text-muted-foreground/70">·</span>
+						<span className={exitClass}>{exitLabel}</span>
+					</>
+				)}
+				{timeStr && (
+					<>
+						<span className="text-muted-foreground/70">·</span>
+						<span className="text-muted-foreground/80">{timeStr}</span>
+					</>
+				)}
 			</button>
 			{isExpanded && (
 				<div className="mt-2 ml-5 space-y-2">

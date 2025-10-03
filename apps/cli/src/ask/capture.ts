@@ -153,6 +153,7 @@ export async function runAskStreamCapture(
 						verbose,
 						durationMs,
 						error: errorMessage,
+						args: data?.args,
 					});
 				} else if (errorMessage) {
 					logToolError(name, errorMessage, { durationMs });

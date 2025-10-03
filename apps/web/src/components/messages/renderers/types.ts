@@ -6,6 +6,11 @@ export interface ToolCallArgs {
 	pct?: number;
 	stage?: string;
 	all?: boolean;
+	cmd?: string;
+	cwd?: string;
+	command?: string;
+	script?: string;
+	input?: string;
 }
 
 export interface ToolResultData {

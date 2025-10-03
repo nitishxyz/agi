@@ -47,6 +47,7 @@ export interface MessagePart {
 	toolName: string | null;
 	toolCallId: string | null;
 	toolDurationMs: number | null;
+	ephemeral?: boolean;
 }
 
 export interface SSEEvent {

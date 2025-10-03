@@ -465,6 +465,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 				verbose: flags.verbose,
 				durationMs,
 				error: errorMessage,
+				args: data?.args,
 			});
 		} else if (
 			name !== 'progress_update' &&
