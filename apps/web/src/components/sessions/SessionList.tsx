@@ -14,14 +14,14 @@ export function SessionList({
 }: SessionListProps) {
 	if (sessions.length === 0) {
 		return (
-			<div className="p-4 text-center text-muted-foreground text-sm">
+			<div className="px-4 py-8 text-center text-sm text-muted-foreground/80">
 				No sessions yet. Create one to get started.
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex flex-col">
+		<div className="flex flex-col gap-1 px-2 py-2">
 			{sessions.map((session) => (
 				<SessionItem
 					key={session.id}

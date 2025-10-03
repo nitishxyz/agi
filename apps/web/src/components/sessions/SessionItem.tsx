@@ -1,4 +1,4 @@
-import { MessageSquare, Clock } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import type { Session } from '../../types/api';
 
 interface SessionItemProps {
@@ -23,26 +23,27 @@ export function SessionItem({ session, isActive, onClick }: SessionItemProps) {
 		return date.toLocaleDateString();
 	};
 
+	const baseStyles =
+		'group w-full rounded-lg px-3 py-3 text-left transition-colors duration-150';
+	const activeStyles = 'bg-primary/10';
+	const inactiveStyles = 'hover:bg-muted/20';
+
 	return (
 		<button
 			onClick={onClick}
-			className={`w-full p-3 text-left border-b border-border hover:bg-muted/50 transition-colors ${
-				isActive ? 'bg-muted/50 border-l-2 border-l-primary' : ''
-			}`}
+			className={`${baseStyles} ${isActive ? activeStyles : inactiveStyles}`}
 		>
 			<div className="flex items-start gap-3">
-				<MessageSquare className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-				<div className="flex-1 min-w-0">
-					<h3 className="text-sm font-medium text-foreground truncate">
-						{session.title || `Session ${session.id.slice(0, 8)}`}
-					</h3>
-					<div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-						<span className="truncate">{session.agent}</span>
-						<span>•</span>
-						<span className="truncate">{session.model}</span>
+				<MessageSquare className={`h-4 w-4 shrink-0 mt-1 text-muted-foreground ${isActive ? 'text-primary' : ''}`} />
+				<div className="min-w-0 flex-1">
+					<div className="flex items-center gap-2">
+						<h3 className="truncate text-sm font-semibold text-foreground">
+							{session.title || `Session ${session.id.slice(0, 8)}`}
+						</h3>
 					</div>
-					<div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-						<Clock className="w-3 h-3" />
+					<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground/80">
+						{session.agent && <span className="uppercase">{session.agent}</span>}
+						{session.agent && <span>•</span>}
 						<span>{formatDate(session.lastActiveAt || session.createdAt)}</span>
 					</div>
 				</div>

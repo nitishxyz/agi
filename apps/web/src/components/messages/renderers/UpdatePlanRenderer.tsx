@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { CheckCircle2, Circle, ArrowRight } from 'lucide-react';
 import type { RendererProps } from './types';
 
 interface PlanItem {
@@ -29,7 +29,7 @@ export function UpdatePlanRenderer({ contentJson }: RendererProps) {
 								<CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-300 flex-shrink-0 mt-0.5" />
 							)}
 							{item.status === 'in_progress' && (
-								<Loader2 className="h-4 w-4 text-blue-700 dark:text-blue-300 flex-shrink-0 mt-0.5 animate-spin" />
+								<ArrowRight className="h-4 w-4 text-blue-700 dark:text-blue-300 flex-shrink-0 mt-0.5 animate-pulse" />
 							)}
 						{item.status === 'pending' && (
 							<Circle className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
