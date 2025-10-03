@@ -31,12 +31,18 @@ export function ApplyPatchRenderer({
 				{summary && (
 					<>
 						<span className="text-muted-foreground/70">·</span>
-						<span className="text-muted-foreground">{summary.files || 0} files</span>
+						<span className="text-muted-foreground">
+							{summary.files || 0} files
+						</span>
 						{(summary.additions || 0) > 0 && (
-							<span className="text-emerald-700 dark:text-emerald-300">+{summary.additions}</span>
+							<span className="text-emerald-700 dark:text-emerald-300">
+								+{summary.additions}
+							</span>
 						)}
 						{(summary.deletions || 0) > 0 && (
-							<span className="text-red-600 dark:text-red-300">-{summary.deletions}</span>
+							<span className="text-red-600 dark:text-red-300">
+								-{summary.deletions}
+							</span>
 						)}
 					</>
 				)}

@@ -64,7 +64,7 @@ export function MessagePartItem({
 	const contentClasses = ['flex-1'];
 
 	if (isToolMessage) {
-	contentClasses.push('pt-0.5', 'mt-[1px]');
+		contentClasses.push('pt-0.5', 'mt-[1px]');
 	} else {
 		contentClasses.push('pt-0');
 	}
@@ -77,38 +77,63 @@ export function MessagePartItem({
 
 	const renderIcon = () => {
 		if (part.type === 'tool_call') {
-			return <Loader2 className="h-4 w-4 text-amber-600 dark:text-amber-300 animate-spin" />;
+			return (
+				<Loader2 className="h-4 w-4 text-amber-600 dark:text-amber-300 animate-spin" />
+			);
 		}
 
 		if (part.type === 'tool_result') {
 			const toolName = part.toolName || '';
 			if (toolName === 'read')
-				return <FileText className="h-4 w-4 text-blue-600 dark:text-blue-300" />;
+				return (
+					<FileText className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+				);
 			if (toolName === 'write')
-				return <FileEdit className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />;
+				return (
+					<FileEdit className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+				);
 			if (toolName === 'edit')
-				return <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-300" />;
-			if (toolName === 'ls') return <List className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />;
+				return (
+					<FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-300" />
+				);
+			if (toolName === 'ls')
+				return <List className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />;
 			if (toolName === 'tree')
-				return <FolderTree className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />;
+				return (
+					<FolderTree className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />
+				);
 			if (toolName === 'bash')
 				return <Terminal className="h-4 w-4 text-muted-foreground" />;
 			if (toolName === 'ripgrep' || toolName === 'grep' || toolName === 'glob')
-				return <Search className="h-4 w-4 text-amber-600 dark:text-amber-300" />;
+				return (
+					<Search className="h-4 w-4 text-amber-600 dark:text-amber-300" />
+				);
 			if (toolName === 'apply_patch')
-				return <Diff className="h-4 w-4 text-purple-600 dark:text-purple-300" />;
+				return (
+					<Diff className="h-4 w-4 text-purple-600 dark:text-purple-300" />
+				);
 			if (toolName === 'git_status')
-				return <GitBranch className="h-4 w-4 text-blue-600 dark:text-blue-300" />;
+				return (
+					<GitBranch className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+				);
 			if (toolName === 'git_diff')
-				return <Diff className="h-4 w-4 text-purple-600 dark:text-purple-300" />;
+				return (
+					<Diff className="h-4 w-4 text-purple-600 dark:text-purple-300" />
+				);
 			if (toolName === 'git_commit')
-				return <GitCommit className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />;
+				return (
+					<GitCommit className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+				);
 			if (toolName === 'finish')
-				return <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />;
+				return (
+					<Check className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+				);
 			return <Terminal className="h-4 w-4 text-muted-foreground" />;
 		}
 
-		return <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-300" />;
+		return (
+			<Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+		);
 	};
 
 	const renderToolResult = () => {
@@ -189,9 +214,7 @@ export function MessagePartItem({
 			</div>
 
 			{/* Content */}
-			<div className={contentClassName}>
-				{renderContent()}
-			</div>
+			<div className={contentClassName}>{renderContent()}</div>
 		</div>
 	);
 }

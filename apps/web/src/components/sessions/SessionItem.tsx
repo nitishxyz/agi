@@ -34,7 +34,9 @@ export function SessionItem({ session, isActive, onClick }: SessionItemProps) {
 			className={`${baseStyles} ${isActive ? activeStyles : inactiveStyles}`}
 		>
 			<div className="flex items-start gap-3">
-				<MessageSquare className={`h-4 w-4 shrink-0 mt-1 text-muted-foreground ${isActive ? 'text-primary' : ''}`} />
+				<MessageSquare
+					className={`h-4 w-4 shrink-0 mt-1 text-muted-foreground ${isActive ? 'text-primary' : ''}`}
+				/>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
 						<h3 className="truncate text-sm font-semibold text-foreground">
@@ -42,7 +44,9 @@ export function SessionItem({ session, isActive, onClick }: SessionItemProps) {
 						</h3>
 					</div>
 					<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground/80">
-						{session.agent && <span className="uppercase">{session.agent}</span>}
+						{session.agent && (
+							<span className="uppercase">{session.agent}</span>
+						)}
 						{session.agent && <span>•</span>}
 						<span>{formatDate(session.lastActiveAt || session.createdAt)}</span>
 					</div>

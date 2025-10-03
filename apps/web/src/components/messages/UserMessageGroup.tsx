@@ -35,7 +35,9 @@ export function UserMessageGroup({ message }: UserMessageGroupProps) {
 			<div className="flex gap-4 justify-end">
 				<div className="inline-block">
 					<div className="flex items-center gap-2 text-xs text-muted-foreground pb-2 justify-end">
-						<span className="font-medium text-emerald-700 dark:text-emerald-300">You</span>
+						<span className="font-medium text-emerald-700 dark:text-emerald-300">
+							You
+						</span>
 						{message.createdAt && <span>·</span>}
 						{message.createdAt && <span>{formatTime(message.createdAt)}</span>}
 					</div>

@@ -1,16 +1,16 @@
 {
-  "name": "basic-cli-bot-example",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Basic CLI bot example using @agi-cli/sdk",
-  "scripts": {
-    "start": "bun run index.ts"
-  },
-  "dependencies": {
-    "@agi-cli/sdk": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  }
+	"name": "basic-cli-bot-example",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Basic CLI bot example using @agi-cli/sdk",
+	"scripts": {
+		"start": "bun run index.ts"
+	},
+	"dependencies": {
+		"@agi-cli/sdk": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	}
 }

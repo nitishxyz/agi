@@ -28,8 +28,12 @@ export function GitCommitRenderer({
 				{!commitResult && <div className="w-3" />}
 				<span className="font-medium">git_commit</span>
 				<span className="text-muted-foreground/70">·</span>
-				<span className="text-foreground/70 truncate max-w-2xl">{firstLine}</span>
-				<span className="text-muted-foreground/80 flex-shrink-0">· {timeStr}</span>
+				<span className="text-foreground/70 truncate max-w-2xl">
+					{firstLine}
+				</span>
+				<span className="text-muted-foreground/80 flex-shrink-0">
+					· {timeStr}
+				</span>
 			</button>
 			{isExpanded && commitResult && (
 				<pre className="mt-2 ml-5 text-xs text-muted-foreground bg-card/60 border border-border rounded-lg p-3 overflow-x-auto">

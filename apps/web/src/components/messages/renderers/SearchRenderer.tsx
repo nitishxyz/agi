@@ -49,12 +49,18 @@ export function SearchRenderer({
 											key={`${match.file}-${match.line || idx}`}
 											className="font-mono text-xs"
 										>
-											<span className="text-muted-foreground">{match.file}</span>
+											<span className="text-muted-foreground">
+												{match.file}
+											</span>
 											{match.line !== undefined && (
-												<span className="text-muted-foreground/80">:{match.line}</span>
+												<span className="text-muted-foreground/80">
+													:{match.line}
+												</span>
 											)}
 											{match.text && (
-												<span className="text-muted-foreground ml-2">{match.text}</span>
+												<span className="text-muted-foreground ml-2">
+													{match.text}
+												</span>
 											)}
 										</div>
 									);
@@ -62,7 +68,10 @@ export function SearchRenderer({
 							}
 							const key = typeof item === 'string' ? item : `item-${idx}`;
 							return (
-								<div key={key} className="text-muted-foreground font-mono text-xs">
+								<div
+									key={key}
+									className="text-muted-foreground font-mono text-xs"
+								>
 									{typeof item === 'string' ? item : JSON.stringify(item)}
 								</div>
 							);

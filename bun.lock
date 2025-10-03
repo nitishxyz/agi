@@ -32,7 +32,7 @@
     },
     "apps/cli": {
       "name": "@agi-cli/cli",
-      "version": "0.1.38",
+      "version": "0.1.39",
       "bin": {
         "agi": "./dist/agi",
       },
@@ -51,7 +51,7 @@
     },
     "apps/install": {
       "name": "@agi-cli/install",
-      "version": "0.1.38",
+      "version": "0.1.39",
       "bin": {
         "agi": "./start.js",
       },
@@ -89,6 +89,29 @@
         "typescript": "~5.9.3",
         "typescript-eslint": "^8.45.0",
         "vite": "^7.1.7",
+      },
+    },
+    "examples/basic-cli-bot": {
+      "name": "basic-cli-bot-example",
+      "version": "0.1.0",
+      "dependencies": {
+        "@agi-cli/sdk": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+    },
+    "examples/git-commit-helper": {
+      "name": "git-commit-helper-example",
+      "version": "0.1.0",
+      "bin": {
+        "git-commit-helper": "./index.ts",
+      },
+      "dependencies": {
+        "@agi-cli/sdk": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
       },
     },
     "packages/auth": {
@@ -143,7 +166,7 @@
     },
     "packages/sdk": {
       "name": "@agi-cli/sdk",
-      "version": "0.1.38",
+      "version": "0.1.39",
       "dependencies": {
         "@agi-cli/auth": "workspace:*",
         "@agi-cli/config": "workspace:*",
@@ -585,6 +608,8 @@
 
     "baseline-browser-mapping": ["baseline-browser-mapping@2.8.10", "", { "bin": { "baseline-browser-mapping": "dist/cli.js" } }, "sha512-uLfgBi+7IBNay8ECBO2mVMGZAc1VgZWEChxm4lv+TobGdG82LnXMjuNGo/BSSZZL4UmkWhxEHP2f5ziLNwGWMA=="],
 
+    "basic-cli-bot-example": ["basic-cli-bot-example@workspace:examples/basic-cli-bot"],
+
     "binary-extensions": ["binary-extensions@2.3.0", "", {}, "sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw=="],
 
     "brace-expansion": ["brace-expansion@1.1.12", "", { "dependencies": { "balanced-match": "^1.0.0", "concat-map": "0.0.1" } }, "sha512-9T9UjW3r0UW5c1Q7GTwllptXwhvYmEzFhzMfZ9H7FQWt+uZePjZPjBP/W1ZEyZ1twGWom5/56TF4lPcqjnDHcg=="],
@@ -756,6 +781,8 @@
     "get-caller-file": ["get-caller-file@2.0.5", "", {}, "sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg=="],
 
     "get-tsconfig": ["get-tsconfig@4.10.1", "", { "dependencies": { "resolve-pkg-maps": "^1.0.0" } }, "sha512-auHyJ4AgMz7vgS8Hp3N6HXSmlMdUyhSUrfBF16w153rxtLIEOE+HGqaBppczZvnHLqQJfiHotCYpNhl0lUROFQ=="],
+
+    "git-commit-helper-example": ["git-commit-helper-example@workspace:examples/git-commit-helper"],
 
     "glob": ["glob@10.4.5", "", { "dependencies": { "foreground-child": "^3.1.0", "jackspeak": "^3.1.2", "minimatch": "^9.0.4", "minipass": "^7.1.2", "package-json-from-dist": "^1.0.0", "path-scurry": "^1.11.1" }, "bin": { "glob": "dist/esm/bin.mjs" } }, "sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg=="],
 

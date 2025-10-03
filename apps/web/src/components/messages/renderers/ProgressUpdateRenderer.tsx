@@ -12,7 +12,9 @@ export function ProgressUpdateRenderer({ contentJson }: RendererProps) {
 			<Loader2 className="h-4 w-4 animate-spin" />
 			{stage && <span className="text-muted-foreground/80">[{stage}]</span>}
 			<span>{message}</span>
-			{pct !== undefined && <span className="text-muted-foreground/80">({pct}%)</span>}
+			{pct !== undefined && (
+				<span className="text-muted-foreground/80">({pct}%)</span>
+			)}
 		</div>
 	);
 }

@@ -1,19 +1,19 @@
 {
-  "name": "git-commit-helper-example",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Smart git commit message generator using @agi-cli/sdk",
-  "bin": {
-    "git-commit-helper": "./index.ts"
-  },
-  "scripts": {
-    "start": "bun run index.ts"
-  },
-  "dependencies": {
-    "@agi-cli/sdk": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  }
+	"name": "git-commit-helper-example",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Smart git commit message generator using @agi-cli/sdk",
+	"bin": {
+		"git-commit-helper": "./index.ts"
+	},
+	"scripts": {
+		"start": "bun run index.ts"
+	},
+	"dependencies": {
+		"@agi-cli/sdk": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	}
 }

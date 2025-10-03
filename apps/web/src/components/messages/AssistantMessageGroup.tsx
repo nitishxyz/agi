@@ -69,9 +69,9 @@ export function AssistantMessageGroup({
 			{/* Header with avatar */}
 			{showHeader && (
 				<div className="pb-2">
-						<div className="inline-flex items-center bg-violet-500/10 border border-violet-500/30 dark:bg-violet-500/5 dark:border-violet-500/20 rounded-full pr-4">
-							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-violet-500/50 bg-violet-500/20 dark:bg-violet-500/10">
-								<Sparkles className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
+					<div className="inline-flex items-center bg-violet-500/10 border border-violet-500/30 dark:bg-violet-500/5 dark:border-violet-500/20 rounded-full pr-4">
+						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-violet-500/50 bg-violet-500/20 dark:bg-violet-500/10">
+							<Sparkles className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
 						</div>
 						<div className="flex items-center gap-2 text-sm text-muted-foreground pl-3">
 							{message.agent && (
@@ -80,12 +80,20 @@ export function AssistantMessageGroup({
 								</span>
 							)}
 							{message.agent && message.provider && <span>·</span>}
-								{message.provider && <span className="text-muted-foreground">{message.provider}</span>}
+							{message.provider && (
+								<span className="text-muted-foreground">
+									{message.provider}
+								</span>
+							)}
 							{message.model && <span>·</span>}
-								{message.model && <span className="text-muted-foreground">{message.model}</span>}
+							{message.model && (
+								<span className="text-muted-foreground">{message.model}</span>
+							)}
 							{message.createdAt && <span>·</span>}
 							{message.createdAt && (
-								<span className="text-muted-foreground">{formatTime(message.createdAt)}</span>
+								<span className="text-muted-foreground">
+									{formatTime(message.createdAt)}
+								</span>
 							)}
 						</div>
 					</div>
@@ -127,20 +135,20 @@ export function AssistantMessageGroup({
 				)}
 
 				{/* Show loading state if message is incomplete and no progress/finish */}
-					{shouldShowLoadingFallback && (
-						<div className="flex gap-3 pb-2 relative">
-							<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
-								<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative z-10 bg-card text-violet-700 dark:bg-background dark:text-violet-300">
-									<Sparkles className="h-4 w-4" />
-								</div>
-							</div>
-							<div className="flex-1 pt-0.5">
-							<div className="text-base text-foreground animate-pulse">
-									{getLoadingMessage(message.id)}
-								</div>
+				{shouldShowLoadingFallback && (
+					<div className="flex gap-3 pb-2 relative">
+						<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
+							<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative z-10 bg-card text-violet-700 dark:bg-background dark:text-violet-300">
+								<Sparkles className="h-4 w-4" />
 							</div>
 						</div>
-					)}
+						<div className="flex-1 pt-0.5">
+							<div className="text-base text-foreground animate-pulse">
+								{getLoadingMessage(message.id)}
+							</div>
+						</div>
+					</div>
+				)}
 			</div>
 		</div>
 	);

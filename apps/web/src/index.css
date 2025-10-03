@@ -113,7 +113,7 @@
 
 body {
 	margin: 0;
-	font-family: 'IBM Plex Mono', monospace;
+	font-family: "IBM Plex Mono", monospace;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	background-color: hsl(var(--background));
@@ -268,5 +268,4 @@ code {
 	& > blockquote:last-child {
 		margin-bottom: 0;
 	}
-
 }
