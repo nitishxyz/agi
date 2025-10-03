@@ -10,10 +10,10 @@
  *   bun run index.ts --dry-run    # Just show suggestion, don't prompt
  */
 
-import { generateObject, resolveModel } from '@agi-cli/sdk';
+import { generateObject, resolveModel, type ProviderId } from '@agi-cli/sdk';
 import { z } from 'zod';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 
 const execAsync = promisify(exec);
 
@@ -55,7 +55,7 @@ async function getGitDiff(): Promise<string> {
 		const { stdout: unstaged } = await execAsync('git diff');
 		if (unstaged.trim()) {
 			console.log(
-				'ℹ️  No staged changes found, analyzing unstaged changes...\n',
+				'ℹ️  No staged changes found, analyzing unstaged changes...\\n',
 			);
 			return unstaged;
 		}
@@ -78,11 +78,11 @@ function formatCommitMessage(commit: CommitMessage): string {
 	message += `: ${commit.subject}`;
 
 	if (commit.body) {
-		message += `\n\n${commit.body}`;
+		message += `\\n\\n${commit.body}`;
 	}
 
 	if (commit.breaking && commit.breakingDescription) {
-		message += `\n\nBREAKING CHANGE: ${commit.breakingDescription}`;
+		message += `\\n\\nBREAKING CHANGE: ${commit.breakingDescription}`;
 	}
 
 	return message;
@@ -91,7 +91,7 @@ function formatCommitMessage(commit: CommitMessage): string {
 async function main() {
 	const dryRun = process.argv.includes('--dry-run');
 
-	console.log('🔍 Analyzing git diff...\n');
+	console.log('🔍 Analyzing git diff...\\n');
 
 	try {
 		// Get the diff
@@ -99,12 +99,12 @@ async function main() {
 
 		if (diff.length > 10000) {
 			console.warn(
-				'⚠️  Warning: Diff is very large, this may take a moment...\n',
+				'⚠️  Warning: Diff is very large, this may take a moment...\\n',
 			);
 		}
 
 		// Resolve model
-		const provider = (process.env.PROVIDER || 'anthropic') as any;
+		const provider = (process.env.PROVIDER || 'anthropic') as ProviderId;
 		const modelId = process.env.MODEL || 'claude-sonnet-4';
 		const model = await resolveModel(provider, modelId);
 
@@ -134,13 +134,13 @@ ${diff}
 		const message = formatCommitMessage(commit);
 
 		// Display the suggestion
-		console.log('📝 Suggested commit message:\n');
+		console.log('📝 Suggested commit message:\\n');
 		console.log('─'.repeat(50));
 		console.log(message);
 		console.log('─'.repeat(50));
 
 		if (commit.breaking) {
-			console.log('\n⚠️  This commit includes BREAKING CHANGES');
+			console.log('\\n⚠️  This commit includes BREAKING CHANGES');
 		}
 
 		// In dry-run mode, just exit
@@ -149,7 +149,7 @@ ${diff}
 		}
 
 		// Prompt user to create commit
-		console.log('\n❓ Would you like to create this commit? (y/n)');
+		console.log('\\n❓ Would you like to create this commit? (y/n)');
 
 		const answer = await new Promise<string>((resolve) => {
 			process.stdin.once('data', (data) => {
@@ -159,10 +159,10 @@ ${diff}
 
 		if (answer === 'y' || answer === 'yes') {
 			// Create the commit
-			await execAsync(`git commit -m "${message.replace(/"/g, '\\"')}"`);
-			console.log('\n✅ Commit created successfully!');
+			await execAsync(`git commit -m "${message.replace(/"/g, '\\\\"')}"`);
+			console.log('\\n✅ Commit created successfully!');
 		} else {
-			console.log('\n❌ Commit cancelled');
+			console.log('\\n❌ Commit cancelled');
 		}
 	} catch (error) {
 		console.error('Error:', error.message);

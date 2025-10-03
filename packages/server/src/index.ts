@@ -50,7 +50,7 @@ export type StandaloneAppConfig = {
 	defaultAgent?: string;
 };
 
-export function createStandaloneApp(config?: StandaloneAppConfig) {
+export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	const honoApp = new Hono();
 
 	if (process.env.NODE_ENV === 'development') {
@@ -81,7 +81,7 @@ export type EmbeddedAppConfig = {
 	agent?: string;
 };
 
-export function createEmbeddedApp(config: EmbeddedAppConfig) {
+export function createEmbeddedApp(_config: EmbeddedAppConfig) {
 	const honoApp = new Hono();
 
 	if (process.env.NODE_ENV === 'development') {

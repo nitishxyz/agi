@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { X } from 'lucide-react';
 import { useConfig, useModels } from '../../hooks/useConfig';
 
@@ -25,6 +25,11 @@ export function ConfigModal({
 }: ConfigModalProps) {
 	const { data: config, isLoading: configLoading } = useConfig();
 	const { data: modelsData, isLoading: modelsLoading } = useModels(provider);
+
+	// Generate unique IDs for form elements
+	const agentId = useId();
+	const providerId = useId();
+	const modelId = useId();
 
 	// Set defaults when config loads
 	useEffect(() => {
@@ -55,11 +60,26 @@ export function ConfigModal({
 
 	if (!isOpen) return null;
 
+	const handleBackdropClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+		if (e.target === e.currentTarget) {
+			onClose();
+		}
+	};
+
+	const handleBackdropKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+		if (e.key === 'Escape') {
+			onClose();
+		}
+	};
+
 	return (
 		<>
-			<div
-				className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-				onClick={onClose}
+			<button
+				type="button"
+				className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 cursor-default"
+				onClick={handleBackdropClick}
+				onKeyDown={handleBackdropKeyDown}
+				aria-label="Close modal"
 			/>
 			<div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
 				<div className="bg-background border border-border rounded-lg shadow-lg">
@@ -84,10 +104,14 @@ export function ConfigModal({
 						) : config ? (
 							<>
 								<div>
-									<label className="block text-sm font-medium text-foreground mb-2">
+									<label
+										htmlFor={agentId}
+										className="block text-sm font-medium text-foreground mb-2"
+									>
 										Agent
 									</label>
 									<select
+										id={agentId}
 										value={agent}
 										onChange={(e) => onAgentChange(e.target.value)}
 										className="w-full bg-background border border-border rounded px-3 py-2 text-foreground outline-none focus:border-violet-500 transition-colors"
@@ -101,10 +125,14 @@ export function ConfigModal({
 								</div>
 
 								<div>
-									<label className="block text-sm font-medium text-foreground mb-2">
+									<label
+										htmlFor={providerId}
+										className="block text-sm font-medium text-foreground mb-2"
+									>
 										Provider
 									</label>
 									<select
+										id={providerId}
 										value={provider}
 										onChange={(e) => onProviderChange(e.target.value)}
 										className="w-full bg-background border border-border rounded px-3 py-2 text-foreground outline-none focus:border-violet-500 transition-colors"
@@ -118,10 +146,14 @@ export function ConfigModal({
 								</div>
 
 								<div>
-									<label className="block text-sm font-medium text-foreground mb-2">
+									<label
+										htmlFor={modelId}
+										className="block text-sm font-medium text-foreground mb-2"
+									>
 										Model
 									</label>
 									<select
+										id={modelId}
 										value={model}
 										onChange={(e) => onModelChange(e.target.value)}
 										disabled={modelsLoading || !modelsData}

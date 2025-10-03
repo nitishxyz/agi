@@ -93,15 +93,15 @@ export function DiffView({ patch }: DiffViewProps) {
 		<div className="bg-card/60 border border-border rounded-lg overflow-x-auto max-h-96 text-xs font-mono">
 			{diffLines.map((line, i) => {
 				const key = `line-${i}-${line.content.slice(0, 20)}`;
-				
+
 				// For meta and header lines, span the full width without line numbers
 				if (line.type === 'meta' || line.type === 'header') {
 					return (
-						<div 
-							key={key} 
+						<div
+							key={key}
 							className={`px-3 py-0.5 ${
-								line.type === 'header' 
-									? 'text-muted-foreground/80 bg-muted/20' 
+								line.type === 'header'
+									? 'text-muted-foreground/80 bg-muted/20'
 									: 'text-muted-foreground/80'
 							}`}
 						>
@@ -127,10 +127,7 @@ export function DiffView({ patch }: DiffViewProps) {
 				}
 
 				return (
-					<div 
-						key={key} 
-						className={`flex ${bgClass}`}
-					>
+					<div key={key} className={`flex ${bgClass}`}>
 						{/* Old line number */}
 						<div className="px-2 py-0.5 text-right text-muted-foreground/40 select-none w-12 flex-shrink-0">
 							{line.oldLineNum || ''}

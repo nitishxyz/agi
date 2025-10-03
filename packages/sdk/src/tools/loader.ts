@@ -298,7 +298,10 @@ function createHelpers(projectRoot: string, toolDir: string) {
 			const pieces = commandLine.trim().split(/\s+/).filter(Boolean);
 			if (pieces.length === 0)
 				throw new Error('Empty command passed to template executor');
-			return exec(pieces[0]!, pieces.slice(1));
+			const firstPiece = pieces[0];
+			if (!firstPiece)
+				throw new Error('Empty command passed to template executor');
+			return exec(firstPiece, pieces.slice(1));
 		};
 		return {
 			exec,

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import type { KeyboardEvent, ChangeEvent } from 'react';
 import { ArrowUp, MoreVertical } from 'lucide-react';
 import { Textarea } from '../ui/Textarea';
@@ -18,7 +18,7 @@ export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 	}, []);
 
 	// Auto-resize textarea based on content
-	const adjustTextareaHeight = () => {
+	const adjustTextareaHeight = useCallback(() => {
 		const textarea = textareaRef.current;
 		if (textarea) {
 			// Reset height to auto to get the correct scrollHeight
@@ -26,11 +26,11 @@ export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 			// Set height to scrollHeight (content height)
 			textarea.style.height = `${textarea.scrollHeight}px`;
 		}
-	};
+	}, []);
 
 	useEffect(() => {
 		adjustTextareaHeight();
-	}, [message]);
+	}, [adjustTextareaHeight, message]);
 
 	const handleSend = () => {
 		if (message.trim() && !disabled) {

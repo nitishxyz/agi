@@ -96,7 +96,7 @@ export class SSEClient {
 		if (!this.handlers.has(eventType)) {
 			this.handlers.set(eventType, new Set());
 		}
-		this.handlers.get(eventType)!.add(handler);
+		this.handlers.get(eventType)?.add(handler);
 
 		return () => {
 			this.off(eventType, handler);
@@ -116,12 +116,16 @@ export class SSEClient {
 	private emit(event: SSEEvent) {
 		const handlers = this.handlers.get(event.type);
 		if (handlers) {
-			handlers.forEach((handler) => handler(event));
+			for (const handler of handlers) {
+				handler(event);
+			}
 		}
 
 		const allHandlers = this.handlers.get('*');
 		if (allHandlers) {
-			allHandlers.forEach((handler) => handler(event));
+			for (const handler of allHandlers) {
+				handler(event);
+			}
 		}
 	}
 }

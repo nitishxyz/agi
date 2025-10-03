@@ -5,7 +5,12 @@ import type { SendMessageRequest } from '../types/api';
 export function useMessages(sessionId: string | undefined) {
 	return useQuery({
 		queryKey: ['messages', sessionId],
-		queryFn: () => apiClient.getMessages(sessionId!),
+		queryFn: () => {
+			if (!sessionId) {
+				throw new Error('Session ID is required');
+			}
+			return apiClient.getMessages(sessionId);
+		},
 		enabled: !!sessionId,
 	});
 }

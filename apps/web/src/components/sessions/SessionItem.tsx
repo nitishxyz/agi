@@ -30,6 +30,7 @@ export function SessionItem({ session, isActive, onClick }: SessionItemProps) {
 
 	return (
 		<button
+			type="button"
 			onClick={onClick}
 			className={`${baseStyles} ${isActive ? activeStyles : inactiveStyles}`}
 		>

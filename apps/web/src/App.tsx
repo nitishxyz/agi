@@ -38,7 +38,6 @@ function AppContent() {
 
 	useEffect(() => {
 		setInputKey((prev) => prev + 1);
-		// biome-ignore lint/correctness/useExhaustiveDependencies: remount input on session change
 	}, [activeSessionId]);
 
 	const handleNewSession = async () => {

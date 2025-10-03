@@ -14,14 +14,10 @@ import {
 	setAuth,
 	removeAuth,
 	type ProviderId,
-	type OAuth,
 	authorize,
 	exchange,
 	openAuthUrl,
 	createApiKey,
-	createOAuthUrl,
-	waitForCallback,
-	getCallbackPort,
 } from '@agi-cli/sdk';
 import { loadConfig } from '@agi-cli/sdk';
 import { catalog } from '@agi-cli/sdk';

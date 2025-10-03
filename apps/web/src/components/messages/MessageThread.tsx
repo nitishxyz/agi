@@ -40,13 +40,13 @@ export function MessageThread({ messages }: MessageThreadProps) {
 
 		bottomRef.current?.scrollIntoView({ behavior: behavior as ScrollBehavior });
 		lastScrollHeightRef.current = container.scrollHeight;
-	}, [messages, autoScroll]);
+	}, [autoScroll]);
 
 	// Force scroll on new message (length change)
 	useEffect(() => {
 		// Re-enable auto-scroll when a new message arrives
 		setAutoScroll(true);
-	}, [messages.length]);
+	}, []);
 
 	const scrollToBottom = () => {
 		setAutoScroll(true);

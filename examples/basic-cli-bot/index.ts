@@ -13,7 +13,7 @@
  *   PROVIDER=openai MODEL=gpt-4o bun run index.ts "Your question"
  */
 
-import { generateText, resolveModel } from '@agi-cli/sdk';
+import { generateText, resolveModel, type ProviderId } from '@agi-cli/sdk';
 
 async function main() {
 	// Get question from command line arguments
@@ -25,7 +25,7 @@ async function main() {
 	}
 
 	// Get provider and model from environment (or use defaults)
-	const provider = (process.env.PROVIDER || 'anthropic') as any;
+	const provider = (process.env.PROVIDER || 'anthropic') as ProviderId;
 	const modelId = process.env.MODEL || 'claude-sonnet-4';
 
 	console.log(`🤖 Using ${provider}/${modelId}...\\n`);

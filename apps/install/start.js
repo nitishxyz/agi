@@ -8,12 +8,12 @@ import {
 	statSync,
 	readFileSync,
 	appendFileSync,
-} from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { get } from 'https';
-import { homedir, platform, arch } from 'os';
-import { spawnSync, spawn } from 'child_process';
+} from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { get } from 'node:https';
+import { homedir, platform, arch } from 'node:os';
+import { spawnSync, spawn } from 'node:child_process';
 
 const REPO = 'nitishxyz/agi';
 const BIN_NAME = 'agi';
@@ -43,7 +43,7 @@ function findBinaryInPath() {
 						return binPath;
 					}
 				}
-			} catch (err) {}
+			} catch (_err) {}
 		}
 	}
 	return null;
@@ -57,7 +57,7 @@ function getVersion(binaryPath) {
 			const match = result.stdout.trim().match(/[\d.]+/);
 			return match ? match[0] : null;
 		}
-	} catch (err) {
+	} catch (_err) {
 		// If we can't get version, return null
 	}
 	return null;
@@ -203,7 +203,7 @@ function updateShellProfile(userBin) {
 		appendFileSync(configFile, `\n${pathExport}\n`);
 		console.log(`✓ Added ${userBin} to PATH in ${configFile}`);
 		console.log(`✓ Restart your ${shellType} or run: source ${configFile}`);
-	} catch (error) {
+	} catch (_error) {
 		// Silently fail if we can't update the profile
 		console.log(`⚠️  Could not automatically update ${configFile}`);
 	}
@@ -310,8 +310,7 @@ async function main() {
 
 	if (binaryPath) {
 		// Binary exists, check version
-		const { needsUpdate, binaryPath: updatedPath } =
-			await checkAndUpdateVersion(binaryPath);
+		const { binaryPath: updatedPath } = await checkAndUpdateVersion(binaryPath);
 		binaryPath = updatedPath;
 
 		const child = spawn(binaryPath, process.argv.slice(2), {
