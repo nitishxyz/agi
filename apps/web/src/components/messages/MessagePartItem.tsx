@@ -17,6 +17,83 @@ import remarkGfm from 'remark-gfm';
 import type { MessagePart } from '../../types/api';
 import { ToolResultRenderer, type ContentJson } from './renderers';
 
+function getToolCallPayload(part: MessagePart): Record<string, unknown> | null {
+	const fromJson = part.contentJson;
+	if (fromJson && typeof fromJson === 'object') {
+		return fromJson;
+	}
+	try {
+		if (part.content) {
+			const parsed = JSON.parse(part.content);
+			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+				return parsed as Record<string, unknown>;
+			}
+		}
+	} catch {}
+	return null;
+}
+
+function getToolCallArgs(
+	part: MessagePart,
+): Record<string, unknown> | undefined {
+	const payload = getToolCallPayload(part);
+	if (!payload) return undefined;
+	const args = (payload as { args?: unknown }).args;
+	if (args && typeof args === 'object' && !Array.isArray(args)) {
+		return args as Record<string, unknown>;
+	}
+	return undefined;
+}
+
+function normalizeToolTarget(
+	toolName: string,
+	args: Record<string, unknown> | undefined,
+): { key: string; value: string } | null {
+	if (!args) return null;
+	const candidates = [
+		{ key: 'path', match: true },
+		{ key: 'file', match: true },
+		{ key: 'target', match: true },
+		{ key: 'cwd', match: true },
+		{ key: 'query', match: true },
+		{ key: 'pattern', match: true },
+		{ key: 'glob', match: true },
+		{ key: 'dir', match: true },
+	];
+	for (const { key } of candidates) {
+		const value = args[key];
+		if (typeof value === 'string' && value.trim().length > 0) {
+			return { key, value: value.trim() };
+		}
+	}
+	if (toolName === 'bash') {
+		const command = args.command;
+		if (typeof command === 'string' && command.trim().length > 0) {
+			return { key: 'command', value: command.trim() };
+		}
+	}
+	return null;
+}
+
+function formatArgsPreview(
+	args: Record<string, unknown> | undefined,
+	skipKey?: string,
+): string | null {
+	if (!args) return null;
+	const pieces: string[] = [];
+	for (const [key, value] of Object.entries(args)) {
+		if (skipKey && key === skipKey) continue;
+		if (typeof value === 'string' || typeof value === 'number') {
+			const rendered = `${key}=${String(value)}`;
+			pieces.push(rendered);
+		}
+		if (pieces.length >= 3) break;
+	}
+	if (!pieces.length) return null;
+	const joined = pieces.join('  ');
+	return joined.length > 120 ? `${joined.slice(0, 117)}…` : joined;
+}
+
 interface MessagePartItemProps {
 	part: MessagePart;
 	showLine: boolean;
@@ -182,10 +259,38 @@ export function MessagePartItem({
 		}
 
 		if (part.type === 'tool_call') {
-			const toolName = part.toolName || 'unknown';
+			const payload = getToolCallPayload(part);
+			const rawToolName =
+				part.toolName ||
+				(typeof (payload as { name?: unknown })?.name === 'string'
+					? ((payload as { name?: unknown }).name as string)
+					: 'tool');
+			const toolLabel = rawToolName.replace(/_/g, ' ');
+			const args = getToolCallArgs(part);
+			const primary = normalizeToolTarget(rawToolName, args);
+			const argsPreview = formatArgsPreview(args, primary?.key);
+			const containerClasses = [
+				'flex flex-col gap-1 text-xs font-mono text-amber-700 dark:text-amber-200',
+			];
+			if (part.ephemeral) containerClasses.push('animate-pulse');
 			return (
-				<div className="text-xs font-mono text-amber-600 dark:text-amber-300">
-					<span className="animate-pulse">Running {toolName}...</span>
+				<div className={containerClasses.join(' ')}>
+					<div className="flex items-center gap-2 uppercase tracking-[0.2em] text-amber-500/80 dark:text-amber-200/80">
+						<span>{toolLabel}</span>
+						<span className="lowercase text-amber-600/80 dark:text-amber-100/70">
+							running…
+						</span>
+					</div>
+					{primary && (
+						<div className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-amber-700 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-100 break-all">
+							{primary.value}
+						</div>
+					)}
+					{argsPreview && (
+						<div className="text-[0.7rem] text-amber-600/90 dark:text-amber-100/70 break-words">
+							{argsPreview}
+						</div>
+					)}
 				</div>
 			);
 		}
