@@ -35,17 +35,17 @@ export function UserMessageGroup({ message }: UserMessageGroupProps) {
 			<div className="flex gap-4 justify-end">
 				<div className="inline-block">
 					<div className="flex items-center gap-2 text-xs text-muted-foreground pb-2 justify-end">
-						<span className="font-medium text-emerald-400">You</span>
+						<span className="font-medium text-emerald-700 dark:text-emerald-300">You</span>
 						{message.createdAt && <span>·</span>}
 						{message.createdAt && <span>{formatTime(message.createdAt)}</span>}
 					</div>
-					<div className="text-sm text-foreground/90 leading-relaxed prose prose-invert prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3 inline-block max-w-2xl">
+					<div className="text-sm text-foreground leading-relaxed prose prose-invert prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3 inline-block max-w-2xl">
 						<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
 					</div>
 				</div>
 				<div className="flex-shrink-0 w-8 flex items-start justify-center">
-					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-emerald-500/50 bg-emerald-500/10 relative z-10 bg-background">
-						<User className="h-4 w-4 text-emerald-400" />
+					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-emerald-500/50 bg-emerald-500/20 dark:bg-emerald-500/10 relative z-10 bg-background">
+						<User className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
 					</div>
 				</div>
 			</div>

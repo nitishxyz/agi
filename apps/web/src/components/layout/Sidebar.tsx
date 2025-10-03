@@ -6,9 +6,9 @@ interface SidebarProps {
 
 export function Sidebar({ children }: SidebarProps) {
 	return (
-		<aside className="w-64 border-r border-border bg-background flex flex-col">
-			<div className="p-4 border-b border-border">
-				<h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+		<aside className="w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col">
+			<div className="p-4 border-b border-sidebar-border">
+				<h2 className="text-sm font-semibold uppercase tracking-wide text-sidebar-foreground/80">
 					Sessions
 				</h2>
 			</div>

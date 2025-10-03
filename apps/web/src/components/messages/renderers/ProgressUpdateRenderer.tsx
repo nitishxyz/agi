@@ -8,11 +8,11 @@ export function ProgressUpdateRenderer({ contentJson }: RendererProps) {
 	const pct = result.pct ? Number(result.pct) : undefined;
 
 	return (
-		<div className="flex items-center gap-2 text-sm text-violet-400">
+		<div className="flex items-center gap-2 text-sm text-violet-700 dark:text-violet-300">
 			<Loader2 className="h-4 w-4 animate-spin" />
-			{stage && <span className="text-zinc-500">[{stage}]</span>}
+			{stage && <span className="text-muted-foreground/80">[{stage}]</span>}
 			<span>{message}</span>
-			{pct !== undefined && <span className="text-zinc-600">({pct}%)</span>}
+			{pct !== undefined && <span className="text-muted-foreground/80">({pct}%)</span>}
 		</div>
 	);
 }

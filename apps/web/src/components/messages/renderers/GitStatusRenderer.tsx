@@ -18,7 +18,7 @@ export function GitStatusRenderer({
 			<button
 				type="button"
 				onClick={() => raw.length > 0 && onToggle()}
-				className={`flex items-center gap-2 text-blue-400 ${raw.length > 0 ? 'hover:text-blue-300 transition-colors' : ''}`}
+				className={`flex items-center gap-2 text-blue-700 dark:text-blue-300 transition-colors ${raw.length > 0 ? 'hover:text-blue-600 dark:hover:text-blue-200' : ''}`}
 			>
 				{raw.length > 0 &&
 					(isExpanded ? (
@@ -28,16 +28,16 @@ export function GitStatusRenderer({
 					))}
 				{raw.length === 0 && <div className="w-3" />}
 				<span className="font-medium">git_status</span>
-				<span className="text-zinc-500">·</span>
-				<span className="text-zinc-400">
+				<span className="text-muted-foreground/70">·</span>
+				<span className="text-muted-foreground">
 					{staged} staged, {unstaged} unstaged
 				</span>
-				<span className="text-zinc-600">· {timeStr}</span>
+				<span className="text-muted-foreground/80">· {timeStr}</span>
 			</button>
 			{isExpanded && raw.length > 0 && (
-				<div className="mt-2 ml-5 bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 overflow-x-auto text-xs font-mono space-y-0.5">
+				<div className="mt-2 ml-5 bg-card/60 border border-border rounded-lg p-3 overflow-x-auto text-xs font-mono space-y-0.5">
 					{raw.map((line) => (
-						<div key={line} className="text-zinc-400">
+						<div key={line} className="text-muted-foreground">
 							{line}
 						</div>
 					))}

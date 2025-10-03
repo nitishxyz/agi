@@ -56,7 +56,7 @@ export function ReadRenderer({
 			<button
 				type="button"
 				onClick={onToggle}
-				className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
+				className="flex items-center gap-2 text-blue-700 dark:text-blue-300 transition-colors hover:text-blue-600 dark:hover:text-blue-200"
 			>
 				{isExpanded ? (
 					<ChevronDown className="h-3 w-3" />
@@ -64,14 +64,14 @@ export function ReadRenderer({
 					<ChevronRight className="h-3 w-3" />
 				)}
 				<span className="font-medium">read</span>
-				<span className="text-zinc-500">·</span>
-				<span className="text-zinc-300">{path}</span>
-				<span className="text-zinc-600">
+				<span className="text-muted-foreground/70">·</span>
+				<span className="text-foreground/70">{path}</span>
+				<span className="text-muted-foreground/80">
 					· {lines.length} lines · {timeStr}
 				</span>
 			</button>
 			{isExpanded && content && (
-				<div className="mt-2 ml-5 bg-zinc-900/50 border border-zinc-800 rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+				<div className="mt-2 ml-5 bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
 					<SyntaxHighlighter
 						language={language}
 						style={vscDarkPlus}

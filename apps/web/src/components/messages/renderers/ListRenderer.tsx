@@ -20,7 +20,7 @@ export function ListRenderer({
 			<button
 				type="button"
 				onClick={() => entries.length > 0 && onToggle()}
-				className={`flex items-center gap-2 text-cyan-400 ${entries.length > 0 ? 'hover:text-cyan-300 transition-colors' : ''}`}
+				className={`flex items-center gap-2 text-cyan-700 dark:text-cyan-300 transition-colors ${entries.length > 0 ? 'hover:text-cyan-600 dark:hover:text-cyan-200' : ''}`}
 			>
 				{entries.length > 0 &&
 					(isExpanded ? (
@@ -30,21 +30,21 @@ export function ListRenderer({
 					))}
 				{entries.length === 0 && <div className="w-3" />}
 				<span className="font-medium">ls</span>
-				<span className="text-zinc-500">·</span>
-				<span className="text-zinc-300">{path}</span>
-				<span className="text-zinc-600">
+				<span className="text-muted-foreground/70">·</span>
+				<span className="text-foreground/70">{path}</span>
+				<span className="text-muted-foreground/80">
 					· {entries.length} items · {timeStr}
 				</span>
 			</button>
 			{isExpanded && entries.length > 0 && (
 				<div className="mt-2 ml-5 space-y-0.5">
 					{entries.slice(0, 50).map((e) => (
-						<div key={`${e.name}-${e.type}`} className="text-zinc-400">
+						<div key={`${e.name}-${e.type}`} className="text-muted-foreground">
 							{e.type === 'dir' ? '📁' : '📄'} {e.name}
 						</div>
 					))}
 					{entries.length > 50 && (
-						<div className="text-zinc-600">
+						<div className="text-muted-foreground/80">
 							... and {entries.length - 50} more
 						</div>
 					)}

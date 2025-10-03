@@ -19,7 +19,7 @@ export function SearchRenderer({
 			<button
 				type="button"
 				onClick={() => resultList.length > 0 && onToggle()}
-				className={`flex items-center gap-2 text-yellow-400 ${resultList.length > 0 ? 'hover:text-yellow-300 transition-colors' : ''}`}
+				className={`flex items-center gap-2 text-amber-600 dark:text-amber-300 transition-colors ${resultList.length > 0 ? 'hover:text-amber-500 dark:hover:text-amber-200' : ''}`}
 			>
 				{resultList.length > 0 &&
 					(isExpanded ? (
@@ -29,12 +29,12 @@ export function SearchRenderer({
 					))}
 				{resultList.length === 0 && <div className="w-3" />}
 				<span className="font-medium">{toolName}</span>
-				<span className="text-zinc-600">
+				<span className="text-muted-foreground/80">
 					· {resultList.length} matches · {timeStr}
 				</span>
 			</button>
 			{isExpanded && resultList.length > 0 && (
-				<div className="mt-2 ml-5 bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 overflow-x-auto max-h-96 overflow-y-auto">
+				<div className="mt-2 ml-5 bg-card/60 border border-border rounded-lg p-3 overflow-x-auto max-h-96 overflow-y-auto">
 					<div className="space-y-1">
 						{resultList.slice(0, 50).map((item: unknown, idx: number) => {
 							if (typeof item === 'object' && item !== null) {
@@ -49,12 +49,12 @@ export function SearchRenderer({
 											key={`${match.file}-${match.line || idx}`}
 											className="font-mono text-xs"
 										>
-											<span className="text-zinc-500">{match.file}</span>
+											<span className="text-muted-foreground">{match.file}</span>
 											{match.line !== undefined && (
-												<span className="text-zinc-600">:{match.line}</span>
+												<span className="text-muted-foreground/80">:{match.line}</span>
 											)}
 											{match.text && (
-												<span className="text-zinc-400 ml-2">{match.text}</span>
+												<span className="text-muted-foreground ml-2">{match.text}</span>
 											)}
 										</div>
 									);
@@ -62,13 +62,13 @@ export function SearchRenderer({
 							}
 							const key = typeof item === 'string' ? item : `item-${idx}`;
 							return (
-								<div key={key} className="text-zinc-400 font-mono text-xs">
+								<div key={key} className="text-muted-foreground font-mono text-xs">
 									{typeof item === 'string' ? item : JSON.stringify(item)}
 								</div>
 							);
 						})}
 						{resultList.length > 50 && (
-							<div className="text-zinc-600 text-xs mt-2">
+							<div className="text-muted-foreground/80 text-xs mt-2">
 								... and {resultList.length - 50} more
 							</div>
 						)}

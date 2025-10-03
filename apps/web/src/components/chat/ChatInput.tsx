@@ -35,7 +35,7 @@ export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 	return (
 		<div className="absolute bottom-0 left-0 right-0 pt-16 pb-8 px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-50">
 			<div className="max-w-3xl mx-auto pointer-events-auto">
-				<div className="flex items-center gap-1 bg-muted rounded-full border border-border p-1 focus-within:border-white transition-colors">
+			<div className="flex items-center gap-1 bg-card rounded-full border border-border p-1 focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40 transition-colors">
 					{onConfigClick && (
 						<button
 							type="button"
@@ -60,7 +60,7 @@ export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 						disabled={disabled || !message.trim()}
 						className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors flex-shrink-0 ${
 							message.trim()
-								? 'bg-white hover:bg-white/90 text-black'
+								? 'bg-primary hover:bg-primary/90 text-primary-foreground'
 								: 'bg-transparent text-muted-foreground'
 						}`}
 					>

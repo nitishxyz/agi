@@ -60,38 +60,38 @@ export function MessagePartItem({
 
 	const renderIcon = () => {
 		if (part.type === 'tool_call') {
-			return <Loader2 className="h-4 w-4 text-amber-400 animate-spin" />;
+			return <Loader2 className="h-4 w-4 text-amber-600 dark:text-amber-300 animate-spin" />;
 		}
 
 		if (part.type === 'tool_result') {
 			const toolName = part.toolName || '';
 			if (toolName === 'read')
-				return <FileText className="h-4 w-4 text-blue-400" />;
+				return <FileText className="h-4 w-4 text-blue-600 dark:text-blue-300" />;
 			if (toolName === 'write')
-				return <FileEdit className="h-4 w-4 text-green-400" />;
+				return <FileEdit className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />;
 			if (toolName === 'edit')
-				return <FileEdit className="h-4 w-4 text-purple-400" />;
-			if (toolName === 'ls') return <List className="h-4 w-4 text-cyan-400" />;
+				return <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-300" />;
+			if (toolName === 'ls') return <List className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />;
 			if (toolName === 'tree')
-				return <FolderTree className="h-4 w-4 text-cyan-400" />;
+				return <FolderTree className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />;
 			if (toolName === 'bash')
-				return <Terminal className="h-4 w-4 text-zinc-400" />;
+				return <Terminal className="h-4 w-4 text-muted-foreground" />;
 			if (toolName === 'ripgrep' || toolName === 'grep' || toolName === 'glob')
-				return <Search className="h-4 w-4 text-yellow-400" />;
+				return <Search className="h-4 w-4 text-amber-600 dark:text-amber-300" />;
 			if (toolName === 'apply_patch')
-				return <Diff className="h-4 w-4 text-purple-400" />;
+				return <Diff className="h-4 w-4 text-purple-600 dark:text-purple-300" />;
 			if (toolName === 'git_status')
-				return <GitBranch className="h-4 w-4 text-blue-400" />;
+				return <GitBranch className="h-4 w-4 text-blue-600 dark:text-blue-300" />;
 			if (toolName === 'git_diff')
-				return <Diff className="h-4 w-4 text-purple-400" />;
+				return <Diff className="h-4 w-4 text-purple-600 dark:text-purple-300" />;
 			if (toolName === 'git_commit')
-				return <GitCommit className="h-4 w-4 text-emerald-400" />;
+				return <GitCommit className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />;
 			if (toolName === 'finish')
-				return <Check className="h-4 w-4 text-green-400" />;
-			return <Terminal className="h-4 w-4 text-zinc-400" />;
+				return <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />;
+			return <Terminal className="h-4 w-4 text-muted-foreground" />;
 		}
 
-		return <Sparkles className="h-4 w-4 text-violet-400" />;
+		return <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-300" />;
 	};
 
 	const renderToolResult = () => {
@@ -133,7 +133,7 @@ export function MessagePartItem({
 			}
 
 			return (
-				<div className="text-base text-foreground/90 leading-relaxed markdown-content">
+				<div className="text-base text-foreground leading-relaxed markdown-content">
 					<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
 				</div>
 			);
@@ -142,7 +142,7 @@ export function MessagePartItem({
 		if (part.type === 'tool_call') {
 			const toolName = part.toolName || 'unknown';
 			return (
-				<div className="text-xs font-mono text-amber-400">
+				<div className="text-xs font-mono text-amber-600 dark:text-amber-300">
 					<span className="animate-pulse">Running {toolName}...</span>
 				</div>
 			);

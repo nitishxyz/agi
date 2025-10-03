@@ -8,6 +8,7 @@ import { ConfigModal } from './components/chat/ConfigModal';
 import { useSessions, useCreateSession } from './hooks/useSessions';
 import { useMessages, useSendMessage } from './hooks/useMessages';
 import { useSessionStream } from './hooks/useSessionStream';
+import { useTheme } from './hooks/useTheme';
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -31,6 +32,7 @@ function AppContent() {
 		useMessages(activeSessionId);
 	const createSession = useCreateSession();
 	const sendMessage = useSendMessage(activeSessionId || '');
+	const { theme, toggleTheme } = useTheme();
 
 	useSessionStream(activeSessionId);
 
@@ -76,6 +78,8 @@ function AppContent() {
 	return (
 		<AppLayout
 			onNewSession={handleNewSession}
+			theme={theme}
+			onToggleTheme={toggleTheme}
 			sidebar={
 				<SessionList
 					sessions={sessions}

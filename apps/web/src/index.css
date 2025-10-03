@@ -19,26 +19,110 @@
 
 @layer base {
 	:root {
-		--background: 0 0% 3.9%;
+		--background: 220 25% 95%;
+		--foreground: 220 10% 15%;
+		--card: 220 25% 98%;
+		--card-foreground: 220 10% 15%;
+		--popover: 220 25% 98%;
+		--popover-foreground: 220 10% 15%;
+		--primary: 222.2 47.4% 11.2%;
+		--primary-foreground: 210 40% 98%;
+		--secondary: 220 18% 88%;
+		--secondary-foreground: 222.2 35% 25%;
+		--muted: 220 18% 88%;
+		--muted-foreground: 220 15% 40%;
+		--accent: 220 20% 86%;
+		--accent-foreground: 222.2 35% 25%;
+		--destructive: 0 90% 65%;
+		--destructive-foreground: 210 40% 98%;
+		--border: 220 15% 89%;
+		--input: 220 15% 89%;
+		--ring: 222.2 84% 4.9%;
+		--chart-1: 222.2 47.4% 41.2%;
+		--chart-2: 173 58% 39%;
+		--chart-3: 197 37% 24%;
+		--chart-4: 43 74% 66%;
+		--chart-5: 27 87% 67%;
+		--radius: 0.5rem;
+		--sidebar-background: 220 25% 91%;
+		--sidebar-foreground: 220 10% 15%;
+		--sidebar-primary: 222.2 47.4% 11.2%;
+		--sidebar-primary-foreground: 210 40% 98%;
+		--sidebar-accent: 220 20% 86%;
+		--sidebar-accent-foreground: 222.2 35% 25%;
+		--sidebar-border: 220 15% 89%;
+		--sidebar-ring: 222.2 84% 4.9%;
+		--code-background: hsl(220 25% 93%);
+		--code-foreground: hsl(220 10% 10%);
+		--code-keyword: hsl(300 85% 42%);
+		--code-class: hsl(120 60% 35%);
+		--code-function: hsl(220 95% 45%);
+		--code-string: hsl(120 60% 35%);
+		--code-comment: hsl(220 15% 35%);
+		--code-operator: hsl(180 85% 30%);
+		--code-punctuation: hsl(220 15% 20%);
+		color-scheme: light;
+	}
+
+	.dark {
+		--background: 240 10% 8%;
 		--foreground: 0 0% 98%;
-		--primary: 263 70% 60%;
-		--primary-foreground: 0 0% 100%;
-		--muted: 0 0% 15%;
-		--muted-foreground: 0 0% 63.9%;
-		--border: 0 0% 14.9%;
+		--card: 240 10% 10%;
+		--card-foreground: 0 0% 98%;
+		--popover: 240 10% 10%;
+		--popover-foreground: 0 0% 98%;
+		--primary: 0 0% 98%;
+		--primary-foreground: 240 5.9% 10%;
+		--secondary: 240 3.7% 15.9%;
+		--secondary-foreground: 0 0% 98%;
+		--muted: 240 3.7% 15.9%;
+		--muted-foreground: 240 5% 64.9%;
+		--accent: 240 3.7% 15.9%;
+		--accent-foreground: 0 0% 98%;
+		--destructive: 0 75% 45%;
+		--destructive-foreground: 0 0% 98%;
+		--border: 240 3.7% 15.9%;
+		--input: 240 3.7% 15.9%;
+		--ring: 240 4.9% 83.9%;
+		--chart-1: 220 70% 50%;
+		--chart-2: 160 60% 45%;
+		--chart-3: 30 80% 55%;
+		--chart-4: 280 65% 60%;
+		--chart-5: 340 75% 55%;
+		--radius: 0.5rem;
+		--sidebar-background: 240 10% 10%;
+		--sidebar-foreground: 0 0% 98%;
+		--sidebar-primary: 217.2 91.2% 59.8%;
+		--sidebar-primary-foreground: 240 5.9% 10%;
+		--sidebar-accent: 240 3.7% 15.9%;
+		--sidebar-accent-foreground: 0 0% 98%;
+		--sidebar-border: 240 3.7% 15.9%;
+		--sidebar-ring: 217.2 91.2% 59.8%;
+		--code-background: hsl(240 10% 10%);
+		--code-foreground: hsl(0 0% 98%);
+		--code-keyword: #c678dd;
+		--code-class: #98c379;
+		--code-function: #61afef;
+		--code-string: #98c379;
+		--code-comment: hsl(240 5% 64.9%);
+		--code-operator: #56b6c2;
+		--code-punctuation: hsl(240 5% 64.9%);
 		color-scheme: dark;
 	}
 }
 
 body {
 	margin: 0;
-	font-family: "IBM Plex Mono", monospace;
+	font-family: 'IBM Plex Mono', monospace;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+	background-color: hsl(var(--background));
+	color: hsl(var(--foreground));
 }
 
 code {
 	font-family: "IBM Plex Mono", monospace;
+	color: var(--code-foreground);
 }
 
 .markdown-content {
@@ -91,41 +175,44 @@ code {
 		margin-bottom: 0.25rem;
 	}
 	pre {
-		background-color: #18181b;
-		border: 1px solid #27272a;
+		background-color: var(--code-background);
+		border: 1px solid hsl(var(--border));
 		border-radius: 0.5rem;
 		padding: 1rem;
 		margin-top: 0.75rem;
 		margin-bottom: 0.75rem;
 		overflow-x: auto;
+		color: var(--code-foreground);
 	}
 	code {
-		background-color: #18181b;
-		border: 1px solid #27272a;
+		background-color: var(--code-background);
+		border: 1px solid hsl(var(--border));
 		border-radius: 0.25rem;
 		padding: 0.125rem 0.375rem;
 		font-size: 0.875rem;
+		color: var(--code-foreground);
 	}
 	pre code {
 		background-color: transparent;
 		border: none;
 		padding: 0;
 		font-size: 0.875rem;
+		color: inherit;
 	}
 	blockquote {
-		border-left: 4px solid #27272a;
+		border-left: 4px solid hsl(var(--border));
 		padding-left: 1rem;
 		margin-top: 0.75rem;
 		margin-bottom: 0.75rem;
-		color: #a1a1aa;
+		color: hsl(var(--muted-foreground));
 		font-style: italic;
 	}
 	a {
-		color: #a78bfa;
+		color: hsl(var(--primary));
 		text-decoration: underline;
 	}
 	a:hover {
-		color: #c4b5fd;
+		color: hsl(var(--primary) / 0.85);
 	}
 	strong,
 	b {
@@ -137,7 +224,7 @@ code {
 	}
 	hr {
 		border: none;
-		border-top: 1px solid #27272a;
+		border-top: 1px solid hsl(var(--border));
 		margin-top: 1.5rem;
 		margin-bottom: 1.5rem;
 	}
@@ -149,12 +236,12 @@ code {
 	}
 	th,
 	td {
-		border: 1px solid #27272a;
+		border: 1px solid hsl(var(--border));
 		padding: 0.5rem;
 		text-align: left;
 	}
 	th {
-		background-color: #18181b;
+		background-color: hsl(var(--muted));
 		font-weight: 600;
 	}
 }

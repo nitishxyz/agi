@@ -20,7 +20,7 @@ export function WriteRenderer({
 			<button
 				type="button"
 				onClick={() => patch && onToggle()}
-				className={`flex items-center gap-2 text-green-400 ${patch ? 'hover:text-green-300 transition-colors' : ''}`}
+				className={`flex items-center gap-2 text-emerald-700 dark:text-emerald-300 transition-colors ${patch ? 'hover:text-emerald-600 dark:hover:text-emerald-200' : ''}`}
 			>
 				{patch &&
 					(isExpanded ? (
@@ -30,9 +30,9 @@ export function WriteRenderer({
 					))}
 				{!patch && <div className="w-3" />}
 				<span className="font-medium">write</span>
-				<span className="text-zinc-500">·</span>
-				<span className="text-zinc-300">{path}</span>
-				<span className="text-zinc-600">
+				<span className="text-muted-foreground/70">·</span>
+				<span className="text-foreground/70">{path}</span>
+				<span className="text-muted-foreground/80">
 					· {bytes} bytes · {timeStr}
 				</span>
 			</button>

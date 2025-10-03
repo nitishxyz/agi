@@ -18,7 +18,7 @@ export function GitDiffRenderer({
 			<button
 				type="button"
 				onClick={() => patch && onToggle()}
-				className={`flex items-center gap-2 text-purple-400 ${patch ? 'hover:text-purple-300 transition-colors' : ''}`}
+				className={`flex items-center gap-2 text-purple-700 dark:text-purple-300 transition-colors ${patch ? 'hover:text-purple-600 dark:hover:text-purple-200' : ''}`}
 			>
 				{patch &&
 					(isExpanded ? (
@@ -28,9 +28,9 @@ export function GitDiffRenderer({
 					))}
 				{!patch && <div className="w-3" />}
 				<span className="font-medium">git_diff</span>
-				<span className="text-zinc-500">·</span>
-				<span className="text-zinc-400">{all ? 'all' : 'staged'}</span>
-				<span className="text-zinc-600">· {timeStr}</span>
+				<span className="text-muted-foreground/70">·</span>
+				<span className="text-muted-foreground">{all ? 'all' : 'staged'}</span>
+				<span className="text-muted-foreground/80">· {timeStr}</span>
 			</button>
 			{isExpanded && patch && (
 				<div className="mt-2 ml-5">

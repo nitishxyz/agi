@@ -19,7 +19,7 @@ export function BashRenderer({
 			<button
 				type="button"
 				onClick={() => hasOutput && onToggle()}
-				className={`flex items-center gap-2 text-zinc-400 ${hasOutput ? 'hover:text-zinc-300 transition-colors' : ''}`}
+				className={`flex items-center gap-2 text-muted-foreground ${hasOutput ? 'hover:text-foreground transition-colors' : ''}`}
 			>
 				{hasOutput &&
 					(isExpanded ? (
@@ -29,24 +29,30 @@ export function BashRenderer({
 					))}
 				{!hasOutput && <div className="w-3" />}
 				<span className="font-medium">bash</span>
-				<span className="text-zinc-500">·</span>
-				<span className={exitCode === 0 ? 'text-green-400' : 'text-red-400'}>
+				<span className="text-muted-foreground/70">·</span>
+				<span
+					className={
+						exitCode === 0
+							? 'text-emerald-700 dark:text-emerald-300'
+							: 'text-red-600 dark:text-red-300'
+					}
+				>
 					exit {exitCode}
 				</span>
-				<span className="text-zinc-600">· {timeStr}</span>
+				<span className="text-muted-foreground/80">· {timeStr}</span>
 			</button>
 			{isExpanded && (
 				<div className="mt-2 ml-5 space-y-2">
 					{stdout && (
-						<pre className="text-zinc-300 bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 overflow-x-auto max-h-96 text-xs">
+						<pre className="text-foreground/80 bg-card/60 border border-border rounded-lg p-3 overflow-x-auto max-h-96 text-xs">
 							{stdout.slice(0, 5000)}
 							{stdout.length > 5000 && (
-								<div className="text-zinc-600 mt-1">...</div>
+								<div className="text-muted-foreground/80 mt-1">...</div>
 							)}
 						</pre>
 					)}
 					{stderr && (
-						<pre className="text-red-400/80 bg-red-950/20 border border-red-900/30 rounded-lg p-3 overflow-x-auto max-h-64 text-xs">
+						<pre className="text-red-600/80 dark:text-red-300/80 bg-red-100/40 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 rounded-lg p-3 overflow-x-auto max-h-64 text-xs">
 							{stderr.slice(0, 2000)}
 						</pre>
 					)}

@@ -14,7 +14,7 @@ export function SessionList({
 }: SessionListProps) {
 	if (sessions.length === 0) {
 		return (
-			<div className="p-4 text-center text-zinc-500 text-sm">
+			<div className="p-4 text-center text-muted-foreground text-sm">
 				No sessions yet. Create one to get started.
 			</div>
 		);

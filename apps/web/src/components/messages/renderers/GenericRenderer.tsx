@@ -19,7 +19,7 @@ export function GenericRenderer({
 			<button
 				type="button"
 				onClick={() => resultStr && onToggle()}
-				className={`flex items-center gap-2 text-zinc-400 ${resultStr ? 'hover:text-zinc-300 transition-colors' : ''}`}
+				className={`flex items-center gap-2 text-muted-foreground ${resultStr ? 'hover:text-foreground transition-colors' : ''}`}
 			>
 				{resultStr &&
 					(isExpanded ? (
@@ -29,10 +29,10 @@ export function GenericRenderer({
 					))}
 				{!resultStr && <div className="w-3" />}
 				<span className="font-medium">{contentJson.name || 'unknown'}</span>
-				<span className="text-zinc-600">· {timeStr}</span>
+				<span className="text-muted-foreground/80">· {timeStr}</span>
 			</button>
 			{isExpanded && resultStr && (
-				<pre className="mt-2 ml-5 max-h-64 overflow-x-auto text-xs text-zinc-400 bg-zinc-900/50 border border-zinc-800 rounded-lg p-3">
+				<pre className="mt-2 ml-5 max-h-64 overflow-x-auto text-xs text-muted-foreground bg-card/60 border border-border rounded-lg p-3">
 					<code>{resultStr}</code>
 				</pre>
 			)}
