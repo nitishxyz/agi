@@ -35,7 +35,7 @@ export function MessagePartItem({
 		return null;
 	}
 
-	// Hide progress_update unless it's the last one (before finish)
+	// Hide progress_update unless it's the latest one (before finish)
 	if (
 		part.type === 'tool_result' &&
 		part.toolName === 'progress_update' &&

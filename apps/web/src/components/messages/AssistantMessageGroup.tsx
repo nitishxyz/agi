@@ -34,6 +34,30 @@ export function AssistantMessageGroup({
 	hasNextAssistantMessage,
 }: AssistantMessageGroupProps) {
 	const parts = message.parts || [];
+	const hasFinish = parts.some((part) => part.toolName === 'finish');
+	const latestProgressUpdateIndex = parts.reduce(
+		(lastIndex, part, index) =>
+			part.type === 'tool_result' && part.toolName === 'progress_update'
+				? index
+				: lastIndex,
+		-1,
+	);
+	const latestProgressUpdatePart =
+		latestProgressUpdateIndex >= 0 ? parts[latestProgressUpdateIndex] : null;
+	const hasVisibleNonProgressParts = parts.some(
+		(part) =>
+			!(part.type === 'tool_result' && part.toolName === 'progress_update'),
+	);
+	const firstVisiblePartIndex = parts.findIndex(
+		(part) =>
+			!(part.type === 'tool_result' && part.toolName === 'progress_update'),
+	);
+	const shouldShowProgressUpdate =
+		message.status === 'pending' &&
+		!hasFinish &&
+		Boolean(latestProgressUpdatePart);
+	const shouldShowLoadingFallback =
+		message.status === 'pending' && !hasFinish && !latestProgressUpdatePart;
 	const formatTime = (ts?: number) => {
 		if (!ts) return '';
 		const date = new Date(ts);
@@ -74,44 +98,49 @@ export function AssistantMessageGroup({
 					const isLastPart = index === parts.length - 1;
 					const showLine = !isLastPart || hasNextAssistantMessage;
 					const isLastToolCall = part.type === 'tool_call' && isLastPart;
+					const isProgressUpdate =
+						part.type === 'tool_result' && part.toolName === 'progress_update';
 
-					// Check if this is the last progress_update (before finish)
-					const isLastProgressUpdate =
-						part.type === 'tool_result' &&
-						part.toolName === 'progress_update' &&
-						isLastPart &&
-						!parts.some((p) => p.toolName === 'finish');
+					if (isProgressUpdate) {
+						return null;
+					}
 
 					return (
 						<MessagePartItem
 							key={part.id}
 							part={part}
 							showLine={showLine}
-							isFirstPart={index === 0 && !showHeader}
+							isFirstPart={index === firstVisiblePartIndex && !showHeader}
 							isLastToolCall={isLastToolCall}
-							isLastProgressUpdate={isLastProgressUpdate}
 						/>
 					);
 				})}
 
+				{shouldShowProgressUpdate && latestProgressUpdatePart && (
+					<MessagePartItem
+						key={latestProgressUpdatePart.id}
+						part={latestProgressUpdatePart}
+						showLine={hasNextAssistantMessage}
+						isFirstPart={!hasVisibleNonProgressParts && !showHeader}
+						isLastProgressUpdate
+					/>
+				)}
+
 				{/* Show loading state if message is incomplete and no progress/finish */}
-				{message.status === 'pending' &&
-					!parts.some((p) => p.toolName === 'progress_update') &&
-					!parts.some((p) => p.toolName === 'finish') &&
-					parts.length > 0 && (
-						<div className="flex gap-3 pb-2 relative">
-							<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
-								<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative z-10 bg-background">
-									<Sparkles className="h-4 w-4 text-violet-400" />
-								</div>
-							</div>
-							<div className="flex-1 pt-0.5">
-								<div className="text-base text-foreground/70 animate-pulse">
-									{getLoadingMessage(message.id)}
-								</div>
+				{shouldShowLoadingFallback && (
+					<div className="flex gap-3 pb-2 relative">
+						<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
+							<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative z-10 bg-background">
+								<Sparkles className="h-4 w-4 text-violet-400" />
 							</div>
 						</div>
-					)}
+						<div className="flex-1 pt-0.5">
+							<div className="text-base text-foreground/70 animate-pulse">
+								{getLoadingMessage(message.id)}
+							</div>
+						</div>
+					</div>
+				)}
 			</div>
 		</div>
 	);

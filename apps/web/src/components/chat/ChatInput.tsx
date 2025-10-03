@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { KeyboardEvent } from 'react';
-import { Send, MoreVertical } from 'lucide-react';
+import { ArrowUp, MoreVertical } from 'lucide-react';
 import { Input } from '../ui/Input';
 
 interface ChatInputProps {
@@ -64,7 +64,7 @@ export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 								: 'bg-transparent text-muted-foreground'
 						}`}
 					>
-						<Send className="w-4 h-4" />
+						<ArrowUp className="w-4 h-4" />
 					</button>
 				</div>
 			</div>
