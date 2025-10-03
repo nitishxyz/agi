@@ -5,6 +5,16 @@ import type {
 	CreateSessionRequest,
 	SendMessageRequest,
 	SendMessageResponse,
+	GitStatusResponse,
+	GitDiffResponse,
+	GitStageRequest,
+	GitStageResponse,
+	GitUnstageRequest,
+	GitUnstageResponse,
+	GitCommitRequest,
+	GitCommitResponse,
+	GitGenerateCommitMessageResponse,
+	GitBranchInfo,
 } from '../types/api';
 
 class ApiClient {
@@ -82,6 +92,76 @@ class ApiClient {
 		default: string;
 	}> {
 		return this.request(`/v1/config/providers/${provider}/models`);
+	}
+
+	// Git API methods
+	async getGitStatus(): Promise<GitStatusResponse> {
+		const response = await this.request<{
+			status: string;
+			data: GitStatusResponse;
+		}>('/v1/git/status');
+		return response.data;
+	}
+
+	async getGitDiff(file: string, staged = false): Promise<GitDiffResponse> {
+		const params = new URLSearchParams({ file, staged: String(staged) });
+		const response = await this.request<{
+			status: string;
+			data: GitDiffResponse;
+		}>(`/v1/git/diff?${params}`);
+		return response.data;
+	}
+
+	async generateCommitMessage(): Promise<GitGenerateCommitMessageResponse> {
+		const response = await this.request<{
+			status: string;
+			data: GitGenerateCommitMessageResponse;
+		}>('/v1/git/generate-commit-message', {
+			method: 'POST',
+			body: JSON.stringify({}),
+		});
+		return response.data;
+	}
+
+	async stageFiles(files: string[]): Promise<GitStageResponse> {
+		const response = await this.request<{
+			status: string;
+			data: GitStageResponse;
+		}>('/v1/git/stage', {
+			method: 'POST',
+			body: JSON.stringify({ files } satisfies GitStageRequest),
+		});
+		return response.data;
+	}
+
+	async unstageFiles(files: string[]): Promise<GitUnstageResponse> {
+		const response = await this.request<{
+			status: string;
+			data: GitUnstageResponse;
+		}>('/v1/git/unstage', {
+			method: 'POST',
+			body: JSON.stringify({ files } satisfies GitUnstageRequest),
+		});
+		return response.data;
+	}
+
+	async commitChanges(message: string): Promise<GitCommitResponse> {
+		const response = await this.request<{
+			status: string;
+			data: GitCommitResponse;
+		}>('/v1/git/commit', {
+			method: 'POST',
+			body: JSON.stringify({ message } satisfies GitCommitRequest),
+		});
+		return response.data;
+	}
+
+	async getGitBranch(): Promise<GitBranchInfo> {
+		const response = await this.request<{
+			status: string;
+			data: GitBranchInfo;
+		}>('/v1/git/branch');
+		return response.data;
 	}
 }
 

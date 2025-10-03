@@ -8,6 +8,7 @@ import { registerSessionMessagesRoutes } from './routes/session-messages.ts';
 import { registerSessionStreamRoute } from './routes/session-stream.ts';
 import { registerAskRoutes } from './routes/ask.ts';
 import { registerConfigRoutes } from './routes/config.ts';
+import { registerGitRoutes } from './routes/git.ts';
 
 function initApp() {
 	const app = new Hono();
@@ -29,6 +30,7 @@ function initApp() {
 	registerSessionStreamRoute(app);
 	registerAskRoutes(app);
 	registerConfigRoutes(app);
+	registerGitRoutes(app);
 
 	return app;
 }
@@ -70,6 +72,7 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	registerSessionStreamRoute(honoApp);
 	registerAskRoutes(honoApp);
 	registerConfigRoutes(honoApp);
+	registerGitRoutes(honoApp);
 
 	return honoApp;
 }
@@ -100,6 +103,7 @@ export function createEmbeddedApp(_config: EmbeddedAppConfig) {
 	registerSessionMessagesRoutes(honoApp);
 	registerSessionStreamRoute(honoApp);
 	registerAskRoutes(honoApp);
+	registerGitRoutes(honoApp);
 
 	return honoApp;
 }
