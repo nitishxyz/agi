@@ -12,7 +12,6 @@ export class SSEClient {
 			this.abortController.abort();
 		}
 
-		console.log('[SSE] Connecting to:', url);
 		this.abortController = new AbortController();
 		this.running = true;
 
@@ -26,8 +25,6 @@ export class SSEClient {
 				console.error('[SSE] Connection failed:', response.status);
 				return;
 			}
-
-			console.log('[SSE] Connection opened');
 
 			const reader = response.body?.getReader();
 			if (!reader) {
@@ -63,7 +60,6 @@ export class SSEClient {
 					}
 
 					if (data) {
-						console.log(`[SSE] ${eventType} event:`, data);
 						try {
 							const payload = JSON.parse(data);
 							this.emit({ type: eventType, payload });
@@ -77,7 +73,7 @@ export class SSEClient {
 			}
 		} catch (error) {
 			if (error instanceof Error && error.name === 'AbortError') {
-				console.log('[SSE] Connection aborted');
+				// Connection was intentionally aborted, don't log
 			} else {
 				console.error('[SSE] Connection error:', error);
 			}

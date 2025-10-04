@@ -9,6 +9,7 @@ import { useSessions, useCreateSession } from './hooks/useSessions';
 import { useMessages, useSendMessage } from './hooks/useMessages';
 import { useSessionStream } from './hooks/useSessionStream';
 import { useTheme } from './hooks/useTheme';
+import { useWorkingDirectory } from './hooks/useWorkingDirectory';
 
 // Configure QueryClient with structural sharing enabled for better performance
 const queryClient = new QueryClient({
@@ -37,6 +38,9 @@ function AppContent() {
 	const createSession = useCreateSession();
 	const sendMessage = useSendMessage(activeSessionId || '');
 	const { theme, toggleTheme } = useTheme();
+
+	// Set page title to current working directory
+	useWorkingDirectory();
 
 	useSessionStream(activeSessionId);
 

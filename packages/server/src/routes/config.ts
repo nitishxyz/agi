@@ -6,9 +6,19 @@ import {
 	isProviderAuthorized,
 } from '@agi-cli/providers';
 import { readdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 
 export function registerConfigRoutes(app: Hono) {
+	// Get working directory info
+	app.get('/v1/config/cwd', (c) => {
+		const cwd = process.cwd();
+		const dirName = basename(cwd);
+		return c.json({
+			cwd,
+			dirName,
+		});
+	});
+
 	// Get full config (agents, providers, models, defaults)
 	app.get('/v1/config', async (c) => {
 		const projectRoot = c.req.query('project') || process.cwd();
