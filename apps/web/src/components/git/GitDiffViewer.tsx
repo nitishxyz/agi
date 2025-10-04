@@ -15,7 +15,7 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 	// Parse the diff into lines with line numbers
 	const lines = diff.diff.split('\n');
 	const diffLines: DiffLine[] = [];
-	
+
 	let oldLineNum = 0;
 	let newLineNum = 0;
 
@@ -33,7 +33,12 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 				content: line,
 				type: 'hunk',
 			});
-		} else if (line.startsWith('diff') || line.startsWith('index') || line.startsWith('---') || line.startsWith('+++')) {
+		} else if (
+			line.startsWith('diff') ||
+			line.startsWith('index') ||
+			line.startsWith('---') ||
+			line.startsWith('+++')
+		) {
 			diffLines.push({
 				oldLineNumber: null,
 				newLineNumber: null,
@@ -71,15 +76,19 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 
 	// Render a single diff line
 	const renderLine = (diffLine: DiffLine, index: number) => {
-		let contentClassName = 'flex-1 px-4 py-0.5 font-mono text-xs overflow-x-auto';
-		let lineNumberClassName = 'flex-shrink-0 w-20 px-2 py-0.5 text-xs font-mono text-muted-foreground select-none border-r border-border';
+		let contentClassName =
+			'flex-1 px-4 py-0.5 font-mono text-xs overflow-x-auto';
+		let lineNumberClassName =
+			'flex-shrink-0 w-20 px-2 py-0.5 text-xs font-mono text-muted-foreground select-none border-r border-border';
 
 		if (diffLine.type === 'hunk') {
-			contentClassName += ' bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold';
+			contentClassName +=
+				' bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold';
 			lineNumberClassName += ' bg-blue-500/10';
 		} else if (diffLine.type === 'add') {
 			contentClassName += ' bg-green-500/10 text-green-700 dark:text-green-400';
-			lineNumberClassName += ' bg-green-500/10 text-green-700 dark:text-green-400';
+			lineNumberClassName +=
+				' bg-green-500/10 text-green-700 dark:text-green-400';
 		} else if (diffLine.type === 'delete') {
 			contentClassName += ' bg-red-500/10 text-red-600 dark:text-red-400';
 			lineNumberClassName += ' bg-red-500/10 text-red-600 dark:text-red-400';
@@ -89,8 +98,10 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 			contentClassName += ' text-foreground/70';
 		}
 
-		const oldNum = diffLine.oldLineNumber !== null ? diffLine.oldLineNumber.toString() : '';
-		const newNum = diffLine.newLineNumber !== null ? diffLine.newLineNumber.toString() : '';
+		const oldNum =
+			diffLine.oldLineNumber !== null ? diffLine.oldLineNumber.toString() : '';
+		const newNum =
+			diffLine.newLineNumber !== null ? diffLine.newLineNumber.toString() : '';
 
 		return (
 			<div key={index} className="flex hover:bg-muted/20">
@@ -100,9 +111,7 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 						<span className="text-right w-8">{newNum}</span>
 					</div>
 				</div>
-				<div className={contentClassName}>
-					{diffLine.content || ' '}
-				</div>
+				<div className={contentClassName}>{diffLine.content || ' '}</div>
 			</div>
 		);
 	};
@@ -119,10 +128,14 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 						) : (
 							<>
 								{diff.insertions > 0 && (
-									<span className="text-green-600 dark:text-green-500">+{diff.insertions}</span>
+									<span className="text-green-600 dark:text-green-500">
+										+{diff.insertions}
+									</span>
 								)}
 								{diff.deletions > 0 && (
-									<span className="text-red-600 dark:text-red-500">-{diff.deletions}</span>
+									<span className="text-red-600 dark:text-red-500">
+										-{diff.deletions}
+									</span>
 								)}
 								<span className="text-muted-foreground">{diff.language}</span>
 							</>

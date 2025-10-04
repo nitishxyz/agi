@@ -78,8 +78,6 @@ for (const file of allFiles) {
 	assetData.set(urlPath, base64);
 
 	if (file.endsWith('.html')) {
-		// HTML is the entry point
-		continue;
 	} else if (file.endsWith('.js')) {
 		manifest.assets.js.push(urlPath);
 	} else if (file.endsWith('.css')) {

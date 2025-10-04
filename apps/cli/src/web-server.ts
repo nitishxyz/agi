@@ -27,41 +27,44 @@ function getMimeType(path: string): string {
 /**
  * Create the web UI server
  */
-export function createWebServer(port: number, agiServerPort: number): { port: number; server: any } {
+export function createWebServer(
+	port: number,
+	agiServerPort: number,
+): { port: number; server: any } {
 	// Build asset map - maps URL paths to file paths
 	const assetMap = new Map<string, string>();
-	
+
 	// Map root and index.html to the HTML file
 	assetMap.set('/', webAssetPaths.html);
 	assetMap.set('/index.html', webAssetPaths.html);
-	
+
 	// Map JS files
 	assetPaths.assets.js.forEach((urlPath, index) => {
 		assetMap.set(urlPath, webAssetPaths.js[index]);
 	});
-	
+
 	// Map CSS files
 	assetPaths.assets.css.forEach((urlPath, index) => {
 		assetMap.set(urlPath, webAssetPaths.css[index]);
 	});
-	
+
 	// Map other assets
 	assetPaths.assets.other.forEach((urlPath, index) => {
 		assetMap.set(urlPath, webAssetPaths.other[index]);
 	});
-	
+
 	const server = Bun.serve({
 		port,
-		
+
 		async fetch(req) {
 			const url = new URL(req.url);
 			let pathname = url.pathname;
-			
+
 			// Normalize path
 			if (pathname === '/') {
 				pathname = '/index.html';
 			}
-			
+
 			// Check if we have this asset
 			if (assetMap.has(pathname)) {
 				const filePath = assetMap.get(pathname)!;
@@ -100,7 +103,7 @@ export function createWebServer(port: number, agiServerPort: number): { port: nu
 						let html = decoder.decode(embeddedData);
 						const scriptTag = `<script>window.AGI_SERVER_URL = 'http://localhost:${agiServerPort}';</script>`;
 						html = html.replace('</head>', `${scriptTag}</head>`);
-						
+
 						return new Response(html, {
 							headers: {
 								'Content-Type': 'text/html; charset=utf-8',
@@ -117,11 +120,11 @@ export function createWebServer(port: number, agiServerPort: number): { port: nu
 					});
 				}
 			}
-			
+
 			console.warn(`File not found: ${pathname}`);
 			return new Response('Not Found', { status: 404 });
 		},
 	});
-	
+
 	return { port: server.port, server };
 }

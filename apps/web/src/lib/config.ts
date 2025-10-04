@@ -10,7 +10,7 @@ function getApiBaseUrl(): string {
 	if (import.meta.env.VITE_API_BASE_URL) {
 		return import.meta.env.VITE_API_BASE_URL;
 	}
-	
+
 	// Check window object for injected values (for production)
 	const win = window as AGIWindow;
 	if (win.AGI_SERVER_URL) {
@@ -19,7 +19,7 @@ function getApiBaseUrl(): string {
 	if (win.__AGI_API_URL__) {
 		return win.__AGI_API_URL__;
 	}
-	
+
 	// Fallback for standalone dev
 	return 'http://localhost:9100';
 }

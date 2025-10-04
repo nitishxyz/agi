@@ -29,7 +29,12 @@ export function GitDiffPanel() {
 			setCollapsed(wasCollapsedBeforeDiff);
 			setWasCollapsedBeforeDiff(null);
 		}
-	}, [isDiffOpen, setWasCollapsedBeforeDiff, setCollapsed, wasCollapsedBeforeDiff]);
+	}, [
+		isDiffOpen,
+		setWasCollapsedBeforeDiff,
+		setCollapsed,
+		wasCollapsedBeforeDiff,
+	]);
 
 	// Handle ESC key
 	useEffect(() => {
@@ -48,17 +53,17 @@ export function GitDiffPanel() {
 	// Format file path to show "../dir/dir/filename.tsx" format
 	const formatFilePath = (path: string) => {
 		const pathParts = path.split('/');
-		
+
 		if (pathParts.length === 1) {
 			// Just a filename
 			return path;
 		}
-		
+
 		if (pathParts.length <= 3) {
 			// Short path, show it all
 			return path;
 		}
-		
+
 		// Show last 2 directories + filename
 		const fileName = pathParts[pathParts.length - 1];
 		const dirs = pathParts.slice(-3, -1).join('/');
@@ -80,7 +85,7 @@ export function GitDiffPanel() {
 					<X className="w-4 h-4" />
 				</Button>
 				<div className="flex-1 flex items-center gap-2">
-					<span 
+					<span
 						className="text-sm font-medium text-foreground truncate font-mono"
 						title={selectedFile}
 					>

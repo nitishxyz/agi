@@ -10,7 +10,11 @@ interface GitFileItemProps {
 	showModifiedIndicator?: boolean;
 }
 
-export function GitFileItem({ file, staged, showModifiedIndicator = false }: GitFileItemProps) {
+export function GitFileItem({
+	file,
+	staged,
+	showModifiedIndicator = false,
+}: GitFileItemProps) {
 	const { openDiff } = useGitStore();
 	const stageFiles = useStageFiles();
 	const unstageFiles = useUnstageFiles();
@@ -87,12 +91,12 @@ export function GitFileItem({ file, staged, showModifiedIndicator = false }: Git
 	const formatFilePath = (path: string) => {
 		const pathParts = path.split('/');
 		const fileName = pathParts[pathParts.length - 1];
-		
+
 		if (pathParts.length === 1) {
 			// Just a filename, no directory
 			return fileName;
 		}
-		
+
 		// Show last directory + filename
 		const lastDir = pathParts[pathParts.length - 2];
 		return `../${lastDir}/${fileName}`;
@@ -126,8 +130,8 @@ export function GitFileItem({ file, staged, showModifiedIndicator = false }: Git
 				<Icon className={`w-4 h-4 flex-shrink-0 ${config.color}`} />
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
-						<span 
-							className="text-sm text-foreground truncate font-mono" 
+						<span
+							className="text-sm text-foreground truncate font-mono"
 							title={file.path}
 						>
 							{displayPath}

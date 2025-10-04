@@ -69,14 +69,21 @@ async function main() {
 		const app = createApp();
 		const portFlagIndex = argv.indexOf('--port');
 		const portEnv = process.env.PORT ? Number(process.env.PORT) : undefined;
-		
+
 		// Use explicit port if provided, otherwise use PORT env, otherwise use 0 (random)
-		const requestedPort = portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : portEnv ?? 0;
-		
+		const requestedPort =
+			portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : (portEnv ?? 0);
+
 		// Start the AGI server
-		const agiServer = Bun.serve({ port: requestedPort, fetch: app.fetch, idleTimeout: 240 });
-		console.log(`🚀 agi server listening on http://localhost:${agiServer.port}`);
-		
+		const agiServer = Bun.serve({
+			port: requestedPort,
+			fetch: app.fetch,
+			idleTimeout: 240,
+		});
+		console.log(
+			`🚀 agi server listening on http://localhost:${agiServer.port}`,
+		);
+
 		// Start the Web UI server on the next port
 		const webPort = agiServer.port + 1;
 		try {
@@ -86,7 +93,7 @@ async function main() {
 			console.error('❌ Failed to start Web UI server:', error);
 			console.log('   AGI server is still running without Web UI');
 		}
-		
+
 		return;
 	}
 

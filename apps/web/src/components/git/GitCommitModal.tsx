@@ -99,7 +99,8 @@ export function GitCommitModal() {
 
 					{generateMessage.isError && (
 						<div className="text-sm text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/20 rounded px-3 py-2">
-							{generateMessage.error?.message || 'Failed to generate commit message'}
+							{generateMessage.error?.message ||
+								'Failed to generate commit message'}
 						</div>
 					)}
 				</div>

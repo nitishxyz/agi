@@ -14,9 +14,11 @@ export const useSidebarStore = create<SidebarState>()(
 		(set) => ({
 			isCollapsed: false,
 			wasCollapsedBeforeDiff: null,
-			toggleCollapse: () => set((state) => ({ isCollapsed: !state.isCollapsed })),
+			toggleCollapse: () =>
+				set((state) => ({ isCollapsed: !state.isCollapsed })),
 			setCollapsed: (collapsed) => set({ isCollapsed: collapsed }),
-			setWasCollapsedBeforeDiff: (state) => set({ wasCollapsedBeforeDiff: state }),
+			setWasCollapsedBeforeDiff: (state) =>
+				set({ wasCollapsedBeforeDiff: state }),
 		}),
 		{
 			name: 'sidebar-storage',
@@ -24,6 +26,6 @@ export const useSidebarStore = create<SidebarState>()(
 			partialize: (state) => ({
 				isCollapsed: state.isCollapsed,
 			}),
-		}
-	)
+		},
+	),
 );

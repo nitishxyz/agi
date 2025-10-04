@@ -19,10 +19,10 @@ export function GitFileList({ status }: GitFileListProps) {
 	const hasUnstagedFiles = unstagedFiles.length > 0;
 
 	// Check which staged files are also modified (appear in unstaged)
-	const unstagedPaths = new Set(status.unstaged.map(f => f.path));
+	const unstagedPaths = new Set(status.unstaged.map((f) => f.path));
 
 	const handleStageAll = () => {
-		const filesToStage = unstagedFiles.map(f => f.path);
+		const filesToStage = unstagedFiles.map((f) => f.path);
 		if (filesToStage.length > 0) {
 			stageFiles.mutate(filesToStage);
 		}
@@ -51,9 +51,9 @@ export function GitFileList({ status }: GitFileListProps) {
 					</div>
 					<div className="divide-y divide-border">
 						{status.staged.map((file) => (
-							<GitFileItem 
-								key={file.path} 
-								file={file} 
+							<GitFileItem
+								key={file.path}
+								file={file}
 								staged={true}
 								showModifiedIndicator={unstagedPaths.has(file.path)}
 							/>

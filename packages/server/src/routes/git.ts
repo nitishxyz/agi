@@ -320,15 +320,15 @@ export function registerGitRoutes(app: Hono) {
 					const filePath = join(cwd, file);
 					const content = await readFile(filePath, 'utf-8');
 					const lines = content.split('\n');
-					
+
 					// Create a diff-like output showing all lines as additions
 					diffOutput = `diff --git a/${file} b/${file}\n`;
 					diffOutput += `new file mode 100644\n`;
 					diffOutput += `--- /dev/null\n`;
 					diffOutput += `+++ b/${file}\n`;
 					diffOutput += `@@ -0,0 +1,${lines.length} @@\n`;
-					diffOutput += lines.map(line => `+${line}`).join('\n');
-					
+					diffOutput += lines.map((line) => `+${line}`).join('\n');
+
 					insertions = lines.length;
 					deletions = 0;
 				} catch (err) {
@@ -428,9 +428,10 @@ export function registerGitRoutes(app: Hono) {
 			);
 
 			// Limit diff size to avoid token limits (keep first 8000 chars)
-			const limitedDiff = stagedDiff.length > 8000 
-				? stagedDiff.slice(0, 8000) + '\n\n... (diff truncated due to size)'
-				: stagedDiff;
+			const limitedDiff =
+				stagedDiff.length > 8000
+					? stagedDiff.slice(0, 8000) + '\n\n... (diff truncated due to size)'
+					: stagedDiff;
 
 			// Generate commit message using AI
 			const prompt = `Based on the following git diff of staged changes, generate a clear and concise commit message following these guidelines:
@@ -454,7 +455,10 @@ Generate only the commit message, nothing else.`;
 			const cfg = await loadConfig(cwd);
 
 			// Resolve the model using SDK - this doesn't create any session
-			const model = await resolveModel(cfg.defaults.provider, cfg.defaults.model);
+			const model = await resolveModel(
+				cfg.defaults.provider,
+				cfg.defaults.model,
+			);
 
 			// Generate text directly - no session involved
 			const result = await generateText({
@@ -464,10 +468,13 @@ Generate only the commit message, nothing else.`;
 
 			// Extract and clean up the message
 			let message = result.text || '';
-			
+
 			// Clean up the message (remove markdown code blocks if present)
 			if (typeof message === 'string') {
-				message = message.replace(/^```(?:text|commit)?\n?/gm, '').replace(/```$/gm, '').trim();
+				message = message
+					.replace(/^```(?:text|commit)?\n?/gm, '')
+					.replace(/```$/gm, '')
+					.trim();
 			}
 
 			return c.json({

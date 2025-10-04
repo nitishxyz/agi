@@ -19,11 +19,17 @@ function initApp() {
 		cors({
 			origin: (origin) => {
 				// Allow all localhost and 127.0.0.1 on any port
-				if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+				if (
+					origin.startsWith('http://localhost:') ||
+					origin.startsWith('http://127.0.0.1:')
+				) {
 					return origin;
 				}
 				// Allow common dev ports
-				if (origin === 'http://localhost:5173' || origin === 'http://localhost:5174') {
+				if (
+					origin === 'http://localhost:5173' ||
+					origin === 'http://localhost:5174'
+				) {
 					return origin;
 				}
 				// Default to allowing the origin (can be restricted in production)
@@ -75,11 +81,17 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 		cors({
 			origin: (origin) => {
 				// Allow all localhost and 127.0.0.1 on any port
-				if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+				if (
+					origin.startsWith('http://localhost:') ||
+					origin.startsWith('http://127.0.0.1:')
+				) {
 					return origin;
 				}
 				// Allow common dev ports
-				if (origin === 'http://localhost:5173' || origin === 'http://localhost:5174') {
+				if (
+					origin === 'http://localhost:5173' ||
+					origin === 'http://localhost:5174'
+				) {
 					return origin;
 				}
 				// Default to allowing the origin
@@ -121,11 +133,17 @@ export function createEmbeddedApp(_config: EmbeddedAppConfig) {
 		cors({
 			origin: (origin) => {
 				// Allow all localhost and 127.0.0.1 on any port
-				if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+				if (
+					origin.startsWith('http://localhost:') ||
+					origin.startsWith('http://127.0.0.1:')
+				) {
 					return origin;
 				}
 				// Allow common dev ports
-				if (origin === 'http://localhost:5173' || origin === 'http://localhost:5174') {
+				if (
+					origin === 'http://localhost:5173' ||
+					origin === 'http://localhost:5174'
+				) {
 					return origin;
 				}
 				// Default to allowing the origin
