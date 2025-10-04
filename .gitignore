@@ -38,3 +38,6 @@ reference
 # sst
 .sst
 .agi
+
+# web-dist (generated build output)
+apps/cli/src/web-dist

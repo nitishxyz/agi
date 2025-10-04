@@ -1,4 +1,3 @@
-import { config } from './config';
 import type {
 	Session,
 	Message,
@@ -16,18 +15,19 @@ import type {
 	GitGenerateCommitMessageResponse,
 	GitBranchInfo,
 } from '../types/api';
+import { API_BASE_URL } from './config';
 
 class ApiClient {
-	private baseUrl: string;
-
-	constructor(baseUrl: string) {
-		this.baseUrl = baseUrl;
+	private get baseUrl(): string {
+		// Always check for injected URL at runtime
+		const win = window as any;
+		if (win.AGI_SERVER_URL) {
+			return win.AGI_SERVER_URL;
+		}
+		return API_BASE_URL;
 	}
 
-	private async request<T>(
-		endpoint: string,
-		options?: RequestInit,
-	): Promise<T> {
+	private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 		const url = `${this.baseUrl}${endpoint}`;
 		const response = await fetch(url, {
 			...options,
@@ -38,15 +38,14 @@ class ApiClient {
 		});
 
 		if (!response.ok) {
-			const error = await response
-				.json()
-				.catch(() => ({ error: 'Unknown error' }));
+			const error = await response.json().catch(() => ({ error: 'Unknown error' }));
 			throw new Error(error.error || `HTTP ${response.status}`);
 		}
 
 		return response.json();
 	}
 
+	// Session methods
 	async getSessions(): Promise<Session[]> {
 		return this.request<Session[]>('/v1/sessions');
 	}
@@ -62,23 +61,18 @@ class ApiClient {
 		return this.request<Message[]>(`/v1/sessions/${sessionId}/messages`);
 	}
 
-	async sendMessage(
-		sessionId: string,
-		data: SendMessageRequest,
-	): Promise<SendMessageResponse> {
-		return this.request<SendMessageResponse>(
-			`/v1/sessions/${sessionId}/messages`,
-			{
-				method: 'POST',
-				body: JSON.stringify(data),
-			},
-		);
+	async sendMessage(sessionId: string, data: SendMessageRequest): Promise<SendMessageResponse> {
+		return this.request<SendMessageResponse>(`/v1/sessions/${sessionId}/messages`, {
+			method: 'POST',
+			body: JSON.stringify(data),
+		});
 	}
 
 	getStreamUrl(sessionId: string): string {
 		return `${this.baseUrl}/v1/sessions/${sessionId}/stream`;
 	}
 
+	// Config methods
 	async getConfig(): Promise<{
 		agents: string[];
 		providers: string[];
@@ -87,47 +81,41 @@ class ApiClient {
 		return this.request('/v1/config');
 	}
 
-	async getModels(provider: string): Promise<{
+	async getModels(providerId: string): Promise<{
 		models: Array<{ id: string; label: string; toolCall?: boolean }>;
 		default: string;
 	}> {
-		return this.request(`/v1/config/providers/${provider}/models`);
+		return this.request(`/v1/config/providers/${providerId}/models`);
 	}
 
-	// Git API methods
+	// Git methods
 	async getGitStatus(): Promise<GitStatusResponse> {
-		const response = await this.request<{
-			status: string;
-			data: GitStatusResponse;
-		}>('/v1/git/status');
+		const response = await this.request<{ data: GitStatusResponse }>('/v1/git/status');
 		return response.data;
 	}
 
-	async getGitDiff(file: string, staged = false): Promise<GitDiffResponse> {
-		const params = new URLSearchParams({ file, staged: String(staged) });
-		const response = await this.request<{
-			status: string;
-			data: GitDiffResponse;
-		}>(`/v1/git/diff?${params}`);
+	async getGitDiff(file: string, staged: boolean = false): Promise<GitDiffResponse> {
+		const params = new URLSearchParams({
+			file,
+			staged: String(staged),
+		});
+		const response = await this.request<{ data: GitDiffResponse }>(`/v1/git/diff?${params}`);
 		return response.data;
 	}
 
 	async generateCommitMessage(): Promise<GitGenerateCommitMessageResponse> {
-		const response = await this.request<{
-			status: string;
-			data: GitGenerateCommitMessageResponse;
-		}>('/v1/git/generate-commit-message', {
-			method: 'POST',
-			body: JSON.stringify({}),
-		});
+		const response = await this.request<{ data: GitGenerateCommitMessageResponse }>(
+			'/v1/git/generate-commit-message',
+			{
+				method: 'POST',
+				body: JSON.stringify({}),
+			}
+		);
 		return response.data;
 	}
 
 	async stageFiles(files: string[]): Promise<GitStageResponse> {
-		const response = await this.request<{
-			status: string;
-			data: GitStageResponse;
-		}>('/v1/git/stage', {
+		const response = await this.request<{ data: GitStageResponse }>('/v1/git/stage', {
 			method: 'POST',
 			body: JSON.stringify({ files } satisfies GitStageRequest),
 		});
@@ -135,10 +123,7 @@ class ApiClient {
 	}
 
 	async unstageFiles(files: string[]): Promise<GitUnstageResponse> {
-		const response = await this.request<{
-			status: string;
-			data: GitUnstageResponse;
-		}>('/v1/git/unstage', {
+		const response = await this.request<{ data: GitUnstageResponse }>('/v1/git/unstage', {
 			method: 'POST',
 			body: JSON.stringify({ files } satisfies GitUnstageRequest),
 		});
@@ -146,10 +131,7 @@ class ApiClient {
 	}
 
 	async commitChanges(message: string): Promise<GitCommitResponse> {
-		const response = await this.request<{
-			status: string;
-			data: GitCommitResponse;
-		}>('/v1/git/commit', {
+		const response = await this.request<{ data: GitCommitResponse }>('/v1/git/commit', {
 			method: 'POST',
 			body: JSON.stringify({ message } satisfies GitCommitRequest),
 		});
@@ -157,12 +139,9 @@ class ApiClient {
 	}
 
 	async getGitBranch(): Promise<GitBranchInfo> {
-		const response = await this.request<{
-			status: string;
-			data: GitBranchInfo;
-		}>('/v1/git/branch');
+		const response = await this.request<{ data: GitBranchInfo }>('/v1/git/branch');
 		return response.data;
 	}
 }
 
-export const apiClient = new ApiClient(config.apiBaseUrl);
+export const apiClient = new ApiClient();

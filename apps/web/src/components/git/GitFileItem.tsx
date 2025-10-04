@@ -137,10 +137,9 @@ export function GitFileItem({ file, staged, showModifiedIndicator = false }: Git
 								{config.label}
 							</span>
 							{showModifiedIndicator && (
-								<AlertCircle 
-									className="w-3.5 h-3.5 text-orange-500" 
-									title="Also modified in working directory"
-								/>
+								<div title="Also modified in working directory">
+									<AlertCircle className="w-3.5 h-3.5 text-orange-500" />
+								</div>
 							)}
 						</div>
 					</div>
