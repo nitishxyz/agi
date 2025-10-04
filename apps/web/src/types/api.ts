@@ -73,3 +73,73 @@ export interface SendMessageRequest {
 export interface SendMessageResponse {
 	messageId: string;
 }
+
+// Git-related types
+export interface GitFileStatus {
+	path: string;
+	status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked';
+	staged: boolean;
+	insertions?: number;
+	deletions?: number;
+}
+
+export interface GitStatusResponse {
+	branch: string;
+	ahead: number;
+	behind: number;
+	staged: GitFileStatus[];
+	unstaged: GitFileStatus[];
+	untracked: GitFileStatus[];
+	hasChanges: boolean;
+}
+
+export interface GitDiffResponse {
+	file: string;
+	diff: string;
+	language: string;
+	insertions: number;
+	deletions: number;
+	binary: boolean;
+}
+
+export interface GitStageRequest {
+	files: string[];
+}
+
+export interface GitStageResponse {
+	staged: string[];
+	failed: string[];
+}
+
+export interface GitUnstageRequest {
+	files: string[];
+}
+
+export interface GitUnstageResponse {
+	unstaged: string[];
+	failed: string[];
+}
+
+export interface GitCommitRequest {
+	message: string;
+}
+
+export interface GitCommitResponse {
+	hash: string;
+	message: string;
+	filesChanged: number;
+	insertions: number;
+	deletions: number;
+}
+
+export interface GitGenerateCommitMessageResponse {
+	message: string;
+}
+
+export interface GitBranchInfo {
+	current: string;
+	upstream: string;
+	ahead: number;
+	behind: number;
+	all: string[];
+}

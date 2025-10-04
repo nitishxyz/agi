@@ -14,6 +14,7 @@ import { runScaffold } from './src/scaffold.ts';
 import { runAgents } from './src/agents.ts';
 import { runToolsList } from './src/tools.ts';
 import { runDoctor } from './src/doctor.ts';
+import { createWebServer } from './src/web-server.ts';
 
 const createApp = createServer;
 // Load package version for --version flag (works in compiled binary)
@@ -66,12 +67,26 @@ async function main() {
 		await getDb(cfg.projectRoot);
 
 		const app = createApp();
-		const portEnv = process.env.PORT ? Number(process.env.PORT) : 0;
 		const portFlagIndex = argv.indexOf('--port');
-		const port =
-			portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : portEnv || 9100;
-		const server = Bun.serve({ port, fetch: app.fetch, idleTimeout: 240 });
-		console.log(`agi server listening on http://localhost:${server.port}`);
+		const portEnv = process.env.PORT ? Number(process.env.PORT) : undefined;
+		
+		// Use explicit port if provided, otherwise use PORT env, otherwise use 0 (random)
+		const requestedPort = portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : portEnv ?? 0;
+		
+		// Start the AGI server
+		const agiServer = Bun.serve({ port: requestedPort, fetch: app.fetch, idleTimeout: 240 });
+		console.log(`🚀 agi server listening on http://localhost:${agiServer.port}`);
+		
+		// Start the Web UI server on the next port
+		const webPort = agiServer.port + 1;
+		try {
+			const { port: actualWebPort } = createWebServer(webPort, agiServer.port);
+			console.log(`🌐 Web UI available at http://localhost:${actualWebPort}`);
+		} catch (error) {
+			console.error('❌ Failed to start Web UI server:', error);
+			console.log('   AGI server is still running without Web UI');
+		}
+		
 		return;
 	}
 
@@ -255,7 +270,7 @@ function printHelp(
 		'Usage: agi [command] [options] [prompt]',
 		'',
 		'Commands:',
-		'  serve                    Start the HTTP server',
+		'  serve [--port <port>]    Start the HTTP server (AGI API + Web UI)',
 		'  sessions [--list|--json] Manage or pick sessions (default: pick)',
 		'  auth <login|list|logout> Manage provider credentials',
 		'  setup                   Alias for `auth login`',

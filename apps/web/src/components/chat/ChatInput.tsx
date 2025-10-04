@@ -56,7 +56,7 @@ export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 	};
 
 	return (
-		<div className="absolute bottom-0 left-0 right-0 pt-16 pb-8 px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-50">
+		<div className="absolute bottom-0 left-0 right-0 pt-16 pb-8 px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20">
 			<div className="max-w-3xl mx-auto pointer-events-auto">
 				<div className="flex items-end gap-1 bg-card rounded-3xl border border-border p-1 focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40 transition-colors">
 					{onConfigClick && (
