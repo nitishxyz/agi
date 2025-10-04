@@ -4,11 +4,7 @@ import { eq } from 'drizzle-orm';
 import { publish } from '../events/bus.ts';
 import type { DiscoveredTool } from '@agi-cli/sdk';
 import { getCwd, setCwd, joinRelative } from '../runtime/cwd.ts';
-import {
-	appendAssistantText,
-	extractFinishText,
-	type ToolAdapterContext,
-} from '../runtime/tool-context.ts';
+import type { ToolAdapterContext } from '../runtime/tool-context.ts';
 
 export type { ToolAdapterContext } from '../runtime/tool-context.ts';
 
@@ -68,7 +64,7 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					?.inputTextDelta;
 				const queue = pendingCalls.get(name);
 				const meta = queue?.length ? queue[queue.length - 1] : undefined;
-				// Stream tool argument deltas as events if needed (finish handled on input available)
+				// Stream tool argument deltas as events if needed
 				publish({
 					type: 'tool.delta',
 					sessionId: ctx.sessionId,
@@ -181,11 +177,6 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
 					await base.onInputAvailable(options as any);
 				}
-				if (name === 'finish') {
-					const text = extractFinishText(args);
-					if (typeof text === 'string' && text.length)
-						await appendAssistantText(ctx, text);
-				}
 			},
 			async execute(input: ToolExecuteInput, options: ToolExecuteOptions) {
 				const queue = pendingCalls.get(name);
@@ -284,15 +275,6 @@ export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
 							contentObj.artifact = maybeArtifact;
 					} catch {}
 				}
-				// If finish returns a text payload in the result, stream it as assistant text.
-				try {
-					if (name === 'finish' && result && typeof result === 'object') {
-						const t = (result as Record<string, unknown>).text;
-						if (typeof t === 'string' && t.trim().length) {
-							await appendAssistantText(ctx, t);
-						}
-					}
-				} catch {}
 
 				const index = await ctx.nextIndex();
 				const endTs = Date.now();

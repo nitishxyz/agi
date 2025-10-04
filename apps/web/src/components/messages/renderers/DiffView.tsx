@@ -138,7 +138,9 @@ export function DiffView({ patch }: DiffViewProps) {
 								{line.newLineNum || ''}
 							</div>
 							{/* Line content */}
-							<div className={`px-3 py-0.5 flex-1 min-w-0 whitespace-pre-wrap break-all ${lineClass}`}>
+							<div
+								className={`px-3 py-0.5 flex-1 min-w-0 whitespace-pre-wrap break-all ${lineClass}`}
+							>
 								{line.content}
 							</div>
 						</div>

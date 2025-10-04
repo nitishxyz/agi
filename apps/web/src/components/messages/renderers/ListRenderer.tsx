@@ -39,7 +39,10 @@ export function ListRenderer({
 			{isExpanded && entries.length > 0 && (
 				<div className="mt-2 ml-5 space-y-0.5 max-w-full overflow-hidden">
 					{entries.slice(0, 50).map((e) => (
-						<div key={`${e.name}-${e.type}`} className="text-muted-foreground truncate">
+						<div
+							key={`${e.name}-${e.type}`}
+							className="text-muted-foreground truncate"
+						>
 							{e.type === 'dir' ? '📁' : '📄'} {e.name}
 						</div>
 					))}

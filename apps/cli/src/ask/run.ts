@@ -442,7 +442,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		if (flags.jsonEnabled) return;
 		const isReadOnly = READ_ONLY_TOOLS.has(name);
 		const hasDiffArtifact = artifact?.kind === 'file_diff';
-		
+
 		// Determine if we should show detailed result output
 		// Show detailed output for: websearch, bash, tree, mutating tools with diffs, errors, or with verbose flags
 		const shouldRenderResult =
@@ -454,7 +454,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 					(MUTATING_TOOLS.has(name) && hasDiffArtifact) ||
 					hasErrorResult ||
 					((flags.readVerbose || flags.verbose) && isReadOnly);
-		
+
 		const errorMessage = hasErrorResult
 			? (extractToolErrorMessage(topLevelError, resultObject) ??
 				'Tool reported an error')
@@ -463,7 +463,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 			hasErrorResult && !data?.result
 				? { error: errorMessage ?? 'Tool reported an error' }
 				: data?.result;
-		
+
 		if (shouldRenderResult) {
 			printToolResult(name, resultPayload, artifact, {
 				verbose: flags.verbose,
@@ -494,10 +494,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 			// Show condensed "done" message for tools that don't render detailed results
 			const timeStr =
 				typeof durationMs === 'number' ? ` ${dim(`(${durationMs}ms)`)} ` : ' ';
-			Bun.write(
-				Bun.stderr,
-				`${bold('›')} ${name}${dim('›')} done${timeStr}\n`,
-			);
+			Bun.write(Bun.stderr, `${bold('›')} ${name}${dim('›')} done${timeStr}\n`);
 		}
 		if (name === 'finish') state.finishSeen = true;
 	}

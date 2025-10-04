@@ -19,19 +19,19 @@ const TOOL_COLORS = {
 	ripgrep: chalk.blue,
 	git_status: chalk.blue,
 	git_diff: chalk.blue,
-	
+
 	// Write operations - green
 	write: chalk.green,
 	edit: chalk.green,
 	apply_patch: chalk.green,
 	git_commit: chalk.green,
-	
+
 	// Execute operations - yellow
 	bash: chalk.yellow,
-	
+
 	// Search operations - magenta
 	websearch: chalk.magenta,
-	
+
 	// Meta operations - cyan
 	finish: chalk.cyan,
 	progress_update: chalk.cyan,
@@ -74,7 +74,8 @@ function extractArgPreview(toolName: string, args: unknown): string {
 			break;
 		case 'bash':
 			if (typeof obj.cmd === 'string') {
-				const cmd = obj.cmd.length > 50 ? `${obj.cmd.slice(0, 50)}...` : obj.cmd;
+				const cmd =
+					obj.cmd.length > 50 ? `${obj.cmd.slice(0, 50)}...` : obj.cmd;
 				return cmd;
 			}
 			break;
@@ -136,7 +137,7 @@ export function printToolCall(
 	opts: { verbose?: boolean } = {},
 ): void {
 	const color = getToolColor(toolName);
-	
+
 	if (opts.verbose) {
 		const argsStr =
 			args && typeof args === 'object'
@@ -154,7 +155,10 @@ export function printToolCall(
 		// Add newline before tool call to separate from LLM message
 		const preview = extractArgPreview(toolName, args);
 		if (preview) {
-			Bun.write(Bun.stderr, `\n${bold('›')} ${color(toolName)} ${dim('›')} ${preview}\n`);
+			Bun.write(
+				Bun.stderr,
+				`\n${bold('›')} ${color(toolName)} ${dim('›')} ${preview}\n`,
+			);
 		} else {
 			Bun.write(Bun.stderr, `\n${bold('›')} ${color(toolName)}\n`);
 		}
@@ -303,7 +307,10 @@ export function printToolResult(
 	// Handle update_plan - show the plan
 	if (toolName === 'update_plan') {
 		if (typeof result === 'object' && result !== null && 'items' in result) {
-			printPlan(result.items, 'note' in result ? String(result.note) : undefined);
+			printPlan(
+				result.items,
+				'note' in result ? String(result.note) : undefined,
+			);
 		}
 		return;
 	}
@@ -342,7 +349,7 @@ export function printToolResult(
 
 					// Title on one line
 					console.log(`  ${i + 1}. ${chalk.bold(r.title)}`);
-					
+
 					// URL on second line
 					console.log(`     ${chalk.cyan(r.url)}`);
 
@@ -356,14 +363,16 @@ export function printToolResult(
 
 						for (const word of words) {
 							if (lineCount >= maxLines) break;
-							
-							if ((currentLine + ' ' + word).length > maxCharsPerLine) {
+
+							if (`${currentLine} ${word}`.length > maxCharsPerLine) {
 								if (currentLine) {
 									console.log(`     ${chalk.dim(currentLine.trim())}`);
 									lineCount++;
 									currentLine = word;
 								} else {
-									console.log(`     ${chalk.dim(word.slice(0, maxCharsPerLine))}`);
+									console.log(
+										`     ${chalk.dim(word.slice(0, maxCharsPerLine))}`,
+									);
 									lineCount++;
 									currentLine = '';
 								}
@@ -371,7 +380,7 @@ export function printToolResult(
 								currentLine += (currentLine ? ' ' : '') + word;
 							}
 						}
-						
+
 						if (currentLine && lineCount < maxLines) {
 							console.log(`     ${chalk.dim(currentLine.trim())}`);
 						}
@@ -412,18 +421,21 @@ export function printToolResult(
 				const lines = result.content.split('\n');
 				const displayLines = Math.min(3, lines.length);
 				console.log();
-				
+
 				for (let i = 0; i < displayLines; i++) {
 					const line = lines[i];
 					if (line !== undefined) {
 						// Truncate each line to 100 chars
-						const truncated = line.length > 100 ? `${line.slice(0, 100)}...` : line;
+						const truncated =
+							line.length > 100 ? `${line.slice(0, 100)}...` : line;
 						console.log(`  ${chalk.dim(truncated)}`);
 					}
 				}
-				
+
 				if (lines.length > displayLines) {
-					console.log(chalk.dim(`  … and ${lines.length - displayLines} more lines`));
+					console.log(
+						chalk.dim(`  … and ${lines.length - displayLines} more lines`),
+					);
 				}
 			}
 			return;
@@ -450,7 +462,9 @@ export function printToolResult(
 					),
 				);
 				if (lines.length > displayLines) {
-					console.log(chalk.dim(`    … and ${lines.length - displayLines} more lines`));
+					console.log(
+						chalk.dim(`    … and ${lines.length - displayLines} more lines`),
+					);
 				}
 			}
 			if (result.stderr) {
@@ -466,7 +480,9 @@ export function printToolResult(
 					),
 				);
 				if (lines.length > displayLines) {
-					console.log(chalk.red(`    … and ${lines.length - displayLines} more lines`));
+					console.log(
+						chalk.red(`    … and ${lines.length - displayLines} more lines`),
+					);
 				}
 			}
 			return;
@@ -518,7 +534,9 @@ export function printToolResult(
 			if (typeof result === 'object' && result !== null) {
 				if ('raw' in result && Array.isArray(result.raw)) {
 					const preview = result.raw.slice(0, 7);
-					console.log(chalk.dim(preview.map((line) => `    ${line}`).join('\n')));
+					console.log(
+						chalk.dim(preview.map((line) => `    ${line}`).join('\n')),
+					);
 					if (result.raw.length > 7) {
 						console.log(chalk.dim(`    … and ${result.raw.length - 7} more`));
 					}
@@ -569,7 +587,8 @@ export function printToolResult(
 						console.log(chalk.dim(`    ${file} (${matches.length})`));
 					}
 
-					const remainingFiles = Object.keys(groupedByFile).length - files.length;
+					const remainingFiles =
+						Object.keys(groupedByFile).length - files.length;
 					if (remainingFiles > 0) {
 						console.log(chalk.dim(`    … and ${remainingFiles} more files`));
 					}

@@ -1,5 +1,5 @@
 - Signal that the task is complete
-- Optionally include a final `text` message to present to the user
+- Agent should stream the summary directly as assistant message not using the finish tool
 
 Usage tips:
 - Ensure all necessary outputs are already saved/emitted before finishing

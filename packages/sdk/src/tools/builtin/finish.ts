@@ -4,10 +4,8 @@ import DESCRIPTION from './finish.txt' with { type: 'text' };
 
 export const finishTool = tool({
 	description: DESCRIPTION,
-	inputSchema: z.object({
-		text: z.string().optional().describe('Optional final message to return'),
-	}),
-	async execute({ text }: { text?: string }) {
-		return { done: true, text } as const;
+	inputSchema: z.object({}),
+	async execute() {
+		return { done: true } as const;
 	},
 });

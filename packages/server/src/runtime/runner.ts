@@ -217,7 +217,7 @@ async function ensureFinishToolCalled(
 ) {
 	if (finishObserved || !toolset?.finish?.execute) return;
 
-	const finishInput = { text: '' } as const;
+	const finishInput = {} as const;
 	const callOptions = { input: finishInput } as const;
 
 	sharedCtx.stepIndex = stepIndex;
