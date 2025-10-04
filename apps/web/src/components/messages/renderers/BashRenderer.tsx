@@ -1,5 +1,8 @@
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { RendererProps } from './types';
+import { formatDuration } from './utils';
 
 export function BashRenderer({
 	contentJson,
@@ -8,55 +11,20 @@ export function BashRenderer({
 	onToggle,
 }: RendererProps) {
 	const result = contentJson.result || {};
-	const args = (contentJson as { args?: unknown }).args;
 	const stdout = String(result.stdout || '');
 	const stderr = String(result.stderr || '');
-	const exitCodeRaw = result.exitCode;
-	const exitCode =
-		exitCodeRaw === null || exitCodeRaw === undefined
-			? null
-			: Number(exitCodeRaw || 0);
-	const hasOutput = Boolean(stdout || stderr);
-	const timeStr = toolDurationMs ? `${toolDurationMs}ms` : '';
-	const command = (() => {
-		const fromArgs =
-			(() => {
-				if (!args || typeof args !== 'object') return null;
-				const rec = args as Record<string, unknown>;
-				for (const key of ['cmd', 'command', 'script', 'input']) {
-					const value = rec[key];
-					if (typeof value === 'string' && value.trim().length > 0) {
-						return value.trim();
-					}
-				}
-				return null;
-			})() ??
-			(() => {
-				if (!result || typeof result !== 'object') return null;
-				const rec = result as Record<string, unknown>;
-				for (const key of ['cmd', 'command', 'script', 'input']) {
-					const value = rec[key];
-					if (typeof value === 'string' && value.trim().length > 0) {
-						return value.trim();
-					}
-				}
-				return null;
-			})();
-		return fromArgs ?? '';
-	})();
+	const exitCode = Number(result.exitCode ?? 0);
+	const cwd = String(result.cwd || '');
+	const timeStr = formatDuration(toolDurationMs);
 
-	const exitLabel = exitCode === null ? 'exit ?' : `exit ${exitCode}`;
-	const exitClass =
-		exitCode === null || exitCode === 0
-			? 'text-emerald-700 dark:text-emerald-300'
-			: 'text-red-600 dark:text-red-300';
+	const hasOutput = stdout.length > 0 || stderr.length > 0;
 
 	return (
 		<div className="text-xs">
 			<button
 				type="button"
 				onClick={() => hasOutput && onToggle()}
-				className={`flex items-center gap-2 text-foreground/80 transition-colors ${hasOutput ? 'hover:text-foreground' : ''}`}
+				className={`flex items-center gap-2 text-muted-foreground transition-colors ${hasOutput ? 'hover:text-foreground' : ''}`}
 			>
 				{hasOutput &&
 					(isExpanded ? (
@@ -65,47 +33,69 @@ export function BashRenderer({
 						<ChevronRight className="h-3 w-3" />
 					))}
 				{!hasOutput && <div className="w-3" />}
-				<span className="font-medium text-foreground">bash</span>
-				{command && (
-					<>
-						<span className="text-muted-foreground/70">·</span>
-						<code className="font-mono text-foreground/90 truncate max-w-md">
-							{command}
-						</code>
-					</>
-				)}
-				{exitLabel && (
-					<>
-						<span className="text-muted-foreground/70">·</span>
-						<span className={exitClass}>{exitLabel}</span>
-					</>
-				)}
-				{timeStr && (
-					<>
-						<span className="text-muted-foreground/70">·</span>
-						<span className="text-muted-foreground/80">{timeStr}</span>
-					</>
-				)}
+				<span className="font-medium">bash</span>
+				<span className="text-muted-foreground/70">·</span>
+				<span className="text-foreground/70 truncate max-w-xs">{cwd}</span>
+				<span
+					className={
+						exitCode === 0
+							? 'text-emerald-600 dark:text-emerald-400'
+							: 'text-red-600 dark:text-red-400'
+					}
+				>
+					· exit {exitCode} · {timeStr}
+				</span>
 			</button>
-			{isExpanded && (
-				<div className="mt-2 ml-5 space-y-2 max-w-full">
-					{stdout && (
-						<div className="bg-card/60 border border-border rounded-lg overflow-hidden max-w-full">
-							<pre className="text-foreground/80 p-3 overflow-x-auto max-h-96 text-xs whitespace-pre-wrap break-words">
-								{stdout.slice(0, 5000)}
-								{stdout.length > 5000 && (
-									<div className="text-muted-foreground/80 mt-1">...</div>
-								)}
-							</pre>
-						</div>
-					)}
-					{stderr && (
-						<div className="bg-red-100/40 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 rounded-lg overflow-hidden max-w-full">
-							<pre className="text-red-600/80 dark:text-red-300/80 p-3 overflow-x-auto max-h-64 text-xs whitespace-pre-wrap break-words">
-								{stderr.slice(0, 2000)}
-							</pre>
-						</div>
-					)}
+			{isExpanded && hasOutput && (
+				<div className="mt-2 ml-5 bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto max-w-full">
+					<div className="overflow-x-auto max-w-full">
+						{stdout && (
+							<div className="mb-2">
+								<div className="text-xs text-muted-foreground px-3 py-1 border-b border-border bg-muted/30">
+									stdout
+								</div>
+								<SyntaxHighlighter
+									language="bash"
+									style={vscDarkPlus}
+									customStyle={{
+										margin: 0,
+										padding: '0.75rem',
+										fontSize: '0.75rem',
+										lineHeight: '1.5',
+										background: 'transparent',
+										maxWidth: '100%',
+									}}
+									wrapLines
+									wrapLongLines
+								>
+									{stdout}
+								</SyntaxHighlighter>
+							</div>
+						)}
+						{stderr && (
+							<div>
+								<div className="text-xs text-red-600 dark:text-red-400 px-3 py-1 border-b border-border bg-red-500/10">
+									stderr
+								</div>
+								<SyntaxHighlighter
+									language="bash"
+									style={vscDarkPlus}
+									customStyle={{
+										margin: 0,
+										padding: '0.75rem',
+										fontSize: '0.75rem',
+										lineHeight: '1.5',
+										background: 'transparent',
+										maxWidth: '100%',
+									}}
+									wrapLines
+									wrapLongLines
+								>
+									{stderr}
+								</SyntaxHighlighter>
+							</div>
+						)}
+					</div>
 				</div>
 			)}
 		</div>

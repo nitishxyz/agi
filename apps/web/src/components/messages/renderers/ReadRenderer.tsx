@@ -2,6 +2,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { RendererProps } from './types';
+import { formatDuration } from './utils';
 
 function getLanguageFromPath(path: string): string {
 	const ext = path.split('.').pop()?.toLowerCase();
@@ -48,7 +49,7 @@ export function ReadRenderer({
 	const path = String(result.path || '');
 	const content = String(result.content || '');
 	const lines = content.split('\n');
-	const timeStr = toolDurationMs ? `${toolDurationMs}ms` : '';
+	const timeStr = formatDuration(toolDurationMs);
 	const language = getLanguageFromPath(path);
 
 	return (
@@ -56,17 +57,24 @@ export function ReadRenderer({
 			<button
 				type="button"
 				onClick={onToggle}
-				className="flex items-center gap-2 text-blue-700 dark:text-blue-300 transition-colors hover:text-blue-600 dark:hover:text-blue-200"
+				className="flex items-center gap-2 text-blue-700 dark:text-blue-300 transition-colors hover:text-blue-600 dark:hover:text-blue-200 w-full min-w-0"
 			>
-				{isExpanded ? (
-					<ChevronDown className="h-3 w-3" />
-				) : (
-					<ChevronRight className="h-3 w-3" />
-				)}
-				<span className="font-medium">read</span>
-				<span className="text-muted-foreground/70">·</span>
-				<span className="text-foreground/70 truncate max-w-xs">{path}</span>
-				<span className="text-muted-foreground/80">
+				<ChevronRight
+					className={`h-3 w-3 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+				/>
+				<span className="font-medium flex-shrink-0">read</span>
+				<span className="text-muted-foreground/70 flex-shrink-0">·</span>
+				<span
+					className="text-foreground/70 truncate min-w-0"
+					style={{
+						direction: 'rtl',
+						unicodeBidi: 'plaintext',
+					}}
+					title={path}
+				>
+					{path}
+				</span>
+				<span className="text-muted-foreground/80 flex-shrink-0 whitespace-nowrap">
 					· {lines.length} lines · {timeStr}
 				</span>
 			</button>
