@@ -1,3 +1,5 @@
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { GitDiffResponse } from '../../types/api';
 
 interface GitDiffViewerProps {
@@ -8,6 +10,7 @@ interface DiffLine {
 	oldLineNumber: number | null;
 	newLineNumber: number | null;
 	content: string;
+	codeContent: string; // Content without +/- prefix
 	type: 'header' | 'hunk' | 'add' | 'delete' | 'context' | 'meta';
 }
 
@@ -31,6 +34,7 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 				oldLineNumber: null,
 				newLineNumber: null,
 				content: line,
+				codeContent: line,
 				type: 'hunk',
 			});
 		} else if (
@@ -43,6 +47,7 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 				oldLineNumber: null,
 				newLineNumber: null,
 				content: line,
+				codeContent: line,
 				type: 'meta',
 			});
 		} else if (line.startsWith('+')) {
@@ -50,6 +55,7 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 				oldLineNumber: null,
 				newLineNumber: newLineNum,
 				content: line,
+				codeContent: line.slice(1), // Remove + prefix for syntax highlighting
 				type: 'add',
 			});
 			newLineNum++;
@@ -58,6 +64,7 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 				oldLineNumber: oldLineNum,
 				newLineNumber: null,
 				content: line,
+				codeContent: line.slice(1), // Remove - prefix for syntax highlighting
 				type: 'delete',
 			});
 			oldLineNum++;
@@ -67,6 +74,7 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 				oldLineNumber: oldLineNum,
 				newLineNumber: newLineNum,
 				content: line,
+				codeContent: line,
 				type: 'context',
 			});
 			oldLineNum++;
@@ -74,28 +82,32 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 		}
 	}
 
-	// Render a single diff line
+	// Render a single diff line with syntax highlighting
 	const renderLine = (diffLine: DiffLine, index: number) => {
-		let contentClassName =
-			'flex-1 px-4 py-0.5 font-mono text-xs overflow-x-auto';
+		let rowClassName = 'flex hover:bg-muted/20';
 		let lineNumberClassName =
-			'flex-shrink-0 w-20 px-2 py-0.5 text-xs font-mono text-muted-foreground select-none border-r border-border';
+			'flex-shrink-0 w-20 px-2 py-0.5 text-xs font-mono select-none border-r border-border';
+		let contentClassName = 'flex-1 px-4 py-0.5 font-mono text-xs overflow-x-auto';
 
+		// Apply background colors for add/delete/hunk
 		if (diffLine.type === 'hunk') {
-			contentClassName +=
-				' bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold';
-			lineNumberClassName += ' bg-blue-500/10';
+			rowClassName += ' bg-blue-500/10';
+			lineNumberClassName += ' text-blue-600 dark:text-blue-400';
+			contentClassName += ' text-blue-600 dark:text-blue-400 font-semibold';
 		} else if (diffLine.type === 'add') {
-			contentClassName += ' bg-green-500/10 text-green-700 dark:text-green-400';
-			lineNumberClassName +=
-				' bg-green-500/10 text-green-700 dark:text-green-400';
+			rowClassName += ' bg-green-500/10';
+			lineNumberClassName += ' text-green-700 dark:text-green-400';
+			contentClassName += ' text-green-700 dark:text-green-400';
 		} else if (diffLine.type === 'delete') {
-			contentClassName += ' bg-red-500/10 text-red-600 dark:text-red-400';
-			lineNumberClassName += ' bg-red-500/10 text-red-600 dark:text-red-400';
+			rowClassName += ' bg-red-500/10';
+			lineNumberClassName += ' text-red-600 dark:text-red-400';
+			contentClassName += ' text-red-600 dark:text-red-400';
 		} else if (diffLine.type === 'meta') {
 			contentClassName += ' text-muted-foreground';
+			lineNumberClassName += ' text-muted-foreground';
 		} else {
-			contentClassName += ' text-foreground/70';
+			contentClassName += ' text-foreground/80';
+			lineNumberClassName += ' text-muted-foreground';
 		}
 
 		const oldNum =
@@ -103,15 +115,66 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 		const newNum =
 			diffLine.newLineNumber !== null ? diffLine.newLineNumber.toString() : '';
 
+		// For code lines (not meta/hunk), apply syntax highlighting
+		let renderedContent: React.ReactNode = diffLine.content || ' ';
+		
+		if (
+			diffLine.type !== 'meta' &&
+			diffLine.type !== 'hunk' &&
+			diff.language !== 'plaintext' &&
+			diffLine.codeContent.trim()
+		) {
+			renderedContent = (
+				<SyntaxHighlighter
+					language={diff.language}
+					style={vscDarkPlus}
+					customStyle={{
+						margin: 0,
+						padding: 0,
+						background: 'transparent',
+						display: 'inline',
+						fontSize: 'inherit',
+						lineHeight: 'inherit',
+					}}
+					codeTagProps={{
+						style: {
+							fontFamily: 'inherit',
+							background: 'transparent',
+						},
+					}}
+					PreTag="span"
+				>
+					{diffLine.codeContent}
+				</SyntaxHighlighter>
+			);
+
+			// Add back the +/- prefix if it was an add/delete
+			if (diffLine.type === 'add') {
+				renderedContent = (
+					<>
+						<span className="select-none">+</span>
+						{renderedContent}
+					</>
+				);
+			} else if (diffLine.type === 'delete') {
+				renderedContent = (
+					<>
+						<span className="select-none">-</span>
+						{renderedContent}
+					</>
+				);
+			}
+		}
+
 		return (
-			<div key={index} className="flex hover:bg-muted/20">
+			<div key={index} className={rowClassName}>
 				<div className={lineNumberClassName}>
 					<div className="flex justify-between gap-2">
 						<span className="text-right w-8">{oldNum}</span>
 						<span className="text-right w-8">{newNum}</span>
 					</div>
 				</div>
-				<div className={contentClassName}>{diffLine.content || ' '}</div>
+				<div className={contentClassName}>{renderedContent}</div>
 			</div>
 		);
 	};
