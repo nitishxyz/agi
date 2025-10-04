@@ -101,9 +101,6 @@ jobs:
           - os: linux
             arch: arm64
             runner: ubuntu-latest
-          - os: windows
-            arch: x64
-            runner: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -155,9 +152,6 @@ jobs:
               ;;
             linux-arm64)
               bun run build:linux-arm64
-              ;;
-            windows-x64)
-              bun run build:windows-x64
               ;;
           esac
 
@@ -290,7 +284,6 @@ jobs:
             - macOS (Apple Silicon): agi-darwin-arm64
             - Linux (x64): agi-linux-x64
             - Linux (ARM64): agi-linux-arm64
-            - Windows (x64): agi-windows-x64.exe
           files: ./release/*
           draft: false
           prerelease: false
