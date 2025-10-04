@@ -1,12 +1,163 @@
 import chalk from 'chalk';
-import type { ToolCallResult } from '@agi-cli/sdk';
+import type { ToolCallResult, Artifact } from '@agi-cli/sdk';
+import type { ToolResultRecord, ToolCallRecord, TokenUsageSummary } from './types.ts';
+
+// Export color utilities
+export const dim = chalk.dim;
+export const bold = chalk.bold;
+
+// Print a tool call
+export function printToolCall(
+	toolName: string,
+	args: unknown,
+	opts: { verbose?: boolean } = {},
+): void {
+	const argsStr = args && typeof args === 'object' 
+		? JSON.stringify(args, null, 2) 
+		: String(args);
+	
+	if (opts.verbose) {
+		console.log(chalk.cyan(`  ▶ ${toolName}`));
+		if (args) {
+			const lines = argsStr.split('\n');
+			for (const line of lines) {
+				console.log(chalk.dim(`    ${line}`));
+			}
+		}
+	} else {
+		const preview = argsStr.length > 80 
+			? argsStr.slice(0, 80) + '...' 
+			: argsStr;
+		console.log(chalk.cyan(`  ▶ ${toolName} ${chalk.dim(preview)}`));
+	}
+}
+
+// Log a tool error
+export function logToolError(
+	toolName: string,
+	errorMessage: string,
+	opts: { durationMs?: number } = {},
+): void {
+	const duration = opts.durationMs ? chalk.dim(` (${opts.durationMs}ms)`) : '';
+	console.log(chalk.red(`  ✗ ${toolName} error${duration}`));
+	console.log(chalk.red(`    ${errorMessage}`));
+}
+
+// Print a plan update
+export function printPlan(
+	items: unknown,
+	note?: string,
+): void {
+	if (!Array.isArray(items) || items.length === 0) return;
+	
+	console.log(chalk.bold('\n📋 Plan:'));
+	if (note) {
+		console.log(chalk.dim(`   ${note}`));
+	}
+	
+	for (let i = 0; i < items.length; i++) {
+		const item = items[i];
+		let step: string;
+		let status: string | undefined;
+		
+		if (typeof item === 'string') {
+			step = item;
+		} else if (item && typeof item === 'object' && 'step' in item) {
+			step = String(item.step);
+			status = 'status' in item ? String(item.status) : undefined;
+		} else {
+			continue;
+		}
+		
+		const statusIcon = status === 'completed' 
+			? chalk.green('✓') 
+			: status === 'in_progress' 
+			? chalk.yellow('⋯') 
+			: chalk.dim('○');
+		
+		console.log(`   ${statusIcon} ${step}`);
+	}
+	console.log();
+}
+
+// Print execution summary
+export function printSummary(
+	toolCalls: ToolCallRecord[],
+	toolResults: ToolResultRecord[],
+	filesTouched: Set<string> | string[],
+	tokenUsage?: TokenUsageSummary | null,
+): void {
+	if (toolCalls.length === 0 && filesTouched.size === 0 && !tokenUsage) {
+		return;
+	}
+	
+	console.log(chalk.bold('\n📊 Summary:'));
+	
+	// Tool counts
+	if (toolCalls.length > 0) {
+		const counts = new Map<string, number>();
+		for (const call of toolCalls) {
+			counts.set(call.name, (counts.get(call.name) || 0) + 1);
+		}
+		
+		console.log(chalk.dim('   Tools:'));
+		for (const [name, count] of counts) {
+			console.log(`     • ${name} × ${count}`);
+		}
+	}
+	
+	// Files touched
+	const filesArray = Array.isArray(filesTouched) ? filesTouched : Array.from(filesTouched);
+	if (filesArray.length > 0) {
+		console.log(chalk.dim('   Files:'));
+		const displayFiles = filesArray.slice(0, 10);
+		for (const file of displayFiles) {
+			console.log(`     • ${file}`);
+		}
+		if (filesArray.length > 10) {
+			console.log(chalk.dim(`     … and ${filesArray.length - 10} more`));
+		}
+	}
+	
+	// Token usage
+	if (tokenUsage) {
+		console.log(chalk.dim('   Tokens:'));
+		if (tokenUsage.inputTokens !== undefined) {
+			console.log(`     • Input: ${tokenUsage.inputTokens.toLocaleString()}`);
+		}
+		if (tokenUsage.outputTokens !== undefined) {
+			console.log(`     • Output: ${tokenUsage.outputTokens.toLocaleString()}`);
+		}
+		if (tokenUsage.totalTokens !== undefined) {
+			console.log(`     • Total: ${tokenUsage.totalTokens.toLocaleString()}`);
+		}
+		if (tokenUsage.costUsd !== undefined) {
+			console.log(`     • Cost: $${tokenUsage.costUsd.toFixed(4)}`);
+		}
+	}
+	
+	console.log();
+}
 
 export function printToolResult(
 	toolName: string,
 	result: ToolCallResult,
-	durationMs?: number,
+	artifact?: Artifact,
+	opts: {
+		verbose?: boolean;
+		durationMs?: number;
+		error?: string;
+		args?: unknown;
+	} = {},
 ): void {
-	const duration = durationMs ? chalk.dim(`(${durationMs}ms)`) : '';
+	const duration = opts.durationMs ? chalk.dim(`(${opts.durationMs}ms)`) : '';
+
+	// Handle errors first
+	if (opts.error) {
+		console.log(chalk.red(`  ✗ ${toolName} error ${duration}`));
+		console.log(chalk.red(`    ${opts.error}`));
+		return;
+	}
 
 	// Handle websearch results
 	if (toolName === 'websearch') {
