@@ -124,8 +124,13 @@ const defaultToolExtras: Record<string, string[]> = {
 		'ripgrep',
 		'apply_patch',
 		'update_plan',
+		'websearch',
 	],
-	plan: ['read', 'ls', 'tree', 'ripgrep', 'update_plan'],
+	plan: ['read', 'ls', 'tree', 'ripgrep', 'update_plan', 'websearch'],
+	general: [
+		'read', 'write', 'ls', 'tree', 'bash', 'ripgrep', 'websearch',
+		'update_plan',
+	],
 	git: ['git_status', 'git_diff', 'git_commit', 'read', 'ls'],
 	commit: ['git_status', 'git_diff', 'git_commit', 'read', 'ls'],
 };

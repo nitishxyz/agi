@@ -11,6 +11,7 @@ import { buildGlobTool } from './builtin/glob.ts';
 import { buildApplyPatchTool } from './builtin/patch.ts';
 import { updatePlanTool } from './builtin/plan.ts';
 import { editTool } from './builtin/edit.ts';
+import { buildWebSearchTool } from './builtin/websearch.ts';
 import { Glob } from 'bun';
 import { dirname, isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -115,6 +116,9 @@ export async function discoverProjectTools(
 	tools.set('update_plan', updatePlanTool);
 	// Edit
 	tools.set('edit', editTool);
+	// Web search
+	const ws = buildWebSearchTool();
+	tools.set(ws.name, ws.tool);
 
 	async function loadFromBase(base: string | null | undefined) {
 		if (!base) return;

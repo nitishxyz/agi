@@ -16,6 +16,7 @@ import { GenericRenderer } from './GenericRenderer';
 import { DebugRenderer } from './DebugRenderer';
 import { UpdatePlanRenderer } from './UpdatePlanRenderer';
 import { ProgressUpdateRenderer } from './ProgressUpdateRenderer';
+import { WebSearchRenderer } from './WebSearchRenderer';
 
 interface ToolResultRendererProps {
 	toolName: string;
@@ -68,6 +69,8 @@ export function ToolResultRenderer({
 		case 'grep':
 		case 'glob':
 			return <SearchRenderer {...props} />;
+		case 'websearch':
+			return <WebSearchRenderer {...props} />;
 		case 'finish':
 			return <FinishRenderer {...props} />;
 		case 'update_plan':

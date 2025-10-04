@@ -1,0 +1,12 @@
+- Search the web or fetch content from URLs
+- Use `query` to search the web and get a list of results with titles, URLs, and snippets
+- Use `url` to fetch and read the content of a specific webpage
+- Returns cleaned, text-based content (HTML tags are stripped)
+- Cannot be used for both search and URL fetch in the same call
+
+Usage tips:
+- For research: use `query` to find relevant pages, then `url` to read specific ones
+- Search returns up to 10 results with titles, URLs, and snippets
+- URL fetching works for text-based content (HTML, JSON, XML, plain text)
+- Content is automatically truncated if it exceeds maxLength (default 50,000 chars)
+- Use this to gather current information, read documentation, or verify facts
