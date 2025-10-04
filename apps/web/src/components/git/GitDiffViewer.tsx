@@ -181,9 +181,11 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 
 	return (
 		<div className="flex flex-col h-full bg-background">
-			{/* Header - matches section headers in GitFileList (includes min-height for button alignment) */}
+			{/* Header with full file path */}
 			<div className="px-4 py-2 bg-muted/50 flex items-center justify-between min-h-10">
-				<span className="font-mono text-sm text-foreground">{diff.file}</span>
+				<span className="font-mono text-sm text-foreground" title={diff.file}>
+					{diff.file}
+				</span>
 				<div className="flex items-center gap-3 text-xs">
 					{diff.binary ? (
 						<span className="text-muted-foreground">Binary file</span>
