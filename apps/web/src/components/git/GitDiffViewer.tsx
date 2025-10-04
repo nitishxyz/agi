@@ -118,29 +118,27 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 
 	return (
 		<div className="flex flex-col h-full bg-background">
-			{/* Header */}
-			<div className="border-b border-border px-4 py-2 bg-muted/30">
-				<div className="flex items-center justify-between">
-					<span className="font-mono text-sm text-foreground">{diff.file}</span>
-					<div className="flex items-center gap-3 text-xs">
-						{diff.binary ? (
-							<span className="text-muted-foreground">Binary file</span>
-						) : (
-							<>
-								{diff.insertions > 0 && (
-									<span className="text-green-600 dark:text-green-500">
-										+{diff.insertions}
-									</span>
-								)}
-								{diff.deletions > 0 && (
-									<span className="text-red-600 dark:text-red-500">
-										-{diff.deletions}
-									</span>
-								)}
-								<span className="text-muted-foreground">{diff.language}</span>
-							</>
-						)}
-					</div>
+			{/* Header - matches section headers in GitFileList (includes min-height for button alignment) */}
+			<div className="px-4 py-2 bg-muted/50 flex items-center justify-between min-h-10">
+				<span className="font-mono text-sm text-foreground">{diff.file}</span>
+				<div className="flex items-center gap-3 text-xs">
+					{diff.binary ? (
+						<span className="text-muted-foreground">Binary file</span>
+					) : (
+						<>
+							{diff.insertions > 0 && (
+								<span className="text-green-600 dark:text-green-500">
+									+{diff.insertions}
+								</span>
+							)}
+							{diff.deletions > 0 && (
+								<span className="text-red-600 dark:text-red-500">
+									-{diff.deletions}
+								</span>
+							)}
+							<span className="text-muted-foreground">{diff.language}</span>
+						</>
+					)}
 				</div>
 			</div>
 
