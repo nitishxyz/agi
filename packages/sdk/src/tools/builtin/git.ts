@@ -8,6 +8,19 @@ import GIT_COMMIT_DESCRIPTION from './git.commit.txt' with { type: 'text' };
 export function buildGitTools(
 	projectRoot: string,
 ): Array<{ name: string; tool: Tool }> {
+	// Helper to find git root directory
+	async function findGitRoot(): Promise<string> {
+		try {
+			const res = await $`git -C ${projectRoot} rev-parse --show-toplevel`
+				.quiet()
+				.text()
+				.catch(() => '');
+			return res.trim() || projectRoot;
+		} catch {
+			return projectRoot;
+		}
+	}
+
 	async function inRepo(): Promise<boolean> {
 		const res = await $`git -C ${projectRoot} rev-parse --is-inside-work-tree`
 			.quiet()
@@ -21,7 +34,8 @@ export function buildGitTools(
 		inputSchema: z.object({}).optional(),
 		async execute() {
 			if (!(await inRepo())) throw new Error('Not a git repository');
-			const out = await $`git -C ${projectRoot} status --porcelain=v1`.text();
+			const gitRoot = await findGitRoot();
+			const out = await $`git -C ${gitRoot} status --porcelain=v1`.text();
 			const lines = out.split('\n').filter(Boolean);
 			let staged = 0;
 			let unstaged = 0;
@@ -47,11 +61,12 @@ export function buildGitTools(
 		inputSchema: z.object({ all: z.boolean().optional().default(false) }),
 		async execute({ all }: { all?: boolean }) {
 			if (!(await inRepo())) throw new Error('Not a git repository');
+			const gitRoot = await findGitRoot();
 			// When all=true, show full working tree diff relative to HEAD
 			// so both staged and unstaged changes are included. Otherwise,
 			// show only the staged diff (index vs HEAD).
 			const args = all ? ['diff', 'HEAD'] : ['diff', '--staged'];
-			const out = await $`git -C ${projectRoot} ${args}`.text();
+			const out = await $`git -C ${gitRoot} ${args}`.text();
 			const limited = out.split('\n').slice(0, 5000).join('\n');
 			return { all: !!all, patch: limited };
 		},
@@ -74,10 +89,11 @@ export function buildGitTools(
 			signoff?: boolean;
 		}) {
 			if (!(await inRepo())) throw new Error('Not a git repository');
+			const gitRoot = await findGitRoot();
 			const args = ['commit', '-m', message];
 			if (amend) args.push('--amend');
 			if (signoff) args.push('--signoff');
-			const res = await $`git -C ${projectRoot} ${args}`
+			const res = await $`git -C ${gitRoot} ${args}`
 				.quiet()
 				.text()
 				.catch(async (e) => {

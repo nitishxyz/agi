@@ -1,7 +1,7 @@
 import type { Hono } from 'hono';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { extname } from 'node:path';
+import { extname, relative, resolve, join } from 'node:path';
 import { z } from 'zod';
 import { generateText, resolveModel } from '@agi-cli/sdk';
 import { loadConfig } from '@agi-cli/config';
@@ -88,6 +88,21 @@ const languageMap: Record<string, string> = {
 function detectLanguage(filePath: string): string {
 	const ext = extname(filePath).toLowerCase();
 	return languageMap[ext] || 'plaintext';
+}
+
+// Helper function to find git root directory
+async function findGitRoot(startPath: string): Promise<string> {
+	try {
+		const { stdout } = await execFileAsync(
+			'git',
+			['rev-parse', '--show-toplevel'],
+			{ cwd: startPath },
+		);
+		return stdout.trim();
+	} catch (error) {
+		// If not in a git repository, return the original path
+		return startPath;
+	}
 }
 
 // Git status parsing
@@ -215,13 +230,14 @@ export function registerGitRoutes(app: Hono) {
 				project: c.req.query('project'),
 			});
 
-			const cwd = query.project || process.cwd();
+			const requestedPath = query.project || process.cwd();
+			const gitRoot = await findGitRoot(requestedPath);
 
 			// Get git status
 			const { stdout: statusOutput } = await execFileAsync(
 				'git',
 				['status', '--porcelain=v1'],
-				{ cwd },
+				{ cwd: gitRoot },
 			);
 
 			const { staged, unstaged, untracked } = parseGitStatus(statusOutput);
@@ -232,7 +248,7 @@ export function registerGitRoutes(app: Hono) {
 					const { stdout: stagedNumstat } = await execFileAsync(
 						'git',
 						['diff', '--cached', '--numstat'],
-						{ cwd },
+						{ cwd: gitRoot },
 					);
 					await parseNumstat(stagedNumstat, staged);
 				} catch {
@@ -246,7 +262,7 @@ export function registerGitRoutes(app: Hono) {
 					const { stdout: unstagedNumstat } = await execFileAsync(
 						'git',
 						['diff', '--numstat'],
-						{ cwd },
+						{ cwd: gitRoot },
 					);
 					await parseNumstat(unstagedNumstat, unstaged);
 				} catch {
@@ -255,8 +271,8 @@ export function registerGitRoutes(app: Hono) {
 			}
 
 			// Get branch info
-			const branch = await getCurrentBranch(cwd);
-			const { ahead, behind } = await getAheadBehind(cwd);
+			const branch = await getCurrentBranch(gitRoot);
+			const { ahead, behind } = await getAheadBehind(gitRoot);
 
 			const status: GitStatus = {
 				branch,
@@ -295,7 +311,8 @@ export function registerGitRoutes(app: Hono) {
 				staged: c.req.query('staged'),
 			});
 
-			const cwd = query.project || process.cwd();
+			const requestedPath = query.project || process.cwd();
+			const gitRoot = await findGitRoot(requestedPath);
 			const file = query.file;
 			const staged = query.staged;
 
@@ -303,7 +320,7 @@ export function registerGitRoutes(app: Hono) {
 			const { stdout: statusOutput } = await execFileAsync(
 				'git',
 				['status', '--porcelain=v1', file],
-				{ cwd },
+				{ cwd: gitRoot },
 			);
 
 			const isUntracked = statusOutput.trim().startsWith('??');
@@ -317,7 +334,7 @@ export function registerGitRoutes(app: Hono) {
 				try {
 					const { readFile } = await import('node:fs/promises');
 					const { join } = await import('node:path');
-					const filePath = join(cwd, file);
+					const filePath = join(gitRoot, file);
 					const content = await readFile(filePath, 'utf-8');
 					const lines = content.split('\n');
 
@@ -343,7 +360,7 @@ export function registerGitRoutes(app: Hono) {
 				}
 				args.push('--', file);
 
-				const { stdout: gitDiff } = await execFileAsync('git', args, { cwd });
+				const { stdout: gitDiff } = await execFileAsync('git', args, { cwd: gitRoot });
 				diffOutput = gitDiff;
 
 				// Get stats
@@ -357,7 +374,7 @@ export function registerGitRoutes(app: Hono) {
 					const { stdout: numstatOutput } = await execFileAsync(
 						'git',
 						numstatArgs,
-						{ cwd },
+						{ cwd: gitRoot },
 					);
 					const parts = numstatOutput.trim().split('\t');
 					if (parts.length >= 2) {
@@ -401,13 +418,14 @@ export function registerGitRoutes(app: Hono) {
 		try {
 			const body = await c.req.json();
 			const { project } = gitGenerateCommitMessageSchema.parse(body);
-			const cwd = project || process.cwd();
+			const requestedPath = project || process.cwd();
+			const gitRoot = await findGitRoot(requestedPath);
 
 			// Check if there are staged changes
 			const { stdout: statusOutput } = await execFileAsync(
 				'git',
 				['diff', '--cached', '--name-only'],
-				{ cwd },
+				{ cwd: gitRoot },
 			);
 
 			if (!statusOutput.trim()) {
@@ -424,7 +442,7 @@ export function registerGitRoutes(app: Hono) {
 			const { stdout: stagedDiff } = await execFileAsync(
 				'git',
 				['diff', '--cached'],
-				{ cwd },
+				{ cwd: gitRoot },
 			);
 
 			// Limit diff size to avoid token limits (keep first 8000 chars)
@@ -452,7 +470,7 @@ ${limitedDiff}
 Generate only the commit message, nothing else.`;
 
 			// Load config to get default provider/model
-			const cfg = await loadConfig(cwd);
+			const cfg = await loadConfig(gitRoot);
 
 			// Resolve the model using SDK - this doesn't create any session
 			const model = await resolveModel(
@@ -504,10 +522,11 @@ Generate only the commit message, nothing else.`;
 			const body = await c.req.json();
 			const { project, files } = gitStageSchema.parse(body);
 
-			const cwd = project || process.cwd();
+			const requestedPath = project || process.cwd();
+			const gitRoot = await findGitRoot(requestedPath);
 
-			// Stage files
-			await execFileAsync('git', ['add', ...files], { cwd });
+			// Stage files - git add handles paths relative to git root
+			await execFileAsync('git', ['add', ...files], { cwd: gitRoot });
 
 			return c.json({
 				status: 'ok',
@@ -535,14 +554,15 @@ Generate only the commit message, nothing else.`;
 			const body = await c.req.json();
 			const { project, files } = gitUnstageSchema.parse(body);
 
-			const cwd = project || process.cwd();
+			const requestedPath = project || process.cwd();
+			const gitRoot = await findGitRoot(requestedPath);
 
 			// Try modern git restore first, fallback to reset
 			try {
-				await execFileAsync('git', ['restore', '--staged', ...files], { cwd });
+				await execFileAsync('git', ['restore', '--staged', ...files], { cwd: gitRoot });
 			} catch {
 				// Fallback to older git reset HEAD
-				await execFileAsync('git', ['reset', 'HEAD', ...files], { cwd });
+				await execFileAsync('git', ['reset', 'HEAD', ...files], { cwd: gitRoot });
 			}
 
 			return c.json({
@@ -571,13 +591,14 @@ Generate only the commit message, nothing else.`;
 			const body = await c.req.json();
 			const { project, message } = gitCommitSchema.parse(body);
 
-			const cwd = project || process.cwd();
+			const requestedPath = project || process.cwd();
+			const gitRoot = await findGitRoot(requestedPath);
 
 			// Check if there are staged changes
 			const { stdout: statusOutput } = await execFileAsync(
 				'git',
 				['diff', '--cached', '--name-only'],
-				{ cwd },
+				{ cwd: gitRoot },
 			);
 
 			if (!statusOutput.trim()) {
@@ -594,7 +615,7 @@ Generate only the commit message, nothing else.`;
 			const { stdout: commitOutput } = await execFileAsync(
 				'git',
 				['commit', '-m', message],
-				{ cwd },
+				{ cwd: gitRoot },
 			);
 
 			// Parse commit output for hash
@@ -605,7 +626,7 @@ Generate only the commit message, nothing else.`;
 			const { stdout: statOutput } = await execFileAsync(
 				'git',
 				['show', '--stat', '--format=', 'HEAD'],
-				{ cwd },
+				{ cwd: gitRoot },
 			);
 
 			const filesChangedMatch = statOutput.match(/(\d+) files? changed/);
@@ -647,10 +668,11 @@ Generate only the commit message, nothing else.`;
 				project: c.req.query('project'),
 			});
 
-			const cwd = query.project || process.cwd();
+			const requestedPath = query.project || process.cwd();
+			const gitRoot = await findGitRoot(requestedPath);
 
-			const branch = await getCurrentBranch(cwd);
-			const { ahead, behind } = await getAheadBehind(cwd);
+			const branch = await getCurrentBranch(gitRoot);
+			const { ahead, behind } = await getAheadBehind(gitRoot);
 
 			// Get all branches
 			let allBranches: string[] = [];
@@ -658,7 +680,7 @@ Generate only the commit message, nothing else.`;
 				const { stdout: branchesOutput } = await execFileAsync(
 					'git',
 					['branch', '--list'],
-					{ cwd },
+					{ cwd: gitRoot },
 				);
 				allBranches = branchesOutput
 					.split('\n')
@@ -674,7 +696,7 @@ Generate only the commit message, nothing else.`;
 				const { stdout: upstreamOutput } = await execFileAsync(
 					'git',
 					['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'],
-					{ cwd },
+					{ cwd: gitRoot },
 				);
 				upstream = upstreamOutput.trim();
 			} catch {
