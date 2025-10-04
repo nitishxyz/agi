@@ -70,6 +70,9 @@ function AppContent() {
 		}
 	};
 
+	// Get the active session object
+	const activeSession = sessions.find((s) => s.id === activeSessionId);
+
 	if (sessionsLoading) {
 		return (
 			<div className="h-screen flex items-center justify-center bg-background text-muted-foreground">
@@ -98,7 +101,7 @@ function AppContent() {
 							Loading messages...
 						</div>
 					) : (
-						<MessageThread messages={messages} />
+						<MessageThread messages={messages} session={activeSession} />
 					)}
 					<ConfigModal
 						isOpen={isConfigOpen}

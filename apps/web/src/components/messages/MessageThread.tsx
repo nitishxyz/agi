@@ -1,17 +1,22 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { ArrowDown } from 'lucide-react';
-import type { Message } from '../../types/api';
+import type { Message, Session } from '../../types/api';
 import { AssistantMessageGroup } from './AssistantMessageGroup';
 import { UserMessageGroup } from './UserMessageGroup';
+import { SessionHeader } from '../sessions/SessionHeader';
+import { LeanHeader } from '../sessions/LeanHeader';
 
 interface MessageThreadProps {
 	messages: Message[];
+	session?: Session;
 }
 
-export function MessageThread({ messages }: MessageThreadProps) {
+export function MessageThread({ messages, session }: MessageThreadProps) {
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const sessionHeaderRef = useRef<HTMLDivElement>(null);
 	const [autoScroll, setAutoScroll] = useState(true);
+	const [showLeanHeader, setShowLeanHeader] = useState(false);
 	const lastScrollHeightRef = useRef(0);
 
 	// Detect if user has scrolled up manually
@@ -25,6 +30,15 @@ export function MessageThread({ messages }: MessageThreadProps) {
 		// If user is within 100px of bottom, enable auto-scroll
 		// Otherwise, they've scrolled up and we should stop auto-scrolling
 		setAutoScroll(distanceFromBottom < 100);
+
+		// Check if session header is scrolled off screen
+		const headerElement = sessionHeaderRef.current;
+		if (headerElement) {
+			const headerRect = headerElement.getBoundingClientRect();
+			const containerRect = container.getBoundingClientRect();
+			// Show lean header when session header has scrolled above the container's top
+			setShowLeanHeader(headerRect.bottom < containerRect.top);
+		}
 	};
 
 	// Auto-scroll when messages change AND user hasn't scrolled up
@@ -68,47 +82,58 @@ export function MessageThread({ messages }: MessageThreadProps) {
 
 	return (
 		<div className="absolute inset-0 flex flex-col">
+			{/* Lean Header - shows when session header scrolls off - positioned within thread */}
+			{session && <LeanHeader session={session} isVisible={showLeanHeader} />}
+
 			<div
 				ref={scrollContainerRef}
-				className="flex-1 overflow-y-auto p-6 pb-32"
+				className="flex-1 overflow-y-auto"
 				onScroll={handleScroll}
 			>
-				<div className="max-w-3xl mx-auto space-y-6">
-					{filteredMessages.map((message, idx) => {
-						const prevMessage = filteredMessages[idx - 1];
-						const nextMessage = filteredMessages[idx + 1];
-						const isLastMessage = idx === filteredMessages.length - 1;
+				{/* Session Header - scrolls with content */}
+				<div ref={sessionHeaderRef}>
+					{session && <SessionHeader session={session} />}
+				</div>
 
-						if (message.role === 'user') {
-							return (
-								<UserMessageGroup
-									key={message.id}
-									message={message}
-									isFirst={idx === 0}
-								/>
-							);
-						}
+				{/* Messages */}
+				<div className="p-6 pb-32">
+					<div className="max-w-3xl mx-auto space-y-6">
+						{filteredMessages.map((message, idx) => {
+							const prevMessage = filteredMessages[idx - 1];
+							const nextMessage = filteredMessages[idx + 1];
+							const isLastMessage = idx === filteredMessages.length - 1;
 
-						if (message.role === 'assistant') {
-							const showHeader =
-								!prevMessage || prevMessage.role !== 'assistant';
-							const nextIsAssistant =
-								nextMessage && nextMessage.role === 'assistant';
+							if (message.role === 'user') {
+								return (
+									<UserMessageGroup
+										key={message.id}
+										message={message}
+										isFirst={idx === 0}
+									/>
+								);
+							}
 
-							return (
-								<AssistantMessageGroup
-									key={message.id}
-									message={message}
-									showHeader={showHeader}
-									hasNextAssistantMessage={nextIsAssistant}
-									isLastMessage={isLastMessage}
-								/>
-							);
-						}
+							if (message.role === 'assistant') {
+								const showHeader =
+									!prevMessage || prevMessage.role !== 'assistant';
+								const nextIsAssistant =
+									nextMessage && nextMessage.role === 'assistant';
 
-						return null;
-					})}
-					<div ref={bottomRef} />
+								return (
+									<AssistantMessageGroup
+										key={message.id}
+										message={message}
+										showHeader={showHeader}
+										hasNextAssistantMessage={nextIsAssistant}
+										isLastMessage={isLastMessage}
+									/>
+								);
+							}
+
+							return null;
+						})}
+						<div ref={bottomRef} />
+					</div>
 				</div>
 			</div>
 
