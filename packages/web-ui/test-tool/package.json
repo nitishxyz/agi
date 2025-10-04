@@ -1,0 +1,14 @@
+{
+	"name": "@agi-cli/web-ui-test-tool",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "bun run server.ts",
+		"build": "bun run build.ts"
+	},
+	"devDependencies": {
+		"@agi-cli/web-ui": "workspace:*",
+		"@types/bun": "latest"
+	}
+}

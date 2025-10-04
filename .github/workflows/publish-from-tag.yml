@@ -142,6 +142,7 @@ jobs:
           TAG="${{ github.event.inputs.tag }}"
           INSTALL_VERSION=$(jq -r .version apps/install/package.json)
           SDK_VERSION=$(jq -r .version packages/sdk/package.json)
+          WEBUI_VERSION=$(jq -r .version packages/web-ui/package.json)
           
           if [ "v${INSTALL_VERSION}" != "$TAG" ]; then
             echo "Tag ($TAG) does not match install version (v${INSTALL_VERSION})" >&2
@@ -154,8 +155,15 @@ jobs:
             exit 1
           fi
           
+          if [ "${INSTALL_VERSION}" != "${WEBUI_VERSION}" ]; then
+            echo "Install version (${INSTALL_VERSION}) does not match web-ui version (${WEBUI_VERSION})" >&2
+            echo "All packages should be updated to the same version in the chore commit before tagging" >&2
+            exit 1
+          fi
+          
           echo "✓ Tag matches install version: ${INSTALL_VERSION}"
           echo "✓ SDK version matches install version: ${SDK_VERSION}"
+          echo "✓ Web UI version matches install version: ${WEBUI_VERSION}"
 
       - name: Regenerate clean lockfile
         shell: bash
@@ -177,4 +185,12 @@ jobs:
           set -euo pipefail
           cd packages/sdk
           # Publish SDK package
+          bun publish --access public --tag latest
+
+      - name: Publish web-ui to npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd packages/web-ui
+          # Publish web-ui package
           bun publish --access public --tag latest

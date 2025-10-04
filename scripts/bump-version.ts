@@ -77,7 +77,7 @@ function incrementVersion(
 	let [major, minor, patch] = match
 		.slice(1, 4)
 		.map((segment) => Number.parseInt(segment, 10));
-	let pre = match[4];
+	let pre: string | undefined = match[4];
 
 	switch (type) {
 		case 'major': {
@@ -202,6 +202,13 @@ function main() {
 	// Update SDK package.json
 	const sdkPackagePath = resolve(process.cwd(), 'packages/sdk/package.json');
 	updatePackageVersion(sdkPackagePath, nextVersion, dryRun);
+
+	// Update web-ui package.json
+	const webUiPackagePath = resolve(
+		process.cwd(),
+		'packages/web-ui/package.json',
+	);
+	updatePackageVersion(webUiPackagePath, nextVersion, dryRun);
 
 	console.log(`\n✓ All packages updated to version: ${nextVersion}`);
 }

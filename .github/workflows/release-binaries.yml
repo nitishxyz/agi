@@ -62,6 +62,11 @@ jobs:
             jq ".version = \"${NEW_VERSION}\"" packages/sdk/package.json > "$tmpfile"
             mv "$tmpfile" packages/sdk/package.json
             
+            echo "Updating web-ui package.json to ${NEW_VERSION}"
+            tmpfile=$(mktemp)
+            jq ".version = \"${NEW_VERSION}\"" packages/web-ui/package.json > "$tmpfile"
+            mv "$tmpfile" packages/web-ui/package.json
+            
             # Apply lint fixes before committing bump
             bun lint --fix || true
             
@@ -210,13 +215,20 @@ jobs:
         run: |
           INSTALL_VERSION=$(jq -r .version apps/install/package.json)
           SDK_VERSION=$(jq -r .version packages/sdk/package.json)
+          WEBUI_VERSION=$(jq -r .version packages/web-ui/package.json)
           
           if [ "${INSTALL_VERSION}" != "${SDK_VERSION}" ]; then
             echo "Install version (${INSTALL_VERSION}) does not match SDK version (${SDK_VERSION})" >&2
             exit 1
           fi
           
+          if [ "${INSTALL_VERSION}" != "${WEBUI_VERSION}" ]; then
+            echo "Install version (${INSTALL_VERSION}) does not match web-ui version (${WEBUI_VERSION})" >&2
+            exit 1
+          fi
+          
           echo "✓ Install and SDK versions match: ${INSTALL_VERSION}"
+          echo "✓ Web UI version matches: ${WEBUI_VERSION}"
 
       - name: Publish install package to npm
         env:
@@ -236,6 +248,16 @@ jobs:
           set -euo pipefail
           cd packages/sdk
           echo "Publishing @agi-cli/sdk@${VERSION} to npm..."
+          bun publish --access public --tag latest
+
+      - name: Publish web-ui to npm
+        env:
+          VERSION: ${{ needs.check-version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd packages/web-ui
+          echo "Publishing @agi-cli/web-ui@${VERSION} to npm..."
           bun publish --access public --tag latest
 
   publish:

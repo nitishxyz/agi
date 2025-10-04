@@ -56,7 +56,6 @@ Commits and Changes
 
 - Make minimal, focused changes. Avoid unrelated refactors.
 - Keep filenames, public APIs, and structure stable unless the change is required by the task.
-- Update relevant docs (`docs/`, `README.md`, `ARCHITECTURE.md`) when adding features or changing conventions. DO NOT create new docs unless explicitly asked for.
 
 Package Development
 

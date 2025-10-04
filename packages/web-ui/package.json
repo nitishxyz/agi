@@ -1,0 +1,38 @@
+{
+	"name": "@agi-cli/web-ui",
+	"version": "0.1.45",
+	"description": "Embeddable web UI for AGI CLI - pre-built static assets",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"scripts": {
+		"build": "bun run build.ts",
+		"prepublishOnly": "bun run build"
+	},
+	"keywords": [
+		"agi",
+		"cli",
+		"web-ui",
+		"embed",
+		"static"
+	],
+	"author": "AGI CLI Team",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/yourusername/agi-cli.git",
+		"directory": "packages/web-ui"
+	},
+	"devDependencies": {
+		"@types/express": "^5.0.3",
+		"@types/node": "^24.6.0",
+		"typescript": "~5.9.3"
+	},
+	"dependencies": {
+		"express": "^5.1.0"
+	}
+}
