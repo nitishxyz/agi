@@ -32,12 +32,12 @@ export function WriteRenderer({
 				{!patch && <div className="w-3 flex-shrink-0" />}
 				<span className="font-medium flex-shrink-0">write</span>
 				<span className="text-muted-foreground/70 flex-shrink-0">·</span>
-				<span 
-					className="text-foreground/70 min-w-0 flex-shrink overflow-hidden" 
-					style={{ 
-						direction: 'rtl', 
+				<span
+					className="text-foreground/70 min-w-0 flex-shrink overflow-hidden"
+					style={{
+						direction: 'rtl',
 						textAlign: 'left',
-						unicodeBidi: 'plaintext' 
+						unicodeBidi: 'plaintext',
 					}}
 					title={path}
 				>

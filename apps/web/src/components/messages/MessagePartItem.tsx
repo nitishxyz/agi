@@ -39,13 +39,13 @@ function getToolCallArgs(
 ): Record<string, unknown> | undefined {
 	const payload = getToolCallPayload(part);
 	if (!payload) return undefined;
-	
+
 	// The args should be nested under an 'args' key
 	const args = (payload as { args?: unknown }).args;
 	if (args && typeof args === 'object' && !Array.isArray(args)) {
 		return args as Record<string, unknown>;
 	}
-	
+
 	// No valid args found
 	return undefined;
 }
@@ -325,7 +325,7 @@ export const MessagePartItem = memo(
 						),
 					});
 				}
-				
+
 				// If there are no segments at all (no primary target, no args preview),
 				// show "running…"
 				if (segments.length === 0) {
@@ -334,7 +334,7 @@ export const MessagePartItem = memo(
 						node: <span className="text-muted-foreground/75">running…</span>,
 					});
 				}
-				
+
 				const containerClasses = [
 					'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground/80 max-w-full',
 				];
