@@ -447,6 +447,7 @@ The CLI binary is built with `bun build --compile`:
 
 ```bash
 cd apps/cli
+bun run prebuild
 bun build --compile ./index.ts --outfile dist/agi
 ```
 

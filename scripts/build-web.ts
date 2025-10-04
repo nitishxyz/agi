@@ -15,7 +15,7 @@ const WEB_DIST = join(WEB_DIR, 'dist');
 const CLI_WEB_DIST = join(CLI_DIR, 'src/web-dist');
 
 console.log('🔨 Building web UI...');
-await $`cd ${WEB_DIR} && bun run build`;
+await $`bun run build`.cwd(WEB_DIR);
 console.log('✅ Web UI built successfully');
 
 console.log('📦 Copying web UI to CLI...');
