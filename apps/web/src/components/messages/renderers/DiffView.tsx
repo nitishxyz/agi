@@ -90,59 +90,61 @@ export function DiffView({ patch }: DiffViewProps) {
 	const diffLines = parseDiff(patch);
 
 	return (
-		<div className="bg-card/60 border border-border rounded-lg overflow-x-auto max-h-96 text-xs font-mono">
-			{diffLines.map((line, i) => {
-				const key = `line-${i}-${line.content.slice(0, 20)}`;
+		<div className="bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 max-w-full">
+			<div className="overflow-x-auto overflow-y-auto max-h-96 text-xs font-mono">
+				{diffLines.map((line, i) => {
+					const key = `line-${i}-${line.content.slice(0, 20)}`;
 
-				// For meta and header lines, span the full width without line numbers
-				if (line.type === 'meta' || line.type === 'header') {
+					// For meta and header lines, span the full width without line numbers
+					if (line.type === 'meta' || line.type === 'header') {
+						return (
+							<div
+								key={key}
+								className={`px-3 py-0.5 whitespace-pre-wrap break-all ${
+									line.type === 'header'
+										? 'text-muted-foreground/80 bg-muted/20'
+										: 'text-muted-foreground/80'
+								}`}
+							>
+								{line.content}
+							</div>
+						);
+					}
+
+					// For diff lines, show line numbers in gutter
+					let lineClass = '';
+					let bgClass = '';
+					switch (line.type) {
+						case 'add':
+							lineClass = 'text-emerald-700 dark:text-emerald-300';
+							bgClass = 'bg-emerald-500/10';
+							break;
+						case 'remove':
+							lineClass = 'text-red-600 dark:text-red-300';
+							bgClass = 'bg-red-500/10';
+							break;
+						default:
+							lineClass = 'text-muted-foreground';
+					}
+
 					return (
-						<div
-							key={key}
-							className={`px-3 py-0.5 ${
-								line.type === 'header'
-									? 'text-muted-foreground/80 bg-muted/20'
-									: 'text-muted-foreground/80'
-							}`}
-						>
-							{line.content}
+						<div key={key} className={`flex ${bgClass}`}>
+							{/* Old line number */}
+							<div className="px-2 py-0.5 text-right text-muted-foreground/40 select-none w-12 flex-shrink-0">
+								{line.oldLineNum || ''}
+							</div>
+							{/* New line number */}
+							<div className="px-2 py-0.5 text-right text-muted-foreground/40 select-none w-12 flex-shrink-0 border-r border-border/50">
+								{line.newLineNum || ''}
+							</div>
+							{/* Line content */}
+							<div className={`px-3 py-0.5 flex-1 min-w-0 whitespace-pre-wrap break-all ${lineClass}`}>
+								{line.content}
+							</div>
 						</div>
 					);
-				}
-
-				// For diff lines, show line numbers in gutter
-				let lineClass = '';
-				let bgClass = '';
-				switch (line.type) {
-					case 'add':
-						lineClass = 'text-emerald-700 dark:text-emerald-300';
-						bgClass = 'bg-emerald-500/10';
-						break;
-					case 'remove':
-						lineClass = 'text-red-600 dark:text-red-300';
-						bgClass = 'bg-red-500/10';
-						break;
-					default:
-						lineClass = 'text-muted-foreground';
-				}
-
-				return (
-					<div key={key} className={`flex ${bgClass}`}>
-						{/* Old line number */}
-						<div className="px-2 py-0.5 text-right text-muted-foreground/40 select-none w-12 flex-shrink-0">
-							{line.oldLineNum || ''}
-						</div>
-						{/* New line number */}
-						<div className="px-2 py-0.5 text-right text-muted-foreground/40 select-none w-12 flex-shrink-0 border-r border-border/50">
-							{line.newLineNum || ''}
-						</div>
-						{/* Line content */}
-						<div className={`px-3 py-0.5 flex-1 ${lineClass}`}>
-							{line.content}
-						</div>
-					</div>
-				);
-			})}
+				})}
+			</div>
 		</div>
 	);
 }

@@ -65,28 +65,32 @@ export function ReadRenderer({
 				)}
 				<span className="font-medium">read</span>
 				<span className="text-muted-foreground/70">·</span>
-				<span className="text-foreground/70">{path}</span>
+				<span className="text-foreground/70 truncate max-w-xs">{path}</span>
 				<span className="text-muted-foreground/80">
 					· {lines.length} lines · {timeStr}
 				</span>
 			</button>
 			{isExpanded && content && (
-				<div className="mt-2 ml-5 bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
-					<SyntaxHighlighter
-						language={language}
-						style={vscDarkPlus}
-						customStyle={{
-							margin: 0,
-							padding: '0.75rem',
-							fontSize: '0.75rem',
-							lineHeight: '1.5',
-							background: 'transparent',
-						}}
-						showLineNumbers
-						wrapLines
-					>
-						{content}
-					</SyntaxHighlighter>
+				<div className="mt-2 ml-5 bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto max-w-full">
+					<div className="overflow-x-auto max-w-full">
+						<SyntaxHighlighter
+							language={language}
+							style={vscDarkPlus}
+							customStyle={{
+								margin: 0,
+								padding: '0.75rem',
+								fontSize: '0.75rem',
+								lineHeight: '1.5',
+								background: 'transparent',
+								maxWidth: '100%',
+							}}
+							showLineNumbers
+							wrapLines
+							wrapLongLines
+						>
+							{content}
+						</SyntaxHighlighter>
+					</div>
 				</div>
 			)}
 		</div>

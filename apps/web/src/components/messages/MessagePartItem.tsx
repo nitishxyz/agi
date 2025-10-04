@@ -155,7 +155,7 @@ export const MessagePartItem = memo(
 		const isToolMessage =
 			part.type === 'tool_call' || part.type === 'tool_result';
 
-		const contentClasses = ['flex-1'];
+		const contentClasses = ['flex-1', 'min-w-0', 'max-w-full'];
 
 		if (isToolMessage) {
 			contentClasses.push('pt-0.5', 'mt-[1px]');
@@ -273,7 +273,7 @@ export const MessagePartItem = memo(
 				}
 
 				return (
-					<div className="text-base text-foreground leading-relaxed markdown-content">
+					<div className="text-base text-foreground leading-relaxed markdown-content max-w-full overflow-hidden">
 						<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
 					</div>
 				);
@@ -296,14 +296,16 @@ export const MessagePartItem = memo(
 					segments.push({
 						key: 'cmd',
 						node: (
-							<code className="font-mono text-foreground/90">{command}</code>
+							<code className="font-mono text-foreground/90 truncate max-w-xs">
+								{command}
+							</code>
 						),
 					});
 				} else if (primary) {
 					segments.push({
 						key: 'primary',
 						node: (
-							<code className="font-mono text-foreground/85">
+							<code className="font-mono text-foreground/85 truncate max-w-xs">
 								{primary.value}
 							</code>
 						),
@@ -313,7 +315,9 @@ export const MessagePartItem = memo(
 					segments.push({
 						key: 'args',
 						node: (
-							<span className="text-muted-foreground/80">{argsPreview}</span>
+							<span className="text-muted-foreground/80 truncate max-w-xs">
+								{argsPreview}
+							</span>
 						),
 					});
 				}
@@ -322,7 +326,7 @@ export const MessagePartItem = memo(
 					node: <span className="text-muted-foreground/75">running…</span>,
 				});
 				const containerClasses = [
-					'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground/80',
+					'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground/80 max-w-full',
 				];
 				if (part.ephemeral) containerClasses.push('animate-pulse');
 				return (
@@ -346,7 +350,7 @@ export const MessagePartItem = memo(
 		};
 
 		return (
-			<div className="flex gap-3 pb-2 relative">
+			<div className="flex gap-3 pb-2 relative max-w-full overflow-hidden">
 				{/* Icon with vertical line */}
 				<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
 					<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative z-10 bg-background">

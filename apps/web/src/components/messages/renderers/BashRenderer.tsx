@@ -88,19 +88,23 @@ export function BashRenderer({
 				)}
 			</button>
 			{isExpanded && (
-				<div className="mt-2 ml-5 space-y-2">
+				<div className="mt-2 ml-5 space-y-2 max-w-full">
 					{stdout && (
-						<pre className="text-foreground/80 bg-card/60 border border-border rounded-lg p-3 overflow-x-auto max-h-96 text-xs">
-							{stdout.slice(0, 5000)}
-							{stdout.length > 5000 && (
-								<div className="text-muted-foreground/80 mt-1">...</div>
-							)}
-						</pre>
+						<div className="bg-card/60 border border-border rounded-lg overflow-hidden max-w-full">
+							<pre className="text-foreground/80 p-3 overflow-x-auto max-h-96 text-xs whitespace-pre-wrap break-words">
+								{stdout.slice(0, 5000)}
+								{stdout.length > 5000 && (
+									<div className="text-muted-foreground/80 mt-1">...</div>
+								)}
+							</pre>
+						</div>
 					)}
 					{stderr && (
-						<pre className="text-red-600/80 dark:text-red-300/80 bg-red-100/40 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 rounded-lg p-3 overflow-x-auto max-h-64 text-xs">
-							{stderr.slice(0, 2000)}
-						</pre>
+						<div className="bg-red-100/40 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 rounded-lg overflow-hidden max-w-full">
+							<pre className="text-red-600/80 dark:text-red-300/80 p-3 overflow-x-auto max-h-64 text-xs whitespace-pre-wrap break-words">
+								{stderr.slice(0, 2000)}
+							</pre>
+						</div>
 					)}
 				</div>
 			)}

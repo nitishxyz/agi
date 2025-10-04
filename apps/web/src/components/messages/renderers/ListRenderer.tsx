@@ -31,15 +31,15 @@ export function ListRenderer({
 				{entries.length === 0 && <div className="w-3" />}
 				<span className="font-medium">ls</span>
 				<span className="text-muted-foreground/70">·</span>
-				<span className="text-foreground/70">{path}</span>
+				<span className="text-foreground/70 truncate max-w-xs">{path}</span>
 				<span className="text-muted-foreground/80">
 					· {entries.length} items · {timeStr}
 				</span>
 			</button>
 			{isExpanded && entries.length > 0 && (
-				<div className="mt-2 ml-5 space-y-0.5">
+				<div className="mt-2 ml-5 space-y-0.5 max-w-full overflow-hidden">
 					{entries.slice(0, 50).map((e) => (
-						<div key={`${e.name}-${e.type}`} className="text-muted-foreground">
+						<div key={`${e.name}-${e.type}`} className="text-muted-foreground truncate">
 							{e.type === 'dir' ? '📁' : '📄'} {e.name}
 						</div>
 					))}

@@ -34,53 +34,55 @@ export function SearchRenderer({
 				</span>
 			</button>
 			{isExpanded && resultList.length > 0 && (
-				<div className="mt-2 ml-5 bg-card/60 border border-border rounded-lg p-3 overflow-x-auto max-h-96 overflow-y-auto">
-					<div className="space-y-1">
-						{resultList.slice(0, 50).map((item: unknown, idx: number) => {
-							if (typeof item === 'object' && item !== null) {
-								const match = item as {
-									file?: string;
-									line?: number;
-									text?: string;
-								};
-								if (match.file) {
-									return (
-										<div
-											key={`${match.file}-${match.line || idx}`}
-											className="font-mono text-xs"
-										>
-											<span className="text-muted-foreground">
-												{match.file}
-											</span>
-											{match.line !== undefined && (
-												<span className="text-muted-foreground/80">
-													:{match.line}
+				<div className="mt-2 ml-5 bg-card/60 border border-border rounded-lg overflow-hidden max-w-full">
+					<div className="p-3 overflow-x-auto overflow-y-auto max-h-96 max-w-full">
+						<div className="space-y-1">
+							{resultList.slice(0, 50).map((item: unknown, idx: number) => {
+								if (typeof item === 'object' && item !== null) {
+									const match = item as {
+										file?: string;
+										line?: number;
+										text?: string;
+									};
+									if (match.file) {
+										return (
+											<div
+												key={`${match.file}-${match.line || idx}`}
+												className="font-mono text-xs break-all"
+											>
+												<span className="text-muted-foreground">
+													{match.file}
 												</span>
-											)}
-											{match.text && (
-												<span className="text-muted-foreground ml-2">
-													{match.text}
-												</span>
-											)}
-										</div>
-									);
+												{match.line !== undefined && (
+													<span className="text-muted-foreground/80">
+														:{match.line}
+													</span>
+												)}
+												{match.text && (
+													<span className="text-muted-foreground ml-2 break-words">
+														{match.text}
+													</span>
+												)}
+											</div>
+										);
+									}
 								}
-							}
-							const key = typeof item === 'string' ? item : `item-${idx}`;
-							return (
-								<div
-									key={key}
-									className="text-muted-foreground font-mono text-xs"
-								>
-									{typeof item === 'string' ? item : JSON.stringify(item)}
+								const key = typeof item === 'string' ? item : `item-${idx}`;
+								return (
+									<div
+										key={key}
+										className="text-muted-foreground font-mono text-xs break-all"
+									>
+										{typeof item === 'string' ? item : JSON.stringify(item)}
+									</div>
+								);
+							})}
+							{resultList.length > 50 && (
+								<div className="text-muted-foreground/80 text-xs mt-2">
+									... and {resultList.length - 50} more
 								</div>
-							);
-						})}
-						{resultList.length > 50 && (
-							<div className="text-muted-foreground/80 text-xs mt-2">
-								... and {resultList.length - 50} more
-							</div>
-						)}
+							)}
+						</div>
 					</div>
 				</div>
 			)}

@@ -28,13 +28,15 @@ export function TreeRenderer({
 				{!tree && <div className="w-3" />}
 				<span className="font-medium">tree</span>
 				<span className="text-muted-foreground/70">·</span>
-				<span className="text-foreground/70">{path}</span>
+				<span className="text-foreground/70 truncate max-w-xs">{path}</span>
 				<span className="text-muted-foreground/80">· {timeStr}</span>
 			</button>
 			{isExpanded && tree && (
-				<pre className="mt-2 ml-5 text-xs text-muted-foreground bg-card/60 border border-border rounded-lg p-3 overflow-x-auto max-h-96">
-					{tree}
-				</pre>
+				<div className="mt-2 ml-5 bg-card/60 border border-border rounded-lg overflow-hidden max-w-full">
+					<pre className="text-xs text-muted-foreground p-3 overflow-x-auto max-h-96 whitespace-pre-wrap break-words">
+						{tree}
+					</pre>
+				</div>
 			)}
 		</div>
 	);
