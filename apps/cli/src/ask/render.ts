@@ -151,11 +151,12 @@ export function printToolCall(
 		}
 	} else {
 		// Condensed format: show tool name and brief preview
+		// Add newline before tool call to separate from LLM message
 		const preview = extractArgPreview(toolName, args);
 		if (preview) {
-			Bun.write(Bun.stderr, `${bold('›')} ${color(toolName)} ${dim('›')} ${preview}\n`);
+			Bun.write(Bun.stderr, `\n${bold('›')} ${color(toolName)} ${dim('›')} ${preview}\n`);
 		} else {
-			Bun.write(Bun.stderr, `${bold('›')} ${color(toolName)}\n`);
+			Bun.write(Bun.stderr, `\n${bold('›')} ${color(toolName)}\n`);
 		}
 	}
 }
