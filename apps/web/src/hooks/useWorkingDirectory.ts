@@ -24,8 +24,14 @@ export function useWorkingDirectory() {
 
 				const response = await fetch(url);
 				if (!response.ok) {
-					console.error('[useWorkingDirectory] Failed:', response.status, response.statusText);
-					throw new Error(`Failed to fetch working directory: ${response.status}`);
+					console.error(
+						'[useWorkingDirectory] Failed:',
+						response.status,
+						response.statusText,
+					);
+					throw new Error(
+						`Failed to fetch working directory: ${response.status}`,
+					);
 				}
 
 				const data: WorkingDirectoryInfo = await response.json();
