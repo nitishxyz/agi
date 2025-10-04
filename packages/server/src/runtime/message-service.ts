@@ -185,7 +185,8 @@ async function updateSessionTitle(args: {
 			}
 		}
 
-		const providerId = (current.provider as ProviderId) ?? cfg.defaults.provider;
+		const providerId =
+			(current.provider as ProviderId) ?? cfg.defaults.provider;
 		const modelId = current.model ?? cfg.defaults.model;
 
 		debugLog('[TITLE_GEN] Starting title generation');
@@ -204,13 +205,9 @@ async function updateSessionTitle(args: {
 		debugLog(`[TITLE_GEN] Needs spoof: ${needsSpoof}`);
 		debugLog(`[TITLE_GEN] Spoof prompt length: ${spoofPrompt?.length ?? 0}`);
 
-		const model = await resolveModel(
-			providerId,
-			modelId,
-			cfg,
-		);
+		const model = await resolveModel(providerId, modelId, cfg);
 		const promptText = String(content ?? '').slice(0, 2000);
-		
+
 		const titlePrompt = [
 			"Create a short, descriptive session title from the user's request.",
 			'Max 6–8 words. No quotes. No trailing punctuation.',
@@ -227,12 +224,12 @@ async function updateSessionTitle(args: {
 			// OAuth mode: spoof stays pure, instructions go in user message
 			system = spoofPrompt;
 			messagesArray = [
-				{ 
-					role: 'user', 
+				{
+					role: 'user',
 					content: `${titlePrompt}\n\n${promptText}`,
 				},
 			];
-			
+
 			debugLog('[TITLE_GEN] Using OAuth mode:');
 			debugLog(`[TITLE_GEN] System prompt (spoof): ${spoofPrompt}`);
 			debugLog(`[TITLE_GEN] User message (instructions + content):`);
@@ -241,10 +238,8 @@ async function updateSessionTitle(args: {
 		} else {
 			// API key mode: normal flow
 			system = titlePrompt;
-			messagesArray = [
-				{ role: 'user', content: promptText },
-			];
-			
+			messagesArray = [{ role: 'user', content: promptText }];
+
 			debugLog('[TITLE_GEN] Using API key mode:');
 			debugLog(`[TITLE_GEN] System prompt: ${system}`);
 			debugLog(`[TITLE_GEN] User message: ${promptText.substring(0, 100)}...`);
@@ -259,27 +254,27 @@ async function updateSessionTitle(args: {
 				messages: messagesArray,
 			});
 			modelTitle = (out?.text || '').trim();
-			
+
 			debugLog('[TITLE_GEN] Raw response from model:');
 			debugLog(`[TITLE_GEN] "${modelTitle}"`);
 		} catch (err) {
 			debugLog('[TITLE_GEN] Error generating title:');
 			debugLog(err);
 		}
-		
+
 		if (!modelTitle) {
 			debugLog('[TITLE_GEN] No title returned, aborting');
 			return;
 		}
-		
+
 		const sanitized = sanitizeTitle(modelTitle);
 		debugLog(`[TITLE_GEN] After sanitization: "${sanitized}"`);
-		
+
 		if (!sanitized) {
 			debugLog('[TITLE_GEN] Title sanitized to empty, aborting');
 			return;
 		}
-		
+
 		modelTitle = sanitized;
 
 		const check = await db
@@ -289,10 +284,12 @@ async function updateSessionTitle(args: {
 		if (!check.length) return;
 		const currentTitle = String(check[0].title ?? '').trim();
 		if (currentTitle && currentTitle !== heuristic) {
-			debugLog(`[TITLE_GEN] Session already has different title: "${currentTitle}", skipping`);
+			debugLog(
+				`[TITLE_GEN] Session already has different title: "${currentTitle}", skipping`,
+			);
 			return;
 		}
-		
+
 		debugLog(`[TITLE_GEN] Setting final title: "${modelTitle}"`);
 		await db
 			.update(sessions)
@@ -388,7 +385,7 @@ function deriveTitle(text: string): string {
 
 function sanitizeTitle(s: string): string {
 	let t = s.trim();
-	t = t.replace(/^['\"""''()[\]]+|['\"""''()[\]]+$/g, '').trim();
+	t = t.replace(/^['"""''()[\]]+|['"""''()[\]]+$/g, '').trim();
 	t = t.replace(/[\s\-_:–—]+$/g, '').trim();
 	if (t.length > 64) t = `${t.slice(0, 63).trimEnd()}…`;
 	return t;

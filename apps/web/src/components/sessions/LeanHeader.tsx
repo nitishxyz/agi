@@ -19,13 +19,13 @@ export function LeanHeader({ session, isVisible }: LeanHeaderProps) {
 	const estimatedCost = useMemo(() => {
 		const input = session.totalInputTokens || 0;
 		const output = session.totalOutputTokens || 0;
-		
+
 		const inputCostPer1M = 30;
 		const outputCostPer1M = 60;
-		
+
 		const inputCost = (input / 1_000_000) * inputCostPer1M;
 		const outputCost = (output / 1_000_000) * outputCostPer1M;
-		
+
 		return inputCost + outputCost;
 	}, [session.totalInputTokens, session.totalOutputTokens]);
 

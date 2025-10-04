@@ -19,28 +19,28 @@ export function SessionHeader({ session }: SessionHeaderProps) {
 	const estimatedCost = useMemo(() => {
 		const input = session.totalInputTokens || 0;
 		const output = session.totalOutputTokens || 0;
-		
+
 		// Example rates (per 1M tokens):
 		// GPT-4: $30 input, $60 output
 		// GPT-3.5: $0.50 input, $1.50 output
 		// These are approximate and should be updated based on actual model
 		const inputCostPer1M = 30;
 		const outputCostPer1M = 60;
-		
+
 		const inputCost = (input / 1_000_000) * inputCostPer1M;
 		const outputCost = (output / 1_000_000) * outputCostPer1M;
-		
+
 		return inputCost + outputCost;
 	}, [session.totalInputTokens, session.totalOutputTokens]);
 
 	// Format time duration
 	const formatDuration = (ms: number | null) => {
 		if (!ms) return '0s';
-		
+
 		const seconds = Math.floor(ms / 1000);
 		const minutes = Math.floor(seconds / 60);
 		const hours = Math.floor(minutes / 60);
-		
+
 		if (hours > 0) {
 			const remainingMinutes = minutes % 60;
 			return `${hours}h ${remainingMinutes}m`;

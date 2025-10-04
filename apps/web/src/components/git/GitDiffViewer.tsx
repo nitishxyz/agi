@@ -87,7 +87,8 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 		let rowClassName = 'flex hover:bg-muted/20';
 		let lineNumberClassName =
 			'flex-shrink-0 w-20 px-2 py-0.5 text-xs font-mono select-none border-r border-border';
-		let contentClassName = 'flex-1 px-4 py-0.5 font-mono text-xs overflow-x-auto';
+		let contentClassName =
+			'flex-1 px-4 py-0.5 font-mono text-xs overflow-x-auto';
 
 		// Apply background colors for add/delete/hunk
 		if (diffLine.type === 'hunk') {
@@ -117,7 +118,7 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 
 		// For code lines (not meta/hunk), apply syntax highlighting
 		let renderedContent: React.ReactNode = diffLine.content || ' ';
-		
+
 		if (
 			diffLine.type !== 'meta' &&
 			diffLine.type !== 'hunk' &&

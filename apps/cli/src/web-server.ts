@@ -3,6 +3,7 @@
  * Serves the web UI from embedded assets
  */
 
+import type { Server } from 'bun';
 import { webAssetPaths, assetPaths, getEmbeddedAsset } from './web-assets';
 
 const decoder = new TextDecoder();
@@ -30,7 +31,7 @@ function getMimeType(path: string): string {
 export function createWebServer(
 	port: number,
 	agiServerPort: number,
-): { port: number; server: any } {
+): { port: number; server: Server } {
 	// Build asset map - maps URL paths to file paths
 	const assetMap = new Map<string, string>();
 
@@ -67,7 +68,11 @@ export function createWebServer(
 
 			// Check if we have this asset
 			if (assetMap.has(pathname)) {
-				const filePath = assetMap.get(pathname)!;
+				const filePath = assetMap.get(pathname);
+				if (!filePath) {
+					return new Response('Not Found', { status: 404 });
+				}
+
 				const file = Bun.file(filePath);
 				const fileExists = await file.exists();
 

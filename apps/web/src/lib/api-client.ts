@@ -17,10 +17,14 @@ import type {
 } from '../types/api';
 import { API_BASE_URL } from './config';
 
+interface WindowWithAgiServerUrl extends Window {
+	AGI_SERVER_URL?: string;
+}
+
 class ApiClient {
 	private get baseUrl(): string {
 		// Always check for injected URL at runtime
-		const win = window as any;
+		const win = window as WindowWithAgiServerUrl;
 		if (win.AGI_SERVER_URL) {
 			return win.AGI_SERVER_URL;
 		}

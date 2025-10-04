@@ -1,7 +1,7 @@
 import type { Hono } from 'hono';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { extname, relative, resolve, join } from 'node:path';
+import { extname } from 'node:path';
 import { z } from 'zod';
 import { generateText, resolveModel } from '@agi-cli/sdk';
 import { loadConfig } from '@agi-cli/config';
@@ -99,7 +99,7 @@ async function findGitRoot(startPath: string): Promise<string> {
 			{ cwd: startPath },
 		);
 		return stdout.trim();
-	} catch (error) {
+	} catch (_error) {
 		// If not in a git repository, return the original path
 		return startPath;
 	}
@@ -360,7 +360,9 @@ export function registerGitRoutes(app: Hono) {
 				}
 				args.push('--', file);
 
-				const { stdout: gitDiff } = await execFileAsync('git', args, { cwd: gitRoot });
+				const { stdout: gitDiff } = await execFileAsync('git', args, {
+					cwd: gitRoot,
+				});
 				diffOutput = gitDiff;
 
 				// Get stats
@@ -448,7 +450,7 @@ export function registerGitRoutes(app: Hono) {
 			// Limit diff size to avoid token limits (keep first 8000 chars)
 			const limitedDiff =
 				stagedDiff.length > 8000
-					? stagedDiff.slice(0, 8000) + '\n\n... (diff truncated due to size)'
+					? `${stagedDiff.slice(0, 8000)}\n\n... (diff truncated due to size)`
 					: stagedDiff;
 
 			// Generate commit message using AI
@@ -559,10 +561,14 @@ Generate only the commit message, nothing else.`;
 
 			// Try modern git restore first, fallback to reset
 			try {
-				await execFileAsync('git', ['restore', '--staged', ...files], { cwd: gitRoot });
+				await execFileAsync('git', ['restore', '--staged', ...files], {
+					cwd: gitRoot,
+				});
 			} catch {
 				// Fallback to older git reset HEAD
-				await execFileAsync('git', ['reset', 'HEAD', ...files], { cwd: gitRoot });
+				await execFileAsync('git', ['reset', 'HEAD', ...files], {
+					cwd: gitRoot,
+				});
 			}
 
 			return c.json({

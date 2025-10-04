@@ -5,8 +5,8 @@
  */
 
 import { $ } from 'bun';
-import { join, relative } from 'path';
-import { readdirSync, statSync } from 'fs';
+import { join, relative } from 'node:path';
+import { readdirSync, statSync } from 'node:fs';
 
 const ROOT = import.meta.dir.replace('/scripts', '');
 const WEB_DIR = join(ROOT, 'apps/web');

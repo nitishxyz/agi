@@ -13,16 +13,22 @@ export function buildWebSearchTool(): {
 				url: z
 					.string()
 					.optional()
-					.describe('URL to fetch content from (mutually exclusive with query)'),
+					.describe(
+						'URL to fetch content from (mutually exclusive with query)',
+					),
 				query: z
 					.string()
 					.optional()
-					.describe('Search query to search the web (mutually exclusive with url)'),
+					.describe(
+						'Search query to search the web (mutually exclusive with url)',
+					),
 				maxLength: z
 					.number()
 					.optional()
 					.default(50000)
-					.describe('Maximum content length to return (default: 50000 characters)'),
+					.describe(
+						'Maximum content length to return (default: 50000 characters)',
+					),
 			})
 			.strict()
 			.refine((data) => (data.url ? !data.query : !!data.query), {
@@ -134,11 +140,9 @@ export function buildWebSearchTool(): {
 					const resultPattern =
 						/<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
 
-					let match;
-					while (
-						(match = resultPattern.exec(html)) !== null &&
-						results.length < 10
-					) {
+					let match: RegExpExecArray | null = null;
+					match = resultPattern.exec(html);
+					while (match !== null && results.length < 10) {
 						const url = match[1]?.trim();
 						const title = match[2]?.trim();
 						let snippet = match[3]?.trim();
@@ -156,16 +160,15 @@ export function buildWebSearchTool(): {
 								snippet: snippet || '',
 							});
 						}
+						match = resultPattern.exec(html);
 					}
 
 					// Fallback: simpler pattern if the above doesn't work
 					if (results.length === 0) {
 						const simplePattern =
 							/<a[^>]+rel="nofollow"[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>/gi;
-						while (
-							(match = simplePattern.exec(html)) !== null &&
-							results.length < 10
-						) {
+						match = simplePattern.exec(html);
+						while (match !== null && results.length < 10) {
 							const url = match[1]?.trim();
 							const title = match[2]?.trim();
 							if (url && title && url.startsWith('http')) {
@@ -175,6 +178,7 @@ export function buildWebSearchTool(): {
 									snippet: '',
 								});
 							}
+							match = simplePattern.exec(html);
 						}
 					}
 

@@ -37,14 +37,7 @@ interface WebSearchResultError {
 	suggestion?: string;
 }
 
-type WebSearchResult =
-	| WebSearchResultSearch
-	| WebSearchResultFetch
-	| WebSearchResultError;
-
-function isSearchResult(
-	result: unknown,
-): result is WebSearchResultSearch {
+function isSearchResult(result: unknown): result is WebSearchResultSearch {
 	return (
 		typeof result === 'object' &&
 		result !== null &&
@@ -177,8 +170,8 @@ export function WebSearchRenderer({
 
 				{isExpanded && results.length > 0 && (
 					<div className="mt-2 ml-5 space-y-2">
-						{results.map((item, idx) => (
-							<SearchResultCard key={idx} result={item} />
+						{results.map((item) => (
+							<SearchResultCard key={item.url} result={item} />
 						))}
 					</div>
 				)}
@@ -265,8 +258,8 @@ export function WebSearchRenderer({
 
 						{wasTruncated && (
 							<div className="text-xs text-muted-foreground italic px-3">
-								⚠️ Content was truncated to{' '}
-								{displayLength.toLocaleString()} characters
+								⚠️ Content was truncated to {displayLength.toLocaleString()}{' '}
+								characters
 							</div>
 						)}
 					</div>
@@ -283,7 +276,9 @@ export function WebSearchRenderer({
 					<div className="w-3" />
 					<AlertCircle className="h-3 w-3" />
 					<span className="font-medium">websearch</span>
-					<span className="text-muted-foreground/80">{timeStr && `· ${timeStr}`}</span>
+					<span className="text-muted-foreground/80">
+						{timeStr && `· ${timeStr}`}
+					</span>
 				</div>
 				<div className="mt-2 ml-5 text-red-600 dark:text-red-400 text-xs p-3 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
 					<p className="font-medium">{result.error}</p>
@@ -308,7 +303,9 @@ export function WebSearchRenderer({
 			<div className="flex items-center gap-2 text-muted-foreground">
 				<div className="w-3" />
 				<span className="font-medium">websearch</span>
-				<span className="text-muted-foreground/80">{timeStr && `· ${timeStr}`}</span>
+				<span className="text-muted-foreground/80">
+					{timeStr && `· ${timeStr}`}
+				</span>
 			</div>
 			<div className="mt-2 ml-5 text-xs text-muted-foreground p-2 border border-border rounded bg-card/60">
 				<code className="text-xs">{JSON.stringify(result, null, 2)}</code>

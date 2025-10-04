@@ -105,17 +105,10 @@ export function GitFileItem({
 	const displayPath = formatFilePath(file.path);
 
 	return (
-		<div
-			className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 cursor-pointer group transition-colors"
+		<button
+			type="button"
+			className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 cursor-pointer group transition-colors w-full text-left"
 			onClick={handleClick}
-			onKeyDown={(e) => {
-				if (e.key === 'Enter' || e.key === ' ') {
-					e.preventDefault();
-					handleClick();
-				}
-			}}
-			role="button"
-			tabIndex={0}
 		>
 			<input
 				type="checkbox"
@@ -166,6 +159,6 @@ export function GitFileItem({
 			{staged && !showModifiedIndicator && (
 				<Check className="w-4 h-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
 			)}
-		</div>
+		</button>
 	);
 }

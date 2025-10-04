@@ -69,7 +69,9 @@ export function BashRenderer({
 				{command && (
 					<>
 						<span className="text-muted-foreground/70">·</span>
-						<code className="font-mono text-foreground/90 truncate max-w-md">{command}</code>
+						<code className="font-mono text-foreground/90 truncate max-w-md">
+							{command}
+						</code>
 					</>
 				)}
 				{exitLabel && (
