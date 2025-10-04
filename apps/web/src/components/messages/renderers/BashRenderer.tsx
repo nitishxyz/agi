@@ -56,7 +56,7 @@ export function BashRenderer({
 			<button
 				type="button"
 				onClick={() => hasOutput && onToggle()}
-				className={`flex flex-wrap items-center gap-2 text-foreground/80 transition-colors ${hasOutput ? 'hover:text-foreground' : ''}`}
+				className={`flex items-center gap-2 text-foreground/80 transition-colors ${hasOutput ? 'hover:text-foreground' : ''}`}
 			>
 				{hasOutput &&
 					(isExpanded ? (
@@ -69,7 +69,7 @@ export function BashRenderer({
 				{command && (
 					<>
 						<span className="text-muted-foreground/70">·</span>
-						<code className="font-mono text-foreground/90">{command}</code>
+						<code className="font-mono text-foreground/90 truncate max-w-md">{command}</code>
 					</>
 				)}
 				{exitLabel && (

@@ -7,6 +7,7 @@ import { publish } from '../events/bus.ts';
 import { enqueueAssistantRun } from './runner.ts';
 import { resolveModel } from './provider.ts';
 import type { ProviderId } from '@agi-cli/providers';
+import { debugLog } from './debug.ts';
 
 type SessionRow = typeof sessions.$inferSelect;
 
@@ -184,29 +185,102 @@ async function updateSessionTitle(args: {
 			}
 		}
 
+		const providerId = (current.provider as ProviderId) ?? cfg.defaults.provider;
+		const modelId = current.model ?? cfg.defaults.model;
+
+		debugLog('[TITLE_GEN] Starting title generation');
+		debugLog(`[TITLE_GEN] Provider: ${providerId}, Model: ${modelId}`);
+
+		// Check if we need OAuth spoof prompt (same logic as runner)
+		const { getAuth } = await import('@agi-cli/auth');
+		const { getProviderSpoofPrompt } = await import('./prompt.ts');
+		const auth = await getAuth(providerId, cfg.projectRoot);
+		const needsSpoof = auth?.type === 'oauth';
+		const spoofPrompt = needsSpoof
+			? getProviderSpoofPrompt(providerId)
+			: undefined;
+
+		debugLog(`[TITLE_GEN] Auth type: ${auth?.type ?? 'none'}`);
+		debugLog(`[TITLE_GEN] Needs spoof: ${needsSpoof}`);
+		debugLog(`[TITLE_GEN] Spoof prompt length: ${spoofPrompt?.length ?? 0}`);
+
 		const model = await resolveModel(
-			(current.provider as ProviderId) ?? cfg.defaults.provider,
-			current.model ?? cfg.defaults.model,
+			providerId,
+			modelId,
 			cfg,
 		);
 		const promptText = String(content ?? '').slice(0, 2000);
-		const sys = [
+		
+		const titlePrompt = [
 			"Create a short, descriptive session title from the user's request.",
 			'Max 6–8 words. No quotes. No trailing punctuation.',
 			'Avoid generic phrases like "help me"; be specific.',
 		].join(' ');
+
+		// Build system prompt and messages
+		// For OAuth: Keep spoof pure, add instructions to user message
+		// For API key: Use instructions as system
+		let system: string;
+		let messagesArray: Array<{ role: 'user'; content: string }>;
+
+		if (spoofPrompt) {
+			// OAuth mode: spoof stays pure, instructions go in user message
+			system = spoofPrompt;
+			messagesArray = [
+				{ 
+					role: 'user', 
+					content: `${titlePrompt}\n\n${promptText}`,
+				},
+			];
+			
+			debugLog('[TITLE_GEN] Using OAuth mode:');
+			debugLog(`[TITLE_GEN] System prompt (spoof): ${spoofPrompt}`);
+			debugLog(`[TITLE_GEN] User message (instructions + content):`);
+			debugLog(`[TITLE_GEN]   Instructions: ${titlePrompt}`);
+			debugLog(`[TITLE_GEN]   Content: ${promptText.substring(0, 100)}...`);
+		} else {
+			// API key mode: normal flow
+			system = titlePrompt;
+			messagesArray = [
+				{ role: 'user', content: promptText },
+			];
+			
+			debugLog('[TITLE_GEN] Using API key mode:');
+			debugLog(`[TITLE_GEN] System prompt: ${system}`);
+			debugLog(`[TITLE_GEN] User message: ${promptText.substring(0, 100)}...`);
+		}
+
+		debugLog('[TITLE_GEN] Calling generateText...');
 		let modelTitle = '';
 		try {
 			const out = await generateText({
 				model,
-				system: sys,
-				prompt: promptText,
+				system,
+				messages: messagesArray,
 			});
 			modelTitle = (out?.text || '').trim();
-		} catch {}
-		if (!modelTitle) return;
-		modelTitle = sanitizeTitle(modelTitle);
-		if (!modelTitle) return;
+			
+			debugLog('[TITLE_GEN] Raw response from model:');
+			debugLog(`[TITLE_GEN] "${modelTitle}"`);
+		} catch (err) {
+			debugLog('[TITLE_GEN] Error generating title:');
+			debugLog(err);
+		}
+		
+		if (!modelTitle) {
+			debugLog('[TITLE_GEN] No title returned, aborting');
+			return;
+		}
+		
+		const sanitized = sanitizeTitle(modelTitle);
+		debugLog(`[TITLE_GEN] After sanitization: "${sanitized}"`);
+		
+		if (!sanitized) {
+			debugLog('[TITLE_GEN] Title sanitized to empty, aborting');
+			return;
+		}
+		
+		modelTitle = sanitized;
 
 		const check = await db
 			.select()
@@ -214,7 +288,12 @@ async function updateSessionTitle(args: {
 			.where(eq(sessions.id, sessionId));
 		if (!check.length) return;
 		const currentTitle = String(check[0].title ?? '').trim();
-		if (currentTitle && currentTitle !== heuristic) return;
+		if (currentTitle && currentTitle !== heuristic) {
+			debugLog(`[TITLE_GEN] Session already has different title: "${currentTitle}", skipping`);
+			return;
+		}
+		
+		debugLog(`[TITLE_GEN] Setting final title: "${modelTitle}"`);
 		await db
 			.update(sessions)
 			.set({ title: modelTitle })
@@ -224,7 +303,10 @@ async function updateSessionTitle(args: {
 			sessionId,
 			payload: { title: modelTitle },
 		});
-	} catch {}
+	} catch (err) {
+		debugLog('[TITLE_GEN] Fatal error:');
+		debugLog(err);
+	}
 }
 
 async function withTitleSlot<T>(fn: () => Promise<T>): Promise<T> {
@@ -306,7 +388,7 @@ function deriveTitle(text: string): string {
 
 function sanitizeTitle(s: string): string {
 	let t = s.trim();
-	t = t.replace(/^['"“”‘’()[\]]+|['"“”‘’()[\]]+$/g, '').trim();
+	t = t.replace(/^['\"""''()[\]]+|['\"""''()[\]]+$/g, '').trim();
 	t = t.replace(/[\s\-_:–—]+$/g, '').trim();
 	if (t.length > 64) t = `${t.slice(0, 63).trimEnd()}…`;
 	return t;
