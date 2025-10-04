@@ -32,7 +32,7 @@
     },
     "apps/cli": {
       "name": "@agi-cli/cli",
-      "version": "0.1.42",
+      "version": "0.1.43",
       "bin": {
         "agi": "./dist/agi",
       },
@@ -51,7 +51,7 @@
     },
     "apps/install": {
       "name": "@agi-cli/install",
-      "version": "0.1.42",
+      "version": "0.1.43",
       "bin": {
         "agi": "./start.js",
       },
@@ -166,7 +166,7 @@
     },
     "packages/sdk": {
       "name": "@agi-cli/sdk",
-      "version": "0.1.42",
+      "version": "0.1.43",
       "dependencies": {
         "@agi-cli/auth": "workspace:*",
         "@agi-cli/config": "workspace:*",
