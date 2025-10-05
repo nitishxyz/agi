@@ -4,6 +4,7 @@ import {
 	type ModelMessage,
 	convertToModelMessages,
 	type UIMessage,
+	APICallError,
 } from 'ai';
 import { loadConfig } from '@agi-cli/config';
 import { getDb } from '@agi-cli/database';
@@ -28,18 +29,34 @@ type RunOpts = {
 	model: string;
 	projectRoot: string;
 	oneShot?: boolean;
+	abortSignal?: AbortSignal;
 };
 
 type RunnerState = { queue: RunOpts[]; running: boolean };
 const runners = new Map<string, RunnerState>();
 
+// Track active abort controllers per session
+const sessionAbortControllers = new Map<string, AbortController>();
+
 type RunnerToolContext = ToolAdapterContext & { stepIndex: number };
 
 export function enqueueAssistantRun(opts: RunOpts) {
+	// Create abort controller for this session
+	const abortController = new AbortController();
+	sessionAbortControllers.set(opts.sessionId, abortController);
+
 	const state = runners.get(opts.sessionId) ?? { queue: [], running: false };
-	state.queue.push(opts);
+	state.queue.push({ ...opts, abortSignal: abortController.signal });
 	runners.set(opts.sessionId, state);
 	if (!state.running) void processQueue(opts.sessionId);
+}
+
+export function abortSession(sessionId: string) {
+	const controller = sessionAbortControllers.get(sessionId);
+	if (controller) {
+		controller.abort();
+		sessionAbortControllers.delete(sessionId);
+	}
 }
 
 async function processQueue(sessionId: string) {
@@ -59,6 +76,8 @@ async function processQueue(sessionId: string) {
 	}
 
 	state.running = false;
+	// Cleanup abort controller when queue is done
+	sessionAbortControllers.delete(sessionId);
 }
 
 function getMaxOutputTokens(
@@ -91,6 +110,7 @@ function getMaxOutputTokens(
 
 function toErrorPayload(err: unknown): {
 	message: string;
+	type: string;
 	details?: Record<string, unknown>;
 } {
 	const asObj =
@@ -98,7 +118,24 @@ function toErrorPayload(err: unknown): {
 			? (err as Record<string, unknown>)
 			: undefined;
 	let message = '';
+	let errorType = 'unknown';
 
+	// Determine error type
+	if (asObj) {
+		if ('name' in asObj && typeof asObj.name === 'string') {
+			errorType = asObj.name;
+		}
+		if ('type' in asObj && typeof asObj.type === 'string') {
+			errorType = asObj.type;
+		}
+	}
+
+	// Check if it's an API error
+	if (APICallError.isInstance(err)) {
+		errorType = 'api_error';
+	}
+
+	// Extract message
 	if (asObj && typeof asObj.message === 'string' && asObj.message) {
 		message = asObj.message as string;
 	} else if (typeof err === 'string') {
@@ -123,11 +160,20 @@ function toErrorPayload(err: unknown): {
 		}
 	}
 
+	// Extract details
 	const details: Record<string, unknown> = {};
 	if (asObj && typeof asObj === 'object') {
 		for (const key of ['name', 'code', 'status', 'statusCode', 'type']) {
 			if (asObj[key] != null) details[key] = asObj[key];
 		}
+
+		// API call error specific fields
+		if ('url' in asObj) details.url = asObj.url;
+		if ('isRetryable' in asObj) details.isRetryable = asObj.isRetryable;
+		if ('responseBody' in asObj) details.responseBody = asObj.responseBody;
+		if ('requestBodyValues' in asObj)
+			details.requestBodyValues = asObj.requestBodyValues;
+
 		if (asObj.cause) {
 			const c = asObj.cause as Record<string, unknown> | undefined;
 			details.cause = {
@@ -160,7 +206,12 @@ function toErrorPayload(err: unknown): {
 				unknown
 			>;
 	}
-	return Object.keys(details).length ? { message, details } : { message };
+
+	return {
+		message,
+		type: errorType,
+		details: Object.keys(details).length ? details : undefined,
+	};
 }
 
 async function setupToolContext(
@@ -421,6 +472,7 @@ async function runAssistant(opts: RunOpts) {
 			...(String(system || '').trim() ? { system } : {}),
 			messages: messagesWithSystemInstructions,
 			...(maxOutputTokens ? { maxOutputTokens } : {}),
+			abortSignal: opts.abortSignal, // ADD ABORT SIGNAL
 			stopWhen: hasToolCall('finish'),
 			onStepFinish: async (step) => {
 				const finishedAt = Date.now();
@@ -475,33 +527,108 @@ async function runAssistant(opts: RunOpts) {
 				} catch {}
 			},
 			onError: async (err) => {
-				const payload = toErrorPayload(err);
+				const errorPayload = toErrorPayload(err);
+				const isApiError = APICallError.isInstance(err);
+
+				// Create error part for UI display
+				const errorPartId = crypto.randomUUID();
+				await db.insert(messageParts).values({
+					id: errorPartId,
+					messageId: opts.assistantMessageId,
+					index: await sharedCtx.nextIndex(),
+					stepIndex,
+					type: 'error',
+					content: JSON.stringify({
+						message: errorPayload.message,
+						type: errorPayload.type,
+						details: errorPayload.details,
+						isAborted: false,
+					}),
+					agent: opts.agent,
+					provider: opts.provider,
+					model: opts.model,
+					startedAt: Date.now(),
+					completedAt: Date.now(),
+				});
+
+				// Update message status
 				await db
 					.update(messages)
 					.set({
 						status: 'error',
-						error: payload.message,
+						error: errorPayload.message,
+						errorType: errorPayload.type,
+						errorDetails: JSON.stringify({
+							...errorPayload.details,
+							isApiError,
+						}),
+						isAborted: false,
 					})
 					.where(eq(messages.id, opts.assistantMessageId));
+
+				// Publish enhanced error event
 				publish({
 					type: 'error',
 					sessionId: opts.sessionId,
 					payload: {
 						messageId: opts.assistantMessageId,
-						error: payload.message,
-						details: payload.details,
+						partId: errorPartId,
+						error: errorPayload.message,
+						errorType: errorPayload.type,
+						details: errorPayload.details,
+						isAborted: false,
 					},
 				});
 			},
-			onAbort: async () => {
+			onAbort: async ({ steps }) => {
+				// Create abort part for UI
+				const abortPartId = crypto.randomUUID();
+				await db.insert(messageParts).values({
+					id: abortPartId,
+					messageId: opts.assistantMessageId,
+					index: await sharedCtx.nextIndex(),
+					stepIndex,
+					type: 'error',
+					content: JSON.stringify({
+						message: 'Generation stopped by user',
+						type: 'abort',
+						isAborted: true,
+						stepsCompleted: steps.length,
+					}),
+					agent: opts.agent,
+					provider: opts.provider,
+					model: opts.model,
+					startedAt: Date.now(),
+					completedAt: Date.now(),
+				});
+
+				// Store abort info
 				await db
 					.update(messages)
-					.set({ status: 'error', error: 'aborted' })
+					.set({
+						status: 'error',
+						error: 'Generation stopped by user',
+						errorType: 'abort',
+						errorDetails: JSON.stringify({
+							stepsCompleted: steps.length,
+							abortedAt: Date.now(),
+						}),
+						isAborted: true,
+					})
 					.where(eq(messages.id, opts.assistantMessageId));
+
+				// Publish abort event
 				publish({
 					type: 'error',
 					sessionId: opts.sessionId,
-					payload: { messageId: opts.assistantMessageId, error: 'aborted' },
+					payload: {
+						messageId: opts.assistantMessageId,
+						partId: abortPartId,
+						error: 'Generation stopped by user',
+						errorType: 'abort',
+						isAborted: true,
+						stepsCompleted: steps.length,
+					},
 				});
 			},
 			onFinish: async (fin) => {
@@ -673,6 +800,7 @@ async function buildHistoryMessages(
 						}
 					} catch {}
 				}
+				// Skip error parts in history
 			}
 
 			const hasIncompleteTools = toolCalls.some(

@@ -18,5 +18,9 @@ export const messages = sqliteTable('messages', {
 	promptTokens: integer('prompt_tokens'),
 	completionTokens: integer('completion_tokens'),
 	totalTokens: integer('total_tokens'),
+	// Error fields
 	error: text('error'),
+	errorType: text('error_type'), // 'api_error', 'abort', 'validation_error', etc.
+	errorDetails: text('error_details'), // JSON string with full error object
+	isAborted: integer('is_aborted', { mode: 'boolean' }), // flag for user aborts
 });

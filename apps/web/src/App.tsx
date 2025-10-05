@@ -77,6 +77,11 @@ function AppContent() {
 	// Get the active session object
 	const activeSession = sessions.find((s) => s.id === activeSessionId);
 
+	// Check if there's an assistant message that's pending (being generated)
+	const isGenerating = messages.some(
+		(m) => m.role === 'assistant' && m.status === 'pending',
+	);
+
 	if (sessionsLoading) {
 		return (
 			<div className="h-screen flex items-center justify-center bg-background text-muted-foreground">
@@ -105,7 +110,11 @@ function AppContent() {
 							Loading messages...
 						</div>
 					) : (
-						<MessageThread messages={messages} session={activeSession} />
+						<MessageThread 
+							messages={messages} 
+							session={activeSession} 
+							isGenerating={isGenerating}
+						/>
 					)}
 					<ConfigModal
 						isOpen={isConfigOpen}

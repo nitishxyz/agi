@@ -9,9 +9,10 @@ import { LeanHeader } from '../sessions/LeanHeader';
 interface MessageThreadProps {
 	messages: Message[];
 	session?: Session;
+	isGenerating?: boolean;
 }
 
-export function MessageThread({ messages, session }: MessageThreadProps) {
+export function MessageThread({ messages, session, isGenerating }: MessageThreadProps) {
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const sessionHeaderRef = useRef<HTMLDivElement>(null);
@@ -83,7 +84,7 @@ export function MessageThread({ messages, session }: MessageThreadProps) {
 	return (
 		<div className="absolute inset-0 flex flex-col">
 			{/* Lean Header - shows when session header scrolls off - positioned within thread */}
-			{session && <LeanHeader session={session} isVisible={showLeanHeader} />}
+			{session && <LeanHeader session={session} isVisible={showLeanHeader} isGenerating={isGenerating} />}
 
 			<div
 				ref={scrollContainerRef}

@@ -284,6 +284,7 @@ export function useSessionStream(sessionId: string | undefined) {
 			'message.completed',
 			'tool.result',
 			'finish-step',
+			'error', // Add error to invalidate and reload from DB
 		]);
 
 		const unsubscribe = client.on('*', (event) => {
@@ -335,6 +336,7 @@ export function useSessionStream(sessionId: string | undefined) {
 					if (messageId) {
 						clearEphemeralForMessage(messageId);
 					}
+					// Error parts are created by the server and will be loaded via query invalidation
 					break;
 				}
 				default:

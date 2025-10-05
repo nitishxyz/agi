@@ -76,4 +76,12 @@ export function registerSessionsRoutes(app: Hono) {
 			return c.json({ error: message }, 400);
 		}
 	});
+
+	// Abort session stream
+	app.delete('/v1/sessions/:sessionId/abort', async (c) => {
+		const sessionId = c.req.param('sessionId');
+		const { abortSession } = await import('../runtime/runner.ts');
+		abortSession(sessionId);
+		return c.json({ success: true });
+	});
 }

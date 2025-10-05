@@ -66,6 +66,15 @@ class ApiClient {
 		});
 	}
 
+	async abortSession(sessionId: string): Promise<{ success: boolean }> {
+		return this.request<{ success: boolean }>(
+			`/v1/sessions/${sessionId}/abort`,
+			{
+				method: 'DELETE',
+			},
+		);
+	}
+
 	async getMessages(sessionId: string): Promise<Message[]> {
 		return this.request<Message[]>(`/v1/sessions/${sessionId}/messages`);
 	}

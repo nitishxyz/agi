@@ -11,6 +11,8 @@ import {
 	Search,
 	FolderTree,
 	List,
+	AlertCircle,
+	XOctagon,
 } from 'lucide-react';
 import { Fragment, memo, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -180,6 +182,17 @@ export const MessagePartItem = memo(
 				);
 			}
 
+			if (part.type === 'error') {
+				// Check if it's an abort
+				const payload = getToolCallPayload(part);
+				const isAborted = payload?.isAborted === true;
+				return isAborted ? (
+					<XOctagon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+				) : (
+					<AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+				);
+			}
+
 			if (part.type === 'tool_result') {
 				const toolName = part.toolName || '';
 				if (toolName === 'read')
@@ -280,6 +293,31 @@ export const MessagePartItem = memo(
 					<div className="text-base text-foreground leading-relaxed markdown-content max-w-full overflow-hidden">
 						<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
 					</div>
+				);
+			}
+
+			if (part.type === 'error') {
+				// Render error using ToolResultRenderer with 'error' as toolName
+				let contentJson: ContentJson;
+				try {
+					if (part.contentJson && typeof part.contentJson === 'object') {
+						contentJson = part.contentJson as ContentJson;
+					} else if (typeof part.content === 'string') {
+						contentJson = JSON.parse(part.content);
+					} else {
+						contentJson = {};
+					}
+				} catch {
+					contentJson = { message: part.content || 'Unknown error' } as ContentJson;
+				}
+
+				return (
+					<ToolResultRenderer
+						toolName="error"
+						contentJson={contentJson}
+						toolDurationMs={part.toolDurationMs}
+						debug={false}
+					/>
 				);
 			}
 

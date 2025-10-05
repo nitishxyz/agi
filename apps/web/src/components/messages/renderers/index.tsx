@@ -17,6 +17,7 @@ import { DebugRenderer } from './DebugRenderer';
 import { UpdatePlanRenderer } from './UpdatePlanRenderer';
 import { ProgressUpdateRenderer } from './ProgressUpdateRenderer';
 import { WebSearchRenderer } from './WebSearchRenderer';
+import { ErrorRenderer } from './ErrorRenderer';
 
 interface ToolResultRendererProps {
 	toolName: string;
@@ -77,6 +78,8 @@ export function ToolResultRenderer({
 			return <UpdatePlanRenderer {...props} />;
 		case 'progress_update':
 			return <ProgressUpdateRenderer {...props} />;
+		case 'error':
+			return <ErrorRenderer {...props} />;
 		default:
 			return <GenericRenderer {...props} toolName={toolName} />;
 	}

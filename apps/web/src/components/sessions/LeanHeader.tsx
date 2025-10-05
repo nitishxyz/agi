@@ -1,13 +1,15 @@
 import { useMemo } from 'react';
 import type { Session } from '../../types/api';
 import { Hash, DollarSign } from 'lucide-react';
+import { StopButton } from '../chat/StopButton';
 
 interface LeanHeaderProps {
 	session: Session;
 	isVisible: boolean;
+	isGenerating?: boolean;
 }
 
-export function LeanHeader({ session, isVisible }: LeanHeaderProps) {
+export function LeanHeader({ session, isVisible, isGenerating }: LeanHeaderProps) {
 	// Calculate total tokens
 	const totalTokens = useMemo(() => {
 		const input = session.totalInputTokens || 0;
@@ -40,24 +42,32 @@ export function LeanHeader({ session, isVisible }: LeanHeaderProps) {
 				isVisible ? 'translate-y-0' : '-translate-y-full'
 			}`}
 		>
-			<div className="h-full px-6 flex items-center justify-end gap-6 text-sm">
-				{/* Total Tokens */}
-				<div className="flex items-center gap-2 text-muted-foreground">
-					<Hash className="w-4 h-4" />
-					<span className="text-foreground font-medium">
-						{formatNumber(totalTokens)}
-					</span>
+			<div className="h-full px-6 flex items-center justify-between gap-6 text-sm">
+				{/* Left side - Stop button */}
+				<div className="flex-shrink-0">
+					{isGenerating && <StopButton sessionId={session.id} />}
 				</div>
 
-				{/* Estimated Cost */}
-				{estimatedCost > 0 && (
+				{/* Right side - Stats */}
+				<div className="flex items-center gap-6">
+					{/* Total Tokens */}
 					<div className="flex items-center gap-2 text-muted-foreground">
-						<DollarSign className="w-4 h-4" />
+						<Hash className="w-4 h-4" />
 						<span className="text-foreground font-medium">
-							${estimatedCost.toFixed(4)}
+							{formatNumber(totalTokens)}
 						</span>
 					</div>
-				)}
+
+					{/* Estimated Cost */}
+					{estimatedCost > 0 && (
+						<div className="flex items-center gap-2 text-muted-foreground">
+							<DollarSign className="w-4 h-4" />
+							<span className="text-foreground font-medium">
+								${estimatedCost.toFixed(4)}
+							</span>
+						</div>
+					)}
+				</div>
 			</div>
 		</div>
 	);
