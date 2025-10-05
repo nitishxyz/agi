@@ -39,7 +39,7 @@ export const UserMessageGroup = memo(
 		return (
 			<div className="relative pb-8 pt-6">
 				<div className="flex gap-4 justify-end">
-					<div className="inline-block">
+					<div className="flex flex-col items-end max-w-2xl">
 						<div className="flex items-center gap-2 text-xs text-muted-foreground pb-2 justify-end">
 							<span className="font-medium text-emerald-700 dark:text-emerald-300">
 								You
@@ -49,7 +49,7 @@ export const UserMessageGroup = memo(
 								<span>{formatTime(message.createdAt)}</span>
 							)}
 						</div>
-						<div className="text-sm text-foreground leading-relaxed prose prose-invert prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3 inline-block max-w-2xl">
+						<div className="text-sm text-foreground leading-relaxed prose prose-invert prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3 max-w-full break-words overflow-wrap-anywhere">
 							<ReactMarkdown remarkPlugins={[remarkGfm]}>
 								{content}
 							</ReactMarkdown>
