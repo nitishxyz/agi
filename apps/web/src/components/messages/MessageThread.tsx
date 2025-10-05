@@ -23,6 +23,7 @@ export function MessageThread({
 	const [autoScroll, setAutoScroll] = useState(true);
 	const [showLeanHeader, setShowLeanHeader] = useState(false);
 	const lastScrollHeightRef = useRef(0);
+	const messagesLengthRef = useRef(0);
 
 	// Detect if user has scrolled up manually
 	const handleScroll = () => {
@@ -46,26 +47,33 @@ export function MessageThread({
 		}
 	};
 
+	// Re-enable auto-scroll when messages length changes (new message added)
+	useEffect(() => {
+		if (messages.length > messagesLengthRef.current) {
+			setAutoScroll(true);
+		}
+		messagesLengthRef.current = messages.length;
+	}, [messages.length]);
+
 	// Auto-scroll when messages change AND user hasn't scrolled up
 	useEffect(() => {
 		const container = scrollContainerRef.current;
 		if (!container || !autoScroll) return;
 
-		// Use instant scroll during rapid updates, smooth for new messages
-		const behavior =
-			lastScrollHeightRef.current === container.scrollHeight
-				? 'instant'
-				: 'smooth';
+		// Use requestAnimationFrame to ensure the DOM has updated
+		requestAnimationFrame(() => {
+			if (!bottomRef.current || !container) return;
 
-		bottomRef.current?.scrollIntoView({ behavior: behavior as ScrollBehavior });
-		lastScrollHeightRef.current = container.scrollHeight;
-	}, [autoScroll]);
+			const { scrollHeight } = container;
+			const isNewContent = scrollHeight !== lastScrollHeightRef.current;
 
-	// Force scroll on new message (length change)
-	useEffect(() => {
-		// Re-enable auto-scroll when a new message arrives
-		setAutoScroll(true);
-	}, []);
+			// Use instant scroll during rapid updates, smooth for new messages
+			const behavior = isNewContent ? 'smooth' : 'instant';
+
+			bottomRef.current.scrollIntoView({ behavior: behavior as ScrollBehavior });
+			lastScrollHeightRef.current = scrollHeight;
+		});
+	}, [messages, autoScroll]);
 
 	const scrollToBottom = () => {
 		setAutoScroll(true);
