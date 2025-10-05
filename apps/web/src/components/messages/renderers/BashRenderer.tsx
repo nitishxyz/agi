@@ -11,10 +11,11 @@ export function BashRenderer({
 	onToggle,
 }: RendererProps) {
 	const result = contentJson.result || {};
+	const args = contentJson.args || {};
 	const stdout = String(result.stdout || '');
 	const stderr = String(result.stderr || '');
 	const exitCode = Number(result.exitCode ?? 0);
-	const cwd = String(result.cwd || '');
+	const cmd = String(args.cmd || '');
 	const timeStr = formatDuration(toolDurationMs);
 
 	const hasOutput = stdout.length > 0 || stderr.length > 0;
@@ -24,24 +25,26 @@ export function BashRenderer({
 			<button
 				type="button"
 				onClick={() => hasOutput && onToggle()}
-				className={`flex items-center gap-2 text-muted-foreground transition-colors ${hasOutput ? 'hover:text-foreground' : ''}`}
+				className={`flex items-center gap-2 text-muted-foreground transition-colors w-full min-w-0 ${hasOutput ? 'hover:text-foreground' : ''}`}
 			>
 				{hasOutput &&
 					(isExpanded ? (
-						<ChevronDown className="h-3 w-3" />
+						<ChevronDown className="h-3 w-3 flex-shrink-0" />
 					) : (
-						<ChevronRight className="h-3 w-3" />
+						<ChevronRight className="h-3 w-3 flex-shrink-0" />
 					))}
-				{!hasOutput && <div className="w-3" />}
-				<span className="font-medium">bash</span>
-				<span className="text-muted-foreground/70">·</span>
-				<span className="text-foreground/70 truncate max-w-xs">{cwd}</span>
+				{!hasOutput && <div className="w-3 flex-shrink-0" />}
+				<span className="font-medium flex-shrink-0">bash</span>
+				<span className="text-muted-foreground/70 flex-shrink-0">·</span>
+				<span className="text-foreground/70 truncate min-w-0" title={cmd}>
+					{cmd}
+				</span>
 				<span
-					className={
+					className={`flex-shrink-0 whitespace-nowrap ${
 						exitCode === 0
 							? 'text-emerald-600 dark:text-emerald-400'
 							: 'text-red-600 dark:text-red-400'
-					}
+					}`}
 				>
 					· exit {exitCode} · {timeStr}
 				</span>
