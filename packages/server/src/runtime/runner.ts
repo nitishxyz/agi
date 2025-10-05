@@ -147,20 +147,27 @@ function toErrorPayload(err: unknown): {
 		typeof asObj.responseBody === 'string' &&
 		asObj.responseBody
 	) {
-		message = asObj.responseBody as string;
+		// Try to parse API error message from responseBody
+		try {
+			const parsed = JSON.parse(asObj.responseBody as string);
+			if (parsed.error && typeof parsed.error.message === 'string') {
+				message = parsed.error.message;
+			} else {
+				message = asObj.responseBody as string;
+			}
+		} catch {
+			message = asObj.responseBody as string;
+		}
 	} else if (asObj?.statusCode && (asObj as { url?: unknown }).url) {
 		message = `HTTP ${String(asObj.statusCode)} error at ${String((asObj as { url?: unknown }).url)}`;
 	} else if (asObj?.name) {
 		message = String(asObj.name);
 	} else {
-		try {
-			message = JSON.stringify(err, null, 2);
-		} catch {
-			message = String(err);
-		}
+		// Default: just say "An error occurred" instead of stringifying the whole object
+		message = 'An error occurred';
 	}
 
-	// Extract details
+	// Extract details - store the WHOLE error object here instead of in message
 	const details: Record<string, unknown> = {};
 	if (asObj && typeof asObj === 'object') {
 		for (const key of ['name', 'code', 'status', 'statusCode', 'type']) {
@@ -173,6 +180,9 @@ function toErrorPayload(err: unknown): {
 		if ('responseBody' in asObj) details.responseBody = asObj.responseBody;
 		if ('requestBodyValues' in asObj)
 			details.requestBodyValues = asObj.requestBodyValues;
+		if ('responseHeaders' in asObj)
+			details.responseHeaders = asObj.responseHeaders;
+		if ('data' in asObj) details.data = asObj.data;
 
 		if (asObj.cause) {
 			const c = asObj.cause as Record<string, unknown> | undefined;
@@ -197,14 +207,6 @@ function toErrorPayload(err: unknown): {
 					asObj as { response?: { status?: unknown; statusText?: unknown } }
 				).response?.statusText,
 			};
-		if (
-			(asObj as { data?: unknown })?.data &&
-			typeof (asObj as { data?: unknown }).data === 'object'
-		)
-			details.data = (asObj as { data?: unknown }).data as Record<
-				string,
-				unknown
-			>;
 	}
 
 	return {
