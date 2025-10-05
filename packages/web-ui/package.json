@@ -11,7 +11,8 @@
 	],
 	"scripts": {
 		"build": "bun run build.ts",
-		"prepublishOnly": "bun run build"
+		"prepublishOnly": "bun run build",
+		"typecheck": "tsc --noEmit"
 	},
 	"keywords": [
 		"agi",

@@ -39,6 +39,10 @@ export interface ToolResultData {
 	files?: unknown[];
 	cwd?: string;
 	output?: string;
+	// Additional fields for specific renderers
+	diff?: string; // for GitDiffRenderer
+	summary?: string; // for GitStatusRenderer
+	results?: unknown[]; // for WebSearchRenderer
 }
 
 export interface ContentJson {
@@ -55,11 +59,21 @@ export interface ContentJson {
 			deletions?: number;
 		};
 	};
+	// Additional fields for ErrorRenderer
+	error?: Record<string, unknown>;
+	details?: Record<string, unknown>;
+	message?: string;
+	type?: string;
+	isAborted?: boolean;
 }
 
 export interface RendererProps {
 	contentJson: ContentJson;
-	toolDurationMs?: number | null;
+	toolDurationMs?: number;
 	isExpanded: boolean;
 	onToggle: () => void;
+}
+
+export interface GenericRendererProps extends RendererProps {
+	toolName: string;
 }

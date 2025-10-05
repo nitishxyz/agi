@@ -1,0 +1,11 @@
+{
+	"extends": "//",
+	"linter": {
+		"rules": {
+			"suspicious": {
+				"noExplicitAny": "warn",
+				"noConsole": "off"
+			}
+		}
+	}
+}

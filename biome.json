@@ -1,5 +1,6 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
+	"root": true,
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -15,10 +16,7 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true,
-			"suspicious": {
-				"noUnknownAtRules": "off"
-			}
+			"recommended": true
 		}
 	},
 	"javascript": {
@@ -33,68 +31,5 @@
 				"organizeImports": "off"
 			}
 		}
-	},
-	"overrides": [
-		{
-			"includes": ["apps/web/src/App.tsx"],
-			"linter": {
-				"rules": {
-					"correctness": {
-						"useExhaustiveDependencies": "off"
-					}
-				}
-			}
-		},
-		{
-			"includes": ["apps/web/src/components/chat/ChatInput.tsx"],
-			"linter": {
-				"rules": {
-					"correctness": {
-						"useExhaustiveDependencies": "off"
-					}
-				}
-			}
-		},
-		{
-			"includes": ["apps/web/src/components/chat/ConfigModal.tsx"],
-			"linter": {
-				"rules": {
-					"a11y": {
-						"useSemanticElements": "warn"
-					},
-					"correctness": {
-						"useUniqueElementIds": "warn"
-					}
-				}
-			}
-		},
-		{
-			"includes": [
-				"apps/web/src/hooks/useMessages.ts",
-				"apps/web/src/main.tsx",
-				"packages/sdk/src/tools/loader.ts"
-			],
-			"linter": {
-				"rules": {
-					"style": {
-						"noNonNullAssertion": "warn"
-					}
-				}
-			}
-		},
-		{
-			"includes": [
-				"apps/web/src/lib/config.ts",
-				"examples/basic-cli-bot/index.ts",
-				"examples/git-commit-helper/index.ts"
-			],
-			"linter": {
-				"rules": {
-					"suspicious": {
-						"noExplicitAny": "warn"
-					}
-				}
-			}
-		}
-	]
+	}
 }

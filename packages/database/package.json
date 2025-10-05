@@ -18,7 +18,8 @@
 	"scripts": {
 		"dev": "bun run src/index.ts",
 		"test": "bun test",
-		"db:generate": "drizzle-kit generate --config=drizzle.config.ts"
+		"db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@agi-cli/config": "workspace:*",

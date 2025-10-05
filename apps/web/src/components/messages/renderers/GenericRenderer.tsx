@@ -1,13 +1,13 @@
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import type { RendererProps } from './types';
+import type { GenericRendererProps } from './types';
 import { formatDuration } from './utils';
 
 export function GenericRenderer({
 	toolName,
 	contentJson,
 	toolDurationMs,
-}: RendererProps) {
+}: GenericRendererProps) {
 	const result = contentJson.result;
 	const timeStr = formatDuration(toolDurationMs);
 

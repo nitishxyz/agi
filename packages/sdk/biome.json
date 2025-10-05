@@ -1,0 +1,15 @@
+{
+	"extends": "//",
+	"overrides": [
+		{
+			"includes": ["src/tools/loader.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noNonNullAssertion": "warn"
+					}
+				}
+			}
+		}
+	]
+}

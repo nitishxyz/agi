@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { ContentJson } from './types';
@@ -84,7 +85,7 @@ export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
 		}
 	}
 
-	const renderValue = (value: unknown): JSX.Element => {
+	const renderValue = (value: unknown): React.JSX.Element => {
 		if (value === null || value === undefined) {
 			return <span className="text-muted-foreground">null</span>;
 		}

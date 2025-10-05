@@ -17,7 +17,8 @@
 	},
 	"scripts": {
 		"dev": "bun run src/index.ts",
-		"test": "bun test"
+		"test": "bun test",
+		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

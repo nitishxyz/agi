@@ -40,7 +40,8 @@
 		"build:darwin-x64": "bun run prebuild && mkdir -p dist && bun build --compile --minify --target=bun-darwin-x64 ./index.ts --outfile dist/agi-darwin-x64",
 		"build:linux-x64": "bun run prebuild && mkdir -p dist && bun build --compile --minify --target=bun-linux-x64 ./index.ts --outfile dist/agi-linux-x64",
 		"build:linux-arm64": "bun run prebuild && mkdir -p dist && bun build --compile --minify --target=bun-linux-arm64 ./index.ts --outfile dist/agi-linux-arm64",
-		"prepublishOnly": "bun run build"
+		"prepublishOnly": "bun run build",
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@agi-cli/sdk": "workspace:*",
