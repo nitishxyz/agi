@@ -25,13 +25,12 @@ export function AppLayout({
 	return (
 		<div className="h-screen flex flex-col bg-background">
 			<Header
-				onNewSession={onNewSession}
 				onToggleTheme={onToggleTheme}
 				theme={theme}
 			/>
 			<div className="flex-1 flex overflow-hidden">
 				{/* Left sidebar - Sessions */}
-				<Sidebar>{sidebar}</Sidebar>
+				<Sidebar onNewSession={onNewSession}>{sidebar}</Sidebar>
 
 				{/* Main content area */}
 				<main className="flex-1 flex flex-col overflow-hidden relative">

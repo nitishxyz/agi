@@ -1,4 +1,4 @@
-import { ChevronLeft, GitBranch } from 'lucide-react';
+import { ChevronRight, GitBranch } from 'lucide-react';
 import { useGitStore } from '../../stores/gitStore';
 import { useGitStatus } from '../../hooks/useGit';
 import { Button } from '../ui/Button';
@@ -39,7 +39,7 @@ export function GitSidebar() {
 					onClick={collapseSidebar}
 					title="Close sidebar"
 				>
-					<ChevronLeft className="w-4 h-4" />
+					<ChevronRight className="w-4 h-4" />
 				</Button>
 			</div>
 

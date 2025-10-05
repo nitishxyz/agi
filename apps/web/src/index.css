@@ -125,6 +125,13 @@ code {
 	color: var(--code-foreground);
 }
 
+/* Remove button outline and focus ring on click/focus */
+button:focus,
+button:focus-visible {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
 /* Hide scrollbar utility */
 .scrollbar-hide {
 	-ms-overflow-style: none; /* IE and Edge */
