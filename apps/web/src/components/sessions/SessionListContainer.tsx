@@ -44,7 +44,7 @@ export const SessionListContainer = memo(function SessionListContainer({
 			{sessionSnapshot.map((session) => {
 				const fullSession = sessions.find((s) => s.id === session.id);
 				if (!fullSession) return null;
-				
+
 				return (
 					<SessionItem
 						key={session.id}

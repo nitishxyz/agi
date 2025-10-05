@@ -13,7 +13,7 @@ export const MessageThreadContainer = memo(function MessageThreadContainer({
 }: MessageThreadContainerProps) {
 	const { data: messages = [], isLoading } = useMessages(sessionId);
 	const { data: sessions = [] } = useSessions();
-	
+
 	useSessionStream(sessionId);
 
 	const session = useMemo(
@@ -22,7 +22,8 @@ export const MessageThreadContainer = memo(function MessageThreadContainer({
 	);
 
 	const isGenerating = useMemo(
-		() => messages.some((m) => m.role === 'assistant' && m.status === 'pending'),
+		() =>
+			messages.some((m) => m.role === 'assistant' && m.status === 'pending'),
 		[messages],
 	);
 

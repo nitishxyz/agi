@@ -37,10 +37,10 @@ export const Sidebar = memo(function Sidebar({
 				</div>
 
 				{/* Spacer to push footer to bottom - clickable to expand */}
-				<div 
-					className="flex-1 cursor-pointer hover:bg-muted/50 transition-colors" 
+				<div
+					className="flex-1 cursor-pointer hover:bg-muted/50 transition-colors"
 					onClick={!isDiffOpen ? toggleCollapse : undefined}
-					title={!isDiffOpen ? "Expand sidebar" : undefined}
+					title={!isDiffOpen ? 'Expand sidebar' : undefined}
 				/>
 
 				{/* Footer with Expand button */}

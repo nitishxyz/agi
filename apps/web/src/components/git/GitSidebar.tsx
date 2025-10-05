@@ -97,7 +97,9 @@ export const GitSidebar = memo(function GitSidebar() {
 						className="h-6 w-6 transition-transform duration-200 hover:scale-110"
 						disabled={isLoading}
 					>
-						<RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+						<RefreshCw
+							className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`}
+						/>
 					</Button>
 				</div>
 			)}
