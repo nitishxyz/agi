@@ -1,37 +1,48 @@
-# AGI CLI Docs
+# AGI CLI Documentation
 
 [← Back to README](../README.md)
 
-Welcome to the AGI CLI documentation. Use the sections below to get started, configure your project, and dive deeper into agents, tools, and the API.
+Welcome to the AGI CLI documentation. This index provides an overview of all available documentation.
 
-## Guides
+## 📖 Table of Contents
 
-- Getting Started: installation, quick start, rendering — see [getting-started.md](./getting-started.md)
-- Usage: core commands, server mode — see [usage.md](./usage.md)
-- Configuration: `.agi` folder and files — see [configuration.md](./configuration.md)
-- Agents & Tools: built-ins and capabilities — see [agents-tools.md](./agents-tools.md)
-- Customization: custom commands and tools — see [customization.md](./customization.md)
-- Environment: variables and flags — see [environment.md](./environment.md)
-- API: REST endpoints and SSE events — see [api.md](./api.md)
-- Development: structure, workflow, testing, DB — see [development.md](./development.md)
-- Contributing: guidelines and commits — see [contributing.md](./contributing.md)
-- Troubleshooting: common fixes — see [troubleshooting.md](./troubleshooting.md)
-- License — see [license.md](./license.md)
+### Getting Started
+- **[Installation & Quick Start](getting-started.md)** - Install AGI and get running
+- **[Usage Guide](usage.md)** - Core commands and workflows
+- **[Configuration](configuration.md)** - Settings and project configuration
 
-## Architecture & Publishing
+### Features & Usage
+- **[Agents & Tools](agents-tools.md)** - Built-in agents and tools reference
+- **[Customization](customization.md)** - Create custom commands and tools
+- **[Environment](environment.md)** - Environment variables and flags
+- **[API Reference](api.md)** - REST endpoints and SSE events
 
-- **Architecture**: Monorepo structure and packages — see [../ARCHITECTURE.md](../ARCHITECTURE.md)
-- **Publishing**: Release workflow and version management — see [../PUBLISHING.md](../PUBLISHING.md)
-- **SDK**: Using AGI in your own projects — see [../packages/sdk/README.md](../packages/sdk/README.md)
+### Architecture & Development
+- **[Architecture](architecture.md)** - Monorepo structure and design principles
+- **[Development](development.md)** - Development workflow, structure, testing
+- **[Publishing](publishing.md)** - Release workflow and version management
+- **[Contributing](../AGENTS.md)** - Contribution guidelines for AI agents and humans
 
-## Deep Dives
+### Advanced Topics
+- **[AI SDK v5 Integration](ai-sdk-v5.md)** - How AGI uses AI SDK v5
+- **[Streaming Architecture](streaming-overhaul.md)** - Real-time streaming implementation
+- **[Tools & Artifacts](tools-and-artifacts.md)** - Tool system and artifact handling
+- **[File Editing Solution](file-editing-solution.md)** - File editing capabilities
+- **[Auth & Config Architecture](auth-config-architecture.md)** - Authentication and configuration design
+- **[SDK Server Standalone Usage](sdk-server-standalone-usage.md)** - Using SDK and server independently
 
-- AI SDK v5 integration — see [ai-sdk-v5.md](./ai-sdk-v5.md)
-- Streaming architecture — see [streaming-overhaul.md](./streaming-overhaul.md)
-- Tools and artifacts — see [tools-and-artifacts.md](./tools-and-artifacts.md)
-- AGI planning approach — see [agi-plan.md](./agi-plan.md)
+### Planning & Features
+- **[AGI Planning Approach](agi-plan.md)** - Project planning philosophy
+- **[Feature Summary](FEATURE_SUMMARY.md)** - Complete feature list
+- **[Web UI Embedding](web-ui-embedding.md)** - Embedding the web UI
+- **[Web UI Enhancements Plan](web-ui-enhancements-plan.md)** - Planned web UI improvements
+- **[Web App Plan](webapp-plan.md)** - Web application roadmap
 
-## Quick Reference
+### Reference
+- **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
+- **[License](license.md)** - MIT License information
+
+## 🚀 Quick Reference
 
 ### Installation
 
@@ -55,7 +66,7 @@ agi setup                    # Configure providers
 agi "your question"          # Ask a question
 agi --agent build "task"     # Use specific agent
 agi --last "follow up"       # Continue last session
-agi server                   # Start HTTP server
+agi serve                    # Start HTTP server
 agi agents                   # List agents
 agi models                   # List models
 agi sessions                 # List sessions
@@ -67,16 +78,18 @@ agi sessions                 # List sessions
 agi/
 ├── apps/
 │   ├── cli/          # Main CLI application
-│   └── install/      # npm installer
+│   └── web/          # Web interface
 ├── packages/
 │   ├── auth/         # Authentication
 │   ├── config/       # Configuration
 │   ├── database/     # SQLite + Drizzle
+│   ├── install/      # npm installer
 │   ├── prompts/      # System prompts
 │   ├── providers/    # Provider catalog
 │   ├── sdk/          # Core SDK
-│   └── server/       # HTTP server
-└── docs/             # Documentation
+│   ├── server/       # HTTP server
+│   └── web-ui/       # Web UI components
+└── docs/             # Documentation (you are here)
 ```
 
 ### SDK Usage
@@ -93,6 +106,61 @@ const result = await generateText({
   tools: Object.fromEntries(tools.map(t => [t.name, t.tool])),
   maxSteps: 10
 });
+
+console.log(result.text);
 ```
 
-See [SDK README](../packages/sdk/README.md) for full documentation.
+**Full SDK documentation:** [../packages/sdk/README.md](../packages/sdk/README.md)
+
+## 📚 Documentation by Topic
+
+### For Users
+
+Start here if you're using AGI CLI:
+
+1. [Getting Started](getting-started.md) - Installation and first steps
+2. [Usage Guide](usage.md) - Basic commands
+3. [Configuration](configuration.md) - Customize your setup
+4. [Agents & Tools](agents-tools.md) - What AGI can do
+5. [Troubleshooting](troubleshooting.md) - When things go wrong
+
+### For Developers
+
+Start here if you're building with AGI SDK:
+
+1. [SDK README](../packages/sdk/README.md) - SDK overview
+2. [API Reference](api.md) - HTTP API documentation
+3. [SDK Server Standalone Usage](sdk-server-standalone-usage.md) - Embed AGI
+4. [Architecture](architecture.md) - System design
+
+### For Contributors
+
+Start here if you're contributing to AGI:
+
+1. [Contributing Guidelines](../AGENTS.md) - How to contribute
+2. [Development](development.md) - Development workflow
+3. [Architecture](architecture.md) - Codebase structure
+4. [Publishing](publishing.md) - Release process
+
+## 🔗 External Resources
+
+- **GitHub Repository**: https://github.com/nitishxyz/agi
+- **Issue Tracker**: https://github.com/nitishxyz/agi/issues
+- **npm Package**: https://www.npmjs.com/package/@agi-cli/install
+- **SDK Package**: https://www.npmjs.com/package/@agi-cli/sdk
+
+## 📝 Documentation Standards
+
+This documentation follows these principles:
+
+- **Clarity**: Clear, concise language
+- **Examples**: Code examples for all features
+- **Completeness**: Cover all functionality
+- **Accuracy**: Keep docs in sync with code
+- **Organization**: Logical structure with cross-links
+
+If you find errors or areas for improvement, please [contribute](../AGENTS.md)!
+
+---
+
+**Last updated**: Documentation restructured with modular organization
