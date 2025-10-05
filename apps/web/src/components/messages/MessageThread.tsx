@@ -56,6 +56,7 @@ export function MessageThread({
 	}, [messages.length]);
 
 	// Auto-scroll when messages change AND user hasn't scrolled up
+	// biome-ignore lint/correctness/useExhaustiveDependencies: messages dependency is required for streaming content updates
 	useEffect(() => {
 		const container = scrollContainerRef.current;
 		if (!container || !autoScroll) return;
@@ -70,7 +71,9 @@ export function MessageThread({
 			// Use instant scroll during rapid updates, smooth for new messages
 			const behavior = isNewContent ? 'smooth' : 'instant';
 
-			bottomRef.current.scrollIntoView({ behavior: behavior as ScrollBehavior });
+			bottomRef.current.scrollIntoView({
+				behavior: behavior as ScrollBehavior,
+			});
 			lastScrollHeightRef.current = scrollHeight;
 		});
 	}, [messages, autoScroll]);
