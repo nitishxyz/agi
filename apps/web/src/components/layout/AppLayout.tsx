@@ -24,10 +24,7 @@ export function AppLayout({
 }: AppLayoutProps) {
 	return (
 		<div className="h-screen flex flex-col bg-background">
-			<Header
-				onToggleTheme={onToggleTheme}
-				theme={theme}
-			/>
+			<Header onToggleTheme={onToggleTheme} theme={theme} />
 			<div className="flex-1 flex overflow-hidden">
 				{/* Left sidebar - Sessions */}
 				<Sidebar onNewSession={onNewSession}>{sidebar}</Sidebar>

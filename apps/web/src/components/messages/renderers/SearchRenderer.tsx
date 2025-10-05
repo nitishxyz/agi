@@ -37,7 +37,7 @@ export function SearchRenderer({
 						const m = match as { file?: string; line?: number; text?: string };
 						return (
 							<div
-								key={i}
+								key={`${m.file}-${m.line}-${i}`}
 								className="text-xs font-mono bg-card/60 border border-border rounded px-2 py-1"
 							>
 								<div className="text-blue-600 dark:text-blue-400 truncate">

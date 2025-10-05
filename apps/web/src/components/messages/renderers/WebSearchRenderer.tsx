@@ -70,7 +70,7 @@ export function WebSearchRenderer({
 					<div className="mt-2 ml-5 space-y-2 max-h-96 overflow-y-auto">
 						{searchResults.map((item, i) => (
 							<div
-								key={i}
+								key={`${item.url}-${i}`}
 								className="bg-card/60 border border-border rounded-lg p-3 space-y-1"
 							>
 								<a

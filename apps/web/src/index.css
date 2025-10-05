@@ -128,8 +128,8 @@ code {
 /* Remove button outline and focus ring on click/focus */
 button:focus,
 button:focus-visible {
-	outline: none !important;
-	box-shadow: none !important;
+	outline: none;
+	box-shadow: none;
 }
 
 /* Hide scrollbar utility */

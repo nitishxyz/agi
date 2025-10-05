@@ -308,7 +308,9 @@ export const MessagePartItem = memo(
 						contentJson = {};
 					}
 				} catch {
-					contentJson = { message: part.content || 'Unknown error' } as ContentJson;
+					contentJson = {
+						message: part.content || 'Unknown error',
+					} as ContentJson;
 				}
 
 				return (

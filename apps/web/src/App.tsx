@@ -110,9 +110,9 @@ function AppContent() {
 							Loading messages...
 						</div>
 					) : (
-						<MessageThread 
-							messages={messages} 
-							session={activeSession} 
+						<MessageThread
+							messages={messages}
+							session={activeSession}
 							isGenerating={isGenerating}
 						/>
 					)}

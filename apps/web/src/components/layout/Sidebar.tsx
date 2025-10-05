@@ -89,7 +89,10 @@ export function Sidebar({ children, onNewSession }: SidebarProps) {
 						strokeLinecap="round"
 						strokeLinejoin="round"
 						className="transition-transform duration-300"
+						role="img"
+						aria-label="Collapse sidebar"
 					>
+						<title>Collapse sidebar</title>
 						<path d="M15 18l-6-6 6-6" />
 					</svg>
 				</Button>

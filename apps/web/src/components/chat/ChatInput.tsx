@@ -9,11 +9,7 @@ interface ChatInputProps {
 	onConfigClick?: () => void;
 }
 
-export function ChatInput({
-	onSend,
-	disabled,
-	onConfigClick,
-}: ChatInputProps) {
+export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 	const [message, setMessage] = useState('');
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 

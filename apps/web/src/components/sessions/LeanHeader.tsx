@@ -9,7 +9,11 @@ interface LeanHeaderProps {
 	isGenerating?: boolean;
 }
 
-export function LeanHeader({ session, isVisible, isGenerating }: LeanHeaderProps) {
+export function LeanHeader({
+	session,
+	isVisible,
+	isGenerating,
+}: LeanHeaderProps) {
 	// Calculate total tokens
 	const totalTokens = useMemo(() => {
 		const input = session.totalInputTokens || 0;

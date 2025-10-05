@@ -38,7 +38,7 @@ export function ListRenderer({
 						const e = entry as { name?: string; isDirectory?: boolean };
 						return (
 							<div
-								key={i}
+								key={`${e.name}-${i}`}
 								className="flex items-center gap-1.5 text-xs font-mono text-foreground/80"
 							>
 								{e.isDirectory ? (

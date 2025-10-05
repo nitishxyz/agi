@@ -28,15 +28,14 @@ export function StopButton({ sessionId, onStop, disabled }: StopButtonProps) {
 
 	return (
 		<button
+			type="button"
 			onClick={handleStop}
 			disabled={disabled || isAborting}
 			className="flex items-center gap-1.5 text-sm text-destructive hover:text-destructive/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 			title="Stop generation"
 		>
 			<StopCircle className="w-4 h-4" />
-			<span className="font-medium">
-				{isAborting ? 'Stopping...' : 'Stop'}
-			</span>
+			<span className="font-medium">{isAborting ? 'Stopping...' : 'Stop'}</span>
 		</button>
 	);
 }
