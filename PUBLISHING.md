@@ -8,7 +8,7 @@ This document describes how to publish the AGI CLI and SDK packages.
 
 npm installer package that downloads the AGI CLI binary.
 
-- **Location:** `apps/install/`
+- **Location:** `packages/install/`
 - **Package name:** `@agi-cli/install`
 - **Purpose:** Simplify global installation via npm/bun
 - **Publishes:** npm only (no binaries)
@@ -34,7 +34,7 @@ git push origin main
 
 **What happens:**
 
-1. Checks install version in `apps/install/package.json`
+1. Checks install version in `packages/install/package.json`
 2. If tag exists, auto-bumps patch version
 3. Updates version across all packages (sync)
 4. Builds binaries for all platforms:
@@ -82,7 +82,7 @@ git push origin v0.1.29
 
 Versions are automatically synchronized across packages by the `scripts/bump-version.ts` script:
 
-- `apps/install/package.json` (installer version - source of truth for publishing)
+- `packages/install/package.json` (installer version - source of truth for publishing)
 - `apps/cli/package.json` (CLI version - kept in sync but not published)
 - `packages/sdk/package.json` (SDK version)
 
@@ -113,9 +113,9 @@ The CI workflow will:
 bun run scripts/bump-version.ts 0.1.29
 
 # Or manually update package.json files
-vim apps/cli/package.json        # Update "version"
-vim apps/install/package.json    # Update "version"
-vim packages/sdk/package.json    # Update "version"
+vim apps/cli/package.json            # Update "version"
+vim packages/install/package.json    # Update "version"
+vim packages/sdk/package.json        # Update "version"
 
 # Commit and tag
 git add .
@@ -193,7 +193,7 @@ bun run build:windows-x64        # Windows x64
 2. **Publish installer:**
 
    ```bash
-   cd apps/install
+   cd packages/install
    bun publish --access public --tag latest
    ```
 
@@ -295,11 +295,13 @@ agi/
 │   │   ├── dist/              # Build output
 │   │   ├── package.json       # CLI version, bin entry
 │   │   └── index.ts          # CLI entry point
-│   └── install/
-│       ├── install.js        # Postinstall script
-│       ├── package.json      # Installer config
-│       └── README.md         # Installer docs
+│   └── web/
+│       └── ...               # Web application
 ├── packages/
+│   ├── install/
+│   │   ├── start.js          # Postinstall script
+│   │   ├── package.json      # Installer config
+│   │   └── README.md         # Installer docs
 │   └── sdk/
 │       ├── src/              # SDK source
 │       └── package.json      # SDK version, exports
@@ -320,7 +322,7 @@ User: npm install -g @agi-cli/install
   ↓
 npm: Download @agi-cli/install package
   ↓
-npm: Run postinstall (apps/install/install.js)
+npm: Run postinstall (packages/install/start.js)
   ↓
 Script: Detect platform (darwin-arm64, linux-x64, etc.)
   ↓

@@ -140,7 +140,7 @@ jobs:
             exit 1
           fi
           TAG="${{ github.event.inputs.tag }}"
-          INSTALL_VERSION=$(jq -r .version apps/install/package.json)
+          INSTALL_VERSION=$(jq -r .version packages/install/package.json)
           SDK_VERSION=$(jq -r .version packages/sdk/package.json)
           WEBUI_VERSION=$(jq -r .version packages/web-ui/package.json)
           
@@ -175,7 +175,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cd apps/install
+          cd packages/install
           # Publish install package
           bun publish --access public --tag latest
 

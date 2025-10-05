@@ -32,7 +32,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          CURRENT_VERSION=$(jq -r .version apps/install/package.json)
+          CURRENT_VERSION=$(jq -r .version packages/install/package.json)
           if git rev-parse "v${CURRENT_VERSION}" >/dev/null 2>&1; then
             echo "Current tag v${CURRENT_VERSION} exists; bumping patch version"
             MAJOR=$(echo "$CURRENT_VERSION" | awk -F. '{print $1}')
@@ -54,8 +54,8 @@ jobs:
             
             echo "Updating install package.json to ${NEW_VERSION}"
             tmpfile=$(mktemp)
-            jq ".version = \"${NEW_VERSION}\"" apps/install/package.json > "$tmpfile"
-            mv "$tmpfile" apps/install/package.json
+            jq ".version = \"${NEW_VERSION}\"" packages/install/package.json > "$tmpfile"
+            mv "$tmpfile" packages/install/package.json
             
             echo "Updating SDK package.json to ${NEW_VERSION}"
             tmpfile=$(mktemp)
@@ -213,7 +213,7 @@ jobs:
       - name: Verify versions match
         shell: bash
         run: |
-          INSTALL_VERSION=$(jq -r .version apps/install/package.json)
+          INSTALL_VERSION=$(jq -r .version packages/install/package.json)
           SDK_VERSION=$(jq -r .version packages/sdk/package.json)
           WEBUI_VERSION=$(jq -r .version packages/web-ui/package.json)
           
@@ -236,7 +236,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cd apps/install
+          cd packages/install
           echo "Publishing @agi-cli/install@${VERSION} to npm..."
           bun publish --access public --tag latest
 

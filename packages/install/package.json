@@ -8,7 +8,7 @@
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/ntishxyz/agi.git",
-		"directory": "apps/install"
+		"directory": "packages/install"
 	},
 	"bugs": {
 		"url": "https://github.com/ntishxyz/agi/issues"
