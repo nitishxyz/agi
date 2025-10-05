@@ -14,7 +14,7 @@ export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
 	// 1. { error: { name, url, statusCode, ... } } - from API errors
 	// 2. { message, type, details: { ... }, isAborted } - from toErrorPayload
 	// 3. { message, ... } - simple errors
-	
+
 	let errorDetails: Record<string, unknown> | undefined;
 	let errorMessage: string | undefined;
 	let errorType: string | undefined;
@@ -30,7 +30,7 @@ export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
 		if (errorDetails.type && typeof errorDetails.type === 'string') {
 			errorType = errorDetails.type;
 		}
-	} 
+	}
 	// Check if we have the toErrorPayload structure
 	else if (contentJson.details && typeof contentJson.details === 'object') {
 		errorDetails = contentJson.details as Record<string, unknown>;
@@ -61,13 +61,22 @@ export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
 
 	// Try to extract and parse API error from responseBody if available
 	let apiError: { type?: string; message?: string } | undefined;
-	if (errorDetails?.responseBody && typeof errorDetails.responseBody === 'string') {
+	if (
+		errorDetails?.responseBody &&
+		typeof errorDetails.responseBody === 'string'
+	) {
 		try {
 			const parsed = JSON.parse(errorDetails.responseBody);
 			if (parsed.error && typeof parsed.error === 'object') {
 				apiError = {
-					type: typeof parsed.error.type === 'string' ? parsed.error.type : undefined,
-					message: typeof parsed.error.message === 'string' ? parsed.error.message : undefined,
+					type:
+						typeof parsed.error.type === 'string'
+							? parsed.error.type
+							: undefined,
+					message:
+						typeof parsed.error.message === 'string'
+							? parsed.error.message
+							: undefined,
 				};
 			}
 		} catch {
@@ -80,7 +89,11 @@ export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
 			return <span className="text-muted-foreground">null</span>;
 		}
 		if (typeof value === 'boolean') {
-			return <span className="text-amber-600 dark:text-amber-400">{String(value)}</span>;
+			return (
+				<span className="text-amber-600 dark:text-amber-400">
+					{String(value)}
+				</span>
+			);
 		}
 		if (typeof value === 'number') {
 			return <span className="text-blue-600 dark:text-blue-400">{value}</span>;
@@ -111,7 +124,14 @@ export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
 		return <span className="text-foreground">{String(value)}</span>;
 	};
 
-	const importantFields = ['name', 'statusCode', 'url', 'model', 'isRetryable', 'cause'];
+	const importantFields = [
+		'name',
+		'statusCode',
+		'url',
+		'model',
+		'isRetryable',
+		'cause',
+	];
 	const renderedFields = new Set<string>();
 
 	return (
@@ -125,10 +145,14 @@ export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
 			{/* Show API error message first if available */}
 			{apiError?.message && (
 				<div className="space-y-1">
-					<div className="font-medium text-red-600 dark:text-red-400">API Error:</div>
+					<div className="font-medium text-red-600 dark:text-red-400">
+						API Error:
+					</div>
 					<div className="text-foreground">{apiError.message}</div>
 					{apiError.type && (
-						<div className="text-xs text-muted-foreground">Type: {apiError.type}</div>
+						<div className="text-xs text-muted-foreground">
+							Type: {apiError.type}
+						</div>
 					)}
 				</div>
 			)}
@@ -136,10 +160,14 @@ export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
 			{/* Show regular error message if no API error */}
 			{!apiError?.message && errorMessage && (
 				<div className="space-y-1">
-					<div className="font-medium text-red-600 dark:text-red-400">Error:</div>
+					<div className="font-medium text-red-600 dark:text-red-400">
+						Error:
+					</div>
 					<div className="text-foreground">{errorMessage}</div>
 					{errorType && (
-						<div className="text-xs text-muted-foreground">Type: {errorType}</div>
+						<div className="text-xs text-muted-foreground">
+							Type: {errorType}
+						</div>
 					)}
 				</div>
 			)}
@@ -194,7 +222,9 @@ export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
 						Debug Info
 					</summary>
 					<pre className="mt-2 p-2 bg-muted/30 rounded overflow-x-auto">
-						<code>{JSON.stringify({ contentJson, errorDetails, apiError }, null, 2)}</code>
+						<code>
+							{JSON.stringify({ contentJson, errorDetails, apiError }, null, 2)}
+						</code>
 					</pre>
 				</details>
 			)}

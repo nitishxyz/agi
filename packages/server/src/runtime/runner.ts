@@ -22,7 +22,10 @@ import {
 	dequeueJob,
 	cleanupSession,
 } from './session-queue.ts';
-import { setupToolContext, type RunnerToolContext } from './tool-context-setup.ts';
+import {
+	setupToolContext,
+	type RunnerToolContext,
+} from './tool-context-setup.ts';
 import {
 	updateSessionTokens,
 	completeAssistantMessage,
@@ -235,8 +238,7 @@ async function runAssistant(opts: RunOpts) {
 	const onFinish = createFinishHandler(
 		opts,
 		db,
-		() =>
-			ensureFinishToolCalled(finishObserved, toolset, sharedCtx, stepIndex),
+		() => ensureFinishToolCalled(finishObserved, toolset, sharedCtx, stepIndex),
 		updateSessionTokens,
 		completeAssistantMessage,
 	);
