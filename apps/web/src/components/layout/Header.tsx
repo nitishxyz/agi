@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '../ui/Button';
 import type { Theme } from '../../hooks/useTheme';
@@ -7,7 +8,10 @@ interface HeaderProps {
 	onToggleTheme: () => void;
 }
 
-export function Header({ theme, onToggleTheme }: HeaderProps) {
+export const Header = memo(function Header({
+	theme,
+	onToggleTheme,
+}: HeaderProps) {
 	return (
 		<header className="h-14 border-b border-border bg-background px-4 flex items-center justify-between">
 			<h1 className="text-lg font-semibold text-foreground">AGI</h1>
@@ -28,4 +32,4 @@ export function Header({ theme, onToggleTheme }: HeaderProps) {
 			</div>
 		</header>
 	);
-}
+});

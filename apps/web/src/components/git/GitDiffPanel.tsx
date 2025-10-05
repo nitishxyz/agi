@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import { X } from 'lucide-react';
 import { useGitStore } from '../../stores/gitStore';
 import { useSidebarStore } from '../../stores/sidebarStore';
@@ -6,11 +6,21 @@ import { useGitDiff } from '../../hooks/useGit';
 import { Button } from '../ui/Button';
 import { GitDiffViewer } from './GitDiffViewer';
 
-export function GitDiffPanel() {
-	const { isDiffOpen, selectedFile, selectedFileStaged, closeDiff } =
-		useGitStore();
-	const { wasCollapsedBeforeDiff, setWasCollapsedBeforeDiff, setCollapsed } =
-		useSidebarStore();
+export const GitDiffPanel = memo(function GitDiffPanel() {
+	// Use selectors to only subscribe to needed state
+	const isDiffOpen = useGitStore((state) => state.isDiffOpen);
+	const selectedFile = useGitStore((state) => state.selectedFile);
+	const selectedFileStaged = useGitStore((state) => state.selectedFileStaged);
+	const closeDiff = useGitStore((state) => state.closeDiff);
+
+	const wasCollapsedBeforeDiff = useSidebarStore(
+		(state) => state.wasCollapsedBeforeDiff,
+	);
+	const setWasCollapsedBeforeDiff = useSidebarStore(
+		(state) => state.setWasCollapsedBeforeDiff,
+	);
+	const setCollapsed = useSidebarStore((state) => state.setCollapsed);
+
 	const { data: diff, isLoading } = useGitDiff(
 		selectedFile,
 		selectedFileStaged,
@@ -115,4 +125,4 @@ export function GitDiffPanel() {
 			</div>
 		</div>
 	);
-}
+});

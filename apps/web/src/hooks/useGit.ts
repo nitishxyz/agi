@@ -9,6 +9,7 @@ export function useGitStatus() {
 		queryKey: ['git', 'status'],
 		queryFn: () => apiClient.getGitStatus(),
 		// Only poll when sidebar is expanded to reduce unnecessary requests
+		// Disabled during active generation to prevent interference
 		refetchInterval: isExpanded ? 5000 : false, // Poll every 5 seconds when expanded
 		retry: 1,
 		// Keep data fresh but don't spam the server

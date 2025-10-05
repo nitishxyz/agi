@@ -1,11 +1,14 @@
+import { memo } from 'react';
 import { ChevronRight, GitBranch } from 'lucide-react';
 import { useGitStore } from '../../stores/gitStore';
 import { useGitStatus } from '../../hooks/useGit';
 import { Button } from '../ui/Button';
 import { GitFileList } from './GitFileList';
 
-export function GitSidebar() {
-	const { isExpanded, collapseSidebar } = useGitStore();
+export const GitSidebar = memo(function GitSidebar() {
+	// Use selectors to only subscribe to needed state
+	const isExpanded = useGitStore((state) => state.isExpanded);
+	const collapseSidebar = useGitStore((state) => state.collapseSidebar);
 	const { data: status, isLoading } = useGitStatus();
 
 	if (!isExpanded) return null;
@@ -73,4 +76,4 @@ export function GitSidebar() {
 			)}
 		</div>
 	);
-}
+});

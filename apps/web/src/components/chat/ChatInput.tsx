@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import type { KeyboardEvent, ChangeEvent } from 'react';
 import { ArrowUp, MoreVertical } from 'lucide-react';
 import { Textarea } from '../ui/Textarea';
@@ -9,7 +9,11 @@ interface ChatInputProps {
 	onConfigClick?: () => void;
 }
 
-export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
+export const ChatInput = memo(function ChatInput({
+	onSend,
+	disabled,
+	onConfigClick,
+}: ChatInputProps) {
 	const [message, setMessage] = useState('');
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -32,7 +36,7 @@ export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 		adjustTextareaHeight();
 	}, [adjustTextareaHeight, message]);
 
-	const handleSend = () => {
+	const handleSend = useCallback(() => {
 		if (message.trim() && !disabled) {
 			onSend(message);
 			setMessage('');
@@ -42,18 +46,21 @@ export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 			}
 			textareaRef.current?.focus();
 		}
-	};
+	}, [message, disabled, onSend]);
 
-	const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+	const handleChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
 		setMessage(e.target.value);
-	};
+	}, []);
 
-	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-		if (e.key === 'Enter' && !e.shiftKey) {
-			e.preventDefault();
-			handleSend();
-		}
-	};
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent<HTMLTextAreaElement>) => {
+			if (e.key === 'Enter' && !e.shiftKey) {
+				e.preventDefault();
+				handleSend();
+			}
+		},
+		[handleSend],
+	);
 
 	return (
 		<div className="absolute bottom-0 left-0 right-0 pt-16 pb-8 px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20">
@@ -95,4 +102,4 @@ export function ChatInput({ onSend, disabled, onConfigClick }: ChatInputProps) {
 			</div>
 		</div>
 	);
-}
+});

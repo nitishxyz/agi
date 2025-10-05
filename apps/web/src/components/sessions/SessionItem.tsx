@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { MessageSquare } from 'lucide-react';
 import type { Session } from '../../types/api';
 
@@ -7,7 +8,11 @@ interface SessionItemProps {
 	onClick: () => void;
 }
 
-export function SessionItem({ session, isActive, onClick }: SessionItemProps) {
+export const SessionItem = memo(function SessionItem({
+	session,
+	isActive,
+	onClick,
+}: SessionItemProps) {
 	const formatDate = (timestamp: number) => {
 		const date = new Date(timestamp);
 		const now = new Date();
@@ -55,4 +60,4 @@ export function SessionItem({ session, isActive, onClick }: SessionItemProps) {
 			</div>
 		</button>
 	);
-}
+});

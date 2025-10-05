@@ -8,6 +8,7 @@ export function useSessionStream(sessionId: string | undefined) {
 	const queryClient = useQueryClient();
 	const clientRef = useRef<SSEClient | null>(null);
 	const assistantMessageIdRef = useRef<string | null>(null);
+	const lastInvalidationRef = useRef<number>(0);
 
 	useEffect(() => {
 		console.log('[useSessionStream] Hook called with sessionId:', sessionId);
@@ -280,6 +281,18 @@ export function useSessionStream(sessionId: string | undefined) {
 			);
 		};
 
+		// Throttle invalidations to prevent excessive re-renders
+		// Only invalidate at most once every 500ms during streaming
+		const throttledInvalidate = () => {
+			const now = Date.now();
+			if (now - lastInvalidationRef.current < 500) {
+				return; // Skip if we invalidated less than 500ms ago
+			}
+			lastInvalidationRef.current = now;
+			console.log('[useSessionStream] Invalidating messages query (throttled)');
+			queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+		};
+
 		const invalidatingEvents = new Set([
 			'message.completed',
 			'tool.result',
@@ -344,8 +357,8 @@ export function useSessionStream(sessionId: string | undefined) {
 			}
 
 			if (invalidatingEvents.has(event.type)) {
-				console.log('[useSessionStream] Invalidating messages query');
-				queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+				// Use throttled invalidation instead of immediate
+				throttledInvalidate();
 			}
 		});
 

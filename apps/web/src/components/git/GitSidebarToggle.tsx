@@ -1,9 +1,12 @@
+import { memo } from 'react';
 import { GitBranch } from 'lucide-react';
 import { useGitStore } from '../../stores/gitStore';
 import { useGitStatus } from '../../hooks/useGit';
 
-export function GitSidebarToggle() {
-	const { isExpanded, toggleSidebar } = useGitStore();
+export const GitSidebarToggle = memo(function GitSidebarToggle() {
+	// Use selectors to only subscribe to needed state
+	const isExpanded = useGitStore((state) => state.isExpanded);
+	const toggleSidebar = useGitStore((state) => state.toggleSidebar);
 	const { data: status } = useGitStatus();
 
 	if (isExpanded) return null;
@@ -30,4 +33,4 @@ export function GitSidebarToggle() {
 			</button>
 		</div>
 	);
-}
+});

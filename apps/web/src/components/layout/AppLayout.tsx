@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { ReactNode } from 'react';
 import type { Theme } from '../../hooks/useTheme';
 import { Header } from './Header';
@@ -15,7 +16,7 @@ interface AppLayoutProps {
 	onToggleTheme: () => void;
 }
 
-export function AppLayout({
+export const AppLayout = memo(function AppLayout({
 	sidebar,
 	children,
 	onNewSession,
@@ -45,4 +46,4 @@ export function AppLayout({
 			<GitCommitModal />
 		</div>
 	);
-}
+});

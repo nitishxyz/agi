@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronRight, Plus } from 'lucide-react';
 import { useGitStore } from '../../stores/gitStore';
@@ -9,9 +10,14 @@ interface SidebarProps {
 	onNewSession?: () => void;
 }
 
-export function Sidebar({ children, onNewSession }: SidebarProps) {
+export const Sidebar = memo(function Sidebar({
+	children,
+	onNewSession,
+}: SidebarProps) {
+	// Use selectors to subscribe only to specific state slices
 	const isDiffOpen = useGitStore((state) => state.isDiffOpen);
-	const { isCollapsed, toggleCollapse } = useSidebarStore();
+	const isCollapsed = useSidebarStore((state) => state.isCollapsed);
+	const toggleCollapse = useSidebarStore((state) => state.toggleCollapse);
 
 	// When collapsed (including auto-collapse from diff), show minimal sidebar with expand button in footer
 	if (isCollapsed) {
@@ -99,4 +105,4 @@ export function Sidebar({ children, onNewSession }: SidebarProps) {
 			</div>
 		</aside>
 	);
-}
+});

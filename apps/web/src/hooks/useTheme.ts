@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -36,11 +36,16 @@ export function useTheme() {
 		}
 	}, [theme]);
 
-	const toggleTheme = () => {
+	// Memoize toggleTheme to prevent creating new function reference on every render
+	const toggleTheme = useCallback(() => {
 		setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-	};
+	}, []);
 
-	return { theme, setTheme, toggleTheme } as const;
+	// Return a stable object reference
+	return useMemo(
+		() => ({ theme, setTheme, toggleTheme }),
+		[theme, toggleTheme],
+	);
 }
 
 export type { Theme };

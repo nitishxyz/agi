@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, memo } from 'react';
 import { ArrowDown } from 'lucide-react';
 import type { Message, Session } from '../../types/api';
 import { AssistantMessageGroup } from './AssistantMessageGroup';
@@ -12,7 +12,7 @@ interface MessageThreadProps {
 	isGenerating?: boolean;
 }
 
-export function MessageThread({
+export const MessageThread = memo(function MessageThread({
 	messages,
 	session,
 	isGenerating,
@@ -172,4 +172,4 @@ export function MessageThread({
 			)}
 		</div>
 	);
-}
+});
