@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { extname } from 'node:path';
 import { z } from 'zod';
-import { generateText, resolveModel } from '@agi-cli/sdk';
+import { generateText, resolveModel } from '@agi-cli/core';
 import { loadConfig } from '@agi-cli/config';
 
 const execFileAsync = promisify(execFile);

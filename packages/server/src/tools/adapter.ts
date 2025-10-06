@@ -2,7 +2,7 @@ import type { Tool } from 'ai';
 import { messageParts, sessions } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish } from '../events/bus.ts';
-import type { DiscoveredTool } from '@agi-cli/sdk';
+import type { DiscoveredTool } from '@agi-cli/core';
 import { getCwd, setCwd, joinRelative } from '../runtime/cwd.ts';
 import type { ToolAdapterContext } from '../runtime/tool-context.ts';
 

@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import { resolveModel } from './provider.ts';
 import { resolveAgentConfig } from './agent-registry.ts';
 import { composeSystemPrompt } from './prompt.ts';
-import { discoverProjectTools } from '@agi-cli/sdk';
+import { discoverProjectTools } from '@agi-cli/core';
 import { adaptTools } from '../tools/adapter.ts';
 import { publish, subscribe } from '../events/bus.ts';
 import { debugLog, time } from './debug.ts';

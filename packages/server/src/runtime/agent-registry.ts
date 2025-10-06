@@ -3,7 +3,7 @@ import {
 	getGlobalAgentsDir,
 } from '@agi-cli/config/paths';
 import { debugLog } from './debug.ts';
-import type { ProviderName } from '@agi-cli/sdk';
+import type { ProviderName } from '@agi-cli/core';
 import { catalog } from '@agi-cli/providers/catalog';
 // Embed default agent prompts; only user overrides read from disk.
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports

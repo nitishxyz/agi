@@ -41,3 +41,4 @@ reference
 
 # web-dist (generated build output)
 apps/cli/src/web-dist
+.turbo

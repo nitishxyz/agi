@@ -1,18 +1,7 @@
 {
-	"name": "@agi-cli/sdk",
-	"version": "0.1.49",
-	"description": "AI agent SDK for building intelligent assistants",
-	"author": "ntishxyz",
-	"license": "MIT",
-	"homepage": "https://github.com/ntishxyz/agi#readme",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/ntishxyz/agi.git",
-		"directory": "packages/sdk"
-	},
-	"bugs": {
-		"url": "https://github.com/ntishxyz/agi/issues"
-	},
+	"name": "@agi-cli/core",
+	"version": "0.1.0",
+	"description": "Core primitives for AGI CLI - tools, providers, streaming",
 	"type": "module",
 	"main": "./src/index.ts",
 	"types": "./src/index.ts",
@@ -22,19 +11,14 @@
 			"types": "./src/index.ts"
 		},
 		"./tools/builtin/fs": {
-			"import": "@agi-cli/core/tools/builtin/fs",
-			"types": "@agi-cli/core/tools/builtin/fs"
+			"import": "./src/tools/builtin/fs/index.ts",
+			"types": "./src/tools/builtin/fs/index.ts"
 		},
 		"./tools/builtin/git": {
-			"import": "@agi-cli/core/tools/builtin/git",
-			"types": "@agi-cli/core/tools/builtin/git"
+			"import": "./src/tools/builtin/git.ts",
+			"types": "./src/tools/builtin/git.ts"
 		}
 	},
-	"files": [
-		"src",
-		"README.md",
-		"LICENSE"
-	],
 	"scripts": {
 		"dev": "bun run src/index.ts",
 		"test": "bun test",
@@ -43,11 +27,9 @@
 	"dependencies": {
 		"@agi-cli/auth": "workspace:*",
 		"@agi-cli/config": "workspace:*",
-		"@agi-cli/core": "workspace:*",
 		"@agi-cli/database": "workspace:*",
 		"@agi-cli/providers": "workspace:*",
 		"@agi-cli/prompts": "workspace:*",
-		"@agi-cli/server": "workspace:*",
 		"ai": "^5.0.43",
 		"@ai-sdk/anthropic": "^2.0.16",
 		"@ai-sdk/openai": "^2.0.30",
@@ -60,16 +42,5 @@
 	"devDependencies": {
 		"@types/bun": "latest",
 		"typescript": "^5"
-	},
-	"keywords": [
-		"ai",
-		"sdk",
-		"agents",
-		"tools",
-		"llm",
-		"anthropic",
-		"openai",
-		"development",
-		"assistant"
-	]
+	}
 }

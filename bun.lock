@@ -124,6 +124,29 @@
         "typescript": "^5",
       },
     },
+    "packages/core": {
+      "name": "@agi-cli/core",
+      "version": "0.1.0",
+      "dependencies": {
+        "@agi-cli/auth": "workspace:*",
+        "@agi-cli/config": "workspace:*",
+        "@agi-cli/database": "workspace:*",
+        "@agi-cli/prompts": "workspace:*",
+        "@agi-cli/providers": "workspace:*",
+        "@ai-sdk/anthropic": "^2.0.16",
+        "@ai-sdk/google": "^2.0.14",
+        "@ai-sdk/openai": "^2.0.30",
+        "@ai-sdk/openai-compatible": "^1.0.18",
+        "@openrouter/ai-sdk-provider": "^1.2.0",
+        "ai": "^5.0.43",
+        "hono": "^4.9.7",
+        "zod": "^4.1.8",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
     "packages/database": {
       "name": "@agi-cli/database",
       "version": "0.1.0",
@@ -166,6 +189,7 @@
       "dependencies": {
         "@agi-cli/auth": "workspace:*",
         "@agi-cli/config": "workspace:*",
+        "@agi-cli/core": "workspace:*",
         "@agi-cli/database": "workspace:*",
         "@agi-cli/prompts": "workspace:*",
         "@agi-cli/providers": "workspace:*",
@@ -190,10 +214,10 @@
       "dependencies": {
         "@agi-cli/auth": "workspace:*",
         "@agi-cli/config": "workspace:*",
+        "@agi-cli/core": "workspace:*",
         "@agi-cli/database": "workspace:*",
         "@agi-cli/prompts": "workspace:*",
         "@agi-cli/providers": "workspace:*",
-        "@agi-cli/sdk": "workspace:*",
         "drizzle-orm": "^0.44.5",
         "hono": "^4.9.9",
       },
@@ -221,6 +245,8 @@
     "@agi-cli/cli": ["@agi-cli/cli@workspace:apps/cli"],
 
     "@agi-cli/config": ["@agi-cli/config@workspace:packages/config"],
+
+    "@agi-cli/core": ["@agi-cli/core@workspace:packages/core"],
 
     "@agi-cli/database": ["@agi-cli/database@workspace:packages/database"],
 
