@@ -1,3 +1,4 @@
+import type { LanguageModel } from 'ai';
 import { openai, createOpenAI } from '@ai-sdk/openai';
 import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
@@ -17,44 +18,49 @@ export type ModelConfig = {
 	baseURL?: string;
 };
 
+function toLanguageModel(model: unknown): LanguageModel {
+	return model as LanguageModel;
+}
+
 export async function resolveModel(
 	provider: ProviderName,
 	model: string,
 	config: ModelConfig = {},
-) {
+): Promise<LanguageModel> {
 	if (provider === 'openai') {
 		if (config.apiKey) {
 			const instance = createOpenAI({ apiKey: config.apiKey });
-			return instance(model);
+			return toLanguageModel(instance(model));
 		}
-		return openai(model);
+		return toLanguageModel(openai(model));
 	}
 
 	if (provider === 'anthropic') {
 		if (config.customFetch) {
-			return createAnthropic({
+			const instance = createAnthropic({
 				apiKey: config.apiKey || '',
 				fetch: config.customFetch as typeof fetch,
 			});
+			return toLanguageModel(instance(model));
 		}
 		if (config.apiKey) {
 			const instance = createAnthropic({ apiKey: config.apiKey });
-			return instance(model);
+			return toLanguageModel(instance(model));
 		}
-		return anthropic(model);
+		return toLanguageModel(anthropic(model));
 	}
 
 	if (provider === 'google') {
 		if (config.apiKey) {
 			throw new Error('Google provider config not yet supported in SDK');
 		}
-		return google(model);
+		return toLanguageModel(google(model));
 	}
 
 	if (provider === 'openrouter') {
 		const apiKey = config.apiKey || process.env.OPENROUTER_API_KEY || '';
 		const openrouter = createOpenRouter({ apiKey });
-		return openrouter.chat(model);
+		return toLanguageModel(openrouter.chat(model));
 	}
 
 	if (provider === 'opencode') {
@@ -70,14 +76,14 @@ export async function resolveModel(
 		});
 
 		const id = model.toLowerCase();
-		if (id.includes('claude')) return ocAnthropic(model);
+		if (id.includes('claude')) return toLanguageModel(ocAnthropic(model));
 		if (
 			id.includes('qwen3-coder') ||
 			id.includes('grok-code') ||
 			id.includes('kimi-k2')
 		)
-			return ocCompat(model);
-		return ocOpenAI(model);
+			return toLanguageModel(ocCompat(model));
+		return toLanguageModel(ocOpenAI(model));
 	}
 
 	throw new Error(`Unsupported provider: ${provider}`);

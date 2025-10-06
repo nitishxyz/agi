@@ -1,0 +1,36 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"noEmit": false,
+		"outDir": "./dist-types",
+		"baseUrl": ".",
+		"allowArbitraryExtensions": true,
+		"paths": {
+			"@agi-cli/auth": ["../auth/src/index.ts"],
+			"@agi-cli/auth/*": ["../auth/src/*"],
+			"@agi-cli/config": ["../config/src/index.ts"],
+			"@agi-cli/config/*": ["../config/src/*"],
+			"@agi-cli/core": ["../core/src/index.ts"],
+			"@agi-cli/core/*": ["../core/src/*"],
+			"@agi-cli/database": ["../database/src/index.ts"],
+			"@agi-cli/database/*": ["../database/src/*"],
+			"@agi-cli/database/schema": ["../database/src/schema.ts"],
+			"@agi-cli/web-ui": ["../web-ui/src/index.ts"],
+			"@agi-cli/web-ui/*": ["../web-ui/src/*"],
+			"@agi-cli/prompts": ["../prompts/src/index.ts"],
+			"@agi-cli/prompts/*": ["../prompts/src/*"],
+			"@agi-cli/providers": ["../providers/src/index.ts"],
+			"@agi-cli/providers/*": ["../providers/src/*"],
+			"@agi-cli/server": ["../server/src/index.ts"],
+			"@agi-cli/server/*": ["../server/src/*"],
+			"@agi-cli/types": ["../types/src/index.ts"],
+			"@agi-cli/types/*": ["../types/src/*"],
+			"@agi-cli/sdk": ["./src/index.ts"]
+		}
+	},
+	"include": ["src/**/*", "../database/src/types/sql.d.ts"]
+}

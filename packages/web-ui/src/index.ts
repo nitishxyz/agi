@@ -10,6 +10,15 @@ const EMBEDDED_ASSETS = new Map<
 	{ content: string; contentType: string }
 >();
 
+type MaybePromise<T> = T | Promise<T>;
+
+type ApiBaseUrlOption =
+	| string
+	| URL
+	| ((context: {
+			req: Request;
+	  }) => MaybePromise<string | URL | null | undefined>);
+
 /**
  * Get the absolute path to the web UI assets directory
  */
@@ -59,6 +68,15 @@ export interface ServeWebUIOptions {
 	 * Custom 404 handler
 	 */
 	onNotFound?: (req: Request) => Response | Promise<Response> | null;
+
+	/**
+	 * Override the API base URL the web UI should call.
+	 *
+	 * Defaults to the current request origin. Provide a string/URL for a static
+	 * value or a callback to derive it per request. Relative strings are resolved
+	 * against the incoming request URL.
+	 */
+	apiBaseUrl?: ApiBaseUrlOption;
 }
 
 /**
@@ -75,10 +93,58 @@ export interface ServeWebUIOptions {
  * ```
  */
 export function serveWebUI(options: ServeWebUIOptions = {}) {
-	const { prefix = '/ui', redirectRoot = false, onNotFound = null } = options;
+	const {
+		prefix = '/ui',
+		redirectRoot = false,
+		onNotFound = null,
+		apiBaseUrl,
+	} = options;
 
 	const webUIPath = getWebUIPath();
 	const useEmbedded = EMBEDDED_ASSETS.size > 0;
+
+	const resolveApiBaseUrl = async (req: Request): Promise<string | null> => {
+		let value: string | URL | null | undefined;
+		if (typeof apiBaseUrl === 'function') {
+			value = await apiBaseUrl({ req });
+		} else if (apiBaseUrl !== undefined) {
+			value = apiBaseUrl;
+		}
+
+		if (value == null) {
+			return new URL(req.url).origin;
+		}
+
+		if (value instanceof URL) {
+			return value.toString();
+		}
+
+		const trimmed = value.trim();
+		if (!trimmed) return null;
+
+		try {
+			if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+				return trimmed;
+			}
+			return new URL(trimmed, req.url).toString();
+		} catch {
+			return trimmed;
+		}
+	};
+
+	const injectIndexHtml = (html: string, baseUrl: string | null) => {
+		if (!baseUrl) return html;
+		const script = `<script>(function(){var url=${JSON.stringify(
+			baseUrl,
+		)};window.AGI_SERVER_URL=url;window.__AGI_API_URL__=url;})();</script>`;
+		if (html.includes('</head>')) {
+			return html.replace('</head>', `${script}\n</head>`);
+		}
+		if (html.includes('</body>')) {
+			return html.replace('</body>', `${script}\n</body>`);
+		}
+		return `${html}\n${script}`;
+	};
 
 	return async function handleRequest(req: Request): Promise<Response | null> {
 		const url = new URL(req.url);
@@ -92,6 +158,16 @@ export function serveWebUI(options: ServeWebUIOptions = {}) {
 			if (useEmbedded) {
 				const asset = EMBEDDED_ASSETS.get(normalizedPath);
 				if (asset) {
+					if (normalizedPath === '/index.html') {
+						const html = Buffer.from(asset.content, 'base64').toString('utf-8');
+						const injected = injectIndexHtml(
+							html,
+							await resolveApiBaseUrl(req),
+						);
+						return new Response(injected, {
+							headers: { 'Content-Type': 'text/html' },
+						});
+					}
 					const content = Buffer.from(asset.content, 'base64');
 					return new Response(content, {
 						headers: { 'Content-Type': asset.contentType },
@@ -111,6 +187,16 @@ export function serveWebUI(options: ServeWebUIOptions = {}) {
 				if (typeof Bun !== 'undefined') {
 					const file = Bun.file(fullPath);
 					if (await file.exists()) {
+						if (normalizedPath === '/index.html') {
+							const html = await file.text();
+							const injected = injectIndexHtml(
+								html,
+								await resolveApiBaseUrl(req),
+							);
+							return new Response(injected, {
+								headers: { 'Content-Type': 'text/html' },
+							});
+						}
 						return new Response(file);
 					}
 				} else {
@@ -118,6 +204,16 @@ export function serveWebUI(options: ServeWebUIOptions = {}) {
 					const fs = require('node:fs');
 					const fsPromises = require('node:fs/promises');
 					if (fs.existsSync(fullPath)) {
+						if (normalizedPath === '/index.html') {
+							const html = await fsPromises.readFile(fullPath, 'utf8');
+							const injected = injectIndexHtml(
+								html,
+								await resolveApiBaseUrl(req),
+							);
+							return new Response(injected, {
+								headers: { 'Content-Type': 'text/html' },
+							});
+						}
 						const content = await fsPromises.readFile(fullPath);
 						const ext = fullPath.split('.').pop() || '';
 						const contentType = getContentType(ext);
@@ -206,10 +302,3 @@ function getContentType(ext: string): string {
 	};
 	return types[ext.toLowerCase()] || 'application/octet-stream';
 }
-
-export default {
-	getWebUIPath,
-	getIndexPath,
-	isWebUIAvailable,
-	serveWebUI,
-};

@@ -44,7 +44,8 @@ export function buildGlobTool(projectRoot: string): {
 				const msg = (stderr || stdout || 'rg failed').toString().trim();
 				throw new Error(`glob failed: ${msg}`);
 			}
-			const lines = stdout.split('\n').filter(Boolean);
+			const stdoutText = stdout.toString();
+			const lines = stdoutText.split('\n').filter(Boolean);
 			const items: Array<{ path: string; mtime: number }> = [];
 			let truncated = false;
 			for (const rel of lines) {

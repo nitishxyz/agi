@@ -1,4 +1,5 @@
-import { catalog, type ProviderId } from './catalog.ts';
+import { catalog } from './catalog.ts';
+import type { ProviderId } from '@agi-cli/types';
 
 export const providerIds = Object.keys(catalog) as ProviderId[];
 

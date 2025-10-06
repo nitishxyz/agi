@@ -126,6 +126,49 @@ const EMBEDDED_ASSETS = new Map();
 // Populate embedded assets
 ${embeddedAssetsCode}
 
+async function resolveApiBaseUrl(option, req) {
+  let value;
+  if (typeof option === 'function') {
+    value = await option({ req });
+  } else if (option !== undefined) {
+    value = option;
+  } else {
+    value = null;
+  }
+
+  if (value === null || value === undefined) {
+    return new URL(req.url).origin;
+  }
+
+  if (value instanceof URL) {
+    return value.toString();
+  }
+
+  const str = String(value).trim();
+  if (!str) return null;
+
+  try {
+    if (str.startsWith('http://') || str.startsWith('https://')) {
+      return str;
+    }
+    return new URL(str, req.url).toString();
+  } catch {
+    return str;
+  }
+}
+
+function injectIndexHtml(html, baseUrl) {
+  if (!baseUrl) return html;
+  const script = '<script>(function(){var url=' + JSON.stringify(baseUrl) + ';window.AGI_SERVER_URL=url;window.__AGI_API_URL__=url;})();</script>';
+  if (html.includes('</head>')) {
+    return html.replace('</head>', script + '\\n</head>');
+  }
+  if (html.includes('</body>')) {
+    return html.replace('</body>', script + '\\n</body>');
+  }
+  return html + '\\n' + script;
+}
+
 /**
  * Get the absolute path to the web UI assets directory
  */
@@ -144,12 +187,10 @@ export function getIndexPath() {
  * Check if web UI assets are available
  */
 export function isWebUIAvailable() {
-  // Check embedded assets first
   if (EMBEDDED_ASSETS.size > 0) {
     return true;
   }
-  
-  // Check filesystem
+
   try {
     const fs = require('fs');
     return fs.existsSync(getIndexPath());
@@ -158,14 +199,12 @@ export function isWebUIAvailable() {
   }
 }
 
-/**
- * Create a request handler for serving the web UI
- */
 export function serveWebUI(options = {}) {
   const {
     prefix = '/ui',
     redirectRoot = false,
     onNotFound = null,
+    apiBaseUrl,
   } = options;
 
   const webUIPath = getWebUIPath();
@@ -173,26 +212,31 @@ export function serveWebUI(options = {}) {
 
   return async function handleRequest(req) {
     const url = new URL(req.url);
+    const baseUrlPromise = resolveApiBaseUrl(apiBaseUrl, req);
 
-    // Helper to serve a file
     const serveAsset = async (pathname) => {
       const normalizedPath = pathname === '' || pathname === '/' ? '/index.html' : pathname;
-      
-      // Try embedded assets first
+      const shouldInject = normalizedPath === '/index.html';
+      const resolvedBaseUrl = shouldInject ? await baseUrlPromise : null;
+
       if (useEmbedded) {
         const asset = EMBEDDED_ASSETS.get(normalizedPath);
         if (asset) {
+          if (shouldInject) {
+            const html = Buffer.from(asset.content, 'base64').toString('utf-8');
+            const injected = injectIndexHtml(html, resolvedBaseUrl);
+            return new Response(injected, {
+              headers: { 'Content-Type': 'text/html' },
+            });
+          }
           const content = Buffer.from(asset.content, 'base64');
           return new Response(content, {
             headers: { 'Content-Type': asset.contentType },
           });
         }
       }
-      
-      // Fallback to filesystem
-      const fullPath = join(webUIPath, normalizedPath);
 
-      // Security: Prevent directory traversal
+      const fullPath = join(webUIPath, normalizedPath);
       if (!fullPath.startsWith(webUIPath)) {
         return null;
       }
@@ -201,13 +245,26 @@ export function serveWebUI(options = {}) {
         if (typeof Bun !== 'undefined') {
           const file = Bun.file(fullPath);
           if (await file.exists()) {
+            if (shouldInject) {
+              const html = await file.text();
+              const injected = injectIndexHtml(html, resolvedBaseUrl);
+              return new Response(injected, {
+                headers: { 'Content-Type': 'text/html' },
+              });
+            }
             return new Response(file);
           }
         } else {
-          // Fallback for Node.js environments
           const fs = require('fs');
           const fsPromises = require('fs/promises');
           if (fs.existsSync(fullPath)) {
+            if (shouldInject) {
+              const html = await fsPromises.readFile(fullPath, 'utf8');
+              const injected = injectIndexHtml(html, resolvedBaseUrl);
+              return new Response(injected, {
+                headers: { 'Content-Type': 'text/html' },
+              });
+            }
             const content = await fsPromises.readFile(fullPath);
             const ext = fullPath.split('.').pop() || '';
             const contentType = getContentType(ext);
@@ -224,7 +281,6 @@ export function serveWebUI(options = {}) {
       return null;
     };
 
-    // Root redirect (optional)
     if (redirectRoot && url.pathname === '/') {
       return new Response('', {
         status: 302,
@@ -232,34 +288,27 @@ export function serveWebUI(options = {}) {
       });
     }
 
-    // Handle prefixed paths (e.g., /ui/*)
     if (url.pathname.startsWith(prefix)) {
-      // Strip prefix to get the actual file path
       const filePath = url.pathname.slice(prefix.length);
-      
-      // Try to serve the requested file
       const assetResponse = await serveAsset(filePath);
       if (assetResponse) {
         return assetResponse;
       }
 
-      // SPA fallback - serve index.html for unmatched routes
       const indexResponse = await serveAsset('/index.html');
       if (indexResponse) {
         return indexResponse;
       }
 
-      // Web UI not found
       if (onNotFound) {
         return onNotFound(req);
       }
-      
+
       return new Response('Web UI not found', { status: 404 });
     }
 
-    // Handle direct asset requests (for cases where HTML references /assets/*)
-    if (url.pathname.startsWith('/assets/') || 
-        url.pathname === '/vite.svg' || 
+    if (url.pathname.startsWith('/assets/') ||
+        url.pathname === '/vite.svg' ||
         url.pathname === '/favicon.ico') {
       const directAsset = await serveAsset(url.pathname);
       if (directAsset) {
@@ -267,30 +316,26 @@ export function serveWebUI(options = {}) {
       }
     }
 
-    // Not a web UI request - return null so other handlers can process it
     return null;
   };
 }
 
-/**
- * Get MIME type for file extension
- */
 function getContentType(ext) {
   const types = {
-    'html': 'text/html',
-    'css': 'text/css',
-    'js': 'application/javascript',
-    'json': 'application/json',
-    'png': 'image/png',
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'gif': 'image/gif',
-    'svg': 'image/svg+xml',
-    'ico': 'image/x-icon',
-    'woff': 'font/woff',
-    'woff2': 'font/woff2',
-    'ttf': 'font/ttf',
-    'eot': 'application/vnd.ms-fontobject',
+    html: 'text/html',
+    css: 'text/css',
+    js: 'application/javascript',
+    json: 'application/json',
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    svg: 'image/svg+xml',
+    ico: 'image/x-icon',
+    woff: 'font/woff',
+    woff2: 'font/woff2',
+    ttf: 'font/ttf',
+    eot: 'application/vnd.ms-fontobject',
   };
   return types[ext.toLowerCase()] || 'application/octet-stream';
 }

@@ -171,6 +171,13 @@ jobs:
           rm -f bun.lock
           bun install
 
+      - name: Build publishable packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun run --filter @agi-cli/web-ui build
+          bun run --filter @agi-cli/sdk build
+
       - name: Publish install package to npm
         shell: bash
         run: |

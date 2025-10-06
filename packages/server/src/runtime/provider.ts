@@ -1,3 +1,4 @@
+import type { LanguageModel } from 'ai';
 import type { AGIConfig } from '@agi-cli/config';
 import type { ProviderId } from '@agi-cli/types';
 import { openai, createOpenAI } from '@ai-sdk/openai';
@@ -97,20 +98,24 @@ async function getAnthropicInstance(cfg: AGIConfig) {
 	return anthropic;
 }
 
+function toLanguageModel(model: unknown): LanguageModel {
+	return model as LanguageModel;
+}
+
 export async function resolveModel(
 	provider: ProviderName,
 	model: string,
 	cfg: AGIConfig,
-) {
-	if (provider === 'openai') return openai(model);
+): Promise<LanguageModel> {
+	if (provider === 'openai') return toLanguageModel(openai(model));
 	if (provider === 'anthropic') {
 		const instance = await getAnthropicInstance(cfg);
-		return instance(model);
+		return toLanguageModel(instance(model));
 	}
-	if (provider === 'google') return google(model);
+	if (provider === 'google') return toLanguageModel(google(model));
 	if (provider === 'openrouter') {
 		const openrouter = getOpenRouterInstance();
-		return openrouter.chat(model);
+		return toLanguageModel(openrouter.chat(model));
 	}
 	if (provider === 'opencode') {
 		const baseURL = 'https://opencode.ai/zen/v1';
@@ -125,14 +130,14 @@ export async function resolveModel(
 		});
 
 		const id = model.toLowerCase();
-		if (id.includes('claude')) return ocAnthropic(model);
+		if (id.includes('claude')) return toLanguageModel(ocAnthropic(model));
 		if (
 			id.includes('qwen3-coder') ||
 			id.includes('grok-code') ||
 			id.includes('kimi-k2')
 		)
-			return ocCompat(model);
-		return ocOpenAI(model);
+			return toLanguageModel(ocCompat(model));
+		return toLanguageModel(ocOpenAI(model));
 	}
 	throw new Error(`Unsupported provider: ${provider}`);
 }

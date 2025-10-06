@@ -139,6 +139,17 @@ export { z } from '@agi-cli/core';
 export { createApp as createServer } from '@agi-cli/server';
 
 // =======================
+// Web UI (from @agi-cli/web-ui)
+// =======================
+export {
+	serveWebUI,
+	getWebUIPath,
+	getIndexPath,
+	isWebUIAvailable,
+} from '@agi-cli/web-ui';
+export type { ServeWebUIOptions } from '@agi-cli/web-ui';
+
+// =======================
 // SDK-specific Agent Types
 // =======================
 export type { AgentConfig, AgentConfigEntry } from './agent/types.ts';

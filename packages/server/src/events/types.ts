@@ -7,6 +7,7 @@ export type AGIEventType =
 	| 'tool.delta'
 	| 'tool.result'
 	| 'plan.updated'
+	| 'session.updated'
 	| 'finish-step'
 	| 'usage'
 	| 'error'

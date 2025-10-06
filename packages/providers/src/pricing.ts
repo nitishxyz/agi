@@ -1,11 +1,7 @@
-import { catalog, type ModelInfo } from './catalog.ts';
+import { catalog } from './catalog.ts';
+import type { ModelInfo, ProviderId } from '@agi-cli/types';
 
-type ProviderName =
-	| 'openai'
-	| 'anthropic'
-	| 'google'
-	| 'openrouter'
-	| 'opencode';
+type ProviderName = ProviderId;
 
 type UsageLike = {
 	inputTokens?: number | null;

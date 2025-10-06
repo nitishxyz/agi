@@ -16,35 +16,42 @@
 	"type": "module",
 	"main": "./src/index.ts",
 	"types": "./src/index.ts",
+	"files": [
+		"src",
+		"README.md",
+		"LICENSE"
+	],
 	"exports": {
 		".": {
 			"import": "./src/index.ts",
 			"types": "./src/index.ts"
 		},
 		"./tools/builtin/fs": {
-			"import": "@agi-cli/core/tools/builtin/fs",
-			"types": "@agi-cli/core/tools/builtin/fs"
+			"import": "./src/tools/builtin/fs.ts",
+			"types": "./src/tools/builtin/fs.ts"
 		},
 		"./tools/builtin/git": {
-			"import": "@agi-cli/core/tools/builtin/git",
-			"types": "@agi-cli/core/tools/builtin/git"
+			"import": "./src/tools/builtin/git.ts",
+			"types": "./src/tools/builtin/git.ts"
+		},
+		"./web-ui": {
+			"import": "./src/web-ui.ts",
+			"types": "./src/web-ui.ts"
 		}
 	},
-	"files": [
-		"src",
-		"README.md",
-		"LICENSE"
-	],
 	"scripts": {
 		"dev": "bun run src/index.ts",
+		"build": "bun run build.ts",
 		"test": "bun test",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"prepublishOnly": "bun run build"
 	},
 	"dependencies": {
 		"@agi-cli/auth": "workspace:*",
 		"@agi-cli/config": "workspace:*",
 		"@agi-cli/core": "workspace:*",
 		"@agi-cli/database": "workspace:*",
+		"@agi-cli/web-ui": "workspace:*",
 		"@agi-cli/providers": "workspace:*",
 		"@agi-cli/prompts": "workspace:*",
 		"@agi-cli/server": "workspace:*",
