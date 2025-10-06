@@ -1,5 +1,5 @@
 import type { AGIConfig } from '@agi-cli/config';
-import type { ProviderId } from '@agi-cli/providers';
+import type { ProviderId } from '@agi-cli/types';
 import { openai, createOpenAI } from '@ai-sdk/openai';
 import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';

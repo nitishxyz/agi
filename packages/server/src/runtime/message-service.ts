@@ -6,7 +6,7 @@ import { messages, messageParts, sessions } from '@agi-cli/database/schema';
 import { publish } from '../events/bus.ts';
 import { enqueueAssistantRun } from './runner.ts';
 import { resolveModel } from './provider.ts';
-import type { ProviderId } from '@agi-cli/providers';
+import type { ProviderId } from '@agi-cli/types';
 import { debugLog } from './debug.ts';
 
 type SessionRow = typeof sessions.$inferSelect;

@@ -3,7 +3,7 @@ import {
 	ensureEnv as mgrEnsureEnv,
 } from '@agi-cli/config';
 import type { AGIConfig } from '@agi-cli/config';
-import type { ProviderId } from '@agi-cli/auth';
+import type { ProviderId } from '@agi-cli/types';
 
 export async function isProviderAuthorized(
 	cfg: AGIConfig,

@@ -1,7 +1,7 @@
 {
 	"name": "@agi-cli/sdk",
 	"version": "0.1.50",
-	"description": "AI agent SDK for building intelligent assistants",
+	"description": "AI agent SDK for building intelligent assistants - tree-shakable and comprehensive",
 	"author": "ntishxyz",
 	"license": "MIT",
 	"homepage": "https://github.com/ntishxyz/agi#readme",
@@ -48,6 +48,7 @@
 		"@agi-cli/providers": "workspace:*",
 		"@agi-cli/prompts": "workspace:*",
 		"@agi-cli/server": "workspace:*",
+		"@agi-cli/types": "workspace:*",
 		"ai": "^5.0.43",
 		"@ai-sdk/anthropic": "^2.0.16",
 		"@ai-sdk/openai": "^2.0.30",
@@ -70,6 +71,8 @@
 		"anthropic",
 		"openai",
 		"development",
-		"assistant"
+		"assistant",
+		"tree-shakable",
+		"typescript"
 	]
 }

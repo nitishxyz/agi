@@ -24,7 +24,7 @@ export {
 	isProviderAuthorized,
 	validateProviderModel,
 } from '@agi-cli/providers';
-export type { ProviderId, ModelInfo } from '@agi-cli/providers';
+export type { ProviderId, ModelInfo } from '@agi-cli/types';
 
 // =======================
 // Tools

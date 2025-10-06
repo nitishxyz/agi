@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import type { ProviderId } from '@agi-cli/providers';
+import type { ProviderId } from '@agi-cli/types';
 import { registerRootRoutes } from './routes/root.ts';
 import { registerOpenApiRoute } from './routes/openapi.ts';
 import { registerSessionsRoutes } from './routes/sessions.ts';

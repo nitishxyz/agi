@@ -1,675 +1,374 @@
 # @agi-cli/sdk
 
-**Batteries-included AI agent SDK.** Build AI assistants with tools, streaming, and multi-provider support in minutes.
+> **The single source of truth for AGI CLI functionality** - Comprehensive, tree-shakable, and developer-friendly.
+
+## Overview
+
+`@agi-cli/sdk` is the unified SDK for building AI agents with AGI CLI. It re-exports all functionality from the underlying packages (`@agi-cli/core`, `@agi-cli/providers`, `@agi-cli/auth`, etc.) in a tree-shakable way.
+
+**Why use the SDK?**
+- ✅ **Single import**: All functionality from one package
+- ✅ **Tree-shakable**: Bundlers only include what you use
+- ✅ **Type-safe**: Full TypeScript support with comprehensive types
+- ✅ **Zero circular dependencies**: Clean architecture
+- ✅ **Consistent API**: No need to remember which package exports what
 
 ## Installation
 
 ```bash
-npm install @agi-cli/sdk
-# or
 bun add @agi-cli/sdk
 ```
 
-**That's it. No need to install `ai`, `@ai-sdk/anthropic`, `hono`, or anything else.** Everything is included.
-
----
-
 ## Quick Start
-
-### 1. Simple AI Call
 
 ```typescript
 import { generateText, resolveModel } from '@agi-cli/sdk';
+import type { ProviderId } from '@agi-cli/sdk';
 
-const model = await resolveModel('anthropic', 'claude-sonnet-4');
+const model = resolveModel('anthropic', 'claude-3-5-sonnet-20241022');
 
-const result = await generateText({
+const { text } = await generateText({
   model,
-  prompt: 'Explain quantum computing in one sentence'
+  prompt: 'What is the meaning of life?',
 });
 
-console.log(result.text);
+console.log(text);
 ```
 
-### 2. AI Agent with Tools
+## What's Included?
+
+### Types (from `@agi-cli/types`)
+
+All shared types are available:
 
 ```typescript
-import { generateText, resolveModel, discoverProjectTools } from '@agi-cli/sdk';
-
-const model = await resolveModel('anthropic', 'claude-sonnet-4');
-const tools = await discoverProjectTools(process.cwd());
-
-const result = await generateText({
-  model,
-  prompt: 'List all TypeScript files and count total lines',
-  tools: Object.fromEntries(tools.map(t => [t.name, t.tool])),
-  maxSteps: 10
-});
-
-console.log(result.text);
+import type { 
+  ProviderId, 
+  ModelInfo, 
+  AuthInfo, 
+  AGIConfig,
+  ProviderConfig,
+  Scope
+} from '@agi-cli/sdk';
 ```
 
-**That's it!** Your agent now has access to:
-- File operations (read, write, edit, ls, tree)
-- Code search (glob, grep, ripgrep)
-- Git operations (status, diff, commit, log)
-- Shell execution (bash)
-- And more...
+### Providers (from `@agi-cli/providers`)
 
-### 3. HTTP Server
+Provider catalog and utilities:
+
+```typescript
+import { 
+  catalog,
+  isProviderId,
+  providerIds,
+  defaultModelFor,
+  hasModel,
+  isProviderAuthorized,
+  validateProviderModel,
+  estimateModelCostUsd,
+  providerEnvVar,
+  readEnvKey,
+  setEnvKey
+} from '@agi-cli/sdk';
+
+// Check available providers
+console.log(providerIds); // ['openai', 'anthropic', 'google', 'openrouter', 'opencode']
+
+// Get model information
+const models = catalog.anthropic.models;
+
+// Validate provider/model combination
+const result = validateProviderModel('anthropic', 'claude-3-5-sonnet-20241022');
+```
+
+### Authentication (from `@agi-cli/auth`)
+
+Manage API keys and OAuth:
+
+```typescript
+import { 
+  getAuth, 
+  setAuth, 
+  removeAuth, 
+  getAllAuth,
+  authorize,
+  createApiKey 
+} from '@agi-cli/sdk';
+
+// Set API key
+await setAuth('openai', { apiKey: 'sk-...' });
+
+// Get auth info
+const auth = await getAuth('openai');
+
+// OAuth flow
+const url = await authorize('anthropic');
+console.log(`Visit: ${url}`);
+```
+
+### Configuration (from `@agi-cli/config`)
+
+Load and manage configuration:
+
+```typescript
+import { loadConfig, readConfig } from '@agi-cli/sdk';
+import type { AGIConfig } from '@agi-cli/sdk';
+
+const config = await loadConfig();
+console.log(config.provider); // 'anthropic'
+console.log(config.model);    // 'claude-3-5-sonnet-20241022'
+```
+
+### Prompts (from `@agi-cli/prompts`)
+
+Pre-built system prompts:
+
+```typescript
+import { systemPrompt, codeContext } from '@agi-cli/sdk';
+
+const prompt = systemPrompt('dev', {
+  workdir: '/home/user/project',
+  platform: 'linux',
+});
+
+const context = codeContext({ includeGitInfo: true });
+```
+
+### Core AI Functions (from `@agi-cli/core`)
+
+AI SDK re-exports and utilities:
+
+```typescript
+import { 
+  generateText, 
+  streamText, 
+  generateObject, 
+  streamObject,
+  tool,
+  resolveModel,
+  discoverProjectTools,
+  buildFsTools,
+  buildGitTools,
+  createFileDiffArtifact,
+  z
+} from '@agi-cli/sdk';
+import type { CoreMessage, Tool, DiscoveredTool } from '@agi-cli/sdk';
+
+// Generate text
+const { text } = await generateText({
+  model: resolveModel('anthropic'),
+  prompt: 'Hello!',
+});
+
+// Stream text with tools
+const { textStream } = streamText({
+  model: resolveModel('openai'),
+  prompt: 'What files are in the current directory?',
+  tools: buildFsTools(),
+});
+
+// Generate structured output
+const { object } = await generateObject({
+  model: resolveModel('anthropic'),
+  schema: z.object({
+    name: z.string(),
+    age: z.number(),
+  }),
+  prompt: 'Generate a person',
+});
+
+// Discover project tools
+const tools = await discoverProjectTools('/path/to/project');
+```
+
+### Database (from `@agi-cli/database`)
+
+Database access:
+
+```typescript
+import { getDb, dbSchema } from '@agi-cli/sdk';
+
+const db = getDb();
+const messages = await db.select().from(dbSchema.messages);
+```
+
+### Server (from `@agi-cli/server`)
+
+Create an HTTP server:
 
 ```typescript
 import { createServer } from '@agi-cli/sdk';
 
 const app = createServer();
-
-// Start server
-export default {
-  port: 3000,
-  fetch: app.fetch
-};
 ```
 
-Run it:
-```bash
-bun run server.ts
-```
+### Error Handling (from `@agi-cli/core`)
 
-Your agent is now available at `http://localhost:3000` with:
-- `POST /ask` - Ask questions
-- `GET /sessions` - List sessions
-- `GET /openapi.json` - OpenAPI spec
-- And more...
-
----
-
-## Complete Examples
-
-### Example 1: Code Review Bot
+Typed error classes:
 
 ```typescript
-import { generateText, resolveModel, discoverProjectTools } from '@agi-cli/sdk';
+import { 
+  AGIError, 
+  AuthError, 
+  ConfigError, 
+  ToolError,
+  ProviderError,
+  DatabaseError,
+  ValidationError,
+  NotFoundError,
+  ServiceError
+} from '@agi-cli/sdk';
 
-async function reviewFile(filePath: string) {
-  const model = await resolveModel('anthropic', 'claude-sonnet-4');
-  const tools = await discoverProjectTools(process.cwd());
-  
-  const result = await generateText({
-    model,
-    prompt: `Review ${filePath} for code quality, security, and best practices. Provide specific suggestions.`,
-    tools: Object.fromEntries(tools.map(t => [t.name, t.tool])),
-    maxSteps: 10
-  });
-  
-  return result.text;
-}
-
-// Usage
-const review = await reviewFile('src/auth.ts');
-console.log(review);
-```
-
-### Example 2: Interactive Agent
-
-```typescript
-import { generateText, resolveModel, discoverProjectTools } from '@agi-cli/sdk';
-
-async function interactiveAgent() {
-  const model = await resolveModel('openai', 'gpt-4o');
-  const tools = await discoverProjectTools(process.cwd());
-  const toolMap = Object.fromEntries(tools.map(t => [t.name, t.tool]));
-  
-  const messages = [];
-  
-  while (true) {
-    const userInput = prompt('You: ');
-    if (userInput === 'exit') break;
-    
-    messages.push({ role: 'user', content: userInput });
-    
-    const result = await generateText({
-      model,
-      messages,
-      tools: toolMap,
-      maxSteps: 15
-    });
-    
-    console.log('Agent:', result.text);
-    messages.push({ role: 'assistant', content: result.text });
+try {
+  // ... your code
+} catch (error) {
+  if (error instanceof AuthError) {
+    console.error('Authentication failed:', error.message);
   }
 }
-
-interactiveAgent();
 ```
 
-### Example 3: Streaming Responses
+## Tree-Shaking
+
+The SDK is fully tree-shakable. Modern bundlers (Vite, Rollup, esbuild, webpack) will only include the code you actually use:
 
 ```typescript
-import { streamText, resolveModel, discoverProjectTools } from '@agi-cli/sdk';
-
-async function streamingAgent(prompt: string) {
-  const model = await resolveModel('google', 'gemini-1.5-pro');
-  const tools = await discoverProjectTools(process.cwd());
-  
-  const stream = streamText({
-    model,
-    prompt,
-    tools: Object.fromEntries(tools.map(t => [t.name, t.tool])),
-    maxSteps: 10
-  });
-  
-  // Stream to console
-  for await (const chunk of stream.textStream) {
-    process.stdout.write(chunk);
-  }
-}
-
-streamingAgent('Refactor the authentication module for better security');
+// Only includes generateText and resolveModel code
+import { generateText, resolveModel } from '@agi-cli/sdk';
 ```
 
-### Example 4: Custom Tool
+## Direct Package Access (Not Recommended)
+
+While you _can_ import directly from individual packages, we recommend using the SDK for consistency:
 
 ```typescript
-import { generateText, resolveModel, discoverProjectTools, tool, z } from '@agi-cli/sdk';
+// ❌ Discouraged - fragmented imports
+import { catalog } from '@agi-cli/providers';
+import { generateText } from '@agi-cli/core';
+import type { ProviderId } from '@agi-cli/types';
 
-// Define custom tool
-const weatherTool = tool({
-  description: 'Get weather for a city',
-  parameters: z.object({
-    city: z.string(),
-    units: z.enum(['celsius', 'fahrenheit']).default('celsius')
-  }),
-  execute: async ({ city, units }) => {
-    const data = await fetch(`https://api.weather.com/${city}`).then(r => r.json());
-    return { temperature: data.temp, city, units };
-  }
-});
+// ✅ Recommended - single source of truth
+import { catalog, generateText } from '@agi-cli/sdk';
+import type { ProviderId } from '@agi-cli/sdk';
+```
 
-// Use with agent
-const model = await resolveModel('anthropic', 'claude-sonnet-4');
-const builtinTools = await discoverProjectTools(process.cwd());
+## Architecture
 
-const result = await generateText({
+The SDK follows a clean dependency graph with zero circular dependencies:
+
+```
+@agi-cli/types (foundation)
+    ↓
+@agi-cli/providers, @agi-cli/auth, @agi-cli/config
+    ↓
+@agi-cli/database, @agi-cli/prompts
+    ↓
+@agi-cli/core
+    ↓
+@agi-cli/server
+    ↓
+@agi-cli/sdk ← YOU ARE HERE (single source of truth)
+```
+
+## Examples
+
+### Basic Agent
+
+```typescript
+import { generateText, resolveModel } from '@agi-cli/sdk';
+
+const model = resolveModel('anthropic');
+
+const { text } = await generateText({
   model,
-  prompt: 'What\'s the weather in Tokyo and New York?',
-  tools: {
-    ...Object.fromEntries(builtinTools.map(t => [t.name, t.tool])),
-    weather: weatherTool
-  },
-  maxSteps: 5
+  prompt: 'Explain TypeScript generics',
 });
 
-console.log(result.text);
+console.log(text);
 ```
 
-### Example 5: HTTP API Server
+### Agent with Tools
 
 ```typescript
-import { createServer, generateText, resolveModel, discoverProjectTools } from '@agi-cli/sdk';
+import { streamText, resolveModel, buildFsTools, buildGitTools } from '@agi-cli/sdk';
 
-const app = createServer();
-
-// Add custom route
-app.post('/custom-ask', async (c) => {
-  const { prompt } = await c.req.json();
-  
-  const model = await resolveModel('anthropic', 'claude-sonnet-4');
-  const tools = await discoverProjectTools(process.cwd());
-  
-  const result = await generateText({
-    model,
-    prompt,
-    tools: Object.fromEntries(tools.map(t => [t.name, t.tool])),
-    maxSteps: 10
-  });
-  
-  return c.json({ response: result.text });
-});
-
-export default {
-  port: 3000,
-  fetch: app.fetch
+const tools = {
+  ...buildFsTools(),
+  ...buildGitTools(),
 };
-```
 
----
-
-## Built-in Tools (15+)
-
-Your agent has access to these tools automatically:
-
-### File Operations
-- `read` - Read file contents
-- `write` - Write to files
-- `edit` - Edit files with diff-based changes
-- `ls` - List directory contents
-- `cd` - Change directory
-- `pwd` - Print working directory
-- `tree` - Show directory tree
-
-### Search & Find
-- `glob` - Find files by pattern (e.g., `*.ts`)
-- `grep` - Search file contents
-- `ripgrep` - Fast content search (if installed)
-
-### Git Operations
-- `git_status` - Show git status
-- `git_diff` - Show git diff
-- `git_commit` - Create commit
-- `git_log` - Show git log
-
-### Execution
-- `bash` - Run shell commands
-
-### Planning
-- `update_plan` - Update task plan
-- `progress_update` - Report progress
-- `finish` - Mark task complete
-
----
-
-## Supported Providers
-
-Switch providers without changing code:
-
-```typescript
-// OpenAI
-const model = await resolveModel('openai', 'gpt-4o-mini');
-
-// Anthropic
-const model = await resolveModel('anthropic', 'claude-sonnet-4');
-
-// Google
-const model = await resolveModel('google', 'gemini-1.5-pro');
-
-// OpenRouter (100+ models)
-const model = await resolveModel('openrouter', 'anthropic/claude-3.5-sonnet');
-
-// OpenCode (specialized code models)
-const model = await resolveModel('opencode', 'qwen3-coder-14b');
-```
-
-Set API keys via environment variables:
-```bash
-export OPENAI_API_KEY=sk-...
-export ANTHROPIC_API_KEY=sk-ant-...
-export GOOGLE_GENERATIVE_AI_API_KEY=...
-```
-
-Or pass directly:
-```typescript
-const model = await resolveModel('openai', 'gpt-4o', {
-  apiKey: 'sk-...'
-});
-```
-
----
-
-## Configuration
-
-The SDK integrates with AGI's configuration system:
-
-```typescript
-import { loadConfig, readConfig } from '@agi-cli/sdk';
-
-// Load config from .agi/config.json
-const config = await loadConfig(process.cwd());
-
-console.log(config.defaults);
-// { agent: 'general', provider: 'anthropic', model: 'claude-sonnet-4' }
-
-// Use configured defaults
-const model = await resolveModel(
-  config.defaults.provider,
-  config.defaults.model
-);
-```
-
----
-
-## Custom Tools (Plugins)
-
-Create reusable tools in `.agi/tools/{name}/tool.js`:
-
-```javascript
-// .agi/tools/database/tool.js
-export default {
-  name: 'query_database',
-  description: 'Query the database',
-  parameters: {
-    query: {
-      type: 'string',
-      description: 'SQL query to execute'
-    }
-  },
-  async execute({ input, exec, fs }) {
-    const result = await exec('sqlite3', ['db.sqlite', input.query]);
-    return {
-      success: true,
-      data: result.stdout
-    };
-  }
-};
-```
-
-Tools are auto-discovered by `discoverProjectTools()`.
-
-**Available helpers in `execute()`:**
-- `input` - Tool parameters
-- `exec(cmd, args)` - Run shell commands
-- `fs.readFile(path)` - Read files
-- `fs.writeFile(path, content)` - Write files
-- `fs.exists(path)` - Check file exists
-- `project` / `projectRoot` / `directory` - Path info
-- `env` - Environment variables
-
----
-
-## Database & Sessions
-
-Store conversation history:
-
-```typescript
-import { getDb, dbSchema } from '@agi-cli/sdk';
-
-const db = await getDb(process.cwd());
-
-// Query sessions
-const sessions = await db.select().from(dbSchema.sessions).limit(10);
-
-// Query messages
-const messages = await db
-  .select()
-  .from(dbSchema.messages)
-  .where(eq(dbSchema.messages.sessionId, sessionId));
-```
-
----
-
-## Authentication
-
-Manage provider credentials:
-
-```typescript
-import { getAllAuth, setAuth, getAuth } from '@agi-cli/sdk';
-
-// Get all stored credentials
-const auth = await getAllAuth();
-
-// Set API key
-await setAuth('openai', {
-  type: 'api',
-  key: 'sk-...'
+const { textStream } = streamText({
+  model: resolveModel('openai'),
+  prompt: 'What Git branch am I on? List the files in the current directory.',
+  tools,
 });
 
-// Get provider auth
-const openaiAuth = await getAuth('openai');
-```
-
----
-
-## What Can You Build?
-
-1. **AI-Powered CLIs** - Interactive command-line tools
-2. **Code Assistants** - Review, refactor, document code
-3. **Project Automation** - Smart build tools, deployment scripts
-4. **Development Bots** - Slack/Discord bots for codebases
-5. **Custom Agents** - Task-specific AI agents
-6. **IDE Extensions** - AI features for editors
-7. **API Services** - HTTP APIs with AI + tools
-8. **Desktop Apps** - Electron/Tauri apps with AI
-9. **Documentation Generators** - Auto-generate docs
-10. **Testing Tools** - AI-powered test generation
-
----
-
-## API Reference
-
-### Core Functions
-
-#### `generateText(options)`
-Generate text with optional tools.
-
-```typescript
-const result = await generateText({
-  model,              // Model from resolveModel()
-  prompt: string,     // Or use 'messages' for multi-turn
-  tools?: object,     // Optional tools
-  maxSteps?: number,  // Max tool calls (default: 1)
-  temperature?: number,
-  maxTokens?: number
-});
-```
-
-#### `streamText(options)`
-Stream text generation.
-
-```typescript
-const stream = streamText({
-  model,
-  prompt: string,
-  tools?: object,
-  maxSteps?: number
-});
-
-for await (const chunk of stream.textStream) {
-  console.log(chunk);
+for await (const chunk of textStream) {
+  process.stdout.write(chunk);
 }
 ```
 
-#### `generateObject(options)`
-Generate structured JSON.
+### Structured Output
 
 ```typescript
-const result = await generateObject({
+import { generateObject, resolveModel, z } from '@agi-cli/sdk';
+
+const schema = z.object({
+  sentiment: z.enum(['positive', 'negative', 'neutral']),
+  confidence: z.number().min(0).max(1),
+  keywords: z.array(z.string()),
+});
+
+const { object } = await generateObject({
+  model: resolveModel('anthropic'),
+  schema,
+  prompt: 'Analyze: "This SDK is amazing!"',
+});
+
+console.log(object);
+// { sentiment: 'positive', confidence: 0.95, keywords: ['amazing', 'SDK'] }
+```
+
+### With Configuration
+
+```typescript
+import { generateText, resolveModel, loadConfig } from '@agi-cli/sdk';
+
+const config = await loadConfig();
+const model = resolveModel(config.provider, config.model);
+
+const { text } = await generateText({
   model,
-  schema: z.object({ ... }),
-  prompt: string
+  prompt: 'Hello from AGI CLI!',
+  temperature: config.temperature,
 });
 ```
 
-#### `streamObject(options)`
-Stream structured JSON generation.
+## TypeScript
 
----
-
-### Provider Functions
-
-#### `resolveModel(provider, model, config?)`
-Get model instance.
+Full TypeScript support with comprehensive types:
 
 ```typescript
-const model = await resolveModel(
-  'anthropic',          // Provider
-  'claude-sonnet-4',   // Model ID
-  { apiKey: '...' }    // Optional config
-);
-```
-
-#### `catalog`
-Provider/model catalog.
-
-```typescript
-import { catalog } from '@agi-cli/sdk';
-
-// List all providers
-console.log(Object.keys(catalog));
-// ['openai', 'anthropic', 'google', ...]
-
-// List OpenAI models
-console.log(catalog.openai.models.map(m => m.id));
-```
-
----
-
-### Tool Functions
-
-#### `discoverProjectTools(projectRoot, globalConfigDir?)`
-Discover all available tools.
-
-```typescript
-const tools = await discoverProjectTools(process.cwd());
-
-// Convert to object for generateText()
-const toolMap = Object.fromEntries(
-  tools.map(t => [t.name, t.tool])
-);
-```
-
-#### `tool(definition)`
-Create custom tool.
-
-```typescript
-import { tool, z } from '@agi-cli/sdk';
-
-const myTool = tool({
-  description: 'Tool description',
-  parameters: z.object({ ... }),
-  execute: async (params) => { ... }
-});
-```
-
----
-
-### Server Functions
-
-#### `createServer()`
-Create HTTP server.
-
-```typescript
-const app = createServer();
-
-// The server includes:
-// - POST /ask - Ask questions
-// - GET /sessions - List sessions
-// - GET /sessions/:id/messages - Get messages
-// - GET /openapi.json - OpenAPI spec
-```
-
----
-
-### Configuration Functions
-
-#### `loadConfig(projectRoot?)`
-Load AGI configuration.
-
-```typescript
-const config = await loadConfig(process.cwd());
-// Returns: { defaults, providers, paths }
-```
-
-#### `readConfig(projectRoot?)`
-Load config + auth.
-
-```typescript
-const { cfg, auth } = await readConfig(process.cwd());
-```
-
----
-
-### Database Functions
-
-#### `getDb(projectRoot?)`
-Get database instance.
-
-```typescript
-const db = await getDb(process.cwd());
-
-// Use with Drizzle ORM
-import { dbSchema } from '@agi-cli/sdk';
-const sessions = await db.select().from(dbSchema.sessions);
-```
-
----
-
-## Types
-
-All types are exported:
-
-```typescript
-import type {
-  // AI SDK types
+import type { 
+  ProviderId, 
+  ModelInfo, 
+  AGIConfig,
   CoreMessage,
   Tool,
-  
-  // Provider types
-  ProviderName,
-  ProviderId,
-  ModelInfo,
-  ModelConfig,
-  
-  // Tool types
   DiscoveredTool,
-  
-  // Config types
-  AGIConfig,
-  ProviderConfig,
-  Scope,
-  
-  // Auth types
-  AuthInfo,
-  OAuth,
-  
-  // Other types
-  ExecutionContext,
-  ToolResult,
   Artifact,
-  FileDiffArtifact
+  ExecutionContext
 } from '@agi-cli/sdk';
+
+// All types are fully documented and type-safe
+const providerId: ProviderId = 'anthropic';
+const config: AGIConfig = await loadConfig();
 ```
-
----
-
-## Environment Variables
-
-```bash
-# Provider API Keys
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_GENERATIVE_AI_API_KEY=...
-OPENROUTER_API_KEY=...
-OPENCODE_API_KEY=...
-
-# Optional
-AGI_DEBUG_TOOLS=1  # Debug tool loading
-```
-
----
-
-## Why Use This SDK?
-
-### ✅ **Batteries Included**
-Everything you need in one package. No need to install `ai`, provider packages, or anything else.
-
-### ✅ **Zero Configuration**
-Works out of the box. Add config only if you need it.
-
-### ✅ **15+ Built-in Tools**
-File operations, Git, search, bash - ready to use.
-
-### ✅ **Multi-Provider**
-Switch between OpenAI, Anthropic, Google without code changes.
-
-### ✅ **HTTP Server Included**
-Create API endpoints in seconds.
-
-### ✅ **Extensible**
-Add custom tools easily with the plugin system.
-
-### ✅ **Type-Safe**
-Full TypeScript support with exported types.
-
----
 
 ## License
 
-MIT - see [LICENSE](../../LICENSE)
+MIT
 
----
+## Contributing
 
-## Links
-
-- [GitHub](https://github.com/ntishxyz/agi)
-- [Documentation](https://github.com/ntishxyz/agi#readme)
-- [Architecture](https://github.com/ntishxyz/agi/blob/main/ARCHITECTURE.md)
-- [Issues](https://github.com/ntishxyz/agi/issues)
+See the main repository for contribution guidelines.

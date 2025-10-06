@@ -194,6 +194,7 @@
         "@agi-cli/prompts": "workspace:*",
         "@agi-cli/providers": "workspace:*",
         "@agi-cli/server": "workspace:*",
+        "@agi-cli/types": "workspace:*",
         "@ai-sdk/anthropic": "^2.0.16",
         "@ai-sdk/google": "^2.0.14",
         "@ai-sdk/openai": "^2.0.30",
@@ -221,6 +222,14 @@
         "drizzle-orm": "^0.44.5",
         "hono": "^4.9.9",
       },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "packages/types": {
+      "name": "@agi-cli/types",
+      "version": "0.1.0",
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5",
@@ -259,6 +268,8 @@
     "@agi-cli/sdk": ["@agi-cli/sdk@workspace:packages/sdk"],
 
     "@agi-cli/server": ["@agi-cli/server@workspace:packages/server"],
+
+    "@agi-cli/types": ["@agi-cli/types@workspace:packages/types"],
 
     "@agi-cli/web-ui": ["@agi-cli/web-ui@workspace:packages/web-ui"],
 

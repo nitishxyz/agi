@@ -5,7 +5,7 @@ import {
 	fileExists,
 	joinPath,
 } from './paths.ts';
-import type { ProviderId } from '@agi-cli/providers';
+import type { ProviderId } from '@agi-cli/types';
 
 export type ProviderConfig = { enabled: boolean; apiKey?: string };
 

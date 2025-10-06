@@ -1,7 +1,7 @@
 import { getSecureAuthPath, ensureDir } from '@agi-cli/config/paths';
-import type { ProviderId } from '@agi-cli/providers';
+import type { ProviderId } from '@agi-cli/types';
 
-export type { ProviderId } from '@agi-cli/providers';
+export type { ProviderId } from '@agi-cli/types';
 
 type ApiAuth = { type: 'api'; key: string };
 export type OAuth = {
