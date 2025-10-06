@@ -22,6 +22,7 @@
 	},
 	"dependencies": {
 		"@agi-cli/config": "workspace:*",
+		"@agi-cli/types": "workspace:*",
 		"@openauthjs/openauth": "^0.4.3",
 		"opencode-anthropic-auth": "^0.0.2"
 	},

@@ -108,6 +108,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@agi-cli/config": "workspace:*",
+        "@agi-cli/types": "workspace:*",
         "@openauthjs/openauth": "^0.4.3",
         "opencode-anthropic-auth": "^0.0.2",
       },
@@ -119,6 +120,9 @@
     "packages/config": {
       "name": "@agi-cli/config",
       "version": "0.1.0",
+      "dependencies": {
+        "@agi-cli/types": "workspace:*",
+      },
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5",

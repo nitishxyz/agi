@@ -24,6 +24,9 @@
 		"test": "bun test",
 		"typecheck": "tsc --noEmit"
 	},
+	"dependencies": {
+		"@agi-cli/types": "workspace:*"
+	},
 	"devDependencies": {
 		"@types/bun": "latest",
 		"typescript": "^5"

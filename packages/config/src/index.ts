@@ -5,25 +5,10 @@ import {
 	fileExists,
 	joinPath,
 } from './paths.ts';
-import type { ProviderId } from '@agi-cli/types';
+import type { ProviderId, ProviderConfig, AGIConfig } from '@agi-cli/types';
 
-export type ProviderConfig = { enabled: boolean; apiKey?: string };
-
-export type AGIConfig = {
-	projectRoot: string;
-	defaults: {
-		agent: string;
-		provider: ProviderId;
-		model: string;
-	};
-	providers: Record<ProviderId, ProviderConfig>;
-	paths: {
-		dataDir: string; // .agi
-		dbPath: string; // .agi/agi.sqlite
-		projectConfigPath: string | null;
-		globalConfigPath: string | null;
-	};
-};
+// Re-export types from @agi-cli/types
+export type { ProviderConfig, AGIConfig } from '@agi-cli/types';
 
 const DEFAULTS: {
 	defaults: AGIConfig['defaults'];
@@ -65,8 +50,8 @@ export async function loadConfig(
 
 	return {
 		projectRoot,
-		defaults: merged.defaults,
-		providers: merged.providers,
+		defaults: merged.defaults as AGIConfig['defaults'],
+		providers: merged.providers as AGIConfig['providers'],
 		paths: {
 			dataDir,
 			dbPath,

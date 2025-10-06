@@ -1,19 +1,13 @@
 import { getSecureAuthPath, ensureDir } from '@agi-cli/config/paths';
-import type { ProviderId } from '@agi-cli/types';
+import type {
+	ProviderId,
+	ApiAuth,
+	OAuth,
+	AuthInfo,
+	AuthFile,
+} from '@agi-cli/types';
 
-export type { ProviderId } from '@agi-cli/types';
-
-type ApiAuth = { type: 'api'; key: string };
-export type OAuth = {
-	type: 'oauth';
-	access: string;
-	refresh: string;
-	expires: number;
-};
-type OAuthAuth = OAuth;
-export type AuthInfo = ApiAuth | OAuthAuth; // room for wellknown later
-
-type AuthFile = Partial<Record<ProviderId, AuthInfo>>;
+export type { ProviderId, ApiAuth, OAuth, AuthInfo } from '@agi-cli/types';
 
 function globalAuthPath(): string {
 	return getSecureAuthPath();

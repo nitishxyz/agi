@@ -6,97 +6,177 @@ export type ErrorPayload = {
 	details?: Record<string, unknown>;
 };
 
-/**
- * Transforms any error object into a structured error payload
- * suitable for storage and event publishing.
- */
 export function toErrorPayload(err: unknown): ErrorPayload {
+	let actualError = err;
+	if (
+		err &&
+		typeof err === 'object' &&
+		'error' in err &&
+		Object.keys(err).length === 1
+	) {
+		actualError = (err as { error: unknown }).error;
+	}
+
 	const asObj =
-		err && typeof err === 'object'
-			? (err as Record<string, unknown>)
+		actualError && typeof actualError === 'object'
+			? (actualError as Record<string, unknown>)
 			: undefined;
 	let message = '';
 	let errorType = 'unknown';
+	const details: Record<string, unknown> = {};
 
-	// Determine error type
+	if (APICallError.isInstance(actualError)) {
+		errorType = 'api_error';
+		message = actualError.message || 'API call failed';
+
+		details.name = actualError.name;
+		details.statusCode = actualError.statusCode;
+		details.url = actualError.url;
+		details.isRetryable = actualError.isRetryable;
+
+		if (actualError.responseBody) {
+			details.responseBody = actualError.responseBody;
+			try {
+				const parsed = JSON.parse(actualError.responseBody);
+				if (parsed.error) {
+					if (typeof parsed.error === 'string') {
+						message = parsed.error;
+					} else if (parsed.error.message) {
+						message = parsed.error.message;
+					}
+				}
+				if (parsed.error?.type) {
+					details.apiErrorType = parsed.error.type;
+				}
+			} catch {}
+		}
+
+		if (actualError.requestBodyValues) {
+			details.requestBodyValues = actualError.requestBodyValues;
+		}
+
+		if (actualError.responseHeaders) {
+			details.responseHeaders = actualError.responseHeaders;
+		}
+
+		if (actualError.cause) {
+			const cause = actualError.cause as Record<string, unknown> | undefined;
+			details.cause = {
+				message: typeof cause?.message === 'string' ? cause.message : undefined,
+				code: cause?.code,
+				status: cause?.status ?? cause?.statusCode,
+			};
+		}
+
+		return { message, type: errorType, details };
+	}
+
+	if (
+		asObj &&
+		'type' in asObj &&
+		asObj.type === 'error' &&
+		'error' in asObj &&
+		typeof asObj.error === 'object' &&
+		asObj.error
+	) {
+		const errorObj = asObj.error as Record<string, unknown>;
+
+		if (typeof errorObj.message === 'string') {
+			message = errorObj.message;
+		}
+		if (typeof errorObj.type === 'string') {
+			errorType = errorObj.type;
+			details.errorType = errorObj.type;
+		}
+		if (typeof errorObj.code === 'string') {
+			details.code = errorObj.code;
+		}
+		if ('param' in errorObj) {
+			details.param = errorObj.param;
+		}
+
+		return { message, type: errorType, details };
+	}
+
 	if (asObj) {
 		if ('name' in asObj && typeof asObj.name === 'string') {
 			errorType = asObj.name;
+			details.name = asObj.name;
 		}
+
 		if ('type' in asObj && typeof asObj.type === 'string') {
 			errorType = asObj.type;
+			details.type = asObj.type;
+		}
+
+		if ('code' in asObj && asObj.code != null) {
+			details.code = asObj.code;
+		}
+
+		if ('status' in asObj && asObj.status != null) {
+			details.status = asObj.status;
+		}
+
+		if ('statusCode' in asObj && asObj.statusCode != null) {
+			details.statusCode = asObj.statusCode;
 		}
 	}
 
-	// Check if it's an API error
-	if (APICallError.isInstance(err)) {
-		errorType = 'api_error';
-	}
-
-	// Extract message
 	if (asObj && typeof asObj.message === 'string' && asObj.message) {
-		message = asObj.message as string;
-	} else if (typeof err === 'string') {
-		message = err as string;
+		message = asObj.message;
+	} else if (typeof actualError === 'string') {
+		message = actualError;
 	} else if (asObj && typeof asObj.error === 'string' && asObj.error) {
-		message = asObj.error as string;
+		message = asObj.error;
 	} else if (
 		asObj &&
 		typeof asObj.responseBody === 'string' &&
 		asObj.responseBody
 	) {
-		// Try to parse API error message from responseBody
+		details.responseBody = asObj.responseBody;
 		try {
-			const parsed = JSON.parse(asObj.responseBody as string);
-			if (parsed.error && typeof parsed.error.message === 'string') {
-				message = parsed.error.message;
+			const parsed = JSON.parse(asObj.responseBody);
+			if (parsed.error) {
+				if (typeof parsed.error === 'string') {
+					message = parsed.error;
+				} else if (typeof parsed.error.message === 'string') {
+					message = parsed.error.message;
+				} else {
+					message = asObj.responseBody;
+				}
 			} else {
-				message = asObj.responseBody as string;
+				message = asObj.responseBody;
 			}
 		} catch {
-			message = asObj.responseBody as string;
+			message = asObj.responseBody;
 		}
-	} else if (asObj?.statusCode && (asObj as { url?: unknown }).url) {
-		message = `HTTP ${String(asObj.statusCode)} error at ${String((asObj as { url?: unknown }).url)}`;
+	} else if (asObj?.statusCode && asObj.url) {
+		message = `HTTP ${String(asObj.statusCode)} error at ${String(asObj.url)}`;
+		details.url = asObj.url;
 	} else if (asObj?.name) {
 		message = String(asObj.name);
 	} else {
-		// Default: just say "An error occurred" instead of stringifying the whole object
 		message = 'An error occurred';
 	}
 
-	// Extract details - store the WHOLE error object here instead of in message
-	const details: Record<string, unknown> = {};
-	if (asObj && typeof asObj === 'object') {
-		for (const key of ['name', 'code', 'status', 'statusCode', 'type']) {
-			if (asObj[key] != null) details[key] = asObj[key];
-		}
-
-		// API call error specific fields
+	if (asObj) {
 		if ('url' in asObj) details.url = asObj.url;
 		if ('isRetryable' in asObj) details.isRetryable = asObj.isRetryable;
-		if ('responseBody' in asObj) details.responseBody = asObj.responseBody;
-		if ('requestBodyValues' in asObj)
-			details.requestBodyValues = asObj.requestBodyValues;
-		if ('responseHeaders' in asObj)
-			details.responseHeaders = asObj.responseHeaders;
 		if ('data' in asObj) details.data = asObj.data;
 
 		if (asObj.cause) {
 			const c = asObj.cause as Record<string, unknown> | undefined;
 			details.cause = {
-				message:
-					typeof c?.message === 'string' ? (c.message as string) : undefined,
-				code: (c as { code?: unknown })?.code,
-				status:
-					(c as { status?: unknown; statusCode?: unknown })?.status ??
-					(c as { statusCode?: unknown })?.statusCode,
+				message: typeof c?.message === 'string' ? c.message : undefined,
+				code: c?.code,
+				status: c?.status ?? c?.statusCode,
 			};
 		}
+
 		if (
 			(asObj as { response?: { status?: unknown; statusText?: unknown } })
 				?.response?.status
-		)
+		) {
 			details.response = {
 				status: (
 					asObj as { response?: { status?: unknown; statusText?: unknown } }
@@ -105,6 +185,7 @@ export function toErrorPayload(err: unknown): ErrorPayload {
 					asObj as { response?: { status?: unknown; statusText?: unknown } }
 				).response?.statusText,
 			};
+		}
 	}
 
 	return {
