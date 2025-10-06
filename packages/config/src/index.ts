@@ -5,9 +5,8 @@ import {
 	fileExists,
 	joinPath,
 } from './paths.ts';
-import type { ProviderId, ProviderConfig, AGIConfig } from '@agi-cli/types';
+import type { AGIConfig } from '@agi-cli/types';
 
-// Re-export types from @agi-cli/types
 export type { ProviderConfig, AGIConfig } from '@agi-cli/types';
 
 const DEFAULTS: {
@@ -45,7 +44,6 @@ export async function loadConfig(
 
 	const merged = deepMerge(DEFAULTS, globalCfg, projectCfg);
 
-	// Ensure data dir exists so downstream can open DB
 	await ensureDir(dataDir);
 
 	return {

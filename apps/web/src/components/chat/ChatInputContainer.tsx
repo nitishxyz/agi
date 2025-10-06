@@ -7,10 +7,6 @@ interface ChatInputContainerProps {
 	sessionId: string;
 }
 
-/**
- * ChatInputContainer - Self-contained component that manages chat input state
- * This isolates input state changes and config modal state from the rest of the app
- */
 export const ChatInputContainer = memo(function ChatInputContainer({
 	sessionId,
 }: ChatInputContainerProps) {
@@ -22,10 +18,9 @@ export const ChatInputContainer = memo(function ChatInputContainer({
 
 	const sendMessage = useSendMessage(sessionId);
 
-	// Reset input when session changes
 	useEffect(() => {
 		setInputKey((prev) => prev + 1);
-	}, [sessionId]);
+	}, []);
 
 	const handleSendMessage = useCallback(
 		async (content: string) => {

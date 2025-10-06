@@ -14,16 +14,13 @@ export const Sidebar = memo(function Sidebar({
 	children,
 	onNewSession,
 }: SidebarProps) {
-	// Use selectors to subscribe only to specific state slices
 	const isDiffOpen = useGitStore((state) => state.isDiffOpen);
 	const isCollapsed = useSidebarStore((state) => state.isCollapsed);
 	const toggleCollapse = useSidebarStore((state) => state.toggleCollapse);
 
-	// When collapsed (including auto-collapse from diff), show minimal sidebar with expand button in footer
 	if (isCollapsed) {
 		return (
 			<aside className="w-12 border-r border-border bg-background flex flex-col transition-all duration-300 ease-in-out">
-				{/* Header with New Session icon */}
 				<div className="h-14 border-b border-border flex items-center justify-center">
 					<Button
 						variant="ghost"
@@ -36,14 +33,14 @@ export const Sidebar = memo(function Sidebar({
 					</Button>
 				</div>
 
-				{/* Spacer to push footer to bottom - clickable to expand */}
-				<div
+				<button
+					type="button"
 					className="flex-1 cursor-pointer hover:bg-muted/50 transition-colors"
 					onClick={!isDiffOpen ? toggleCollapse : undefined}
 					title={!isDiffOpen ? 'Expand sidebar' : undefined}
+					aria-label="Expand sidebar"
 				/>
 
-				{/* Footer with Expand button */}
 				<div className="border-t border-border p-2 flex items-center justify-center">
 					<Button
 						variant="ghost"
@@ -62,7 +59,6 @@ export const Sidebar = memo(function Sidebar({
 
 	return (
 		<aside className="w-64 border-r border-border bg-background flex flex-col transition-all duration-300 ease-in-out">
-			{/* Header with New Session button */}
 			<div className="h-14 border-b border-border px-4 flex items-center">
 				<Button
 					variant="primary"
@@ -75,10 +71,8 @@ export const Sidebar = memo(function Sidebar({
 				</Button>
 			</div>
 
-			{/* Content */}
 			<div className="flex-1 overflow-y-auto scrollbar-hide">{children}</div>
 
-			{/* Footer with Collapse button aligned to the right */}
 			<div className="border-t border-border p-2 flex items-center justify-end">
 				<Button
 					variant="ghost"
