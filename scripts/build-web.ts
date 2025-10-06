@@ -9,16 +9,16 @@ import { join, relative } from 'node:path';
 import { readdirSync, statSync } from 'node:fs';
 
 const ROOT = import.meta.dir.replace('/scripts', '');
-const WEB_DIR = join(ROOT, 'apps/web');
+const WEB_PACKAGE_DIR = join(ROOT, 'packages/web-ui');
 const CLI_DIR = join(ROOT, 'apps/cli');
-const WEB_DIST = join(WEB_DIR, 'dist');
+const WEB_DIST = join(WEB_PACKAGE_DIR, 'dist', 'web-assets');
 const CLI_WEB_DIST = join(CLI_DIR, 'src/web-dist');
 
-console.log('🔨 Building web UI...');
-await $`bun run build`.cwd(WEB_DIR);
-console.log('✅ Web UI built successfully');
+console.log('🔨 Building @agi-cli/web-ui package...');
+await $`bun run build`.cwd(WEB_PACKAGE_DIR);
+console.log('✅ Web UI package built');
 
-console.log('📦 Copying web UI to CLI...');
+console.log('📦 Copying web UI assets to CLI...');
 await $`rm -rf ${CLI_WEB_DIST}`;
 await $`cp -r ${WEB_DIST} ${CLI_WEB_DIST}`;
 console.log('✅ Web UI copied to CLI');
