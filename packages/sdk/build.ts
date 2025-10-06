@@ -31,6 +31,7 @@ const buildResult = await Bun.build({
 	format: 'esm',
 	sourcemap: 'external',
 	minify: false,
+	external: ['@agi-cli/web-ui'],
 });
 
 if (!buildResult.success) {
