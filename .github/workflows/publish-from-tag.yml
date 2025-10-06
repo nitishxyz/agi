@@ -191,13 +191,12 @@ jobs:
         run: |
           set -euo pipefail
           cd packages/sdk
-          # Publish SDK package
-          bun publish --access public --tag latest
+          bun run build
+          bun publish --access public --tag latest ./dist
 
       - name: Publish web-ui to npm
         shell: bash
         run: |
           set -euo pipefail
           cd packages/web-ui
-          # Publish web-ui package
           bun publish --access public --tag latest

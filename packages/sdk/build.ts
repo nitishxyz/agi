@@ -71,11 +71,25 @@ const rawPackage = JSON.parse(
 	await readFile(join(packageDir, 'package.json'), 'utf8'),
 ) as Record<string, unknown>;
 
+const externals = new Set(['@agi-cli/web-ui']);
+const webUIPackage = JSON.parse(
+	await readFile(join(packageDir, '..', 'web-ui', 'package.json'), 'utf8'),
+) as { version?: string };
 const dependencies = Object.fromEntries(
 	Object.entries(
 		(rawPackage.dependencies ?? {}) as Record<string, string>,
-	).filter(([name]) => !name.startsWith('@agi-cli/')),
+	).filter(([name]) => {
+		if (!name.startsWith('@agi-cli/')) return true;
+		return externals.has(name);
+	}),
 );
+
+if (externals.has('@agi-cli/web-ui')) {
+	const version = webUIPackage.version;
+	if (version) {
+		dependencies['@agi-cli/web-ui'] = version;
+	}
+}
 
 const publishPackage = {
 	name: rawPackage.name,

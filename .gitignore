@@ -43,3 +43,4 @@ reference
 apps/cli/src/web-dist
 .turbo
 tmp
+dist-types
