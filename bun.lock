@@ -32,7 +32,7 @@
     },
     "apps/cli": {
       "name": "@agi-cli/cli",
-      "version": "0.1.51",
+      "version": "0.1.52",
       "bin": {
         "agi": "./dist/agi",
       },
@@ -166,7 +166,7 @@
     },
     "packages/install": {
       "name": "@agi-cli/install",
-      "version": "0.1.51",
+      "version": "0.1.52",
       "bin": {
         "agi": "./start.js",
       },
@@ -189,7 +189,7 @@
     },
     "packages/sdk": {
       "name": "@agi-cli/sdk",
-      "version": "0.1.51",
+      "version": "0.1.52",
       "dependencies": {
         "@agi-cli/auth": "workspace:*",
         "@agi-cli/config": "workspace:*",
@@ -242,7 +242,7 @@
     },
     "packages/web-ui": {
       "name": "@agi-cli/web-ui",
-      "version": "0.1.51",
+      "version": "0.1.52",
       "dependencies": {
         "express": "^5.1.0",
       },
