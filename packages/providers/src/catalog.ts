@@ -4198,4 +4198,4 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 			},
 		],
 	},
-} as const;
+} as const satisfies Record<ProviderId, { models: ModelInfo[] }>;

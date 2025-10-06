@@ -1,4 +1,4 @@
-import type { ProviderId } from './catalog.ts';
+import type { ProviderId } from '@agi-cli/types';
 
 const ENV_VARS: Record<ProviderId, string> = {
 	openai: 'OPENAI_API_KEY',

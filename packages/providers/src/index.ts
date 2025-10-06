@@ -1,6 +1,6 @@
 export { isProviderAuthorized, ensureProviderEnv } from './authorization.ts';
 export { catalog } from './catalog.ts';
-export type { ProviderId, ModelInfo } from './catalog.ts';
+export type { ProviderId, ModelInfo } from '@agi-cli/types';
 export {
 	isProviderId,
 	providerIds,

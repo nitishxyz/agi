@@ -1,4 +1,5 @@
-import { catalog, type ProviderId } from './catalog.ts';
+import { catalog } from './catalog.ts';
+import type { ProviderId } from '@agi-cli/types';
 
 export type CapabilityRequest = {
 	wantsToolCalls?: boolean;
@@ -28,9 +29,10 @@ export function validateProviderModel(
 		throw new Error(`Model ${model} does not support tool calls.`);
 	}
 	if (cap?.wantsVision) {
-		const inputs = entry.modalities?.input ?? [];
-		const outputs = entry.modalities?.output ?? [];
-		const ok = inputs.includes('image') || outputs.includes('image');
+		const inputs = entry.modalities?.input as string[] | undefined;
+		const outputs = entry.modalities?.output as string[] | undefined;
+		const ok =
+			(inputs ?? []).includes('image') || (outputs ?? []).includes('image');
 		if (!ok)
 			throw new Error(`Model ${model} does not support vision input/output.`);
 	}
