@@ -185,7 +185,7 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 					return origin;
 				}
 				// Allow custom CORS origins (for Tailscale, proxies, etc.)
-				if (config.corsOrigins && config.corsOrigins.includes(origin)) {
+				if (config.corsOrigins?.includes(origin)) {
 					return origin;
 				}
 				// Default to allowing the origin

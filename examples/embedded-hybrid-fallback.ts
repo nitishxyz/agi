@@ -14,11 +14,11 @@ import { serveWebUI } from '@agi-cli/web-ui';
 console.log(
 	'\n📦 Example 1: No config (falls back to ~/.config/agi/auth.json)',
 );
-const app1 = createEmbeddedApp();
+const _app1 = createEmbeddedApp();
 
 // Example 2: Partial override - Model only
 console.log('\n📦 Example 2: Override model only (auth from files/env)');
-const app2 = createEmbeddedApp({
+const _app2 = createEmbeddedApp({
 	model: 'gpt-4', // Override model, auth/provider from files
 });
 
@@ -32,7 +32,7 @@ const app3 = createEmbeddedApp({
 
 // Example 4: Full override
 console.log('\n📦 Example 4: Full config (no fallback)');
-const app4 = createEmbeddedApp({
+const _app4 = createEmbeddedApp({
 	provider: 'openai',
 	model: 'gpt-4',
 	apiKey: process.env.OPENAI_API_KEY || '',
@@ -47,7 +47,7 @@ const app4 = createEmbeddedApp({
 console.log(
 	'\n📦 Example 5: Multi-provider (some from config, some from files)',
 );
-const app5 = createEmbeddedApp({
+const _app5 = createEmbeddedApp({
 	provider: 'openai',
 	apiKey: process.env.OPENAI_API_KEY, // Can be undefined
 	auth: {
