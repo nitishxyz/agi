@@ -54,4 +54,6 @@ const server = Bun.serve({
 console.log(`🚀 Server running at: http://${host}:${server.port}`);
 console.log(`📱 Web UI available at: http://${host}:${server.port}/ui`);
 console.log(`🏥 Health endpoint: http://${host}:${server.port}/api/health`);
-console.log(`\n✨ Web UI is configured to connect to this server automatically`);
+console.log(
+	`\n✨ Web UI is configured to connect to this server automatically`,
+);

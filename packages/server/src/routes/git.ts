@@ -90,8 +90,18 @@ function detectLanguage(filePath: string): string {
 	return languageMap[ext] || 'plaintext';
 }
 
+// Helper function to check if path is in a git repository
+async function isGitRepository(path: string): Promise<boolean> {
+	try {
+		await execFileAsync('git', ['rev-parse', '--git-dir'], { cwd: path });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 // Helper function to find git root directory
-async function findGitRoot(startPath: string): Promise<string> {
+async function findGitRoot(startPath: string): Promise<string | null> {
 	try {
 		const { stdout } = await execFileAsync(
 			'git',
@@ -99,10 +109,28 @@ async function findGitRoot(startPath: string): Promise<string> {
 			{ cwd: startPath },
 		);
 		return stdout.trim();
-	} catch (_error) {
-		// If not in a git repository, return the original path
-		return startPath;
+	} catch {
+		return null;
 	}
+}
+
+// Helper to validate git repo and get root
+async function validateAndGetGitRoot(
+	path: string,
+): Promise<{ gitRoot: string } | { error: string; code: string }> {
+	if (!(await isGitRepository(path))) {
+		return { error: 'Not a git repository', code: 'NOT_A_GIT_REPO' };
+	}
+
+	const gitRoot = await findGitRoot(path);
+	if (!gitRoot) {
+		return {
+			error: 'Could not find git repository root',
+			code: 'GIT_ROOT_NOT_FOUND',
+		};
+	}
+
+	return { gitRoot };
 }
 
 // Git status parsing
@@ -231,7 +259,16 @@ export function registerGitRoutes(app: Hono) {
 			});
 
 			const requestedPath = query.project || process.cwd();
-			const gitRoot = await findGitRoot(requestedPath);
+
+			const validation = await validateAndGetGitRoot(requestedPath);
+			if ('error' in validation) {
+				return c.json(
+					{ status: 'error', error: validation.error, code: validation.code },
+					400,
+				);
+			}
+
+			const { gitRoot } = validation;
 
 			// Get git status
 			const { stdout: statusOutput } = await execFileAsync(
@@ -290,12 +327,12 @@ export function registerGitRoutes(app: Hono) {
 				data: status,
 			});
 		} catch (error) {
-			console.error('Git status error:', error);
+			const errorMessage =
+				error instanceof Error ? error.message : 'Failed to get git status';
 			return c.json(
 				{
 					status: 'error',
-					error:
-						error instanceof Error ? error.message : 'Failed to get git status',
+					error: errorMessage,
 				},
 				500,
 			);
@@ -312,7 +349,16 @@ export function registerGitRoutes(app: Hono) {
 			});
 
 			const requestedPath = query.project || process.cwd();
-			const gitRoot = await findGitRoot(requestedPath);
+
+			const validation = await validateAndGetGitRoot(requestedPath);
+			if ('error' in validation) {
+				return c.json(
+					{ status: 'error', error: validation.error, code: validation.code },
+					400,
+				);
+			}
+
+			const { gitRoot } = validation;
 			const file = query.file;
 			const staged = query.staged;
 
@@ -349,7 +395,6 @@ export function registerGitRoutes(app: Hono) {
 					insertions = lines.length;
 					deletions = 0;
 				} catch (err) {
-					console.error('Error reading new file:', err);
 					diffOutput = `Error reading file: ${err instanceof Error ? err.message : 'Unknown error'}`;
 				}
 			} else {
@@ -403,15 +448,9 @@ export function registerGitRoutes(app: Hono) {
 				},
 			});
 		} catch (error) {
-			console.error('Git diff error:', error);
-			return c.json(
-				{
-					status: 'error',
-					error:
-						error instanceof Error ? error.message : 'Failed to get git diff',
-				},
-				500,
-			);
+			const errorMessage =
+				error instanceof Error ? error.message : 'Failed to get git diff';
+			return c.json({ status: 'error', error: errorMessage }, 500);
 		}
 	});
 
@@ -504,7 +543,6 @@ Generate only the commit message, nothing else.`;
 				},
 			});
 		} catch (error) {
-			console.error('Generate commit message error:', error);
 			return c.json(
 				{
 					status: 'error',
@@ -538,7 +576,6 @@ Generate only the commit message, nothing else.`;
 				},
 			});
 		} catch (error) {
-			console.error('Git stage error:', error);
 			return c.json(
 				{
 					status: 'error',
@@ -579,7 +616,6 @@ Generate only the commit message, nothing else.`;
 				},
 			});
 		} catch (error) {
-			console.error('Git unstage error:', error);
 			return c.json(
 				{
 					status: 'error',
@@ -656,7 +692,6 @@ Generate only the commit message, nothing else.`;
 				},
 			});
 		} catch (error) {
-			console.error('Git commit error:', error);
 			return c.json(
 				{
 					status: 'error',
@@ -675,7 +710,16 @@ Generate only the commit message, nothing else.`;
 			});
 
 			const requestedPath = query.project || process.cwd();
-			const gitRoot = await findGitRoot(requestedPath);
+
+			const validation = await validateAndGetGitRoot(requestedPath);
+			if ('error' in validation) {
+				return c.json(
+					{ status: 'error', error: validation.error, code: validation.code },
+					400,
+				);
+			}
+
+			const { gitRoot } = validation;
 
 			const branch = await getCurrentBranch(gitRoot);
 			const { ahead, behind } = await getAheadBehind(gitRoot);
@@ -720,7 +764,6 @@ Generate only the commit message, nothing else.`;
 				},
 			});
 		} catch (error) {
-			console.error('Git branch error:', error);
 			return c.json(
 				{
 					status: 'error',

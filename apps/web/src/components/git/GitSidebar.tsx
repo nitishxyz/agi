@@ -10,7 +10,7 @@ export const GitSidebar = memo(function GitSidebar() {
 	// Use selectors to only subscribe to needed state
 	const isExpanded = useGitStore((state) => state.isExpanded);
 	const collapseSidebar = useGitStore((state) => state.collapseSidebar);
-	const { data: status, isLoading, refetch } = useGitStatus();
+	const { data: status, isLoading, error, refetch } = useGitStatus();
 	const queryClient = useQueryClient();
 
 	// Auto-fetch when sidebar is opened or closed
@@ -66,6 +66,19 @@ export const GitSidebar = memo(function GitSidebar() {
 				{isLoading ? (
 					<div className="p-4 text-sm text-muted-foreground">
 						Loading git status...
+					</div>
+				) : error ? (
+					<div className="p-4 text-sm text-muted-foreground">
+						<div className="flex flex-col gap-2">
+							<span className="text-orange-500">
+								{error instanceof Error
+									? error.message
+									: 'Failed to load git status'}
+							</span>
+							<Button variant="secondary" size="sm" onClick={handleRefresh}>
+								Retry
+							</Button>
+						</div>
 					</div>
 				) : !status || totalChanges === 0 ? (
 					<div className="p-4 text-sm text-muted-foreground">

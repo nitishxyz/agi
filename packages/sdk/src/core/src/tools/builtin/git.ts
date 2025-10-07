@@ -38,7 +38,14 @@ export function buildGitTools(
 		description: GIT_STATUS_DESCRIPTION,
 		inputSchema: z.object({}).optional(),
 		async execute() {
-			if (!(await inRepo())) throw new Error('Not a git repository');
+			if (!(await inRepo())) {
+				return {
+					error: 'Not a git repository',
+					staged: 0,
+					unstaged: 0,
+					raw: [],
+				};
+			}
 			const gitRoot = await findGitRoot();
 			const { stdout } = await execAsync(
 				`git -C "${gitRoot}" status --porcelain=v1`,
@@ -67,7 +74,9 @@ export function buildGitTools(
 		description: GIT_DIFF_DESCRIPTION,
 		inputSchema: z.object({ all: z.boolean().optional().default(false) }),
 		async execute({ all }: { all?: boolean }) {
-			if (!(await inRepo())) throw new Error('Not a git repository');
+			if (!(await inRepo())) {
+				return { error: 'Not a git repository', all: !!all, patch: '' };
+			}
 			const gitRoot = await findGitRoot();
 			// When all=true, show full working tree diff relative to HEAD
 			// so both staged and unstaged changes are included. Otherwise,
@@ -97,7 +106,9 @@ export function buildGitTools(
 			amend?: boolean;
 			signoff?: boolean;
 		}) {
-			if (!(await inRepo())) throw new Error('Not a git repository');
+			if (!(await inRepo())) {
+				return { success: false, error: 'Not a git repository' };
+			}
 			const gitRoot = await findGitRoot();
 			const args = [
 				'git',
