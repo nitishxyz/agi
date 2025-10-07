@@ -109,6 +109,44 @@ Bun.serve({
 console.log('Web UI: http://localhost:3000/admin');
 ```
 
+### Custom Server URL
+
+When serving both the API and web UI from the same server, you can configure the web UI to connect to your server instead of the default `localhost:9100`:
+
+```typescript
+import { createApp } from '@agi-cli/server';
+import { serveWebUI } from '@agi-cli/web-ui';
+
+const port = parseInt(process.env.PORT || '3000', 10);
+const host = process.env.HOST || '127.0.0.1';
+
+const app = createApp();
+const handleWebUI = serveWebUI({
+  prefix: '/ui',
+  serverUrl: `http://${host}:${port}`, // Explicit server URL
+});
+
+// Or let it auto-detect (recommended for same-server setup):
+// const handleWebUI = serveWebUI({ prefix: '/ui' });
+
+const server = Bun.serve({
+  port,
+  hostname: host,
+  async fetch(req) {
+    // Serve web UI first
+    const webUIResponse = await handleWebUI(req);
+    if (webUIResponse) return webUIResponse;
+
+    // Then API routes
+    return app.fetch(req);
+  },
+});
+
+console.log(`Server: http://${host}:${server.port}/ui`);
+```
+
+> **Note:** If you don't specify `serverUrl`, the web UI will automatically detect the server URL from the incoming request. This is recommended when serving both the API and UI from the same server.
+
 ## API Reference
 
 ### `serveWebUI(options?): (req: Request) => Promise<Response | null>`
@@ -122,6 +160,7 @@ Creates a request handler that serves the web UI.
 | `prefix` | `string` | `'/ui'` | URL prefix for the web UI |
 | `redirectRoot` | `boolean` | `false` | Redirect `/` to the prefix |
 | `onNotFound` | `(req: Request) => Response \| null` | `null` | Custom 404 handler |
+| `serverUrl` | `string` | Auto-detected | API server URL for the web UI to connect to. If not provided, auto-detects from request (e.g., `http://localhost:3000`) |
 
 **Returns:** A request handler function that returns:
 - `Response` if the request matches a web UI route

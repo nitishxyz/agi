@@ -59,6 +59,14 @@ export interface ServeWebUIOptions {
 	 * Custom 404 handler
 	 */
 	onNotFound?: (req: Request) => Response | Promise<Response> | null;
+
+	/**
+	 * API server URL for the web UI to connect to
+	 * If not provided, will attempt to auto-detect from the request
+	 * or fall back to localhost:9100
+	 * @example 'http://localhost:3000', 'https://api.example.com'
+	 */
+	serverUrl?: string;
 }
 
 /**
@@ -75,13 +83,23 @@ export interface ServeWebUIOptions {
  * ```
  */
 export function serveWebUI(options: ServeWebUIOptions = {}) {
-	const { prefix = '/ui', redirectRoot = false, onNotFound = null } = options;
+	const {
+		prefix = '/ui',
+		redirectRoot = false,
+		onNotFound = null,
+		serverUrl,
+	} = options;
 
 	const webUIPath = getWebUIPath();
 	const useEmbedded = EMBEDDED_ASSETS.size > 0;
 
 	return async function handleRequest(req: Request): Promise<Response | null> {
 		const url = new URL(req.url);
+
+		// Determine the server URL for this request
+		const resolvedServerUrl =
+			serverUrl ||
+			`${url.protocol}//${url.host}`.replace(/\/ui$/, '').replace(/\/$/, '');
 
 		// Helper to serve a file
 		const serveAsset = async (pathname: string): Promise<Response | null> => {
@@ -92,7 +110,18 @@ export function serveWebUI(options: ServeWebUIOptions = {}) {
 			if (useEmbedded) {
 				const asset = EMBEDDED_ASSETS.get(normalizedPath);
 				if (asset) {
-					const content = Buffer.from(asset.content, 'base64');
+					let content = Buffer.from(asset.content, 'base64');
+
+					// Inject server URL into index.html
+					if (normalizedPath === '/index.html') {
+						const html = content.toString('utf-8');
+						const injectedHtml = html.replace(
+							'</head>',
+							`<script>window.AGI_SERVER_URL = ${JSON.stringify(resolvedServerUrl)};</script></head>`,
+						);
+						content = Buffer.from(injectedHtml, 'utf-8');
+					}
+
 					return new Response(content, {
 						headers: { 'Content-Type': asset.contentType },
 					});
@@ -111,6 +140,17 @@ export function serveWebUI(options: ServeWebUIOptions = {}) {
 				if (typeof Bun !== 'undefined') {
 					const file = Bun.file(fullPath);
 					if (await file.exists()) {
+						// Inject server URL into index.html
+						if (normalizedPath === '/index.html') {
+							const html = await file.text();
+							const injectedHtml = html.replace(
+								'</head>',
+								`<script>window.AGI_SERVER_URL = ${JSON.stringify(resolvedServerUrl)};</script></head>`,
+							);
+							return new Response(injectedHtml, {
+								headers: { 'Content-Type': 'text/html' },
+							});
+						}
 						return new Response(file);
 					}
 				} else {
@@ -118,9 +158,20 @@ export function serveWebUI(options: ServeWebUIOptions = {}) {
 					const fs = require('node:fs');
 					const fsPromises = require('node:fs/promises');
 					if (fs.existsSync(fullPath)) {
-						const content = await fsPromises.readFile(fullPath);
+						let content = await fsPromises.readFile(fullPath);
 						const ext = fullPath.split('.').pop() || '';
 						const contentType = getContentType(ext);
+
+						// Inject server URL into index.html
+						if (normalizedPath === '/index.html') {
+							const html = content.toString('utf-8');
+							const injectedHtml = html.replace(
+								'</head>',
+								`<script>window.AGI_SERVER_URL = ${JSON.stringify(resolvedServerUrl)};</script></head>`,
+							);
+							content = Buffer.from(injectedHtml, 'utf-8');
+						}
+
 						return new Response(content, {
 							headers: { 'Content-Type': contentType },
 						});
