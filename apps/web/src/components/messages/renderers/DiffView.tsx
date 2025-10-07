@@ -1,31 +1,79 @@
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
 interface DiffViewProps {
 	patch: string;
 }
 
 interface DiffLine {
 	content: string;
+	codeContent: string; // Content without +/- prefix
 	type: 'add' | 'remove' | 'context' | 'meta' | 'header';
 	oldLineNum?: number;
 	newLineNum?: number;
 }
 
-function parseDiff(patch: string): DiffLine[] {
+function getLanguageFromPath(path: string): string {
+	const ext = path.split('.').pop()?.toLowerCase();
+	const langMap: Record<string, string> = {
+		js: 'javascript',
+		jsx: 'jsx',
+		ts: 'typescript',
+		tsx: 'tsx',
+		py: 'python',
+		rb: 'ruby',
+		go: 'go',
+		rs: 'rust',
+		java: 'java',
+		c: 'c',
+		cpp: 'cpp',
+		h: 'c',
+		hpp: 'cpp',
+		cs: 'csharp',
+		php: 'php',
+		sh: 'bash',
+		bash: 'bash',
+		zsh: 'bash',
+		sql: 'sql',
+		json: 'json',
+		yaml: 'yaml',
+		yml: 'yaml',
+		xml: 'xml',
+		html: 'html',
+		css: 'css',
+		scss: 'scss',
+		md: 'markdown',
+		txt: 'text',
+		svelte: 'svelte',
+	};
+	return langMap[ext || ''] || 'javascript';
+}
+
+function parseDiff(patch: string): { lines: DiffLine[]; filePath: string } {
 	const lines = patch.split('\n');
 	const result: DiffLine[] = [];
 	let oldLineNum = 0;
 	let newLineNum = 0;
 	let inHunk = false;
+	let filePath = '';
 
 	for (const line of lines) {
+		// Extract file path from diff headers
+		if (line.startsWith('+++') || line.startsWith('*** Update File:')) {
+			const match = line.match(/\+\+\+ b\/(.+)/) || line.match(/\*\*\* Update File: (.+)/);
+			if (match) filePath = match[1];
+		}
+
 		// Parse hunk header to get starting line numbers
 		// Format: @@ -oldStart,oldCount +newStart,newCount @@
 		const hunkMatch = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
 		if (hunkMatch) {
-			oldLineNum = parseInt(hunkMatch[1], 10);
-			newLineNum = parseInt(hunkMatch[2], 10);
+			oldLineNum = Number.parseInt(hunkMatch[1], 10);
+			newLineNum = Number.parseInt(hunkMatch[2], 10);
 			inHunk = true;
 			result.push({
 				content: line,
+				codeContent: line,
 				type: 'header',
 			});
 			continue;
@@ -41,6 +89,7 @@ function parseDiff(patch: string): DiffLine[] {
 		) {
 			result.push({
 				content: line,
+				codeContent: line,
 				type: 'meta',
 			});
 			continue;
@@ -51,18 +100,21 @@ function parseDiff(patch: string): DiffLine[] {
 			if (line.startsWith('+')) {
 				result.push({
 					content: line,
+					codeContent: line.slice(1),
 					type: 'add',
 					newLineNum: newLineNum++,
 				});
 			} else if (line.startsWith('-')) {
 				result.push({
 					content: line,
+					codeContent: line.slice(1),
 					type: 'remove',
 					oldLineNum: oldLineNum++,
 				});
 			} else if (line.startsWith(' ') || line === '') {
 				result.push({
 					content: line,
+					codeContent: line.startsWith(' ') ? line.slice(1) : line,
 					type: 'context',
 					oldLineNum: oldLineNum++,
 					newLineNum: newLineNum++,
@@ -71,6 +123,7 @@ function parseDiff(patch: string): DiffLine[] {
 				// Handle lines that don't start with +, -, or space (edge case)
 				result.push({
 					content: line,
+					codeContent: line,
 					type: 'context',
 				});
 			}
@@ -78,16 +131,18 @@ function parseDiff(patch: string): DiffLine[] {
 			// Lines before any hunk
 			result.push({
 				content: line,
+				codeContent: line,
 				type: 'meta',
 			});
 		}
 	}
 
-	return result;
+	return { lines: result, filePath };
 }
 
 export function DiffView({ patch }: DiffViewProps) {
-	const diffLines = parseDiff(patch);
+	const { lines: diffLines, filePath } = parseDiff(patch);
+	const language = getLanguageFromPath(filePath);
 
 	return (
 		<div className="bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 max-w-full">
@@ -124,7 +179,59 @@ export function DiffView({ patch }: DiffViewProps) {
 							bgClass = 'bg-red-500/10';
 							break;
 						default:
-							lineClass = 'text-muted-foreground';
+							lineClass = 'text-foreground/80';
+					}
+
+					// Apply syntax highlighting to code content
+					let renderedContent: React.ReactNode = line.content;
+					if (line.codeContent.trim() && language !== 'text') {
+						renderedContent = (
+							<SyntaxHighlighter
+								language={language}
+								style={vscDarkPlus}
+								customStyle={{
+									margin: 0,
+									padding: 0,
+									background: 'transparent',
+									display: 'inline',
+									fontSize: 'inherit',
+									lineHeight: 'inherit',
+								}}
+								codeTagProps={{
+									style: {
+										fontFamily: 'inherit',
+										background: 'transparent',
+									},
+								}}
+								PreTag="span"
+							>
+								{line.codeContent}
+							</SyntaxHighlighter>
+						);
+
+						// Add back the +/- prefix
+						if (line.type === 'add') {
+							renderedContent = (
+								<>
+									<span className="select-none">+</span>
+									{renderedContent}
+								</>
+							);
+						} else if (line.type === 'remove') {
+							renderedContent = (
+								<>
+									<span className="select-none">-</span>
+									{renderedContent}
+								</>
+							);
+						} else if (line.type === 'context') {
+							renderedContent = (
+								<>
+									<span className="select-none"> </span>
+									{renderedContent}
+								</>
+							);
+						}
 					}
 
 					return (
@@ -141,7 +248,7 @@ export function DiffView({ patch }: DiffViewProps) {
 							<div
 								className={`px-3 py-0.5 flex-1 min-w-0 whitespace-pre-wrap break-all ${lineClass}`}
 							>
-								{line.content}
+								{renderedContent}
 							</div>
 						</div>
 					);
