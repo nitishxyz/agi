@@ -84,25 +84,40 @@ const safeTools = BUILTIN_TOOLS.filter(
 
 ## Configuration Options
 
-### Basic Configuration
+### Hybrid Fallback Architecture
+
+AGI uses a **three-tier fallback system** for configuration and authentication:
+
+1. **Injected config** (highest priority) - Passed to `createEmbeddedApp()`
+2. **Environment variables** - `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.
+3. **Config files** (fallback) - `~/.config/agi/auth.json`, `.agi/config.json`
+
+This allows AGI to work in **any environment**:
+- Fully embedded (no files needed)
+- CI/CD (env vars only)
+- Traditional CLI (config files)
+- Hybrid (mix of all three)
+
+### Configuration Types
 
 ```typescript
+// Optional configuration - all fields are optional!
 type EmbeddedAppConfig = {
-  // Required: Provider and model
-  provider: 'openai' | 'anthropic' | 'google' | 'openrouter' | 'opencode';
-  model: string;
-  apiKey: string;
+  // Provider and model (falls back to env/files if not provided)
+  provider?: 'openai' | 'anthropic' | 'google' | 'openrouter' | 'opencode';
+  model?: string;
+  apiKey?: string;
   
-  // Optional: Default agent to use
+  // Default agent to use
   agent?: string;
   
-  // Optional: Multi-provider auth
+  // Multi-provider auth (optional)
   auth?: Record<string, { apiKey: string }>;
   
-  // Optional: Custom agents
+  // Custom agents (optional)
   agents?: Record<string, AgentConfigEntry>;
   
-  // Optional: Default settings
+  // Default settings (optional)
   defaults?: {
     provider?: string;
     model?: string;
@@ -111,20 +126,80 @@ type EmbeddedAppConfig = {
 };
 ```
 
+## Network Access & Proxies
+
+The server supports access from:
+- **Localhost**: `http://localhost:*` and `http://127.0.0.1:*`
+- **Local network**: `192.168.x.x`, `10.x.x.x`, `172.16-31.x.x`
+- **Custom origins**: Configure via `corsOrigins` for Tailscale, reverse proxies, etc.
+
+### Tailscale / Proxy Configuration
+
+```typescript
+import { createEmbeddedApp } from '@agi-cli/server';
+
+const app = createEmbeddedApp({
+  corsOrigins: [
+    'https://myapp.ts.net',           // Tailscale domain
+    'https://agi.example.com',        // Custom domain
+    'https://subdomain.ngrok.io'      // ngrok tunnel
+  ]
+});
+
+Bun.serve({
+  port: 9100,
+  fetch: app.fetch
+});
+```
+
+The Web UI auto-detects the server URL, so accessing via `https://myapp.ts.net/ui` will connect to `https://myapp.ts.net/v1/*`.
+
 ## Usage Examples
 
-### 1. Use Built-in Agent
+### 1. Full Injection (No Files or Env Vars)
 
 ```typescript
 const app = createEmbeddedApp({
   provider: 'openai',
   model: 'gpt-4',
-  apiKey: process.env.OPENAI_API_KEY || '',
-  agent: 'build', // ← Autocomplete works!
+  apiKey: 'sk-...', // Hardcoded or from your vault
+  agent: 'build',
 });
 ```
 
-### 2. Customize Built-in Agent
+### 2. Environment Variables Only
+
+```typescript
+// Set env vars: OPENAI_API_KEY=sk-...
+const app = createEmbeddedApp({
+  provider: 'openai',
+  model: 'gpt-4',
+  // apiKey omitted - falls back to env var
+  agent: 'build',
+});
+```
+
+### 3. Fallback to Config Files
+
+```typescript
+// Uses ~/.config/agi/auth.json and .agi/config.json
+const app = createEmbeddedApp({
+  // All fields omitted - uses file config
+});
+```
+
+### 4. Hybrid Mode (Mix of All)
+
+```typescript
+// Uses injected provider, but falls back to env/files for API key
+const app = createEmbeddedApp({
+  provider: 'openai', // Injected
+  // model and apiKey fall back to env or files
+  agent: 'build',
+});
+```
+
+### 5. Customize Built-in Agent
 
 ```typescript
 import { BUILTIN_AGENTS } from '@agi-cli/server';
@@ -143,7 +218,7 @@ const app = createEmbeddedApp({
 });
 ```
 
-### 3. Create Custom Agent
+### 6. Create Custom Agent
 
 ```typescript
 const app = createEmbeddedApp({
@@ -162,7 +237,7 @@ const app = createEmbeddedApp({
 });
 ```
 
-### 4. Multi-Agent Setup
+### 7. Multi-Agent Setup
 
 ```typescript
 const app = createEmbeddedApp({
@@ -205,7 +280,7 @@ const app = createEmbeddedApp({
 });
 ```
 
-### 5. Embed in Existing App
+### 8. Embed in Existing App
 
 ```typescript
 import { Hono } from 'hono';
@@ -384,15 +459,62 @@ const agiApp = createEmbeddedApp({
 });
 ```
 
-## Differences from CLI Mode
+## Fallback Priority
 
-| Feature | CLI Mode | Embedded Mode |
-|---------|----------|---------------|
-| Auth | `~/.config/agi/auth.json` | Injected via config |
-| Config | `.agi/config.json` | Injected via config |
-| Agents | File-based | Programmatic |
-| Database | `.agi/agi.sqlite` | In-memory or custom |
-| Setup | User runs `agi login` | Parent app handles |
+When AGI needs a configuration value, it checks in this order:
+
+```
+1. Injected config (createEmbeddedApp({ ... }))
+   ↓ if not found
+2. Environment variables (OPENAI_API_KEY, etc.)
+   ↓ if not found
+3. Config files (~/.config/agi/auth.json, .agi/config.json)
+   ↓ if not found
+4. Built-in defaults
+```
+
+### Example Scenarios
+
+| Scenario | Injected | Env Vars | Files | Result |
+|----------|----------|----------|-------|--------|
+| **Full Injection** | ✅ All | ❌ None | ❌ None | Uses injected config |
+| **Env Only** | ❌ None | ✅ API keys | ❌ None | Uses env vars |
+| **CLI Mode** | ❌ None | ❌ None | ✅ All | Uses config files |
+| **Hybrid** | ✅ Provider | ✅ API key | ✅ Model | Uses all three! |
+
+## Deployment Modes
+
+### Mode 1: Fully Embedded (No Files)
+Best for: SaaS platforms, VSCode extensions, Electron apps
+
+```typescript
+const app = createEmbeddedApp({
+  provider: 'openai',
+  model: 'gpt-4',
+  apiKey: await getFromVault(),
+  agent: 'build',
+});
+```
+
+### Mode 2: Environment Variables (CI/CD)
+Best for: GitHub Actions, Docker, serverless
+
+```typescript
+// Set: OPENAI_API_KEY=sk-...
+const app = createEmbeddedApp({
+  provider: 'openai',
+  model: 'gpt-4',
+  // Falls back to env var
+});
+```
+
+### Mode 3: Traditional CLI (Config Files)
+Best for: Desktop development, local usage
+
+```typescript
+// Uses ~/.config/agi/auth.json
+const app = createEmbeddedApp({});
+```
 
 ## Next Steps
 

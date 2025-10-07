@@ -24,19 +24,11 @@ Welcome to the AGI CLI documentation. This index provides an overview of all ava
 - **[Contributing](../AGENTS.md)** - Contribution guidelines for AI agents and humans
 
 ### Advanced Topics
+- **[Embedding Guide](embedding-guide.md)** - Embed AGI in your applications
 - **[AI SDK v5 Integration](ai-sdk-v5.md)** - How AGI uses AI SDK v5
 - **[Streaming Architecture](streaming-overhaul.md)** - Real-time streaming implementation
 - **[Tools & Artifacts](tools-and-artifacts.md)** - Tool system and artifact handling
 - **[File Editing Solution](file-editing-solution.md)** - File editing capabilities
-- **[Auth & Config Architecture](auth-config-architecture.md)** - Authentication and configuration design
-- **[SDK Server Standalone Usage](sdk-server-standalone-usage.md)** - Using SDK and server independently
-
-### Planning & Features
-- **[AGI Planning Approach](agi-plan.md)** - Project planning philosophy
-- **[Feature Summary](FEATURE_SUMMARY.md)** - Complete feature list
-- **[Web UI Embedding](web-ui-embedding.md)** - Embedding the web UI
-- **[Web UI Enhancements Plan](web-ui-enhancements-plan.md)** - Planned web UI improvements
-- **[Web App Plan](webapp-plan.md)** - Web application roadmap
 
 ### Reference
 - **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
@@ -129,8 +121,8 @@ Start here if you're using AGI CLI:
 Start here if you're building with AGI SDK:
 
 1. [SDK README](../packages/sdk/README.md) - SDK overview
-2. [API Reference](api.md) - HTTP API documentation
-3. [SDK Server Standalone Usage](sdk-server-standalone-usage.md) - Embed AGI
+2. [Embedding Guide](embedding-guide.md) - Embed AGI in your applications
+3. [API Reference](api.md) - HTTP API documentation
 4. [Architecture](architecture.md) - System design
 
 ### For Contributors

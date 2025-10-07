@@ -14,7 +14,7 @@ import type { AgentConfigEntry } from './runtime/agent-registry.ts';
 function initApp() {
 	const app = new Hono();
 
-	// Enable CORS for all localhost ports (for web UI on random ports)
+	// Enable CORS for localhost and local network access
 	app.use(
 		'*',
 		cors({
@@ -22,15 +22,15 @@ function initApp() {
 				// Allow all localhost and 127.0.0.1 on any port
 				if (
 					origin.startsWith('http://localhost:') ||
-					origin.startsWith('http://127.0.0.1:')
+					origin.startsWith('http://127.0.0.1:') ||
+					origin.startsWith('https://localhost:') ||
+					origin.startsWith('https://127.0.0.1:')
 				) {
 					return origin;
 				}
-				// Allow common dev ports
-				if (
-					origin === 'http://localhost:5173' ||
-					origin === 'http://localhost:5174'
-				) {
+				// Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+				const localNetworkPattern = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
+				if (localNetworkPattern.test(origin)) {
 					return origin;
 				}
 				// Default to allowing the origin (can be restricted in production)
@@ -76,7 +76,7 @@ export type StandaloneAppConfig = {
 export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	const honoApp = new Hono();
 
-	// Enable CORS for all localhost ports (for web UI on random ports)
+	// Enable CORS for localhost and local network access
 	honoApp.use(
 		'*',
 		cors({
@@ -84,15 +84,15 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 				// Allow all localhost and 127.0.0.1 on any port
 				if (
 					origin.startsWith('http://localhost:') ||
-					origin.startsWith('http://127.0.0.1:')
+					origin.startsWith('http://127.0.0.1:') ||
+					origin.startsWith('https://localhost:') ||
+					origin.startsWith('https://127.0.0.1:')
 				) {
 					return origin;
 				}
-				// Allow common dev ports
-				if (
-					origin === 'http://localhost:5173' ||
-					origin === 'http://localhost:5174'
-				) {
+				// Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+				const localNetworkPattern = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
+				if (localNetworkPattern.test(origin)) {
 					return origin;
 				}
 				// Default to allowing the origin
@@ -148,6 +148,8 @@ export type EmbeddedAppConfig = {
 		model?: string;
 		agent?: string;
 	};
+	/** Additional CORS origins for proxies/Tailscale (e.g., ['https://myapp.ts.net', 'https://example.com']) */
+	corsOrigins?: string[];
 };
 
 export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
@@ -160,7 +162,7 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 		await next();
 	});
 
-	// Enable CORS for all localhost ports (for web UI on random ports)
+	// Enable CORS for localhost and local network access
 	honoApp.use(
 		'*',
 		cors({
@@ -168,15 +170,19 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 				// Allow all localhost and 127.0.0.1 on any port
 				if (
 					origin.startsWith('http://localhost:') ||
-					origin.startsWith('http://127.0.0.1:')
+					origin.startsWith('http://127.0.0.1:') ||
+					origin.startsWith('https://localhost:') ||
+					origin.startsWith('https://127.0.0.1:')
 				) {
 					return origin;
 				}
-				// Allow common dev ports
-				if (
-					origin === 'http://localhost:5173' ||
-					origin === 'http://localhost:5174'
-				) {
+				// Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+				const localNetworkPattern = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
+				if (localNetworkPattern.test(origin)) {
+					return origin;
+				}
+				// Allow custom CORS origins (for Tailscale, proxies, etc.)
+				if (config.corsOrigins && config.corsOrigins.includes(origin)) {
 					return origin;
 				}
 				// Default to allowing the origin

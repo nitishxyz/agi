@@ -41,6 +41,7 @@ agi agents              # Explore built-in agents
 ### Features & Customization
 - **[Agents & Tools](docs/agents-tools.md)** - Built-in capabilities
 - **[Customization](docs/customization.md)** - Custom commands and tools
+- **[Embedding Guide](docs/embedding-guide.md)** - Embed AGI in your apps
 - **[Environment](docs/environment.md)** - Variables and flags
 - **[API Reference](docs/api.md)** - REST endpoints and SSE events
 
@@ -78,9 +79,44 @@ bun dev
 
 **See:** [apps/web/README.md](./apps/web/README.md) | [apps/web/QUICKSTART.md](./apps/web/QUICKSTART.md)
 
-## 📦 SDK Usage
+## 📦 Embedding AGI
 
-Embed AGI agents in your own projects:
+Embed the complete AGI server and Web UI in your own applications:
+
+```typescript
+import { createEmbeddedApp } from "@agi-cli/server";
+import { serveWebUI } from "@agi-cli/web-ui";
+
+const app = createEmbeddedApp({
+  provider: "anthropic",
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  corsOrigins: ["https://myapp.ts.net"], // Optional: for Tailscale/proxies
+});
+
+Bun.serve({
+  port: 9100,
+  fetch: async (req) => {
+    // Serve Web UI at /ui
+    const uiResponse = await serveWebUI({ prefix: "/ui" })(req);
+    if (uiResponse) return uiResponse;
+    
+    // Handle API routes
+    return app.fetch(req);
+  },
+});
+```
+
+**Features:**
+- 🔧 **Hybrid Configuration** - Inject config or fallback to env/files
+- 🌐 **Network Access** - Localhost, local network, and proxy support
+- 🎨 **Embedded Web UI** - Full interface served from your app
+- ⚡ **Zero Installation** - No separate AGI setup needed
+
+**Full embedding guide:** [docs/embedding-guide.md](./docs/embedding-guide.md)
+
+### SDK Usage
+
+Use AGI components directly:
 
 ```typescript
 import { generateText, resolveModel, discoverProjectTools } from "@agi-cli/sdk";
@@ -98,7 +134,7 @@ const result = await generateText({
 console.log(result.text);
 ```
 
-**Full SDK documentation:** [packages/sdk/README.md](./packages/sdk/README.md)
+**SDK documentation:** [packages/sdk/README.md](./packages/sdk/README.md)
 
 ## 🏗️ Project Structure
 
