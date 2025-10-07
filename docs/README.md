@@ -8,6 +8,7 @@ This directory contains the documentation for AGI CLI and SDK.
 - **[Getting Started](getting-started.md)** - Installation and first steps
 - **[Embedding Guide](embedding-guide.md)** - Embed AGI in your applications
 - **[Configuration](configuration.md)** - Configuration system and fallback priority
+- **[Mobile Support](mobile-support.md)** - Mobile-optimized web interface
 - **[Architecture](architecture.md)** - System design and structure
 
 ## 🎯 Documentation by Use Case
@@ -44,6 +45,7 @@ docs/
 │
 ├── Developer Guides
 │   ├── embedding-guide.md        # Embed AGI (⭐ Main guide)
+│   ├── mobile-support.md         # Mobile-optimized web interface
 │   ├── api.md                    # HTTP API reference
 │   ├── customization.md          # Custom agents and tools
 │   └── agents-tools.md           # Built-in agents and tools

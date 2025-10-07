@@ -31,6 +31,7 @@ function getMimeType(path: string): string {
 export function createWebServer(
 	port: number,
 	agiServerPort: number,
+	network = false,
 ): { port: number; server: Server } {
 	// Build asset map - maps URL paths to file paths
 	const assetMap = new Map<string, string>();
@@ -54,8 +55,19 @@ export function createWebServer(
 		assetMap.set(urlPath, webAssetPaths.other[index]);
 	});
 
+	// Get the appropriate server URL for network mode
+	const getServerUrl = (requestHost?: string) => {
+		if (network && requestHost) {
+			// Extract hostname from request (e.g., "192.168.1.100:3457" -> "192.168.1.100")
+			const hostname = requestHost.split(':')[0];
+			return `http://${hostname}:${agiServerPort}`;
+		}
+		return `http://localhost:${agiServerPort}`;
+	};
+
 	const server = Bun.serve({
 		port,
+		hostname: network ? '0.0.0.0' : 'localhost',
 
 		async fetch(req) {
 			const url = new URL(req.url);
@@ -80,7 +92,8 @@ export function createWebServer(
 					if (pathname.endsWith('.html')) {
 						try {
 							let html = await file.text();
-							const scriptTag = `<script>window.AGI_SERVER_URL = 'http://localhost:${agiServerPort}';</script>`;
+							const serverUrl = getServerUrl(url.host);
+							const scriptTag = `<script>window.AGI_SERVER_URL = '${serverUrl}';</script>`;
 							html = html.replace('</head>', `${scriptTag}</head>`);
 
 							return new Response(html, {
@@ -106,7 +119,8 @@ export function createWebServer(
 				if (embeddedData) {
 					if (pathname.endsWith('.html')) {
 						let html = decoder.decode(embeddedData);
-						const scriptTag = `<script>window.AGI_SERVER_URL = 'http://localhost:${agiServerPort}';</script>`;
+						const serverUrl = getServerUrl(url.host);
+						const scriptTag = `<script>window.AGI_SERVER_URL = '${serverUrl}';</script>`;
 						html = html.replace('</head>', `${scriptTag}</head>`);
 
 						return new Response(html, {

@@ -24,22 +24,24 @@ export const AppLayout = memo(function AppLayout({
 	onToggleTheme,
 }: AppLayoutProps) {
 	return (
-		<div className="h-screen flex flex-col bg-background">
+		<div className="h-screen flex flex-col bg-background touch-manipulation">
 			<Header onToggleTheme={onToggleTheme} theme={theme} />
-			<div className="flex-1 flex overflow-hidden">
+			<div className="flex-1 flex overflow-hidden relative">
 				{/* Left sidebar - Sessions */}
 				<Sidebar onNewSession={onNewSession}>{sidebar}</Sidebar>
 
 				{/* Main content area */}
-				<main className="flex-1 flex flex-col overflow-hidden relative">
+				<main className="flex-1 flex flex-col overflow-hidden relative w-full md:w-auto">
 					{/* Git diff panel overlays this when open */}
 					<GitDiffPanel />
 					{children}
 				</main>
 
-				{/* Right sidebar - Git */}
-				<GitSidebarToggle />
-				<GitSidebar />
+				{/* Right sidebar - Git (hidden on mobile) */}
+				<div className="hidden md:block">
+					<GitSidebarToggle />
+					<GitSidebar />
+				</div>
 			</div>
 
 			{/* Modals */}

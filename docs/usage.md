@@ -43,6 +43,8 @@ agi --help               # Show help with discovered commands
 ## Server Mode
 
 ```bash
-agi serve                # Start HTTP server on random port
-agi serve --port 3000    # Start on specific port
+agi serve                  # Start HTTP server on random port
+agi serve --port 3000      # Start on specific port
+agi serve --network        # Start with network access (0.0.0.0)
+agi serve --port 3000 --network  # Combine port and network flags
 ```

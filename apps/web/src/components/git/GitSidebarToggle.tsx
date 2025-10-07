@@ -17,11 +17,11 @@ export const GitSidebarToggle = memo(function GitSidebarToggle() {
 		(status?.untracked?.length ?? 0);
 
 	return (
-		<div className="w-12 border-l border-border bg-background flex flex-col items-center py-4">
+		<div className="w-12 border-l border-border bg-background flex flex-col items-center py-4 h-full">
 			<button
 				type="button"
 				onClick={toggleSidebar}
-				className="relative p-2 rounded hover:bg-muted transition-colors"
+				className="relative p-2 rounded hover:bg-muted transition-colors touch-manipulation"
 				title="Open Git sidebar"
 			>
 				<GitBranch className="w-5 h-5 text-muted-foreground" />

@@ -57,17 +57,17 @@ agi agents              # Explore built-in agents
 
 ## 🌐 Web Interface
 
-AGI includes a modern web interface:
+AGI includes a modern web interface with mobile support:
 
 ```bash
-# Start server
+# Start server (localhost only)
 agi serve
 
-# In another terminal, start web app
-cd apps/web
-bun dev
+# Start server with network access (accessible on local network)
+agi serve --network
 
-# Open http://localhost:5173
+# Specify custom port
+agi serve --port 3000 --network
 ```
 
 **Features:**
@@ -75,9 +75,10 @@ bun dev
 - 📊 Session management and history
 - 🔧 Visual configuration editor
 - 📁 File and artifact viewing
-- 🎨 Modern, responsive UI
+- 📱 Mobile-optimized responsive UI
+- 🎨 Modern, dark theme
 
-**See:** [apps/web/README.md](./apps/web/README.md) | [apps/web/QUICKSTART.md](./apps/web/QUICKSTART.md)
+**See:** [Mobile Support Guide](docs/mobile-support.md) | [apps/web/README.md](./apps/web/README.md)
 
 ## 📦 Embedding AGI
 

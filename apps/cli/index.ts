@@ -65,27 +65,47 @@ async function main() {
 
 		const app = createApp();
 		const portFlagIndex = argv.indexOf('--port');
+		const networkFlag = argv.includes('--network');
 		const portEnv = process.env.PORT ? Number(process.env.PORT) : undefined;
 
 		// Use explicit port if provided, otherwise use PORT env, otherwise use 0 (random)
 		const requestedPort =
 			portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : (portEnv ?? 0);
 
+		// Determine hostname based on --network flag
+		const hostname = networkFlag ? '0.0.0.0' : 'localhost';
+
 		// Start the AGI server
 		const agiServer = Bun.serve({
 			port: requestedPort,
+			hostname,
 			fetch: app.fetch,
 			idleTimeout: 240,
 		});
+
+		// Get display URL based on hostname
+		const displayHost = networkFlag ? getLocalIP() : 'localhost';
 		console.log(
-			`🚀 agi server listening on http://localhost:${agiServer.port}`,
+			`🚀 agi server listening on http://${displayHost}:${agiServer.port}`,
 		);
+		if (networkFlag) {
+			console.log(`   Also accessible at http://localhost:${agiServer.port}`);
+		}
 
 		// Start the Web UI server on the next port
 		const webPort = agiServer.port + 1;
 		try {
-			const { port: actualWebPort } = createWebServer(webPort, agiServer.port);
-			console.log(`🌐 Web UI available at http://localhost:${actualWebPort}`);
+			const { port: actualWebPort } = createWebServer(
+				webPort,
+				agiServer.port,
+				networkFlag,
+			);
+			console.log(
+				`🌐 Web UI available at http://${displayHost}:${actualWebPort}`,
+			);
+			if (networkFlag) {
+				console.log(`   Also accessible at http://localhost:${actualWebPort}`);
+			}
 		} catch (error) {
 			console.error('❌ Failed to start Web UI server:', error);
 			console.log('   AGI server is still running without Web UI');
@@ -274,16 +294,16 @@ function printHelp(
 		'Usage: agi [command] [options] [prompt]',
 		'',
 		'Commands:',
-		'  serve [--port <port>]    Start the HTTP server (AGI API + Web UI)',
-		'  sessions [--list|--json] Manage or pick sessions (default: pick)',
-		'  auth <login|list|logout> Manage provider credentials',
-		'  setup                   Alias for `auth login`',
-		'  models|switch           Pick default provider/model (interactive)',
-		'  scaffold|generate       Create agents, tools, or commands (interactive)',
-		'  agents [--local]        Edit agents.json entries (interactive)',
-		'  tools                   List discovered tools and agent access',
-		'  doctor                  Diagnose auth, defaults, and agent/tool issues',
-		'  chat [--last|--session] Start an interactive chat (if enabled)',
+		'  serve [--port <port>] [--network]  Start the HTTP server (AGI API + Web UI)',
+		'  sessions [--list|--json]           Manage or pick sessions (default: pick)',
+		'  auth <login|list|logout>           Manage provider credentials',
+		'  setup                              Alias for `auth login`',
+		'  models|switch                      Pick default provider/model (interactive)',
+		'  scaffold|generate                  Create agents, tools, or commands (interactive)',
+		'  agents [--local]                   Edit agents.json entries (interactive)',
+		'  tools                              List discovered tools and agent access',
+		'  doctor                             Diagnose auth, defaults, and agent/tool issues',
+		'  chat [--last|--session]            Start an interactive chat (if enabled)',
 		'',
 		'One-shot ask:',
 		'  agi "<prompt>" [--agent <name>] [--provider <p>] [--model <m>] [--project <path>] [--last|--session <id>]',
@@ -292,6 +312,7 @@ function printHelp(
 		'  --project <path>         Use project at <path> (default: cwd)',
 		'  --last                   Send to most-recent session',
 		'  --session <id>           Send to a specific session',
+		'  --network                Bind to 0.0.0.0 for network access (serve only)',
 		'  --json | --json-stream   Machine-readable outputs',
 		'  --version, -v            Print version and exit',
 	];
@@ -323,4 +344,22 @@ async function ensureSomeAuth(projectRoot: string): Promise<boolean> {
 		return any2;
 	}
 	return true;
+}
+
+function getLocalIP(): string {
+	try {
+		const { networkInterfaces } = require('node:os');
+		const nets = networkInterfaces();
+		for (const name of Object.keys(nets)) {
+			for (const net of nets[name]) {
+				// Skip internal (loopback) and non-IPv4 addresses
+				if (net.family === 'IPv4' && !net.internal) {
+					return net.address;
+				}
+			}
+		}
+	} catch {
+		// Fallback if we can't get the IP
+	}
+	return '0.0.0.0';
 }

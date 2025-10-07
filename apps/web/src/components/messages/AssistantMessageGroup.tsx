@@ -75,29 +75,29 @@ export const AssistantMessageGroup = memo(
 				{/* Header with avatar */}
 				{showHeader && (
 					<div className="pb-2">
-						<div className="inline-flex items-center bg-violet-500/10 border border-violet-500/30 dark:bg-violet-500/5 dark:border-violet-500/20 rounded-full pr-4">
+						<div className="inline-flex items-center bg-violet-500/10 border border-violet-500/30 dark:bg-violet-500/5 dark:border-violet-500/20 rounded-full pr-3 md:pr-4">
 							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-violet-500/50 bg-violet-500/20 dark:bg-violet-500/10">
 								<Sparkles className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
 							</div>
-							<div className="flex items-center gap-2 text-sm text-muted-foreground pl-3">
+							<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs md:text-sm text-muted-foreground pl-3">
 								{message.agent && (
-									<span className="font-medium text-violet-700 dark:text-violet-300">
+									<span className="font-medium text-violet-700 dark:text-violet-300 whitespace-nowrap">
 										{message.agent}
 									</span>
 								)}
-								{message.agent && message.provider && <span>·</span>}
+								{message.agent && message.provider && <span className="hidden md:inline">·</span>}
 								{message.provider && (
-									<span className="text-muted-foreground">
+									<span className="text-muted-foreground whitespace-nowrap">
 										{message.provider}
 									</span>
 								)}
-								{message.model && <span>·</span>}
+								{message.model && <span className="hidden md:inline">·</span>}
 								{message.model && (
-									<span className="text-muted-foreground">{message.model}</span>
+									<span className="text-muted-foreground break-all md:break-normal">{message.model}</span>
 								)}
-								{message.createdAt && <span>·</span>}
+								{message.createdAt && <span className="hidden md:inline">·</span>}
 								{message.createdAt && (
-									<span className="text-muted-foreground">
+									<span className="text-muted-foreground whitespace-nowrap">
 										{formatTime(message.createdAt)}
 									</span>
 								)}
