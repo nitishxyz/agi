@@ -60,7 +60,8 @@ function parseDiff(patch: string): { lines: DiffLine[]; filePath: string } {
 	for (const line of lines) {
 		// Extract file path from diff headers
 		if (line.startsWith('+++') || line.startsWith('*** Update File:')) {
-			const match = line.match(/\+\+\+ b\/(.+)/) || line.match(/\*\*\* Update File: (.+)/);
+			const match =
+				line.match(/\+\+\+ b\/(.+)/) || line.match(/\*\*\* Update File: (.+)/);
 			if (match) filePath = match[1];
 		}
 

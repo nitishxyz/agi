@@ -1,6 +1,6 @@
 {
 	"name": "@agi-cli/sdk",
-	"version": "0.1.54",
+	"version": "0.1.55",
 	"description": "AI agent SDK for building intelligent assistants - tree-shakable and comprehensive",
 	"author": "ntishxyz",
 	"license": "MIT",
@@ -41,7 +41,6 @@
 			"import": "./src/core/src/tools/builtin/finish.ts",
 			"types": "./src/core/src/tools/builtin/finish.ts"
 		},
-
 		"./tools/builtin/grep": {
 			"import": "./src/core/src/tools/builtin/grep.ts",
 			"types": "./src/core/src/tools/builtin/grep.ts"

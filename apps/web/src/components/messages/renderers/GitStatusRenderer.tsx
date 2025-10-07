@@ -89,9 +89,7 @@ export function GitStatusRenderer({
 						)}
 					</>
 				) : (
-					<span className="text-muted-foreground/60 flex-shrink-0">
-						clean
-					</span>
+					<span className="text-muted-foreground/60 flex-shrink-0">clean</span>
 				)}
 				<span className="text-muted-foreground/80 flex-shrink-0">
 					· {timeStr}
