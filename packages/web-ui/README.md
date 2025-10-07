@@ -35,17 +35,21 @@ import { serveWebUI } from '@agi-cli/web-ui';
 
 Bun.serve({
   port: 3000,
+  idleTimeout: 240, // IMPORTANT: prevents SSE timeout
   fetch: serveWebUI({ prefix: '/ui' })
 });
 
 console.log('Web UI: http://localhost:3000/ui');
 ```
 
+> **⚠️ Important**: Always set `idleTimeout: 240` (or higher) in `Bun.serve()` to prevent SSE connection timeouts. The web UI uses Server-Sent Events for real-time streaming, and Bun's default timeout of 10 seconds will cause connections to drop.
+
 That's it! The web UI will be available at `/ui` with:
 - ✅ Automatic SPA routing
 - ✅ Asset path handling (both `/ui/assets/*` and `/assets/*`)
 - ✅ Proper MIME types
 - ✅ 404 fallbacks
+- ✅ Real-time SSE streaming
 
 ### With Custom Routes
 

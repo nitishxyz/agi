@@ -13,6 +13,7 @@ const webUI = serveWebUI({
 
 Bun.serve({
 	port,
+	idleTimeout: 240, // 4 minutes - prevents SSE connection timeout
 	async fetch(req) {
 		return (await webUI(req)) || new Response('Not found', { status: 404 });
 	},

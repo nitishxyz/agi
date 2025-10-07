@@ -176,9 +176,14 @@ export function serveWebUI(options = {}) {
     const url = new URL(req.url);
 
     // Determine the server URL for this request
-    const resolvedServerUrl =
-      serverUrl ||
-      \`\${url.protocol}//\${url.host}\`.replace(/\\/ui$/, '').replace(/\\/$/, '');
+    let resolvedServerUrl;
+    if (serverUrl) {
+      resolvedServerUrl = serverUrl;
+    } else {
+      // Auto-detect from the request URL (protocol + host)
+      const baseUrl = \`\${url.protocol}//\${url.host}\`;
+      resolvedServerUrl = baseUrl;
+    }
 
     // Helper to serve a file
     const serveAsset = async (pathname) => {
@@ -195,7 +200,7 @@ export function serveWebUI(options = {}) {
             const html = content.toString('utf-8');
             const injectedHtml = html.replace(
               '</head>',
-              \`<script>window.AGI_SERVER_URL = \${JSON.stringify(resolvedServerUrl)};</script></head>\`,
+              \`<!-- AGI Server URL: \${resolvedServerUrl} --><script>window.AGI_SERVER_URL = \${JSON.stringify(resolvedServerUrl)};</script></head>\`,
             );
             content = Buffer.from(injectedHtml, 'utf-8');
           }
@@ -223,7 +228,7 @@ export function serveWebUI(options = {}) {
               const html = await file.text();
               const injectedHtml = html.replace(
                 '</head>',
-                \`<script>window.AGI_SERVER_URL = \${JSON.stringify(resolvedServerUrl)};</script></head>\`,
+                \`<!-- AGI Server URL: \${resolvedServerUrl} --><script>window.AGI_SERVER_URL = \${JSON.stringify(resolvedServerUrl)};</script></head>\`,
               );
               return new Response(injectedHtml, {
                 headers: { 'Content-Type': 'text/html' },
@@ -245,7 +250,7 @@ export function serveWebUI(options = {}) {
               const html = content.toString('utf-8');
               const injectedHtml = html.replace(
                 '</head>',
-                \`<script>window.AGI_SERVER_URL = \${JSON.stringify(resolvedServerUrl)};</script></head>\`,
+                \`<!-- AGI Server URL: \${resolvedServerUrl} --><script>window.AGI_SERVER_URL = \${JSON.stringify(resolvedServerUrl)};</script></head>\`,
               );
               content = Buffer.from(injectedHtml, 'utf-8');
             }

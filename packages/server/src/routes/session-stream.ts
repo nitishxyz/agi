@@ -24,10 +24,15 @@ export function registerSessionStreamRoute(app: Hono) {
 				const unsubscribe = subscribe(sessionId, write);
 				// Initial ping
 				controller.enqueue(encoder.encode(`: connected ${sessionId}\n\n`));
+				// Heartbeat every 5s to prevent idle timeout (Bun default is 10s)
 				const hb = setInterval(() => {
-					// Comment line as heartbeat to keep connection alive
-					controller.enqueue(encoder.encode(`: hb ${Date.now()}\n\n`));
-				}, 15000);
+					try {
+						controller.enqueue(encoder.encode(`: hb ${Date.now()}\n\n`));
+					} catch {
+						// Controller might be closed
+						clearInterval(hb);
+					}
+				}, 5000);
 
 				const signal = c.req.raw?.signal as AbortSignal | undefined;
 				signal?.addEventListener('abort', () => {

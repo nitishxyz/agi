@@ -10,6 +10,7 @@ const webUI = serveWebUI({ prefix: '/ui' });
 
 Bun.serve({
 	port,
+	idleTimeout: 240, // 4 minutes - prevents SSE connection timeout
 	async fetch(req) {
 		const url = new URL(req.url);
 
