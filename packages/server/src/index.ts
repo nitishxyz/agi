@@ -29,7 +29,8 @@ function initApp() {
 					return origin;
 				}
 				// Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-				const localNetworkPattern = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
+				const localNetworkPattern =
+					/^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
 				if (localNetworkPattern.test(origin)) {
 					return origin;
 				}
@@ -91,7 +92,8 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 					return origin;
 				}
 				// Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-				const localNetworkPattern = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
+				const localNetworkPattern =
+					/^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
 				if (localNetworkPattern.test(origin)) {
 					return origin;
 				}
@@ -177,7 +179,8 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 					return origin;
 				}
 				// Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-				const localNetworkPattern = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
+				const localNetworkPattern =
+					/^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
 				if (localNetworkPattern.test(origin)) {
 					return origin;
 				}
