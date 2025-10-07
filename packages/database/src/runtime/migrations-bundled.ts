@@ -11,10 +11,14 @@ import mig0002 from '../../drizzle/0002_vengeful_warlock.sql' with {
 import mig0003 from '../../drizzle/0003_pale_violations.sql' with {
 	type: 'text',
 };
+import mig0004 from '../../drizzle/0004_left_the_professor.sql' with {
+	type: 'text',
+};
 
 export const bundledMigrations: Array<{ name: string; content: string }> = [
 	{ name: '0000_tense_shadow_king.sql', content: mig0000 },
 	{ name: '0001_past_kabuki.sql', content: mig0001 },
 	{ name: '0002_vengeful_warlock.sql', content: mig0002 },
 	{ name: '0003_pale_violations.sql', content: mig0003 },
+	{ name: '0004_left_the_professor.sql', content: mig0004 },
 ];

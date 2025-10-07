@@ -18,6 +18,8 @@ export const messages = sqliteTable('messages', {
 	promptTokens: integer('prompt_tokens'),
 	completionTokens: integer('completion_tokens'),
 	totalTokens: integer('total_tokens'),
+	cachedInputTokens: integer('cached_input_tokens'),
+	reasoningTokens: integer('reasoning_tokens'),
 	// Error fields
 	error: text('error'),
 	errorType: text('error_type'), // 'api_error', 'abort', 'validation_error', etc.

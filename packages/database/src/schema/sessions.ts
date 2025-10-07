@@ -12,6 +12,8 @@ export const sessions = sqliteTable('sessions', {
 	lastActiveAt: integer('last_active_at', { mode: 'number' }),
 	totalInputTokens: integer('total_input_tokens'),
 	totalOutputTokens: integer('total_output_tokens'),
+	totalCachedTokens: integer('total_cached_tokens'),
+	totalReasoningTokens: integer('total_reasoning_tokens'),
 	totalToolTimeMs: integer('total_tool_time_ms'),
 	toolCountsJson: text('tool_counts_json'), // JSON object of name->count
 });

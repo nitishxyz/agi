@@ -28,6 +28,8 @@ import {
 } from './tool-context-setup.ts';
 import {
 	updateSessionTokens,
+	updateSessionTokensIncremental,
+	updateMessageTokensIncremental,
 	completeAssistantMessage,
 	cleanupEmptyTextParts,
 } from './db-operations.ts';
@@ -180,7 +182,7 @@ async function runAssistant(opts: RunOpts) {
 		opts,
 		db,
 	);
-	const toolset = adaptTools(gated, sharedCtx);
+	const toolset = adaptTools(gated, sharedCtx, opts.provider);
 
 	const modelTimer = time('runner:resolveModel');
 	const model = await resolveModel(opts.provider, opts.model, cfg);
@@ -229,6 +231,8 @@ async function runAssistant(opts: RunOpts) {
 		updateCurrentPartId,
 		updateAccumulated,
 		incrementStepIndex,
+		updateSessionTokensIncremental,
+		updateMessageTokensIncremental,
 	);
 
 	const onError = createErrorHandler(opts, db, getStepIndex, sharedCtx);
@@ -239,16 +243,29 @@ async function runAssistant(opts: RunOpts) {
 		opts,
 		db,
 		() => ensureFinishToolCalled(finishObserved, toolset, sharedCtx, stepIndex),
-		updateSessionTokens,
+		async () => {
+			// No-op: tokens are tracked incrementally in onStepFinish
+		},
 		completeAssistantMessage,
+	);
+
+	// Apply optimizations: cache control and context truncation
+	const { addCacheControl, truncateHistory } = await import(
+		'./cache-optimizer.ts'
+	);
+	const truncatedMessages = truncateHistory(messagesWithSystemInstructions, 20);
+	const { system: cachedSystem, messages: optimizedMessages } = addCacheControl(
+		opts.provider as any,
+		system,
+		truncatedMessages,
 	);
 
 	try {
 		const result = streamText({
 			model,
 			tools: toolset,
-			...(String(system || '').trim() ? { system } : {}),
-			messages: messagesWithSystemInstructions,
+			...(cachedSystem ? { system: cachedSystem } : {}),
+			messages: optimizedMessages,
 			...(maxOutputTokens ? { maxOutputTokens } : {}),
 			abortSignal: opts.abortSignal,
 			stopWhen: hasToolCall('finish'),

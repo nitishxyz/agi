@@ -39,15 +39,40 @@ function getPendingQueue(
 	return queue;
 }
 
-export function adaptTools(tools: DiscoveredTool[], ctx: ToolAdapterContext) {
+export function adaptTools(
+	tools: DiscoveredTool[],
+	ctx: ToolAdapterContext,
+	provider?: string,
+) {
 	const out: Record<string, Tool> = {};
 	const pendingCalls = new Map<string, PendingCallMeta[]>();
 	let firstToolCallReported = false;
 
+	// Anthropic allows max 4 cache_control blocks
+	// Cache only the most frequently used tools: read, write, bash
+	const cacheableTools = new Set(['read', 'write', 'bash', 'edit']);
+	let cachedToolCount = 0;
+
 	for (const { name, tool } of tools) {
 		const base = tool;
+
+		// Add cache control for Anthropic to cache tool definitions (max 2 tools)
+		const shouldCache =
+			provider === 'anthropic' &&
+			cacheableTools.has(name) &&
+			cachedToolCount < 2;
+
+		if (shouldCache) {
+			cachedToolCount++;
+		}
+
+		const providerOptions = shouldCache
+			? { anthropic: { cacheControl: { type: 'ephemeral' as const } } }
+			: undefined;
+
 		out[name] = {
 			...base,
+			...(providerOptions ? { providerOptions } : {}),
 			async onInputStart(options: unknown) {
 				const queue = getPendingQueue(pendingCalls, name);
 				queue.push({

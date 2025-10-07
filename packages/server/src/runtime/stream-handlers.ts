@@ -9,9 +9,16 @@ import type { RunOpts } from './session-queue.ts';
 import type { ToolAdapterContext } from '../tools/adapter.ts';
 
 type StepFinishEvent = {
-	usage?: { inputTokens?: number; outputTokens?: number };
+	usage?: {
+		inputTokens?: number;
+		outputTokens?: number;
+		totalTokens?: number;
+		cachedInputTokens?: number;
+		reasoningTokens?: number;
+	};
 	finishReason?: string;
 	response?: unknown;
+	experimental_providerMetadata?: Record<string, any>;
 };
 
 type FinishEvent = {
@@ -39,6 +46,18 @@ export function createStepFinishHandler(
 	updateCurrentPartId: (id: string) => void,
 	updateAccumulated: (text: string) => void,
 	incrementStepIndex: () => number,
+	updateSessionTokensIncrementalFn: (
+		usage: any,
+		providerMetadata: Record<string, any> | undefined,
+		opts: RunOpts,
+		db: Awaited<ReturnType<typeof getDb>>,
+	) => Promise<void>,
+	updateMessageTokensIncrementalFn: (
+		usage: any,
+		providerMetadata: Record<string, any> | undefined,
+		opts: RunOpts,
+		db: Awaited<ReturnType<typeof getDb>>,
+	) => Promise<void>,
 ) {
 	return async (step: StepFinishEvent) => {
 		const finishedAt = Date.now();
@@ -51,6 +70,27 @@ export function createStepFinishHandler(
 				.set({ completedAt: finishedAt })
 				.where(eq(messageParts.id, currentPartId));
 		} catch {}
+
+		// Update token counts incrementally after each step
+		if (step.usage) {
+			try {
+				await updateSessionTokensIncrementalFn(
+					step.usage,
+					step.experimental_providerMetadata,
+					opts,
+					db,
+				);
+			} catch {}
+
+			try {
+				await updateMessageTokensIncrementalFn(
+					step.usage,
+					step.experimental_providerMetadata,
+					opts,
+					db,
+				);
+			} catch {}
+		}
 
 		try {
 			publish({
