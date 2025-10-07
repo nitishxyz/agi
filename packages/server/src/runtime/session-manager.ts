@@ -47,6 +47,11 @@ export async function createSession({
 		model,
 		projectPath: cfg.projectRoot,
 		createdAt: now,
+		lastActiveAt: null,
+		totalInputTokens: null,
+		totalOutputTokens: null,
+		totalToolTimeMs: null,
+		toolCountsJson: null,
 	};
 	await db.insert(sessions).values(row);
 	publish({ type: 'session.created', sessionId: id, payload: row });

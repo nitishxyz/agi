@@ -482,7 +482,7 @@ Generate only the commit message, nothing else.`;
 
 			// Generate text directly - no session involved
 			const result = await generateText({
-				model,
+				model: model as Parameters<typeof generateText>[0]['model'],
 				prompt,
 			});
 

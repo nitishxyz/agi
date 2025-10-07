@@ -210,6 +210,20 @@ function main() {
 	);
 	updatePackageVersion(webUiPackagePath, nextVersion, dryRun);
 
+	// Update database package.json
+	const databasePackagePath = resolve(
+		process.cwd(),
+		'packages/database/package.json',
+	);
+	updatePackageVersion(databasePackagePath, nextVersion, dryRun);
+
+	// Update server package.json
+	const serverPackagePath = resolve(
+		process.cwd(),
+		'packages/server/package.json',
+	);
+	updatePackageVersion(serverPackagePath, nextVersion, dryRun);
+
 	console.log(`\n✓ All packages updated to version: ${nextVersion}`);
 }
 

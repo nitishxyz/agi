@@ -1,5 +1,6 @@
 export type AGIEventType =
 	| 'session.created'
+	| 'session.updated'
 	| 'message.created'
 	| 'message.part.delta'
 	| 'message.completed'

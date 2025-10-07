@@ -143,6 +143,8 @@ jobs:
           INSTALL_VERSION=$(jq -r .version packages/install/package.json)
           SDK_VERSION=$(jq -r .version packages/sdk/package.json)
           WEBUI_VERSION=$(jq -r .version packages/web-ui/package.json)
+          DATABASE_VERSION=$(jq -r .version packages/database/package.json)
+          SERVER_VERSION=$(jq -r .version packages/server/package.json)
           
           if [ "v${INSTALL_VERSION}" != "$TAG" ]; then
             echo "Tag ($TAG) does not match install version (v${INSTALL_VERSION})" >&2
@@ -151,19 +153,38 @@ jobs:
           
           if [ "${INSTALL_VERSION}" != "${SDK_VERSION}" ]; then
             echo "Install version (${INSTALL_VERSION}) does not match SDK version (${SDK_VERSION})" >&2
-            echo "Both packages should be updated to the same version in the chore commit before tagging" >&2
+            echo "All packages should be updated to the same version" >&2
             exit 1
           fi
           
           if [ "${INSTALL_VERSION}" != "${WEBUI_VERSION}" ]; then
             echo "Install version (${INSTALL_VERSION}) does not match web-ui version (${WEBUI_VERSION})" >&2
-            echo "All packages should be updated to the same version in the chore commit before tagging" >&2
+            echo "All packages should be updated to the same version" >&2
+            exit 1
+          fi
+          
+          if [ "${INSTALL_VERSION}" != "${DATABASE_VERSION}" ]; then
+            echo "Install version (${INSTALL_VERSION}) does not match database version (${DATABASE_VERSION})" >&2
+            echo "All packages should be updated to the same version" >&2
+            exit 1
+          fi
+          
+          if [ "${INSTALL_VERSION}" != "${SERVER_VERSION}" ]; then
+            echo "Install version (${INSTALL_VERSION}) does not match server version (${SERVER_VERSION})" >&2
+            echo "All packages should be updated to the same version" >&2
             exit 1
           fi
           
           echo "✓ Tag matches install version: ${INSTALL_VERSION}"
-          echo "✓ SDK version matches install version: ${SDK_VERSION}"
-          echo "✓ Web UI version matches install version: ${WEBUI_VERSION}"
+          echo "✓ SDK version: ${SDK_VERSION}"
+          echo "✓ Web UI version: ${WEBUI_VERSION}"
+          echo "✓ Database version: ${DATABASE_VERSION}"
+          echo "✓ Server version: ${SERVER_VERSION}"
+
+      - name: Replace workspace dependencies
+        shell: bash
+        run: |
+          bun run scripts/prepare-publish.ts
 
       - name: Regenerate clean lockfile
         shell: bash
@@ -193,4 +214,20 @@ jobs:
           set -euo pipefail
           cd packages/web-ui
           # Publish web-ui package
+          bun publish --access public --tag latest
+
+      - name: Publish database to npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd packages/database
+          # Publish database package
+          bun publish --access public --tag latest
+
+      - name: Publish server to npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd packages/server
+          # Publish server package
           bun publish --access public --tag latest
