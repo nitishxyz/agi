@@ -72,22 +72,22 @@ export function ApplyPatchRenderer({
 				</span>
 			</button>
 			{isExpanded && hasError && errorMessage && (
-			<div>
-			<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />
-			{patch && (
-			 <div className="mt-2 ml-5">
-			 <details>
-			 <summary className="cursor-pointer text-xs text-red-700 dark:text-red-300 hover:text-red-600 dark:hover:text-red-200">
-			 Show patch that failed
-			 </summary>
-			 <div className="mt-2">
-			 <DiffView patch={patch} />
-			 </div>
-			 </details>
-			 </div>
-			 )}
-			 </div>
-		)}
+				<div>
+					<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />
+					{patch && (
+						<div className="mt-2 ml-5">
+							<details>
+								<summary className="cursor-pointer text-xs text-red-700 dark:text-red-300 hover:text-red-600 dark:hover:text-red-200">
+									Show patch that failed
+								</summary>
+								<div className="mt-2">
+									<DiffView patch={patch} />
+								</div>
+							</details>
+						</div>
+					)}
+				</div>
+			)}
 			{isExpanded && !hasError && patch && (
 				<div className="mt-2 ml-5">
 					<DiffView patch={patch} />

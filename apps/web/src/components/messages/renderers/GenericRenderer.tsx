@@ -19,15 +19,24 @@ export function GenericRenderer({
 	// Check for errors
 	const hasError =
 		contentJson.error ||
-		(result && typeof result === 'object' && 'ok' in result && result.ok === false);
+		(result &&
+			typeof result === 'object' &&
+			'ok' in result &&
+			result.ok === false);
 	const errorMessage =
 		typeof contentJson.error === 'string'
 			? contentJson.error
-			: result && typeof result === 'object' && 'error' in result && typeof result.error === 'string'
+			: result &&
+					typeof result === 'object' &&
+					'error' in result &&
+					typeof result.error === 'string'
 				? result.error
 				: null;
 	const errorStack =
-		result && typeof result === 'object' && 'stack' in result && typeof result.stack === 'string'
+		result &&
+		typeof result === 'object' &&
+		'stack' in result &&
+		typeof result.stack === 'string'
 			? result.stack
 			: undefined;
 

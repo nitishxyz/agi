@@ -17,7 +17,10 @@ export function SearchRenderer({
 	// Check for errors
 	const hasError =
 		contentJson.error ||
-		(result && typeof result === 'object' && 'ok' in result && result.ok === false) ||
+		(result &&
+			typeof result === 'object' &&
+			'ok' in result &&
+			result.ok === false) ||
 		(result && 'error' in result);
 	const errorMessage =
 		typeof contentJson.error === 'string'
@@ -97,7 +100,7 @@ export function SearchRenderer({
 				<span className="text-muted-foreground/80">· {timeStr}</span>
 			</button>
 			{isExpanded && hasError && errorMessage && (
-			<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />
+				<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />
 			)}
 			{isExpanded && !hasError && matches.length > 0 && (
 				<div className="mt-2 ml-5 space-y-1 max-h-96 overflow-y-auto">

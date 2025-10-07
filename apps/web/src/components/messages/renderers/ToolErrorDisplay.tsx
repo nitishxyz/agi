@@ -10,7 +10,11 @@ interface ToolErrorDisplayProps {
  * Shared error display component for tool results with ok: false
  * Matches the structure and colors of ErrorRenderer
  */
-export function ToolErrorDisplay({ error, stack, showStack = false }: ToolErrorDisplayProps) {
+export function ToolErrorDisplay({
+	error,
+	stack,
+	showStack = false,
+}: ToolErrorDisplayProps) {
 	return (
 		<div className="mt-2 ml-5 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded text-sm">
 			<div className="flex items-start gap-2">

@@ -13,7 +13,7 @@ export function BashRenderer({
 }: RendererProps) {
 	const result = contentJson.result || {};
 	const args = contentJson.args || {};
-	
+
 	// Check for tool execution error (ok: false)
 	const hasToolError =
 		typeof result === 'object' && 'ok' in result && result.ok === false;
