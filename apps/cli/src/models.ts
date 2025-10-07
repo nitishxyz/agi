@@ -9,7 +9,7 @@ import {
 } from '@clack/prompts';
 import { loadConfig } from '@agi-cli/sdk';
 import { catalog, type ProviderId, type ModelInfo } from '@agi-cli/sdk';
-import { getGlobalConfigDir, getGlobalConfigPath } from '@agi-cli/config/paths';
+import { getGlobalConfigDir, getGlobalConfigPath } from '@agi-cli/sdk';
 import { isProviderAuthorized } from '@agi-cli/sdk';
 import { runAuth } from './auth.ts';
 

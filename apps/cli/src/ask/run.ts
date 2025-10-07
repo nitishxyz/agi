@@ -1,4 +1,4 @@
-import type { ProviderId } from '@agi-cli/providers';
+import type { ProviderId } from '@agi-cli/sdk';
 import type { Artifact } from '@agi-cli/sdk';
 import { renderMarkdown } from '../ui.ts';
 import {

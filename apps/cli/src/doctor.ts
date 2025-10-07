@@ -1,5 +1,5 @@
 import { isAbsolute, join } from 'node:path';
-import { read as readMerged, isAuthorized } from '@agi-cli/config/manager';
+import { read as readMerged, isAuthorized } from '@agi-cli/sdk';
 import { discoverCommands } from './commands.ts';
 import { box, colors } from './ui.ts';
 import type { ProviderId } from '@agi-cli/sdk';
@@ -12,7 +12,7 @@ import {
 	getGlobalAgentsJsonPath,
 	getGlobalToolsDir,
 	getGlobalCommandsDir,
-} from '@agi-cli/config/paths';
+} from '@agi-cli/sdk';
 
 type MergedConfig = Awaited<ReturnType<typeof readMerged>>;
 

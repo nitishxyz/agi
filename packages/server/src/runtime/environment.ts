@@ -1,4 +1,4 @@
-import { getHomeDir } from '@agi-cli/config/paths';
+import { getHomeDir } from '@agi-cli/sdk';
 
 export async function getEnvironmentContext(
 	projectRoot: string,

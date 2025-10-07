@@ -1,10 +1,10 @@
 import type { Hono } from 'hono';
-import { loadConfig } from '@agi-cli/config';
+import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { sessions } from '@agi-cli/database/schema';
 import { desc, eq } from 'drizzle-orm';
-import type { ProviderId } from '@agi-cli/types';
-import { isProviderId } from '@agi-cli/providers';
+import type { ProviderId } from '@agi-cli/sdk';
+import { isProviderId } from '@agi-cli/sdk';
 import { resolveAgentConfig } from '../runtime/agent-registry.ts';
 import { createSession as createSessionRow } from '../runtime/session-manager.ts';
 

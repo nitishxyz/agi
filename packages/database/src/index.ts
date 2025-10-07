@@ -1,6 +1,6 @@
 import { Database } from 'bun:sqlite';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import { loadConfig } from '@agi-cli/config';
+import { loadConfig } from '@agi-cli/sdk';
 import * as schema from './schema/index.ts';
 import { bundledMigrations } from './runtime/migrations-bundled.ts';
 

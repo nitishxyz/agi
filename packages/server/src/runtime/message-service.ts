@@ -1,12 +1,12 @@
 import { generateText } from 'ai';
 import { eq } from 'drizzle-orm';
-import type { AGIConfig } from '@agi-cli/config';
+import type { AGIConfig } from '@agi-cli/sdk';
 import type { DB } from '@agi-cli/database';
 import { messages, messageParts, sessions } from '@agi-cli/database/schema';
 import { publish } from '../events/bus.ts';
 import { enqueueAssistantRun } from './runner.ts';
 import { resolveModel } from './provider.ts';
-import type { ProviderId } from '@agi-cli/types';
+import type { ProviderId } from '@agi-cli/sdk';
 import { debugLog } from './debug.ts';
 
 type SessionRow = typeof sessions.$inferSelect;
@@ -193,7 +193,7 @@ async function updateSessionTitle(args: {
 		debugLog(`[TITLE_GEN] Provider: ${providerId}, Model: ${modelId}`);
 
 		// Check if we need OAuth spoof prompt (same logic as runner)
-		const { getAuth } = await import('@agi-cli/auth');
+		const { getAuth } = await import('@agi-cli/sdk');
 		const { getProviderSpoofPrompt } = await import('./prompt.ts');
 		const auth = await getAuth(providerId, cfg.projectRoot);
 		const needsSpoof = auth?.type === 'oauth';

@@ -1,4 +1,4 @@
-import type { AGIConfig } from '@agi-cli/config';
+import type { AGIConfig } from '@agi-cli/sdk';
 import {
 	catalog,
 	type ProviderId,
@@ -6,7 +6,7 @@ import {
 	providerIds,
 	defaultModelFor,
 	hasModel,
-} from '@agi-cli/providers';
+} from '@agi-cli/sdk';
 
 const FALLBACK_ORDER: ProviderId[] = [
 	'anthropic',

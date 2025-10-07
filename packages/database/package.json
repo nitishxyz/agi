@@ -22,7 +22,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@agi-cli/config": "workspace:*",
+		"@agi-cli/sdk": "workspace:*",
 		"drizzle-orm": "^0.44.5"
 	},
 	"devDependencies": {

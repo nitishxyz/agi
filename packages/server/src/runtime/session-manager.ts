@@ -1,5 +1,5 @@
 import { desc, eq } from 'drizzle-orm';
-import type { AGIConfig } from '@agi-cli/config';
+import type { AGIConfig } from '@agi-cli/sdk';
 import type { DB } from '@agi-cli/database';
 import { sessions } from '@agi-cli/database/schema';
 import {
@@ -7,7 +7,7 @@ import {
 	isProviderAuthorized,
 	ensureProviderEnv,
 	type ProviderId,
-} from '@agi-cli/providers';
+} from '@agi-cli/sdk';
 import { publish } from '../events/bus.ts';
 
 type SessionRow = typeof sessions.$inferSelect;

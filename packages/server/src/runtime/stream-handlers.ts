@@ -3,7 +3,7 @@ import { messages, messageParts } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
 import { APICallError } from 'ai';
 import { publish } from '../events/bus.ts';
-import { estimateModelCostUsd } from '@agi-cli/providers';
+import { estimateModelCostUsd } from '@agi-cli/sdk';
 import { toErrorPayload } from './error-handling.ts';
 import type { RunOpts } from './session-queue.ts';
 import type { ToolAdapterContext } from '../tools/adapter.ts';

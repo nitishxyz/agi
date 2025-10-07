@@ -9,13 +9,13 @@ async function read(path: string) {
 describe('agent prompt resolution', () => {
 	it('uses code default for known agent (plan)', async () => {
 		const cfg = await resolveAgentConfig(process.cwd(), 'plan');
-		const file = await read('packages/prompts/src/agents/plan.txt');
+		const file = await read('packages/sdk/src/prompts/src/agents/plan.txt');
 		expect(cfg.prompt.trim()).toBe(file);
 	});
 
 	it('falls back to build prompt when agent missing', async () => {
 		const cfg = await resolveAgentConfig(process.cwd(), 'nonexistent-agent');
-		const file = await read('packages/prompts/src/agents/build.txt');
+		const file = await read('packages/sdk/src/prompts/src/agents/build.txt');
 		expect(cfg.prompt.trim()).toBe(file);
 	});
 

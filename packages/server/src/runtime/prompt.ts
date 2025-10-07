@@ -1,13 +1,13 @@
-import { providerBasePrompt } from '@agi-cli/prompts';
+import { providerBasePrompt } from '@agi-cli/sdk';
 import { composeEnvironmentAndInstructions } from './environment.ts';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import BASE_PROMPT from '@agi-cli/prompts/base.txt' with { type: 'text' };
+import BASE_PROMPT from '@agi-cli/sdk/prompts/base.txt' with { type: 'text' };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import ONESHOT_PROMPT from '@agi-cli/prompts/modes/oneshot.txt' with {
+import ONESHOT_PROMPT from '@agi-cli/sdk/prompts/modes/oneshot.txt' with {
 	type: 'text',
 };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import ANTHROPIC_SPOOF_PROMPT from '@agi-cli/prompts/providers/anthropicSpoof.txt' with {
+import ANTHROPIC_SPOOF_PROMPT from '@agi-cli/sdk/prompts/providers/anthropicSpoof.txt' with {
 	type: 'text',
 };
 

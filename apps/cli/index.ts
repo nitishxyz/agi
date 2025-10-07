@@ -1,9 +1,9 @@
 import {
-	createServer,
 	loadConfig,
-	getDb,
 	isProviderAuthorized,
 } from '@agi-cli/sdk';
+import { createApp as createServer } from '@agi-cli/server';
+import { getDb } from '@agi-cli/database';
 import { runAsk } from './src/ask.ts';
 import { runSessions } from './src/sessions.ts';
 import { intro, outro, text, isCancel, cancel } from '@clack/prompts';

@@ -1,5 +1,7 @@
 import chalk from 'chalk';
-import type { ToolCallResult, Artifact } from '@agi-cli/sdk';
+import type { Artifact } from '@agi-cli/sdk';
+
+type ToolCallResult = unknown;
 import type {
 	ToolResultRecord,
 	ToolCallRecord,

@@ -1,5 +1,5 @@
 import type { Hono } from 'hono';
-import { loadConfig } from '@agi-cli/config';
+import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { messages, messageParts, sessions } from '@agi-cli/database/schema';
 import { eq, inArray } from 'drizzle-orm';
@@ -7,7 +7,7 @@ import {
 	validateProviderModel,
 	isProviderAuthorized,
 	ensureProviderEnv,
-} from '@agi-cli/providers';
+} from '@agi-cli/sdk';
 import { dispatchAssistantMessage } from '../runtime/message-service.ts';
 
 type MessagePartRow = typeof messageParts.$inferSelect;

@@ -22,13 +22,51 @@
 			"types": "./src/index.ts"
 		},
 		"./tools/builtin/fs": {
-			"import": "@agi-cli/core/tools/builtin/fs",
-			"types": "@agi-cli/core/tools/builtin/fs"
+			"import": "./src/core/src/tools/builtin/fs/index.ts",
+			"types": "./src/core/src/tools/builtin/fs/index.ts"
 		},
 		"./tools/builtin/git": {
-			"import": "@agi-cli/core/tools/builtin/git",
-			"types": "@agi-cli/core/tools/builtin/git"
-		}
+			"import": "./src/core/src/tools/builtin/git.ts",
+			"types": "./src/core/src/tools/builtin/git.ts"
+		},
+		"./tools/builtin/bash": {
+			"import": "./src/core/src/tools/builtin/bash.ts",
+			"types": "./src/core/src/tools/builtin/bash.ts"
+		},
+		"./tools/builtin/edit": {
+			"import": "./src/core/src/tools/builtin/edit.ts",
+			"types": "./src/core/src/tools/builtin/edit.ts"
+		},
+		"./tools/builtin/finish": {
+			"import": "./src/core/src/tools/builtin/finish.ts",
+			"types": "./src/core/src/tools/builtin/finish.ts"
+		},
+
+		"./tools/builtin/grep": {
+			"import": "./src/core/src/tools/builtin/grep.ts",
+			"types": "./src/core/src/tools/builtin/grep.ts"
+		},
+		"./tools/builtin/patch": {
+			"import": "./src/core/src/tools/builtin/patch.ts",
+			"types": "./src/core/src/tools/builtin/patch.ts"
+		},
+		"./tools/builtin/plan": {
+			"import": "./src/core/src/tools/builtin/plan.ts",
+			"types": "./src/core/src/tools/builtin/plan.ts"
+		},
+		"./tools/builtin/progress": {
+			"import": "./src/core/src/tools/builtin/progress.ts",
+			"types": "./src/core/src/tools/builtin/progress.ts"
+		},
+		"./tools/builtin/ripgrep": {
+			"import": "./src/core/src/tools/builtin/ripgrep.ts",
+			"types": "./src/core/src/tools/builtin/ripgrep.ts"
+		},
+		"./tools/builtin/websearch": {
+			"import": "./src/core/src/tools/builtin/websearch.ts",
+			"types": "./src/core/src/tools/builtin/websearch.ts"
+		},
+		"./prompts/*": "./src/prompts/src/*"
 	},
 	"files": [
 		"src",
@@ -41,14 +79,8 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@agi-cli/auth": "workspace:*",
-		"@agi-cli/config": "workspace:*",
-		"@agi-cli/core": "workspace:*",
-		"@agi-cli/database": "workspace:*",
-		"@agi-cli/providers": "workspace:*",
-		"@agi-cli/prompts": "workspace:*",
-		"@agi-cli/server": "workspace:*",
-		"@agi-cli/types": "workspace:*",
+		"@openauthjs/openauth": "^0.4.3",
+		"opencode-anthropic-auth": "^0.0.2",
 		"ai": "^5.0.43",
 		"@ai-sdk/anthropic": "^2.0.16",
 		"@ai-sdk/openai": "^2.0.30",
@@ -56,7 +88,8 @@
 		"@openrouter/ai-sdk-provider": "^1.2.0",
 		"@ai-sdk/openai-compatible": "^1.0.18",
 		"hono": "^4.9.7",
-		"zod": "^4.1.8"
+		"zod": "^4.1.8",
+		"fast-glob": "^3.3.2"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

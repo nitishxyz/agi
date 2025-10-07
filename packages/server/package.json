@@ -29,12 +29,8 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@agi-cli/auth": "workspace:*",
-		"@agi-cli/config": "workspace:*",
-		"@agi-cli/core": "workspace:*",
+		"@agi-cli/sdk": "workspace:*",
 		"@agi-cli/database": "workspace:*",
-		"@agi-cli/prompts": "workspace:*",
-		"@agi-cli/providers": "workspace:*",
 		"drizzle-orm": "^0.44.5",
 		"hono": "^4.9.9"
 	},

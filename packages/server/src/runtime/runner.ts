@@ -1,12 +1,12 @@
 import { hasToolCall, streamText } from 'ai';
-import { loadConfig } from '@agi-cli/config';
+import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { messageParts } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
 import { resolveModel } from './provider.ts';
 import { resolveAgentConfig } from './agent-registry.ts';
 import { composeSystemPrompt } from './prompt.ts';
-import { discoverProjectTools } from '@agi-cli/core';
+import { discoverProjectTools } from '@agi-cli/sdk';
 import { adaptTools } from '../tools/adapter.ts';
 import { publish, subscribe } from '../events/bus.ts';
 import { debugLog, time } from './debug.ts';
@@ -124,7 +124,7 @@ async function runAssistant(opts: RunOpts) {
 	const isFirstMessage = history.length === 0;
 
 	const systemTimer = time('runner:composeSystemPrompt');
-	const { getAuth } = await import('@agi-cli/auth');
+	const { getAuth } = await import('@agi-cli/sdk');
 	const { getProviderSpoofPrompt } = await import('./prompt.ts');
 	const auth = await getAuth(opts.provider, cfg.projectRoot);
 	const needsSpoof = auth?.type === 'oauth';

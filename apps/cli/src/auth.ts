@@ -21,7 +21,7 @@ import {
 } from '@agi-cli/sdk';
 import { loadConfig } from '@agi-cli/sdk';
 import { catalog } from '@agi-cli/sdk';
-import { getGlobalConfigDir, getGlobalConfigPath } from '@agi-cli/config/paths';
+import { getGlobalConfigDir, getGlobalConfigPath } from '@agi-cli/sdk';
 
 const PROVIDER_LINKS: Record<
 	ProviderId,

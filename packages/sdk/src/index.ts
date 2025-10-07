@@ -7,50 +7,45 @@
 // Usage:
 //   import { generateText, resolveModel } from '@agi-cli/sdk';
 //   import type { ProviderId, AGIConfig } from '@agi-cli/sdk';
-//
-// Note: Direct package imports are still available but discouraged:
-//   import { catalog } from '@agi-cli/providers'; // ❌ Discouraged
-//   import { catalog } from '@agi-cli/sdk';       // ✅ Recommended
 // ============================================================================
 
 // =======================
-// Types (from @agi-cli/types)
+// Types (from internal types module)
 // =======================
 // Provider types
-export type { ProviderId, ModelInfo } from '@agi-cli/types';
+export type { ProviderId, ModelInfo } from './types/src/index.ts';
 
 // Auth types
-export type { ApiAuth, OAuth, AuthInfo, AuthFile } from '@agi-cli/types';
+export type { ApiAuth, OAuth, AuthInfo, AuthFile } from './types/src/index.ts';
 
 // Config types
 export type {
-	Scope,
 	ProviderConfig,
 	DefaultConfig,
 	PathConfig,
 	AGIConfig,
-} from '@agi-cli/types';
+} from './types/src/index.ts';
 
 // =======================
-// Providers (from @agi-cli/providers)
+// Providers (from internal providers module)
 // =======================
-export { catalog } from '@agi-cli/providers';
+export { catalog } from './providers/src/index.ts';
 export {
 	isProviderId,
 	providerIds,
 	defaultModelFor,
 	hasModel,
-} from '@agi-cli/providers';
+} from './providers/src/index.ts';
 export {
 	isProviderAuthorized,
 	ensureProviderEnv,
-} from '@agi-cli/providers';
-export { validateProviderModel } from '@agi-cli/providers';
-export { estimateModelCostUsd } from '@agi-cli/providers';
-export { providerEnvVar, readEnvKey, setEnvKey } from '@agi-cli/providers';
+} from './providers/src/index.ts';
+export { validateProviderModel } from './providers/src/index.ts';
+export { estimateModelCostUsd } from './providers/src/index.ts';
+export { providerEnvVar, readEnvKey, setEnvKey } from './providers/src/index.ts';
 
 // =======================
-// Authentication (from @agi-cli/auth)
+// Authentication (from internal auth module)
 // =======================
 export {
 	getAllAuth,
@@ -62,26 +57,23 @@ export {
 	refreshToken,
 	openAuthUrl,
 	createApiKey,
-} from '@agi-cli/auth';
+} from './auth/src/index.ts';
 
 // =======================
-// Configuration (from @agi-cli/config)
+// Configuration (from internal config module)
 // =======================
-export { loadConfig, read as readConfig } from '@agi-cli/config';
+export { loadConfig, read as readConfig } from './config/src/index.ts';
+export { getLocalDataDir, getGlobalConfigDir, getGlobalConfigPath, getGlobalAgentsJsonPath, getGlobalAgentsDir, getGlobalToolsDir, getGlobalCommandsDir, getSecureAuthPath, getHomeDir } from './config/src/paths.ts';
+export { read, isAuthorized, ensureEnv, writeDefaults as setConfig, writeAuth, removeAuth as removeConfig } from './config/src/manager.ts';
+export type { Scope } from './config/src/manager.ts';
 
 // =======================
-// Prompts (from @agi-cli/prompts)
+// Prompts (from internal prompts module)
 // =======================
-export { providerBasePrompt } from '@agi-cli/prompts';
+export { providerBasePrompt } from './prompts/src/providers.ts';
 
 // =======================
-// Database (from @agi-cli/database)
-// =======================
-export { getDb } from '@agi-cli/database';
-export * as dbSchema from '@agi-cli/database/schema';
-
-// =======================
-// Core AI Functions (from @agi-cli/core)
+// Core AI Functions (from internal core module)
 // =======================
 // AI SDK re-exports
 export {
@@ -90,32 +82,34 @@ export {
 	generateObject,
 	streamObject,
 	tool,
-} from '@agi-cli/core';
-export type { CoreMessage, Tool } from '@agi-cli/core';
+} from './core/src/index.ts';
+export type { CoreMessage, Tool } from './core/src/index.ts';
+// Re-export from AI SDK
+export type { ToolCallPart } from 'ai';
 
 // Provider & Model Resolution
-export { resolveModel } from '@agi-cli/core';
-export type { ProviderName, ModelConfig } from '@agi-cli/core';
+export { resolveModel } from './core/src/index.ts';
+export type { ProviderName, ModelConfig } from './core/src/index.ts';
 
 // Tools
-export { discoverProjectTools } from '@agi-cli/core';
-export type { DiscoveredTool } from '@agi-cli/core';
-export { buildFsTools } from '@agi-cli/core';
-export { buildGitTools } from '@agi-cli/core';
+export { discoverProjectTools } from './core/src/index.ts';
+export type { DiscoveredTool } from './core/src/index.ts';
+export { buildFsTools } from './core/src/index.ts';
+export { buildGitTools } from './core/src/index.ts';
 
 // Streaming & Artifacts
 export {
 	createFileDiffArtifact,
 	createToolResultPayload,
-} from '@agi-cli/core';
+} from './core/src/index.ts';
 export type {
 	Artifact,
 	FileDiffArtifact,
 	FileArtifact,
-} from '@agi-cli/core';
+} from './core/src/index.ts';
 
 // Core Types
-export type { ExecutionContext, ToolResult } from '@agi-cli/core';
+export type { ExecutionContext, ToolResult } from './core/src/index.ts';
 
 // Error Handling
 export {
@@ -128,15 +122,10 @@ export {
 	ValidationError,
 	NotFoundError,
 	ServiceError,
-} from '@agi-cli/core';
+} from './core/src/index.ts';
 
 // Schema Validation
-export { z } from '@agi-cli/core';
-
-// =======================
-// Server (from @agi-cli/server)
-// =======================
-export { createApp as createServer } from '@agi-cli/server';
+export { z } from './core/src/index.ts';
 
 // =======================
 // SDK-specific Agent Types

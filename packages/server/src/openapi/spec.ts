@@ -1,4 +1,4 @@
-import { providerIds } from '@agi-cli/providers';
+import { providerIds } from '@agi-cli/sdk';
 
 export function getOpenAPISpec() {
 	const spec = {

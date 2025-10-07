@@ -1,19 +1,18 @@
-import {
-	getGlobalAgentsJsonPath,
-	getGlobalAgentsDir,
-} from '@agi-cli/config/paths';
+import { getGlobalAgentsJsonPath, getGlobalAgentsDir } from '@agi-cli/sdk';
 import { debugLog } from './debug.ts';
-import type { ProviderName } from '@agi-cli/core';
-import { catalog } from '@agi-cli/providers/catalog';
+import type { ProviderName } from '@agi-cli/sdk';
+import { catalog } from '@agi-cli/sdk';
 // Embed default agent prompts; only user overrides read from disk.
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import AGENT_BUILD from '@agi-cli/prompts/agents/build.txt' with {
+import AGENT_BUILD from '@agi-cli/sdk/prompts/agents/build.txt' with {
 	type: 'text',
 };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import AGENT_PLAN from '@agi-cli/prompts/agents/plan.txt' with { type: 'text' };
+import AGENT_PLAN from '@agi-cli/sdk/prompts/agents/plan.txt' with {
+	type: 'text',
+};
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import AGENT_GENERAL from '@agi-cli/prompts/agents/general.txt' with {
+import AGENT_GENERAL from '@agi-cli/sdk/prompts/agents/general.txt' with {
 	type: 'text',
 };
 
@@ -119,11 +118,12 @@ const defaultToolExtras: Record<string, string[]> = {
 		'ls',
 		'tree',
 		'bash',
+		'update_plan',
+		'grep',
 		'git_status',
 		'git_diff',
 		'ripgrep',
 		'apply_patch',
-		'update_plan',
 		'websearch',
 	],
 	plan: ['read', 'ls', 'tree', 'ripgrep', 'update_plan', 'websearch'],

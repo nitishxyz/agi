@@ -1,6 +1,6 @@
 import { intro } from '@clack/prompts';
 import { editAgentsConfig } from './scaffold.ts';
-import { getGlobalConfigDir } from '@agi-cli/config/paths';
+import { getGlobalConfigDir } from '@agi-cli/sdk';
 
 export async function runAgents(
 	opts: { project?: string; local?: boolean } = {},

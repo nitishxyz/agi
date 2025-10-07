@@ -1,4 +1,4 @@
-import type { ProviderName } from '@agi-cli/core';
+import type { ProviderName } from '../core/src/index.ts';
 
 export type AgentConfig = {
 	name: string;

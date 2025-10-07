@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { loadConfig } from '@agi-cli/config';
+import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import {
 	createSession,
@@ -18,7 +18,7 @@ import {
 	ensureProviderEnv,
 	isProviderId,
 	type ProviderId,
-} from '@agi-cli/providers';
+} from '@agi-cli/sdk';
 import { sessions } from '@agi-cli/database/schema';
 import { time } from './debug.ts';
 
@@ -103,7 +103,7 @@ async function processAskRequest(
 	const projectRoot = request.projectRoot || process.cwd();
 	const configTimer = time('ask:loadConfig+db');
 
-	let cfg: import('@agi-cli/config').AGIConfig;
+	let cfg: import('@agi-cli/sdk').AGIConfig;
 
 	if (request.skipFileConfig || request.config) {
 		const injectedProvider = (request.config?.provider ||

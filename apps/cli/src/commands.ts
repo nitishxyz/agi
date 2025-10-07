@@ -1,7 +1,7 @@
 import { intro, outro, text, isCancel, cancel } from '@clack/prompts';
 import { isAbsolute, join } from 'node:path';
 import { runAsk } from './ask.ts';
-import { getGlobalCommandsDir } from '@agi-cli/config/paths';
+import { getGlobalCommandsDir } from '@agi-cli/sdk';
 
 export type CommandManifest = {
 	name: string;

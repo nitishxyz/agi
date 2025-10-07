@@ -1,5 +1,5 @@
 import { defineConfig } from 'drizzle-kit';
-import { getLocalDataDir } from '@agi-cli/config/paths';
+import { getLocalDataDir } from '@agi-cli/sdk';
 
 const dataDir = getLocalDataDir(process.cwd());
 const dbPath = `${dataDir}/agi.db`;

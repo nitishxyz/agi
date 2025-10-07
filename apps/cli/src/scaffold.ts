@@ -13,7 +13,7 @@ import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline';
 import { defaultToolsForAgent } from '@agi-cli/server/runtime/agent-registry';
 import { discoverProjectTools } from '@agi-cli/sdk';
-import { getGlobalConfigDir, getHomeDir } from '@agi-cli/config/paths';
+import { getGlobalConfigDir, getHomeDir } from '@agi-cli/sdk';
 
 type ScaffoldOptions = { project?: string; local?: boolean };
 
@@ -481,7 +481,7 @@ async function listAgents(
 	const names = new Set(defaults);
 	const _home = process.env.HOME || process.env.USERPROFILE || '';
 	try {
-		const { getGlobalAgentsJsonPath } = await import('@agi-cli/config/paths');
+		const { getGlobalAgentsJsonPath } = await import('@agi-cli/sdk');
 		const globalAgents = (await Bun.file(getGlobalAgentsJsonPath())
 			.json()
 			.catch(() => ({}))) as Record<string, unknown>;

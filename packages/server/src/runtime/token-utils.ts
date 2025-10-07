@@ -1,4 +1,4 @@
-import { catalog } from '@agi-cli/providers';
+import { catalog } from '@agi-cli/sdk';
 import { debugLog } from './debug.ts';
 import type { ProviderName } from './provider.ts';
 

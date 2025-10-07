@@ -32,12 +32,14 @@
     },
     "apps/cli": {
       "name": "@agi-cli/cli",
-      "version": "0.1.51",
+      "version": "0.1.52",
       "bin": {
         "agi": "./dist/agi",
       },
       "dependencies": {
+        "@agi-cli/database": "workspace:*",
         "@agi-cli/sdk": "workspace:*",
+        "@agi-cli/server": "workspace:*",
         "@clack/prompts": "^0.11.0",
         "diff": "^8.0.2",
         "marked": "^16.3.0",
@@ -103,59 +105,11 @@
         "@types/bun": "latest",
       },
     },
-    "packages/auth": {
-      "name": "@agi-cli/auth",
-      "version": "0.1.0",
-      "dependencies": {
-        "@agi-cli/config": "workspace:*",
-        "@agi-cli/types": "workspace:*",
-        "@openauthjs/openauth": "^0.4.3",
-        "opencode-anthropic-auth": "^0.0.2",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
-    "packages/config": {
-      "name": "@agi-cli/config",
-      "version": "0.1.0",
-      "dependencies": {
-        "@agi-cli/types": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
-    "packages/core": {
-      "name": "@agi-cli/core",
-      "version": "0.1.0",
-      "dependencies": {
-        "@agi-cli/auth": "workspace:*",
-        "@agi-cli/config": "workspace:*",
-        "@agi-cli/database": "workspace:*",
-        "@agi-cli/prompts": "workspace:*",
-        "@agi-cli/providers": "workspace:*",
-        "@ai-sdk/anthropic": "^2.0.16",
-        "@ai-sdk/google": "^2.0.14",
-        "@ai-sdk/openai": "^2.0.30",
-        "@ai-sdk/openai-compatible": "^1.0.18",
-        "@openrouter/ai-sdk-provider": "^1.2.0",
-        "ai": "^5.0.43",
-        "hono": "^4.9.7",
-        "zod": "^4.1.8",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
     "packages/database": {
       "name": "@agi-cli/database",
       "version": "0.1.0",
       "dependencies": {
-        "@agi-cli/config": "workspace:*",
+        "@agi-cli/sdk": "workspace:*",
         "drizzle-orm": "^0.44.5",
       },
       "devDependencies": {
@@ -166,46 +120,27 @@
     },
     "packages/install": {
       "name": "@agi-cli/install",
-      "version": "0.1.51",
+      "version": "0.1.52",
       "bin": {
         "agi": "./start.js",
       },
     },
-    "packages/prompts": {
-      "name": "@agi-cli/prompts",
-      "version": "0.1.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
-    "packages/providers": {
-      "name": "@agi-cli/providers",
-      "version": "0.1.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
     "packages/sdk": {
       "name": "@agi-cli/sdk",
-      "version": "0.1.51",
+      "version": "0.1.52",
       "dependencies": {
-        "@agi-cli/auth": "workspace:*",
-        "@agi-cli/config": "workspace:*",
-        "@agi-cli/core": "workspace:*",
         "@agi-cli/database": "workspace:*",
-        "@agi-cli/prompts": "workspace:*",
-        "@agi-cli/providers": "workspace:*",
-        "@agi-cli/server": "workspace:*",
-        "@agi-cli/types": "workspace:*",
         "@ai-sdk/anthropic": "^2.0.16",
         "@ai-sdk/google": "^2.0.14",
         "@ai-sdk/openai": "^2.0.30",
         "@ai-sdk/openai-compatible": "^1.0.18",
+        "@openauthjs/openauth": "^0.4.3",
         "@openrouter/ai-sdk-provider": "^1.2.0",
         "ai": "^5.0.43",
+        "drizzle-orm": "^0.44.5",
+        "fast-glob": "^3.3.2",
         "hono": "^4.9.7",
+        "opencode-anthropic-auth": "^0.0.2",
         "zod": "^4.1.8",
       },
       "devDependencies": {
@@ -217,12 +152,8 @@
       "name": "@agi-cli/server",
       "version": "0.1.0",
       "dependencies": {
-        "@agi-cli/auth": "workspace:*",
-        "@agi-cli/config": "workspace:*",
-        "@agi-cli/core": "workspace:*",
         "@agi-cli/database": "workspace:*",
-        "@agi-cli/prompts": "workspace:*",
-        "@agi-cli/providers": "workspace:*",
+        "@agi-cli/sdk": "workspace:*",
         "drizzle-orm": "^0.44.5",
         "hono": "^4.9.9",
       },
@@ -231,17 +162,9 @@
         "typescript": "^5",
       },
     },
-    "packages/types": {
-      "name": "@agi-cli/types",
-      "version": "0.1.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
     "packages/web-ui": {
       "name": "@agi-cli/web-ui",
-      "version": "0.1.51",
+      "version": "0.1.52",
       "dependencies": {
         "express": "^5.1.0",
       },
@@ -253,27 +176,15 @@
     },
   },
   "packages": {
-    "@agi-cli/auth": ["@agi-cli/auth@workspace:packages/auth"],
-
     "@agi-cli/cli": ["@agi-cli/cli@workspace:apps/cli"],
-
-    "@agi-cli/config": ["@agi-cli/config@workspace:packages/config"],
-
-    "@agi-cli/core": ["@agi-cli/core@workspace:packages/core"],
 
     "@agi-cli/database": ["@agi-cli/database@workspace:packages/database"],
 
     "@agi-cli/install": ["@agi-cli/install@workspace:packages/install"],
 
-    "@agi-cli/prompts": ["@agi-cli/prompts@workspace:packages/prompts"],
-
-    "@agi-cli/providers": ["@agi-cli/providers@workspace:packages/providers"],
-
     "@agi-cli/sdk": ["@agi-cli/sdk@workspace:packages/sdk"],
 
     "@agi-cli/server": ["@agi-cli/server@workspace:packages/server"],
-
-    "@agi-cli/types": ["@agi-cli/types@workspace:packages/types"],
 
     "@agi-cli/web-ui": ["@agi-cli/web-ui@workspace:packages/web-ui"],
 
@@ -809,7 +720,7 @@
 
     "glob": ["glob@10.4.5", "", { "dependencies": { "foreground-child": "^3.1.0", "jackspeak": "^3.1.2", "minimatch": "^9.0.4", "minipass": "^7.1.2", "package-json-from-dist": "^1.0.0", "path-scurry": "^1.11.1" }, "bin": { "glob": "dist/esm/bin.mjs" } }, "sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg=="],
 
-    "glob-parent": ["glob-parent@6.0.2", "", { "dependencies": { "is-glob": "^4.0.3" } }, "sha512-XxwI8EOhVQgWp6iDL+3b0r86f4d6AX6zSU55HfB4ydCEuXLXc5FcYeOu+nnGftS4TEju/11rt4KJPTMgbfmv4A=="],
+    "glob-parent": ["glob-parent@5.1.2", "", { "dependencies": { "is-glob": "^4.0.1" } }, "sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow=="],
 
     "globals": ["globals@16.4.0", "", {}, "sha512-ob/2LcVVaVGCYN+r14cnwnoDPUufjiYgSqRhiFD0Q1iI4Odora5RE8Iv1D24hAz5oMophRGkGz+yuvQmmUMnMw=="],
 
@@ -1357,13 +1268,9 @@
 
     "anymatch/picomatch": ["picomatch@2.3.1", "", {}, "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA=="],
 
-    "chokidar/glob-parent": ["glob-parent@5.1.2", "", { "dependencies": { "is-glob": "^4.0.1" } }, "sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow=="],
-
     "cli-highlight/chalk": ["chalk@4.1.2", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA=="],
 
     "decode-named-character-reference/character-entities": ["character-entities@2.0.2", "", {}, "sha512-shx7oQ0Awen/BRIdkjkvz54PnEEI/EjwXDSIZp86/KKdbafHh1Df/RYGBhn4hbe2+uKC9FnT5UCEdyPz3ai9hQ=="],
-
-    "fast-glob/glob-parent": ["glob-parent@5.1.2", "", { "dependencies": { "is-glob": "^4.0.1" } }, "sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow=="],
 
     "hast-util-from-parse5/hastscript": ["hastscript@9.0.1", "", { "dependencies": { "@types/hast": "^3.0.0", "comma-separated-tokens": "^2.0.0", "hast-util-parse-selector": "^4.0.0", "property-information": "^7.0.0", "space-separated-tokens": "^2.0.0" } }, "sha512-g7df9rMFX/SPi34tyGCyUBREQoKkapwdY/T04Qn9TDWfHhAYt4/I0gMVirzK5wEzeUqIjEB+LXC/ypb7Aqno5w=="],
 
@@ -1404,6 +1311,8 @@
     "strip-ansi/ansi-regex": ["ansi-regex@5.0.1", "", {}, "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="],
 
     "strip-ansi-cjs/ansi-regex": ["ansi-regex@5.0.1", "", {}, "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="],
+
+    "tailwindcss/glob-parent": ["glob-parent@6.0.2", "", { "dependencies": { "is-glob": "^4.0.3" } }, "sha512-XxwI8EOhVQgWp6iDL+3b0r86f4d6AX6zSU55HfB4ydCEuXLXc5FcYeOu+nnGftS4TEju/11rt4KJPTMgbfmv4A=="],
 
     "@esbuild-kit/core-utils/esbuild/@esbuild/android-arm": ["@esbuild/android-arm@0.18.20", "", { "os": "android", "cpu": "arm" }, "sha512-fyi7TDI/ijKKNZTUJAQqiG5T7YjJXgnzkURqmGj13C6dCqckZBLdl4h7bkhHt/t0WP+zO9/zwroDvANaOqO5Sw=="],
 
