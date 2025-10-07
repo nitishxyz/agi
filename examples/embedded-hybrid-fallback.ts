@@ -3,7 +3,7 @@ import { serveWebUI } from '@agi-cli/web-ui';
 
 /**
  * Hybrid Fallback Architecture
- * 
+ *
  * Priority Chain:
  * 1. Injected config (highest)
  * 2. Environment variables
@@ -11,7 +11,9 @@ import { serveWebUI } from '@agi-cli/web-ui';
  */
 
 // Example 1: Empty config - Uses files/env completely
-console.log('\n📦 Example 1: No config (falls back to ~/.config/agi/auth.json)');
+console.log(
+	'\n📦 Example 1: No config (falls back to ~/.config/agi/auth.json)',
+);
 const app1 = createEmbeddedApp();
 
 // Example 2: Partial override - Model only
@@ -42,7 +44,9 @@ const app4 = createEmbeddedApp({
 });
 
 // Example 5: Multi-provider with fallback
-console.log('\n📦 Example 5: Multi-provider (some from config, some from files)');
+console.log(
+	'\n📦 Example 5: Multi-provider (some from config, some from files)',
+);
 const app5 = createEmbeddedApp({
 	provider: 'openai',
 	apiKey: process.env.OPENAI_API_KEY, // Can be undefined
