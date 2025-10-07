@@ -1,11 +1,8 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import DESCRIPTION from './ripgrep.txt' with { type: 'text' };
-
-const execAsync = promisify(exec);
 
 export function buildRipgrepTool(projectRoot: string): {
 	name: string;
@@ -50,27 +47,54 @@ export function buildRipgrepTool(projectRoot: string): {
 			const p = expandTilde(String(path ?? '.')).trim();
 			const isAbs = p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p);
 			const target = p ? (isAbs ? p : join(projectRoot, p)) : projectRoot;
-			const args = ['rg', '--no-heading', '--line-number', '--color=never'];
+			const args = ['--no-heading', '--line-number', '--color=never'];
 			if (ignoreCase) args.push('-i');
 			if (Array.isArray(glob)) for (const g of glob) args.push('-g', g);
 			args.push('--max-count', String(maxResults));
 			args.push(query);
-			args.push(`"${target}"`);
+			args.push(target);
 
 			try {
-				const { stdout } = await execAsync(args.join(' '), {
-					maxBuffer: 10 * 1024 * 1024,
+				return await new Promise((resolve) => {
+					const proc = spawn('rg', args, { cwd: projectRoot });
+					let stdout = '';
+					let stderr = '';
+
+					proc.stdout.on('data', (data) => {
+						stdout += data.toString();
+					});
+
+					proc.stderr.on('data', (data) => {
+						stderr += data.toString();
+					});
+
+					proc.on('close', (code) => {
+						if (code !== 0 && code !== 1) {
+							resolve({ count: 0, matches: [], error: stderr.trim() });
+							return;
+						}
+
+						const lines = stdout
+							.split('\n')
+							.filter(Boolean)
+							.slice(0, maxResults);
+						const matches = lines.map((l) => {
+							const parts = l.split(':');
+							if (parts.length < 3) return { file: '', line: 0, text: l };
+							const file = parts[0];
+							const line = Number.parseInt(parts[1], 10);
+							const text = parts.slice(2).join(':');
+							return { file, line, text };
+						});
+						resolve({ count: matches.length, matches });
+					});
+
+					proc.on('error', (err) => {
+						resolve({ count: 0, matches: [], error: String(err) });
+					});
 				});
-				const lines = stdout.split('\n').filter(Boolean).slice(0, maxResults);
-				const matches = lines.map((l) => {
-					const m = l.match(/^(.*?):(\d+):(.*)$/);
-					if (!m) return { file: '', line: 0, text: l };
-					return { file: m[1], line: Number(m[2]), text: m[3] };
-				});
-				return { count: matches.length, matches };
 			} catch (err) {
-				const stderr = (err as { stderr?: string })?.stderr ?? String(err);
-				return { count: 0, matches: [], error: stderr?.trim() };
+				return { count: 0, matches: [], error: String(err) };
 			}
 		},
 	});
