@@ -5,6 +5,7 @@ import type {
 	InjectableCredentials,
 } from '../runtime/ask-service.ts';
 import { AskServiceError, handleAskRequest } from '../runtime/ask-service.ts';
+import type { EmbeddedAppConfig } from '../index.ts';
 
 export function registerAskRoutes(app: Hono) {
 	app.post('/v1/ask', async (c) => {
@@ -18,6 +19,57 @@ export function registerAskRoutes(app: Hono) {
 			return c.json({ error: 'Prompt is required.' }, 400);
 		}
 
+		const embeddedConfig = c.get('embeddedConfig') as
+			| EmbeddedAppConfig
+			| undefined;
+
+		// Hybrid fallback: Use embedded config if provided, otherwise fall back to files/env
+		let injectableConfig: InjectableConfig | undefined;
+		let injectableCredentials: InjectableCredentials | undefined;
+		let skipFileConfig = false;
+
+		if (embeddedConfig && Object.keys(embeddedConfig).length > 0) {
+			// Has embedded config - build injectable config from it
+			const hasDefaults =
+				embeddedConfig.defaults ||
+				embeddedConfig.provider ||
+				embeddedConfig.model ||
+				embeddedConfig.agent;
+
+			if (hasDefaults) {
+				injectableConfig = {
+					defaults: embeddedConfig.defaults || {
+						agent: embeddedConfig.agent,
+						provider: embeddedConfig.provider,
+						model: embeddedConfig.model,
+					},
+				};
+			}
+
+			// Convert embedded auth to injectable credentials
+			const hasAuth = embeddedConfig.auth || embeddedConfig.apiKey;
+			if (hasAuth) {
+				if (embeddedConfig.auth) {
+					injectableCredentials = {};
+					for (const [provider, auth] of Object.entries(embeddedConfig.auth)) {
+						if ('apiKey' in auth) {
+							injectableCredentials[provider] = { apiKey: auth.apiKey };
+						} else {
+							injectableCredentials[provider] = auth;
+						}
+					}
+				} else if (embeddedConfig.apiKey && embeddedConfig.provider) {
+					injectableCredentials = {
+						[embeddedConfig.provider]: { apiKey: embeddedConfig.apiKey },
+					};
+				}
+
+				// Only skip file config if we have credentials injected
+				skipFileConfig = true;
+			}
+			// If no auth provided, skipFileConfig stays false -> will use ensureProviderEnv -> auth.json fallback
+		}
+
 		const request: AskServerRequest = {
 			projectRoot,
 			prompt,
@@ -29,17 +81,20 @@ export function registerAskRoutes(app: Hono) {
 			last: Boolean(body.last),
 			jsonMode: Boolean(body.jsonMode),
 			skipFileConfig:
-				typeof body.skipFileConfig === 'boolean'
+				skipFileConfig ||
+				(typeof body.skipFileConfig === 'boolean'
 					? body.skipFileConfig
-					: undefined,
+					: false),
 			config:
-				body.config && typeof body.config === 'object'
+				injectableConfig ||
+				(body.config && typeof body.config === 'object'
 					? (body.config as InjectableConfig)
-					: undefined,
+					: undefined),
 			credentials:
-				body.credentials && typeof body.credentials === 'object'
+				injectableCredentials ||
+				(body.credentials && typeof body.credentials === 'object'
 					? (body.credentials as InjectableCredentials)
-					: undefined,
+					: undefined),
 			agentPrompt:
 				typeof body.agentPrompt === 'string' ? body.agentPrompt : undefined,
 			tools: Array.isArray(body.tools) ? body.tools : undefined,

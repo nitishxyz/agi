@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import type { ProviderId } from '@agi-cli/sdk';
+import type { ProviderId, AuthInfo } from '@agi-cli/sdk';
 import { registerRootRoutes } from './routes/root.ts';
 import { registerOpenApiRoute } from './routes/openapi.ts';
 import { registerSessionsRoutes } from './routes/sessions.ts';
@@ -9,6 +9,7 @@ import { registerSessionStreamRoute } from './routes/session-stream.ts';
 import { registerAskRoutes } from './routes/ask.ts';
 import { registerConfigRoutes } from './routes/config.ts';
 import { registerGitRoutes } from './routes/git.ts';
+import type { AgentConfigEntry } from './runtime/agent-registry.ts';
 
 function initApp() {
 	const app = new Hono();
@@ -117,15 +118,47 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	return honoApp;
 }
 
+/**
+ * Embedded app configuration with hybrid fallback:
+ * 1. Injected config (highest priority)
+ * 2. Environment variables
+ * 3. auth.json/config.json files (fallback)
+ *
+ * All fields are optional - if not provided, falls back to files/env
+ */
 export type EmbeddedAppConfig = {
-	provider: ProviderId;
-	model: string;
-	apiKey: string;
+	/** Primary provider (optional - falls back to config.json or env) */
+	provider?: ProviderId;
+	/** Primary model (optional - falls back to config.json) */
+	model?: string;
+	/** Primary API key (optional - falls back to env vars or auth.json) */
+	apiKey?: string;
+	/** Default agent (optional - falls back to config.json) */
 	agent?: string;
+	/** Multi-provider auth (optional - falls back to auth.json) */
+	auth?: Record<string, { apiKey: string } | AuthInfo>;
+	/** Custom agents (optional - falls back to .agi/agents/) */
+	agents?: Record<
+		string,
+		Omit<AgentConfigEntry, 'tools'> & { tools?: readonly string[] | string[] }
+	>;
+	/** Default settings (optional - falls back to config.json) */
+	defaults?: {
+		provider?: ProviderId;
+		model?: string;
+		agent?: string;
+	};
 };
 
-export function createEmbeddedApp(_config: EmbeddedAppConfig) {
+export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 	const honoApp = new Hono();
+
+	// Store injected config in Hono context for routes to access
+	// Config can be empty - routes will fall back to files/env
+	honoApp.use('*', async (c, next) => {
+		c.set('embeddedConfig', config);
+		await next();
+	});
 
 	// Enable CORS for all localhost ports (for web UI on random ports)
 	honoApp.use(
@@ -163,6 +196,7 @@ export function createEmbeddedApp(_config: EmbeddedAppConfig) {
 	registerSessionMessagesRoutes(honoApp);
 	registerSessionStreamRoute(honoApp);
 	registerAskRoutes(honoApp);
+	registerConfigRoutes(honoApp);
 	registerGitRoutes(honoApp);
 
 	return honoApp;
@@ -181,3 +215,9 @@ export {
 } from './runtime/ask-service.ts';
 export { registerSessionsRoutes } from './routes/sessions.ts';
 export { registerAskRoutes } from './routes/ask.ts';
+export {
+	BUILTIN_AGENTS,
+	BUILTIN_TOOLS,
+	type BuiltinAgent,
+	type BuiltinTool,
+} from './presets.ts';
