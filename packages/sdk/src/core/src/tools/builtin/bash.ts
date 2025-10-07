@@ -1,6 +1,6 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
-import { exec } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import DESCRIPTION from './bash.txt' with { type: 'text' };
 
 function normalizePath(p: string) {
@@ -31,7 +31,7 @@ export function buildBashTool(projectRoot: string): {
 		description: DESCRIPTION,
 		inputSchema: z
 			.object({
-				cmd: z.string().describe('Shell command to run (bash -lc <cmd>)'),
+				cmd: z.string().describe('Shell command to run (bash -c <cmd>)'),
 				cwd: z
 					.string()
 					.default('.')
@@ -41,27 +41,45 @@ export function buildBashTool(projectRoot: string): {
 					.optional()
 					.default(false)
 					.describe('If true, do not throw on non-zero exit'),
+				timeout: z
+					.number()
+					.optional()
+					.default(300000)
+					.describe('Timeout in milliseconds (default: 300000 = 5 minutes)'),
 			})
 			.strict(),
 		async execute({
 			cmd,
 			cwd,
 			allowNonZeroExit,
+			timeout = 300000,
 		}: {
 			cmd: string;
 			cwd?: string;
 			allowNonZeroExit?: boolean;
+			timeout?: number;
 		}) {
 			const absCwd = resolveSafePath(projectRoot, cwd || '.');
 
 			return new Promise((resolve, reject) => {
-				const proc = exec(`bash -lc '${cmd.replace(/'/g, "'\\''")}'`, {
+				// Use spawn with shell: true for cross-platform compatibility
+				const proc = spawn(cmd, {
 					cwd: absCwd,
-					maxBuffer: 10 * 1024 * 1024,
+					shell: true,
+					stdio: ['ignore', 'pipe', 'pipe'],
 				});
 
 				let stdout = '';
 				let stderr = '';
+				let didTimeout = false;
+				let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+				if (timeout > 0) {
+					timeoutId = setTimeout(() => {
+						didTimeout = true;
+						proc.kill();
+					}, timeout);
+				}
 
 				proc.stdout?.on('data', (chunk) => {
 					stdout += chunk.toString();
@@ -72,8 +90,16 @@ export function buildBashTool(projectRoot: string): {
 				});
 
 				proc.on('close', (exitCode) => {
-					if (exitCode !== 0 && !allowNonZeroExit) {
-						const msg = (stderr || stdout || `Command failed: ${cmd}`).trim();
+					if (timeoutId) clearTimeout(timeoutId);
+
+					if (didTimeout) {
+						reject(new Error(`Command timed out after ${timeout}ms: ${cmd}`));
+					} else if (exitCode !== 0 && !allowNonZeroExit) {
+						const errorMsg =
+							stderr.trim() ||
+							stdout.trim() ||
+							`Command failed with exit code ${exitCode}`;
+						const msg = `${errorMsg}\n\nCommand: ${cmd}\nExit code: ${exitCode}`;
 						reject(new Error(msg));
 					} else {
 						resolve({ exitCode: exitCode ?? 0, stdout, stderr });
@@ -81,7 +107,12 @@ export function buildBashTool(projectRoot: string): {
 				});
 
 				proc.on('error', (err) => {
-					reject(err);
+					if (timeoutId) clearTimeout(timeoutId);
+					reject(
+						new Error(
+							`Command execution failed: ${err.message}\n\nCommand: ${cmd}`,
+						),
+					);
 				});
 			});
 		},

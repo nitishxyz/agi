@@ -1,41 +1,41 @@
 {
-  "version": "7",
-  "dialect": "sqlite",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "6",
-      "when": 1757903506317,
-      "tag": "0000_tense_shadow_king",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1757926724962,
-      "tag": "0001_past_kabuki",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1758380042084,
-      "tag": "0002_vengeful_warlock",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1759590176611,
-      "tag": "0003_pale_violations",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1759825214699,
-      "tag": "0004_left_the_professor",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "sqlite",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "6",
+			"when": 1757903506317,
+			"tag": "0000_tense_shadow_king",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "6",
+			"when": 1757926724962,
+			"tag": "0001_past_kabuki",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "6",
+			"when": 1758380042084,
+			"tag": "0002_vengeful_warlock",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "6",
+			"when": 1759590176611,
+			"tag": "0003_pale_violations",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "6",
+			"when": 1759825214699,
+			"tag": "0004_left_the_professor",
+			"breakpoints": true
+		}
+	]
 }

@@ -274,11 +274,6 @@ export function createFinishHandler(
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 	ensureFinishToolCalled: () => Promise<void>,
-	updateSessionTokensFn: (
-		fin: FinishEvent,
-		opts: RunOpts,
-		db: Awaited<ReturnType<typeof getDb>>,
-	) => Promise<void>,
 	completeAssistantMessageFn: (
 		fin: FinishEvent,
 		opts: RunOpts,
@@ -290,23 +285,37 @@ export function createFinishHandler(
 			await ensureFinishToolCalled();
 		} catch {}
 
-		try {
-			await updateSessionTokensFn(fin, opts, db);
-		} catch {}
+		// Note: Token updates are handled incrementally in onStepFinish
+		// Do NOT add fin.usage here as it would cause double-counting
 
 		try {
 			await completeAssistantMessageFn(fin, opts, db);
 		} catch {}
 
-		const costUsd = fin.usage
-			? estimateModelCostUsd(opts.provider, opts.model, fin.usage)
+		// Use session totals from DB for accurate cost calculation
+		const sessRows = await db
+			.select()
+			.from(messages)
+			.where(eq(messages.id, opts.assistantMessageId));
+
+		const usage = sessRows[0]
+			? {
+					inputTokens: Number(sessRows[0].promptTokens ?? 0),
+					outputTokens: Number(sessRows[0].completionTokens ?? 0),
+					totalTokens: Number(sessRows[0].totalTokens ?? 0),
+				}
+			: fin.usage;
+
+		const costUsd = usage
+			? estimateModelCostUsd(opts.provider, opts.model, usage)
 			: undefined;
+
 		publish({
 			type: 'message.completed',
 			sessionId: opts.sessionId,
 			payload: {
 				id: opts.assistantMessageId,
-				usage: fin.usage,
+				usage,
 				costUsd,
 				finishReason: fin.finishReason,
 			},

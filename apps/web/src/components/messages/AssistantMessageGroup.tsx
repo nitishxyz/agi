@@ -85,7 +85,9 @@ export const AssistantMessageGroup = memo(
 										{message.agent}
 									</span>
 								)}
-								{message.agent && message.provider && <span className="hidden md:inline">·</span>}
+								{message.agent && message.provider && (
+									<span className="hidden md:inline">·</span>
+								)}
 								{message.provider && (
 									<span className="text-muted-foreground whitespace-nowrap">
 										{message.provider}
@@ -93,9 +95,13 @@ export const AssistantMessageGroup = memo(
 								)}
 								{message.model && <span className="hidden md:inline">·</span>}
 								{message.model && (
-									<span className="text-muted-foreground break-all md:break-normal">{message.model}</span>
+									<span className="text-muted-foreground break-all md:break-normal">
+										{message.model}
+									</span>
 								)}
-								{message.createdAt && <span className="hidden md:inline">·</span>}
+								{message.createdAt && (
+									<span className="hidden md:inline">·</span>
+								)}
 								{message.createdAt && (
 									<span className="text-muted-foreground whitespace-nowrap">
 										{formatTime(message.createdAt)}

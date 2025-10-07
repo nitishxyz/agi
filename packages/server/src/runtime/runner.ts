@@ -243,17 +243,25 @@ async function runAssistant(opts: RunOpts) {
 		opts,
 		db,
 		() => ensureFinishToolCalled(finishObserved, toolset, sharedCtx, stepIndex),
-		async () => {
-			// No-op: tokens are tracked incrementally in onStepFinish
-		},
 		completeAssistantMessage,
 	);
 
-	// Apply optimizations: cache control and context truncation
+	// Apply optimizations: deduplication, pruning, cache control, and truncation
 	const { addCacheControl, truncateHistory } = await import(
 		'./cache-optimizer.ts'
 	);
-	const truncatedMessages = truncateHistory(messagesWithSystemInstructions, 20);
+	const { optimizeContext } = await import('./context-optimizer.ts');
+
+	// 1. Optimize context (deduplicate file reads, prune old tool results)
+	const contextOptimized = optimizeContext(messagesWithSystemInstructions, {
+		deduplicateFiles: true,
+		maxToolResults: 30,
+	});
+
+	// 2. Truncate history
+	const truncatedMessages = truncateHistory(contextOptimized, 20);
+
+	// 3. Add cache control
 	const { system: cachedSystem, messages: optimizedMessages } = addCacheControl(
 		opts.provider as any,
 		system,

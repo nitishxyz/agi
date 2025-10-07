@@ -19,6 +19,8 @@ const TOOL_COLORS = {
 	ls: chalk.blue,
 	tree: chalk.blue,
 	ripgrep: chalk.blue,
+	grep: chalk.blue,
+	glob: chalk.cyan,
 	git_status: chalk.blue,
 	git_diff: chalk.blue,
 
@@ -82,7 +84,11 @@ function extractArgPreview(toolName: string, args: unknown): string {
 			}
 			break;
 		case 'ripgrep':
+		case 'grep':
+		case 'glob':
 			if (typeof obj.query === 'string') return `"${obj.query}"`;
+			if (typeof obj.pattern === 'string') return `"${obj.pattern}"`;
+			if (typeof obj.filePattern === 'string') return `"${obj.filePattern}"`;
 			break;
 		case 'websearch':
 			if (typeof obj.query === 'string') return `"${obj.query}"`;
@@ -514,6 +520,41 @@ export function printToolResult(
 		artifact.kind === 'file_diff' &&
 		typeof artifact.patch === 'string'
 	) {
+		// Check if there's an error in the result
+		const hasError =
+			typeof result === 'object' &&
+			result !== null &&
+			'error' in result &&
+			result.error;
+		const hasOkFalse =
+			typeof result === 'object' &&
+			result !== null &&
+			'ok' in result &&
+			result.ok === false;
+
+		if (hasError || hasOkFalse) {
+			// Show error for apply_patch failures
+			console.log(chalk.red(`  ✗ ${toolName} error ${duration}`));
+			if (hasError) {
+				console.log(chalk.red(`    ${result.error}`));
+			}
+			// Still show a preview of the patch that failed
+			console.log(chalk.dim('    Patch that failed:'));
+			const lines = artifact.patch.split('\n').slice(0, 5);
+			for (const line of lines) {
+				console.log(chalk.dim(`    ${line}`));
+			}
+			if (artifact.patch.split('\n').length > 5) {
+				console.log(
+					chalk.dim(
+						`    … and ${artifact.patch.split('\n').length - 5} more lines`,
+					),
+				);
+			}
+			return;
+		}
+
+		// Success case - show the diff with colors
 		console.log(color(`  ↳ ${toolName} ${duration}`));
 		const lines = artifact.patch.split('\n').slice(0, 7);
 		for (const line of lines) {
@@ -562,7 +603,7 @@ export function printToolResult(
 			return;
 		}
 
-		if (toolName === 'ripgrep') {
+		if (toolName === 'ripgrep' || toolName === 'grep' || toolName === 'glob') {
 			console.log(color(`  ↳ ${toolName} ${duration}`));
 			if (typeof result === 'object' && result !== null) {
 				if ('matches' in result && Array.isArray(result.matches)) {
@@ -593,6 +634,25 @@ export function printToolResult(
 						Object.keys(groupedByFile).length - files.length;
 					if (remainingFiles > 0) {
 						console.log(chalk.dim(`    … and ${remainingFiles} more files`));
+					}
+					return;
+				}
+				// Handle glob results (files list)
+				if (
+					toolName === 'glob' &&
+					'files' in result &&
+					Array.isArray(result.files)
+				) {
+					const count = result.files.length;
+					console.log(
+						chalk.dim(`    ${count} ${count === 1 ? 'file' : 'files'}`),
+					);
+					const displayFiles = result.files.slice(0, 7);
+					for (const file of displayFiles) {
+						console.log(chalk.dim(`    ${String(file)}`));
+					}
+					if (result.files.length > 7) {
+						console.log(chalk.dim(`    … and ${result.files.length - 7} more`));
 					}
 					return;
 				}

@@ -55,6 +55,7 @@ describe('Built-in Tools', () => {
 		expect(names).toContain('git_commit');
 		expect(names).toContain('ripgrep');
 		expect(names).toContain('grep');
+		expect(names).toContain('glob');
 		expect(names).toContain('apply_patch');
 		expect(names).toContain('finish');
 		expect(names).toContain('progress_update');
@@ -203,7 +204,8 @@ describe('Built-in Tools', () => {
 				pattern: 'Hello',
 				path: '.',
 			});
-			expect(result).toHaveProperty('output');
+			expect(result).toHaveProperty('matches');
+			expect(result).toHaveProperty('count');
 		});
 
 		it('should support file includes', async () => {
@@ -215,7 +217,36 @@ describe('Built-in Tools', () => {
 				path: '.',
 				include: '*.ts',
 			});
-			expect(result).toHaveProperty('output');
+			expect(result).toHaveProperty('matches');
+			expect(result).toHaveProperty('count');
+		});
+	});
+
+	describe('glob tool', () => {
+		it('should find files by pattern', async () => {
+			const tools = await discoverProjectTools(projectRoot);
+			const globTool = tools.find((t) => t.name === 'glob');
+
+			const result = await globTool?.tool.execute({
+				pattern: '*.ts',
+				path: 'packages/sdk/src/core/src/tools/builtin',
+			});
+			expect(result).toHaveProperty('files');
+			expect(result).toHaveProperty('count');
+			expect(Array.isArray((result as { files: unknown }).files)).toBe(true);
+		});
+
+		it('should support glob patterns', async () => {
+			const tools = await discoverProjectTools(projectRoot);
+			const globTool = tools.find((t) => t.name === 'glob');
+
+			const result = await globTool?.tool.execute({
+				pattern: '**/*.txt',
+				path: 'packages/sdk/src/core/src/tools/builtin',
+				limit: 10,
+			});
+			expect(result).toHaveProperty('files');
+			expect(result).toHaveProperty('count');
 		});
 	});
 

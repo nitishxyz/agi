@@ -70,16 +70,57 @@ async function applyEnvelopedPatch(projectRoot: string, patch: string) {
 				if (oldLines.length > 0) {
 					const oldText = oldLines.join('\n');
 					const newText = newLines.join('\n');
+
+					// Try exact match first
 					if (existingContent.includes(oldText)) {
 						newContent = existingContent.replace(oldText, newText);
 					} else {
-						// Can't find exact match, this is where enveloped format fails
-						// Provide more context about what couldn't be found
-						const preview = oldText.substring(0, 100);
-						return {
-							ok: false,
-							error: `Cannot find content to replace in ${currentFile}. Looking for: "${preview}${oldText.length > 100 ? '...' : ''}"`,
-						};
+						// Try normalizing whitespace for more flexible matching
+						const normalizeWhitespace = (s: string) =>
+							s.replace(/\s+/g, ' ').trim();
+						const normalizedOld = normalizeWhitespace(oldText);
+						const normalizedExisting = normalizeWhitespace(existingContent);
+
+						if (normalizedExisting.includes(normalizedOld)) {
+							// Find the actual text in the file by matching normalized version
+							const lines = existingContent.split('\n');
+							let found = false;
+
+							for (let i = 0; i < lines.length; i++) {
+								const candidate = lines
+									.slice(i, i + oldLines.length)
+									.join('\n');
+								if (normalizeWhitespace(candidate) === normalizedOld) {
+									// Replace this section
+									const before = lines.slice(0, i).join('\n');
+									const after = lines.slice(i + oldLines.length).join('\n');
+									newContent =
+										before +
+										(before ? '\n' : '') +
+										newText +
+										(after ? '\n' : '') +
+										after;
+									found = true;
+									break;
+								}
+							}
+
+							if (!found) {
+								const preview = oldText.substring(0, 100);
+								return {
+									ok: false,
+									error: `Cannot find exact location to replace in ${currentFile}. Looking for: "${preview}${oldText.length > 100 ? '...' : ''}"`,
+								};
+							}
+						} else {
+							// Can't find even with normalized whitespace
+							const preview = oldText.substring(0, 100);
+							const filePreview = existingContent.substring(0, 200);
+							return {
+								ok: false,
+								error: `Cannot find content to replace in ${currentFile}.\nLooking for: "${preview}${oldText.length > 100 ? '...' : ''}"\nFile contains: "${filePreview}${existingContent.length > 200 ? '...' : ''}"`,
+							};
+						}
 					}
 				} else if (newLines.length > 0) {
 					// Just appending new lines

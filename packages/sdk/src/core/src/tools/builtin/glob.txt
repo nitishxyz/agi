@@ -1,0 +1,10 @@
+- Find files matching glob patterns (e.g., "*.ts", "**/*.tsx", "src/**/*.{js,ts}")
+- Returns a list of matching file paths relative to the search directory
+- Supports standard glob syntax: * (any chars), ** (any dirs), {a,b} (alternatives), [abc] (character sets)
+- Automatically excludes common build/cache folders (node_modules, dist, .git, etc.)
+- Results sorted by modification time (most recent first)
+
+Usage tips:
+- Use this tool to find files by name or extension patterns
+- Use Grep or Ripgrep tools to search file contents
+- Combine with path parameter to search in specific directories only

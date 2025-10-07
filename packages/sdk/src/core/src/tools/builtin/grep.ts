@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
-import { stat } from 'node:fs/promises';
 import DESCRIPTION from './grep.txt' with { type: 'text' };
 import { defaultIgnoreGlobs } from './ignore.ts';
 
@@ -64,11 +63,7 @@ export function buildGrepTool(projectRoot: string): {
 			} catch (error: unknown) {
 				const err = error as { code?: number; stderr?: string };
 				if (err.code === 1) {
-					return {
-						title: pattern,
-						metadata: { matches: 0, truncated: false },
-						output: 'No files found',
-					};
+					return { count: 0, matches: [] };
 				}
 				const err2 = error as { stderr?: string; message?: string };
 				throw new Error(`ripgrep failed: ${err2.stderr || err2.message}`);
@@ -76,10 +71,9 @@ export function buildGrepTool(projectRoot: string): {
 
 			const lines = output.trim().split('\n');
 			const matches: Array<{
-				path: string;
-				modTime: number;
-				lineNum: number;
-				lineText: string;
+				file: string;
+				line: number;
+				text: string;
 			}> = [];
 
 			for (const line of lines) {
@@ -92,47 +86,16 @@ export function buildGrepTool(projectRoot: string): {
 				const lineText = line.slice(idx2 + 1);
 				const lineNum = parseInt(lineNumStr, 10);
 				if (!filePath || !Number.isFinite(lineNum)) continue;
-				const stats = await stat(filePath)
-					.then((s) => s.mtime.getTime())
-					.catch(() => 0);
-				matches.push({ path: filePath, modTime: stats, lineNum, lineText });
+				matches.push({ file: filePath, line: lineNum, text: lineText });
 			}
 
-			matches.sort((a, b) => b.modTime - a.modTime);
-
-			const limit = 100;
+			const limit = 500;
 			const truncated = matches.length > limit;
 			const finalMatches = truncated ? matches.slice(0, limit) : matches;
 
-			if (finalMatches.length === 0) {
-				return {
-					title: pattern,
-					metadata: { matches: 0, truncated: false },
-					output: 'No files found',
-				};
-			}
-
-			const outputLines = [`Found ${finalMatches.length} matches`];
-			let currentFile = '';
-			for (const match of finalMatches) {
-				if (currentFile !== match.path) {
-					if (currentFile !== '') outputLines.push('');
-					currentFile = match.path;
-					outputLines.push(`${match.path}:`);
-				}
-				outputLines.push(`  Line ${match.lineNum}: ${match.lineText}`);
-			}
-			if (truncated) {
-				outputLines.push('');
-				outputLines.push(
-					'(Results are truncated. Consider using a more specific path or pattern.)',
-				);
-			}
-
 			return {
-				title: pattern,
-				metadata: { matches: finalMatches.length, truncated },
-				output: outputLines.join('\n'),
+				count: finalMatches.length,
+				matches: finalMatches,
 			};
 		},
 	});

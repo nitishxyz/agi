@@ -7,6 +7,7 @@ import { progressUpdateTool } from './builtin/progress.ts';
 import { buildBashTool } from './builtin/bash.ts';
 import { buildRipgrepTool } from './builtin/ripgrep.ts';
 import { buildGrepTool } from './builtin/grep.ts';
+import { buildGlobTool } from './builtin/glob.ts';
 import { buildApplyPatchTool } from './builtin/patch.ts';
 import { updatePlanTool } from './builtin/plan.ts';
 import { editTool } from './builtin/edit.ts';
@@ -107,6 +108,8 @@ export async function discoverProjectTools(
 	tools.set(rg.name, rg.tool);
 	const grep = buildGrepTool(projectRoot);
 	tools.set(grep.name, grep.tool);
+	const glob = buildGlobTool(projectRoot);
+	tools.set(glob.name, glob.tool);
 	// Patch/apply
 	const ap = buildApplyPatchTool(projectRoot);
 	tools.set(ap.name, ap.tool);

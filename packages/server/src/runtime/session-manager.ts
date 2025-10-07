@@ -52,9 +52,9 @@ export async function createSession({
 		totalOutputTokens: null,
 		totalCachedTokens: null,
 		totalReasoningTokens: null,
-	totalToolTimeMs: null,
-	toolCountsJson: null,
-};
+		totalToolTimeMs: null,
+		toolCountsJson: null,
+	};
 	await db.insert(sessions).values(row);
 	publish({ type: 'session.created', sessionId: id, payload: row });
 	return row;

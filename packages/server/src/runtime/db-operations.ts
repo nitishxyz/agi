@@ -13,6 +13,7 @@ type UsageData = {
 
 /**
  * Updates session token counts incrementally after each step.
+ * Note: onStepFinish.usage is CUMULATIVE per message, so we compute DELTA and add to session.
  */
 export async function updateSessionTokensIncremental(
 	usage: UsageData,
@@ -22,40 +23,71 @@ export async function updateSessionTokensIncremental(
 ) {
 	if (!usage) return;
 
+	// Read session totals
 	const sessRows = await db
 		.select()
 		.from(sessions)
 		.where(eq(sessions.id, opts.sessionId));
 
-	if (sessRows.length > 0 && sessRows[0]) {
-		const row = sessRows[0];
-		const priorInput = Number(row.totalInputTokens ?? 0);
-		const priorOutput = Number(row.totalOutputTokens ?? 0);
-		const priorCached = Number(row.totalCachedTokens ?? 0);
-		const priorReasoning = Number(row.totalReasoningTokens ?? 0);
+	if (sessRows.length === 0 || !sessRows[0]) return;
 
-		const nextInput = priorInput + Number(usage.inputTokens ?? 0);
-		const nextOutput = priorOutput + Number(usage.outputTokens ?? 0);
+	const sess = sessRows[0];
+	const priorInputSess = Number(sess.totalInputTokens ?? 0);
+	const priorOutputSess = Number(sess.totalOutputTokens ?? 0);
+	const priorCachedSess = Number(sess.totalCachedTokens ?? 0);
+	const priorReasoningSess = Number(sess.totalReasoningTokens ?? 0);
 
-		// Prefer normalized usage field over provider metadata
-		const cachedTokens =
-			usage.cachedInputTokens ??
-			providerMetadata?.openai?.cachedPromptTokens ??
-			0;
-		const nextCached = priorCached + Number(cachedTokens);
+	// Read current message totals to compute delta
+	const msgRows = await db
+		.select()
+		.from(messages)
+		.where(eq(messages.id, opts.assistantMessageId));
 
-		const nextReasoning = priorReasoning + Number(usage.reasoningTokens ?? 0);
+	const msg = msgRows[0];
+	const priorPromptMsg = Number(msg?.promptTokens ?? 0);
+	const priorCompletionMsg = Number(msg?.completionTokens ?? 0);
+	const priorCachedMsg = Number(msg?.cachedInputTokens ?? 0);
+	const priorReasoningMsg = Number(msg?.reasoningTokens ?? 0);
 
-		await db
-			.update(sessions)
-			.set({
-				totalInputTokens: nextInput,
-				totalOutputTokens: nextOutput,
-				totalCachedTokens: nextCached,
-				totalReasoningTokens: nextReasoning,
-			})
-			.where(eq(sessions.id, opts.sessionId));
-	}
+	// Treat usage as cumulative per-message for this step
+	const cumPrompt =
+		usage.inputTokens != null ? Number(usage.inputTokens) : priorPromptMsg;
+	const cumCompletion =
+		usage.outputTokens != null
+			? Number(usage.outputTokens)
+			: priorCompletionMsg;
+	const cumReasoning =
+		usage.reasoningTokens != null
+			? Number(usage.reasoningTokens)
+			: priorReasoningMsg;
+
+	const cumCached =
+		usage.cachedInputTokens != null
+			? Number(usage.cachedInputTokens)
+			: providerMetadata?.openai?.cachedPromptTokens != null
+				? Number(providerMetadata.openai.cachedPromptTokens)
+				: priorCachedMsg;
+
+	// Compute deltas for this step; clamp to 0 in case provider reports smaller values
+	const deltaInput = Math.max(0, cumPrompt - priorPromptMsg);
+	const deltaOutput = Math.max(0, cumCompletion - priorCompletionMsg);
+	const deltaCached = Math.max(0, cumCached - priorCachedMsg);
+	const deltaReasoning = Math.max(0, cumReasoning - priorReasoningMsg);
+
+	const nextInputSess = priorInputSess + deltaInput;
+	const nextOutputSess = priorOutputSess + deltaOutput;
+	const nextCachedSess = priorCachedSess + deltaCached;
+	const nextReasoningSess = priorReasoningSess + deltaReasoning;
+
+	await db
+		.update(sessions)
+		.set({
+			totalInputTokens: nextInputSess,
+			totalOutputTokens: nextOutputSess,
+			totalCachedTokens: nextCachedSess,
+			totalReasoningTokens: nextReasoningSess,
+		})
+		.where(eq(sessions.id, opts.sessionId));
 }
 
 /**
@@ -93,6 +125,7 @@ export async function updateSessionTokens(
 
 /**
  * Updates message token counts incrementally after each step.
+ * Note: onStepFinish.usage is CUMULATIVE per message, so we REPLACE values, not add.
  */
 export async function updateMessageTokensIncremental(
 	usage: UsageData,
@@ -111,38 +144,39 @@ export async function updateMessageTokensIncremental(
 		const msg = msgRows[0];
 		const priorPrompt = Number(msg.promptTokens ?? 0);
 		const priorCompletion = Number(msg.completionTokens ?? 0);
-		const priorTotal = Number(msg.totalTokens ?? 0);
 		const priorCached = Number(msg.cachedInputTokens ?? 0);
 		const priorReasoning = Number(msg.reasoningTokens ?? 0);
 
-		const nextPrompt = priorPrompt + Number(usage.inputTokens ?? 0);
-		const nextCompletion = priorCompletion + Number(usage.outputTokens ?? 0);
+		// Treat usage as cumulative per-message - REPLACE not ADD
+		const cumPrompt =
+			usage.inputTokens != null ? Number(usage.inputTokens) : priorPrompt;
+		const cumCompletion =
+			usage.outputTokens != null ? Number(usage.outputTokens) : priorCompletion;
+		const cumReasoning =
+			usage.reasoningTokens != null
+				? Number(usage.reasoningTokens)
+				: priorReasoning;
 
-		// Prefer normalized usage field over provider metadata
-		const cachedTokens =
-			usage.cachedInputTokens ??
-			providerMetadata?.openai?.cachedPromptTokens ??
-			0;
-		const nextCached = priorCached + Number(cachedTokens);
+		const cumCached =
+			usage.cachedInputTokens != null
+				? Number(usage.cachedInputTokens)
+				: providerMetadata?.openai?.cachedPromptTokens != null
+					? Number(providerMetadata.openai.cachedPromptTokens)
+					: priorCached;
 
-		const nextReasoning = priorReasoning + Number(usage.reasoningTokens ?? 0);
-
-		// Accumulate total tokens from this step
-		const stepTotal =
-			usage.totalTokens ??
-			(usage.inputTokens ?? 0) +
-				(usage.outputTokens ?? 0) +
-				(usage.reasoningTokens ?? 0);
-		const nextTotal = priorTotal + stepTotal;
+		const cumTotal =
+			usage.totalTokens != null
+				? Number(usage.totalTokens)
+				: cumPrompt + cumCompletion + cumReasoning;
 
 		await db
 			.update(messages)
 			.set({
-				promptTokens: nextPrompt,
-				completionTokens: nextCompletion,
-				totalTokens: nextTotal,
-				cachedInputTokens: nextCached,
-				reasoningTokens: nextReasoning,
+				promptTokens: cumPrompt,
+				completionTokens: cumCompletion,
+				totalTokens: cumTotal,
+				cachedInputTokens: cumCached,
+				reasoningTokens: cumReasoning,
 			})
 			.where(eq(messages.id, opts.assistantMessageId));
 	}

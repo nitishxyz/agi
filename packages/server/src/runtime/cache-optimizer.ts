@@ -9,7 +9,13 @@ export function addCacheControl(
 	system: string | undefined,
 	messages: ModelMessage[],
 ): {
-	system?: string | Array<{ type: 'text'; text: string; cache_control?: { type: 'ephemeral' } }>;
+	system?:
+		| string
+		| Array<{
+				type: 'text';
+				text: string;
+				cache_control?: { type: 'ephemeral' };
+		  }>;
 	messages: ModelMessage[];
 } {
 	// Only Anthropic supports prompt caching currently
@@ -36,21 +42,21 @@ export function addCacheControl(
 	// - Tools: 2 blocks (read, write)
 	// - Last user message: 1 block
 	// Total: 4 blocks
-	
+
 	// Add cache control to the last user message if conversation is long
 	// This caches the conversation history up to that point
 	if (messages.length >= 3) {
 		const cachedMessages = [...messages];
-		
+
 		// Find second-to-last user message (not the current one)
 		const userIndices = cachedMessages
 			.map((m, i) => (m.role === 'user' ? i : -1))
 			.filter((i) => i >= 0);
-		
+
 		if (userIndices.length >= 2) {
 			const targetIndex = userIndices[userIndices.length - 2];
 			const targetMsg = cachedMessages[targetIndex];
-			
+
 			if (Array.isArray(targetMsg.content)) {
 				// Add cache control to the last content part of that message
 				const lastPart = targetMsg.content[targetMsg.content.length - 1];
@@ -96,11 +102,14 @@ export function estimateTokens(text: string): number {
  */
 export function summarizeToolResult(result: unknown, maxLength = 5000): string {
 	const str = typeof result === 'string' ? result : JSON.stringify(result);
-	
+
 	if (str.length <= maxLength) {
 		return str;
 	}
 
 	// Truncate and add indicator
-	return str.slice(0, maxLength) + `\n\n[... truncated ${str.length - maxLength} characters]`;
+	return (
+		str.slice(0, maxLength) +
+		`\n\n[... truncated ${str.length - maxLength} characters]`
+	);
 }
