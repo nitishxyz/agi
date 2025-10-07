@@ -204,10 +204,14 @@ export function buildApplyPatchTool(projectRoot: string): {
 			let lastError = '';
 			for (const cmd of tries) {
 				try {
-					const { stdout } = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 });
+					const { stdout } = await execAsync(cmd, {
+						maxBuffer: 10 * 1024 * 1024,
+					});
 					// Check if any files were actually modified
 					try {
-						const { stdout: statusOut } = await execAsync(`git -C "${projectRoot}" status --porcelain`);
+						const { stdout: statusOut } = await execAsync(
+							`git -C "${projectRoot}" status --porcelain`,
+						);
 						if (statusOut && statusOut.trim().length > 0) {
 							return {
 								ok: true,
@@ -216,14 +220,17 @@ export function buildApplyPatchTool(projectRoot: string): {
 							} as const;
 						}
 					} catch {}
-				} catch (error: any) {
-					lastError = error.stderr || error.message || 'git apply failed';
+				} catch (error: unknown) {
+					const err = error as { stderr?: string; message?: string };
+					lastError = err.stderr || err.message || 'git apply failed';
 				}
 			}
-			
+
 			// Final check if files were modified anyway
 			try {
-				const { stdout: statusOut } = await execAsync(`git -C "${projectRoot}" status --porcelain`);
+				const { stdout: statusOut } = await execAsync(
+					`git -C "${projectRoot}" status --porcelain`,
+				);
 				if (statusOut && statusOut.trim().length > 0) {
 					return {
 						ok: true,

@@ -14,7 +14,9 @@ export function buildGitTools(
 	// Helper to find git root directory
 	async function findGitRoot(): Promise<string> {
 		try {
-			const { stdout } = await execAsync(`git -C "${projectRoot}" rev-parse --show-toplevel`);
+			const { stdout } = await execAsync(
+				`git -C "${projectRoot}" rev-parse --show-toplevel`,
+			);
 			return stdout.trim() || projectRoot;
 		} catch {
 			return projectRoot;
@@ -23,7 +25,9 @@ export function buildGitTools(
 
 	async function inRepo(): Promise<boolean> {
 		try {
-			const { stdout } = await execAsync(`git -C "${projectRoot}" rev-parse --is-inside-work-tree`);
+			const { stdout } = await execAsync(
+				`git -C "${projectRoot}" rev-parse --is-inside-work-tree`,
+			);
 			return stdout.trim() === 'true';
 		} catch {
 			return false;
@@ -36,7 +40,9 @@ export function buildGitTools(
 		async execute() {
 			if (!(await inRepo())) throw new Error('Not a git repository');
 			const gitRoot = await findGitRoot();
-			const { stdout } = await execAsync(`git -C "${gitRoot}" status --porcelain=v1`);
+			const { stdout } = await execAsync(
+				`git -C "${gitRoot}" status --porcelain=v1`,
+			);
 			const lines = stdout.split('\n').filter(Boolean);
 			let staged = 0;
 			let unstaged = 0;
@@ -66,7 +72,9 @@ export function buildGitTools(
 			// When all=true, show full working tree diff relative to HEAD
 			// so both staged and unstaged changes are included. Otherwise,
 			// show only the staged diff (index vs HEAD).
-			const cmd = all ? `git -C "${gitRoot}" diff HEAD` : `git -C "${gitRoot}" diff --staged`;
+			const cmd = all
+				? `git -C "${gitRoot}" diff HEAD`
+				: `git -C "${gitRoot}" diff --staged`;
 			const { stdout } = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 });
 			const limited = stdout.split('\n').slice(0, 5000).join('\n');
 			return { all: !!all, patch: limited };
@@ -91,14 +99,22 @@ export function buildGitTools(
 		}) {
 			if (!(await inRepo())) throw new Error('Not a git repository');
 			const gitRoot = await findGitRoot();
-			const args = ['git', '-C', `"${gitRoot}"`, 'commit', '-m', `"${message.replace(/"/g, '\\"')}"`];
+			const args = [
+				'git',
+				'-C',
+				`"${gitRoot}"`,
+				'commit',
+				'-m',
+				`"${message.replace(/"/g, '\\"')}"`,
+			];
 			if (amend) args.push('--amend');
 			if (signoff) args.push('--signoff');
 			try {
 				const { stdout } = await execAsync(args.join(' '));
 				return { result: stdout.trim() };
-			} catch (error: any) {
-				const txt = error.stderr || error.message || 'git commit failed';
+			} catch (error: unknown) {
+				const err = error as { stderr?: string; message?: string };
+				const txt = err.stderr || err.message || 'git commit failed';
 				throw new Error(txt);
 			}
 		},

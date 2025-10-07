@@ -60,7 +60,7 @@ export const editTool: Tool = tool({
 			await access(path, constants.F_OK);
 			exists = true;
 		} catch {}
-		
+
 		if (!exists) {
 			if (!create) throw new Error(`File not found: ${path}`);
 			await writeFile(path, '');

@@ -1,7 +1,4 @@
-import {
-	loadConfig,
-	isProviderAuthorized,
-} from '@agi-cli/sdk';
+import { loadConfig, isProviderAuthorized } from '@agi-cli/sdk';
 import { createApp as createServer } from '@agi-cli/server';
 import { getDb } from '@agi-cli/database';
 import { runAsk } from './src/ask.ts';

@@ -61,15 +61,17 @@ export function buildGrepTool(projectRoot: string): {
 			try {
 				const result = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 });
 				output = result.stdout;
-			} catch (error: any) {
-				if (error.code === 1) {
+			} catch (error: unknown) {
+				const err = error as { code?: number; stderr?: string };
+				if (err.code === 1) {
 					return {
 						title: pattern,
 						metadata: { matches: 0, truncated: false },
 						output: 'No files found',
 					};
 				}
-				throw new Error(`ripgrep failed: ${error.stderr || error.message}`);
+				const err2 = error as { stderr?: string; message?: string };
+				throw new Error(`ripgrep failed: ${err2.stderr || err2.message}`);
 			}
 
 			const lines = output.trim().split('\n');

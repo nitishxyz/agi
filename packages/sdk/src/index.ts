@@ -42,7 +42,11 @@ export {
 } from './providers/src/index.ts';
 export { validateProviderModel } from './providers/src/index.ts';
 export { estimateModelCostUsd } from './providers/src/index.ts';
-export { providerEnvVar, readEnvKey, setEnvKey } from './providers/src/index.ts';
+export {
+	providerEnvVar,
+	readEnvKey,
+	setEnvKey,
+} from './providers/src/index.ts';
 
 // =======================
 // Authentication (from internal auth module)
@@ -63,8 +67,25 @@ export {
 // Configuration (from internal config module)
 // =======================
 export { loadConfig, read as readConfig } from './config/src/index.ts';
-export { getLocalDataDir, getGlobalConfigDir, getGlobalConfigPath, getGlobalAgentsJsonPath, getGlobalAgentsDir, getGlobalToolsDir, getGlobalCommandsDir, getSecureAuthPath, getHomeDir } from './config/src/paths.ts';
-export { read, isAuthorized, ensureEnv, writeDefaults as setConfig, writeAuth, removeAuth as removeConfig } from './config/src/manager.ts';
+export {
+	getLocalDataDir,
+	getGlobalConfigDir,
+	getGlobalConfigPath,
+	getGlobalAgentsJsonPath,
+	getGlobalAgentsDir,
+	getGlobalToolsDir,
+	getGlobalCommandsDir,
+	getSecureAuthPath,
+	getHomeDir,
+} from './config/src/paths.ts';
+export {
+	read,
+	isAuthorized,
+	ensureEnv,
+	writeDefaults as setConfig,
+	writeAuth,
+	removeAuth as removeConfig,
+} from './config/src/manager.ts';
 export type { Scope } from './config/src/manager.ts';
 
 // =======================

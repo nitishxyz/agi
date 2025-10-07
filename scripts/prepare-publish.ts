@@ -41,9 +41,7 @@ function replaceWorkspaceDependencies(
 				}
 				deps[depName] = actualVersion;
 				modified = true;
-				console.log(
-					`  ${depName}: workspace:* → ${actualVersion}`,
-				);
+				console.log(`  ${depName}: workspace:* → ${actualVersion}`);
 			}
 		}
 	}

@@ -1,7 +1,12 @@
 import { getSecureAuthPath, ensureDir } from '../../config/src/paths.ts';
 import type { ProviderId, AuthInfo, AuthFile } from '../../types/src/index.ts';
 
-export type { ProviderId, ApiAuth, OAuth, AuthInfo } from '../../types/src/index.ts';
+export type {
+	ProviderId,
+	ApiAuth,
+	OAuth,
+	AuthInfo,
+} from '../../types/src/index.ts';
 
 function globalAuthPath(): string {
 	return getSecureAuthPath();

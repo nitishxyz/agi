@@ -1,10 +1,6 @@
 import type { Hono } from 'hono';
 import { loadConfig } from '@agi-cli/sdk';
-import {
-	catalog,
-	type ProviderId,
-	isProviderAuthorized,
-} from '@agi-cli/sdk';
+import { catalog, type ProviderId, isProviderAuthorized } from '@agi-cli/sdk';
 import { readdir } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 

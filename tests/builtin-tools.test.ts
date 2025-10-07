@@ -15,15 +15,23 @@ beforeAll(async () => {
 	testDir = await mkdtemp(join(tmpdir(), 'agi-tools-test-'));
 	projectRoot = join(testDir, 'project');
 	await mkdir(projectRoot, { recursive: true });
-	
+
 	// Initialize git repo for git tools
 	await execAsync('git init', { cwd: projectRoot });
-	await execAsync('git config user.email "test@example.com"', { cwd: projectRoot });
+	await execAsync('git config user.email "test@example.com"', {
+		cwd: projectRoot,
+	});
 	await execAsync('git config user.name "Test User"', { cwd: projectRoot });
-	
+
 	// Create test files
-	await writeFile(join(projectRoot, 'test.txt'), 'Hello World\nLine 2\nLine 3\n');
-	await writeFile(join(projectRoot, 'example.ts'), 'export function test() {\n  return "test";\n}\n');
+	await writeFile(
+		join(projectRoot, 'test.txt'),
+		'Hello World\nLine 2\nLine 3\n',
+	);
+	await writeFile(
+		join(projectRoot, 'example.ts'),
+		'export function test() {\n  return "test";\n}\n',
+	);
 	await mkdir(join(projectRoot, 'subdir'), { recursive: true });
 	await writeFile(join(projectRoot, 'subdir', 'file.ts'), 'const x = 1;\n');
 });
@@ -36,7 +44,7 @@ describe('Built-in Tools', () => {
 	it('should discover all built-in tools', async () => {
 		const tools = await discoverProjectTools(projectRoot);
 		const names = tools.map((t) => t.name);
-		
+
 		expect(names).toContain('read');
 		expect(names).toContain('write');
 		expect(names).toContain('ls');
@@ -60,24 +68,26 @@ describe('Built-in Tools', () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const readTool = tools.find((t) => t.name === 'read');
 			expect(readTool).toBeDefined();
-			
-			const result = await readTool!.tool.execute({ path: 'test.txt' });
+
+			const result = await readTool?.tool.execute({ path: 'test.txt' });
 			expect(result).toHaveProperty('content');
-			expect((result as any).content).toContain('Hello World');
+			expect((result as { content: string }).content).toContain('Hello World');
 		});
 
 		it('should read file with line range', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const readTool = tools.find((t) => t.name === 'read');
-			
-			const result = await readTool!.tool.execute({ 
+
+			const result = await readTool?.tool.execute({
 				path: 'test.txt',
 				startLine: 1,
-				endLine: 2
+				endLine: 2,
 			});
 			expect(result).toHaveProperty('content');
-			expect((result as any).content).toBe('Hello World\nLine 2');
-			expect((result as any).lineRange).toBe('@1-2');
+			expect((result as { content: string }).content).toBe(
+				'Hello World\nLine 2',
+			);
+			expect((result as { lineRange: string }).lineRange).toBe('@1-2');
 		});
 	});
 
@@ -85,13 +95,13 @@ describe('Built-in Tools', () => {
 		it('should write content to file', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const writeTool = tools.find((t) => t.name === 'write');
-			
-			const result = await writeTool!.tool.execute({
+
+			const result = await writeTool?.tool.execute({
 				path: 'new-file.txt',
-				content: 'test content'
+				content: 'test content',
 			});
 			expect(result).toHaveProperty('bytes');
-			expect((result as any).bytes).toBe(12);
+			expect((result as { bytes: number }).bytes).toBe(12);
 		});
 	});
 
@@ -99,10 +109,12 @@ describe('Built-in Tools', () => {
 		it('should list directory contents', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const lsTool = tools.find((t) => t.name === 'ls');
-			
-			const result = await lsTool!.tool.execute({ path: '.' });
+
+			const result = await lsTool?.tool.execute({ path: '.' });
 			expect(result).toHaveProperty('entries');
-			expect(Array.isArray((result as any).entries)).toBe(true);
+			expect(Array.isArray((result as { entries: unknown[] }).entries)).toBe(
+				true,
+			);
 		});
 	});
 
@@ -110,10 +122,10 @@ describe('Built-in Tools', () => {
 		it('should show directory tree', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const treeTool = tools.find((t) => t.name === 'tree');
-			
-			const result = await treeTool!.tool.execute({ path: '.', depth: 2 });
+
+			const result = await treeTool?.tool.execute({ path: '.', depth: 2 });
 			expect(result).toHaveProperty('tree');
-			expect(typeof (result as any).tree).toBe('string');
+			expect(typeof (result as { tree: string }).tree).toBe('string');
 		});
 	});
 
@@ -121,19 +133,17 @@ describe('Built-in Tools', () => {
 		it('should execute shell commands', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const bashTool = tools.find((t) => t.name === 'bash');
-			
-			const result = await bashTool!.tool.execute({ cmd: 'echo "test"' });
+
+			const result = await bashTool?.tool.execute({ cmd: 'echo "test"' });
 			expect(result).toHaveProperty('stdout');
-			expect((result as any).stdout).toContain('test');
+			expect((result as { stdout: string }).stdout).toContain('test');
 		});
 
 		it('should handle command errors', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const bashTool = tools.find((t) => t.name === 'bash');
-			
-			await expect(
-				bashTool!.tool.execute({ cmd: 'exit 1' })
-			).rejects.toThrow();
+
+			await expect(bashTool?.tool.execute({ cmd: 'exit 1' })).rejects.toThrow();
 		});
 	});
 
@@ -141,8 +151,8 @@ describe('Built-in Tools', () => {
 		it('git_status should show repository status', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const gitStatusTool = tools.find((t) => t.name === 'git_status');
-			
-			const result = await gitStatusTool!.tool.execute({});
+
+			const result = await gitStatusTool?.tool.execute({});
 			expect(result).toHaveProperty('staged');
 			expect(result).toHaveProperty('unstaged');
 		});
@@ -150,10 +160,10 @@ describe('Built-in Tools', () => {
 		it('git_diff should show diff', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const gitDiffTool = tools.find((t) => t.name === 'git_diff');
-			
-			const result = await gitDiffTool!.tool.execute({ all: false });
+
+			const result = await gitDiffTool?.tool.execute({ all: false });
 			expect(result).toHaveProperty('patch');
-			expect(typeof (result as any).patch).toBe('string');
+			expect(typeof (result as { patch: string }).patch).toBe('string');
 		});
 	});
 
@@ -161,24 +171,26 @@ describe('Built-in Tools', () => {
 		it('should search for patterns', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const ripgrepTool = tools.find((t) => t.name === 'ripgrep');
-			
-			const result = await ripgrepTool!.tool.execute({ 
+
+			const result = await ripgrepTool?.tool.execute({
 				query: 'Hello',
-				path: '.'
+				path: '.',
 			});
 			expect(result).toHaveProperty('matches');
-			expect(Array.isArray((result as any).matches)).toBe(true);
+			expect(Array.isArray((result as { matches: unknown[] }).matches)).toBe(
+				true,
+			);
 		});
 
 		it('should handle no matches gracefully', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const ripgrepTool = tools.find((t) => t.name === 'ripgrep');
-			
-			const result = await ripgrepTool!.tool.execute({ 
+
+			const result = await ripgrepTool?.tool.execute({
 				query: 'NONEXISTENT_STRING_XYZ',
-				path: '.'
+				path: '.',
 			});
-			expect((result as any).count).toBe(0);
+			expect((result as { count: number }).count).toBe(0);
 		});
 	});
 
@@ -186,10 +198,10 @@ describe('Built-in Tools', () => {
 		it('should search in files', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const grepTool = tools.find((t) => t.name === 'grep');
-			
-			const result = await grepTool!.tool.execute({ 
+
+			const result = await grepTool?.tool.execute({
 				pattern: 'Hello',
-				path: '.'
+				path: '.',
 			});
 			expect(result).toHaveProperty('output');
 		});
@@ -197,11 +209,11 @@ describe('Built-in Tools', () => {
 		it('should support file includes', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const grepTool = tools.find((t) => t.name === 'grep');
-			
-			const result = await grepTool!.tool.execute({ 
+
+			const result = await grepTool?.tool.execute({
 				pattern: 'export',
 				path: '.',
-				include: '*.ts'
+				include: '*.ts',
 			});
 			expect(result).toHaveProperty('output');
 		});
@@ -211,10 +223,10 @@ describe('Built-in Tools', () => {
 		it('should signal completion', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const finishTool = tools.find((t) => t.name === 'finish');
-			
-			const result = await finishTool!.tool.execute({});
+
+			const result = await finishTool?.tool.execute({});
 			expect(result).toHaveProperty('done');
-			expect((result as any).done).toBe(true);
+			expect((result as { done: boolean }).done).toBe(true);
 		});
 	});
 
@@ -222,10 +234,12 @@ describe('Built-in Tools', () => {
 		it('should update progress', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const progressTool = tools.find((t) => t.name === 'progress_update');
-			
-			const result = await progressTool!.tool.execute({ message: 'Working...' });
+
+			const result = await progressTool?.tool.execute({
+				message: 'Working...',
+			});
 			expect(result).toHaveProperty('message');
-			expect((result as any).message).toBe('Working...');
+			expect((result as { message: string }).message).toBe('Working...');
 		});
 	});
 
@@ -233,12 +247,12 @@ describe('Built-in Tools', () => {
 		it('should update plan items', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const planTool = tools.find((t) => t.name === 'update_plan');
-			
-			const result = await planTool!.tool.execute({ 
+
+			const result = await planTool?.tool.execute({
 				items: [
 					{ step: 'Task 1', status: 'done' },
-					{ step: 'Task 2', status: 'in-progress' }
-				]
+					{ step: 'Task 2', status: 'in-progress' },
+				],
 			});
 			expect(result).toHaveProperty('items');
 		});
@@ -248,13 +262,13 @@ describe('Built-in Tools', () => {
 		it('should apply enveloped patch', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const patchTool = tools.find((t) => t.name === 'apply_patch');
-			
+
 			const patch = `*** Begin Patch
 *** Add File: newfile.txt
 +This is new content
 *** End Patch`;
-			
-			const result = await patchTool!.tool.execute({ patch });
+
+			const result = await patchTool?.tool.execute({ patch });
 			expect(result).toHaveProperty('ok');
 		});
 	});
@@ -263,18 +277,20 @@ describe('Built-in Tools', () => {
 		it('should edit files', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const editTool = tools.find((t) => t.name === 'edit');
-			
+
 			const testFile = join(projectRoot, 'test.txt');
-			const result = await editTool!.tool.execute({
+			const result = await editTool?.tool.execute({
 				path: testFile,
-				ops: [{
-					type: 'replace',
-					find: 'Hello World',
-					replace: 'Hello Universe'
-				}]
+				ops: [
+					{
+						type: 'replace',
+						find: 'Hello World',
+						replace: 'Hello Universe',
+					},
+				],
 			});
 			expect(result).toHaveProperty('opsApplied');
-			expect((result as any).opsApplied).toBe(1);
+			expect((result as { opsApplied: number }).opsApplied).toBe(1);
 		});
 	});
 
@@ -282,7 +298,7 @@ describe('Built-in Tools', () => {
 		it('should have websearch tool', async () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const websearchTool = tools.find((t) => t.name === 'websearch');
-			
+
 			expect(websearchTool).toBeDefined();
 			expect(websearchTool?.name).toBe('websearch');
 		});

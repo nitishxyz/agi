@@ -7,7 +7,11 @@ import {
 	type AuthInfo,
 } from '../../auth/src/index.ts';
 import { getGlobalConfigDir, getGlobalConfigPath } from './paths.ts';
-import { providerIds, readEnvKey, setEnvKey } from '../../providers/src/index.ts';
+import {
+	providerIds,
+	readEnvKey,
+	setEnvKey,
+} from '../../providers/src/index.ts';
 
 export type Scope = 'global' | 'local';
 

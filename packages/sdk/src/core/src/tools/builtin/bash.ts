@@ -53,15 +53,12 @@ export function buildBashTool(projectRoot: string): {
 			allowNonZeroExit?: boolean;
 		}) {
 			const absCwd = resolveSafePath(projectRoot, cwd || '.');
-			
+
 			return new Promise((resolve, reject) => {
-				const proc = exec(
-					`bash -lc '${cmd.replace(/'/g, "'\\''")}'`,
-					{
-						cwd: absCwd,
-						maxBuffer: 10 * 1024 * 1024,
-					}
-				);
+				const proc = exec(`bash -lc '${cmd.replace(/'/g, "'\\''")}'`, {
+					cwd: absCwd,
+					maxBuffer: 10 * 1024 * 1024,
+				});
 
 				let stdout = '';
 				let stderr = '';

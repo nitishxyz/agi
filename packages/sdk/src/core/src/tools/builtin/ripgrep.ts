@@ -56,9 +56,11 @@ export function buildRipgrepTool(projectRoot: string): {
 			args.push('--max-count', String(maxResults));
 			args.push(query);
 			args.push(`"${target}"`);
-			
+
 			try {
-				const { stdout } = await execAsync(args.join(' '), { maxBuffer: 10 * 1024 * 1024 });
+				const { stdout } = await execAsync(args.join(' '), {
+					maxBuffer: 10 * 1024 * 1024,
+				});
 				const lines = stdout.split('\n').filter(Boolean).slice(0, maxResults);
 				const matches = lines.map((l) => {
 					const m = l.match(/^(.*?):(\d+):(.*)$/);

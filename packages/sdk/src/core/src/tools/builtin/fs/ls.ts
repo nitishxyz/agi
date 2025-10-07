@@ -31,7 +31,7 @@ export function buildLsTool(projectRoot: string): { name: string; tool: Tool } {
 				? req
 				: resolveSafePath(projectRoot, req || '.');
 			const ignored = toIgnoredBasenames(ignore);
-			
+
 			try {
 				const { stdout } = await execAsync('ls -1p', {
 					cwd: abs,
@@ -45,10 +45,13 @@ export function buildLsTool(projectRoot: string): { name: string; tool: Tool } {
 						name: line.replace(/\/$/, ''),
 						type: line.endsWith('/') ? 'dir' : 'file',
 					}))
-					.filter((entry) => !(entry.type === 'dir' && ignored.has(entry.name)));
+					.filter(
+						(entry) => !(entry.type === 'dir' && ignored.has(entry.name)),
+					);
 				return { path: req, entries };
-			} catch (error: any) {
-				const message = (error.stderr || error.stdout || 'ls failed').trim();
+			} catch (error: unknown) {
+				const err = error as { stderr?: string; stdout?: string };
+				const message = (err.stderr || err.stdout || 'ls failed').trim();
 				throw new Error(`ls failed for ${req}: ${message}`);
 			}
 		},
