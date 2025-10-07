@@ -88,7 +88,8 @@
 		"@ai-sdk/openai-compatible": "^1.0.18",
 		"hono": "^4.9.7",
 		"zod": "^4.1.8",
-		"fast-glob": "^3.3.2"
+		"fast-glob": "^3.3.2",
+		"diff": "^8.0.2"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

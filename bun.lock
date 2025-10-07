@@ -136,6 +136,7 @@
         "@openauthjs/openauth": "^0.4.3",
         "@openrouter/ai-sdk-provider": "^1.2.0",
         "ai": "^5.0.43",
+        "diff": "^8.0.2",
         "fast-glob": "^3.3.2",
         "hono": "^4.9.7",
         "opencode-anthropic-auth": "^0.0.2",
