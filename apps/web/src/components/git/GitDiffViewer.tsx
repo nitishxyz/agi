@@ -21,11 +21,9 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 	// Parse the diff into lines with line numbers
 	const lines = diff.diff.split('\n');
 	const diffLines: DiffLine[] = [];
-	const syntaxTheme =
-		typeof document !== 'undefined' &&
-		document.documentElement.classList.contains('dark')
-			? vscDarkPlus
-			: oneLight;
+	const syntaxTheme = document?.documentElement.classList.contains('dark')
+		? vscDarkPlus
+		: oneLight;
 
 	let oldLineNum = 0;
 	let newLineNum = 0;

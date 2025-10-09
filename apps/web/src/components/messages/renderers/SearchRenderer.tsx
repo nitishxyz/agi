@@ -87,7 +87,7 @@ export function SearchRenderer({
 						<span className="font-mono text-foreground/90 text-[11px]">
 							"
 							{searchTerm.length > 30
-								? searchTerm.slice(0, 30) + '…'
+								? `${searchTerm.slice(0, 30)}…`
 								: searchTerm}
 							"
 						</span>
@@ -122,9 +122,9 @@ export function SearchRenderer({
 			)}
 			{isExpanded && !hasError && files.length > 0 && matches.length === 0 && (
 				<div className="mt-2 ml-5 space-y-0.5 max-h-96 overflow-y-auto">
-					{files.map((file, i) => (
+					{files.map((file) => (
 						<div
-							key={i}
+							key={String(file)}
 							className="text-xs font-mono text-foreground/70 truncate"
 						>
 							{String(file)}

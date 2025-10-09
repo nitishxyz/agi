@@ -10,6 +10,17 @@ interface FileRead {
 	path: string;
 }
 
+interface ToolPart {
+	type: string;
+	input?: {
+		path?: string;
+		filePattern?: string;
+		pattern?: string;
+	};
+	output?: unknown;
+	[key: string]: unknown;
+}
+
 /**
  * Deduplicates file read results, keeping only the latest version of each file.
  *
@@ -38,7 +49,8 @@ export function deduplicateFileReads(messages: ModelMessage[]): ModelMessage[] {
 			if (!['read', 'grep', 'glob'].includes(toolName)) return;
 
 			// Extract file path from input
-			const input = (part as any).input;
+			const toolPart = part as ToolPart;
+			const input = toolPart.input;
 			if (!input) return;
 
 			const path = input.path || input.filePattern || input.pattern;
@@ -49,8 +61,8 @@ export function deduplicateFileReads(messages: ModelMessage[]): ModelMessage[] {
 				fileReads.set(path, []);
 			}
 			fileReads
-				.get(path)!
-				.push({ messageIndex: msgIdx, partIndex: partIdx, path });
+				.get(path)
+				?.push({ messageIndex: msgIdx, partIndex: partIdx, path });
 		});
 	});
 
@@ -112,7 +124,8 @@ export function pruneToolResults(
 			if (!toolType.startsWith('tool-')) return;
 
 			// Check if this has output
-			const hasOutput = (part as any).output !== undefined;
+			const toolPart = part as ToolPart;
+			const hasOutput = toolPart.output !== undefined;
 			if (!hasOutput) return;
 
 			toolResults.push({ messageIndex: msgIdx, partIndex: partIdx });
@@ -142,11 +155,12 @@ export function pruneToolResults(
 			if (!part || typeof part !== 'object') return part;
 			if (!('type' in part)) return part;
 
-			const toolType = (part as any).type as string;
+			const toolPart = part as ToolPart;
+			const toolType = toolPart.type;
 			if (!toolType.startsWith('tool-')) return part;
 
 			const key = `${msgIdx}-${partIdx}`;
-			const hasOutput = (part as any).output !== undefined;
+			const hasOutput = toolPart.output !== undefined;
 
 			// If this tool result should be pruned, remove its output
 			if (hasOutput && !toKeep.has(key)) {

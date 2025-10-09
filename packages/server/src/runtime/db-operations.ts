@@ -11,13 +11,20 @@ type UsageData = {
 	reasoningTokens?: number;
 };
 
+interface ProviderMetadata {
+	openai?: {
+		cachedPromptTokens?: number;
+	};
+	[key: string]: unknown;
+}
+
 /**
  * Updates session token counts incrementally after each step.
  * Note: onStepFinish.usage is CUMULATIVE per message, so we compute DELTA and add to session.
  */
 export async function updateSessionTokensIncremental(
 	usage: UsageData,
-	providerMetadata: Record<string, any> | undefined,
+	providerMetadata: ProviderMetadata | undefined,
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
@@ -129,7 +136,7 @@ export async function updateSessionTokens(
  */
 export async function updateMessageTokensIncremental(
 	usage: UsageData,
-	providerMetadata: Record<string, any> | undefined,
+	providerMetadata: ProviderMetadata | undefined,
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
@@ -148,86 +155,74 @@ export async function updateMessageTokensIncremental(
 		const priorReasoning = Number(msg.reasoningTokens ?? 0);
 
 		// Treat usage as cumulative per-message - REPLACE not ADD
-		const cumPrompt =
+		const nextPrompt =
 			usage.inputTokens != null ? Number(usage.inputTokens) : priorPrompt;
-		const cumCompletion =
+		const nextCompletion =
 			usage.outputTokens != null ? Number(usage.outputTokens) : priorCompletion;
-		const cumReasoning =
+		const nextReasoning =
 			usage.reasoningTokens != null
 				? Number(usage.reasoningTokens)
 				: priorReasoning;
 
-		const cumCached =
+		const nextCached =
 			usage.cachedInputTokens != null
 				? Number(usage.cachedInputTokens)
 				: providerMetadata?.openai?.cachedPromptTokens != null
 					? Number(providerMetadata.openai.cachedPromptTokens)
 					: priorCached;
 
-		const cumTotal =
-			usage.totalTokens != null
-				? Number(usage.totalTokens)
-				: cumPrompt + cumCompletion + cumReasoning;
-
 		await db
 			.update(messages)
 			.set({
-				promptTokens: cumPrompt,
-				completionTokens: cumCompletion,
-				totalTokens: cumTotal,
-				cachedInputTokens: cumCached,
-				reasoningTokens: cumReasoning,
+				promptTokens: nextPrompt,
+				completionTokens: nextCompletion,
+				cachedInputTokens: nextCached,
+				reasoningTokens: nextReasoning,
 			})
 			.where(eq(messages.id, opts.assistantMessageId));
 	}
 }
 
 /**
- * Marks an assistant message as complete.
- * Token usage is tracked incrementally via updateMessageTokensIncremental().
+ * Completes the assistant message after the run finishes.
+ * Used to finalize timing but NOT tokens, which are already incremental.
  */
 export async function completeAssistantMessage(
-	fin: {
+	_fin: {
 		usage?: {
 			inputTokens?: number;
 			outputTokens?: number;
-			totalTokens?: number;
 		};
 	},
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
-	// Only mark as complete - tokens are already tracked incrementally
-	await db
-		.update(messages)
-		.set({
-			status: 'complete',
-			completedAt: Date.now(),
-		})
+	const msgRow = await db
+		.select()
+		.from(messages)
 		.where(eq(messages.id, opts.assistantMessageId));
+
+	if (msgRow.length > 0) {
+		await db
+			.update(messages)
+			.set({
+				finishedAt: new Date(),
+			})
+			.where(eq(messages.id, opts.assistantMessageId));
+	}
 }
 
-/**
- * Removes empty text parts from an assistant message.
- */
-export async function cleanupEmptyTextParts(
-	opts: RunOpts,
+export async function createMessagePart(
+	partData: {
+		messageId: number;
+		contentType: 'text' | 'tool' | 'other';
+		toolName?: string | null;
+		toolArgs?: unknown;
+		toolResult?: unknown;
+		textContent?: string | null;
+		stepIndex?: number | null;
+	},
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
-	const parts = await db
-		.select()
-		.from(messageParts)
-		.where(eq(messageParts.messageId, opts.assistantMessageId));
-
-	for (const p of parts) {
-		if (p.type === 'text') {
-			let t = '';
-			try {
-				t = JSON.parse(p.content || '{}')?.text || '';
-			} catch {}
-			if (!t || t.length === 0) {
-				await db.delete(messageParts).where(eq(messageParts.id, p.id));
-			}
-		}
-	}
+	await db.insert(messageParts).values(partData);
 }

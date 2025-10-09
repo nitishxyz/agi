@@ -1,4 +1,4 @@
-import { hasToolCall, streamText } from 'ai';
+import { streamText } from 'ai';
 import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { messageParts } from '@agi-cli/database/schema';
@@ -7,11 +7,8 @@ import { resolveModel } from './provider.ts';
 import { resolveAgentConfig } from './agent-registry.ts';
 import { composeSystemPrompt } from './prompt.ts';
 import { discoverProjectTools } from '@agi-cli/sdk';
-import { adaptTools } from '../tools/adapter.ts';
-import { publish, subscribe } from '../events/bus.ts';
-import { debugLog, time } from './debug.ts';
+import { publish } from '../events/bus.ts';
 import { buildHistoryMessages } from './history-builder.ts';
-import { toErrorPayload } from './error-handling.ts';
 import { getMaxOutputTokens } from './token-utils.ts';
 import {
 	type RunOpts,
@@ -22,16 +19,11 @@ import {
 	dequeueJob,
 	cleanupSession,
 } from './session-queue.ts';
+import { setupToolContext } from './tool-context-setup.ts';
 import {
-	setupToolContext,
-	type RunnerToolContext,
-} from './tool-context-setup.ts';
-import {
-	updateSessionTokens,
 	updateSessionTokensIncremental,
 	updateMessageTokensIncremental,
 	completeAssistantMessage,
-	cleanupEmptyTextParts,
 } from './db-operations.ts';
 import {
 	createStepFinishHandler,
@@ -39,175 +31,38 @@ import {
 	createAbortHandler,
 	createFinishHandler,
 } from './stream-handlers.ts';
+import { addCacheControl } from './cache-optimizer.ts';
+import { optimizeContext } from './context-optimizer.ts';
+import { truncateHistory } from './history-truncator.ts';
 
 /**
- * Enqueues an assistant run for processing.
+ * Main runner that executes the LLM streaming loop with tools
  */
-export function enqueueAssistantRun(opts: Omit<RunOpts, 'abortSignal'>) {
-	enqueueRun(opts, processQueue);
-}
+export async function runAssistant(opts: RunOpts) {
+	const db = await getDb();
+	const config = await loadConfig();
+	const [provider, modelName] = opts.model.split('/', 2);
+	const model = resolveModel(provider, modelName);
 
-/**
- * Aborts an active session.
- */
-export function abortSession(sessionId: string) {
-	abortSessionQueue(sessionId);
-}
+	// Build agent + system prompt
+	const agentConfig = resolveAgentConfig(opts.agent);
+	const availableTools = await discoverProjectTools(config.project.root);
+	const system = composeSystemPrompt(agentConfig, availableTools);
 
-/**
- * Processes the queue of assistant runs for a session.
- */
-async function processQueue(sessionId: string) {
-	const state = getRunnerState(sessionId);
-	if (!state) return;
-	if (state.running) return;
-	setRunning(sessionId, true);
+	// Build message history
+	const history = await buildHistoryMessages(opts, db);
 
-	while (state.queue.length > 0) {
-		const job = dequeueJob(sessionId);
-		if (!job) break;
-		try {
-			await runAssistant(job);
-		} catch (_err) {
-			// Swallow to keep the loop alive; event published by runner
-		}
-	}
+	// Setup tool context
+	const toolContext = await setupToolContext(opts, db);
+	const { tools, sharedCtx } = toolContext;
 
-	setRunning(sessionId, false);
-	cleanupSession(sessionId);
-}
-
-/**
- * Ensures the finish tool is called if not already observed.
- */
-async function ensureFinishToolCalled(
-	finishObserved: boolean,
-	toolset: ReturnType<typeof adaptTools>,
-	sharedCtx: RunnerToolContext,
-	stepIndex: number,
-) {
-	if (finishObserved || !toolset?.finish?.execute) return;
-
-	const finishInput = {} as const;
-	const callOptions = { input: finishInput } as const;
-
-	sharedCtx.stepIndex = stepIndex;
-
-	try {
-		await toolset.finish.onInputStart?.(callOptions as never);
-	} catch {}
-
-	try {
-		await toolset.finish.onInputAvailable?.(callOptions as never);
-	} catch {}
-
-	await toolset.finish.execute(finishInput, {} as never);
-}
-
-/**
- * Main function to run the assistant for a given request.
- */
-async function runAssistant(opts: RunOpts) {
-	const cfgTimer = time('runner:loadConfig+db');
-	const cfg = await loadConfig(opts.projectRoot);
-	const db = await getDb(cfg.projectRoot);
-	cfgTimer.end();
-
-	const agentTimer = time('runner:resolveAgentConfig');
-	const agentCfg = await resolveAgentConfig(cfg.projectRoot, opts.agent);
-	agentTimer.end({ agent: opts.agent });
-
-	const agentPrompt = agentCfg.prompt || '';
-
-	const historyTimer = time('runner:buildHistory');
-	const history = await buildHistoryMessages(db, opts.sessionId);
-	historyTimer.end({ messages: history.length });
-
-	const isFirstMessage = history.length === 0;
-
-	const systemTimer = time('runner:composeSystemPrompt');
-	const { getAuth } = await import('@agi-cli/sdk');
-	const { getProviderSpoofPrompt } = await import('./prompt.ts');
-	const auth = await getAuth(opts.provider, cfg.projectRoot);
-	const needsSpoof = auth?.type === 'oauth';
-	const spoofPrompt = needsSpoof
-		? getProviderSpoofPrompt(opts.provider)
-		: undefined;
-
-	let system: string;
-	let additionalSystemMessages: Array<{ role: 'system'; content: string }> = [];
-
-	if (spoofPrompt) {
-		system = spoofPrompt;
-		const fullPrompt = await composeSystemPrompt({
-			provider: opts.provider,
-			model: opts.model,
-			projectRoot: cfg.projectRoot,
-			agentPrompt,
-			oneShot: opts.oneShot,
-			spoofPrompt: undefined,
-			includeProjectTree: isFirstMessage,
-		});
-		additionalSystemMessages = [{ role: 'system', content: fullPrompt }];
-	} else {
-		system = await composeSystemPrompt({
-			provider: opts.provider,
-			model: opts.model,
-			projectRoot: cfg.projectRoot,
-			agentPrompt,
-			oneShot: opts.oneShot,
-			spoofPrompt: undefined,
-			includeProjectTree: isFirstMessage,
-		});
-	}
-	systemTimer.end();
-	debugLog('[system] composed prompt (provider+base+agent):');
-	debugLog(system);
-
-	const toolsTimer = time('runner:discoverTools');
-	const allTools = await discoverProjectTools(cfg.projectRoot);
-	toolsTimer.end({ count: allTools.length });
-	const allowedNames = new Set([
-		...(agentCfg.tools || []),
-		'finish',
-		'progress_update',
-	]);
-	const gated = allTools.filter((t) => allowedNames.has(t.name));
-	const messagesWithSystemInstructions = [
-		...(isFirstMessage ? additionalSystemMessages : []),
-		...history,
-	];
-
-	const { sharedCtx, firstToolTimer, firstToolSeen } = await setupToolContext(
-		opts,
-		db,
-	);
-	const toolset = adaptTools(gated, sharedCtx, opts.provider);
-
-	const modelTimer = time('runner:resolveModel');
-	const model = await resolveModel(opts.provider, opts.model, cfg);
-	modelTimer.end();
-
-	const maxOutputTokens = getMaxOutputTokens(opts.provider, opts.model);
-
-	let currentPartId = opts.assistantPartId;
+	// State
+	let currentPartId = sharedCtx.assistantPartId;
+	let stepIndex = sharedCtx.stepIndex;
 	let accumulated = '';
-	let stepIndex = 0;
+	const abortController = new AbortController();
 
-	let finishObserved = false;
-	const unsubscribeFinish = subscribe(opts.sessionId, (evt) => {
-		if (evt.type !== 'tool.result') return;
-		try {
-			const name = (evt.payload as { name?: string } | undefined)?.name;
-			if (name === 'finish') finishObserved = true;
-		} catch {}
-	});
-
-	const streamStartTimer = time('runner:first-delta');
-	let firstDeltaSeen = false;
-	debugLog(`[streamText] Calling with maxOutputTokens: ${maxOutputTokens}`);
-
-	// State management helpers
+	// State getters/setters
 	const getCurrentPartId = () => currentPartId;
 	const getStepIndex = () => stepIndex;
 	const updateCurrentPartId = (id: string) => {
@@ -216,12 +71,10 @@ async function runAssistant(opts: RunOpts) {
 	const updateAccumulated = (text: string) => {
 		accumulated = text;
 	};
-	const incrementStepIndex = () => {
-		stepIndex += 1;
-		return stepIndex;
-	};
+	const getAccumulated = () => accumulated;
+	const incrementStepIndex = () => ++stepIndex;
 
-	// Create stream handlers
+	// Handlers
 	const onStepFinish = createStepFinishHandler(
 		opts,
 		db,
@@ -235,104 +88,102 @@ async function runAssistant(opts: RunOpts) {
 		updateMessageTokensIncremental,
 	);
 
-	const onError = createErrorHandler(opts, db, getStepIndex, sharedCtx);
-
-	const onAbort = createAbortHandler(opts, db, getStepIndex, sharedCtx);
-
 	const onFinish = createFinishHandler(
 		opts,
 		db,
-		() => ensureFinishToolCalled(finishObserved, toolset, sharedCtx, stepIndex),
 		completeAssistantMessage,
+		getAccumulated,
+		abortController,
 	);
 
-	// Apply optimizations: deduplication, pruning, cache control, and truncation
-	const { addCacheControl, truncateHistory } = await import(
-		'./cache-optimizer.ts'
-	);
-	const { optimizeContext } = await import('./context-optimizer.ts');
+	const _onAbort = createAbortHandler(opts, db, abortController);
+	const onError = createErrorHandler(opts, db);
 
-	// 1. Optimize context (deduplicate file reads, prune old tool results)
-	const contextOptimized = optimizeContext(messagesWithSystemInstructions, {
+	// Context optimization
+	const contextOptimized = optimizeContext(history, {
 		deduplicateFiles: true,
 		maxToolResults: 30,
 	});
 
-	// 2. Truncate history
+	// Truncate history
 	const truncatedMessages = truncateHistory(contextOptimized, 20);
 
-	// 3. Add cache control
+	// Add cache control
 	const { system: cachedSystem, messages: optimizedMessages } = addCacheControl(
-		opts.provider as any,
+		opts.provider,
 		system,
 		truncatedMessages,
 	);
 
 	try {
-		const result = streamText({
+		const maxTokens = getMaxOutputTokens(provider, modelName);
+		const result = await streamText({
 			model,
-			tools: toolset,
-			...(cachedSystem ? { system: cachedSystem } : {}),
+			system: cachedSystem,
 			messages: optimizedMessages,
-			...(maxOutputTokens ? { maxOutputTokens } : {}),
-			abortSignal: opts.abortSignal,
-			stopWhen: hasToolCall('finish'),
+			tools,
+			maxSteps: 50,
+			maxTokens,
+			temperature: agentConfig.temperature ?? 0.7,
+			abortSignal: abortController.signal,
 			onStepFinish,
-			onError,
-			onAbort,
 			onFinish,
+			experimental_continueSteps: true,
 		});
 
+		// Process the stream
 		for await (const delta of result.textStream) {
-			if (!delta) continue;
-			if (!firstDeltaSeen) {
-				firstDeltaSeen = true;
-				streamStartTimer.end();
-			}
+			if (abortController.signal.aborted) break;
+
 			accumulated += delta;
-			publish({
-				type: 'message.part.delta',
+			if (currentPartId) {
+				await db
+					.update(messageParts)
+					.set({ content: accumulated })
+					.where(eq(messageParts.id, currentPartId));
+			}
+
+			publish('stream:text-delta', {
 				sessionId: opts.sessionId,
-				payload: {
-					messageId: opts.assistantMessageId,
-					partId: currentPartId,
-					stepIndex,
-					delta,
-				},
-			});
-			await db
-				.update(messageParts)
-				.set({ content: JSON.stringify({ text: accumulated }) })
-				.where(eq(messageParts.id, currentPartId));
-		}
-	} catch (error) {
-		const errorPayload = toErrorPayload(error);
-		await db
-			.update(messageParts)
-			.set({
-				content: JSON.stringify({
-					text: accumulated,
-					error: errorPayload.message,
-				}),
-			})
-			.where(eq(messageParts.messageId, opts.assistantMessageId));
-		publish({
-			type: 'error',
-			sessionId: opts.sessionId,
-			payload: {
 				messageId: opts.assistantMessageId,
-				error: errorPayload.message,
-				details: errorPayload.details,
-			},
-		});
-		throw error;
+				assistantMessageId: opts.assistantMessageId,
+				stepIndex,
+				textDelta: delta,
+				fullText: accumulated,
+			});
+		}
+	} catch (err) {
+		await onError(err);
 	} finally {
-		if (!firstToolSeen()) firstToolTimer.end({ skipped: true });
-		try {
-			unsubscribeFinish();
-		} catch {}
-		try {
-			await cleanupEmptyTextParts(opts, db);
-		} catch {}
+		setRunning(opts.sessionId, false);
+		dequeueJob(opts.sessionId);
 	}
+}
+
+/**
+ * Enqueues an assistant run
+ */
+export async function enqueueAssistantRun(opts: RunOpts) {
+	return enqueueRun(opts);
+}
+
+/**
+ * Aborts a running session
+ */
+export async function abortSession(sessionId: number) {
+	return abortSessionQueue(sessionId);
+}
+
+/**
+ * Gets the current runner state for a session
+ */
+export function getSessionState(sessionId: number) {
+	return getRunnerState(sessionId);
+}
+
+/**
+ * Cleanup session resources
+ */
+export function cleanupSessionResources(sessionId: number) {
+	return cleanupSession(sessionId);
 }

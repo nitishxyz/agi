@@ -147,11 +147,9 @@ function parseDiff(patch: string): { lines: DiffLine[]; filePath: string } {
 export function DiffView({ patch }: DiffViewProps) {
 	const { lines: diffLines, filePath } = parseDiff(patch);
 	const language = getLanguageFromPath(filePath);
-	const syntaxTheme =
-		typeof document !== 'undefined' &&
-		document.documentElement.classList.contains('dark')
-			? vscDarkPlus
-			: oneLight;
+	const syntaxTheme = document?.documentElement.classList.contains('dark')
+		? vscDarkPlus
+		: oneLight;
 
 	return (
 		<div className="bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 max-w-full">
