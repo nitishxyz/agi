@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
+		"dev:full": "bun run --cwd ../../packages/web-sdk dev & vite",
 		"build": "tsc -b && vite build",
 		"typecheck": "tsc -b --noEmit",
 		"lint": "biome lint",
