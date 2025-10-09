@@ -1,72 +1,69 @@
-import {
-	hasToolCall,
-	streamText,
-	type ModelMessage,
-	convertToModelMessages,
-	type UIMessage,
-	APICallError,
-} from 'ai';
+import { hasToolCall, streamText } from 'ai';
 import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
-import { messages, messageParts, sessions } from '@agi-cli/database/schema';
-import { eq, asc } from 'drizzle-orm';
-import { resolveModel, type ProviderName } from './provider.ts';
+import { messageParts } from '@agi-cli/database/schema';
+import { eq } from 'drizzle-orm';
+import { resolveModel } from './provider.ts';
 import { resolveAgentConfig } from './agent-registry.ts';
 import { composeSystemPrompt } from './prompt.ts';
 import { discoverProjectTools } from '@agi-cli/sdk';
 import { adaptTools } from '../tools/adapter.ts';
-import type { ToolAdapterContext } from '../tools/adapter.ts';
 import { publish, subscribe } from '../events/bus.ts';
 import { debugLog, time } from './debug.ts';
-import { estimateModelCostUsd, catalog } from '@agi-cli/sdk';
+import { buildHistoryMessages } from './history-builder.ts';
+import { toErrorPayload } from './error-handling.ts';
+import { getMaxOutputTokens } from './token-utils.ts';
+import {
+	type RunOpts,
+	enqueueAssistantRun as enqueueRun,
+	abortSession as abortSessionQueue,
+	getRunnerState,
+	setRunning,
+	dequeueJob,
+	cleanupSession,
+} from './session-queue.ts';
+import {
+	setupToolContext,
+	type RunnerToolContext,
+} from './tool-context-setup.ts';
+import {
+	updateSessionTokensIncremental,
+	updateMessageTokensIncremental,
+	completeAssistantMessage,
+	cleanupEmptyTextParts,
+} from './db-operations.ts';
+import {
+	createStepFinishHandler,
+	createErrorHandler,
+	createAbortHandler,
+	createFinishHandler,
+} from './stream-handlers.ts';
 
-type RunOpts = {
-	sessionId: string;
-	assistantMessageId: string;
-	assistantPartId: string;
-	agent: string;
-	provider: ProviderName;
-	model: string;
-	projectRoot: string;
-	oneShot?: boolean;
-	abortSignal?: AbortSignal;
-};
-
-type RunnerState = { queue: RunOpts[]; running: boolean };
-const runners = new Map<string, RunnerState>();
-
-// Track active abort controllers per session
-const sessionAbortControllers = new Map<string, AbortController>();
-
-type RunnerToolContext = ToolAdapterContext & { stepIndex: number };
-
-export function enqueueAssistantRun(opts: RunOpts) {
-	// Create abort controller for this session
-	const abortController = new AbortController();
-	sessionAbortControllers.set(opts.sessionId, abortController);
-
-	const state = runners.get(opts.sessionId) ?? { queue: [], running: false };
-	state.queue.push({ ...opts, abortSignal: abortController.signal });
-	runners.set(opts.sessionId, state);
-	if (!state.running) void processQueue(opts.sessionId);
+/**
+ * Enqueues an assistant run for processing.
+ */
+export function enqueueAssistantRun(opts: Omit<RunOpts, 'abortSignal'>) {
+	enqueueRun(opts, processQueue);
 }
 
+/**
+ * Aborts an active session.
+ */
 export function abortSession(sessionId: string) {
-	const controller = sessionAbortControllers.get(sessionId);
-	if (controller) {
-		controller.abort();
-		sessionAbortControllers.delete(sessionId);
-	}
+	abortSessionQueue(sessionId);
 }
 
+/**
+ * Processes the queue of assistant runs for a session.
+ */
 async function processQueue(sessionId: string) {
-	const state = runners.get(sessionId);
+	const state = getRunnerState(sessionId);
 	if (!state) return;
 	if (state.running) return;
-	state.running = true;
+	setRunning(sessionId, true);
 
 	while (state.queue.length > 0) {
-		const job = state.queue.shift();
+		const job = dequeueJob(sessionId);
 		if (!job) break;
 		try {
 			await runAssistant(job);
@@ -75,193 +72,13 @@ async function processQueue(sessionId: string) {
 		}
 	}
 
-	state.running = false;
-	// Cleanup abort controller when queue is done
-	sessionAbortControllers.delete(sessionId);
+	setRunning(sessionId, false);
+	cleanupSession(sessionId);
 }
 
-function getMaxOutputTokens(
-	provider: ProviderName,
-	modelId: string,
-): number | undefined {
-	try {
-		const providerCatalog = catalog[provider];
-		if (!providerCatalog) {
-			debugLog(`[maxOutputTokens] No catalog found for provider: ${provider}`);
-			return undefined;
-		}
-		const modelInfo = providerCatalog.models.find((m) => m.id === modelId);
-		if (!modelInfo) {
-			debugLog(
-				`[maxOutputTokens] No model info found for: ${modelId} in provider: ${provider}`,
-			);
-			return undefined;
-		}
-		const outputLimit = modelInfo.limit?.output;
-		debugLog(
-			`[maxOutputTokens] Provider: ${provider}, Model: ${modelId}, Limit: ${outputLimit}`,
-		);
-		return outputLimit;
-	} catch (err) {
-		debugLog(`[maxOutputTokens] Error looking up limit: ${err}`);
-		return undefined;
-	}
-}
-
-function toErrorPayload(err: unknown): {
-	message: string;
-	type: string;
-	details?: Record<string, unknown>;
-} {
-	const asObj =
-		err && typeof err === 'object'
-			? (err as Record<string, unknown>)
-			: undefined;
-	let message = '';
-	let errorType = 'unknown';
-
-	// Determine error type
-	if (asObj) {
-		if ('name' in asObj && typeof asObj.name === 'string') {
-			errorType = asObj.name;
-		}
-		if ('type' in asObj && typeof asObj.type === 'string') {
-			errorType = asObj.type;
-		}
-	}
-
-	// Check if it's an API error
-	if (APICallError.isInstance(err)) {
-		errorType = 'api_error';
-	}
-
-	// Extract message
-	if (asObj && typeof asObj.message === 'string' && asObj.message) {
-		message = asObj.message as string;
-	} else if (typeof err === 'string') {
-		message = err as string;
-	} else if (asObj && typeof asObj.error === 'string' && asObj.error) {
-		message = asObj.error as string;
-	} else if (
-		asObj &&
-		typeof asObj.responseBody === 'string' &&
-		asObj.responseBody
-	) {
-		// Try to parse API error message from responseBody
-		try {
-			const parsed = JSON.parse(asObj.responseBody as string);
-			if (parsed.error && typeof parsed.error.message === 'string') {
-				message = parsed.error.message;
-			} else {
-				message = asObj.responseBody as string;
-			}
-		} catch {
-			message = asObj.responseBody as string;
-		}
-	} else if (asObj?.statusCode && (asObj as { url?: unknown }).url) {
-		message = `HTTP ${String(asObj.statusCode)} error at ${String((asObj as { url?: unknown }).url)}`;
-	} else if (asObj?.name) {
-		message = String(asObj.name);
-	} else {
-		// Default: just say "An error occurred" instead of stringifying the whole object
-		message = 'An error occurred';
-	}
-
-	// Extract details - store the WHOLE error object here instead of in message
-	const details: Record<string, unknown> = {};
-	if (asObj && typeof asObj === 'object') {
-		for (const key of ['name', 'code', 'status', 'statusCode', 'type']) {
-			if (asObj[key] != null) details[key] = asObj[key];
-		}
-
-		// API call error specific fields
-		if ('url' in asObj) details.url = asObj.url;
-		if ('isRetryable' in asObj) details.isRetryable = asObj.isRetryable;
-		if ('responseBody' in asObj) details.responseBody = asObj.responseBody;
-		if ('requestBodyValues' in asObj)
-			details.requestBodyValues = asObj.requestBodyValues;
-		if ('responseHeaders' in asObj)
-			details.responseHeaders = asObj.responseHeaders;
-		if ('data' in asObj) details.data = asObj.data;
-
-		if (asObj.cause) {
-			const c = asObj.cause as Record<string, unknown> | undefined;
-			details.cause = {
-				message:
-					typeof c?.message === 'string' ? (c.message as string) : undefined,
-				code: (c as { code?: unknown })?.code,
-				status:
-					(c as { status?: unknown; statusCode?: unknown })?.status ??
-					(c as { statusCode?: unknown })?.statusCode,
-			};
-		}
-		if (
-			(asObj as { response?: { status?: unknown; statusText?: unknown } })
-				?.response?.status
-		)
-			details.response = {
-				status: (
-					asObj as { response?: { status?: unknown; statusText?: unknown } }
-				).response?.status,
-				statusText: (
-					asObj as { response?: { status?: unknown; statusText?: unknown } }
-				).response?.statusText,
-			};
-	}
-
-	return {
-		message,
-		type: errorType,
-		details: Object.keys(details).length ? details : undefined,
-	};
-}
-
-async function setupToolContext(
-	opts: RunOpts,
-	db: Awaited<ReturnType<typeof getDb>>,
-) {
-	const firstToolTimer = time('runner:first-tool-call');
-	let firstToolSeen = false;
-
-	const sharedCtx: RunnerToolContext = {
-		nextIndex: async () => 0,
-		stepIndex: 0,
-		sessionId: opts.sessionId,
-		messageId: opts.assistantMessageId,
-		assistantPartId: opts.assistantPartId,
-		db,
-		agent: opts.agent,
-		provider: opts.provider,
-		model: opts.model,
-		projectRoot: opts.projectRoot,
-		onFirstToolCall: () => {
-			if (firstToolSeen) return;
-			firstToolSeen = true;
-			firstToolTimer.end();
-		},
-	};
-
-	let counter = 0;
-	try {
-		const existing = await db
-			.select()
-			.from(messageParts)
-			.where(eq(messageParts.messageId, opts.assistantMessageId));
-		if (existing.length) {
-			const indexes = existing.map((p) => Number(p.index ?? 0));
-			const maxIndex = Math.max(...indexes);
-			if (Number.isFinite(maxIndex)) counter = maxIndex;
-		}
-	} catch {}
-
-	sharedCtx.nextIndex = () => {
-		counter += 1;
-		return counter;
-	};
-
-	return { sharedCtx, firstToolTimer, firstToolSeen: () => firstToolSeen };
-}
-
+/**
+ * Ensures the finish tool is called if not already observed.
+ */
 async function ensureFinishToolCalled(
 	finishObserved: boolean,
 	toolset: ReturnType<typeof adaptTools>,
@@ -276,97 +93,19 @@ async function ensureFinishToolCalled(
 	sharedCtx.stepIndex = stepIndex;
 
 	try {
-		await toolset.finish.onInputStart?.(callOptions);
+		await toolset.finish.onInputStart?.(callOptions as never);
 	} catch {}
 
 	try {
-		await toolset.finish.onInputAvailable?.(callOptions);
+		await toolset.finish.onInputAvailable?.(callOptions as never);
 	} catch {}
 
 	await toolset.finish.execute(finishInput, {} as never);
 }
 
-async function updateSessionTokens(
-	fin: { usage?: { inputTokens?: number; outputTokens?: number } },
-	opts: RunOpts,
-	db: Awaited<ReturnType<typeof getDb>>,
-) {
-	if (!fin.usage) return;
-
-	const sessRows = await db
-		.select()
-		.from(sessions)
-		.where(eq(sessions.id, opts.sessionId));
-
-	if (sessRows.length > 0 && sessRows[0]) {
-		const row = sessRows[0];
-		const priorInput = Number(row.totalInputTokens ?? 0);
-		const priorOutput = Number(row.totalOutputTokens ?? 0);
-		const nextInput = priorInput + Number(fin.usage.inputTokens ?? 0);
-		const nextOutput = priorOutput + Number(fin.usage.outputTokens ?? 0);
-
-		await db
-			.update(sessions)
-			.set({
-				totalInputTokens: nextInput,
-				totalOutputTokens: nextOutput,
-			})
-			.where(eq(sessions.id, opts.sessionId));
-	}
-}
-
-async function completeAssistantMessage(
-	fin: {
-		usage?: {
-			inputTokens?: number;
-			outputTokens?: number;
-			totalTokens?: number;
-		};
-	},
-	opts: RunOpts,
-	db: Awaited<ReturnType<typeof getDb>>,
-) {
-	const vals: Record<string, unknown> = {
-		status: 'complete',
-		completedAt: Date.now(),
-	};
-
-	if (fin.usage) {
-		vals.promptTokens = fin.usage.inputTokens;
-		vals.completionTokens = fin.usage.outputTokens;
-		vals.totalTokens =
-			fin.usage.totalTokens ??
-			(vals.promptTokens as number) + (vals.completionTokens as number);
-	}
-
-	await db
-		.update(messages)
-		.set(vals)
-		.where(eq(messages.id, opts.assistantMessageId));
-}
-
-async function cleanupEmptyTextParts(
-	opts: RunOpts,
-	db: Awaited<ReturnType<typeof getDb>>,
-) {
-	const parts = await db
-		.select()
-		.from(messageParts)
-		.where(eq(messageParts.messageId, opts.assistantMessageId));
-
-	for (const p of parts) {
-		if (p.type === 'text') {
-			let t = '';
-			try {
-				t = JSON.parse(p.content || '{}')?.text || '';
-			} catch {}
-			if (!t || t.length === 0) {
-				await db.delete(messageParts).where(eq(messageParts.id, p.id));
-			}
-		}
-	}
-}
-
+/**
+ * Main function to run the assistant for a given request.
+ */
 async function runAssistant(opts: RunOpts) {
 	const cfgTimer = time('runner:loadConfig+db');
 	const cfg = await loadConfig(opts.projectRoot);
@@ -442,7 +181,7 @@ async function runAssistant(opts: RunOpts) {
 		opts,
 		db,
 	);
-	const toolset = adaptTools(gated, sharedCtx);
+	const toolset = adaptTools(gated, sharedCtx, opts.provider);
 
 	const modelTimer = time('runner:resolveModel');
 	const model = await resolveModel(opts.provider, opts.model, cfg);
@@ -467,204 +206,81 @@ async function runAssistant(opts: RunOpts) {
 	let firstDeltaSeen = false;
 	debugLog(`[streamText] Calling with maxOutputTokens: ${maxOutputTokens}`);
 
+	// State management helpers
+	const getCurrentPartId = () => currentPartId;
+	const getStepIndex = () => stepIndex;
+	const updateCurrentPartId = (id: string) => {
+		currentPartId = id;
+	};
+	const updateAccumulated = (text: string) => {
+		accumulated = text;
+	};
+	const incrementStepIndex = () => {
+		stepIndex += 1;
+		return stepIndex;
+	};
+
+	// Create stream handlers
+	const onStepFinish = createStepFinishHandler(
+		opts,
+		db,
+		getCurrentPartId,
+		getStepIndex,
+		sharedCtx,
+		updateCurrentPartId,
+		updateAccumulated,
+		incrementStepIndex,
+		updateSessionTokensIncremental,
+		updateMessageTokensIncremental,
+	);
+
+	const onError = createErrorHandler(opts, db, getStepIndex, sharedCtx);
+
+	const onAbort = createAbortHandler(opts, db, getStepIndex, sharedCtx);
+
+	const onFinish = createFinishHandler(
+		opts,
+		db,
+		() => ensureFinishToolCalled(finishObserved, toolset, sharedCtx, stepIndex),
+		completeAssistantMessage,
+	);
+
+	// Apply optimizations: deduplication, pruning, cache control, and truncation
+	const { addCacheControl, truncateHistory } = await import(
+		'./cache-optimizer.ts'
+	);
+	const { optimizeContext } = await import('./context-optimizer.ts');
+
+	// 1. Optimize context (deduplicate file reads, prune old tool results)
+	const contextOptimized = optimizeContext(messagesWithSystemInstructions, {
+		deduplicateFiles: true,
+		maxToolResults: 30,
+	});
+
+	// 2. Truncate history
+	const truncatedMessages = truncateHistory(contextOptimized, 20);
+
+	// 3. Add cache control
+	const { system: cachedSystem, messages: optimizedMessages } = addCacheControl(
+		opts.provider as any,
+		system,
+		truncatedMessages,
+	);
+
 	try {
+		// @ts-expect-error this is fine 🔥
 		const result = streamText({
 			model,
 			tools: toolset,
-			...(String(system || '').trim() ? { system } : {}),
-			messages: messagesWithSystemInstructions,
+			...(cachedSystem ? { system: cachedSystem } : {}),
+			messages: optimizedMessages,
 			...(maxOutputTokens ? { maxOutputTokens } : {}),
-			abortSignal: opts.abortSignal, // ADD ABORT SIGNAL
+			abortSignal: opts.abortSignal,
 			stopWhen: hasToolCall('finish'),
-			onStepFinish: async (step) => {
-				const finishedAt = Date.now();
-				try {
-					await db
-						.update(messageParts)
-						.set({ completedAt: finishedAt })
-						.where(eq(messageParts.id, currentPartId));
-				} catch {}
-
-				try {
-					publish({
-						type: 'finish-step',
-						sessionId: opts.sessionId,
-						payload: {
-							stepIndex,
-							usage: step.usage,
-							finishReason: step.finishReason,
-							response: step.response,
-						},
-					});
-					if (step.usage) {
-						publish({
-							type: 'usage',
-							sessionId: opts.sessionId,
-							payload: { stepIndex, ...step.usage },
-						});
-					}
-				} catch {}
-
-				try {
-					stepIndex += 1;
-					const newPartId = crypto.randomUUID();
-					const index = await sharedCtx.nextIndex();
-					const nowTs = Date.now();
-					await db.insert(messageParts).values({
-						id: newPartId,
-						messageId: opts.assistantMessageId,
-						index,
-						stepIndex,
-						type: 'text',
-						content: JSON.stringify({ text: '' }),
-						agent: opts.agent,
-						provider: opts.provider,
-						model: opts.model,
-						startedAt: nowTs,
-					});
-					currentPartId = newPartId;
-					sharedCtx.assistantPartId = newPartId;
-					sharedCtx.stepIndex = stepIndex;
-					accumulated = '';
-				} catch {}
-			},
-			onError: async (err) => {
-				const errorPayload = toErrorPayload(err);
-				const isApiError = APICallError.isInstance(err);
-
-				// Create error part for UI display
-				const errorPartId = crypto.randomUUID();
-				await db.insert(messageParts).values({
-					id: errorPartId,
-					messageId: opts.assistantMessageId,
-					index: await sharedCtx.nextIndex(),
-					stepIndex,
-					type: 'error',
-					content: JSON.stringify({
-						message: errorPayload.message,
-						type: errorPayload.type,
-						details: errorPayload.details,
-						isAborted: false,
-					}),
-					agent: opts.agent,
-					provider: opts.provider,
-					model: opts.model,
-					startedAt: Date.now(),
-					completedAt: Date.now(),
-				});
-
-				// Update message status
-				await db
-					.update(messages)
-					.set({
-						status: 'error',
-						error: errorPayload.message,
-						errorType: errorPayload.type,
-						errorDetails: JSON.stringify({
-							...errorPayload.details,
-							isApiError,
-						}),
-						isAborted: false,
-					})
-					.where(eq(messages.id, opts.assistantMessageId));
-
-				// Publish enhanced error event
-				publish({
-					type: 'error',
-					sessionId: opts.sessionId,
-					payload: {
-						messageId: opts.assistantMessageId,
-						partId: errorPartId,
-						error: errorPayload.message,
-						errorType: errorPayload.type,
-						details: errorPayload.details,
-						isAborted: false,
-					},
-				});
-			},
-			onAbort: async ({ steps }) => {
-				// Create abort part for UI
-				const abortPartId = crypto.randomUUID();
-				await db.insert(messageParts).values({
-					id: abortPartId,
-					messageId: opts.assistantMessageId,
-					index: await sharedCtx.nextIndex(),
-					stepIndex,
-					type: 'error',
-					content: JSON.stringify({
-						message: 'Generation stopped by user',
-						type: 'abort',
-						isAborted: true,
-						stepsCompleted: steps.length,
-					}),
-					agent: opts.agent,
-					provider: opts.provider,
-					model: opts.model,
-					startedAt: Date.now(),
-					completedAt: Date.now(),
-				});
-
-				// Store abort info
-				await db
-					.update(messages)
-					.set({
-						status: 'error',
-						error: 'Generation stopped by user',
-						errorType: 'abort',
-						errorDetails: JSON.stringify({
-							stepsCompleted: steps.length,
-							abortedAt: Date.now(),
-						}),
-						isAborted: true,
-					})
-					.where(eq(messages.id, opts.assistantMessageId));
-
-				// Publish abort event
-				publish({
-					type: 'error',
-					sessionId: opts.sessionId,
-					payload: {
-						messageId: opts.assistantMessageId,
-						partId: abortPartId,
-						error: 'Generation stopped by user',
-						errorType: 'abort',
-						isAborted: true,
-						stepsCompleted: steps.length,
-					},
-				});
-			},
-			onFinish: async (fin) => {
-				try {
-					await ensureFinishToolCalled(
-						finishObserved,
-						toolset,
-						sharedCtx,
-						stepIndex,
-					);
-				} catch {}
-
-				try {
-					await updateSessionTokens(fin, opts, db);
-				} catch {}
-
-				try {
-					await completeAssistantMessage(fin, opts, db);
-				} catch {}
-
-				const costUsd = fin.usage
-					? estimateModelCostUsd(opts.provider, opts.model, fin.usage)
-					: undefined;
-				publish({
-					type: 'message.completed',
-					sessionId: opts.sessionId,
-					payload: {
-						id: opts.assistantMessageId,
-						usage: fin.usage,
-						costUsd,
-						finishReason: fin.finishReason,
-					},
-				});
-			},
+			onStepFinish,
+			onError,
+			onAbort,
+			onFinish,
 		});
 
 		for await (const delta of result.textStream) {
@@ -692,12 +308,14 @@ async function runAssistant(opts: RunOpts) {
 	} catch (error) {
 		const errorPayload = toErrorPayload(error);
 		await db
-			.update(messages)
+			.update(messageParts)
 			.set({
-				status: 'error',
-				error: errorPayload.message,
+				content: JSON.stringify({
+					text: accumulated,
+					error: errorPayload.message,
+				}),
 			})
-			.where(eq(messages.id, opts.assistantMessageId));
+			.where(eq(messageParts.messageId, opts.assistantMessageId));
 		publish({
 			type: 'error',
 			sessionId: opts.sessionId,
@@ -717,151 +335,4 @@ async function runAssistant(opts: RunOpts) {
 			await cleanupEmptyTextParts(opts, db);
 		} catch {}
 	}
-}
-
-async function buildHistoryMessages(
-	db: Awaited<ReturnType<typeof getDb>>,
-	sessionId: string,
-): Promise<ModelMessage[]> {
-	const rows = await db
-		.select()
-		.from(messages)
-		.where(eq(messages.sessionId, sessionId))
-		.orderBy(asc(messages.createdAt));
-
-	const ui: UIMessage[] = [];
-
-	for (const m of rows) {
-		const parts = await db
-			.select()
-			.from(messageParts)
-			.where(eq(messageParts.messageId, m.id))
-			.orderBy(asc(messageParts.index));
-
-		if (m.role === 'user') {
-			const uparts: UIMessage['parts'] = [];
-			for (const p of parts) {
-				if (p.type !== 'text') continue;
-				try {
-					const obj = JSON.parse(p.content ?? '{}');
-					const t = String(obj.text ?? '');
-					if (t) uparts.push({ type: 'text', text: t });
-				} catch {}
-			}
-			if (uparts.length) {
-				ui.push({ id: m.id, role: 'user', parts: uparts });
-			}
-			continue;
-		}
-
-		if (m.role === 'assistant') {
-			const assistantParts: UIMessage['parts'] = [];
-			const toolCalls: Array<{ name: string; callId: string; args: unknown }> =
-				[];
-			const toolResults: Array<{
-				name: string;
-				callId: string;
-				result: unknown;
-			}> = [];
-
-			for (const p of parts) {
-				if (p.type === 'text') {
-					try {
-						const obj = JSON.parse(p.content ?? '{}');
-						const t = String(obj.text ?? '');
-						if (t) assistantParts.push({ type: 'text', text: t });
-					} catch {}
-				} else if (p.type === 'tool_call') {
-					try {
-						const obj = JSON.parse(p.content ?? '{}') as {
-							name?: string;
-							callId?: string;
-							args?: unknown;
-						};
-						if (obj.callId && obj.name) {
-							toolCalls.push({
-								name: obj.name,
-								callId: obj.callId,
-								args: obj.args,
-							});
-						}
-					} catch {}
-				} else if (p.type === 'tool_result') {
-					try {
-						const obj = JSON.parse(p.content ?? '{}') as {
-							name?: string;
-							callId?: string;
-							result?: unknown;
-						};
-						if (obj.callId) {
-							toolResults.push({
-								name: obj.name ?? 'tool',
-								callId: obj.callId,
-								result: obj.result,
-							});
-						}
-					} catch {}
-				}
-				// Skip error parts in history
-			}
-
-			const hasIncompleteTools = toolCalls.some(
-				(call) => !toolResults.find((result) => result.callId === call.callId),
-			);
-
-			if (hasIncompleteTools) {
-				debugLog(
-					`[buildHistoryMessages] Incomplete tool calls for assistant message ${m.id}, pushing text only`,
-				);
-				if (assistantParts.length) {
-					ui.push({ id: m.id, role: 'assistant', parts: assistantParts });
-				}
-				continue;
-			}
-
-			for (const call of toolCalls) {
-				const toolType = `tool-${call.name}` as `tool-${string}`;
-				const result = toolResults.find((r) => r.callId === call.callId);
-
-				if (result) {
-					const outputStr = (() => {
-						const r = result.result;
-						if (typeof r === 'string') return r;
-						try {
-							return JSON.stringify(r);
-						} catch {
-							return String(r);
-						}
-					})();
-
-					assistantParts.push({
-						type: toolType,
-						state: 'output-available',
-						toolCallId: call.callId,
-						input: call.args,
-						output: outputStr,
-					} as never);
-				}
-			}
-
-			if (assistantParts.length) {
-				ui.push({ id: m.id, role: 'assistant', parts: assistantParts });
-
-				if (toolResults.length) {
-					const userParts: UIMessage['parts'] = toolResults.map((r) => {
-						const out =
-							typeof r.result === 'string'
-								? r.result
-								: JSON.stringify(r.result);
-						return { type: 'text', text: out };
-					});
-					if (userParts.length) {
-						ui.push({ id: m.id, role: 'user', parts: userParts });
-					}
-				}
-			}
-		}
-	}
-
-	return convertToModelMessages(ui);
 }
