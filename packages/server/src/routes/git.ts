@@ -1,9 +1,8 @@
 import type { Hono } from 'hono';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { extname } from 'node:path';
 import { z } from 'zod';
-import { generateText, resolveModel } from '@agi-cli/sdk';
+import { generateText, resolveModel, type ProviderId } from '@agi-cli/sdk';
 import { loadConfig } from '@agi-cli/sdk';
 
 const execFileAsync = promisify(execFile);
@@ -203,7 +202,7 @@ export function registerGitRoutes(app: Hono) {
 				{ cwd: gitRoot },
 			);
 
-			const files = parseGitStatus(statusOutput);
+			const { staged, unstaged, untracked } = parseGitStatus(statusOutput);
 
 			// Get ahead/behind counts
 			const { ahead, behind } = await getAheadBehind(gitRoot);
@@ -211,13 +210,19 @@ export function registerGitRoutes(app: Hono) {
 			// Get current branch
 			const branch = await getCurrentBranch(gitRoot);
 
+			// Calculate hasChanges
+			const hasChanges = staged.length > 0 || unstaged.length > 0 || untracked.length > 0;
+
 			return c.json({
 				status: 'ok',
 				data: {
-					files,
+					branch,
 					ahead,
 					behind,
-					branch,
+					staged,
+					unstaged,
+					untracked,
+					hasChanges,
 				},
 			});
 		} catch (error) {
