@@ -1,3 +1,24 @@
+import {
+	client,
+	listSessions as apiListSessions,
+	createSession as apiCreateSession,
+	listMessages as apiListMessages,
+	createMessage as apiCreateMessage,
+	abortSession as apiAbortSession,
+	getConfig as apiGetConfig,
+	getProviderModels as apiGetProviderModels,
+	getGitStatus as apiGetGitStatus,
+	getGitDiff as apiGetGitDiff,
+	getGitBranch as apiGetGitBranch,
+	stageFiles as apiStageFiles,
+	unstageFiles as apiUnstageFiles,
+	commitChanges as apiCommitChanges,
+	generateCommitMessage as apiGenerateCommitMessage,
+	type Session as ApiSession,
+	type Message as ApiMessage,
+	type CreateSessionData,
+	type CreateMessageData,
+} from '@agi-cli/api';
 import type {
 	Session,
 	Message,
@@ -21,6 +42,42 @@ interface WindowWithAgiServerUrl extends Window {
 	AGI_SERVER_URL?: string;
 }
 
+/**
+ * Configure the API client with the correct base URL
+ * This should be called once at application startup
+ */
+export function configureApiClient() {
+	const win = window as WindowWithAgiServerUrl;
+	const baseURL = win.AGI_SERVER_URL || API_BASE_URL;
+	
+	client.setConfig({
+		baseURL,
+	});
+}
+
+// Configure the client immediately when this module is imported
+configureApiClient();
+
+// Type conversion helpers
+function convertSession(apiSession: ApiSession): Session {
+	return {
+		...apiSession,
+		title: apiSession.title ?? null,
+		createdAt: typeof apiSession.createdAt === 'string' ? new Date(apiSession.createdAt).getTime() : apiSession.createdAt,
+		lastActiveAt: typeof apiSession.lastActiveAt === 'string' ? new Date(apiSession.lastActiveAt).getTime() : apiSession.lastActiveAt,
+	} as Session;
+}
+
+function convertMessage(apiMessage: ApiMessage): Message {
+	return {
+		...apiMessage,
+		createdAt: typeof apiMessage.createdAt === 'string' ? new Date(apiMessage.createdAt).getTime() : apiMessage.createdAt,
+		completedAt: apiMessage.completedAt 
+			? (typeof apiMessage.completedAt === 'string' ? new Date(apiMessage.completedAt).getTime() : apiMessage.completedAt)
+			: null,
+	} as Message;
+}
+
 class ApiClient {
 	private get baseUrl(): string {
 		// Always check for injected URL at runtime
@@ -31,157 +88,167 @@ class ApiClient {
 		return API_BASE_URL;
 	}
 
-	private async request<T>(
-		endpoint: string,
-		options?: RequestInit,
-	): Promise<T> {
-		const url = `${this.baseUrl}${endpoint}`;
-		const response = await fetch(url, {
-			...options,
-			headers: {
-				'Content-Type': 'application/json',
-				...options?.headers,
-			},
-		});
-
-		if (!response.ok) {
-			const error = await response
-				.json()
-				.catch(() => ({ error: 'Unknown error' }));
-			throw new Error(error.error || `HTTP ${response.status}`);
-		}
-
-		return response.json();
-	}
-
-	// Session methods
+	// Session methods using new API
 	async getSessions(): Promise<Session[]> {
-		return this.request<Session[]>('/v1/sessions');
+		const response = await apiListSessions();
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to fetch sessions');
+		}
+		return (response.data || []).map(convertSession);
 	}
 
 	async createSession(data: CreateSessionRequest): Promise<Session> {
-		return this.request<Session>('/v1/sessions', {
-			method: 'POST',
-			body: JSON.stringify(data),
+		const response = await apiCreateSession({
+			body: data as CreateSessionData['body'],
 		});
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to create session');
+		}
+		return convertSession(response.data!);
 	}
 
 	async abortSession(sessionId: string): Promise<{ success: boolean }> {
-		return this.request<{ success: boolean }>(
-			`/v1/sessions/${sessionId}/abort`,
-			{
-				method: 'DELETE',
-			},
-		);
+		const response = await apiAbortSession({
+			path: { sessionId },
+		});
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to abort session');
+		}
+		return response.data as { success: boolean };
 	}
 
 	async getMessages(sessionId: string): Promise<Message[]> {
-		return this.request<Message[]>(`/v1/sessions/${sessionId}/messages`);
+		const response = await apiListMessages({
+			path: { id: sessionId },
+		});
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to fetch messages');
+		}
+		return (response.data || []).map(convertMessage);
 	}
 
 	async sendMessage(
 		sessionId: string,
 		data: SendMessageRequest,
 	): Promise<SendMessageResponse> {
-		return this.request<SendMessageResponse>(
-			`/v1/sessions/${sessionId}/messages`,
-			{
-				method: 'POST',
-				body: JSON.stringify(data),
-			},
-		);
+		const response = await apiCreateMessage({
+			path: { id: sessionId },
+			body: data as CreateMessageData['body'],
+		});
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to send message');
+		}
+		return response.data as SendMessageResponse;
 	}
 
 	getStreamUrl(sessionId: string): string {
 		return `${this.baseUrl}/v1/sessions/${sessionId}/stream`;
 	}
 
-	// Config methods
+	// Config methods using new API
 	async getConfig(): Promise<{
 		agents: string[];
 		providers: string[];
 		defaults: { agent: string; provider: string; model: string };
 	}> {
-		return this.request('/v1/config');
+		const response = await apiGetConfig();
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to fetch config');
+		}
+		return response.data as {
+			agents: string[];
+			providers: string[];
+			defaults: { agent: string; provider: string; model: string };
+		};
 	}
 
 	async getModels(providerId: string): Promise<{
 		models: Array<{ id: string; label: string; toolCall?: boolean }>;
 		default: string;
 	}> {
-		return this.request(`/v1/config/providers/${providerId}/models`);
+		const response = await apiGetProviderModels({
+			path: { provider: providerId as any },
+		});
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to fetch models');
+		}
+		return response.data as {
+			models: Array<{ id: string; label: string; toolCall?: boolean }>;
+			default: string;
+		};
 	}
 
-	// Git methods
+	// Git methods using new API
 	async getGitStatus(): Promise<GitStatusResponse> {
-		const response = await this.request<{ data: GitStatusResponse }>(
-			'/v1/git/status',
-		);
-		return response.data;
+		const response = await apiGetGitStatus();
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to fetch git status');
+		}
+		return (response.data as any)?.data as GitStatusResponse;
 	}
 
 	async getGitDiff(
 		file: string,
 		staged: boolean = false,
 	): Promise<GitDiffResponse> {
-		const params = new URLSearchParams({
-			file,
-			staged: String(staged),
+		const response = await apiGetGitDiff({
+			query: {
+				file,
+				staged: staged ? 'true' : 'false',
+			},
 		});
-		const response = await this.request<{ data: GitDiffResponse }>(
-			`/v1/git/diff?${params}`,
-		);
-		return response.data;
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to fetch git diff');
+		}
+		return (response.data as any)?.data as GitDiffResponse;
 	}
 
 	async generateCommitMessage(): Promise<GitGenerateCommitMessageResponse> {
-		const response = await this.request<{
-			data: GitGenerateCommitMessageResponse;
-		}>('/v1/git/generate-commit-message', {
-			method: 'POST',
-			body: JSON.stringify({}),
+		const response = await apiGenerateCommitMessage({
+			body: {},
 		});
-		return response.data;
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to generate commit message');
+		}
+		return (response.data as any)?.data as GitGenerateCommitMessageResponse;
 	}
 
 	async stageFiles(files: string[]): Promise<GitStageResponse> {
-		const response = await this.request<{ data: GitStageResponse }>(
-			'/v1/git/stage',
-			{
-				method: 'POST',
-				body: JSON.stringify({ files } satisfies GitStageRequest),
-			},
-		);
-		return response.data;
+		const response = await apiStageFiles({
+			body: { files } as any,
+		});
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to stage files');
+		}
+		return (response.data as any)?.data as GitStageResponse;
 	}
 
 	async unstageFiles(files: string[]): Promise<GitUnstageResponse> {
-		const response = await this.request<{ data: GitUnstageResponse }>(
-			'/v1/git/unstage',
-			{
-				method: 'POST',
-				body: JSON.stringify({ files } satisfies GitUnstageRequest),
-			},
-		);
-		return response.data;
+		const response = await apiUnstageFiles({
+			body: { files } as any,
+		});
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to unstage files');
+		}
+		return (response.data as any)?.data as GitUnstageResponse;
 	}
 
 	async commitChanges(message: string): Promise<GitCommitResponse> {
-		const response = await this.request<{ data: GitCommitResponse }>(
-			'/v1/git/commit',
-			{
-				method: 'POST',
-				body: JSON.stringify({ message } satisfies GitCommitRequest),
-			},
-		);
-		return response.data;
+		const response = await apiCommitChanges({
+			body: { message } as any,
+		});
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to commit changes');
+		}
+		return (response.data as any)?.data as GitCommitResponse;
 	}
 
 	async getGitBranch(): Promise<GitBranchInfo> {
-		const response = await this.request<{ data: GitBranchInfo }>(
-			'/v1/git/branch',
-		);
-		return response.data;
+		const response = await apiGetGitBranch();
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to fetch git branch');
+		}
+		return (response.data as any)?.data as GitBranchInfo;
 	}
 }
 

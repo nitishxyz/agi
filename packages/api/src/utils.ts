@@ -29,8 +29,8 @@ export async function handleApiError(response: Response): Promise<never> {
 	let errorMessage: string;
 
 	try {
-		const data = await response.json();
-		errorMessage = data.error || response.statusText;
+		const data = (await response.json()) as { error?: string };
+		errorMessage = data?.error || response.statusText;
 	} catch {
 		errorMessage = response.statusText;
 	}

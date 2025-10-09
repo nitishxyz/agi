@@ -56,6 +56,10 @@
 		"url": "https://github.com/yourusername/agi-cli.git",
 		"directory": "packages/web-sdk"
 	},
+	"dependencies": {
+		"@agi-cli/api": "workspace:*",
+		"axios": "^1.7.9"
+	},
 	"peerDependencies": {
 		"react": "^18.0.0 || ^19.0.0",
 		"react-dom": "^18.0.0 || ^19.0.0",

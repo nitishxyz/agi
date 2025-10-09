@@ -31,10 +31,11 @@
 		"directory": "packages/api"
 	},
 	"dependencies": {
+		"axios": "^1.7.9",
 		"eventsource-parser": "^2.0.1"
 	},
 	"devDependencies": {
-		"@hey-api/openapi-ts": "^0.56.0",
+		"@hey-api/openapi-ts": "^0.85.1",
 		"@types/node": "^24.6.0",
 		"typescript": "~5.9.3"
 	}

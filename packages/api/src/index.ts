@@ -1,22 +1,56 @@
 /**
  * @agi-cli/api - Type-safe API client for AGI CLI server
  *
- * This package provides a fully typed API client generated from the OpenAPI spec,
- * plus utilities for SSE streaming and common patterns.
+ * This package provides a fully typed API client generated from the OpenAPI spec
+ * using @hey-api/openapi-ts with Axios client support.
+ * 
+ * The client uses Axios for HTTP requests and provides:
+ * - Type-safe SDK functions for all API endpoints
+ * - Runtime schemas for validation
+ * - SSE streaming utilities
+ * - Error handling helpers
  */
 
-// Re-export generated types and client
-export * from './generated/types.js';
-export type { ApiClient } from './generated/client.js';
+// Re-export generated types
+export * from './generated/types.gen';
 
-// Export our custom client factory
-export { createApiClient } from './client.js';
-export type { ApiClientConfig } from './client.js';
+// Re-export the Axios client instance and SDK functions
+// The client is pre-configured but can be customized via client.setConfig()
+export { client } from './generated/client.gen';
+
+// Re-export all SDK functions for type-safe API calls
+// These are tree-shakeable function exports
+export * from './generated/sdk.gen';
+
+// Re-export schemas (for runtime validation if needed)
+export * from './generated/schemas.gen';
 
 // Export SSE utilities
-export { createSSEStream, parseSSEEvent } from './streaming.js';
-export type { SSEEvent, SSEStreamOptions } from './streaming.js';
+export { createSSEStream, parseSSEEvent } from './streaming';
+export type { SSEEvent, SSEStreamOptions } from './streaming';
 
 // Export helpers
-export { isApiError, handleApiError } from './utils.js';
-export type { ApiError } from './utils.js';
+export { isApiError, handleApiError } from './utils';
+export type { ApiError } from './utils';
+
+/**
+ * Quick Start Example:
+ * 
+ * ```typescript
+ * import { client, getSessions } from '@agi-cli/api';
+ * 
+ * // Configure the client
+ * client.setConfig({
+ *   baseURL: 'http://localhost:3000',
+ *   // Optional: add interceptors, auth, etc.
+ * });
+ * 
+ * // Make API calls
+ * const { data, error } = await getSessions();
+ * if (error) {
+ *   console.error('Failed to fetch sessions:', error);
+ * } else {
+ *   console.log('Sessions:', data);
+ * }
+ * ```
+ */
