@@ -38,7 +38,8 @@
 	"scripts": {
 		"build": "tsc || true",
 		"typecheck": "tsc --noEmit",
-		"dev": "tsc --watch"
+		"dev": "tsc --watch",
+		"prepublishOnly": "bun run build"
 	},
 	"keywords": [
 		"agi",

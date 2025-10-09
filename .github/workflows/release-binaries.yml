@@ -41,7 +41,7 @@ jobs:
             NEW_PATCH=$((PATCH + 1))
             NEW_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
             
-            # Update all three package.json files to the same version
+            # Update all package.json files to the same version
             echo "Updating root package.json to ${NEW_VERSION}"
             tmpfile=$(mktemp)
             jq ".version = \"${NEW_VERSION}\"" package.json > "$tmpfile"
@@ -57,6 +57,11 @@ jobs:
             jq ".version = \"${NEW_VERSION}\"" packages/install/package.json > "$tmpfile"
             mv "$tmpfile" packages/install/package.json
             
+            echo "Updating api package.json to ${NEW_VERSION}"
+            tmpfile=$(mktemp)
+            jq ".version = \"${NEW_VERSION}\"" packages/api/package.json > "$tmpfile"
+            mv "$tmpfile" packages/api/package.json
+            
             echo "Updating SDK package.json to ${NEW_VERSION}"
             tmpfile=$(mktemp)
             jq ".version = \"${NEW_VERSION}\"" packages/sdk/package.json > "$tmpfile"
@@ -66,6 +71,11 @@ jobs:
             tmpfile=$(mktemp)
             jq ".version = \"${NEW_VERSION}\"" packages/web-ui/package.json > "$tmpfile"
             mv "$tmpfile" packages/web-ui/package.json
+            
+            echo "Updating web-sdk package.json to ${NEW_VERSION}"
+            tmpfile=$(mktemp)
+            jq ".version = \"${NEW_VERSION}\"" packages/web-sdk/package.json > "$tmpfile"
+            mv "$tmpfile" packages/web-sdk/package.json
             
             echo "Updating database package.json to ${NEW_VERSION}"
             tmpfile=$(mktemp)
@@ -229,10 +239,17 @@ jobs:
         shell: bash
         run: |
           INSTALL_VERSION=$(jq -r .version packages/install/package.json)
+          API_VERSION=$(jq -r .version packages/api/package.json)
           SDK_VERSION=$(jq -r .version packages/sdk/package.json)
           WEBUI_VERSION=$(jq -r .version packages/web-ui/package.json)
+          WEBSDK_VERSION=$(jq -r .version packages/web-sdk/package.json)
           DATABASE_VERSION=$(jq -r .version packages/database/package.json)
           SERVER_VERSION=$(jq -r .version packages/server/package.json)
+          
+          if [ "${INSTALL_VERSION}" != "${API_VERSION}" ]; then
+            echo "Install version (${INSTALL_VERSION}) does not match API version (${API_VERSION})" >&2
+            exit 1
+          fi
           
           if [ "${INSTALL_VERSION}" != "${SDK_VERSION}" ]; then
             echo "Install version (${INSTALL_VERSION}) does not match SDK version (${SDK_VERSION})" >&2
@@ -241,6 +258,11 @@ jobs:
           
           if [ "${INSTALL_VERSION}" != "${WEBUI_VERSION}" ]; then
             echo "Install version (${INSTALL_VERSION}) does not match web-ui version (${WEBUI_VERSION})" >&2
+            exit 1
+          fi
+          
+          if [ "${INSTALL_VERSION}" != "${WEBSDK_VERSION}" ]; then
+            echo "Install version (${INSTALL_VERSION}) does not match web-sdk version (${WEBSDK_VERSION})" >&2
             exit 1
           fi
           
@@ -266,6 +288,16 @@ jobs:
           echo "Publishing @agi-cli/install@${VERSION} to npm..."
           bun publish --access public --tag latest
 
+      - name: Publish API to npm
+        env:
+          VERSION: ${{ needs.check-version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd packages/api
+          echo "Publishing @agi-cli/api@${VERSION} to npm..."
+          bun publish --access public --tag latest
+
       - name: Publish SDK to npm
         env:
           VERSION: ${{ needs.check-version.outputs.version }}
@@ -284,6 +316,16 @@ jobs:
           set -euo pipefail
           cd packages/web-ui
           echo "Publishing @agi-cli/web-ui@${VERSION} to npm..."
+          bun publish --access public --tag latest
+
+      - name: Publish web-sdk to npm
+        env:
+          VERSION: ${{ needs.check-version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd packages/web-sdk
+          echo "Publishing @agi-cli/web-sdk@${VERSION} to npm..."
           bun publish --access public --tag latest
 
       - name: Publish database to npm

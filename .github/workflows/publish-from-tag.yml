@@ -141,13 +141,21 @@ jobs:
           fi
           TAG="${{ github.event.inputs.tag }}"
           INSTALL_VERSION=$(jq -r .version packages/install/package.json)
+          API_VERSION=$(jq -r .version packages/api/package.json)
           SDK_VERSION=$(jq -r .version packages/sdk/package.json)
           WEBUI_VERSION=$(jq -r .version packages/web-ui/package.json)
+          WEBSDK_VERSION=$(jq -r .version packages/web-sdk/package.json)
           DATABASE_VERSION=$(jq -r .version packages/database/package.json)
           SERVER_VERSION=$(jq -r .version packages/server/package.json)
           
           if [ "v${INSTALL_VERSION}" != "$TAG" ]; then
             echo "Tag ($TAG) does not match install version (v${INSTALL_VERSION})" >&2
+            exit 1
+          fi
+          
+          if [ "${INSTALL_VERSION}" != "${API_VERSION}" ]; then
+            echo "Install version (${INSTALL_VERSION}) does not match API version (${API_VERSION})" >&2
+            echo "All packages should be updated to the same version" >&2
             exit 1
           fi
           
@@ -159,6 +167,12 @@ jobs:
           
           if [ "${INSTALL_VERSION}" != "${WEBUI_VERSION}" ]; then
             echo "Install version (${INSTALL_VERSION}) does not match web-ui version (${WEBUI_VERSION})" >&2
+            echo "All packages should be updated to the same version" >&2
+            exit 1
+          fi
+          
+          if [ "${INSTALL_VERSION}" != "${WEBSDK_VERSION}" ]; then
+            echo "Install version (${INSTALL_VERSION}) does not match web-sdk version (${WEBSDK_VERSION})" >&2
             echo "All packages should be updated to the same version" >&2
             exit 1
           fi
@@ -176,8 +190,10 @@ jobs:
           fi
           
           echo "✓ Tag matches install version: ${INSTALL_VERSION}"
+          echo "✓ API version: ${API_VERSION}"
           echo "✓ SDK version: ${SDK_VERSION}"
           echo "✓ Web UI version: ${WEBUI_VERSION}"
+          echo "✓ Web SDK version: ${WEBSDK_VERSION}"
           echo "✓ Database version: ${DATABASE_VERSION}"
           echo "✓ Server version: ${SERVER_VERSION}"
 
@@ -200,6 +216,14 @@ jobs:
           # Publish install package
           bun publish --access public --tag latest
 
+      - name: Publish API to npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd packages/api
+          # Publish API package
+          bun publish --access public --tag latest
+
       - name: Publish SDK to npm
         shell: bash
         run: |
@@ -214,6 +238,14 @@ jobs:
           set -euo pipefail
           cd packages/web-ui
           # Publish web-ui package
+          bun publish --access public --tag latest
+
+      - name: Publish web-sdk to npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd packages/web-sdk
+          # Publish web-sdk package
           bun publish --access public --tag latest
 
       - name: Publish database to npm

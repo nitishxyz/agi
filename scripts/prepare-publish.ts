@@ -54,8 +54,10 @@ function replaceWorkspaceDependencies(
 
 function main() {
 	const packages = [
+		'packages/api',
 		'packages/sdk',
 		'packages/web-ui',
+		'packages/web-sdk',
 		'packages/install',
 		'packages/database',
 		'packages/server',

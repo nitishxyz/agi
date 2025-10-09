@@ -199,6 +199,10 @@ function main() {
 	);
 	updatePackageVersion(installPackagePath, nextVersion, dryRun);
 
+	// Update API package.json
+	const apiPackagePath = resolve(process.cwd(), 'packages/api/package.json');
+	updatePackageVersion(apiPackagePath, nextVersion, dryRun);
+
 	// Update SDK package.json
 	const sdkPackagePath = resolve(process.cwd(), 'packages/sdk/package.json');
 	updatePackageVersion(sdkPackagePath, nextVersion, dryRun);
@@ -209,6 +213,13 @@ function main() {
 		'packages/web-ui/package.json',
 	);
 	updatePackageVersion(webUiPackagePath, nextVersion, dryRun);
+
+	// Update web-sdk package.json
+	const webSdkPackagePath = resolve(
+		process.cwd(),
+		'packages/web-sdk/package.json',
+	);
+	updatePackageVersion(webSdkPackagePath, nextVersion, dryRun);
 
 	// Update database package.json
 	const databasePackagePath = resolve(
