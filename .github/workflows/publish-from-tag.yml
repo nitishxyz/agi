@@ -232,20 +232,20 @@ jobs:
           # Publish SDK package
           bun publish --access public --tag latest
 
-      - name: Publish web-ui to npm
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd packages/web-ui
-          # Publish web-ui package
-          bun publish --access public --tag latest
-
       - name: Publish web-sdk to npm
         shell: bash
         run: |
           set -euo pipefail
           cd packages/web-sdk
           # Publish web-sdk package
+          bun publish --access public --tag latest
+
+      - name: Publish web-ui to npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd packages/web-ui
+          # Publish web-ui package
           bun publish --access public --tag latest
 
       - name: Publish database to npm

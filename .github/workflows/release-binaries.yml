@@ -308,16 +308,6 @@ jobs:
           echo "Publishing @agi-cli/sdk@${VERSION} to npm..."
           bun publish --access public --tag latest
 
-      - name: Publish web-ui to npm
-        env:
-          VERSION: ${{ needs.check-version.outputs.version }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd packages/web-ui
-          echo "Publishing @agi-cli/web-ui@${VERSION} to npm..."
-          bun publish --access public --tag latest
-
       - name: Publish web-sdk to npm
         env:
           VERSION: ${{ needs.check-version.outputs.version }}
@@ -326,6 +316,16 @@ jobs:
           set -euo pipefail
           cd packages/web-sdk
           echo "Publishing @agi-cli/web-sdk@${VERSION} to npm..."
+          bun publish --access public --tag latest
+
+      - name: Publish web-ui to npm
+        env:
+          VERSION: ${{ needs.check-version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd packages/web-ui
+          echo "Publishing @agi-cli/web-ui@${VERSION} to npm..."
           bun publish --access public --tag latest
 
       - name: Publish database to npm
