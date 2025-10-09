@@ -1,6 +1,9 @@
 import { ChevronRight } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import {
+	prism,
+	vscDarkPlus,
+} from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { RendererProps } from './types';
 import { formatDuration } from './utils';
 
@@ -51,6 +54,9 @@ export function ReadRenderer({
 	const lines = content.split('\n');
 	const timeStr = formatDuration(toolDurationMs);
 	const language = getLanguageFromPath(path);
+	const syntaxTheme = document?.documentElement.classList.contains('dark')
+		? vscDarkPlus
+		: prism;
 
 	return (
 		<div className="text-xs">
@@ -83,7 +89,7 @@ export function ReadRenderer({
 					<div className="overflow-x-auto max-w-full">
 						<SyntaxHighlighter
 							language={language}
-							style={vscDarkPlus}
+							style={syntaxTheme}
 							customStyle={{
 								margin: 0,
 								padding: '0.75rem',

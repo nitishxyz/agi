@@ -11,7 +11,7 @@ export function useSessionStream(sessionId: string | undefined) {
 	const lastInvalidationRef = useRef<number>(0);
 
 	useEffect(() => {
-		console.log('[useSessionStream] Hook called with sessionId:', sessionId);
+		// console.log('[useSessionStream] Hook called with sessionId:', sessionId);
 		if (!sessionId) {
 			console.log('[useSessionStream] No sessionId, skipping');
 			return;
@@ -289,7 +289,7 @@ export function useSessionStream(sessionId: string | undefined) {
 				return; // Skip if we invalidated less than 500ms ago
 			}
 			lastInvalidationRef.current = now;
-			console.log('[useSessionStream] Invalidating messages query (throttled)');
+			// console.log('[useSessionStream] Invalidating messages query (throttled)');
 			queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
 		};
 
@@ -301,7 +301,7 @@ export function useSessionStream(sessionId: string | undefined) {
 		]);
 
 		const unsubscribe = client.on('*', (event) => {
-			console.log('[useSessionStream] Event received:', event);
+			// console.log('[useSessionStream] Event received:', event);
 			const payload = event.payload as Record<string, unknown> | undefined;
 
 			switch (event.type) {

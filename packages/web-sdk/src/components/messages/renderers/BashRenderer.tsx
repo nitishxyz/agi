@@ -1,6 +1,9 @@
 import { ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import {
+	prism,
+	vscDarkPlus,
+} from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { RendererProps } from './types';
 import { formatDuration } from './utils';
 import { ToolErrorDisplay } from './ToolErrorDisplay';
@@ -31,6 +34,9 @@ export function BashRenderer({
 	const exitCode = Number(result.exitCode ?? 0);
 	const cmd = String(args.cmd || '');
 	const timeStr = formatDuration(toolDurationMs);
+	const syntaxTheme = document?.documentElement.classList.contains('dark')
+		? vscDarkPlus
+		: prism;
 
 	const hasOutput = stdout.length > 0 || stderr.length > 0;
 
@@ -96,7 +102,7 @@ export function BashRenderer({
 								</div>
 								<SyntaxHighlighter
 									language="bash"
-									style={vscDarkPlus}
+									style={syntaxTheme}
 									customStyle={{
 										margin: 0,
 										padding: '0.75rem',
@@ -119,7 +125,7 @@ export function BashRenderer({
 								</div>
 								<SyntaxHighlighter
 									language="bash"
-									style={vscDarkPlus}
+									style={syntaxTheme}
 									customStyle={{
 										margin: 0,
 										padding: '0.75rem',

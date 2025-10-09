@@ -1,5 +1,6 @@
 import type { Hono } from 'hono';
 import { execFile } from 'node:child_process';
+import { extname } from 'node:path';
 import { promisify } from 'node:util';
 import { z } from 'zod';
 import { generateText, resolveModel, type ProviderId } from '@agi-cli/sdk';
@@ -20,6 +21,71 @@ const gitDiffSchema = z.object({
 		.optional()
 		.transform((val) => val === 'true'),
 });
+
+const LANGUAGE_MAP: Record<string, string> = {
+	js: 'javascript',
+	jsx: 'jsx',
+	ts: 'typescript',
+	tsx: 'tsx',
+	py: 'python',
+	rb: 'ruby',
+	go: 'go',
+	rs: 'rust',
+	java: 'java',
+	c: 'c',
+	cpp: 'cpp',
+	h: 'c',
+	hpp: 'cpp',
+	cs: 'csharp',
+	php: 'php',
+	sh: 'bash',
+	bash: 'bash',
+	zsh: 'bash',
+	sql: 'sql',
+	json: 'json',
+	yaml: 'yaml',
+	yml: 'yaml',
+	xml: 'xml',
+	html: 'html',
+	css: 'css',
+	scss: 'scss',
+	md: 'markdown',
+	txt: 'plaintext',
+	svelte: 'svelte',
+};
+
+function inferLanguage(filePath: string): string {
+	const extension = extname(filePath).toLowerCase().replace('.', '');
+	if (!extension) {
+		return 'plaintext';
+	}
+	return LANGUAGE_MAP[extension] ?? 'plaintext';
+}
+
+function summarizeDiff(diff: string): {
+	insertions: number;
+	deletions: number;
+	binary: boolean;
+} {
+	let insertions = 0;
+	let deletions = 0;
+	let binary = false;
+
+	for (const line of diff.split('\n')) {
+		if (line.startsWith('Binary files ') || line.includes('GIT binary patch')) {
+			binary = true;
+			break;
+		}
+
+		if (line.startsWith('+') && !line.startsWith('+++')) {
+			insertions++;
+		} else if (line.startsWith('-') && !line.startsWith('---')) {
+			deletions++;
+		}
+	}
+
+	return { insertions, deletions, binary };
+}
 
 const gitStageSchema = z.object({
 	project: z.string().optional(),
@@ -259,18 +325,56 @@ export function registerGitRoutes(app: Hono) {
 
 			const { gitRoot } = validation;
 
-			// Get diff
-			const args = query.staged
-				? ['diff', '--cached', query.file]
-				: ['diff', query.file];
-			const { stdout: diff } = await execFileAsync('git', args, {
-				cwd: gitRoot,
-			});
+			// Get diff output and stats for the requested file
+			const diffArgs = query.staged
+				? ['diff', '--cached', '--', query.file]
+				: ['diff', '--', query.file];
+			const numstatArgs = query.staged
+				? ['diff', '--cached', '--numstat', '--', query.file]
+				: ['diff', '--numstat', '--', query.file];
+
+			const [{ stdout: diffOutput }, { stdout: numstatOutput }] =
+				await Promise.all([
+					execFileAsync('git', diffArgs, { cwd: gitRoot }),
+					execFileAsync('git', numstatArgs, { cwd: gitRoot }),
+				]);
+
+			let insertions = 0;
+			let deletions = 0;
+			let binary = false;
+
+			const numstatLine = numstatOutput.trim().split('\n').find(Boolean);
+			if (numstatLine) {
+				const [rawInsertions, rawDeletions] = numstatLine.split('\t');
+				if (rawInsertions === '-' || rawDeletions === '-') {
+					binary = true;
+				} else {
+					insertions = Number.parseInt(rawInsertions, 10) || 0;
+					deletions = Number.parseInt(rawDeletions, 10) || 0;
+				}
+			}
+
+			const diffText = diffOutput ?? '';
+			if (!binary) {
+				const summary = summarizeDiff(diffText);
+				binary = summary.binary;
+				if (insertions === 0 && deletions === 0) {
+					insertions = summary.insertions;
+					deletions = summary.deletions;
+				}
+			}
+
+			const language = inferLanguage(query.file);
 
 			return c.json({
 				status: 'ok',
 				data: {
-					diff: diff || 'No changes',
+					file: query.file,
+					diff: diffText,
+					insertions,
+					deletions,
+					language,
+					binary,
 				},
 			});
 		} catch (error) {

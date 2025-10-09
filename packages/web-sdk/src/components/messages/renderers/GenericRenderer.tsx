@@ -1,6 +1,9 @@
 import { ChevronRight, AlertCircle } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import {
+	prism,
+	vscDarkPlus,
+} from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { GenericRendererProps } from './types';
 import { formatDuration } from './utils';
 import { ToolErrorDisplay } from './ToolErrorDisplay';
@@ -15,6 +18,9 @@ export function GenericRenderer({
 	const result = contentJson.result;
 	const timeStr = formatDuration(toolDurationMs);
 	const hasResult = result && Object.keys(result).length > 0;
+	const syntaxTheme = document?.documentElement.classList.contains('dark')
+		? vscDarkPlus
+		: prism;
 
 	// Check for errors
 	const hasError =
@@ -74,7 +80,7 @@ export function GenericRenderer({
 					<div className="overflow-x-auto max-w-full">
 						<SyntaxHighlighter
 							language="json"
-							style={vscDarkPlus}
+							style={syntaxTheme}
 							customStyle={{
 								margin: 0,
 								padding: '0.75rem',

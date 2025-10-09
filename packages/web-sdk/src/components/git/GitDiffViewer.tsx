@@ -1,6 +1,6 @@
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import {
-	oneLight,
+	prism,
 	vscDarkPlus,
 } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { GitDiffResponse } from '../../types/api';
@@ -17,13 +17,53 @@ interface DiffLine {
 	type: 'header' | 'hunk' | 'add' | 'delete' | 'context' | 'meta';
 }
 
+const LANGUAGE_MAP: Record<string, string> = {
+	js: 'javascript',
+	jsx: 'jsx',
+	ts: 'typescript',
+	tsx: 'tsx',
+	py: 'python',
+	rb: 'ruby',
+	go: 'go',
+	rs: 'rust',
+	java: 'java',
+	c: 'c',
+	cpp: 'cpp',
+	h: 'c',
+	hpp: 'cpp',
+	cs: 'csharp',
+	php: 'php',
+	sh: 'bash',
+	bash: 'bash',
+	zsh: 'bash',
+	sql: 'sql',
+	json: 'json',
+	yaml: 'yaml',
+	yml: 'yaml',
+	xml: 'xml',
+	html: 'html',
+	css: 'css',
+	scss: 'scss',
+	md: 'markdown',
+	txt: 'plaintext',
+	svelte: 'svelte',
+};
+
+function inferLanguageFromPath(path: string): string {
+	const extension = path.split('.').pop()?.toLowerCase() ?? '';
+	if (!extension) {
+		return 'plaintext';
+	}
+	return LANGUAGE_MAP[extension] ?? 'plaintext';
+}
+
 export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 	// Parse the diff into lines with line numbers
 	const lines = diff.diff.split('\n');
 	const diffLines: DiffLine[] = [];
 	const syntaxTheme = document?.documentElement.classList.contains('dark')
 		? vscDarkPlus
-		: oneLight;
+		: prism;
 
 	let oldLineNum = 0;
 	let newLineNum = 0;
@@ -89,6 +129,11 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 	}
 
 	// Render a single diff line with syntax highlighting
+	const resolvedLanguage =
+		diff.language && diff.language.trim().length > 0
+			? diff.language
+			: inferLanguageFromPath(diff.file);
+
 	const renderLine = (diffLine: DiffLine, index: number) => {
 		let rowClassName = 'flex hover:bg-muted/20';
 		let lineNumberClassName =
@@ -128,12 +173,12 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 		if (
 			diffLine.type !== 'meta' &&
 			diffLine.type !== 'hunk' &&
-			diff.language !== 'plaintext' &&
+			resolvedLanguage !== 'plaintext' &&
 			diffLine.codeContent.trim()
 		) {
 			renderedContent = (
 				<SyntaxHighlighter
-					language={diff.language}
+					language={resolvedLanguage}
 					style={syntaxTheme}
 					customStyle={{
 						margin: 0,
@@ -208,7 +253,7 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 									-{diff.deletions}
 								</span>
 							)}
-							<span className="text-muted-foreground">{diff.language}</span>
+							<span className="text-muted-foreground">{resolvedLanguage}</span>
 						</>
 					)}
 				</div>

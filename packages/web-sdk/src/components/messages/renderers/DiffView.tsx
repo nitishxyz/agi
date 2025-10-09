@@ -1,6 +1,6 @@
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import {
-	oneLight,
+	prism,
 	vscDarkPlus,
 } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -149,7 +149,7 @@ export function DiffView({ patch }: DiffViewProps) {
 	const language = getLanguageFromPath(filePath);
 	const syntaxTheme = document?.documentElement.classList.contains('dark')
 		? vscDarkPlus
-		: oneLight;
+		: prism;
 
 	return (
 		<div className="bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 max-w-full">
