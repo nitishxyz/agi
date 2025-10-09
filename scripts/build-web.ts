@@ -9,10 +9,21 @@ import { join, relative } from 'node:path';
 import { readdirSync, statSync } from 'node:fs';
 
 const ROOT = import.meta.dir.replace('/scripts', '');
+const API_DIR = join(ROOT, 'packages/api');
+const WEB_SDK_DIR = join(ROOT, 'packages/web-sdk');
 const WEB_DIR = join(ROOT, 'apps/web');
 const CLI_DIR = join(ROOT, 'apps/cli');
 const WEB_DIST = join(WEB_DIR, 'dist');
 const CLI_WEB_DIST = join(CLI_DIR, 'src/web-dist');
+
+// Build dependencies in order
+console.log('📦 Building @agi-cli/api...');
+await $`bun run build`.cwd(API_DIR);
+console.log('✅ API built successfully');
+
+console.log('📦 Building @agi-cli/web-sdk...');
+await $`bun run build`.cwd(WEB_SDK_DIR);
+console.log('✅ Web SDK built successfully');
 
 console.log('🔨 Building web UI...');
 await $`bun run build`.cwd(WEB_DIR);
@@ -121,7 +132,7 @@ function formatAssetArray(files: string[]): string {
 
 	return `[
 ${items}
-\t]`;
+	]`;
 }
 
 const importsFile = `/**
