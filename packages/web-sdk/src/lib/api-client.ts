@@ -49,7 +49,7 @@ interface WindowWithAgiServerUrl extends Window {
 export function configureApiClient() {
 	const win = window as WindowWithAgiServerUrl;
 	const baseURL = win.AGI_SERVER_URL || API_BASE_URL;
-	
+
 	client.setConfig({
 		baseURL,
 	});
@@ -63,17 +63,28 @@ function convertSession(apiSession: ApiSession): Session {
 	return {
 		...apiSession,
 		title: apiSession.title ?? null,
-		createdAt: typeof apiSession.createdAt === 'string' ? new Date(apiSession.createdAt).getTime() : apiSession.createdAt,
-		lastActiveAt: typeof apiSession.lastActiveAt === 'string' ? new Date(apiSession.lastActiveAt).getTime() : apiSession.lastActiveAt,
+		createdAt:
+			typeof apiSession.createdAt === 'string'
+				? new Date(apiSession.createdAt).getTime()
+				: apiSession.createdAt,
+		lastActiveAt:
+			typeof apiSession.lastActiveAt === 'string'
+				? new Date(apiSession.lastActiveAt).getTime()
+				: apiSession.lastActiveAt,
 	} as Session;
 }
 
 function convertMessage(apiMessage: ApiMessage): Message {
 	return {
 		...apiMessage,
-		createdAt: typeof apiMessage.createdAt === 'string' ? new Date(apiMessage.createdAt).getTime() : apiMessage.createdAt,
-		completedAt: apiMessage.completedAt 
-			? (typeof apiMessage.completedAt === 'string' ? new Date(apiMessage.completedAt).getTime() : apiMessage.completedAt)
+		createdAt:
+			typeof apiMessage.createdAt === 'string'
+				? new Date(apiMessage.createdAt).getTime()
+				: apiMessage.createdAt,
+		completedAt: apiMessage.completedAt
+			? typeof apiMessage.completedAt === 'string'
+				? new Date(apiMessage.completedAt).getTime()
+				: apiMessage.completedAt
 			: null,
 	} as Message;
 }
@@ -208,7 +219,9 @@ class ApiClient {
 			body: {},
 		});
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to generate commit message');
+			throw new Error(
+				String(response.error) || 'Failed to generate commit message',
+			);
 		}
 		return (response.data as any)?.data as GitGenerateCommitMessageResponse;
 	}

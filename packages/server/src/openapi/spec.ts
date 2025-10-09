@@ -244,7 +244,8 @@ export function getOpenAPISpec() {
 					tags: ['sessions'],
 					operationId: 'abortSession',
 					summary: 'Abort a running session',
-					description: 'Aborts any currently running assistant generation for the session',
+					description:
+						'Aborts any currently running assistant generation for the session',
 					parameters: [
 						{
 							in: 'path',
@@ -275,7 +276,8 @@ export function getOpenAPISpec() {
 					tags: ['config'],
 					operationId: 'getConfig',
 					summary: 'Get full configuration',
-					description: 'Returns agents, authorized providers, models, and defaults',
+					description:
+						'Returns agents, authorized providers, models, and defaults',
 					parameters: [projectQueryParam()],
 					responses: {
 						200: {
@@ -435,7 +437,8 @@ export function getOpenAPISpec() {
 					tags: ['git'],
 					operationId: 'getGitStatus',
 					summary: 'Get git status',
-					description: 'Returns current git status including staged, unstaged, and untracked files',
+					description:
+						'Returns current git status including staged, unstaged, and untracked files',
 					parameters: [projectQueryParam()],
 					responses: {
 						200: {
@@ -686,7 +689,8 @@ export function getOpenAPISpec() {
 					tags: ['git'],
 					operationId: 'generateCommitMessage',
 					summary: 'Generate AI-powered commit message',
-					description: 'Uses AI to generate a commit message based on staged changes',
+					description:
+						'Uses AI to generate a commit message based on staged changes',
 					requestBody: {
 						required: false,
 						content: {
@@ -999,7 +1003,14 @@ export function getOpenAPISpec() {
 						language: { type: 'string' },
 						binary: { type: 'boolean' },
 					},
-					required: ['file', 'diff', 'insertions', 'deletions', 'language', 'binary'],
+					required: [
+						'file',
+						'diff',
+						'insertions',
+						'deletions',
+						'language',
+						'binary',
+					],
 				},
 				GitBranch: {
 					type: 'object',
@@ -1024,7 +1035,13 @@ export function getOpenAPISpec() {
 						insertions: { type: 'integer' },
 						deletions: { type: 'integer' },
 					},
-					required: ['hash', 'message', 'filesChanged', 'insertions', 'deletions'],
+					required: [
+						'hash',
+						'message',
+						'filesChanged',
+						'insertions',
+						'deletions',
+					],
 				},
 			},
 		},

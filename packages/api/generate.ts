@@ -29,7 +29,7 @@ const codegen = Bun.spawnSync(
 		cwd: import.meta.dir,
 		stdout: 'inherit',
 		stderr: 'inherit',
-	}
+	},
 );
 
 if (!codegen.success) {
@@ -38,6 +38,8 @@ if (!codegen.success) {
 }
 
 console.log('\\n✅ Client generation complete!');
-console.log('\\n📝 Note: The client uses Axios. Make sure to configure the baseURL when using the client:');
+console.log(
+	'\\n📝 Note: The client uses Axios. Make sure to configure the baseURL when using the client:',
+);
 console.log('   import { client } from "@agi-cli/api";');
 console.log('   client.setConfig({ baseURL: "http://localhost:3000" });');

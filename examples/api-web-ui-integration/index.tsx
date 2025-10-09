@@ -185,9 +185,7 @@ function ChatArea({ sessionId }: { sessionId: string }) {
 					onSubmit={handleSendMessage}
 					disabled={sending || !connected}
 					placeholder={
-						connected
-							? 'Type your message...'
-							: 'Waiting for connection...'
+						connected ? 'Type your message...' : 'Waiting for connection...'
 					}
 				/>
 			</div>
@@ -203,9 +201,7 @@ function MessageBubble({ message }: { message: any }) {
 		<div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
 			<Card
 				className={`max-w-2xl ${
-					isUser
-						? 'bg-blue-600 text-white'
-						: 'bg-gray-100 dark:bg-gray-800'
+					isUser ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800'
 				}`}
 			>
 				<div className="mb-1 text-xs font-semibold uppercase opacity-70">

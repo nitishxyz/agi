@@ -3,7 +3,7 @@
  *
  * This package provides a fully typed API client generated from the OpenAPI spec
  * using @hey-api/openapi-ts with Axios client support.
- * 
+ *
  * The client uses Axios for HTTP requests and provides:
  * - Type-safe SDK functions for all API endpoints
  * - Runtime schemas for validation
@@ -35,16 +35,16 @@ export type { ApiError } from './utils';
 
 /**
  * Quick Start Example:
- * 
+ *
  * ```typescript
  * import { client, getSessions } from '@agi-cli/api';
- * 
+ *
  * // Configure the client
  * client.setConfig({
  *   baseURL: 'http://localhost:3000',
  *   // Optional: add interceptors, auth, etc.
  * });
- * 
+ *
  * // Make API calls
  * const { data, error } = await getSessions();
  * if (error) {

@@ -2,10 +2,10 @@ import type { CreateClientConfig } from './generated/client.gen';
 
 /**
  * Runtime configuration for the Axios client.
- * 
+ *
  * This function is called by the generated client to set up the initial configuration.
  * You can override baseURL, add interceptors, configure auth, etc.
- * 
+ *
  * Documentation: https://heyapi.dev/openapi-ts/clients/axios
  */
 export const createClientConfig: CreateClientConfig = (config = {}) => ({

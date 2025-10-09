@@ -80,7 +80,7 @@ export interface SSEStreamOptions {
  */
 export async function createSSEStream(
 	options: SSEStreamOptions,
-	signal?: AbortSignal
+	signal?: AbortSignal,
 ): Promise<void> {
 	const {
 		baseUrl,
@@ -254,7 +254,7 @@ export interface ErrorEvent {
  */
 export function isServerEvent<T extends ServerEvent['type']>(
 	event: unknown,
-	type: T
+	type: T,
 ): event is Extract<ServerEvent, { type: T }> {
 	return (
 		typeof event === 'object' &&

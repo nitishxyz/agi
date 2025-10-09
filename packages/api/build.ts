@@ -27,14 +27,11 @@ if (!generate.success) {
 
 // Step 3: Build TypeScript
 console.log('\n📦 Building TypeScript...');
-const build = Bun.spawnSync(
-	['bunx', 'tsc', '--project', 'tsconfig.json'],
-	{
-		cwd: import.meta.dir,
-		stdout: 'inherit',
-		stderr: 'inherit',
-	}
-);
+const build = Bun.spawnSync(['bunx', 'tsc', '--project', 'tsconfig.json'], {
+	cwd: import.meta.dir,
+	stdout: 'inherit',
+	stderr: 'inherit',
+});
 
 if (!build.success) {
 	console.error('❌ Failed to build TypeScript');
