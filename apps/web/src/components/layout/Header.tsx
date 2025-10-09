@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import { Moon, Sun, Menu } from 'lucide-react';
-import { Button } from '../ui/Button';
-import type { Theme } from '../../hooks/useTheme';
-import { useSidebarStore } from '../../stores/sidebarStore';
+import { Button } from '@agi-cli/web-sdk/components';
+import type { Theme } from '@agi-cli/web-sdk/hooks';
+import { useSidebarStore } from '@agi-cli/web-sdk/stores';
 
 interface HeaderProps {
 	theme: Theme;

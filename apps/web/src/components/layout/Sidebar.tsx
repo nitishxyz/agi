@@ -1,9 +1,8 @@
 import { memo, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronRight, Plus, X } from 'lucide-react';
-import { useGitStore } from '../../stores/gitStore';
-import { useSidebarStore } from '../../stores/sidebarStore';
-import { Button } from '../ui/Button';
+import { useGitStore, useSidebarStore } from '@agi-cli/web-sdk/stores';
+import { Button } from '@agi-cli/web-sdk/components';
 
 interface SidebarProps {
 	children: ReactNode;

@@ -1,16 +1,18 @@
 import { useState, useCallback, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppLayout } from './components/layout/AppLayout';
-import { SessionListContainer } from './components/sessions/SessionListContainer';
-import { MessageThreadContainer } from './components/messages/MessageThreadContainer';
 import {
+	SessionListContainer,
+	MessageThreadContainer,
 	ChatInputContainer,
 	type ChatInputContainerRef,
-} from './components/chat/ChatInputContainer';
-import { useCreateSession } from './hooks/useSessions';
-import { useTheme } from './hooks/useTheme';
-import { useWorkingDirectory } from './hooks/useWorkingDirectory';
-import { useSidebarStore } from './stores/sidebarStore';
+} from '@agi-cli/web-sdk/components';
+import {
+	useCreateSession,
+	useTheme,
+	useWorkingDirectory,
+} from '@agi-cli/web-sdk/hooks';
+import { useSidebarStore } from '@agi-cli/web-sdk/stores';
 
 const queryClient = new QueryClient({
 	defaultOptions: {

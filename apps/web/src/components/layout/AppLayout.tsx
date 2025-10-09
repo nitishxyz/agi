@@ -1,12 +1,14 @@
 import { memo } from 'react';
 import type { ReactNode } from 'react';
-import type { Theme } from '../../hooks/useTheme';
+import type { Theme } from '@agi-cli/web-sdk/hooks';
+import {
+	GitSidebarToggle,
+	GitSidebar,
+	GitDiffPanel,
+	GitCommitModal,
+} from '@agi-cli/web-sdk/components';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
-import { GitSidebarToggle } from '../git/GitSidebarToggle';
-import { GitSidebar } from '../git/GitSidebar';
-import { GitDiffPanel } from '../git/GitDiffPanel';
-import { GitCommitModal } from '../git/GitCommitModal';
 
 interface AppLayoutProps {
 	sidebar: ReactNode;

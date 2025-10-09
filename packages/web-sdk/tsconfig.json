@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"outDir": "./dist",
+		"rootDir": "./src",
+		"declaration": true,
+		"declarationMap": true,
+		"sourceMap": true,
+		"jsx": "react-jsx",
+		"skipLibCheck": true,
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"strict": false,
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+		"types": ["@types/react", "@types/react-dom"]
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]
+}

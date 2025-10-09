@@ -1,0 +1,41 @@
+{
+	"name": "@agi-cli/api",
+	"version": "0.1.58",
+	"description": "Type-safe API client for AGI CLI server",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"scripts": {
+		"build": "bun run build.ts",
+		"generate": "bun run generate.ts",
+		"prepublishOnly": "bun run build",
+		"typecheck": "tsc --noEmit"
+	},
+	"keywords": [
+		"agi",
+		"cli",
+		"api",
+		"client",
+		"typescript",
+		"openapi"
+	],
+	"author": "AGI CLI Team",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ntishxyz/agi.git",
+		"directory": "packages/api"
+	},
+	"dependencies": {
+		"eventsource-parser": "^2.0.1"
+	},
+	"devDependencies": {
+		"@hey-api/openapi-ts": "^0.56.0",
+		"@types/node": "^24.6.0",
+		"typescript": "~5.9.3"
+	}
+}
