@@ -32,7 +32,7 @@
     },
     "apps/cli": {
       "name": "@agi-cli/cli",
-      "version": "0.1.61",
+      "version": "0.1.62",
       "bin": {
         "agi": "./dist/agi",
       },
@@ -122,7 +122,7 @@
     },
     "packages/api": {
       "name": "@agi-cli/api",
-      "version": "0.1.61",
+      "version": "0.1.62",
       "dependencies": {
         "axios": "^1.7.9",
         "eventsource-parser": "^2.0.1",
@@ -135,7 +135,7 @@
     },
     "packages/database": {
       "name": "@agi-cli/database",
-      "version": "0.1.61",
+      "version": "0.1.62",
       "dependencies": {
         "@agi-cli/sdk": "workspace:*",
         "drizzle-orm": "^0.44.5",
@@ -148,14 +148,14 @@
     },
     "packages/install": {
       "name": "@agi-cli/install",
-      "version": "0.1.61",
+      "version": "0.1.62",
       "bin": {
         "agi": "./start.js",
       },
     },
     "packages/sdk": {
       "name": "@agi-cli/sdk",
-      "version": "0.1.61",
+      "version": "0.1.62",
       "dependencies": {
         "@ai-sdk/anthropic": "^2.0.16",
         "@ai-sdk/google": "^2.0.14",
@@ -177,7 +177,7 @@
     },
     "packages/server": {
       "name": "@agi-cli/server",
-      "version": "0.1.61",
+      "version": "0.1.62",
       "dependencies": {
         "@agi-cli/database": "workspace:*",
         "@agi-cli/sdk": "workspace:*",
@@ -191,7 +191,7 @@
     },
     "packages/web-sdk": {
       "name": "@agi-cli/web-sdk",
-      "version": "0.1.61",
+      "version": "0.1.62",
       "dependencies": {
         "@agi-cli/api": "workspace:*",
         "axios": "^1.7.9",
@@ -225,7 +225,7 @@
     },
     "packages/web-ui": {
       "name": "@agi-cli/web-ui",
-      "version": "0.1.61",
+      "version": "0.1.62",
       "dependencies": {
         "express": "^5.1.0",
       },
