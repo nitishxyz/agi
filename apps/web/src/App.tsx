@@ -1,12 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppLayout } from './components/layout/AppLayout';
 import { SessionListContainer } from './components/sessions/SessionListContainer';
 import { MessageThreadContainer } from './components/messages/MessageThreadContainer';
-import { ChatInputContainer } from './components/chat/ChatInputContainer';
+import {
+	ChatInputContainer,
+	type ChatInputContainerRef,
+} from './components/chat/ChatInputContainer';
 import { useCreateSession } from './hooks/useSessions';
 import { useTheme } from './hooks/useTheme';
 import { useWorkingDirectory } from './hooks/useWorkingDirectory';
+import { useSidebarStore } from './stores/sidebarStore';
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -20,9 +24,11 @@ const queryClient = new QueryClient({
 
 function AppContent() {
 	const [activeSessionId, setActiveSessionId] = useState<string>();
+	const chatInputRef = useRef<ChatInputContainerRef>(null);
 
 	const createSession = useCreateSession();
 	const { theme, toggleTheme } = useTheme();
+	const setCollapsed = useSidebarStore((state) => state.setCollapsed);
 
 	useWorkingDirectory();
 
@@ -32,10 +38,27 @@ function AppContent() {
 				agent: 'general',
 			});
 			setActiveSessionId(session.id);
+			// Close sidebar on mobile and focus input
+			setCollapsed(true);
+			setTimeout(() => {
+				chatInputRef.current?.focus();
+			}, 100);
 		} catch (error) {
 			console.error('Failed to create session:', error);
 		}
-	}, [createSession]);
+	}, [createSession, setCollapsed]);
+
+	const handleSelectSession = useCallback(
+		(sessionId: string) => {
+			setActiveSessionId(sessionId);
+			// Close sidebar on mobile and focus input
+			setCollapsed(true);
+			setTimeout(() => {
+				chatInputRef.current?.focus();
+			}, 100);
+		},
+		[setCollapsed],
+	);
 
 	return (
 		<AppLayout
@@ -45,14 +68,14 @@ function AppContent() {
 			sidebar={
 				<SessionListContainer
 					activeSessionId={activeSessionId}
-					onSelectSession={setActiveSessionId}
+					onSelectSession={handleSelectSession}
 				/>
 			}
 		>
 			{activeSessionId ? (
 				<>
 					<MessageThreadContainer sessionId={activeSessionId} />
-					<ChatInputContainer sessionId={activeSessionId} />
+					<ChatInputContainer ref={chatInputRef} sessionId={activeSessionId} />
 				</>
 			) : (
 				<div className="flex-1 flex items-center justify-center text-muted-foreground">

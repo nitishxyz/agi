@@ -1,5 +1,8 @@
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import {
+	oneLight,
+	vscDarkPlus,
+} from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { GitDiffResponse } from '../../types/api';
 
 interface GitDiffViewerProps {
@@ -18,6 +21,11 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 	// Parse the diff into lines with line numbers
 	const lines = diff.diff.split('\n');
 	const diffLines: DiffLine[] = [];
+	const syntaxTheme =
+		typeof document !== 'undefined' &&
+		document.documentElement.classList.contains('dark')
+			? vscDarkPlus
+			: oneLight;
 
 	let oldLineNum = 0;
 	let newLineNum = 0;
@@ -128,7 +136,7 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 			renderedContent = (
 				<SyntaxHighlighter
 					language={diff.language}
-					style={vscDarkPlus}
+					style={syntaxTheme}
 					customStyle={{
 						margin: 0,
 						padding: 0,

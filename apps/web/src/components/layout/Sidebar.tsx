@@ -1,6 +1,6 @@
 import { memo, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, Plus, X } from 'lucide-react';
 import { useGitStore } from '../../stores/gitStore';
 import { useSidebarStore } from '../../stores/sidebarStore';
 import { Button } from '../ui/Button';
@@ -72,13 +72,29 @@ export const Sidebar = memo(function Sidebar({
 		<>
 			{!isCollapsed && (
 				<div
-					className="fixed inset-0 bg-black/50 z-10 md:hidden"
+					className="fixed inset-0 bg-black/50 z-40 md:hidden"
 					onClick={toggleCollapse}
 					aria-hidden="true"
 				/>
 			)}
-			<aside className="w-full md:w-64 border-r border-border bg-background flex flex-col transition-all duration-300 ease-in-out absolute md:relative z-20 h-full md:h-auto">
-				<div className="h-14 border-b border-border px-4 flex items-center">
+			<aside className="w-full md:w-64 border-r border-border bg-background flex flex-col transition-all duration-300 ease-in-out fixed md:relative top-0 left-0 z-50 h-screen md:h-auto">
+				{/* Mobile header with close button - covers the main header area */}
+				<div className="h-14 border-b border-border px-4 flex items-center gap-2 md:hidden bg-background">
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={toggleCollapse}
+						title="Close menu"
+						className="touch-manipulation flex-shrink-0"
+						aria-label="Close menu"
+					>
+						<X className="w-5 h-5" />
+					</Button>
+					<h1 className="text-lg font-semibold text-foreground flex-1">AGI</h1>
+				</div>
+
+				{/* Desktop/Mobile "New Session" button area */}
+				<div className="h-14 border-b border-border px-4 flex items-center gap-2">
 					<Button
 						variant="primary"
 						size="sm"

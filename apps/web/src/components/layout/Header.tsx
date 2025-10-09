@@ -16,7 +16,7 @@ export const Header = memo(function Header({
 	const toggleCollapse = useSidebarStore((state) => state.toggleCollapse);
 
 	return (
-		<header className="h-14 border-b border-border bg-background px-4 flex items-center justify-between">
+		<header className="h-14 border-b border-border bg-background px-4 flex items-center justify-between relative z-30">
 			<div className="flex items-center gap-2">
 				<Button
 					variant="ghost"

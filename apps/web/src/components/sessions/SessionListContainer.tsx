@@ -1,7 +1,6 @@
 import { memo, useMemo, useCallback } from 'react';
 import { useSessions } from '../../hooks/useSessions';
 import { SessionItem } from './SessionItem';
-import { useSidebarStore } from '../../stores/sidebarStore';
 
 interface SessionListContainerProps {
 	activeSessionId?: string;
@@ -13,17 +12,12 @@ export const SessionListContainer = memo(function SessionListContainer({
 	onSelectSession,
 }: SessionListContainerProps) {
 	const { data: sessions = [], isLoading } = useSessions();
-	const toggleCollapse = useSidebarStore((state) => state.toggleCollapse);
 
 	const handleSessionClick = useCallback(
 		(sessionId: string) => {
 			onSelectSession(sessionId);
-			// Close sidebar on mobile after selecting a session
-			if (window.innerWidth < 768) {
-				toggleCollapse();
-			}
 		},
-		[onSelectSession, toggleCollapse],
+		[onSelectSession],
 	);
 
 	// Create a stable reference that only changes when session count, titles, or agents change
