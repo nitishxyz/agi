@@ -4,7 +4,7 @@
  * Provides helpers for connecting to and consuming SSE streams from the AGI server.
  */
 
-import { createParser, type EventSourceParser } from 'eventsource-parser';
+import { createParser } from 'eventsource-parser';
 
 export interface SSEEvent {
 	id?: string;

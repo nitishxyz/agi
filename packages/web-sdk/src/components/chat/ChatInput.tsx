@@ -48,7 +48,7 @@ export const ChatInput = memo(
 
 		useEffect(() => {
 			adjustTextareaHeight();
-		}, [adjustTextareaHeight, message]);
+		}, [adjustTextareaHeight]);
 
 		const handleSend = useCallback(() => {
 			if (message.trim() && !disabled) {

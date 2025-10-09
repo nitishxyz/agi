@@ -8,8 +8,8 @@
  * - Real-time SSE streaming
  */
 
-import React, { useState, useEffect } from 'react';
-import { createApiClient, createSSEStream } from '@agi-cli/api';
+import { useState, useEffect } from 'react';
+import { createApiClient } from '@agi-cli/api';
 import {
 	Button,
 	Card,
@@ -22,6 +22,7 @@ import {
 	useMessages,
 	useSessionStream,
 } from '@agi-cli/web-ui/hooks';
+import type { Message, MessagePart } from '@agi-cli/web-ui/types';
 
 const API_BASE_URL = 'http://localhost:9100';
 
@@ -194,7 +195,7 @@ function ChatArea({ sessionId }: { sessionId: string }) {
 }
 
 // Message Bubble Component
-function MessageBubble({ message }: { message: any }) {
+function MessageBubble({ message }: { message: Message }) {
 	const isUser = message.role === 'user';
 
 	return (
@@ -207,8 +208,11 @@ function MessageBubble({ message }: { message: any }) {
 				<div className="mb-1 text-xs font-semibold uppercase opacity-70">
 					{message.role}
 				</div>
-				{message.parts?.map((part: any, i: number) => (
-					<div key={i} className="whitespace-pre-wrap">
+				{message.parts?.map((part: MessagePart) => (
+					<div
+						key={`${part.messageId}-${part.index}`}
+						className="whitespace-pre-wrap"
+					>
 						{part.type === 'text' ? JSON.parse(part.content).text : ''}
 					</div>
 				))}

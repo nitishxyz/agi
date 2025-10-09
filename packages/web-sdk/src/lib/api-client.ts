@@ -27,11 +27,8 @@ import type {
 	SendMessageResponse,
 	GitStatusResponse,
 	GitDiffResponse,
-	GitStageRequest,
 	GitStageResponse,
-	GitUnstageRequest,
 	GitUnstageResponse,
-	GitCommitRequest,
 	GitCommitResponse,
 	GitGenerateCommitMessageResponse,
 	GitBranchInfo,
@@ -115,7 +112,10 @@ class ApiClient {
 		if (response.error) {
 			throw new Error(String(response.error) || 'Failed to create session');
 		}
-		return convertSession(response.data!);
+		if (!response.data) {
+			throw new Error('No data returned from create session');
+		}
+		return convertSession(response.data);
 	}
 
 	async abortSession(sessionId: string): Promise<{ success: boolean }> {
@@ -178,6 +178,7 @@ class ApiClient {
 		default: string;
 	}> {
 		const response = await apiGetProviderModels({
+			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch between client and server
 			path: { provider: providerId as any },
 		});
 		if (response.error) {
@@ -195,6 +196,7 @@ class ApiClient {
 		if (response.error) {
 			throw new Error(String(response.error) || 'Failed to fetch git status');
 		}
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitStatusResponse;
 	}
 
@@ -211,6 +213,7 @@ class ApiClient {
 		if (response.error) {
 			throw new Error(String(response.error) || 'Failed to fetch git diff');
 		}
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitDiffResponse;
 	}
 
@@ -223,36 +226,43 @@ class ApiClient {
 				String(response.error) || 'Failed to generate commit message',
 			);
 		}
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitGenerateCommitMessageResponse;
 	}
 
 	async stageFiles(files: string[]): Promise<GitStageResponse> {
 		const response = await apiStageFiles({
+			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch between client and server
 			body: { files } as any,
 		});
 		if (response.error) {
 			throw new Error(String(response.error) || 'Failed to stage files');
 		}
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitStageResponse;
 	}
 
 	async unstageFiles(files: string[]): Promise<GitUnstageResponse> {
 		const response = await apiUnstageFiles({
+			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch between client and server
 			body: { files } as any,
 		});
 		if (response.error) {
 			throw new Error(String(response.error) || 'Failed to unstage files');
 		}
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitUnstageResponse;
 	}
 
 	async commitChanges(message: string): Promise<GitCommitResponse> {
 		const response = await apiCommitChanges({
+			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch between client and server
 			body: { message } as any,
 		});
 		if (response.error) {
 			throw new Error(String(response.error) || 'Failed to commit changes');
 		}
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitCommitResponse;
 	}
 
@@ -261,6 +271,7 @@ class ApiClient {
 		if (response.error) {
 			throw new Error(String(response.error) || 'Failed to fetch git branch');
 		}
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitBranchInfo;
 	}
 }
