@@ -211,7 +211,8 @@ export function registerGitRoutes(app: Hono) {
 			const branch = await getCurrentBranch(gitRoot);
 
 			// Calculate hasChanges
-			const hasChanges = staged.length > 0 || unstaged.length > 0 || untracked.length > 0;
+			const hasChanges =
+				staged.length > 0 || unstaged.length > 0 || untracked.length > 0;
 
 			return c.json({
 				status: 'ok',
