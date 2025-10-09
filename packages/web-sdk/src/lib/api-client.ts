@@ -14,6 +14,7 @@ import {
 	unstageFiles as apiUnstageFiles,
 	commitChanges as apiCommitChanges,
 	generateCommitMessage as apiGenerateCommitMessage,
+	pushCommits as apiPushCommits,
 	type Session as ApiSession,
 	type Message as ApiMessage,
 	type CreateSessionData,
@@ -32,6 +33,7 @@ import type {
 	GitCommitResponse,
 	GitGenerateCommitMessageResponse,
 	GitBranchInfo,
+	GitPushResponse,
 } from '../types/api';
 import { API_BASE_URL } from './config';
 
@@ -273,6 +275,18 @@ class ApiClient {
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitBranchInfo;
+	}
+
+	async pushCommits(): Promise<GitPushResponse> {
+		const response = await apiPushCommits({
+			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch between client and server
+			body: {} as any,
+		});
+		if (response.error) {
+			throw new Error(String(response.error) || 'Failed to push commits');
+		}
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
+		return (response.data as any)?.data as GitPushResponse;
 	}
 }
 

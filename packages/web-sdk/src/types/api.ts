@@ -143,3 +143,7 @@ export interface GitBranchInfo {
 	behind: number;
 	all: string[];
 }
+
+export interface GitPushResponse {
+	output: string;
+}

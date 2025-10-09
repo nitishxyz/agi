@@ -1,8 +1,8 @@
-import { memo, useEffect } from 'react';
-import { ChevronRight, GitBranch, RefreshCw } from 'lucide-react';
+import { memo, useEffect, useState } from 'react';
+import { ChevronRight, GitBranch, RefreshCw, Upload } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGitStore } from '../../stores/gitStore';
-import { useGitStatus } from '../../hooks/useGit';
+import { useGitStatus, usePushCommits } from '../../hooks/useGit';
 import { Button } from '../ui/Button';
 import { GitFileList } from './GitFileList';
 
@@ -12,6 +12,8 @@ export const GitSidebar = memo(function GitSidebar() {
 	const collapseSidebar = useGitStore((state) => state.collapseSidebar);
 	const { data: status, isLoading, error, refetch } = useGitStatus();
 	const queryClient = useQueryClient();
+	const pushMutation = usePushCommits();
+	const [pushError, setPushError] = useState<string | null>(null);
 
 	// Auto-fetch when sidebar is opened or closed
 	useEffect(() => {
@@ -26,6 +28,16 @@ export const GitSidebar = memo(function GitSidebar() {
 		refetch();
 	};
 
+	// Push handler
+	const handlePush = async () => {
+		setPushError(null);
+		try {
+			await pushMutation.mutateAsync();
+		} catch (err) {
+			setPushError(err instanceof Error ? err.message : 'Failed to push');
+		}
+	};
+
 	if (!isExpanded) return null;
 
 	const allFiles = [
@@ -35,6 +47,7 @@ export const GitSidebar = memo(function GitSidebar() {
 	];
 
 	const totalChanges = allFiles.length;
+	const canPush = status && status.ahead > 0;
 
 	return (
 		<div className="w-80 border-l border-border bg-background flex flex-col h-full">
@@ -89,31 +102,65 @@ export const GitSidebar = memo(function GitSidebar() {
 				)}
 			</div>
 
-			{/* Branch info footer with refresh button */}
+			{/* Branch info footer with push and refresh buttons */}
 			{status?.branch && (
-				<div className="border-t border-border px-4 py-2 text-xs text-muted-foreground flex items-center justify-between">
-					<div className="flex items-center gap-2">
-						<GitBranch className="w-3 h-3" />
-						<span>{status.branch}</span>
-						{status.ahead > 0 && (
-							<span className="text-green-500">↑{status.ahead}</span>
-						)}
-						{status.behind > 0 && (
-							<span className="text-orange-500">↓{status.behind}</span>
-						)}
+				<div className="border-t border-border">
+					{/* Push error message */}
+					{pushError && (
+						<div className="px-4 py-2 text-xs text-orange-500 border-b border-border bg-orange-50 dark:bg-orange-950/20">
+							{pushError}
+						</div>
+					)}
+
+					{/* Footer with branch info and buttons */}
+					<div className="px-4 py-2 text-xs text-muted-foreground flex items-center justify-between gap-2">
+						<div className="flex items-center gap-2 min-w-0 flex-1">
+							<GitBranch className="w-3 h-3 flex-shrink-0" />
+							<span className="truncate">{status.branch}</span>
+							{status.ahead > 0 && (
+								<span className="text-green-500 flex-shrink-0">
+									↑{status.ahead}
+								</span>
+							)}
+							{status.behind > 0 && (
+								<span className="text-orange-500 flex-shrink-0">
+									↓{status.behind}
+								</span>
+							)}
+						</div>
+
+						<div className="flex items-center gap-1 flex-shrink-0">
+							{/* Push button - only show when we have commits to push */}
+							{canPush && (
+								<Button
+									variant="ghost"
+									size="icon"
+									onClick={handlePush}
+									title="Push commits to remote"
+									className="h-6 w-6 transition-transform duration-200 hover:scale-110"
+									disabled={pushMutation.isPending}
+								>
+									<Upload
+										className={`w-3 h-3 ${pushMutation.isPending ? 'animate-pulse' : ''}`}
+									/>
+								</Button>
+							)}
+
+							{/* Refresh button */}
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={handleRefresh}
+								title="Refresh git status"
+								className="h-6 w-6 transition-transform duration-200 hover:scale-110"
+								disabled={isLoading}
+							>
+								<RefreshCw
+									className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`}
+								/>
+							</Button>
+						</div>
 					</div>
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={handleRefresh}
-						title="Refresh git status"
-						className="h-6 w-6 transition-transform duration-200 hover:scale-110"
-						disabled={isLoading}
-					>
-						<RefreshCw
-							className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`}
-						/>
-					</Button>
 				</div>
 			)}
 		</div>

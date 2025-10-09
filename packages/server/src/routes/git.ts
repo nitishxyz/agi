@@ -41,6 +41,10 @@ const gitGenerateCommitMessageSchema = z.object({
 	project: z.string().optional(),
 });
 
+const gitPushSchema = z.object({
+	project: z.string().optional(),
+});
+
 // Types
 export interface GitFile {
 	path: string;
@@ -48,144 +52,75 @@ export interface GitFile {
 	staged: boolean;
 	insertions?: number;
 	deletions?: number;
-	oldPath?: string;
 }
 
-export interface GitStatus {
-	branch: string;
-	ahead: number;
-	behind: number;
-	staged: GitFile[];
-	unstaged: GitFile[];
-	untracked: GitFile[];
-	hasChanges: boolean;
+interface GitRoot {
+	gitRoot: string;
 }
 
-// File extension to language mapping
-const languageMap: Record<string, string> = {
-	'.ts': 'typescript',
-	'.tsx': 'typescript',
-	'.js': 'javascript',
-	'.jsx': 'javascript',
-	'.py': 'python',
-	'.java': 'java',
-	'.c': 'c',
-	'.cpp': 'cpp',
-	'.go': 'go',
-	'.rs': 'rust',
-	'.rb': 'ruby',
-	'.php': 'php',
-	'.css': 'css',
-	'.html': 'html',
-	'.json': 'json',
-	'.xml': 'xml',
-	'.yaml': 'yaml',
-	'.yml': 'yaml',
-	'.md': 'markdown',
-	'.sh': 'bash',
-};
-
-function detectLanguage(filePath: string): string {
-	const ext = extname(filePath).toLowerCase();
-	return languageMap[ext] || 'plaintext';
+interface GitError {
+	error: string;
+	code?: string;
 }
 
-// Helper function to check if path is in a git repository
-async function isGitRepository(path: string): Promise<boolean> {
+// Helper functions
+async function validateAndGetGitRoot(
+	requestedPath: string,
+): Promise<GitRoot | GitError> {
 	try {
-		await execFileAsync('git', ['rev-parse', '--git-dir'], { cwd: path });
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-// Helper function to find git root directory
-async function findGitRoot(startPath: string): Promise<string | null> {
-	try {
-		const { stdout } = await execFileAsync(
+		const { stdout: gitRoot } = await execFileAsync(
 			'git',
 			['rev-parse', '--show-toplevel'],
-			{ cwd: startPath },
+			{
+				cwd: requestedPath,
+			},
 		);
-		return stdout.trim();
+		return { gitRoot: gitRoot.trim() };
 	} catch {
-		return null;
-	}
-}
-
-// Helper to validate git repo and get root
-async function validateAndGetGitRoot(
-	path: string,
-): Promise<{ gitRoot: string } | { error: string; code: string }> {
-	if (!(await isGitRepository(path))) {
-		return { error: 'Not a git repository', code: 'NOT_A_GIT_REPO' };
-	}
-
-	const gitRoot = await findGitRoot(path);
-	if (!gitRoot) {
 		return {
-			error: 'Could not find git repository root',
-			code: 'GIT_ROOT_NOT_FOUND',
+			error: 'Not a git repository',
+			code: 'NOT_A_GIT_REPO',
 		};
 	}
-
-	return { gitRoot };
 }
 
-// Git status parsing
-function parseGitStatus(porcelainOutput: string): {
+function parseGitStatus(statusOutput: string): {
 	staged: GitFile[];
 	unstaged: GitFile[];
 	untracked: GitFile[];
 } {
+	const lines = statusOutput.trim().split('\n').filter(Boolean);
 	const staged: GitFile[] = [];
 	const unstaged: GitFile[] = [];
 	const untracked: GitFile[] = [];
 
-	const lines = porcelainOutput.split('\n').filter((line) => line.trim());
-
 	for (const line of lines) {
-		if (line.length < 4) continue;
+		const x = line[0]; // staged status
+		const y = line[1]; // unstaged status
+		const path = line.slice(3).trim();
 
-		const stagedStatus = line[0];
-		const unstagedStatus = line[1];
-		const filePath = line.slice(3);
-
-		// Parse staged files
-		if (stagedStatus !== ' ' && stagedStatus !== '?') {
-			let status: GitFile['status'] = 'modified';
-			if (stagedStatus === 'A') status = 'added';
-			else if (stagedStatus === 'D') status = 'deleted';
-			else if (stagedStatus === 'R') status = 'renamed';
-			else if (stagedStatus === 'M') status = 'modified';
-
+		// Check if file is staged (X is not space or ?)
+		if (x !== ' ' && x !== '?') {
 			staged.push({
-				path: filePath,
-				status,
+				path,
+				status: getStatusFromCode(x),
 				staged: true,
 			});
 		}
 
-		// Parse unstaged files
-		// NOTE: A file can appear in both staged and unstaged if it has staged changes
-		// and additional working directory changes
-		if (unstagedStatus !== ' ' && unstagedStatus !== '?') {
-			let status: GitFile['status'] = 'modified';
-			if (unstagedStatus === 'M') status = 'modified';
-			else if (unstagedStatus === 'D') status = 'deleted';
-
+		// Check if file is unstaged (Y is not space)
+		if (y !== ' ' && y !== '?') {
 			unstaged.push({
-				path: filePath,
-				status,
+				path,
+				status: getStatusFromCode(y),
 				staged: false,
 			});
 		}
 
-		// Parse untracked files
-		if (stagedStatus === '?' && unstagedStatus === '?') {
+		// Check if file is untracked
+		if (x === '?' && y === '?') {
 			untracked.push({
-				path: filePath,
+				path,
 				status: 'untracked',
 				staged: false,
 			});
@@ -195,63 +130,54 @@ function parseGitStatus(porcelainOutput: string): {
 	return { staged, unstaged, untracked };
 }
 
-async function parseNumstat(
-	numstatOutput: string,
-	files: GitFile[],
-): Promise<void> {
-	const lines = numstatOutput.split('\n').filter((line) => line.trim());
-
-	for (const line of lines) {
-		const parts = line.split('\t');
-		if (parts.length < 3) continue;
-
-		const insertions = Number.parseInt(parts[0], 10);
-		const deletions = Number.parseInt(parts[1], 10);
-		const filePath = parts[2];
-
-		const file = files.find((f) => f.path === filePath);
-		if (file) {
-			file.insertions = Number.isNaN(insertions) ? 0 : insertions;
-			file.deletions = Number.isNaN(deletions) ? 0 : deletions;
-		}
-	}
-}
-
-async function getCurrentBranch(cwd: string): Promise<string> {
-	try {
-		const { stdout } = await execFileAsync(
-			'git',
-			['branch', '--show-current'],
-			{ cwd },
-		);
-		return stdout.trim() || 'HEAD';
-	} catch {
-		return 'HEAD';
+function getStatusFromCode(code: string): GitFile['status'] {
+	switch (code) {
+		case 'M':
+			return 'modified';
+		case 'A':
+			return 'added';
+		case 'D':
+			return 'deleted';
+		case 'R':
+			return 'renamed';
+		default:
+			return 'modified';
 	}
 }
 
 async function getAheadBehind(
-	cwd: string,
+	gitRoot: string,
 ): Promise<{ ahead: number; behind: number }> {
 	try {
 		const { stdout } = await execFileAsync(
 			'git',
-			['rev-list', '--left-right', '--count', 'HEAD...@{u}'],
-			{ cwd },
+			['rev-list', '--left-right', '--count', 'HEAD...@{upstream}'],
+			{ cwd: gitRoot },
 		);
-		const parts = stdout.trim().split('\t');
-		return {
-			ahead: Number.parseInt(parts[0], 10) || 0,
-			behind: Number.parseInt(parts[1], 10) || 0,
-		};
+		const [ahead, behind] = stdout.trim().split(/\s+/).map(Number);
+		return { ahead: ahead || 0, behind: behind || 0 };
 	} catch {
 		return { ahead: 0, behind: 0 };
 	}
 }
 
-// Route handlers
+async function getCurrentBranch(gitRoot: string): Promise<string> {
+	try {
+		const { stdout } = await execFileAsync(
+			'git',
+			['branch', '--show-current'],
+			{
+				cwd: gitRoot,
+			},
+		);
+		return stdout.trim();
+	} catch {
+		return 'unknown';
+	}
+}
+
 export function registerGitRoutes(app: Hono) {
-	// GET /v1/git/status - Get current git status
+	// GET /v1/git/status - Get git status
 	app.get('/v1/git/status', async (c) => {
 		try {
 			const query = gitStatusSchema.parse({
@@ -270,76 +196,43 @@ export function registerGitRoutes(app: Hono) {
 
 			const { gitRoot } = validation;
 
-			// Get git status
+			// Get status
 			const { stdout: statusOutput } = await execFileAsync(
 				'git',
 				['status', '--porcelain=v1'],
 				{ cwd: gitRoot },
 			);
 
-			const { staged, unstaged, untracked } = parseGitStatus(statusOutput);
+			const files = parseGitStatus(statusOutput);
 
-			// Get stats for staged files
-			if (staged.length > 0) {
-				try {
-					const { stdout: stagedNumstat } = await execFileAsync(
-						'git',
-						['diff', '--cached', '--numstat'],
-						{ cwd: gitRoot },
-					);
-					await parseNumstat(stagedNumstat, staged);
-				} catch {
-					// Ignore numstat errors
-				}
-			}
-
-			// Get stats for unstaged files
-			if (unstaged.length > 0) {
-				try {
-					const { stdout: unstagedNumstat } = await execFileAsync(
-						'git',
-						['diff', '--numstat'],
-						{ cwd: gitRoot },
-					);
-					await parseNumstat(unstagedNumstat, unstaged);
-				} catch {
-					// Ignore numstat errors
-				}
-			}
-
-			// Get branch info
-			const branch = await getCurrentBranch(gitRoot);
+			// Get ahead/behind counts
 			const { ahead, behind } = await getAheadBehind(gitRoot);
 
-			const status: GitStatus = {
-				branch,
-				ahead,
-				behind,
-				staged,
-				unstaged,
-				untracked,
-				hasChanges:
-					staged.length > 0 || unstaged.length > 0 || untracked.length > 0,
-			};
+			// Get current branch
+			const branch = await getCurrentBranch(gitRoot);
 
 			return c.json({
 				status: 'ok',
-				data: status,
+				data: {
+					files,
+					ahead,
+					behind,
+					branch,
+				},
 			});
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : 'Failed to get git status';
 			return c.json(
 				{
 					status: 'error',
-					error: errorMessage,
+					error:
+						error instanceof Error ? error.message : 'Failed to get status',
 				},
 				500,
 			);
 		}
 	});
 
-	// GET /v1/git/diff - Get diff for a specific file
+	// GET /v1/git/diff - Get file diff
 	app.get('/v1/git/diff', async (c) => {
 		try {
 			const query = gitDiffSchema.parse({
@@ -359,182 +252,258 @@ export function registerGitRoutes(app: Hono) {
 			}
 
 			const { gitRoot } = validation;
-			const file = query.file;
-			const staged = query.staged;
 
-			// Check if file is untracked (new file)
-			const { stdout: statusOutput } = await execFileAsync(
-				'git',
-				['status', '--porcelain=v1', file],
-				{ cwd: gitRoot },
-			);
-
-			const isUntracked = statusOutput.trim().startsWith('??');
-
-			let diffOutput = '';
-			let insertions = 0;
-			let deletions = 0;
-
-			if (isUntracked) {
-				// For untracked files, show the entire file content as additions
-				try {
-					const { readFile } = await import('node:fs/promises');
-					const { join } = await import('node:path');
-					const filePath = join(gitRoot, file);
-					const content = await readFile(filePath, 'utf-8');
-					const lines = content.split('\n');
-
-					// Create a diff-like output showing all lines as additions
-					diffOutput = `diff --git a/${file} b/${file}\n`;
-					diffOutput += `new file mode 100644\n`;
-					diffOutput += `--- /dev/null\n`;
-					diffOutput += `+++ b/${file}\n`;
-					diffOutput += `@@ -0,0 +1,${lines.length} @@\n`;
-					diffOutput += lines.map((line) => `+${line}`).join('\n');
-
-					insertions = lines.length;
-					deletions = 0;
-				} catch (err) {
-					diffOutput = `Error reading file: ${err instanceof Error ? err.message : 'Unknown error'}`;
-				}
-			} else {
-				// For tracked files, use git diff
-				const args = ['diff'];
-				if (staged) {
-					args.push('--cached');
-				}
-				args.push('--', file);
-
-				const { stdout: gitDiff } = await execFileAsync('git', args, {
-					cwd: gitRoot,
-				});
-				diffOutput = gitDiff;
-
-				// Get stats
-				const numstatArgs = ['diff', '--numstat'];
-				if (staged) {
-					numstatArgs.push('--cached');
-				}
-				numstatArgs.push('--', file);
-
-				try {
-					const { stdout: numstatOutput } = await execFileAsync(
-						'git',
-						numstatArgs,
-						{ cwd: gitRoot },
-					);
-					const parts = numstatOutput.trim().split('\t');
-					if (parts.length >= 2) {
-						insertions = Number.parseInt(parts[0], 10) || 0;
-						deletions = Number.parseInt(parts[1], 10) || 0;
-					}
-				} catch {
-					// Ignore numstat errors
-				}
-			}
-
-			// Check if binary
-			const isBinary = diffOutput.includes('Binary files');
+			// Get diff
+			const args = query.staged
+				? ['diff', '--cached', query.file]
+				: ['diff', query.file];
+			const { stdout: diff } = await execFileAsync('git', args, {
+				cwd: gitRoot,
+			});
 
 			return c.json({
 				status: 'ok',
 				data: {
-					file,
-					diff: diffOutput,
-					insertions,
-					deletions,
-					language: detectLanguage(file),
-					binary: isBinary,
+					diff: diff || 'No changes',
 				},
 			});
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : 'Failed to get git diff';
-			return c.json({ status: 'error', error: errorMessage }, 500);
+			return c.json(
+				{
+					status: 'error',
+					error: error instanceof Error ? error.message : 'Failed to get diff',
+				},
+				500,
+			);
 		}
 	});
 
-	// POST /v1/git/generate-commit-message - Generate AI commit message
-	app.post('/v1/git/generate-commit-message', async (c) => {
+	// POST /v1/git/stage - Stage files
+	app.post('/v1/git/stage', async (c) => {
 		try {
 			const body = await c.req.json();
-			const { project } = gitGenerateCommitMessageSchema.parse(body);
+			const { files, project } = gitStageSchema.parse(body);
+
 			const requestedPath = project || process.cwd();
-			const gitRoot = await findGitRoot(requestedPath);
 
-			// Check if there are staged changes
-			const { stdout: statusOutput } = await execFileAsync(
-				'git',
-				['diff', '--cached', '--name-only'],
-				{ cwd: gitRoot },
-			);
+			const validation = await validateAndGetGitRoot(requestedPath);
+			if ('error' in validation) {
+				return c.json(
+					{ status: 'error', error: validation.error, code: validation.code },
+					400,
+				);
+			}
 
-			if (!statusOutput.trim()) {
+			const { gitRoot } = validation;
+
+			if (files.length === 0) {
 				return c.json(
 					{
 						status: 'error',
-						error: 'No staged changes to generate commit message for',
+						error: 'No files specified',
 					},
 					400,
 				);
 			}
 
-			// Get the full staged diff
-			const { stdout: stagedDiff } = await execFileAsync(
-				'git',
-				['diff', '--cached'],
-				{ cwd: gitRoot },
+			// Stage files
+			await execFileAsync('git', ['add', ...files], { cwd: gitRoot });
+
+			return c.json({
+				status: 'ok',
+				data: {
+					staged: files,
+				},
+			});
+		} catch (error) {
+			return c.json(
+				{
+					status: 'error',
+					error:
+						error instanceof Error ? error.message : 'Failed to stage files',
+				},
+				500,
 			);
+		}
+	});
 
-			// Limit diff size to avoid token limits (keep first 8000 chars)
-			const limitedDiff =
-				stagedDiff.length > 8000
-					? `${stagedDiff.slice(0, 8000)}\n\n... (diff truncated due to size)`
-					: stagedDiff;
+	// POST /v1/git/unstage - Unstage files
+	app.post('/v1/git/unstage', async (c) => {
+		try {
+			const body = await c.req.json();
+			const { files, project } = gitUnstageSchema.parse(body);
 
-			// Generate commit message using AI
-			const prompt = `Based on the following git diff of staged changes, generate a clear and concise commit message following these guidelines:
+			const requestedPath = project || process.cwd();
 
-1. Use conventional commit format: <type>(<scope>): <subject>
-2. Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
-3. Keep the subject line under 72 characters
-4. Use imperative mood ("add" not "added" or "adds")
-5. Don't end the subject line with a period
-6. If there are multiple significant changes, focus on the most important one
-7. Be specific about what changed
+			const validation = await validateAndGetGitRoot(requestedPath);
+			if ('error' in validation) {
+				return c.json(
+					{ status: 'error', error: validation.error, code: validation.code },
+					400,
+				);
+			}
 
-Git diff of staged changes:
-\`\`\`diff
-${limitedDiff}
-\`\`\`
+			const { gitRoot } = validation;
 
-Generate only the commit message, nothing else.`;
+			if (files.length === 0) {
+				return c.json(
+					{
+						status: 'error',
+						error: 'No files specified',
+					},
+					400,
+				);
+			}
 
-			// Load config to get default provider/model
-			const cfg = await loadConfig(gitRoot);
-
-			// Resolve the model using SDK - this doesn't create any session
-			const model = await resolveModel(
-				cfg.defaults.provider,
-				cfg.defaults.model,
-			);
-
-			// Generate text directly - no session involved
-			const result = await generateText({
-				model: model as Parameters<typeof generateText>[0]['model'],
-				prompt,
+			// Unstage files
+			await execFileAsync('git', ['reset', 'HEAD', '--', ...files], {
+				cwd: gitRoot,
 			});
 
-			// Extract and clean up the message
-			let message = result.text || '';
+			return c.json({
+				status: 'ok',
+				data: {
+					unstaged: files,
+				},
+			});
+		} catch (error) {
+			return c.json(
+				{
+					status: 'error',
+					error:
+						error instanceof Error ? error.message : 'Failed to unstage files',
+				},
+				500,
+			);
+		}
+	});
 
-			// Clean up the message (remove markdown code blocks if present)
-			if (typeof message === 'string') {
-				message = message
-					.replace(/^```(?:text|commit)?\n?/gm, '')
-					.replace(/```$/gm, '')
-					.trim();
+	// POST /v1/git/commit - Commit staged changes
+	app.post('/v1/git/commit', async (c) => {
+		try {
+			const body = await c.req.json();
+			const { message, project } = gitCommitSchema.parse(body);
+
+			const requestedPath = project || process.cwd();
+
+			const validation = await validateAndGetGitRoot(requestedPath);
+			if ('error' in validation) {
+				return c.json(
+					{ status: 'error', error: validation.error, code: validation.code },
+					400,
+				);
 			}
+
+			const { gitRoot } = validation;
+
+			// Commit changes
+			const { stdout } = await execFileAsync('git', ['commit', '-m', message], {
+				cwd: gitRoot,
+			});
+
+			return c.json({
+				status: 'ok',
+				data: {
+					message: stdout.trim(),
+				},
+			});
+		} catch (error) {
+			return c.json(
+				{
+					status: 'error',
+					error: error instanceof Error ? error.message : 'Failed to commit',
+				},
+				500,
+			);
+		}
+	});
+
+	// POST /v1/git/generate-commit-message - Generate commit message from staged changes
+	app.post('/v1/git/generate-commit-message', async (c) => {
+		try {
+			const body = await c.req.json();
+			const { project } = gitGenerateCommitMessageSchema.parse(body);
+
+			const requestedPath = project || process.cwd();
+
+			const validation = await validateAndGetGitRoot(requestedPath);
+			if ('error' in validation) {
+				return c.json(
+					{ status: 'error', error: validation.error, code: validation.code },
+					400,
+				);
+			}
+
+			const { gitRoot } = validation;
+
+			// Get staged diff
+			const { stdout: diff } = await execFileAsync(
+				'git',
+				['diff', '--cached'],
+				{
+					cwd: gitRoot,
+				},
+			);
+
+			if (!diff.trim()) {
+				return c.json(
+					{
+						status: 'error',
+						error: 'No staged changes to generate message from',
+					},
+					400,
+				);
+			}
+
+			// Get file list for context
+			const { stdout: statusOutput } = await execFileAsync(
+				'git',
+				['status', '--porcelain=v1'],
+				{ cwd: gitRoot },
+			);
+			const { staged } = parseGitStatus(statusOutput);
+			const fileList = staged.map((f) => `${f.status}: ${f.path}`).join('\n');
+
+			// Load config to get provider settings
+			const config = await loadConfig();
+
+			// Use a simple model for quick commit message generation
+			const provider = config.defaults?.provider || 'anthropic';
+			const model = await resolveModel(
+				provider as ProviderId,
+				config.defaults?.model,
+				undefined,
+			);
+
+			// Generate commit message using AI
+			const prompt = `Generate a concise, conventional commit message for these git changes.
+
+Staged files:
+${fileList}
+
+Diff (first 2000 chars):
+${diff.slice(0, 2000)}
+
+Guidelines:
+- Use conventional commits format (feat:, fix:, docs:, etc.)
+- Keep the first line under 72 characters
+- Be specific but concise
+- Focus on what changed and why, not how
+- Do not include any markdown formatting or code blocks
+- Return ONLY the commit message text, nothing else
+
+Commit message:`;
+
+			const { text } = await generateText({
+				provider: provider as ProviderId,
+				model: model.id,
+				systemPrompt:
+					'You are a helpful assistant that generates git commit messages.',
+				prompt,
+				maxTokens: 200,
+			});
+
+			const message = text.trim();
 
 			return c.json({
 				status: 'ok',
@@ -556,153 +525,7 @@ Generate only the commit message, nothing else.`;
 		}
 	});
 
-	// POST /v1/git/stage - Stage files
-	app.post('/v1/git/stage', async (c) => {
-		try {
-			const body = await c.req.json();
-			const { project, files } = gitStageSchema.parse(body);
-
-			const requestedPath = project || process.cwd();
-			const gitRoot = await findGitRoot(requestedPath);
-
-			// Stage files - git add handles paths relative to git root
-			await execFileAsync('git', ['add', ...files], { cwd: gitRoot });
-
-			return c.json({
-				status: 'ok',
-				data: {
-					staged: files,
-					failed: [],
-				},
-			});
-		} catch (error) {
-			return c.json(
-				{
-					status: 'error',
-					error:
-						error instanceof Error ? error.message : 'Failed to stage files',
-				},
-				500,
-			);
-		}
-	});
-
-	// POST /v1/git/unstage - Unstage files
-	app.post('/v1/git/unstage', async (c) => {
-		try {
-			const body = await c.req.json();
-			const { project, files } = gitUnstageSchema.parse(body);
-
-			const requestedPath = project || process.cwd();
-			const gitRoot = await findGitRoot(requestedPath);
-
-			// Try modern git restore first, fallback to reset
-			try {
-				await execFileAsync('git', ['restore', '--staged', ...files], {
-					cwd: gitRoot,
-				});
-			} catch {
-				// Fallback to older git reset HEAD
-				await execFileAsync('git', ['reset', 'HEAD', ...files], {
-					cwd: gitRoot,
-				});
-			}
-
-			return c.json({
-				status: 'ok',
-				data: {
-					unstaged: files,
-					failed: [],
-				},
-			});
-		} catch (error) {
-			return c.json(
-				{
-					status: 'error',
-					error:
-						error instanceof Error ? error.message : 'Failed to unstage files',
-				},
-				500,
-			);
-		}
-	});
-
-	// POST /v1/git/commit - Commit staged changes
-	app.post('/v1/git/commit', async (c) => {
-		try {
-			const body = await c.req.json();
-			const { project, message } = gitCommitSchema.parse(body);
-
-			const requestedPath = project || process.cwd();
-			const gitRoot = await findGitRoot(requestedPath);
-
-			// Check if there are staged changes
-			const { stdout: statusOutput } = await execFileAsync(
-				'git',
-				['diff', '--cached', '--name-only'],
-				{ cwd: gitRoot },
-			);
-
-			if (!statusOutput.trim()) {
-				return c.json(
-					{
-						status: 'error',
-						error: 'No staged changes to commit',
-					},
-					400,
-				);
-			}
-
-			// Commit
-			const { stdout: commitOutput } = await execFileAsync(
-				'git',
-				['commit', '-m', message],
-				{ cwd: gitRoot },
-			);
-
-			// Parse commit output for hash
-			const hashMatch = commitOutput.match(/[\w/]+ ([a-f0-9]+)\]/);
-			const hash = hashMatch ? hashMatch[1] : '';
-
-			// Get commit stats
-			const { stdout: statOutput } = await execFileAsync(
-				'git',
-				['show', '--stat', '--format=', 'HEAD'],
-				{ cwd: gitRoot },
-			);
-
-			const filesChangedMatch = statOutput.match(/(\d+) files? changed/);
-			const insertionsMatch = statOutput.match(/(\d+) insertions?/);
-			const deletionsMatch = statOutput.match(/(\d+) deletions?/);
-
-			return c.json({
-				status: 'ok',
-				data: {
-					hash,
-					message: message.split('\n')[0],
-					filesChanged: filesChangedMatch
-						? Number.parseInt(filesChangedMatch[1], 10)
-						: 0,
-					insertions: insertionsMatch
-						? Number.parseInt(insertionsMatch[1], 10)
-						: 0,
-					deletions: deletionsMatch
-						? Number.parseInt(deletionsMatch[1], 10)
-						: 0,
-				},
-			});
-		} catch (error) {
-			return c.json(
-				{
-					status: 'error',
-					error: error instanceof Error ? error.message : 'Failed to commit',
-				},
-				500,
-			);
-		}
-	});
-
-	// GET /v1/git/branch - Get branch information
+	// GET /v1/git/branch - Get branch info
 	app.get('/v1/git/branch', async (c) => {
 		try {
 			const query = gitStatusSchema.parse({
@@ -721,48 +544,39 @@ Generate only the commit message, nothing else.`;
 
 			const { gitRoot } = validation;
 
+			// Get current branch
 			const branch = await getCurrentBranch(gitRoot);
+
+			// Get ahead/behind counts
 			const { ahead, behind } = await getAheadBehind(gitRoot);
 
-			// Get all branches
-			let allBranches: string[] = [];
+			// Get remote info
 			try {
-				const { stdout: branchesOutput } = await execFileAsync(
-					'git',
-					['branch', '--list'],
-					{ cwd: gitRoot },
-				);
-				allBranches = branchesOutput
-					.split('\n')
-					.map((line) => line.replace(/^\*?\s*/, '').trim())
-					.filter(Boolean);
-			} catch {
-				allBranches = [branch];
-			}
+				const { stdout: remotes } = await execFileAsync('git', ['remote'], {
+					cwd: gitRoot,
+				});
+				const remoteList = remotes.trim().split('\n').filter(Boolean);
 
-			// Get upstream branch
-			let upstream = '';
-			try {
-				const { stdout: upstreamOutput } = await execFileAsync(
-					'git',
-					['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'],
-					{ cwd: gitRoot },
-				);
-				upstream = upstreamOutput.trim();
+				return c.json({
+					status: 'ok',
+					data: {
+						branch,
+						ahead,
+						behind,
+						remotes: remoteList,
+					},
+				});
 			} catch {
-				// No upstream configured
+				return c.json({
+					status: 'ok',
+					data: {
+						branch,
+						ahead,
+						behind,
+						remotes: [],
+					},
+				});
 			}
-
-			return c.json({
-				status: 'ok',
-				data: {
-					current: branch,
-					upstream,
-					ahead,
-					behind,
-					all: allBranches,
-				},
-			});
 		} catch (error) {
 			return c.json(
 				{
@@ -771,6 +585,170 @@ Generate only the commit message, nothing else.`;
 						error instanceof Error
 							? error.message
 							: 'Failed to get branch info',
+				},
+				500,
+			);
+		}
+	});
+
+	// POST /v1/git/push - Push commits to remote
+	app.post('/v1/git/push', async (c) => {
+		try {
+			// Parse JSON body, defaulting to empty object if parsing fails
+			let body = {};
+			try {
+				body = await c.req.json();
+			} catch (jsonError) {
+				// If JSON parsing fails (e.g., empty body), use empty object
+				console.warn(
+					'Failed to parse JSON body for git push, using empty object:',
+					jsonError,
+				);
+			}
+
+			const { project } = gitPushSchema.parse(body);
+
+			const requestedPath = project || process.cwd();
+
+			const validation = await validateAndGetGitRoot(requestedPath);
+			if ('error' in validation) {
+				return c.json(
+					{ status: 'error', error: validation.error, code: validation.code },
+					400,
+				);
+			}
+
+			const { gitRoot } = validation;
+
+			// Check if there's a remote configured
+			try {
+				const { stdout: remotes } = await execFileAsync('git', ['remote'], {
+					cwd: gitRoot,
+				});
+				if (!remotes.trim()) {
+					return c.json(
+						{ status: 'error', error: 'No remote repository configured' },
+						400,
+					);
+				}
+			} catch {
+				return c.json(
+					{ status: 'error', error: 'No remote repository configured' },
+					400,
+				);
+			}
+
+			// Get current branch and check for upstream
+			const branch = await getCurrentBranch(gitRoot);
+			let hasUpstream = false;
+			try {
+				await execFileAsync(
+					'git',
+					['rev-parse', '--abbrev-ref', '@{upstream}'],
+					{
+						cwd: gitRoot,
+					},
+				);
+				hasUpstream = true;
+			} catch {
+				// No upstream set
+			}
+
+			// Push to remote - with proper error handling
+			try {
+				let pushOutput: string;
+				let pushError: string;
+
+				if (hasUpstream) {
+					// Push to existing upstream
+					const result = await execFileAsync('git', ['push'], { cwd: gitRoot });
+					pushOutput = result.stdout;
+					pushError = result.stderr;
+				} else {
+					// Set upstream and push
+					const result = await execFileAsync(
+						'git',
+						['push', '--set-upstream', 'origin', branch],
+						{ cwd: gitRoot },
+					);
+					pushOutput = result.stdout;
+					pushError = result.stderr;
+				}
+
+				return c.json({
+					status: 'ok',
+					data: {
+						output: pushOutput.trim() || pushError.trim(),
+					},
+				});
+			} catch (pushErr: unknown) {
+				// Handle specific git push errors
+				const error = pushErr as {
+					message?: string;
+					stderr?: string;
+					code?: number;
+				};
+				const errorMessage = error.stderr || error.message || 'Failed to push';
+
+				// Check for common error patterns
+				if (
+					errorMessage.includes('failed to push') ||
+					errorMessage.includes('rejected')
+				) {
+					return c.json(
+						{
+							status: 'error',
+							error: 'Push rejected. Try pulling changes first with: git pull',
+							details: errorMessage,
+						},
+						400,
+					);
+				}
+
+				if (
+					errorMessage.includes('Permission denied') ||
+					errorMessage.includes('authentication') ||
+					errorMessage.includes('could not read')
+				) {
+					return c.json(
+						{
+							status: 'error',
+							error: 'Authentication failed. Check your git credentials',
+							details: errorMessage,
+						},
+						401,
+					);
+				}
+
+				if (
+					errorMessage.includes('Could not resolve host') ||
+					errorMessage.includes('network')
+				) {
+					return c.json(
+						{
+							status: 'error',
+							error: 'Network error. Check your internet connection',
+							details: errorMessage,
+						},
+						503,
+					);
+				}
+
+				// Generic push error
+				return c.json(
+					{
+						status: 'error',
+						error: 'Failed to push commits',
+						details: errorMessage,
+					},
+					500,
+				);
+			}
+		} catch (error) {
+			return c.json(
+				{
+					status: 'error',
+					error: error instanceof Error ? error.message : 'Failed to push',
 				},
 				500,
 			);

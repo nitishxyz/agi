@@ -731,6 +731,53 @@ export function getOpenAPISpec() {
 					},
 				},
 			},
+			'/v1/git/push': {
+				post: {
+					tags: ['git'],
+					operationId: 'pushCommits',
+					summary: 'Push commits to remote',
+					description:
+						'Pushes local commits to the configured remote repository',
+					requestBody: {
+						required: false,
+						content: {
+							'application/json': {
+								schema: {
+									type: 'object',
+									properties: {
+										project: { type: 'string' },
+									},
+								},
+							},
+						},
+					},
+					responses: {
+						200: {
+							description: 'OK',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										properties: {
+											status: { type: 'string', enum: ['ok'] },
+											data: {
+												type: 'object',
+												properties: {
+													output: { type: 'string' },
+												},
+												required: ['output'],
+											},
+										},
+										required: ['status', 'data'],
+									},
+								},
+							},
+						},
+						400: gitErrorResponse(),
+						500: gitErrorResponse(),
+					},
+				},
+			},
 		},
 		components: {
 			schemas: {

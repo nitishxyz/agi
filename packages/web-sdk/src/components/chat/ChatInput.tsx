@@ -46,6 +46,7 @@ export const ChatInput = memo(
 			}
 		}, []);
 
+		// biome-ignore lint/correctness/useExhaustiveDependencies: message dependency needed to trigger height adjustment when content changes
 		useEffect(() => {
 			adjustTextareaHeight();
 		}, [adjustTextareaHeight, message]);
