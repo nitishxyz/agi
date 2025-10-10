@@ -60,31 +60,9 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 
 	if (!isDiffOpen || !selectedFile) return null;
 
-	// Format file path to show "../dir/dir/filename.tsx" format
-	const formatFilePath = (path: string) => {
-		const pathParts = path.split('/');
-
-		if (pathParts.length === 1) {
-			// Just a filename
-			return path;
-		}
-
-		if (pathParts.length <= 3) {
-			// Short path, show it all
-			return path;
-		}
-
-		// Show last 2 directories + filename
-		const fileName = pathParts[pathParts.length - 1];
-		const dirs = pathParts.slice(-3, -1).join('/');
-		return `.../${dirs}/${fileName}`;
-	};
-
-	const displayPath = formatFilePath(selectedFile);
-
 	return (
 		<div className="absolute inset-0 bg-background z-50 flex flex-col animate-in slide-in-from-left duration-300">
-			{/* Header */}
+			{/* Header - Full path display */}
 			<div className="h-14 border-b border-border px-4 flex items-center gap-3">
 				<Button
 					variant="ghost"
@@ -94,15 +72,15 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 				>
 					<X className="w-4 h-4" />
 				</Button>
-				<div className="flex-1 flex items-center gap-2">
+				<div className="flex-1 flex items-center gap-2 min-w-0">
 					<span
-						className="text-sm font-medium text-foreground truncate font-mono"
-						title={selectedFile}
+						className="text-sm font-medium text-foreground font-mono truncate"
+						title={`${selectedFile}\n${diff?.absPath || ''}`}
 					>
-						{displayPath}
+						{selectedFile}
 					</span>
 					{selectedFileStaged && (
-						<span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">
+						<span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary flex-shrink-0">
 							Staged
 						</span>
 					)}

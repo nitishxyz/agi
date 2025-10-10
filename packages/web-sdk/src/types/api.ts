@@ -77,16 +77,21 @@ export interface SendMessageResponse {
 // Git-related types
 export interface GitFileStatus {
 	path: string;
+	absPath: string; // NEW: Absolute filesystem path
 	status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked';
 	staged: boolean;
 	insertions?: number;
 	deletions?: number;
+	oldPath?: string; // For renamed files
+	isNew: boolean; // NEW: True for untracked or newly added files
 }
 
 export interface GitStatusResponse {
 	branch: string;
 	ahead: number;
 	behind: number;
+	gitRoot: string; // NEW: Git repository root path
+	workingDir: string; // NEW: Current working directory
 	staged: GitFileStatus[];
 	unstaged: GitFileStatus[];
 	untracked: GitFileStatus[];
@@ -95,11 +100,15 @@ export interface GitStatusResponse {
 
 export interface GitDiffResponse {
 	file: string;
+	absPath: string; // NEW: Absolute filesystem path
 	diff: string;
+	content?: string; // NEW: Full file content (for new files)
+	isNewFile: boolean; // NEW: True if this is a new/untracked file
 	language: string;
 	insertions: number;
 	deletions: number;
-	binary: boolean;
+	isBinary: boolean; // Renamed from 'binary' for consistency
+	staged: boolean; // NEW: Whether showing staged or unstaged version
 }
 
 export interface GitStageRequest {

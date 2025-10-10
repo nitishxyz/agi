@@ -1,6 +1,7 @@
 import type { Hono } from 'hono';
 import { execFile } from 'node:child_process';
-import { extname } from 'node:path';
+import { extname, join } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { z } from 'zod';
 import { generateText, resolveModel, type ProviderId } from '@agi-cli/sdk';
@@ -113,10 +114,13 @@ const gitPushSchema = z.object({
 // Types
 export interface GitFile {
 	path: string;
+	absPath: string; // NEW: Absolute filesystem path
 	status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked';
 	staged: boolean;
 	insertions?: number;
 	deletions?: number;
+	oldPath?: string; // For renamed files
+	isNew: boolean; // NEW: True for untracked or newly added files
 }
 
 interface GitRoot {
@@ -149,7 +153,25 @@ async function validateAndGetGitRoot(
 	}
 }
 
-function parseGitStatus(statusOutput: string): {
+/**
+ * Check if a file is new/untracked (not in git index)
+ */
+async function checkIfNewFile(
+	gitRoot: string,
+	file: string,
+): Promise<boolean> {
+	try {
+		// Check if file exists in git index or committed
+		await execFileAsync('git', ['ls-files', '--error-unmatch', file], {
+			cwd: gitRoot,
+		});
+		return false; // File exists in git
+	} catch {
+		return true; // File is new/untracked
+	}
+}
+
+function parseGitStatus(statusOutput: string, gitRoot: string): {
 	staged: GitFile[];
 	unstaged: GitFile[];
 	untracked: GitFile[];
@@ -163,13 +185,16 @@ function parseGitStatus(statusOutput: string): {
 		const x = line[0]; // staged status
 		const y = line[1]; // unstaged status
 		const path = line.slice(3).trim();
+		const absPath = join(gitRoot, path);
 
 		// Check if file is staged (X is not space or ?)
 		if (x !== ' ' && x !== '?') {
 			staged.push({
 				path,
+				absPath,
 				status: getStatusFromCode(x),
 				staged: true,
+				isNew: x === 'A', // 'A' means added (new file)
 			});
 		}
 
@@ -177,8 +202,10 @@ function parseGitStatus(statusOutput: string): {
 		if (y !== ' ' && y !== '?') {
 			unstaged.push({
 				path,
+				absPath,
 				status: getStatusFromCode(y),
 				staged: false,
+				isNew: false,
 			});
 		}
 
@@ -186,8 +213,10 @@ function parseGitStatus(statusOutput: string): {
 		if (x === '?' && y === '?') {
 			untracked.push({
 				path,
+				absPath,
 				status: 'untracked',
 				staged: false,
+				isNew: true, // Untracked files are new
 			});
 		}
 	}
@@ -268,7 +297,7 @@ export function registerGitRoutes(app: Hono) {
 				{ cwd: gitRoot },
 			);
 
-			const { staged, unstaged, untracked } = parseGitStatus(statusOutput);
+			const { staged, unstaged, untracked } = parseGitStatus(statusOutput, gitRoot);
 
 			// Get ahead/behind counts
 			const { ahead, behind } = await getAheadBehind(gitRoot);
@@ -286,6 +315,8 @@ export function registerGitRoutes(app: Hono) {
 					branch,
 					ahead,
 					behind,
+					gitRoot, // NEW: Expose git root path
+					workingDir: requestedPath, // NEW: Current working directory
 					staged,
 					unstaged,
 					untracked,
@@ -324,8 +355,45 @@ export function registerGitRoutes(app: Hono) {
 			}
 
 			const { gitRoot } = validation;
+			const absPath = join(gitRoot, query.file);
 
-			// Get diff output and stats for the requested file
+			// Check if file is new/untracked
+			const isNewFile = await checkIfNewFile(gitRoot, query.file);
+
+			// For new files, read and return full content
+			if (isNewFile) {
+				try {
+					const content = await readFile(absPath, 'utf-8');
+					const lineCount = content.split('\n').length;
+					const language = inferLanguage(query.file);
+
+					return c.json({
+						status: 'ok',
+						data: {
+							file: query.file,
+							absPath,
+							diff: '', // Empty diff for new files
+							content, // NEW: Full file content
+							isNewFile: true, // NEW: Flag indicating this is a new file
+							isBinary: false,
+							insertions: lineCount,
+							deletions: 0,
+							language,
+							staged: !!query.staged, // NEW: Whether showing staged or unstaged
+						},
+					});
+				} catch (error) {
+					return c.json(
+						{
+							status: 'error',
+							error: error instanceof Error ? error.message : 'Failed to read file',
+						},
+						500,
+					);
+				}
+			}
+
+			// For existing files, get diff output and stats
 			const diffArgs = query.staged
 				? ['diff', '--cached', '--', query.file]
 				: ['diff', '--', query.file];
@@ -370,11 +438,14 @@ export function registerGitRoutes(app: Hono) {
 				status: 'ok',
 				data: {
 					file: query.file,
+					absPath, // NEW: Absolute path
 					diff: diffText,
+					isNewFile: false, // NEW: Not a new file
+					isBinary: binary,
 					insertions,
 					deletions,
 					language,
-					binary,
+					staged: !!query.staged, // NEW: Whether showing staged or unstaged
 				},
 			});
 		} catch (error) {
@@ -571,7 +642,7 @@ export function registerGitRoutes(app: Hono) {
 				['status', '--porcelain=v1'],
 				{ cwd: gitRoot },
 			);
-			const { staged } = parseGitStatus(statusOutput);
+			const { staged } = parseGitStatus(statusOutput, gitRoot);
 			const fileList = staged.map((f) => `${f.status}: ${f.path}`).join('\n');
 
 			// Load config to get provider settings

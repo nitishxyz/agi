@@ -10,6 +10,28 @@ interface GitFileItemProps {
 	showModifiedIndicator?: boolean;
 }
 
+/**
+ * Smart path truncation that shows the most relevant parts
+ * - For short paths: show full path
+ * - For long paths: show parent directory + filename
+ * Examples:
+ *   "src/index.ts" -> "src/index.ts"
+ *   "packages/web-sdk/src/components/git/GitFileItem.tsx" -> "../git/GitFileItem.tsx"
+ *   "docs/git-implementation-rework-plan.md" -> "../git-implementation-rework-plan.md"
+ */
+function smartTruncatePath(path: string, maxParts = 2): string {
+	const parts = path.split('/');
+	
+	// If path is short enough, show it all
+	if (parts.length <= maxParts + 1) {
+		return path;
+	}
+	
+	// Show last N parts with ellipsis
+	const truncated = parts.slice(-maxParts);
+	return `../${truncated.join('/')}`;
+}
+
 export function GitFileItem({
 	file,
 	staged,
@@ -87,22 +109,8 @@ export function GitFileItem({
 	const config = getStatusConfig();
 	const Icon = config.icon;
 
-	// Format file path to show "../dir/filename.tsx" format
-	const formatFilePath = (path: string) => {
-		const pathParts = path.split('/');
-		const fileName = pathParts[pathParts.length - 1];
-
-		if (pathParts.length === 1) {
-			// Just a filename, no directory
-			return fileName;
-		}
-
-		// Show last directory + filename
-		const lastDir = pathParts[pathParts.length - 2];
-		return `../${lastDir}/${fileName}`;
-	};
-
-	const displayPath = formatFilePath(file.path);
+	// Smart truncation: show enough context without wrapping
+	const displayPath = smartTruncatePath(file.path, 2);
 
 	return (
 		<button
@@ -124,8 +132,8 @@ export function GitFileItem({
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
 						<span
-							className="text-sm text-foreground truncate font-mono"
-							title={file.path}
+							className="text-sm text-foreground font-mono truncate"
+							title={`${file.path}\n${file.absPath}`}
 						>
 							{displayPath}
 						</span>

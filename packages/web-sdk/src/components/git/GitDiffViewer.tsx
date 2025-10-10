@@ -57,13 +57,105 @@ function inferLanguageFromPath(path: string): string {
 	return LANGUAGE_MAP[extension] ?? 'plaintext';
 }
 
+/**
+ * Get just the filename from a path
+ */
+function getFileName(path: string): string {
+	const parts = path.split('/');
+	return parts[parts.length - 1];
+}
+
 export function GitDiffViewer({ diff }: GitDiffViewerProps) {
-	// Parse the diff into lines with line numbers
-	const lines = diff.diff.split('\n');
-	const diffLines: DiffLine[] = [];
 	const syntaxTheme = document?.documentElement.classList.contains('dark')
 		? vscDarkPlus
 		: prism;
+
+	const resolvedLanguage =
+		diff.language && diff.language.trim().length > 0
+			? diff.language
+			: inferLanguageFromPath(diff.file);
+
+	// Get just the filename for the internal header
+	const fileName = getFileName(diff.file);
+
+	// Handle new files - show full content instead of diff
+	if (diff.isNewFile && diff.content) {
+		return (
+			<div className="flex flex-col h-full bg-background">
+				{/* Header with just filename and stats */}
+				<div className="px-4 py-2 bg-muted/50 flex items-center justify-between min-h-10">
+					<span className="font-mono text-sm text-foreground truncate" title={diff.file}>
+						{fileName}
+					</span>
+					<div className="flex items-center gap-3 text-xs flex-shrink-0">
+						<span className="text-green-600 dark:text-green-500">
+							+{diff.insertions}
+						</span>
+						<span className="text-muted-foreground">{resolvedLanguage}</span>
+					</div>
+				</div>
+
+				{/* New file banner */}
+				<div className="px-4 py-3 bg-green-500/10 border-b border-green-500/20">
+					<p className="text-sm text-green-600 dark:text-green-400 font-medium">
+						New file: {diff.insertions} lines
+					</p>
+				</div>
+
+				{/* Full file content with syntax highlighting */}
+				<div className="flex-1 overflow-auto">
+					<SyntaxHighlighter
+						language={resolvedLanguage}
+						style={syntaxTheme}
+						showLineNumbers
+						customStyle={{
+							margin: 0,
+							padding: '1rem',
+							background: 'transparent',
+						}}
+						lineNumberStyle={{
+							minWidth: '3em',
+							paddingRight: '1em',
+							color: 'var(--color-muted-foreground)',
+							userSelect: 'none',
+						}}
+					>
+						{diff.content}
+					</SyntaxHighlighter>
+				</div>
+			</div>
+		);
+	}
+
+	// Handle binary files
+	if (diff.isBinary) {
+		return (
+			<div className="flex flex-col h-full bg-background">
+				{/* Header with just filename */}
+				<div className="px-4 py-2 bg-muted/50 flex items-center justify-between min-h-10">
+					<span className="font-mono text-sm text-foreground truncate" title={diff.file}>
+						{fileName}
+					</span>
+					<div className="flex items-center gap-3 text-xs flex-shrink-0">
+						<span className="text-muted-foreground">Binary file</span>
+					</div>
+				</div>
+
+				{/* Binary file message */}
+				<div className="flex-1 flex items-center justify-center">
+					<div className="p-4 text-center">
+						<p className="text-sm text-muted-foreground">
+							Binary file - cannot display diff
+						</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	// Parse the diff into lines with line numbers (for modified files)
+	const lines = diff.diff.split('\n');
+	const diffLines: DiffLine[] = [];
 
 	let oldLineNum = 0;
 	let newLineNum = 0;
@@ -129,11 +221,6 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 	}
 
 	// Render a single diff line with syntax highlighting
-	const resolvedLanguage =
-		diff.language && diff.language.trim().length > 0
-			? diff.language
-			: inferLanguageFromPath(diff.file);
-
 	const renderLine = (diffLine: DiffLine, index: number) => {
 		let rowClassName = 'flex hover:bg-muted/20';
 		let lineNumberClassName =
@@ -233,39 +320,29 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 
 	return (
 		<div className="flex flex-col h-full bg-background">
-			{/* Header with full file path */}
+			{/* Header with just filename and stats */}
 			<div className="px-4 py-2 bg-muted/50 flex items-center justify-between min-h-10">
-				<span className="font-mono text-sm text-foreground" title={diff.file}>
-					{diff.file}
+				<span className="font-mono text-sm text-foreground truncate" title={diff.file}>
+					{fileName}
 				</span>
-				<div className="flex items-center gap-3 text-xs">
-					{diff.binary ? (
-						<span className="text-muted-foreground">Binary file</span>
-					) : (
-						<>
-							{diff.insertions > 0 && (
-								<span className="text-green-600 dark:text-green-500">
-									+{diff.insertions}
-								</span>
-							)}
-							{diff.deletions > 0 && (
-								<span className="text-red-600 dark:text-red-500">
-									-{diff.deletions}
-								</span>
-							)}
-							<span className="text-muted-foreground">{resolvedLanguage}</span>
-						</>
+				<div className="flex items-center gap-3 text-xs flex-shrink-0">
+					{diff.insertions > 0 && (
+						<span className="text-green-600 dark:text-green-500">
+							+{diff.insertions}
+						</span>
 					)}
+					{diff.deletions > 0 && (
+						<span className="text-red-600 dark:text-red-500">
+							-{diff.deletions}
+						</span>
+					)}
+					<span className="text-muted-foreground">{resolvedLanguage}</span>
 				</div>
 			</div>
 
 			{/* Diff content */}
 			<div className="flex-1 overflow-auto">
-				{diff.binary ? (
-					<div className="p-4 text-sm text-muted-foreground">
-						Binary file - cannot display diff
-					</div>
-				) : diff.diff.trim() === '' ? (
+				{diff.diff.trim() === '' ? (
 					<div className="p-4 text-sm text-muted-foreground">
 						No changes to display
 					</div>
