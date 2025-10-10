@@ -156,10 +156,7 @@ async function validateAndGetGitRoot(
 /**
  * Check if a file is new/untracked (not in git index)
  */
-async function checkIfNewFile(
-	gitRoot: string,
-	file: string,
-): Promise<boolean> {
+async function checkIfNewFile(gitRoot: string, file: string): Promise<boolean> {
 	try {
 		// Check if file exists in git index or committed
 		await execFileAsync('git', ['ls-files', '--error-unmatch', file], {
@@ -171,7 +168,10 @@ async function checkIfNewFile(
 	}
 }
 
-function parseGitStatus(statusOutput: string, gitRoot: string): {
+function parseGitStatus(
+	statusOutput: string,
+	gitRoot: string,
+): {
 	staged: GitFile[];
 	unstaged: GitFile[];
 	untracked: GitFile[];
@@ -182,41 +182,50 @@ function parseGitStatus(statusOutput: string, gitRoot: string): {
 	const untracked: GitFile[] = [];
 
 	for (const line of lines) {
-		const x = line[0]; // staged status
-		const y = line[1]; // unstaged status
-		const path = line.slice(3).trim();
-		const absPath = join(gitRoot, path);
+		// Porcelain v2 format has different line types
+		if (line.startsWith('1 ') || line.startsWith('2 ')) {
+			// Regular changed entry: "1 XY sub <mH> <mI> <mW> <hH> <hI> <path>"
+			// XY is a 2-character field with staged (X) and unstaged (Y) status
+			const parts = line.split(' ');
+			if (parts.length < 9) continue;
 
-		// Check if file is staged (X is not space or ?)
-		if (x !== ' ' && x !== '?') {
-			staged.push({
-				path,
-				absPath,
-				status: getStatusFromCode(x),
-				staged: true,
-				isNew: x === 'A', // 'A' means added (new file)
-			});
-		}
+			const xy = parts[1]; // e.g., ".M", "M.", "MM", "A.", etc.
+			const x = xy[0]; // staged status
+			const y = xy[1]; // unstaged status
+			const path = parts.slice(8).join(' '); // Path can contain spaces
+			const absPath = join(gitRoot, path);
 
-		// Check if file is unstaged (Y is not space)
-		if (y !== ' ' && y !== '?') {
-			unstaged.push({
-				path,
-				absPath,
-				status: getStatusFromCode(y),
-				staged: false,
-				isNew: false,
-			});
-		}
+			// Check if file is staged (X is not '.')
+			if (x !== '.') {
+				staged.push({
+					path,
+					absPath,
+					status: getStatusFromCodeV2(x),
+					staged: true,
+					isNew: x === 'A',
+				});
+			}
 
-		// Check if file is untracked
-		if (x === '?' && y === '?') {
+			// Check if file is unstaged (Y is not '.')
+			if (y !== '.') {
+				unstaged.push({
+					path,
+					absPath,
+					status: getStatusFromCodeV2(y),
+					staged: false,
+					isNew: false,
+				});
+			}
+		} else if (line.startsWith('? ')) {
+			// Untracked file: "? <path>"
+			const path = line.slice(2);
+			const absPath = join(gitRoot, path);
 			untracked.push({
 				path,
 				absPath,
 				status: 'untracked',
 				staged: false,
-				isNew: true, // Untracked files are new
+				isNew: true,
 			});
 		}
 	}
@@ -234,6 +243,23 @@ function getStatusFromCode(code: string): GitFile['status'] {
 			return 'deleted';
 		case 'R':
 			return 'renamed';
+		default:
+			return 'modified';
+	}
+}
+
+function getStatusFromCodeV2(code: string): GitFile['status'] {
+	switch (code) {
+		case 'M':
+			return 'modified';
+		case 'A':
+			return 'added';
+		case 'D':
+			return 'deleted';
+		case 'R':
+			return 'renamed';
+		case 'C':
+			return 'modified'; // Copied - treat as modified
 		default:
 			return 'modified';
 	}
@@ -293,11 +319,14 @@ export function registerGitRoutes(app: Hono) {
 			// Get status
 			const { stdout: statusOutput } = await execFileAsync(
 				'git',
-				['status', '--porcelain=v1'],
+				['status', '--porcelain=v2'],
 				{ cwd: gitRoot },
 			);
 
-			const { staged, unstaged, untracked } = parseGitStatus(statusOutput, gitRoot);
+			const { staged, unstaged, untracked } = parseGitStatus(
+				statusOutput,
+				gitRoot,
+			);
 
 			// Get ahead/behind counts
 			const { ahead, behind } = await getAheadBehind(gitRoot);
@@ -386,7 +415,8 @@ export function registerGitRoutes(app: Hono) {
 					return c.json(
 						{
 							status: 'error',
-							error: error instanceof Error ? error.message : 'Failed to read file',
+							error:
+								error instanceof Error ? error.message : 'Failed to read file',
 						},
 						500,
 					);
@@ -639,7 +669,7 @@ export function registerGitRoutes(app: Hono) {
 			// Get file list for context
 			const { stdout: statusOutput } = await execFileAsync(
 				'git',
-				['status', '--porcelain=v1'],
+				['status', '--porcelain=v2'],
 				{ cwd: gitRoot },
 			);
 			const { staged } = parseGitStatus(statusOutput, gitRoot);
