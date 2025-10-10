@@ -32,7 +32,8 @@
 		"@agi-cli/sdk": "workspace:*",
 		"@agi-cli/database": "workspace:*",
 		"drizzle-orm": "^0.44.5",
-		"hono": "^4.9.9"
+		"hono": "^4.9.9",
+		"zod": "^4.1.8"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
