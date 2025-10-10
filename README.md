@@ -42,11 +42,13 @@ agi agents              # Explore built-in agents
 - **[Agents & Tools](docs/agents-tools.md)** - Built-in capabilities
 - **[Customization](docs/customization.md)** - Custom commands and tools
 - **[Embedding Guide](docs/embedding-guide.md)** - Embed AGI in your apps
+- **[Integration Guide](docs/integration-guide.md)** - Complete guide for integrating AGI packages
 - **[Environment](docs/environment.md)** - Variables and flags
 - **[API Reference](docs/api.md)** - REST endpoints and SSE events
 
 ### Development
-- **[Development Guide](docs/development.md)** - Structure, workflow, testing
+- **[Development Guide](docs/development-guide.md)** - Complete guide for server, CLI, web-sdk, and web app development
+- **[Development Workflow](docs/development.md)** - Structure, workflow, testing
 - **[Architecture](docs/architecture.md)** - Monorepo structure and design
 - **[Publishing](docs/publishing.md)** - Release workflow
 - **[Contributing](AGENTS.md)** - Contribution guidelines for AI agents and humans
@@ -113,7 +115,7 @@ Bun.serve({
 - 🎨 **Embedded Web UI** - Full interface served from your app
 - ⚡ **Zero Installation** - No separate AGI setup needed
 
-**Full embedding guide:** [docs/embedding-guide.md](./docs/embedding-guide.md)
+**Full guides:** [Embedding Guide](./docs/embedding-guide.md) | [Integration Guide](./docs/integration-guide.md)
 
 ### SDK Usage
 
@@ -136,6 +138,19 @@ console.log(result.text);
 ```
 
 **SDK documentation:** [packages/sdk/README.md](./packages/sdk/README.md)
+
+## 🔌 Integration Options
+
+AGI can be integrated into your projects in multiple ways:
+
+| Approach | Packages | Best For |
+|----------|----------|----------|
+| **Full Stack** | `@agi-cli/server` + `@agi-cli/web-ui` | VSCode extensions, Electron apps, quick deployments |
+| **Custom Frontend** | `@agi-cli/server` + `@agi-cli/web-sdk` | Branded apps with custom React UI |
+| **API Client** | `@agi-cli/api` | Connect to existing AGI server |
+| **Programmatic** | `@agi-cli/sdk` | CLI tools, automation, custom agents |
+
+**Complete integration guide with examples:** [Integration Guide](docs/integration-guide.md)
 
 ## 🏗️ Project Structure
 

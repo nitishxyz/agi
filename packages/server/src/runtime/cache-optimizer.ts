@@ -4,18 +4,29 @@ import type { ModelMessage } from 'ai';
  * Adds cache control to messages for prompt caching optimization.
  * Anthropic supports caching for system messages, tools, and long context.
  */
+type CachedSystemValue =
+	| string
+	| undefined
+	| Array<{
+			type: 'text';
+			text: string;
+			cache_control?: { type: 'ephemeral' };
+	  }>;
+
+type TextContentPartWithProviderOptions = {
+	providerOptions?: {
+		anthropic?: { cacheControl?: { type: 'ephemeral' } };
+		[key: string]: unknown;
+	};
+	[key: string]: unknown;
+};
+
 export function addCacheControl(
 	provider: string,
 	system: string | undefined,
 	messages: ModelMessage[],
 ): {
-	system?:
-		| string
-		| Array<{
-				type: 'text';
-				text: string;
-				cache_control?: { type: 'ephemeral' };
-		  }>;
+	system?: CachedSystemValue;
 	messages: ModelMessage[];
 } {
 	// Only Anthropic supports prompt caching currently
@@ -24,7 +35,7 @@ export function addCacheControl(
 	}
 
 	// Convert system to cacheable format if it's long enough
-	let cachedSystem: any = system;
+	let cachedSystem: CachedSystemValue = system;
 	if (system && system.length > 1024) {
 		// Anthropic requires 1024+ tokens for Claude Sonnet/Opus
 		cachedSystem = [
@@ -60,8 +71,16 @@ export function addCacheControl(
 			if (Array.isArray(targetMsg.content)) {
 				// Add cache control to the last content part of that message
 				const lastPart = targetMsg.content[targetMsg.content.length - 1];
-				if (lastPart && typeof lastPart === 'object' && 'type' in lastPart) {
-					(lastPart as any).providerOptions = {
+				if (
+					lastPart &&
+					typeof lastPart === 'object' &&
+					'type' in lastPart &&
+					lastPart.type === 'text'
+				) {
+					const textPart =
+						lastPart as unknown as TextContentPartWithProviderOptions;
+					textPart.providerOptions = {
+						...textPart.providerOptions,
 						anthropic: { cacheControl: { type: 'ephemeral' } },
 					};
 				}

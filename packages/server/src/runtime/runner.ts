@@ -262,7 +262,7 @@ async function runAssistant(opts: RunOpts) {
 
 	// 3. Add cache control
 	const { system: cachedSystem, messages: optimizedMessages } = addCacheControl(
-		opts.provider as any,
+		opts.provider,
 		system,
 		truncatedMessages,
 	);

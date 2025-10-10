@@ -7,26 +7,17 @@ import { estimateModelCostUsd } from '@agi-cli/sdk';
 import { toErrorPayload } from './error-handling.ts';
 import type { RunOpts } from './session-queue.ts';
 import type { ToolAdapterContext } from '../tools/adapter.ts';
+import type { ProviderMetadata, UsageData } from './db-operations.ts';
 
 type StepFinishEvent = {
-	usage?: {
-		inputTokens?: number;
-		outputTokens?: number;
-		totalTokens?: number;
-		cachedInputTokens?: number;
-		reasoningTokens?: number;
-	};
+	usage?: UsageData;
 	finishReason?: string;
 	response?: unknown;
-	experimental_providerMetadata?: Record<string, any>;
+	experimental_providerMetadata?: ProviderMetadata;
 };
 
 type FinishEvent = {
-	usage?: {
-		inputTokens?: number;
-		outputTokens?: number;
-		totalTokens?: number;
-	};
+	usage?: Pick<UsageData, 'inputTokens' | 'outputTokens' | 'totalTokens'>;
 	finishReason?: string;
 };
 
@@ -47,14 +38,14 @@ export function createStepFinishHandler(
 	updateAccumulated: (text: string) => void,
 	incrementStepIndex: () => number,
 	updateSessionTokensIncrementalFn: (
-		usage: any,
-		providerMetadata: Record<string, any> | undefined,
+		usage: UsageData,
+		providerMetadata: ProviderMetadata | undefined,
 		opts: RunOpts,
 		db: Awaited<ReturnType<typeof getDb>>,
 	) => Promise<void>,
 	updateMessageTokensIncrementalFn: (
-		usage: any,
-		providerMetadata: Record<string, any> | undefined,
+		usage: UsageData,
+		providerMetadata: ProviderMetadata | undefined,
 		opts: RunOpts,
 		db: Awaited<ReturnType<typeof getDb>>,
 	) => Promise<void>,

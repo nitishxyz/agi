@@ -3,12 +3,19 @@ import { messages, messageParts, sessions } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
 import type { RunOpts } from './session-queue.ts';
 
-type UsageData = {
+export type UsageData = {
 	inputTokens?: number;
 	outputTokens?: number;
 	totalTokens?: number;
 	cachedInputTokens?: number;
 	reasoningTokens?: number;
+};
+
+export type ProviderMetadata = Record<string, unknown> & {
+	openai?: {
+		cachedPromptTokens?: number;
+		[key: string]: unknown;
+	};
 };
 
 /**
@@ -17,7 +24,7 @@ type UsageData = {
  */
 export async function updateSessionTokensIncremental(
 	usage: UsageData,
-	providerMetadata: Record<string, any> | undefined,
+	providerMetadata: ProviderMetadata | undefined,
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
@@ -129,7 +136,7 @@ export async function updateSessionTokens(
  */
 export async function updateMessageTokensIncremental(
 	usage: UsageData,
-	providerMetadata: Record<string, any> | undefined,
+	providerMetadata: ProviderMetadata | undefined,
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
@@ -187,7 +194,7 @@ export async function updateMessageTokensIncremental(
  * Token usage is tracked incrementally via updateMessageTokensIncremental().
  */
 export async function completeAssistantMessage(
-	fin: {
+	_fin: {
 		usage?: {
 			inputTokens?: number;
 			outputTokens?: number;

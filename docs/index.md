@@ -19,6 +19,7 @@ Welcome to the AGI CLI documentation. This index provides an overview of all ava
 
 ### Architecture & Development
 - **[Architecture](architecture.md)** - Monorepo structure and design principles
+- **[Development Guide](development-guide.md)** - Comprehensive guide for server, CLI, web-sdk, and web app development
 - **[Development](development.md)** - Development workflow, structure, testing
 - **[Publishing](publishing.md)** - Release workflow and version management
 - **[Contributing](../AGENTS.md)** - Contribution guidelines for AI agents and humans
@@ -130,9 +131,10 @@ Start here if you're building with AGI SDK:
 Start here if you're contributing to AGI:
 
 1. [Contributing Guidelines](../AGENTS.md) - How to contribute
-2. [Development](development.md) - Development workflow
-3. [Architecture](architecture.md) - Codebase structure
-4. [Publishing](publishing.md) - Release process
+2. [Development Guide](development-guide.md) - Complete development guide for all components
+3. [Development](development.md) - Development workflow
+4. [Architecture](architecture.md) - Codebase structure
+5. [Publishing](publishing.md) - Release process
 
 ## 🔗 External Resources
 
