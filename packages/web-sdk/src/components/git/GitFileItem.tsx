@@ -21,12 +21,12 @@ interface GitFileItemProps {
  */
 function smartTruncatePath(path: string, maxParts = 2): string {
 	const parts = path.split('/');
-	
+
 	// If path is short enough, show it all
 	if (parts.length <= maxParts + 1) {
 		return path;
 	}
-	
+
 	// Show last N parts with ellipsis
 	const truncated = parts.slice(-maxParts);
 	return `../${truncated.join('/')}`;
