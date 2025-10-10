@@ -4,6 +4,63 @@ import { catalog, type ProviderId, isProviderAuthorized } from '@agi-cli/sdk';
 import { readdir } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import type { EmbeddedAppConfig } from '../index.ts';
+import type { AGIConfig } from '@agi-cli/sdk';
+
+/**
+ * Check if a provider is authorized in either embedded config or file-based config
+ */
+async function isProviderAuthorizedHybrid(
+	embeddedConfig: EmbeddedAppConfig | undefined,
+	fileConfig: AGIConfig,
+	provider: ProviderId,
+): Promise<boolean> {
+	// Check embedded auth first
+	const hasEmbeddedAuth =
+		embeddedConfig?.provider === provider ||
+		(embeddedConfig?.auth && provider in embeddedConfig.auth);
+
+	if (hasEmbeddedAuth) {
+		return true;
+	}
+
+	// Fallback to file-based auth
+	return await isProviderAuthorized(fileConfig, provider);
+}
+
+/**
+ * Get all authorized providers from both embedded and file-based config
+ */
+async function getAuthorizedProviders(
+	embeddedConfig: EmbeddedAppConfig | undefined,
+	fileConfig: AGIConfig,
+): Promise<ProviderId[]> {
+	const allProviders = Object.keys(catalog) as ProviderId[];
+	const authorizedProviders: ProviderId[] = [];
+
+	for (const provider of allProviders) {
+		const authorized = await isProviderAuthorizedHybrid(
+			embeddedConfig,
+			fileConfig,
+			provider,
+		);
+		if (authorized) {
+			authorizedProviders.push(provider);
+		}
+	}
+
+	return authorizedProviders;
+}
+
+/**
+ * Get default value with embedded config taking priority over file config
+ */
+function getDefault<T>(
+	embeddedValue: T | undefined,
+	embeddedDefaultValue: T | undefined,
+	fileValue: T,
+): T {
+	return embeddedValue ?? embeddedDefaultValue ?? fileValue;
+}
 
 export function registerConfigRoutes(app: Hono) {
 	// Get working directory info
@@ -46,37 +103,28 @@ export function registerConfigRoutes(app: Hono) {
 		const allAgents = Array.from(new Set([...embeddedAgents, ...fileAgents]));
 
 		// Providers: Check both embedded and file-based auth
-		const allProviders = Object.keys(catalog) as ProviderId[];
-		const authorizedProviders: ProviderId[] = [];
-
-		for (const provider of allProviders) {
-			// Check embedded auth first
-			const hasEmbeddedAuth =
-				embeddedConfig?.provider === provider ||
-				(embeddedConfig?.auth && provider in embeddedConfig.auth);
-
-			// Fallback to file-based auth
-			const hasFileAuth = await isProviderAuthorized(cfg, provider);
-
-			if (hasEmbeddedAuth || hasFileAuth) {
-				authorizedProviders.push(provider);
-			}
-		}
+		const authorizedProviders = await getAuthorizedProviders(
+			embeddedConfig,
+			cfg,
+		);
 
 		// Defaults: Embedded overrides file config
 		const defaults = {
-			agent:
-				embeddedConfig?.defaults?.agent ||
-				embeddedConfig?.agent ||
+			agent: getDefault(
+				embeddedConfig?.agent,
+				embeddedConfig?.defaults?.agent,
 				cfg.defaults.agent,
-			provider:
-				embeddedConfig?.defaults?.provider ||
-				embeddedConfig?.provider ||
+			),
+			provider: getDefault(
+				embeddedConfig?.provider,
+				embeddedConfig?.defaults?.provider,
 				cfg.defaults.provider,
-			model:
-				embeddedConfig?.defaults?.model ||
-				embeddedConfig?.model ||
+			),
+			model: getDefault(
+				embeddedConfig?.model,
+				embeddedConfig?.defaults?.model,
 				cfg.defaults.model,
+			),
 		};
 
 		return c.json({
@@ -98,8 +146,11 @@ export function registerConfigRoutes(app: Hono) {
 				: ['general', 'build', 'plan'];
 			return c.json({
 				agents,
-				default:
-					embeddedConfig.agent || embeddedConfig.defaults?.agent || 'general',
+				default: getDefault(
+					embeddedConfig.agent,
+					embeddedConfig.defaults?.agent,
+					'general',
+				),
 			});
 		}
 
@@ -140,22 +191,18 @@ export function registerConfigRoutes(app: Hono) {
 
 			return c.json({
 				providers,
-				default: embeddedConfig.defaults?.provider || embeddedConfig.provider,
+				default: getDefault(
+					embeddedConfig.provider,
+					embeddedConfig.defaults?.provider,
+					undefined,
+				),
 			});
 		}
 
 		const projectRoot = c.req.query('project') || process.cwd();
 		const cfg = await loadConfig(projectRoot);
 
-		const allProviders = Object.keys(catalog) as ProviderId[];
-		const authorizedProviders: ProviderId[] = [];
-
-		for (const provider of allProviders) {
-			const authorized = await isProviderAuthorized(cfg, provider);
-			if (authorized) {
-				authorizedProviders.push(provider);
-			}
-		}
+		const authorizedProviders = await getAuthorizedProviders(undefined, cfg);
 
 		return c.json({
 			providers: authorizedProviders,
@@ -170,36 +217,17 @@ export function registerConfigRoutes(app: Hono) {
 			| undefined;
 		const provider = c.req.param('provider') as ProviderId;
 
-		if (embeddedConfig) {
-			// Check if provider is authorized in embedded mode
-			const hasAuth =
-				embeddedConfig.provider === provider ||
-				(embeddedConfig.auth && provider in embeddedConfig.auth);
-
-			if (!hasAuth) {
-				return c.json({ error: 'Provider not authorized' }, 403);
-			}
-
-			const providerCatalog = catalog[provider];
-			if (!providerCatalog) {
-				return c.json({ error: 'Provider not found' }, 404);
-			}
-
-			return c.json({
-				models: providerCatalog.models.map((m) => ({
-					id: m.id,
-					label: m.label || m.id,
-					toolCall: m.toolCall,
-					reasoning: m.reasoning,
-				})),
-				default: embeddedConfig.model || embeddedConfig.defaults?.model,
-			});
-		}
-
+		// Always load file config for fallback auth check
 		const projectRoot = c.req.query('project') || process.cwd();
 		const cfg = await loadConfig(projectRoot);
 
-		const authorized = await isProviderAuthorized(cfg, provider);
+		// Check if provider is authorized (hybrid: embedded OR file-based)
+		const authorized = await isProviderAuthorizedHybrid(
+			embeddedConfig,
+			cfg,
+			provider,
+		);
+
 		if (!authorized) {
 			return c.json({ error: 'Provider not authorized' }, 403);
 		}
@@ -216,7 +244,11 @@ export function registerConfigRoutes(app: Hono) {
 				toolCall: m.toolCall,
 				reasoning: m.reasoning,
 			})),
-			default: cfg.defaults.model,
+			default: getDefault(
+				embeddedConfig?.model,
+				embeddedConfig?.defaults?.model,
+				cfg.defaults.model,
+			),
 		});
 	});
 }
