@@ -73,6 +73,49 @@ export function createWebServer(
 			const url = new URL(req.url);
 			let pathname = url.pathname;
 
+			const respondWithIndex = async () => {
+				const indexPath = assetMap.get('/index.html');
+				const serverUrl = getServerUrl(url.host);
+
+				if (indexPath) {
+					const indexFile = Bun.file(indexPath);
+					if (await indexFile.exists()) {
+						try {
+							let html = await indexFile.text();
+							html = html.replace(
+								'</head>',
+								`<script>window.AGI_SERVER_URL = '${serverUrl}';</script></head>`,
+							);
+							return new Response(html, {
+								headers: {
+									'Content-Type': 'text/html; charset=utf-8',
+									'Cache-Control': 'no-cache',
+								},
+							});
+						} catch (error) {
+							console.error('Error reading HTML file for fallback:', error);
+						}
+					}
+				}
+
+				const embeddedIndex = getEmbeddedAsset('/index.html');
+				if (embeddedIndex) {
+					let html = decoder.decode(embeddedIndex);
+					html = html.replace(
+						'</head>',
+						`<script>window.AGI_SERVER_URL = '${serverUrl}';</script></head>`,
+					);
+					return new Response(html, {
+						headers: {
+							'Content-Type': 'text/html; charset=utf-8',
+							'Cache-Control': 'no-cache',
+						},
+					});
+				}
+
+				return null;
+			};
+
 			// Normalize path
 			if (pathname === '/') {
 				pathname = '/index.html';
@@ -137,6 +180,13 @@ export function createWebServer(
 							'Cache-Control': 'public, max-age=31536000',
 						},
 					});
+				}
+			}
+
+			if (!pathname.includes('.')) {
+				const fallback = await respondWithIndex();
+				if (fallback) {
+					return fallback;
 				}
 			}
 

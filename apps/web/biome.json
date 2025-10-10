@@ -29,6 +29,15 @@
 			}
 		},
 		{
+			"includes": ["src/routeTree.gen.ts"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			}
+		},
+		{
 			"includes": ["src/components/chat/ConfigModal.tsx"],
 			"linter": {
 				"rules": {
