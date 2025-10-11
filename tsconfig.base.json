@@ -16,7 +16,7 @@
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false,
-		"resolveJsonModule": true,
-		"types": ["bun-types"]
+		"resolveJsonModule": true
+		// "types": ["bun-types"]
 	}
 }
