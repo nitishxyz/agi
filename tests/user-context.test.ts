@@ -261,23 +261,25 @@ describe('User Context Feature', () => {
 			expect(response.status).toBe(202);
 
 			// Wait a bit for message to be created
-			await new Promise(resolve => setTimeout(resolve, 100));
+			await new Promise((resolve) => setTimeout(resolve, 100));
 
 			// Fetch messages with parsed=true to get parsed JSON content
-			const messagesRes = await app.request(`/v1/sessions/${sessionId}/messages?parsed=true`);
+			const messagesRes = await app.request(
+				`/v1/sessions/${sessionId}/messages?parsed=true`,
+			);
 			expect(messagesRes.status).toBe(200);
-			
+
 			const messages = await messagesRes.json();
 			expect(messages.length).toBeGreaterThan(0);
-			
+
 			// Should have user message
 			const userMessage = messages.find((m: any) => m.role === 'user');
 			expect(userMessage).toBeDefined();
-			
+
 			// Message content is in parts, not directly on message
 			expect(userMessage.parts).toBeDefined();
 			expect(userMessage.parts.length).toBeGreaterThan(0);
-			
+
 			// Get the text content from parts (with parsed=true, content is parsed JSON)
 			const textPart = userMessage.parts.find((p: any) => p.type === 'text');
 			expect(textPart).toBeDefined();
@@ -296,16 +298,18 @@ describe('User Context Feature', () => {
 				body: JSON.stringify({ content, userContext }),
 			});
 
-			await new Promise(resolve => setTimeout(resolve, 100));
+			await new Promise((resolve) => setTimeout(resolve, 100));
 
 			// Fetch messages with parsed=true to get parsed JSON content
-			const messagesRes = await app.request(`/v1/sessions/${sessionId}/messages?parsed=true`);
+			const messagesRes = await app.request(
+				`/v1/sessions/${sessionId}/messages?parsed=true`,
+			);
 			const messages = await messagesRes.json();
-			
+
 			const userMessage = messages.find((m: any) => m.role === 'user');
 			expect(userMessage).toBeDefined();
 			expect(userMessage.parts).toBeDefined();
-			
+
 			// Get the text content from parts (with parsed=true, content is parsed JSON)
 			const textPart = userMessage.parts.find((p: any) => p.type === 'text');
 			expect(textPart).toBeDefined();

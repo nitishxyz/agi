@@ -73,7 +73,7 @@ export function serializeError(err: unknown): APIErrorResponse {
 	// Default to 400 for generic errors (client errors)
 	// Only use 500 if explicitly set or for APIError instances without a status
 	let status = 400;
-	
+
 	// Handle APIError instances first
 	if (err instanceof APIError) {
 		status = err.status;
