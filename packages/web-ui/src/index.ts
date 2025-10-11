@@ -87,9 +87,7 @@ function normalizeBasePath(prefix: string): string {
 	if (!trimmed || trimmed === '/') {
 		return '/';
 	}
-	const withLeadingSlash = trimmed.startsWith('/')
-		? trimmed
-		: `/${trimmed}`;
+	const withLeadingSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
 	const withoutTrailingSlash = withLeadingSlash.replace(/\/+$/, '');
 	return withoutTrailingSlash || '/';
 }

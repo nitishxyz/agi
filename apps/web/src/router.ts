@@ -6,7 +6,8 @@ const getBasePath = () => {
 		typeof globalThis !== 'undefined'
 			? (globalThis as { AGI_ROUTER_BASEPATH?: string }).AGI_ROUTER_BASEPATH
 			: undefined;
-	const fallback = typeof import.meta !== 'undefined' ? import.meta.env.BASE_URL : '/';
+	const fallback =
+		typeof import.meta !== 'undefined' ? import.meta.env.BASE_URL : '/';
 	const value = injectedBasePath ?? fallback ?? '/';
 	if (!value) {
 		return '/';
