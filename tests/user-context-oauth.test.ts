@@ -36,10 +36,10 @@ describe('userContext with OAuth/spoof prompt handling', () => {
 	it('should compose full prompt with userContext for OAuth double-call pattern', async () => {
 		// Simulating the runner.ts pattern for OAuth
 		const spoofPrompt = 'You are Claude Code.';
-		
+
 		// First: Get the short spoof for system field
 		const shortSystem = spoofPrompt;
-		
+
 		// Second: Get the full prompt for messages array (without passing spoofPrompt)
 		const fullPrompt = await composeSystemPrompt({
 			provider: 'anthropic',
@@ -52,12 +52,12 @@ describe('userContext with OAuth/spoof prompt handling', () => {
 
 		// Verify short system is just the spoof
 		expect(shortSystem).toBe('You are Claude Code.');
-		
+
 		// Verify full prompt includes everything
 		expect(fullPrompt).toContain('helpful assistant');
 		expect(fullPrompt).toContain('User is working on project X');
 		expect(fullPrompt).toContain('<user-provided-state-context>');
-		
+
 		// Verify full prompt does NOT contain the spoof (it's separate)
 		expect(fullPrompt).not.toContain('You are Claude Code.');
 	});

@@ -37,10 +37,12 @@ export async function dispatchAssistantMessage(
 		oneShot,
 		userContext,
 	} = options;
-	
+
 	// DEBUG: Log userContext in dispatch
-	debugLog(`[MESSAGE_SERVICE] dispatchAssistantMessage called with userContext: ${userContext ? userContext.substring(0, 50) + '...' : 'NONE'}`);
-	
+	debugLog(
+		`[MESSAGE_SERVICE] dispatchAssistantMessage called with userContext: ${userContext ? userContext.substring(0, 50) + '...' : 'NONE'}`,
+	);
+
 	const sessionId = session.id;
 	const now = Date.now();
 	const userMessageId = crypto.randomUUID();
@@ -105,7 +107,9 @@ export async function dispatchAssistantMessage(
 	});
 
 	// DEBUG: Log before enqueue
-	debugLog(`[MESSAGE_SERVICE] Enqueuing assistant run with userContext: ${userContext ? userContext.substring(0, 50) + '...' : 'NONE'}`);
+	debugLog(
+		`[MESSAGE_SERVICE] Enqueuing assistant run with userContext: ${userContext ? userContext.substring(0, 50) + '...' : 'NONE'}`,
+	);
 
 	enqueueAssistantRun({
 		sessionId,
@@ -221,9 +225,13 @@ async function generateSessionTitle(args: {
 		const { getProviderSpoofPrompt } = await import('./prompt.ts');
 		const auth = await getAuth(provider, cfg.projectRoot);
 		const needsSpoof = auth?.type === 'oauth';
-		const spoofPrompt = needsSpoof ? getProviderSpoofPrompt(provider) : undefined;
+		const spoofPrompt = needsSpoof
+			? getProviderSpoofPrompt(provider)
+			: undefined;
 
-		debugLog(`[TITLE_GEN] needsSpoof: ${needsSpoof}, spoofPrompt: ${spoofPrompt || 'NONE'}`);
+		debugLog(
+			`[TITLE_GEN] needsSpoof: ${needsSpoof}, spoofPrompt: ${spoofPrompt || 'NONE'}`,
+		);
 
 		const promptText = String(content ?? '').slice(0, 2000);
 

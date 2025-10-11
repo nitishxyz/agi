@@ -85,13 +85,15 @@ export function registerSessionMessagesRoutes(app: Hono) {
 			const db = await getDb(cfg.projectRoot);
 			const sessionId = c.req.param('id');
 			const body = await c.req.json().catch(() => ({}));
-			
+
 			// DEBUG: Log received body
 			logger.info('[API] Received message request', {
 				sessionId,
 				hasContent: !!body?.content,
 				hasUserContext: !!body?.userContext,
-				userContext: body?.userContext ? `${String(body.userContext).substring(0, 50)}...` : 'NONE',
+				userContext: body?.userContext
+					? `${String(body.userContext).substring(0, 50)}...`
+					: 'NONE',
 			});
 
 			// Load session to inherit its provider/model/agent by default
@@ -112,7 +114,9 @@ export function registerSessionMessagesRoutes(app: Hono) {
 
 			// DEBUG: Log extracted userContext
 			logger.info('[API] Extracted userContext', {
-				userContext: userContext ? `${String(userContext).substring(0, 50)}...` : 'NONE',
+				userContext: userContext
+					? `${String(userContext).substring(0, 50)}...`
+					: 'NONE',
 				typeOf: typeof userContext,
 			});
 

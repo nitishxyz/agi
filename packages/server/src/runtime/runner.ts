@@ -126,11 +126,13 @@ async function runAssistant(opts: RunOpts) {
 	// The user message is already in history by this point, so history.length will be > 0
 	// We need to add additionalSystemMessages on the first assistant turn
 	const isFirstMessage = !history.some((m) => m.role === 'assistant');
-	
+
 	debugLog(`[RUNNER] isFirstMessage: ${isFirstMessage}`);
 	debugLog(`[RUNNER] userContext provided: ${opts.userContext ? 'YES' : 'NO'}`);
 	if (opts.userContext) {
-		debugLog(`[RUNNER] userContext value: ${opts.userContext.substring(0, 100)}${opts.userContext.length > 100 ? '...' : ''}`);
+		debugLog(
+			`[RUNNER] userContext value: ${opts.userContext.substring(0, 100)}${opts.userContext.length > 100 ? '...' : ''}`,
+		);
 	}
 
 	const systemTimer = time('runner:composeSystemPrompt');
@@ -161,16 +163,18 @@ async function runAssistant(opts: RunOpts) {
 			includeProjectTree: isFirstMessage,
 			userContext: opts.userContext,
 		});
-		
+
 		// FIX: Always add the system message for OAuth because:
 		// 1. System messages are NOT stored in the database
 		// 2. buildHistoryMessages only returns user/assistant messages
 		// 3. We need the full instructions on every turn
 		additionalSystemMessages = [{ role: 'system', content: fullPrompt }];
-		
+
 		debugLog('[RUNNER] OAuth mode: additionalSystemMessages created');
 		debugLog(`[RUNNER] fullPrompt length: ${fullPrompt.length}`);
-		debugLog(`[RUNNER] fullPrompt contains userContext: ${fullPrompt.includes('<user-provided-state-context>') ? 'YES' : 'NO'}`);
+		debugLog(
+			`[RUNNER] fullPrompt contains userContext: ${fullPrompt.includes('<user-provided-state-context>') ? 'YES' : 'NO'}`,
+		);
 		if (opts.userContext && fullPrompt.includes(opts.userContext)) {
 			debugLog('[RUNNER] ✅ userContext IS in fullPrompt');
 		} else if (opts.userContext) {
@@ -202,19 +206,27 @@ async function runAssistant(opts: RunOpts) {
 		'progress_update',
 	]);
 	const gated = allTools.filter((t) => allowedNames.has(t.name));
-	
+
 	// FIX: For OAuth, ALWAYS prepend the system message because it's never in history
 	// For API key mode, only add on first message (when additionalSystemMessages is empty)
 	const messagesWithSystemInstructions = [
-		...additionalSystemMessages,  // Always add for OAuth, empty for API key mode
+		...additionalSystemMessages, // Always add for OAuth, empty for API key mode
 		...history,
 	];
-	
-	debugLog(`[RUNNER] messagesWithSystemInstructions length: ${messagesWithSystemInstructions.length}`);
-	debugLog(`[RUNNER] additionalSystemMessages length: ${additionalSystemMessages.length}`);
+
+	debugLog(
+		`[RUNNER] messagesWithSystemInstructions length: ${messagesWithSystemInstructions.length}`,
+	);
+	debugLog(
+		`[RUNNER] additionalSystemMessages length: ${additionalSystemMessages.length}`,
+	);
 	if (additionalSystemMessages.length > 0) {
-		debugLog('[RUNNER] ✅ additionalSystemMessages ADDED to messagesWithSystemInstructions');
-		debugLog(`[RUNNER] This happens on EVERY turn for OAuth (system messages not stored in DB)`);
+		debugLog(
+			'[RUNNER] ✅ additionalSystemMessages ADDED to messagesWithSystemInstructions',
+		);
+		debugLog(
+			`[RUNNER] This happens on EVERY turn for OAuth (system messages not stored in DB)`,
+		);
 	}
 
 	const { sharedCtx, firstToolTimer, firstToolSeen } = await setupToolContext(
@@ -296,17 +308,23 @@ async function runAssistant(opts: RunOpts) {
 		deduplicateFiles: true,
 		maxToolResults: 30,
 	});
-	
-	debugLog(`[RUNNER] After optimizeContext: ${contextOptimized.length} messages`);
+
+	debugLog(
+		`[RUNNER] After optimizeContext: ${contextOptimized.length} messages`,
+	);
 
 	// 2. Truncate history
 	const truncatedMessages = truncateHistory(contextOptimized, 20);
-	
-	debugLog(`[RUNNER] After truncateHistory: ${truncatedMessages.length} messages`);
+
+	debugLog(
+		`[RUNNER] After truncateHistory: ${truncatedMessages.length} messages`,
+	);
 	if (truncatedMessages.length > 0 && truncatedMessages[0].role === 'system') {
 		debugLog('[RUNNER] ✅ First message is system message');
 	} else if (truncatedMessages.length > 0) {
-		debugLog(`[RUNNER] ⚠️ First message is NOT system (it's ${truncatedMessages[0].role})`);
+		debugLog(
+			`[RUNNER] ⚠️ First message is NOT system (it's ${truncatedMessages[0].role})`,
+		);
 	}
 
 	// 3. Add cache control
@@ -315,9 +333,13 @@ async function runAssistant(opts: RunOpts) {
 		system,
 		truncatedMessages,
 	);
-	
-	debugLog(`[RUNNER] Final optimizedMessages: ${optimizedMessages.length} messages`);
-	debugLog(`[RUNNER] cachedSystem (spoof): ${typeof cachedSystem === 'string' ? cachedSystem.substring(0, 100) : JSON.stringify(cachedSystem).substring(0, 100)}`);
+
+	debugLog(
+		`[RUNNER] Final optimizedMessages: ${optimizedMessages.length} messages`,
+	);
+	debugLog(
+		`[RUNNER] cachedSystem (spoof): ${typeof cachedSystem === 'string' ? cachedSystem.substring(0, 100) : JSON.stringify(cachedSystem).substring(0, 100)}`,
+	);
 
 	try {
 		// @ts-expect-error this is fine 🔥
