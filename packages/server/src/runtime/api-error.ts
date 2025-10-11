@@ -1,6 +1,6 @@
 /**
  * Unified API error handling
- * 
+ *
  * Provides consistent error serialization and response formatting
  * across all API endpoints.
  */
@@ -61,7 +61,7 @@ export class APIError extends Error {
 
 /**
  * Serialize any error into a consistent API error response
- * 
+ *
  * @param err - The error to serialize
  * @returns A properly formatted API error response
  */
@@ -125,20 +125,18 @@ export function serializeError(err: unknown): APIErrorResponse {
 
 /**
  * Create an error response with proper HTTP status code
- * 
+ *
  * @param err - The error to convert
  * @returns Tuple of [APIErrorResponse, HTTP status code]
  */
-export function createErrorResponse(
-	err: unknown,
-): [APIErrorResponse, number] {
+export function createErrorResponse(err: unknown): [APIErrorResponse, number] {
 	const response = serializeError(err);
 	return [response, response.error.status ?? 500];
 }
 
 /**
  * Normalize error to ensure it's an Error instance
- * 
+ *
  * @param err - The error to normalize
  * @returns An Error instance
  */
@@ -163,7 +161,7 @@ export function normalizeError(err: unknown): Error {
 
 /**
  * Extract error message from any error type
- * 
+ *
  * @param err - The error to extract message from
  * @returns The error message string
  */

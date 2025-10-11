@@ -1,6 +1,6 @@
 /**
  * Runtime debug state management
- * 
+ *
  * Centralizes debug flag state that can be set either via:
  * - Environment variables (AGI_DEBUG, DEBUG_AGI)
  * - Runtime configuration (CLI --debug flag)
@@ -86,7 +86,7 @@ export function isTraceEnabled(): boolean {
 /**
  * Enable or disable debug mode at runtime
  * Overrides environment variable settings
- * 
+ *
  * @param enabled - true to enable debug mode, false to disable
  */
 export function setDebugEnabled(enabled: boolean): void {
@@ -97,7 +97,7 @@ export function setDebugEnabled(enabled: boolean): void {
 /**
  * Enable or disable trace mode at runtime
  * Trace mode shows full stack traces in error logs
- * 
+ *
  * @param enabled - true to enable trace mode, false to disable
  */
 export function setTraceEnabled(enabled: boolean): void {

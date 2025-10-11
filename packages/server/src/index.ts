@@ -232,5 +232,10 @@ export {
 } from './presets.ts';
 
 // Export debug state management
-export { setDebugEnabled, isDebugEnabled, setTraceEnabled, isTraceEnabled } from './runtime/debug-state.ts';
+export {
+	setDebugEnabled,
+	isDebugEnabled,
+	setTraceEnabled,
+	isTraceEnabled,
+} from './runtime/debug-state.ts';
 export { logger } from './runtime/logger.ts';

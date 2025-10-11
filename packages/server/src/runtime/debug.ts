@@ -1,6 +1,6 @@
 /**
  * Legacy debug utilities - now integrated with new logger
- * 
+ *
  * This file maintains backward compatibility while using the new
  * centralized debug-state and logger modules.
  */
@@ -73,7 +73,7 @@ function getDebugConfig(): DebugConfig {
 /**
  * Check if debug mode is enabled for a specific flag
  * Now uses the centralized debug state
- * 
+ *
  * @deprecated Use isDebugEnabled from debug-state.ts instead
  */
 export function isDebugEnabled(flag?: string): boolean {
@@ -98,18 +98,20 @@ export function isDebugEnabled(flag?: string): boolean {
 /**
  * Log debug message
  * Now uses the centralized logger
- * 
+ *
  * @deprecated Use logger.debug from logger.ts instead
  */
 export function debugLog(...args: unknown[]) {
 	if (!isDebugEnabled('log')) return;
-	debugNew(args.map(arg => String(arg)).join(' '));
+	debugNew(args.map((arg) => String(arg)).join(' '));
 }
 
 /**
  * Create a timer for performance measurement
  * Integrated with centralized logger
  */
-export function time(label: string): { end(meta?: Record<string, unknown>): void } {
+export function time(label: string): {
+	end(meta?: Record<string, unknown>): void;
+} {
 	return timeNew(label);
 }

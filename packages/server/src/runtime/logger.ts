@@ -1,6 +1,6 @@
 /**
  * Centralized logging utility
- * 
+ *
  * Provides structured logging with debug mode awareness.
  * Replaces scattered console.log calls throughout the codebase.
  */
@@ -24,11 +24,11 @@ function formatMessage(
 ): string {
 	const timestamp = new Date().toISOString();
 	const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
-	
+
 	if (meta && Object.keys(meta).length > 0) {
 		return `${prefix} ${message} ${JSON.stringify(meta)}`;
 	}
-	
+
 	return `${prefix} ${message}`;
 }
 
@@ -37,7 +37,7 @@ function formatMessage(
  */
 export function debug(message: string, meta?: Record<string, unknown>): void {
 	if (!isDebugEnabled()) return;
-	
+
 	try {
 		if (meta && Object.keys(meta).length > 0) {
 			console.log(`[debug] ${message}`, meta);
@@ -89,10 +89,10 @@ export function error(
 ): void {
 	// Only log errors when debug mode is enabled
 	if (!isDebugEnabled()) return;
-	
+
 	try {
 		const logMeta: Record<string, unknown> = { ...meta };
-		
+
 		if (err) {
 			if (err instanceof Error) {
 				// Always show error name and message in debug mode
@@ -100,7 +100,7 @@ export function error(
 					name: err.name,
 					message: err.message,
 				};
-				
+
 				// Show full stack trace only with --trace flag
 				if (isTraceEnabled() && err.stack) {
 					logMeta.error.stack = err.stack;
@@ -112,12 +112,18 @@ export function error(
 				const errObj = err as Record<string, unknown>;
 				logMeta.error = {
 					...(typeof errObj.name === 'string' ? { name: errObj.name } : {}),
-					...(typeof errObj.message === 'string' ? { message: errObj.message } : {}),
+					...(typeof errObj.message === 'string'
+						? { message: errObj.message }
+						: {}),
 					...(typeof errObj.code === 'string' ? { code: errObj.code } : {}),
-					...(typeof errObj.status === 'number' ? { status: errObj.status } : {}),
-					...(typeof errObj.statusCode === 'number' ? { statusCode: errObj.statusCode } : {}),
+					...(typeof errObj.status === 'number'
+						? { status: errObj.status }
+						: {}),
+					...(typeof errObj.statusCode === 'number'
+						? { statusCode: errObj.statusCode }
+						: {}),
 				};
-				
+
 				// Include stack in trace mode
 				if (isTraceEnabled() && typeof errObj.stack === 'string') {
 					logMeta.error.stack = errObj.stack;
@@ -127,7 +133,7 @@ export function error(
 				logMeta.error = String(err);
 			}
 		}
-		
+
 		if (Object.keys(logMeta).length > 0) {
 			console.error(`[error] ${message}`, logMeta);
 		} else {
@@ -163,7 +169,7 @@ function nowMs(): number {
 	return Date.now();
 }
 
-type Timer = { 
+type Timer = {
 	end(meta?: Record<string, unknown>): void;
 };
 
@@ -175,16 +181,16 @@ export function time(label: string): Timer {
 	if (!isDebugEnabled()) {
 		return { end() {} };
 	}
-	
+
 	const start = nowMs();
 	let finished = false;
-	
+
 	return {
 		end(meta?: Record<string, unknown>) {
 			if (finished) return;
 			finished = true;
 			const duration = nowMs() - start;
-			
+
 			try {
 				const line = `[timing] ${label} ${duration.toFixed(1)}ms`;
 				if (meta && Object.keys(meta).length) {

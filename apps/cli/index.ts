@@ -1,5 +1,9 @@
 import { loadConfig, isProviderAuthorized } from '@agi-cli/sdk';
-import { createApp as createServer, setDebugEnabled, setTraceEnabled } from '@agi-cli/server';
+import {
+	createApp as createServer,
+	setDebugEnabled,
+	setTraceEnabled,
+} from '@agi-cli/server';
 import { getDb } from '@agi-cli/database';
 import { runAsk } from './src/ask.ts';
 import { runSessions } from './src/sessions.ts';
@@ -33,12 +37,12 @@ async function main() {
 	// Parse --debug and --trace flags early
 	const debugEnabled = argv.includes('--debug');
 	const traceEnabled = argv.includes('--trace');
-	
+
 	if (debugEnabled) {
 		setDebugEnabled(true);
 		console.log('[debug] Debug mode enabled');
 	}
-	
+
 	if (traceEnabled) {
 		setTraceEnabled(true);
 		if (debugEnabled) {
