@@ -21,5 +21,18 @@ export default defineConfig({
 			// Resolve workspace packages to their source instead of dist
 			'@agi-cli/web-sdk': path.resolve(__dirname, '../../packages/web-sdk/src'),
 		},
+		// Deduplicate React and React-DOM to prevent multiple instances
+		dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
+	},
+	build: {
+		// Additional build options to ensure proper bundling
+		rollupOptions: {
+			output: {
+				// Ensure consistent chunk splitting
+				manualChunks: undefined,
+			},
+		},
+		// Increase chunk size warning limit
+		chunkSizeWarningLimit: 1000,
 	},
 });
