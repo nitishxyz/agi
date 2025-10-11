@@ -42,6 +42,53 @@ interface WindowWithAgiServerUrl extends Window {
 }
 
 /**
+ * Extract error message from API error response
+ * Handles both string errors and structured error objects
+ */
+function extractErrorMessage(error: unknown): string {
+	if (!error) {
+		return 'Unknown error';
+	}
+
+	// If it's a string, return it
+	if (typeof error === 'string') {
+		return error;
+	}
+
+	// If it's an error object with our standardized structure
+	if (error && typeof error === 'object') {
+		const errObj = error as Record<string, unknown>;
+
+		// New standardized format: { error: { message, type, ... } }
+		if (errObj.error && typeof errObj.error === 'object') {
+			const innerError = errObj.error as Record<string, unknown>;
+			if (typeof innerError.message === 'string') {
+				return innerError.message;
+			}
+		}
+
+		// Legacy format: { error: "message" }
+		if (typeof errObj.error === 'string') {
+			return errObj.error;
+		}
+
+		// Direct message property
+		if (typeof errObj.message === 'string') {
+			return errObj.message;
+		}
+
+		// Try to JSON stringify if it's a complex object
+		try {
+			return JSON.stringify(error);
+		} catch {
+			return 'Error occurred (unable to parse)';
+		}
+	}
+
+	return 'Unknown error';
+}
+
+/**
  * Configure the API client with the correct base URL
  * This should be called once at application startup
  */
@@ -102,7 +149,7 @@ class ApiClient {
 	async getSessions(): Promise<Session[]> {
 		const response = await apiListSessions();
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to fetch sessions');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		return (response.data || []).map(convertSession);
 	}
@@ -112,7 +159,7 @@ class ApiClient {
 			body: data as CreateSessionData['body'],
 		});
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to create session');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		if (!response.data) {
 			throw new Error('No data returned from create session');
@@ -125,7 +172,7 @@ class ApiClient {
 			path: { sessionId },
 		});
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to abort session');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		return response.data as { success: boolean };
 	}
@@ -135,7 +182,7 @@ class ApiClient {
 			path: { id: sessionId },
 		});
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to fetch messages');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		return (response.data || []).map(convertMessage);
 	}
@@ -149,7 +196,7 @@ class ApiClient {
 			body: data as CreateMessageData['body'],
 		});
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to send message');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		return response.data as SendMessageResponse;
 	}
@@ -166,7 +213,7 @@ class ApiClient {
 	}> {
 		const response = await apiGetConfig();
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to fetch config');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		return response.data as {
 			agents: string[];
@@ -184,7 +231,7 @@ class ApiClient {
 			path: { provider: providerId as any },
 		});
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to fetch models');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		return response.data as {
 			models: Array<{ id: string; label: string; toolCall?: boolean }>;
@@ -196,7 +243,7 @@ class ApiClient {
 	async getGitStatus(): Promise<GitStatusResponse> {
 		const response = await apiGetGitStatus();
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to fetch git status');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitStatusResponse;
@@ -213,7 +260,7 @@ class ApiClient {
 			},
 		});
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to fetch git diff');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitDiffResponse;
@@ -224,9 +271,7 @@ class ApiClient {
 			body: {},
 		});
 		if (response.error) {
-			throw new Error(
-				String(response.error) || 'Failed to generate commit message',
-			);
+			throw new Error(extractErrorMessage(response.error));
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitGenerateCommitMessageResponse;
@@ -238,7 +283,7 @@ class ApiClient {
 			body: { files } as any,
 		});
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to stage files');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitStageResponse;
@@ -250,7 +295,7 @@ class ApiClient {
 			body: { files } as any,
 		});
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to unstage files');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitUnstageResponse;
@@ -262,7 +307,7 @@ class ApiClient {
 			body: { message } as any,
 		});
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to commit changes');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitCommitResponse;
@@ -271,7 +316,7 @@ class ApiClient {
 	async getGitBranch(): Promise<GitBranchInfo> {
 		const response = await apiGetGitBranch();
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to fetch git branch');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitBranchInfo;
@@ -283,7 +328,7 @@ class ApiClient {
 			body: {} as any,
 		});
 		if (response.error) {
-			throw new Error(String(response.error) || 'Failed to push commits');
+			throw new Error(extractErrorMessage(response.error));
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitPushResponse;

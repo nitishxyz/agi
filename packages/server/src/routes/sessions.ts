@@ -7,6 +7,8 @@ import type { ProviderId } from '@agi-cli/sdk';
 import { isProviderId } from '@agi-cli/sdk';
 import { resolveAgentConfig } from '../runtime/agent-registry.ts';
 import { createSession as createSessionRow } from '../runtime/session-manager.ts';
+import { serializeError } from '../runtime/api-error.ts';
+import { logger } from '../runtime/logger.ts';
 
 export function registerSessionsRoutes(app: Hono) {
 	// List sessions
@@ -72,8 +74,9 @@ export function registerSessionsRoutes(app: Hono) {
 			});
 			return c.json(row, 201);
 		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err);
-			return c.json({ error: message }, 400);
+			logger.error('Failed to create session', err);
+			const errorResponse = serializeError(err);
+			return c.json(errorResponse, errorResponse.error.status || 400);
 		}
 	});
 

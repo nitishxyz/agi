@@ -1,5 +1,5 @@
 import { loadConfig, isProviderAuthorized } from '@agi-cli/sdk';
-import { createApp as createServer } from '@agi-cli/server';
+import { createApp as createServer, setDebugEnabled, setTraceEnabled } from '@agi-cli/server';
 import { getDb } from '@agi-cli/database';
 import { runAsk } from './src/ask.ts';
 import { runSessions } from './src/sessions.ts';
@@ -30,8 +30,24 @@ if (argv[0] === 'agi' || argv[0]?.endsWith('/agi')) {
 const cmd = argv[0];
 
 async function main() {
-	// Debug: Check what arguments we received
-	if (process.env.DEBUG_AGI) {
+	// Parse --debug and --trace flags early
+	const debugEnabled = argv.includes('--debug');
+	const traceEnabled = argv.includes('--trace');
+	
+	if (debugEnabled) {
+		setDebugEnabled(true);
+		console.log('[debug] Debug mode enabled');
+	}
+	
+	if (traceEnabled) {
+		setTraceEnabled(true);
+		if (debugEnabled) {
+			console.log('[debug] Trace mode enabled (stack traces will be shown)');
+		}
+	}
+
+	// Debug: Check what arguments we received (only in debug mode)
+	if (debugEnabled) {
 		console.log('DEBUG: process.argv:', process.argv);
 		console.log('DEBUG: argv (after cleanup):', argv);
 		console.log('DEBUG: cmd:', cmd);
@@ -192,7 +208,7 @@ async function main() {
 
 	// One-shot: agi "<prompt>" [--agent] [--provider] [--model] [--project]
 	if (cmd && !cmd.startsWith('-')) {
-		if (process.env.DEBUG_AGI) {
+		if (debugEnabled) {
 			console.log('DEBUG: Entering one-shot mode with cmd:', cmd);
 		}
 		const prompt = cmd;
@@ -228,7 +244,7 @@ async function main() {
 
 	// No non-flag command provided: context-aware interactive mode
 	// Respect flags like --project, --last, --session (and optionally agent/provider/model)
-	if (process.env.DEBUG_AGI) {
+	if (debugEnabled) {
 		console.log('DEBUG: Entering interactive mode - will prompt for input');
 	}
 	const projectIdx = argv.indexOf('--project');
@@ -313,6 +329,8 @@ function printHelp(
 		'  --last                   Send to most-recent session',
 		'  --session <id>           Send to a specific session',
 		'  --network                Bind to 0.0.0.0 for network access (serve only)',
+		'  --debug                  Enable debug logging (errors, warnings, debug messages)',
+		'  --trace                  Enable stack traces in error logs (requires --debug)',
 		'  --json | --json-stream   Machine-readable outputs',
 		'  --version, -v            Print version and exit',
 	];

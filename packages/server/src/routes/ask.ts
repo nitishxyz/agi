@@ -4,8 +4,10 @@ import type {
 	InjectableConfig,
 	InjectableCredentials,
 } from '../runtime/ask-service.ts';
-import { AskServiceError, handleAskRequest } from '../runtime/ask-service.ts';
+import { handleAskRequest } from '../runtime/ask-service.ts';
 import type { EmbeddedAppConfig } from '../index.ts';
+import { serializeError } from '../runtime/api-error.ts';
+import { logger } from '../runtime/logger.ts';
 
 export function registerAskRoutes(app: Hono) {
 	app.post('/v1/ask', async (c) => {
@@ -104,11 +106,9 @@ export function registerAskRoutes(app: Hono) {
 			const response = await handleAskRequest(request);
 			return c.json(response, 202);
 		} catch (err) {
-			if (err instanceof AskServiceError) {
-				return c.json({ error: err.message }, err.status as never);
-			}
-			const message = err instanceof Error ? err.message : String(err);
-			return c.json({ error: message }, 400);
+			logger.error('Ask request failed', err);
+			const errorResponse = serializeError(err);
+			return c.json(errorResponse, errorResponse.error.status || 400);
 		}
 	});
 }

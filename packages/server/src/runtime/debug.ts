@@ -1,3 +1,13 @@
+/**
+ * Legacy debug utilities - now integrated with new logger
+ * 
+ * This file maintains backward compatibility while using the new
+ * centralized debug-state and logger modules.
+ */
+
+import { isDebugEnabled as isDebugEnabledNew } from './debug-state';
+import { time as timeNew, debug as debugNew } from './logger';
+
 const TRUTHY = new Set(['1', 'true', 'yes', 'on']);
 
 const SYNONYMS: Record<string, string> = {
@@ -60,45 +70,46 @@ function getDebugConfig(): DebugConfig {
 	return cachedConfig;
 }
 
+/**
+ * Check if debug mode is enabled for a specific flag
+ * Now uses the centralized debug state
+ * 
+ * @deprecated Use isDebugEnabled from debug-state.ts instead
+ */
 export function isDebugEnabled(flag?: string): boolean {
+	// Use new centralized debug state for general debug
+	if (!flag || flag === 'log') {
+		return isDebugEnabledNew();
+	}
+
+	// For specific flags like 'timing', check both new state and legacy env vars
+	if (flag === 'timing') {
+		// If new debug state is enabled OR timing flag is set
+		if (isDebugEnabledNew()) return true;
+	}
+
+	// Legacy flag checking
 	const config = getDebugConfig();
 	if (config.flags.has('all')) return true;
 	if (flag) return config.flags.has(flag);
 	return config.flags.has('log');
 }
 
+/**
+ * Log debug message
+ * Now uses the centralized logger
+ * 
+ * @deprecated Use logger.debug from logger.ts instead
+ */
 export function debugLog(...args: unknown[]) {
 	if (!isDebugEnabled('log')) return;
-	try {
-		console.log('[debug]', ...args);
-	} catch {}
+	debugNew(args.map(arg => String(arg)).join(' '));
 }
 
-function nowMs(): number {
-	const perf = (globalThis as { performance?: { now?: () => number } })
-		.performance;
-	if (perf && typeof perf.now === 'function') return perf.now();
-	return Date.now();
-}
-
-type Timer = { end(meta?: Record<string, unknown>): void };
-
-export function time(label: string): Timer {
-	if (!isDebugEnabled('timing')) {
-		return { end() {} };
-	}
-	const start = nowMs();
-	let finished = false;
-	return {
-		end(meta?: Record<string, unknown>) {
-			if (finished) return;
-			finished = true;
-			const duration = nowMs() - start;
-			try {
-				const line = `[timing] ${label} ${duration.toFixed(1)}ms`;
-				if (meta && Object.keys(meta).length) console.log(line, meta);
-				else console.log(line);
-			} catch {}
-		},
-	};
+/**
+ * Create a timer for performance measurement
+ * Integrated with centralized logger
+ */
+export function time(label: string): { end(meta?: Record<string, unknown>): void } {
+	return timeNew(label);
 }

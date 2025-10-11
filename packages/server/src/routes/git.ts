@@ -4,8 +4,11 @@ import { extname, join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { z } from 'zod';
-import { generateText, resolveModel, type ProviderId } from '@agi-cli/sdk';
-import { loadConfig } from '@agi-cli/sdk';
+import { generateText } from 'ai';
+import type { ProviderId } from '@agi-cli/sdk';
+import { loadConfig, getAuth } from '@agi-cli/sdk';
+import { resolveModel } from '../runtime/provider.ts';
+import { getProviderSpoofPrompt } from '../runtime/prompt.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -678,16 +681,22 @@ export function registerGitRoutes(app: Hono) {
 			// Load config to get provider settings
 			const config = await loadConfig();
 
-			// Use a simple model for quick commit message generation
-			const provider = config.defaults?.provider || 'anthropic';
-			const model = await resolveModel(
-				provider as ProviderId,
-				config.defaults?.model,
-				undefined,
-			);
+			// Use the default provider and model for quick commit message generation
+			const provider = (config.defaults?.provider || 'anthropic') as ProviderId;
+			const modelId = config.defaults?.model || 'claude-3-5-sonnet-20241022';
+
+			// Check if we need OAuth spoof prompt (same as runner)
+			const auth = await getAuth(provider, config.projectRoot);
+			const needsSpoof = auth?.type === 'oauth';
+			const spoofPrompt = needsSpoof
+				? getProviderSpoofPrompt(provider)
+				: undefined;
+
+			// Resolve model with proper authentication (3-level fallback: OAuth, API key, env var)
+			const model = await resolveModel(provider, modelId, config);
 
 			// Generate commit message using AI
-			const prompt = `Generate a concise, conventional commit message for these git changes.
+			const userPrompt = `Generate a concise, conventional commit message for these git changes.
 
 Staged files:
 ${fileList}
@@ -705,12 +714,15 @@ Guidelines:
 
 Commit message:`;
 
+			// Use spoof prompt as system if OAuth, otherwise use normal system prompt
+			const systemPrompt = spoofPrompt
+				? spoofPrompt
+				: 'You are a helpful assistant that generates git commit messages.';
+
 			const { text } = await generateText({
-				provider: provider as ProviderId,
-				model: model.id,
-				systemPrompt:
-					'You are a helpful assistant that generates git commit messages.',
-				prompt,
+				model,
+				system: systemPrompt,
+				prompt: userPrompt,
 				maxTokens: 200,
 			});
 
