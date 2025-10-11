@@ -28,7 +28,7 @@ export const UserMessageGroup = memo(
 		}
 
 		const formatTime = (ts?: number) => {
-			if (!ts) return ''
+			if (!ts) return '';
 			const date = new Date(ts);
 			return date.toLocaleTimeString([], {
 				hour: '2-digit',

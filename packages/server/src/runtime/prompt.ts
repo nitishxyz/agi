@@ -20,6 +20,7 @@ export async function composeSystemPrompt(options: {
 	spoofPrompt?: string;
 	includeEnvironment?: boolean;
 	includeProjectTree?: boolean;
+	userContext?: string;
 }): Promise<string> {
 	if (options.spoofPrompt) {
 		return options.spoofPrompt.trim();
@@ -59,6 +60,16 @@ export async function composeSystemPrompt(options: {
 		if (envAndInstructions) {
 			parts.push(envAndInstructions);
 		}
+	}
+
+	// Add user-provided context if present
+	if (options.userContext?.trim()) {
+		const userContextBlock = [
+			'<user-provided-state-context>',
+			options.userContext.trim(),
+			'</user-provided-state-context>',
+		].join('\n');
+		parts.push(userContextBlock);
 	}
 
 	const composed = parts.filter(Boolean).join('\n\n').trim();

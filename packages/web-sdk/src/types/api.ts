@@ -68,6 +68,7 @@ export interface SendMessageRequest {
 	provider?: string;
 	model?: string;
 	oneShot?: boolean;
+	userContext?: string;
 }
 
 export interface SendMessageResponse {

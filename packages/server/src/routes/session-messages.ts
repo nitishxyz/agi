@@ -99,6 +99,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 			const modelName = body?.model ?? sess.model ?? cfg.defaults.model;
 			const agent = body?.agent ?? sess.agent ?? cfg.defaults.agent;
 			const content = body?.content ?? '';
+			const userContext = body?.userContext;
 
 			// Validate model capabilities if tools are allowed for this agent
 			const wantsToolCalls = true; // agent toolset may be non-empty
@@ -131,6 +132,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				model: modelName,
 				content,
 				oneShot: Boolean(body?.oneShot),
+				userContext,
 			});
 			return c.json({ messageId: assistantMessageId }, 202);
 		} catch (error) {

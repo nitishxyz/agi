@@ -9,6 +9,7 @@ export type RunOpts = {
 	model: string;
 	projectRoot: string;
 	oneShot?: boolean;
+	userContext?: string;
 	abortSignal?: AbortSignal;
 };
 
@@ -39,7 +40,8 @@ export function enqueueAssistantRun(
 }
 
 /**
- * Aborts all pending operations for a given session.
+ * Signals the abort controller for a session.
+ * This will trigger the abortSignal in the streamText call.
  */
 export function abortSession(sessionId: string) {
 	const controller = sessionAbortControllers.get(sessionId);
@@ -49,34 +51,25 @@ export function abortSession(sessionId: string) {
 	}
 }
 
-/**
- * Gets the current state of a session's queue.
- */
 export function getRunnerState(sessionId: string): RunnerState | undefined {
 	return runners.get(sessionId);
 }
 
-/**
- * Marks a session queue as running.
- */
 export function setRunning(sessionId: string, running: boolean) {
 	const state = runners.get(sessionId);
-	if (state) {
-		state.running = running;
-	}
+	if (state) state.running = running;
 }
 
-/**
- * Dequeues the next job from a session's queue.
- */
 export function dequeueJob(sessionId: string): RunOpts | undefined {
 	const state = runners.get(sessionId);
 	return state?.queue.shift();
 }
 
-/**
- * Cleanup abort controller for a session (called when queue is done).
- */
 export function cleanupSession(sessionId: string) {
-	sessionAbortControllers.delete(sessionId);
+	const state = runners.get(sessionId);
+	if (state && state.queue.length === 0 && !state.running) {
+		runners.delete(sessionId);
+		// Clean up any lingering abort controller
+		sessionAbortControllers.delete(sessionId);
+	}
 }

@@ -20,13 +20,23 @@ type DispatchOptions = {
 	model: string;
 	content: string;
 	oneShot?: boolean;
+	userContext?: string;
 };
 
 export async function dispatchAssistantMessage(
 	options: DispatchOptions,
 ): Promise<{ assistantMessageId: string }> {
-	const { cfg, db, session, agent, provider, model, content, oneShot } =
-		options;
+	const {
+		cfg,
+		db,
+		session,
+		agent,
+		provider,
+		model,
+		content,
+		oneShot,
+		userContext,
+	} = options;
 	const sessionId = session.id;
 	const now = Date.now();
 	const userMessageId = crypto.randomUUID();
@@ -99,6 +109,7 @@ export async function dispatchAssistantMessage(
 		model,
 		projectRoot: cfg.projectRoot,
 		oneShot: Boolean(oneShot),
+		userContext,
 	});
 
 	void touchSessionLastActive({ db, sessionId });
@@ -385,8 +396,8 @@ function deriveTitle(text: string): string {
 
 function sanitizeTitle(s: string): string {
 	let t = s.trim();
-	t = t.replace(/^['"""''()[\]]+|['"""''()[\]]+$/g, '').trim();
-	t = t.replace(/[\s\-_:–—]+$/g, '').trim();
+	t = t.replace(/^['"""''()[\\]]+|['"""''()[\\]]+$/g, '').trim();
+	t = t.replace(/[\\s\\-_:–—]+$/g, '').trim();
 	if (t.length > 64) t = `${t.slice(0, 63).trimEnd()}…`;
 	return t;
 }

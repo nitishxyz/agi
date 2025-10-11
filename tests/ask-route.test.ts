@@ -28,7 +28,10 @@ describe('registerAskRoutes error handling', () => {
 
 		expect(res.status).toBe(401);
 		const payload = await res.json();
-		expect(payload.error).toBe('Unauthorized provider');
+		// Error response is now structured as { error: { message, type, status, code, details } }
+		expect(payload.error).toBeDefined();
+		expect(payload.error.message).toBe('Unauthorized provider');
+		expect(payload.error.status).toBe(401);
 	});
 
 	test('falls back to 400 for generic errors', async () => {
@@ -47,6 +50,8 @@ describe('registerAskRoutes error handling', () => {
 
 		expect(res.status).toBe(400);
 		const payload = await res.json();
-		expect(payload.error).toBe('Boom');
+		// Error response is now structured as { error: { message, type, status, code, details } }
+		expect(payload.error).toBeDefined();
+		expect(payload.error.message).toBe('Boom');
 	});
 });

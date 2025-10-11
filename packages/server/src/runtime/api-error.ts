@@ -70,8 +70,14 @@ export function serializeError(err: unknown): APIErrorResponse {
 	const payload = toErrorPayload(err);
 
 	// Determine HTTP status code
-	let status = 500;
-	if (err && typeof err === 'object') {
+	// Default to 400 for generic errors (client errors)
+	// Only use 500 if explicitly set or for APIError instances without a status
+	let status = 400;
+	
+	// Handle APIError instances first
+	if (err instanceof APIError) {
+		status = err.status;
+	} else if (err && typeof err === 'object') {
 		const errObj = err as Record<string, unknown>;
 		if (typeof errObj.status === 'number') {
 			status = errObj.status;
@@ -84,11 +90,6 @@ export function serializeError(err: unknown): APIErrorResponse {
 		) {
 			status = (errObj.details as Record<string, unknown>).statusCode as number;
 		}
-	}
-
-	// Handle APIError instances
-	if (err instanceof APIError) {
-		status = err.status;
 	}
 
 	// Extract code if available

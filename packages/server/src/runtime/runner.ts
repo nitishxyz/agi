@@ -146,6 +146,7 @@ async function runAssistant(opts: RunOpts) {
 			oneShot: opts.oneShot,
 			spoofPrompt: undefined,
 			includeProjectTree: isFirstMessage,
+			userContext: opts.userContext,
 		});
 		additionalSystemMessages = [{ role: 'system', content: fullPrompt }];
 	} else {
@@ -157,6 +158,7 @@ async function runAssistant(opts: RunOpts) {
 			oneShot: opts.oneShot,
 			spoofPrompt: undefined,
 			includeProjectTree: isFirstMessage,
+			userContext: opts.userContext,
 		});
 	}
 	systemTimer.end();

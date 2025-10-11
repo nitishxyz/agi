@@ -13,6 +13,7 @@ import { ConfigModal } from './ConfigModal';
 
 interface ChatInputContainerProps {
 	sessionId: string;
+	userContext?: string;
 }
 
 export interface ChatInputContainerRef {
@@ -21,7 +22,7 @@ export interface ChatInputContainerRef {
 
 export const ChatInputContainer = memo(
 	forwardRef<ChatInputContainerRef, ChatInputContainerProps>(
-		function ChatInputContainer({ sessionId }, ref) {
+		function ChatInputContainer({ sessionId, userContext }, ref) {
 			const [agent, setAgent] = useState('');
 			const [provider, setProvider] = useState('');
 			const [model, setModel] = useState('');
@@ -50,12 +51,13 @@ export const ChatInputContainer = memo(
 							agent: agent || undefined,
 							provider: provider || undefined,
 							model: model || undefined,
+							userContext: userContext || undefined,
 						});
 					} catch (error) {
 						console.error('Failed to send message:', error);
 					}
 				},
-				[sendMessage, agent, provider, model],
+				[sendMessage, agent, provider, model, userContext],
 			);
 
 			const handleToggleConfig = useCallback(() => {
