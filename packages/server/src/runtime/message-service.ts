@@ -40,7 +40,7 @@ export async function dispatchAssistantMessage(
 
 	// DEBUG: Log userContext in dispatch
 	debugLog(
-		`[MESSAGE_SERVICE] dispatchAssistantMessage called with userContext: ${userContext ? userContext.substring(0, 50) + '...' : 'NONE'}`,
+		`[MESSAGE_SERVICE] dispatchAssistantMessage called with userContext: ${userContext ? `${userContext.substring(0, 50)}...` : 'NONE'}`,
 	);
 
 	const sessionId = session.id;
@@ -108,7 +108,7 @@ export async function dispatchAssistantMessage(
 
 	// DEBUG: Log before enqueue
 	debugLog(
-		`[MESSAGE_SERVICE] Enqueuing assistant run with userContext: ${userContext ? userContext.substring(0, 50) + '...' : 'NONE'}`,
+		`[MESSAGE_SERVICE] Enqueuing assistant run with userContext: ${userContext ? `${userContext.substring(0, 50)}...` : 'NONE'}`,
 	);
 
 	enqueueAssistantRun({

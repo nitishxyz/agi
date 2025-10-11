@@ -195,6 +195,11 @@ export function getOpenAPISpec() {
 										},
 										provider: { $ref: '#/components/schemas/Provider' },
 										model: { type: 'string' },
+										userContext: {
+											type: 'string',
+											description:
+												'Optional user-provided context to include in the system prompt.',
+										},
 									},
 								},
 							},

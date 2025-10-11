@@ -80,11 +80,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 		return (
 			<>
 				<MessageThreadContainer sessionId={sessionId} />
-				<ChatInputContainer
-					ref={chatInputRef}
-					sessionId={sessionId}
-					userContext="Nitish is a seasoned developer who crated multiple opensource projects like agi and solforge"
-				/>
+				<ChatInputContainer ref={chatInputRef} sessionId={sessionId} />
 			</>
 		);
 	}, [sessionId]);

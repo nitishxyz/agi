@@ -1,6 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { createEmbeddedApp } from '../packages/server/src/index.js';
 import type { Hono } from 'hono';
+import type {
+	Message,
+	MessagePart,
+} from '../packages/database/src/types/index.js';
 
 describe('User Context Feature', () => {
 	let app: Hono;
@@ -273,7 +277,9 @@ describe('User Context Feature', () => {
 			expect(messages.length).toBeGreaterThan(0);
 
 			// Should have user message
-			const userMessage = messages.find((m: any) => m.role === 'user');
+			const userMessage = messages.find(
+				(m: Message & { parts?: MessagePart[] }) => m.role === 'user',
+			);
 			expect(userMessage).toBeDefined();
 
 			// Message content is in parts, not directly on message
@@ -281,7 +287,9 @@ describe('User Context Feature', () => {
 			expect(userMessage.parts.length).toBeGreaterThan(0);
 
 			// Get the text content from parts (with parsed=true, content is parsed JSON)
-			const textPart = userMessage.parts.find((p: any) => p.type === 'text');
+			const textPart = userMessage.parts.find(
+				(p: MessagePart) => p.type === 'text',
+			);
 			expect(textPart).toBeDefined();
 			expect(textPart.content).toBeDefined();
 			expect(typeof textPart.content).toBe('object');
@@ -306,12 +314,16 @@ describe('User Context Feature', () => {
 			);
 			const messages = await messagesRes.json();
 
-			const userMessage = messages.find((m: any) => m.role === 'user');
+			const userMessage = messages.find(
+				(m: Message & { parts?: MessagePart[] }) => m.role === 'user',
+			);
 			expect(userMessage).toBeDefined();
 			expect(userMessage.parts).toBeDefined();
 
 			// Get the text content from parts (with parsed=true, content is parsed JSON)
-			const textPart = userMessage.parts.find((p: any) => p.type === 'text');
+			const textPart = userMessage.parts.find(
+				(p: MessagePart) => p.type === 'text',
+			);
 			expect(textPart).toBeDefined();
 			expect(textPart.content).toBeDefined();
 			expect(typeof textPart.content).toBe('object');
