@@ -28,7 +28,7 @@ export const UserMessageGroup = memo(
 		}
 
 		const formatTime = (ts?: number) => {
-			if (!ts) return '';
+			if (!ts) return ''
 			const date = new Date(ts);
 			return date.toLocaleTimeString([], {
 				hour: '2-digit',
@@ -38,8 +38,8 @@ export const UserMessageGroup = memo(
 
 		return (
 			<div className="relative pb-8 pt-6">
-				<div className="flex gap-4 justify-end">
-					<div className="flex flex-col items-end max-w-2xl">
+				<div className="flex gap-3 md:gap-4 justify-end">
+					<div className="flex flex-col items-end min-w-0 flex-1 max-w-[calc(100%-3rem)] md:max-w-2xl">
 						<div className="flex items-center gap-2 text-xs text-muted-foreground pb-2 justify-end">
 							<span className="font-medium text-emerald-700 dark:text-emerald-300">
 								You
@@ -49,10 +49,12 @@ export const UserMessageGroup = memo(
 								<span>{formatTime(message.createdAt)}</span>
 							)}
 						</div>
-						<div className="text-sm text-foreground leading-relaxed prose prose-invert prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3 max-w-full break-words overflow-wrap-anywhere">
-							<ReactMarkdown remarkPlugins={[remarkGfm]}>
-								{content}
-							</ReactMarkdown>
+						<div className="inline-block max-w-full text-sm text-foreground leading-relaxed bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3 [word-break:break-word] overflow-hidden">
+							<div className="prose prose-invert prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_*]:[word-break:break-word] [&_*]:overflow-wrap-anywhere">
+								<ReactMarkdown remarkPlugins={[remarkGfm]}>
+									{content}
+								</ReactMarkdown>
+							</div>
 						</div>
 					</div>
 					<div className="flex-shrink-0 w-8 flex items-start justify-center">
