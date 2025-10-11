@@ -7,6 +7,7 @@ export * from './ui/Textarea';
 // Chat Components
 export * from './chat/ChatInput';
 export * from './chat/ChatInputContainer';
+export * from './chat/ChatInputView';
 export * from './chat/ConfigModal';
 export * from './chat/ConfigSelector';
 export * from './chat/StopButton';
@@ -14,6 +15,7 @@ export * from './chat/StopButton';
 // Message Components
 export * from './messages/MessageThread';
 export * from './messages/MessageThreadContainer';
+export * from './messages/MessageThreadView';
 export * from './messages/AssistantMessageGroup';
 export * from './messages/UserMessageGroup';
 export * from './messages/MessagePartItem';

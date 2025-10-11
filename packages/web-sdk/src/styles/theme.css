@@ -1,0 +1,339 @@
+/**
+ * AGI Web SDK - Default Theme
+ *
+ * This file provides default CSS variables for theming.
+ * You can import this file directly or override these variables in your own CSS.
+ *
+ * Usage:
+ * import '@agi-cli/web-sdk/styles/theme.css';
+ *
+ * Or override in your own CSS:
+ * :root {
+ *   --background: your-color;
+ * }
+ */
+
+@layer base {
+	:root {
+		/* Background & Foreground */
+		--background: 220 25% 95%;
+		--foreground: 220 10% 15%;
+
+		/* Card */
+		--card: 220 25% 98%;
+		--card-foreground: 220 10% 15%;
+
+		/* Popover */
+		--popover: 220 25% 98%;
+		--popover-foreground: 220 10% 15%;
+
+		/* Primary */
+		--primary: 222.2 47.4% 11.2%;
+		--primary-foreground: 210 40% 98%;
+
+		/* Secondary */
+		--secondary: 220 18% 88%;
+		--secondary-foreground: 222.2 35% 25%;
+
+		/* Muted */
+		--muted: 220 18% 88%;
+		--muted-foreground: 220 15% 40%;
+
+		/* Accent */
+		--accent: 220 20% 86%;
+		--accent-foreground: 222.2 35% 25%;
+
+		/* Destructive */
+		--destructive: 0 90% 65%;
+		--destructive-foreground: 210 40% 98%;
+
+		/* Border, Input & Ring */
+		--border: 220 15% 89%;
+		--input: 220 15% 89%;
+		--ring: 222.2 84% 4.9%;
+
+		/* Chart Colors */
+		--chart-1: 222.2 47.4% 41.2%;
+		--chart-2: 173 58% 39%;
+		--chart-3: 197 37% 24%;
+		--chart-4: 43 74% 66%;
+		--chart-5: 27 87% 67%;
+
+		/* Radius */
+		--radius: 0.5rem;
+
+		/* Sidebar */
+		--sidebar-background: 220 25% 91%;
+		--sidebar-foreground: 220 10% 15%;
+		--sidebar-primary: 222.2 47.4% 11.2%;
+		--sidebar-primary-foreground: 210 40% 98%;
+		--sidebar-accent: 220 20% 86%;
+		--sidebar-accent-foreground: 222.2 35% 25%;
+		--sidebar-border: 220 15% 89%;
+		--sidebar-ring: 222.2 84% 4.9%;
+
+		/* Code Syntax Highlighting */
+		--code-background: hsl(220 25% 93%);
+		--code-foreground: hsl(220 10% 10%);
+		--code-keyword: hsl(300 85% 42%);
+		--code-class: hsl(120 60% 35%);
+		--code-function: hsl(220 95% 45%);
+		--code-string: hsl(120 60% 35%);
+		--code-comment: hsl(220 15% 35%);
+		--code-operator: hsl(180 85% 30%);
+		--code-punctuation: hsl(220 15% 20%);
+
+		color-scheme: light;
+	}
+
+	.dark {
+		/* Background & Foreground */
+		--background: 240 10% 8%;
+		--foreground: 0 0% 98%;
+
+		/* Card */
+		--card: 240 10% 10%;
+		--card-foreground: 0 0% 98%;
+
+		/* Popover */
+		--popover: 240 10% 10%;
+		--popover-foreground: 0 0% 98%;
+
+		/* Primary */
+		--primary: 0 0% 98%;
+		--primary-foreground: 240 5.9% 10%;
+
+		/* Secondary */
+		--secondary: 240 3.7% 15.9%;
+		--secondary-foreground: 0 0% 98%;
+
+		/* Muted */
+		--muted: 240 3.7% 15.9%;
+		--muted-foreground: 240 5% 64.9%;
+
+		/* Accent */
+		--accent: 240 3.7% 15.9%;
+		--accent-foreground: 0 0% 98%;
+
+		/* Destructive */
+		--destructive: 0 75% 45%;
+		--destructive-foreground: 0 0% 98%;
+
+		/* Border, Input & Ring */
+		--border: 240 3.7% 15.9%;
+		--input: 240 3.7% 15.9%;
+		--ring: 240 4.9% 83.9%;
+
+		/* Chart Colors */
+		--chart-1: 220 70% 50%;
+		--chart-2: 160 60% 45%;
+		--chart-3: 30 80% 55%;
+		--chart-4: 280 65% 60%;
+		--chart-5: 340 75% 55%;
+
+		/* Sidebar */
+		--sidebar-background: 240 10% 10%;
+		--sidebar-foreground: 0 0% 98%;
+		--sidebar-primary: 217.2 91.2% 59.8%;
+		--sidebar-primary-foreground: 240 5.9% 10%;
+		--sidebar-accent: 240 3.7% 15.9%;
+		--sidebar-accent-foreground: 0 0% 98%;
+		--sidebar-border: 240 3.7% 15.9%;
+		--sidebar-ring: 217.2 91.2% 59.8%;
+
+		/* Code Syntax Highlighting */
+		--code-background: hsl(240 10% 10%);
+		--code-foreground: hsl(0 0% 98%);
+		--code-keyword: #c678dd;
+		--code-class: #98c379;
+		--code-function: #61afef;
+		--code-string: #98c379;
+		--code-comment: hsl(240 5% 64.9%);
+		--code-operator: #56b6c2;
+		--code-punctuation: hsl(240 5% 64.9%);
+
+		color-scheme: dark;
+	}
+}
+
+/* Markdown Content Styles */
+.markdown-content {
+	max-width: 100%;
+	overflow-wrap: break-word;
+	word-wrap: break-word;
+	word-break: break-word;
+}
+
+.markdown-content h1 {
+	font-size: 1.875rem;
+	font-weight: 700;
+	margin-top: 1.5rem;
+	margin-bottom: 1rem;
+	line-height: 1.2;
+}
+
+.markdown-content h2 {
+	font-size: 1.5rem;
+	font-weight: 600;
+	margin-top: 1.5rem;
+	margin-bottom: 0.75rem;
+	line-height: 1.3;
+}
+
+.markdown-content h3 {
+	font-size: 1.25rem;
+	font-weight: 600;
+	margin-top: 1.25rem;
+	margin-bottom: 0.5rem;
+	line-height: 1.4;
+}
+
+.markdown-content h4 {
+	font-size: 1.125rem;
+	font-weight: 600;
+	margin-top: 1rem;
+	margin-bottom: 0.5rem;
+	line-height: 1.4;
+}
+
+.markdown-content p {
+	margin-top: 0.75rem;
+	margin-bottom: 0.75rem;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+	margin-top: 0.75rem;
+	margin-bottom: 0.75rem;
+	padding-left: 1.5rem;
+}
+
+.markdown-content li {
+	margin-top: 0.25rem;
+	margin-bottom: 0.25rem;
+}
+
+.markdown-content pre {
+	background-color: var(--code-background);
+	border: 1px solid hsl(var(--border));
+	border-radius: 0.5rem;
+	padding: 1rem;
+	margin-top: 0.75rem;
+	margin-bottom: 0.75rem;
+	overflow-x: auto;
+	color: var(--code-foreground);
+	max-width: 100%;
+}
+
+.markdown-content code {
+	background-color: var(--code-background);
+	border: 1px solid hsl(var(--border));
+	border-radius: 0.25rem;
+	padding: 0.125rem 0.375rem;
+	font-size: 0.875rem;
+	color: var(--code-foreground);
+	word-break: break-all;
+}
+
+.markdown-content pre code {
+	background-color: transparent;
+	border: none;
+	padding: 0;
+	font-size: 0.875rem;
+	color: inherit;
+	word-break: normal;
+	overflow-wrap: normal;
+}
+
+.markdown-content blockquote {
+	border-left: 4px solid hsl(var(--border));
+	padding-left: 1rem;
+	margin-top: 0.75rem;
+	margin-bottom: 0.75rem;
+	color: hsl(var(--muted-foreground));
+	font-style: italic;
+}
+
+.markdown-content a {
+	color: hsl(var(--primary));
+	text-decoration: underline;
+	word-break: break-word;
+}
+
+.markdown-content a:hover {
+	color: hsl(var(--primary) / 0.85);
+}
+
+.markdown-content strong,
+.markdown-content b {
+	font-weight: 600;
+}
+
+.markdown-content em,
+.markdown-content i {
+	font-style: italic;
+}
+
+.markdown-content hr {
+	border: none;
+	border-top: 1px solid hsl(var(--border));
+	margin-top: 1.5rem;
+	margin-bottom: 1.5rem;
+}
+
+.markdown-content table {
+	width: 100%;
+	max-width: 100%;
+	border-collapse: collapse;
+	margin-top: 0.75rem;
+	margin-bottom: 0.75rem;
+	overflow-x: auto;
+	display: block;
+}
+
+.markdown-content th,
+.markdown-content td {
+	border: 1px solid hsl(var(--border));
+	padding: 0.5rem;
+	text-align: left;
+	word-break: break-word;
+}
+
+.markdown-content th {
+	background-color: hsl(var(--muted));
+	font-weight: 600;
+}
+
+.markdown-content > *:first-child {
+	margin-top: 0;
+}
+
+.markdown-content > *:last-child {
+	margin-bottom: 0;
+}
+
+.markdown-content > p:first-child,
+.markdown-content > ul:first-child,
+.markdown-content > ol:first-child,
+.markdown-content > pre:first-child,
+.markdown-content > blockquote:first-child {
+	margin-top: 0;
+}
+
+.markdown-content > p:last-child,
+.markdown-content > ul:last-child,
+.markdown-content > ol:last-child,
+.markdown-content > pre:last-child,
+.markdown-content > blockquote:last-child {
+	margin-bottom: 0;
+}
+
+/* Utility Classes */
+.scrollbar-hide {
+	-ms-overflow-style: none; /* IE and Edge */
+	scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none; /* Chrome, Safari and Opera */
+}

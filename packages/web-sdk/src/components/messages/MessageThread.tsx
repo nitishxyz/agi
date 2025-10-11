@@ -12,6 +12,15 @@ interface MessageThreadProps {
 	isGenerating?: boolean;
 }
 
+/**
+ * MessageThread - Full-featured message thread component with session headers
+ *
+ * This component is designed for the AGI web app and uses absolute positioning
+ * to fill its parent container. For a more flexible, size-agnostic component,
+ * use MessageThreadView instead.
+ *
+ * @deprecated Use MessageThreadView for new projects
+ */
 export const MessageThread = memo(function MessageThread({
 	messages,
 	session,
