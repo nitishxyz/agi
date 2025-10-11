@@ -82,6 +82,27 @@ export interface ServeWebUIOptions {
  * });
  * ```
  */
+function normalizeBasePath(prefix: string): string {
+	const trimmed = prefix.trim();
+	if (!trimmed || trimmed === '/') {
+		return '/';
+	}
+	const withLeadingSlash = trimmed.startsWith('/')
+		? trimmed
+		: `/${trimmed}`;
+	const withoutTrailingSlash = withLeadingSlash.replace(/\/+$/, '');
+	return withoutTrailingSlash || '/';
+}
+
+function injectRuntimeConfig(
+	html: string,
+	serverUrl: string,
+	basePath: string,
+): string {
+	const runtimeScript = `<!-- AGI Server URL: ${serverUrl} --><script>window.AGI_SERVER_URL = ${JSON.stringify(serverUrl)};window.AGI_ROUTER_BASEPATH = ${JSON.stringify(basePath)};</script>`;
+	return html.replace('</head>', `${runtimeScript}</head>`);
+}
+
 export function serveWebUI(options: ServeWebUIOptions = {}) {
 	const {
 		prefix = '/ui',
@@ -92,6 +113,7 @@ export function serveWebUI(options: ServeWebUIOptions = {}) {
 
 	const webUIPath = getWebUIPath();
 	const useEmbedded = EMBEDDED_ASSETS.size > 0;
+	const basePath = normalizeBasePath(prefix);
 
 	return async function handleRequest(req: Request): Promise<Response | null> {
 		const url = new URL(req.url);
@@ -121,9 +143,10 @@ export function serveWebUI(options: ServeWebUIOptions = {}) {
 					// Inject server URL into index.html
 					if (normalizedPath === '/index.html') {
 						const html = content.toString('utf-8');
-						const injectedHtml = html.replace(
-							'</head>',
-							`<!-- AGI Server URL: ${resolvedServerUrl} --><script>window.AGI_SERVER_URL = ${JSON.stringify(resolvedServerUrl)};</script></head>`,
+						const injectedHtml = injectRuntimeConfig(
+							html,
+							resolvedServerUrl,
+							basePath,
 						);
 						content = Buffer.from(injectedHtml, 'utf-8');
 					}
@@ -149,9 +172,10 @@ export function serveWebUI(options: ServeWebUIOptions = {}) {
 						// Inject server URL into index.html
 						if (normalizedPath === '/index.html') {
 							const html = await file.text();
-							const injectedHtml = html.replace(
-								'</head>',
-								`<!-- AGI Server URL: ${resolvedServerUrl} --><script>window.AGI_SERVER_URL = ${JSON.stringify(resolvedServerUrl)};</script></head>`,
+							const injectedHtml = injectRuntimeConfig(
+								html,
+								resolvedServerUrl,
+								basePath,
 							);
 							return new Response(injectedHtml, {
 								headers: { 'Content-Type': 'text/html' },
@@ -171,9 +195,10 @@ export function serveWebUI(options: ServeWebUIOptions = {}) {
 						// Inject server URL into index.html
 						if (normalizedPath === '/index.html') {
 							const html = content.toString('utf-8');
-							const injectedHtml = html.replace(
-								'</head>',
-								`<!-- AGI Server URL: ${resolvedServerUrl} --><script>window.AGI_SERVER_URL = ${JSON.stringify(resolvedServerUrl)};</script></head>`,
+							const injectedHtml = injectRuntimeConfig(
+								html,
+								resolvedServerUrl,
+								basePath,
 							);
 							content = Buffer.from(injectedHtml, 'utf-8');
 						}
