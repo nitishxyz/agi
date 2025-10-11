@@ -85,6 +85,15 @@ export function registerSessionMessagesRoutes(app: Hono) {
 			const db = await getDb(cfg.projectRoot);
 			const sessionId = c.req.param('id');
 			const body = await c.req.json().catch(() => ({}));
+			
+			// DEBUG: Log received body
+			logger.info('[API] Received message request', {
+				sessionId,
+				hasContent: !!body?.content,
+				hasUserContext: !!body?.userContext,
+				userContext: body?.userContext ? `${String(body.userContext).substring(0, 50)}...` : 'NONE',
+			});
+
 			// Load session to inherit its provider/model/agent by default
 			const sessionRows = await db
 				.select()
@@ -100,6 +109,12 @@ export function registerSessionMessagesRoutes(app: Hono) {
 			const agent = body?.agent ?? sess.agent ?? cfg.defaults.agent;
 			const content = body?.content ?? '';
 			const userContext = body?.userContext;
+
+			// DEBUG: Log extracted userContext
+			logger.info('[API] Extracted userContext', {
+				userContext: userContext ? `${String(userContext).substring(0, 50)}...` : 'NONE',
+				typeOf: typeof userContext,
+			});
 
 			// Validate model capabilities if tools are allowed for this agent
 			const wantsToolCalls = true; // agent toolset may be non-empty

@@ -37,6 +37,10 @@ export async function dispatchAssistantMessage(
 		oneShot,
 		userContext,
 	} = options;
+	
+	// DEBUG: Log userContext in dispatch
+	debugLog(`[MESSAGE_SERVICE] dispatchAssistantMessage called with userContext: ${userContext ? userContext.substring(0, 50) + '...' : 'NONE'}`);
+	
 	const sessionId = session.id;
 	const now = Date.now();
 	const userMessageId = crypto.randomUUID();
@@ -100,6 +104,9 @@ export async function dispatchAssistantMessage(
 		payload: { id: assistantMessageId, role: 'assistant' },
 	});
 
+	// DEBUG: Log before enqueue
+	debugLog(`[MESSAGE_SERVICE] Enqueuing assistant run with userContext: ${userContext ? userContext.substring(0, 50) + '...' : 'NONE'}`);
+
 	enqueueAssistantRun({
 		sessionId,
 		assistantMessageId,
@@ -128,21 +135,44 @@ function scheduleSessionTitle(args: {
 	db: DB;
 	sessionId: string;
 	content: unknown;
-}): void {
-	const { sessionId } = args;
-	if (titleInFlight.has(sessionId)) return;
-	titleInFlight.add(sessionId);
-	void (async () => {
+}) {
+	const { cfg, db, sessionId, content } = args;
+
+	if (titleInFlight.has(sessionId) || titlePending.has(sessionId)) {
+		return;
+	}
+
+	const processNext = () => {
+		if (titleQueue.length === 0) {
+			return;
+		}
+		if (titleActiveCount >= TITLE_CONCURRENCY_LIMIT) {
+			return;
+		}
+		const next = titleQueue.shift();
+		if (!next) return;
+		titleActiveCount++;
+		next();
+	};
+
+	const task = async () => {
+		titleInFlight.add(sessionId);
+		titlePending.delete(sessionId);
 		try {
-			const alreadyTitled = await sessionHasTitle(args.db, sessionId);
-			if (alreadyTitled) return;
-			await withTitleSlot(() => updateSessionTitle(args));
-		} catch {
-			// Swallow title generation errors; they are non-blocking.
+			await generateSessionTitle({ cfg, db, sessionId, content });
+		} catch (err) {
+			debugLog('[TITLE_GEN] Title generation error:');
+			debugLog(err);
 		} finally {
 			titleInFlight.delete(sessionId);
+			titleActiveCount--;
+			processNext();
 		}
-	})();
+	};
+
+	titlePending.add(sessionId);
+	titleQueue.push(task);
+	processNext();
 }
 
 function enqueueSessionTitle(args: {
@@ -151,72 +181,50 @@ function enqueueSessionTitle(args: {
 	sessionId: string;
 	content: unknown;
 }) {
-	const { sessionId } = args;
-	if (titlePending.has(sessionId) || titleInFlight.has(sessionId)) return;
-	titlePending.add(sessionId);
-	Promise.resolve()
-		.then(() => {
-			titlePending.delete(sessionId);
-			scheduleSessionTitle(args);
-		})
-		.catch(() => {
-			titlePending.delete(sessionId);
-		});
+	scheduleSessionTitle(args);
 }
 
-async function updateSessionTitle(args: {
+async function generateSessionTitle(args: {
 	cfg: AGIConfig;
 	db: DB;
 	sessionId: string;
 	content: unknown;
-}) {
+}): Promise<void> {
 	const { cfg, db, sessionId, content } = args;
+
 	try {
-		const rows = await db
+		const existingSession = await db
 			.select()
 			.from(sessions)
 			.where(eq(sessions.id, sessionId));
-		if (!rows.length) return;
-		const current = rows[0];
-		const alreadyHasTitle =
-			current.title != null && String(current.title).trim().length > 0;
-		let heuristic = '';
-		if (!alreadyHasTitle) {
-			heuristic = deriveTitle(String(content ?? ''));
-			if (heuristic) {
-				await db
-					.update(sessions)
-					.set({ title: heuristic })
-					.where(eq(sessions.id, sessionId));
-				publish({
-					type: 'session.updated',
-					sessionId,
-					payload: { title: heuristic },
-				});
-			}
+
+		if (!existingSession.length) {
+			debugLog('[TITLE_GEN] Session not found, aborting');
+			return;
 		}
 
-		const providerId =
-			(current.provider as ProviderId) ?? cfg.defaults.provider;
-		const modelId = current.model ?? cfg.defaults.model;
+		const sess = existingSession[0];
+		if (sess.title && sess.title !== 'New Session') {
+			debugLog('[TITLE_GEN] Session already has a title, skipping');
+			return;
+		}
 
-		debugLog('[TITLE_GEN] Starting title generation');
-		debugLog(`[TITLE_GEN] Provider: ${providerId}, Model: ${modelId}`);
+		const provider = sess.provider ?? cfg.defaults.provider;
+		const modelName = sess.model ?? cfg.defaults.model;
 
-		// Check if we need OAuth spoof prompt (same logic as runner)
+		debugLog('[TITLE_GEN] Generating title for session');
+		debugLog(`[TITLE_GEN] Provider: ${provider}, Model: ${modelName}`);
+
+		const model = await resolveModel(provider, modelName, cfg);
+
 		const { getAuth } = await import('@agi-cli/sdk');
 		const { getProviderSpoofPrompt } = await import('./prompt.ts');
-		const auth = await getAuth(providerId, cfg.projectRoot);
+		const auth = await getAuth(provider, cfg.projectRoot);
 		const needsSpoof = auth?.type === 'oauth';
-		const spoofPrompt = needsSpoof
-			? getProviderSpoofPrompt(providerId)
-			: undefined;
+		const spoofPrompt = needsSpoof ? getProviderSpoofPrompt(provider) : undefined;
 
-		debugLog(`[TITLE_GEN] Auth type: ${auth?.type ?? 'none'}`);
-		debugLog(`[TITLE_GEN] Needs spoof: ${needsSpoof}`);
-		debugLog(`[TITLE_GEN] Spoof prompt length: ${spoofPrompt?.length ?? 0}`);
+		debugLog(`[TITLE_GEN] needsSpoof: ${needsSpoof}, spoofPrompt: ${spoofPrompt || 'NONE'}`);
 
-		const model = await resolveModel(providerId, modelId, cfg);
 		const promptText = String(content ?? '').slice(0, 2000);
 
 		const titlePrompt = [
@@ -281,123 +289,49 @@ async function updateSessionTitle(args: {
 		const sanitized = sanitizeTitle(modelTitle);
 		debugLog(`[TITLE_GEN] After sanitization: "${sanitized}"`);
 
-		if (!sanitized) {
-			debugLog('[TITLE_GEN] Title sanitized to empty, aborting');
+		if (!sanitized || sanitized === 'New Session') {
+			debugLog('[TITLE_GEN] Sanitized title is empty or default, aborting');
 			return;
 		}
 
-		modelTitle = sanitized;
-
-		const check = await db
-			.select()
-			.from(sessions)
-			.where(eq(sessions.id, sessionId));
-		if (!check.length) return;
-		const currentTitle = String(check[0].title ?? '').trim();
-		if (currentTitle && currentTitle !== heuristic) {
-			debugLog(
-				`[TITLE_GEN] Session already has different title: "${currentTitle}", skipping`,
-			);
-			return;
-		}
-
-		debugLog(`[TITLE_GEN] Setting final title: "${modelTitle}"`);
 		await db
 			.update(sessions)
-			.set({ title: modelTitle })
+			.set({ title: sanitized, updatedAt: Date.now() })
 			.where(eq(sessions.id, sessionId));
+
+		debugLog(`[TITLE_GEN] Setting final title: "${sanitized}"`);
+
 		publish({
 			type: 'session.updated',
 			sessionId,
-			payload: { title: modelTitle },
+			payload: { id: sessionId, title: sanitized },
 		});
 	} catch (err) {
-		debugLog('[TITLE_GEN] Fatal error:');
+		debugLog('[TITLE_GEN] Error in generateSessionTitle:');
 		debugLog(err);
 	}
 }
 
-async function withTitleSlot<T>(fn: () => Promise<T>): Promise<T> {
-	await acquireTitleSlot();
-	try {
-		return await fn();
-	} finally {
-		releaseTitleSlot();
-	}
+function sanitizeTitle(raw: string): string {
+	let s = raw.trim();
+	s = s.replace(/^["']|["']$/g, '');
+	s = s.replace(/[.!?]+$/, '');
+	s = s.replace(/\s+/g, ' ');
+	if (s.length > 80) s = s.slice(0, 80).trim();
+	return s;
 }
 
-async function sessionHasTitle(db: DB, sessionId: string): Promise<boolean> {
-	try {
-		const rows = await db
-			.select({ title: sessions.title })
-			.from(sessions)
-			.where(eq(sessions.id, sessionId))
-			.limit(1);
-		if (!rows.length) return false;
-		const title = rows[0]?.title;
-		return typeof title === 'string' && title.trim().length > 0;
-	} catch {
-		return false;
-	}
-}
-
-function acquireTitleSlot(): Promise<void> {
-	if (titleActiveCount < TITLE_CONCURRENCY_LIMIT) {
-		titleActiveCount += 1;
-		return Promise.resolve();
-	}
-	return new Promise((resolve) => {
-		titleQueue.push(() => {
-			titleActiveCount += 1;
-			resolve();
-		});
-	});
-}
-
-function releaseTitleSlot(): void {
-	if (titleActiveCount > 0) titleActiveCount -= 1;
-	const next = titleQueue.shift();
-	if (next) {
-		next();
-	}
-}
-
-async function touchSessionLastActive(args: { db: DB; sessionId: string }) {
+async function touchSessionLastActive(args: {
+	db: DB;
+	sessionId: string;
+}): Promise<void> {
 	const { db, sessionId } = args;
 	try {
 		await db
 			.update(sessions)
-			.set({ lastActiveAt: Date.now() })
+			.set({ updatedAt: Date.now() })
 			.where(eq(sessions.id, sessionId));
-	} catch {}
-}
-
-function deriveTitle(text: string): string {
-	const cleaned = String(text || '')
-		.replace(/```[\s\S]*?```/g, ' ')
-		.replace(/`[^`]*`/g, ' ')
-		.replace(/\s+/g, ' ')
-		.trim();
-	if (!cleaned) return '';
-	const endIdx = (() => {
-		const punct = ['? ', '. ', '! ']
-			.map((p) => cleaned.indexOf(p))
-			.filter((i) => i > 0);
-		const idx = Math.min(...(punct.length ? punct : [cleaned.length]));
-		return Math.min(idx + 1, cleaned.length);
-	})();
-	const first = cleaned.slice(0, endIdx).trim();
-	const maxLen = 64;
-	const base = first.length > 8 ? first : cleaned;
-	const truncated =
-		base.length > maxLen ? `${base.slice(0, maxLen - 1).trimEnd()}…` : base;
-	return truncated;
-}
-
-function sanitizeTitle(s: string): string {
-	let t = s.trim();
-	t = t.replace(/^['"""''()[\\]]+|['"""''()[\\]]+$/g, '').trim();
-	t = t.replace(/[\\s\\-_:–—]+$/g, '').trim();
-	if (t.length > 64) t = `${t.slice(0, 63).trimEnd()}…`;
-	return t;
+	} catch (err) {
+		debugLog('[touchSessionLastActive] Error:', err);
+	}
 }
