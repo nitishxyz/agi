@@ -44,13 +44,14 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@agi-cli/sdk": "workspace:*",
 		"@agi-cli/database": "workspace:*",
+		"@agi-cli/sdk": "workspace:*",
 		"@agi-cli/server": "workspace:*",
 		"@clack/prompts": "^0.11.0",
+		"chalk": "^5.6.2",
+		"diff": "^8.0.2",
 		"marked": "^16.3.0",
-		"marked-terminal": "^7.3.0",
-		"diff": "^8.0.2"
+		"marked-terminal": "^7.3.0"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
