@@ -236,7 +236,7 @@ function parseGitStatus(
 	return { staged, unstaged, untracked };
 }
 
-function getStatusFromCode(code: string): GitFile['status'] {
+function _getStatusFromCode(code: string): GitFile['status'] {
 	switch (code) {
 		case 'M':
 			return 'modified';

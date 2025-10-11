@@ -9,15 +9,10 @@ import { isDebugEnabled, isTraceEnabled } from './debug-state';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-type LogOptions = {
-	meta?: Record<string, unknown>;
-	stack?: boolean;
-};
-
 /**
  * Format a log message with optional metadata
  */
-function formatMessage(
+function _formatMessage(
 	level: LogLevel,
 	message: string,
 	meta?: Record<string, unknown>,

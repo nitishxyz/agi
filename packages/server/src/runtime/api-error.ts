@@ -6,7 +6,7 @@
  */
 
 import { isDebugEnabled } from './debug-state';
-import { toErrorPayload, type ErrorPayload } from './error-handling';
+import { toErrorPayload } from './error-handling';
 
 /**
  * Standard API error response format
