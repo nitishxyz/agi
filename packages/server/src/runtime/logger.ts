@@ -45,9 +45,11 @@ export function debug(message: string, meta?: Record<string, unknown>): void {
 }
 
 /**
- * Log informational messages
+ * Log informational messages (only when debug or trace mode is enabled)
  */
 export function info(message: string, meta?: Record<string, unknown>): void {
+	if (!isDebugEnabled() && !isTraceEnabled()) return;
+
 	try {
 		if (meta && Object.keys(meta).length > 0) {
 			console.log(`[info] ${message}`, meta);
