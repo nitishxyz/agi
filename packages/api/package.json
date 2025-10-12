@@ -1,6 +1,6 @@
 {
 	"name": "@agi-cli/api",
-	"version": "0.1.76",
+	"version": "0.1.77",
 	"description": "Type-safe API client for AGI CLI server",
 	"type": "module",
 	"main": "./dist/index.js",
