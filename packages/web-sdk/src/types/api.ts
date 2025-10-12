@@ -62,6 +62,12 @@ export interface CreateSessionRequest {
 	title?: string;
 }
 
+export interface UpdateSessionRequest {
+	agent?: string;
+	provider?: string;
+	model?: string;
+}
+
 export interface SendMessageRequest {
 	content: string;
 	agent?: string;
@@ -74,6 +80,20 @@ export interface SendMessageRequest {
 export interface SendMessageResponse {
 	messageId: string;
 }
+
+export interface ModelInfo {
+	id: string;
+	label: string;
+	toolCall?: boolean;
+	reasoning?: boolean;
+}
+
+export interface ProviderModels {
+	label: string;
+	models: ModelInfo[];
+}
+
+export type AllModelsResponse = Record<string, ProviderModels>;
 
 // Git-related types
 export interface GitFileStatus {

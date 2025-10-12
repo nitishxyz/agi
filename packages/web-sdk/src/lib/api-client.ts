@@ -34,6 +34,8 @@ import type {
 	GitGenerateCommitMessageResponse,
 	GitBranchInfo,
 	GitPushResponse,
+	UpdateSessionRequest,
+	AllModelsResponse,
 } from '../types/api';
 import { API_BASE_URL } from './config';
 
@@ -167,6 +169,29 @@ class ApiClient {
 		return convertSession(response.data);
 	}
 
+	async updateSession(
+		sessionId: string,
+		data: UpdateSessionRequest,
+	): Promise<Session> {
+		const response = await fetch(`${this.baseUrl}/v1/sessions/${sessionId}`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(data),
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to update session' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		const sessionData = await response.json();
+		return convertSession(sessionData);
+	}
+
 	async abortSession(sessionId: string): Promise<{ success: boolean }> {
 		const response = await apiAbortSession({
 			path: { sessionId },
@@ -237,6 +262,24 @@ class ApiClient {
 			models: Array<{ id: string; label: string; toolCall?: boolean }>;
 			default: string;
 		};
+	}
+
+	async getAllModels(): Promise<AllModelsResponse> {
+		const response = await fetch(`${this.baseUrl}/v1/config/models`, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to fetch models' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
 	}
 
 	// Git methods using new API

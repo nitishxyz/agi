@@ -8,6 +8,7 @@ import {
 	useImperativeHandle,
 } from 'react';
 import { useSendMessage } from '../../hooks/useMessages';
+import { useSession, useUpdateSession } from '../../hooks/useSessions';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
 
@@ -23,6 +24,7 @@ export interface ChatInputContainerRef {
 export const ChatInputContainer = memo(
 	forwardRef<ChatInputContainerRef, ChatInputContainerProps>(
 		function ChatInputContainer({ sessionId, userContext }, ref) {
+			const session = useSession(sessionId);
 			const [agent, setAgent] = useState('');
 			const [provider, setProvider] = useState('');
 			const [model, setModel] = useState('');
@@ -32,6 +34,15 @@ export const ChatInputContainer = memo(
 			const chatInputRef = useRef<{ focus: () => void }>(null);
 
 			const sendMessage = useSendMessage(sessionId);
+			const updateSession = useUpdateSession(sessionId);
+
+			useEffect(() => {
+				if (session) {
+					setAgent(session.agent);
+					setProvider(session.provider);
+					setModel(session.model);
+				}
+			}, [session]);
 
 			useEffect(() => {
 				setInputKey((prev) => prev + 1);
@@ -68,17 +79,62 @@ export const ChatInputContainer = memo(
 				setIsConfigOpen(false);
 			}, []);
 
-			const handleAgentChange = useCallback((value: string) => {
-				setAgent(value);
-			}, []);
+			const handleAgentChange = useCallback(
+				async (value: string) => {
+					setAgent(value);
+					try {
+						await updateSession.mutateAsync({ agent: value });
+					} catch (error) {
+						console.error('Failed to update agent:', error);
+					}
+				},
+				[updateSession],
+			);
 
-			const handleProviderChange = useCallback((value: string) => {
-				setProvider(value);
-			}, []);
+			const handleModelSelectorChange = useCallback(
+				async (newProvider: string, newModel: string) => {
+					setProvider(newProvider);
+					setModel(newModel);
+					try {
+						await updateSession.mutateAsync({
+							provider: newProvider,
+							model: newModel,
+						});
+					} catch (error) {
+						console.error('Failed to update model:', error);
+					}
+				},
+				[updateSession],
+			);
 
-			const handleModelChange = useCallback((value: string) => {
-				setModel(value);
-			}, []);
+			const handleProviderChange = useCallback(
+				async (newProvider: string) => {
+					setProvider(newProvider);
+					if (model) {
+						try {
+							await updateSession.mutateAsync({
+								provider: newProvider,
+								model,
+							});
+						} catch (error) {
+							console.error('Failed to update provider:', error);
+						}
+					}
+				},
+				[model, updateSession],
+			);
+
+			const handleModelChange = useCallback(
+				async (newModel: string) => {
+					setModel(newModel);
+					try {
+						await updateSession.mutateAsync({ provider, model: newModel });
+					} catch (error) {
+						console.error('Failed to update model:', error);
+					}
+				},
+				[provider, updateSession],
+			);
 
 			return (
 				<>
@@ -91,6 +147,7 @@ export const ChatInputContainer = memo(
 						onAgentChange={handleAgentChange}
 						onProviderChange={handleProviderChange}
 						onModelChange={handleModelChange}
+						onModelSelectorChange={handleModelSelectorChange}
 					/>
 					<ChatInput
 						ref={chatInputRef}

@@ -9,6 +9,7 @@ import {
 } from '@agi-cli/web-sdk/components';
 import {
 	useCreateSession,
+	useConfig,
 	useTheme,
 	useWorkingDirectory,
 } from '@agi-cli/web-sdk/hooks';
@@ -21,6 +22,7 @@ interface SessionsLayoutProps {
 export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	const chatInputRef = useRef<ChatInputContainerRef>(null);
 	const createSession = useCreateSession();
+	const { data: config } = useConfig();
 	const { theme, toggleTheme } = useTheme();
 	const setCollapsed = useSidebarStore((state) => state.setCollapsed);
 	const navigate = useNavigate();
@@ -36,7 +38,9 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	const handleNewSession = useCallback(async () => {
 		try {
 			const session = await createSession.mutateAsync({
-				agent: 'general',
+				agent: config?.defaults.agent || 'general',
+				provider: config?.defaults.provider,
+				model: config?.defaults.model,
 			});
 			navigate({
 				to: '/sessions/$sessionId',
@@ -48,7 +52,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 		} catch (error) {
 			console.error('Failed to create session:', error);
 		}
-	}, [createSession, navigate, setCollapsed, focusInput]);
+	}, [createSession, config, navigate, setCollapsed, focusInput]);
 
 	const handleSelectSession = useCallback(
 		(id: string) => {

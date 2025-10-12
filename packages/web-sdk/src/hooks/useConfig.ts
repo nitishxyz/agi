@@ -15,3 +15,10 @@ export function useModels(provider?: string) {
 		enabled: !!provider,
 	});
 }
+
+export function useAllModels() {
+	return useQuery({
+		queryKey: ['models', 'all'],
+		queryFn: () => apiClient.getAllModels(),
+	});
+}

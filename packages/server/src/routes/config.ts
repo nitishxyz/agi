@@ -1,12 +1,18 @@
 import type { Hono } from 'hono';
 import { loadConfig } from '@agi-cli/sdk';
-import { catalog, type ProviderId, isProviderAuthorized } from '@agi-cli/sdk';
+import {
+	catalog,
+	type ProviderId,
+	isProviderAuthorized,
+	getGlobalAgentsDir,
+} from '@agi-cli/sdk';
 import { readdir } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import type { EmbeddedAppConfig } from '../index.ts';
 import type { AGIConfig } from '@agi-cli/sdk';
 import { logger } from '../runtime/logger.ts';
 import { serializeError } from '../runtime/api-error.ts';
+import { loadAgentsConfig } from '../runtime/agent-registry.ts';
 
 /**
  * Check if a provider is authorized in either embedded config or file-based config
@@ -64,6 +70,63 @@ function getDefault<T>(
 	return embeddedValue ?? embeddedDefaultValue ?? fileValue;
 }
 
+/**
+ * Discover all agents from all sources:
+ * - Built-in agents (general, build, plan)
+ * - agents.json (global + local)
+ * - Agent files in .agi/agents/ (global + local)
+ */
+async function discoverAllAgents(projectRoot: string): Promise<string[]> {
+	const builtInAgents = ['general', 'build', 'plan'];
+	const agentSet = new Set<string>(builtInAgents);
+
+	// Load agents from agents.json (global + local merged)
+	try {
+		const agentsJson = await loadAgentsConfig(projectRoot);
+		for (const agentName of Object.keys(agentsJson)) {
+			if (agentName.trim()) {
+				agentSet.add(agentName);
+			}
+		}
+	} catch (err) {
+		logger.debug('Failed to load agents.json', err);
+	}
+
+	// Discover custom agent files from local .agi/agents/
+	try {
+		const localAgentsPath = join(projectRoot, '.agi', 'agents');
+		const localFiles = await readdir(localAgentsPath).catch(() => []);
+		for (const file of localFiles) {
+			if (file.endsWith('.txt') || file.endsWith('.md')) {
+				const agentName = file.replace(/\.(txt|md)$/, '');
+				if (agentName.trim()) {
+					agentSet.add(agentName);
+				}
+			}
+		}
+	} catch (err) {
+		logger.debug('Failed to read local agents directory', err);
+	}
+
+	// Discover custom agent files from global ~/.config/agi/agents/
+	try {
+		const globalAgentsPath = getGlobalAgentsDir();
+		const globalFiles = await readdir(globalAgentsPath).catch(() => []);
+		for (const file of globalFiles) {
+			if (file.endsWith('.txt') || file.endsWith('.md')) {
+				const agentName = file.replace(/\.(txt|md)$/, '');
+				if (agentName.trim()) {
+					agentSet.add(agentName);
+				}
+			}
+		}
+	} catch (err) {
+		logger.debug('Failed to read global agents directory', err);
+	}
+
+	return Array.from(agentSet).sort();
+}
+
 export function registerConfigRoutes(app: Hono) {
 	// Get working directory info
 	app.get('/v1/config/cwd', (c) => {
@@ -93,25 +156,19 @@ export function registerConfigRoutes(app: Hono) {
 			const cfg = await loadConfig(projectRoot);
 
 			// Hybrid mode: Merge embedded config with file config
-			const builtInAgents = ['general', 'build', 'plan'];
-			let customAgents: string[] = [];
+			let allAgents: string[];
 
-			try {
-				const customAgentsPath = join(cfg.projectRoot, '.agi', 'agents');
-				const files = await readdir(customAgentsPath).catch(() => []);
-				customAgents = files
-					.filter((f) => f.endsWith('.txt'))
-					.map((f) => f.replace('.txt', ''));
-			} catch (err) {
-				logger.debug('Failed to read custom agents directory', err);
+			if (embeddedConfig?.agents) {
+				// Embedded mode: use embedded agents + file agents
+				const embeddedAgents = Object.keys(embeddedConfig.agents);
+				const fileAgents = await discoverAllAgents(cfg.projectRoot);
+				allAgents = Array.from(
+					new Set([...embeddedAgents, ...fileAgents]),
+				).sort();
+			} else {
+				// File mode: discover all agents
+				allAgents = await discoverAllAgents(cfg.projectRoot);
 			}
-
-			// Agents: Embedded custom agents + file-based agents
-			const fileAgents = [...builtInAgents, ...customAgents];
-			const embeddedAgents = embeddedConfig?.agents
-				? Object.keys(embeddedConfig.agents)
-				: [];
-			const allAgents = Array.from(new Set([...embeddedAgents, ...fileAgents]));
 
 			// Providers: Check both embedded and file-based auth
 			const authorizedProviders = await getAuthorizedProviders(
@@ -174,26 +231,12 @@ export function registerConfigRoutes(app: Hono) {
 			const projectRoot = c.req.query('project') || process.cwd();
 			const cfg = await loadConfig(projectRoot);
 
-			const builtInAgents = ['general', 'build', 'plan'];
+			const allAgents = await discoverAllAgents(cfg.projectRoot);
 
-			try {
-				const customAgentsPath = join(cfg.projectRoot, '.agi', 'agents');
-				const files = await readdir(customAgentsPath).catch(() => []);
-				const customAgents = files
-					.filter((f) => f.endsWith('.txt'))
-					.map((f) => f.replace('.txt', ''));
-
-				return c.json({
-					agents: [...builtInAgents, ...customAgents],
-					default: cfg.defaults.agent,
-				});
-			} catch (err) {
-				logger.debug('Failed to read custom agents directory', err);
-				return c.json({
-					agents: builtInAgents,
-					default: cfg.defaults.agent,
-				});
-			}
+			return c.json({
+				agents: allAgents,
+				default: cfg.defaults.agent,
+			});
 		} catch (error) {
 			logger.error('Failed to get agents', error);
 			const errorResponse = serializeError(error);
@@ -284,6 +327,59 @@ export function registerConfigRoutes(app: Hono) {
 			});
 		} catch (error) {
 			logger.error('Failed to get provider models', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
+	// Get all models grouped by provider
+	app.get('/v1/config/models', async (c) => {
+		try {
+			const embeddedConfig = c.get('embeddedConfig') as
+				| EmbeddedAppConfig
+				| undefined;
+
+			const projectRoot = c.req.query('project') || process.cwd();
+			const cfg = await loadConfig(projectRoot);
+
+			// Get all authorized providers
+			const authorizedProviders = await getAuthorizedProviders(
+				embeddedConfig,
+				cfg,
+			);
+
+			// Build models map
+			const modelsMap: Record<
+				string,
+				{
+					label: string;
+					models: Array<{
+						id: string;
+						label: string;
+						toolCall?: boolean;
+						reasoning?: boolean;
+					}>;
+				}
+			> = {};
+
+			for (const provider of authorizedProviders) {
+				const providerCatalog = catalog[provider];
+				if (providerCatalog) {
+					modelsMap[provider] = {
+						label: providerCatalog.label || provider,
+						models: providerCatalog.models.map((m) => ({
+							id: m.id,
+							label: m.label || m.id,
+							toolCall: m.toolCall,
+							reasoning: m.reasoning,
+						})),
+					};
+				}
+			}
+
+			return c.json(modelsMap);
+		} catch (error) {
+			logger.error('Failed to get all models', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}
