@@ -136,6 +136,19 @@ export const ChatInputContainer = memo(
 				[provider, updateSession],
 			);
 
+			const handlePlanModeToggle = useCallback(
+				async (isPlanMode: boolean) => {
+					const newAgent = isPlanMode ? 'plan' : 'build';
+					setAgent(newAgent);
+					try {
+						await updateSession.mutateAsync({ agent: newAgent });
+					} catch (error) {
+						console.error('Failed to switch agent:', error);
+					}
+				},
+				[updateSession],
+			);
+
 			return (
 				<>
 					<ConfigModal
@@ -155,6 +168,8 @@ export const ChatInputContainer = memo(
 						onSend={handleSendMessage}
 						disabled={sendMessage.isPending}
 						onConfigClick={handleToggleConfig}
+						onPlanModeToggle={handlePlanModeToggle}
+						isPlanMode={agent === 'plan'}
 					/>
 				</>
 			);
