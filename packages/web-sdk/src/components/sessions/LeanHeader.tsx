@@ -47,9 +47,7 @@ export function LeanHeader({
 				<div className="flex items-center gap-4">
 					<div className="flex items-center gap-2 text-muted-foreground">
 						<Bot className="w-4 h-4" />
-						<span className="text-foreground font-medium">
-							{session.agent}
-						</span>
+						<span className="text-foreground font-medium">{session.agent}</span>
 					</div>
 
 					{isGenerating && <StopButton sessionId={session.id} />}

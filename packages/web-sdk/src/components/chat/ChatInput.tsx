@@ -21,7 +21,13 @@ interface ChatInputProps {
 
 export const ChatInput = memo(
 	forwardRef<{ focus: () => void }, ChatInputProps>(function ChatInput(
-		{ onSend, disabled, onConfigClick, onPlanModeToggle, isPlanMode: externalIsPlanMode },
+		{
+			onSend,
+			disabled,
+			onConfigClick,
+			onPlanModeToggle,
+			isPlanMode: externalIsPlanMode,
+		},
 		ref,
 	) {
 		const [message, setMessage] = useState('');
@@ -52,6 +58,7 @@ export const ChatInput = memo(
 			}
 		}, []);
 
+		// biome-ignore lint/correctness/useExhaustiveDependencies: message dependency required for adjusting textarea height on content change
 		useEffect(() => {
 			adjustTextareaHeight();
 		}, [adjustTextareaHeight, message]);
