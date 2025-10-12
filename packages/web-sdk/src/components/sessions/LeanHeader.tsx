@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Session } from '../../types/api';
-import { Hash, DollarSign } from 'lucide-react';
+import { Hash, DollarSign, Bot } from 'lucide-react';
 import { StopButton } from '../chat/StopButton';
 
 interface LeanHeaderProps {
@@ -14,14 +14,12 @@ export function LeanHeader({
 	isVisible,
 	isGenerating,
 }: LeanHeaderProps) {
-	// Calculate total tokens
 	const totalTokens = useMemo(() => {
 		const input = session.totalInputTokens || 0;
 		const output = session.totalOutputTokens || 0;
 		return input + output;
 	}, [session.totalInputTokens, session.totalOutputTokens]);
 
-	// Calculate estimated cost
 	const estimatedCost = useMemo(() => {
 		const input = session.totalInputTokens || 0;
 		const output = session.totalOutputTokens || 0;
@@ -35,7 +33,6 @@ export function LeanHeader({
 		return inputCost + outputCost;
 	}, [session.totalInputTokens, session.totalOutputTokens]);
 
-	// Format number with commas
 	const formatNumber = (num: number) => {
 		return num.toLocaleString('en-US');
 	};
@@ -47,14 +44,18 @@ export function LeanHeader({
 			}`}
 		>
 			<div className="h-full px-6 flex items-center justify-between gap-6 text-sm">
-				{/* Left side - Stop button */}
-				<div className="flex-shrink-0">
+				<div className="flex items-center gap-4">
+					<div className="flex items-center gap-2 text-muted-foreground">
+						<Bot className="w-4 h-4" />
+						<span className="text-foreground font-medium">
+							{session.agent}
+						</span>
+					</div>
+
 					{isGenerating && <StopButton sessionId={session.id} />}
 				</div>
 
-				{/* Right side - Stats */}
 				<div className="flex items-center gap-6">
-					{/* Total Tokens */}
 					<div className="flex items-center gap-2 text-muted-foreground">
 						<Hash className="w-4 h-4" />
 						<span className="text-foreground font-medium">
@@ -62,7 +63,6 @@ export function LeanHeader({
 						</span>
 					</div>
 
-					{/* Estimated Cost */}
 					{estimatedCost > 0 && (
 						<div className="flex items-center gap-2 text-muted-foreground">
 							<DollarSign className="w-4 h-4" />
