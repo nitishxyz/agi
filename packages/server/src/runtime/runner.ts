@@ -77,33 +77,6 @@ async function processQueue(sessionId: string) {
 }
 
 /**
- * Ensures the finish tool is called if not already observed.
- */
-async function ensureFinishToolCalled(
-	finishObserved: boolean,
-	toolset: ReturnType<typeof adaptTools>,
-	sharedCtx: RunnerToolContext,
-	stepIndex: number,
-) {
-	if (finishObserved || !toolset?.finish?.execute) return;
-
-	const finishInput = {} as const;
-	const callOptions = { input: finishInput } as const;
-
-	sharedCtx.stepIndex = stepIndex;
-
-	try {
-		await toolset.finish.onInputStart?.(callOptions as never);
-	} catch {}
-
-	try {
-		await toolset.finish.onInputAvailable?.(callOptions as never);
-	} catch {}
-
-	await toolset.finish.execute(finishInput, {} as never);
-}
-
-/**
  * Main function to run the assistant for a given request.
  */
 async function runAssistant(opts: RunOpts) {
@@ -293,7 +266,6 @@ async function runAssistant(opts: RunOpts) {
 	const onFinish = createFinishHandler(
 		opts,
 		db,
-		() => ensureFinishToolCalled(finishObserved, toolset, sharedCtx, stepIndex),
 		completeAssistantMessage,
 	);
 

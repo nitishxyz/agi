@@ -1,5 +1,10 @@
-- Signal that the task is complete
-- Agent should stream the summary directly as assistant message not using the finish tool
+Call this tool AFTER you have completed all your work AND streamed your final summary/response to the user.
 
-Usage tips:
-- Ensure all necessary outputs are already saved/emitted before finishing
+This signals the end of your turn and that you are done with the current request.
+
+**CRITICAL**: You MUST always call this tool when you are completely finished. The workflow is:
+1. Perform all necessary tool calls (read files, make changes, etc.)
+2. Stream your final text response/summary to the user
+3. Call the finish tool to signal completion
+
+Do NOT call finish before streaming your response. Do NOT forget to call finish after responding.

@@ -264,7 +264,6 @@ export function createAbortHandler(
 export function createFinishHandler(
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
-	ensureFinishToolCalled: () => Promise<void>,
 	completeAssistantMessageFn: (
 		fin: FinishEvent,
 		opts: RunOpts,
@@ -272,10 +271,6 @@ export function createFinishHandler(
 	) => Promise<void>,
 ) {
 	return async (fin: FinishEvent) => {
-		try {
-			await ensureFinishToolCalled();
-		} catch {}
-
 		// Note: Token updates are handled incrementally in onStepFinish
 		// Do NOT add fin.usage here as it would cause double-counting
 

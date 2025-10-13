@@ -116,7 +116,9 @@ export const AssistantMessageGroup = memo(
 				<div className="relative ml-1">
 					{parts.map((part, index) => {
 						const isLastPart = index === parts.length - 1;
-						const showLine = !isLastPart || hasNextAssistantMessage;
+						// Don't show line after finish tool
+						const isFinishTool = part.type === 'tool_result' && part.toolName === 'finish';
+						const showLine = (!isLastPart || hasNextAssistantMessage) && !isFinishTool;
 						const isLastToolCall = part.type === 'tool_call' && isLastPart;
 						const isProgressUpdate =
 							part.type === 'tool_result' &&

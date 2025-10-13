@@ -109,6 +109,9 @@ export async function buildHistoryMessages(
 			}
 
 			for (const call of toolCalls) {
+				// Skip finish tool from history - it's internal loop control
+				if (call.name === 'finish') continue;
+
 				const toolType = `tool-${call.name}` as `tool-${string}`;
 				const result = toolResults.find((r) => r.callId === call.callId);
 
