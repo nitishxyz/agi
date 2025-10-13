@@ -1,5 +1,5 @@
 import type { Hono } from 'hono';
-import { readdir } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -38,6 +38,52 @@ function shouldExclude(name: string): boolean {
 	return false;
 }
 
+async function parseGitignore(projectRoot: string): Promise<Set<string>> {
+	const patterns = new Set<string>();
+	try {
+		const gitignorePath = join(projectRoot, '.gitignore');
+		const content = await readFile(gitignorePath, 'utf-8');
+		for (const line of content.split('\n')) {
+			const trimmed = line.trim();
+			if (trimmed && !trimmed.startsWith('#')) {
+				patterns.add(trimmed);
+			}
+		}
+	} catch (_err) {
+	}
+	return patterns;
+}
+
+function matchesGitignorePattern(
+	relativePath: string,
+	patterns: Set<string>,
+): boolean {
+	for (const pattern of patterns) {
+		const cleanPattern = pattern.replace(/^\//, '').replace(/\/$/, '');
+		const pathParts = relativePath.split('/');
+
+		if (pattern.endsWith('/')) {
+			if (pathParts[0] === cleanPattern) return true;
+			if (relativePath.startsWith(`${cleanPattern}/`)) return true;
+		}
+
+		if (pattern.includes('*')) {
+			const regex = new RegExp(
+				`^${cleanPattern.replace(/\*/g, '.*').replace(/\?/g, '.')}$`,
+			);
+			if (regex.test(relativePath)) return true;
+			for (const part of pathParts) {
+				if (regex.test(part)) return true;
+			}
+		} else {
+			if (relativePath === cleanPattern) return true;
+			if (pathParts.includes(cleanPattern)) return true;
+			if (relativePath.startsWith(`${cleanPattern}/`)) return true;
+		}
+	}
+	return false;
+}
+
 async function traverseDirectory(
 	dir: string,
 	projectRoot: string,
@@ -45,6 +91,7 @@ async function traverseDirectory(
 	currentDepth = 0,
 	limit: number,
 	collected: string[] = [],
+	gitignorePatterns?: Set<string>,
 ): Promise<{ files: string[]; truncated: boolean }> {
 	if (currentDepth >= maxDepth || collected.length >= limit) {
 		return { files: collected, truncated: collected.length >= limit };
@@ -65,6 +112,10 @@ async function traverseDirectory(
 			const fullPath = join(dir, entry.name);
 			const relativePath = relative(projectRoot, fullPath);
 
+			if (gitignorePatterns && matchesGitignorePattern(relativePath, gitignorePatterns)) {
+				continue;
+			}
+
 			if (entry.isDirectory()) {
 				const result = await traverseDirectory(
 					fullPath,
@@ -73,6 +124,7 @@ async function traverseDirectory(
 					currentDepth + 1,
 					limit,
 					collected,
+					gitignorePatterns,
 				);
 				if (result.truncated) {
 					return result;
@@ -124,12 +176,16 @@ export function registerFilesRoutes(app: Hono) {
 			const maxDepth = Number.parseInt(c.req.query('maxDepth') || '10', 10);
 			const limit = Number.parseInt(c.req.query('limit') || '1000', 10);
 
+			const gitignorePatterns = await parseGitignore(projectRoot);
+
 			const result = await traverseDirectory(
 				projectRoot,
 				projectRoot,
 				maxDepth,
 				0,
 				limit,
+				[],
+				gitignorePatterns,
 			);
 
 			const changedFiles = await getChangedFiles(projectRoot);

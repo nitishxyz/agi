@@ -132,14 +132,14 @@ export const ChatInput = memo(
 
 		const handleKeyDown = useCallback(
 			(e: KeyboardEvent<HTMLTextAreaElement>) => {
-				if (showFileMention) {
-					if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'j')) {
-						e.preventDefault();
-						setMentionSelectedIndex((prev) => Math.min(prev + 1, 9));
-					} else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'k')) {
-						e.preventDefault();
-						setMentionSelectedIndex((prev) => Math.max(prev - 1, 0));
-					} else if (e.key === 'Enter') {
+			if (showFileMention) {
+				if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'j')) {
+					e.preventDefault();
+					setMentionSelectedIndex((prev) => (prev + 1) % 20);
+				} else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'k')) {
+					e.preventDefault();
+					setMentionSelectedIndex((prev) => (prev - 1 + 20) % 20);
+				} else if (e.key === 'Enter') {
 						e.preventDefault();
 						if (currentFileToSelect) {
 							handleFileSelect(currentFileToSelect);

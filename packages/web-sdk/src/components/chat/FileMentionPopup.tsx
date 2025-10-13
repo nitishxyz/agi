@@ -129,7 +129,7 @@ export function FileMentionPopup({
 
 	const results = useMemo(() => {
 		if (!query) {
-			return files.slice(0, 10);
+			return files.slice(0, 20);
 		}
 		const searchResults = fuse.search(query).map((r) => r.item);
 
@@ -141,7 +141,7 @@ export function FileMentionPopup({
 			return 0;
 		});
 
-		return searchResults.slice(0, 10);
+		return searchResults.slice(0, 20);
 	}, [fuse, query, files, changedFilesMap]);
 
 	useEffect(() => {
