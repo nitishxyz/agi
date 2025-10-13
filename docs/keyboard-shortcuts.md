@@ -22,7 +22,9 @@ AGI web interface supports vim-style keyboard shortcuts for efficient navigation
 
 - **Ctrl+N** - Create new session
 
-- **Esc** - Return focus to chat input
+- **ESC** - Close sidebar and return to center
+  - Closes current sidebar if focused on left or right
+  - Returns focus to chat input
 
 ### Session List (when focused with Ctrl+H)
 
@@ -38,7 +40,8 @@ AGI web interface supports vim-style keyboard shortcuts for efficient navigation
 - **A** - Stage all unstaged files
 - **U** - Unstage all staged files
 - **C** - Open commit modal (if files are staged)
-- **Enter** - View diff of focused file
+- **Diff preview** - Automatically shown when file is focused (no need to press Enter)
+- **Space** - Also shows diff when toggling stage/unstage
 
 ## Visual Indicators
 

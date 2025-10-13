@@ -35,6 +35,7 @@ export function useKeyboardShortcuts({
 	const { currentFocus, sessionIndex, gitFileIndex, setFocus, setSessionIndex, setGitFileIndex, resetSessionIndex, resetGitFileIndex } = useFocusStore();
 	const { isCollapsed: isSessionListCollapsed, setCollapsed: setSessionListCollapsed, toggleCollapse: toggleSessionList } = useSidebarStore();
 	const { isExpanded: isGitExpanded, toggleSidebar: toggleGit, openCommitModal } = useGitStore();
+	const closeDiff = useGitStore((state) => state.closeDiff);
 
 	const currentSessionIndex = sessionIds.indexOf(activeSessionId || '');
 
@@ -54,13 +55,14 @@ export function useKeyboardShortcuts({
 				setSessionListCollapsed(true);
 				// Focus the input after a small delay to ensure sidebar is collapsing
 				setTimeout(() => onReturnToInput?.(), 50);
-			} else if (currentFocus === 'git') {
-				// On right sidebar, go back to center (don't jump to left)
-				(document.activeElement as HTMLElement)?.blur();
-				setFocus('input');
-				toggleGit();
-				setTimeout(() => onReturnToInput?.(), 50);
-			} else {
+		} else if (currentFocus === 'git') {
+			// On right sidebar, go back to center (don't jump to left)
+			(document.activeElement as HTMLElement)?.blur();
+			setFocus('input');
+			toggleGit();
+			closeDiff();
+			setTimeout(() => onReturnToInput?.(), 50);
+		} else {
 				// From center, go to left sidebar
 				(document.activeElement as HTMLElement)?.blur();
 				setFocus('sessions');
@@ -76,13 +78,14 @@ export function useKeyboardShortcuts({
 			e.preventDefault();
 			
 			// Ctrl+L: center -> right, right -> center, left -> center
-			if (currentFocus === 'git') {
-				// Already on git, go back to center
-				(document.activeElement as HTMLElement)?.blur();
-				setFocus('input');
-				toggleGit();
-				// Focus the input after a small delay to ensure sidebar is collapsing
-				setTimeout(() => onReturnToInput?.(), 50);
+		if (currentFocus === 'git') {
+			// Already on git, go back to center
+			(document.activeElement as HTMLElement)?.blur();
+			setFocus('input');
+			toggleGit();
+			closeDiff();
+			// Focus the input after a small delay to ensure sidebar is collapsing
+			setTimeout(() => onReturnToInput?.(), 50);
 			} else if (currentFocus === 'sessions') {
 				// On left sidebar, go back to center (don't jump to right)
 				(document.activeElement as HTMLElement)?.blur();
@@ -119,10 +122,17 @@ export function useKeyboardShortcuts({
 				return;
 			}
 
-			if (e.key === 'Escape') {
-				e.preventDefault();
-				setFocus('input');
-				onReturnToInput?.();
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			// Close sidebar if focused on one
+			if (currentFocus === 'sessions') {
+				setSessionListCollapsed(true);
+			} else if (currentFocus === 'git') {
+				toggleGit();
+				closeDiff();
+			}
+			setFocus('input');
+			onReturnToInput?.();
 				return;
 			}
 

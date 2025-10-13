@@ -12,7 +12,7 @@ interface GitFileListProps {
 }
 
 export function GitFileList({ status }: GitFileListProps) {
-	const { openCommitModal } = useGitStore();
+	const { openCommitModal, openDiff } = useGitStore();
 	const stageFiles = useStageFiles();
 	const unstageFiles = useUnstageFiles();
 	const { currentFocus, gitFileIndex } = useFocusStore();
@@ -45,36 +45,33 @@ export function GitFileList({ status }: GitFileListProps) {
 	};
 
 	useEffect(() => {
-		if (currentFocus === 'git') {
+		if (currentFocus === 'git' && gitFileIndex >= 0) {
 			const element = itemRefs.current.get(gitFileIndex);
 			element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+			// Auto-show diff for focused file
+			const allFiles = [...status.staged, ...status.unstaged, ...status.untracked];
+			const focusedFile = allFiles[gitFileIndex];
+			if (focusedFile) {
+				// Determine if file is staged or unstaged
+				const isStaged = status.staged.includes(focusedFile);
+				openDiff(focusedFile.path, isStaged);
+			}
 		}
-	}, [currentFocus, gitFileIndex]);
+	}, [currentFocus, gitFileIndex, status.staged, status.unstaged, status.untracked]);
 
 	return (
 		<div className="flex flex-col">
 			{hasStaged && (
 				<div className="border-b border-border">
 					<div className="px-4 py-2 bg-muted/50 flex items-center justify-between">
-						<span className="text-xs font-semibold text-foreground uppercase">
-							Staged Changes ({status.staged.length})
-						</span>
-						<div className="flex items-center gap-1">
-							{status.staged.length > 0 && (
-								<Button
-									variant="ghost"
-									size="sm"
-									onClick={handleUnstageAll}
-									title="Unstage all changes"
-									className="h-6 text-xs"
-								>
-									<Square className="w-3 h-3 mr-1" />
-									Unstage All
-								</Button>
-							)}
-							{status.staged.length > 0 && (
-								<Button
-									variant="primary"
+					<span className="text-xs font-semibold text-foreground uppercase">
+						Staged Changes ({status.staged.length})
+					</span>
+					<div className="flex items-center gap-1">
+						{status.staged.length > 0 && (
+							<Button
+								variant="primary"
 									size="sm"
 									onClick={openCommitModal}
 									className="h-6 text-xs"
