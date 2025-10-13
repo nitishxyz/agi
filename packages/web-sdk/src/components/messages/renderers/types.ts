@@ -42,6 +42,19 @@ export interface ToolResultData {
 	// Additional fields for specific renderers
 	diff?: string; // for GitDiffRenderer
 	summary?: string; // for GitStatusRenderer
+	changes?: Array<{
+		filePath: string;
+		kind: string;
+		hunks: Array<{
+			oldStart: number;
+			oldLines: number;
+			newStart: number;
+			newLines: number;
+			additions: number;
+			deletions: number;
+			context?: string;
+		}>;
+	}>;
 	results?: unknown[]; // for WebSearchRenderer
 }
 

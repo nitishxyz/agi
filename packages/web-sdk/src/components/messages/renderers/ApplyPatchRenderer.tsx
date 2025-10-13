@@ -4,6 +4,22 @@ import { DiffView } from './DiffView';
 import { formatDuration } from './utils';
 import { ToolErrorDisplay } from './ToolErrorDisplay';
 
+interface ApplyPatchChangeHunk {
+	oldStart: number;
+	oldLines: number;
+	newStart: number;
+	newLines: number;
+	additions: number;
+	deletions: number;
+	context?: string;
+}
+
+interface ApplyPatchChange {
+	filePath: string;
+	kind: string;
+	hunks: ApplyPatchChangeHunk[];
+}
+
 export function ApplyPatchRenderer({
 	contentJson,
 	toolDurationMs,
@@ -12,11 +28,30 @@ export function ApplyPatchRenderer({
 }: RendererProps) {
 	const artifact = contentJson.artifact;
 	const timeStr = formatDuration(toolDurationMs);
+
+	const formatSpan = (start: number, count: number) => {
+		if (count <= 1) return `${start}`;
+		return `${start}-${start + count - 1}`;
+	};
+
+	const formatHunkLabel = (hunk: ApplyPatchChangeHunk) => {
+		const left = `-${formatSpan(hunk.oldStart, hunk.oldLines)}`;
+		const right = `+${formatSpan(hunk.newStart, hunk.newLines)}`;
+		const deltaParts: string[] = [];
+		if (hunk.additions > 0) deltaParts.push(`+${hunk.additions}`);
+		if (hunk.deletions > 0) deltaParts.push(`-${hunk.deletions}`);
+		const delta = deltaParts.length > 0 ? ` (${deltaParts.join(', ')})` : '';
+		return `${left} ${right}${delta}`;
+	};
 	const summary = artifact?.summary || {};
 	const files = Number(summary.files || 0);
 	const additions = Number(summary.additions || 0);
 	const deletions = Number(summary.deletions || 0);
 	const patch = artifact?.patch ? String(artifact.patch) : '';
+
+	const changes = Array.isArray(contentJson.result?.changes)
+		? (contentJson.result?.changes as ApplyPatchChange[])
+		: [];
 
 	// Check for errors
 	const hasError =
@@ -88,6 +123,31 @@ export function ApplyPatchRenderer({
 					)}
 				</div>
 			)}
+			{isExpanded && !hasError && changes.length > 0 && (
+				<div className="mt-2 ml-5 space-y-2">
+					{changes.map((change) => (
+						<div
+							key={`apply-patch-${change.filePath}-${change.kind}`}
+							className="space-y-1"
+						>
+							<div className="font-mono text-foreground/80">
+								{change.filePath}
+							</div>
+							<div className="flex flex-wrap gap-2">
+								{change.hunks.map((hunk, index) => (
+									<span
+										key={`apply-patch-${change.filePath}-hunk-${index}`}
+										className="rounded bg-muted px-2 py-0.5 text-[0.65rem] font-mono text-muted-foreground"
+									>
+										{formatHunkLabel(hunk)}
+									</span>
+								))}
+							</div>
+						</div>
+					))}
+				</div>
+			)}
+
 			{isExpanded && !hasError && patch && (
 				<div className="mt-2 ml-5">
 					<DiffView patch={patch} />

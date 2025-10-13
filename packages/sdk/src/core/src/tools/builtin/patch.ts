@@ -1,184 +1,688 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
-import { writeFile, readFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, unlink, mkdir } from 'node:fs/promises';
+import { dirname, resolve, relative, isAbsolute } from 'node:path';
 import DESCRIPTION from './patch.txt' with { type: 'text' };
 
-const execAsync = promisify(exec);
+interface PatchAddOperation {
+	kind: 'add';
+	filePath: string;
+	lines: string[];
+}
 
-/**
- * Apply enveloped patch by directly modifying files
- */
-async function applyEnvelopedPatch(projectRoot: string, patch: string) {
-	const lines = patch.split('\n');
-	let currentFile: string | null = null;
-	let operation: 'add' | 'update' | 'delete' | null = null;
-	let fileContent: string[] = [];
+interface PatchDeleteOperation {
+	kind: 'delete';
+	filePath: string;
+}
 
-	async function applyCurrentFile() {
-		if (!currentFile || !operation) return { ok: true };
+interface PatchUpdateOperation {
+	kind: 'update';
+	filePath: string;
+	hunks: PatchHunk[];
+}
 
-		const fullPath = `${projectRoot}/${currentFile}`;
+type ParsedPatchOperation =
+	| PatchAddOperation
+	| PatchDeleteOperation
+	| PatchUpdateOperation;
 
-		if (operation === 'delete') {
-			try {
-				await writeFile(fullPath, '');
-			} catch (e) {
-				return {
-					ok: false,
-					error: `Failed to delete ${currentFile}: ${e instanceof Error ? e.message : String(e)}`,
-				};
-			}
-		} else if (operation === 'add') {
-			// For add, only use lines starting with +
-			const newContent = fileContent
-				.filter((l) => l.startsWith('+'))
-				.map((l) => l.substring(1))
-				.join('\n');
-			try {
-				await writeFile(fullPath, newContent);
-			} catch (e) {
-				return {
-					ok: false,
-					error: `Failed to create ${currentFile}: ${e instanceof Error ? e.message : String(e)}`,
-				};
-			}
-		} else if (operation === 'update') {
-			try {
-				// Read existing file
-				let existingContent = '';
-				try {
-					existingContent = await readFile(fullPath, 'utf-8');
-				} catch {
-					// File doesn't exist yet
-				}
+type PatchLineKind = 'context' | 'add' | 'remove';
 
-				// Get the old content (lines starting with -)
-				const oldLines = fileContent
-					.filter((l) => l.startsWith('-'))
-					.map((l) => l.substring(1));
+interface PatchHunkLine {
+	kind: PatchLineKind;
+	content: string;
+}
 
-				// Get the new content (lines starting with +)
-				const newLines = fileContent
-					.filter((l) => l.startsWith('+'))
-					.map((l) => l.substring(1));
+interface PatchHunkHeader {
+	oldStart?: number;
+	oldLines?: number;
+	newStart?: number;
+	newLines?: number;
+	context?: string;
+}
 
-				// Simple replacement: if old content is empty, append
-				// Otherwise try to replace old with new
-				let newContent = existingContent;
-				if (oldLines.length > 0) {
-					const oldText = oldLines.join('\n');
-					const newText = newLines.join('\n');
+interface PatchHunk {
+	header: PatchHunkHeader;
+	lines: PatchHunkLine[];
+}
 
-					// Try exact match first
-					if (existingContent.includes(oldText)) {
-						newContent = existingContent.replace(oldText, newText);
-					} else {
-						// Try normalizing whitespace for more flexible matching
-						const normalizeWhitespace = (s: string) =>
-							s.replace(/\s+/g, ' ').trim();
-						const normalizedOld = normalizeWhitespace(oldText);
-						const normalizedExisting = normalizeWhitespace(existingContent);
+interface PatchStats {
+	additions: number;
+	deletions: number;
+}
 
-						if (normalizedExisting.includes(normalizedOld)) {
-							// Find the actual text in the file by matching normalized version
-							const lines = existingContent.split('\n');
-							let found = false;
+interface AppliedHunkResult {
+	header: PatchHunkHeader;
+	lines: PatchHunkLine[];
+	oldStart: number;
+	oldLines: number;
+	newStart: number;
+	newLines: number;
+	additions: number;
+	deletions: number;
+}
 
-							for (let i = 0; i < lines.length; i++) {
-								const candidate = lines
-									.slice(i, i + oldLines.length)
-									.join('\n');
-								if (normalizeWhitespace(candidate) === normalizedOld) {
-									// Replace this section
-									const before = lines.slice(0, i).join('\n');
-									const after = lines.slice(i + oldLines.length).join('\n');
-									newContent =
-										before +
-										(before ? '\n' : '') +
-										newText +
-										(after ? '\n' : '') +
-										after;
-									found = true;
-									break;
-								}
-							}
+interface AppliedOperationRecord {
+	kind: 'add' | 'delete' | 'update';
+	filePath: string;
+	operation: ParsedPatchOperation;
+	stats: PatchStats;
+	hunks: AppliedHunkResult[];
+}
 
-							if (!found) {
-								const preview = oldText.substring(0, 100);
-								return {
-									ok: false,
-									error: `Cannot find exact location to replace in ${currentFile}. Looking for: "${preview}${oldText.length > 100 ? '...' : ''}"`,
-								};
-							}
-						} else {
-							// Can't find even with normalized whitespace
-							const preview = oldText.substring(0, 100);
-							const filePreview = existingContent.substring(0, 200);
-							return {
-								ok: false,
-								error: `Cannot find content to replace in ${currentFile}.\nLooking for: "${preview}${oldText.length > 100 ? '...' : ''}"\nFile contains: "${filePreview}${existingContent.length > 200 ? '...' : ''}"`,
-							};
-						}
-					}
-				} else if (newLines.length > 0) {
-					// Just appending new lines
-					newContent =
-						existingContent +
-						(existingContent.endsWith('\n') ? '' : '\n') +
-						newLines.join('\n');
-				}
+const PATCH_BEGIN_MARKER = '*** Begin Patch';
+const PATCH_END_MARKER = '*** End Patch';
+const PATCH_ADD_PREFIX = '*** Add File:';
+const PATCH_UPDATE_PREFIX = '*** Update File:';
+const PATCH_DELETE_PREFIX = '*** Delete File:';
 
-				await writeFile(fullPath, newContent);
-			} catch (e) {
-				return {
-					ok: false,
-					error: `Failed to update ${currentFile}: ${e instanceof Error ? e.message : String(e)}`,
-				};
-			}
-		}
-		return { ok: true };
+function isErrnoException(value: unknown): value is NodeJS.ErrnoException {
+	return (
+		value instanceof Error &&
+		typeof (value as NodeJS.ErrnoException).code === 'string'
+	);
+}
+
+function splitLines(value: string): { lines: string[]; newline: string } {
+	const newline = value.includes('\r\n') ? '\r\n' : '\n';
+	const normalized = newline === '\n' ? value : value.replace(/\r\n/g, '\n');
+	const parts = normalized.split('\n');
+
+	if (parts.length > 0 && parts[parts.length - 1] === '') {
+		parts.pop();
 	}
 
-	for (const line of lines) {
-		if (line === '*** Begin Patch' || line === '*** End Patch') {
+	return { lines: parts, newline };
+}
+
+function joinLines(lines: string[], newline: string): string {
+	const base = lines.join('\n');
+	return newline === '\n' ? base : base.replace(/\n/g, newline);
+}
+
+function ensureTrailingNewline(lines: string[]) {
+	if (lines.length === 0 || lines[lines.length - 1] !== '') {
+		lines.push('');
+	}
+}
+
+function findSubsequence(
+	lines: string[],
+	pattern: string[],
+	startIndex: number,
+): number {
+	if (pattern.length === 0) return -1;
+	const start = Math.max(0, startIndex);
+	for (let i = start; i <= lines.length - pattern.length; i++) {
+		let matches = true;
+		for (let j = 0; j < pattern.length; j++) {
+			if (lines[i + j] !== pattern[j]) {
+				matches = false;
+				break;
+			}
+		}
+		if (matches) return i;
+	}
+	return -1;
+}
+
+function parseDirectivePath(line: string, prefix: string): string {
+	const filePath = line.slice(prefix.length).trim();
+	if (!filePath) {
+		throw new Error(`Missing file path for directive: ${line}`);
+	}
+	if (filePath.startsWith('/') || isAbsolute(filePath)) {
+		throw new Error('Patch file paths must be relative to the project root.');
+	}
+	return filePath;
+}
+
+function parseHunkHeader(raw: string): PatchHunkHeader {
+	const numericMatch = raw.match(
+		/^@@\s*-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?\s*@@(?:\s*(.*))?$/,
+	);
+	if (numericMatch) {
+		const [, oldStart, oldCount, newStart, newCount, context] = numericMatch;
+		return {
+			oldStart: Number.parseInt(oldStart, 10),
+			oldLines: oldCount ? Number.parseInt(oldCount, 10) : undefined,
+			newStart: Number.parseInt(newStart, 10),
+			newLines: newCount ? Number.parseInt(newCount, 10) : undefined,
+			context: context?.trim() || undefined,
+		};
+	}
+
+	const context = raw.replace(/^@@/, '').trim();
+	return context ? { context } : {};
+}
+
+function parseEnvelopedPatch(patch: string): ParsedPatchOperation[] {
+	const normalized = patch.replace(/\r\n/g, '\n');
+	const lines = normalized.split('\n');
+	const operations: ParsedPatchOperation[] = [];
+
+	type Builder =
+		| (PatchAddOperation & { kind: 'add' })
+		| (PatchDeleteOperation & { kind: 'delete' })
+		| (PatchUpdateOperation & {
+				kind: 'update';
+				currentHunk: PatchHunk | null;
+		  });
+
+	let builder: Builder | null = null;
+	let insidePatch = false;
+	let encounteredEnd = false;
+
+	const flushBuilder = () => {
+		if (!builder) return;
+		if (builder.kind === 'update') {
+			if (builder.currentHunk && builder.currentHunk.lines.length === 0) {
+				builder.hunks.pop();
+			}
+			if (builder.hunks.length === 0) {
+				throw new Error(
+					`Update for ${builder.filePath} does not contain any diff hunks.`,
+				);
+			}
+			operations.push({
+				kind: 'update',
+				filePath: builder.filePath,
+				hunks: builder.hunks.map((hunk) => ({
+					header: { ...hunk.header },
+					lines: hunk.lines.map((line) => ({ ...line })),
+				})),
+			});
+		} else if (builder.kind === 'add') {
+			operations.push({
+				kind: 'add',
+				filePath: builder.filePath,
+				lines: [...builder.lines],
+			});
+		} else {
+			operations.push({ kind: 'delete', filePath: builder.filePath });
+		}
+		builder = null;
+	};
+
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i];
+		if (!insidePatch) {
+			if (line.trim() === '') continue;
+			if (line.startsWith(PATCH_BEGIN_MARKER)) {
+				insidePatch = true;
+				continue;
+			}
+			throw new Error(
+				'Patch must start with "*** Begin Patch" and use the enveloped patch format.',
+			);
+		}
+
+		if (line.startsWith(PATCH_BEGIN_MARKER)) {
+			throw new Error('Nested "*** Begin Patch" markers are not supported.');
+		}
+
+		if (line.startsWith(PATCH_END_MARKER)) {
+			flushBuilder();
+			encounteredEnd = true;
+			const remaining = lines.slice(i + 1).find((rest) => rest.trim() !== '');
+			if (remaining) {
+				throw new Error(
+					'Unexpected content found after "*** End Patch" marker.',
+				);
+			}
+			break;
+		}
+
+		if (line.startsWith(PATCH_ADD_PREFIX)) {
+			flushBuilder();
+			builder = {
+				kind: 'add',
+				filePath: parseDirectivePath(line, PATCH_ADD_PREFIX),
+				lines: [],
+			};
 			continue;
 		}
 
-		if (
-			line.startsWith('*** Add File:') ||
-			line.startsWith('*** Update File:') ||
-			line.startsWith('*** Delete File:')
-		) {
-			// Apply previous file if any
-			const result = await applyCurrentFile();
-			if (!result.ok) return result;
+		if (line.startsWith(PATCH_UPDATE_PREFIX)) {
+			flushBuilder();
+			builder = {
+				kind: 'update',
+				filePath: parseDirectivePath(line, PATCH_UPDATE_PREFIX),
+				hunks: [],
+				currentHunk: null,
+			};
+			continue;
+		}
 
-			// Start new file
-			if (line.startsWith('*** Add File:')) {
-				currentFile = line.replace('*** Add File:', '').trim();
-				operation = 'add';
-			} else if (line.startsWith('*** Update File:')) {
-				currentFile = line.replace('*** Update File:', '').trim();
-				operation = 'update';
-			} else if (line.startsWith('*** Delete File:')) {
-				currentFile = line.replace('*** Delete File:', '').trim();
-				operation = 'delete';
+		if (line.startsWith(PATCH_DELETE_PREFIX)) {
+			flushBuilder();
+			builder = {
+				kind: 'delete',
+				filePath: parseDirectivePath(line, PATCH_DELETE_PREFIX),
+			};
+			continue;
+		}
+
+		if (!builder) {
+			if (line.trim() === '') {
+				continue;
 			}
-			fileContent = [];
-		} else if (
-			currentFile &&
-			(line.startsWith('+') || line.startsWith('-') || line.startsWith(' '))
-		) {
-			// Collect patch content lines
-			fileContent.push(line);
+			throw new Error(`Unexpected content in patch: "${line}"`);
+		}
+
+		if (builder.kind === 'add') {
+			const content = line.startsWith('+') ? line.slice(1) : line;
+			builder.lines.push(content);
+			continue;
+		}
+
+		if (builder.kind === 'delete') {
+			if (line.trim() !== '') {
+				throw new Error(
+					`Delete directive for ${builder.filePath} should not contain additional lines.`,
+				);
+			}
+			continue;
+		}
+
+		if (line.startsWith('@@')) {
+			const hunk: PatchHunk = { header: parseHunkHeader(line), lines: [] };
+			builder.hunks.push(hunk);
+			builder.currentHunk = hunk;
+			continue;
+		}
+
+		if (!builder.currentHunk) {
+			const fallbackHunk: PatchHunk = { header: {}, lines: [] };
+			builder.hunks.push(fallbackHunk);
+			builder.currentHunk = fallbackHunk;
+		}
+
+		const currentHunk = builder.currentHunk;
+		const prefix = line[0];
+		if (prefix === '+') {
+			currentHunk.lines.push({ kind: 'add', content: line.slice(1) });
+		} else if (prefix === '-') {
+			currentHunk.lines.push({ kind: 'remove', content: line.slice(1) });
+		} else if (prefix === ' ') {
+			currentHunk.lines.push({ kind: 'context', content: line.slice(1) });
+		} else {
+			throw new Error(`Unrecognized patch line: "${line}"`);
 		}
 	}
 
-	// Apply the last file
-	const result = await applyCurrentFile();
-	return result;
+	if (!encounteredEnd) {
+		throw new Error('Missing "*** End Patch" marker.');
+	}
+
+	return operations;
+}
+
+function resolveProjectPath(projectRoot: string, filePath: string): string {
+	const fullPath = resolve(projectRoot, filePath);
+	const relativePath = relative(projectRoot, fullPath);
+	if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
+		throw new Error(`Patch path escapes project root: ${filePath}`);
+	}
+	return fullPath;
+}
+
+async function applyAddOperation(
+	projectRoot: string,
+	operation: PatchAddOperation,
+): Promise<AppliedOperationRecord> {
+	const targetPath = resolveProjectPath(projectRoot, operation.filePath);
+	await mkdir(dirname(targetPath), { recursive: true });
+	const linesForWrite = [...operation.lines];
+	ensureTrailingNewline(linesForWrite);
+	await writeFile(targetPath, joinLines(linesForWrite, '\n'), 'utf-8');
+
+	const hunkLines: PatchHunkLine[] = operation.lines.map((line) => ({
+		kind: 'add',
+		content: line,
+	}));
+
+	return {
+		kind: 'add',
+		filePath: operation.filePath,
+		operation,
+		stats: {
+			additions: hunkLines.length,
+			deletions: 0,
+		},
+		hunks: [
+			{
+				header: {},
+				lines: hunkLines,
+				oldStart: 0,
+				oldLines: 0,
+				newStart: 1,
+				newLines: hunkLines.length,
+				additions: hunkLines.length,
+				deletions: 0,
+			},
+		],
+	};
+}
+
+async function applyDeleteOperation(
+	projectRoot: string,
+	operation: PatchDeleteOperation,
+): Promise<AppliedOperationRecord> {
+	const targetPath = resolveProjectPath(projectRoot, operation.filePath);
+	let existingContent = '';
+	try {
+		existingContent = await readFile(targetPath, 'utf-8');
+	} catch (error) {
+		if (isErrnoException(error) && error.code === 'ENOENT') {
+			throw new Error(`File not found for deletion: ${operation.filePath}`);
+		}
+		throw error;
+	}
+
+	const { lines } = splitLines(existingContent);
+	await unlink(targetPath);
+
+	const hunkLines: PatchHunkLine[] = lines.map((line) => ({
+		kind: 'remove',
+		content: line,
+	}));
+
+	return {
+		kind: 'delete',
+		filePath: operation.filePath,
+		operation,
+		stats: {
+			additions: 0,
+			deletions: hunkLines.length,
+		},
+		hunks: [
+			{
+				header: {},
+				lines: hunkLines,
+				oldStart: 1,
+				oldLines: hunkLines.length,
+				newStart: 0,
+				newLines: 0,
+				additions: 0,
+				deletions: hunkLines.length,
+			},
+		],
+	};
+}
+
+function applyHunksToLines(
+	originalLines: string[],
+	hunks: PatchHunk[],
+	filePath: string,
+): { lines: string[]; applied: AppliedHunkResult[] } {
+	const lines = [...originalLines];
+	let searchIndex = 0;
+	let lineOffset = 0;
+	const applied: AppliedHunkResult[] = [];
+
+	for (const hunk of hunks) {
+		const expected: string[] = [];
+		const replacement: string[] = [];
+		let additions = 0;
+		let deletions = 0;
+
+		for (const line of hunk.lines) {
+			if (line.kind !== 'add') {
+				expected.push(line.content);
+			}
+			if (line.kind !== 'remove') {
+				replacement.push(line.content);
+			}
+			if (line.kind === 'add') additions += 1;
+			if (line.kind === 'remove') deletions += 1;
+		}
+
+		const hasExpected = expected.length > 0;
+		const hint =
+			typeof hunk.header.oldStart === 'number'
+				? Math.max(0, hunk.header.oldStart - 1 + lineOffset)
+				: searchIndex;
+
+		let matchIndex = hasExpected
+			? findSubsequence(lines, expected, Math.max(0, hint - 3))
+			: -1;
+
+		if (hasExpected && matchIndex === -1) {
+			matchIndex = findSubsequence(lines, expected, 0);
+		}
+
+		if (matchIndex === -1 && hasExpected && hunk.header.context) {
+			const contextIndex = findSubsequence(lines, [hunk.header.context], 0);
+			if (contextIndex !== -1) {
+				const positionInExpected = expected.indexOf(hunk.header.context);
+				matchIndex =
+					positionInExpected >= 0
+						? Math.max(0, contextIndex - positionInExpected)
+						: contextIndex;
+			}
+		}
+
+		if (!hasExpected) {
+			matchIndex = computeInsertionIndex(lines, hint, hunk.header);
+		}
+
+		if (matchIndex === -1) {
+			const contextInfo = hunk.header.context
+				? ` near context '${hunk.header.context}'`
+				: '';
+			throw new Error(
+				`Failed to apply patch hunk in ${filePath}${contextInfo}.`,
+			);
+		}
+
+		const deleteCount = hasExpected ? expected.length : 0;
+		const originalIndex = matchIndex - lineOffset;
+		const normalizedOriginalIndex = Math.min(
+			Math.max(0, originalIndex),
+			originalLines.length,
+		);
+		const oldStart = normalizedOriginalIndex + 1;
+		const newStart = matchIndex + 1;
+
+		lines.splice(matchIndex, deleteCount, ...replacement);
+		searchIndex = matchIndex + replacement.length;
+		lineOffset += replacement.length - deleteCount;
+
+		applied.push({
+			header: { ...hunk.header },
+			lines: hunk.lines.map((line) => ({ ...line })),
+			oldStart,
+			oldLines: deleteCount,
+			newStart,
+			newLines: replacement.length,
+			additions,
+			deletions,
+		});
+	}
+
+	return { lines, applied };
+}
+
+function computeInsertionIndex(
+	lines: string[],
+	hint: number,
+	header: PatchHunkHeader,
+): number {
+	if (header.context) {
+		const contextIndex = findSubsequence(lines, [header.context], 0);
+		if (contextIndex !== -1) {
+			return contextIndex + 1;
+		}
+	}
+
+	if (typeof header.oldStart === 'number') {
+		const zeroBased = Math.max(0, header.oldStart - 1);
+		return Math.min(lines.length, zeroBased);
+	}
+
+	if (typeof header.newStart === 'number') {
+		const zeroBased = Math.max(0, header.newStart - 1);
+		return Math.min(lines.length, zeroBased);
+	}
+
+	return Math.min(lines.length, Math.max(0, hint));
+}
+
+async function applyUpdateOperation(
+	projectRoot: string,
+	operation: PatchUpdateOperation,
+): Promise<AppliedOperationRecord> {
+	const targetPath = resolveProjectPath(projectRoot, operation.filePath);
+	let originalContent: string;
+	try {
+		originalContent = await readFile(targetPath, 'utf-8');
+	} catch (error) {
+		if (isErrnoException(error) && error.code === 'ENOENT') {
+			throw new Error(`File not found: ${operation.filePath}`);
+		}
+		throw error;
+	}
+
+	const { lines: originalLines, newline } = splitLines(originalContent);
+	const { lines: updatedLines, applied } = applyHunksToLines(
+		originalLines,
+		operation.hunks,
+		operation.filePath,
+	);
+	ensureTrailingNewline(updatedLines);
+	await writeFile(targetPath, joinLines(updatedLines, newline), 'utf-8');
+
+	const stats = applied.reduce<PatchStats>(
+		(acc, hunk) => ({
+			additions: acc.additions + hunk.additions,
+			deletions: acc.deletions + hunk.deletions,
+		}),
+		{ additions: 0, deletions: 0 },
+	);
+
+	return {
+		kind: 'update',
+		filePath: operation.filePath,
+		operation,
+		stats,
+		hunks: applied,
+	};
+}
+
+function summarizeOperations(operations: AppliedOperationRecord[]) {
+	const summary = operations.reduce(
+		(acc, op) => ({
+			files: acc.files + 1,
+			additions: acc.additions + op.stats.additions,
+			deletions: acc.deletions + op.stats.deletions,
+		}),
+		{ files: 0, additions: 0, deletions: 0 },
+	);
+	return {
+		files: Math.max(summary.files, operations.length > 0 ? 1 : 0),
+		additions: summary.additions,
+		deletions: summary.deletions,
+	};
+}
+
+function formatRange(start: number, count: number) {
+	const normalizedStart = Math.max(0, start);
+	if (count === 0) return `${normalizedStart},0`;
+	if (count === 1) return `${normalizedStart}`;
+	return `${normalizedStart},${count}`;
+}
+
+function formatHunkHeader(applied: AppliedHunkResult) {
+	const oldRange = formatRange(applied.oldStart, applied.oldLines);
+	const newRange = formatRange(applied.newStart, applied.newLines);
+	const context = applied.header.context?.trim();
+	return context
+		? `@@ -${oldRange} +${newRange} @@ ${context}`
+		: `@@ -${oldRange} +${newRange} @@`;
+}
+
+function serializePatchLine(line: PatchHunkLine): string {
+	switch (line.kind) {
+		case 'add':
+			return `+${line.content}`;
+		case 'remove':
+			return `-${line.content}`;
+		default:
+			return ` ${line.content}`;
+	}
+}
+
+function formatNormalizedPatch(operations: AppliedOperationRecord[]): string {
+	const lines: string[] = [PATCH_BEGIN_MARKER];
+
+	for (const op of operations) {
+		switch (op.kind) {
+			case 'add': {
+				lines.push(`${PATCH_ADD_PREFIX} ${op.filePath}`);
+				for (const hunk of op.hunks) {
+					lines.push(formatHunkHeader(hunk));
+					for (const line of hunk.lines) {
+						lines.push(serializePatchLine(line));
+					}
+				}
+				break;
+			}
+			case 'delete': {
+				lines.push(`${PATCH_DELETE_PREFIX} ${op.filePath}`);
+				for (const hunk of op.hunks) {
+					lines.push(formatHunkHeader(hunk));
+					for (const line of hunk.lines) {
+						lines.push(serializePatchLine(line));
+					}
+				}
+				break;
+			}
+			case 'update': {
+				lines.push(`${PATCH_UPDATE_PREFIX} ${op.filePath}`);
+				const updateOp = op.operation as PatchUpdateOperation;
+				for (let i = 0; i < updateOp.hunks.length; i++) {
+					const originalHunk = updateOp.hunks[i];
+					const appliedHunk = op.hunks[i];
+					const header: AppliedHunkResult = {
+						...appliedHunk,
+						header: {
+							...appliedHunk.header,
+							context: originalHunk.header.context,
+						},
+					};
+					lines.push(formatHunkHeader(header));
+					for (const line of originalHunk.lines) {
+						lines.push(serializePatchLine(line));
+					}
+				}
+				break;
+			}
+		}
+	}
+
+	lines.push(PATCH_END_MARKER);
+	return lines.join('\n');
+}
+
+async function applyEnvelopedPatch(projectRoot: string, patch: string) {
+	const operations = parseEnvelopedPatch(patch);
+	const applied: AppliedOperationRecord[] = [];
+
+	for (const operation of operations) {
+		if (operation.kind === 'add') {
+			applied.push(await applyAddOperation(projectRoot, operation));
+		} else if (operation.kind === 'delete') {
+			applied.push(await applyDeleteOperation(projectRoot, operation));
+		} else {
+			applied.push(await applyUpdateOperation(projectRoot, operation));
+		}
+	}
+
+	return {
+		operations: applied,
+		normalizedPatch: formatNormalizedPatch(applied),
+	};
 }
 
 export function buildApplyPatchTool(projectRoot: string): {
@@ -197,114 +701,46 @@ export function buildApplyPatchTool(projectRoot: string): {
 					'Allow hunks to be rejected without failing the whole operation',
 				),
 		}),
-		async execute({
-			patch,
-			allowRejects,
-		}: {
-			patch: string;
-			allowRejects?: boolean;
-		}) {
-			// Check if this is an enveloped patch format
-			const isEnveloped =
-				patch.includes('*** Begin Patch') ||
-				patch.includes('*** Add File:') ||
-				patch.includes('*** Update File:');
-
-			if (isEnveloped) {
-				// Handle enveloped patches directly
-				const result = await applyEnvelopedPatch(projectRoot, patch);
-				const summary = summarizePatch(patch);
-				if (result.ok) {
-					return {
-						ok: true,
-						output: 'Applied enveloped patch',
-						artifact: { kind: 'file_diff', patch, summary },
-					} as const;
-				} else {
-					return {
-						ok: false,
-						error: result.error || 'Failed to apply enveloped patch',
-						artifact: { kind: 'file_diff', patch, summary },
-					} as const;
-				}
-			}
-
-			// For unified diffs, use git apply as before
-			const dir = `${projectRoot}/.agi/tmp`;
-			await mkdir(dir, { recursive: true }).catch(() => {});
-			const file = `${dir}/patch-${Date.now()}.diff`;
-			await writeFile(file, patch);
-			const summary = summarizePatch(patch);
-			// Try -p1 first for canonical git-style patches (a/ b/ prefixes), then fall back to -p0.
-			const baseArgs = ['apply', '--whitespace=nowarn'];
-			const rejectArg = allowRejects ? '--reject' : '';
-			const tries = [
-				`git -C "${projectRoot}" ${baseArgs.join(' ')} ${rejectArg} -p1 "${file}"`,
-				`git -C "${projectRoot}" ${baseArgs.join(' ')} ${rejectArg} -p0 "${file}"`,
-			];
-			let lastError = '';
-			for (const cmd of tries) {
-				try {
-					const { stdout } = await execAsync(cmd, {
-						maxBuffer: 10 * 1024 * 1024,
-					});
-					// Check if any files were actually modified
-					try {
-						const { stdout: statusOut } = await execAsync(
-							`git -C "${projectRoot}" status --porcelain`,
-						);
-						if (statusOut && statusOut.trim().length > 0) {
-							return {
-								ok: true,
-								output: stdout.trim(),
-								artifact: { kind: 'file_diff', patch, summary },
-							} as const;
-						}
-					} catch {}
-				} catch (error: unknown) {
-					const err = error as { stderr?: string; message?: string };
-					lastError = err.stderr || err.message || 'git apply failed';
-				}
-			}
-
-			// Final check if files were modified anyway
-			try {
-				const { stdout: statusOut } = await execAsync(
-					`git -C "${projectRoot}" status --porcelain`,
+		async execute({ patch }: { patch: string; allowRejects?: boolean }) {
+			if (
+				!patch.includes(PATCH_BEGIN_MARKER) ||
+				!patch.includes(PATCH_END_MARKER)
+			) {
+				throw new Error(
+					'Only enveloped patch format is supported. Patch must start with "*** Begin Patch" and contain "*** Add File:", "*** Update File:", or "*** Delete File:" directives.',
 				);
-				if (statusOut && statusOut.trim().length > 0) {
-					return {
-						ok: true,
-						output: 'Patch applied with warnings',
-						artifact: { kind: 'file_diff', patch, summary },
-					} as const;
-				}
-			} catch {}
+			}
 
-			// If both attempts fail and no files changed, return error with more context
-			const errorDetails = lastError.includes('patch does not apply')
-				? 'The patch cannot be applied because the target content has changed or does not match. The file may have been modified since the patch was created.'
-				: lastError ||
-					'git apply failed (tried -p1 and -p0) — ensure paths match project root';
+			const { operations, normalizedPatch } = await applyEnvelopedPatch(
+				projectRoot,
+				patch,
+			);
+			const summary = summarizeOperations(operations);
+			const changes = operations.map((operation) => ({
+				filePath: operation.filePath,
+				kind: operation.kind,
+				hunks: operation.hunks.map((hunk) => ({
+					oldStart: hunk.oldStart,
+					oldLines: hunk.oldLines,
+					newStart: hunk.newStart,
+					newLines: hunk.newLines,
+					additions: hunk.additions,
+					deletions: hunk.deletions,
+					context: hunk.header.context,
+				})),
+			}));
+
 			return {
-				ok: false,
-				error: errorDetails,
-				artifact: { kind: 'file_diff', patch, summary },
+				ok: true,
+				output: 'Applied enveloped patch',
+				changes,
+				artifact: {
+					kind: 'file_diff',
+					patch: normalizedPatch,
+					summary,
+				},
 			} as const;
 		},
 	});
 	return { name: 'apply_patch', tool: applyPatch };
-}
-
-function summarizePatch(patch: string) {
-	const lines = String(patch || '').split('\n');
-	let files = 0;
-	let additions = 0;
-	let deletions = 0;
-	for (const l of lines) {
-		if (/^\*\*\*\s+(Add|Update|Delete) File:/.test(l)) files += 1;
-		else if (l.startsWith('+') && !l.startsWith('+++')) additions += 1;
-		else if (l.startsWith('-') && !l.startsWith('---')) deletions += 1;
-	}
-	return { files, additions, deletions };
 }

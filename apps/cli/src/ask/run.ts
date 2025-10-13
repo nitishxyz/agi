@@ -406,21 +406,13 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 			typeof data?.error === 'string' && data.error.trim().length
 				? data.error
 				: undefined;
-		// Special handling for apply_patch which uses 'ok' field
-		const isApplyPatchOk =
-			name === 'apply_patch' &&
-			resultObject &&
-			Reflect.get(resultObject, 'ok') === true;
 
 		const hasErrorResult =
 			Boolean(
 				resultObject &&
-					// Don't treat apply_patch as error if ok is true, even if it has error field
-					!(name === 'apply_patch' && isApplyPatchOk) &&
 					(Reflect.has(resultObject, 'error') ||
 						Reflect.get(resultObject, 'success') === false ||
-						(name === 'apply_patch' &&
-							Reflect.get(resultObject, 'ok') === false)),
+						Reflect.get(resultObject, 'ok') === false),
 			) || Boolean(topLevelError);
 		if (name === 'write' && typeof resultValue?.path === 'string')
 			state.filesTouched.add(String(resultValue.path));

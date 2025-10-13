@@ -301,6 +301,59 @@ describe('Built-in Tools', () => {
 
 			const result = await patchTool?.tool.execute({ patch });
 			expect(result).toHaveProperty('ok');
+			expect(
+				(result as { artifact?: { patch?: string } }).artifact?.patch,
+			).toContain('@@ -0,0 +1');
+		});
+
+		it('should update existing file using enveloped patch', async () => {
+			const tools = await discoverProjectTools(projectRoot);
+			const patchTool = tools.find((t) => t.name === 'apply_patch');
+
+			const patch = `*** Begin Patch
+*** Update File: test.txt
+@@
+ Hello World
+-Line 2
++Line 2 updated
+ Line 3
+*** End Patch`;
+
+			const result = await patchTool?.tool.execute({ patch });
+			expect(result).toHaveProperty('ok', true);
+			const change = (result as { changes?: Array<{ hunks: unknown[] }> })
+				.changes?.[0] as
+				| {
+						filePath: string;
+						kind: string;
+						hunks: Array<{
+							oldStart: number;
+							newStart: number;
+							oldLines: number;
+							newLines: number;
+							additions: number;
+							deletions: number;
+							context?: string;
+						}>;
+				  }
+				| undefined;
+			expect(change).toBeDefined();
+			expect(change).toMatchObject({ filePath: 'test.txt', kind: 'update' });
+			const hunk = change?.hunks?.[0];
+			expect(hunk).toMatchObject({
+				oldStart: 1,
+				newStart: 1,
+				oldLines: 3,
+				newLines: 3,
+				additions: 1,
+				deletions: 1,
+			});
+			expect(
+				(result as { artifact?: { patch?: string } }).artifact?.patch,
+			).toContain('@@ -1,3 +1,3 @@');
+
+			const updated = await Bun.file(join(projectRoot, 'test.txt')).text();
+			expect(updated).toContain('Line 2 updated');
 		});
 	});
 

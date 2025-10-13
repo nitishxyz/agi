@@ -42,6 +42,15 @@ function getLanguageFromPath(path: string): string {
 	return langMap[ext || ''] || 'text';
 }
 
+function parseLineRange(lineRange: string | undefined): number | undefined {
+	if (!lineRange) return undefined;
+	const match = lineRange.match(/@(\d+)-(\d+)/);
+	if (match) {
+		return Number.parseInt(match[1], 10);
+	}
+	return undefined;
+}
+
 export function ReadRenderer({
 	contentJson,
 	toolDurationMs,
@@ -51,12 +60,19 @@ export function ReadRenderer({
 	const result = contentJson.result || {};
 	const path = String(result.path || '');
 	const content = String(result.content || '');
+	const lineRange = result.lineRange as string | undefined;
 	const lines = content.split('\n');
 	const timeStr = formatDuration(toolDurationMs);
 	const language = getLanguageFromPath(path);
 	const syntaxTheme = document?.documentElement.classList.contains('dark')
 		? vscDarkPlus
 		: prism;
+
+	const startingLineNumber = parseLineRange(lineRange);
+
+	const displayText = lineRange
+		? `${path}:${lineRange.replace('@', '')}`
+		: path;
 
 	return (
 		<div className="text-xs">
@@ -76,9 +92,9 @@ export function ReadRenderer({
 						direction: 'rtl',
 						unicodeBidi: 'plaintext',
 					}}
-					title={path}
+					title={displayText}
 				>
-					{path}
+					{displayText}
 				</span>
 				<span className="text-muted-foreground/80 flex-shrink-0 whitespace-nowrap">
 					· {lines.length} lines · {timeStr}
@@ -99,6 +115,7 @@ export function ReadRenderer({
 								maxWidth: '100%',
 							}}
 							showLineNumbers
+							startingLineNumber={startingLineNumber}
 							wrapLines
 							wrapLongLines
 						>
