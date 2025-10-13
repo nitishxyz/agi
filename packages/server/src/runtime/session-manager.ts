@@ -47,7 +47,7 @@ export async function createSession({
 		model,
 		projectPath: cfg.projectRoot,
 		createdAt: now,
-		lastActiveAt: null,
+		lastActiveAt: now,
 		totalInputTokens: null,
 		totalOutputTokens: null,
 		totalCachedTokens: null,

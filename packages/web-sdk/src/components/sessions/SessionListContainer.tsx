@@ -1,6 +1,7 @@
-import { memo, useMemo, useCallback } from 'react';
+import { memo, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSessions } from '../../hooks/useSessions';
 import { SessionItem } from './SessionItem';
+import { useFocusStore } from '../../stores/focusStore';
 
 interface SessionListContainerProps {
 	activeSessionId?: string;
@@ -12,6 +13,8 @@ export const SessionListContainer = memo(function SessionListContainer({
 	onSelectSession,
 }: SessionListContainerProps) {
 	const { data: sessions = [], isLoading } = useSessions();
+	const { currentFocus, sessionIndex } = useFocusStore();
+	const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
 	const handleSessionClick = useCallback(
 		(sessionId: string) => {
@@ -29,6 +32,13 @@ export const SessionListContainer = memo(function SessionListContainer({
 			createdAt: s.createdAt,
 		}));
 	}, [sessions]);
+
+	useEffect(() => {
+		if (currentFocus === 'sessions') {
+			const element = itemRefs.current.get(sessionIndex);
+			element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+		}
+	}, [currentFocus, sessionIndex]);
 
 	if (isLoading) {
 		return (
@@ -48,17 +58,26 @@ export const SessionListContainer = memo(function SessionListContainer({
 
 	return (
 		<div className="flex flex-col gap-1 px-2 py-2 overflow-y-auto scrollbar-hide">
-			{sessionSnapshot.map((session) => {
+			{sessionSnapshot.map((session, index) => {
 				const fullSession = sessions.find((s) => s.id === session.id);
 				if (!fullSession) return null;
+				const isFocused = currentFocus === 'sessions' && sessionIndex === index;
 
 				return (
-					<SessionItem
+					<div
 						key={session.id}
-						session={fullSession}
-						isActive={session.id === activeSessionId}
-						onClick={() => handleSessionClick(session.id)}
-					/>
+						ref={(el) => {
+						if (el) itemRefs.current.set(index, el);
+						else itemRefs.current.delete(index);
+					}}
+					className={isFocused ? 'ring-1 ring-primary/40 rounded-md' : ''}
+				>
+					<SessionItem
+							session={fullSession}
+							isActive={session.id === activeSessionId}
+							onClick={() => handleSessionClick(session.id)}
+						/>
+					</div>
 				);
 			})}
 		</div>

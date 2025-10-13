@@ -12,8 +12,15 @@ import {
 	useConfig,
 	useTheme,
 	useWorkingDirectory,
+	useKeyboardShortcuts,
 } from '@agi-cli/web-sdk/hooks';
-import { useSidebarStore } from '@agi-cli/web-sdk/stores';
+import { useSidebarStore, useGitStore } from '@agi-cli/web-sdk/stores';
+import {
+	useGitStatus,
+	useStageFiles,
+	useUnstageFiles,
+	useSessions,
+} from '@agi-cli/web-sdk/hooks';
 
 interface SessionsLayoutProps {
 	sessionId?: string;
@@ -25,7 +32,12 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	const { data: config } = useConfig();
 	const { theme, toggleTheme } = useTheme();
 	const setCollapsed = useSidebarStore((state) => state.setCollapsed);
+	const { openCommitModal, openDiff } = useGitStore();
 	const navigate = useNavigate();
+	const { data: sessions = [] } = useSessions();
+	const { data: gitStatus } = useGitStatus();
+	const stageFiles = useStageFiles();
+	const unstageFiles = useUnstageFiles();
 
 	useWorkingDirectory();
 
@@ -65,6 +77,38 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 		},
 		[navigate, setCollapsed, focusInput],
 	);
+
+	const gitFiles = useMemo(() => {
+		if (!gitStatus) return [];
+		return [
+			...gitStatus.staged.map((f) => ({ path: f.path, staged: true })),
+			...gitStatus.unstaged.map((f) => ({ path: f.path, staged: false })),
+			...gitStatus.untracked.map((f) => ({ path: f.path, staged: false })),
+		];
+	}, [gitStatus]);
+
+	const sessionIds = useMemo(() => sessions.map((s) => s.id), [sessions]);
+
+	useKeyboardShortcuts({
+		sessionIds,
+		activeSessionId: sessionId,
+		gitFiles,
+		onSelectSession: handleSelectSession,
+		onNewSession: handleNewSession,
+		onStageFile: (path) => stageFiles.mutate([path]),
+		onUnstageFile: (path) => unstageFiles.mutate([path]),
+		onStageAll: () => {
+			const unstaged = gitFiles.filter((f) => !f.staged).map((f) => f.path);
+			if (unstaged.length > 0) stageFiles.mutate(unstaged);
+		},
+		onUnstageAll: () => {
+			const staged = gitFiles.filter((f) => f.staged).map((f) => f.path);
+			if (staged.length > 0) unstageFiles.mutate(staged);
+		},
+		onOpenCommitModal: openCommitModal,
+		onViewDiff: openDiff,
+		onReturnToInput: focusInput,
+	});
 
 	useEffect(() => {
 		if (sessionId) {
