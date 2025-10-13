@@ -22,8 +22,8 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 **File Reading & Editing**:
 - `read`: Read file contents (supports line ranges)
 - `write`: Write complete file contents
-- `edit`: Structured file editing with operations (PREFERRED for modifications)
-- `apply_patch`: Apply unified diff patches (alternative editing method)
+- `apply_patch`: Apply unified diff patches (RECOMMENDED for targeted edits)
+- `edit`: Structured file editing with operations (alternative editing method)
 
 **Version Control**:
 - `git_status`, `git_diff`, `git_log`, `git_show`, `git_commit`
@@ -37,7 +37,7 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 ### Tool Usage Best Practices:
 
 1. **Batch Independent Operations**: Make all independent tool calls in one turn
-2. **File Editing**: Prefer `edit` over `apply_patch` for reliability
+2. **File Editing**: Prefer `apply_patch` for targeted edits to avoid rewriting entire files
 3. **Combine Edits**: When editing the same file multiple times, use ONE `edit` call with multiple ops
 4. **Search First**: Use `glob` to find files before reading them
 5. **Progress Updates**: Call `progress_update` at major milestones (planning, discovering, writing, verifying)

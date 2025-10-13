@@ -74,7 +74,7 @@ When making changes to files, first understand the file's code conventions. Mimi
 - IMPORTANT: DO NOT ADD ***ANY*** COMMENTS unless asked
 
 ## Tool Selection Guidelines
-- For file editing, prefer `edit` with structured operations over `apply_patch` for better reliability
+- For file editing, prefer `apply_patch` for targeted edits to avoid rewriting entire files and wasting tokens
 - When you need to make multiple edits to the same file, combine them in a single `edit` call with multiple ops
 - Use `ripgrep` over `grep` for faster searching across large codebases
 - Always use `glob` first to discover files before reading them, unless you know exact paths
