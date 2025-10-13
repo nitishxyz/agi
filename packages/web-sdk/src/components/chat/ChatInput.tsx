@@ -10,6 +10,8 @@ import {
 import type { KeyboardEvent, ChangeEvent } from 'react';
 import { ArrowUp, MoreVertical } from 'lucide-react';
 import { Textarea } from '../ui/Textarea';
+import { FileMentionPopup } from './FileMentionPopup';
+import { useFiles } from '../../hooks/useFiles';
 
 interface ChatInputProps {
 	onSend: (message: string) => void;
@@ -30,9 +32,17 @@ export const ChatInput = memo(
 		},
 		ref,
 	) {
-		const [message, setMessage] = useState('');
-		const [isPlanMode, setIsPlanMode] = useState(externalIsPlanMode || false);
-		const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const [message, setMessage] = useState('');
+	const [isPlanMode, setIsPlanMode] = useState(externalIsPlanMode || false);
+	const [showFileMention, setShowFileMention] = useState(false);
+	const [mentionQuery, setMentionQuery] = useState('');
+	const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
+	const [currentFileToSelect, setCurrentFileToSelect] = useState<string | undefined>();
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+	const { data: filesData, isLoading: filesLoading } = useFiles();
+	const files = filesData?.files || [];
+	const changedFiles = filesData?.changedFiles || [];
 
 		useEffect(() => {
 			textareaRef.current?.focus();
@@ -71,34 +81,106 @@ export const ChatInput = memo(
 					textareaRef.current.style.height = 'auto';
 				}
 				textareaRef.current?.focus();
-			}
-		}, [message, disabled, onSend]);
+		}
+	}, [message, disabled, onSend]);
 
-		const handleChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
-			setMessage(e.target.value);
-		}, []);
+	const handleFileSelect = useCallback(
+		(filePath: string) => {
+			const textarea = textareaRef.current;
+			if (!textarea) return;
 
-		const handleKeyDown = useCallback(
-			(e: KeyboardEvent<HTMLTextAreaElement>) => {
-				if (e.key === 'Tab') {
-					e.preventDefault();
-					const newPlanMode = !isPlanMode;
-					setIsPlanMode(newPlanMode);
-					onPlanModeToggle?.(newPlanMode);
-				} else if (e.key === 'Enter' && !e.shiftKey) {
-					e.preventDefault();
-					handleSend();
+			const value = textarea.value;
+			const cursorPos = textarea.selectionStart;
+			const textBeforeCursor = value.slice(0, cursorPos);
+
+			const match = textBeforeCursor.match(/@(\S*)$/);
+			if (!match) return;
+
+		const atPos = cursorPos - match[0].length;
+		const newValue =
+			`${value.slice(0, atPos)}@${filePath} ${value.slice(cursorPos)}`;
+
+		setMessage(newValue);
+			setShowFileMention(false);
+
+			setTimeout(() => {
+				const newCursorPos = atPos + filePath.length + 2;
+				textarea.setSelectionRange(newCursorPos, newCursorPos);
+				textarea.focus();
+			}, 0);
+		},
+		[],
+	);
+
+	const handleEnterSelect = useCallback((file: string | undefined) => {
+		setCurrentFileToSelect(file);
+	}, []);
+
+	const handleChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
+		setMessage(e.target.value);
+
+		const cursorPos = e.target.selectionStart;
+		const textBeforeCursor = e.target.value.slice(0, cursorPos);
+		const match = textBeforeCursor.match(/@(\S*)$/);
+
+		if (match) {
+			setShowFileMention(true);
+			setMentionQuery(match[1]);
+			setMentionSelectedIndex(0);
+		} else {
+			setShowFileMention(false);
+		}
+	}, []);
+
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent<HTMLTextAreaElement>) => {
+		if (showFileMention) {
+			if (e.key === 'ArrowDown') {
+				e.preventDefault();
+				setMentionSelectedIndex((prev) =>
+					Math.min(prev + 1, 9),
+				);
+			} else if (e.key === 'ArrowUp') {
+				e.preventDefault();
+				setMentionSelectedIndex((prev) => Math.max(prev - 1, 0));
+			} else if (e.key === 'Enter') {
+				e.preventDefault();
+				if (currentFileToSelect) {
+					handleFileSelect(currentFileToSelect);
 				}
-			},
-			[handleSend, isPlanMode, onPlanModeToggle],
-		);
+			} else if (e.key === 'Escape') {
+					e.preventDefault();
+					setShowFileMention(false);
+				}
+				return;
+			}
 
-		return (
-			<div className="absolute bottom-0 left-0 right-0 pt-16 pb-6 md:pb-8 px-2 md:px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20 safe-area-inset-bottom">
-				<div className="max-w-3xl mx-auto pointer-events-auto mb-2 md:mb-0">
-					<div
-						className={`flex items-end gap-1 rounded-3xl p-1 transition-all touch-manipulation ${
-					isPlanMode
+			if (e.key === 'Tab') {
+				e.preventDefault();
+				const newPlanMode = !isPlanMode;
+				setIsPlanMode(newPlanMode);
+				onPlanModeToggle?.(newPlanMode);
+			} else if (e.key === 'Enter' && !e.shiftKey) {
+				e.preventDefault();
+				handleSend();
+			}
+		},
+		[
+			showFileMention,
+			files,
+			mentionSelectedIndex,
+			handleSend,
+			isPlanMode,
+			onPlanModeToggle,
+		],
+	);
+
+	return (
+		<div className="absolute bottom-0 left-0 right-0 pt-16 pb-6 md:pb-8 px-2 md:px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20 safe-area-inset-bottom">
+			<div className="max-w-3xl mx-auto pointer-events-auto mb-2 md:mb-0 relative">
+				<div
+					className={`flex items-end gap-1 rounded-3xl p-1 transition-all touch-manipulation ${
+				isPlanMode
 						? 'bg-slate-100 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-700 focus-within:border-slate-400 dark:focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-300 dark:focus-within:ring-slate-700'
 						: 'bg-card border border-border focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40'
 						}`}
@@ -137,11 +219,23 @@ export const ChatInput = memo(
 									: 'bg-transparent text-muted-foreground'
 							}`}
 						>
-							<ArrowUp className="w-4 h-4" />
-						</button>
-					</div>
-				</div>
+					<ArrowUp className="w-4 h-4" />
+				</button>
 			</div>
-		);
+
+			{showFileMention && !filesLoading && (
+				<FileMentionPopup
+					files={files}
+					changedFiles={changedFiles}
+					query={mentionQuery}
+					selectedIndex={mentionSelectedIndex}
+					onSelect={handleFileSelect}
+					onEnterSelect={handleEnterSelect}
+					onClose={() => setShowFileMention(false)}
+				/>
+			)}
+		</div>
+	</div>
+);
 	}),
 );

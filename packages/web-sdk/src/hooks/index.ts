@@ -1,5 +1,6 @@
 // Export all hooks
 export * from './useConfig';
+export * from './useFiles';
 export * from './useGit';
 export * from './useMessages';
 export * from './useSessions';

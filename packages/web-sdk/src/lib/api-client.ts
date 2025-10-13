@@ -7,6 +7,7 @@ import {
 	abortSession as apiAbortSession,
 	getConfig as apiGetConfig,
 	getProviderModels as apiGetProviderModels,
+	listFiles as apiListFiles,
 	getGitStatus as apiGetGitStatus,
 	getGitDiff as apiGetGitDiff,
 	getGitBranch as apiGetGitBranch,
@@ -375,6 +376,18 @@ class ApiClient {
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitPushResponse;
+	}
+
+	async listFiles() {
+		const response = await apiListFiles();
+		if (response.error) {
+			throw new Error(extractErrorMessage(response.error));
+		}
+		return response.data as {
+			files: string[];
+			changedFiles: Array<{ path: string; status: string }>;
+			truncated: boolean;
+		};
 	}
 }
 

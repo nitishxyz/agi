@@ -1,5 +1,6 @@
 import { askPaths } from './paths/ask';
 import { configPaths } from './paths/config';
+import { filesPaths } from './paths/files';
 import { gitPaths } from './paths/git';
 import { messagesPaths } from './paths/messages';
 import { sessionsPaths } from './paths/sessions';
@@ -15,22 +16,24 @@ export function getOpenAPISpec() {
 			description:
 				'Server-side API for AGI sessions, messages, and streaming events. All AI work runs on the server. Streaming uses SSE.',
 		},
-		tags: [
-			{ name: 'sessions' },
-			{ name: 'messages' },
-			{ name: 'stream' },
-			{ name: 'ask' },
-			{ name: 'config' },
-			{ name: 'git' },
-		],
-		paths: {
-			...askPaths,
-			...sessionsPaths,
-			...messagesPaths,
-			...streamPaths,
-			...configPaths,
-			...gitPaths,
-		},
+	tags: [
+		{ name: 'sessions' },
+		{ name: 'messages' },
+		{ name: 'stream' },
+		{ name: 'ask' },
+		{ name: 'config' },
+		{ name: 'files' },
+		{ name: 'git' },
+	],
+	paths: {
+		...askPaths,
+		...sessionsPaths,
+		...messagesPaths,
+		...streamPaths,
+		...configPaths,
+		...filesPaths,
+		...gitPaths,
+	},
 		components: {
 			schemas,
 		},

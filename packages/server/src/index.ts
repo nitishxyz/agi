@@ -8,6 +8,7 @@ import { registerSessionMessagesRoutes } from './routes/session-messages.ts';
 import { registerSessionStreamRoute } from './routes/session-stream.ts';
 import { registerAskRoutes } from './routes/ask.ts';
 import { registerConfigRoutes } from './routes/config.ts';
+import { registerFilesRoutes } from './routes/files.ts';
 import { registerGitRoutes } from './routes/git.ts';
 import type { AgentConfigEntry } from './runtime/agent-registry.ts';
 
@@ -52,6 +53,7 @@ function initApp() {
 	registerSessionStreamRoute(app);
 	registerAskRoutes(app);
 	registerConfigRoutes(app);
+	registerFilesRoutes(app);
 	registerGitRoutes(app);
 
 	return app;
@@ -115,6 +117,7 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	registerSessionStreamRoute(honoApp);
 	registerAskRoutes(honoApp);
 	registerConfigRoutes(honoApp);
+	registerFilesRoutes(honoApp);
 	registerGitRoutes(honoApp);
 
 	return honoApp;
@@ -206,6 +209,7 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 	registerSessionStreamRoute(honoApp);
 	registerAskRoutes(honoApp);
 	registerConfigRoutes(honoApp);
+	registerFilesRoutes(honoApp);
 	registerGitRoutes(honoApp);
 
 	return honoApp;
