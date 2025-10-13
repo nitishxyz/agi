@@ -2,6 +2,7 @@ import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import { spawn } from 'node:child_process';
 import DESCRIPTION from './bash.txt' with { type: 'text' };
+import { createToolError, type ToolResponse } from '../error.ts';
 
 function normalizePath(p: string) {
 	const parts = p.replace(/\\/g, '/').split('/');
@@ -58,11 +59,16 @@ export function buildBashTool(projectRoot: string): {
 			cwd?: string;
 			allowNonZeroExit?: boolean;
 			timeout?: number;
-		}) {
+		}): Promise<
+			ToolResponse<{
+				exitCode: number;
+				stdout: string;
+				stderr: string;
+			}>
+		> {
 			const absCwd = resolveSafePath(projectRoot, cwd || '.');
 
-			return new Promise((resolve, reject) => {
-				// Use spawn with shell: true for cross-platform compatibility
+			return new Promise((resolve) => {
 				const proc = spawn(cmd, {
 					cwd: absCwd,
 					shell: true,
@@ -93,24 +99,49 @@ export function buildBashTool(projectRoot: string): {
 					if (timeoutId) clearTimeout(timeoutId);
 
 					if (didTimeout) {
-						reject(new Error(`Command timed out after ${timeout}ms: ${cmd}`));
+						resolve(
+							createToolError(
+								`Command timed out after ${timeout}ms: ${cmd}`,
+								'timeout',
+								{
+									parameter: 'timeout',
+									value: timeout,
+									suggestion: 'Increase timeout or optimize the command',
+								},
+							),
+						);
 					} else if (exitCode !== 0 && !allowNonZeroExit) {
-						const errorMsg =
-							stderr.trim() ||
-							stdout.trim() ||
-							`Command failed with exit code ${exitCode}`;
-						const msg = `${errorMsg}\n\nCommand: ${cmd}\nExit code: ${exitCode}`;
-						reject(new Error(msg));
+						const errorDetail = stderr.trim() || stdout.trim() || '';
+						const errorMsg = `Command failed with exit code ${exitCode}${errorDetail ? `\n\n${errorDetail}` : ''}`;
+						resolve(
+							createToolError(errorMsg, 'execution', {
+								exitCode,
+								stdout,
+								stderr,
+								cmd,
+								suggestion: 'Check command syntax or use allowNonZeroExit: true',
+							}),
+						);
 					} else {
-						resolve({ exitCode: exitCode ?? 0, stdout, stderr });
+						resolve({
+							ok: true,
+							exitCode: exitCode ?? 0,
+							stdout,
+							stderr,
+						});
 					}
 				});
 
 				proc.on('error', (err) => {
 					if (timeoutId) clearTimeout(timeoutId);
-					reject(
-						new Error(
-							`Command execution failed: ${err.message}\n\nCommand: ${cmd}`,
+					resolve(
+						createToolError(
+							`Command execution failed: ${err.message}`,
+							'execution',
+							{
+								cmd,
+								originalError: err.message,
+							},
 						),
 					);
 				});

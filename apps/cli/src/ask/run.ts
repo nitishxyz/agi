@@ -41,23 +41,7 @@ const READ_ONLY_TOOLS = new Set([
 
 const MUTATING_TOOLS = new Set(['write', 'apply_patch', 'edit']);
 
-function extractToolErrorMessage(
-	topLevelError: string | undefined,
-	resultObject: Record<string, unknown> | null,
-): string | undefined {
-	const primary = typeof topLevelError === 'string' ? topLevelError.trim() : '';
-	if (primary.length) return primary;
-	if (!resultObject) return undefined;
-	const keys = ['error', 'stderr', 'message', 'detail', 'details', 'reason'];
-	for (const key of keys) {
-		const value = resultObject[key];
-		if (typeof value === 'string') {
-			const trimmed = value.trim();
-			if (trimmed.length) return trimmed;
-		}
-	}
-	return undefined;
-}
+import { extractToolError, isToolError } from '@agi-cli/sdk/tools/error';
 
 export async function runAsk(prompt: string, opts: AskOptions = {}) {
 	const startedAt = Date.now();
@@ -408,12 +392,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 				: undefined;
 
 		const hasErrorResult =
-			Boolean(
-				resultObject &&
-					(Reflect.has(resultObject, 'error') ||
-						Reflect.get(resultObject, 'success') === false ||
-						Reflect.get(resultObject, 'ok') === false),
-			) || Boolean(topLevelError);
+			isToolError(resultObject) || Boolean(topLevelError);
 		if (name === 'write' && typeof resultValue?.path === 'string')
 			state.filesTouched.add(String(resultValue.path));
 		if (flags.jsonStreamEnabled) {
@@ -448,7 +427,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 					((flags.readVerbose || flags.verbose) && isReadOnly);
 
 		const errorMessage = hasErrorResult
-			? (extractToolErrorMessage(topLevelError, resultObject) ??
+			? (extractToolError(resultObject, topLevelError) ??
 				'Tool reported an error')
 			: undefined;
 		const resultPayload =

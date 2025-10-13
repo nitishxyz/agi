@@ -52,8 +52,9 @@ export function ApplyPatchRenderer({
 	const changes = Array.isArray(contentJson.result?.changes)
 		? (contentJson.result?.changes as ApplyPatchChange[])
 		: [];
+	
+	const singleFilePath = files === 1 && changes.length > 0 ? changes[0].filePath : null;
 
-	// Check for errors
 	const hasError =
 		contentJson.error ||
 		(contentJson.result &&
@@ -93,9 +94,19 @@ export function ApplyPatchRenderer({
 					apply patch{hasError ? ' error' : ''}
 				</span>
 				<span className="text-muted-foreground/70 flex-shrink-0">·</span>
-				<span className="text-foreground/70 flex-shrink-0">
-					{files} {files === 1 ? 'file' : 'files'}
-				</span>
+				{singleFilePath ? (
+					<span
+						className="text-foreground/70 min-w-0 flex-shrink overflow-hidden text-ellipsis whitespace-nowrap"
+						dir="rtl"
+						title={singleFilePath}
+					>
+						{singleFilePath}
+					</span>
+				) : (
+					<span className="text-foreground/70 flex-shrink-0">
+						{files} {files === 1 ? 'file' : 'files'}
+					</span>
+				)}
 				<span className="text-emerald-600 dark:text-emerald-400 flex-shrink-0">
 					+{additions}
 				</span>

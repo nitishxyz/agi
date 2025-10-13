@@ -2,6 +2,7 @@ import type { AskHandshake, AskOptions } from './types.ts';
 import { getOrStartServerUrl } from './server.ts';
 import { httpJson, safeJson, connectSSE } from './http.ts';
 import { printToolCall, printToolResult, dim, logToolError } from './render.ts';
+import { extractToolError, isToolError } from '@agi-cli/sdk/tools/error';
 
 const READ_ONLY_TOOLS = new Set([
 	'read',
@@ -14,23 +15,6 @@ const READ_ONLY_TOOLS = new Set([
 
 const MUTATING_TOOLS = new Set(['write', 'apply_patch', 'edit']);
 
-function extractToolErrorMessage(
-	topLevelError: string | undefined,
-	resultObject: Record<string, unknown> | null,
-): string | undefined {
-	const primary = typeof topLevelError === 'string' ? topLevelError.trim() : '';
-	if (primary.length) return primary;
-	if (!resultObject) return undefined;
-	const keys = ['error', 'stderr', 'message', 'detail', 'details', 'reason'];
-	for (const key of keys) {
-		const value = resultObject[key];
-		if (typeof value === 'string') {
-			const trimmed = value.trim();
-			if (trimmed.length) return trimmed;
-		}
-	}
-	return undefined;
-}
 
 export async function runAskStreamCapture(
 	prompt: string,
@@ -124,11 +108,7 @@ export async function runAskStreamCapture(
 					Reflect.get(resultObj, 'exitCode') !== 0;
 
 				const hasErrorResult =
-					Boolean(
-						resultObj &&
-							(Reflect.has(resultObj, 'error') ||
-								Reflect.get(resultObj, 'success') === false),
-					) ||
+					isToolError(resultObj) ||
 					Boolean(topLevelError) ||
 					isBashError;
 				const isReadOnly = READ_ONLY_TOOLS.has(name ?? '');
@@ -141,7 +121,7 @@ export async function runAskStreamCapture(
 					readVerbose ||
 					!isReadOnly;
 				const errorMessage = hasErrorResult
-					? (extractToolErrorMessage(topLevelError, resultObj) ??
+					? (extractToolError(resultObj, topLevelError) ??
 						'Tool reported an error')
 					: undefined;
 				const resultPayload =

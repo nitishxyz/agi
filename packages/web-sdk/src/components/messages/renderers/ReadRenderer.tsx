@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, AlertCircle } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import {
 	prism,
@@ -6,6 +6,7 @@ import {
 } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { RendererProps } from './types';
 import { formatDuration } from './utils';
+import { ToolErrorDisplay } from './ToolErrorDisplay';
 
 function getLanguageFromPath(path: string): string {
 	const ext = path.split('.').pop()?.toLowerCase();
@@ -58,7 +59,20 @@ export function ReadRenderer({
 	onToggle,
 }: RendererProps) {
 	const result = contentJson.result || {};
-	const path = String(result.path || '');
+	const args = contentJson.args || {};
+
+	const hasToolError =
+		typeof result === 'object' && 'ok' in result && result.ok === false;
+	const errorMessage =
+		hasToolError && 'error' in result && typeof result.error === 'string'
+			? result.error
+			: null;
+	const errorStack =
+		hasToolError && 'stack' in result && typeof result.stack === 'string'
+			? result.stack
+			: undefined;
+
+	const path = String(result.path || args.path || '');
 	const content = String(result.content || '');
 	const lineRange = result.lineRange as string | undefined;
 	const lines = content.split('\n');
@@ -74,33 +88,59 @@ export function ReadRenderer({
 		? `${path}:${lineRange.replace('@', '')}`
 		: path;
 
+	const canExpand = content.length > 0 || hasToolError;
+
 	return (
 		<div className="text-xs">
 			<button
 				type="button"
-				onClick={onToggle}
-				className="flex items-center gap-2 text-blue-700 dark:text-blue-300 transition-colors hover:text-blue-600 dark:hover:text-blue-200 w-full min-w-0"
+				onClick={() => canExpand && onToggle()}
+				className={`flex items-center gap-2 transition-colors w-full min-w-0 ${
+					hasToolError
+						? 'text-red-700 dark:text-red-300 hover:text-red-600 dark:hover:text-red-200'
+						: canExpand
+							? 'text-blue-700 dark:text-blue-300 hover:text-blue-600 dark:hover:text-blue-200'
+							: 'text-blue-700 dark:text-blue-300'
+				}`}
 			>
-				<ChevronRight
-					className={`h-3 w-3 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-				/>
-				<span className="font-medium flex-shrink-0">read</span>
+				{canExpand ? (
+					isExpanded ? (
+						<ChevronRight className="h-3 w-3 flex-shrink-0 rotate-90 transition-transform" />
+					) : (
+						<ChevronRight className="h-3 w-3 flex-shrink-0 transition-transform" />
+					)
+				) : (
+					<div className="w-3 flex-shrink-0" />
+				)}
+				{hasToolError && (
+					<AlertCircle className="h-3 w-3 flex-shrink-0 text-red-600 dark:text-red-400" />
+				)}
+				<span className="font-medium flex-shrink-0">
+					read{hasToolError ? ' error' : ''}
+				</span>
 				<span className="text-muted-foreground/70 flex-shrink-0">·</span>
 				<span
-					className="text-foreground/70 truncate min-w-0"
-					style={{
-						direction: 'rtl',
-						unicodeBidi: 'plaintext',
-					}}
+					className="text-foreground/70 min-w-0 flex-shrink overflow-hidden text-ellipsis whitespace-nowrap"
+					dir="rtl"
 					title={displayText}
 				>
 					{displayText}
 				</span>
-				<span className="text-muted-foreground/80 flex-shrink-0 whitespace-nowrap">
-					· {lines.length} lines · {timeStr}
-				</span>
+				{!hasToolError && lines.length > 0 && (
+					<span className="text-muted-foreground/80 flex-shrink-0 whitespace-nowrap">
+						· {lines.length} lines · {timeStr}
+					</span>
+				)}
+				{hasToolError && (
+					<span className="text-muted-foreground/80 flex-shrink-0">
+						· {timeStr}
+					</span>
+				)}
 			</button>
-			{isExpanded && content && (
+			{isExpanded && hasToolError && errorMessage && (
+				<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />
+			)}
+			{isExpanded && !hasToolError && content && (
 				<div className="mt-2 ml-5 bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto max-w-full">
 					<div className="overflow-x-auto max-w-full">
 						<SyntaxHighlighter

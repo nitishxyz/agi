@@ -8,8 +8,8 @@ import {
 	isAbsoluteLike,
 } from './util.ts';
 import DESCRIPTION from './write.txt' with { type: 'text' };
+import { createToolError, type ToolResponse } from '../../error.ts';
 
-// description imported above
 
 export function buildWriteTool(projectRoot: string): {
 	name: string;
@@ -34,27 +34,68 @@ export function buildWriteTool(projectRoot: string): {
 			path: string;
 			content: string;
 			createDirs?: boolean;
-		}) {
+		}): Promise<
+			ToolResponse<{
+				path: string;
+				bytes: number;
+				artifact: unknown;
+			}>
+		> {
+			if (!path || path.trim().length === 0) {
+				return createToolError(
+					'Missing required parameter: path',
+					'validation',
+					{
+						parameter: 'path',
+						value: path,
+						suggestion: 'Provide a file path to write',
+					},
+				);
+			}
+
 			const req = expandTilde(path);
 			if (isAbsoluteLike(req)) {
-				throw new Error(
+				return createToolError(
 					`Refusing to write outside project root: ${req}. Use a relative path within the project.`,
+					'permission',
+					{
+						parameter: 'path',
+						value: req,
+						suggestion: 'Use a relative path within the project',
+					},
 				);
 			}
 			const abs = resolveSafePath(projectRoot, req);
-			if (createDirs) {
-				const dirPath = abs.slice(0, abs.lastIndexOf('/'));
-				await mkdir(dirPath, { recursive: true });
-			}
-			let existed = false;
-			let oldText = '';
+
 			try {
-				oldText = await readFile(abs, 'utf-8');
-				existed = true;
-			} catch {}
-			await writeFile(abs, content);
-			const artifact = await buildWriteArtifact(req, existed, oldText, content);
-			return { path: req, bytes: content.length, artifact } as const;
+				if (createDirs) {
+					const dirPath = abs.slice(0, abs.lastIndexOf('/'));
+					await mkdir(dirPath, { recursive: true });
+				}
+				let existed = false;
+				let oldText = '';
+				try {
+					oldText = await readFile(abs, 'utf-8');
+					existed = true;
+				} catch {}
+				await writeFile(abs, content);
+				const artifact = await buildWriteArtifact(req, existed, oldText, content);
+				return {
+					ok: true,
+					path: req,
+					bytes: content.length,
+					artifact,
+				};
+			} catch (error: unknown) {
+				return createToolError(
+					`Failed to write file: ${error instanceof Error ? error.message : String(error)}`,
+					'execution',
+					{
+						parameter: 'path',
+						value: req,
+					},
+				);
+			}
 		},
 	});
 	return { name: 'write', tool: write };

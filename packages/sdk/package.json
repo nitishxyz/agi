@@ -65,6 +65,10 @@
 			"import": "./src/core/src/tools/builtin/websearch.ts",
 			"types": "./src/core/src/tools/builtin/websearch.ts"
 		},
+		"./tools/error": {
+			"import": "./src/core/src/tools/error.ts",
+			"types": "./src/core/src/tools/error.ts"
+		},
 		"./prompts/*": "./src/prompts/src/*"
 	},
 	"files": [

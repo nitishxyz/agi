@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { readFile, writeFile, unlink, mkdir } from 'node:fs/promises';
 import { dirname, resolve, relative, isAbsolute } from 'node:path';
 import DESCRIPTION from './patch.txt' with { type: 'text' };
+import { createToolError, type ToolResponse } from '../error.ts';
 
 interface PatchAddOperation {
 	kind: 'add';
@@ -701,45 +702,79 @@ export function buildApplyPatchTool(projectRoot: string): {
 					'Allow hunks to be rejected without failing the whole operation',
 				),
 		}),
-		async execute({ patch }: { patch: string; allowRejects?: boolean }) {
+		async execute({ patch }: { patch: string; allowRejects?: boolean }): Promise<
+			ToolResponse<{
+				output: string;
+				changes: unknown[];
+				artifact: unknown;
+			}>
+		> {
+			if (!patch || patch.trim().length === 0) {
+				return createToolError(
+					'Missing required parameter: patch',
+					'validation',
+					{
+						parameter: 'patch',
+						value: patch,
+						suggestion: 'Provide patch content in enveloped format',
+					},
+				);
+			}
+
 			if (
 				!patch.includes(PATCH_BEGIN_MARKER) ||
 				!patch.includes(PATCH_END_MARKER)
 			) {
-				throw new Error(
+				return createToolError(
 					'Only enveloped patch format is supported. Patch must start with "*** Begin Patch" and contain "*** Add File:", "*** Update File:", or "*** Delete File:" directives.',
+					'validation',
+					{
+						parameter: 'patch',
+						suggestion: 'Use enveloped patch format starting with *** Begin Patch',
+					},
 				);
 			}
 
-			const { operations, normalizedPatch } = await applyEnvelopedPatch(
-				projectRoot,
-				patch,
-			);
-			const summary = summarizeOperations(operations);
-			const changes = operations.map((operation) => ({
-				filePath: operation.filePath,
-				kind: operation.kind,
-				hunks: operation.hunks.map((hunk) => ({
-					oldStart: hunk.oldStart,
-					oldLines: hunk.oldLines,
-					newStart: hunk.newStart,
-					newLines: hunk.newLines,
-					additions: hunk.additions,
-					deletions: hunk.deletions,
-					context: hunk.header.context,
-				})),
-			}));
+			try {
+				const { operations, normalizedPatch } = await applyEnvelopedPatch(
+					projectRoot,
+					patch,
+				);
+				const summary = summarizeOperations(operations);
+				const changes = operations.map((operation) => ({
+					filePath: operation.filePath,
+					kind: operation.kind,
+					hunks: operation.hunks.map((hunk) => ({
+						oldStart: hunk.oldStart,
+						oldLines: hunk.oldLines,
+						newStart: hunk.newStart,
+						newLines: hunk.newLines,
+						additions: hunk.additions,
+						deletions: hunk.deletions,
+						context: hunk.header.context,
+					})),
+				}));
 
-			return {
-				ok: true,
-				output: 'Applied enveloped patch',
-				changes,
-				artifact: {
-					kind: 'file_diff',
-					patch: normalizedPatch,
-					summary,
-				},
-			} as const;
+				return {
+					ok: true,
+					output: 'Applied enveloped patch',
+					changes,
+					artifact: {
+						kind: 'file_diff',
+						patch: normalizedPatch,
+						summary,
+					},
+				};
+			} catch (error: unknown) {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				return createToolError(
+					`Failed to apply patch: ${errorMessage}`,
+					'execution',
+					{
+						suggestion: 'Check that the patch format is correct and target files exist',
+					},
+				);
+			}
 		},
 	});
 	return { name: 'apply_patch', tool: applyPatch };

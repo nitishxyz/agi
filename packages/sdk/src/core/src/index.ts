@@ -32,6 +32,19 @@ export type { ProviderId, ModelInfo } from '../../types/src/index.ts';
 export { discoverProjectTools } from './tools/loader';
 export type { DiscoveredTool } from './tools/loader';
 
+// Tool error handling utilities
+export {
+	isToolError,
+	extractToolError,
+	createToolError,
+} from './tools/error';
+export type {
+	ToolErrorType,
+	ToolErrorResponse,
+	ToolSuccessResponse,
+	ToolResponse,
+} from './tools/error';
+
 // Re-export builtin tools for direct access
 export { buildFsTools } from './tools/builtin/fs/index';
 export { buildGitTools } from './tools/builtin/git';

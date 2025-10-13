@@ -5,6 +5,7 @@ import { publish } from '../events/bus.ts';
 import type { DiscoveredTool } from '@agi-cli/sdk';
 import { getCwd, setCwd, joinRelative } from '../runtime/cwd.ts';
 import type { ToolAdapterContext } from '../runtime/tool-context.ts';
+import { isToolError } from '@agi-cli/sdk/tools/error';
 
 export type { ToolAdapterContext } from '../runtime/tool-context.ts';
 
@@ -403,7 +404,8 @@ export function adaptTools(
 					}
 					return result;
 				} catch (error) {
-					// Tool execution failed - save error to database as tool_result
+					// Tool execution failed
+					// Check if the error is already a structured tool error response
 					const resultPartId = crypto.randomUUID();
 					const callId = callIdFromQueue;
 					const startTs = startTsFromQueue;
@@ -411,15 +413,21 @@ export function adaptTools(
 					const dur =
 						typeof startTs === 'number' ? Math.max(0, endTs - startTs) : null;
 
-					const errorMessage =
-						error instanceof Error ? error.message : String(error);
-					const errorStack = error instanceof Error ? error.stack : undefined;
-
-					const errorResult = {
-						ok: false,
-						error: errorMessage,
-						stack: errorStack,
-					};
+					// If the tool returned a structured error response, use it directly
+					// Otherwise, wrap the thrown error in our standard format
+					let errorResult: unknown;
+					if (isToolError(error)) {
+						errorResult = error;
+					} else {
+						const errorMessage =
+							error instanceof Error ? error.message : String(error);
+						const errorStack = error instanceof Error ? error.stack : undefined;
+						errorResult = {
+							ok: false,
+							error: errorMessage,
+							stack: errorStack,
+						};
+					}
 
 					const contentObj = {
 						name,
