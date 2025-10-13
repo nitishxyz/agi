@@ -72,6 +72,28 @@ All patches must be wrapped in markers and use explicit file directives:
 It should describe what to look for (e.g., `@@ inside main function` or `@@ config section`).
 The actual context lines (with leading space) come AFTER the `@@` line.
 
+
+### Update multiple locations in the same file:
+```
+*** Begin Patch
+*** Update File: src/app.ts
+@@ first section - near line 10
+ function init() {
+-  const port = 3000;
++  const port = 8080;
+   return port;
+ }
+@@ second section - near line 25
+ function start() {
+-  console.log("Starting...");
++  console.log("Server starting...");
+   init();
+ }
+*** End Patch
+```
+
+**IMPORTANT**: Use separate `@@` headers for each non-consecutive change location. This allows multiple edits to the same file in one patch, saving tokens and reducing tool calls.
+
 ### Delete a file:
 ```
 *** Begin Patch
