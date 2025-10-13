@@ -2,13 +2,18 @@ Apply a patch to modify one or more files using the enveloped patch format.
 
 **RECOMMENDED: Use apply_patch for targeted file edits to avoid rewriting entire files and wasting tokens.**
 
+**FUZZY MATCHING**: By default, fuzzy matching is enabled to handle whitespace differences (tabs vs spaces).
+Exact matching is tried first, then normalized matching if exact fails. Disable with `fuzzyMatch: false` if needed.
+
 Use `apply_patch` only when:
 - You want to make targeted edits to specific lines (primary use case)
 - You want to make multiple related changes across different files in a single operation
 - You need to add/delete entire files along with modifications
-- You have JUST read the file and are confident the content hasn't changed
+- You have JUST read the file immediately before (within the same response) and are confident the content hasn't changed
 
-**IMPORTANT: Patches require EXACT line matches. If the file content has changed since you last read it, the patch will fail.**
+**CRITICAL - ALWAYS READ BEFORE PATCHING**: You MUST read the file content immediately before creating a patch.
+Never rely on memory or previous reads. Even with fuzzy matching enabled (tolerates tabs vs spaces),
+If the file content has changed significantly since you last read it, the patch may still fail.
 
 **Alternative: Use the `edit` tool if you need fuzzy matching or structured operations.**
 
@@ -55,7 +60,7 @@ All patches must be wrapped in markers and use explicit file directives:
 ```
 *** Begin Patch
 *** Update File: src/app.ts
-@@ function main()
+@@ function main() - locates the change position
  function main() {
 -  console.log("old");
 +  console.log("new");
@@ -63,7 +68,9 @@ All patches must be wrapped in markers and use explicit file directives:
 *** End Patch
 ```
 
-The `@@ context line` helps locate the exact position, but the `-` lines must still match exactly.
+**IMPORTANT**: The `@@ context line` is a hint for finding the location - it's NOT a line from the file.
+It should describe what to look for (e.g., `@@ inside main function` or `@@ config section`).
+The actual context lines (with leading space) come AFTER the `@@` line.
 
 ### Delete a file:
 ```

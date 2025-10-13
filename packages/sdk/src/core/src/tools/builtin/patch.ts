@@ -107,6 +107,49 @@ function ensureTrailingNewline(lines: string[]) {
 	}
 }
 
+/**
+ * Normalize whitespace for fuzzy matching.
+ * Converts tabs to spaces and trims leading/trailing whitespace.
+ */
+function normalizeWhitespace(line: string): string {
+	return line.replace(/\t/g, '  ').trim();
+}
+
+/**
+ * Find subsequence with optional whitespace normalization for fuzzy matching.
+ * Falls back to normalized matching if exact match fails.
+ */
+function findSubsequenceWithFuzzy(
+	lines: string[],
+	pattern: string[],
+	startIndex: number,
+	useFuzzy: boolean,
+): number {
+	// Try exact match first
+	const exactMatch = findSubsequence(lines, pattern, startIndex);
+	if (exactMatch !== -1) return exactMatch;
+
+	// If fuzzy matching is enabled and exact match failed, try normalized matching
+	if (useFuzzy && pattern.length > 0) {
+		const normalizedLines = lines.map(normalizeWhitespace);
+		const normalizedPattern = pattern.map(normalizeWhitespace);
+		
+		const start = Math.max(0, startIndex);
+		for (let i = start; i <= lines.length - pattern.length; i++) {
+			let matches = true;
+			for (let j = 0; j < pattern.length; j++) {
+				if (normalizedLines[i + j] !== normalizedPattern[j]) {
+					matches = false;
+					break;
+				}
+			}
+			if (matches) return i;
+		}
+	}
+
+	return -1;
+}
+
 function findSubsequence(
 	lines: string[],
 	pattern: string[],
@@ -416,6 +459,7 @@ function applyHunksToLines(
 	originalLines: string[],
 	hunks: PatchHunk[],
 	filePath: string,
+	useFuzzy: boolean = false,
 ): { lines: string[]; applied: AppliedHunkResult[] } {
 	const lines = [...originalLines];
 	let searchIndex = 0;
@@ -446,11 +490,11 @@ function applyHunksToLines(
 				: searchIndex;
 
 		let matchIndex = hasExpected
-			? findSubsequence(lines, expected, Math.max(0, hint - 3))
+			? findSubsequenceWithFuzzy(lines, expected, Math.max(0, hint - 3), useFuzzy)
 			: -1;
 
 		if (hasExpected && matchIndex === -1) {
-			matchIndex = findSubsequence(lines, expected, 0);
+			matchIndex = findSubsequenceWithFuzzy(lines, expected, 0, useFuzzy);
 		}
 
 		if (matchIndex === -1 && hasExpected && hunk.header.context) {
@@ -472,8 +516,20 @@ function applyHunksToLines(
 			const contextInfo = hunk.header.context
 				? ` near context '${hunk.header.context}'`
 				: '';
+			
+			// Provide helpful error with nearby context
+			const nearbyStart = Math.max(0, hint - 2);
+			const nearbyEnd = Math.min(lines.length, hint + 5);
+			const nearbyLines = lines.slice(nearbyStart, nearbyEnd);
+			const lineNumberInfo = nearbyStart > 0 ? ` (around line ${nearbyStart + 1})` : '';
+			
+			let errorMsg = `Failed to apply patch hunk in ${filePath}${contextInfo}.\n`;
+			errorMsg += `Expected to find:\n${expected.map(l => `  ${l}`).join('\n')}\n`;
+			errorMsg += `Nearby context${lineNumberInfo}:\n${nearbyLines.map((l, idx) => `  ${nearbyStart + idx + 1}: ${l}`).join('\n')}\n`;
+			errorMsg += `Hint: Check for whitespace differences (tabs vs spaces). Try enabling fuzzyMatch option.`;
+			
 			throw new Error(
-				`Failed to apply patch hunk in ${filePath}${contextInfo}.`,
+				errorMsg,
 			);
 		}
 
@@ -533,6 +589,7 @@ function computeInsertionIndex(
 async function applyUpdateOperation(
 	projectRoot: string,
 	operation: PatchUpdateOperation,
+	useFuzzy: boolean = false,
 ): Promise<AppliedOperationRecord> {
 	const targetPath = resolveProjectPath(projectRoot, operation.filePath);
 	let originalContent: string;
@@ -550,6 +607,7 @@ async function applyUpdateOperation(
 		originalLines,
 		operation.hunks,
 		operation.filePath,
+		useFuzzy,
 	);
 	ensureTrailingNewline(updatedLines);
 	await writeFile(targetPath, joinLines(updatedLines, newline), 'utf-8');
@@ -666,7 +724,7 @@ function formatNormalizedPatch(operations: AppliedOperationRecord[]): string {
 	return lines.join('\n');
 }
 
-async function applyEnvelopedPatch(projectRoot: string, patch: string) {
+async function applyEnvelopedPatch(projectRoot: string, patch: string, useFuzzy: boolean = false) {
 	const operations = parseEnvelopedPatch(patch);
 	const applied: AppliedOperationRecord[] = [];
 
@@ -676,7 +734,7 @@ async function applyEnvelopedPatch(projectRoot: string, patch: string) {
 		} else if (operation.kind === 'delete') {
 			applied.push(await applyDeleteOperation(projectRoot, operation));
 		} else {
-			applied.push(await applyUpdateOperation(projectRoot, operation));
+			applied.push(await applyUpdateOperation(projectRoot, operation, useFuzzy));
 		}
 	}
 
@@ -701,8 +759,15 @@ export function buildApplyPatchTool(projectRoot: string): {
 				.describe(
 					'Allow hunks to be rejected without failing the whole operation',
 				),
+			fuzzyMatch: z
+				.boolean()
+				.optional()
+				.default(true)
+				.describe(
+					'Enable fuzzy matching with whitespace normalization (converts tabs to spaces for matching)',
+				),
 		}),
-		async execute({ patch }: { patch: string; allowRejects?: boolean }): Promise<
+		async execute({ patch, fuzzyMatch }: { patch: string; allowRejects?: boolean; fuzzyMatch?: boolean }): Promise<
 			ToolResponse<{
 				output: string;
 				changes: unknown[];
@@ -739,6 +804,7 @@ export function buildApplyPatchTool(projectRoot: string): {
 				const { operations, normalizedPatch } = await applyEnvelopedPatch(
 					projectRoot,
 					patch,
+					fuzzyMatch ?? true,
 				);
 				const summary = summarizeOperations(operations);
 				const changes = operations.map((operation) => ({
