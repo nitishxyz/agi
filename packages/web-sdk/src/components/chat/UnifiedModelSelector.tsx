@@ -190,12 +190,12 @@ export function UnifiedModelSelector({
 	const handleSearchKeyDown = (event: React.KeyboardEvent) => {
 		if (filteredFlatList.length === 0) return;
 
-		if (event.key === 'ArrowDown') {
+		if (event.key === 'ArrowDown' || (event.ctrlKey && event.key === 'j')) {
 			event.preventDefault();
 			setHighlightedIndex((prev) =>
 				prev < filteredFlatList.length - 1 ? prev + 1 : 0,
 			);
-		} else if (event.key === 'ArrowUp') {
+		} else if (event.key === 'ArrowUp' || (event.ctrlKey && event.key === 'k')) {
 			event.preventDefault();
 			setHighlightedIndex((prev) =>
 				prev > 0 ? prev - 1 : filteredFlatList.length - 1,
