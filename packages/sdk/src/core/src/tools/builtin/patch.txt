@@ -60,7 +60,7 @@ All patches must be wrapped in markers and use explicit file directives:
 ```
 *** Begin Patch
 *** Update File: src/app.ts
-@@ function main() - locates the change position
+@@ function main()
  function main() {
 -  console.log("old");
 +  console.log("new");
@@ -68,9 +68,11 @@ All patches must be wrapped in markers and use explicit file directives:
 *** End Patch
 ```
 
-**IMPORTANT**: The `@@ context line` is a hint for finding the location - it's NOT a line from the file.
-It should describe what to look for (e.g., `@@ inside main function` or `@@ config section`).
-The actual context lines (with leading space) come AFTER the `@@` line.
+**IMPORTANT**: 
+- The `@@` line is an OPTIONAL hint to help locate the change - it's a comment, not parsed as context
+- REQUIRED: Actual context lines (starting with space ` `) that match the file exactly
+- The context lines with space prefix are what the tool uses to find the location
+- The `@@` line just helps humans/AI understand what section you're editing
 
 
 ### Update multiple locations in the same file:
@@ -118,11 +120,17 @@ The actual context lines (with leading space) come AFTER the `@@` line.
 - Lines starting with `+` are added
 - Lines starting with `-` are removed  
 - Lines starting with ` ` (space) are context (kept unchanged)
-- Lines starting with `@@` provide context for finding the location
+- Lines starting with `@@` are optional hints/comments (not parsed as context)
 
 ## Common Errors
 
-**"Failed to find expected lines"**: The file content doesn't match your patch. The file may have changed, or you may have mistyped the lines. Solution: Use the `edit` tool instead.
+**"Failed to find expected lines"**: The file content doesn't match your patch. Common causes:
+- Missing context lines (lines with space prefix)
+- Using `@@` line as context instead of real context lines
+- The file content has changed since you read it
+- Whitespace/indentation mismatch
+
+**Solution**: Always read the file immediately before patching and include actual context lines with space prefix.
 
 ## Important Notes
 
