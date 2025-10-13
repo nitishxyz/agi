@@ -163,11 +163,11 @@ export const ChatInput = memo(
 			},
 			[
 				showFileMention,
-				files,
-				mentionSelectedIndex,
 				handleSend,
 				isPlanMode,
 				onPlanModeToggle,
+				currentFileToSelect,
+				handleFileSelect,
 			],
 		);
 

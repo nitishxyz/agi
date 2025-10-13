@@ -112,7 +112,7 @@ async function getChangedFiles(
 			}
 		}
 		return changedFiles;
-	} catch (err) {
+	} catch (_err) {
 		return new Set();
 	}
 }

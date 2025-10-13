@@ -39,7 +39,7 @@ export function UnifiedAgentSelector({
 		if (isOpen) {
 			setHighlightedIndex(0);
 		}
-	}, [searchQuery, isOpen]);
+	}, [isOpen]);
 
 	useEffect(() => {
 		if (

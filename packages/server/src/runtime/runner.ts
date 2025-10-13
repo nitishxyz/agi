@@ -22,10 +22,7 @@ import {
 	dequeueJob,
 	cleanupSession,
 } from './session-queue.ts';
-import {
-	setupToolContext,
-	type RunnerToolContext,
-} from './tool-context-setup.ts';
+import { setupToolContext } from './tool-context-setup.ts';
 import {
 	updateSessionTokensIncremental,
 	updateMessageTokensIncremental,
@@ -218,12 +215,12 @@ async function runAssistant(opts: RunOpts) {
 	let accumulated = '';
 	let stepIndex = 0;
 
-	let finishObserved = false;
+	let _finishObserved = false;
 	const unsubscribeFinish = subscribe(opts.sessionId, (evt) => {
 		if (evt.type !== 'tool.result') return;
 		try {
 			const name = (evt.payload as { name?: string } | undefined)?.name;
-			if (name === 'finish') finishObserved = true;
+			if (name === 'finish') _finishObserved = true;
 		} catch {}
 	});
 

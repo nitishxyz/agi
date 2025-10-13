@@ -138,7 +138,7 @@ export function UnifiedModelSelector({
 		if (isOpen) {
 			setHighlightedIndex(0);
 		}
-	}, [searchQuery, isOpen]);
+	}, [isOpen]);
 
 	useEffect(() => {
 		if (
