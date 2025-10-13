@@ -52,8 +52,9 @@ export function ApplyPatchRenderer({
 	const changes = Array.isArray(contentJson.result?.changes)
 		? (contentJson.result?.changes as ApplyPatchChange[])
 		: [];
-	
-	const singleFilePath = files === 1 && changes.length > 0 ? changes[0].filePath : null;
+
+	const singleFilePath =
+		files === 1 && changes.length > 0 ? changes[0].filePath : null;
 
 	const hasError =
 		contentJson.error ||

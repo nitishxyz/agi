@@ -31,9 +31,7 @@ export type ToolResponse<T = unknown> =
 export function isToolError(result: unknown): result is ToolErrorResponse {
 	if (!result || typeof result !== 'object') return false;
 	const obj = result as Record<string, unknown>;
-	return (
-		obj.ok === false || 'error' in obj || obj.success === false
-	);
+	return obj.ok === false || 'error' in obj || obj.success === false;
 }
 
 export function extractToolError(

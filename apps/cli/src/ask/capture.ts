@@ -15,7 +15,6 @@ const READ_ONLY_TOOLS = new Set([
 
 const MUTATING_TOOLS = new Set(['write', 'apply_patch', 'edit']);
 
-
 export async function runAskStreamCapture(
 	prompt: string,
 	opts: AskOptions = {},
@@ -108,9 +107,7 @@ export async function runAskStreamCapture(
 					Reflect.get(resultObj, 'exitCode') !== 0;
 
 				const hasErrorResult =
-					isToolError(resultObj) ||
-					Boolean(topLevelError) ||
-					isBashError;
+					isToolError(resultObj) || Boolean(topLevelError) || isBashError;
 				const isReadOnly = READ_ONLY_TOOLS.has(name ?? '');
 				const shouldRenderResult =
 					name === 'tree' ||

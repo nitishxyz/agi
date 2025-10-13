@@ -391,8 +391,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 				? data.error
 				: undefined;
 
-		const hasErrorResult =
-			isToolError(resultObject) || Boolean(topLevelError);
+		const hasErrorResult = isToolError(resultObject) || Boolean(topLevelError);
 		if (name === 'write' && typeof resultValue?.path === 'string')
 			state.filesTouched.add(String(resultValue.path));
 		if (flags.jsonStreamEnabled) {

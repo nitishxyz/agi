@@ -141,7 +141,11 @@ export function UnifiedModelSelector({
 	}, [searchQuery, isOpen]);
 
 	useEffect(() => {
-		if (isOpen && highlightedIndex >= 0 && highlightedIndex < itemRefs.current.length) {
+		if (
+			isOpen &&
+			highlightedIndex >= 0 &&
+			highlightedIndex < itemRefs.current.length
+		) {
 			itemRefs.current[highlightedIndex]?.scrollIntoView({
 				block: 'nearest',
 				behavior: 'smooth',
@@ -319,7 +323,7 @@ export function UnifiedModelSelector({
 									</div>
 								),
 							)
-		)}
+						)}
 					</div>
 				</div>
 			)}

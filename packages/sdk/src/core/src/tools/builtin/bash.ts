@@ -119,7 +119,8 @@ export function buildBashTool(projectRoot: string): {
 								stdout,
 								stderr,
 								cmd,
-								suggestion: 'Check command syntax or use allowNonZeroExit: true',
+								suggestion:
+									'Check command syntax or use allowNonZeroExit: true',
 							}),
 						);
 					} else {

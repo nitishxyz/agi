@@ -263,11 +263,7 @@ async function runAssistant(opts: RunOpts) {
 
 	const onAbort = createAbortHandler(opts, db, getStepIndex, sharedCtx);
 
-	const onFinish = createFinishHandler(
-		opts,
-		db,
-		completeAssistantMessage,
-	);
+	const onFinish = createFinishHandler(opts, db, completeAssistantMessage);
 
 	// Apply optimizations: deduplication, pruning, cache control, and truncation
 	const { addCacheControl, truncateHistory } = await import(

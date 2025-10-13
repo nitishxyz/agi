@@ -10,7 +10,6 @@ import {
 import DESCRIPTION from './write.txt' with { type: 'text' };
 import { createToolError, type ToolResponse } from '../../error.ts';
 
-
 export function buildWriteTool(projectRoot: string): {
 	name: string;
 	tool: Tool;
@@ -79,7 +78,12 @@ export function buildWriteTool(projectRoot: string): {
 					existed = true;
 				} catch {}
 				await writeFile(abs, content);
-				const artifact = await buildWriteArtifact(req, existed, oldText, content);
+				const artifact = await buildWriteArtifact(
+					req,
+					existed,
+					oldText,
+					content,
+				);
 				return {
 					ok: true,
 					path: req,

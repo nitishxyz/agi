@@ -42,7 +42,11 @@ export function UnifiedAgentSelector({
 	}, [searchQuery, isOpen]);
 
 	useEffect(() => {
-		if (isOpen && highlightedIndex >= 0 && highlightedIndex < itemRefs.current.length) {
+		if (
+			isOpen &&
+			highlightedIndex >= 0 &&
+			highlightedIndex < itemRefs.current.length
+		) {
 			itemRefs.current[highlightedIndex]?.scrollIntoView({
 				block: 'nearest',
 				behavior: 'smooth',

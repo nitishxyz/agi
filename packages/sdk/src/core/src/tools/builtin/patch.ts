@@ -133,7 +133,7 @@ function findSubsequenceWithFuzzy(
 	if (useFuzzy && pattern.length > 0) {
 		const normalizedLines = lines.map(normalizeWhitespace);
 		const normalizedPattern = pattern.map(normalizeWhitespace);
-		
+
 		const start = Math.max(0, startIndex);
 		for (let i = start; i <= lines.length - pattern.length; i++) {
 			let matches = true;
@@ -490,7 +490,12 @@ function applyHunksToLines(
 				: searchIndex;
 
 		let matchIndex = hasExpected
-			? findSubsequenceWithFuzzy(lines, expected, Math.max(0, hint - 3), useFuzzy)
+			? findSubsequenceWithFuzzy(
+					lines,
+					expected,
+					Math.max(0, hint - 3),
+					useFuzzy,
+				)
 			: -1;
 
 		if (hasExpected && matchIndex === -1) {
@@ -516,21 +521,20 @@ function applyHunksToLines(
 			const contextInfo = hunk.header.context
 				? ` near context '${hunk.header.context}'`
 				: '';
-			
+
 			// Provide helpful error with nearby context
 			const nearbyStart = Math.max(0, hint - 2);
 			const nearbyEnd = Math.min(lines.length, hint + 5);
 			const nearbyLines = lines.slice(nearbyStart, nearbyEnd);
-			const lineNumberInfo = nearbyStart > 0 ? ` (around line ${nearbyStart + 1})` : '';
-			
+			const lineNumberInfo =
+				nearbyStart > 0 ? ` (around line ${nearbyStart + 1})` : '';
+
 			let errorMsg = `Failed to apply patch hunk in ${filePath}${contextInfo}.\n`;
-			errorMsg += `Expected to find:\n${expected.map(l => `  ${l}`).join('\n')}\n`;
+			errorMsg += `Expected to find:\n${expected.map((l) => `  ${l}`).join('\n')}\n`;
 			errorMsg += `Nearby context${lineNumberInfo}:\n${nearbyLines.map((l, idx) => `  ${nearbyStart + idx + 1}: ${l}`).join('\n')}\n`;
 			errorMsg += `Hint: Check for whitespace differences (tabs vs spaces). Try enabling fuzzyMatch option.`;
-			
-			throw new Error(
-				errorMsg,
-			);
+
+			throw new Error(errorMsg);
 		}
 
 		const deleteCount = hasExpected ? expected.length : 0;
@@ -724,7 +728,11 @@ function formatNormalizedPatch(operations: AppliedOperationRecord[]): string {
 	return lines.join('\n');
 }
 
-async function applyEnvelopedPatch(projectRoot: string, patch: string, useFuzzy: boolean = false) {
+async function applyEnvelopedPatch(
+	projectRoot: string,
+	patch: string,
+	useFuzzy: boolean = false,
+) {
 	const operations = parseEnvelopedPatch(patch);
 	const applied: AppliedOperationRecord[] = [];
 
@@ -734,7 +742,9 @@ async function applyEnvelopedPatch(projectRoot: string, patch: string, useFuzzy:
 		} else if (operation.kind === 'delete') {
 			applied.push(await applyDeleteOperation(projectRoot, operation));
 		} else {
-			applied.push(await applyUpdateOperation(projectRoot, operation, useFuzzy));
+			applied.push(
+				await applyUpdateOperation(projectRoot, operation, useFuzzy),
+			);
 		}
 	}
 
@@ -767,7 +777,14 @@ export function buildApplyPatchTool(projectRoot: string): {
 					'Enable fuzzy matching with whitespace normalization (converts tabs to spaces for matching)',
 				),
 		}),
-		async execute({ patch, fuzzyMatch }: { patch: string; allowRejects?: boolean; fuzzyMatch?: boolean }): Promise<
+		async execute({
+			patch,
+			fuzzyMatch,
+		}: {
+			patch: string;
+			allowRejects?: boolean;
+			fuzzyMatch?: boolean;
+		}): Promise<
 			ToolResponse<{
 				output: string;
 				changes: unknown[];
@@ -795,7 +812,8 @@ export function buildApplyPatchTool(projectRoot: string): {
 					'validation',
 					{
 						parameter: 'patch',
-						suggestion: 'Use enveloped patch format starting with *** Begin Patch',
+						suggestion:
+							'Use enveloped patch format starting with *** Begin Patch',
 					},
 				);
 			}
@@ -832,12 +850,14 @@ export function buildApplyPatchTool(projectRoot: string): {
 					},
 				};
 			} catch (error: unknown) {
-				const errorMessage = error instanceof Error ? error.message : String(error);
+				const errorMessage =
+					error instanceof Error ? error.message : String(error);
 				return createToolError(
 					`Failed to apply patch: ${errorMessage}`,
 					'execution',
 					{
-						suggestion: 'Check that the patch format is correct and target files exist',
+						suggestion:
+							'Check that the patch format is correct and target files exist',
 					},
 				);
 			}
