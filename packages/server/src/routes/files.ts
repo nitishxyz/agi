@@ -88,22 +88,26 @@ async function traverseDirectory(
 	return { files: collected, truncated: false };
 }
 
-async function getChangedFiles(projectRoot: string): Promise<Map<string, string>> {
+async function getChangedFiles(
+	projectRoot: string,
+): Promise<Map<string, string>> {
 	try {
-		const { stdout } = await execAsync('git status --porcelain', { cwd: projectRoot });
+		const { stdout } = await execAsync('git status --porcelain', {
+			cwd: projectRoot,
+		});
 		const changedFiles = new Map<string, string>();
 		for (const line of stdout.split('\n')) {
 			if (line.length > 3) {
 				const statusCode = line.substring(0, 2).trim();
 				const filePath = line.substring(3).trim();
-				
+
 				let status = 'modified';
 				if (statusCode.includes('A')) status = 'added';
 				else if (statusCode.includes('M')) status = 'modified';
 				else if (statusCode.includes('D')) status = 'deleted';
 				else if (statusCode.includes('R')) status = 'renamed';
 				else if (statusCode.includes('?')) status = 'untracked';
-				
+
 				changedFiles.set(filePath, status);
 			}
 		}
@@ -125,28 +129,30 @@ export function registerFilesRoutes(app: Hono) {
 				projectRoot,
 				maxDepth,
 				0,
-			limit,
-		);
+				limit,
+			);
 
-		const changedFiles = await getChangedFiles(projectRoot);
-		
-		result.files.sort((a, b) => {
-			const aChanged = changedFiles.has(a);
-			const bChanged = changedFiles.has(b);
-			if (aChanged && !bChanged) return -1;
-			if (!aChanged && bChanged) return 1;
-			return a.localeCompare(b);
+			const changedFiles = await getChangedFiles(projectRoot);
+
+			result.files.sort((a, b) => {
+				const aChanged = changedFiles.has(a);
+				const bChanged = changedFiles.has(b);
+				if (aChanged && !bChanged) return -1;
+				if (!aChanged && bChanged) return 1;
+				return a.localeCompare(b);
 			});
 
-		return c.json({
-			files: result.files,
-			changedFiles: Array.from(changedFiles.entries()).map(([path, status]) => ({
-				path,
-				status,
-			})),
-			truncated: result.truncated,
-		});
-	} catch (err) {
+			return c.json({
+				files: result.files,
+				changedFiles: Array.from(changedFiles.entries()).map(
+					([path, status]) => ({
+						path,
+						status,
+					}),
+				),
+				truncated: result.truncated,
+			});
+		} catch (err) {
 			logger.error('Files route error:', err);
 			return c.json({ error: serializeError(err) }, 500);
 		}

@@ -36,24 +36,31 @@ export const filesPaths = {
 									files: {
 										type: 'array',
 										items: { type: 'string' },
-						},
-						changedFiles: {
-							type: 'array',
-							items: {
-								type: 'object',
-								properties: {
-									path: { type: 'string' },
-									status: {
-										type: 'string',
-										enum: ['added', 'modified', 'deleted', 'renamed', 'untracked'],
 									},
+									changedFiles: {
+										type: 'array',
+										items: {
+											type: 'object',
+											properties: {
+												path: { type: 'string' },
+												status: {
+													type: 'string',
+													enum: [
+														'added',
+														'modified',
+														'deleted',
+														'renamed',
+														'untracked',
+													],
+												},
+											},
+											required: ['path', 'status'],
+										},
+										description:
+											'List of files with uncommitted changes (from git status)',
+									},
+									truncated: { type: 'boolean' },
 								},
-								required: ['path', 'status'],
-							},
-							description: 'List of files with uncommitted changes (from git status)',
-						},
-						truncated: { type: 'boolean' },
-					},
 								required: ['files', 'changedFiles', 'truncated'],
 							},
 						},

@@ -305,8 +305,7 @@ export const gitPaths = {
 			tags: ['git'],
 			operationId: 'pushCommits',
 			summary: 'Push commits to remote',
-			description:
-				'Pushes local commits to the configured remote repository',
+			description: 'Pushes local commits to the configured remote repository',
 			requestBody: {
 				required: false,
 				content: {

@@ -28,7 +28,7 @@ interface FileMentionPopupProps {
 
 function getFileIcon(filePath: string): LucideIcon {
 	const ext = filePath.split('.').pop()?.toLowerCase();
-	
+
 	switch (ext) {
 		case 'ts':
 		case 'tsx':
@@ -75,23 +75,31 @@ function getFileIcon(filePath: string): LucideIcon {
 	}
 }
 
-function getGitStatusInfo(filePath: string, changedFilesMap: Map<string, string>) {
+function getGitStatusInfo(
+	filePath: string,
+	changedFilesMap: Map<string, string>,
+) {
 	const status = changedFilesMap.get(filePath);
 	if (!status) {
 		return null;
 	}
-	
-	const icons: Record<string, { icon: LucideIcon; label: string; className: string }> = {
+
+	const icons: Record<
+		string,
+		{ icon: LucideIcon; label: string; className: string }
+	> = {
 		added: { icon: Plus, label: 'Added', className: 'text-green-500' },
 		modified: { icon: Pencil, label: 'Modified', className: 'text-yellow-500' },
 		untracked: { icon: Plus, label: 'Untracked', className: 'text-blue-500' },
 	};
-	
-	return icons[status] || {
-		icon: Pencil,
-		label: 'Modified',
-		className: 'text-yellow-500',
-	};
+
+	return (
+		icons[status] || {
+			icon: Pencil,
+			label: 'Modified',
+			className: 'text-yellow-500',
+		}
+	);
 }
 
 export function FileMentionPopup({
@@ -104,7 +112,7 @@ export function FileMentionPopup({
 	onClose,
 }: FileMentionPopupProps) {
 	const changedFilesMap = useMemo(
-		() => new Map(changedFiles?.map(f => [f.path, f.status]) || []),
+		() => new Map(changedFiles?.map((f) => [f.path, f.status]) || []),
 		[changedFiles],
 	);
 
@@ -123,8 +131,8 @@ export function FileMentionPopup({
 		if (!query) {
 			return files.slice(0, 10);
 		}
-		const searchResults = fuse.search(query).map(r => r.item);
-		
+		const searchResults = fuse.search(query).map((r) => r.item);
+
 		searchResults.sort((a, b) => {
 			const aChanged = changedFilesMap.has(a);
 			const bChanged = changedFilesMap.has(b);
@@ -132,7 +140,7 @@ export function FileMentionPopup({
 			if (!aChanged && bChanged) return 1;
 			return 0;
 		});
-		
+
 		return searchResults.slice(0, 10);
 	}, [fuse, query, files, changedFilesMap]);
 
@@ -188,12 +196,23 @@ export function FileMentionPopup({
 					<div className="flex items-center gap-2 w-full">
 						{(() => {
 							const Icon = getFileIcon(filePath);
-							return <Icon className="w-4 h-4 flex-shrink-0 text-muted-foreground" />;
+							return (
+								<Icon className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+							);
 						})()}
-						<span className="font-mono text-sm flex-1 truncate">{filePath}</span>
+						<span className="font-mono text-sm flex-1 truncate">
+							{filePath}
+						</span>
 						{(() => {
 							const status = getGitStatusInfo(filePath, changedFilesMap);
-							return status && <status.icon className={`w-3.5 h-3.5 flex-shrink-0 ${status.className}`} title={status.label} />;
+							return (
+								status && (
+									<status.icon
+										className={`w-3.5 h-3.5 flex-shrink-0 ${status.className}`}
+										title={status.label}
+									/>
+								)
+							);
 						})()}
 					</div>
 				</button>

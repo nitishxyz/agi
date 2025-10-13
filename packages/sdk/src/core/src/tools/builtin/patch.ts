@@ -342,20 +342,20 @@ function parseEnvelopedPatch(patch: string): ParsedPatchOperation[] {
 			builder.currentHunk = fallbackHunk;
 		}
 
-	const currentHunk = builder.currentHunk;
-	const prefix = line[0];
-	if (prefix === '+') {
-		currentHunk.lines.push({ kind: 'add', content: line.slice(1) });
-	} else if (prefix === '-') {
-		currentHunk.lines.push({ kind: 'remove', content: line.slice(1) });
-	} else if (prefix === ' ') {
-		currentHunk.lines.push({ kind: 'context', content: line.slice(1) });
-	} else {
-		// Auto-correct: treat lines without prefix as context (with implicit space)
-		// This makes the parser more forgiving for AI-generated patches
-		currentHunk.lines.push({ kind: 'context', content: line });
+		const currentHunk = builder.currentHunk;
+		const prefix = line[0];
+		if (prefix === '+') {
+			currentHunk.lines.push({ kind: 'add', content: line.slice(1) });
+		} else if (prefix === '-') {
+			currentHunk.lines.push({ kind: 'remove', content: line.slice(1) });
+		} else if (prefix === ' ') {
+			currentHunk.lines.push({ kind: 'context', content: line.slice(1) });
+		} else {
+			// Auto-correct: treat lines without prefix as context (with implicit space)
+			// This makes the parser more forgiving for AI-generated patches
+			currentHunk.lines.push({ kind: 'context', content: line });
+		}
 	}
-}
 
 	if (!encounteredEnd) {
 		throw new Error('Missing "*** End Patch" marker.');

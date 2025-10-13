@@ -71,14 +71,7 @@ export const schemas = {
 				nullable: true,
 			},
 		},
-		required: [
-			'id',
-			'agent',
-			'provider',
-			'model',
-			'projectPath',
-			'createdAt',
-		],
+		required: ['id', 'agent', 'provider', 'model', 'projectPath', 'createdAt'],
 	},
 	Message: {
 		type: 'object',
@@ -270,14 +263,7 @@ export const schemas = {
 			language: { type: 'string' },
 			binary: { type: 'boolean' },
 		},
-		required: [
-			'file',
-			'diff',
-			'insertions',
-			'deletions',
-			'language',
-			'binary',
-		],
+		required: ['file', 'diff', 'insertions', 'deletions', 'language', 'binary'],
 	},
 	GitBranch: {
 		type: 'object',
@@ -302,12 +288,6 @@ export const schemas = {
 			insertions: { type: 'integer' },
 			deletions: { type: 'integer' },
 		},
-		required: [
-			'hash',
-			'message',
-			'filesChanged',
-			'insertions',
-			'deletions',
-		],
+		required: ['hash', 'message', 'filesChanged', 'insertions', 'deletions'],
 	},
 } as const;
