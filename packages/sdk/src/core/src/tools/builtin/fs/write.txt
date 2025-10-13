@@ -4,5 +4,7 @@
 - Returns a compact patch artifact summarizing the change
 
 Usage tips:
-- Prefer idempotent writes by providing the full intended content
-- For localized edits, consider the Edit tool with structured operations
+- Only use for creating new files or completely replacing file content
+- NEVER use for partial/targeted edits - use apply_patch or edit instead
+- Using write for partial edits wastes output tokens and risks hallucinating unchanged parts
+- Prefer idempotent writes by providing the full intended content when you do use write

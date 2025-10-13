@@ -82,19 +82,28 @@ When making changes to files, first understand the file's code conventions. Mimi
 
 ## File Editing Best Practices
 
-**Using the `edit` Tool** (Recommended):
+**Using the `apply_patch` Tool** (Recommended):
+- Primary choice for targeted file edits - avoids rewriting entire files
+- Only requires the specific lines you want to change
+- Format: `*** Begin Patch` ... `*** Update File: path` ... `-old` / `+new` ... `*** End Patch`
+- Only use when you have a complete unified diff ready
+- Ensure patch is based on current file content (not stale)
+- If patch fails, read the file first to see current state before retrying
+
+**Using the `edit` Tool** (Alternative):
 - Specify the file path and a list of operations
 - Operations are applied sequentially to the latest file state
 - Operation types: `replace`, `insert-before`, `insert-after`, `delete`
 - Each operation includes: `old` (text to match/find) and `new` (replacement/insertion)
 - When making multiple changes to a file, use ONE `edit` call with multiple ops
 
-**Using the `apply_patch` Tool** (Alternative):
-- Only use when you have a complete unified diff ready
-- Ensure patch is based on current file content (not stale)
-- If patch fails, read the file first to see current state before retrying
+**Using the `write` Tool** (Last Resort):
+- Only use when creating new files or completely replacing file content
+- NEVER use for targeted edits - it rewrites the entire file
+- Wastes output tokens and risks hallucinating unchanged parts
 
 **Never**:
+- Use `write` for partial file edits (use `apply_patch` or `edit` instead)
 - Make multiple separate `edit` or `apply_patch` calls for the same file
 - Assume file content remains unchanged between operations
 - Use `bash` with `sed`/`awk` for programmatic file editing (use `edit` instead)

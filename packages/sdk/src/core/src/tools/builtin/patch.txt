@@ -1,13 +1,16 @@
 Apply a patch to modify one or more files using the enveloped patch format.
 
-**IMPORTANT: Patches require EXACT line matches. If the file content has changed since you last read it, the patch will fail.**
-
-**RECOMMENDATION: For most file edits, use the `edit` tool instead - it's more reliable and doesn't require exact line matching.**
+**RECOMMENDED: Use apply_patch for targeted file edits to avoid rewriting entire files and wasting tokens.**
 
 Use `apply_patch` only when:
+- You want to make targeted edits to specific lines (primary use case)
 - You want to make multiple related changes across different files in a single operation
 - You need to add/delete entire files along with modifications
 - You have JUST read the file and are confident the content hasn't changed
+
+**IMPORTANT: Patches require EXACT line matches. If the file content has changed since you last read it, the patch will fail.**
+
+**Alternative: Use the `edit` tool if you need fuzzy matching or structured operations.**
 
 ## Patch Format
 
