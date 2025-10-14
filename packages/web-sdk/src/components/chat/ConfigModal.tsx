@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useConfig } from '../../hooks/useConfig';
+import { usePreferences } from '../../hooks/usePreferences';
 import { Modal } from '../ui/Modal';
 import {
 	UnifiedModelSelector,
@@ -36,6 +37,7 @@ export function ConfigModal({
 	onModelSelectorChange,
 }: ConfigModalProps) {
 	const { data: config, isLoading: configLoading } = useConfig();
+	const { preferences, updatePreferences } = usePreferences();
 	const agentSelectorRef = useRef<UnifiedAgentSelectorRef>(null);
 	const modelSelectorRef = useRef<UnifiedModelSelectorRef>(null);
 
@@ -99,6 +101,28 @@ export function ConfigModal({
 							model={model}
 							onChange={handleModelChange}
 						/>
+					</div>
+
+					<div>
+						<div className="block text-sm font-medium text-foreground mb-2">
+							Preferences
+						</div>
+						<label className="flex items-center gap-3 py-2 px-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors cursor-pointer">
+							<input
+								type="checkbox"
+								checked={preferences.vimMode}
+								onChange={(e) =>
+									updatePreferences({ vimMode: e.target.checked })
+								}
+								className="w-4 h-4 rounded border-border bg-background checked:bg-primary checked:border-primary focus:ring-2 focus:ring-primary/40 cursor-pointer"
+							/>
+							<div className="flex-1">
+								<div className="text-sm font-medium text-foreground">Vim Mode</div>
+								<div className="text-xs text-muted-foreground">
+									Enable vim keybindings in chat input (Normal/Insert modes)
+								</div>
+							</div>
+						</label>
 					</div>
 				</div>
 			) : null}

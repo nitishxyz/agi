@@ -106,6 +106,99 @@ const SHORTCUTS: ShortcutItem[] = [
 	},
 ];
 
+const VIM_MODE_SHORTCUTS: ShortcutItem[] = [
+	{
+		keys: ['i'],
+		description: 'Enter insert mode at cursor (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['a'],
+		description: 'Enter insert mode after cursor (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['I'],
+		description: 'Enter insert mode at line start (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['A'],
+		description: 'Enter insert mode at line end (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['o'],
+		description: 'New line below and enter insert mode (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['O'],
+		description: 'New line above and enter insert mode (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['ESC'],
+		description: 'Return to normal mode (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['Enter'],
+		description: 'Send message in normal mode (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['w'],
+		description: 'Jump to next word start (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['e'],
+		description: 'Jump to next word end (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['b'],
+		description: 'Jump to previous word start (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['x'],
+		description: 'Delete character under cursor (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['s'],
+		description: 'Delete character and enter insert mode (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['S'],
+		description: 'Delete line and enter insert mode (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['f', '{char}'],
+		description: 'Find and jump to next character on line (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['d', 'd'],
+		description: 'Delete current line (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['0'],
+		description: 'Jump to line start (vim mode)',
+		category: 'Vim Mode',
+	},
+	{
+		keys: ['$'],
+		description: 'Jump to line end (vim mode)',
+		category: 'Vim Mode',
+	},
+];
+
 const SLASH_COMMANDS = [
 	{
 		command: '/models',
@@ -137,7 +230,8 @@ function groupShortcutsByCategory(shortcuts: ShortcutItem[]) {
 }
 
 export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
-	const groupedShortcuts = groupShortcutsByCategory(SHORTCUTS);
+	const allShortcuts = [...SHORTCUTS, ...VIM_MODE_SHORTCUTS];
+	const groupedShortcuts = groupShortcutsByCategory(allShortcuts);
 	const modalContentRef = useRef<HTMLDivElement>(null);
 	const previousActiveElement = useRef<HTMLElement | null>(null);
 
