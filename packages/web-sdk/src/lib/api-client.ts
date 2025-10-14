@@ -13,6 +13,7 @@ import {
 	getGitBranch as apiGetGitBranch,
 	stageFiles as apiStageFiles,
 	unstageFiles as apiUnstageFiles,
+	restoreFiles as apiRestoreFiles,
 	commitChanges as apiCommitChanges,
 	generateCommitMessage as apiGenerateCommitMessage,
 	pushCommits as apiPushCommits,
@@ -343,6 +344,18 @@ class ApiClient {
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitUnstageResponse;
+	}
+
+	async restoreFiles(files: string[]): Promise<{ restored: string[] }> {
+		const response = await apiRestoreFiles({
+			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch between client and server
+			body: { files } as any,
+		});
+		if (response.error) {
+			throw new Error(extractErrorMessage(response.error));
+		}
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
+		return (response.data as any)?.data as { restored: string[] };
 	}
 
 	async commitChanges(message: string): Promise<GitCommitResponse> {

@@ -101,6 +101,11 @@ const gitUnstageSchema = z.object({
 	files: z.array(z.string()),
 });
 
+const gitRestoreSchema = z.object({
+	project: z.string().optional(),
+	files: z.array(z.string()),
+});
+
 const gitCommitSchema = z.object({
 	project: z.string().optional(),
 	message: z.string().min(1),
@@ -972,6 +977,57 @@ Commit message:`;
 				{
 					status: 'error',
 					error: error instanceof Error ? error.message : 'Failed to push',
+				},
+				500,
+			);
+		}
+	});
+
+	// POST /v1/git/restore - Restore files to HEAD
+	app.post('/v1/git/restore', async (c) => {
+		try {
+			const body = await c.req.json();
+			const { files, project } = gitRestoreSchema.parse(body);
+
+			const requestedPath = project || process.cwd();
+
+			const validation = await validateAndGetGitRoot(requestedPath);
+			if ('error' in validation) {
+				return c.json(
+					{ status: 'error', error: validation.error, code: validation.code },
+					400,
+				);
+			}
+
+			const { gitRoot } = validation;
+
+			if (files.length === 0) {
+				return c.json(
+					{
+						status: 'error',
+						error: 'No files specified',
+					},
+					400,
+				);
+			}
+
+			// Restore files to HEAD state
+			await execFileAsync('git', ['restore', '--', ...files], {
+				cwd: gitRoot,
+			});
+
+			return c.json({
+				status: 'ok',
+				data: {
+					restored: files,
+				},
+			});
+		} catch (error) {
+			return c.json(
+				{
+					status: 'error',
+					error:
+						error instanceof Error ? error.message : 'Failed to restore files',
 				},
 				500,
 			);

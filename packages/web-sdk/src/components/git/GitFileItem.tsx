@@ -1,6 +1,7 @@
 import { FileIcon, FilePlus, FileX, Check, AlertCircle } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import type { GitFileStatus } from '../../types/api';
-import { useStageFiles, useUnstageFiles } from '../../hooks/useGit';
+import { useStageFiles, useUnstageFiles, useRestoreFiles } from '../../hooks/useGit';
 import { useGitStore } from '../../stores/gitStore';
 import { useState } from 'react';
 
@@ -40,6 +41,7 @@ export function GitFileItem({
 	const { openDiff } = useGitStore();
 	const stageFiles = useStageFiles();
 	const unstageFiles = useUnstageFiles();
+	const restoreFiles = useRestoreFiles();
 	const [isChecked, setIsChecked] = useState(staged);
 
 	const handleCheckChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,6 +59,17 @@ export function GitFileItem({
 			// Revert on error
 			setIsChecked(!checked);
 			console.error('Failed to stage/unstage file:', error);
+		}
+	};
+
+	const handleRestore = async (e: React.MouseEvent) => {
+		e.stopPropagation();
+		if (window.confirm(`Restore ${file.path} to HEAD state? This will discard all changes.`)) {
+			try {
+				await restoreFiles.mutateAsync([file.path]);
+			} catch (error) {
+				console.error('Failed to restore file:', error);
+			}
 		}
 	};
 
@@ -162,6 +175,19 @@ export function GitFileItem({
 					)}
 				</div>
 			) : null}
+
+			{/* Restore button for unstaged files */}
+			{!staged && (
+				<button
+					type="button"
+					onClick={handleRestore}
+					className="p-1.5 hover:bg-destructive/10 rounded opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+					title="Restore file to HEAD (Shift+R)"
+					aria-label={`Restore ${file.path}`}
+				>
+					<RotateCcw className="w-3.5 h-3.5 text-destructive" />
+				</button>
+			)}
 
 			{/* Staged indicator */}
 			{staged && !showModifiedIndicator && (

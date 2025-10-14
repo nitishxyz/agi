@@ -346,4 +346,56 @@ export const gitPaths = {
 			},
 		},
 	},
+	'/v1/git/restore': {
+		post: {
+			tags: ['git'],
+			operationId: 'restoreFiles',
+			summary: 'Restore files to HEAD',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								project: { type: 'string' },
+								files: {
+									type: 'array',
+									items: { type: 'string' },
+								},
+							},
+							required: ['files'],
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: { type: 'string', enum: ['ok'] },
+									data: {
+										type: 'object',
+										properties: {
+											restored: {
+												type: 'array',
+												items: { type: 'string' },
+											},
+										},
+										required: ['restored'],
+									},
+								},
+								required: ['status', 'data'],
+							},
+						},
+					},
+				},
+				500: gitErrorResponse(),
+			},
+		},
+	},
 } as const;

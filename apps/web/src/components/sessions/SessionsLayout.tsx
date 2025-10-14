@@ -19,6 +19,7 @@ import {
 	useGitStatus,
 	useStageFiles,
 	useUnstageFiles,
+	useRestoreFiles,
 	useSessions,
 } from '@agi-cli/web-sdk/hooks';
 
@@ -38,6 +39,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	const { data: gitStatus } = useGitStatus();
 	const stageFiles = useStageFiles();
 	const unstageFiles = useUnstageFiles();
+	const restoreFiles = useRestoreFiles();
 
 	useWorkingDirectory();
 
@@ -97,6 +99,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 		onNewSession: handleNewSession,
 		onStageFile: (path) => stageFiles.mutate([path]),
 		onUnstageFile: (path) => unstageFiles.mutate([path]),
+		onRestoreFile: (path) => restoreFiles.mutate([path]),
 		onStageAll: () => {
 			const unstaged = gitFiles.filter((f) => !f.staged).map((f) => f.path);
 			if (unstaged.length > 0) stageFiles.mutate(unstaged);

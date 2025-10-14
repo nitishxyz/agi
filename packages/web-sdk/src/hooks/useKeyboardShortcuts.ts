@@ -11,6 +11,7 @@ interface UseKeyboardShortcutsOptions {
 	onNewSession: () => void;
 	onStageFile?: (path: string) => void;
 	onUnstageFile?: (path: string) => void;
+	onRestoreFile?: (path: string) => void;
 	onStageAll?: () => void;
 	onUnstageAll?: () => void;
 	onOpenCommitModal?: () => void;
@@ -26,6 +27,7 @@ export function useKeyboardShortcuts({
 	onNewSession,
 	onStageFile,
 	onUnstageFile,
+	onRestoreFile,
 	onStageAll,
 	onUnstageAll,
 	onOpenCommitModal,
@@ -197,6 +199,15 @@ export function useKeyboardShortcuts({
 					return;
 				}
 
+				if (e.key === 'R' && gitFiles[gitFileIndex]) {
+					e.preventDefault();
+					const file = gitFiles[gitFileIndex];
+					if (!file.staged) {
+						onRestoreFile?.(file.path);
+					}
+					return;
+				}
+
 				if (e.key === 'c') {
 					e.preventDefault();
 					onOpenCommitModal?.();
@@ -230,9 +241,10 @@ export function useKeyboardShortcuts({
 			toggleSessionList,
 			onSelectSession,
 			onNewSession,
-			onStageFile,
-			onUnstageFile,
-			onStageAll,
+		onStageFile,
+		onUnstageFile,
+		onRestoreFile,
+		onStageAll,
 			onUnstageAll,
 			onOpenCommitModal,
 			onViewDiff,

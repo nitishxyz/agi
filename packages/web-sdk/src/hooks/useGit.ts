@@ -69,6 +69,17 @@ export function useUnstageFiles() {
 	});
 }
 
+export function useRestoreFiles() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (files: string[]) => apiClient.restoreFiles(files),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['git', 'status'] });
+		},
+	});
+}
+
 export function useCommitChanges() {
 	const queryClient = useQueryClient();
 
