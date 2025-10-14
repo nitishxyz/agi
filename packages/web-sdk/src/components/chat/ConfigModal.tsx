@@ -14,6 +14,7 @@ interface ConfigModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	initialFocus?: 'agent' | 'model' | null;
+	chatInputRef?: React.RefObject<{ focus: () => void }>;
 	agent: string;
 	provider: string;
 	model: string;
@@ -27,6 +28,7 @@ export function ConfigModal({
 	isOpen,
 	onClose,
 	initialFocus,
+	chatInputRef,
 	agent,
 	provider,
 	model,
@@ -51,6 +53,14 @@ export function ConfigModal({
 		}
 	}, [isOpen, initialFocus]);
 
+	const handleClose = () => {
+		onClose();
+		// Focus chat input after modal closes
+		setTimeout(() => {
+			chatInputRef?.current?.focus();
+		}, 100);
+	};
+
 	const handleModelChange = (
 		selectedProvider: string,
 		selectedModel: string,
@@ -66,7 +76,7 @@ export function ConfigModal({
 	return (
 		<Modal
 			isOpen={isOpen}
-			onClose={onClose}
+			onClose={handleClose}
 			title="Configuration"
 			closeOnEscape={true}
 			closeOnBackdropClick={true}

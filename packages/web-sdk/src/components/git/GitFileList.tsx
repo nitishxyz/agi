@@ -1,4 +1,4 @@
-import { GitCommit, CheckSquare, Square } from 'lucide-react';
+import { GitCommit, CheckSquare } from 'lucide-react';
 import type { GitStatusResponse } from '../../types/api';
 import { Button } from '../ui/Button';
 import { GitFileItem } from './GitFileItem';
@@ -24,7 +24,7 @@ export function GitFileList({ status }: GitFileListProps) {
 	const unstagedFiles = [...status.unstaged, ...status.untracked];
 	const hasUnstagedFiles = unstagedFiles.length > 0;
 
-	const allFiles = useMemo(() => {
+	const _allFiles = useMemo(() => {
 		return [...status.staged, ...status.unstaged, ...status.untracked];
 	}, [status]);
 
@@ -37,7 +37,7 @@ export function GitFileList({ status }: GitFileListProps) {
 		}
 	};
 
-	const handleUnstageAll = () => {
+	const _handleUnstageAll = () => {
 		const filesToUnstage = status.staged.map((f) => f.path);
 		if (filesToUnstage.length > 0) {
 			unstageFiles.mutate(filesToUnstage);
@@ -68,6 +68,7 @@ export function GitFileList({ status }: GitFileListProps) {
 		status.staged,
 		status.unstaged,
 		status.untracked,
+		openDiff,
 	]);
 
 	return (

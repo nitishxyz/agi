@@ -267,12 +267,10 @@ export function useKeyboardShortcuts({
 			gitFiles,
 			currentSessionIndex,
 			isGitExpanded,
-			isSessionListCollapsed,
 			setFocus,
 			setSessionIndex,
 			setGitFileIndex,
 			resetGitFileIndex,
-			resetSessionIndex,
 			setSessionListCollapsed,
 			toggleGit,
 			toggleSessionList,
@@ -287,6 +285,7 @@ export function useKeyboardShortcuts({
 			onOpenCommitModal,
 			onViewDiff,
 			onReturnToInput,
+			closeDiff,
 		],
 	);
 

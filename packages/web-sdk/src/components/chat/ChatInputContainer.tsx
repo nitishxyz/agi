@@ -175,6 +175,7 @@ export const ChatInputContainer = memo(
 						isOpen={isConfigOpen}
 						onClose={handleCloseConfig}
 						initialFocus={configFocusTarget}
+						chatInputRef={chatInputRef}
 						agent={agent}
 						provider={provider}
 						model={model}
