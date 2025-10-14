@@ -67,13 +67,13 @@ export function Modal({
 		<>
 			{/* Backdrop */}
 			<div
-				className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 cursor-default"
+				className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] cursor-default"
 				onClick={handleBackdropClick}
 				aria-label="Close modal"
 			/>
 			
 			{/* Modal Container */}
-			<div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full ${maxWidthClasses[maxWidth]} px-4`}>
+			<div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full ${maxWidthClasses[maxWidth]} px-4`}>
 				<div className="bg-background border border-border rounded-lg shadow-lg">
 					{/* Header */}
 					{(title || showCloseButton) && (

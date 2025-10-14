@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { Terminal, Sparkles, Plus } from 'lucide-react';
+import { Terminal, Sparkles, Plus, Keyboard } from 'lucide-react';
 
 interface Command {
 	id: string;
@@ -34,6 +34,18 @@ const COMMANDS: Command[] = [
 		label: '/new',
 		description: 'Create new session',
 		icon: Plus,
+	},
+	{
+		id: 'shortcuts',
+		label: '/shortcuts',
+		description: 'Show keyboard shortcuts',
+		icon: Keyboard,
+	},
+	{
+		id: 'help',
+		label: '/help',
+		description: 'Show keyboard shortcuts',
+		icon: Keyboard,
 	},
 ];
 

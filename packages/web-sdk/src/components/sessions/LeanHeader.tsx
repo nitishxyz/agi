@@ -39,7 +39,7 @@ export function LeanHeader({
 
 	return (
 		<div
-			className={`absolute top-0 left-0 right-0 h-14 border-b border-border bg-background/95 backdrop-blur-sm z-30 transition-transform duration-200 ${
+			className={`absolute top-0 left-0 right-0 h-14 border-b border-border bg-background/95 backdrop-blur-sm z-10 transition-transform duration-200 ${
 				isVisible ? 'translate-y-0' : '-translate-y-full'
 			}`}
 		>

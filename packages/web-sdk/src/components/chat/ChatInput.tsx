@@ -12,6 +12,7 @@ import { ArrowUp, MoreVertical } from 'lucide-react';
 import { Textarea } from '../ui/Textarea';
 import { FileMentionPopup } from './FileMentionPopup';
 import { CommandSuggestionsPopup } from './CommandSuggestionsPopup';
+import { ShortcutsModal } from './ShortcutsModal';
 import { useFiles } from '../../hooks/useFiles';
 
 interface ChatInputProps {
@@ -36,16 +37,17 @@ export const ChatInput = memo(
 		ref,
 	) {
 		const [message, setMessage] = useState('');
-		const [isPlanMode, setIsPlanMode] = useState(externalIsPlanMode || false);
-		const [showFileMention, setShowFileMention] = useState(false);
-		const [mentionQuery, setMentionQuery] = useState('');
-		const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
-		const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
-		const [commandQuery, setCommandQuery] = useState('');
-		const [commandSelectedIndex, setCommandSelectedIndex] = useState(0);
-		const [currentFileToSelect, setCurrentFileToSelect] = useState<
-			string | undefined
-		>();
+	const [isPlanMode, setIsPlanMode] = useState(externalIsPlanMode || false);
+	const [showFileMention, setShowFileMention] = useState(false);
+	const [mentionQuery, setMentionQuery] = useState('');
+	const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
+	const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
+	const [commandQuery, setCommandQuery] = useState('');
+	const [commandSelectedIndex, setCommandSelectedIndex] = useState(0);
+	const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+	const [currentFileToSelect, setCurrentFileToSelect] = useState<
+		string | undefined
+	>();
 		const [currentCommandToSelect, setCurrentCommandToSelect] = useState<
 			string | undefined
 		>();
@@ -127,10 +129,20 @@ export const ChatInput = memo(
 			setCurrentCommandToSelect(commandId);
 		}, []);
 
-		const handleCommandSelect = useCallback((commandId: string) => {
-			if (onCommand) {
-				onCommand(commandId);
+	const handleCommandSelect = useCallback((commandId: string) => {
+		if (commandId === 'shortcuts' || commandId === 'help') {
+			setShowShortcutsModal(true);
+			setMessage('');
+			setShowCommandSuggestions(false);
+			if (textareaRef.current) {
+				textareaRef.current.style.height = 'auto';
 			}
+			textareaRef.current?.focus();
+			return;
+		}
+		if (onCommand) {
+			onCommand(commandId);
+		}
 			setMessage('');
 			setShowCommandSuggestions(false);
 			if (textareaRef.current) {
@@ -172,10 +184,10 @@ export const ChatInput = memo(
 			if (showCommandSuggestions) {
 				if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'j')) {
 					e.preventDefault();
-					setCommandSelectedIndex((prev) => (prev + 1) % 3);
+					setCommandSelectedIndex((prev) => (prev + 1) % 5);
 				} else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'k')) {
 					e.preventDefault();
-					setCommandSelectedIndex((prev) => (prev - 1 + 3) % 3);
+					setCommandSelectedIndex((prev) => (prev - 1 + 5) % 5);
 				} else if (e.key === 'Enter') {
 						e.preventDefault();
 						if (currentCommandToSelect) {
@@ -230,7 +242,7 @@ export const ChatInput = memo(
 		],
 	);
 
-		return (
+	return (
 			<div className="absolute bottom-0 left-0 right-0 pt-16 pb-6 md:pb-8 px-2 md:px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20 safe-area-inset-bottom">
 				<div className="max-w-3xl mx-auto pointer-events-auto mb-2 md:mb-0 relative">
 					<div
@@ -299,6 +311,11 @@ export const ChatInput = memo(
 							onClose={() => setShowCommandSuggestions(false)}
 						/>
 					)}
+
+					<ShortcutsModal
+						isOpen={showShortcutsModal}
+						onClose={() => setShowShortcutsModal(false)}
+					/>
 				</div>
 			</div>
 		);
