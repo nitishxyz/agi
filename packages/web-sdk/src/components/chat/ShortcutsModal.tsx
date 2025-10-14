@@ -120,12 +120,8 @@ const SLASH_COMMANDS = [
 		description: 'Create new session',
 	},
 	{
-		command: '/shortcuts',
-		description: 'Show keyboard shortcuts (this modal)',
-	},
-	{
 		command: '/help',
-		description: 'Show keyboard shortcuts (this modal)',
+		description: 'Show keyboard shortcuts and help (this modal)',
 	},
 ];
 

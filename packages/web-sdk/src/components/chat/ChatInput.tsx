@@ -130,7 +130,7 @@ export const ChatInput = memo(
 		}, []);
 
 	const handleCommandSelect = useCallback((commandId: string) => {
-		if (commandId === 'shortcuts' || commandId === 'help') {
+		if (commandId === 'help') {
 			setShowShortcutsModal(true);
 			setMessage('');
 			setShowCommandSuggestions(false);

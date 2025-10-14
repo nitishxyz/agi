@@ -6,6 +6,7 @@ interface Command {
 	label: string;
 	description: string;
 	icon: typeof Terminal;
+	matchScore?: number;
 }
 
 interface CommandSuggestionsPopupProps {
@@ -36,18 +37,39 @@ const COMMANDS: Command[] = [
 		icon: Plus,
 	},
 	{
-		id: 'shortcuts',
-		label: '/shortcuts',
-		description: 'Show keyboard shortcuts',
-		icon: Keyboard,
-	},
-	{
 		id: 'help',
 		label: '/help',
-		description: 'Show keyboard shortcuts',
+		description: 'Show keyboard shortcuts and help',
 		icon: Keyboard,
 	},
 ];
+
+function fuzzySearchCommands(query: string): Command[] {
+	if (!query) {
+		return COMMANDS;
+	}
+
+	const lowerQuery = query.toLowerCase();
+	const matches: Command[] = [];
+
+	for (const cmd of COMMANDS) {
+		const labelMatch = cmd.label.toLowerCase().includes(lowerQuery);
+		const descriptionMatch = cmd.description.toLowerCase().includes(lowerQuery);
+
+		if (labelMatch || descriptionMatch) {
+			// Prioritize label matches over description matches
+			const matchScore = labelMatch ? 10 : 5;
+			matches.push({ ...cmd, matchScore });
+		}
+	}
+
+	// Sort by match score (higher first), then alphabetically
+	return matches.sort((a, b) => {
+		const scoreDiff = (b.matchScore || 0) - (a.matchScore || 0);
+		if (scoreDiff !== 0) return scoreDiff;
+		return a.label.localeCompare(b.label);
+	});
+}
 
 export function CommandSuggestionsPopup({
 	query,
@@ -57,15 +79,7 @@ export function CommandSuggestionsPopup({
 	onClose,
 }: CommandSuggestionsPopupProps) {
 	const results = useMemo(() => {
-		if (!query) {
-			return COMMANDS;
-		}
-		const lowerQuery = query.toLowerCase();
-		return COMMANDS.filter(
-			(cmd) =>
-				cmd.label.toLowerCase().includes(lowerQuery) ||
-				cmd.description.toLowerCase().includes(lowerQuery),
-		);
+		return fuzzySearchCommands(query);
 	}, [query]);
 
 	useEffect(() => {
