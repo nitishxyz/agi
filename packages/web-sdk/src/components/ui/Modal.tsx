@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 interface ModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	title?: string;
+	title?: string | React.ReactNode;
 	children: ReactNode;
 	showCloseButton?: boolean;
 	closeOnBackdropClick?: boolean;
@@ -36,6 +36,7 @@ export function Modal({
 		const handleEscape = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') {
 				e.preventDefault();
+				e.stopPropagation();
 				onClose();
 			}
 		};
@@ -78,9 +79,9 @@ export function Modal({
 					{(title || showCloseButton) && (
 						<div className="flex items-center justify-between p-4 border-b border-border">
 							{title && (
-								<h2 className="text-lg font-semibold text-foreground">
+								<div className="text-lg font-semibold text-foreground">
 									{title}
-								</h2>
+								</div>
 							)}
 							{showCloseButton && (
 								<button
