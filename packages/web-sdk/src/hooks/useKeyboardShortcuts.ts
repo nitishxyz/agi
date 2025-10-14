@@ -43,19 +43,13 @@ export function useKeyboardShortcuts({
 		setFocus,
 		setSessionIndex,
 		setGitFileIndex,
-		resetSessionIndex,
 		resetGitFileIndex,
 	} = useFocusStore();
 	const {
-		isCollapsed: isSessionListCollapsed,
 		setCollapsed: setSessionListCollapsed,
 		toggleCollapse: toggleSessionList,
 	} = useSidebarStore();
-	const {
-		isExpanded: isGitExpanded,
-		toggleSidebar: toggleGit,
-		openCommitModal,
-	} = useGitStore();
+	const { isExpanded: isGitExpanded, toggleSidebar: toggleGit } = useGitStore();
 	const closeDiff = useGitStore((state) => state.closeDiff);
 
 	const currentSessionIndex = sessionIds.indexOf(activeSessionId || '');

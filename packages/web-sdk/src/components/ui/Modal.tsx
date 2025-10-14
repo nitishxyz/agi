@@ -66,9 +66,17 @@ export function Modal({
 	return (
 		<>
 			{/* Backdrop */}
-			<div
+			<button
+				type="button"
 				className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] cursor-default"
 				onClick={handleBackdropClick}
+				onKeyDown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						handleBackdropClick(
+							e as unknown as React.MouseEvent<HTMLDivElement>,
+						);
+					}
+				}}
 				aria-label="Close modal"
 			/>
 
