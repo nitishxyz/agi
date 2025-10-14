@@ -14,12 +14,13 @@ import {
 	useWorkingDirectory,
 	useKeyboardShortcuts,
 } from '@agi-cli/web-sdk/hooks';
-import { useSidebarStore, useGitStore } from '@agi-cli/web-sdk/stores';
+import { useSidebarStore, useGitStore, useConfirmationStore } from '@agi-cli/web-sdk/stores';
 import {
 	useGitStatus,
 	useStageFiles,
 	useUnstageFiles,
 	useRestoreFiles,
+	useDeleteFiles,
 	useSessions,
 } from '@agi-cli/web-sdk/hooks';
 
@@ -40,6 +41,8 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	const stageFiles = useStageFiles();
 	const unstageFiles = useUnstageFiles();
 	const restoreFiles = useRestoreFiles();
+	const deleteFiles = useDeleteFiles();
+	const openConfirmation = useConfirmationStore((state) => state.openConfirmation);
 
 	useWorkingDirectory();
 
@@ -100,6 +103,17 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 		onStageFile: (path) => stageFiles.mutate([path]),
 		onUnstageFile: (path) => unstageFiles.mutate([path]),
 		onRestoreFile: (path) => restoreFiles.mutate([path]),
+		onDeleteFile: (path) => {
+			openConfirmation({
+				title: 'Delete File',
+				message: `Delete ${path}? This will permanently remove the untracked file.`,
+				confirmLabel: 'Delete',
+				variant: 'destructive',
+				onConfirm: async () => {
+					await deleteFiles.mutateAsync([path]);
+				},
+			});
+		},
 		onStageAll: () => {
 			const unstaged = gitFiles.filter((f) => !f.staged).map((f) => f.path);
 			if (unstaged.length > 0) stageFiles.mutate(unstaged);

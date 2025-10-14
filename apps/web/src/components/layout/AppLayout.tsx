@@ -6,6 +6,7 @@ import {
 	GitSidebar,
 	GitDiffPanel,
 	GitCommitModal,
+	ConfirmationDialog,
 } from '@agi-cli/web-sdk/components';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
@@ -48,6 +49,7 @@ export const AppLayout = memo(function AppLayout({
 
 			{/* Modals */}
 			<GitCommitModal />
+			<ConfirmationDialog />
 		</div>
 	);
 });

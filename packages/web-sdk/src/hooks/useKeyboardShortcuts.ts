@@ -12,6 +12,7 @@ interface UseKeyboardShortcutsOptions {
 	onStageFile?: (path: string) => void;
 	onUnstageFile?: (path: string) => void;
 	onRestoreFile?: (path: string) => void;
+	onDeleteFile?: (path: string) => void;
 	onStageAll?: () => void;
 	onUnstageAll?: () => void;
 	onOpenCommitModal?: () => void;
@@ -28,6 +29,7 @@ export function useKeyboardShortcuts({
 	onStageFile,
 	onUnstageFile,
 	onRestoreFile,
+	onDeleteFile,
 	onStageAll,
 	onUnstageAll,
 	onOpenCommitModal,
@@ -199,20 +201,30 @@ export function useKeyboardShortcuts({
 					return;
 				}
 
-				if (e.key === 'R' && gitFiles[gitFileIndex]) {
-					e.preventDefault();
-					const file = gitFiles[gitFileIndex];
-					// Only allow restore for unstaged, tracked files (not new/untracked)
-					const canRestore = !file.staged && file.status !== 'untracked' && file.status !== 'added';
-					if (canRestore) {
-						onRestoreFile?.(file.path);
-					}
-					return;
+			if (e.key === 'R' && gitFiles[gitFileIndex]) {
+				e.preventDefault();
+				const file = gitFiles[gitFileIndex];
+				// Only allow restore for unstaged, tracked files (not new/untracked)
+				const canRestore = !file.staged && file.status !== 'untracked' && file.status !== 'added';
+				if (canRestore) {
+					onRestoreFile?.(file.path);
 				}
+				return;
+			}
 
-				if (e.key === 'c') {
-					e.preventDefault();
-					onOpenCommitModal?.();
+			// Delete file - Shift+D or Delete (only for untracked files)
+			if ((e.shiftKey && e.key === 'D') || e.key === 'Backspace') {
+				e.preventDefault();
+				const file = gitFiles[gitFileIndex];
+				if (file && !file.staged && file.status === 'untracked') {
+					onDeleteFile?.(file.path);
+				}
+				return;
+			}
+
+			if (e.key === 'c') {
+				e.preventDefault();
+				onOpenCommitModal?.();
 					return;
 				}
 
@@ -246,8 +258,9 @@ export function useKeyboardShortcuts({
 		onStageFile,
 		onUnstageFile,
 		onRestoreFile,
+		onDeleteFile,
 		onStageAll,
-			onUnstageAll,
+		onUnstageAll,
 			onOpenCommitModal,
 			onViewDiff,
 			onReturnToInput,

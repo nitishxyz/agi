@@ -3,6 +3,7 @@ export * from './ui/Button';
 export * from './ui/Card';
 export * from './ui/Input';
 export * from './ui/Textarea';
+export * from './ui/ConfirmationDialog';
 
 // Chat Components
 export * from './chat/ChatInput';

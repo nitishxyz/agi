@@ -2,6 +2,7 @@ import { FileIcon, FilePlus, FileX, Check, AlertCircle, RotateCcw, Trash2 } from
 import type { GitFileStatus } from '../../types/api';
 import { useStageFiles, useUnstageFiles, useRestoreFiles, useDeleteFiles } from '../../hooks/useGit';
 import { useGitStore } from '../../stores/gitStore';
+import { useConfirmationStore } from '../../stores/confirmationStore';
 import { useState } from 'react';
 
 interface GitFileItemProps {
@@ -42,6 +43,7 @@ export function GitFileItem({
 	const unstageFiles = useUnstageFiles();
 	const restoreFiles = useRestoreFiles();
 	const deleteFiles = useDeleteFiles();
+	const openConfirmation = useConfirmationStore((state) => state.openConfirmation);
 	const [isChecked, setIsChecked] = useState(staged);
 
 	const handleCheckChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,24 +66,38 @@ export function GitFileItem({
 
 	const handleRestore = async (e: React.MouseEvent) => {
 		e.stopPropagation();
-		if (window.confirm(`Restore ${file.path} to HEAD state? This will discard all changes.`)) {
-			try {
-				await restoreFiles.mutateAsync([file.path]);
-			} catch (error) {
-				console.error('Failed to restore file:', error);
-			}
-		}
+		openConfirmation({
+			title: 'Restore File',
+			message: `Restore ${file.path} to HEAD state? This will discard all changes.`,
+			confirmLabel: 'Restore',
+			variant: 'destructive',
+			onConfirm: async () => {
+				try {
+					await restoreFiles.mutateAsync([file.path]);
+				} catch (error) {
+					console.error('Failed to restore file:', error);
+					throw error;
+				}
+			},
+		});
 	};
 
 	const handleDelete = async (e: React.MouseEvent) => {
 		e.stopPropagation();
-		if (window.confirm(`Delete ${file.path}? This will permanently remove the untracked file.`)) {
-			try {
-				await deleteFiles.mutateAsync([file.path]);
-			} catch (error) {
-				console.error('Failed to delete file:', error);
-			}
-		}
+		openConfirmation({
+			title: 'Delete File',
+			message: `Delete ${file.path}? This will permanently remove the untracked file.`,
+			confirmLabel: 'Delete',
+			variant: 'destructive',
+			onConfirm: async () => {
+				try {
+					await deleteFiles.mutateAsync([file.path]);
+				} catch (error) {
+					console.error('Failed to delete file:', error);
+					throw error;
+				}
+			},
+		});
 	};
 
 	const handleClick = () => {
