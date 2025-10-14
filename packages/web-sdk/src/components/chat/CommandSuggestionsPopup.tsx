@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { Terminal, Sparkles, Plus, Keyboard } from 'lucide-react';
+import { Terminal, Sparkles, Plus, Keyboard, Code } from 'lucide-react';
 
 interface Command {
 	id: string;
@@ -41,6 +41,12 @@ const COMMANDS: Command[] = [
 		label: '/help',
 		description: 'Show keyboard shortcuts and help',
 		icon: Keyboard,
+	},
+	{
+		id: 'vim',
+		label: '/vim',
+		description: 'Toggle Vim mode keybindings',
+		icon: Code,
 	},
 ];
 
