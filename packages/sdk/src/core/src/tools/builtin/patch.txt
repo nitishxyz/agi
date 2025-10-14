@@ -5,6 +5,7 @@ Apply a patch to modify one or more files. The tool accepts the **enveloped patc
 - Each change needs a directive (`*** Add File`, `*** Update File`, `*** Delete File`)
 - Include real context lines (prefixed with space) around your changes
 - Keep paths relative to the project root
+- **Use multiple `@@` hunks for multiple edits to the same file - do NOT make separate tool calls**
 
 **RECOMMENDED: Use apply_patch for targeted file edits to avoid rewriting entire files and wasting tokens.**
 
@@ -27,6 +28,37 @@ The tool will apply the hunks it can and skip the rest, returning the skipped hu
 **ALREADY APPLIED?**: If the removal lines are already gone or the additions are already present, the tool will treat the hunk as applied and move on—no need to resend the same change.
 
 **Alternative: Use the `edit` tool if you need fuzzy matching or structured operations.**
+
+## ⚠️ CRITICAL: Multiple Edits to Same File
+
+**DO NOT make separate `apply_patch` calls for the same file!**
+
+Instead, use multiple `@@` hunks in a single patch:
+
+```
+*** Begin Patch
+*** Update File: src/app.ts
+@@ first change - line 10
+ function init() {
+-  const port = 3000;
++  const port = 8080;
+   return port;
+ }
+@@ second change - line 25
+ function start() {
+-  console.log("Starting...");
++  console.log("Server starting...");
+   init();
+ }
+@@ third change - line 40
+ function cleanup() {
+-  // TODO
++  console.log("Cleaning up...");
+ }
+*** End Patch
+```
+
+**This makes ONE tool call instead of three, saving tokens and reducing latency.**
 
 ## Patch Formats
 

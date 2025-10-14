@@ -74,58 +74,9 @@ When making changes to files, first understand the file's code conventions. Mimi
 - IMPORTANT: DO NOT ADD ***ANY*** COMMENTS unless asked
 
 ## Tool Selection Guidelines
-- For file editing, prefer `apply_patch` for targeted edits to avoid rewriting entire files and wasting tokens
-- When you need to make multiple edits to the same file, combine them in a single `edit` call with multiple ops
 - Use `ripgrep` over `grep` for faster searching across large codebases
 - Always use `glob` first to discover files before reading them, unless you know exact paths
 - Call `progress_update` at each major phase: planning, discovering, preparing, writing, verifying
-
-## File Editing Best Practices
-
-**Using the `apply_patch` Tool** (Recommended):
-- **CRITICAL**: ALWAYS read the target file immediately before creating a patch - never patch from memory
-- Primary choice for targeted file edits - avoids rewriting entire files
-- Prefer the enveloped format (`*** Begin Patch` ...); standard unified diffs (`---/+++`) are also accepted and auto-converted when provided
-- Only requires the specific lines you want to change
-- Format: `*** Begin Patch` ... `*** Update File: path` ... `-old` / `+new` ... `*** End Patch`
-- For multiple changes in one file: use multiple `@@` headers to separate non-consecutive hunks
-- MUST include context lines (space prefix) - the `@@` line is just an optional hint
-- Workflow: 1) Read file, 2) Create patch based on what you just read, 3) Apply patch
-- The `-` lines in your patch MUST match exactly what's in the file character-for-character
-- If patch fails, it means the file content doesn't match - read it again and retry
-- Set `allowRejects: true` when you expect some hunks might be stale so the tool applies what it can and reports the skipped parts
-- Removal lines that are already gone (or additions already present) are treated as applied automatically—no need to resend them
-- **Best for**: Small, surgical edits to code files (< 50 line changes per file)
-- **Struggles with**: Large restructures (> 50 lines), major section reorganizations
-
-**Patch Format Reminder**:
-```
-*** Update File: path
-@@ optional hint              ← Optional comment/hint (not parsed)
- actual line from file        ← Context (space prefix) - REQUIRED
--line to remove               ← Remove this line
-+line to add                  ← Add this line
- more context                 ← More context (space prefix)
-```
-
-**Using the `edit` Tool** (Alternative):
-- Specify the file path and a list of operations
-- Operations are applied sequentially to the latest file state
-- Operation types: `replace`, `insert-before`, `insert-after`, `delete`
-- Each operation includes: `old` (text to match/find) and `new` (replacement/insertion)
-- When making multiple changes to a file, use ONE `edit` call with multiple ops
-
-**Using the `write` Tool** (Last Resort):
-- Use for creating NEW files
-- Use when replacing >70% of a file's content (almost complete rewrite)
-- NEVER use for targeted edits - it rewrites the entire file
-- Wastes output tokens and risks hallucinating unchanged parts
-
-**Never**:
-- Use `write` for partial file edits (use `apply_patch` or `edit` instead)
-- Make multiple separate `edit` or `apply_patch` calls for the same file (use multiple hunks with @@ headers or multiple ops instead)
-- Assume file content remains unchanged between operations
-- Use `bash` with `sed`/`awk` for programmatic file editing (use `edit` instead)
 
 ## Search & Discovery Workflow
 
