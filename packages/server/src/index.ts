@@ -7,9 +7,9 @@ import { registerSessionsRoutes } from './routes/sessions.ts';
 import { registerSessionMessagesRoutes } from './routes/session-messages.ts';
 import { registerSessionStreamRoute } from './routes/session-stream.ts';
 import { registerAskRoutes } from './routes/ask.ts';
-import { registerConfigRoutes } from './routes/config.ts';
+import { registerConfigRoutes } from './routes/config/index.ts';
 import { registerFilesRoutes } from './routes/files.ts';
-import { registerGitRoutes } from './routes/git.ts';
+import { registerGitRoutes } from './routes/git/index.ts';
 import type { AgentConfigEntry } from './runtime/agent-registry.ts';
 
 function initApp() {
