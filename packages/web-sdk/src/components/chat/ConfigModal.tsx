@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { useConfig } from '../../hooks/useConfig';
-import { usePreferences } from '../../hooks/usePreferences';
 import { Modal } from '../ui/Modal';
 import {
 	UnifiedModelSelector,
@@ -37,7 +36,6 @@ export function ConfigModal({
 	onModelSelectorChange,
 }: ConfigModalProps) {
 	const { data: config, isLoading: configLoading } = useConfig();
-	const { preferences, updatePreferences } = usePreferences();
 	const agentSelectorRef = useRef<UnifiedAgentSelectorRef>(null);
 	const modelSelectorRef = useRef<UnifiedModelSelectorRef>(null);
 
@@ -95,16 +93,15 @@ export function ConfigModal({
 						<div className="block text-sm font-medium text-foreground mb-2">
 							Provider / Model
 						</div>
-				<UnifiedModelSelector
-					ref={modelSelectorRef}
-					provider={provider}
-					model={model}
-					onChange={handleModelChange}
-				/>
-			</div>
-
-		</div>
-	) : null}
-</Modal>
+						<UnifiedModelSelector
+							ref={modelSelectorRef}
+							provider={provider}
+							model={model}
+							onChange={handleModelChange}
+						/>
+					</div>
+				</div>
+			) : null}
+		</Modal>
 	);
 }

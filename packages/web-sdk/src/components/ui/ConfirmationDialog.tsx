@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useConfirmationStore } from '../../stores/confirmationStore';
 import { X, AlertCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -23,7 +24,7 @@ export function ConfirmationDialog() {
 		}
 	}, [isOpen]);
 
-	const handleConfirm = async () => {
+	const handleConfirm = useCallback(async () => {
 		setIsProcessing(true);
 		try {
 			await onConfirm();
@@ -32,12 +33,12 @@ export function ConfirmationDialog() {
 			console.error('Confirmation action failed:', error);
 			setIsProcessing(false);
 		}
-	};
+	}, [onConfirm, closeConfirmation]);
 
-	const handleCancel = () => {
+	const handleCancel = useCallback(() => {
 		onCancel?.();
 		closeConfirmation();
-	};
+	}, [onCancel, closeConfirmation]);
 
 	const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
 		if (e.target === e.currentTarget && !isProcessing) {
@@ -69,8 +70,16 @@ export function ConfirmationDialog() {
 
 	return (
 		<div
+			role="dialog"
+			aria-modal="true"
 			className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
 			onClick={handleBackdropClick}
+			onKeyDown={(e) => {
+				if (e.key === 'Escape' && !isProcessing) {
+					e.preventDefault();
+					handleCancel();
+				}
+			}}
 		>
 			<div className="bg-background border border-border rounded-lg shadow-lg max-w-md w-full mx-4">
 				<div className="flex items-center justify-between p-4 border-b border-border">

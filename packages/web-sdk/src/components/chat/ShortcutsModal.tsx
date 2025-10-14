@@ -308,21 +308,22 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
 							{category}
 						</h3>
 						<div className="space-y-2">
-							{shortcuts.map((shortcut, index) => (
+							{shortcuts.map((shortcut, _index) => (
 								<div
-									key={`${category}-${index}`}
+									key={`${category}-${shortcut.description}`}
 									className="flex items-center justify-between py-2 px-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
 								>
 									<span className="text-sm text-foreground">
 										{shortcut.description}
 									</span>
 									<div className="flex items-center gap-1">
-										{shortcut.keys.map((key, keyIndex) => (
-											<span key={keyIndex} className="flex items-center gap-1">
+										{shortcut.keys.map((key) => (
+											<span key={key} className="flex items-center gap-1">
 												<kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded shadow-sm">
 													{key}
 												</kbd>
-												{keyIndex < shortcut.keys.length - 1 && (
+												{shortcut.keys.indexOf(key) <
+													shortcut.keys.length - 1 && (
 													<span className="text-muted-foreground">+</span>
 												)}
 											</span>
@@ -340,9 +341,9 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
 						Slash Commands
 					</h3>
 					<div className="space-y-2">
-						{SLASH_COMMANDS.map((cmd, index) => (
+						{SLASH_COMMANDS.map((cmd, _index) => (
 							<div
-								key={index}
+								key={cmd.command}
 								className="flex items-center justify-between py-2 px-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
 							>
 								<span className="text-sm text-foreground">

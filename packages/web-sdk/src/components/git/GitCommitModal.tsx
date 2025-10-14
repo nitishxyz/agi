@@ -1,4 +1,4 @@
-import { useState, useId, useEffect } from 'react';
+import { useState, useId, useEffect, useCallback } from 'react';
 import { GitCommit, Sparkles, Loader2 } from 'lucide-react';
 import { useGitStore } from '../../stores/gitStore';
 import { useCommitChanges, useGenerateCommitMessage } from '../../hooks/useGit';
@@ -13,7 +13,7 @@ export function GitCommitModal() {
 	const [message, setMessage] = useState('');
 	const messageId = useId();
 
-	const handleCommit = async () => {
+	const handleCommit = useCallback(async () => {
 		if (!message.trim()) return;
 
 		try {
@@ -23,21 +23,21 @@ export function GitCommitModal() {
 		} catch (error) {
 			console.error('Failed to commit:', error);
 		}
-	};
+	}, [message, commitChanges, closeCommitModal]);
 
 	const handleClose = () => {
 		setMessage('');
 		closeCommitModal();
 	};
 
-	const handleGenerateMessage = async () => {
+	const handleGenerateMessage = useCallback(async () => {
 		try {
 			const result = await generateMessage.mutateAsync();
 			setMessage(result.message);
 		} catch (error) {
 			console.error('Failed to generate commit message:', error);
 		}
-	};
+	}, [generateMessage]);
 
 	useEffect(() => {
 		if (!isCommitModalOpen) return;
@@ -59,7 +59,13 @@ export function GitCommitModal() {
 
 		document.addEventListener('keydown', handleKeyDown);
 		return () => document.removeEventListener('keydown', handleKeyDown);
-	}, [isCommitModalOpen, message, commitChanges.isPending]);
+	}, [
+		isCommitModalOpen,
+		message,
+		commitChanges.isPending,
+		handleCommit,
+		handleGenerateMessage,
+	]);
 
 	return (
 		<Modal

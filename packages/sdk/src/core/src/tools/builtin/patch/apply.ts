@@ -234,10 +234,10 @@ function isHunkAlreadyApplied(
 	}
 
 	const removals = hunk.lines.filter((line) => line.kind === 'remove');
-	const additions = hunk.lines
+	const _additions = hunk.lines
 		.filter((line) => line.kind === 'add')
 		.map((line) => line.content);
-	const contextLines = hunk.lines
+	const _contextLines = hunk.lines
 		.filter((line) => line.kind === 'context')
 		.map((line) => line.content);
 	if (removals.length === 0) return false;
