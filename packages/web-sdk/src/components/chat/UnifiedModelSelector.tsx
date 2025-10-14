@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { useAllModels } from '../../hooks/useConfig';
@@ -19,12 +19,22 @@ interface FlattenedModel {
 	reasoning?: boolean;
 }
 
-export function UnifiedModelSelector({
-	provider,
-	model,
-	onChange,
-	disabled = false,
-}: UnifiedModelSelectorProps) {
+export interface UnifiedModelSelectorRef {
+	openAndFocus: () => void;
+}
+
+export const UnifiedModelSelector = forwardRef<
+	UnifiedModelSelectorRef,
+	UnifiedModelSelectorProps
+>(function UnifiedModelSelector(
+	{
+		provider,
+		model,
+		onChange,
+		disabled = false,
+	},
+	ref,
+) {
 	const { data: allModels, isLoading } = useAllModels();
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState('');
@@ -32,6 +42,12 @@ export function UnifiedModelSelector({
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+	useImperativeHandle(ref, () => ({
+		openAndFocus: () => {
+			setIsOpen(true);
+		},
+	}));
 
 	const flattenedModels = useMemo(() => {
 		if (!allModels) return [];
@@ -329,4 +345,4 @@ export function UnifiedModelSelector({
 			)}
 		</div>
 	);
-}
+});

@@ -15,6 +15,7 @@ import { ConfigModal } from './ConfigModal';
 interface ChatInputContainerProps {
 	sessionId: string;
 	userContext?: string;
+	onNewSession?: () => void;
 }
 
 export interface ChatInputContainerRef {
@@ -23,12 +24,15 @@ export interface ChatInputContainerRef {
 
 export const ChatInputContainer = memo(
 	forwardRef<ChatInputContainerRef, ChatInputContainerProps>(
-		function ChatInputContainer({ sessionId, userContext }, ref) {
+		function ChatInputContainer({ sessionId, userContext, onNewSession }, ref) {
 			const session = useSession(sessionId);
 			const [agent, setAgent] = useState('');
 			const [provider, setProvider] = useState('');
 			const [model, setModel] = useState('');
 			const [isConfigOpen, setIsConfigOpen] = useState(false);
+			const [configFocusTarget, setConfigFocusTarget] = useState<
+				'agent' | 'model' | null
+			>(null);
 			const [inputKey, setInputKey] = useState(0);
 
 			const chatInputRef = useRef<{ focus: () => void }>(null);
@@ -77,7 +81,23 @@ export const ChatInputContainer = memo(
 
 			const handleCloseConfig = useCallback(() => {
 				setIsConfigOpen(false);
+				setConfigFocusTarget(null);
 			}, []);
+
+			const handleCommand = useCallback(
+				(commandId: string) => {
+					if (commandId === 'models') {
+						setConfigFocusTarget('model');
+						setIsConfigOpen(true);
+					} else if (commandId === 'agents') {
+						setConfigFocusTarget('agent');
+						setIsConfigOpen(true);
+					} else if (commandId === 'new') {
+						onNewSession?.();
+					}
+				},
+				[onNewSession],
+			);
 
 			const handleAgentChange = useCallback(
 				async (value: string) => {
@@ -154,6 +174,7 @@ export const ChatInputContainer = memo(
 					<ConfigModal
 						isOpen={isConfigOpen}
 						onClose={handleCloseConfig}
+						initialFocus={configFocusTarget}
 						agent={agent}
 						provider={provider}
 						model={model}
@@ -166,6 +187,7 @@ export const ChatInputContainer = memo(
 						ref={chatInputRef}
 						key={inputKey}
 						onSend={handleSendMessage}
+						onCommand={handleCommand}
 						disabled={sendMessage.isPending}
 						onConfigClick={handleToggleConfig}
 						onPlanModeToggle={handlePlanModeToggle}

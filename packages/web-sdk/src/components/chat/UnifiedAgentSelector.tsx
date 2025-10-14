@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import Fuse from 'fuse.js';
 
@@ -9,18 +9,34 @@ interface UnifiedAgentSelectorProps {
 	disabled?: boolean;
 }
 
-export function UnifiedAgentSelector({
-	agent,
-	agents,
-	onChange,
-	disabled = false,
-}: UnifiedAgentSelectorProps) {
+export interface UnifiedAgentSelectorRef {
+	openAndFocus: () => void;
+}
+
+export const UnifiedAgentSelector = forwardRef<
+	UnifiedAgentSelectorRef,
+	UnifiedAgentSelectorProps
+>(function UnifiedAgentSelector(
+	{
+		agent,
+		agents,
+		onChange,
+		disabled = false,
+	},
+	ref,
+) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [highlightedIndex, setHighlightedIndex] = useState(0);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+	useImperativeHandle(ref, () => ({
+		openAndFocus: () => {
+			setIsOpen(true);
+		},
+	}));
 
 	const fuse = useMemo(() => {
 		return new Fuse(agents, {
@@ -182,4 +198,4 @@ export function UnifiedAgentSelector({
 			)}
 		</div>
 	);
-}
+});

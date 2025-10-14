@@ -11,10 +11,12 @@ import type { KeyboardEvent, ChangeEvent } from 'react';
 import { ArrowUp, MoreVertical } from 'lucide-react';
 import { Textarea } from '../ui/Textarea';
 import { FileMentionPopup } from './FileMentionPopup';
+import { CommandSuggestionsPopup } from './CommandSuggestionsPopup';
 import { useFiles } from '../../hooks/useFiles';
 
 interface ChatInputProps {
 	onSend: (message: string) => void;
+	onCommand?: (commandId: string) => void;
 	disabled?: boolean;
 	onConfigClick?: () => void;
 	onPlanModeToggle?: (isPlanMode: boolean) => void;
@@ -25,6 +27,7 @@ export const ChatInput = memo(
 	forwardRef<{ focus: () => void }, ChatInputProps>(function ChatInput(
 		{
 			onSend,
+			onCommand,
 			disabled,
 			onConfigClick,
 			onPlanModeToggle,
@@ -37,7 +40,13 @@ export const ChatInput = memo(
 		const [showFileMention, setShowFileMention] = useState(false);
 		const [mentionQuery, setMentionQuery] = useState('');
 		const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
+		const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
+		const [commandQuery, setCommandQuery] = useState('');
+		const [commandSelectedIndex, setCommandSelectedIndex] = useState(0);
 		const [currentFileToSelect, setCurrentFileToSelect] = useState<
+			string | undefined
+		>();
+		const [currentCommandToSelect, setCurrentCommandToSelect] = useState<
 			string | undefined
 		>();
 		const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -114,24 +123,71 @@ export const ChatInput = memo(
 			setCurrentFileToSelect(file);
 		}, []);
 
+		const handleCommandEnterSelect = useCallback((commandId: string | undefined) => {
+			setCurrentCommandToSelect(commandId);
+		}, []);
+
+		const handleCommandSelect = useCallback((commandId: string) => {
+			if (onCommand) {
+				onCommand(commandId);
+			}
+			setMessage('');
+			setShowCommandSuggestions(false);
+			if (textareaRef.current) {
+				textareaRef.current.style.height = 'auto';
+			}
+			textareaRef.current?.focus();
+		}, [onCommand]);
+
 		const handleChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
 			setMessage(e.target.value);
+			const value = e.target.value;
 
-			const cursorPos = e.target.selectionStart;
-			const textBeforeCursor = e.target.value.slice(0, cursorPos);
-			const match = textBeforeCursor.match(/@(\S*)$/);
-
-			if (match) {
-				setShowFileMention(true);
-				setMentionQuery(match[1]);
-				setMentionSelectedIndex(0);
-			} else {
+			// Check for slash command (only when input starts with /)
+			if (value.startsWith('/') && !value.includes(' ')) {
+				setShowCommandSuggestions(true);
+				setCommandQuery(value.slice(1));
+				setCommandSelectedIndex(0);
 				setShowFileMention(false);
+			} else {
+				setShowCommandSuggestions(false);
+				
+				// Check for file mention
+				const cursorPos = e.target.selectionStart;
+				const textBeforeCursor = value.slice(0, cursorPos);
+				const match = textBeforeCursor.match(/@(\S*)$/);
+
+				if (match) {
+					setShowFileMention(true);
+					setMentionQuery(match[1]);
+					setMentionSelectedIndex(0);
+				} else {
+					setShowFileMention(false);
+				}
 			}
 		}, []);
 
 		const handleKeyDown = useCallback(
 			(e: KeyboardEvent<HTMLTextAreaElement>) => {
+			if (showCommandSuggestions) {
+				if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'j')) {
+					e.preventDefault();
+					setCommandSelectedIndex((prev) => (prev + 1) % 3);
+				} else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'k')) {
+					e.preventDefault();
+					setCommandSelectedIndex((prev) => (prev - 1 + 3) % 3);
+				} else if (e.key === 'Enter') {
+						e.preventDefault();
+						if (currentCommandToSelect) {
+							handleCommandSelect(currentCommandToSelect);
+						}
+					} else if (e.key === 'Escape') {
+						e.preventDefault();
+						setShowCommandSuggestions(false);
+					}
+				return;
+			}
+
 			if (showFileMention) {
 				if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'j')) {
 					e.preventDefault();
@@ -148,28 +204,31 @@ export const ChatInput = memo(
 						e.preventDefault();
 						setShowFileMention(false);
 					}
-					return;
-				}
+				return;
+			}
 
-				if (e.key === 'Tab') {
-					e.preventDefault();
-					const newPlanMode = !isPlanMode;
-					setIsPlanMode(newPlanMode);
-					onPlanModeToggle?.(newPlanMode);
-				} else if (e.key === 'Enter' && !e.shiftKey) {
-					e.preventDefault();
-					handleSend();
-				}
-			},
-			[
-				showFileMention,
-				handleSend,
-				isPlanMode,
-				onPlanModeToggle,
-				currentFileToSelect,
-				handleFileSelect,
-			],
-		);
+			if (e.key === 'Tab') {
+				e.preventDefault();
+				const newPlanMode = !isPlanMode;
+				setIsPlanMode(newPlanMode);
+				onPlanModeToggle?.(newPlanMode);
+			} else if (e.key === 'Enter' && !e.shiftKey) {
+				e.preventDefault();
+				handleSend();
+			}
+		},
+		[
+			showFileMention,
+			showCommandSuggestions,
+			handleSend,
+			isPlanMode,
+			onPlanModeToggle,
+			currentFileToSelect,
+			handleFileSelect,
+			currentCommandToSelect,
+			handleCommandSelect,
+		],
+	);
 
 		return (
 			<div className="absolute bottom-0 left-0 right-0 pt-16 pb-6 md:pb-8 px-2 md:px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20 safe-area-inset-bottom">
@@ -228,6 +287,16 @@ export const ChatInput = memo(
 							onSelect={handleFileSelect}
 							onEnterSelect={handleEnterSelect}
 							onClose={() => setShowFileMention(false)}
+						/>
+					)}
+
+					{showCommandSuggestions && (
+						<CommandSuggestionsPopup
+							query={commandQuery}
+							selectedIndex={commandSelectedIndex}
+							onSelect={handleCommandSelect}
+							onEnterSelect={handleCommandEnterSelect}
+							onClose={() => setShowCommandSuggestions(false)}
 						/>
 					)}
 				</div>
