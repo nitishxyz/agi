@@ -1,8 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useConfig } from '../../hooks/useConfig';
 import { Modal } from '../ui/Modal';
-import { UnifiedModelSelector, type UnifiedModelSelectorRef } from './UnifiedModelSelector';
-import { UnifiedAgentSelector, type UnifiedAgentSelectorRef } from './UnifiedAgentSelector';
+import {
+	UnifiedModelSelector,
+	type UnifiedModelSelectorRef,
+} from './UnifiedModelSelector';
+import {
+	UnifiedAgentSelector,
+	type UnifiedAgentSelectorRef,
+} from './UnifiedAgentSelector';
 
 interface ConfigModalProps {
 	isOpen: boolean;

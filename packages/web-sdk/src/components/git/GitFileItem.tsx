@@ -1,6 +1,19 @@
-import { FileIcon, FilePlus, FileX, Check, AlertCircle, RotateCcw, Trash2 } from 'lucide-react';
+import {
+	FileIcon,
+	FilePlus,
+	FileX,
+	Check,
+	AlertCircle,
+	RotateCcw,
+	Trash2,
+} from 'lucide-react';
 import type { GitFileStatus } from '../../types/api';
-import { useStageFiles, useUnstageFiles, useRestoreFiles, useDeleteFiles } from '../../hooks/useGit';
+import {
+	useStageFiles,
+	useUnstageFiles,
+	useRestoreFiles,
+	useDeleteFiles,
+} from '../../hooks/useGit';
 import { useGitStore } from '../../stores/gitStore';
 import { useConfirmationStore } from '../../stores/confirmationStore';
 import { useState } from 'react';
@@ -43,7 +56,9 @@ export function GitFileItem({
 	const unstageFiles = useUnstageFiles();
 	const restoreFiles = useRestoreFiles();
 	const deleteFiles = useDeleteFiles();
-	const openConfirmation = useConfirmationStore((state) => state.openConfirmation);
+	const openConfirmation = useConfirmationStore(
+		(state) => state.openConfirmation,
+	);
 	const [isChecked, setIsChecked] = useState(staged);
 
 	const handleCheckChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

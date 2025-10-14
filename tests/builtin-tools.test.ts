@@ -433,7 +433,6 @@ describe('Built-in Tools', () => {
 			const updated = await Bun.file(join(projectRoot, 'test.txt')).text();
 			expect(updated).toBe('Hello World\nLine 3\n');
 		});
-
 	});
 
 	describe('edit tool', () => {

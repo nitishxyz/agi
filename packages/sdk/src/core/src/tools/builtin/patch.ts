@@ -2,9 +2,7 @@ import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import DESCRIPTION from './patch.txt' with { type: 'text' };
 import { createToolError, type ToolResponse } from '../error.ts';
-import {
-	applyPatchOperations,
-} from './patch/apply.ts';
+import { applyPatchOperations } from './patch/apply.ts';
 import { parsePatchInput } from './patch/parse.ts';
 import type {
 	AppliedPatchOperation,
@@ -46,7 +44,7 @@ function serializeRejected(rejected: RejectedPatch[]) {
 							kind: line.kind,
 							content: line.content,
 						})),
-				  }))
+					}))
 				: undefined,
 	}));
 }
@@ -107,8 +105,7 @@ export function buildApplyPatchTool(projectRoot: string): {
 				const parsed = parsePatchInput(patch);
 				operations = parsed.operations;
 			} catch (error) {
-				const message =
-					error instanceof Error ? error.message : String(error);
+				const message = error instanceof Error ? error.message : String(error);
 				return createToolError(message, 'validation', {
 					parameter: 'patch',
 					suggestion:

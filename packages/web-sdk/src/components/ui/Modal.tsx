@@ -71,9 +71,11 @@ export function Modal({
 				onClick={handleBackdropClick}
 				aria-label="Close modal"
 			/>
-			
+
 			{/* Modal Container */}
-			<div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full ${maxWidthClasses[maxWidth]} px-4`}>
+			<div
+				className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full ${maxWidthClasses[maxWidth]} px-4`}
+			>
 				<div className="bg-background border border-border rounded-lg shadow-lg">
 					{/* Header */}
 					{(title || showCloseButton) && (
@@ -97,9 +99,7 @@ export function Modal({
 					)}
 
 					{/* Content */}
-					<div className="p-4">
-						{children}
-					</div>
+					<div className="p-4">{children}</div>
 				</div>
 			</div>
 		</>

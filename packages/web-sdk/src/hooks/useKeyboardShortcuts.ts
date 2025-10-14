@@ -36,9 +36,26 @@ export function useKeyboardShortcuts({
 	onViewDiff,
 	onReturnToInput,
 }: UseKeyboardShortcutsOptions) {
-	const { currentFocus, sessionIndex, gitFileIndex, setFocus, setSessionIndex, setGitFileIndex, resetSessionIndex, resetGitFileIndex } = useFocusStore();
-	const { isCollapsed: isSessionListCollapsed, setCollapsed: setSessionListCollapsed, toggleCollapse: toggleSessionList } = useSidebarStore();
-	const { isExpanded: isGitExpanded, toggleSidebar: toggleGit, openCommitModal } = useGitStore();
+	const {
+		currentFocus,
+		sessionIndex,
+		gitFileIndex,
+		setFocus,
+		setSessionIndex,
+		setGitFileIndex,
+		resetSessionIndex,
+		resetGitFileIndex,
+	} = useFocusStore();
+	const {
+		isCollapsed: isSessionListCollapsed,
+		setCollapsed: setSessionListCollapsed,
+		toggleCollapse: toggleSessionList,
+	} = useSidebarStore();
+	const {
+		isExpanded: isGitExpanded,
+		toggleSidebar: toggleGit,
+		openCommitModal,
+	} = useGitStore();
 	const closeDiff = useGitStore((state) => state.closeDiff);
 
 	const currentSessionIndex = sessionIds.indexOf(activeSessionId || '');
@@ -46,67 +63,70 @@ export function useKeyboardShortcuts({
 	const handleKeyDown = useCallback(
 		(e: KeyboardEvent) => {
 			const target = e.target as HTMLElement;
-			const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+			const isInInput =
+				target.tagName === 'INPUT' ||
+				target.tagName === 'TEXTAREA' ||
+				target.isContentEditable;
 
-		if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
-			e.preventDefault();
-			
-			// Ctrl+H: center -> left, left -> center, right -> center
-			if (currentFocus === 'sessions') {
-				// Already on sessions, go back to center
-				(document.activeElement as HTMLElement)?.blur();
-				setFocus('input');
-				setSessionListCollapsed(true);
-				// Focus the input after a small delay to ensure sidebar is collapsing
-				setTimeout(() => onReturnToInput?.(), 50);
-		} else if (currentFocus === 'git') {
-			// On right sidebar, go back to center (don't jump to left)
-			(document.activeElement as HTMLElement)?.blur();
-			setFocus('input');
-			toggleGit();
-			closeDiff();
-			setTimeout(() => onReturnToInput?.(), 50);
-		} else {
-				// From center, go to left sidebar
-				(document.activeElement as HTMLElement)?.blur();
-				setFocus('sessions');
-				setSessionListCollapsed(false);
-				if (currentSessionIndex >= 0) {
-					setSessionIndex(currentSessionIndex);
-				}
-			}
-			return;
-		}
+			if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+				e.preventDefault();
 
-		if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
-			e.preventDefault();
-			
-			// Ctrl+L: center -> right, right -> center, left -> center
-		if (currentFocus === 'git') {
-			// Already on git, go back to center
-			(document.activeElement as HTMLElement)?.blur();
-			setFocus('input');
-			toggleGit();
-			closeDiff();
-			// Focus the input after a small delay to ensure sidebar is collapsing
-			setTimeout(() => onReturnToInput?.(), 50);
-			} else if (currentFocus === 'sessions') {
-				// On left sidebar, go back to center (don't jump to right)
-				(document.activeElement as HTMLElement)?.blur();
-				setFocus('input');
-				setSessionListCollapsed(true);
-				setTimeout(() => onReturnToInput?.(), 50);
-			} else {
-				// From center, go to right sidebar
-				(document.activeElement as HTMLElement)?.blur();
-				if (!isGitExpanded) {
+				// Ctrl+H: center -> left, left -> center, right -> center
+				if (currentFocus === 'sessions') {
+					// Already on sessions, go back to center
+					(document.activeElement as HTMLElement)?.blur();
+					setFocus('input');
+					setSessionListCollapsed(true);
+					// Focus the input after a small delay to ensure sidebar is collapsing
+					setTimeout(() => onReturnToInput?.(), 50);
+				} else if (currentFocus === 'git') {
+					// On right sidebar, go back to center (don't jump to left)
+					(document.activeElement as HTMLElement)?.blur();
+					setFocus('input');
 					toggleGit();
+					closeDiff();
+					setTimeout(() => onReturnToInput?.(), 50);
+				} else {
+					// From center, go to left sidebar
+					(document.activeElement as HTMLElement)?.blur();
+					setFocus('sessions');
+					setSessionListCollapsed(false);
+					if (currentSessionIndex >= 0) {
+						setSessionIndex(currentSessionIndex);
+					}
 				}
-				setFocus('git');
-				resetGitFileIndex();
+				return;
 			}
-			return;
-		}
+
+			if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+				e.preventDefault();
+
+				// Ctrl+L: center -> right, right -> center, left -> center
+				if (currentFocus === 'git') {
+					// Already on git, go back to center
+					(document.activeElement as HTMLElement)?.blur();
+					setFocus('input');
+					toggleGit();
+					closeDiff();
+					// Focus the input after a small delay to ensure sidebar is collapsing
+					setTimeout(() => onReturnToInput?.(), 50);
+				} else if (currentFocus === 'sessions') {
+					// On left sidebar, go back to center (don't jump to right)
+					(document.activeElement as HTMLElement)?.blur();
+					setFocus('input');
+					setSessionListCollapsed(true);
+					setTimeout(() => onReturnToInput?.(), 50);
+				} else {
+					// From center, go to right sidebar
+					(document.activeElement as HTMLElement)?.blur();
+					if (!isGitExpanded) {
+						toggleGit();
+					}
+					setFocus('git');
+					resetGitFileIndex();
+				}
+				return;
+			}
 
 			if ((e.ctrlKey || e.metaKey) && e.key === '/') {
 				e.preventDefault();
@@ -126,17 +146,17 @@ export function useKeyboardShortcuts({
 				return;
 			}
 
-		if (e.key === 'Escape') {
-			e.preventDefault();
-			// Close sidebar if focused on one
-			if (currentFocus === 'sessions') {
-				setSessionListCollapsed(true);
-			} else if (currentFocus === 'git') {
-				toggleGit();
-				closeDiff();
-			}
-			setFocus('input');
-			onReturnToInput?.();
+			if (e.key === 'Escape') {
+				e.preventDefault();
+				// Close sidebar if focused on one
+				if (currentFocus === 'sessions') {
+					setSessionListCollapsed(true);
+				} else if (currentFocus === 'git') {
+					toggleGit();
+					closeDiff();
+				}
+				setFocus('input');
+				onReturnToInput?.();
 				return;
 			}
 
@@ -201,30 +221,33 @@ export function useKeyboardShortcuts({
 					return;
 				}
 
-			if (e.key === 'R' && gitFiles[gitFileIndex]) {
-				e.preventDefault();
-				const file = gitFiles[gitFileIndex];
-				// Only allow restore for unstaged, tracked files (not new/untracked)
-				const canRestore = !file.staged && file.status !== 'untracked' && file.status !== 'added';
-				if (canRestore) {
-					onRestoreFile?.(file.path);
+				if (e.key === 'R' && gitFiles[gitFileIndex]) {
+					e.preventDefault();
+					const file = gitFiles[gitFileIndex];
+					// Only allow restore for unstaged, tracked files (not new/untracked)
+					const canRestore =
+						!file.staged &&
+						file.status !== 'untracked' &&
+						file.status !== 'added';
+					if (canRestore) {
+						onRestoreFile?.(file.path);
+					}
+					return;
 				}
-				return;
-			}
 
-			// Delete file - Shift+D or Delete (only for untracked files)
-			if ((e.shiftKey && e.key === 'D') || e.key === 'Backspace') {
-				e.preventDefault();
-				const file = gitFiles[gitFileIndex];
-				if (file && !file.staged && file.status === 'untracked') {
-					onDeleteFile?.(file.path);
+				// Delete file - Shift+D or Delete (only for untracked files)
+				if ((e.shiftKey && e.key === 'D') || e.key === 'Backspace') {
+					e.preventDefault();
+					const file = gitFiles[gitFileIndex];
+					if (file && !file.staged && file.status === 'untracked') {
+						onDeleteFile?.(file.path);
+					}
+					return;
 				}
-				return;
-			}
 
-			if (e.key === 'c') {
-				e.preventDefault();
-				onOpenCommitModal?.();
+				if (e.key === 'c') {
+					e.preventDefault();
+					onOpenCommitModal?.();
 					return;
 				}
 
@@ -255,12 +278,12 @@ export function useKeyboardShortcuts({
 			toggleSessionList,
 			onSelectSession,
 			onNewSession,
-		onStageFile,
-		onUnstageFile,
-		onRestoreFile,
-		onDeleteFile,
-		onStageAll,
-		onUnstageAll,
+			onStageFile,
+			onUnstageFile,
+			onRestoreFile,
+			onDeleteFile,
+			onStageAll,
+			onUnstageAll,
 			onOpenCommitModal,
 			onViewDiff,
 			onReturnToInput,

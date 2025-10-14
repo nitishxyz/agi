@@ -56,7 +56,9 @@ export function getDefault<T>(
 	return embeddedValue ?? embeddedDefaultValue ?? fileValue;
 }
 
-export async function discoverAllAgents(projectRoot: string): Promise<string[]> {
+export async function discoverAllAgents(
+	projectRoot: string,
+): Promise<string[]> {
 	const builtInAgents = ['general', 'build', 'plan'];
 	const agentSet = new Set<string>(builtInAgents);
 

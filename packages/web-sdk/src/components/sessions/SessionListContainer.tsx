@@ -67,12 +67,12 @@ export const SessionListContainer = memo(function SessionListContainer({
 					<div
 						key={session.id}
 						ref={(el) => {
-						if (el) itemRefs.current.set(index, el);
-						else itemRefs.current.delete(index);
-					}}
-					className={isFocused ? 'ring-1 ring-primary/40 rounded-md' : ''}
-				>
-					<SessionItem
+							if (el) itemRefs.current.set(index, el);
+							else itemRefs.current.delete(index);
+						}}
+						className={isFocused ? 'ring-1 ring-primary/40 rounded-md' : ''}
+					>
+						<SessionItem
 							session={fullSession}
 							isActive={session.id === activeSessionId}
 							onClick={() => handleSessionClick(session.id)}

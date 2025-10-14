@@ -160,8 +160,11 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
 
 		const handleKeyDown = (e: KeyboardEvent) => {
 			const target = e.target as HTMLElement;
-			const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
-			
+			const isInputField =
+				target.tagName === 'INPUT' ||
+				target.tagName === 'TEXTAREA' ||
+				target.isContentEditable;
+
 			if (isInputField) return;
 
 			if (e.key === 'j') {
@@ -200,7 +203,10 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
 			closeOnEscape={true}
 			closeOnBackdropClick={true}
 		>
-			<div ref={modalContentRef} className="space-y-6 max-h-[70vh] overflow-y-auto">
+			<div
+				ref={modalContentRef}
+				className="space-y-6 max-h-[70vh] overflow-y-auto"
+			>
 				{Object.entries(groupedShortcuts).map(([category, shortcuts]) => (
 					<div key={category}>
 						<h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -245,7 +251,9 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
 								key={index}
 								className="flex items-center justify-between py-2 px-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
 							>
-								<span className="text-sm text-foreground">{cmd.description}</span>
+								<span className="text-sm text-foreground">
+									{cmd.description}
+								</span>
 								<kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded shadow-sm">
 									{cmd.command}
 								</kbd>

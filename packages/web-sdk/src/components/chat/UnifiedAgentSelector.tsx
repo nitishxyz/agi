@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useMemo, useImperativeHandle, forwardRef } from 'react';
+import {
+	useState,
+	useEffect,
+	useRef,
+	useMemo,
+	useImperativeHandle,
+	forwardRef,
+} from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import Fuse from 'fuse.js';
 
@@ -17,12 +24,7 @@ export const UnifiedAgentSelector = forwardRef<
 	UnifiedAgentSelectorRef,
 	UnifiedAgentSelectorProps
 >(function UnifiedAgentSelector(
-	{
-		agent,
-		agents,
-		onChange,
-		disabled = false,
-	},
+	{ agent, agents, onChange, disabled = false },
 	ref,
 ) {
 	const [isOpen, setIsOpen] = useState(false);
@@ -112,7 +114,10 @@ export const UnifiedAgentSelector = forwardRef<
 			setHighlightedIndex((prev) =>
 				prev < filteredAgents.length - 1 ? prev + 1 : 0,
 			);
-		} else if (event.key === 'ArrowUp' || (event.ctrlKey && event.key === 'k')) {
+		} else if (
+			event.key === 'ArrowUp' ||
+			(event.ctrlKey && event.key === 'k')
+		) {
 			event.preventDefault();
 			setHighlightedIndex((prev) =>
 				prev > 0 ? prev - 1 : filteredAgents.length - 1,

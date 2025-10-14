@@ -49,8 +49,7 @@ async function parseGitignore(projectRoot: string): Promise<Set<string>> {
 				patterns.add(trimmed);
 			}
 		}
-	} catch (_err) {
-	}
+	} catch (_err) {}
 	return patterns;
 }
 
@@ -112,7 +111,10 @@ async function traverseDirectory(
 			const fullPath = join(dir, entry.name);
 			const relativePath = relative(projectRoot, fullPath);
 
-			if (gitignorePatterns && matchesGitignorePattern(relativePath, gitignorePatterns)) {
+			if (
+				gitignorePatterns &&
+				matchesGitignorePattern(relativePath, gitignorePatterns)
+			) {
 				continue;
 			}
 

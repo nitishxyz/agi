@@ -14,7 +14,11 @@ import {
 	useWorkingDirectory,
 	useKeyboardShortcuts,
 } from '@agi-cli/web-sdk/hooks';
-import { useSidebarStore, useGitStore, useConfirmationStore } from '@agi-cli/web-sdk/stores';
+import {
+	useSidebarStore,
+	useGitStore,
+	useConfirmationStore,
+} from '@agi-cli/web-sdk/stores';
 import {
 	useGitStatus,
 	useStageFiles,
@@ -42,7 +46,9 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	const unstageFiles = useUnstageFiles();
 	const restoreFiles = useRestoreFiles();
 	const deleteFiles = useDeleteFiles();
-	const openConfirmation = useConfirmationStore((state) => state.openConfirmation);
+	const openConfirmation = useConfirmationStore(
+		(state) => state.openConfirmation,
+	);
 
 	useWorkingDirectory();
 
@@ -86,9 +92,21 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	const gitFiles = useMemo(() => {
 		if (!gitStatus) return [];
 		return [
-			...gitStatus.staged.map((f) => ({ path: f.path, staged: true, status: f.status })),
-			...gitStatus.unstaged.map((f) => ({ path: f.path, staged: false, status: f.status })),
-			...gitStatus.untracked.map((f) => ({ path: f.path, staged: false, status: f.status })),
+			...gitStatus.staged.map((f) => ({
+				path: f.path,
+				staged: true,
+				status: f.status,
+			})),
+			...gitStatus.unstaged.map((f) => ({
+				path: f.path,
+				staged: false,
+				status: f.status,
+			})),
+			...gitStatus.untracked.map((f) => ({
+				path: f.path,
+				staged: false,
+				status: f.status,
+			})),
 		];
 	}, [gitStatus]);
 
@@ -145,8 +163,8 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 		return (
 			<>
 				<MessageThreadContainer sessionId={sessionId} />
-				<ChatInputContainer 
-					ref={chatInputRef} 
+				<ChatInputContainer
+					ref={chatInputRef}
 					sessionId={sessionId}
 					onNewSession={handleNewSession}
 				/>

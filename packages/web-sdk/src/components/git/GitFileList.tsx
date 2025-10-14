@@ -50,7 +50,11 @@ export function GitFileList({ status }: GitFileListProps) {
 			element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
 			// Auto-show diff for focused file
-			const allFiles = [...status.staged, ...status.unstaged, ...status.untracked];
+			const allFiles = [
+				...status.staged,
+				...status.unstaged,
+				...status.untracked,
+			];
 			const focusedFile = allFiles[gitFileIndex];
 			if (focusedFile) {
 				// Determine if file is staged or unstaged
@@ -58,20 +62,26 @@ export function GitFileList({ status }: GitFileListProps) {
 				openDiff(focusedFile.path, isStaged);
 			}
 		}
-	}, [currentFocus, gitFileIndex, status.staged, status.unstaged, status.untracked]);
+	}, [
+		currentFocus,
+		gitFileIndex,
+		status.staged,
+		status.unstaged,
+		status.untracked,
+	]);
 
 	return (
 		<div className="flex flex-col">
 			{hasStaged && (
 				<div className="border-b border-border">
 					<div className="px-4 py-2 bg-muted/50 flex items-center justify-between">
-					<span className="text-xs font-semibold text-foreground uppercase">
-						Staged Changes ({status.staged.length})
-					</span>
-					<div className="flex items-center gap-1">
-						{status.staged.length > 0 && (
-							<Button
-								variant="primary"
+						<span className="text-xs font-semibold text-foreground uppercase">
+							Staged Changes ({status.staged.length})
+						</span>
+						<div className="flex items-center gap-1">
+							{status.staged.length > 0 && (
+								<Button
+									variant="primary"
 									size="sm"
 									onClick={openCommitModal}
 									className="h-6 text-xs"
@@ -85,17 +95,20 @@ export function GitFileList({ status }: GitFileListProps) {
 					<div className="divide-y divide-border">
 						{status.staged.map((file, index) => {
 							const globalIndex = index;
-							const isFocused = currentFocus === 'git' && gitFileIndex === globalIndex;
+							const isFocused =
+								currentFocus === 'git' && gitFileIndex === globalIndex;
 							return (
 								<div
 									key={file.path}
-						ref={(el) => {
-							if (el) itemRefs.current.set(globalIndex, el);
-							else itemRefs.current.delete(globalIndex);
-						}}
-						className={isFocused ? 'ring-1 ring-inset ring-primary/40' : ''}
-					>
-						<GitFileItem
+									ref={(el) => {
+										if (el) itemRefs.current.set(globalIndex, el);
+										else itemRefs.current.delete(globalIndex);
+									}}
+									className={
+										isFocused ? 'ring-1 ring-inset ring-primary/40' : ''
+									}
+								>
+									<GitFileItem
 										file={file}
 										staged={true}
 										showModifiedIndicator={unstagedPaths.has(file.path)}
@@ -129,7 +142,8 @@ export function GitFileList({ status }: GitFileListProps) {
 					<div className="divide-y divide-border">
 						{status.unstaged.map((file, index) => {
 							const globalIndex = status.staged.length + index;
-							const isFocused = currentFocus === 'git' && gitFileIndex === globalIndex;
+							const isFocused =
+								currentFocus === 'git' && gitFileIndex === globalIndex;
 							return (
 								<div
 									key={file.path}
@@ -137,15 +151,19 @@ export function GitFileList({ status }: GitFileListProps) {
 										if (el) itemRefs.current.set(globalIndex, el);
 										else itemRefs.current.delete(globalIndex);
 									}}
-						className={isFocused ? 'ring-1 ring-inset ring-primary/40' : ''}
+									className={
+										isFocused ? 'ring-1 ring-inset ring-primary/40' : ''
+									}
 								>
 									<GitFileItem file={file} staged={false} />
 								</div>
 							);
 						})}
 						{status.untracked.map((file, index) => {
-							const globalIndex = status.staged.length + status.unstaged.length + index;
-							const isFocused = currentFocus === 'git' && gitFileIndex === globalIndex;
+							const globalIndex =
+								status.staged.length + status.unstaged.length + index;
+							const isFocused =
+								currentFocus === 'git' && gitFileIndex === globalIndex;
 							return (
 								<div
 									key={file.path}
@@ -153,7 +171,9 @@ export function GitFileList({ status }: GitFileListProps) {
 										if (el) itemRefs.current.set(globalIndex, el);
 										else itemRefs.current.delete(globalIndex);
 									}}
-						className={isFocused ? 'ring-1 ring-inset ring-primary/40' : ''}
+									className={
+										isFocused ? 'ring-1 ring-inset ring-primary/40' : ''
+									}
 								>
 									<GitFileItem file={file} staged={false} />
 								</div>

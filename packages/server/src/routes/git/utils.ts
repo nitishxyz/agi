@@ -90,7 +90,10 @@ export async function validateAndGetGitRoot(
 	}
 }
 
-export async function checkIfNewFile(gitRoot: string, file: string): Promise<boolean> {
+export async function checkIfNewFile(
+	gitRoot: string,
+	file: string,
+): Promise<boolean> {
 	try {
 		await execFileAsync('git', ['ls-files', '--error-unmatch', file], {
 			cwd: gitRoot,

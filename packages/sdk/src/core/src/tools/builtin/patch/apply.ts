@@ -1,10 +1,7 @@
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 
-import {
-	NORMALIZATION_LEVELS,
-	normalizeWhitespace,
-} from './normalize.ts';
+import { NORMALIZATION_LEVELS, normalizeWhitespace } from './normalize.ts';
 import {
 	PATCH_ADD_PREFIX,
 	PATCH_DELETE_PREFIX,
@@ -12,7 +9,7 @@ import {
 	PATCH_BEGIN_MARKER,
 	PATCH_END_MARKER,
 } from './constants.ts';
-import {
+import type {
 	AppliedPatchHunk,
 	AppliedPatchOperation,
 	PatchAddOperation,
@@ -27,7 +24,10 @@ import {
 } from './types.ts';
 import { ensureTrailingNewline, joinLines, splitLines } from './text.ts';
 
-export function resolveProjectPath(projectRoot: string, filePath: string): string {
+export function resolveProjectPath(
+	projectRoot: string,
+	filePath: string,
+): string {
 	const fullPath = resolve(projectRoot, filePath);
 	const relativePath = relative(projectRoot, fullPath);
 	if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
@@ -212,7 +212,11 @@ function computeInsertionIndex(
 	return Math.min(lines.length, Math.max(0, hint));
 }
 
-function lineExists(lines: string[], target: string, useFuzzy: boolean): boolean {
+function lineExists(
+	lines: string[],
+	target: string,
+	useFuzzy: boolean,
+): boolean {
 	return findLineIndex(lines, target, 0, useFuzzy) !== -1;
 }
 
@@ -237,9 +241,7 @@ function isHunkAlreadyApplied(
 		.filter((line) => line.kind === 'context')
 		.map((line) => line.content);
 	if (removals.length === 0) return false;
-	return removals.every(
-		(line) => !lineExists(lines, line.content, useFuzzy),
-	);
+	return removals.every((line) => !lineExists(lines, line.content, useFuzzy));
 }
 
 function applyHunkToLines(
@@ -328,7 +330,7 @@ function applyHunkToLines(
 					? findLineIndex(lines, anchorContext, 0, useFuzzy)
 					: -1;
 
-			let insertionIndex =
+			const insertionIndex =
 				anchorIndex !== -1
 					? anchorIndex + 1
 					: computeInsertionIndex(lines, hunk.header, initialHint);
@@ -527,13 +529,9 @@ export async function applyPatchOperations(
 	for (const operation of operations) {
 		try {
 			if (operation.kind === 'add') {
-				applied.push(
-					await applyAddOperation(projectRoot, operation),
-				);
+				applied.push(await applyAddOperation(projectRoot, operation));
 			} else if (operation.kind === 'delete') {
-				applied.push(
-					await applyDeleteOperation(projectRoot, operation),
-				);
+				applied.push(await applyDeleteOperation(projectRoot, operation));
 			} else {
 				applied.push(
 					await applyUpdateOperation(projectRoot, operation, options.useFuzzy),

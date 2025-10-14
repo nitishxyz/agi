@@ -61,8 +61,7 @@ export function registerPushRoute(app: Hono) {
 					},
 				);
 				hasUpstream = true;
-			} catch {
-			}
+			} catch {}
 
 			try {
 				let pushOutput: string;

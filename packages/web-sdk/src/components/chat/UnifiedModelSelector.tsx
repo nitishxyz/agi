@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useMemo, useImperativeHandle, forwardRef } from 'react';
+import {
+	useState,
+	useEffect,
+	useRef,
+	useMemo,
+	useImperativeHandle,
+	forwardRef,
+} from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { useAllModels } from '../../hooks/useConfig';
@@ -27,12 +34,7 @@ export const UnifiedModelSelector = forwardRef<
 	UnifiedModelSelectorRef,
 	UnifiedModelSelectorProps
 >(function UnifiedModelSelector(
-	{
-		provider,
-		model,
-		onChange,
-		disabled = false,
-	},
+	{ provider, model, onChange, disabled = false },
 	ref,
 ) {
 	const { data: allModels, isLoading } = useAllModels();
@@ -211,7 +213,10 @@ export const UnifiedModelSelector = forwardRef<
 			setHighlightedIndex((prev) =>
 				prev < filteredFlatList.length - 1 ? prev + 1 : 0,
 			);
-		} else if (event.key === 'ArrowUp' || (event.ctrlKey && event.key === 'k')) {
+		} else if (
+			event.key === 'ArrowUp' ||
+			(event.ctrlKey && event.key === 'k')
+		) {
 			event.preventDefault();
 			setHighlightedIndex((prev) =>
 				prev > 0 ? prev - 1 : filteredFlatList.length - 1,

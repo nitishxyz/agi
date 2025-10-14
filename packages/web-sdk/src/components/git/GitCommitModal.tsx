@@ -107,7 +107,8 @@ export function GitCommitModal() {
 					) : (
 						<>
 							<Sparkles className="w-4 h-4 mr-2" />
-							Generate commit message <span className="text-muted-foreground ml-1">(⌘G)</span>
+							Generate commit message{' '}
+							<span className="text-muted-foreground ml-1">(⌘G)</span>
 						</>
 					)}
 				</Button>
