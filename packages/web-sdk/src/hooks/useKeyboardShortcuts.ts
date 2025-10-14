@@ -6,7 +6,7 @@ import { useGitStore } from '../stores/gitStore';
 interface UseKeyboardShortcutsOptions {
 	sessionIds: string[];
 	activeSessionId?: string;
-	gitFiles: Array<{ path: string; staged: boolean }>;
+	gitFiles: Array<{ path: string; staged: boolean; status?: string }>;
 	onSelectSession: (sessionId: string) => void;
 	onNewSession: () => void;
 	onStageFile?: (path: string) => void;
@@ -202,7 +202,9 @@ export function useKeyboardShortcuts({
 				if (e.key === 'R' && gitFiles[gitFileIndex]) {
 					e.preventDefault();
 					const file = gitFiles[gitFileIndex];
-					if (!file.staged) {
+					// Only allow restore for unstaged, tracked files (not new/untracked)
+					const canRestore = !file.staged && file.status !== 'untracked' && file.status !== 'added';
+					if (canRestore) {
 						onRestoreFile?.(file.path);
 					}
 					return;

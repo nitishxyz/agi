@@ -83,9 +83,9 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	const gitFiles = useMemo(() => {
 		if (!gitStatus) return [];
 		return [
-			...gitStatus.staged.map((f) => ({ path: f.path, staged: true })),
-			...gitStatus.unstaged.map((f) => ({ path: f.path, staged: false })),
-			...gitStatus.untracked.map((f) => ({ path: f.path, staged: false })),
+			...gitStatus.staged.map((f) => ({ path: f.path, staged: true, status: f.status })),
+			...gitStatus.unstaged.map((f) => ({ path: f.path, staged: false, status: f.status })),
+			...gitStatus.untracked.map((f) => ({ path: f.path, staged: false, status: f.status })),
 		];
 	}, [gitStatus]);
 

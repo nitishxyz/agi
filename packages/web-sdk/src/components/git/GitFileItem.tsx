@@ -177,7 +177,7 @@ export function GitFileItem({
 			) : null}
 
 			{/* Restore button for unstaged files */}
-			{!staged && (
+			{!staged && file.status !== 'untracked' && file.status !== 'added' && (
 				<button
 					type="button"
 					onClick={handleRestore}
