@@ -80,6 +80,17 @@ export function useRestoreFiles() {
 	});
 }
 
+export function useDeleteFiles() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (files: string[]) => apiClient.deleteFiles(files),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['git', 'status'] });
+		},
+	});
+}
+
 export function useCommitChanges() {
 	const queryClient = useQueryClient();
 

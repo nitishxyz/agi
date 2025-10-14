@@ -1,7 +1,7 @@
 import type { Hono } from 'hono';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { gitStageSchema, gitUnstageSchema, gitRestoreSchema } from './schemas.ts';
+import { gitStageSchema, gitUnstageSchema, gitRestoreSchema, gitDeleteSchema } from './schemas.ts';
 import { validateAndGetGitRoot } from './utils.ts';
 
 const execFileAsync = promisify(execFile);
@@ -146,6 +146,55 @@ export function registerStagingRoutes(app: Hono) {
 					status: 'error',
 					error:
 						error instanceof Error ? error.message : 'Failed to restore files',
+				},
+				500,
+			);
+		}
+	});
+
+	app.post('/v1/git/delete', async (c) => {
+		try {
+			const body = await c.req.json();
+			const { files, project } = gitDeleteSchema.parse(body);
+
+			const requestedPath = project || process.cwd();
+
+			const validation = await validateAndGetGitRoot(requestedPath);
+			if ('error' in validation) {
+				return c.json(
+					{ status: 'error', error: validation.error, code: validation.code },
+					400,
+				);
+			}
+
+			const { gitRoot } = validation;
+
+			if (files.length === 0) {
+				return c.json(
+					{
+						status: 'error',
+						error: 'No files specified',
+					},
+					400,
+				);
+			}
+
+			await execFileAsync('git', ['clean', '-f', '--', ...files], {
+				cwd: gitRoot,
+			});
+
+			return c.json({
+				status: 'ok',
+				data: {
+					deleted: files,
+				},
+			});
+		} catch (error) {
+			return c.json(
+				{
+					status: 'error',
+					error:
+						error instanceof Error ? error.message : 'Failed to delete files',
 				},
 				500,
 			);

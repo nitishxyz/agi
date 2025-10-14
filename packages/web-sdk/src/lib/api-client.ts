@@ -14,6 +14,7 @@ import {
 	stageFiles as apiStageFiles,
 	unstageFiles as apiUnstageFiles,
 	restoreFiles as apiRestoreFiles,
+	deleteFiles as apiDeleteFiles,
 	commitChanges as apiCommitChanges,
 	generateCommitMessage as apiGenerateCommitMessage,
 	pushCommits as apiPushCommits,
@@ -356,6 +357,18 @@ class ApiClient {
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as { restored: string[] };
+	}
+
+	async deleteFiles(files: string[]): Promise<{ deleted: string[] }> {
+		const response = await apiDeleteFiles({
+			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch between client and server
+			body: { files } as any,
+		});
+		if (response.error) {
+			throw new Error(extractErrorMessage(response.error));
+		}
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
+		return (response.data as any)?.data as { deleted: string[] };
 	}
 
 	async commitChanges(message: string): Promise<GitCommitResponse> {

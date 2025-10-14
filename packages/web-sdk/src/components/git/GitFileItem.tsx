@@ -1,7 +1,6 @@
-import { FileIcon, FilePlus, FileX, Check, AlertCircle } from 'lucide-react';
-import { RotateCcw } from 'lucide-react';
+import { FileIcon, FilePlus, FileX, Check, AlertCircle, RotateCcw, Trash2 } from 'lucide-react';
 import type { GitFileStatus } from '../../types/api';
-import { useStageFiles, useUnstageFiles, useRestoreFiles } from '../../hooks/useGit';
+import { useStageFiles, useUnstageFiles, useRestoreFiles, useDeleteFiles } from '../../hooks/useGit';
 import { useGitStore } from '../../stores/gitStore';
 import { useState } from 'react';
 
@@ -42,6 +41,7 @@ export function GitFileItem({
 	const stageFiles = useStageFiles();
 	const unstageFiles = useUnstageFiles();
 	const restoreFiles = useRestoreFiles();
+	const deleteFiles = useDeleteFiles();
 	const [isChecked, setIsChecked] = useState(staged);
 
 	const handleCheckChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,6 +69,17 @@ export function GitFileItem({
 				await restoreFiles.mutateAsync([file.path]);
 			} catch (error) {
 				console.error('Failed to restore file:', error);
+			}
+		}
+	};
+
+	const handleDelete = async (e: React.MouseEvent) => {
+		e.stopPropagation();
+		if (window.confirm(`Delete ${file.path}? This will permanently remove the untracked file.`)) {
+			try {
+				await deleteFiles.mutateAsync([file.path]);
+			} catch (error) {
+				console.error('Failed to delete file:', error);
 			}
 		}
 	};
@@ -176,7 +187,20 @@ export function GitFileItem({
 				</div>
 			) : null}
 
-			{/* Restore button for unstaged files */}
+			{/* Delete button for untracked files */}
+			{!staged && file.status === 'untracked' && (
+				<button
+					type="button"
+					onClick={handleDelete}
+					className="p-1.5 hover:bg-destructive/10 rounded opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+					title="Delete untracked file"
+					aria-label={`Delete ${file.path}`}
+				>
+					<Trash2 className="w-3.5 h-3.5 text-destructive" />
+				</button>
+			)}
+
+			{/* Restore button for modified/deleted files */}
 			{!staged && file.status !== 'untracked' && file.status !== 'added' && (
 				<button
 					type="button"

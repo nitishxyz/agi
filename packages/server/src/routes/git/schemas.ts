@@ -28,6 +28,11 @@ export const gitRestoreSchema = z.object({
 	files: z.array(z.string()),
 });
 
+export const gitDeleteSchema = z.object({
+	project: z.string().optional(),
+	files: z.array(z.string()),
+});
+
 export const gitCommitSchema = z.object({
 	project: z.string().optional(),
 	message: z.string().min(1),

@@ -398,4 +398,56 @@ export const gitPaths = {
 			},
 		},
 	},
+	'/v1/git/delete': {
+		post: {
+			tags: ['git'],
+			operationId: 'deleteFiles',
+			summary: 'Delete untracked files',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								project: { type: 'string' },
+								files: {
+									type: 'array',
+									items: { type: 'string' },
+								},
+							},
+							required: ['files'],
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: { type: 'string', enum: ['ok'] },
+									data: {
+										type: 'object',
+										properties: {
+											deleted: {
+												type: 'array',
+												items: { type: 'string' },
+											},
+										},
+										required: ['deleted'],
+									},
+								},
+								required: ['status', 'data'],
+							},
+						},
+					},
+				},
+				500: gitErrorResponse(),
+			},
+		},
+	},
 } as const;
