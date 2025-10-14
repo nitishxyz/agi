@@ -355,6 +355,85 @@ describe('Built-in Tools', () => {
 			const updated = await Bun.file(join(projectRoot, 'test.txt')).text();
 			expect(updated).toContain('Line 2 updated');
 		});
+
+		it('should accept standard unified diff patches', async () => {
+			const tools = await discoverProjectTools(projectRoot);
+			const patchTool = tools.find((t) => t.name === 'apply_patch');
+
+			const patch = `diff --git a/test.txt b/test.txt
+--- a/test.txt
++++ b/test.txt
+@@
+ Hello World
+-Line 2 updated
++Line 2 unified
+ Line 3
+`;
+
+			const result = await patchTool?.tool.execute({ patch });
+			expect(result).toHaveProperty('ok', true);
+
+			const updated = await Bun.file(join(projectRoot, 'test.txt')).text();
+			expect(updated).toContain('Line 2 unified');
+		});
+
+		it('should allow rejects when requested', async () => {
+			const tools = await discoverProjectTools(projectRoot);
+			const patchTool = tools.find((t) => t.name === 'apply_patch');
+
+			const patch = `*** Begin Patch
+*** Update File: test.txt
+@@
+ Hello World
+-Line 2 unified
++Line 2 final
+ Line 3
+*** Update File: missing.txt
+@@ missing file
+-old
++new
+*** End Patch`;
+
+			const result = await patchTool?.tool.execute({
+				patch,
+				allowRejects: true,
+			});
+
+			expect(result).toHaveProperty('ok', true);
+			const { rejected } = (result ?? {}) as {
+				rejected?: Array<{ filePath: string; reason: string }>;
+			};
+			expect(rejected).toBeDefined();
+			expect(rejected?.length).toBe(1);
+			expect(rejected?.[0]?.filePath).toBe('missing.txt');
+			expect(rejected?.[0]?.reason).toMatch(/File not found/i);
+
+			const updated = await Bun.file(join(projectRoot, 'test.txt')).text();
+			expect(updated).toContain('Line 2 final');
+		});
+
+		it('should treat already-applied removals as success', async () => {
+			const tools = await discoverProjectTools(projectRoot);
+			const patchTool = tools.find((t) => t.name === 'apply_patch');
+
+			// Reset file to a state that already omits the removal target.
+			await writeFile(
+				join(projectRoot, 'test.txt'),
+				'Hello World\nLine 3\n',
+				'utf-8',
+			);
+			const patch = `*** Begin Patch
+*** Update File: test.txt
+-import does.not.exist
+-Line 2 final
+*** End Patch`;
+
+			const result = await patchTool?.tool.execute({ patch });
+			expect(result).toHaveProperty('ok', true);
+			const updated = await Bun.file(join(projectRoot, 'test.txt')).text();
+			expect(updated).toBe('Hello World\nLine 3\n');
+		});
+
 	});
 
 	describe('edit tool', () => {

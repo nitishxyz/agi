@@ -1,4 +1,10 @@
-Apply a patch to modify one or more files using the enveloped patch format.
+Apply a patch to modify one or more files. The tool accepts the **enveloped patch format** (preferred) and will also auto-convert standard unified diffs (`--- / +++`) if you provide one.
+
+**Quick checklist before you call the tool:**
+- Finished patch must include both `*** Begin Patch` and `*** End Patch`
+- Each change needs a directive (`*** Add File`, `*** Update File`, `*** Delete File`)
+- Include real context lines (prefixed with space) around your changes
+- Keep paths relative to the project root
 
 **RECOMMENDED: Use apply_patch for targeted file edits to avoid rewriting entire files and wasting tokens.**
 
@@ -15,9 +21,16 @@ Use `apply_patch` only when:
 Never rely on memory or previous reads. Even with fuzzy matching enabled (tolerates tabs vs spaces),
 If the file content has changed significantly since you last read it, the patch may still fail.
 
+**ALLOW REJECTS**: If you are applying a patch that might include stale hunks, set `allowRejects: true`.
+The tool will apply the hunks it can and skip the rest, returning the skipped hunks with reasons.
+
+**ALREADY APPLIED?**: If the removal lines are already gone or the additions are already present, the tool will treat the hunk as applied and move on—no need to resend the same change.
+
 **Alternative: Use the `edit` tool if you need fuzzy matching or structured operations.**
 
-## Patch Format
+## Patch Formats
+
+### Preferred: Enveloped Patch
 
 All patches must be wrapped in markers and use explicit file directives:
 
@@ -32,6 +45,21 @@ All patches must be wrapped in markers and use explicit file directives:
 *** Delete File: path/to/delete.txt
 *** End Patch
 ```
+
+### Also Supported: Standard Unified Diff
+
+You can paste a regular `git diff` style patch:
+
+```
+diff --git a/src/app.ts b/src/app.ts
+--- a/src/app.ts
++++ b/src/app.ts
+@@
+-const PORT = 3000;
++const PORT = 8080;
+```
+
+The tool will convert it automatically, but the enveloped format is still recommended because it is more explicit and easier to control.
 
 ## File Operations
 
@@ -137,5 +165,5 @@ All patches must be wrapped in markers and use explicit file directives:
 - **Patches are fragile**: Any mismatch in whitespace, indentation, or content will cause failure
 - **Use `edit` for reliability**: The `edit` tool can make targeted changes without requiring exact matches
 - All file paths are relative to the project root
-- The patch format does NOT support standard unified diff format (no `---`/`+++` headers)
-- Always wrap patches with `*** Begin Patch` and `*** End Patch`
+- The enveloped format is the most reliable; unified diffs are converted automatically if provided
+- Always wrap patches with `*** Begin Patch` and `*** End Patch` when you write them manually
