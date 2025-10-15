@@ -58,7 +58,7 @@ export const UserMessageGroup = memo(
 						</div>
 					</div>
 					<div className="flex-shrink-0 w-8 flex items-start justify-center">
-						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-emerald-500/50 bg-emerald-500/20 dark:bg-emerald-500/10 relative z-10 bg-background">
+						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-emerald-500/50 bg-emerald-500/20 dark:bg-emerald-500/10 relative bg-background">
 							<User className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
 						</div>
 					</div>

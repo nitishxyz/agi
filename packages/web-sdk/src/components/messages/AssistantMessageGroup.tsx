@@ -155,7 +155,7 @@ export const AssistantMessageGroup = memo(
 					{shouldShowLoadingFallback && (
 						<div className="flex gap-3 pb-2 relative">
 							<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
-								<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative z-10 bg-card text-violet-700 dark:bg-background dark:text-violet-300">
+								<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative bg-card text-violet-700 dark:bg-background dark:text-violet-300">
 									<Sparkles className="h-4 w-4" />
 								</div>
 							</div>

@@ -403,7 +403,7 @@ export const MessagePartItem = memo(
 			<div className="flex gap-3 pb-2 relative max-w-full overflow-hidden">
 				{/* Icon with vertical line */}
 				<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
-					<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative z-10 bg-background">
+					<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative bg-background">
 						{renderIcon()}
 					</div>
 					{/* Vertical line */}
