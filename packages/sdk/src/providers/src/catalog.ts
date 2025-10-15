@@ -366,6 +366,11 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				releaseDate: '2025-09-15',
 				lastUpdated: '2025-09-15',
 				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.125,
+				},
 				limit: {
 					context: 400000,
 					output: 128000,
@@ -1102,6 +1107,56 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				},
 			},
 			{
+				id: 'gemini-2.5-flash-image',
+				label: 'Gemini 2.5 Flash Image',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text', 'image'],
+				},
+				toolCall: false,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-06',
+				releaseDate: '2025-08-26',
+				lastUpdated: '2025-08-26',
+				openWeights: false,
+				cost: {
+					input: 0.3,
+					output: 30,
+					cacheRead: 0.075,
+				},
+				limit: {
+					context: 32768,
+					output: 32768,
+				},
+			},
+			{
+				id: 'gemini-2.5-flash-image-preview',
+				label: 'Gemini 2.5 Flash Image (Preview)',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text', 'image'],
+				},
+				toolCall: false,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-06',
+				releaseDate: '2025-08-26',
+				lastUpdated: '2025-08-26',
+				openWeights: false,
+				cost: {
+					input: 0.3,
+					output: 30,
+					cacheRead: 0.075,
+				},
+				limit: {
+					context: 32768,
+					output: 32768,
+				},
+			},
+			{
 				id: 'gemini-2.5-flash-lite',
 				label: 'Gemini 2.5 Flash Lite',
 				modalities: {
@@ -1252,6 +1307,30 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				},
 			},
 			{
+				id: 'gemini-2.5-flash-preview-tts',
+				label: 'Gemini 2.5 Flash Preview TTS',
+				modalities: {
+					input: ['text'],
+					output: ['audio'],
+				},
+				toolCall: false,
+				reasoning: false,
+				attachment: false,
+				temperature: false,
+				knowledge: '2025-01',
+				releaseDate: '2025-05-01',
+				lastUpdated: '2025-05-01',
+				openWeights: false,
+				cost: {
+					input: 0.5,
+					output: 10,
+				},
+				limit: {
+					context: 8000,
+					output: 16000,
+				},
+			},
+			{
 				id: 'gemini-2.5-pro',
 				label: 'Gemini 2.5 Pro',
 				modalities: {
@@ -1327,6 +1406,30 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				},
 			},
 			{
+				id: 'gemini-2.5-pro-preview-tts',
+				label: 'Gemini 2.5 Pro Preview TTS',
+				modalities: {
+					input: ['text'],
+					output: ['audio'],
+				},
+				toolCall: false,
+				reasoning: false,
+				attachment: false,
+				temperature: false,
+				knowledge: '2025-01',
+				releaseDate: '2025-05-01',
+				lastUpdated: '2025-05-01',
+				openWeights: false,
+				cost: {
+					input: 1,
+					output: 20,
+				},
+				limit: {
+					context: 8000,
+					output: 16000,
+				},
+			},
+			{
 				id: 'gemini-flash-latest',
 				label: 'Gemini Flash Latest',
 				modalities: {
@@ -1374,6 +1477,30 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				limit: {
 					context: 1048576,
 					output: 65536,
+				},
+			},
+			{
+				id: 'gemini-live-2.5-flash',
+				label: 'Gemini Live 2.5 Flash',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video'],
+					output: ['text', 'audio'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-09-01',
+				lastUpdated: '2025-09-01',
+				openWeights: false,
+				cost: {
+					input: 0.5,
+					output: 2,
+				},
+				limit: {
+					context: 128000,
+					output: 8000,
 				},
 			},
 			{
@@ -3271,7 +3398,7 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 					input: ['text'],
 					output: ['text'],
 				},
-				toolCall: false,
+				toolCall: true,
 				reasoning: false,
 				attachment: false,
 				temperature: true,
@@ -3284,8 +3411,32 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 					output: 0.8,
 				},
 				limit: {
-					context: 131072,
-					output: 33000,
+					context: 262000,
+					output: 262000,
+				},
+			},
+			{
+				id: 'qwen/qwen3-30b-a3b-thinking-2507',
+				label: 'Qwen3 30B A3B Thinking 2507',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-07-29',
+				lastUpdated: '2025-07-29',
+				openWeights: true,
+				cost: {
+					input: 0.2,
+					output: 0.8,
+				},
+				limit: {
+					context: 262000,
+					output: 262000,
 				},
 			},
 			{
@@ -3440,6 +3591,30 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				},
 				toolCall: true,
 				reasoning: false,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-09-11',
+				lastUpdated: '2025-09-11',
+				openWeights: true,
+				cost: {
+					input: 0.14,
+					output: 1.4,
+				},
+				limit: {
+					context: 262144,
+					output: 262144,
+				},
+			},
+			{
+				id: 'qwen/qwen3-next-80b-a3b-thinking',
+				label: 'Qwen3 Next 80B A3B Thinking',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
 				attachment: false,
 				temperature: true,
 				knowledge: '2025-04',
@@ -4001,6 +4176,54 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				},
 			},
 			{
+				id: 'code-g1x',
+				label: 'Code G1X (alpha)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-07-30',
+				lastUpdated: '2025-07-30',
+				openWeights: true,
+				cost: {
+					input: 0.5,
+					output: 2,
+				},
+				limit: {
+					context: 200000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'code-g8x',
+				label: 'Code G8X (alpha)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-07-30',
+				lastUpdated: '2025-07-30',
+				openWeights: true,
+				cost: {
+					input: 0.5,
+					output: 2,
+				},
+				limit: {
+					context: 200000,
+					output: 128000,
+				},
+			},
+			{
 				id: 'code-supernova',
 				label: 'Code Supernova 1M',
 				modalities: {
@@ -4026,7 +4249,7 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 			},
 			{
 				id: 'glm-4.6',
-				label: 'GLM-4.6',
+				label: 'GLM-4.6 (beta)',
 				modalities: {
 					input: ['text'],
 					output: ['text'],
@@ -4041,8 +4264,7 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				openWeights: true,
 				cost: {
 					input: 0.6,
-					output: 2.2,
-					cacheRead: 0.11,
+					output: 1.9,
 				},
 				limit: {
 					context: 204800,
@@ -4166,30 +4388,6 @@ export const catalog: Record<ProviderId, { models: ModelInfo[] }> = {
 				cost: {
 					input: 0.45,
 					output: 1.8,
-				},
-				limit: {
-					context: 262144,
-					output: 65536,
-				},
-			},
-			{
-				id: 'qwen3-max',
-				label: 'Qwen3 Max',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: true,
-				attachment: false,
-				temperature: true,
-				knowledge: '2025-04',
-				releaseDate: '2025-09-05',
-				lastUpdated: '2025-09-05',
-				openWeights: true,
-				cost: {
-					input: 1.6,
-					output: 6.4,
 				},
 				limit: {
 					context: 262144,
