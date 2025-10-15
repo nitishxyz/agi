@@ -13,7 +13,12 @@
 // Types (from internal types module)
 // =======================
 // Provider types
-export type { ProviderId, ModelInfo } from './types/src/index.ts';
+export type {
+	ProviderId,
+	ModelInfo,
+	ModelProviderBinding,
+	ProviderCatalogEntry,
+} from './types/src/index.ts';
 
 // Auth types
 export type { ApiAuth, OAuth, AuthInfo, AuthFile } from './types/src/index.ts';

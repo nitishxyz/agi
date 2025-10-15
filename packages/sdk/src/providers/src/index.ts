@@ -1,6 +1,11 @@
 export { isProviderAuthorized, ensureProviderEnv } from './authorization.ts';
 export { catalog } from './catalog.ts';
-export type { ProviderId, ModelInfo } from '../../types/src/index.ts';
+export type {
+	ProviderId,
+	ModelInfo,
+	ModelProviderBinding,
+	ProviderCatalogEntry,
+} from '../../types/src/index.ts';
 export {
 	isProviderId,
 	providerIds,

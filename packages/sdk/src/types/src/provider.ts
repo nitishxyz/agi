@@ -8,6 +8,13 @@ export type ProviderId =
 	| 'openrouter'
 	| 'opencode';
 
+export type ModelProviderBinding = {
+	id?: string;
+	npm?: string;
+	api?: string;
+	baseURL?: string;
+};
+
 /**
  * Information about a specific model
  */
@@ -25,4 +32,15 @@ export type ModelInfo = {
 	openWeights?: boolean;
 	cost?: { input?: number; output?: number; cacheRead?: number };
 	limit?: { context?: number; output?: number };
+	provider?: ModelProviderBinding;
+};
+
+export type ProviderCatalogEntry = {
+	id: ProviderId;
+	label?: string;
+	env?: string[];
+	npm?: string;
+	api?: string;
+	doc?: string;
+	models: ModelInfo[];
 };

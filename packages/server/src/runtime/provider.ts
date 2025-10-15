@@ -1,13 +1,10 @@
-import type { AGIConfig } from '@agi-cli/sdk';
-import type { ProviderId } from '@agi-cli/sdk';
+import type { AGIConfig, ProviderId } from '@agi-cli/sdk';
+import { catalog, getAuth, refreshToken, setAuth } from '@agi-cli/sdk';
 import { openai, createOpenAI } from '@ai-sdk/openai';
 import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { getAuth } from '@agi-cli/sdk';
-import { refreshToken } from '@agi-cli/sdk';
-import { setAuth } from '@agi-cli/sdk';
 
 export type ProviderName = ProviderId;
 
@@ -113,26 +110,59 @@ export async function resolveModel(
 		return openrouter.chat(model);
 	}
 	if (provider === 'opencode') {
-		const baseURL = 'https://opencode.ai/zen/v1';
+		const entry = catalog[provider];
+		const normalizedModel = normalizeModelIdentifier(provider, model);
+		const modelInfo =
+			entry?.models.find((m) => m.id === normalizedModel) ??
+			entry?.models.find((m) => m.id === model);
+		const resolvedModelId = modelInfo?.id ?? normalizedModel ?? model;
+		const binding = modelInfo?.provider?.npm ?? entry?.npm;
 		const apiKey = process.env.OPENCODE_API_KEY ?? '';
+		const baseURL =
+			modelInfo?.provider?.baseURL ||
+			modelInfo?.provider?.api ||
+			entry?.api ||
+			'https://opencode.ai/zen/v1';
+		const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
+		if (binding === '@ai-sdk/openai') {
+			const instance = createOpenAI({ apiKey, baseURL });
+			return instance(resolvedModelId);
+		}
+		if (binding === '@ai-sdk/anthropic') {
+			const instance = createAnthropic({ apiKey, baseURL });
+			return instance(resolvedModelId);
+		}
+		if (binding === '@ai-sdk/openai-compatible') {
+			const instance = createOpenAICompatible({
+				name: entry?.label ?? 'opencode',
+				baseURL,
+				headers,
+			});
+			return instance(resolvedModelId);
+		}
 
 		const ocOpenAI = createOpenAI({ apiKey, baseURL });
 		const ocAnthropic = createAnthropic({ apiKey, baseURL });
 		const ocCompat = createOpenAICompatible({
-			name: 'opencode',
+			name: entry?.label ?? 'opencode',
 			baseURL,
-			headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
+			headers,
 		});
 
-		const id = model.toLowerCase();
-		if (id.includes('claude')) return ocAnthropic(model);
+		const id = resolvedModelId.toLowerCase();
+		if (id.includes('claude')) return ocAnthropic(resolvedModelId);
 		if (
 			id.includes('qwen3-coder') ||
 			id.includes('grok-code') ||
 			id.includes('kimi-k2')
 		)
-			return ocCompat(model);
-		return ocOpenAI(model);
+			return ocCompat(resolvedModelId);
+		return ocOpenAI(resolvedModelId);
 	}
 	throw new Error(`Unsupported provider: ${provider}`);
+}
+
+function normalizeModelIdentifier(provider: ProviderId, model: string): string {
+	const prefix = `${provider}/`;
+	return model.startsWith(prefix) ? model.slice(prefix.length) : model;
 }
