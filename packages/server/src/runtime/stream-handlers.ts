@@ -52,19 +52,19 @@ export function createStepFinishHandler(
 ) {
 	return async (step: StepFinishEvent) => {
 		const finishedAt = Date.now();
-	const currentPartId = getCurrentPartId();
-	const stepIndex = getStepIndex();
+		const currentPartId = getCurrentPartId();
+		const stepIndex = getStepIndex();
 
-	try {
-		if (currentPartId) {
-			await db
-				.update(messageParts)
-				.set({ completedAt: finishedAt })
-				.where(eq(messageParts.id, currentPartId));
-		}
-	} catch {}
+		try {
+			if (currentPartId) {
+				await db
+					.update(messageParts)
+					.set({ completedAt: finishedAt })
+					.where(eq(messageParts.id, currentPartId));
+			}
+		} catch {}
 
-	// Update token counts incrementally after each step
+		// Update token counts incrementally after each step
 		if (step.usage) {
 			try {
 				await updateSessionTokensIncrementalFn(

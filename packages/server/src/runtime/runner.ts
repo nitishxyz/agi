@@ -457,8 +457,12 @@ async function runAssistant(opts: RunOpts) {
 		unsubscribeFinish();
 		const payload = toErrorPayload(err);
 		debugLog(`[RUNNER] Error during stream: ${payload.message}`);
-		debugLog(`[RUNNER] Error stack: ${err instanceof Error ? err.stack : 'no stack'}`);
-		debugLog(`[RUNNER] db is: ${typeof db}, db.select is: ${typeof db?.select}`);
+		debugLog(
+			`[RUNNER] Error stack: ${err instanceof Error ? err.stack : 'no stack'}`,
+		);
+		debugLog(
+			`[RUNNER] db is: ${typeof db}, db.select is: ${typeof db?.select}`,
+		);
 		publish({
 			type: 'error',
 			sessionId: opts.sessionId,
@@ -483,11 +487,7 @@ async function runAssistant(opts: RunOpts) {
 				opts,
 				db,
 			);
-			await completeAssistantMessage(
-				{},
-				opts,
-				db,
-			);
+			await completeAssistantMessage({}, opts, db);
 		} catch {}
 		throw err;
 	}
