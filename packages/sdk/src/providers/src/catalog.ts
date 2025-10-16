@@ -863,6 +863,31 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
+				id: 'claude-haiku-4-5-20251001',
+				label: 'Claude Haiku 4.5',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-02-31',
+				releaseDate: '2025-10-15',
+				lastUpdated: '2025-10-15',
+				openWeights: false,
+				cost: {
+					input: 1,
+					output: 5,
+					cacheRead: 0.1,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
+				},
+			},
+			{
 				id: 'claude-opus-4-1-20250805',
 				label: 'Claude Opus 4.1',
 				modalities: {
@@ -1311,9 +1336,9 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				lastUpdated: '2025-09-25',
 				openWeights: false,
 				cost: {
-					input: 0.15,
-					output: 0.6,
-					cacheRead: 0.0375,
+					input: 0.3,
+					output: 2.5,
+					cacheRead: 0.075,
 				},
 				limit: {
 					context: 1048576,
@@ -1459,9 +1484,9 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				lastUpdated: '2025-09-25',
 				openWeights: false,
 				cost: {
-					input: 0.15,
-					output: 0.6,
-					cacheRead: 0.0375,
+					input: 0.3,
+					output: 2.5,
+					cacheRead: 0.075,
 				},
 				limit: {
 					context: 1048576,
@@ -1598,6 +1623,31 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				limit: {
 					context: 200000,
 					output: 128000,
+				},
+			},
+			{
+				id: 'anthropic/claude-4.5-haiku',
+				label: 'Claude Haiku 4.5',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-02-31',
+				releaseDate: '2025-10-15',
+				lastUpdated: '2025-10-15',
+				openWeights: false,
+				cost: {
+					input: 1,
+					output: 5,
+					cacheRead: 0.1,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
 				},
 			},
 			{
@@ -2056,6 +2106,81 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 					input: 0.3,
 					output: 2.5,
 					cacheRead: 0.0375,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
+			},
+			{
+				id: 'google/gemini-2.5-flash-lite',
+				label: 'Gemini 2.5 Flash Lite',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-06-17',
+				lastUpdated: '2025-06-17',
+				openWeights: false,
+				cost: {
+					input: 0.1,
+					output: 0.4,
+					cacheRead: 0.025,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
+			},
+			{
+				id: 'google/gemini-2.5-flash-lite-preview-09-2025',
+				label: 'Gemini 2.5 Flash Lite Preview 09-25',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-09-25',
+				lastUpdated: '2025-09-25',
+				openWeights: false,
+				cost: {
+					input: 0.1,
+					output: 0.4,
+					cacheRead: 0.025,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
+			},
+			{
+				id: 'google/gemini-2.5-flash-preview-09-2025',
+				label: 'Gemini 2.5 Flash Preview 09-25',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-09-25',
+				lastUpdated: '2025-09-25',
+				openWeights: false,
+				cost: {
+					input: 0.3,
+					output: 2.5,
+					cacheRead: 0.031,
 				},
 				limit: {
 					context: 1048576,
@@ -2951,6 +3076,31 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 					input: 1.25,
 					output: 10,
 					cacheRead: 0.125,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'openai/gpt-5-image',
+				label: 'GPT-5 Image',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text', 'image'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2024-10-01',
+				releaseDate: '2025-10-14',
+				lastUpdated: '2025-10-14',
+				openWeights: false,
+				cost: {
+					input: 5,
+					output: 10,
+					cacheRead: 1.25,
 				},
 				limit: {
 					context: 400000,
@@ -4147,6 +4297,34 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				limit: {
 					context: 200000,
 					output: 8192,
+				},
+				provider: {
+					npm: '@ai-sdk/anthropic',
+				},
+			},
+			{
+				id: 'claude-haiku-4-5',
+				label: 'Claude Haiku 4.5',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-02-31',
+				releaseDate: '2025-10-15',
+				lastUpdated: '2025-10-15',
+				openWeights: false,
+				cost: {
+					input: 1,
+					output: 1.25,
+					cacheRead: 0.1,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
 				},
 				provider: {
 					npm: '@ai-sdk/anthropic',
