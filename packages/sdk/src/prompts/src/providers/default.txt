@@ -427,6 +427,38 @@ When using the shell, you must adhere to the following guidelines:
 - When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)
 - Read files in chunks with a max chunk size of 250 lines. Do not use python scripts to attempt to output larger chunks of a file. Command line output will be truncated after 10 kilobytes or 256 lines of output, regardless of the command used.
 
+## Apply Patch Tool - Critical Guidelines
+
+**⚠️ Common Patch Failures Across All Models:**
+
+Most patch failures happen because:
+- Patches created from memory instead of reading file first
+- Context lines guessed or invented rather than copied exactly
+- Indentation mismatches (tabs vs spaces)
+- Missing or malformed markers (`*** Begin Patch` / `*** End Patch`)
+- Hallucinated code in context lines
+
+**Universal Pre-Flight Checklist:**
+Before calling `apply_patch`, verify ALL of these:
+- [ ] File was read with `read` tool in THIS turn (not from memory)
+- [ ] Context lines (space prefix) copied EXACTLY character-for-character
+- [ ] Indentation verified (if file uses spaces, patch uses spaces)
+- [ ] Wrapped in `*** Begin Patch` and `*** End Patch` markers
+- [ ] Used correct directive: `*** Add/Update/Delete File: path`
+
+**Success Formula:**
+1. Use `read` tool on target file
+2. Identify exact location to edit
+3. Extract 2-3 lines before/after as context (space prefix)
+4. Add `-old` lines to remove, `+new` lines to add
+5. Wrap in `*** Begin Patch` ... `*** End Patch`
+6. Verify all context matches file exactly
+
+**If Patch Fails:**
+- Error = context didn't match OR file content changed
+- Solution: Read file AGAIN, verify context character-by-character
+- After 2+ failures: use `edit` tool instead (more forgiving)
+
 ## `update_plan`
 
 A tool named `update_plan` is available to you. You can use it to keep an up‑to‑date, step‑by‑step plan for the task.

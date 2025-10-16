@@ -259,6 +259,12 @@ function applyHunkToLines(
 		.map((line) => line.content);
 
 	const removals = hunk.lines.filter((line) => line.kind === 'remove');
+	const additions = hunk.lines
+		.filter((line) => line.kind === 'add')
+		.map((line) => line.content);
+	const contextLines = hunk.lines
+		.filter((line) => line.kind === 'context')
+		.map((line) => line.content);
 
 	const hasExpected = expected.length > 0;
 	const initialHint =

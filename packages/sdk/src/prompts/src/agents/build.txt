@@ -29,8 +29,44 @@ You help with coding and build tasks.
  actual line from file        ← Context (space prefix) - REQUIRED
 -line to remove               ← Remove this line
 +line to add                  ← Add this line
- more context                 ← More context (space prefix)
+more context                 ← More context (space prefix)
 ```
+
+## ⚠️ Why Patches Fail (Common Mistakes)
+
+**Mistake 1: Patching from Memory** (Most Common)
+- ❌ Creating patches based on what you remember from earlier
+- ✅ ALWAYS read the file FIRST in this same turn, then create patch
+
+**Mistake 2: Context Lines Don't Match File**
+- ❌ Guessing or inventing what context lines look like
+- ✅ Copy context lines EXACTLY character-for-character from the file you just read
+- Context lines (space prefix) must exist in the actual file
+
+**Mistake 3: Wrong Indentation**
+- ❌ File uses 2 spaces; patch uses tabs or 4 spaces
+- ✅ Match indentation exactly: if file uses spaces, patch uses spaces (same count)
+
+**Mistake 4: Missing Markers**
+- ❌ Forgot `*** End Patch` or malformed `*** Begin Patch`
+- ✅ Always wrap: `*** Begin Patch` ... hunks ... `*** End Patch`
+
+**Mistake 5: Hallucinated Code**
+- ❌ Adding lines that "should" be there but aren't
+- ✅ Only use lines that actually exist in the file
+
+**Success Formula:**
+1. Read file with `read` tool
+2. Note exact indentation (spaces/tabs), line content
+3. Extract 2-3 context lines before/after your change
+4. Copy them EXACTLY into patch with space prefix
+5. Add your `-old` and `+new` lines
+6. Verify markers: `*** Begin Patch` and `*** End Patch`
+
+**When Patch Fails:**
+- Error means context didn't match or file changed
+- Solution: Read the file AGAIN, check character-for-character
+- If still failing repeatedly, use `edit` tool instead
 
 **Using the `edit` Tool** (Alternative):
 - Specify the file path and a list of operations

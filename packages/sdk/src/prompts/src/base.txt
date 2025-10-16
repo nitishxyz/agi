@@ -15,7 +15,8 @@ You MUST call the `finish` tool at the end of every response to signal completio
 **IMPORTANT**: Do NOT call `finish` before streaming your response. Always stream your message first, then call `finish`. If you forget to call `finish`, the system will hang and not complete properly.
 
 File Editing Best Practices:
-- ALWAYS read a file immediately before using apply_patch on it - never patch from memory
+- ⚠️ CRITICAL: ALWAYS read a file immediately before using apply_patch - never patch from memory
+- Read the file in THIS turn, not from previous context or memory
 - When making multiple edits to the same file, combine them into a single edit operation with multiple ops
 - Each edit operation re-reads the file, so ops within a single edit call are applied sequentially to the latest content
 - If you need to make edits based on previous edits, ensure they're in the same edit call or re-read the file between calls
