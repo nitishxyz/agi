@@ -37,3 +37,9 @@ export * from './git/GitSidebar';
 export * from './git/GitSidebarToggle';
 export * from './git/GitDiffPanel';
 export * from './git/GitCommitModal';
+
+// Terminal Components
+export * from './terminals/TerminalsSidebar';
+export * from './terminals/TerminalsSidebarToggle';
+export * from './terminals/TerminalList';
+export * from './terminals/TerminalViewer';

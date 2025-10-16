@@ -65,6 +65,10 @@
 			"import": "./src/core/src/tools/builtin/websearch.ts",
 			"types": "./src/core/src/tools/builtin/websearch.ts"
 		},
+		"./tools/builtin/terminal": {
+			"import": "./src/core/src/tools/builtin/terminal.ts",
+			"types": "./src/core/src/tools/builtin/terminal.ts"
+		},
 		"./tools/error": {
 			"import": "./src/core/src/tools/error.ts",
 			"types": "./src/core/src/tools/error.ts"
@@ -82,18 +86,19 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@openauthjs/openauth": "^0.4.3",
-		"opencode-anthropic-auth": "^0.0.2",
-		"ai": "^5.0.43",
 		"@ai-sdk/anthropic": "^2.0.16",
-		"@ai-sdk/openai": "^2.0.30",
 		"@ai-sdk/google": "^2.0.14",
-		"@openrouter/ai-sdk-provider": "^1.2.0",
+		"@ai-sdk/openai": "^2.0.30",
 		"@ai-sdk/openai-compatible": "^1.0.18",
-		"hono": "^4.9.7",
-		"zod": "^4.1.8",
+		"@openauthjs/openauth": "^0.4.3",
+		"@openrouter/ai-sdk-provider": "^1.2.0",
+		"ai": "^5.0.43",
+		"bun-pty": "^0.3.2",
+		"diff": "^8.0.2",
 		"fast-glob": "^3.3.2",
-		"diff": "^8.0.2"
+		"hono": "^4.9.7",
+		"opencode-anthropic-auth": "^0.0.2",
+		"zod": "^4.1.8"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

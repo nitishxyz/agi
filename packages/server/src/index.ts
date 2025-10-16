@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { ProviderId, AuthInfo } from '@agi-cli/sdk';
+import { TerminalManager } from '@agi-cli/sdk';
+import { setTerminalManager } from '@agi-cli/sdk';
 import { registerRootRoutes } from './routes/root.ts';
 import { registerOpenApiRoute } from './routes/openapi.ts';
 import { registerSessionsRoutes } from './routes/sessions.ts';
@@ -10,7 +12,11 @@ import { registerAskRoutes } from './routes/ask.ts';
 import { registerConfigRoutes } from './routes/config/index.ts';
 import { registerFilesRoutes } from './routes/files.ts';
 import { registerGitRoutes } from './routes/git/index.ts';
+import { registerTerminalsRoutes } from './routes/terminals.ts';
 import type { AgentConfigEntry } from './runtime/agent-registry.ts';
+
+const globalTerminalManager = new TerminalManager();
+setTerminalManager(globalTerminalManager);
 
 function initApp() {
 	const app = new Hono();
@@ -55,6 +61,7 @@ function initApp() {
 	registerConfigRoutes(app);
 	registerFilesRoutes(app);
 	registerGitRoutes(app);
+	registerTerminalsRoutes(app, globalTerminalManager);
 
 	return app;
 }
@@ -119,6 +126,7 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	registerConfigRoutes(honoApp);
 	registerFilesRoutes(honoApp);
 	registerGitRoutes(honoApp);
+	registerTerminalsRoutes(honoApp, globalTerminalManager);
 
 	return honoApp;
 }
@@ -211,6 +219,7 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 	registerConfigRoutes(honoApp);
 	registerFilesRoutes(honoApp);
 	registerGitRoutes(honoApp);
+	registerTerminalsRoutes(honoApp, globalTerminalManager);
 
 	return honoApp;
 }

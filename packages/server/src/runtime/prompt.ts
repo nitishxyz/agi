@@ -11,6 +11,7 @@ import ANTHROPIC_SPOOF_PROMPT from '@agi-cli/sdk/prompts/providers/anthropicSpoo
 	type: 'text',
 };
 
+import { getTerminalManager } from '@agi-cli/sdk';
 export async function composeSystemPrompt(options: {
 	provider: string;
 	model?: string;
@@ -70,6 +71,15 @@ export async function composeSystemPrompt(options: {
 			'</user-provided-state-context>',
 		].join('\n');
 		parts.push(userContextBlock);
+	}
+
+	// Add terminal context if available
+	const terminalManager = getTerminalManager();
+	if (terminalManager) {
+		const terminalContext = terminalManager.getContext();
+		if (terminalContext) {
+			parts.push(terminalContext);
+		}
 	}
 
 	const composed = parts.filter(Boolean).join('\n\n').trim();

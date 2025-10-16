@@ -7,6 +7,8 @@ import { sessionsPaths } from './paths/sessions';
 import { streamPaths } from './paths/stream';
 import { schemas } from './schemas';
 
+import { terminalsPath } from './paths/terminals';
+
 export function getOpenAPISpec() {
 	const spec = {
 		openapi: '3.0.3',
@@ -24,6 +26,7 @@ export function getOpenAPISpec() {
 			{ name: 'config' },
 			{ name: 'files' },
 			{ name: 'git' },
+			{ name: 'terminals' },
 		],
 		paths: {
 			...askPaths,
@@ -33,6 +36,7 @@ export function getOpenAPISpec() {
 			...configPaths,
 			...filesPaths,
 			...gitPaths,
+			...terminalsPath,
 		},
 		components: {
 			schemas,

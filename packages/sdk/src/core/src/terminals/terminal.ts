@@ -1,0 +1,127 @@
+import type { IPty } from './bun-pty.ts';
+import { EventEmitter } from 'node:events';
+import { CircularBuffer } from './circular-buffer.ts';
+
+export type TerminalStatus = 'running' | 'exited';
+export type TerminalCreator = 'user' | 'llm';
+
+export interface TerminalOptions {
+	command: string;
+	args?: string[];
+	cwd: string;
+	purpose: string;
+	createdBy: TerminalCreator;
+	title?: string;
+}
+
+export class Terminal {
+	readonly id: string;
+	readonly pty: IPty;
+	readonly command: string;
+	readonly args: string[];
+	readonly cwd: string;
+	readonly purpose: string;
+	readonly createdBy: TerminalCreator;
+	readonly createdAt: Date;
+
+	private buffer: CircularBuffer;
+	private _status: TerminalStatus = 'running';
+	private _exitCode?: number;
+	private _title?: string;
+	private dataEmitter = new EventEmitter();
+	private exitEmitter = new EventEmitter();
+
+	constructor(id: string, pty: IPty, options: TerminalOptions) {
+		this.id = id;
+		this.pty = pty;
+		this.command = options.command;
+		this.args = options.args || [];
+		this.cwd = options.cwd;
+		this.purpose = options.purpose;
+		this.createdBy = options.createdBy;
+		this._title = options.title;
+		this.createdAt = new Date();
+		this.buffer = new CircularBuffer(500);
+
+		this.pty.onData((data) => {
+			const lines = data.split('\n');
+			for (const line of lines) {
+				if (line) {
+					this.buffer.push(line);
+					this.dataEmitter.emit('data', line);
+				}
+			}
+		});
+
+		this.pty.onExit(({ exitCode }) => {
+			this._status = 'exited';
+			this._exitCode = exitCode;
+			this.exitEmitter.emit('exit', exitCode);
+		});
+	}
+
+	get pid(): number {
+		return this.pty.pid;
+	}
+
+	get status(): TerminalStatus {
+		return this._status;
+	}
+
+	get exitCode(): number | undefined {
+		return this._exitCode;
+	}
+
+	get title(): string {
+		return this._title || this.purpose;
+	}
+
+	set title(value: string) {
+		this._title = value;
+	}
+
+	read(lines?: number): string[] {
+		return this.buffer.read(lines);
+	}
+
+	write(input: string): void {
+		this.pty.write(input);
+	}
+
+	kill(signal?: string): void {
+		this.pty.kill(signal);
+	}
+
+	onData(callback: (line: string) => void): void {
+		this.dataEmitter.on('data', callback);
+	}
+
+	onExit(callback: (exitCode: number) => void): void {
+		this.exitEmitter.on('exit', callback);
+	}
+
+	removeDataListener(callback: (line: string) => void): void {
+		this.dataEmitter.off('data', callback);
+	}
+
+	removeExitListener(callback: (exitCode: number) => void): void {
+		this.exitEmitter.off('exit', callback);
+	}
+
+	toJSON() {
+		return {
+			id: this.id,
+			pid: this.pid,
+			command: this.command,
+			args: this.args,
+			cwd: this.cwd,
+			purpose: this.purpose,
+			createdBy: this.createdBy,
+			title: this.title,
+			status: this.status,
+			exitCode: this.exitCode,
+			createdAt: this.createdAt,
+			uptime: Date.now() - this.createdAt.getTime(),
+		};
+	}
+}

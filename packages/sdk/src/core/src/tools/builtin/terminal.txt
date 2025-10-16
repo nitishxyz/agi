@@ -1,0 +1,79 @@
+- Manage persistent terminals for long-running processes (dev servers, watchers, build processes)
+- Returns terminal information and output
+- Supports creating, reading, writing, listing, and killing terminals
+
+## Operations
+
+### start
+- Spawns a new persistent terminal with a command
+- Returns terminal ID for future operations
+- Use for processes that need to stay alive (dev servers, watchers, logs)
+- Parameters:
+  - command (required): Shell command to run
+  - purpose (required): Description of what this terminal is for
+  - cwd (optional): Working directory relative to project root (default: '.')
+  - args (optional): Array of command arguments
+
+### read
+- Read output from a terminal's buffer (last N lines)
+- Parameters:
+  - terminalId (required): Terminal ID from start operation
+  - lines (optional): Number of lines to read from end (default: 100)
+- Returns output lines, status, and exit code
+
+### write
+- Write input to a terminal's stdin
+- Useful for interactive commands or sending signals
+- Parameters:
+  - terminalId (required): Terminal ID
+  - input (required): String to write to stdin
+
+### list
+- List all active terminals
+- Returns array of terminal metadata (id, purpose, status, pid, uptime)
+- No parameters required
+
+### kill
+- Kill a running terminal
+- Sends SIGTERM by default
+- Parameters:
+  - terminalId (required): Terminal ID to kill
+
+## When to Use Terminal vs Bash
+
+### Use terminal for:
+- Dev servers: npm run dev, bun dev
+- File watchers: bun test --watch, nodemon
+- Build watchers: bun build --watch
+- Log tailing: tail -f logs/app.log
+- Background services: docker compose up
+- Any process that needs to stay alive and produce continuous output
+
+### Use bash for:
+- Status checks: git status, ls, ps
+- One-off commands: mkdir, rm, curl
+- Quick scripts: bun run build, git commit
+- File operations: cat, grep, sed
+- Short-lived commands with immediate output
+
+## Example Workflow
+
+1. Start dev server:
+   terminal(operation: "start", command: "npm", args: ["run", "dev"], purpose: "dev server")
+   → Returns { terminalId: "term-abc123", pid: 12345 }
+
+2. Later, check for errors:
+   terminal(operation: "read", terminalId: "term-abc123", lines: 50)
+   → Returns last 50 lines of output
+
+3. Kill when done:
+   terminal(operation: "kill", terminalId: "term-abc123")
+
+## Notes
+
+- Terminals persist across multiple LLM turns (unlike bash commands)
+- Maximum 10 terminals per session
+- Exited terminals auto-cleanup after 5 minutes
+- Output is buffered (last 500 lines kept)
+- Both user-created and LLM-created terminals are visible
+- You can read from user-created terminals to understand context

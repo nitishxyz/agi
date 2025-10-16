@@ -1,3 +1,11 @@
+// Terminals
+export {
+	TerminalsSidebar,
+	TerminalsSidebarToggle,
+	TerminalViewer,
+	TerminalList,
+} from './components/terminals/index.ts';
+
 // Main entry point - re-export everything for convenience
 export * from './components';
 export * from './hooks';

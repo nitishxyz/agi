@@ -4,6 +4,8 @@ import type { Theme } from '@agi-cli/web-sdk/hooks';
 import {
 	GitSidebarToggle,
 	GitSidebar,
+	TerminalsSidebarToggle,
+	TerminalsSidebar,
 	GitDiffPanel,
 	GitCommitModal,
 	ConfirmationDialog,
@@ -41,9 +43,16 @@ export const AppLayout = memo(function AppLayout({
 				</main>
 
 				{/* Right sidebar - Git (hidden on mobile) */}
-				<div className="hidden md:block">
-					<GitSidebarToggle />
+				<div className="hidden md:flex">
+					{/* Panels - expand when toggled */}
 					<GitSidebar />
+					<TerminalsSidebar />
+
+					{/* Tab buttons - always visible, stacked vertically, full height */}
+					<div className="flex flex-col w-12 border-l border-border bg-background">
+						<GitSidebarToggle />
+						<TerminalsSidebarToggle />
+					</div>
 				</div>
 			</div>
 

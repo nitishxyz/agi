@@ -120,8 +120,19 @@ export type { ProviderName, ModelConfig } from './core/src/index.ts';
 // Tools
 export { discoverProjectTools } from './core/src/index.ts';
 export type { DiscoveredTool } from './core/src/index.ts';
+export { setTerminalManager, getTerminalManager } from './core/src/index.ts';
 export { buildFsTools } from './core/src/index.ts';
 export { buildGitTools } from './core/src/index.ts';
+
+// Terminals
+export { TerminalManager } from './core/src/index.ts';
+export type {
+	Terminal,
+	TerminalOptions,
+	TerminalStatus,
+	TerminalCreator,
+	CreateTerminalOptions,
+} from './core/src/index.ts';
 
 // Streaming & Artifacts
 export {

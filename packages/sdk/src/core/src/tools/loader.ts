@@ -12,6 +12,8 @@ import { buildApplyPatchTool } from './builtin/patch.ts';
 import { updatePlanTool } from './builtin/plan.ts';
 import { editTool } from './builtin/edit.ts';
 import { buildWebSearchTool } from './builtin/websearch.ts';
+import { buildTerminalTool } from './builtin/terminal.ts';
+import type { TerminalManager } from '../terminals/index.ts';
 import fg from 'fast-glob';
 import { dirname, isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -90,6 +92,16 @@ type FsHelpers = {
 
 const pluginPatterns = ['tools/*/tool.js', 'tools/*/tool.mjs'];
 
+let globalTerminalManager: TerminalManager | null = null;
+
+export function setTerminalManager(manager: TerminalManager): void {
+	globalTerminalManager = manager;
+}
+
+export function getTerminalManager(): TerminalManager | null {
+	return globalTerminalManager;
+}
+
 export async function discoverProjectTools(
 	projectRoot: string,
 	globalConfigDir?: string,
@@ -120,6 +132,11 @@ export async function discoverProjectTools(
 	// Web search
 	const ws = buildWebSearchTool();
 	tools.set(ws.name, ws.tool);
+	// Terminal (if manager is available)
+	if (globalTerminalManager) {
+		const term = buildTerminalTool(projectRoot, globalTerminalManager);
+		tools.set(term.name, term.tool);
+	}
 
 	async function loadFromBase(base: string | null | undefined) {
 		if (!base) return;

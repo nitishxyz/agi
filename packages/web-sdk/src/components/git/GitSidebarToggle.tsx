@@ -9,28 +9,26 @@ export const GitSidebarToggle = memo(function GitSidebarToggle() {
 	const toggleSidebar = useGitStore((state) => state.toggleSidebar);
 	const { data: status } = useGitStatus();
 
-	if (isExpanded) return null;
-
 	const totalChanges =
 		(status?.staged?.length ?? 0) +
 		(status?.unstaged?.length ?? 0) +
 		(status?.untracked?.length ?? 0);
 
 	return (
-		<div className="w-12 border-l border-border bg-background flex flex-col items-center py-4 h-full">
-			<button
-				type="button"
-				onClick={toggleSidebar}
-				className="relative p-2 rounded hover:bg-muted transition-colors touch-manipulation"
-				title="Open Git sidebar"
-			>
-				<GitBranch className="w-5 h-5 text-muted-foreground" />
-				{totalChanges > 0 && (
-					<span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-semibold">
-						{totalChanges > 9 ? '9+' : totalChanges}
-					</span>
-				)}
-			</button>
-		</div>
+		<button
+			type="button"
+			onClick={toggleSidebar}
+			className={`relative p-3 w-full transition-colors touch-manipulation ${
+				isExpanded ? 'bg-muted border-r-2 border-primary' : 'hover:bg-muted/50'
+			}`}
+			title="Git"
+		>
+			<GitBranch className="w-5 h-5 text-muted-foreground mx-auto" />
+			{totalChanges > 0 && (
+				<span className="absolute top-1 right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-semibold">
+					{totalChanges > 9 ? '9+' : totalChanges}
+				</span>
+			)}
+		</button>
 	);
 });

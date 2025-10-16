@@ -122,6 +122,7 @@ const defaultToolExtras: Record<string, string[]> = {
 		'glob',
 		'ripgrep',
 		'git_status',
+		'terminal',
 		'apply_patch',
 		'websearch',
 	],

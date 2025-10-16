@@ -31,6 +31,7 @@ export type { ProviderId, ModelInfo } from '../../types/src/index.ts';
 // =======================
 export { discoverProjectTools } from './tools/loader';
 export type { DiscoveredTool } from './tools/loader';
+export { setTerminalManager, getTerminalManager } from './tools/loader';
 
 // Tool error handling utilities
 export {
@@ -48,6 +49,19 @@ export type {
 // Re-export builtin tools for direct access
 export { buildFsTools } from './tools/builtin/fs/index';
 export { buildGitTools } from './tools/builtin/git';
+export { buildTerminalTool } from './tools/builtin/terminal';
+
+// =======================
+// Terminals
+// =======================
+export { TerminalManager } from './terminals/index';
+export type {
+	Terminal,
+	TerminalOptions,
+	TerminalStatus,
+	TerminalCreator,
+	CreateTerminalOptions,
+} from './terminals/index';
 
 // =======================
 // Streaming & Artifacts

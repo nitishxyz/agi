@@ -290,4 +290,30 @@ export const schemas = {
 		},
 		required: ['hash', 'message', 'filesChanged', 'insertions', 'deletions'],
 	},
+	Terminal: {
+		type: 'object',
+		properties: {
+			id: { type: 'string' },
+			pid: { type: 'integer' },
+			command: { type: 'string' },
+			args: {
+				type: 'array',
+				items: { type: 'string' },
+			},
+			cwd: { type: 'string' },
+			purpose: { type: 'string' },
+			createdBy: {
+				type: 'string',
+				enum: ['user', 'llm'],
+			},
+			title: { type: 'string' },
+			status: {
+				type: 'string',
+				enum: ['running', 'exited'],
+			},
+			exitCode: { type: 'integer' },
+			createdAt: { type: 'string', format: 'date-time' },
+			uptime: { type: 'integer' },
+		},
+	},
 } as const;
