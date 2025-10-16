@@ -1,6 +1,6 @@
 {
 	"name": "@agi-cli/install",
-	"version": "0.1.87",
+	"version": "0.1.88",
 	"description": "AI-powered development assistant CLI - npm installer",
 	"author": "ntishxyz",
 	"license": "MIT",
