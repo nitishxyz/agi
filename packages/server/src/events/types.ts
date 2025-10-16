@@ -3,6 +3,7 @@ export type AGIEventType =
 	| 'session.updated'
 	| 'message.created'
 	| 'message.part.delta'
+	| 'reasoning.delta'
 	| 'message.completed'
 	| 'tool.call'
 	| 'tool.delta'

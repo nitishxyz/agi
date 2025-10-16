@@ -28,7 +28,7 @@ export async function updateSessionTokensIncremental(
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
-	if (!usage) return;
+	if (!usage || !db) return;
 
 	// Read session totals
 	const sessRows = await db
@@ -106,7 +106,7 @@ export async function updateSessionTokens(
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
-	if (!fin.usage) return;
+	if (!fin.usage || !db) return;
 
 	const sessRows = await db
 		.select()
@@ -140,7 +140,7 @@ export async function updateMessageTokensIncremental(
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
-	if (!usage) return;
+	if (!usage || !db) return;
 
 	const msgRows = await db
 		.select()
@@ -204,6 +204,8 @@ export async function completeAssistantMessage(
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
+	if (!db) return;
+
 	// Only mark as complete - tokens are already tracked incrementally
 	await db
 		.update(messages)
@@ -221,6 +223,8 @@ export async function cleanupEmptyTextParts(
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
+	if (!db) return;
+
 	const parts = await db
 		.select()
 		.from(messageParts)

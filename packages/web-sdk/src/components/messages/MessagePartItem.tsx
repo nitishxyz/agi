@@ -13,12 +13,17 @@ import {
 	List,
 	AlertCircle,
 	XOctagon,
+	Brain,
 } from 'lucide-react';
 import { Fragment, memo, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { MessagePart } from '../../types/api';
-import { ToolResultRenderer, type ContentJson } from './renderers';
+import {
+	ToolResultRenderer,
+	ReasoningRenderer,
+	type ContentJson,
+} from './renderers';
 
 function getToolCallPayload(part: MessagePart): Record<string, unknown> | null {
 	const fromJson = part.contentJson;
@@ -176,6 +181,12 @@ export const MessagePartItem = memo(
 		const contentClassName = contentClasses.join(' ');
 
 		const renderIcon = () => {
+			if (part.type === 'reasoning') {
+				return (
+					<Brain className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
+				);
+			}
+
 			if (part.type === 'tool_call') {
 				return (
 					<Loader2 className="h-4 w-4 text-amber-600 dark:text-amber-300 animate-spin" />
@@ -278,6 +289,10 @@ export const MessagePartItem = memo(
 		};
 
 		const renderContent = () => {
+			if (part.type === 'reasoning') {
+				return <ReasoningRenderer part={part} />;
+			}
+
 			if (part.type === 'text') {
 				let content = '';
 				const data = part.contentJson || part.content;

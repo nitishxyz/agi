@@ -36,7 +36,7 @@ export interface MessagePart {
 	messageId: string;
 	index: number;
 	stepIndex: number | null;
-	type: 'text' | 'tool_call' | 'tool_result' | 'image' | 'error';
+	type: 'text' | 'tool_call' | 'tool_result' | 'image' | 'error' | 'reasoning';
 	content: string;
 	contentJson?: Record<string, unknown>;
 	agent: string;

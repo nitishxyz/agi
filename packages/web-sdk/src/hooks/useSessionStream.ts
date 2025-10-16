@@ -61,6 +61,67 @@ export function useSessionStream(sessionId: string | undefined) {
 			return '';
 		};
 
+		const applyReasoningDelta = (
+			payload: Record<string, unknown> | undefined,
+		) => {
+			const messageId =
+				typeof payload?.messageId === 'string' ? payload.messageId : null;
+			const partId =
+				typeof payload?.partId === 'string' ? payload.partId : null;
+			const delta = typeof payload?.delta === 'string' ? payload.delta : null;
+			if (!messageId || !partId || delta === null) return;
+			queryClient.setQueryData<Message[]>(
+				['messages', sessionId],
+				(oldMessages) => {
+					if (!oldMessages) return oldMessages;
+					const nextMessages = [...oldMessages];
+					const messageIndex = nextMessages.findIndex(
+						(message) => message.id === messageId,
+					);
+					if (messageIndex === -1) return oldMessages;
+					const targetMessage = nextMessages[messageIndex];
+					const parts = targetMessage.parts ? [...targetMessage.parts] : [];
+					let partIndex = parts.findIndex((part) => part.id === partId);
+					const stepIndex =
+						typeof payload?.stepIndex === 'number' ? payload.stepIndex : null;
+					if (partIndex === -1) {
+						const newPart: MessagePart = {
+							id: partId,
+							messageId,
+							index: parts.length,
+							stepIndex,
+							type: 'reasoning',
+							content: JSON.stringify({ text: delta }),
+							contentJson: { text: delta },
+							agent: targetMessage.agent,
+							provider: targetMessage.provider,
+							model: targetMessage.model,
+							startedAt: Date.now(),
+							completedAt: null,
+							toolName: null,
+							toolCallId: null,
+							toolDurationMs: null,
+						};
+						parts.push(newPart);
+						partIndex = parts.length - 1;
+					} else {
+						const existing = parts[partIndex];
+						const previous = extractText(existing);
+						const nextText = `${previous}${delta}`;
+						parts[partIndex] = {
+							...existing,
+							content: JSON.stringify({ text: nextText }),
+							contentJson: { text: nextText },
+							stepIndex: stepIndex ?? existing.stepIndex ?? null,
+							completedAt: null,
+						};
+					}
+					nextMessages[messageIndex] = { ...targetMessage, parts };
+					return nextMessages;
+				},
+			);
+		};
+
 		const applyMessageDelta = (
 			payload: Record<string, unknown> | undefined,
 		) => {
@@ -315,6 +376,10 @@ export function useSessionStream(sessionId: string | undefined) {
 				}
 				case 'message.part.delta': {
 					applyMessageDelta(payload);
+					break;
+				}
+				case 'reasoning.delta': {
+					applyReasoningDelta(payload);
 					break;
 				}
 				case 'message.completed': {

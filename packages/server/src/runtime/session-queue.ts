@@ -3,7 +3,6 @@ import type { ProviderName } from './provider.ts';
 export type RunOpts = {
 	sessionId: string;
 	assistantMessageId: string;
-	assistantPartId: string;
 	agent: string;
 	provider: ProviderName;
 	model: string;

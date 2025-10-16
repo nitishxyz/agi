@@ -86,3 +86,4 @@ export function ToolResultRenderer({
 }
 
 export * from './types';
+export { ReasoningRenderer } from './ReasoningRenderer';

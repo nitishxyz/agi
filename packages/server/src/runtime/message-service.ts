@@ -4,7 +4,8 @@ import type { AGIConfig } from '@agi-cli/sdk';
 import type { DB } from '@agi-cli/database';
 import { messages, messageParts, sessions } from '@agi-cli/database/schema';
 import { publish } from '../events/bus.ts';
-import { enqueueAssistantRun } from './runner.ts';
+import { enqueueAssistantRun } from './session-queue.ts';
+import { runSessionLoop } from './runner.ts';
 import { resolveModel } from './provider.ts';
 import type { ProviderId } from '@agi-cli/sdk';
 import { debugLog } from './debug.ts';
@@ -86,20 +87,6 @@ export async function dispatchAssistantMessage(
 		model,
 		createdAt: Date.now(),
 	});
-	const assistantPartId = crypto.randomUUID();
-	const startTs = Date.now();
-	await db.insert(messageParts).values({
-		id: assistantPartId,
-		messageId: assistantMessageId,
-		index: 0,
-		stepIndex: 0,
-		type: 'text',
-		content: JSON.stringify({ text: '' }),
-		agent,
-		provider,
-		model,
-		startedAt: startTs,
-	});
 	publish({
 		type: 'message.created',
 		sessionId,
@@ -111,17 +98,19 @@ export async function dispatchAssistantMessage(
 		`[MESSAGE_SERVICE] Enqueuing assistant run with userContext: ${userContext ? `${userContext.substring(0, 50)}...` : 'NONE'}`,
 	);
 
-	enqueueAssistantRun({
-		sessionId,
-		assistantMessageId,
-		assistantPartId,
-		agent,
-		provider,
-		model,
-		projectRoot: cfg.projectRoot,
-		oneShot: Boolean(oneShot),
-		userContext,
-	});
+	enqueueAssistantRun(
+		{
+			sessionId,
+			assistantMessageId,
+			agent,
+			provider,
+			model,
+			projectRoot: cfg.projectRoot,
+			oneShot: Boolean(oneShot),
+			userContext,
+		},
+		runSessionLoop,
+	);
 
 	void touchSessionLastActive({ db, sessionId });
 

@@ -1,6 +1,4 @@
 import type { getDb } from '@agi-cli/database';
-import { messageParts } from '@agi-cli/database/schema';
-import { eq } from 'drizzle-orm';
 import { time } from './debug.ts';
 import type { ToolAdapterContext } from '../tools/adapter.ts';
 import type { RunOpts } from './session-queue.ts';
@@ -18,12 +16,16 @@ export async function setupToolContext(
 	const firstToolTimer = time('runner:first-tool-call');
 	let firstToolSeen = false;
 
+	// Simple counter starting at 0 - first event gets 0, second gets 1, etc.
+	let currentIndex = 0;
+	const nextIndex = () => currentIndex++;
+
 	const sharedCtx: RunnerToolContext = {
-		nextIndex: async () => 0,
+		nextIndex,
 		stepIndex: 0,
 		sessionId: opts.sessionId,
 		messageId: opts.assistantMessageId,
-		assistantPartId: opts.assistantPartId,
+		assistantPartId: '', // Will be set by runner when first text part is created
 		db,
 		agent: opts.agent,
 		provider: opts.provider,
@@ -34,24 +36,6 @@ export async function setupToolContext(
 			firstToolSeen = true;
 			firstToolTimer.end();
 		},
-	};
-
-	let counter = 0;
-	try {
-		const existing = await db
-			.select()
-			.from(messageParts)
-			.where(eq(messageParts.messageId, opts.assistantMessageId));
-		if (existing.length) {
-			const indexes = existing.map((p) => Number(p.index ?? 0));
-			const maxIndex = Math.max(...indexes);
-			if (Number.isFinite(maxIndex)) counter = maxIndex;
-		}
-	} catch {}
-
-	sharedCtx.nextIndex = () => {
-		counter += 1;
-		return counter;
 	};
 
 	return { sharedCtx, firstToolTimer, firstToolSeen: () => firstToolSeen };

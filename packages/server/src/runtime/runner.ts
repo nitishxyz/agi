@@ -15,9 +15,6 @@ import { toErrorPayload } from './error-handling.ts';
 import { getMaxOutputTokens } from './token-utils.ts';
 import {
 	type RunOpts,
-	enqueueAssistantRun as enqueueRun,
-	abortSession as abortSessionQueue,
-	getRunnerState,
 	setRunning,
 	dequeueJob,
 	cleanupSession,
@@ -36,32 +33,19 @@ import {
 	createFinishHandler,
 } from './stream-handlers.ts';
 
-/**
- * Enqueues an assistant run for processing.
- */
-export function enqueueAssistantRun(opts: Omit<RunOpts, 'abortSignal'>) {
-	enqueueRun(opts, processQueue);
-}
+export { enqueueAssistantRun, abortSession } from './session-queue.ts';
+export { getRunnerState } from './session-queue.ts';
 
 /**
- * Aborts an active session.
+ * Main loop that processes the queue for a given session.
  */
-export function abortSession(sessionId: string) {
-	abortSessionQueue(sessionId);
-}
-
-/**
- * Processes the queue of assistant runs for a session.
- */
-async function processQueue(sessionId: string) {
-	const state = getRunnerState(sessionId);
-	if (!state) return;
-	if (state.running) return;
+export async function runSessionLoop(sessionId: string) {
 	setRunning(sessionId, true);
 
-	while (state.queue.length > 0) {
-		const job = dequeueJob(sessionId);
+	while (true) {
+		const job = await dequeueJob(sessionId);
 		if (!job) break;
+
 		try {
 			await runAssistant(job);
 		} catch (_err) {
@@ -170,12 +154,9 @@ async function runAssistant(opts: RunOpts) {
 	const toolsTimer = time('runner:discoverTools');
 	const allTools = await discoverProjectTools(cfg.projectRoot);
 	toolsTimer.end({ count: allTools.length });
-	const allowedNames = new Set([
-		...(agentCfg.tools || []),
-		'finish',
-		'progress_update',
-	]);
-	const gated = allTools.filter((t) => allowedNames.has(t.name));
+	const allowedNames = new Set([...(agentCfg.tools || []), 'finish']);
+	const gated = allTools.filter((tool) => allowedNames.has(tool.name));
+	debugLog(`[tools] ${gated.length} allowed tools`);
 
 	// FIX: For OAuth, ALWAYS prepend the system message because it's never in history
 	// For API key mode, only add on first message (when additionalSystemMessages is empty)
@@ -184,6 +165,8 @@ async function runAssistant(opts: RunOpts) {
 		...history,
 	];
 
+	debugLog(`[RUNNER] About to create model with provider: ${opts.provider}`);
+	debugLog(`[RUNNER] About to create model ID: ${opts.model}`);
 	debugLog(
 		`[RUNNER] messagesWithSystemInstructions length: ${messagesWithSystemInstructions.length}`,
 	);
@@ -199,21 +182,20 @@ async function runAssistant(opts: RunOpts) {
 		);
 	}
 
+	const model = await resolveModel(opts.provider, opts.model, cfg);
+	debugLog(
+		`[RUNNER] Model created: ${JSON.stringify({ id: model.modelId, provider: model.provider })}`,
+	);
+
+	const maxOutputTokens = getMaxOutputTokens(opts.provider, opts.model);
+	debugLog(`[RUNNER] maxOutputTokens for ${opts.model}: ${maxOutputTokens}`);
+
+	// Setup tool context
 	const { sharedCtx, firstToolTimer, firstToolSeen } = await setupToolContext(
 		opts,
 		db,
 	);
 	const toolset = adaptTools(gated, sharedCtx, opts.provider);
-
-	const modelTimer = time('runner:resolveModel');
-	const model = await resolveModel(opts.provider, opts.model, cfg);
-	modelTimer.end();
-
-	const maxOutputTokens = getMaxOutputTokens(opts.provider, opts.model);
-
-	let currentPartId = opts.assistantPartId;
-	let accumulated = '';
-	let stepIndex = 0;
 
 	let _finishObserved = false;
 	const unsubscribeFinish = subscribe(opts.sessionId, (evt) => {
@@ -231,7 +213,7 @@ async function runAssistant(opts: RunOpts) {
 	// State management helpers
 	const getCurrentPartId = () => currentPartId;
 	const getStepIndex = () => stepIndex;
-	const updateCurrentPartId = (id: string) => {
+	const updateCurrentPartId = (id: string | null) => {
 		currentPartId = id;
 	};
 	const updateAccumulated = (text: string) => {
@@ -242,16 +224,29 @@ async function runAssistant(opts: RunOpts) {
 		return stepIndex;
 	};
 
+	type ReasoningState = {
+		partId: string;
+		text: string;
+		providerMetadata?: unknown;
+	};
+	const reasoningStates = new Map<string, ReasoningState>();
+	const serializeReasoningContent = (state: ReasoningState) =>
+		JSON.stringify(
+			state.providerMetadata != null
+				? { text: state.text, providerMetadata: state.providerMetadata }
+				: { text: state.text },
+		);
+
 	// Create stream handlers
 	const onStepFinish = createStepFinishHandler(
 		opts,
 		db,
-		getCurrentPartId,
 		getStepIndex,
-		sharedCtx,
+		incrementStepIndex,
+		getCurrentPartId,
 		updateCurrentPartId,
 		updateAccumulated,
-		incrementStepIndex,
+		sharedCtx,
 		updateSessionTokensIncremental,
 		updateMessageTokensIncremental,
 	);
@@ -306,6 +301,11 @@ async function runAssistant(opts: RunOpts) {
 		`[RUNNER] cachedSystem (spoof): ${typeof cachedSystem === 'string' ? cachedSystem.substring(0, 100) : JSON.stringify(cachedSystem).substring(0, 100)}`,
 	);
 
+	// Part tracking - will be created on first text-delta
+	let currentPartId: string | null = null;
+	let accumulated = '';
+	let stepIndex = 0;
+
 	try {
 		// @ts-expect-error this is fine 🔥
 		const result = streamText({
@@ -322,50 +322,173 @@ async function runAssistant(opts: RunOpts) {
 			onFinish,
 		});
 
-		for await (const delta of result.textStream) {
-			if (!delta) continue;
-			if (!firstDeltaSeen) {
-				firstDeltaSeen = true;
-				streamStartTimer.end();
-			}
-			accumulated += delta;
-			publish({
-				type: 'message.part.delta',
-				sessionId: opts.sessionId,
-				payload: {
-					messageId: opts.assistantMessageId,
-					partId: currentPartId,
-					stepIndex,
-					delta,
-				},
-			});
-			await db
-				.update(messageParts)
-				.set({ content: JSON.stringify({ text: accumulated }) })
-				.where(eq(messageParts.id, currentPartId));
-		}
-	} catch (error) {
-		const errorPayload = toErrorPayload(error);
-		await db
-			.update(messageParts)
-			.set({
-				content: JSON.stringify({ error: errorPayload }),
-			})
-			.where(eq(messageParts.id, currentPartId));
+		for await (const part of result.fullStream) {
+			if (!part) continue;
+			if (part.type === 'text-delta') {
+				const delta = part.text;
+				if (!delta) continue;
+				if (!firstDeltaSeen) {
+					firstDeltaSeen = true;
+					streamStartTimer.end();
+				}
 
-		publish({
-			type: 'message.error',
-			sessionId: opts.sessionId,
-			payload: {
-				messageId: opts.assistantMessageId,
-				partId: currentPartId,
-				error: errorPayload,
-			},
-		});
-		throw error;
-	} finally {
+				// Create text part on first delta
+				if (!currentPartId) {
+					currentPartId = crypto.randomUUID();
+					sharedCtx.assistantPartId = currentPartId;
+					await db.insert(messageParts).values({
+						id: currentPartId,
+						messageId: opts.assistantMessageId,
+						index: sharedCtx.nextIndex(),
+						stepIndex: null,
+						type: 'text',
+						content: JSON.stringify({ text: '' }),
+						agent: opts.agent,
+						provider: opts.provider,
+						model: opts.model,
+						startedAt: Date.now(),
+					});
+				}
+
+				accumulated += delta;
+				publish({
+					type: 'message.part.delta',
+					sessionId: opts.sessionId,
+					payload: {
+						messageId: opts.assistantMessageId,
+						partId: currentPartId,
+						stepIndex,
+						delta,
+					},
+				});
+				await db
+					.update(messageParts)
+					.set({ content: JSON.stringify({ text: accumulated }) })
+					.where(eq(messageParts.id, currentPartId));
+				continue;
+			}
+
+			if (part.type === 'reasoning-start') {
+				const reasoningId = part.id;
+				if (!reasoningId) continue;
+				const reasoningPartId = crypto.randomUUID();
+				const state: ReasoningState = {
+					partId: reasoningPartId,
+					text: '',
+					providerMetadata: part.providerMetadata,
+				};
+				reasoningStates.set(reasoningId, state);
+				try {
+					await db.insert(messageParts).values({
+						id: reasoningPartId,
+						messageId: opts.assistantMessageId,
+						index: sharedCtx.nextIndex(),
+						stepIndex: getStepIndex(),
+						type: 'reasoning',
+						content: serializeReasoningContent(state),
+						agent: opts.agent,
+						provider: opts.provider,
+						model: opts.model,
+						startedAt: Date.now(),
+					});
+				} catch {}
+				continue;
+			}
+
+			if (part.type === 'reasoning-delta') {
+				const state = reasoningStates.get(part.id);
+				if (!state) continue;
+				state.text += part.text;
+				if (part.providerMetadata != null) {
+					state.providerMetadata = part.providerMetadata;
+				}
+				publish({
+					type: 'reasoning.delta',
+					sessionId: opts.sessionId,
+					payload: {
+						messageId: opts.assistantMessageId,
+						partId: state.partId,
+						stepIndex: getStepIndex(),
+						delta: part.text,
+					},
+				});
+				try {
+					await db
+						.update(messageParts)
+						.set({ content: serializeReasoningContent(state) })
+						.where(eq(messageParts.id, state.partId));
+				} catch {}
+				continue;
+			}
+
+			if (part.type === 'reasoning-end') {
+				const state = reasoningStates.get(part.id);
+				if (!state) continue;
+				try {
+					await db
+						.update(messageParts)
+						.set({ completedAt: Date.now() })
+						.where(eq(messageParts.id, state.partId));
+				} catch {}
+				reasoningStates.delete(part.id);
+			}
+		}
+
+		// Emit finish-step at the end if there were no tool calls and no finish
+		const fs = firstToolSeen();
+		if (!fs && !_finishObserved) {
+			publish({
+				type: 'finish-step',
+				sessionId: opts.sessionId,
+				payload: { reason: 'no-tool-calls' },
+			});
+		}
+
 		unsubscribeFinish();
-		await cleanupEmptyTextParts(db, opts.assistantMessageId);
-		firstToolTimer.end({ seen: firstToolSeen });
+
+		await cleanupEmptyTextParts(opts, db);
+
+		firstToolTimer.end({ seen: firstToolSeen() });
+
+		debugLog(
+			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}`,
+		);
+	} catch (err) {
+		unsubscribeFinish();
+		const payload = toErrorPayload(err);
+		debugLog(`[RUNNER] Error during stream: ${payload.message}`);
+		debugLog(`[RUNNER] Error stack: ${err instanceof Error ? err.stack : 'no stack'}`);
+		debugLog(`[RUNNER] db is: ${typeof db}, db.select is: ${typeof db?.select}`);
+		publish({
+			type: 'error',
+			sessionId: opts.sessionId,
+			payload,
+		});
+		try {
+			await updateSessionTokensIncremental(
+				{
+					inputTokens: 0,
+					outputTokens: 0,
+				},
+				undefined,
+				opts,
+				db,
+			);
+			await updateMessageTokensIncremental(
+				{
+					inputTokens: 0,
+					outputTokens: 0,
+				},
+				undefined,
+				opts,
+				db,
+			);
+			await completeAssistantMessage(
+				{},
+				opts,
+				db,
+			);
+		} catch {}
+		throw err;
 	}
 }

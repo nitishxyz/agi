@@ -31,12 +31,12 @@ type AbortEvent = {
 export function createStepFinishHandler(
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
-	getCurrentPartId: () => string,
 	getStepIndex: () => number,
-	sharedCtx: ToolAdapterContext,
-	updateCurrentPartId: (id: string) => void,
-	updateAccumulated: (text: string) => void,
 	incrementStepIndex: () => number,
+	getCurrentPartId: () => string | null,
+	updateCurrentPartId: (id: string | null) => void,
+	updateAccumulated: (text: string) => void,
+	sharedCtx: ToolAdapterContext,
 	updateSessionTokensIncrementalFn: (
 		usage: UsageData,
 		providerMetadata: ProviderMetadata | undefined,
@@ -52,17 +52,19 @@ export function createStepFinishHandler(
 ) {
 	return async (step: StepFinishEvent) => {
 		const finishedAt = Date.now();
-		const currentPartId = getCurrentPartId();
-		const stepIndex = getStepIndex();
+	const currentPartId = getCurrentPartId();
+	const stepIndex = getStepIndex();
 
-		try {
+	try {
+		if (currentPartId) {
 			await db
 				.update(messageParts)
 				.set({ completedAt: finishedAt })
 				.where(eq(messageParts.id, currentPartId));
-		} catch {}
+		}
+	} catch {}
 
-		// Update token counts incrementally after each step
+	// Update token counts incrementally after each step
 		if (step.usage) {
 			try {
 				await updateSessionTokensIncrementalFn(
@@ -104,25 +106,11 @@ export function createStepFinishHandler(
 		} catch {}
 
 		try {
+			// Increment step index but defer creating the new text part
+			// until we actually get a text-delta (so reasoning blocks can complete first)
 			const newStepIndex = incrementStepIndex();
-			const newPartId = crypto.randomUUID();
-			const index = await sharedCtx.nextIndex();
-			const nowTs = Date.now();
-			await db.insert(messageParts).values({
-				id: newPartId,
-				messageId: opts.assistantMessageId,
-				index,
-				stepIndex: newStepIndex,
-				type: 'text',
-				content: JSON.stringify({ text: '' }),
-				agent: opts.agent,
-				provider: opts.provider,
-				model: opts.model,
-				startedAt: nowTs,
-			});
-			updateCurrentPartId(newPartId);
-			sharedCtx.assistantPartId = newPartId;
 			sharedCtx.stepIndex = newStepIndex;
+			updateCurrentPartId(null); // Signal that next text-delta should create new part
 			updateAccumulated('');
 		} catch {}
 	};

@@ -21,6 +21,13 @@ export async function buildHistoryMessages(
 	const ui: UIMessage[] = [];
 
 	for (const m of rows) {
+		if (m.role === 'assistant' && m.status !== 'complete') {
+			debugLog(
+				`[buildHistoryMessages] Skipping assistant message ${m.id} with status ${m.status}`,
+			);
+			continue;
+		}
+
 		const parts = await db
 			.select()
 			.from(messageParts)
@@ -54,6 +61,8 @@ export async function buildHistoryMessages(
 			}> = [];
 
 			for (const p of parts) {
+				if (p.type === 'reasoning') continue;
+
 				if (p.type === 'text') {
 					try {
 						const obj = JSON.parse(p.content ?? '{}');
