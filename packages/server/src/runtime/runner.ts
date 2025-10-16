@@ -421,12 +421,22 @@ async function runAssistant(opts: RunOpts) {
 				continue;
 			}
 
-			if (part.type === 'reasoning-end') {
-				const state = reasoningStates.get(part.id);
-				if (!state) continue;
+		if (part.type === 'reasoning-end') {
+			const state = reasoningStates.get(part.id);
+			if (!state) continue;
+			// Delete the reasoning part if it's empty
+			if (!state.text || state.text.trim() === '') {
 				try {
 					await db
-						.update(messageParts)
+						.delete(messageParts)
+						.where(eq(messageParts.id, state.partId));
+				} catch {}
+				reasoningStates.delete(part.id);
+				continue;
+			}
+			try {
+				await db
+					.update(messageParts)
 						.set({ completedAt: Date.now() })
 						.where(eq(messageParts.id, state.partId));
 				} catch {}
