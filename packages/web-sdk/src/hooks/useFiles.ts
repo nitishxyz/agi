@@ -8,7 +8,8 @@ export function useFiles() {
 			const result = await apiClient.listFiles();
 			return result;
 		},
-		staleTime: 60000,
+		staleTime: 10000,
+		refetchOnWindowFocus: true,
 		retry: 1,
 	});
 }
