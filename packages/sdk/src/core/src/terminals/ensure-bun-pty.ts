@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { getGlobalConfigDir } from '../../../../src/config/src/paths.ts';
+import { RUST_PTY_LIBS } from './rust-libs.ts';
 
 function resolveLibraryFilename(): string {
 	const platform = process.platform;
@@ -27,41 +27,12 @@ function tryUseExistingPath(path?: string | null): string | null {
 	return null;
 }
 
-async function readFromEmbedded(
-	url: URL,
-	targetPath: string,
-): Promise<string | null> {
-	const file = Bun.file(url);
-	if (!(await file.exists())) {
-		return null;
-	}
-
-	const dir = dirname(targetPath);
-	mkdirSync(dir, { recursive: true });
-	await Bun.write(targetPath, file);
-	process.env.BUN_PTY_LIB = targetPath;
-	return targetPath;
-}
-
 export async function ensureBunPtyLibrary(): Promise<string | null> {
 	const already = tryUseExistingPath(process.env.BUN_PTY_LIB);
 	if (already) return already;
 
 	const filename = resolveLibraryFilename();
 	const candidates: string[] = [];
-
-	let pkgUrl: string | null = null;
-	try {
-		pkgUrl = await import.meta.resolve('bun-pty/package.json');
-		const pkgPath = fileURLToPath(pkgUrl);
-		const pkgDir = dirname(pkgPath);
-		candidates.push(
-			join(pkgDir, 'rust-pty', 'target', 'release', filename),
-			join(pkgDir, '..', 'bun-pty', 'rust-pty', 'target', 'release', filename),
-		);
-	} catch {
-		// ignore resolution failures
-	}
 
 	candidates.push(
 		join(
@@ -80,14 +51,19 @@ export async function ensureBunPtyLibrary(): Promise<string | null> {
 		if (path) return path;
 	}
 
-	if (pkgUrl) {
-		const embeddedUrl = new URL(
-			`./rust-pty/target/release/${filename}`,
-			pkgUrl,
-		);
-		const tmpPath = join(tmpdir(), 'agi-cli', 'bun-pty', filename);
-		const fromEmbedded = await readFromEmbedded(embeddedUrl, tmpPath);
-		if (fromEmbedded) return fromEmbedded;
+	const platformLibs =
+		RUST_PTY_LIBS[process.platform as keyof typeof RUST_PTY_LIBS];
+	const embeddedPath =
+		platformLibs?.[process.arch === 'arm64' ? 'arm64' : 'x64'];
+
+	if (embeddedPath) {
+		const targetDir = join(getGlobalConfigDir(), 'runtime', 'bun-pty');
+		mkdirSync(targetDir, { recursive: true });
+		const targetPath = join(targetDir, filename);
+		const source = Bun.file(embeddedPath);
+		await Bun.write(targetPath, source);
+		process.env.BUN_PTY_LIB = targetPath;
+		return targetPath;
 	}
 
 	return null;
