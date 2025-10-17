@@ -6,10 +6,10 @@ import { ArrowLeft, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useTerminals } from '../../hooks/useTerminals';
 import { useTerminalStore } from '../../stores/terminalStore';
+import { getRuntimeApiBaseUrl } from '../../lib/config';
 import '@xterm/xterm/css/xterm.css';
+import { client } from '@agi-cli/api';
 
-const API_BASE_URL =
-	import.meta.env.VITE_API_BASE_URL || 'http://localhost:9100';
 const NERD_FONT_STACK = [
 	'"Symbols Nerd Font Mono"',
 	'"Symbols Nerd Font"',
@@ -29,6 +29,14 @@ const NERD_FONT_STACK = [
 	'"MesloLGS NF"',
 ];
 const FALLBACK_FONT_STACK = ['Menlo', 'Monaco', '"Courier New"', 'monospace'];
+
+function resolveApiBaseUrl(): string {
+	const config = client.getConfig?.();
+	if (config && typeof config.baseURL === 'string' && config.baseURL.length > 0) {
+		return config.baseURL;
+	}
+	return getRuntimeApiBaseUrl();
+}
 
 function resolveFontFamily(): string {
 	if (typeof document !== 'undefined' && 'fonts' in document) {
@@ -64,7 +72,8 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 
 	const handleKill = async () => {
 		try {
-			await fetch(`${API_BASE_URL}/v1/terminals/${terminalId}`, {
+			const baseUrl = resolveApiBaseUrl();
+			await fetch(`${baseUrl}/v1/terminals/${terminalId}`, {
 				method: 'DELETE',
 			});
 			selectTerminal(null);
@@ -142,8 +151,9 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 			}
 		}, 50);
 
+		const baseUrl = resolveApiBaseUrl();
 		const eventSource = new EventSource(
-			`${API_BASE_URL}/v1/terminals/${terminalId}/output`,
+			`${baseUrl}/v1/terminals/${terminalId}/output`,
 		);
 		eventSourceRef.current = eventSource;
 
@@ -166,11 +176,11 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 			}
 		};
 
-		eventSource.onerror = (error) => {
-			if (eventSource.readyState !== EventSource.CLOSED) {
-				console.error('[TerminalViewer] SSE connection error:', {
-					terminalId,
-					url: `${API_BASE_URL}/v1/terminals/${terminalId}/output`,
+			eventSource.onerror = (error) => {
+				if (eventSource.readyState !== EventSource.CLOSED) {
+					console.error('[TerminalViewer] SSE connection error:', {
+						terminalId,
+					url: `${baseUrl}/v1/terminals/${terminalId}/output`,
 					readyState: eventSource.readyState,
 					readyStateText:
 						eventSource.readyState === 0
@@ -191,7 +201,7 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 		};
 
 		xterm.onData((data) => {
-			fetch(`${API_BASE_URL}/v1/terminals/${terminalId}/input`, {
+			fetch(`${baseUrl}/v1/terminals/${terminalId}/input`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ input: data }),
