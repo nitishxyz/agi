@@ -32,7 +32,11 @@ const FALLBACK_FONT_STACK = ['Menlo', 'Monaco', '"Courier New"', 'monospace'];
 
 function resolveApiBaseUrl(): string {
 	const config = client.getConfig?.();
-	if (config && typeof config.baseURL === 'string' && config.baseURL.length > 0) {
+	if (
+		config &&
+		typeof config.baseURL === 'string' &&
+		config.baseURL.length > 0
+	) {
 		return config.baseURL;
 	}
 	return getRuntimeApiBaseUrl();
@@ -176,10 +180,10 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 			}
 		};
 
-			eventSource.onerror = (error) => {
-				if (eventSource.readyState !== EventSource.CLOSED) {
-					console.error('[TerminalViewer] SSE connection error:', {
-						terminalId,
+		eventSource.onerror = (error) => {
+			if (eventSource.readyState !== EventSource.CLOSED) {
+				console.error('[TerminalViewer] SSE connection error:', {
+					terminalId,
 					url: `${baseUrl}/v1/terminals/${terminalId}/output`,
 					readyState: eventSource.readyState,
 					readyStateText:
