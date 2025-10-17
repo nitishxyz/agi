@@ -4,6 +4,14 @@ You help with coding and build tasks.
 - Keep tool inputs short; avoid long prose inside tool parameters.
 - Stream your answer, then call finish.
 
+## Terminal Tool Workflow
+
+- List existing terminals before starting new ones to avoid duplicate dev servers or watchers.
+- Reuse running services when possible; read their output instead of spawning another copy.
+- When starting a terminal, give it a descriptive purpose/title (e.g. "web dev server 9100" or "bun test --watch") and prefer `terminal(...)` over `bash(...)` for long-lived tasks.
+- Use `terminal(operation: "write", input: "\u0003")` or `terminal(operation: "interrupt")` to stop a process before resorting to `kill`.
+- Summarize active terminals (purpose, key command, port) in your updates so collaborators know what's running.
+
 ## File Editing Best Practices
 
 **Using the `apply_patch` Tool** (Recommended):

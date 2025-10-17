@@ -1,35 +1,99 @@
-import { Button } from '../ui/Button';
-import { memo, useEffect, useRef } from 'react';
-import { Terminal as XTerm } from '@xterm/xterm';
+import { useEffect, useRef } from 'react';
 import { FitAddon } from '@xterm/addon-fit';
-import { ChevronLeft, X } from 'lucide-react';
+import { Unicode11Addon } from '@xterm/addon-unicode11';
+import { Terminal } from '@xterm/xterm';
+import { ArrowLeft, X } from 'lucide-react';
+import { Button } from '../ui/Button';
+import { useTerminals } from '../../hooks/useTerminals';
 import { useTerminalStore } from '../../stores/terminalStore';
-import { useTerminalOutput, useKillTerminal } from '../../hooks/useTerminals';
 import '@xterm/xterm/css/xterm.css';
+
+const API_BASE_URL =
+	import.meta.env.VITE_API_BASE_URL || 'http://localhost:9100';
+const NERD_FONT_STACK = [
+	'"Symbols Nerd Font Mono"',
+	'"Symbols Nerd Font"',
+	'"JetBrainsMono Nerd Font Mono"',
+	'"JetBrainsMono Nerd Font"',
+	'"JetBrains Mono Nerd Font Mono"',
+	'"JetBrains Mono Nerd Font"',
+	'"FiraCode Nerd Font Mono"',
+	'"FiraCode Nerd Font"',
+	'"Fira Code Nerd Font Mono"',
+	'"Fira Code Nerd Font"',
+	'"CaskaydiaCove Nerd Font"',
+	'"Caskaydia Cove Nerd Font"',
+	'"Cascadia Code PL"',
+	'"Hack Nerd Font Mono"',
+	'"Hack Nerd Font"',
+	'"MesloLGS NF"',
+];
+const FALLBACK_FONT_STACK = ['Menlo', 'Monaco', '"Courier New"', 'monospace'];
+
+function resolveFontFamily(): string {
+	if (typeof document !== 'undefined' && 'fonts' in document) {
+		const available = NERD_FONT_STACK.filter((font) => {
+			try {
+				return document.fonts.check(`12px ${font}`);
+			} catch {
+				return false;
+			}
+		});
+
+		if (available.length > 0) {
+			return [...available, ...FALLBACK_FONT_STACK].join(', ');
+		}
+	}
+
+	return [...NERD_FONT_STACK, ...FALLBACK_FONT_STACK].join(', ');
+}
 
 interface TerminalViewerProps {
 	terminalId: string;
 }
 
-export const TerminalViewer = memo(function TerminalViewer({
-	terminalId,
-}: TerminalViewerProps) {
+export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 	const termRef = useRef<HTMLDivElement>(null);
-	const xtermRef = useRef<XTerm>(null);
-	const fitAddonRef = useRef<FitAddon>(null);
+	const xtermRef = useRef<Terminal | null>(null);
+	const fitAddonRef = useRef<FitAddon | null>(null);
+	const eventSourceRef = useRef<EventSource | null>(null);
+	const { data: terminals } = useTerminals();
+	const { selectTerminal } = useTerminalStore();
 
-	const selectTerminal = useTerminalStore((state) => state.selectTerminal);
-	const { data: terminal } = useTerminalOutput(terminalId);
-	const killTerminal = useKillTerminal();
+	const terminal = terminals?.terminals.find((t) => t.id === terminalId);
+
+	const handleKill = async () => {
+		try {
+			await fetch(`${API_BASE_URL}/v1/terminals/${terminalId}`, {
+				method: 'DELETE',
+			});
+			selectTerminal(null);
+		} catch (error) {
+			console.error('Failed to kill terminal:', error);
+		}
+	};
 
 	useEffect(() => {
-		if (!termRef.current) return;
+		if (!termRef.current || !terminalId) return;
 
-		const xterm = new XTerm({
+		// Prevent duplicate connections - close existing EventSource
+		if (eventSourceRef.current) {
+			console.log('[TerminalViewer] Closing existing EventSource');
+			eventSourceRef.current.close();
+			eventSourceRef.current = null;
+		}
+
+		console.log('[TerminalViewer] Setting up terminal:', terminalId);
+
+		const resolvedFontFamily = resolveFontFamily();
+
+		const xterm = new Terminal({
 			theme: {
 				background: '#1e1e1e',
-				foreground: '#cccccc',
-				cursor: '#cccccc',
+				foreground: '#d4d4d4',
+				cursor: '#ffffff',
+				cursorAccent: '#000000',
+				selectionBackground: '#264f78',
 				black: '#000000',
 				red: '#cd3131',
 				green: '#0dbc79',
@@ -48,24 +112,50 @@ export const TerminalViewer = memo(function TerminalViewer({
 				brightWhite: '#e5e5e5',
 			},
 			fontSize: 13,
-			fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+			fontFamily: resolvedFontFamily,
 			cursorBlink: true,
 			convertEol: true,
 			scrollback: 1000,
+			allowProposedApi: true,
 		});
 
 		const fitAddon = new FitAddon();
+		const unicodeAddon = new Unicode11Addon();
 		xterm.loadAddon(fitAddon);
+		xterm.loadAddon(unicodeAddon);
+		xterm.unicode.activeVersion = '11';
 		xterm.open(termRef.current);
-		fitAddon.fit();
+		// Force font family on rendered DOM nodes in case xterm doesn't pick up config immediately
+		const fontTargets = termRef.current.querySelectorAll<HTMLElement>(
+			'.xterm, .xterm-rows, .xterm-helper-textarea',
+		);
+		fontTargets.forEach((node) => {
+			node.style.fontFamily = resolvedFontFamily;
+		});
 
-		const eventSource = new EventSource(`/api/terminals/${terminalId}/output`);
+		// Fit after a short delay to ensure DOM is ready
+		setTimeout(() => {
+			try {
+				fitAddon.fit();
+			} catch (error) {
+				console.error('Failed to fit terminal:', error);
+			}
+		}, 50);
+
+		const eventSource = new EventSource(
+			`${API_BASE_URL}/v1/terminals/${terminalId}/output`,
+		);
+		eventSourceRef.current = eventSource;
+
+		eventSource.onopen = () => {
+			console.log('[TerminalViewer] SSE connection opened:', terminalId);
+		};
 
 		eventSource.onmessage = (event) => {
 			try {
 				const data = JSON.parse(event.data);
 				if (data.type === 'data') {
-					xterm.write(`${data.line}\r\n`);
+					xterm.write(data.line);
 				} else if (data.type === 'exit') {
 					xterm.write(
 						`\r\n\x1b[33m[Process exited with code ${data.exitCode}]\x1b[0m\r\n`,
@@ -76,12 +166,32 @@ export const TerminalViewer = memo(function TerminalViewer({
 			}
 		};
 
-		eventSource.onerror = () => {
-			console.error('SSE connection error');
+		eventSource.onerror = (error) => {
+			if (eventSource.readyState !== EventSource.CLOSED) {
+				console.error('[TerminalViewer] SSE connection error:', {
+					terminalId,
+					url: `${API_BASE_URL}/v1/terminals/${terminalId}/output`,
+					readyState: eventSource.readyState,
+					readyStateText:
+						eventSource.readyState === 0
+							? 'CONNECTING'
+							: eventSource.readyState === 1
+								? 'OPEN'
+								: 'CLOSED',
+					error,
+				});
+			}
+
+			// Close the EventSource to prevent auto-reconnect loop
+			console.log('[TerminalViewer] Closing EventSource due to error');
+			eventSource.close();
+			if (eventSourceRef.current === eventSource) {
+				eventSourceRef.current = null;
+			}
 		};
 
 		xterm.onData((data) => {
-			fetch(`/api/terminals/${terminalId}/input`, {
+			fetch(`${API_BASE_URL}/v1/terminals/${terminalId}/input`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ input: data }),
@@ -93,61 +203,60 @@ export const TerminalViewer = memo(function TerminalViewer({
 		xtermRef.current = xterm;
 		fitAddonRef.current = fitAddon;
 
-		const resizeObserver = new ResizeObserver(() => {
-			fitAddon.fit();
-		});
-		resizeObserver.observe(termRef.current);
+		// Handle window resize
+		const handleResize = () => {
+			if (fitAddonRef.current) {
+				try {
+					fitAddonRef.current.fit();
+				} catch (error) {
+					console.error('Failed to fit terminal on resize:', error);
+				}
+			}
+		};
+		window.addEventListener('resize', handleResize);
 
 		return () => {
-			resizeObserver.disconnect();
-			eventSource.close();
+			console.log('[TerminalViewer] Cleanup:', terminalId);
+			if (eventSourceRef.current) {
+				eventSourceRef.current.close();
+				eventSourceRef.current = null;
+			}
+			window.removeEventListener('resize', handleResize);
 			xterm.dispose();
 		};
 	}, [terminalId]);
 
-	const handleBack = () => {
-		selectTerminal(null);
-	};
-
-	const handleKill = async () => {
-		try {
-			await killTerminal.mutateAsync(terminalId);
-			selectTerminal(null);
-		} catch (error) {
-			console.error('Failed to kill terminal:', error);
-		}
-	};
-
 	return (
-		<div className="flex flex-col h-full">
-			<div className="h-12 border-b border-border px-3 flex items-center justify-between shrink-0">
-				<div className="flex items-center gap-2">
-					<Button variant="ghost" size="icon" onClick={handleBack}>
-						<ChevronLeft className="w-4 h-4" />
+		<div className="flex h-full flex-col overflow-hidden bg-background">
+			{/* Header */}
+			<div className="h-10 border-b border-border px-3 flex items-center justify-between shrink-0 bg-muted/40">
+				<div className="flex items-center gap-2 flex-1 min-w-0">
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={() => selectTerminal(null)}
+						title="Back to terminal list"
+						className="h-6 w-6 shrink-0"
+					>
+						<ArrowLeft className="w-3.5 h-3.5" />
 					</Button>
-					<div className="flex flex-col">
-						<span className="text-sm font-medium">
-							{terminal?.title || terminal?.purpose}
-						</span>
-						<span className="text-xs text-muted-foreground">
-							{terminal?.status === 'running'
-								? 'Running'
-								: `Exited (${terminal?.exitCode})`}
-						</span>
-					</div>
+					<span className="text-xs font-medium text-muted-foreground truncate">
+						{terminal?.title || terminal?.purpose || terminalId}
+					</span>
 				</div>
 				<Button
 					variant="ghost"
 					size="icon"
 					onClick={handleKill}
-					disabled={terminal?.status === 'exited' || killTerminal.isPending}
 					title="Kill terminal"
+					className="h-6 w-6 shrink-0 text-destructive hover:text-destructive"
 				>
-					<X className="w-4 h-4" />
+					<X className="w-3.5 h-3.5" />
 				</Button>
 			</div>
 
-			<div ref={termRef} className="flex-1 bg-[#1e1e1e] p-2" />
+			{/* Terminal */}
+			<div ref={termRef} className="h-full w-full bg-background" />
 		</div>
 	);
-});
+}

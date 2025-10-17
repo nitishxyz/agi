@@ -19,7 +19,6 @@ export const TerminalsSidebar = memo(function TerminalsSidebar() {
 	const createTerminal = useCreateTerminal();
 
 	const handleNewTerminal = async () => {
-
 		try {
 			const result = await createTerminal.mutateAsync({
 				command: 'bash',

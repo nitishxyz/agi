@@ -3,6 +3,19 @@ import { z } from 'zod';
 import DESCRIPTION from './terminal.txt' with { type: 'text' };
 import { createToolError } from '../error.ts';
 import type { TerminalManager } from '../../terminals/index.ts';
+import type { TerminalStatus } from '../../terminals/terminal.ts';
+import { normalizeTerminalLine } from '../../utils/ansi.ts';
+
+function shellQuote(segment: string): string {
+	if (/^[a-zA-Z0-9._-]+$/.test(segment)) {
+		return segment;
+	}
+	return `'${segment.replace(/'/g, `'\\''`)}'`;
+}
+
+function formatShellCommand(parts: string[]): string {
+	return parts.map(shellQuote).join(' ');
+}
 
 function normalizePath(p: string) {
 	const parts = p.replace(/\\/g, '/').split('/');
@@ -35,7 +48,7 @@ export function buildTerminalTool(
 		description: DESCRIPTION,
 		inputSchema: z.object({
 			operation: z
-				.enum(['start', 'read', 'write', 'list', 'kill'])
+				.enum(['start', 'read', 'write', 'interrupt', 'list', 'kill'])
 				.describe('Operation to perform'),
 
 			command: z.string().optional().describe('For start: Command to run'),
@@ -43,10 +56,22 @@ export function buildTerminalTool(
 				.array(z.string())
 				.optional()
 				.describe('For start: Command arguments'),
+			shell: z
+				.boolean()
+				.default(true)
+				.describe(
+					'For start: Launch inside interactive shell and optionally run command',
+				),
 			purpose: z
 				.string()
 				.optional()
 				.describe('For start: Description of what this terminal is for'),
+			title: z
+				.string()
+				.optional()
+				.describe(
+					'For start: Short name shown in the UI (defaults to purpose)',
+				),
 			cwd: z
 				.string()
 				.default('.')
@@ -62,6 +87,12 @@ export function buildTerminalTool(
 				.default(100)
 				.optional()
 				.describe('For read: Number of lines to read from end'),
+			raw: z
+				.boolean()
+				.optional()
+				.describe(
+					'For read: Include raw output with ANSI escape sequences (default false)',
+				),
 
 			input: z
 				.string()
@@ -74,7 +105,9 @@ export function buildTerminalTool(
 
 				switch (operation) {
 					case 'start': {
-						if (!params.command) {
+						const runInShell = params.shell;
+
+						if (!params.command && !runInShell) {
 							return createToolError('command is required for start operation');
 						}
 						if (!params.purpose) {
@@ -83,22 +116,59 @@ export function buildTerminalTool(
 
 						const cwd = resolveSafePath(projectRoot, params.cwd);
 
+						const shellPath = process.env.SHELL || '/bin/sh';
+
+						let command = params.command ?? shellPath;
+						let args = params.args ?? [];
+						let initialCommand: string | null = null;
+
+						if (runInShell) {
+							command = shellPath;
+							args = ['-i'];
+							const providedCommand = params.command;
+							const providedArgs = params.args ?? [];
+
+							if (providedCommand || providedArgs.length > 0) {
+								if (providedArgs.length === 0 && providedCommand) {
+									// Command already contains spaces; treat as full shell snippet
+									initialCommand = providedCommand;
+								} else {
+									const commandParts = [
+										providedCommand,
+										...providedArgs,
+									].filter((part): part is string => Boolean(part));
+									if (commandParts.length > 0) {
+										initialCommand = formatShellCommand(commandParts);
+									}
+								}
+							}
+						}
+
 						const term = terminalManager.create({
-							command: params.command,
-							args: params.args,
+							command,
+							args,
 							cwd,
 							purpose: params.purpose,
+							title: params.title,
 							createdBy: 'llm',
 						});
+
+						if (initialCommand) {
+							queueMicrotask(() => {
+								term.write(`${initialCommand}\n`);
+							});
+						}
 
 						return {
 							ok: true,
 							terminalId: term.id,
 							pid: term.pid,
 							purpose: term.purpose,
-							command: params.command,
+							command: params.command ?? command,
 							args: params.args || [],
-							message: `Started: ${params.command}${params.args ? ` ${params.args.join(' ')}` : ''}`,
+							shell: runInShell,
+							title: term.title,
+							message: `Started: ${params.command ?? command}${params.args ? ` ${params.args.join(' ')}` : ''}`,
 						};
 					}
 
@@ -115,15 +185,33 @@ export function buildTerminalTool(
 						}
 
 						const output = term.read(params.lines);
+						const normalized = output.map(normalizeTerminalLine);
+						const text = normalized.join('\n').replace(/\u0000/g, '');
 
-						return {
+						const response: {
+							ok: true;
+							terminalId: string;
+							output: string[];
+							status: TerminalStatus;
+							exitCode: number | undefined;
+							lines: number;
+							text: string;
+							rawOutput?: string[];
+						} = {
 							ok: true,
 							terminalId: term.id,
-							output,
+							output: normalized,
 							status: term.status,
 							exitCode: term.exitCode,
-							lines: output.length,
+							lines: normalized.length,
+							text,
 						};
+
+						if (params.raw) {
+							response.rawOutput = output;
+						}
+
+						return response;
 					}
 
 					case 'write': {
@@ -147,6 +235,27 @@ export function buildTerminalTool(
 							ok: true,
 							terminalId: term.id,
 							message: `Wrote ${params.input.length} characters to terminal`,
+						};
+					}
+
+					case 'interrupt': {
+						if (!params.terminalId) {
+							return createToolError(
+								'terminalId is required for interrupt operation',
+							);
+						}
+
+						const term = terminalManager.get(params.terminalId);
+						if (!term) {
+							return createToolError(`Terminal ${params.terminalId} not found`);
+						}
+
+						term.write('\u0003');
+
+						return {
+							ok: true,
+							terminalId: term.id,
+							message: 'Sent SIGINT (Ctrl+C) to terminal',
 						};
 					}
 

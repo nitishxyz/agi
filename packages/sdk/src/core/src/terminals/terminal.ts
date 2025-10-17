@@ -44,13 +44,10 @@ export class Terminal {
 		this.buffer = new CircularBuffer(500);
 
 		this.pty.onData((data) => {
-			const lines = data.split('\n');
-			for (const line of lines) {
-				if (line) {
-					this.buffer.push(line);
-					this.dataEmitter.emit('data', line);
-				}
-			}
+			// Store in buffer for history
+			this.buffer.push(data);
+			// Emit raw data - terminals need control chars, ANSI codes, etc.
+			this.dataEmitter.emit('data', data);
 		});
 
 		this.pty.onExit(({ exitCode }) => {

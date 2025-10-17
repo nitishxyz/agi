@@ -57,7 +57,10 @@ export function registerTerminalsRoutes(
 			});
 		} catch (error) {
 			console.error('[API] Error creating terminal:', error);
-			console.error('[API] Error stack:', error instanceof Error ? error.stack : 'No stack');
+			console.error(
+				'[API] Error stack:',
+				error instanceof Error ? error.stack : 'No stack',
+			);
 			const message = error instanceof Error ? error.message : String(error);
 			return c.json({ error: message }, 500);
 		}
@@ -76,39 +79,87 @@ export function registerTerminalsRoutes(
 
 	app.get('/v1/terminals/:id/output', async (c) => {
 		const id = c.req.param('id');
+		console.log('[SSE] Client connecting to terminal:', id);
 		const terminal = terminalManager.get(id);
 
 		if (!terminal) {
+			console.error('[SSE] Terminal not found:', id);
 			return c.json({ error: 'Terminal not found' }, 404);
 		}
 
 		return streamSSE(c, async (stream) => {
-			const onData = (line: string) => {
-				stream.write(JSON.stringify({ type: 'data', line }));
+			console.log('[SSE] Stream started for terminal:', id);
+			// Send historical buffer first (unless skipHistory is set)
+			const skipHistory = c.req.query('skipHistory') === 'true';
+			if (!skipHistory) {
+				const history = terminal.read();
+				console.log('[SSE] Sending history, lines:', history.length);
+				for (const line of history) {
+					await stream.write(
+						`data: ${JSON.stringify({ type: 'data', line })}\n\n`,
+					);
+				}
+			}
+
+			const sendEvent = async (payload: Record<string, unknown>) => {
+				try {
+					await stream.write(`data: ${JSON.stringify(payload)}\n\n`);
+				} catch (error) {
+					console.error('[SSE] Error writing event:', error);
+				}
 			};
 
-			const onExit = (exitCode: number) => {
-				stream.write(JSON.stringify({ type: 'exit', exitCode }));
-				stream.close();
+			const onData = (line: string) => {
+				void sendEvent({ type: 'data', line });
 			};
+
+			let resolveStream: (() => void) | null = null;
+			let finished = false;
+
+			function cleanup() {
+				terminal.removeDataListener(onData);
+				terminal.removeExitListener(onExit);
+				c.req.raw.signal.removeEventListener('abort', onAbort);
+			}
+
+			function finish() {
+				if (finished) {
+					return;
+				}
+				finished = true;
+				cleanup();
+				resolveStream?.();
+			}
+
+			async function onExit(exitCode: number) {
+				try {
+					await sendEvent({ type: 'exit', exitCode });
+				} finally {
+					stream.close();
+					finish();
+				}
+			}
+
+			function onAbort() {
+				console.log('[SSE] Client disconnected:', terminal.id);
+				stream.close();
+				finish();
+			}
 
 			terminal.onData(onData);
 			terminal.onExit(onExit);
 
-			c.req.raw.signal.addEventListener('abort', () => {
-				terminal.removeDataListener(onData);
-				terminal.removeExitListener(onExit);
+			c.req.raw.signal.addEventListener('abort', onAbort, { once: true });
+
+			const waitForClose = new Promise<void>((resolve) => {
+				resolveStream = resolve;
 			});
 
 			if (terminal.status === 'exited') {
-				stream.write(
-					JSON.stringify({
-						type: 'exit',
-						exitCode: terminal.exitCode,
-					}),
-				);
-				stream.close();
+				void onExit(terminal.exitCode ?? 0);
 			}
+
+			await waitForClose;
 		});
 	});
 

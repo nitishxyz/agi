@@ -5,21 +5,27 @@
 ## Operations
 
 ### start
-- Spawns a new persistent terminal with a command
+- Spawns a new persistent terminal (interactive shell by default)
 - Returns terminal ID for future operations
 - Use for processes that need to stay alive (dev servers, watchers, logs)
+- Before starting, call `terminal(operation: "list")` to see if a matching service is already running
+- Provide a clear `purpose` or `title` (e.g. "web dev server port 9100") so humans can recognize it
 - Parameters:
-  - command (required): Shell command to run
+  - command (optional when `shell` is true): Command to run
   - purpose (required): Description of what this terminal is for
+  - title (optional): Short UI label shown beside the terminal
   - cwd (optional): Working directory relative to project root (default: '.')
   - args (optional): Array of command arguments
+  - shell (optional, default: true): Launch an interactive shell and run the command via stdin. Set to `false` to spawn the process directly.
 
 ### read
 - Read output from a terminal's buffer (last N lines)
+- Strips ANSI escape codes by default so responses are easy to read
 - Parameters:
   - terminalId (required): Terminal ID from start operation
   - lines (optional): Number of lines to read from end (default: 100)
-- Returns output lines, status, and exit code
+  - raw (optional): Include `rawOutput` array with ANSI escape sequences (default: false)
+- Returns sanitized output lines, combined `text`, status, and exit code
 
 ### write
 - Write input to a terminal's stdin
@@ -27,6 +33,12 @@
 - Parameters:
   - terminalId (required): Terminal ID
   - input (required): String to write to stdin
+
+### interrupt
+- Sends SIGINT (Ctrl+C) to the terminal without closing the PTY
+- Useful for stopping dev servers or watchers while keeping the shell alive
+- Parameters:
+  - terminalId (required): Terminal ID
 
 ### list
 - List all active terminals
@@ -77,3 +89,5 @@
 - Output is buffered (last 500 lines kept)
 - Both user-created and LLM-created terminals are visible
 - You can read from user-created terminals to understand context
+- Prefer `read` over `start` when you only need status — avoid duplicating services that already exist
+- Mention running terminals (purpose, command, port) in your responses so humans know what is active

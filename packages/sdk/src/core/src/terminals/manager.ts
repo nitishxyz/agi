@@ -38,35 +38,35 @@ export class TerminalManager {
 				args: options.args,
 				cwd: options.cwd,
 				purpose: options.purpose,
-		});
+			});
 
-		const ptyOptions: PtyOptions = {
-			name: 'xterm-256color',
-			cols: 80,
-			rows: 30,
-			cwd: options.cwd,
-			env: process.env as Record<string, string>,
-		};
+			const ptyOptions: PtyOptions = {
+				name: 'xterm-256color',
+				cols: 80,
+				rows: 30,
+				cwd: options.cwd,
+				env: process.env as Record<string, string>,
+			};
 
-		const pty = spawnPty(options.command, options.args || [], ptyOptions);
+			const pty = spawnPty(options.command, options.args || [], ptyOptions);
 
-		console.log('[TerminalManager] PTY created successfully:', pty.pid);
+			console.log('[TerminalManager] PTY created successfully:', pty.pid);
 
-		const terminal = new Terminal(id, pty, options);
+			const terminal = new Terminal(id, pty, options);
 
-		terminal.onExit((_exitCode) => {
-			const timer = setTimeout(() => {
-				this.delete(id);
-			}, CLEANUP_DELAY_MS);
+			terminal.onExit((_exitCode) => {
+				const timer = setTimeout(() => {
+					this.delete(id);
+				}, CLEANUP_DELAY_MS);
 
-			this.cleanupTimers.set(id, timer);
-		});
+				this.cleanupTimers.set(id, timer);
+			});
 
-		this.terminals.set(id, terminal);
+			this.terminals.set(id, terminal);
 
 			console.log('[TerminalManager] Terminal added to map');
 
-		return terminal;
+			return terminal;
 		} catch (error) {
 			console.error('[TerminalManager] Failed to create terminal:', error);
 			throw error;
