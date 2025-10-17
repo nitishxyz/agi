@@ -27,7 +27,10 @@ function tryUseExistingPath(path?: string | null): string | null {
 	return null;
 }
 
-async function readFromEmbedded(url: URL, targetPath: string): Promise<string | null> {
+async function readFromEmbedded(
+	url: URL,
+	targetPath: string,
+): Promise<string | null> {
 	const file = Bun.file(url);
 	if (!(await file.exists())) {
 		return null;
