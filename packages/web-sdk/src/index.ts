@@ -4,7 +4,7 @@ export {
 	TerminalsSidebarToggle,
 	TerminalViewer,
 	TerminalList,
-} from './components/terminals/index.ts';
+} from './components/terminals';
 
 // Main entry point - re-export everything for convenience
 export * from './components';
