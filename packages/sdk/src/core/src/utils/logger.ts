@@ -2,7 +2,9 @@ import { isDebugEnabled, isTraceEnabled } from './debug.ts';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-function safeHasMeta(meta?: Record<string, unknown>): meta is Record<string, unknown> {
+function safeHasMeta(
+	meta?: Record<string, unknown>,
+): meta is Record<string, unknown> {
 	return Boolean(meta && Object.keys(meta).length);
 }
 
@@ -69,7 +71,8 @@ export function error(
 				const errObj = err as Record<string, unknown>;
 				const details: Record<string, unknown> = {};
 				if (typeof errObj.name === 'string') details.name = errObj.name;
-				if (typeof errObj.message === 'string') details.message = errObj.message;
+				if (typeof errObj.message === 'string')
+					details.message = errObj.message;
 				if (typeof errObj.code === 'string') details.code = errObj.code;
 				if (typeof errObj.status === 'number') details.status = errObj.status;
 				if (typeof errObj.statusCode === 'number')

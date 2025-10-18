@@ -5,7 +5,9 @@ type GlobalDebugFlags = {
 	__AGI_TRACE_ENABLED__?: boolean;
 };
 
-function readGlobalFlag(key: '__AGI_DEBUG_ENABLED__' | '__AGI_TRACE_ENABLED__') {
+function readGlobalFlag(
+	key: '__AGI_DEBUG_ENABLED__' | '__AGI_TRACE_ENABLED__',
+) {
 	const globalState = globalThis as GlobalDebugFlags;
 	return globalState[key];
 }
