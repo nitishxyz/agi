@@ -9,7 +9,7 @@ import {
 	ensureProviderEnv,
 } from '@agi-cli/sdk';
 import { dispatchAssistantMessage } from '../runtime/message-service.ts';
-import { logger } from '../runtime/logger.ts';
+import { logger } from '@agi-cli/sdk';
 import { serializeError } from '../runtime/api-error.ts';
 
 type MessagePartRow = typeof messageParts.$inferSelect;

@@ -23,6 +23,18 @@ const state: DebugState = {
 	runtimeTraceOverride: null,
 };
 
+type GlobalDebugFlags = {
+	__AGI_DEBUG_ENABLED__?: boolean;
+	__AGI_TRACE_ENABLED__?: boolean;
+};
+
+const globalFlags = globalThis as GlobalDebugFlags;
+
+function syncGlobalFlags() {
+	globalFlags.__AGI_DEBUG_ENABLED__ = state.enabled;
+	globalFlags.__AGI_TRACE_ENABLED__ = state.traceEnabled;
+}
+
 /**
  * Check if environment variables indicate debug mode
  */
@@ -63,6 +75,7 @@ function initialize() {
 	if (state.runtimeTraceOverride === null) {
 		state.traceEnabled = checkEnvTrace();
 	}
+	syncGlobalFlags();
 }
 
 /**
@@ -92,6 +105,7 @@ export function isTraceEnabled(): boolean {
 export function setDebugEnabled(enabled: boolean): void {
 	state.enabled = enabled;
 	state.runtimeOverride = enabled;
+	syncGlobalFlags();
 }
 
 /**
@@ -103,6 +117,7 @@ export function setDebugEnabled(enabled: boolean): void {
 export function setTraceEnabled(enabled: boolean): void {
 	state.traceEnabled = enabled;
 	state.runtimeTraceOverride = enabled;
+	syncGlobalFlags();
 }
 
 /**
@@ -113,6 +128,7 @@ export function resetDebugState(): void {
 	state.runtimeTraceOverride = null;
 	state.enabled = checkEnvDebug();
 	state.traceEnabled = checkEnvTrace();
+	syncGlobalFlags();
 }
 
 /**

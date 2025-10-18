@@ -31,6 +31,7 @@ export async function setupToolContext(
 		provider: opts.provider,
 		model: opts.model,
 		projectRoot: opts.projectRoot,
+		stepExecution: { states: new Map() },
 		onFirstToolCall: () => {
 			if (firstToolSeen) return;
 			firstToolSeen = true;

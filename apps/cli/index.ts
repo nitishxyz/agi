@@ -1,4 +1,8 @@
-import { loadConfig, isProviderAuthorized } from '@agi-cli/sdk';
+import {
+	loadConfig,
+	isProviderAuthorized,
+	getTerminalManager,
+} from '@agi-cli/sdk';
 import {
 	createApp as createServer,
 	setDebugEnabled,
@@ -114,12 +118,14 @@ async function main() {
 
 		// Start the Web UI server on the next port
 		const webPort = agiServer.port + 1;
+		let webServer: ReturnType<typeof createWebServer>['server'] | null = null;
 		try {
-			const { port: actualWebPort } = createWebServer(
+			const { port: actualWebPort, server } = createWebServer(
 				webPort,
 				agiServer.port,
 				networkFlag,
 			);
+			webServer = server;
 			console.log(
 				`🌐 Web UI available at http://${displayHost}:${actualWebPort}`,
 			);
@@ -130,6 +136,38 @@ async function main() {
 			console.error('❌ Failed to start Web UI server:', error);
 			console.log('   AGI server is still running without Web UI');
 		}
+
+		let shuttingDown = false;
+		const shutdown = async (signal: NodeJS.Signals) => {
+			if (shuttingDown) return;
+			shuttingDown = true;
+			console.log(`\nReceived ${signal}, shutting down...`);
+			try {
+				const terminalManager = getTerminalManager();
+				if (terminalManager) {
+					await terminalManager.killAll();
+				}
+			} catch (error) {
+				console.error('Error cleaning up terminals:', error);
+			}
+
+			try {
+				webServer?.stop(true);
+			} catch (error) {
+				console.error('Error stopping web server:', error);
+			}
+
+			try {
+				agiServer.stop(true);
+			} catch (error) {
+				console.error('Error stopping API server:', error);
+			}
+
+			process.exit(0);
+		};
+
+		process.once('SIGINT', shutdown);
+		process.once('SIGTERM', shutdown);
 
 		return;
 	}

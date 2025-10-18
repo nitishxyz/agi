@@ -1,7 +1,7 @@
 import type { Hono } from 'hono';
 import { loadConfig, catalog, type ProviderId } from '@agi-cli/sdk';
 import type { EmbeddedAppConfig } from '../../index.ts';
-import { logger } from '../../runtime/logger.ts';
+import { logger } from '@agi-cli/sdk';
 import { serializeError } from '../../runtime/api-error.ts';
 import {
 	isProviderAuthorizedHybrid,

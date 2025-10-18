@@ -1,6 +1,7 @@
 import type { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import type { TerminalManager } from '@agi-cli/sdk';
+import { logger } from '@agi-cli/sdk';
 
 export function registerTerminalsRoutes(
 	app: Hono,
@@ -16,9 +17,9 @@ export function registerTerminalsRoutes(
 
 	app.post('/v1/terminals', async (c) => {
 		try {
-			console.log('[API] POST /v1/terminals called');
+			logger.debug('POST /v1/terminals called');
 			const body = await c.req.json();
-			console.log('[API] Request body:', body);
+			logger.debug('Creating terminal request received', body);
 			const { command, args, purpose, cwd, title } = body;
 
 			if (!command || !purpose) {
@@ -31,7 +32,7 @@ export function registerTerminalsRoutes(
 			}
 			const resolvedCwd = cwd || process.cwd();
 
-			console.log('[API] Creating terminal with:', {
+			logger.debug('Creating terminal', {
 				command: resolvedCommand,
 				args,
 				purpose,
@@ -47,7 +48,7 @@ export function registerTerminalsRoutes(
 				title,
 			});
 
-			console.log('[API] Terminal created successfully:', terminal.id);
+			logger.debug('Terminal created successfully', { id: terminal.id });
 
 			return c.json({
 				terminalId: terminal.id,
@@ -56,11 +57,7 @@ export function registerTerminalsRoutes(
 				command: terminal.command,
 			});
 		} catch (error) {
-			console.error('[API] Error creating terminal:', error);
-			console.error(
-				'[API] Error stack:',
-				error instanceof Error ? error.stack : 'No stack',
-			);
+			logger.error('Error creating terminal', error);
 			const message = error instanceof Error ? error.message : String(error);
 			return c.json({ error: message }, 500);
 		}
@@ -79,21 +76,24 @@ export function registerTerminalsRoutes(
 
 	app.get('/v1/terminals/:id/output', async (c) => {
 		const id = c.req.param('id');
-		console.log('[SSE] Client connecting to terminal:', id);
+		logger.debug('SSE client connecting to terminal', { id });
 		const terminal = terminalManager.get(id);
 
 		if (!terminal) {
-			console.error('[SSE] Terminal not found:', id);
+			logger.debug('SSE terminal not found', { id });
 			return c.json({ error: 'Terminal not found' }, 404);
 		}
 
 		return streamSSE(c, async (stream) => {
-			console.log('[SSE] Stream started for terminal:', id);
+			logger.debug('SSE stream started for terminal', { id });
 			// Send historical buffer first (unless skipHistory is set)
 			const skipHistory = c.req.query('skipHistory') === 'true';
 			if (!skipHistory) {
 				const history = terminal.read();
-				console.log('[SSE] Sending history, lines:', history.length);
+				logger.debug('SSE sending terminal history', {
+					id,
+					lines: history.length,
+				});
 				for (const line of history) {
 					await stream.write(
 						`data: ${JSON.stringify({ type: 'data', line })}\n\n`,
@@ -105,7 +105,7 @@ export function registerTerminalsRoutes(
 				try {
 					await stream.write(`data: ${JSON.stringify(payload)}\n\n`);
 				} catch (error) {
-					console.error('[SSE] Error writing event:', error);
+					logger.error('SSE error writing event', error, { id });
 				}
 			};
 
@@ -141,7 +141,9 @@ export function registerTerminalsRoutes(
 			}
 
 			function onAbort() {
-				console.log('[SSE] Client disconnected:', terminal.id);
+				logger.debug('SSE client disconnected from terminal', {
+					id: terminal.id,
+				});
 				stream.close();
 				finish();
 			}

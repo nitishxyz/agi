@@ -7,7 +7,7 @@ import type {
 import { handleAskRequest } from '../runtime/ask-service.ts';
 import type { EmbeddedAppConfig } from '../index.ts';
 import { serializeError } from '../runtime/api-error.ts';
-import { logger } from '../runtime/logger.ts';
+import { logger } from '@agi-cli/sdk';
 
 export function registerAskRoutes(app: Hono) {
 	app.post('/v1/ask', async (c) => {

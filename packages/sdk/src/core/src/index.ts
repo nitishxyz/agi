@@ -100,3 +100,9 @@ export {
 	NotFoundError,
 	ServiceError,
 } from './errors';
+
+// =======================
+// Logging & Debug
+// =======================
+export { logger, debug, info, warn, error, time } from './utils/logger.ts';
+export { isDebugEnabled, isTraceEnabled } from './utils/debug.ts';

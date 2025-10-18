@@ -1,7 +1,8 @@
-import { spawn as spawnPty } from './bun-pty.ts';
 import { randomBytes } from 'node:crypto';
-import { Terminal } from './terminal.ts';
 import type { PtyOptions } from './bun-pty.ts';
+import { spawn as spawnPty } from './bun-pty.ts';
+import { Terminal } from './terminal.ts';
+import { logger } from '../utils/logger.ts';
 
 const MAX_TERMINALS = 10;
 const CLEANUP_DELAY_MS = 5 * 60 * 1000;
@@ -19,10 +20,7 @@ export class TerminalManager {
 	private terminals = new Map<string, Terminal>();
 	private cleanupTimers = new Map<string, NodeJS.Timeout>();
 
-	constructor() {
-		process.on('SIGTERM', () => this.killAll());
-		process.on('SIGINT', () => this.killAll());
-	}
+	constructor() {}
 
 	create(options: CreateTerminalOptions): Terminal {
 		if (this.terminals.size >= MAX_TERMINALS) {
@@ -32,7 +30,7 @@ export class TerminalManager {
 		const id = this.generateId();
 
 		try {
-			console.log('[TerminalManager] Creating terminal:', {
+			logger.debug('TerminalManager: creating terminal', {
 				id,
 				command: options.command,
 				args: options.args,
@@ -50,7 +48,9 @@ export class TerminalManager {
 
 			const pty = spawnPty(options.command, options.args || [], ptyOptions);
 
-			console.log('[TerminalManager] PTY created successfully:', pty.pid);
+			logger.debug('TerminalManager: PTY created', {
+				pid: pty.pid,
+			});
 
 			const terminal = new Terminal(id, pty, options);
 
@@ -64,11 +64,11 @@ export class TerminalManager {
 
 			this.terminals.set(id, terminal);
 
-			console.log('[TerminalManager] Terminal added to map');
+			logger.debug('TerminalManager: terminal added to map', { id });
 
 			return terminal;
 		} catch (error) {
-			console.error('[TerminalManager] Failed to create terminal:', error);
+			logger.error('TerminalManager: failed to create terminal', error);
 			throw error;
 		}
 	}

@@ -161,6 +161,18 @@ export {
 	ServiceError,
 } from './core/src/index.ts';
 
+// Logging & Debug
+export {
+	logger,
+	debug,
+	info,
+	warn,
+	error,
+	time,
+	isDebugEnabled,
+	isTraceEnabled,
+} from './core/src/index.ts';
+
 // Schema Validation
 export { z } from './core/src/index.ts';
 

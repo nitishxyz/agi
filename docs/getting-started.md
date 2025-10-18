@@ -2,45 +2,50 @@
 
 [← Back to README](../README.md) • [Docs Index](./index.md)
 
+---
+
 ## Installation
 
-### Recommended: npm or bun (global install)
+### 🎯 Recommended: One-Liner Install
 
-The easiest way to install AGI is via npm or bun:
+The fastest way to get started:
 
 ```bash
-npm install -g @agi-cli/install
-# or
-bun install -g @agi-cli/install
+curl -fsSL https://install.agi.nitish.sh | sh
 ```
 
-This will automatically:
-- Download the correct prebuilt binary for your OS and architecture
-- Install it to your system PATH
-- Make the `agi` command available globally
+**What this does:**
+- ✅ Detects your OS and architecture automatically
+- ✅ Downloads the correct prebuilt binary
+- ✅ Installs to `/usr/local/bin` (or `$HOME/.local/bin` as fallback)
+- ✅ Makes `agi` available globally
+
+**Pin a specific version:**
+
+```bash
+AGI_VERSION=v0.1.92 curl -fsSL https://install.agi.nitish.sh | sh
+```
+
+### 📦 Alternative: npm or Bun
+
+Install via package managers:
+
+```bash
+# Using npm
+npm install -g @agi-cli/install
+
+# Using Bun
+bun install -g @agi-cli/install
+```
 
 **Supported platforms:**
 - macOS (x64, ARM64/Apple Silicon)
 - Linux (x64, ARM64)
 - Windows (x64)
 
-### Alternative: Direct binary install via curl
+---
 
-```bash
-curl -fsSL https://install.agi.nitish.sh | sh
-```
-
-- Installs the correct prebuilt binary for your OS/arch.
-- Uses `/usr/local/bin` when writable; otherwise falls back to `$HOME/.local/bin`.
-- If needed, add the chosen directory to your `PATH`.
-
-Pin a specific version:
-
-```bash
-AGI_VERSION=v0.1.29 curl -fsSL https://install.agi.nitish.sh | sh
-```
-
-### From Source
+### 🛠️ From Source (For Developers)
 
 > Note: This project uses Bun as its runtime. Install Bun first from https://bun.sh
 
@@ -185,3 +190,97 @@ chmod +x /path/to/agi
 
 See [troubleshooting.md](./troubleshooting.md) for more help, or file an issue at:
 https://github.com/nitishxyz/agi/issues
+# Run from source
+bun run cli "hello"
+# Build binary for your platform
+bun run compile
+# Output: dist/agi
+
+# Or build for specific platforms
+bun run build:bin:darwin-arm64
+bun run build:bin:linux-x64
+**Pretty-print markdown output:**
+
+---
+### 1️⃣ Configure Your AI Provider
+
+Set up authentication interactively:
+**Set API keys via environment variables:**
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+export OPENAI_API_KEY="sk-..."
+export GOOGLE_GENERATIVE_AI_API_KEY="..."
+export OPENROUTER_API_KEY="sk-or-..."
+```
+
+### 2️⃣ Start Using AGI
+# 💬 Ask a question
+# 🔄 Interactive mode
+# 🔨 Use specialized agents
+agi "design a scalable API" --agent plan
+agi "review my changes" --agent git
+# 💾 Continue last conversation
+# 🎯 Choose provider and model
+agi "refactor this function" \\
+  --provider anthropic \\
+  --model claude-3-5-sonnet-20241022
+
+# 🌐 Start web interface
+agi serve
+# Open http://127.0.0.1:3456
+---
+
+---
+
+# ✅ Check version
+# ✅ Test basic functionality
+# ✅ List available agents
+# ✅ View available models
+
+# ✅ Check current configuration
+agi doctor
+---
+
+Ready to dive deeper? Check out these guides:
+
+- **Web UI**: See [mobile-support.md](./mobile-support.md) for web interface guide
+
+---
+   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+   
+   # For macOS zsh
+   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+   source ~/.zshrc
+### Provider authentication issues
+
+```bash
+# Check if API key is set
+echo $ANTHROPIC_API_KEY
+
+# Reconfigure authentication
+agi auth login
+
+# Or use the setup wizard
+agi setup
+```
+
+### Web UI not loading
+
+```bash
+# Check if server is running
+curl http://127.0.0.1:3456/health
+
+# Try different port
+agi serve --port 3000
+
+# Enable network access
+agi serve --network
+```
+
+
+---
+
+<p align="center">
+  <strong>Ready to start? Run <code>agi setup</code> to begin! 🚀</strong>
+</p>

@@ -3,6 +3,11 @@ import type { DB } from '@agi-cli/database';
 import { messageParts } from '@agi-cli/database/schema';
 import { publish } from '../events/bus.ts';
 
+export type StepExecutionState = {
+	chain: Promise<void>;
+	failed: boolean;
+};
+
 export type ToolAdapterContext = {
 	sessionId: string;
 	messageId: string;
@@ -15,6 +20,9 @@ export type ToolAdapterContext = {
 	nextIndex: () => number | Promise<number>;
 	stepIndex?: number;
 	onFirstToolCall?: () => void;
+	stepExecution?: {
+		states: Map<number, StepExecutionState>;
+	};
 };
 
 export function extractFinishText(input: unknown): string | undefined {

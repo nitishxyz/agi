@@ -4,7 +4,10 @@ import { eq } from 'drizzle-orm';
 import { publish } from '../events/bus.ts';
 import type { DiscoveredTool } from '@agi-cli/sdk';
 import { getCwd, setCwd, joinRelative } from '../runtime/cwd.ts';
-import type { ToolAdapterContext } from '../runtime/tool-context.ts';
+import type {
+	ToolAdapterContext,
+	StepExecutionState,
+} from '../runtime/tool-context.ts';
 import { isToolError } from '@agi-cli/sdk/tools/error';
 
 export type { ToolAdapterContext } from '../runtime/tool-context.ts';
@@ -49,6 +52,11 @@ export function adaptTools(
 	const pendingCalls = new Map<string, PendingCallMeta[]>();
 	let firstToolCallReported = false;
 
+	if (!ctx.stepExecution) {
+		ctx.stepExecution = { states: new Map<number, StepExecutionState>() };
+	}
+	const stepStates = ctx.stepExecution.states;
+
 	// Anthropic allows max 4 cache_control blocks
 	// Cache only the most frequently used tools: read, write, bash
 	const cacheableTools = new Set(['read', 'write', 'bash', 'edit']);
@@ -56,6 +64,68 @@ export function adaptTools(
 
 	for (const { name, tool } of tools) {
 		const base = tool;
+
+		const processedToolErrors = new WeakSet<object>();
+
+		const persistToolErrorResult = async (
+			errorResult: unknown,
+			{
+				callId,
+				startTs,
+				stepIndexForEvent,
+				args,
+			}: {
+				callId?: string;
+				startTs?: number;
+				stepIndexForEvent: number;
+				args?: unknown;
+			},
+		) => {
+			const resultPartId = crypto.randomUUID();
+			const endTs = Date.now();
+			const dur =
+				typeof startTs === 'number' ? Math.max(0, endTs - startTs) : null;
+
+			const contentObj: {
+				name: string;
+				result: unknown;
+				callId?: string;
+				args?: unknown;
+			} = {
+				name,
+				result: errorResult,
+				callId,
+			};
+
+			if (args !== undefined) {
+				contentObj.args = args;
+			}
+
+			const index = await ctx.nextIndex();
+
+			await ctx.db.insert(messageParts).values({
+				id: resultPartId,
+				messageId: ctx.messageId,
+				index,
+				stepIndex: stepIndexForEvent,
+				type: 'tool_result',
+				content: JSON.stringify(contentObj),
+				agent: ctx.agent,
+				provider: ctx.provider,
+				model: ctx.model,
+				startedAt: startTs,
+				completedAt: endTs,
+				toolName: name,
+				toolCallId: callId,
+				toolDurationMs: dur ?? undefined,
+			});
+
+			publish({
+				type: 'tool.result',
+				sessionId: ctx.sessionId,
+				payload: { ...contentObj, stepIndex: stepIndexForEvent },
+			});
+		};
 
 		// Add cache control for Anthropic to cache tool definitions (max 2 tools)
 		const shouldCache =
@@ -212,263 +282,275 @@ export function adaptTools(
 				const startTsFromQueue = meta?.startTs;
 				const stepIndexForEvent = meta?.stepIndex ?? ctx.stepIndex;
 
-				try {
-					// Handle session-relative paths and cwd tools
-					let res: ToolExecuteReturn | { cwd: string } | null | undefined;
-					const cwd = getCwd(ctx.sessionId);
-					if (name === 'pwd') {
-						res = { cwd };
-					} else if (name === 'cd') {
-						const next = joinRelative(
-							cwd,
-							String((input as Record<string, unknown>)?.path ?? '.'),
-						);
-						setCwd(ctx.sessionId, next);
-						res = { cwd: next };
-					} else if (
-						['read', 'write', 'ls', 'tree'].includes(name) &&
-						typeof (input as Record<string, unknown>)?.path === 'string'
-					) {
-						const rel = joinRelative(
-							cwd,
-							String((input as Record<string, unknown>).path),
-						);
-						const nextInput = {
-							...(input as Record<string, unknown>),
-							path: rel,
-						} as ToolExecuteInput;
-						// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
-						res = base.execute?.(nextInput, options as any);
-					} else if (name === 'bash') {
-						const needsCwd =
-							!input ||
-							typeof (input as Record<string, unknown>).cwd !== 'string';
-						const nextInput = needsCwd
-							? ({
-									...(input as Record<string, unknown>),
-									cwd,
-								} as ToolExecuteInput)
-							: input;
-						// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
-						res = base.execute?.(nextInput, options as any);
-					} else {
-						// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
-						res = base.execute?.(input, options as any);
+					const stepKey =
+						typeof stepIndexForEvent === 'number' && Number.isFinite(stepIndexForEvent)
+							? stepIndexForEvent
+							: 0;
+					let stepState = stepStates.get(stepKey);
+					if (!stepState) {
+						stepState = { chain: Promise.resolve(), failed: false };
+						stepStates.set(stepKey, stepState);
 					}
-					let result: unknown = res;
-					// If tool returns an async iterable, stream deltas while accumulating
-					if (res && typeof res === 'object' && Symbol.asyncIterator in res) {
-						const chunks: unknown[] = [];
-						for await (const chunk of res as AsyncIterable<unknown>) {
-							chunks.push(chunk);
-							publish({
-								type: 'tool.delta',
-								sessionId: ctx.sessionId,
-								payload: {
-									name,
-									channel: 'output',
-									delta: chunk,
-									stepIndex: stepIndexForEvent,
-									callId: callIdFromQueue,
-								},
-							});
-						}
-						// Prefer the last chunk as the result if present, otherwise the entire array
-						result = chunks.length > 0 ? chunks[chunks.length - 1] : null;
-					} else {
-						// Await promise or passthrough value
-						result = await Promise.resolve(res as ToolExecuteReturn);
-					}
-					const resultPartId = crypto.randomUUID();
-					const callId = callIdFromQueue;
-					const startTs = startTsFromQueue;
-					const contentObj: {
-						name: string;
-						result: unknown;
-						callId?: string;
-						artifact?: unknown;
-						args?: unknown;
-					} = {
-						name,
-						result,
-						callId,
-					};
-					if (meta?.args !== undefined) {
-						contentObj.args = meta.args;
-					}
-					if (result && typeof result === 'object' && 'artifact' in result) {
+
+					const executeWithGuards = async (): Promise<ToolExecuteReturn> => {
 						try {
-							const maybeArtifact = (result as { artifact?: unknown }).artifact;
-							if (maybeArtifact !== undefined)
-								contentObj.artifact = maybeArtifact;
-						} catch {}
-					}
-
-					const index = await ctx.nextIndex();
-					const endTs = Date.now();
-					const dur =
-						typeof startTs === 'number' ? Math.max(0, endTs - startTs) : null;
-
-					// Special-case: keep progress_update result lightweight; publish first, persist best-effort
-					if (name === 'progress_update') {
-						publish({
-							type: 'tool.result',
-							sessionId: ctx.sessionId,
-							payload: { ...contentObj, stepIndex: stepIndexForEvent },
-						});
-						// Persist without blocking the event loop
-						(async () => {
-							try {
-								await ctx.db.insert(messageParts).values({
-									id: resultPartId,
-									messageId: ctx.messageId,
-									index,
-									stepIndex: stepIndexForEvent,
-									type: 'tool_result',
-									content: JSON.stringify(contentObj),
-									agent: ctx.agent,
-									provider: ctx.provider,
-									model: ctx.model,
-									startedAt: startTs,
-									completedAt: endTs,
-									toolName: name,
-									toolCallId: callId,
-									toolDurationMs: dur ?? undefined,
-								});
-							} catch {}
-						})();
-						return result as ToolExecuteReturn;
-					}
-
-					await ctx.db.insert(messageParts).values({
-						id: resultPartId,
-						messageId: ctx.messageId,
-						index,
-						stepIndex: stepIndexForEvent,
-						type: 'tool_result',
-						content: JSON.stringify(contentObj),
-						agent: ctx.agent,
-						provider: ctx.provider,
-						model: ctx.model,
-						startedAt: startTs,
-						completedAt: endTs,
-						toolName: name,
-						toolCallId: callId,
-						toolDurationMs: dur ?? undefined,
-					});
-					// Update session aggregates: total tool time and counts per tool
-					try {
-						const sessRows = await ctx.db
-							.select()
-							.from(sessions)
-							.where(eq(sessions.id, ctx.sessionId));
-						if (sessRows.length) {
-							const row = sessRows[0] as typeof sessions.$inferSelect;
-							const totalToolTimeMs =
-								Number(row.totalToolTimeMs || 0) + (dur ?? 0);
-							let counts: Record<string, number> = {};
-							try {
-								counts = row.toolCountsJson
-									? JSON.parse(row.toolCountsJson)
-									: {};
-							} catch {}
-							counts[name] = (counts[name] || 0) + 1;
-							await ctx.db
-								.update(sessions)
-								.set({
-									totalToolTimeMs,
-									toolCountsJson: JSON.stringify(counts),
-									lastActiveAt: endTs,
-								})
-								.where(eq(sessions.id, ctx.sessionId));
-						}
-					} catch {}
-					publish({
-						type: 'tool.result',
-						sessionId: ctx.sessionId,
-						payload: { ...contentObj, stepIndex: stepIndexForEvent },
-					});
-					if (name === 'update_plan') {
-						try {
-							const result = (contentObj as { result?: unknown }).result as
-								| { items?: unknown; note?: unknown }
-								| undefined;
-							if (result && Array.isArray(result.items)) {
-								publish({
-									type: 'plan.updated',
-									sessionId: ctx.sessionId,
-									payload: { items: result.items, note: result.note },
-								});
+							if (stepState.failed) {
+								const skipError = {
+									ok: false,
+									error: `Cannot execute "${name}" because a previous tool call in this step failed. Retry the failing tool before continuing with "${name}".`,
+									details: { skippedTool: name },
+								};
+								throw skipError;
 							}
-						} catch {}
-					}
-					return result;
-				} catch (error) {
-					// Tool execution failed
-					// Check if the error is already a structured tool error response
-					const resultPartId = crypto.randomUUID();
-					const callId = callIdFromQueue;
-					const startTs = startTsFromQueue;
-					const endTs = Date.now();
-					const dur =
-						typeof startTs === 'number' ? Math.max(0, endTs - startTs) : null;
+							// Handle session-relative paths and cwd tools
+							let res: ToolExecuteReturn | { cwd: string } | null | undefined;
+							const cwd = getCwd(ctx.sessionId);
+							if (name === 'pwd') {
+								res = { cwd };
+							} else if (name === 'cd') {
+								const next = joinRelative(
+									cwd,
+									String((input as Record<string, unknown>)?.path ?? '.'),
+								);
+								setCwd(ctx.sessionId, next);
+								res = { cwd: next };
+							} else if (
+								['read', 'write', 'ls', 'tree'].includes(name) &&
+								typeof (input as Record<string, unknown>)?.path === 'string'
+							) {
+								const rel = joinRelative(
+									cwd,
+									String((input as Record<string, unknown>).path),
+								);
+								const nextInput = {
+									...(input as Record<string, unknown>),
+									path: rel,
+								} as ToolExecuteInput;
+								// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+								res = base.execute?.(nextInput, options as any);
+							} else if (name === 'bash') {
+								const needsCwd =
+									!input ||
+									typeof (input as Record<string, unknown>).cwd !== 'string';
+								const nextInput = needsCwd
+									? ({
+											...(input as Record<string, unknown>),
+											cwd,
+										} as ToolExecuteInput)
+									: input;
+								// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+								res = base.execute?.(nextInput, options as any);
+							} else {
+								// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+								res = base.execute?.(input, options as any);
+							}
+							let result: unknown = res;
+							// If tool returns an async iterable, stream deltas while accumulating
+							if (res && typeof res === 'object' && Symbol.asyncIterator in res) {
+								const chunks: unknown[] = [];
+								for await (const chunk of res as AsyncIterable<unknown>) {
+									chunks.push(chunk);
+									publish({
+										type: 'tool.delta',
+										sessionId: ctx.sessionId,
+										payload: {
+											name,
+											channel: 'output',
+											delta: chunk,
+											stepIndex: stepIndexForEvent,
+											callId: callIdFromQueue,
+										},
+									});
+								}
+								// Prefer the last chunk as the result if present, otherwise the entire array
+								result = chunks.length > 0 ? chunks[chunks.length - 1] : null;
+							} else {
+								// Await promise or passthrough value
+								result = await Promise.resolve(res as ToolExecuteReturn);
+							}
 
-					// If the tool returned a structured error response, use it directly
-					// Otherwise, wrap the thrown error in our standard format
-					let errorResult: unknown;
-					if (isToolError(error)) {
-						errorResult = error;
-					} else {
-						const errorMessage =
-							error instanceof Error ? error.message : String(error);
-						const errorStack = error instanceof Error ? error.stack : undefined;
-						errorResult = {
-							ok: false,
-							error: errorMessage,
-							stack: errorStack,
-						};
-					}
+							if (isToolError(result)) {
+								stepState.failed = true;
+								await persistToolErrorResult(result, {
+									callId: callIdFromQueue,
+									startTs: startTsFromQueue,
+									stepIndexForEvent,
+									args: meta?.args,
+								});
+								processedToolErrors.add(result as object);
+								throw result;
+							}
 
-					const contentObj = {
-						name,
-						result: errorResult,
-						callId,
+							const resultPartId = crypto.randomUUID();
+							const callId = callIdFromQueue;
+							const startTs = startTsFromQueue;
+							const contentObj: {
+								name: string;
+								result: unknown;
+								callId?: string;
+								artifact?: unknown;
+								args?: unknown;
+							} = {
+								name,
+								result,
+								callId,
+							};
+							if (meta?.args !== undefined) {
+								contentObj.args = meta.args;
+							}
+							if (result && typeof result === 'object' && 'artifact' in result) {
+								try {
+									const maybeArtifact = (result as { artifact?: unknown }).artifact;
+									if (maybeArtifact !== undefined)
+										contentObj.artifact = maybeArtifact;
+								} catch {}
+							}
+
+							const index = await ctx.nextIndex();
+							const endTs = Date.now();
+							const dur =
+								typeof startTs === 'number' ? Math.max(0, endTs - startTs) : null;
+
+							// Special-case: keep progress_update result lightweight; publish first, persist best-effort
+							if (name === 'progress_update') {
+								publish({
+									type: 'tool.result',
+									sessionId: ctx.sessionId,
+									payload: { ...contentObj, stepIndex: stepIndexForEvent },
+								});
+								// Persist without blocking the event loop
+								(async () => {
+									try {
+										await ctx.db.insert(messageParts).values({
+											id: resultPartId,
+											messageId: ctx.messageId,
+											index,
+											stepIndex: stepIndexForEvent,
+											type: 'tool_result',
+											content: JSON.stringify(contentObj),
+											agent: ctx.agent,
+											provider: ctx.provider,
+											model: ctx.model,
+											startedAt: startTs,
+											completedAt: endTs,
+											toolName: name,
+											toolCallId: callId,
+											toolDurationMs: dur ?? undefined,
+										});
+									} catch {}
+								})();
+								return result as ToolExecuteReturn;
+							}
+
+							await ctx.db.insert(messageParts).values({
+								id: resultPartId,
+								messageId: ctx.messageId,
+								index,
+								stepIndex: stepIndexForEvent,
+								type: 'tool_result',
+								content: JSON.stringify(contentObj),
+								agent: ctx.agent,
+								provider: ctx.provider,
+								model: ctx.model,
+								startedAt: startTs,
+								completedAt: endTs,
+								toolName: name,
+								toolCallId: callId,
+								toolDurationMs: dur ?? undefined,
+							});
+							// Update session aggregates: total tool time and counts per tool
+							try {
+								const sessRows = await ctx.db
+									.select()
+									.from(sessions)
+									.where(eq(sessions.id, ctx.sessionId));
+								if (sessRows.length) {
+									const row = sessRows[0] as typeof sessions.$inferSelect;
+									const totalToolTimeMs =
+										Number(row.totalToolTimeMs || 0) + (dur ?? 0);
+									let counts: Record<string, number> = {};
+									try {
+										counts = row.toolCountsJson
+											? JSON.parse(row.toolCountsJson)
+											: {};
+									} catch {}
+									counts[name] = (counts[name] || 0) + 1;
+									await ctx.db
+										.update(sessions)
+										.set({
+											totalToolTimeMs,
+											toolCountsJson: JSON.stringify(counts),
+											lastActiveAt: endTs,
+										})
+										.where(eq(sessions.id, ctx.sessionId));
+								}
+							} catch {}
+							publish({
+								type: 'tool.result',
+								sessionId: ctx.sessionId,
+								payload: { ...contentObj, stepIndex: stepIndexForEvent },
+							});
+							if (name === 'update_plan') {
+								try {
+									const resultValue = (contentObj as { result?: unknown }).result as
+										| { items?: unknown; note?: unknown }
+										| undefined;
+									if (resultValue && Array.isArray(resultValue.items)) {
+										publish({
+											type: 'plan.updated',
+											sessionId: ctx.sessionId,
+											payload: { items: resultValue.items, note: resultValue.note },
+										});
+									}
+								} catch {}
+							}
+							return result as ToolExecuteReturn;
+						} catch (error) {
+							stepState.failed = true;
+
+							// Tool execution failed
+							if (isToolError(error) && processedToolErrors.has(error as object)) {
+								throw error;
+							}
+
+							const errorResult = isToolError(error)
+								? error
+								: (() => {
+										const errorMessage =
+											error instanceof Error ? error.message : String(error);
+										const errorStack =
+											error instanceof Error ? error.stack : undefined;
+										return {
+											ok: false,
+											error: errorMessage,
+											stack: errorStack,
+										};
+									})();
+
+							await persistToolErrorResult(errorResult, {
+								callId: callIdFromQueue,
+								startTs: startTsFromQueue,
+								stepIndexForEvent,
+								args: meta?.args,
+							});
+
+							if (isToolError(error)) {
+								processedToolErrors.add(error as object);
+							}
+
+							// Re-throw so AI SDK can handle it
+							throw error;
+						}
 					};
 
-					if (meta?.args !== undefined) {
-						contentObj.args = meta.args;
-					}
-
-					const index = await ctx.nextIndex();
-
-					// Save error result to database
-					await ctx.db.insert(messageParts).values({
-						id: resultPartId,
-						messageId: ctx.messageId,
-						index,
-						stepIndex: stepIndexForEvent,
-						type: 'tool_result',
-						content: JSON.stringify(contentObj),
-						agent: ctx.agent,
-						provider: ctx.provider,
-						model: ctx.model,
-						startedAt: startTs,
-						completedAt: endTs,
-						toolName: name,
-						toolCallId: callId,
-						toolDurationMs: dur ?? undefined,
-					});
-
-					// Publish error result
-					publish({
-						type: 'tool.result',
-						sessionId: ctx.sessionId,
-						payload: { ...contentObj, stepIndex: stepIndexForEvent },
-					});
-
-					// Re-throw so AI SDK can handle it
-					throw error;
-				}
+					const queued = stepState.chain
+						.catch(() => undefined)
+						.then(() => executeWithGuards());
+					stepState.chain = queued.then(
+						() => undefined,
+						() => undefined,
+					);
+					return queued;
 			},
 		} as Tool;
 	}

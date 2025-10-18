@@ -8,7 +8,7 @@ import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { EmbeddedAppConfig } from '../../index.ts';
 import type { AGIConfig } from '@agi-cli/sdk';
-import { logger } from '../../runtime/logger.ts';
+import { logger } from '@agi-cli/sdk';
 import { loadAgentsConfig } from '../../runtime/agent-registry.ts';
 
 export async function isProviderAuthorizedHybrid(

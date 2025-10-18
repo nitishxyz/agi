@@ -144,7 +144,8 @@ describe('Built-in Tools', () => {
 			const tools = await discoverProjectTools(projectRoot);
 			const bashTool = tools.find((t) => t.name === 'bash');
 
-			await expect(bashTool?.tool.execute({ cmd: 'exit 1' })).rejects.toThrow();
+			const result = await bashTool?.tool.execute({ cmd: 'exit 1' });
+			expect(result).toMatchObject({ ok: false });
 		});
 	});
 

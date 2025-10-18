@@ -6,7 +6,7 @@
  */
 
 import { isDebugEnabled as isDebugEnabledNew } from './debug-state';
-import { time as timeNew, debug as debugNew } from './logger';
+import { time as timeNew, debug as debugNew } from '@agi-cli/sdk';
 
 const TRUTHY = new Set(['1', 'true', 'yes', 'on']);
 

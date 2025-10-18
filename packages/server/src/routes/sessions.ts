@@ -8,7 +8,7 @@ import { isProviderId, catalog } from '@agi-cli/sdk';
 import { resolveAgentConfig } from '../runtime/agent-registry.ts';
 import { createSession as createSessionRow } from '../runtime/session-manager.ts';
 import { serializeError } from '../runtime/api-error.ts';
-import { logger } from '../runtime/logger.ts';
+import { logger } from '@agi-cli/sdk';
 
 export function registerSessionsRoutes(app: Hono) {
 	// List sessions
