@@ -10,6 +10,13 @@ import type {
 } from '../runtime/tool-context.ts';
 import { isToolError } from '@agi-cli/sdk/tools/error';
 
+function isSkippedToolCallError(error: unknown): boolean {
+	if (!isToolError(error)) return false;
+	const details = (error as { details?: unknown }).details;
+	if (!details || typeof details !== 'object') return false;
+	return 'skippedTool' in (details as Record<string, unknown>);
+}
+
 export type { ToolAdapterContext } from '../runtime/tool-context.ts';
 
 type ToolExecuteSignature = Tool['execute'] extends (
@@ -50,6 +57,10 @@ export function adaptTools(
 ) {
 	const out: Record<string, Tool> = {};
 	const pendingCalls = new Map<string, PendingCallMeta[]>();
+	const failureState: { active: boolean; toolName?: string } = {
+		active: false,
+		toolName: undefined,
+	};
 	let firstToolCallReported = false;
 
 	if (!ctx.stepExecution) {
@@ -289,19 +300,32 @@ export function adaptTools(
 						: 0;
 				let stepState = stepStates.get(stepKey);
 				if (!stepState) {
-					stepState = { chain: Promise.resolve(), failed: false };
+					stepState = {
+						chain: Promise.resolve(),
+						failed: false,
+						failedToolName: undefined,
+					};
 					stepStates.set(stepKey, stepState);
 				}
 
 				const executeWithGuards = async (): Promise<ToolExecuteReturn> => {
 					try {
-						if (stepState.failed) {
-							const skipError = {
-								ok: false,
-								error: `Cannot execute "${name}" because a previous tool call in this step failed. Retry the failing tool before continuing with "${name}".`,
-								details: { skippedTool: name },
-							};
-							throw skipError;
+						if (failureState.active) {
+							const expectedTool = failureState.toolName;
+							if (!expectedTool || expectedTool !== name) {
+								const skipError = {
+									ok: false,
+									error: expectedTool
+										? `Cannot execute "${name}" because "${expectedTool}" failed earlier in this step. Retry "${expectedTool}" before using other tools.`
+										: `Cannot execute "${name}" because a previous tool call in this session failed. Retry that tool before continuing with "${name}".`,
+									details: {
+										skippedTool: name,
+										reason: 'previous_tool_failed',
+										expectedTool,
+									},
+								};
+								throw skipError;
+							}
 						}
 						// Handle session-relative paths and cwd tools
 						let res: ToolExecuteReturn | { cwd: string } | null | undefined;
@@ -415,6 +439,12 @@ export function adaptTools(
 
 						// Special-case: keep progress_update result lightweight; publish first, persist best-effort
 						if (name === 'progress_update') {
+							stepState.failed = false;
+							stepState.failedToolName = undefined;
+							if (failureState.active && failureState.toolName === name) {
+								failureState.active = false;
+								failureState.toolName = undefined;
+							}
 							publish({
 								type: 'tool.result',
 								sessionId: ctx.sessionId,
@@ -442,6 +472,13 @@ export function adaptTools(
 								} catch {}
 							})();
 							return result as ToolExecuteReturn;
+						}
+
+						stepState.failed = false;
+						stepState.failedToolName = undefined;
+						if (failureState.active && failureState.toolName === name) {
+							failureState.active = false;
+							failureState.toolName = undefined;
 						}
 
 						await ctx.db.insert(messageParts).values({
@@ -510,7 +547,14 @@ export function adaptTools(
 						}
 						return result as ToolExecuteReturn;
 					} catch (error) {
+						if (isSkippedToolCallError(error)) {
+							throw error;
+						}
+
 						stepState.failed = true;
+						stepState.failedToolName = name;
+						failureState.active = true;
+						failureState.toolName = name;
 
 						// Tool execution failed
 						if (

@@ -44,6 +44,12 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 6. **Plan Tracking**: Use `update_plan` to show task breakdown and progress
 7. **Finish Required**: Always call `finish` tool when complete
 
+### Tool Failure Handling
+
+- After every tool result, check whether `ok` is `false`. Treat this as a blocking failure that must be resolved before issuing new tool calls.
+- When the payload includes `details.reason === 'previous_tool_failed'`, immediately retry the tool that failed (use `details.expectedTool` when present, otherwise the previous tool name). Do not run any other tools until that retry succeeds or you have explained why a retry is impossible.
+- Reflect on why the tool failed, adjust the plan if needed, and communicate the intended fix before retrying.
+
 ## File Editing Best Practices
 
 **Using the `apply_patch` Tool** (Recommended):

@@ -63,6 +63,12 @@ Your toolset includes specialized file editing and search tools. Follow these gu
 - Keep progress messages short (<= 80 chars) and actionable
 - Use stages: planning, discovering, generating, preparing, writing, verifying
 
+## Tool Failure Handling
+
+- Inspect every tool result; if `ok` is `false`, pause and resolve the failure before issuing new tool calls.
+- When you see `details.reason === 'previous_tool_failed'`, retry the named tool (`details.expectedTool` when provided, otherwise the most recent tool) before doing anything else.
+- Explain briefly why the tool failed, how you’ll fix it, and update your plan if necessary prior to retrying.
+
 ## Search & Discovery Workflow
 
 **Step 1 - Understand Structure**:

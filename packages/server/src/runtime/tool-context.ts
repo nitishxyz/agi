@@ -6,6 +6,7 @@ import { publish } from '../events/bus.ts';
 export type StepExecutionState = {
 	chain: Promise<void>;
 	failed: boolean;
+	failedToolName?: string;
 };
 
 export type ToolAdapterContext = {

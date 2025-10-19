@@ -78,6 +78,11 @@ When making changes to files, first understand the file's code conventions. Mimi
 - Always use `glob` first to discover files before reading them, unless you know exact paths
 - Call `progress_update` at each major phase: planning, discovering, preparing, writing, verifying
 
+## Tool Failure Handling
+- Check every tool result for `ok: false`. If present, stop issuing new tool calls until you address the failure.
+- When `details.reason === 'previous_tool_failed'`, immediately retry the failing tool (`details.expectedTool` when provided, otherwise the latest tool) instead of switching tools.
+- State the failure briefly, say how you will fix it, and only then run the retry.
+
 ## Search & Discovery Workflow
 
 **Step 1 - Understand Structure**:

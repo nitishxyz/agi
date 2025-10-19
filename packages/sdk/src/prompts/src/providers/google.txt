@@ -67,6 +67,12 @@ Examples of operations to batch:
 - Checking `git_status` and reading a README
 - Running `ls` on different directories
 
+## Tool Failure Handling
+
+- After every tool call, inspect the result. If `ok` is `false`, stop and address the failure before issuing any other tool commands.
+- When `details.reason === 'previous_tool_failed'`, immediately retry the failing tool (`details.expectedTool` when provided, otherwise the last tool invoked). Do not run other tools until that retry succeeds or you explain why a retry cannot be done.
+- Provide a concise explanation of the failure root cause and adjust your plan if needed before retrying.
+
 # Primary Workflows
 
 ## Software Engineering Tasks
