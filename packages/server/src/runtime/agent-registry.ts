@@ -317,7 +317,12 @@ export async function resolveAgentConfig(
 	const provider = normalizeProvider(entry?.provider);
 	const model = normalizeModel(entry?.model);
 	debugLog(`[agent] ${name} prompt source: ${promptSource}`);
-	debugLog(`[agent] ${name} prompt:\n${prompt}`);
+	debugLog(
+		`[agent] ${name} prompt summary: ${JSON.stringify({
+			length: prompt.length,
+			lines: prompt.split('\n').length,
+		})}`,
+	);
 	return {
 		name,
 		prompt,

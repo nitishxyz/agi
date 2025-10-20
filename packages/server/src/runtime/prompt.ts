@@ -12,6 +12,12 @@ import ANTHROPIC_SPOOF_PROMPT from '@agi-cli/sdk/prompts/providers/anthropicSpoo
 };
 
 import { getTerminalManager } from '@agi-cli/sdk';
+
+export type ComposedSystemPrompt = {
+	prompt: string;
+	components: string[];
+};
+
 export async function composeSystemPrompt(options: {
 	provider: string;
 	model?: string;
@@ -22,9 +28,17 @@ export async function composeSystemPrompt(options: {
 	includeEnvironment?: boolean;
 	includeProjectTree?: boolean;
 	userContext?: string;
-}): Promise<string> {
+}): Promise<ComposedSystemPrompt> {
+	const components: string[] = [];
 	if (options.spoofPrompt) {
-		return options.spoofPrompt.trim();
+		const prompt = options.spoofPrompt.trim();
+		const providerComponent = options.provider
+			? `spoof:${options.provider}`
+			: 'spoof:unknown';
+		return {
+			prompt,
+			components: [providerComponent],
+		};
 	}
 
 	const parts: string[] = [];
@@ -41,6 +55,18 @@ export async function composeSystemPrompt(options: {
 		baseInstructions.trim(),
 		options.agentPrompt.trim(),
 	);
+	if (providerPrompt.trim()) {
+		const providerComponent = options.provider
+			? `provider:${options.provider}`
+			: 'provider:unknown';
+		components.push(providerComponent);
+	}
+	if (baseInstructions.trim()) {
+		components.push('base');
+	}
+	if (options.agentPrompt.trim()) {
+		components.push('agent');
+	}
 
 	if (options.oneShot) {
 		const oneShotBlock =
@@ -51,6 +77,7 @@ export async function composeSystemPrompt(options: {
 				'</system-reminder>',
 			].join('\n');
 		parts.push(oneShotBlock);
+		components.push('mode:oneshot');
 	}
 
 	if (options.includeEnvironment !== false) {
@@ -60,6 +87,10 @@ export async function composeSystemPrompt(options: {
 		);
 		if (envAndInstructions) {
 			parts.push(envAndInstructions);
+			components.push('environment');
+			if (options.includeProjectTree) {
+				components.push('project-tree');
+			}
 		}
 	}
 
@@ -71,6 +102,7 @@ export async function composeSystemPrompt(options: {
 			'</user-provided-state-context>',
 		].join('\n');
 		parts.push(userContextBlock);
+		components.push('user-context');
 	}
 
 	// Add terminal context if available
@@ -79,17 +111,27 @@ export async function composeSystemPrompt(options: {
 		const terminalContext = terminalManager.getContext();
 		if (terminalContext) {
 			parts.push(terminalContext);
+			components.push('terminal-context');
 		}
 	}
 
 	const composed = parts.filter(Boolean).join('\n\n').trim();
-	if (composed) return composed;
+	if (composed) {
+		return {
+			prompt: composed,
+			components: dedupeComponents(components),
+		};
+	}
 
-	return [
+	const fallback = [
 		'You are a concise, friendly coding agent.',
 		'Be precise and actionable. Use tools when needed, prefer small diffs.',
 		'Stream your answer; call finish when done.',
 	].join(' ');
+	return {
+		prompt: fallback,
+		components: dedupeComponents([...components, 'fallback']),
+	};
 }
 
 export function getProviderSpoofPrompt(provider: string): string | undefined {
@@ -97,4 +139,16 @@ export function getProviderSpoofPrompt(provider: string): string | undefined {
 		return (ANTHROPIC_SPOOF_PROMPT || '').trim();
 	}
 	return undefined;
+}
+
+function dedupeComponents(input: string[]): string[] {
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const item of input) {
+		if (!item) continue;
+		if (seen.has(item)) continue;
+		seen.add(item);
+		out.push(item);
+	}
+	return out;
 }

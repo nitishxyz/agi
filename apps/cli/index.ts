@@ -2,6 +2,7 @@ import {
 	loadConfig,
 	isProviderAuthorized,
 	getTerminalManager,
+	type ProviderId,
 } from '@agi-cli/sdk';
 import {
 	createApp as createServer,
@@ -385,25 +386,38 @@ function printHelp(
 }
 
 async function ensureSomeAuth(projectRoot: string): Promise<boolean> {
-	const cfg = await loadConfig(projectRoot);
-	const any = await Promise.all([
-		isProviderAuthorized(cfg, 'openai'),
-		isProviderAuthorized(cfg, 'anthropic'),
-		isProviderAuthorized(cfg, 'google'),
-		isProviderAuthorized(cfg, 'openrouter'),
-	]).then((arr) => arr.some(Boolean));
-	if (!any) {
-		await runAuth(['login']);
-		const cfg2 = await loadConfig(projectRoot);
-		const any2 = await Promise.all([
-			isProviderAuthorized(cfg2, 'openai'),
-			isProviderAuthorized(cfg2, 'anthropic'),
-			isProviderAuthorized(cfg2, 'google'),
-			isProviderAuthorized(cfg2, 'openrouter'),
-		]).then((arr) => arr.some(Boolean));
-		return any2;
-	}
-	return true;
+	let cfg = await loadConfig(projectRoot);
+	const defaultProvider = cfg.defaults.provider as ProviderId;
+
+	const checkAny = async (
+		config: Awaited<ReturnType<typeof loadConfig>>,
+	): Promise<boolean> => {
+		const providers: ProviderId[] = [
+			'openai',
+			'anthropic',
+			'google',
+			'openrouter',
+			'opencode',
+		];
+		const statuses = await Promise.all(
+			providers.map((provider) => isProviderAuthorized(config, provider)),
+		);
+		return statuses.some(Boolean);
+	};
+
+	const defaultAuthorized = await isProviderAuthorized(cfg, defaultProvider);
+	if (defaultAuthorized) return true;
+
+	await runAuth(['login', defaultProvider]);
+	cfg = await loadConfig(projectRoot);
+	if (await isProviderAuthorized(cfg, defaultProvider)) return true;
+
+	if (await checkAny(cfg)) return true;
+
+	await runAuth(['login']);
+	cfg = await loadConfig(projectRoot);
+	if (await isProviderAuthorized(cfg, defaultProvider)) return true;
+	return await checkAny(cfg);
 }
 
 function getLocalIP(): string {

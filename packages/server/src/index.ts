@@ -228,7 +228,10 @@ export {
 	resolveAgentConfig,
 	defaultToolsForAgent,
 } from './runtime/agent-registry.ts';
-export { composeSystemPrompt } from './runtime/prompt.ts';
+export {
+	composeSystemPrompt,
+	type ComposedSystemPrompt,
+} from './runtime/prompt.ts';
 export {
 	AskServiceError,
 	handleAskRequest,

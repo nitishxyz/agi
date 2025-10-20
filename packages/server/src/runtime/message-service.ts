@@ -246,19 +246,23 @@ async function generateSessionTitle(args: {
 				},
 			];
 
-			debugLog('[TITLE_GEN] Using OAuth mode:');
-			debugLog(`[TITLE_GEN] System prompt (spoof): ${spoofPrompt}`);
-			debugLog(`[TITLE_GEN] User message (instructions + content):`);
-			debugLog(`[TITLE_GEN]   Instructions: ${titlePrompt}`);
-			debugLog(`[TITLE_GEN]   Content: ${promptText.substring(0, 100)}...`);
+			debugLog(
+				`[TITLE_GEN] Using OAuth mode (prompts: spoof:${provider}, title-generator, user-request)`,
+			);
+			debugLog(
+				`[TITLE_GEN] User content preview: ${promptText.substring(0, 100)}...`,
+			);
 		} else {
 			// API key mode: normal flow
 			system = titlePrompt;
 			messagesArray = [{ role: 'user', content: promptText }];
 
-			debugLog('[TITLE_GEN] Using API key mode:');
-			debugLog(`[TITLE_GEN] System prompt: ${system}`);
-			debugLog(`[TITLE_GEN] User message: ${promptText.substring(0, 100)}...`);
+			debugLog(
+				`[TITLE_GEN] Using API key mode (prompts: title-generator, user-request)`,
+			);
+			debugLog(
+				`[TITLE_GEN] User content preview: ${promptText.substring(0, 100)}...`,
+			);
 		}
 
 		debugLog('[TITLE_GEN] Calling generateText...');

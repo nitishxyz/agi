@@ -3,6 +3,7 @@ import type { getDb } from '@agi-cli/database';
 import { messages, messageParts } from '@agi-cli/database/schema';
 import { eq, asc } from 'drizzle-orm';
 import { debugLog } from './debug.ts';
+import { ToolHistoryTracker } from './history/tool-history-tracker.ts';
 
 /**
  * Builds the conversation history for a session from the database,
@@ -19,12 +20,14 @@ export async function buildHistoryMessages(
 		.orderBy(asc(messages.createdAt));
 
 	const ui: UIMessage[] = [];
+	const toolHistory = new ToolHistoryTracker();
 
 	for (const m of rows) {
 		if (m.role === 'assistant' && m.status !== 'complete') {
 			debugLog(
-				`[buildHistoryMessages] Skipping assistant message ${m.id} with status ${m.status}`,
+				`[buildHistoryMessages] Skipping assistant message ${m.id} with status ${m.status} (current turn still in progress)`,
 			);
+			logPendingToolParts(db, m.id);
 			continue;
 		}
 
@@ -103,13 +106,21 @@ export async function buildHistoryMessages(
 				// Skip error parts in history
 			}
 
+			const toolResultsById = new Map(
+				toolResults.map((result) => [result.callId, result]),
+			);
+
 			const hasIncompleteTools = toolCalls.some(
-				(call) => !toolResults.find((result) => result.callId === call.callId),
+				(call) => !toolResultsById.has(call.callId),
 			);
 
 			if (hasIncompleteTools) {
+				const pendingCalls = toolCalls
+					.filter((call) => !toolResultsById.has(call.callId))
+					.map((call) => `${call.name}#${call.callId}`)
+					.join(', ');
 				debugLog(
-					`[buildHistoryMessages] Incomplete tool calls for assistant message ${m.id}, pushing text only`,
+					`[buildHistoryMessages] Incomplete tool calls for assistant message ${m.id}, skipping tool data (pending: ${pendingCalls || 'unknown'})`,
 				);
 				if (assistantParts.length) {
 					ui.push({ id: m.id, role: 'assistant', parts: assistantParts });
@@ -122,47 +133,92 @@ export async function buildHistoryMessages(
 				if (call.name === 'finish') continue;
 
 				const toolType = `tool-${call.name}` as `tool-${string}`;
-				const result = toolResults.find((r) => r.callId === call.callId);
+				const result = toolResultsById.get(call.callId);
 
 				if (result) {
-					const outputStr = (() => {
-						const r = result.result;
-						if (typeof r === 'string') return r;
-						try {
-							return JSON.stringify(r);
-						} catch {
-							return String(r);
-						}
-					})();
-
-					assistantParts.push({
+					const part = {
 						type: toolType,
 						state: 'output-available',
 						toolCallId: call.callId,
 						input: call.args,
-						output: outputStr,
-					} as never);
+						output: (() => {
+							const r = result.result;
+							if (typeof r === 'string') return r;
+							try {
+								return JSON.stringify(r);
+							} catch {
+								return String(r);
+							}
+						})(),
+					};
+
+					toolHistory.register(part, {
+						toolName: call.name,
+						callId: call.callId,
+						args: call.args,
+						result: result.result,
+					});
+
+					assistantParts.push(part as never);
 				}
 			}
 
 			if (assistantParts.length) {
 				ui.push({ id: m.id, role: 'assistant', parts: assistantParts });
-
-				if (toolResults.length) {
-					const userParts: UIMessage['parts'] = toolResults.map((r) => {
-						const out =
-							typeof r.result === 'string'
-								? r.result
-								: JSON.stringify(r.result);
-						return { type: 'text', text: out };
-					});
-					if (userParts.length) {
-						ui.push({ id: m.id, role: 'user', parts: userParts });
-					}
-				}
 			}
 		}
 	}
 
 	return convertToModelMessages(ui);
+}
+
+async function logPendingToolParts(
+	db: Awaited<ReturnType<typeof getDb>>,
+	messageId: string,
+) {
+	try {
+		const parts = await db
+			.select()
+			.from(messageParts)
+			.where(eq(messageParts.messageId, messageId))
+			.orderBy(asc(messageParts.index));
+
+		const pendingCalls: string[] = [];
+		for (const part of parts) {
+			if (part.type !== 'tool_call') continue;
+			try {
+				const obj = JSON.parse(part.content ?? '{}') as {
+					name?: string;
+					callId?: string;
+				};
+				if (obj.name && obj.callId) {
+					const resultExists = parts.some((candidate) => {
+						if (candidate.type !== 'tool_result') return false;
+						try {
+							const parsed = JSON.parse(candidate.content ?? '{}') as {
+								callId?: string;
+							};
+							return parsed.callId === obj.callId;
+						} catch {
+							return false;
+						}
+					});
+					if (!resultExists) {
+						pendingCalls.push(`${obj.name}#${obj.callId}`);
+					}
+				}
+			} catch {}
+		}
+		if (pendingCalls.length) {
+			debugLog(
+				`[buildHistoryMessages] Pending tool calls for assistant message ${messageId}: ${pendingCalls.join(', ')}`,
+			);
+		}
+	} catch (err) {
+		debugLog(
+			`[buildHistoryMessages] Failed to inspect pending tool calls for ${messageId}: ${
+				err instanceof Error ? err.message : String(err)
+			}`,
+		);
+	}
 }

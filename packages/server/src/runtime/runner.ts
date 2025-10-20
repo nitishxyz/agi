@@ -61,6 +61,12 @@ export async function runSessionLoop(sessionId: string) {
  * Main function to run the assistant for a given request.
  */
 async function runAssistant(opts: RunOpts) {
+	const separator = '='.repeat(72);
+	debugLog(separator);
+	debugLog(
+		`[RUNNER] Starting turn for session ${opts.sessionId}, message ${opts.assistantMessageId}`,
+	);
+
 	const cfgTimer = time('runner:loadConfig+db');
 	const cfg = await loadConfig(opts.projectRoot);
 	const db = await getDb(cfg.projectRoot);
@@ -99,14 +105,19 @@ async function runAssistant(opts: RunOpts) {
 		: undefined;
 
 	debugLog(`[RUNNER] needsSpoof (OAuth): ${needsSpoof}`);
-	debugLog(`[RUNNER] spoofPrompt: ${spoofPrompt || 'NONE'}`);
+	debugLog(
+		`[RUNNER] spoofPrompt: ${spoofPrompt ? `present (${opts.provider})` : 'none'}`,
+	);
 
 	let system: string;
+	let systemComponents: string[] = [];
+	let oauthFullPromptComponents: string[] | undefined;
 	let additionalSystemMessages: Array<{ role: 'system'; content: string }> = [];
 
 	if (spoofPrompt) {
 		// OAuth mode: short spoof in system field, full instructions in messages array
 		system = spoofPrompt;
+		systemComponents = [`spoof:${opts.provider || 'unknown'}`];
 		const fullPrompt = await composeSystemPrompt({
 			provider: opts.provider,
 			model: opts.model,
@@ -117,26 +128,27 @@ async function runAssistant(opts: RunOpts) {
 			includeProjectTree: isFirstMessage,
 			userContext: opts.userContext,
 		});
+		oauthFullPromptComponents = fullPrompt.components;
 
 		// FIX: Always add the system message for OAuth because:
 		// 1. System messages are NOT stored in the database
 		// 2. buildHistoryMessages only returns user/assistant messages
 		// 3. We need the full instructions on every turn
-		additionalSystemMessages = [{ role: 'system', content: fullPrompt }];
+		additionalSystemMessages = [{ role: 'system', content: fullPrompt.prompt }];
 
 		debugLog('[RUNNER] OAuth mode: additionalSystemMessages created');
-		debugLog(`[RUNNER] fullPrompt length: ${fullPrompt.length}`);
+		const includesUserContext =
+			!!opts.userContext && fullPrompt.prompt.includes(opts.userContext);
 		debugLog(
-			`[RUNNER] fullPrompt contains userContext: ${fullPrompt.includes('<user-provided-state-context>') ? 'YES' : 'NO'}`,
+			`[system] oauth-full summary: ${JSON.stringify({
+				components: oauthFullPromptComponents ?? [],
+				length: fullPrompt.prompt.length,
+				includesUserContext,
+			})}`,
 		);
-		if (opts.userContext && fullPrompt.includes(opts.userContext)) {
-			debugLog('[RUNNER] ✅ userContext IS in fullPrompt');
-		} else if (opts.userContext) {
-			debugLog('[RUNNER] ❌ userContext NOT in fullPrompt!');
-		}
 	} else {
 		// API key mode: full instructions in system field
-		system = await composeSystemPrompt({
+		const composed = await composeSystemPrompt({
 			provider: opts.provider,
 			model: opts.model,
 			projectRoot: cfg.projectRoot,
@@ -146,10 +158,16 @@ async function runAssistant(opts: RunOpts) {
 			includeProjectTree: isFirstMessage,
 			userContext: opts.userContext,
 		});
+		system = composed.prompt;
+		systemComponents = composed.components;
 	}
 	systemTimer.end();
-	debugLog('[system] composed prompt (provider+base+agent):');
-	debugLog(system);
+	debugLog(
+		`[system] summary: ${JSON.stringify({
+			components: systemComponents,
+			length: system.length,
+		})}`,
+	);
 
 	const toolsTimer = time('runner:discoverTools');
 	const allTools = await discoverProjectTools(cfg.projectRoot);
@@ -500,5 +518,10 @@ async function runAssistant(opts: RunOpts) {
 			await completeAssistantMessage({}, opts, db);
 		} catch {}
 		throw err;
+	} finally {
+		debugLog(
+			`[RUNNER] Turn complete for session ${opts.sessionId}, message ${opts.assistantMessageId}`,
+		);
+		debugLog(separator);
 	}
 }

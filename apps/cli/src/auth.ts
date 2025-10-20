@@ -18,6 +18,7 @@ import {
 	exchange,
 	openAuthUrl,
 	createApiKey,
+	providerIds,
 } from '@agi-cli/sdk';
 import { loadConfig } from '@agi-cli/sdk';
 import { catalog } from '@agi-cli/sdk';
@@ -96,24 +97,33 @@ export async function runAuthList(_args: string[]) {
 export async function runAuthLogin(_args: string[]) {
 	const cfg = await loadConfig(process.cwd());
 	const wantLocal = _args.includes('--local');
+	const providerArg = _args.find((arg) =>
+		(providerIds as readonly string[]).includes(arg as ProviderId),
+	) as ProviderId | undefined;
 	intro('Add credential');
-	const provider = (await select({
-		message: 'Select provider',
-		options: [
-			{ value: 'openai', label: PROVIDER_LINKS.openai.name },
-			{ value: 'anthropic', label: PROVIDER_LINKS.anthropic.name },
-			{ value: 'google', label: PROVIDER_LINKS.google.name },
-			{ value: 'openrouter', label: PROVIDER_LINKS.openrouter.name },
-			{ value: 'opencode', label: PROVIDER_LINKS.opencode.name },
-		],
-	})) as ProviderId | symbol;
-	if (isCancel(provider)) return cancel('Cancelled');
+	let provider: ProviderId;
+	if (providerArg) {
+		provider = providerArg;
+	} else {
+		const selected = (await select({
+			message: 'Select provider',
+			options: [
+				{ value: 'openai', label: PROVIDER_LINKS.openai.name },
+				{ value: 'anthropic', label: PROVIDER_LINKS.anthropic.name },
+				{ value: 'google', label: PROVIDER_LINKS.google.name },
+				{ value: 'openrouter', label: PROVIDER_LINKS.openrouter.name },
+				{ value: 'opencode', label: PROVIDER_LINKS.opencode.name },
+			],
+		})) as ProviderId | symbol;
+		if (isCancel(selected)) return cancel('Cancelled');
+		provider = selected as ProviderId;
+	}
 
 	if (provider === 'anthropic') {
 		return await runAuthLoginAnthropic(cfg, wantLocal);
 	}
 
-	const meta = PROVIDER_LINKS[provider as ProviderId];
+	const meta = PROVIDER_LINKS[provider];
 	log.info(`Open in browser: ${meta.url}`);
 	const key = await password({
 		message: `Paste ${meta.env} here`,
@@ -122,7 +132,7 @@ export async function runAuthLogin(_args: string[]) {
 	});
 	if (isCancel(key)) return cancel('Cancelled');
 	await setAuth(
-		provider as ProviderId,
+		provider,
 		{ type: 'api', key: String(key) },
 		cfg.projectRoot,
 		'global',
@@ -131,7 +141,7 @@ export async function runAuthLogin(_args: string[]) {
 		log.warn(
 			'Local credential storage is disabled; saved to secure global location.',
 		);
-	await ensureGlobalConfigDefaults(provider as ProviderId);
+	await ensureGlobalConfigDefaults(provider);
 	log.success('Saved');
 	log.info(`Tip: you can also set ${meta.env} in your environment.`);
 	outro('Done');
