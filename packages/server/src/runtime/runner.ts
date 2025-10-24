@@ -275,49 +275,9 @@ async function runAssistant(opts: RunOpts) {
 
 	const onFinish = createFinishHandler(opts, db, completeAssistantMessage);
 
-	// Apply optimizations: deduplication, pruning, cache control, and truncation
-	const { addCacheControl, truncateHistory } = await import(
-		'./cache-optimizer.ts'
-	);
-	const { optimizeContext } = await import('./context-optimizer.ts');
-
-	// 1. Optimize context (deduplicate file reads, prune old tool results)
-	const contextOptimized = optimizeContext(messagesWithSystemInstructions, {
-		deduplicateFiles: true,
-		maxToolResults: 30,
-	});
-
-	debugLog(
-		`[RUNNER] After optimizeContext: ${contextOptimized.length} messages`,
-	);
-
-	// 2. Truncate history
-	const truncatedMessages = truncateHistory(contextOptimized, 20);
-
-	debugLog(
-		`[RUNNER] After truncateHistory: ${truncatedMessages.length} messages`,
-	);
-	if (truncatedMessages.length > 0 && truncatedMessages[0].role === 'system') {
-		debugLog('[RUNNER] ✅ First message is system message');
-	} else if (truncatedMessages.length > 0) {
-		debugLog(
-			`[RUNNER] ⚠️ First message is NOT system (it's ${truncatedMessages[0].role})`,
-		);
-	}
-
-	// 3. Add cache control
-	const { system: cachedSystem, messages: optimizedMessages } = addCacheControl(
-		opts.provider,
-		system,
-		truncatedMessages,
-	);
-
-	debugLog(
-		`[RUNNER] Final optimizedMessages: ${optimizedMessages.length} messages`,
-	);
-	debugLog(
-		`[RUNNER] cachedSystem (spoof): ${typeof cachedSystem === 'string' ? cachedSystem.substring(0, 100) : JSON.stringify(cachedSystem).substring(0, 100)}`,
-	);
+	// Use messages directly without truncation or optimization
+	const optimizedMessages = messagesWithSystemInstructions;
+	const cachedSystem = system;
 
 	// Part tracking - will be created on first text-delta
 	let currentPartId: string | null = null;

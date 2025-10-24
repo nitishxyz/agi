@@ -10,13 +10,6 @@ import type {
 } from '../runtime/tool-context.ts';
 import { isToolError } from '@agi-cli/sdk/tools/error';
 
-function isSkippedToolCallError(error: unknown): boolean {
-	if (!isToolError(error)) return false;
-	const details = (error as { details?: unknown }).details;
-	if (!details || typeof details !== 'object') return false;
-	return 'skippedTool' in (details as Record<string, unknown>);
-}
-
 export type { ToolAdapterContext } from '../runtime/tool-context.ts';
 
 type ToolExecuteSignature = Tool['execute'] extends (
@@ -310,23 +303,6 @@ export function adaptTools(
 
 				const executeWithGuards = async (): Promise<ToolExecuteReturn> => {
 					try {
-						if (failureState.active) {
-							const expectedTool = failureState.toolName;
-							if (!expectedTool || expectedTool !== name) {
-								const skipError = {
-									ok: false,
-									error: expectedTool
-										? `Cannot execute "${name}" because "${expectedTool}" failed earlier in this step. Retry "${expectedTool}" before using other tools.`
-										: `Cannot execute "${name}" because a previous tool call in this session failed. Retry that tool before continuing with "${name}".`,
-									details: {
-										skippedTool: name,
-										reason: 'previous_tool_failed',
-										expectedTool,
-									},
-								};
-								throw skipError;
-							}
-						}
 						// Handle session-relative paths and cwd tools
 						let res: ToolExecuteReturn | { cwd: string } | null | undefined;
 						const cwd = getCwd(ctx.sessionId);
@@ -396,6 +372,10 @@ export function adaptTools(
 
 						if (isToolError(result)) {
 							stepState.failed = true;
+							stepState.failedToolName = name;
+							failureState.active = true;
+							failureState.toolName = name;
+
 							await persistToolErrorResult(result, {
 								callId: callIdFromQueue,
 								startTs: startTsFromQueue,
@@ -403,7 +383,7 @@ export function adaptTools(
 								args: meta?.args,
 							});
 							processedToolErrors.add(result as object);
-							throw result;
+							return result as ToolExecuteReturn;
 						}
 
 						const resultPartId = crypto.randomUUID();
@@ -547,10 +527,6 @@ export function adaptTools(
 						}
 						return result as ToolExecuteReturn;
 					} catch (error) {
-						if (isSkippedToolCallError(error)) {
-							throw error;
-						}
-
 						stepState.failed = true;
 						stepState.failedToolName = name;
 						failureState.active = true;
@@ -589,8 +565,7 @@ export function adaptTools(
 							processedToolErrors.add(error as object);
 						}
 
-						// Re-throw so AI SDK can handle it
-						throw error;
+						return errorResult as ToolExecuteReturn;
 					}
 				};
 
