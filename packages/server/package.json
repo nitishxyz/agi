@@ -1,6 +1,6 @@
 {
 	"name": "@agi-cli/server",
-	"version": "0.1.97",
+	"version": "0.1.98",
 	"description": "HTTP API server for AGI CLI",
 	"type": "module",
 	"main": "./src/index.ts",
