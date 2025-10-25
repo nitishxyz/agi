@@ -57,7 +57,8 @@ export function LeanHeader({
 					<div className="flex items-center gap-2 text-muted-foreground">
 						<Hash className="w-4 h-4" />
 						<span className="text-foreground font-medium">
-							{formatNumber(totalTokens)}
+							{formatNumber(session.totalInputTokens || 0)} /{' '}
+							{formatNumber(session.totalOutputTokens || 0)}
 						</span>
 					</div>
 
