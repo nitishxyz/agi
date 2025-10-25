@@ -220,41 +220,7 @@ export function adaptTools(
 							stepIndex: ctx.stepIndex,
 						},
 					});
-					// Optionally persist in the background without blocking ordering
-					(async () => {
-						try {
-							const index = await ctx.nextIndex();
-							await ctx.db.insert(messageParts).values({
-								id: callPartId,
-								messageId: ctx.messageId,
-								index,
-								stepIndex: ctx.stepIndex,
-								type: 'tool_call',
-								content: JSON.stringify({ name, args, callId }),
-								agent: ctx.agent,
-								provider: ctx.provider,
-								model: ctx.model,
-								startedAt: startTs,
-								toolName: name,
-								toolCallId: callId,
-							});
-						} catch {}
-					})();
-					if (typeof base.onInputAvailable === 'function') {
-						// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
-						await base.onInputAvailable(options as any);
-					}
-					return;
-				}
-
-				// Publish promptly so UI shows the call header before results
-				publish({
-					type: 'tool.call',
-					sessionId: ctx.sessionId,
-					payload: { name, args, callId, stepIndex: ctx.stepIndex },
-				});
-				// Persist best-effort in the background to avoid delaying output
-				(async () => {
+					// Persist synchronously to maintain correct ordering
 					try {
 						const index = await ctx.nextIndex();
 						await ctx.db.insert(messageParts).values({
@@ -272,7 +238,37 @@ export function adaptTools(
 							toolCallId: callId,
 						});
 					} catch {}
-				})();
+					if (typeof base.onInputAvailable === 'function') {
+						// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+						await base.onInputAvailable(options as any);
+					}
+					return;
+				}
+
+				// Publish promptly so UI shows the call header before results
+				publish({
+					type: 'tool.call',
+					sessionId: ctx.sessionId,
+					payload: { name, args, callId, stepIndex: ctx.stepIndex },
+				});
+				// Persist synchronously to maintain correct ordering
+				try {
+					const index = await ctx.nextIndex();
+					await ctx.db.insert(messageParts).values({
+						id: callPartId,
+						messageId: ctx.messageId,
+						index,
+						stepIndex: ctx.stepIndex,
+						type: 'tool_call',
+						content: JSON.stringify({ name, args, callId }),
+						agent: ctx.agent,
+						provider: ctx.provider,
+						model: ctx.model,
+						startedAt: startTs,
+						toolName: name,
+						toolCallId: callId,
+					});
+				} catch {}
 				if (typeof base.onInputAvailable === 'function') {
 					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
 					await base.onInputAvailable(options as any);
