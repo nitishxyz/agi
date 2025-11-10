@@ -1,5 +1,5 @@
 export { isProviderAuthorized, ensureProviderEnv } from './authorization.ts';
-export { catalog } from './catalog.ts';
+export { catalog } from './catalog-merged.ts';
 export type {
 	ProviderId,
 	ModelInfo,
@@ -15,3 +15,11 @@ export {
 export { validateProviderModel } from './validate.ts';
 export { estimateModelCostUsd } from './pricing.ts';
 export { providerEnvVar, readEnvKey, setEnvKey } from './env.ts';
+export {
+	createSolforgeFetch,
+	createSolforgeModel,
+} from './solforge-client.ts';
+export type {
+	SolforgeAuth,
+	SolforgeProviderOptions,
+} from './solforge-client.ts';

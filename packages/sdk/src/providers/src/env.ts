@@ -6,6 +6,7 @@ const ENV_VARS: Record<ProviderId, string> = {
 	google: 'GOOGLE_GENERATIVE_AI_API_KEY',
 	openrouter: 'OPENROUTER_API_KEY',
 	opencode: 'OPENCODE_API_KEY',
+	solforge: 'SOLFORGE_PRIVATE_KEY',
 };
 
 export function providerEnvVar(provider: ProviderId): string {

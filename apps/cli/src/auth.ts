@@ -53,6 +53,11 @@ const PROVIDER_LINKS: Record<
 		url: 'https://opencode.ai',
 		env: 'OPENCODE_API_KEY',
 	},
+	solforge: {
+		name: 'Solforge',
+		url: 'https://ai.solforge.sh',
+		env: 'SOLFORGE_PRIVATE_KEY',
+	},
 };
 
 export async function runAuth(args: string[]) {
@@ -113,6 +118,7 @@ export async function runAuthLogin(_args: string[]) {
 				{ value: 'google', label: PROVIDER_LINKS.google.name },
 				{ value: 'openrouter', label: PROVIDER_LINKS.openrouter.name },
 				{ value: 'opencode', label: PROVIDER_LINKS.opencode.name },
+				{ value: 'solforge', label: PROVIDER_LINKS.solforge.name },
 			],
 		})) as ProviderId | symbol;
 		if (isCancel(selected)) return cancel('Cancelled');
@@ -121,6 +127,10 @@ export async function runAuthLogin(_args: string[]) {
 
 	if (provider === 'anthropic') {
 		return await runAuthLoginAnthropic(cfg, wantLocal);
+	}
+
+	if (provider === 'solforge') {
+		return await runAuthLoginSolforge(cfg, wantLocal);
 	}
 
 	const meta = PROVIDER_LINKS[provider];
@@ -268,6 +278,37 @@ async function runAuthLoginAnthropic(
 	}
 }
 
+async function runAuthLoginSolforge(
+	cfg: Awaited<ReturnType<typeof loadConfig>>,
+	wantLocal: boolean,
+) {
+	log.info(
+		'Solforge uses a Solana wallet private key (base58 encoded). Keep it secure.',
+	);
+	const key = await password({
+		message: `Paste ${PROVIDER_LINKS.solforge.env} (base58 private key)`,
+		validate: (v) =>
+			v && String(v).trim().length > 0 ? undefined : 'Private key is required',
+	});
+	if (isCancel(key)) return cancel('Cancelled');
+	await setAuth(
+		'solforge',
+		{ type: 'wallet', secret: String(key) },
+		cfg.projectRoot,
+		'global',
+	);
+	if (wantLocal)
+		log.warn(
+			'Local credential storage is disabled; saved to secure global location.',
+		);
+	await ensureGlobalConfigDefaults('solforge');
+	log.success('Saved');
+	log.info(
+		`Tip: you can also set ${PROVIDER_LINKS.solforge.env} in your environment.`,
+	);
+	return outro('Done');
+}
+
 export async function runAuthLogout(_args: string[]) {
 	const cfg = await loadConfig(process.cwd());
 	const wantLocal = _args.includes('--local');
@@ -320,6 +361,7 @@ async function ensureGlobalConfigDefaults(provider: ProviderId) {
 			google: { enabled: provider === 'google' },
 			openrouter: { enabled: provider === 'openrouter' },
 			opencode: { enabled: provider === 'opencode' },
+			solforge: { enabled: provider === 'solforge' },
 		},
 	};
 	// Ensure directory and write file

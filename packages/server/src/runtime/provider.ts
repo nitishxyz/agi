@@ -1,5 +1,11 @@
 import type { AGIConfig, ProviderId } from '@agi-cli/sdk';
-import { catalog, getAuth, refreshToken, setAuth } from '@agi-cli/sdk';
+import {
+	catalog,
+	createSolforgeModel,
+	getAuth,
+	refreshToken,
+	setAuth,
+} from '@agi-cli/sdk';
 import { openai, createOpenAI } from '@ai-sdk/openai';
 import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
@@ -158,6 +164,26 @@ export async function resolveModel(
 		)
 			return ocCompat(resolvedModelId);
 		return ocOpenAI(resolvedModelId);
+	}
+	if (provider === 'solforge') {
+		const privateKey = process.env.SOLFORGE_PRIVATE_KEY ?? '';
+		if (!privateKey) {
+			throw new Error(
+				'Solforge provider requires SOLFORGE_PRIVATE_KEY (base58 Solana secret).',
+			);
+		}
+		const baseURL = process.env.SOLFORGE_BASE_URL;
+		const rpcURL = process.env.SOLFORGE_SOLANA_RPC_URL;
+		const topupAmount = process.env.SOLFORGE_TOPUP_MICRO_USDC;
+		return createSolforgeModel(
+			model,
+			{ privateKey },
+			{
+				baseURL,
+				rpcURL,
+				topupAmountMicroUsdc: topupAmount,
+			},
+		);
 	}
 	throw new Error(`Unsupported provider: ${provider}`);
 }

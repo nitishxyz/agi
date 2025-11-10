@@ -26,6 +26,7 @@ export async function runDoctor(opts: { project?: string } = {}) {
 		'google',
 		'openrouter',
 		'opencode',
+		'solforge',
 	];
 	const providerMeta = await Promise.all(
 		providers.map(async (p) => {
@@ -178,11 +179,19 @@ async function describeProvider(
 	if (envConfigured && envVar) sources.push(`env: ${envVar}`);
 	if (locations.global)
 		sources.push(`auth.json: ${friendlyPath(locations.global)}`);
+	const hasStoredSecret = (() => {
+		const info = auth?.[provider];
+		if (!info) return false;
+		if (info.type === 'api') return Boolean(info.key);
+		if (info.type === 'wallet') return Boolean(info.secret);
+		if (info.type === 'oauth') return Boolean(info.access || info.refresh);
+		return false;
+	})();
 	const configured =
 		envConfigured ||
 		Boolean(locations.global) ||
 		cfg.defaults.provider === provider ||
-		Boolean(auth?.[provider]?.key);
+		hasStoredSecret;
 	return { provider, sources: Array.from(new Set(sources)), configured };
 }
 
@@ -512,6 +521,7 @@ function providerEnvVar(p: ProviderId) {
 	if (p === 'anthropic') return 'ANTHROPIC_API_KEY';
 	if (p === 'google') return 'GOOGLE_GENERATIVE_AI_API_KEY';
 	if (p === 'opencode') return 'OPENCODE_API_KEY';
+	if (p === 'solforge') return 'SOLFORGE_PRIVATE_KEY';
 	return null;
 }
 

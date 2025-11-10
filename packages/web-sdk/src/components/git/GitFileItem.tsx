@@ -168,7 +168,7 @@ export function GitFileItem({
 	const displayPath = smartTruncatePath(file.path, 2);
 
 	return (
-		<div
+		<button
 			type="button"
 			className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 cursor-pointer group transition-colors w-full text-left"
 			onClick={handleClick}
@@ -248,6 +248,6 @@ export function GitFileItem({
 			{staged && !showModifiedIndicator && (
 				<Check className="w-4 h-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
 			)}
-		</div>
+		</button>
 	);
 }

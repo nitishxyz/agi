@@ -3,14 +3,15 @@ import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { catalog } from '../../../providers/src/index.ts';
+import { catalog, createSolforgeModel } from '../../../providers/src/index.ts';
 
 export type ProviderName =
 	| 'openai'
 	| 'anthropic'
 	| 'google'
 	| 'openrouter'
-	| 'opencode';
+	| 'opencode'
+	| 'solforge';
 
 export type ModelConfig = {
 	apiKey?: string;
@@ -108,6 +109,27 @@ export async function resolveModel(
 		)
 			return ocCompat(resolvedModelId);
 		return ocOpenAI(resolvedModelId);
+	}
+
+	if (provider === 'solforge') {
+		const privateKey = config.apiKey || process.env.SOLFORGE_PRIVATE_KEY || '';
+		if (!privateKey) {
+			throw new Error(
+				'Solforge provider requires SOLFORGE_PRIVATE_KEY (base58 Solana secret).',
+			);
+		}
+		const baseURL = config.baseURL || process.env.SOLFORGE_BASE_URL;
+		const rpcURL = process.env.SOLFORGE_SOLANA_RPC_URL;
+		const topupAmount = process.env.SOLFORGE_TOPUP_MICRO_USDC;
+		return createSolforgeModel(
+			model,
+			{ privateKey },
+			{
+				baseURL,
+				rpcURL,
+				topupAmountMicroUsdc: topupAmount,
+			},
+		);
 	}
 
 	throw new Error(`Unsupported provider: ${provider}`);

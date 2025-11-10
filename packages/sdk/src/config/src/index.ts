@@ -24,6 +24,7 @@ const DEFAULTS: {
 		google: { enabled: true },
 		openrouter: { enabled: false },
 		opencode: { enabled: false },
+		solforge: { enabled: false },
 	},
 };
 

@@ -14,7 +14,7 @@
 
 AGI CLI is a **next-generation AI development assistant** that combines the power of multiple AI providers with specialized agents and a rich toolset:
 
-- 🤖 **Multi-Provider AI** - OpenAI, Anthropic, Google AI, OpenRouter, OpenCode all in one tool
+- 🤖 **Multi-Provider AI** - OpenAI, Anthropic, Google AI, OpenRouter, OpenCode, Solforge all in one tool
 - 🎯 **Specialized Agents** - General coding, build tasks, planning, git operations
 - 🛠️ **15+ Built-in Tools** - File operations, git, bash, search, structured editing
 - 🌐 **Modern Web UI** - Full-featured React dashboard with mobile support
@@ -69,6 +69,8 @@ agi setup
 agi auth login
 ```
 
+> 💡 Solforge uses Solana wallet authentication — run `agi auth login solforge` (base58 private key) or set `SOLFORGE_PRIVATE_KEY`.
+
 ### Start Coding with AI
 
 ```bash
@@ -102,7 +104,7 @@ This launches the web UI at `http://127.0.0.1:3456` with:
 
 ### Choose Your Provider
 
-AGI CLI supports **5 major AI providers** with 30+ models:
+AGI CLI supports **6 major AI providers** with 30+ models:
 
 ```bash
 # Anthropic Claude (recommended for coding)
@@ -119,6 +121,9 @@ agi "help me debug" --provider openrouter --model anthropic/claude-3.5-sonnet
 
 # OpenCode
 agi "what's wrong with my code?" --provider opencode
+
+# Solforge (wallet auth + Solana x402 payments)
+agi "ship it" --provider solforge --model gpt-4o-mini
 ```
 
 **Supported Providers:**
@@ -128,6 +133,7 @@ agi "what's wrong with my code?" --provider opencode
 - **Google AI** - Gemini 2.0 Flash, Gemini 1.5 Pro, Gemini 2.0 Flash Thinking
 - **OpenRouter** - Access to 100+ models from multiple providers
 - **OpenCode** - Free tier access to Anthropic models
+- **Solforge** - OpenAI/Anthropic proxy with automatic x402 Solana USDC payments (`SOLFORGE_PRIVATE_KEY`)
 
 ### Specialized Agents
 

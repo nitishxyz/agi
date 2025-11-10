@@ -11,7 +11,13 @@ export type CommandManifest = {
 	promptPath?: string; // relative path to prompt text
 	promptTemplate?: string; // e.g., "Draft a message: {input}"
 	defaults?: {
-		provider?: 'openai' | 'anthropic' | 'google' | 'openrouter' | 'opencode';
+		provider?:
+			| 'openai'
+			| 'anthropic'
+			| 'google'
+			| 'openrouter'
+			| 'opencode'
+			| 'solforge';
 		model?: string;
 		agent?: string;
 	};
@@ -181,7 +187,8 @@ export async function runDiscoveredCommand(
 					| 'anthropic'
 					| 'google'
 					| 'openrouter'
-					| 'opencode')
+					| 'opencode'
+					| 'solforge')
 			: undefined) || cmd.defaults?.provider;
 	const model =
 		(modelFlagIdx >= 0 ? argv[modelFlagIdx + 1] : undefined) ||

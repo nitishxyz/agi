@@ -6,6 +6,11 @@ import type { ProviderId } from './provider';
 export type ApiAuth = { type: 'api'; key: string };
 
 /**
+ * Wallet/private-key authentication
+ */
+export type WalletAuth = { type: 'wallet'; secret: string };
+
+/**
  * OAuth authentication tokens
  */
 export type OAuth = {
@@ -18,7 +23,7 @@ export type OAuth = {
 /**
  * Union of all auth types
  */
-export type AuthInfo = ApiAuth | OAuth;
+export type AuthInfo = ApiAuth | OAuth | WalletAuth;
 
 /**
  * Collection of auth credentials per provider

@@ -20,8 +20,6 @@ export class TerminalManager {
 	private terminals = new Map<string, Terminal>();
 	private cleanupTimers = new Map<string, NodeJS.Timeout>();
 
-	constructor() {}
-
 	create(options: CreateTerminalOptions): Terminal {
 		if (this.terminals.size >= MAX_TERMINALS) {
 			throw new Error(`Maximum ${MAX_TERMINALS} terminals reached`);

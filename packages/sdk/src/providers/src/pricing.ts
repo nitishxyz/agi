@@ -1,4 +1,4 @@
-import { catalog } from './catalog.ts';
+import { catalog } from './catalog-merged.ts';
 import type { ModelInfo, ProviderId } from '../../types/src/index.ts';
 
 type ProviderName = ProviderId;

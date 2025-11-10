@@ -268,7 +268,9 @@ async function main() {
 						| 'openai'
 						| 'anthropic'
 						| 'google'
-						| 'openrouter')
+						| 'openrouter'
+						| 'opencode'
+						| 'solforge')
 				: undefined;
 		const model = modelIdx >= 0 ? argv[modelIdx + 1] : undefined;
 		const project = projectIdx >= 0 ? argv[projectIdx + 1] : undefined;
@@ -319,7 +321,9 @@ async function main() {
 					| 'openai'
 					| 'anthropic'
 					| 'google'
-					| 'openrouter')
+					| 'openrouter'
+					| 'opencode'
+					| 'solforge')
 			: undefined;
 	const model = modelIdx >= 0 ? argv[modelIdx + 1] : undefined;
 	const sessionId = sessionIdx >= 0 ? argv[sessionIdx + 1] : undefined;
@@ -398,6 +402,7 @@ async function ensureSomeAuth(projectRoot: string): Promise<boolean> {
 			'google',
 			'openrouter',
 			'opencode',
+			'solforge',
 		];
 		const statuses = await Promise.all(
 			providers.map((provider) => isProviderAuthorized(config, provider)),

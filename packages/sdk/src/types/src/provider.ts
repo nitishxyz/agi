@@ -6,7 +6,8 @@ export type ProviderId =
 	| 'anthropic'
 	| 'google'
 	| 'openrouter'
-	| 'opencode';
+	| 'opencode'
+	| 'solforge';
 
 export type ModelProviderBinding = {
 	id?: string;

@@ -22,6 +22,7 @@ export async function runSetup(projectRoot?: string) {
 			{ value: 'google', label: 'Google (Gemini)' },
 			{ value: 'openrouter', label: 'OpenRouter' },
 			{ value: 'opencode', label: 'OpenCode' },
+			{ value: 'solforge', label: 'Solforge' },
 		],
 		initialValues: Object.entries(cfg.providers)
 			.filter(([, v]) => v.enabled)
@@ -35,6 +36,7 @@ export async function runSetup(projectRoot?: string) {
 		google: { enabled: false },
 		openrouter: { enabled: false },
 		opencode: { enabled: false },
+		solforge: { enabled: false },
 	};
 	for (const p of providersPicked as ProviderId[]) providers[p].enabled = true;
 
@@ -50,7 +52,9 @@ export async function runSetup(projectRoot?: string) {
 						? 'GOOGLE_GENERATIVE_AI_API_KEY'
 						: p === 'openrouter'
 							? 'OPENROUTER_API_KEY'
-							: 'OPENCODE_API_KEY';
+							: p === 'opencode'
+								? 'OPENCODE_API_KEY'
+								: 'SOLFORGE_PRIVATE_KEY';
 		const key = await text({
 			message: `Enter ${keyLabel} (leave empty to skip)`,
 			initialValue: '',
@@ -107,6 +111,7 @@ export async function runSetup(projectRoot?: string) {
 			google: providers.google,
 			openrouter: providers.openrouter,
 			opencode: providers.opencode,
+			solforge: providers.solforge,
 		},
 		paths: cfg.paths,
 	};

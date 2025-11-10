@@ -64,8 +64,11 @@ export async function providerBasePrompt(
 		}
 	}
 
-	// 2) Provider-family fallback for openrouter/opencode using embedded defaults
-	if ((id === 'openrouter' || id === 'opencode') && modelId) {
+	// 2) Provider-family fallback for openrouter/opencode/solforge using embedded defaults
+	if (
+		(id === 'openrouter' || id === 'opencode' || id === 'solforge') &&
+		modelId
+	) {
 		const family = inferFamilyFromModel(modelId);
 		if (family) {
 			const embedded = (

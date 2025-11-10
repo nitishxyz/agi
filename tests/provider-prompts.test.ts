@@ -20,4 +20,14 @@ describe('provider base prompts', () => {
 		// openai.txt is present as a code file (even minimal)
 		expect(typeof txt).toBe('string');
 	});
+
+	it('uses provider family for solforge models', async () => {
+		const txt = await providerBasePrompt(
+			'solforge',
+			'gpt-4o-mini',
+			process.cwd(),
+		);
+		expect(typeof txt).toBe('string');
+		expect(txt.length).toBeGreaterThan(0);
+	});
 });

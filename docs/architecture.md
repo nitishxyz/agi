@@ -125,10 +125,11 @@ bun install -g @agi-cli/install
 
 **Key Features:**
 
-- Provider catalog (OpenAI, Anthropic, Google, OpenRouter, OpenCode)
+- Provider catalog (OpenAI, Anthropic, Google, OpenRouter, OpenCode, Solforge)
 - Model information (capabilities, pricing, context windows)
 - Environment variable management for API keys
 - Provider validation
+- Solforge wallet auth support via `SOLFORGE_PRIVATE_KEY` (base58 Solana secret)
 
 **Exports:**
 

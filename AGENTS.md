@@ -70,7 +70,8 @@ When you need schema/database changes:
 ## AI SDK and Agents
 
 - Use AI SDK v5 APIs (`generateText`, `streamText`, `generateObject`, `streamObject`, `tool`, `embed`, `rerank`)
-- Support provider switching via `@agi-cli/providers` (OpenAI, Anthropic, Google, OpenRouter, OpenCode)
+- Support provider switching via `@agi-cli/providers` (OpenAI, Anthropic, Google, OpenRouter, OpenCode, Solforge)
+- Solforge uses Solana wallet auth — store the base58 private key with `agi auth login solforge` or via `SOLFORGE_PRIVATE_KEY`
 - Agents and tools are modular
 - Load defaults from `packages/sdk/src/tools/`
 - Allow project overrides under `.agi/`

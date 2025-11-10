@@ -4598,4 +4598,4 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 		api: 'https://opencode.ai/zen/v1',
 		doc: 'https://opencode.ai/docs/zen',
 	},
-} as const satisfies Record<ProviderId, ProviderCatalogEntry>;
+} as const satisfies Partial<Record<ProviderId, ProviderCatalogEntry>>;

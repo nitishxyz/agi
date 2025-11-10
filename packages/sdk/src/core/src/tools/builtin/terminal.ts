@@ -186,7 +186,8 @@ export function buildTerminalTool(
 
 						const output = term.read(params.lines);
 						const normalized = output.map(normalizeTerminalLine);
-						const text = normalized.join('\n').replace(/\u0000/g, '');
+						const joined = normalized.join('\n');
+						const text = joined.split(String.fromCharCode(0)).join('');
 
 						const response: {
 							ok: true;

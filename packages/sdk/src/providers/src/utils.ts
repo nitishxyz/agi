@@ -1,4 +1,4 @@
-import { catalog } from './catalog.ts';
+import { catalog } from './catalog-merged.ts';
 import type { ProviderId } from '../../types/src/index.ts';
 
 export const providerIds = Object.keys(catalog) as ProviderId[];

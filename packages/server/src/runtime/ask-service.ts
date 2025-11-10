@@ -17,6 +17,7 @@ import {
 	isProviderAuthorized,
 	ensureProviderEnv,
 	isProviderId,
+	providerEnvVar,
 	type ProviderId,
 } from '@agi-cli/sdk';
 import { sessions } from '@agi-cli/database/schema';
@@ -126,6 +127,7 @@ async function processAskRequest(
 				google: { enabled: true },
 				openrouter: { enabled: true },
 				opencode: { enabled: true },
+				solforge: { enabled: true },
 			},
 			paths: {
 				dataDir: `${projectRoot}/.agi`,
@@ -137,11 +139,15 @@ async function processAskRequest(
 
 		if (request.credentials) {
 			for (const [provider, creds] of Object.entries(request.credentials)) {
-				const envKey = `${provider.toUpperCase()}_API_KEY`;
+				const envKey =
+					providerEnvVar(provider as ProviderId) ??
+					`${provider.toUpperCase()}_API_KEY`;
 				process.env[envKey] = creds.apiKey;
 			}
 		} else if (request.config?.apiKey) {
-			const envKey = `${injectedProvider.toUpperCase()}_API_KEY`;
+			const envKey =
+				providerEnvVar(injectedProvider) ??
+				`${injectedProvider.toUpperCase()}_API_KEY`;
 			process.env[envKey] = request.config.apiKey;
 		}
 	} else {

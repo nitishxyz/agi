@@ -52,6 +52,14 @@ export {
 	readEnvKey,
 	setEnvKey,
 } from './providers/src/index.ts';
+export {
+	createSolforgeFetch,
+	createSolforgeModel,
+} from './providers/src/index.ts';
+export type {
+	SolforgeAuth,
+	SolforgeProviderOptions,
+} from './providers/src/index.ts';
 
 // =======================
 // Authentication (from internal auth module)
