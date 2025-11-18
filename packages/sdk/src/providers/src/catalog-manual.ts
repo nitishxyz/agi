@@ -7,7 +7,16 @@ import type {
 type CatalogMap = Partial<Record<ProviderId, ProviderCatalogEntry>>;
 
 const SOLFORGE_ID: ProviderId = 'solforge';
-const ACCEPTED_BINDINGS = new Set(['@ai-sdk/openai', '@ai-sdk/anthropic']);
+const SOLFORGE_SOURCES: Array<{ id: ProviderId; npm: string }> = [
+	{
+		id: 'openai',
+		npm: '@ai-sdk/openai',
+	},
+	{
+		id: 'anthropic',
+		npm: '@ai-sdk/anthropic',
+	},
+];
 
 function cloneModel(model: ModelInfo): ModelInfo {
 	return {
@@ -29,13 +38,14 @@ function cloneModel(model: ModelInfo): ModelInfo {
 }
 
 function buildSolforgeEntry(base: CatalogMap): ProviderCatalogEntry | null {
-	const opencodeModels = base.opencode?.models ?? [];
-	const solforgeModels = opencodeModels
-		.filter((model) => {
-			const npm = model.provider?.npm;
-			return npm != null && ACCEPTED_BINDINGS.has(npm);
-		})
-		.map(cloneModel);
+	const solforgeModels = SOLFORGE_SOURCES.flatMap(({ id, npm }) => {
+		const sourceModels = base[id]?.models ?? [];
+		return sourceModels.map((model) => {
+			const cloned = cloneModel(model);
+			cloned.provider = { ...(cloned.provider ?? {}), npm };
+			return cloned;
+		});
+	});
 
 	if (!solforgeModels.length) return null;
 

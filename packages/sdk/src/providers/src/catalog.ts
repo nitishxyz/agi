@@ -5,7 +5,7 @@ import type {
 	ProviderCatalogEntry,
 } from '../../types/src/index.ts';
 
-export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
+export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 	openai: {
 		id: 'openai',
 		models: [
@@ -431,6 +431,130 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
+				id: 'gpt-5-pro',
+				label: 'GPT-5 Pro',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-10-06',
+				lastUpdated: '2025-10-06',
+				openWeights: false,
+				cost: {
+					input: 15,
+					output: 120,
+				},
+				limit: {
+					context: 400000,
+					output: 272000,
+				},
+			},
+			{
+				id: 'gpt-5.1',
+				label: 'GPT-5.1',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-13',
+				lastUpdated: '2025-11-13',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.13,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'gpt-5.1-chat-latest',
+				label: 'GPT-5.1 Chat',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-13',
+				lastUpdated: '2025-11-13',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.125,
+				},
+				limit: {
+					context: 128000,
+					output: 16384,
+				},
+			},
+			{
+				id: 'gpt-5.1-codex',
+				label: 'GPT-5.1 Codex',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text', 'image'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-13',
+				lastUpdated: '2025-11-13',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.125,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'gpt-5.1-codex-mini',
+				label: 'GPT-5.1 Codex mini',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text', 'image'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-13',
+				lastUpdated: '2025-11-13',
+				openWeights: false,
+				cost: {
+					input: 0.25,
+					output: 2,
+					cacheRead: 0.025,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
 				id: 'o1',
 				label: 'o1',
 				modalities: {
@@ -678,6 +802,78 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 					output: 100000,
 				},
 			},
+			{
+				id: 'text-embedding-3-large',
+				label: 'text-embedding-3-large',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: false,
+				reasoning: false,
+				attachment: false,
+				temperature: false,
+				knowledge: '2024-01',
+				releaseDate: '2024-01-25',
+				lastUpdated: '2024-01-25',
+				openWeights: false,
+				cost: {
+					input: 0.13,
+					output: 0,
+				},
+				limit: {
+					context: 8191,
+					output: 3072,
+				},
+			},
+			{
+				id: 'text-embedding-3-small',
+				label: 'text-embedding-3-small',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: false,
+				reasoning: false,
+				attachment: false,
+				temperature: false,
+				knowledge: '2024-01',
+				releaseDate: '2024-01-25',
+				lastUpdated: '2024-01-25',
+				openWeights: false,
+				cost: {
+					input: 0.02,
+					output: 0,
+				},
+				limit: {
+					context: 8191,
+					output: 1536,
+				},
+			},
+			{
+				id: 'text-embedding-ada-002',
+				label: 'text-embedding-ada-002',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: false,
+				reasoning: false,
+				attachment: false,
+				temperature: false,
+				knowledge: '2022-12',
+				releaseDate: '2022-12-15',
+				lastUpdated: '2022-12-15',
+				openWeights: false,
+				cost: {
+					input: 0.1,
+					output: 0,
+				},
+				limit: {
+					context: 8192,
+					output: 1536,
+				},
+			},
 		],
 		label: 'OpenAI',
 		env: ['OPENAI_API_KEY'],
@@ -690,6 +886,31 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 			{
 				id: 'claude-3-5-haiku-20241022',
 				label: 'Claude Haiku 3.5',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+				temperature: true,
+				knowledge: '2024-07-31',
+				releaseDate: '2024-10-22',
+				lastUpdated: '2024-10-22',
+				openWeights: false,
+				cost: {
+					input: 0.8,
+					output: 4,
+					cacheRead: 0.08,
+				},
+				limit: {
+					context: 200000,
+					output: 8192,
+				},
+			},
+			{
+				id: 'claude-3-5-haiku-latest',
+				label: 'Claude Haiku 3.5 (latest)',
 				modalities: {
 					input: ['text', 'image'],
 					output: ['text'],
@@ -788,6 +1009,31 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
+				id: 'claude-3-7-sonnet-latest',
+				label: 'Claude Sonnet 3.7 (latest)',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2024-10-31',
+				releaseDate: '2025-02-19',
+				lastUpdated: '2025-02-19',
+				openWeights: false,
+				cost: {
+					input: 3,
+					output: 15,
+					cacheRead: 0.3,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
+				},
+			},
+			{
 				id: 'claude-3-haiku-20240307',
 				label: 'Claude Haiku 3',
 				modalities: {
@@ -863,6 +1109,31 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
+				id: 'claude-haiku-4-5',
+				label: 'Claude Haiku 4.5 (latest)',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-02-31',
+				releaseDate: '2025-10-15',
+				lastUpdated: '2025-10-15',
+				openWeights: false,
+				cost: {
+					input: 1,
+					output: 5,
+					cacheRead: 0.1,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
+				},
+			},
+			{
 				id: 'claude-haiku-4-5-20251001',
 				label: 'Claude Haiku 4.5',
 				modalities: {
@@ -885,6 +1156,56 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				limit: {
 					context: 200000,
 					output: 64000,
+				},
+			},
+			{
+				id: 'claude-opus-4-0',
+				label: 'Claude Opus 4 (latest)',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-03-31',
+				releaseDate: '2025-05-22',
+				lastUpdated: '2025-05-22',
+				openWeights: false,
+				cost: {
+					input: 15,
+					output: 75,
+					cacheRead: 1.5,
+				},
+				limit: {
+					context: 200000,
+					output: 32000,
+				},
+			},
+			{
+				id: 'claude-opus-4-1',
+				label: 'Claude Opus 4.1 (latest)',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-03-31',
+				releaseDate: '2025-08-05',
+				lastUpdated: '2025-08-05',
+				openWeights: false,
+				cost: {
+					input: 15,
+					output: 75,
+					cacheRead: 1.5,
+				},
+				limit: {
+					context: 200000,
+					output: 32000,
 				},
 			},
 			{
@@ -938,6 +1259,31 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
+				id: 'claude-sonnet-4-0',
+				label: 'Claude Sonnet 4 (latest)',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-03-31',
+				releaseDate: '2025-05-22',
+				lastUpdated: '2025-05-22',
+				openWeights: false,
+				cost: {
+					input: 3,
+					output: 15,
+					cacheRead: 0.3,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
+				},
+			},
+			{
 				id: 'claude-sonnet-4-20250514',
 				label: 'Claude Sonnet 4',
 				modalities: {
@@ -951,6 +1297,31 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				knowledge: '2025-03-31',
 				releaseDate: '2025-05-22',
 				lastUpdated: '2025-05-22',
+				openWeights: false,
+				cost: {
+					input: 3,
+					output: 15,
+					cacheRead: 0.3,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
+				},
+			},
+			{
+				id: 'claude-sonnet-4-5',
+				label: 'Claude Sonnet 4.5 (latest)',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-07-31',
+				releaseDate: '2025-09-29',
+				lastUpdated: '2025-09-29',
 				openWeights: false,
 				cost: {
 					input: 3,
@@ -1469,6 +1840,55 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
+				id: 'gemini-3-pro-preview',
+				label: 'Gemini 3 Pro Preview',
+				modalities: {
+					input: ['text', 'image', 'video', 'audio', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-11-18',
+				lastUpdated: '2025-11-18',
+				openWeights: false,
+				cost: {
+					input: 2,
+					output: 12,
+					cacheRead: 0.2,
+				},
+				limit: {
+					context: 1000000,
+					output: 64000,
+				},
+			},
+			{
+				id: 'gemini-embedding-001',
+				label: 'Gemini Embedding 001',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: false,
+				reasoning: false,
+				attachment: false,
+				temperature: false,
+				knowledge: '2025-05',
+				releaseDate: '2025-05-20',
+				lastUpdated: '2025-05-20',
+				openWeights: false,
+				cost: {
+					input: 0.15,
+					output: 0,
+				},
+				limit: {
+					context: 2048,
+					output: 3072,
+				},
+			},
+			{
 				id: 'gemini-flash-latest',
 				label: 'Gemini Flash Latest',
 				modalities: {
@@ -1626,7 +2046,7 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
-				id: 'anthropic/claude-4.5-haiku',
+				id: 'anthropic/claude-haiku-4.5',
 				label: 'Claude Haiku 4.5',
 				modalities: {
 					input: ['text', 'image'],
@@ -1993,6 +2413,30 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 			{
 				id: 'deepseek/deepseek-v3.1-terminus',
 				label: 'DeepSeek V3.1 Terminus',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-07',
+				releaseDate: '2025-09-22',
+				lastUpdated: '2025-09-22',
+				openWeights: true,
+				cost: {
+					input: 0.27,
+					output: 1,
+				},
+				limit: {
+					context: 131072,
+					output: 65536,
+				},
+			},
+			{
+				id: 'deepseek/deepseek-v3.1-terminus:exacto',
+				label: 'DeepSeek V3.1 Terminus (exacto)',
 				modalities: {
 					input: ['text'],
 					output: ['text'],
@@ -2383,6 +2827,30 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
+				id: 'kwaipilot/kat-coder-pro:free',
+				label: 'Kat Coder Pro (free)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-11',
+				releaseDate: '2025-11-10',
+				lastUpdated: '2025-11-10',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 256000,
+					output: 65536,
+				},
+			},
+			{
 				id: 'meta-llama/llama-3.2-11b-vision-instruct',
 				label: 'Llama 3.2 11B Vision Instruct',
 				modalities: {
@@ -2476,6 +2944,76 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				limit: {
 					context: 163840,
 					output: 163840,
+				},
+			},
+			{
+				id: 'minimax/minimax-01',
+				label: 'MiniMax-01',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				releaseDate: '2025-01-15',
+				lastUpdated: '2025-01-15',
+				openWeights: true,
+				cost: {
+					input: 0.2,
+					output: 1.1,
+				},
+				limit: {
+					context: 1000000,
+					output: 1000000,
+				},
+			},
+			{
+				id: 'minimax/minimax-m1',
+				label: 'MiniMax M1',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2025-06-17',
+				lastUpdated: '2025-06-17',
+				openWeights: true,
+				cost: {
+					input: 0.4,
+					output: 2.2,
+				},
+				limit: {
+					context: 1000000,
+					output: 40000,
+				},
+			},
+			{
+				id: 'minimax/minimax-m2',
+				label: 'MiniMax M2',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2025-10-23',
+				lastUpdated: '2025-10-23',
+				openWeights: true,
+				cost: {
+					input: 0.28,
+					output: 1.15,
+					cacheRead: 0.28,
+				},
+				limit: {
+					context: 196600,
+					output: 118000,
 				},
 			},
 			{
@@ -2839,6 +3377,55 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
+				id: 'moonshotai/kimi-k2-0905:exacto',
+				label: 'Kimi K2 Instruct 0905 (exacto)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-10',
+				releaseDate: '2025-09-05',
+				lastUpdated: '2025-09-05',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 2.5,
+				},
+				limit: {
+					context: 262144,
+					output: 16384,
+				},
+			},
+			{
+				id: 'moonshotai/kimi-k2-thinking',
+				label: 'Kimi K2 Thinking',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-08',
+				releaseDate: '2025-11-06',
+				lastUpdated: '2025-11-06',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 2.5,
+					cacheRead: 0.15,
+				},
+				limit: {
+					context: 262144,
+					output: 262144,
+				},
+			},
+			{
 				id: 'moonshotai/kimi-k2:free',
 				label: 'Kimi K2 (free)',
 				modalities: {
@@ -2928,6 +3515,30 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				cost: {
 					input: 0.13,
 					output: 0.4,
+				},
+				limit: {
+					context: 131072,
+					output: 131072,
+				},
+			},
+			{
+				id: 'nvidia/nemotron-nano-9b-v2',
+				label: 'nvidia-nemotron-nano-9b-v2',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-09',
+				releaseDate: '2025-08-18',
+				lastUpdated: '2025-08-18',
+				openWeights: true,
+				cost: {
+					input: 0.04,
+					output: 0.16,
 				},
 				limit: {
 					context: 131072,
@@ -3156,6 +3767,130 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
+				id: 'openai/gpt-5-pro',
+				label: 'GPT-5 Pro',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-10-06',
+				lastUpdated: '2025-10-06',
+				openWeights: false,
+				cost: {
+					input: 15,
+					output: 120,
+				},
+				limit: {
+					context: 400000,
+					output: 272000,
+				},
+			},
+			{
+				id: 'openai/gpt-5.1',
+				label: 'GPT-5.1',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-13',
+				lastUpdated: '2025-11-13',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.125,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'openai/gpt-5.1-chat',
+				label: 'GPT-5.1 Chat',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-13',
+				lastUpdated: '2025-11-13',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.125,
+				},
+				limit: {
+					context: 128000,
+					output: 16384,
+				},
+			},
+			{
+				id: 'openai/gpt-5.1-codex',
+				label: 'GPT-5.1-Codex',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-13',
+				lastUpdated: '2025-11-13',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.125,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'openai/gpt-5.1-codex-mini',
+				label: 'GPT-5.1-Codex-Mini',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-13',
+				lastUpdated: '2025-11-13',
+				openWeights: false,
+				cost: {
+					input: 0.25,
+					output: 2,
+					cacheRead: 0.025,
+				},
+				limit: {
+					context: 400000,
+					output: 100000,
+				},
+			},
+			{
 				id: 'openai/gpt-oss-120b',
 				label: 'GPT OSS 120B',
 				modalities: {
@@ -3172,6 +3907,29 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				cost: {
 					input: 0.072,
 					output: 0.28,
+				},
+				limit: {
+					context: 131072,
+					output: 32768,
+				},
+			},
+			{
+				id: 'openai/gpt-oss-120b:exacto',
+				label: 'GPT OSS 120B (exacto)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2025-08-05',
+				lastUpdated: '2025-08-05',
+				openWeights: true,
+				cost: {
+					input: 0.05,
+					output: 0.24,
 				},
 				limit: {
 					context: 131072,
@@ -3296,6 +4054,78 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				limit: {
 					context: 256000,
 					output: 128000,
+				},
+			},
+			{
+				id: 'openrouter/polaris-alpha',
+				label: 'Polaris Alpha',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-07',
+				releaseDate: '2025-07-30',
+				lastUpdated: '2025-07-30',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 256000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'openrouter/sherlock-dash-alpha',
+				label: 'Sherlock Dash Alpha',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-11',
+				releaseDate: '2025-11-15',
+				lastUpdated: '2025-11-15',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 1840000,
+					output: 64000,
+				},
+			},
+			{
+				id: 'openrouter/sherlock-think-alpha',
+				label: 'Sherlock Think Alpha',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-11',
+				releaseDate: '2025-11-15',
+				lastUpdated: '2025-11-15',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 1840000,
+					output: 64000,
 				},
 			},
 			{
@@ -3705,6 +4535,30 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
+				id: 'qwen/qwen3-coder:exacto',
+				label: 'Qwen3 Coder (exacto)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-07-23',
+				lastUpdated: '2025-07-23',
+				openWeights: true,
+				cost: {
+					input: 0.38,
+					output: 1.53,
+				},
+				limit: {
+					context: 131072,
+					output: 32768,
+				},
+			},
+			{
 				id: 'qwen/qwen3-coder:free',
 				label: 'Qwen3 Coder 480B A35B Instruct (free)',
 				modalities: {
@@ -4070,31 +4924,6 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
-				id: 'x-ai/grok-4-fast:free',
-				label: 'Grok 4 Fast (free)',
-				modalities: {
-					input: ['text', 'image'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: true,
-				attachment: false,
-				temperature: true,
-				knowledge: '2024-11',
-				releaseDate: '2025-08-19',
-				lastUpdated: '2025-08-19',
-				openWeights: false,
-				cost: {
-					input: 0,
-					output: 0,
-					cacheRead: 0,
-				},
-				limit: {
-					context: 2000000,
-					output: 2000000,
-				},
-			},
-			{
 				id: 'x-ai/grok-code-fast-1',
 				label: 'Grok Code Fast 1',
 				modalities: {
@@ -4240,6 +5069,31 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 					output: 128000,
 				},
 			},
+			{
+				id: 'z-ai/glm-4.6:exacto',
+				label: 'GLM 4.6 (exacto)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-09',
+				releaseDate: '2025-09-30',
+				lastUpdated: '2025-09-30',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 1.9,
+					cacheRead: 0.11,
+				},
+				limit: {
+					context: 200000,
+					output: 128000,
+				},
+			},
 		],
 		label: 'OpenRouter',
 		env: ['OPENROUTER_API_KEY'],
@@ -4251,8 +5105,36 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 		id: 'opencode',
 		models: [
 			{
-				id: 'an-g8x',
-				label: 'Code G8X (alpha)',
+				id: 'alpha-doubao-seed-code',
+				label: 'Doubao Seed Code (alpha)',
+				modalities: {
+					input: ['text', 'image', 'video'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-10',
+				releaseDate: '2025-11-11',
+				lastUpdated: '2025-11-11',
+				openWeights: true,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
+				},
+				limit: {
+					context: 256000,
+					output: 32000,
+				},
+				provider: {
+					npm: '@ai-sdk/openai',
+				},
+			},
+			{
+				id: 'alpha-gd4',
+				label: 'Code GD4 (alpha)',
 				modalities: {
 					input: ['text'],
 					output: ['text'],
@@ -4262,12 +5144,89 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				attachment: false,
 				temperature: true,
 				knowledge: '2025-01',
-				releaseDate: '2025-07-30',
-				lastUpdated: '2025-07-30',
+				releaseDate: '2025-01-01',
+				lastUpdated: '2025-01-01',
 				openWeights: true,
 				cost: {
 					input: 0.5,
 					output: 2,
+					cacheRead: 0.15,
+				},
+				limit: {
+					context: 200000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'alpha-kimi-k2-thinking',
+				label: 'Kimi K2 Thinking (alpha)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-10',
+				releaseDate: '2025-09-05',
+				lastUpdated: '2025-09-05',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 2.5,
+				},
+				limit: {
+					context: 262144,
+					output: 262144,
+				},
+			},
+			{
+				id: 'alpha-minimax-m2',
+				label: 'MiniMax M2 (alpha)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-10',
+				releaseDate: '2025-10-27',
+				lastUpdated: '2025-10-27',
+				openWeights: true,
+				cost: {
+					input: 0.3,
+					output: 1.2,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+				provider: {
+					npm: '@ai-sdk/anthropic',
+				},
+			},
+			{
+				id: 'big-pickle',
+				label: 'Big Pickle',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-10-17',
+				lastUpdated: '2025-10-17',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
 				},
 				limit: {
 					context: 200000,
@@ -4319,7 +5278,7 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				openWeights: false,
 				cost: {
 					input: 1,
-					output: 1.25,
+					output: 5,
 					cacheRead: 0.1,
 				},
 				limit: {
@@ -4415,18 +5374,19 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 			},
 			{
-				id: 'code-supernova',
-				label: 'Code Supernova 1M',
+				id: 'gemini-3-pro',
+				label: 'Gemini 3 Pro',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'video', 'audio', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
 				reasoning: true,
 				attachment: true,
 				temperature: true,
-				releaseDate: '2025-09-19',
-				lastUpdated: '2025-09-19',
+				knowledge: '2025-01',
+				releaseDate: '2025-11-18',
+				lastUpdated: '2025-11-18',
 				openWeights: false,
 				cost: {
 					input: 0,
@@ -4435,12 +5395,15 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				},
 				limit: {
 					context: 1000000,
-					output: 1000000,
+					output: 64000,
+				},
+				provider: {
+					npm: '@ai-sdk/google',
 				},
 			},
 			{
 				id: 'glm-4.6',
-				label: 'GLM-4.6 (beta)',
+				label: 'GLM-4.6',
 				modalities: {
 					input: ['text'],
 					output: ['text'],
@@ -4455,7 +5418,8 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				openWeights: true,
 				cost: {
 					input: 0.6,
-					output: 1.9,
+					output: 2.2,
+					cacheRead: 0.1,
 				},
 				limit: {
 					context: 204800,
@@ -4492,7 +5456,7 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 			},
 			{
 				id: 'gpt-5-codex',
-				label: 'GPT-5-Codex',
+				label: 'GPT-5 Codex',
 				modalities: {
 					input: ['text', 'image'],
 					output: ['text'],
@@ -4504,6 +5468,90 @@ export const catalog: Record<ProviderId, ProviderCatalogEntry> = {
 				knowledge: '2024-09-30',
 				releaseDate: '2025-08-07',
 				lastUpdated: '2025-08-07',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.125,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+				provider: {
+					npm: '@ai-sdk/openai',
+				},
+			},
+			{
+				id: 'gpt-5-nano',
+				label: 'GPT-5 Nano',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2024-05-30',
+				releaseDate: '2025-08-07',
+				lastUpdated: '2025-08-07',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+				provider: {
+					npm: '@ai-sdk/openai',
+				},
+			},
+			{
+				id: 'gpt-5.1',
+				label: 'GPT-5.1',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text', 'image'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-12',
+				lastUpdated: '2025-11-12',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.125,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+				provider: {
+					npm: '@ai-sdk/openai',
+				},
+			},
+			{
+				id: 'gpt-5.1-codex',
+				label: 'GPT-5.1 Codex',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text', 'image'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-12',
+				lastUpdated: '2025-11-12',
 				openWeights: false,
 				cost: {
 					input: 1.25,

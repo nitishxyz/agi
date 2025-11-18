@@ -8,7 +8,7 @@ import nacl from 'tweetnacl';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 const DEFAULT_BASE_URL = 'https://ai.solforge.sh';
-const DEFAULT_RPC_URL = 'https://api.devnet.solana.com';
+const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const DEFAULT_TOPUP_AMOUNT = '100000'; // $0.10
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_MAX_PAYMENT_ATTEMPTS = 20;
