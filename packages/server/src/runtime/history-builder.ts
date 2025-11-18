@@ -110,57 +110,50 @@ export async function buildHistoryMessages(
 				toolResults.map((result) => [result.callId, result]),
 			);
 
-			const hasIncompleteTools = toolCalls.some(
-				(call) => !toolResultsById.has(call.callId),
-			);
-
-			if (hasIncompleteTools) {
-				const pendingCalls = toolCalls
-					.filter((call) => !toolResultsById.has(call.callId))
-					.map((call) => `${call.name}#${call.callId}`)
-					.join(', ');
-				debugLog(
-					`[buildHistoryMessages] Incomplete tool calls for assistant message ${m.id}, skipping tool data (pending: ${pendingCalls || 'unknown'})`,
-				);
-				if (assistantParts.length) {
-					ui.push({ id: m.id, role: 'assistant', parts: assistantParts });
-				}
-				continue;
-			}
-
 			for (const call of toolCalls) {
 				// Skip finish tool from history - it's internal loop control
 				if (call.name === 'finish') continue;
 
 				const toolType = `tool-${call.name}` as `tool-${string}`;
-				const result = toolResultsById.get(call.callId);
+				let result = toolResultsById.get(call.callId);
 
-				if (result) {
-					const part = {
-						type: toolType,
-						state: 'output-available',
-						toolCallId: call.callId,
-						input: call.args,
-						output: (() => {
-							const r = result.result;
-							if (typeof r === 'string') return r;
-							try {
-								return JSON.stringify(r);
-							} catch {
-								return String(r);
-							}
-						})(),
-					};
-
-					toolHistory.register(part, {
-						toolName: call.name,
+				if (!result) {
+					// Synthesize a result for incomplete tool calls to preserve history
+					debugLog(
+						`[buildHistoryMessages] Synthesizing error result for incomplete tool call ${call.name}#${call.callId}`,
+					);
+					result = {
+						name: call.name,
 						callId: call.callId,
-						args: call.args,
-						result: result.result,
-					});
-
-					assistantParts.push(part as never);
+						result:
+							'Error: The tool execution was interrupted or failed to return a result. You may need to retry this operation.',
+					};
 				}
+
+				const part = {
+					type: toolType,
+					state: 'output-available',
+					toolCallId: call.callId,
+					input: call.args,
+					output: (() => {
+						const r = result.result;
+						if (typeof r === 'string') return r;
+						try {
+							return JSON.stringify(r);
+						} catch {
+							return String(r);
+						}
+					})(),
+				};
+
+				toolHistory.register(part, {
+					toolName: call.name,
+					callId: call.callId,
+					args: call.args,
+					result: result.result,
+				});
+
+				assistantParts.push(part as never);
 			}
 
 			if (assistantParts.length) {

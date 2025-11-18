@@ -1,6 +1,6 @@
 import { openai, createOpenAI } from '@ai-sdk/openai';
 import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
-import { google } from '@ai-sdk/google';
+import { google, createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { catalog, createSolforgeModel } from '../../../providers/src/index.ts';
@@ -48,7 +48,8 @@ export async function resolveModel(
 
 	if (provider === 'google') {
 		if (config.apiKey) {
-			throw new Error('Google provider config not yet supported in SDK');
+			const instance = createGoogleGenerativeAI({ apiKey: config.apiKey });
+			return instance(model);
 		}
 		return google(model);
 	}

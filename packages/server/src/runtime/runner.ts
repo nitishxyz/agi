@@ -178,10 +178,20 @@ async function runAssistant(opts: RunOpts) {
 
 	// FIX: For OAuth, ALWAYS prepend the system message because it's never in history
 	// For API key mode, only add on first message (when additionalSystemMessages is empty)
-	const messagesWithSystemInstructions = [
+	const messagesWithSystemInstructions: any[] = [
 		...additionalSystemMessages, // Always add for OAuth, empty for API key mode
 		...history,
 	];
+
+	// Inject a reminder for subsequent turns to prevent "abrupt stops"
+	// This reinforces the instruction to call finish and maintain context
+	if (!isFirstMessage) {
+		messagesWithSystemInstructions.push({
+			role: 'user',
+			content:
+				'SYSTEM REMINDER: You are continuing an existing session. When you have completed the task, you MUST stream a text summary of what you did to the user, and THEN call the `finish` tool. Do not call `finish` without a summary.',
+		});
+	}
 
 	debugLog(`[RUNNER] About to create model with provider: ${opts.provider}`);
 	debugLog(`[RUNNER] About to create model ID: ${opts.model}`);
@@ -285,7 +295,6 @@ async function runAssistant(opts: RunOpts) {
 	let stepIndex = 0;
 
 	try {
-		// @ts-expect-error this is fine 🔥
 		const result = streamText({
 			model,
 			tools: toolset,

@@ -8,7 +8,7 @@ import {
 } from '@agi-cli/sdk';
 import { openai, createOpenAI } from '@ai-sdk/openai';
 import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
-import { google } from '@ai-sdk/google';
+import { google, createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
@@ -110,7 +110,14 @@ export async function resolveModel(
 		const instance = await getAnthropicInstance(cfg);
 		return instance(model);
 	}
-	if (provider === 'google') return google(model);
+	if (provider === 'google') {
+		const auth = await getAuth('google', cfg.projectRoot);
+		if (auth?.type === 'api' && auth.key) {
+			const instance = createGoogleGenerativeAI({ apiKey: auth.key });
+			return instance(model);
+		}
+		return google(model);
+	}
 	if (provider === 'openrouter') {
 		const openrouter = getOpenRouterInstance();
 		return openrouter.chat(model);
