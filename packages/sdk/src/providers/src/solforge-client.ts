@@ -7,7 +7,7 @@ import { svm } from 'x402/shared';
 import nacl from 'tweetnacl';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-const DEFAULT_BASE_URL = 'http://localhost:4000';
+const DEFAULT_BASE_URL = 'https://ai.solforge.sh';
 const DEFAULT_RPC_URL = 'https://api.devnet.solana.com';
 const DEFAULT_TOPUP_AMOUNT = '100000'; // $0.10
 const DEFAULT_MAX_ATTEMPTS = 3;
