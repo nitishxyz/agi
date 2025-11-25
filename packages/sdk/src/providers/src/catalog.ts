@@ -1119,7 +1119,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				reasoning: true,
 				attachment: true,
 				temperature: true,
-				knowledge: '2025-02-31',
+				knowledge: '2025-02-28',
 				releaseDate: '2025-10-15',
 				lastUpdated: '2025-10-15',
 				openWeights: false,
@@ -1144,7 +1144,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				reasoning: true,
 				attachment: true,
 				temperature: true,
-				knowledge: '2025-02-31',
+				knowledge: '2025-02-28',
 				releaseDate: '2025-10-15',
 				lastUpdated: '2025-10-15',
 				openWeights: false,
@@ -1256,6 +1256,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 200000,
 					output: 32000,
+				},
+			},
+			{
+				id: 'claude-opus-4-5',
+				label: 'Claude Opus 4.5 (latest)',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-03-31',
+				releaseDate: '2025-11-24',
+				lastUpdated: '2025-11-24',
+				openWeights: false,
+				cost: {
+					input: 5,
+					output: 25,
+					cacheRead: 1.5,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
 				},
 			},
 			{
@@ -2056,7 +2081,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				reasoning: true,
 				attachment: true,
 				temperature: true,
-				knowledge: '2025-02-31',
+				knowledge: '2025-02-28',
 				releaseDate: '2025-10-15',
 				lastUpdated: '2025-10-15',
 				openWeights: false,
@@ -2707,6 +2732,33 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'google/gemini-3-pro-preview',
+				label: 'Gemini 3 Pro Preview',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-11-18',
+				lastUpdated: '2025-11',
+				openWeights: false,
+				cost: {
+					input: 2,
+					output: 12,
+				},
+				limit: {
+					context: 1050000,
+					output: 66000,
+				},
+				provider: {
+					npm: '@openrouter/ai-sdk-provider',
+				},
+			},
+			{
 				id: 'google/gemma-2-9b-it:free',
 				label: 'Gemma 2 9B (free)',
 				modalities: {
@@ -3014,6 +3066,9 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 196600,
 					output: 118000,
+				},
+				provider: {
+					npm: '@openrouter/ai-sdk-provider',
 				},
 			},
 			{
@@ -3423,6 +3478,9 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 262144,
 					output: 262144,
+				},
+				provider: {
+					npm: '@openrouter/ai-sdk-provider',
 				},
 			},
 			{
@@ -3960,6 +4018,29 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'openai/gpt-oss-safeguard-20b',
+				label: 'GPT OSS Safeguard 20B',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2025-10-29',
+				lastUpdated: '2025-10-29',
+				openWeights: false,
+				cost: {
+					input: 0.075,
+					output: 0.3,
+				},
+				limit: {
+					context: 131072,
+					output: 65536,
+				},
+			},
+			{
 				id: 'openai/o4-mini',
 				label: 'o4 Mini',
 				modalities: {
@@ -3982,196 +4063,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 200000,
 					output: 100000,
-				},
-			},
-			{
-				id: 'openrouter/cypher-alpha:free',
-				label: 'Cypher Alpha (free)',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: false,
-				attachment: false,
-				temperature: true,
-				knowledge: '2025-07',
-				releaseDate: '2025-07-01',
-				lastUpdated: '2025-07-01',
-				openWeights: false,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 1000000,
-					output: 1000000,
-				},
-			},
-			{
-				id: 'openrouter/horizon-alpha',
-				label: 'Horizon Alpha',
-				modalities: {
-					input: ['text', 'image'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: false,
-				attachment: true,
-				temperature: false,
-				knowledge: '2025-07',
-				releaseDate: '2025-07-30',
-				lastUpdated: '2025-07-30',
-				openWeights: false,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 256000,
-					output: 128000,
-				},
-			},
-			{
-				id: 'openrouter/horizon-beta',
-				label: 'Horizon Beta',
-				modalities: {
-					input: ['text', 'image'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: false,
-				attachment: true,
-				temperature: false,
-				knowledge: '2025-07',
-				releaseDate: '2025-08-01',
-				lastUpdated: '2025-08-01',
-				openWeights: false,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 256000,
-					output: 128000,
-				},
-			},
-			{
-				id: 'openrouter/polaris-alpha',
-				label: 'Polaris Alpha',
-				modalities: {
-					input: ['text', 'image'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: false,
-				attachment: true,
-				temperature: false,
-				knowledge: '2025-07',
-				releaseDate: '2025-07-30',
-				lastUpdated: '2025-07-30',
-				openWeights: false,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 256000,
-					output: 128000,
-				},
-			},
-			{
-				id: 'openrouter/sherlock-dash-alpha',
-				label: 'Sherlock Dash Alpha',
-				modalities: {
-					input: ['text', 'image'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: false,
-				attachment: true,
-				temperature: false,
-				knowledge: '2025-11',
-				releaseDate: '2025-11-15',
-				lastUpdated: '2025-11-15',
-				openWeights: false,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 1840000,
-					output: 64000,
-				},
-			},
-			{
-				id: 'openrouter/sherlock-think-alpha',
-				label: 'Sherlock Think Alpha',
-				modalities: {
-					input: ['text', 'image'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: true,
-				attachment: true,
-				temperature: false,
-				knowledge: '2025-11',
-				releaseDate: '2025-11-15',
-				lastUpdated: '2025-11-15',
-				openWeights: false,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 1840000,
-					output: 64000,
-				},
-			},
-			{
-				id: 'openrouter/sonoma-dusk-alpha',
-				label: 'Sonoma Dusk Alpha',
-				modalities: {
-					input: ['text', 'image'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: false,
-				attachment: true,
-				temperature: false,
-				releaseDate: '2024-09-05',
-				lastUpdated: '2024-09-05',
-				openWeights: false,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 2000000,
-					output: 2000000,
-				},
-			},
-			{
-				id: 'openrouter/sonoma-sky-alpha',
-				label: 'Sonoma Sky Alpha',
-				modalities: {
-					input: ['text', 'image'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: false,
-				attachment: true,
-				temperature: false,
-				releaseDate: '2024-09-05',
-				lastUpdated: '2024-09-05',
-				openWeights: false,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 2000000,
-					output: 2000000,
 				},
 			},
 			{
@@ -4924,6 +4815,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'x-ai/grok-4.1-fast',
+				label: 'Grok 4.1 Fast',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-11',
+				releaseDate: '2025-11-19',
+				lastUpdated: '2025-11-19',
+				openWeights: false,
+				cost: {
+					input: 0.2,
+					output: 0.5,
+					cacheRead: 0.05,
+				},
+				limit: {
+					context: 2000000,
+					output: 30000,
+				},
+			},
+			{
 				id: 'x-ai/grok-code-fast-1',
 				label: 'Grok Code Fast 1',
 				modalities: {
@@ -5158,30 +5074,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
-				id: 'alpha-kimi-k2-thinking',
-				label: 'Kimi K2 Thinking (alpha)',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: true,
-				attachment: false,
-				temperature: true,
-				knowledge: '2024-10',
-				releaseDate: '2025-09-05',
-				lastUpdated: '2025-09-05',
-				openWeights: true,
-				cost: {
-					input: 0.6,
-					output: 2.5,
-				},
-				limit: {
-					context: 262144,
-					output: 262144,
-				},
-			},
-			{
 				id: 'alpha-minimax-m2',
 				label: 'MiniMax M2 (alpha)',
 				modalities: {
@@ -5272,7 +5164,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				reasoning: true,
 				attachment: true,
 				temperature: true,
-				knowledge: '2025-02-31',
+				knowledge: '2025-02-28',
 				releaseDate: '2025-10-15',
 				lastUpdated: '2025-10-15',
 				openWeights: false,
@@ -5312,6 +5204,34 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 200000,
 					output: 32000,
+				},
+				provider: {
+					npm: '@ai-sdk/anthropic',
+				},
+			},
+			{
+				id: 'claude-opus-4-5',
+				label: 'Claude Opus 4.5',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-03-31',
+				releaseDate: '2025-11-01',
+				lastUpdated: '2025-11-01',
+				openWeights: false,
+				cost: {
+					input: 5,
+					output: 25,
+					cacheRead: 0.5,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
 				},
 				provider: {
 					npm: '@ai-sdk/anthropic',
@@ -5389,9 +5309,9 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				lastUpdated: '2025-11-18',
 				openWeights: false,
 				cost: {
-					input: 0,
-					output: 0,
-					cacheRead: 0,
+					input: 2,
+					output: 12,
+					cacheRead: 0.2,
 				},
 				limit: {
 					context: 1000000,
@@ -5442,9 +5362,9 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				lastUpdated: '2025-08-07',
 				openWeights: false,
 				cost: {
-					input: 1.25,
-					output: 10,
-					cacheRead: 0.125,
+					input: 1.07,
+					output: 8.5,
+					cacheRead: 0.107,
 				},
 				limit: {
 					context: 400000,
@@ -5470,9 +5390,9 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				lastUpdated: '2025-08-07',
 				openWeights: false,
 				cost: {
-					input: 1.25,
-					output: 10,
-					cacheRead: 0.125,
+					input: 1.07,
+					output: 8.5,
+					cacheRead: 0.107,
 				},
 				limit: {
 					context: 400000,
@@ -5526,9 +5446,9 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				lastUpdated: '2025-11-12',
 				openWeights: false,
 				cost: {
-					input: 1.25,
-					output: 10,
-					cacheRead: 0.125,
+					input: 1.07,
+					output: 8.5,
+					cacheRead: 0.107,
 				},
 				limit: {
 					context: 400000,
@@ -5554,9 +5474,9 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				lastUpdated: '2025-11-12',
 				openWeights: false,
 				cost: {
-					input: 1.25,
-					output: 10,
-					cacheRead: 0.125,
+					input: 1.07,
+					output: 8.5,
+					cacheRead: 0.107,
 				},
 				limit: {
 					context: 400000,
@@ -5606,9 +5526,34 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				lastUpdated: '2025-09-05',
 				openWeights: true,
 				cost: {
+					input: 0.45,
+					output: 2.5,
+					cacheRead: 0.45,
+				},
+				limit: {
+					context: 262144,
+					output: 262144,
+				},
+			},
+			{
+				id: 'kimi-k2-thinking',
+				label: 'Kimi K2 Thinking',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-10',
+				releaseDate: '2025-09-05',
+				lastUpdated: '2025-09-05',
+				openWeights: true,
+				cost: {
 					input: 0.6,
 					output: 2.5,
-					cacheRead: 0.36,
+					cacheRead: 0.6,
 				},
 				limit: {
 					context: 262144,
