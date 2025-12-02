@@ -1276,7 +1276,32 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				cost: {
 					input: 5,
 					output: 25,
-					cacheRead: 1.5,
+					cacheRead: 0.5,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
+				},
+			},
+			{
+				id: 'claude-opus-4-5-20251101',
+				label: 'Claude Opus 4.5',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-03-31',
+				releaseDate: '2025-11-01',
+				lastUpdated: '2025-11-01',
+				openWeights: false,
+				cost: {
+					input: 5,
+					output: 25,
+					cacheRead: 0.5,
 				},
 				limit: {
 					context: 200000,
@@ -2139,6 +2164,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 15,
 					output: 75,
 					cacheRead: 1.5,
+				},
+				limit: {
+					context: 200000,
+					output: 32000,
+				},
+			},
+			{
+				id: 'anthropic/claude-opus-4.5',
+				label: 'Claude Opus 4.5',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-05-30',
+				releaseDate: '2025-11-24',
+				lastUpdated: '2025-11-24',
+				openWeights: false,
+				cost: {
+					input: 5,
+					output: 25,
+					cacheRead: 0.5,
 				},
 				limit: {
 					context: 200000,
@@ -4426,6 +4476,30 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'qwen/qwen3-coder-flash',
+				label: 'Qwen3 Coder Flash',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-07-23',
+				lastUpdated: '2025-07-23',
+				openWeights: false,
+				cost: {
+					input: 0.3,
+					output: 1.5,
+				},
+				limit: {
+					context: 128000,
+					output: 66536,
+				},
+			},
+			{
 				id: 'qwen/qwen3-coder:exacto',
 				label: 'Qwen3 Coder (exacto)',
 				modalities: {
@@ -5050,7 +5124,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 			},
 			{
 				id: 'alpha-gd4',
-				label: 'Code GD4 (alpha)',
+				label: 'Alpha GD4',
 				modalities: {
 					input: ['text'],
 					output: ['text'],
@@ -5069,8 +5143,11 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					cacheRead: 0.15,
 				},
 				limit: {
-					context: 200000,
-					output: 128000,
+					context: 262144,
+					output: 32768,
+				},
+				provider: {
+					npm: '@ai-sdk/anthropic',
 				},
 			},
 			{
@@ -5526,9 +5603,9 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				lastUpdated: '2025-09-05',
 				openWeights: true,
 				cost: {
-					input: 0.45,
+					input: 0.4,
 					output: 2.5,
-					cacheRead: 0.45,
+					cacheRead: 0.4,
 				},
 				limit: {
 					context: 262144,
@@ -5551,9 +5628,9 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				lastUpdated: '2025-09-05',
 				openWeights: true,
 				cost: {
-					input: 0.6,
+					input: 0.4,
 					output: 2.5,
-					cacheRead: 0.6,
+					cacheRead: 0.4,
 				},
 				limit: {
 					context: 262144,
