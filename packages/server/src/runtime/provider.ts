@@ -14,6 +14,56 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 export type ProviderName = ProviderId;
 
+async function getZaiInstance(cfg: AGIConfig, model: string) {
+	const auth = await getAuth('zai', cfg.projectRoot);
+	const entry = catalog.zai;
+
+	let apiKey = '';
+	const baseURL = entry?.api || 'https://api.z.ai/api/paas/v4';
+
+	if (auth?.type === 'api' && auth.key) {
+		apiKey = auth.key;
+	} else {
+		apiKey = process.env.ZAI_API_KEY || process.env.ZHIPU_API_KEY || '';
+	}
+
+	const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
+
+	const instance = createOpenAICompatible({
+		name: entry?.label ?? 'Z.AI',
+		baseURL,
+		headers,
+	});
+
+	return instance(model);
+}
+
+async function getZaiCodingInstance(cfg: AGIConfig, model: string) {
+	const auth =
+		(await getAuth('zai', cfg.projectRoot)) ||
+		(await getAuth('zai-coding', cfg.projectRoot));
+	const entry = catalog['zai-coding'];
+
+	let apiKey = '';
+	const baseURL = entry?.api || 'https://api.z.ai/api/coding/paas/v4';
+
+	if (auth?.type === 'api' && auth.key) {
+		apiKey = auth.key;
+	} else {
+		apiKey = process.env.ZAI_API_KEY || process.env.ZHIPU_API_KEY || '';
+	}
+
+	const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
+
+	const instance = createOpenAICompatible({
+		name: entry?.label ?? 'Z.AI Coding',
+		baseURL,
+		headers,
+	});
+
+	return instance(model);
+}
+
 function getOpenRouterInstance() {
 	const apiKey = process.env.OPENROUTER_API_KEY ?? '';
 	return createOpenRouter({ apiKey });
@@ -191,6 +241,12 @@ export async function resolveModel(
 				topupAmountMicroUsdc: topupAmount,
 			},
 		);
+	}
+	if (provider === 'zai') {
+		return getZaiInstance(cfg, model);
+	}
+	if (provider === 'zai-coding') {
+		return getZaiCodingInstance(cfg, model);
 	}
 	throw new Error(`Unsupported provider: ${provider}`);
 }

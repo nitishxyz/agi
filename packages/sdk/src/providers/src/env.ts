@@ -7,6 +7,8 @@ const ENV_VARS: Record<ProviderId, string> = {
 	openrouter: 'OPENROUTER_API_KEY',
 	opencode: 'OPENCODE_API_KEY',
 	solforge: 'SOLFORGE_PRIVATE_KEY',
+	zai: 'ZAI_API_KEY',
+	'zai-coding': 'ZAI_API_KEY',
 };
 
 export function providerEnvVar(provider: ProviderId): string {

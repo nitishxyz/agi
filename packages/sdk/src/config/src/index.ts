@@ -25,6 +25,8 @@ const DEFAULTS: {
 		openrouter: { enabled: false },
 		opencode: { enabled: false },
 		solforge: { enabled: false },
+		zai: { enabled: false },
+		'zai-coding': { enabled: false },
 	},
 };
 

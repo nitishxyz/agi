@@ -509,7 +509,32 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				label: 'GPT-5.1 Codex',
 				modalities: {
 					input: ['text', 'image'],
-					output: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-13',
+				lastUpdated: '2025-11-13',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.125,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'gpt-5.1-codex-max',
+				label: 'GPT-5.1 Codex Max',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
 				},
 				toolCall: true,
 				reasoning: true,
@@ -548,6 +573,80 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.25,
 					output: 2,
 					cacheRead: 0.025,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'gpt-5.2',
+				label: 'GPT-5.2',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-08-31',
+				releaseDate: '2025-12-11',
+				lastUpdated: '2025-12-11',
+				openWeights: false,
+				cost: {
+					input: 1.75,
+					output: 14,
+					cacheRead: 0.175,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'gpt-5.2-chat-latest',
+				label: 'GPT-5.2 Chat',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-08-31',
+				releaseDate: '2025-12-11',
+				lastUpdated: '2025-12-11',
+				openWeights: false,
+				cost: {
+					input: 1.75,
+					output: 14,
+					cacheRead: 0.175,
+				},
+				limit: {
+					context: 128000,
+					output: 16384,
+				},
+			},
+			{
+				id: 'gpt-5.2-pro',
+				label: 'GPT-5.2 Pro',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-08-31',
+				releaseDate: '2025-12-11',
+				lastUpdated: '2025-12-11',
+				openWeights: false,
+				cost: {
+					input: 21,
+					output: 168,
 				},
 				limit: {
 					context: 400000,
@@ -887,7 +986,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-3-5-haiku-20241022',
 				label: 'Claude Haiku 3.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -912,7 +1011,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-3-5-haiku-latest',
 				label: 'Claude Haiku 3.5 (latest)',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -937,7 +1036,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-3-5-sonnet-20240620',
 				label: 'Claude Sonnet 3.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -962,7 +1061,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-3-5-sonnet-20241022',
 				label: 'Claude Sonnet 3.5 v2',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -987,7 +1086,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-3-7-sonnet-20250219',
 				label: 'Claude Sonnet 3.7',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1012,7 +1111,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-3-7-sonnet-latest',
 				label: 'Claude Sonnet 3.7 (latest)',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1037,7 +1136,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-3-haiku-20240307',
 				label: 'Claude Haiku 3',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1062,7 +1161,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-3-opus-20240229',
 				label: 'Claude Opus 3',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1087,7 +1186,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-3-sonnet-20240229',
 				label: 'Claude Sonnet 3',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1112,7 +1211,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-haiku-4-5',
 				label: 'Claude Haiku 4.5 (latest)',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1137,7 +1236,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-haiku-4-5-20251001',
 				label: 'Claude Haiku 4.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1162,7 +1261,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-opus-4-0',
 				label: 'Claude Opus 4 (latest)',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1187,7 +1286,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-opus-4-1',
 				label: 'Claude Opus 4.1 (latest)',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1212,7 +1311,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-opus-4-1-20250805',
 				label: 'Claude Opus 4.1',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1237,7 +1336,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-opus-4-20250514',
 				label: 'Claude Opus 4',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1262,7 +1361,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-opus-4-5',
 				label: 'Claude Opus 4.5 (latest)',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1287,7 +1386,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-opus-4-5-20251101',
 				label: 'Claude Opus 4.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1312,7 +1411,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-sonnet-4-0',
 				label: 'Claude Sonnet 4 (latest)',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1337,7 +1436,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-sonnet-4-20250514',
 				label: 'Claude Sonnet 4',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1362,7 +1461,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-sonnet-4-5',
 				label: 'Claude Sonnet 4.5 (latest)',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1387,7 +1486,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-sonnet-4-5-20250929',
 				label: 'Claude Sonnet 4.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -1890,6 +1989,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'gemini-3-flash-preview',
+				label: 'Gemini 3 Flash Preview',
+				modalities: {
+					input: ['text', 'image', 'video', 'audio', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-12-17',
+				lastUpdated: '2025-12-17',
+				openWeights: false,
+				cost: {
+					input: 0.5,
+					output: 3,
+					cacheRead: 0.05,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
+			},
+			{
 				id: 'gemini-3-pro-preview',
 				label: 'Gemini 3 Pro Preview',
 				modalities: {
@@ -2049,7 +2173,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'anthropic/claude-3.5-haiku',
 				label: 'Claude Haiku 3.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -2074,7 +2198,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'anthropic/claude-3.7-sonnet',
 				label: 'Claude Sonnet 3.7',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -2099,7 +2223,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'anthropic/claude-haiku-4.5',
 				label: 'Claude Haiku 4.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -2124,7 +2248,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'anthropic/claude-opus-4',
 				label: 'Claude Opus 4',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -2149,7 +2273,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'anthropic/claude-opus-4.1',
 				label: 'Claude Opus 4.1',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -2174,7 +2298,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'anthropic/claude-opus-4.5',
 				label: 'Claude Opus 4.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -2199,7 +2323,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'anthropic/claude-sonnet-4',
 				label: 'Claude Sonnet 4',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -2224,7 +2348,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'anthropic/claude-sonnet-4.5',
 				label: 'Claude Sonnet 4.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -2534,6 +2658,60 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'deepseek/deepseek-v3.2',
+				label: 'DeepSeek V3.2',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-07',
+				releaseDate: '2025-12-01',
+				lastUpdated: '2025-12-01',
+				openWeights: true,
+				cost: {
+					input: 0.28,
+					output: 0.4,
+				},
+				limit: {
+					context: 163840,
+					output: 65536,
+				},
+				provider: {
+					npm: '@openrouter/ai-sdk-provider',
+				},
+			},
+			{
+				id: 'deepseek/deepseek-v3.2-speciale',
+				label: 'DeepSeek V3.2 Speciale',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-07',
+				releaseDate: '2025-12-01',
+				lastUpdated: '2025-12-01',
+				openWeights: true,
+				cost: {
+					input: 0.27,
+					output: 0.41,
+				},
+				limit: {
+					context: 163840,
+					output: 65536,
+				},
+				provider: {
+					npm: '@openrouter/ai-sdk-provider',
+				},
+			},
+			{
 				id: 'featherless/qwerky-72b',
 				label: 'Qwerky 72B',
 				modalities: {
@@ -2779,6 +2957,34 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 1048576,
 					output: 65536,
+				},
+			},
+			{
+				id: 'google/gemini-3-flash-preview',
+				label: 'Gemini 3 Flash Preview',
+				modalities: {
+					input: ['text', 'image', 'audio', 'video', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-12-17',
+				lastUpdated: '2025-12-17',
+				openWeights: false,
+				cost: {
+					input: 0.5,
+					output: 3,
+					cacheRead: 0.05,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
+				provider: {
+					npm: '@openrouter/ai-sdk-provider',
 				},
 			},
 			{
@@ -3122,6 +3328,32 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'minimax/minimax-m2.1',
+				label: 'MiniMax M2.1',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2025-12-23',
+				lastUpdated: '2025-12-23',
+				openWeights: true,
+				cost: {
+					input: 0.3,
+					output: 1.2,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+				provider: {
+					npm: '@openrouter/ai-sdk-provider',
+				},
+			},
+			{
 				id: 'mistralai/codestral-2508',
 				label: 'Codestral 2508',
 				modalities: {
@@ -3143,6 +3375,54 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 256000,
 					output: 256000,
+				},
+			},
+			{
+				id: 'mistralai/devstral-2512',
+				label: 'Devstral 2 2512',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-12',
+				releaseDate: '2025-09-12',
+				lastUpdated: '2025-09-12',
+				openWeights: true,
+				cost: {
+					input: 0.15,
+					output: 0.6,
+				},
+				limit: {
+					context: 262144,
+					output: 262144,
+				},
+			},
+			{
+				id: 'mistralai/devstral-2512:free',
+				label: 'Devstral 2 2512 (free)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-12',
+				releaseDate: '2025-09-12',
+				lastUpdated: '2025-09-12',
+				openWeights: true,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 262144,
+					output: 262144,
 				},
 			},
 			{
@@ -3999,6 +4279,80 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'openai/gpt-5.2',
+				label: 'GPT-5.2',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-08-31',
+				releaseDate: '2025-12-11',
+				lastUpdated: '2025-12-11',
+				openWeights: false,
+				cost: {
+					input: 1.75,
+					output: 14,
+					cacheRead: 0.175,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
+				id: 'openai/gpt-5.2-chat-latest',
+				label: 'GPT-5.2 Chat',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-08-31',
+				releaseDate: '2025-12-11',
+				lastUpdated: '2025-12-11',
+				openWeights: false,
+				cost: {
+					input: 1.75,
+					output: 14,
+					cacheRead: 0.175,
+				},
+				limit: {
+					context: 128000,
+					output: 16384,
+				},
+			},
+			{
+				id: 'openai/gpt-5.2-pro',
+				label: 'GPT-5.2 Pro',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-08-31',
+				releaseDate: '2025-12-11',
+				lastUpdated: '2025-12-11',
+				openWeights: false,
+				cost: {
+					input: 21,
+					output: 168,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
 				id: 'openai/gpt-oss-120b',
 				label: 'GPT OSS 120B',
 				modalities: {
@@ -4113,6 +4467,54 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 200000,
 					output: 100000,
+				},
+			},
+			{
+				id: 'openrouter/sherlock-dash-alpha',
+				label: 'Sherlock Dash Alpha',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: false,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-11',
+				releaseDate: '2025-11-15',
+				lastUpdated: '2025-12-14',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 1840000,
+					output: 0,
+				},
+			},
+			{
+				id: 'openrouter/sherlock-think-alpha',
+				label: 'Sherlock Think Alpha',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-11',
+				releaseDate: '2025-11-15',
+				lastUpdated: '2025-12-14',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 1840000,
+					output: 0,
 				},
 			},
 			{
@@ -5084,6 +5486,34 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					output: 128000,
 				},
 			},
+			{
+				id: 'z-ai/glm-4.7',
+				label: 'GLM-4.7',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-12-22',
+				lastUpdated: '2025-12-22',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 2.2,
+					cacheRead: 0.11,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+				provider: {
+					npm: '@openrouter/ai-sdk-provider',
+				},
+			},
 		],
 		label: 'OpenRouter',
 		env: ['OPENROUTER_API_KEY'],
@@ -5094,34 +5524,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 	opencode: {
 		id: 'opencode',
 		models: [
-			{
-				id: 'alpha-doubao-seed-code',
-				label: 'Doubao Seed Code (alpha)',
-				modalities: {
-					input: ['text', 'image', 'video'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: true,
-				attachment: false,
-				temperature: true,
-				knowledge: '2024-10',
-				releaseDate: '2025-11-11',
-				lastUpdated: '2025-11-11',
-				openWeights: true,
-				cost: {
-					input: 0,
-					output: 0,
-					cacheRead: 0,
-				},
-				limit: {
-					context: 256000,
-					output: 32000,
-				},
-				provider: {
-					npm: '@ai-sdk/openai',
-				},
-			},
 			{
 				id: 'alpha-gd4',
 				label: 'Alpha GD4',
@@ -5151,8 +5553,8 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
-				id: 'alpha-minimax-m2',
-				label: 'MiniMax M2 (alpha)',
+				id: 'alpha-glm-4.7',
+				label: 'Alpha GLM-4.7',
 				modalities: {
 					input: ['text'],
 					output: ['text'],
@@ -5161,20 +5563,18 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				reasoning: true,
 				attachment: false,
 				temperature: true,
-				knowledge: '2024-10',
-				releaseDate: '2025-10-27',
-				lastUpdated: '2025-10-27',
+				knowledge: '2025-04',
+				releaseDate: '2025-12-22',
+				lastUpdated: '2025-12-22',
 				openWeights: true,
 				cost: {
-					input: 0.3,
-					output: 1.2,
+					input: 0.6,
+					output: 2.2,
+					cacheRead: 0.6,
 				},
 				limit: {
 					context: 204800,
 					output: 131072,
-				},
-				provider: {
-					npm: '@ai-sdk/anthropic',
 				},
 			},
 			{
@@ -5206,7 +5606,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-3-5-haiku',
 				label: 'Claude Haiku 3.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -5234,7 +5634,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-haiku-4-5',
 				label: 'Claude Haiku 4.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -5262,7 +5662,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-opus-4-1',
 				label: 'Claude Opus 4.1',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -5290,7 +5690,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-opus-4-5',
 				label: 'Claude Opus 4.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -5318,7 +5718,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-sonnet-4',
 				label: 'Claude Sonnet 4',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -5346,7 +5746,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'claude-sonnet-4-5',
 				label: 'Claude Sonnet 4.5',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -5371,6 +5771,34 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'gemini-3-flash',
+				label: 'Gemini 3 Flash',
+				modalities: {
+					input: ['text', 'image', 'video', 'audio', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2025-12-17',
+				lastUpdated: '2025-12-17',
+				openWeights: false,
+				cost: {
+					input: 0.5,
+					output: 3,
+					cacheRead: 0.05,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
+				},
+				provider: {
+					npm: '@ai-sdk/google',
+				},
+			},
+			{
 				id: 'gemini-3-pro',
 				label: 'Gemini 3 Pro',
 				modalities: {
@@ -5391,8 +5819,8 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					cacheRead: 0.2,
 				},
 				limit: {
-					context: 1000000,
-					output: 64000,
+					context: 1048576,
+					output: 65536,
 				},
 				provider: {
 					npm: '@ai-sdk/google',
@@ -5417,6 +5845,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.6,
 					output: 2.2,
 					cacheRead: 0.1,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+			},
+			{
+				id: 'glm-4.7-free',
+				label: 'GLM-4.7',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-12-22',
+				lastUpdated: '2025-12-22',
+				openWeights: true,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
 				},
 				limit: {
 					context: 204800,
@@ -5512,7 +5965,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				label: 'GPT-5.1',
 				modalities: {
 					input: ['text', 'image'],
-					output: ['text', 'image'],
+					output: ['text'],
 				},
 				toolCall: true,
 				reasoning: true,
@@ -5540,7 +5993,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				label: 'GPT-5.1 Codex',
 				modalities: {
 					input: ['text', 'image'],
-					output: ['text', 'image'],
+					output: ['text'],
 				},
 				toolCall: true,
 				reasoning: true,
@@ -5554,6 +6007,62 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 1.07,
 					output: 8.5,
 					cacheRead: 0.107,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+				provider: {
+					npm: '@ai-sdk/openai',
+				},
+			},
+			{
+				id: 'gpt-5.1-codex-max',
+				label: 'GPT-5.1 Codex Max',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-12',
+				lastUpdated: '2025-11-12',
+				openWeights: false,
+				cost: {
+					input: 1.25,
+					output: 10,
+					cacheRead: 0.125,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+				provider: {
+					npm: '@ai-sdk/openai',
+				},
+			},
+			{
+				id: 'gpt-5.2',
+				label: 'GPT-5.2',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-08-31',
+				releaseDate: '2025-11-12',
+				lastUpdated: '2025-11-12',
+				openWeights: false,
+				cost: {
+					input: 1.75,
+					output: 14,
+					cacheRead: 0.175,
 				},
 				limit: {
 					context: 400000,
@@ -5667,5 +6176,188 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 		npm: '@ai-sdk/openai-compatible',
 		api: 'https://opencode.ai/zen/v1',
 		doc: 'https://opencode.ai/docs/zen',
+	},
+	zai: {
+		id: 'zai',
+		models: [
+			{
+				id: 'glm-4.5',
+				label: 'GLM-4.5',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-07-28',
+				lastUpdated: '2025-07-28',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 2.2,
+					cacheRead: 0.11,
+				},
+				limit: {
+					context: 131072,
+					output: 98304,
+				},
+			},
+			{
+				id: 'glm-4.5-air',
+				label: 'GLM-4.5-Air',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-07-28',
+				lastUpdated: '2025-07-28',
+				openWeights: true,
+				cost: {
+					input: 0.2,
+					output: 1.1,
+					cacheRead: 0.03,
+				},
+				limit: {
+					context: 131072,
+					output: 98304,
+				},
+			},
+			{
+				id: 'glm-4.5-flash',
+				label: 'GLM-4.5-Flash',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-07-28',
+				lastUpdated: '2025-07-28',
+				openWeights: true,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
+				},
+				limit: {
+					context: 131072,
+					output: 98304,
+				},
+			},
+			{
+				id: 'glm-4.5v',
+				label: 'GLM-4.5V',
+				modalities: {
+					input: ['text', 'image', 'video'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-08-11',
+				lastUpdated: '2025-08-11',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 1.8,
+				},
+				limit: {
+					context: 64000,
+					output: 16384,
+				},
+			},
+			{
+				id: 'glm-4.6',
+				label: 'GLM-4.6',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-09-30',
+				lastUpdated: '2025-09-30',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 2.2,
+					cacheRead: 0.11,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+			},
+			{
+				id: 'glm-4.6v',
+				label: 'GLM-4.6V',
+				modalities: {
+					input: ['text', 'image', 'video'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-12-08',
+				lastUpdated: '2025-12-08',
+				openWeights: true,
+				cost: {
+					input: 0.3,
+					output: 0.9,
+				},
+				limit: {
+					context: 128000,
+					output: 32768,
+				},
+			},
+			{
+				id: 'glm-4.7',
+				label: 'GLM-4.7',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-12-22',
+				lastUpdated: '2025-12-22',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 2.2,
+					cacheRead: 0.11,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+			},
+		],
+		label: 'Z.AI',
+		env: ['ZHIPU_API_KEY'],
+		npm: '@ai-sdk/openai-compatible',
+		api: 'https://api.z.ai/api/paas/v4',
+		doc: 'https://docs.z.ai/guides/overview/pricing',
 	},
 } as const satisfies Partial<Record<ProviderId, ProviderCatalogEntry>>;

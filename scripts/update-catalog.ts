@@ -59,16 +59,28 @@ function pickProviders(
 		google: createEmptyEntry('google'),
 		openrouter: createEmptyEntry('openrouter'),
 		opencode: createEmptyEntry('opencode'),
+		zai: createEmptyEntry('zai'),
+		'zai-coding': createEmptyEntry('zai-coding'),
 	};
 	for (const providerKey of Object.keys(feed)) {
+		let targetKey = providerKey as ProviderId;
+		if (providerKey === 'zai-coding-plan') {
+			targetKey = 'zai-coding';
+		}
 		if (
-			!['openai', 'anthropic', 'google', 'openrouter', 'opencode'].includes(
-				providerKey,
-			)
+			![
+				'openai',
+				'anthropic',
+				'google',
+				'openrouter',
+				'opencode',
+				'zai',
+				'zai-coding-plan',
+			].includes(providerKey)
 		)
 			continue;
 		const entry = feed[providerKey];
-		const key = providerKey as ProviderId;
+		const key = targetKey;
 		const models: ModelInfo[] = [];
 		for (const mid of Object.keys(entry.models || {})) {
 			const raw = entry.models[mid] as Record<string, unknown> | undefined;

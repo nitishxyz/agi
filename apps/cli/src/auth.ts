@@ -58,6 +58,16 @@ const PROVIDER_LINKS: Record<
 		url: 'https://ai.solforge.sh',
 		env: 'SOLFORGE_PRIVATE_KEY',
 	},
+	zai: {
+		name: 'Z.AI (GLM)',
+		url: 'https://z.ai/manage-apikey/apikey-list',
+		env: 'ZAI_API_KEY',
+	},
+	'zai-coding': {
+		name: 'Z.AI Coding Plan',
+		url: 'https://z.ai/manage-apikey/apikey-list',
+		env: 'ZAI_API_KEY',
+	},
 };
 
 export async function runAuth(args: string[]) {
@@ -119,6 +129,8 @@ export async function runAuthLogin(_args: string[]) {
 				{ value: 'openrouter', label: PROVIDER_LINKS.openrouter.name },
 				{ value: 'opencode', label: PROVIDER_LINKS.opencode.name },
 				{ value: 'solforge', label: PROVIDER_LINKS.solforge.name },
+				{ value: 'zai', label: PROVIDER_LINKS.zai.name },
+				{ value: 'zai-coding', label: PROVIDER_LINKS['zai-coding'].name },
 			],
 		})) as ProviderId | symbol;
 		if (isCancel(selected)) return cancel('Cancelled');

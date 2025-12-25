@@ -7,7 +7,9 @@ export type ProviderId =
 	| 'google'
 	| 'openrouter'
 	| 'opencode'
-	| 'solforge';
+	| 'solforge'
+	| 'zai'
+	| 'zai-coding';
 
 export type ModelProviderBinding = {
 	id?: string;

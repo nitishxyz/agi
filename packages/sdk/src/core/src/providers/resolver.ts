@@ -11,7 +11,9 @@ export type ProviderName =
 	| 'google'
 	| 'openrouter'
 	| 'opencode'
-	| 'solforge';
+	| 'solforge'
+	| 'zai'
+	| 'zai-coding';
 
 export type ModelConfig = {
 	apiKey?: string;
@@ -131,6 +133,42 @@ export async function resolveModel(
 				topupAmountMicroUsdc: topupAmount,
 			},
 		);
+	}
+
+	if (provider === 'zai') {
+		const entry = catalog[provider];
+		const apiKey =
+			config.apiKey ||
+			process.env.ZAI_API_KEY ||
+			process.env.ZHIPU_API_KEY ||
+			'';
+		const baseURL =
+			config.baseURL || entry?.api || 'https://api.z.ai/api/paas/v4';
+		const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
+		const instance = createOpenAICompatible({
+			name: entry?.label ?? 'Z.AI',
+			baseURL,
+			headers,
+		});
+		return instance(model);
+	}
+
+	if (provider === 'zai-coding') {
+		const entry = catalog[provider];
+		const apiKey =
+			config.apiKey ||
+			process.env.ZAI_API_KEY ||
+			process.env.ZHIPU_API_KEY ||
+			'';
+		const baseURL =
+			config.baseURL || entry?.api || 'https://api.z.ai/api/coding/paas/v4';
+		const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
+		const instance = createOpenAICompatible({
+			name: entry?.label ?? 'Z.AI Coding',
+			baseURL,
+			headers,
+		});
+		return instance(model);
 	}
 
 	throw new Error(`Unsupported provider: ${provider}`);

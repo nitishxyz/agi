@@ -74,6 +74,15 @@ const pricingTable: Record<ProviderName, PricingEntry[]> = {
 	opencode: [
 		// Pricing from catalog entries; leave empty here
 	],
+	solforge: [
+		// Pricing from catalog entries; leave empty here
+	],
+	zai: [
+		// Pricing from catalog entries; leave empty here
+	],
+	'zai-coding': [
+		// Pricing from catalog entries; leave empty here
+	],
 };
 
 function findPricing(
