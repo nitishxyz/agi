@@ -49,7 +49,7 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 	// Handle ESC key
 	useEffect(() => {
 		const handleEscape = (e: KeyboardEvent) => {
-			if (e.key === 'Escape' && isDiffOpen) {
+			if ((e.key === 'Escape' || e.key === 'q') && isDiffOpen) {
 				closeDiff();
 			}
 		};

@@ -76,15 +76,14 @@ export async function updateSessionTokensIncremental(
 				: priorCachedMsg;
 
 	// Compute deltas for this step; clamp to 0 in case provider reports smaller values
-	// Cached tokens reduce the billable input, so we subtract them from the delta
 	const deltaInput = Math.max(0, cumPrompt - priorPromptMsg);
 	const deltaOutput = Math.max(0, cumCompletion - priorCompletionMsg);
 	const deltaCached = Math.max(0, cumCached - priorCachedMsg);
 	const deltaReasoning = Math.max(0, cumReasoning - priorReasoningMsg);
 
-	// Session input should only count non-cached tokens
-	// Total cached tokens are tracked separately for reference
-	const nextInputSess = priorInputSess + deltaInput - deltaCached;
+	// Note: AI SDK's inputTokens already excludes cached tokens for Anthropic,
+	// so we don't need to subtract deltaCached here. Just accumulate directly.
+	const nextInputSess = priorInputSess + deltaInput;
 	const nextOutputSess = priorOutputSess + deltaOutput;
 	const nextCachedSess = priorCachedSess + deltaCached;
 	const nextReasoningSess = priorReasoningSess + deltaReasoning;

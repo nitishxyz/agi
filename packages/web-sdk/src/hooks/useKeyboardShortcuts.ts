@@ -140,7 +140,7 @@ export function useKeyboardShortcuts({
 				return;
 			}
 
-			if (e.key === 'Escape') {
+			if (e.key === 'Escape' || e.key === 'q') {
 				e.preventDefault();
 				// Close sidebar if focused on one
 				if (currentFocus === 'sessions') {

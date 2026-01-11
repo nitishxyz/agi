@@ -49,7 +49,7 @@ export function ConfirmationDialog() {
 	useEffect(() => {
 		const handleEscape = (e: KeyboardEvent) => {
 			if (isOpen && !isProcessing) {
-				if (e.key === 'Escape') {
+				if (e.key === 'Escape' || e.key === 'q') {
 					e.preventDefault();
 					handleCancel();
 				}
@@ -75,7 +75,7 @@ export function ConfirmationDialog() {
 			className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
 			onClick={handleBackdropClick}
 			onKeyDown={(e) => {
-				if (e.key === 'Escape' && !isProcessing) {
+				if ((e.key === 'Escape' || e.key === 'q') && !isProcessing) {
 					e.preventDefault();
 					handleCancel();
 				}

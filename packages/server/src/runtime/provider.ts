@@ -7,7 +7,7 @@ import {
 	setAuth,
 } from '@agi-cli/sdk';
 import { openai, createOpenAI } from '@ai-sdk/openai';
-import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { google, createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { toClaudeCodeName } from './tool-mapping.ts';
@@ -170,7 +170,7 @@ async function getAnthropicInstance(cfg: AGIConfig) {
 				url += url.includes('?') ? '&beta=true' : '?beta=true';
 			}
 
-			// Transform request body: tool names to PascalCase
+			// Transform request body: tool names to PascalCase + apply caching
 			let body = init?.body;
 			if (body && typeof body === 'string') {
 				try {
@@ -186,36 +186,118 @@ async function getAnthropicInstance(cfg: AGIConfig) {
 						);
 					}
 
-					// Transform tool names in messages (for tool_use blocks in history)
+					// Apply ephemeral caching (max 4 cache breakpoints total)
+					// Adapter adds 2 tool cache blocks, so we can add 2 more:
+					// - 1 system block (the first one with tools description)
+					// - 1 message block (the last user message)
+					const MAX_SYSTEM_CACHE = 1;
+					const MAX_MESSAGE_CACHE = 1;
+					let systemCacheUsed = 0;
+					let messageCacheUsed = 0;
+
+					// Cache first system message only (contains agent instructions)
+					if (parsed.system && Array.isArray(parsed.system)) {
+						parsed.system = parsed.system.map(
+							(
+								block: { type: string; cache_control?: unknown },
+								index: number,
+							) => {
+								if (block.cache_control) return block;
+								if (
+									systemCacheUsed < MAX_SYSTEM_CACHE &&
+									index === 0 &&
+									block.type === 'text'
+								) {
+									systemCacheUsed++;
+									return { ...block, cache_control: { type: 'ephemeral' } };
+								}
+								return block;
+							},
+						);
+					}
+
+					// Transform tool names in messages and apply caching to last message only
 					if (parsed.messages && Array.isArray(parsed.messages)) {
+						const messageCount = parsed.messages.length;
+
 						parsed.messages = parsed.messages.map(
-							(msg: {
-								role: string;
-								content: unknown;
-								[key: string]: unknown;
-							}) => {
+							(
+								msg: {
+									role: string;
+									content: unknown;
+									[key: string]: unknown;
+								},
+								msgIndex: number,
+							) => {
+								// Only cache the very last message
+								const isLast = msgIndex === messageCount - 1;
+
 								if (Array.isArray(msg.content)) {
+									const content = msg.content.map(
+										(
+											block: {
+												type: string;
+												name?: string;
+												cache_control?: unknown;
+											},
+											blockIndex: number,
+										) => {
+											let transformedBlock = block;
+
+											// Transform tool names
+											if (block.type === 'tool_use' && block.name) {
+												transformedBlock = {
+													...block,
+													name: toClaudeCodeName(block.name),
+												};
+											}
+											if (block.type === 'tool_result' && block.name) {
+												transformedBlock = {
+													...block,
+													name: toClaudeCodeName(block.name),
+												};
+											}
+
+											// Add cache_control to last block of last message
+											if (
+												isLast &&
+												!transformedBlock.cache_control &&
+												messageCacheUsed < MAX_MESSAGE_CACHE &&
+												blockIndex ===
+													(msg.content as unknown[]).length - 1
+											) {
+												messageCacheUsed++;
+												return {
+													...transformedBlock,
+													cache_control: { type: 'ephemeral' },
+												};
+											}
+
+											return transformedBlock;
+										},
+									);
+									return { ...msg, content };
+								}
+
+								// For string content, wrap in array with cache_control if last message
+								if (
+									isLast &&
+									messageCacheUsed < MAX_MESSAGE_CACHE &&
+									typeof msg.content === 'string'
+								) {
+									messageCacheUsed++;
 									return {
 										...msg,
-										content: msg.content.map(
-											(block: { type: string; name?: string }) => {
-												if (block.type === 'tool_use' && block.name) {
-													return {
-														...block,
-														name: toClaudeCodeName(block.name),
-													};
-												}
-												if (block.type === 'tool_result' && block.name) {
-													return {
-														...block,
-														name: toClaudeCodeName(block.name),
-													};
-												}
-												return block;
+										content: [
+											{
+												type: 'text',
+												text: msg.content,
+												cache_control: { type: 'ephemeral' },
 											},
-										),
+										],
 									};
 								}
+
 								return msg;
 							},
 						);
@@ -239,7 +321,116 @@ async function getAnthropicInstance(cfg: AGIConfig) {
 		});
 	}
 
-	return anthropic;
+	// For API key auth, also apply caching via customFetch
+	// This optimizes token usage even without OAuth
+	const customFetch = async (
+		input: string | URL | Request,
+		init?: RequestInit,
+	) => {
+		let body = init?.body;
+		if (body && typeof body === 'string') {
+			try {
+				const parsed = JSON.parse(body);
+
+				// Apply ephemeral caching (max 4 cache breakpoints total)
+				// Adapter adds 2 tool cache blocks, so we can add 2 more:
+				// - 1 system block + 1 message block = 2
+				const MAX_SYSTEM_CACHE = 1;
+				const MAX_MESSAGE_CACHE = 1;
+				let systemCacheUsed = 0;
+				let messageCacheUsed = 0;
+
+				// Cache first system message
+				if (parsed.system && Array.isArray(parsed.system)) {
+					parsed.system = parsed.system.map(
+						(
+							block: { type: string; cache_control?: unknown },
+							index: number,
+						) => {
+							if (block.cache_control) return block;
+							if (
+								systemCacheUsed < MAX_SYSTEM_CACHE &&
+								index === 0 &&
+								block.type === 'text'
+							) {
+								systemCacheUsed++;
+								return { ...block, cache_control: { type: 'ephemeral' } };
+							}
+							return block;
+						},
+					);
+				}
+
+				// Cache last message only
+				if (parsed.messages && Array.isArray(parsed.messages)) {
+					const messageCount = parsed.messages.length;
+					parsed.messages = parsed.messages.map(
+						(
+							msg: {
+								role: string;
+								content: unknown;
+								[key: string]: unknown;
+							},
+							msgIndex: number,
+						) => {
+							const isLast = msgIndex === messageCount - 1;
+
+							if (Array.isArray(msg.content)) {
+								const blocks = msg.content as {
+									type: string;
+									cache_control?: unknown;
+								}[];
+								const content = blocks.map((block, blockIndex) => {
+									if (block.cache_control) return block;
+									if (
+										isLast &&
+										messageCacheUsed < MAX_MESSAGE_CACHE &&
+										blockIndex === blocks.length - 1
+									) {
+										messageCacheUsed++;
+										return { ...block, cache_control: { type: 'ephemeral' } };
+									}
+									return block;
+								});
+								return { ...msg, content };
+							}
+
+							if (
+								isLast &&
+								messageCacheUsed < MAX_MESSAGE_CACHE &&
+								typeof msg.content === 'string'
+							) {
+								messageCacheUsed++;
+								return {
+									...msg,
+									content: [
+										{
+											type: 'text',
+											text: msg.content,
+											cache_control: { type: 'ephemeral' },
+										},
+									],
+								};
+							}
+
+							return msg;
+						},
+					);
+				}
+
+				body = JSON.stringify(parsed);
+			} catch {
+				// If parsing fails, send as-is
+			}
+		}
+
+		const url = typeof input === 'string' ? input : input.toString();
+		return fetch(url, { ...init, body });
+	};
+
+	return createAnthropic({
+		fetch: customFetch as typeof fetch,
+	});
 }
 
 export async function resolveModel(

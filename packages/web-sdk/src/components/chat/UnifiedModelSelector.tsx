@@ -182,7 +182,7 @@ export const UnifiedModelSelector = forwardRef<
 		};
 
 		const handleEscape = (event: KeyboardEvent) => {
-			if (event.key === 'Escape') {
+			if (event.key === 'Escape' || event.key === 'q') {
 				setIsOpen(false);
 			}
 		};
