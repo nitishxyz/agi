@@ -4,6 +4,7 @@ import { messages, messageParts } from '@agi-cli/database/schema';
 import { eq, asc } from 'drizzle-orm';
 import { debugLog } from './debug.ts';
 import { ToolHistoryTracker } from './history/tool-history-tracker.ts';
+import { COMPACTED_PLACEHOLDER } from './compaction.ts';
 
 /**
  * Builds the conversation history for a session from the database,
@@ -93,12 +94,17 @@ export async function buildHistoryMessages(
 							name?: string;
 							callId?: string;
 							result?: unknown;
+							compactedAt?: number;
 						};
 						if (obj.callId) {
+							// If this tool result was compacted, return placeholder instead
+							const result = obj.compactedAt
+								? COMPACTED_PLACEHOLDER
+								: obj.result;
 							toolResults.push({
 								name: obj.name ?? 'tool',
 								callId: obj.callId,
-								result: obj.result,
+								result,
 							});
 						}
 					} catch {}

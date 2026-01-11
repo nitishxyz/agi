@@ -8,6 +8,13 @@ import { toErrorPayload } from './error-handling.ts';
 import type { RunOpts } from './session-queue.ts';
 import type { ToolAdapterContext } from '../tools/adapter.ts';
 import type { ProviderMetadata, UsageData } from './db-operations.ts';
+import {
+	pruneSession,
+	isOverflow,
+	getModelLimits,
+	type TokenUsage,
+} from './compaction.ts';
+import { debugLog } from './debug.ts';
 
 type StepFinishEvent = {
 	usage?: UsageData;
@@ -277,12 +284,44 @@ export function createFinishHandler(
 					inputTokens: Number(sessRows[0].promptTokens ?? 0),
 					outputTokens: Number(sessRows[0].completionTokens ?? 0),
 					totalTokens: Number(sessRows[0].totalTokens ?? 0),
+					cachedInputTokens: Number(sessRows[0].cachedInputTokens ?? 0),
 				}
 			: fin.usage;
 
 		const costUsd = usage
 			? estimateModelCostUsd(opts.provider, opts.model, usage)
 			: undefined;
+
+		// Check for context overflow and prune if needed
+		if (usage) {
+			try {
+				const limits = getModelLimits(opts.provider, opts.model);
+				if (limits) {
+					const tokenUsage: TokenUsage = {
+						input: usage.inputTokens ?? 0,
+						output: usage.outputTokens ?? 0,
+						cacheRead:
+							(usage as { cachedInputTokens?: number }).cachedInputTokens ?? 0,
+					};
+
+					if (isOverflow(tokenUsage, limits)) {
+						debugLog(
+							`[stream-handlers] Context overflow detected, triggering prune for session ${opts.sessionId}`,
+						);
+						// Prune asynchronously - don't block the finish handler
+						pruneSession(db, opts.sessionId).catch((err) => {
+							debugLog(
+								`[stream-handlers] Prune failed: ${err instanceof Error ? err.message : String(err)}`,
+							);
+						});
+					}
+				}
+			} catch (err) {
+				debugLog(
+					`[stream-handlers] Overflow check failed: ${err instanceof Error ? err.message : String(err)}`,
+				);
+			}
+		}
 
 		publish({
 			type: 'message.completed',
