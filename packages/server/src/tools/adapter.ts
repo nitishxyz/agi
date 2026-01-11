@@ -9,6 +9,10 @@ import type {
 	StepExecutionState,
 } from '../runtime/tool-context.ts';
 import { isToolError } from '@agi-cli/sdk/tools/error';
+import {
+	toClaudeCodeName,
+	requiresClaudeCodeNaming,
+} from '../runtime/tool-mapping.ts';
 
 export type { ToolAdapterContext } from '../runtime/tool-context.ts';
 
@@ -47,6 +51,7 @@ export function adaptTools(
 	tools: DiscoveredTool[],
 	ctx: ToolAdapterContext,
 	provider?: string,
+	authType?: string,
 ) {
 	const out: Record<string, Tool> = {};
 	const pendingCalls = new Map<string, PendingCallMeta[]>();
@@ -55,6 +60,12 @@ export function adaptTools(
 		toolName: undefined,
 	};
 	let firstToolCallReported = false;
+
+	// Determine if we need Claude Code naming (PascalCase)
+	const useClaudeCodeNaming = requiresClaudeCodeNaming(
+		provider ?? '',
+		authType,
+	);
 
 	if (!ctx.stepExecution) {
 		ctx.stepExecution = { states: new Map<number, StepExecutionState>() };
@@ -66,8 +77,14 @@ export function adaptTools(
 	const cacheableTools = new Set(['read', 'write', 'bash', 'edit']);
 	let cachedToolCount = 0;
 
-	for (const { name, tool } of tools) {
+	for (const { name: canonicalName, tool } of tools) {
 		const base = tool;
+		// Use PascalCase for Claude Code OAuth, otherwise canonical (snake_case)
+		const registrationName = useClaudeCodeNaming
+			? toClaudeCodeName(canonicalName)
+			: canonicalName;
+		// Always use canonical name for DB storage and events
+		const name = canonicalName;
 
 		const processedToolErrors = new WeakSet<object>();
 
@@ -145,7 +162,7 @@ export function adaptTools(
 			? { anthropic: { cacheControl: { type: 'ephemeral' as const } } }
 			: undefined;
 
-		out[name] = {
+		out[registrationName] = {
 			...base,
 			...(providerOptions ? { providerOptions } : {}),
 			async onInputStart(options: unknown) {

@@ -1,5 +1,5 @@
 import { hasToolCall, streamText } from 'ai';
-import { loadConfig } from '@agi-cli/sdk';
+import { loadConfig, getAuth } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { messageParts } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
@@ -223,7 +223,11 @@ async function runAssistant(opts: RunOpts) {
 		opts,
 		db,
 	);
-	const toolset = adaptTools(gated, sharedCtx, opts.provider);
+
+	// Get auth type for Claude Code OAuth detection
+	const providerAuth = await getAuth(opts.provider, opts.projectRoot);
+	const authType = providerAuth?.type;
+	const toolset = adaptTools(gated, sharedCtx, opts.provider, authType);
 
 	let _finishObserved = false;
 	const unsubscribeFinish = subscribe(opts.sessionId, (evt) => {

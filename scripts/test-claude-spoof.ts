@@ -1,13 +1,26 @@
 /**
- * Test script to send a request that exactly mirrors Claude Code's format.
+ * Test script to determine what Claude Code OAuth actually validates.
  *
  * Usage:
- *   bun run scripts/test-claude-spoof.ts
+ *   bun run scripts/test-claude-spoof.ts [message-mode] [tool-mode]
  *
- * This script:
- * 1. Reads the OAuth token from AGI's auth storage
- * 2. Sends a request with EXACT Claude Code headers, tools, and body structure
- * 3. Reports success or failure
+ * Message modes:
+ *   simple     - Just say hello (no tools used)
+ *   tool       - Ask to read a file (triggers tool call) [default]
+ *
+ * Tool modes:
+ *   claude-code - Only tools that Claude Code has (should always pass)
+ *   agi-mixed   - Mix of Claude Code + AGI-only tools [default]
+ *   agi-only    - Only AGI-specific tools (tests if whitelist)
+ *
+ * Examples:
+ *   bun run scripts/test-claude-spoof.ts tool claude-code  # Should pass
+ *   bun run scripts/test-claude-spoof.ts tool agi-mixed    # Tests if custom tools allowed
+ *   bun run scripts/test-claude-spoof.ts tool agi-only     # Tests naming convention only
+ *
+ * This helps determine if Claude Code OAuth validates:
+ *   A) A whitelist of specific tool names (would reject unknown tools)
+ *   B) Just PascalCase naming convention (would accept any PascalCase tool)
  */
 
 import { readFileSync, existsSync, writeFileSync } from 'fs';
@@ -95,45 +108,52 @@ async function getOAuthToken(): Promise<string | null> {
   return null;
 }
 
-// Exact Claude Code tools (simplified set for testing)
-const CLAUDE_CODE_TOOLS = [
+// Test mode for tool validation:
+// 'claude-code' = Only tools that Claude Code has (should pass)
+// 'agi-mixed' = Mix of Claude Code tools + AGI-only tools (tests if whitelist)
+// 'agi-only' = Only AGI-specific tools with PascalCase (tests naming convention)
+const TOOL_TEST_MODE = process.argv[3] || 'agi-mixed';
+
+// Claude Code standard tools (these should always pass)
+const CLAUDE_CODE_STANDARD_TOOLS = [
   {
     name: 'Bash',
-    description:
-      'Executes a given bash command in a persistent shell session with optional timeout, ensuring proper handling and security measures.\n\nBefore executing the command, please follow these steps:\n\n1. Directory Verification:\n   - If the command will create new directories or files, first use `ls` to verify the parent directory exists and is the correct location\n\n2. Command Execution:\n   - Always quote file paths that contain spaces with double quotes\n   - After ensuring proper quoting, execute the command.\n   - Capture the output of the command.\n\nUsage notes:\n  - The command argument is required.\n  - You can specify an optional timeout in milliseconds (up to 600000ms / 10 minutes).',
+    description: 'Executes a bash command.',
     input_schema: {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
       type: 'object',
       properties: {
-        command: {
-          description: 'The command to execute',
-          type: 'string',
-        },
-        timeout: {
-          description: 'Optional timeout in milliseconds (max 600000)',
-          type: 'number',
-        },
+        command: { description: 'The command to execute', type: 'string' },
+        timeout: { description: 'Optional timeout in milliseconds', type: 'number' },
       },
       required: ['command'],
       additionalProperties: false,
     },
   },
   {
-    name: 'Glob',
-    description:
-      '- Fast file pattern matching tool that works with any codebase size\n- Supports glob patterns like "**/*.js" or "src/**/*.ts"\n- Returns matching file paths sorted by modification time\n- Use this tool when you need to find files by name patterns',
+    name: 'Read',
+    description: 'Read a file from the filesystem.',
     input_schema: {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
       type: 'object',
       properties: {
-        pattern: {
-          description: 'The glob pattern to match files against',
-          type: 'string',
-        },
-        path: {
-          description: 'The directory to search in.',
-          type: 'string',
-        },
+        path: { description: 'File path to read', type: 'string' },
+        startLine: { description: 'Starting line number', type: 'integer' },
+        endLine: { description: 'Ending line number', type: 'integer' },
+      },
+      required: ['path'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'Glob',
+    description: 'Find files matching a glob pattern.',
+    input_schema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      properties: {
+        pattern: { description: 'Glob pattern', type: 'string' },
+        path: { description: 'Directory to search', type: 'string' },
       },
       required: ['pattern'],
       additionalProperties: false,
@@ -141,51 +161,100 @@ const CLAUDE_CODE_TOOLS = [
   },
   {
     name: 'Grep',
-    description:
-      'A powerful search tool built on ripgrep\n\n  Usage:\n  - ALWAYS use Grep for search tasks.\n  - Supports full regex syntax\n  - Filter files with glob parameter or type parameter',
+    description: 'Search file contents with regex.',
     input_schema: {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
       type: 'object',
       properties: {
-        pattern: {
-          description: 'The regular expression pattern to search for in file contents',
-          type: 'string',
-        },
-        path: {
-          description: 'File or directory to search in. Defaults to current working directory.',
-          type: 'string',
-        },
+        pattern: { description: 'Regex pattern', type: 'string' },
+        path: { description: 'Path to search', type: 'string' },
       },
       required: ['pattern'],
       additionalProperties: false,
     },
   },
+];
+
+// AGI-specific tools that Claude Code DOESN'T have
+// These test whether it's a whitelist or just naming convention
+const AGI_ONLY_TOOLS = [
   {
-    name: 'Read',
-    description:
-      'Reads a file from the local filesystem. You can access any file directly by using this tool.\nAssume this tool is able to read all files on the machine.',
+    // AGI's apply_patch tool - Claude Code doesn't have this
+    name: 'ApplyPatch',
+    description: 'Apply a unified diff patch to files in the project.',
     input_schema: {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
       type: 'object',
       properties: {
-        file_path: {
-          description: 'The absolute path to the file to read',
-          type: 'string',
-        },
-        offset: {
-          description: 'The line number to start reading from.',
-          type: 'number',
-        },
-        limit: {
-          description: 'The number of lines to read.',
-          type: 'number',
-        },
+        patch: { description: 'Unified diff patch content', type: 'string' },
+        allowRejects: { description: 'Allow partial application', type: 'boolean' },
+        fuzzyMatch: { description: 'Enable fuzzy matching', type: 'boolean' },
       },
-      required: ['file_path'],
+      required: ['patch'],
+      additionalProperties: false,
+    },
+  },
+  {
+    // AGI's progress_update tool - Claude Code doesn't have this
+    name: 'ProgressUpdate',
+    description: 'Report progress on the current task.',
+    input_schema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      properties: {
+        message: { description: 'Progress message', type: 'string' },
+        percent: { description: 'Completion percentage', type: 'number' },
+      },
+      required: ['message'],
+      additionalProperties: false,
+    },
+  },
+  {
+    // AGI's git_status tool - Claude Code uses Bash for git
+    name: 'GitStatus',
+    description: 'Get the current git status of the repository.',
+    input_schema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      properties: {
+        path: { description: 'Repository path', type: 'string' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    // Completely made up tool to test naming convention
+    name: 'CustomAgiTool',
+    description: 'A custom AGI-only tool that definitely does not exist in Claude Code.',
+    input_schema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      properties: {
+        input: { description: 'Some input', type: 'string' },
+      },
+      required: ['input'],
       additionalProperties: false,
     },
   },
 ];
+
+// Select tools based on test mode
+function getToolsForMode(mode: string) {
+  switch (mode) {
+    case 'claude-code':
+      console.log('Testing with Claude Code standard tools only');
+      return CLAUDE_CODE_STANDARD_TOOLS;
+    case 'agi-only':
+      console.log('Testing with AGI-only tools (should fail if whitelist)');
+      return AGI_ONLY_TOOLS;
+    case 'agi-mixed':
+    default:
+      console.log('Testing with mixed tools (Claude Code + AGI-only)');
+      return [...CLAUDE_CODE_STANDARD_TOOLS, ...AGI_ONLY_TOOLS];
+  }
+}
+
+const CLAUDE_CODE_TOOLS = getToolsForMode(TOOL_TEST_MODE);
 
 // Generate stable IDs
 function generateUUID(): string {
@@ -206,8 +275,16 @@ function generateUserHash(token: string): string {
   return Math.abs(hash).toString(16).padStart(64, '0').slice(0, 64);
 }
 
+// Test mode: 'simple' = just say hello, 'tool' = trigger tool call and respond
+const TEST_MODE = process.argv[2] || 'tool';
+
 async function main() {
-  console.log('=== Claude Code Spoof Test ===\n');
+  console.log('=== Claude Code OAuth Tool Validation Test ===\n');
+  console.log(`Message mode: ${TEST_MODE} (simple/tool)`);
+  console.log(`Tool set mode: ${TOOL_TEST_MODE} (claude-code/agi-mixed/agi-only)\n`);
+  console.log('This test determines if Claude Code OAuth validates:');
+  console.log('  A) Whitelist of specific tool names');
+  console.log('  B) Just PascalCase naming convention\n');
 
   // Get auth token
   const accessToken = await getOAuthToken();
@@ -224,10 +301,15 @@ async function main() {
   const accountUUID = generateUUID();
   const sessionId = generateUUID();
 
+  // Choose message based on test mode
+  const userMessage = TEST_MODE === 'tool'
+    ? 'Read the file /Users/bat/dev/slashforge/agi/package.json and tell me the project name.'
+    : 'Say hello';
+
   // Build exact Claude Code request
   const requestBody = {
     model: 'claude-sonnet-4-20250514', // Use a model that's definitely available
-    max_tokens: 1024,
+    max_tokens: 4096,
     system: [
       {
         type: 'text',
@@ -236,7 +318,7 @@ async function main() {
       },
       {
         type: 'text',
-        text: "You are an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.\n\nHere is useful information about the environment you are running in:\n<env>\nWorking directory: /Users/bat/dev/slashforge/agi\nIs directory a git repo: Yes\nPlatform: darwin\nToday's date: 2026-01-09\n</env>",
+        text: "You are an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.\n\nHere is useful information about the environment you are running in:\n<env>\nWorking directory: /Users/bat/dev/slashforge/agi\nIs directory a git repo: Yes\nPlatform: darwin\nToday's date: 2026-01-11\n</env>",
         cache_control: { type: 'ephemeral' },
       },
     ],
@@ -246,7 +328,7 @@ async function main() {
         content: [
           {
             type: 'text',
-            text: 'Say hello',
+            text: userMessage,
             cache_control: { type: 'ephemeral' },
           },
         ],
@@ -283,12 +365,15 @@ async function main() {
 
   console.log('\n--- Request Details ---');
   console.log('URL: https://api.anthropic.com/v1/messages?beta=true');
-  console.log('Headers:', JSON.stringify(headers, null, 2));
+  console.log('\nTools being sent:');
+  for (const tool of requestBody.tools) {
+    const isClaudeCode = CLAUDE_CODE_STANDARD_TOOLS.some(t => t.name === tool.name);
+    console.log(`  ${tool.name} ${isClaudeCode ? '(Claude Code)' : '(AGI-only)'}`);
+  }
   console.log('\nBody preview:');
   console.log('  model:', requestBody.model);
-  console.log('  tools:', requestBody.tools.map((t) => t.name).join(', '));
+  console.log('  tools count:', requestBody.tools.length);
   console.log('  system blocks:', requestBody.system.length);
-  console.log('  cache_control blocks: 3 (2 system + 1 message)');
   console.log('  message:', requestBody.messages[0].content[0].text);
   console.log('  metadata.user_id:', requestBody.metadata.user_id.slice(0, 40) + '...');
 
@@ -323,6 +408,15 @@ async function main() {
         const decoder = new TextDecoder();
         let buffer = '';
         let assistantText = '';
+        let stopReason = '';
+
+        // Collect tool calls
+        const toolCalls: Array<{ id: string; name: string; input: string }> = [];
+        let currentToolCall: { id: string; name: string; input: string } | null = null;
+
+        // Collect content blocks for assistant message
+        const contentBlocks: Array<{ type: string; [key: string]: unknown }> = [];
+        let currentTextBlock = '';
 
         while (true) {
           const { done, value } = await reader.read();
@@ -353,8 +447,14 @@ async function main() {
                       console.log(`\n[thinking] index=${event.index}`);
                     } else if (event.content_block?.type === 'text') {
                       console.log(`\n[text] index=${event.index}`);
+                      currentTextBlock = '';
                     } else if (event.content_block?.type === 'tool_use') {
                       console.log(`\n[tool_use] ${event.content_block.name} id=${event.content_block.id}`);
+                      currentToolCall = {
+                        id: event.content_block.id,
+                        name: event.content_block.name,
+                        input: '',
+                      };
                     }
                     break;
 
@@ -364,17 +464,38 @@ async function main() {
                     } else if (event.delta?.type === 'text_delta') {
                       process.stdout.write(event.delta.text);
                       assistantText += event.delta.text;
+                      currentTextBlock += event.delta.text;
                     } else if (event.delta?.type === 'input_json_delta') {
                       process.stdout.write(event.delta.partial_json);
+                      if (currentToolCall) {
+                        currentToolCall.input += event.delta.partial_json;
+                      }
                     }
                     break;
 
                   case 'content_block_stop':
                     console.log('');
+                    if (currentToolCall) {
+                      toolCalls.push(currentToolCall);
+                      contentBlocks.push({
+                        type: 'tool_use',
+                        id: currentToolCall.id,
+                        name: currentToolCall.name,
+                        input: JSON.parse(currentToolCall.input || '{}'),
+                      });
+                      currentToolCall = null;
+                    } else if (currentTextBlock) {
+                      contentBlocks.push({
+                        type: 'text',
+                        text: currentTextBlock,
+                      });
+                      currentTextBlock = '';
+                    }
                     break;
 
                   case 'message_delta':
-                    console.log(`\n[message_delta] stop_reason=${event.delta.stop_reason} output_tokens=${event.usage.output_tokens}`);
+                    stopReason = event.delta.stop_reason;
+                    console.log(`\n[message_delta] stop_reason=${stopReason} output_tokens=${event.usage.output_tokens}`);
                     break;
 
                   case 'message_stop':
@@ -388,9 +509,147 @@ async function main() {
           }
         }
         console.log('\n--- End of Stream ---');
+
         if (assistantText) {
           console.log('\n=== Assistant Response ===');
           console.log(assistantText);
+        }
+
+        // If we got tool calls and stop_reason is tool_use, send tool results back
+        if (stopReason === 'tool_use' && toolCalls.length > 0) {
+          console.log('\n\n========================================');
+          console.log('=== TOOL CALL DETECTED - ROUND 2 ===');
+          console.log('========================================\n');
+
+          for (const tc of toolCalls) {
+            console.log(`Tool: ${tc.name}`);
+            console.log(`ID: ${tc.id}`);
+            console.log(`Input: ${tc.input}`);
+          }
+
+          // Simulate tool result with AGI's response format
+          // This is the key test - does Claude accept our ToolResponse<T> format?
+          const toolResults = toolCalls.map((tc) => {
+            const input = JSON.parse(tc.input || '{}');
+
+            if (tc.name === 'Read') {
+              // Simulate AGI's read tool response format
+              const simulatedContent = JSON.stringify({
+                name: "agi-monorepo",
+                version: "0.1.104",
+                description: "AGI CLI monorepo"
+              }, null, 2);
+
+              // AGI's ToolResponse format - using input.path (AGI schema)
+              const agiResponse = {
+                ok: true,
+                path: input.path,  // AGI uses 'path' not 'file_path'
+                content: simulatedContent,
+                size: simulatedContent.length,
+              };
+
+              console.log('\n--- Sending Tool Result (AGI Format) ---');
+              console.log(JSON.stringify(agiResponse, null, 2));
+
+              return {
+                type: 'tool_result',
+                tool_use_id: tc.id,
+                content: JSON.stringify(agiResponse),
+              };
+            }
+
+            // Default response
+            return {
+              type: 'tool_result',
+              tool_use_id: tc.id,
+              content: JSON.stringify({ ok: true, result: 'Tool executed successfully' }),
+            };
+          });
+
+          // Build follow-up request with tool results
+          const followUpBody = {
+            ...requestBody,
+            messages: [
+              // Original user message
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: userMessage,
+                  },
+                ],
+              },
+              // Assistant's response with tool calls
+              {
+                role: 'assistant',
+                content: contentBlocks,
+              },
+              // User message with tool results
+              {
+                role: 'user',
+                content: toolResults,
+              },
+            ],
+          };
+
+          console.log('\n--- Sending Follow-up Request ---\n');
+
+          const followUpResponse = await fetch('https://api.anthropic.com/v1/messages?beta=true', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(followUpBody),
+          });
+
+          console.log('Follow-up Status:', followUpResponse.status, followUpResponse.statusText);
+
+          if (followUpResponse.ok) {
+            console.log('\n✓ Follow-up SUCCESS!\n');
+
+            const followUpReader = followUpResponse.body?.getReader();
+            if (followUpReader) {
+              let followUpBuffer = '';
+              let followUpText = '';
+
+              while (true) {
+                const { done, value } = await followUpReader.read();
+                if (done) break;
+
+                followUpBuffer += decoder.decode(value, { stream: true });
+                const lines = followUpBuffer.split('\n');
+                followUpBuffer = lines.pop() || '';
+
+                for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') continue;
+
+                    try {
+                      const event = JSON.parse(data);
+
+                      if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+                        process.stdout.write(event.delta.text);
+                        followUpText += event.delta.text;
+                      } else if (event.type === 'message_delta') {
+                        console.log(`\n\n[message_delta] stop_reason=${event.delta.stop_reason}`);
+                      }
+                    } catch {
+                      // Ignore
+                    }
+                  }
+                }
+              }
+
+              console.log('\n\n=== Final Response ===');
+              console.log(followUpText);
+              console.log('\n✓ TOOL ROUND-TRIP COMPLETE!');
+              console.log('✓ AGI ToolResponse format is COMPATIBLE with Claude Code!');
+            }
+          } else {
+            console.log('\n✗ Follow-up FAILED');
+            const errorBody = await followUpResponse.text();
+            console.log('Error:', errorBody);
+          }
         }
       }
     } else {

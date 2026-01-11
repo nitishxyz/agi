@@ -26,6 +26,52 @@ interface ToolResultRendererProps {
 	debug?: boolean;
 }
 
+/**
+ * Normalize tool names to canonical form for rendering.
+ * Handles both snake_case (canonical) and PascalCase (OAuth) names.
+ *
+ * Claude Code OAuth requires PascalCase but doesn't whitelist tools,
+ * so we can use all AGI tools with PascalCase naming.
+ */
+const TOOL_NAME_ALIASES: Record<string, string> = {
+	// File system operations
+	Read: 'read',
+	Write: 'write',
+	Edit: 'edit',
+	Ls: 'ls',
+	Tree: 'tree',
+	Cd: 'cd',
+	Pwd: 'pwd',
+
+	// Search operations
+	Glob: 'glob',
+	Grep: 'ripgrep',
+
+	// Execution
+	Bash: 'bash',
+	Terminal: 'terminal',
+
+	// Git operations
+	GitStatus: 'git_status',
+	GitDiff: 'git_diff',
+	GitCommit: 'git_commit',
+
+	// Patch/edit
+	ApplyPatch: 'apply_patch',
+
+	// Task management
+	UpdatePlan: 'update_plan',
+	ProgressUpdate: 'progress_update',
+	Finish: 'finish',
+
+	// Web operations
+	WebSearch: 'websearch',
+};
+
+function normalizeToolName(name: string): string {
+	return TOOL_NAME_ALIASES[name] ?? name;
+}
+
 export function ToolResultRenderer({
 	toolName,
 	contentJson,
@@ -33,6 +79,7 @@ export function ToolResultRenderer({
 	debug,
 }: ToolResultRendererProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
+	const normalizedName = normalizeToolName(toolName);
 
 	const props = {
 		contentJson,
@@ -45,7 +92,7 @@ export function ToolResultRenderer({
 		return <DebugRenderer {...props} toolName={toolName} />;
 	}
 
-	switch (toolName) {
+	switch (normalizedName) {
 		case 'read':
 			return <ReadRenderer {...props} />;
 		case 'write':
