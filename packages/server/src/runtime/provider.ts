@@ -142,14 +142,14 @@ async function getAnthropicInstance(cfg: AGIConfig) {
 				'claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14';
 			headers['anthropic-dangerous-direct-browser-access'] = 'true';
 			headers['anthropic-version'] = '2023-06-01';
-			headers['user-agent'] = `claude-cli/${CLAUDE_CLI_VERSION} (external, cli)`;
+			headers['user-agent'] =
+				`claude-cli/${CLAUDE_CLI_VERSION} (external, cli)`;
 			headers['x-app'] = 'cli';
 			headers['content-type'] = 'application/json';
 			headers.accept = 'application/json';
 
 			// Stainless headers (fingerprinting)
-			headers['x-stainless-arch'] =
-				process.arch === 'arm64' ? 'arm64' : 'x64';
+			headers['x-stainless-arch'] = process.arch === 'arm64' ? 'arm64' : 'x64';
 			headers['x-stainless-helper-method'] = 'stream';
 			headers['x-stainless-lang'] = 'js';
 			headers['x-stainless-os'] =
