@@ -263,8 +263,7 @@ async function getAnthropicInstance(cfg: AGIConfig) {
 												isLast &&
 												!transformedBlock.cache_control &&
 												messageCacheUsed < MAX_MESSAGE_CACHE &&
-												blockIndex ===
-													(msg.content as unknown[]).length - 1
+												blockIndex === (msg.content as unknown[]).length - 1
 											) {
 												messageCacheUsed++;
 												return {
