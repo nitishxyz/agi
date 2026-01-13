@@ -50,7 +50,10 @@ export function ConfirmationDialog() {
 		const handleEscape = (e: KeyboardEvent) => {
 			if (isOpen && !isProcessing) {
 				const target = e.target as HTMLElement;
-				const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+				const isInInput =
+					target.tagName === 'INPUT' ||
+					target.tagName === 'TEXTAREA' ||
+					target.isContentEditable;
 				if (e.key === 'Escape' || (e.key === 'q' && !isInInput)) {
 					e.preventDefault();
 					handleCancel();
@@ -76,11 +79,17 @@ export function ConfirmationDialog() {
 			aria-modal="true"
 			className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
 			onClick={handleBackdropClick}
-		onKeyDown={(e) => {
-			const target = e.target as HTMLElement;
-			const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
-			if ((e.key === 'Escape' || (e.key === 'q' && !isInInput)) && !isProcessing) {
-				e.preventDefault();
+			onKeyDown={(e) => {
+				const target = e.target as HTMLElement;
+				const isInInput =
+					target.tagName === 'INPUT' ||
+					target.tagName === 'TEXTAREA' ||
+					target.isContentEditable;
+				if (
+					(e.key === 'Escape' || (e.key === 'q' && !isInInput)) &&
+					!isProcessing
+				) {
+					e.preventDefault();
 					handleCancel();
 				}
 			}}

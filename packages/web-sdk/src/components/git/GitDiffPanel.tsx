@@ -50,7 +50,10 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 	useEffect(() => {
 		const handleEscape = (e: KeyboardEvent) => {
 			const target = e.target as HTMLElement;
-			const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+			const isInInput =
+				target.tagName === 'INPUT' ||
+				target.tagName === 'TEXTAREA' ||
+				target.isContentEditable;
 			if ((e.key === 'Escape' || (e.key === 'q' && !isInInput)) && isDiffOpen) {
 				closeDiff();
 			}
