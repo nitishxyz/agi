@@ -182,7 +182,9 @@ export const UnifiedModelSelector = forwardRef<
 		};
 
 		const handleEscape = (event: KeyboardEvent) => {
-			if (event.key === 'Escape' || event.key === 'q') {
+			const target = event.target as HTMLElement;
+			const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+			if (event.key === 'Escape' || (event.key === 'q' && !isInInput)) {
 				setIsOpen(false);
 			}
 		};

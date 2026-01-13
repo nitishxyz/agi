@@ -34,7 +34,9 @@ export function Modal({
 		if (!isOpen || !closeOnEscape) return;
 
 		const handleEscape = (e: KeyboardEvent) => {
-			if (e.key === 'Escape' || e.key === 'q') {
+			const target = e.target as HTMLElement;
+			const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+			if (e.key === 'Escape' || (e.key === 'q' && !isInInput)) {
 				e.preventDefault();
 				e.stopPropagation();
 				onClose();

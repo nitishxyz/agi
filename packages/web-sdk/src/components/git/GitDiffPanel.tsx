@@ -49,7 +49,9 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 	// Handle ESC key
 	useEffect(() => {
 		const handleEscape = (e: KeyboardEvent) => {
-			if ((e.key === 'Escape' || e.key === 'q') && isDiffOpen) {
+			const target = e.target as HTMLElement;
+			const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+			if ((e.key === 'Escape' || (e.key === 'q' && !isInInput)) && isDiffOpen) {
 				closeDiff();
 			}
 		};

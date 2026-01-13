@@ -134,25 +134,26 @@ export function useKeyboardShortcuts({
 				return;
 			}
 
-			if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-				e.preventDefault();
-				onNewSession();
-				return;
-			}
+		if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+			e.preventDefault();
+			onNewSession();
+			return;
+		}
 
-			if (e.key === 'Escape' || e.key === 'q') {
-				e.preventDefault();
-				// Close sidebar if focused on one
-				if (currentFocus === 'sessions') {
-					setSessionListCollapsed(true);
-				} else if (currentFocus === 'git') {
-					toggleGit();
-					closeDiff();
-				}
-				setFocus('input');
-				onReturnToInput?.();
-				return;
+		// Only handle q when not in input and a sidebar is focused
+		if (e.key === 'Escape' || (e.key === 'q' && !isInInput && (currentFocus === 'sessions' || currentFocus === 'git'))) {
+			e.preventDefault();
+			// Close sidebar if focused on one
+			if (currentFocus === 'sessions') {
+				setSessionListCollapsed(true);
+			} else if (currentFocus === 'git') {
+				toggleGit();
+				closeDiff();
 			}
+			setFocus('input');
+			onReturnToInput?.();
+			return;
+		}
 
 			if (currentFocus === 'sessions' && !isInInput) {
 				if (e.key === 'j' && sessionIds.length > 0) {
