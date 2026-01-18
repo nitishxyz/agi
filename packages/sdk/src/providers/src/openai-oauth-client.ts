@@ -107,7 +107,7 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 		let body = init?.body;
 		if (body && typeof body === 'string') {
 			try {
-				let parsed = JSON.parse(body);
+				const parsed = JSON.parse(body);
 
 				parsed.store = false;
 				parsed.stream = true;
@@ -126,21 +126,33 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 					parsed.include.push('reasoning.encrypted_content');
 				}
 
-			if (!parsed.reasoning) {
-				const providerOpts = parsed.providerOptions?.openai || {};
-				parsed.reasoning = {
-					effort: providerOpts.reasoningEffort || config.reasoningEffort || 'medium',
-					summary: providerOpts.reasoningSummary || config.reasoningSummary || 'auto',
-				};
-			} else {
-				const providerOpts = parsed.providerOptions?.openai || {};
-				if (!parsed.reasoning.effort) {
-					parsed.reasoning.effort = providerOpts.reasoningEffort || config.reasoningEffort || 'medium';
+				if (!parsed.reasoning) {
+					const providerOpts = parsed.providerOptions?.openai || {};
+					parsed.reasoning = {
+						effort:
+							providerOpts.reasoningEffort ||
+							config.reasoningEffort ||
+							'medium',
+						summary:
+							providerOpts.reasoningSummary ||
+							config.reasoningSummary ||
+							'auto',
+					};
+				} else {
+					const providerOpts = parsed.providerOptions?.openai || {};
+					if (!parsed.reasoning.effort) {
+						parsed.reasoning.effort =
+							providerOpts.reasoningEffort ||
+							config.reasoningEffort ||
+							'medium';
+					}
+					if (!parsed.reasoning.summary) {
+						parsed.reasoning.summary =
+							providerOpts.reasoningSummary ||
+							config.reasoningSummary ||
+							'auto';
+					}
 				}
-				if (!parsed.reasoning.summary) {
-					parsed.reasoning.summary = providerOpts.reasoningSummary || config.reasoningSummary || 'auto';
-				}
-			}
 
 				delete parsed.max_output_tokens;
 				delete parsed.max_completion_tokens;

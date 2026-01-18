@@ -22,3 +22,42 @@ export function hasModel(
 	if (!model) return false;
 	return listModels(provider).includes(model);
 }
+
+const PREFERRED_FAST_MODELS: Partial<Record<ProviderId, string[]>> = {
+	openai: ['gpt-4o-mini', 'gpt-4.1-nano', 'gpt-4.1-mini'],
+	anthropic: [
+		'claude-3-5-haiku-latest',
+		'claude-3-5-haiku-20241022',
+		'claude-haiku-4-5',
+	],
+	google: [
+		'gemini-2.0-flash-lite',
+		'gemini-2.0-flash',
+		'gemini-2.5-flash-lite',
+	],
+	openrouter: [
+		'openai/gpt-4o-mini',
+		'google/gemini-2.0-flash-001',
+		'anthropic/claude-3.5-haiku',
+	],
+	opencode: ['gpt-5-nano', 'claude-3-5-haiku', 'gemini-3-flash'],
+	zai: ['glm-4.5-flash', 'glm-4.5-air'],
+};
+
+export function getFastModel(provider: ProviderId): string | undefined {
+	const providerModels = catalog[provider]?.models ?? [];
+	if (!providerModels.length) return undefined;
+
+	const preferred = PREFERRED_FAST_MODELS[provider] ?? [];
+	for (const modelId of preferred) {
+		if (providerModels.some((m) => m.id === modelId)) {
+			return modelId;
+		}
+	}
+
+	const sorted = [...providerModels]
+		.filter((m) => m.cost?.input !== undefined && m.toolCall !== false)
+		.sort((a, b) => (a.cost?.input ?? Infinity) - (b.cost?.input ?? Infinity));
+
+	return sorted[0]?.id ?? providerModels[0]?.id;
+}

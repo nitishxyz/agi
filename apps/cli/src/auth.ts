@@ -258,7 +258,9 @@ async function runAuthLoginOpenAI(
 				apiKey = await obtainOpenAIApiKey(tokens.idToken);
 				useApiKey = true;
 			} catch {
-				log.info('ℹ️  API key not available (no OpenAI Platform org). Using OAuth tokens.');
+				log.info(
+					'ℹ️  API key not available (no OpenAI Platform org). Using OAuth tokens.',
+				);
 			}
 
 			if (useApiKey && apiKey) {
@@ -283,7 +285,9 @@ async function runAuthLoginOpenAI(
 					cfg.projectRoot,
 					'global',
 				);
-				log.success(`OAuth tokens saved!${tokens.accountId ? ` (Account: ${tokens.accountId.slice(0, 8)}...)` : ''}`);
+				log.success(
+					`OAuth tokens saved!${tokens.accountId ? ` (Account: ${tokens.accountId.slice(0, 8)}...)` : ''}`,
+				);
 			}
 
 			log.info(

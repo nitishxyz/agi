@@ -7,7 +7,7 @@ import { publish } from '../events/bus.ts';
 import { enqueueAssistantRun } from './session-queue.ts';
 import { runSessionLoop } from './runner.ts';
 import { resolveModel } from './provider.ts';
-import type { ProviderId } from '@agi-cli/sdk';
+import { getFastModel, type ProviderId } from '@agi-cli/sdk';
 import { debugLog } from './debug.ts';
 
 type SessionRow = typeof sessions.$inferSelect;
@@ -230,8 +230,6 @@ async function generateSessionTitle(args: {
 		debugLog('[TITLE_GEN] Generating title for session');
 		debugLog(`[TITLE_GEN] Provider: ${provider}, Model: ${modelName}`);
 
-		const model = await resolveModel(provider, modelName, cfg);
-
 		const { getAuth } = await import('@agi-cli/sdk');
 		const { getProviderSpoofPrompt } = await import('./prompt.ts');
 		const auth = await getAuth(provider, cfg.projectRoot);
@@ -239,6 +237,12 @@ async function generateSessionTitle(args: {
 		const spoofPrompt = needsSpoof
 			? getProviderSpoofPrompt(provider)
 			: undefined;
+
+		// Use a smaller, faster model for title generation
+		// Look up the cheapest/fastest model from the catalog for this provider
+		const titleModel = getFastModel(provider) ?? modelName;
+		debugLog(`[TITLE_GEN] Using title model: ${titleModel}`);
+		const model = await resolveModel(provider, titleModel, cfg);
 
 		debugLog(
 			`[TITLE_GEN] needsSpoof: ${needsSpoof}, spoofPrompt: ${spoofPrompt || 'NONE'}`,
