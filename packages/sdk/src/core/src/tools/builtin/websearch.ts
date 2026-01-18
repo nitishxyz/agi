@@ -32,24 +32,34 @@ export function buildWebSearchTool(): {
 					),
 			})
 			.strict()
-		.refine((data) => (data.url ? !data.query : !!data.query), {
-			message: 'Must provide either url or query, but not both',
-		}),
-	async execute({
-		url,
-		query,
-		maxLength,
-	}: {
-		url?: string;
-		query?: string;
-		maxLength?: number;
-	}): Promise<
-		ToolResponse<
-			| { url: string; content: string; contentLength: number; truncated: boolean; contentType: string }
-			| { query: string; results: Array<{ title: string; url: string; snippet: string }>; count: number }
-		>
-	> {
-		const maxLen = maxLength ?? 50000;
+			.refine((data) => (data.url ? !data.query : !!data.query), {
+				message: 'Must provide either url or query, but not both',
+			}),
+		async execute({
+			url,
+			query,
+			maxLength,
+		}: {
+			url?: string;
+			query?: string;
+			maxLength?: number;
+		}): Promise<
+			ToolResponse<
+				| {
+						url: string;
+						content: string;
+						contentLength: number;
+						truncated: boolean;
+						contentType: string;
+				  }
+				| {
+						query: string;
+						results: Array<{ title: string; url: string; snippet: string }>;
+						count: number;
+				  }
+			>
+		> {
+			const maxLen = maxLength ?? 50000;
 
 			if (url) {
 				// Fetch URL content
@@ -191,45 +201,49 @@ export function buildWebSearchTool(): {
 							}
 							match = simplePattern.exec(html);
 						}
-				}
+					}
 
-				if (results.length === 0) {
+					if (results.length === 0) {
+						return createToolError(
+							'No search results found. The search service may have changed its format or blocked the request.',
+							'execution',
+							{
+								query,
+								suggestion:
+									'Try using the url parameter to fetch a specific webpage instead.',
+							},
+						);
+					}
+
+					return {
+						ok: true,
+						query,
+						results,
+						count: results.length,
+					};
+				} catch (error) {
+					const errorMessage =
+						error instanceof Error ? error.message : String(error);
 					return createToolError(
-						'No search results found. The search service may have changed its format or blocked the request.',
+						`Search failed: ${errorMessage}`,
 						'execution',
 						{
 							query,
 							suggestion:
-								'Try using the url parameter to fetch a specific webpage instead.',
+								'Search services may be temporarily unavailable. Try using the url parameter to fetch a specific webpage instead.',
 						},
 					);
 				}
-
-				return {
-					ok: true,
-					query,
-					results,
-					count: results.length,
-					};
-			} catch (error) {
-				const errorMessage =
-					error instanceof Error ? error.message : String(error);
-				return createToolError(
-					`Search failed: ${errorMessage}`,
-					'execution',
-					{
-					query,
-					suggestion:
-						'Search services may be temporarily unavailable. Try using the url parameter to fetch a specific webpage instead.',
-					},
-				);
 			}
-		}
 
-		return createToolError('Must provide either url or query parameter', 'validation', {
-			suggestion: 'Provide either a url to fetch or a query to search',
-		});
-	},
+			return createToolError(
+				'Must provide either url or query parameter',
+				'validation',
+				{
+					suggestion: 'Provide either a url to fetch or a query to search',
+				},
+			);
+		},
 	});
 
 	return { name: 'websearch', tool: websearch };

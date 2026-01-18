@@ -22,28 +22,28 @@ export function buildRipgrepTool(projectRoot: string): {
 			glob: z
 				.array(z.string())
 				.optional()
-			.describe('One or more glob patterns to include'),
-		maxResults: z.number().int().min(1).max(5000).optional().default(500),
-	}),
-	async execute({
-		query,
-		path = '.',
-		ignoreCase,
-		glob,
-		maxResults = 500,
-	}: {
-		query: string;
-		path?: string;
-		ignoreCase?: boolean;
-		glob?: string[];
-		maxResults?: number;
-	}): Promise<
-		ToolResponse<{
-			count: number;
-			matches: Array<{ file: string; line: number; text: string }>;
-		}>
-	> {
-		function expandTilde(p: string) {
+				.describe('One or more glob patterns to include'),
+			maxResults: z.number().int().min(1).max(5000).optional().default(500),
+		}),
+		async execute({
+			query,
+			path = '.',
+			ignoreCase,
+			glob,
+			maxResults = 500,
+		}: {
+			query: string;
+			path?: string;
+			ignoreCase?: boolean;
+			glob?: string[];
+			maxResults?: number;
+		}): Promise<
+			ToolResponse<{
+				count: number;
+				matches: Array<{ file: string; line: number; text: string }>;
+			}>
+		> {
+			function expandTilde(p: string) {
 				const home = process.env.HOME || process.env.USERPROFILE || '';
 				if (!home) return p;
 				if (p === '~') return home;
@@ -74,15 +74,20 @@ export function buildRipgrepTool(projectRoot: string): {
 						stderr += data.toString();
 					});
 
-				proc.on('close', (code) => {
-					if (code !== 0 && code !== 1) {
-						resolve(
-							createToolError(stderr.trim() || 'ripgrep failed', 'execution', {
-								suggestion: 'Check if ripgrep (rg) is installed and the query is valid',
-							}),
-						);
-						return;
-					}
+					proc.on('close', (code) => {
+						if (code !== 0 && code !== 1) {
+							resolve(
+								createToolError(
+									stderr.trim() || 'ripgrep failed',
+									'execution',
+									{
+										suggestion:
+											'Check if ripgrep (rg) is installed and the query is valid',
+									},
+								),
+							);
+							return;
+						}
 
 						const lines = stdout
 							.split('\n')
@@ -93,26 +98,26 @@ export function buildRipgrepTool(projectRoot: string): {
 							if (parts.length < 3) return { file: '', line: 0, text: l };
 							const file = parts[0];
 							const line = Number.parseInt(parts[1], 10);
-						const text = parts.slice(2).join(':');
-						return { file, line, text };
+							const text = parts.slice(2).join(':');
+							return { file, line, text };
+						});
+						resolve({ ok: true, count: matches.length, matches });
 					});
-					resolve({ ok: true, count: matches.length, matches });
-				});
 
-				proc.on('error', (err) => {
-					resolve(
-						createToolError(String(err), 'execution', {
-							suggestion: 'Ensure ripgrep (rg) is installed',
-						}),
-					);
+					proc.on('error', (err) => {
+						resolve(
+							createToolError(String(err), 'execution', {
+								suggestion: 'Ensure ripgrep (rg) is installed',
+							}),
+						);
+					});
 				});
-			});
-		} catch (err) {
-			return createToolError(String(err), 'execution', {
-				suggestion: 'Ensure ripgrep (rg) is installed',
-			});
-		}
-	},
+			} catch (err) {
+				return createToolError(String(err), 'execution', {
+					suggestion: 'Ensure ripgrep (rg) is installed',
+				});
+			}
+		},
 	});
 	return { name: 'ripgrep', tool: rg };
 }

@@ -120,9 +120,7 @@ export function ToolHeaderDetail({
 	children: ReactNode;
 	className?: string;
 }) {
-	return (
-		<span className={`text-foreground/70 ${className}`}>{children}</span>
-	);
+	return <span className={`text-foreground/70 ${className}`}>{children}</span>;
 }
 
 export function ToolHeaderMeta({
@@ -141,11 +139,7 @@ export function ToolHeaderMeta({
 	);
 }
 
-export function ToolHeaderSuccess({
-	children,
-}: {
-	children: ReactNode;
-}) {
+export function ToolHeaderSuccess({ children }: { children: ReactNode }) {
 	return (
 		<span className="text-emerald-600 dark:text-emerald-400 flex-shrink-0">
 			{children}
@@ -153,11 +147,7 @@ export function ToolHeaderSuccess({
 	);
 }
 
-export function ToolHeaderError({
-	children,
-}: {
-	children: ReactNode;
-}) {
+export function ToolHeaderError({ children }: { children: ReactNode }) {
 	return (
 		<span className="text-red-600 dark:text-red-400 flex-shrink-0">
 			{children}

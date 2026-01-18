@@ -55,7 +55,9 @@ export const editTool: Tool = tool({
 		path: string;
 		ops: z.infer<typeof opSchema>[];
 		create?: boolean;
-	}): Promise<ToolResponse<{ path: string; opsApplied: number; bytes: number }>> {
+	}): Promise<
+		ToolResponse<{ path: string; opsApplied: number; bytes: number }>
+	> {
 		let exists = false;
 		try {
 			await access(path, constants.F_OK);
@@ -128,10 +130,14 @@ export const editTool: Tool = tool({
 					continue;
 				}
 				if (!op.pattern) {
-					return createToolError('insert requires pattern for before/after', 'validation', {
-						parameter: 'pattern',
-						suggestion: 'Provide a pattern to anchor the insertion',
-					});
+					return createToolError(
+						'insert requires pattern for before/after',
+						'validation',
+						{
+							parameter: 'pattern',
+							suggestion: 'Provide a pattern to anchor the insertion',
+						},
+					);
 				}
 				const idx = text.indexOf(op.pattern);
 				if (idx === -1) continue;

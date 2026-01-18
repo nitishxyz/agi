@@ -33,7 +33,10 @@ export function buildLsTool(projectRoot: string): { name: string; tool: Tool } {
 			path: string;
 			ignore?: string[];
 		}): Promise<
-			ToolResponse<{ path: string; entries: Array<{ name: string; type: string }> }>
+			ToolResponse<{
+				path: string;
+				entries: Array<{ name: string; type: string }>;
+			}>
 		> {
 			const req = expandTilde(path || '.');
 			const abs = isAbsoluteLike(req)
@@ -55,8 +58,8 @@ export function buildLsTool(projectRoot: string): { name: string; tool: Tool } {
 						type: line.endsWith('/') ? 'dir' : 'file',
 					}))
 					.filter(
-					(entry) => !(entry.type === 'dir' && ignored.has(entry.name)),
-				);
+						(entry) => !(entry.type === 'dir' && ignored.has(entry.name)),
+					);
 				return { ok: true, path: req, entries };
 			} catch (error: unknown) {
 				const err = error as { stderr?: string; stdout?: string };

@@ -74,9 +74,11 @@ export function buildGitTools(
 	const git_diff = tool({
 		description: GIT_DIFF_DESCRIPTION,
 		inputSchema: z.object({ all: z.boolean().optional().default(false) }),
-		async execute({ all }: { all?: boolean }): Promise<
-			ToolResponse<{ all: boolean; patch: string }>
-		> {
+		async execute({
+			all,
+		}: {
+			all?: boolean;
+		}): Promise<ToolResponse<{ all: boolean; patch: string }>> {
 			if (!(await inRepo())) {
 				return createToolError('Not a git repository', 'not_found', {
 					suggestion: 'Initialize a git repository with git init',
@@ -134,7 +136,8 @@ export function buildGitTools(
 				const err = error as { stderr?: string; message?: string };
 				const txt = err.stderr || err.message || 'git commit failed';
 				return createToolError(txt, 'execution', {
-					suggestion: 'Check if there are staged changes and the commit message is valid',
+					suggestion:
+						'Check if there are staged changes and the commit message is valid',
 				});
 			}
 		},

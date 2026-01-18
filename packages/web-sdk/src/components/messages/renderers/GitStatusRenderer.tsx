@@ -1,10 +1,6 @@
 import type { RendererProps } from './types';
 import { formatDuration, isToolError, getErrorMessage } from './utils';
-import {
-	ToolHeader,
-	ToolHeaderSeparator,
-	ToolHeaderMeta,
-} from './shared';
+import { ToolHeader, ToolHeaderSeparator, ToolHeaderMeta } from './shared';
 import { ToolErrorDisplay } from './ToolErrorDisplay';
 
 interface StatusLine {

@@ -27,9 +27,9 @@ export function buildTreeTool(projectRoot: string): {
 				.optional()
 				.describe('Optional depth limit (defaults to full depth).'),
 			ignore: z
-			.array(z.string())
-			.optional()
-			.describe('List of directory names/globs to ignore'),
+				.array(z.string())
+				.optional()
+				.describe('List of directory names/globs to ignore'),
 		}),
 		async execute({
 			path,
@@ -58,25 +58,26 @@ export function buildTreeTool(projectRoot: string): {
 
 			try {
 				const { stdout } = await execAsync(cmd, {
-				cwd: start,
-				maxBuffer: 10 * 1024 * 1024,
-			});
-			const output = stdout.trimEnd();
-			return { ok: true, path: req, depth: depth ?? null, tree: output };
-		} catch (error: unknown) {
-			const err = error as { stderr?: string; stdout?: string };
-			const message = (err.stderr || err.stdout || 'tree failed').trim();
-			return createToolError(
-				`tree failed for ${req}: ${message}`,
-				'execution',
-				{
-					parameter: 'path',
-					value: req,
-					suggestion: 'Check if the directory exists and tree command is installed',
-				},
-			);
-		}
-	},
+					cwd: start,
+					maxBuffer: 10 * 1024 * 1024,
+				});
+				const output = stdout.trimEnd();
+				return { ok: true, path: req, depth: depth ?? null, tree: output };
+			} catch (error: unknown) {
+				const err = error as { stderr?: string; stdout?: string };
+				const message = (err.stderr || err.stdout || 'tree failed').trim();
+				return createToolError(
+					`tree failed for ${req}: ${message}`,
+					'execution',
+					{
+						parameter: 'path',
+						value: req,
+						suggestion:
+							'Check if the directory exists and tree command is installed',
+					},
+				);
+			}
+		},
 	});
 	return { name: 'tree', tool: tree };
 }

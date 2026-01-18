@@ -20,8 +20,13 @@ export function SearchRenderer({
 	const timeStr = formatDuration(toolDurationMs);
 
 	const hasError = isToolError(result) || !!contentJson.error;
-	const errorMessage = getErrorMessage(result) || (typeof contentJson.error === 'string' ? contentJson.error : null);
-	const errorStack = result && typeof result === 'object' && 'stack' in result ? String(result.stack) : undefined;
+	const errorMessage =
+		getErrorMessage(result) ||
+		(typeof contentJson.error === 'string' ? contentJson.error : null);
+	const errorStack =
+		result && typeof result === 'object' && 'stack' in result
+			? String(result.stack)
+			: undefined;
 
 	// Determine what to show - matches for grep/ripgrep, files for glob
 	const itemCount = matches.length > 0 ? matches.length : files.length;
@@ -62,7 +67,9 @@ export function SearchRenderer({
 						<ToolHeaderSeparator />
 						<span className="font-mono text-foreground/90 text-[11px]">
 							"
-							{searchTerm.length > 30 ? `${searchTerm.slice(0, 30)}…` : searchTerm}
+							{searchTerm.length > 30
+								? `${searchTerm.slice(0, 30)}…`
+								: searchTerm}
 							"
 						</span>
 					</>

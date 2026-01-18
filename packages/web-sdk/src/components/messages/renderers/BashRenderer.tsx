@@ -77,9 +77,7 @@ export function BashRenderer({
 						<ToolHeaderMeta>{timeStr}</ToolHeaderMeta>
 					</>
 				)}
-				{hasToolError && (
-					<ToolHeaderMeta>· {timeStr}</ToolHeaderMeta>
-				)}
+				{hasToolError && <ToolHeaderMeta>· {timeStr}</ToolHeaderMeta>}
 			</ToolHeader>
 
 			{isExpanded && hasToolError && errorMessage && (

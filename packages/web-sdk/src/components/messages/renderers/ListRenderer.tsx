@@ -45,7 +45,11 @@ export function ListRenderer({
 			{isExpanded && !hasError && entries.length > 0 && (
 				<div className="mt-2 ml-5 space-y-0.5 max-h-96 overflow-y-auto">
 					{entries.map((entry, i) => {
-						const e = entry as { name?: string; type?: string; isDirectory?: boolean };
+						const e = entry as {
+							name?: string;
+							type?: string;
+							isDirectory?: boolean;
+						};
 						const isDir = e.type === 'dir' || e.isDirectory;
 						return (
 							<div
