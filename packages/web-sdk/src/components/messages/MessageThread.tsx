@@ -26,7 +26,10 @@ export const MessageThread = memo(function MessageThread({
 	const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 	const targetScrollRef = useRef(0);
 	const animationFrameRef = useRef<number>();
+	const initialScrollDoneRef = useRef(false);
+	const lastSessionIdRef = useRef<string | undefined>(session?.id);
 	const prevMessagesLengthRef = useRef(messages.length);
+	const prevIsGeneratingRef = useRef(isGenerating);
 
 	const handleScroll = useCallback(() => {
 		const container = scrollContainerRef.current;
@@ -56,16 +59,46 @@ export const MessageThread = memo(function MessageThread({
 		}
 	}, []);
 
+	// Immediate scroll to bottom on initial load or session change
 	useEffect(() => {
-		if (
-			messages.length > prevMessagesLengthRef.current &&
-			!userScrollingRef.current
-		) {
-			if (!isGenerating) {
-				setAutoScroll(true);
+		const sessionChanged = session?.id !== lastSessionIdRef.current;
+		lastSessionIdRef.current = session?.id;
+
+		if (sessionChanged) {
+			initialScrollDoneRef.current = false;
+		}
+
+		if (!initialScrollDoneRef.current && messages.length > 0) {
+			initialScrollDoneRef.current = true;
+			const container = scrollContainerRef.current;
+			if (container) {
+				container.scrollTop = container.scrollHeight;
 			}
 		}
+	}, [messages.length, session?.id]);
+
+	useEffect(() => {
+		const justStartedGenerating = isGenerating && !prevIsGeneratingRef.current;
+		const messagesAdded = messages.length > prevMessagesLengthRef.current;
+		
+		prevIsGeneratingRef.current = isGenerating;
 		prevMessagesLengthRef.current = messages.length;
+
+		// Scroll to bottom when generation starts (user just sent a message)
+		if (justStartedGenerating) {
+			userScrollingRef.current = false;
+			setAutoScroll(true);
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					const container = scrollContainerRef.current;
+					if (container) {
+						container.scrollTop = container.scrollHeight;
+					}
+				});
+			});
+		} else if (messagesAdded && !userScrollingRef.current && !isGenerating) {
+				setAutoScroll(true);
+		}
 	}, [messages.length, isGenerating]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: messages dep needed for streaming content updates
@@ -84,7 +117,13 @@ export const MessageThread = memo(function MessageThread({
 			const diff = target - current;
 
 			if (Math.abs(diff) < 1) {
-				el.scrollTop = target;
+				el.scrollTop = el.scrollHeight - el.clientHeight;
+				return;
+			}
+
+			// If very close, just snap to bottom
+			if (Math.abs(diff) < 10) {
+				el.scrollTop = el.scrollHeight - el.clientHeight;
 				return;
 			}
 
@@ -112,7 +151,10 @@ export const MessageThread = memo(function MessageThread({
 	const scrollToBottom = () => {
 		userScrollingRef.current = false;
 		setAutoScroll(true);
-		bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+		const container = scrollContainerRef.current;
+		if (container) {
+			container.scrollTop = container.scrollHeight;
+		}
 	};
 
 	// Memoize filtered messages to avoid recalculating on every render
