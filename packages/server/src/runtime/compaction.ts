@@ -55,13 +55,15 @@ export function isCompactCommand(content: string): boolean {
 }
 
 /**
-* Build context for the LLM to generate a summary.
-* Returns a prompt that describes what to summarize.
+ * Build context for the LLM to generate a summary.
+ * Returns a prompt that describes what to summarize.
  * Includes tool calls and results with appropriate truncation to fit within model limits.
-*/
+ * @param contextTokenLimit - Max tokens for context (uses ~4 chars per token estimate)
+ */
 export async function buildCompactionContext(
 	db: Awaited<ReturnType<typeof getDb>>,
 	sessionId: string,
+	contextTokenLimit?: number,
 ): Promise<string> {
 	const allMessages = await db
 		.select()
@@ -71,7 +73,9 @@ export async function buildCompactionContext(
 
 	const lines: string[] = [];
 	let totalChars = 0;
-	const maxChars = 60000; // Limit context size (~15k tokens) to fit within model limits
+	// Use provided limit or default to 60k chars (~15k tokens)
+	// We use ~50% of model context for compaction, leaving room for system prompt + response
+	const maxChars = contextTokenLimit ? contextTokenLimit * 4 : 60000;
 
 	for (const msg of allMessages) {
 		if (totalChars > maxChars) {
@@ -393,6 +397,7 @@ export const COMPACTED_PLACEHOLDER = '[Compacted]';
  * Perform auto-compaction when context overflows.
  * Streams the compaction summary (like /compact does), marks old parts as compacted.
  * Returns info needed for caller to trigger a retry.
+ * Uses the session's model for consistency with /compact command.
  */
 export async function performAutoCompaction(
 	db: Awaited<ReturnType<typeof getDb>>,
@@ -403,6 +408,8 @@ export async function performAutoCompaction(
 		sessionId: string;
 		payload: Record<string, unknown>;
 	}) => void,
+	provider: string,
+	modelId: string,
 ): Promise<{
 	success: boolean;
 	summary?: string;
@@ -412,8 +419,21 @@ export async function performAutoCompaction(
 	debugLog(`[compaction] Starting auto-compaction for session ${sessionId}`);
 
 	try {
-		// 1. Build compaction context
-		const context = await buildCompactionContext(db, sessionId);
+		// 1. Get model limits and build compaction context
+		const limits = getModelLimits(provider, modelId);
+		// Use 50% of context window for compaction, minimum 15k tokens
+		const contextTokenLimit = limits
+			? Math.max(Math.floor(limits.context * 0.5), 15000)
+			: 15000;
+		debugLog(
+			`[compaction] Model ${modelId} context limit: ${limits?.context ?? 'unknown'}, using ${contextTokenLimit} tokens for compaction`,
+		);
+
+		const context = await buildCompactionContext(
+			db,
+			sessionId,
+			contextTokenLimit,
+		);
 		if (!context || context.length < 100) {
 			debugLog('[compaction] Not enough context to compact');
 			return { success: false, error: 'Not enough context to compact' };
@@ -421,14 +441,16 @@ export async function performAutoCompaction(
 
 		// 2. Stream the compaction summary
 
-		// Use codex-mini for OAuth (works with ChatGPT backend), gpt-4o-mini for API key
-		const { getAuth } = await import('@agi-cli/sdk');
+		// Use the session's model for consistency
 		const cfg = await loadConfig();
-		const auth = await getAuth('openai', cfg.projectRoot);
-		const compactModel =
-			auth?.type === 'oauth' ? 'gpt-5.1-codex-mini' : 'gpt-4o-mini';
-		debugLog(`[compaction] Using model ${compactModel} for auto-compaction`);
-		const model = await resolveModel('openai', compactModel, cfg);
+		debugLog(
+			`[compaction] Using session model ${provider}/${modelId} for auto-compaction`,
+		);
+		const model = await resolveModel(
+			provider as Parameters<typeof resolveModel>[0],
+			modelId,
+			cfg,
+		);
 
 		// Create a text part for the compaction summary (after model created successfully)
 		const compactPartId = crypto.randomUUID();
@@ -442,19 +464,19 @@ export async function performAutoCompaction(
 			type: 'text',
 			content: JSON.stringify({ text: '' }),
 			agent: 'system',
-			provider: 'openai',
-			model: compactModel,
+			provider: provider,
+			model: modelId,
 			startedAt: now,
 		});
 
 		const prompt = getCompactionSystemPrompt();
 		const result = streamText({
 			model,
-			system: prompt,
+			system: `${prompt}\n\nIMPORTANT: Generate a comprehensive summary. This will replace the detailed conversation history.`,
 			messages: [
 				{
 					role: 'user',
-					content: `<conversation-to-summarize>\n${context.slice(0, 60000)}\n</conversation-to-summarize>`,
+					content: `Please summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`,
 				},
 			],
 			maxTokens: 2000,

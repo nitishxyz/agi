@@ -181,6 +181,8 @@ export function createErrorHandler(
 					opts.sessionId,
 					opts.assistantMessageId,
 					publish,
+					opts.provider,
+					opts.model,
 				);
 				if (compactResult.success) {
 					debugLog(

@@ -120,13 +120,26 @@ export async function dispatchAssistantMessage(
 		`[MESSAGE_SERVICE] Enqueuing assistant run with userContext: ${userContext ? `${userContext.substring(0, 50)}...` : 'NONE'}`,
 	);
 
-	// Detect /compact command
+	// Detect /compact command and build context with model-aware limits
 	const isCompact = isCompactCommand(content);
 	let compactionContext: string | undefined;
 
 	if (isCompact) {
 		debugLog('[MESSAGE_SERVICE] Detected /compact command, building context');
-		compactionContext = await buildCompactionContext(db, sessionId);
+		const { getModelLimits } = await import('./compaction.ts');
+		const limits = getModelLimits(provider, model);
+		// Use 50% of context window for compaction, minimum 15k tokens
+		const contextTokenLimit = limits
+			? Math.max(Math.floor(limits.context * 0.5), 15000)
+			: 15000;
+		compactionContext = await buildCompactionContext(
+			db,
+			sessionId,
+			contextTokenLimit,
+		);
+		debugLog(
+			`[message-service] /compact context length: ${compactionContext.length}, limit: ${contextTokenLimit} tokens`,
+		);
 	}
 
 	enqueueAssistantRun(
