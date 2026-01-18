@@ -173,10 +173,9 @@ export async function updateMessageTokensIncremental(
 					? Number(providerMetadata.openai.cachedPromptTokens)
 					: priorCached;
 
-		const cumTotal =
-			usage.totalTokens != null
-				? Number(usage.totalTokens)
-				: cumPrompt + cumCompletion + cumReasoning;
+		// Note: AI SDK's totalTokens excludes cachedInputTokens for Anthropic,
+		// so we always compute total ourselves to include all token types.
+		const cumTotal = cumPrompt + cumCompletion + cumCached + cumReasoning;
 
 		await db
 			.update(messages)
