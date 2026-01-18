@@ -298,13 +298,42 @@ async function runAssistant(opts: RunOpts) {
 	let accumulated = '';
 	let stepIndex = 0;
 
+	// Build provider options for reasoning/extended thinking
+	const providerOptions: Record<string, unknown> = {};
+	const THINKING_BUDGET = 16000;
+	// When reasoning is enabled for Anthropic, the API requires max_tokens to fit 
+	// both thinking tokens AND response tokens. AI SDK adds budgetTokens to maxOutputTokens,
+	// so we need to reduce maxOutputTokens to leave room for thinking.
+	let effectiveMaxOutputTokens = maxOutputTokens;
+
+	if (opts.reasoning) {
+		if (opts.provider === 'anthropic') {
+			providerOptions.anthropic = {
+				thinking: { type: 'enabled', budgetTokens: THINKING_BUDGET },
+			};
+			// Reduce max output to leave room for thinking budget
+			if (maxOutputTokens && maxOutputTokens > THINKING_BUDGET) {
+				effectiveMaxOutputTokens = maxOutputTokens - THINKING_BUDGET;
+			}
+		} else if (opts.provider === 'openai') {
+			providerOptions.openai = {
+				reasoningSummary: 'auto',
+			};
+		} else if (opts.provider === 'google') {
+			providerOptions.google = {
+				thinkingConfig: { thinkingBudget: THINKING_BUDGET },
+			};
+		}
+	}
+
 	try {
 		const result = streamText({
 			model,
 			tools: toolset,
 			...(cachedSystem ? { system: cachedSystem } : {}),
 			messages: optimizedMessages,
-			...(maxOutputTokens ? { maxOutputTokens } : {}),
+			...(effectiveMaxOutputTokens ? { maxOutputTokens: effectiveMaxOutputTokens } : {}),
+			...(Object.keys(providerOptions).length > 0 ? { providerOptions } : {}),
 			abortSignal: opts.abortSignal,
 			stopWhen: hasToolCall('finish'),
 			onStepFinish,

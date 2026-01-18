@@ -22,6 +22,7 @@ type DispatchOptions = {
 	content: string;
 	oneShot?: boolean;
 	userContext?: string;
+	reasoning?: boolean;
 };
 
 export async function dispatchAssistantMessage(
@@ -37,6 +38,7 @@ export async function dispatchAssistantMessage(
 		content,
 		oneShot,
 		userContext,
+		reasoning,
 	} = options;
 
 	// DEBUG: Log userContext in dispatch
@@ -108,6 +110,7 @@ export async function dispatchAssistantMessage(
 			projectRoot: cfg.projectRoot,
 			oneShot: Boolean(oneShot),
 			userContext,
+			reasoning,
 		},
 		runSessionLoop,
 	);

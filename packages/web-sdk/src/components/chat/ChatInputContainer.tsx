@@ -9,6 +9,8 @@ import {
 } from 'react';
 import { useSendMessage } from '../../hooks/useMessages';
 import { useSession, useUpdateSession } from '../../hooks/useSessions';
+import { useAllModels } from '../../hooks/useConfig';
+import { usePreferences } from '../../hooks/usePreferences';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
 
@@ -39,6 +41,12 @@ export const ChatInputContainer = memo(
 
 			const sendMessage = useSendMessage(sessionId);
 			const updateSession = useUpdateSession(sessionId);
+			const { data: allModels } = useAllModels();
+			const { preferences } = usePreferences();
+
+			const modelSupportsReasoning = allModels?.[provider]?.models?.find(
+				(m) => m.id === model,
+			)?.reasoning;
 
 			useEffect(() => {
 				if (session) {
@@ -67,12 +75,24 @@ export const ChatInputContainer = memo(
 							provider: provider || undefined,
 							model: model || undefined,
 							userContext: userContext || undefined,
+							reasoning:
+								modelSupportsReasoning && preferences.reasoningEnabled
+									? true
+									: undefined,
 						});
 					} catch (error) {
 						console.error('Failed to send message:', error);
 					}
 				},
-				[sendMessage, agent, provider, model, userContext],
+				[
+					sendMessage,
+					agent,
+					provider,
+					model,
+					userContext,
+					modelSupportsReasoning,
+					preferences.reasoningEnabled,
+				],
 			);
 
 			const handleToggleConfig = useCallback(() => {
@@ -179,6 +199,7 @@ export const ChatInputContainer = memo(
 						agent={agent}
 						provider={provider}
 						model={model}
+						modelSupportsReasoning={modelSupportsReasoning}
 						onAgentChange={handleAgentChange}
 						onProviderChange={handleProviderChange}
 						onModelChange={handleModelChange}
@@ -193,6 +214,10 @@ export const ChatInputContainer = memo(
 						onConfigClick={handleToggleConfig}
 						onPlanModeToggle={handlePlanModeToggle}
 						isPlanMode={agent === 'plan'}
+						reasoningEnabled={
+							modelSupportsReasoning && preferences.reasoningEnabled
+						}
+						sessionId={sessionId}
 					/>
 				</>
 			);

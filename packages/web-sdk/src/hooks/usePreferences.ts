@@ -1,12 +1,14 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
 interface Preferences {
 	vimMode: boolean;
+	reasoningEnabled: boolean;
 }
 
 const STORAGE_KEY = 'agi-preferences';
 const DEFAULT_PREFERENCES: Preferences = {
 	vimMode: false,
+	reasoningEnabled: true,
 };
 
 function resolveInitialPreferences(): Preferences {
@@ -28,28 +30,54 @@ function resolveInitialPreferences(): Preferences {
 	return DEFAULT_PREFERENCES;
 }
 
-export function usePreferences() {
-	const [preferences, setPreferences] = useState<Preferences>(() =>
-		resolveInitialPreferences(),
-	);
+let preferences: Preferences = resolveInitialPreferences();
+const listeners = new Set<() => void>();
 
-	useEffect(() => {
-		if (typeof window === 'undefined') return;
+function getSnapshot(): Preferences {
+	return preferences;
+}
 
+function getServerSnapshot(): Preferences {
+	return DEFAULT_PREFERENCES;
+}
+
+function subscribe(listener: () => void): () => void {
+	listeners.add(listener);
+	return () => listeners.delete(listener);
+}
+
+function notifyListeners() {
+	for (const listener of listeners) {
+		listener();
+	}
+}
+
+function updateStore(updates: Partial<Preferences>) {
+	preferences = { ...preferences, ...updates };
+	if (typeof window !== 'undefined') {
 		try {
 			window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
 		} catch (error) {
 			console.warn('Failed to persist preferences', error);
 		}
-	}, [preferences]);
+	}
+	notifyListeners();
+}
+
+export function usePreferences() {
+	const currentPreferences = useSyncExternalStore(
+		subscribe,
+		getSnapshot,
+		getServerSnapshot,
+	);
 
 	const updatePreferences = useCallback((updates: Partial<Preferences>) => {
-		setPreferences((prev) => ({ ...prev, ...updates }));
+		updateStore(updates);
 	}, []);
 
 	return useMemo(
-		() => ({ preferences, updatePreferences }),
-		[preferences, updatePreferences],
+		() => ({ preferences: currentPreferences, updatePreferences }),
+		[currentPreferences, updatePreferences],
 	);
 }
 

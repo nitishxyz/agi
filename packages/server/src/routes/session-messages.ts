@@ -120,6 +120,8 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				typeOf: typeof userContext,
 			});
 
+			const reasoning = body?.reasoning === true;
+
 			// Validate model capabilities if tools are allowed for this agent
 			const wantsToolCalls = true; // agent toolset may be non-empty
 			try {
@@ -152,6 +154,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				content,
 				oneShot: Boolean(body?.oneShot),
 				userContext,
+				reasoning,
 			});
 			return c.json({ messageId: assistantMessageId }, 202);
 		} catch (error) {

@@ -28,6 +28,8 @@ interface ChatInputProps {
 	onConfigClick?: () => void;
 	onPlanModeToggle?: (isPlanMode: boolean) => void;
 	isPlanMode?: boolean;
+	reasoningEnabled?: boolean;
+	sessionId?: string;
 }
 
 export const ChatInput = memo(
@@ -39,6 +41,8 @@ export const ChatInput = memo(
 			onConfigClick,
 			onPlanModeToggle,
 			isPlanMode: externalIsPlanMode,
+			reasoningEnabled,
+			sessionId,
 		},
 		ref,
 	) {
@@ -82,9 +86,11 @@ export const ChatInput = memo(
 			onCommand,
 			updatePreferences,
 			vimModeEnabled: preferences.vimMode,
+			reasoningEnabled: preferences.reasoningEnabled,
 			textareaRef,
 			setMessage,
 			setShowShortcutsModal,
+			sessionId,
 		});
 
 		const { vimMode, setVimMode, handleVimNormalMode } = useVimMode({
@@ -318,6 +324,15 @@ export const ChatInput = memo(
 							<ArrowUp className="w-4 h-4" />
 						</button>
 					</div>
+
+					{reasoningEnabled && (
+						<div className="flex items-center justify-center mt-1">
+							<span className="text-[10px] text-purple-400/70 flex items-center gap-1">
+								<span className="w-1.5 h-1.5 rounded-full bg-purple-400/70" />
+								Extended thinking enabled
+							</span>
+						</div>
+					)}
 
 					{showFileMention && !filesLoading && (
 						<FileMentionPopup

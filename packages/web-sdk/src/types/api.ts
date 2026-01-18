@@ -75,6 +75,7 @@ export interface SendMessageRequest {
 	model?: string;
 	oneShot?: boolean;
 	userContext?: string;
+	reasoning?: boolean;
 }
 
 export interface SendMessageResponse {

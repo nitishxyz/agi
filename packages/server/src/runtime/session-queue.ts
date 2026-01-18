@@ -9,6 +9,7 @@ export type RunOpts = {
 	projectRoot: string;
 	oneShot?: boolean;
 	userContext?: string;
+	reasoning?: boolean;
 	abortSignal?: AbortSignal;
 };
 

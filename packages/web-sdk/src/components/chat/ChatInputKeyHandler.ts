@@ -1,5 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import type { VimMode } from '../../hooks/useVimMode';
+import { COMMANDS } from '../../lib/commands';
 
 interface ChatInputKeyHandlerOptions {
 	showFileMention: boolean;
@@ -50,12 +51,13 @@ export function createChatInputKeyHandler(options: ChatInputKeyHandlerOptions) {
 		} = options;
 
 		if (showCommandSuggestions) {
+			const count = COMMANDS.length;
 			if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'j')) {
 				e.preventDefault();
-				setCommandSelectedIndex((commandSelectedIndex + 1) % 5);
+				setCommandSelectedIndex((commandSelectedIndex + 1) % count);
 			} else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'k')) {
 				e.preventDefault();
-				setCommandSelectedIndex((commandSelectedIndex - 1 + 5) % 5);
+				setCommandSelectedIndex((commandSelectedIndex - 1 + count) % count);
 			} else if (e.key === 'Enter') {
 				e.preventDefault();
 				if (currentCommandToSelect) {

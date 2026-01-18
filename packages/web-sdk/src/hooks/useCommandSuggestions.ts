@@ -1,12 +1,18 @@
 import { useState, useCallback } from 'react';
+import { apiClient } from '../lib/api-client';
 
 interface UseCommandSuggestionsOptions {
 	onCommand?: (commandId: string) => void;
-	updatePreferences: (prefs: { vimMode: boolean }) => void;
+	updatePreferences: (prefs: {
+		vimMode?: boolean;
+		reasoningEnabled?: boolean;
+	}) => void;
 	vimModeEnabled: boolean;
+	reasoningEnabled: boolean;
 	textareaRef: React.RefObject<HTMLTextAreaElement>;
 	setMessage: (msg: string) => void;
 	setShowShortcutsModal: (show: boolean) => void;
+	sessionId?: string;
 }
 
 interface UseCommandSuggestionsReturn {
@@ -27,9 +33,11 @@ export function useCommandSuggestions({
 	onCommand,
 	updatePreferences,
 	vimModeEnabled,
+	reasoningEnabled,
 	textareaRef,
 	setMessage,
 	setShowShortcutsModal,
+	sessionId,
 }: UseCommandSuggestionsOptions): UseCommandSuggestionsReturn {
 	const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
 	const [commandQuery, setCommandQuery] = useState('');
@@ -39,45 +47,56 @@ export function useCommandSuggestions({
 	>();
 
 	const handleCommandSelect = useCallback(
-		(commandId: string) => {
-			if (commandId === 'help') {
-				setShowShortcutsModal(true);
+		async (commandId: string) => {
+			const resetInput = () => {
 				setMessage('');
 				setShowCommandSuggestions(false);
 				if (textareaRef.current) {
 					textareaRef.current.style.height = 'auto';
 				}
 				textareaRef.current?.focus();
+			};
+
+			if (commandId === 'help') {
+				setShowShortcutsModal(true);
+				resetInput();
 				return;
 			}
 			if (commandId === 'vim') {
-				const newVimMode = !vimModeEnabled;
-				updatePreferences({ vimMode: newVimMode });
-				setMessage('');
-				setShowCommandSuggestions(false);
-				if (textareaRef.current) {
-					textareaRef.current.style.height = 'auto';
+				updatePreferences({ vimMode: !vimModeEnabled });
+				resetInput();
+				return;
+			}
+			if (commandId === 'reasoning') {
+				updatePreferences({ reasoningEnabled: !reasoningEnabled });
+				resetInput();
+				return;
+			}
+			if (commandId === 'stop') {
+				if (sessionId) {
+					try {
+						await apiClient.abortSession(sessionId);
+					} catch (error) {
+						console.error('Failed to stop generation:', error);
+					}
 				}
-				textareaRef.current?.focus();
+				resetInput();
 				return;
 			}
 			if (onCommand) {
 				onCommand(commandId);
 			}
-			setMessage('');
-			setShowCommandSuggestions(false);
-			if (textareaRef.current) {
-				textareaRef.current.style.height = 'auto';
-			}
-			textareaRef.current?.focus();
+			resetInput();
 		},
 		[
 			onCommand,
 			vimModeEnabled,
+			reasoningEnabled,
 			updatePreferences,
 			textareaRef,
 			setMessage,
 			setShowShortcutsModal,
+			sessionId,
 		],
 	);
 
