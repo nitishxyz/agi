@@ -80,7 +80,7 @@ export const MessageThread = memo(function MessageThread({
 	useEffect(() => {
 		const justStartedGenerating = isGenerating && !prevIsGeneratingRef.current;
 		const messagesAdded = messages.length > prevMessagesLengthRef.current;
-		
+
 		prevIsGeneratingRef.current = isGenerating;
 		prevMessagesLengthRef.current = messages.length;
 
@@ -97,7 +97,7 @@ export const MessageThread = memo(function MessageThread({
 				});
 			});
 		} else if (messagesAdded && !userScrollingRef.current && !isGenerating) {
-				setAutoScroll(true);
+			setAutoScroll(true);
 		}
 	}, [messages.length, isGenerating]);
 
