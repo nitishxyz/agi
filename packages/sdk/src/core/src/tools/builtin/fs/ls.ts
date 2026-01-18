@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import { expandTilde, isAbsoluteLike, resolveSafePath } from './util.ts';
 import DESCRIPTION from './ls.txt' with { type: 'text' };
 import { toIgnoredBasenames } from '../ignore.ts';
+import { createToolError, type ToolResponse } from '../../error.ts';
 
 const execAsync = promisify(exec);
 
@@ -25,7 +26,15 @@ export function buildLsTool(projectRoot: string): { name: string; tool: Tool } {
 				.optional()
 				.describe('List of directory names/globs to ignore'),
 		}),
-		async execute({ path, ignore }: { path: string; ignore?: string[] }) {
+		async execute({
+			path,
+			ignore,
+		}: {
+			path: string;
+			ignore?: string[];
+		}): Promise<
+			ToolResponse<{ path: string; entries: Array<{ name: string; type: string }> }>
+		> {
 			const req = expandTilde(path || '.');
 			const abs = isAbsoluteLike(req)
 				? req
@@ -46,13 +55,21 @@ export function buildLsTool(projectRoot: string): { name: string; tool: Tool } {
 						type: line.endsWith('/') ? 'dir' : 'file',
 					}))
 					.filter(
-						(entry) => !(entry.type === 'dir' && ignored.has(entry.name)),
-					);
-				return { path: req, entries };
+					(entry) => !(entry.type === 'dir' && ignored.has(entry.name)),
+				);
+				return { ok: true, path: req, entries };
 			} catch (error: unknown) {
 				const err = error as { stderr?: string; stdout?: string };
 				const message = (err.stderr || err.stdout || 'ls failed').trim();
-				throw new Error(`ls failed for ${req}: ${message}`);
+				return createToolError(
+					`ls failed for ${req}: ${message}`,
+					'execution',
+					{
+						parameter: 'path',
+						value: req,
+						suggestion: 'Check if the directory exists and is accessible',
+					},
+				);
 			}
 		},
 	});

@@ -1,3 +1,36 @@
+// Error types matching SDK
+export type ToolErrorType =
+	| 'validation'
+	| 'not_found'
+	| 'permission'
+	| 'execution'
+	| 'timeout'
+	| 'unsupported';
+
+// Error response structure
+export interface ToolErrorResponse {
+	ok: false;
+	error: string;
+	errorType?: ToolErrorType;
+	details?: {
+		parameter?: string;
+		value?: unknown;
+		constraint?: string;
+		suggestion?: string;
+		[key: string]: unknown;
+	};
+	stack?: string;
+}
+
+// Success response (data spread at top level)
+export interface ToolSuccessResponse {
+	ok: true;
+	[key: string]: unknown;
+}
+
+// Generic tool response
+export type ToolResponse = ToolSuccessResponse | ToolErrorResponse;
+
 export interface ToolCallArgs {
 	text?: string;
 	message?: string;
@@ -15,9 +48,10 @@ export interface ToolCallArgs {
 
 export interface ToolResultData {
 	done?: boolean;
+	ok?: boolean;
+	error?: string;
 	text?: string;
 	result?: string | Record<string, unknown>;
-	ok?: boolean;
 	message?: string;
 	pct?: number;
 	stage?: string;
@@ -39,6 +73,12 @@ export interface ToolResultData {
 	files?: unknown[];
 	cwd?: string;
 	output?: string;
+	// Error fields
+	errorType?: ToolErrorType;
+	details?: {
+		suggestion?: string;
+		[key: string]: unknown;
+	};
 	// Additional fields for specific renderers
 	diff?: string; // for GitDiffRenderer
 	summary?: string; // for GitStatusRenderer

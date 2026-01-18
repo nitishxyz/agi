@@ -1,6 +1,7 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import DESCRIPTION from './websearch.txt' with { type: 'text' };
+import { createToolError, type ToolResponse } from '../error.ts';
 
 export function buildWebSearchTool(): {
 	name: string;
@@ -31,19 +32,24 @@ export function buildWebSearchTool(): {
 					),
 			})
 			.strict()
-			.refine((data) => (data.url ? !data.query : !!data.query), {
-				message: 'Must provide either url or query, but not both',
-			}),
-		async execute({
-			url,
-			query,
-			maxLength,
-		}: {
-			url?: string;
-			query?: string;
-			maxLength?: number;
-		}) {
-			const maxLen = maxLength ?? 50000;
+		.refine((data) => (data.url ? !data.query : !!data.query), {
+			message: 'Must provide either url or query, but not both',
+		}),
+	async execute({
+		url,
+		query,
+		maxLength,
+	}: {
+		url?: string;
+		query?: string;
+		maxLength?: number;
+	}): Promise<
+		ToolResponse<
+			| { url: string; content: string; contentLength: number; truncated: boolean; contentType: string }
+			| { query: string; results: Array<{ title: string; url: string; snippet: string }>; count: number }
+		>
+	> {
+		const maxLen = maxLength ?? 50000;
 
 			if (url) {
 				// Fetch URL content
@@ -76,9 +82,11 @@ export function buildWebSearchTool(): {
 					) {
 						content = await response.text();
 					} else {
-						return {
-							error: `Unsupported content type: ${contentType}. Only text-based content can be fetched.`,
-						};
+						return createToolError(
+							`Unsupported content type: ${contentType}. Only text-based content can be fetched.`,
+							'unsupported',
+							{ contentType },
+						);
 					}
 
 					// Strip HTML tags for better readability (basic cleaning)
@@ -93,6 +101,7 @@ export function buildWebSearchTool(): {
 					const wasTruncated = cleanContent.length > maxLen;
 
 					return {
+						ok: true,
 						url,
 						content: truncated,
 						contentLength: cleanContent.length,
@@ -102,9 +111,11 @@ export function buildWebSearchTool(): {
 				} catch (error) {
 					const errorMessage =
 						error instanceof Error ? error.message : String(error);
-					return {
-						error: `Failed to fetch URL: ${errorMessage}`,
-					};
+					return createToolError(
+						`Failed to fetch URL: ${errorMessage}`,
+						'execution',
+						{ url },
+					);
 				}
 			}
 
@@ -180,39 +191,45 @@ export function buildWebSearchTool(): {
 							}
 							match = simplePattern.exec(html);
 						}
-					}
+				}
 
-					if (results.length === 0) {
-						return {
-							error:
-								'No search results found. The search service may have changed its format or blocked the request.',
+				if (results.length === 0) {
+					return createToolError(
+						'No search results found. The search service may have changed its format or blocked the request.',
+						'execution',
+						{
 							query,
 							suggestion:
 								'Try using the url parameter to fetch a specific webpage instead.',
-						};
-					}
-
-					return {
-						query,
-						results,
-						count: results.length,
-					};
-				} catch (error) {
-					const errorMessage =
-						error instanceof Error ? error.message : String(error);
-					return {
-						error: `Search failed: ${errorMessage}`,
-						query,
-						suggestion:
-							'Search services may be temporarily unavailable. Try using the url parameter to fetch a specific webpage instead.',
-					};
+						},
+					);
 				}
-			}
 
-			return {
-				error: 'Must provide either url or query parameter',
-			};
-		},
+				return {
+					ok: true,
+					query,
+					results,
+					count: results.length,
+					};
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error ? error.message : String(error);
+				return createToolError(
+					`Search failed: ${errorMessage}`,
+					'execution',
+					{
+					query,
+					suggestion:
+						'Search services may be temporarily unavailable. Try using the url parameter to fetch a specific webpage instead.',
+					},
+				);
+			}
+		}
+
+		return createToolError('Must provide either url or query parameter', 'validation', {
+			suggestion: 'Provide either a url to fetch or a query to search',
+		});
+	},
 	});
 
 	return { name: 'websearch', tool: websearch };

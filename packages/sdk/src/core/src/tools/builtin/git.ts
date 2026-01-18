@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import GIT_STATUS_DESCRIPTION from './git.status.txt' with { type: 'text' };
 import GIT_DIFF_DESCRIPTION from './git.diff.txt' with { type: 'text' };
 import GIT_COMMIT_DESCRIPTION from './git.commit.txt' with { type: 'text' };
+import { createToolError, type ToolResponse } from '../error.ts';
 
 const execAsync = promisify(exec);
 
@@ -37,14 +38,13 @@ export function buildGitTools(
 	const git_status = tool({
 		description: GIT_STATUS_DESCRIPTION,
 		inputSchema: z.object({}).optional(),
-		async execute() {
+		async execute(): Promise<
+			ToolResponse<{ staged: number; unstaged: number; raw: string[] }>
+		> {
 			if (!(await inRepo())) {
-				return {
-					error: 'Not a git repository',
-					staged: 0,
-					unstaged: 0,
-					raw: [],
-				};
+				return createToolError('Not a git repository', 'not_found', {
+					suggestion: 'Initialize a git repository with git init',
+				});
 			}
 			const gitRoot = await findGitRoot();
 			const { stdout } = await execAsync(
@@ -63,6 +63,7 @@ export function buildGitTools(
 				if (isUntracked || y !== ' ') unstaged += 1;
 			}
 			return {
+				ok: true,
 				staged,
 				unstaged,
 				raw: lines.slice(0, 200),
@@ -73,9 +74,13 @@ export function buildGitTools(
 	const git_diff = tool({
 		description: GIT_DIFF_DESCRIPTION,
 		inputSchema: z.object({ all: z.boolean().optional().default(false) }),
-		async execute({ all }: { all?: boolean }) {
+		async execute({ all }: { all?: boolean }): Promise<
+			ToolResponse<{ all: boolean; patch: string }>
+		> {
 			if (!(await inRepo())) {
-				return { error: 'Not a git repository', all: !!all, patch: '' };
+				return createToolError('Not a git repository', 'not_found', {
+					suggestion: 'Initialize a git repository with git init',
+				});
 			}
 			const gitRoot = await findGitRoot();
 			// When all=true, show full working tree diff relative to HEAD
@@ -86,7 +91,7 @@ export function buildGitTools(
 				: `git -C "${gitRoot}" diff --staged`;
 			const { stdout } = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 });
 			const limited = stdout.split('\n').slice(0, 5000).join('\n');
-			return { all: !!all, patch: limited };
+			return { ok: true, all: !!all, patch: limited };
 		},
 	});
 
@@ -105,9 +110,11 @@ export function buildGitTools(
 			message: string;
 			amend?: boolean;
 			signoff?: boolean;
-		}) {
+		}): Promise<ToolResponse<{ result: string }>> {
 			if (!(await inRepo())) {
-				return { success: false, error: 'Not a git repository' };
+				return createToolError('Not a git repository', 'not_found', {
+					suggestion: 'Initialize a git repository with git init',
+				});
 			}
 			const gitRoot = await findGitRoot();
 			const args = [
@@ -122,11 +129,13 @@ export function buildGitTools(
 			if (signoff) args.push('--signoff');
 			try {
 				const { stdout } = await execAsync(args.join(' '));
-				return { result: stdout.trim() };
+				return { ok: true, result: stdout.trim() };
 			} catch (error: unknown) {
 				const err = error as { stderr?: string; message?: string };
 				const txt = err.stderr || err.message || 'git commit failed';
-				throw new Error(txt);
+				return createToolError(txt, 'execution', {
+					suggestion: 'Check if there are staged changes and the commit message is valid',
+				});
 			}
 		},
 	});

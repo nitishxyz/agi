@@ -1,6 +1,11 @@
-import { ChevronRight } from 'lucide-react';
 import type { RendererProps } from './types';
-import { formatDuration } from './utils';
+import { formatDuration, isToolError, getErrorMessage } from './utils';
+import {
+	ToolHeader,
+	ToolHeaderSeparator,
+	ToolHeaderMeta,
+} from './shared';
+import { ToolErrorDisplay } from './ToolErrorDisplay';
 
 interface StatusLine {
 	status: string;
@@ -54,6 +59,8 @@ export function GitStatusRenderer({
 	onToggle,
 }: RendererProps) {
 	const result = contentJson.result || {};
+	const hasError = isToolError(result);
+	const errorMessage = getErrorMessage(result);
 	const staged = Number(result.staged || 0);
 	const unstaged = Number(result.unstaged || 0);
 	const raw = (result.raw || []) as string[];
@@ -62,19 +69,19 @@ export function GitStatusRenderer({
 
 	const statusLines = raw.map(parseStatusLine).filter(Boolean) as StatusLine[];
 	const hasChanges = staged > 0 || unstaged > 0;
+	const canExpand = statusLines.length > 0 || hasError || !!summary;
 
 	return (
 		<div className="text-xs">
-			<button
-				type="button"
-				onClick={onToggle}
-				className="flex items-center gap-2 text-blue-700 dark:text-blue-300 transition-colors hover:text-blue-600 dark:hover:text-blue-200 w-full"
+			<ToolHeader
+				toolName="git status"
+				isExpanded={isExpanded}
+				onToggle={onToggle}
+				isError={hasError}
+				colorVariant="blue"
+				canExpand={canExpand}
 			>
-				<ChevronRight
-					className={`h-3 w-3 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-				/>
-				<span className="font-medium flex-shrink-0">git status</span>
-				<span className="text-muted-foreground/70 flex-shrink-0">·</span>
+				<ToolHeaderSeparator />
 				{hasChanges ? (
 					<>
 						{staged > 0 && (
@@ -91,11 +98,13 @@ export function GitStatusRenderer({
 				) : (
 					<span className="text-muted-foreground/60 flex-shrink-0">clean</span>
 				)}
-				<span className="text-muted-foreground/80 flex-shrink-0">
-					· {timeStr}
-				</span>
-			</button>
-			{isExpanded && (statusLines.length > 0 || summary) && (
+				<ToolHeaderSeparator />
+				<ToolHeaderMeta>{timeStr}</ToolHeaderMeta>
+			</ToolHeader>
+			{isExpanded && hasError && errorMessage && (
+				<ToolErrorDisplay error={errorMessage} />
+			)}
+			{isExpanded && !hasError && (statusLines.length > 0 || summary) && (
 				<div className="mt-2 ml-5">
 					{statusLines.length > 0 ? (
 						<div className="bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto">

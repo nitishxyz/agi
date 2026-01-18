@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { readFile, writeFile, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import DESCRIPTION from './edit.txt' with { type: 'text' };
+import { createToolError, type ToolResponse } from '../error.ts';
 
 const replaceOp = z.object({
 	type: z.literal('replace'),
@@ -54,7 +55,7 @@ export const editTool: Tool = tool({
 		path: string;
 		ops: z.infer<typeof opSchema>[];
 		create?: boolean;
-	}) {
+	}): Promise<ToolResponse<{ path: string; opsApplied: number; bytes: number }>> {
 		let exists = false;
 		try {
 			await access(path, constants.F_OK);
@@ -62,7 +63,13 @@ export const editTool: Tool = tool({
 		} catch {}
 
 		if (!exists) {
-			if (!create) throw new Error(`File not found: ${path}`);
+			if (!create) {
+				return createToolError(`File not found: ${path}`, 'not_found', {
+					parameter: 'path',
+					value: path,
+					suggestion: 'Set create: true to create a new file',
+				});
+			}
 			await writeFile(path, '');
 		}
 		let text = await readFile(path, 'utf-8');
@@ -120,8 +127,12 @@ export const editTool: Tool = tool({
 					applied += 1;
 					continue;
 				}
-				if (!op.pattern)
-					throw new Error('insert requires pattern for before/after');
+				if (!op.pattern) {
+					return createToolError('insert requires pattern for before/after', 'validation', {
+						parameter: 'pattern',
+						suggestion: 'Provide a pattern to anchor the insertion',
+					});
+				}
 				const idx = text.indexOf(op.pattern);
 				if (idx === -1) continue;
 				if (op.position === 'before')
@@ -147,6 +158,6 @@ export const editTool: Tool = tool({
 		}
 
 		await writeFile(path, text);
-		return { path, opsApplied: applied, bytes: text.length };
+		return { ok: true, path, opsApplied: applied, bytes: text.length };
 	},
 });

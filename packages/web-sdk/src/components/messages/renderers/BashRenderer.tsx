@@ -1,12 +1,4 @@
-import { useState } from 'react';
-import {
-	ChevronDown,
-	ChevronRight,
-	AlertCircle,
-	Terminal,
-	Copy,
-	Check,
-} from 'lucide-react';
+import { Terminal } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import {
 	prism,
@@ -15,34 +7,14 @@ import {
 import type { RendererProps } from './types';
 import { formatDuration } from './utils';
 import { ToolErrorDisplay } from './ToolErrorDisplay';
-
-function CopyButton({ text }: { text: string }) {
-	const [copied, setCopied] = useState(false);
-
-	const handleCopy = async (e: React.MouseEvent) => {
-		e.stopPropagation();
-		try {
-			await navigator.clipboard.writeText(text);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
-		} catch {}
-	};
-
-	return (
-		<button
-			type="button"
-			onClick={handleCopy}
-			className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
-			title="Copy"
-		>
-			{copied ? (
-				<Check className="h-3 w-3 text-emerald-500" />
-			) : (
-				<Copy className="h-3 w-3" />
-			)}
-		</button>
-	);
-}
+import {
+	ToolHeader,
+	ToolHeaderSeparator,
+	ToolHeaderMeta,
+	ToolHeaderSuccess,
+	ToolHeaderError,
+	ToolContentBox,
+} from './shared';
 
 export function BashRenderer({
 	contentJson,
@@ -75,167 +47,138 @@ export function BashRenderer({
 		: prism;
 
 	const hasOutput = stdout.length > 0 || stderr.length > 0;
-
 	const isError = hasToolError || exitCode !== 0;
 	const hasStderr = stderr.length > 0;
-
 	const combinedOutput = stdout + (stdout && stderr ? '\n' : '') + stderr;
 
 	return (
 		<div className="text-xs">
-			<button
-				type="button"
-				onClick={onToggle}
-				className={`flex items-center gap-2 transition-colors w-full min-w-0 ${
-					isError
-						? 'text-red-700 dark:text-red-300 hover:text-red-600 dark:hover:text-red-200'
-						: 'text-muted-foreground hover:text-foreground'
-				}`}
+			<ToolHeader
+				toolName="bash"
+				isExpanded={isExpanded}
+				onToggle={onToggle}
+				isError={isError}
+				colorVariant="default"
+				canExpand={true}
 			>
-				{isExpanded ? (
-					<ChevronDown className="h-3 w-3 flex-shrink-0" />
-				) : (
-					<ChevronRight className="h-3 w-3 flex-shrink-0" />
-				)}
-				{isError && (
-					<AlertCircle className="h-3 w-3 flex-shrink-0 text-red-600 dark:text-red-400" />
-				)}
-				<span className="font-medium flex-shrink-0">
-					bash{hasToolError ? ' error' : ''}
-				</span>
-			<span className="text-muted-foreground/70 flex-shrink-0">·</span>
-			<span
-				className="text-foreground/70 min-w-0 truncate"
-				title={cmd}
-			>
+				<ToolHeaderSeparator />
+				<span className="text-foreground/70 min-w-0 truncate" title={cmd}>
 					{cmd}
 				</span>
 				{!hasToolError && (
-					<span
-						className={`flex-shrink-0 whitespace-nowrap ${
-							exitCode === 0
-								? 'text-emerald-600 dark:text-emerald-400'
-								: 'text-red-600 dark:text-red-400'
-						}`}
-					>
-						· exit {exitCode} · {timeStr}
-					</span>
+					<>
+						<ToolHeaderSeparator />
+						{exitCode === 0 ? (
+							<ToolHeaderSuccess>exit {exitCode}</ToolHeaderSuccess>
+						) : (
+							<ToolHeaderError>exit {exitCode}</ToolHeaderError>
+						)}
+						<ToolHeaderSeparator />
+						<ToolHeaderMeta>{timeStr}</ToolHeaderMeta>
+					</>
 				)}
 				{hasToolError && (
-					<span className="text-muted-foreground/80 flex-shrink-0">
-						· {timeStr}
-					</span>
+					<ToolHeaderMeta>· {timeStr}</ToolHeaderMeta>
 				)}
-			</button>
+			</ToolHeader>
+
 			{isExpanded && hasToolError && errorMessage && (
 				<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />
 			)}
+
 			{isExpanded && !hasToolError && (
 				<div className="mt-2 ml-5 flex flex-col gap-2 max-w-full">
-					{/* Command box */}
-					<div className="bg-card/60 border border-border rounded-lg overflow-hidden">
-						<div className="flex items-center justify-between gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/30 border-b border-border">
-							<div className="flex items-center gap-2">
-								<Terminal className="h-3 w-3" />
-								<span>command</span>
-								{cwd && cwd !== '.' && (
-									<span className="text-muted-foreground/60">in {cwd}</span>
-								)}
-							</div>
-							<CopyButton text={cmd} />
-						</div>
+					<ToolContentBox
+						title="command"
+						icon={<Terminal className="h-3 w-3" />}
+						subtitle={cwd && cwd !== '.' ? `in ${cwd}` : undefined}
+						copyText={cmd}
+						maxHeight=""
+					>
 						<div className="px-3 py-2 font-mono text-xs bg-muted/10 break-all">
 							{cmd}
 						</div>
-					</div>
+					</ToolContentBox>
 
-					{/* Output box */}
 					{hasOutput && (
-						<div className="bg-card/60 border border-border rounded-lg overflow-hidden flex flex-col max-h-80">
-							{/* When exit code is 0, combine stdout/stderr as "output" */}
+						<>
 							{exitCode === 0 ? (
-								<>
-									<div className="flex items-center justify-between gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/30 border-b border-border sticky top-0">
-										<span>output</span>
-										<CopyButton text={combinedOutput} />
-									</div>
-									<div className="overflow-auto flex-1">
-										<SyntaxHighlighter
-											language="bash"
-											style={syntaxTheme}
-											customStyle={{
-												margin: 0,
-												padding: '0.75rem',
-												fontSize: '0.75rem',
-												lineHeight: '1.5',
-												background: 'transparent',
-												maxWidth: '100%',
-											}}
-											wrapLines
-											wrapLongLines
-										>
-											{combinedOutput}
-										</SyntaxHighlighter>
-									</div>
-								</>
+								<ToolContentBox
+									title="output"
+									copyText={combinedOutput}
+									maxHeight="max-h-80"
+								>
+									<SyntaxHighlighter
+										language="bash"
+										style={syntaxTheme}
+										customStyle={{
+											margin: 0,
+											padding: '0.75rem',
+											fontSize: '0.75rem',
+											lineHeight: '1.5',
+											background: 'transparent',
+											maxWidth: '100%',
+										}}
+										wrapLines
+										wrapLongLines
+									>
+										{combinedOutput}
+									</SyntaxHighlighter>
+								</ToolContentBox>
 							) : (
 								<>
-									{/* When exit code != 0, show stdout and stderr separately */}
 									{stdout && (
-										<>
-											<div className="flex items-center justify-between gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/30 border-b border-border sticky top-0">
-												<span>stdout</span>
-												<CopyButton text={stdout} />
-											</div>
-											<div className="overflow-auto max-h-40">
-												<SyntaxHighlighter
-													language="bash"
-													style={syntaxTheme}
-													customStyle={{
-														margin: 0,
-														padding: '0.75rem',
-														fontSize: '0.75rem',
-														lineHeight: '1.5',
-														background: 'transparent',
-														maxWidth: '100%',
-													}}
-													wrapLines
-													wrapLongLines
-												>
-													{stdout}
-												</SyntaxHighlighter>
-											</div>
-										</>
+										<ToolContentBox
+											title="stdout"
+											copyText={stdout}
+											maxHeight="max-h-40"
+										>
+											<SyntaxHighlighter
+												language="bash"
+												style={syntaxTheme}
+												customStyle={{
+													margin: 0,
+													padding: '0.75rem',
+													fontSize: '0.75rem',
+													lineHeight: '1.5',
+													background: 'transparent',
+													maxWidth: '100%',
+												}}
+												wrapLines
+												wrapLongLines
+											>
+												{stdout}
+											</SyntaxHighlighter>
+										</ToolContentBox>
 									)}
 									{hasStderr && (
-										<>
-											<div className="flex items-center justify-between gap-2 text-xs text-red-600 dark:text-red-400 px-3 py-1.5 bg-red-500/10 border-b border-border sticky top-0">
-												<span>stderr</span>
-												<CopyButton text={stderr} />
-											</div>
-											<div className="overflow-auto max-h-40">
-												<SyntaxHighlighter
-													language="bash"
-													style={syntaxTheme}
-													customStyle={{
-														margin: 0,
-														padding: '0.75rem',
-														fontSize: '0.75rem',
-														lineHeight: '1.5',
-														background: 'transparent',
-														maxWidth: '100%',
-													}}
-													wrapLines
-													wrapLongLines
-												>
-													{stderr}
-												</SyntaxHighlighter>
-											</div>
-										</>
+										<ToolContentBox
+											title="stderr"
+											copyText={stderr}
+											variant="error"
+											maxHeight="max-h-40"
+										>
+											<SyntaxHighlighter
+												language="bash"
+												style={syntaxTheme}
+												customStyle={{
+													margin: 0,
+													padding: '0.75rem',
+													fontSize: '0.75rem',
+													lineHeight: '1.5',
+													background: 'transparent',
+													maxWidth: '100%',
+												}}
+												wrapLines
+												wrapLongLines
+											>
+												{stderr}
+											</SyntaxHighlighter>
+										</ToolContentBox>
 									)}
 								</>
 							)}
-						</div>
+						</>
 					)}
 				</div>
 			)}

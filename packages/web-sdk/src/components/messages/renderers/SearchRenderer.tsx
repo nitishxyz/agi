@@ -1,7 +1,12 @@
-import { ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import type { RendererProps } from './types';
-import { formatDuration } from './utils';
+import { formatDuration, isToolError, getErrorMessage } from './utils';
 import { ToolErrorDisplay } from './ToolErrorDisplay';
+import {
+	ToolHeader,
+	ToolHeaderSeparator,
+	ToolHeaderDetail,
+	ToolHeaderMeta,
+} from './shared';
 
 export function SearchRenderer({
 	contentJson,
@@ -14,30 +19,9 @@ export function SearchRenderer({
 	const files = (result.files as Array<unknown>) || [];
 	const timeStr = formatDuration(toolDurationMs);
 
-	// Check for errors
-	const hasError =
-		contentJson.error ||
-		(result &&
-			typeof result === 'object' &&
-			'ok' in result &&
-			result.ok === false) ||
-		(result && 'error' in result);
-	const errorMessage =
-		typeof contentJson.error === 'string'
-			? contentJson.error
-			: result &&
-					typeof result === 'object' &&
-					'error' in result &&
-					typeof result.error === 'string'
-				? result.error
-				: null;
-	const errorStack =
-		result &&
-		typeof result === 'object' &&
-		'stack' in result &&
-		typeof result.stack === 'string'
-			? result.stack
-			: undefined;
+	const hasError = isToolError(result) || !!contentJson.error;
+	const errorMessage = getErrorMessage(result) || (typeof contentJson.error === 'string' ? contentJson.error : null);
+	const errorStack = result && typeof result === 'object' && 'stack' in result ? String(result.stack) : undefined;
 
 	// Determine what to show - matches for grep/ripgrep, files for glob
 	const itemCount = matches.length > 0 ? matches.length : files.length;
@@ -61,44 +45,35 @@ export function SearchRenderer({
 		return '';
 	})();
 
+	const canExpand = itemCount > 0 || hasError;
+
 	return (
 		<div className="text-xs">
-			<button
-				type="button"
-				onClick={onToggle}
-				className={`flex items-center gap-2 transition-colors ${
-					hasError
-						? 'text-red-700 dark:text-red-300 hover:text-red-600 dark:hover:text-red-200'
-						: 'text-amber-700 dark:text-amber-300 hover:text-amber-600 dark:hover:text-amber-200'
-				}`}
+			<ToolHeader
+				toolName="search"
+				isExpanded={isExpanded}
+				onToggle={onToggle}
+				isError={hasError}
+				colorVariant="amber"
+				canExpand={canExpand}
 			>
-				{isExpanded ? (
-					<ChevronDown className="h-3 w-3" />
-				) : (
-					<ChevronRight className="h-3 w-3" />
-				)}
-				{hasError && (
-					<AlertCircle className="h-3 w-3 flex-shrink-0 text-red-600 dark:text-red-400" />
-				)}
-				<span className="font-medium">search{hasError ? ' error' : ''}</span>
 				{searchTerm && (
 					<>
-						<span className="text-muted-foreground/70">·</span>
+						<ToolHeaderSeparator />
 						<span className="font-mono text-foreground/90 text-[11px]">
 							"
-							{searchTerm.length > 30
-								? `${searchTerm.slice(0, 30)}…`
-								: searchTerm}
+							{searchTerm.length > 30 ? `${searchTerm.slice(0, 30)}…` : searchTerm}
 							"
 						</span>
 					</>
 				)}
-				<span className="text-muted-foreground/70">·</span>
-				<span className="text-foreground/70">
+				<ToolHeaderSeparator />
+				<ToolHeaderDetail>
 					{itemCount} {itemLabel}
-				</span>
-				<span className="text-muted-foreground/80">· {timeStr}</span>
-			</button>
+				</ToolHeaderDetail>
+				<ToolHeaderSeparator />
+				<ToolHeaderMeta>{timeStr}</ToolHeaderMeta>
+			</ToolHeader>
 			{isExpanded && hasError && errorMessage && (
 				<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />
 			)}

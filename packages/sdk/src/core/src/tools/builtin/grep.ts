@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import { join } from 'node:path';
 import DESCRIPTION from './grep.txt' with { type: 'text' };
 import { defaultIgnoreGlobs } from './ignore.ts';
+import { createToolError, type ToolResponse } from '../error.ts';
 
 const execAsync = promisify(exec);
 
@@ -35,13 +36,28 @@ export function buildGrepTool(projectRoot: string): {
 				.optional()
 				.describe('File glob to include (e.g., "*.js", "*.{ts,tsx}")'),
 			ignore: z
-				.array(z.string())
-				.optional()
-				.describe('Glob patterns to exclude from search'),
-		}),
-		async execute(params) {
-			const pattern = String(params.pattern || '');
-			if (!pattern) throw new Error('pattern is required');
+			.array(z.string())
+			.optional()
+			.describe('Glob patterns to exclude from search'),
+	}),
+	async execute(params: {
+		pattern: string;
+		path?: string;
+		include?: string;
+		ignore?: string[];
+	}): Promise<
+		ToolResponse<{
+			count: number;
+			matches: Array<{ file: string; line: number; text: string }>;
+		}>
+	> {
+		const pattern = String(params.pattern || '');
+		if (!pattern) {
+			return createToolError('pattern is required', 'validation', {
+				parameter: 'pattern',
+				suggestion: 'Provide a regex pattern to search for',
+			});
+		}
 
 			const p = expandTilde(String(params.path || '')).trim();
 			const isAbs = p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p);
@@ -57,17 +73,21 @@ export function buildGrepTool(projectRoot: string): {
 			cmd += ` "${pattern.replace(/"/g, '\\"')}" "${searchPath}"`;
 
 			let output = '';
-			try {
-				const result = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 });
-				output = result.stdout;
-			} catch (error: unknown) {
-				const err = error as { code?: number; stderr?: string };
-				if (err.code === 1) {
-					return { count: 0, matches: [] };
-				}
-				const err2 = error as { stderr?: string; message?: string };
-				throw new Error(`ripgrep failed: ${err2.stderr || err2.message}`);
+		try {
+			const result = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 });
+			output = result.stdout;
+		} catch (error: unknown) {
+			const err = error as { code?: number; stderr?: string };
+			if (err.code === 1) {
+				return { ok: true, count: 0, matches: [] };
 			}
+			const err2 = error as { stderr?: string; message?: string };
+			return createToolError(`ripgrep failed: ${err2.stderr || err2.message}`, 'execution', {
+				parameter: 'pattern',
+				value: pattern,
+				suggestion: 'Check if ripgrep (rg) is installed and the pattern is valid',
+			});
+		}
 
 			const lines = output.trim().split('\n');
 			const matches: Array<{
@@ -91,12 +111,13 @@ export function buildGrepTool(projectRoot: string): {
 
 			const limit = 500;
 			const truncated = matches.length > limit;
-			const finalMatches = truncated ? matches.slice(0, limit) : matches;
+		const finalMatches = truncated ? matches.slice(0, limit) : matches;
 
-			return {
-				count: finalMatches.length,
-				matches: finalMatches,
-			};
+		return {
+			ok: true,
+			count: finalMatches.length,
+			matches: finalMatches,
+		};
 		},
 	});
 	return { name: 'grep', tool: grep };
