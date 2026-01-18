@@ -9,6 +9,7 @@ import { runSessionLoop } from './runner.ts';
 import { resolveModel } from './provider.ts';
 import { getFastModel, type ProviderId } from '@agi-cli/sdk';
 import { debugLog } from './debug.ts';
+import { isCompactCommand, buildCompactionContext } from './compaction.ts';
 
 type SessionRow = typeof sessions.$inferSelect;
 
@@ -119,6 +120,15 @@ export async function dispatchAssistantMessage(
 		`[MESSAGE_SERVICE] Enqueuing assistant run with userContext: ${userContext ? `${userContext.substring(0, 50)}...` : 'NONE'}`,
 	);
 
+	// Detect /compact command
+	const isCompact = isCompactCommand(content);
+	let compactionContext: string | undefined;
+
+	if (isCompact) {
+		debugLog('[MESSAGE_SERVICE] Detected /compact command, building context');
+		compactionContext = await buildCompactionContext(db, sessionId);
+	}
+
 	enqueueAssistantRun(
 		{
 			sessionId,
@@ -130,6 +140,8 @@ export async function dispatchAssistantMessage(
 			oneShot: Boolean(oneShot),
 			userContext,
 			reasoning,
+			isCompactCommand: isCompact,
+			compactionContext,
 		},
 		runSessionLoop,
 	);

@@ -16,4 +16,7 @@ export const sessions = sqliteTable('sessions', {
 	totalReasoningTokens: integer('total_reasoning_tokens'),
 	totalToolTimeMs: integer('total_tool_time_ms'),
 	toolCountsJson: text('tool_counts_json'), // JSON object of name->count
+	// Compaction
+	contextSummary: text('context_summary'), // LLM-generated summary of conversation context
+	lastCompactedAt: integer('last_compacted_at', { mode: 'number' }),
 });

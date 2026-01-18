@@ -13,6 +13,7 @@ import {
 	isOverflow,
 	getModelLimits,
 	type TokenUsage,
+	markSessionCompacted,
 } from './compaction.ts';
 import { debugLog } from './debug.ts';
 
@@ -272,6 +273,27 @@ export function createFinishHandler(
 		try {
 			await completeAssistantMessageFn(fin, opts, db);
 		} catch {}
+
+		// If this was a /compact command, mark old parts as compacted
+		if (opts.isCompactCommand) {
+			try {
+				debugLog(
+					`[stream-handlers] /compact complete, marking session compacted`,
+				);
+				const result = await markSessionCompacted(
+					db,
+					opts.sessionId,
+					opts.assistantMessageId,
+				);
+				debugLog(
+					`[stream-handlers] Compacted ${result.compacted} parts, saved ~${result.saved} tokens`,
+				);
+			} catch (err) {
+				debugLog(
+					`[stream-handlers] Compaction failed: ${err instanceof Error ? err.message : String(err)}`,
+				);
+			}
+		}
 
 		// Use session totals from DB for accurate cost calculation
 		const sessRows = await db

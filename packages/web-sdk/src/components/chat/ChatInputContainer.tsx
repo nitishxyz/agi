@@ -150,9 +150,17 @@ export const ChatInputContainer = memo(
 						}
 					} else if (commandId === 'commit') {
 						openCommitModal();
+					} else if (commandId === 'compact') {
+						handleSendMessage('/compact');
 					}
 				},
-				[onNewSession, gitStatus, stageFiles, openCommitModal],
+				[
+					onNewSession,
+					gitStatus,
+					stageFiles,
+					openCommitModal,
+					handleSendMessage,
+				],
 			);
 
 			const handleAgentChange = useCallback(

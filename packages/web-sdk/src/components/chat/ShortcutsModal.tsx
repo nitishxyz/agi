@@ -216,6 +216,10 @@ const SLASH_COMMANDS = [
 		command: '/help',
 		description: 'Show keyboard shortcuts and help (this modal)',
 	},
+	{
+		command: '/compact',
+		description: 'Compact conversation to reduce context size',
+	},
 ];
 
 function groupShortcutsByCategory(shortcuts: ShortcutItem[]) {

@@ -1,7 +1,7 @@
 import { hasToolCall, streamText } from 'ai';
 import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
-import { messageParts } from '@agi-cli/database/schema';
+import { messageParts, sessions } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
 import { resolveModel } from './provider.ts';
 import { resolveAgentConfig } from './agent-registry.ts';
@@ -32,6 +32,7 @@ import {
 	createAbortHandler,
 	createFinishHandler,
 } from './stream-handlers.ts';
+import { getCompactionSystemPrompt } from './compaction.ts';
 
 export { enqueueAssistantRun, abortSession } from './session-queue.ts';
 export { getRunnerState } from './session-queue.ts';
@@ -82,6 +83,19 @@ async function runAssistant(opts: RunOpts) {
 	const history = await buildHistoryMessages(db, opts.sessionId);
 	historyTimer.end({ messages: history.length });
 
+	// Fetch session to get context summary for compaction
+	const sessionRows = await db
+		.select()
+		.from(sessions)
+		.where(eq(sessions.id, opts.sessionId))
+		.limit(1);
+	const contextSummary = sessionRows[0]?.contextSummary ?? undefined;
+	if (contextSummary) {
+		debugLog(
+			`[RUNNER] Using context summary from compaction (${contextSummary.length} chars)`,
+		);
+	}
+
 	// FIX: For OAuth, we need to check if this is the first ASSISTANT message
 	// The user message is already in history by this point, so history.length will be > 0
 	// We need to add additionalSystemMessages on the first assistant turn
@@ -127,6 +141,7 @@ async function runAssistant(opts: RunOpts) {
 			spoofPrompt: undefined,
 			includeProjectTree: isFirstMessage,
 			userContext: opts.userContext,
+			contextSummary,
 		});
 		oauthFullPromptComponents = fullPrompt.components;
 
@@ -157,6 +172,7 @@ async function runAssistant(opts: RunOpts) {
 			spoofPrompt: undefined,
 			includeProjectTree: isFirstMessage,
 			userContext: opts.userContext,
+			contextSummary,
 		});
 		system = composed.prompt;
 		systemComponents = composed.components;
@@ -168,6 +184,18 @@ async function runAssistant(opts: RunOpts) {
 			length: system.length,
 		})}`,
 	);
+
+	// Inject compaction prompt if this is a /compact command
+	if (opts.isCompactCommand && opts.compactionContext) {
+		debugLog('[RUNNER] Injecting compaction context for /compact command');
+		const compactPrompt = getCompactionSystemPrompt();
+		// Add compaction instructions and context as system messages
+		// Don't modify `system` directly as it may contain OAuth spoof prompt
+		additionalSystemMessages.push({
+			role: 'system',
+			content: `${compactPrompt}\n\n<conversation-to-summarize>\n${opts.compactionContext}\n</conversation-to-summarize>`,
+		});
+	}
 
 	const toolsTimer = time('runner:discoverTools');
 	const allTools = await discoverProjectTools(cfg.projectRoot);

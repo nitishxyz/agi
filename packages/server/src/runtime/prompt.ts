@@ -28,6 +28,7 @@ export async function composeSystemPrompt(options: {
 	includeEnvironment?: boolean;
 	includeProjectTree?: boolean;
 	userContext?: string;
+	contextSummary?: string;
 }): Promise<ComposedSystemPrompt> {
 	const components: string[] = [];
 	if (options.spoofPrompt) {
@@ -103,6 +104,19 @@ export async function composeSystemPrompt(options: {
 		].join('\n');
 		parts.push(userContextBlock);
 		components.push('user-context');
+	}
+
+	// Add compacted conversation summary if present
+	if (options.contextSummary?.trim()) {
+		const summaryBlock = [
+			'<compacted-conversation-summary>',
+			'The conversation was compacted to save context. Here is a summary of the previous context:',
+			'',
+			options.contextSummary.trim(),
+			'</compacted-conversation-summary>',
+		].join('\n');
+		parts.push(summaryBlock);
+		components.push('context-summary');
 	}
 
 	// Add terminal context if available

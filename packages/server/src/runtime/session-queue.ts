@@ -11,6 +11,8 @@ export type RunOpts = {
 	userContext?: string;
 	reasoning?: boolean;
 	abortSignal?: AbortSignal;
+	isCompactCommand?: boolean;
+	compactionContext?: string;
 };
 
 type RunnerState = { queue: RunOpts[]; running: boolean };

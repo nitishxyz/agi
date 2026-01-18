@@ -1,29 +1,29 @@
 /**
  * Context compaction module for managing token usage.
  *
- * This module implements OpenCode-style context management:
- * 1. Detects when context is overflowing (tokens > context_limit - output_limit)
- * 2. Prunes old tool outputs by marking them as "compacted"
- * 3. History builder returns "[Old tool result content cleared]" for compacted parts
+ * This module implements intelligent context management:
+ * 1. Detects /compact command and builds summarization context
+ * 2. After LLM responds with summary, marks old parts as compacted
+ * 3. History builder skips compacted parts entirely
  *
- * Pruning strategy:
- * - Protect the last PRUNE_PROTECT tokens worth of tool calls (40,000)
- * - Only prune if we'd save at least PRUNE_MINIMUM tokens (20,000)
- * - Skip the last 2 turns to preserve recent context
- * - Never prune "skill" or other protected tools
+ * Flow:
+ * - User sends "/compact" → stored as regular user message
+ * - Runner detects command, builds context for LLM to summarize
+ * - LLM streams summary response naturally
+ * - On completion, markSessionCompacted() marks old tool_call/tool_result parts
+ * - Future history builds skip compacted parts
  */
 
 import type { getDb } from '@agi-cli/database';
 import { messages, messageParts } from '@agi-cli/database/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, asc, and, lt } from 'drizzle-orm';
 import { debugLog } from './debug.ts';
 
-// Token thresholds (matching OpenCode)
-export const PRUNE_MINIMUM = 20_000; // Only prune if we'd save at least this many tokens
+// Token thresholds
 export const PRUNE_PROTECT = 40_000; // Protect last N tokens worth of tool calls
 
-// Tools that should never be pruned
-const PRUNE_PROTECTED_TOOLS = ['skill'];
+// Tools that should never be compacted
+const PROTECTED_TOOLS = ['skill'];
 
 // Simple token estimation: ~4 chars per token
 export function estimateTokens(text: string): number {
@@ -44,51 +44,144 @@ export interface ModelLimits {
 }
 
 /**
- * Check if context is overflowing based on token usage and model limits.
- * Returns true if we've used more tokens than (context_limit - output_limit).
+ * Check if a message content is the /compact command.
  */
-export function isOverflow(tokens: TokenUsage, limits: ModelLimits): boolean {
-	if (limits.context === 0) return false;
-
-	const count = tokens.input + (tokens.cacheRead ?? 0) + tokens.output;
-	const usableContext = limits.context - limits.output;
-
-	const overflow = count > usableContext;
-	if (overflow) {
-		debugLog(
-			`[compaction] Context overflow detected: ${count} tokens used, ${usableContext} usable (${limits.context} context - ${limits.output} output)`,
-		);
-	}
-
-	return overflow;
+export function isCompactCommand(content: string): boolean {
+	const trimmed = content.trim().toLowerCase();
+	return trimmed === '/compact';
 }
 
 /**
- * Prune old tool outputs from a session to reduce context size.
- *
- * Goes backwards through tool results, protecting the last PRUNE_PROTECT tokens.
- * Marks older tool results as "compacted" so history builder returns placeholder text.
+ * Build context for the LLM to generate a summary.
+ * Returns a prompt that describes what to summarize.
  */
-export async function pruneSession(
+export async function buildCompactionContext(
 	db: Awaited<ReturnType<typeof getDb>>,
 	sessionId: string,
-): Promise<{ pruned: number; saved: number }> {
-	debugLog(`[compaction] Starting prune for session ${sessionId}`);
-
-	// Get all messages in the session ordered by creation time
+): Promise<string> {
 	const allMessages = await db
 		.select()
 		.from(messages)
 		.where(eq(messages.sessionId, sessionId))
+		.orderBy(asc(messages.createdAt));
+
+	const lines: string[] = [];
+	let totalChars = 0;
+	const maxChars = 80000; // Limit context size
+
+	for (const msg of allMessages) {
+		if (totalChars > maxChars) {
+			lines.unshift('[...earlier content truncated...]');
+			break;
+		}
+
+		const parts = await db
+			.select()
+			.from(messageParts)
+			.where(eq(messageParts.messageId, msg.id))
+			.orderBy(asc(messageParts.index));
+
+		for (const part of parts) {
+			if (part.compactedAt) continue; // Skip already compacted
+
+			try {
+				const content = JSON.parse(part.content ?? '{}');
+
+				if (part.type === 'text' && content.text) {
+					const text = `[${msg.role.toUpperCase()}]: ${content.text}`;
+					lines.push(text.slice(0, 2000));
+					totalChars += text.length;
+				} else if (part.type === 'tool_call' && content.name) {
+					const argsStr =
+						typeof content.args === 'object'
+							? JSON.stringify(content.args).slice(0, 300)
+							: '';
+					const text = `[TOOL ${content.name}]: ${argsStr}`;
+					lines.push(text);
+					totalChars += text.length;
+				} else if (part.type === 'tool_result' && content.result !== null) {
+					const resultStr =
+						typeof content.result === 'string'
+							? content.result.slice(0, 1000)
+							: JSON.stringify(content.result ?? '').slice(0, 1000);
+					const text = `[RESULT]: ${resultStr}`;
+					lines.push(text);
+					totalChars += text.length;
+				}
+			} catch {}
+		}
+	}
+
+	return lines.join('\n');
+}
+
+/**
+ * Get the system prompt addition for compaction.
+ */
+export function getCompactionSystemPrompt(): string {
+	return `
+The user has requested to compact the conversation. Generate a comprehensive summary that captures:
+
+1. **Main Goals**: What was the user trying to accomplish?
+2. **Key Actions**: What files were created, modified, or deleted?
+3. **Important Decisions**: What approaches or solutions were chosen and why?
+4. **Current State**: What is done and what might be pending?
+5. **Critical Context**: Any gotchas, errors encountered, or important details for continuing.
+
+Format your response as a clear, structured summary. Start with "📦 **Context Compacted**" header.
+Keep under 2000 characters but be thorough. This summary will replace detailed tool history.
+`;
+}
+
+/**
+ * Mark old tool_call and tool_result parts as compacted.
+ * Called after the compaction summary response is complete.
+ *
+ * Protects:
+ * - Last N tokens of tool results (PRUNE_PROTECT)
+ * - Last 2 user turns
+ * - Protected tool names (skill, etc.)
+ */
+export async function markSessionCompacted(
+	db: Awaited<ReturnType<typeof getDb>>,
+	sessionId: string,
+	compactMessageId: string,
+): Promise<{ compacted: number; saved: number }> {
+	debugLog(`[compaction] Marking session ${sessionId} as compacted`);
+
+	// Get the compact message to find the cutoff point
+	const compactMsg = await db
+		.select()
+		.from(messages)
+		.where(eq(messages.id, compactMessageId))
+		.limit(1);
+
+	if (!compactMsg.length) {
+		debugLog('[compaction] Compact message not found');
+		return { compacted: 0, saved: 0 };
+	}
+
+	const cutoffTime = compactMsg[0].createdAt;
+
+	// Get all messages before the compact command
+	const oldMessages = await db
+		.select()
+		.from(messages)
+		.where(
+			and(
+				eq(messages.sessionId, sessionId),
+				lt(messages.createdAt, cutoffTime),
+			),
+		)
 		.orderBy(desc(messages.createdAt));
 
 	let totalTokens = 0;
-	let prunedTokens = 0;
-	const toPrune: Array<{ id: string; content: string }> = [];
+	let compactedTokens = 0;
+	const toCompact: Array<{ id: string; content: string }> = [];
 	let turns = 0;
 
 	// Go backwards through messages
-	for (const msg of allMessages) {
+	for (const msg of oldMessages) {
 		// Count user messages as turns
 		if (msg.role === 'user') {
 			turns++;
@@ -105,31 +198,113 @@ export async function pruneSession(
 			.orderBy(desc(messageParts.index));
 
 		for (const part of parts) {
-			// Only process tool results
-			if (part.type !== 'tool_result') continue;
+			// Only compact tool_call and tool_result
+			if (part.type !== 'tool_call' && part.type !== 'tool_result') continue;
 
 			// Skip protected tools
-			if (part.toolName && PRUNE_PROTECTED_TOOLS.includes(part.toolName)) {
+			if (part.toolName && PROTECTED_TOOLS.includes(part.toolName)) {
 				continue;
 			}
 
-			// Parse content to check if already compacted
-			let content: { result?: unknown; compactedAt?: number };
+			// Skip already compacted
+			if (part.compactedAt) continue;
+
+			// Parse content
+			let content: { result?: unknown; args?: unknown };
 			try {
 				content = JSON.parse(part.content ?? '{}');
 			} catch {
 				continue;
 			}
 
-			// Stop if we hit already compacted content (we've pruned before)
-			if (content.compactedAt) {
+			// Estimate tokens
+			const contentStr =
+				part.type === 'tool_result'
+					? typeof content.result === 'string'
+						? content.result
+						: JSON.stringify(content.result ?? '')
+					: JSON.stringify(content.args ?? '');
+
+			const estimate = estimateTokens(contentStr);
+			totalTokens += estimate;
+
+			// If we've exceeded the protection threshold, mark for compaction
+			if (totalTokens > PRUNE_PROTECT) {
+				compactedTokens += estimate;
+				toCompact.push({ id: part.id, content: part.content ?? '{}' });
+			}
+		}
+	}
+
+	debugLog(
+		`[compaction] Found ${toCompact.length} parts to compact, saving ~${compactedTokens} tokens`,
+	);
+
+	if (toCompact.length > 0) {
+		const compactedAt = Date.now();
+
+		for (const part of toCompact) {
+			try {
+				await db
+					.update(messageParts)
+					.set({ compactedAt })
+					.where(eq(messageParts.id, part.id));
+			} catch (err) {
 				debugLog(
-					`[compaction] Hit previously compacted content, stopping prune`,
+					`[compaction] Failed to mark part ${part.id}: ${err instanceof Error ? err.message : String(err)}`,
 				);
-				break;
+			}
+		}
+
+		debugLog(`[compaction] Marked ${toCompact.length} parts as compacted`);
+	}
+
+	return { compacted: toCompact.length, saved: compactedTokens };
+}
+
+/**
+ * Legacy prune function - marks tool results as compacted.
+ * Used for automatic overflow-triggered compaction.
+ */
+export async function pruneSession(
+	db: Awaited<ReturnType<typeof getDb>>,
+	sessionId: string,
+): Promise<{ pruned: number; saved: number }> {
+	debugLog(`[compaction] Auto-pruning session ${sessionId}`);
+
+	const allMessages = await db
+		.select()
+		.from(messages)
+		.where(eq(messages.sessionId, sessionId))
+		.orderBy(desc(messages.createdAt));
+
+	let totalTokens = 0;
+	let prunedTokens = 0;
+	const toPrune: Array<{ id: string }> = [];
+	let turns = 0;
+
+	for (const msg of allMessages) {
+		if (msg.role === 'user') turns++;
+		if (turns < 2) continue;
+
+		const parts = await db
+			.select()
+			.from(messageParts)
+			.where(eq(messageParts.messageId, msg.id))
+			.orderBy(desc(messageParts.index));
+
+		for (const part of parts) {
+			if (part.type !== 'tool_result') continue;
+			if (part.toolName && PROTECTED_TOOLS.includes(part.toolName)) continue;
+			if (part.compactedAt) continue;
+
+			let content: { result?: unknown };
+			try {
+				content = JSON.parse(part.content ?? '{}');
+			} catch {
+				continue;
 			}
 
-			// Estimate tokens for this result
 			const estimate = estimateTokens(
 				typeof content.result === 'string'
 					? content.result
@@ -137,118 +312,73 @@ export async function pruneSession(
 			);
 			totalTokens += estimate;
 
-			// If we've exceeded the protection threshold, mark for pruning
 			if (totalTokens > PRUNE_PROTECT) {
 				prunedTokens += estimate;
-				toPrune.push({ id: part.id, content: part.content ?? '{}' });
+				toPrune.push({ id: part.id });
 			}
 		}
 	}
 
-	debugLog(
-		`[compaction] Found ${toPrune.length} tool results to prune, saving ~${prunedTokens} tokens`,
-	);
-
-	// Only prune if we'd save enough tokens to be worthwhile
-	if (prunedTokens > PRUNE_MINIMUM) {
+	if (toPrune.length > 0) {
 		const compactedAt = Date.now();
-
 		for (const part of toPrune) {
 			try {
-				const content = JSON.parse(part.content);
-				// Keep the structure but mark as compacted
-				content.compactedAt = compactedAt;
-				// Keep a small summary if it was a string result
-				if (typeof content.result === 'string' && content.result.length > 100) {
-					content.resultSummary = `${content.result.slice(0, 100)}...`;
-				}
-				// Clear the actual result to save space
-				content.result = null;
-
 				await db
 					.update(messageParts)
-					.set({ content: JSON.stringify(content) })
+					.set({ compactedAt })
 					.where(eq(messageParts.id, part.id));
-			} catch (err) {
-				debugLog(
-					`[compaction] Failed to prune part ${part.id}: ${err instanceof Error ? err.message : String(err)}`,
-				);
-			}
+			} catch {}
 		}
-
-		debugLog(
-			`[compaction] Pruned ${toPrune.length} tool results, saved ~${prunedTokens} tokens`,
-		);
-	} else {
-		debugLog(
-			`[compaction] Skipping prune, would only save ${prunedTokens} tokens (min: ${PRUNE_MINIMUM})`,
-		);
 	}
 
 	return { pruned: toPrune.length, saved: prunedTokens };
 }
 
 /**
+ * Check if context is overflowing based on token usage and model limits.
+ */
+export function isOverflow(tokens: TokenUsage, limits: ModelLimits): boolean {
+	if (limits.context === 0) return false;
+
+	const count = tokens.input + (tokens.cacheRead ?? 0) + tokens.output;
+	const usableContext = limits.context - limits.output;
+
+	return count > usableContext;
+}
+
+/**
  * Get model limits from provider catalog or use defaults.
  */
 export function getModelLimits(
-	provider: string,
+	_provider: string,
 	model: string,
 ): ModelLimits | null {
-	// Default limits for common models
-	// These should ideally come from the provider catalog
 	const defaults: Record<string, ModelLimits> = {
-		// Anthropic
 		'claude-sonnet-4-20250514': { context: 200000, output: 16000 },
 		'claude-3-5-sonnet-20241022': { context: 200000, output: 8192 },
 		'claude-3-5-haiku-20241022': { context: 200000, output: 8192 },
-		'claude-3-opus-20240229': { context: 200000, output: 4096 },
-		// OpenAI
 		'gpt-4o': { context: 128000, output: 16384 },
 		'gpt-4o-mini': { context: 128000, output: 16384 },
-		'gpt-4-turbo': { context: 128000, output: 4096 },
 		o1: { context: 200000, output: 100000 },
-		'o1-mini': { context: 128000, output: 65536 },
-		'o1-pro': { context: 200000, output: 100000 },
 		'o3-mini': { context: 200000, output: 100000 },
-		// Google
 		'gemini-2.0-flash': { context: 1000000, output: 8192 },
 		'gemini-1.5-pro': { context: 2000000, output: 8192 },
-		'gemini-1.5-flash': { context: 1000000, output: 8192 },
 	};
 
-	// Try exact match first
-	if (defaults[model]) {
-		return defaults[model];
-	}
+	if (defaults[model]) return defaults[model];
 
-	// Try partial match (e.g., "claude-3-5-sonnet" matches "claude-3-5-sonnet-20241022")
 	for (const [key, limits] of Object.entries(defaults)) {
-		if (model.includes(key) || key.includes(model)) {
-			return limits;
-		}
+		if (model.includes(key) || key.includes(model)) return limits;
 	}
 
-	// Return null if no match - caller should handle
-	debugLog(
-		`[compaction] No model limits found for ${provider}/${model}, skipping overflow check`,
-	);
 	return null;
 }
 
 /**
- * Check if a tool result content is compacted.
+ * Check if a part is compacted.
  */
-export function isCompacted(content: string): boolean {
-	try {
-		const parsed = JSON.parse(content);
-		return !!parsed.compactedAt;
-	} catch {
-		return false;
-	}
+export function isCompacted(part: { compactedAt?: number | null }): boolean {
+	return !!part.compactedAt;
 }
 
-/**
- * Get the placeholder text for compacted tool results.
- */
-export const COMPACTED_PLACEHOLDER = '[Old tool result content cleared]';
+export const COMPACTED_PLACEHOLDER = '[Compacted]';

@@ -8,6 +8,7 @@ import {
 	StopCircle,
 	GitBranch,
 	Check,
+	Minimize2,
 } from 'lucide-react';
 
 export interface Command {
@@ -80,6 +81,12 @@ export const COMMANDS: Command[] = [
 		label: '/commit',
 		description: 'Commit staged changes',
 		icon: Check,
+	},
+	{
+		id: 'compact',
+		label: '/compact',
+		description: 'Compact conversation to reduce context size',
+		icon: Minimize2,
 	},
 ];
 
