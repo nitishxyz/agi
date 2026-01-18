@@ -10,7 +10,7 @@ import {
 } from 'react';
 import type { ChangeEvent, DragEvent, ClipboardEvent } from 'react';
 
-import { ArrowUp, MoreVertical, X, ImageIcon } from 'lucide-react';
+import { ArrowUp, MoreVertical, X, ImageIcon, Brain } from 'lucide-react';
 import { Textarea } from '../ui/Textarea';
 import { FileMentionPopup } from './FileMentionPopup';
 import { CommandSuggestionsPopup } from './CommandSuggestionsPopup';
@@ -385,13 +385,13 @@ export const ChatInput = memo(
 						</div>
 					</div>
 
-					{reasoningEnabled && (
-						<div className="flex items-center justify-center mt-1">
-							<span className="text-[10px] text-purple-400/70 flex items-center gap-1">
-								<span className="w-1.5 h-1.5 rounded-full bg-purple-400/70" />
-								Extended thinking enabled
-							</span>
-						</div>
+				{reasoningEnabled && (
+					<div className="flex items-center justify-start mt-1 pl-3">
+						<span className="text-[10px] text-indigo-600 dark:text-indigo-300 flex items-center gap-1">
+							<Brain className="h-3 w-3" />
+							Extended thinking enabled
+						</span>
+					</div>
 					)}
 
 					{showFileMention && !filesLoading && (
