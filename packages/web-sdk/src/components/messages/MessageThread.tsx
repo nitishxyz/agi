@@ -24,6 +24,8 @@ export const MessageThread = memo(function MessageThread({
 	const [showLeanHeader, setShowLeanHeader] = useState(false);
 	const userScrollingRef = useRef(false);
 	const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+	const targetScrollRef = useRef(0);
+	const animationFrameRef = useRef<number>();
 	const prevMessagesLengthRef = useRef(messages.length);
 
 	const handleScroll = useCallback(() => {
@@ -71,16 +73,38 @@ export const MessageThread = memo(function MessageThread({
 		const container = scrollContainerRef.current;
 		if (!container || !autoScroll || userScrollingRef.current) return;
 
-		requestAnimationFrame(() => {
-			if (!container || userScrollingRef.current) return;
-			container.scrollTop = container.scrollHeight - container.clientHeight;
-		});
+		targetScrollRef.current = container.scrollHeight - container.clientHeight;
+
+		const animate = () => {
+			const el = scrollContainerRef.current;
+			if (!el || userScrollingRef.current) return;
+
+			const current = el.scrollTop;
+			const target = el.scrollHeight - el.clientHeight;
+			const diff = target - current;
+
+			if (Math.abs(diff) < 1) {
+				el.scrollTop = target;
+				return;
+			}
+
+			el.scrollTop = current + diff * 0.15;
+			animationFrameRef.current = requestAnimationFrame(animate);
+		};
+
+		if (animationFrameRef.current) {
+			cancelAnimationFrame(animationFrameRef.current);
+		}
+		animationFrameRef.current = requestAnimationFrame(animate);
 	}, [messages, autoScroll]);
 
 	useEffect(() => {
 		return () => {
 			if (userScrollTimeoutRef.current) {
 				clearTimeout(userScrollTimeoutRef.current);
+			}
+			if (animationFrameRef.current) {
+				cancelAnimationFrame(animationFrameRef.current);
 			}
 		};
 	}, []);
