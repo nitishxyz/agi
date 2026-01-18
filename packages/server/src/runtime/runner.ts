@@ -196,11 +196,16 @@ async function runAssistant(opts: RunOpts) {
 	if (opts.isCompactCommand && opts.compactionContext) {
 		debugLog('[RUNNER] Injecting compaction context for /compact command');
 		const compactPrompt = getCompactionSystemPrompt();
-		// Add compaction instructions and context as system messages
+		// Add compaction instructions as system message
 		// Don't modify `system` directly as it may contain OAuth spoof prompt
 		additionalSystemMessages.push({
 			role: 'system',
-			content: `${compactPrompt}\n\n<conversation-to-summarize>\n${opts.compactionContext}\n</conversation-to-summarize>`,
+			content: compactPrompt,
+		});
+		// Add the conversation context as a USER message (Anthropic requires at least one user message)
+		additionalSystemMessages.push({
+			role: 'user',
+			content: `Please summarize this conversation:\n\n<conversation-to-summarize>\n${opts.compactionContext}\n</conversation-to-summarize>`,
 		});
 	}
 

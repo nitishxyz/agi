@@ -55,9 +55,10 @@ export function isCompactCommand(content: string): boolean {
 }
 
 /**
- * Build context for the LLM to generate a summary.
- * Returns a prompt that describes what to summarize.
- */
+* Build context for the LLM to generate a summary.
+* Returns a prompt that describes what to summarize.
+ * Includes tool calls and results with appropriate truncation to fit within model limits.
+*/
 export async function buildCompactionContext(
 	db: Awaited<ReturnType<typeof getDb>>,
 	sessionId: string,
@@ -70,7 +71,7 @@ export async function buildCompactionContext(
 
 	const lines: string[] = [];
 	let totalChars = 0;
-	const maxChars = 80000; // Limit context size
+	const maxChars = 60000; // Limit context size (~15k tokens) to fit within model limits
 
 	for (const msg of allMessages) {
 		if (totalChars > maxChars) {
@@ -92,21 +93,23 @@ export async function buildCompactionContext(
 
 				if (part.type === 'text' && content.text) {
 					const text = `[${msg.role.toUpperCase()}]: ${content.text}`;
-					lines.push(text.slice(0, 2000));
+					lines.push(text.slice(0, 3000)); // Allow more text content
 					totalChars += text.length;
 				} else if (part.type === 'tool_call' && content.name) {
+					// Include tool name and relevant args (file paths, commands, etc.)
 					const argsStr =
 						typeof content.args === 'object'
-							? JSON.stringify(content.args).slice(0, 300)
+							? JSON.stringify(content.args).slice(0, 500)
 							: '';
 					const text = `[TOOL ${content.name}]: ${argsStr}`;
 					lines.push(text);
 					totalChars += text.length;
 				} else if (part.type === 'tool_result' && content.result !== null) {
+					// Include enough result context for the LLM to understand what happened
 					const resultStr =
 						typeof content.result === 'string'
-							? content.result.slice(0, 1000)
-							: JSON.stringify(content.result ?? '').slice(0, 1000);
+							? content.result.slice(0, 1500)
+							: JSON.stringify(content.result ?? '').slice(0, 1500);
 					const text = `[RESULT]: ${resultStr}`;
 					lines.push(text);
 					totalChars += text.length;
