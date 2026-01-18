@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, memo } from 'react';
+import { useEffect, useRef, useState, useMemo, memo, useCallback } from 'react';
 import { ArrowDown } from 'lucide-react';
 import type { Message, Session } from '../../types/api';
 import { AssistantMessageGroup } from './AssistantMessageGroup';
@@ -22,63 +22,71 @@ export const MessageThread = memo(function MessageThread({
 	const sessionHeaderRef = useRef<HTMLDivElement>(null);
 	const [autoScroll, setAutoScroll] = useState(true);
 	const [showLeanHeader, setShowLeanHeader] = useState(false);
-	const lastScrollHeightRef = useRef(0);
-	const messagesLengthRef = useRef(0);
+	const userScrollingRef = useRef(false);
+	const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+	const prevMessagesLengthRef = useRef(messages.length);
 
-	// Detect if user has scrolled up manually
-	const handleScroll = () => {
+	const handleScroll = useCallback(() => {
 		const container = scrollContainerRef.current;
 		if (!container) return;
 
 		const { scrollTop, scrollHeight, clientHeight } = container;
 		const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-		// If user is within 100px of bottom, enable auto-scroll
-		// Otherwise, they've scrolled up and we should stop auto-scrolling
-		setAutoScroll(distanceFromBottom < 100);
+		if (distanceFromBottom < 100) {
+			setAutoScroll(true);
+		} else {
+			setAutoScroll(false);
+			userScrollingRef.current = true;
+			if (userScrollTimeoutRef.current) {
+				clearTimeout(userScrollTimeoutRef.current);
+			}
+			userScrollTimeoutRef.current = setTimeout(() => {
+				userScrollingRef.current = false;
+			}, 150);
+		}
 
-		// Check if session header is scrolled off screen
 		const headerElement = sessionHeaderRef.current;
 		if (headerElement) {
 			const headerRect = headerElement.getBoundingClientRect();
 			const containerRect = container.getBoundingClientRect();
-			// Show lean header when session header has scrolled above the container's top
 			setShowLeanHeader(headerRect.bottom < containerRect.top);
 		}
-	};
+	}, []);
 
-	// Re-enable auto-scroll when messages length changes (new message added)
 	useEffect(() => {
-		if (messages.length > messagesLengthRef.current) {
-			setAutoScroll(true);
+		if (
+			messages.length > prevMessagesLengthRef.current &&
+			!userScrollingRef.current
+		) {
+			if (!isGenerating) {
+				setAutoScroll(true);
+			}
 		}
-		messagesLengthRef.current = messages.length;
-	}, [messages.length]);
+		prevMessagesLengthRef.current = messages.length;
+	}, [messages.length, isGenerating]);
 
-	// Auto-scroll when messages change AND user hasn't scrolled up
-	// biome-ignore lint/correctness/useExhaustiveDependencies: messages dependency is required for streaming content updates
+	// biome-ignore lint/correctness/useExhaustiveDependencies: messages dep needed for streaming content updates
 	useEffect(() => {
 		const container = scrollContainerRef.current;
-		if (!container || !autoScroll) return;
+		if (!container || !autoScroll || userScrollingRef.current) return;
 
-		// Use requestAnimationFrame to ensure the DOM has updated
 		requestAnimationFrame(() => {
-			if (!bottomRef.current || !container) return;
-
-			const { scrollHeight } = container;
-			const isNewContent = scrollHeight !== lastScrollHeightRef.current;
-
-			// Use instant scroll during rapid updates, smooth for new messages
-			const behavior = isNewContent ? 'smooth' : 'instant';
-
-			bottomRef.current.scrollIntoView({
-				behavior: behavior as ScrollBehavior,
-			});
-			lastScrollHeightRef.current = scrollHeight;
+			if (!container || userScrollingRef.current) return;
+			container.scrollTop = container.scrollHeight - container.clientHeight;
 		});
 	}, [messages, autoScroll]);
 
+	useEffect(() => {
+		return () => {
+			if (userScrollTimeoutRef.current) {
+				clearTimeout(userScrollTimeoutRef.current);
+			}
+		};
+	}, []);
+
 	const scrollToBottom = () => {
+		userScrollingRef.current = false;
 		setAutoScroll(true);
 		bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
 	};
