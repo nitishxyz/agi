@@ -11,6 +11,8 @@ import { useSendMessage } from '../../hooks/useMessages';
 import { useSession, useUpdateSession } from '../../hooks/useSessions';
 import { useAllModels } from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
+import { useGitStatus, useStageFiles } from '../../hooks/useGit';
+import { useGitStore } from '../../stores/gitStore';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
 
@@ -43,6 +45,9 @@ export const ChatInputContainer = memo(
 			const updateSession = useUpdateSession(sessionId);
 			const { data: allModels } = useAllModels();
 			const { preferences } = usePreferences();
+			const { data: gitStatus } = useGitStatus();
+			const stageFiles = useStageFiles();
+			const openCommitModal = useGitStore((state) => state.openCommitModal);
 
 			const modelSupportsReasoning = allModels?.[provider]?.models?.find(
 				(m) => m.id === model,
@@ -114,9 +119,19 @@ export const ChatInputContainer = memo(
 						setIsConfigOpen(true);
 					} else if (commandId === 'new') {
 						onNewSession?.();
+					} else if (commandId === 'stage') {
+						const unstagedPaths = gitStatus?.unstaged?.map((f) => f.path) ?? [];
+						const untrackedPaths =
+							gitStatus?.untracked?.map((f) => f.path) ?? [];
+						const allUnstaged = [...unstagedPaths, ...untrackedPaths];
+						if (allUnstaged.length > 0) {
+							stageFiles.mutate(allUnstaged);
+						}
+					} else if (commandId === 'commit') {
+						openCommitModal();
 					}
 				},
-				[onNewSession],
+				[onNewSession, gitStatus, stageFiles, openCommitModal],
 			);
 
 			const handleAgentChange = useCallback(

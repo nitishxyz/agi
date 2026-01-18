@@ -6,6 +6,8 @@ import {
 	Code,
 	Brain,
 	StopCircle,
+	GitBranch,
+	Check,
 } from 'lucide-react';
 
 export interface Command {
@@ -66,6 +68,18 @@ export const COMMANDS: Command[] = [
 				? 'Disable extended thinking'
 				: 'Enable extended thinking',
 		icon: Brain,
+	},
+	{
+		id: 'stage',
+		label: '/stage',
+		description: 'Stage all changes (git add -A)',
+		icon: GitBranch,
+	},
+	{
+		id: 'commit',
+		label: '/commit',
+		description: 'Commit staged changes',
+		icon: Check,
 	},
 ];
 
