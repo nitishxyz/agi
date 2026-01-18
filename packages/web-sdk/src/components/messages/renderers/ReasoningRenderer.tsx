@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { MessagePart } from '../../../types/api';
 
@@ -8,6 +8,7 @@ interface ReasoningRendererProps {
 
 export function ReasoningRenderer({ part }: ReasoningRendererProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
+	const scrollRef = useRef<HTMLDivElement>(null);
 	let content = '';
 	const data = part.contentJson || part.content;
 	if (data && typeof data === 'object' && 'text' in data) {
@@ -15,6 +16,12 @@ export function ReasoningRenderer({ part }: ReasoningRendererProps) {
 	} else if (typeof data === 'string') {
 		content = data;
 	}
+
+	useEffect(() => {
+		if (scrollRef.current && isExpanded && !part.completedAt) {
+			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+		}
+	}, [content, isExpanded, part.completedAt]);
 
 	if (!content || !content.trim()) {
 		return null;
@@ -40,7 +47,10 @@ export function ReasoningRenderer({ part }: ReasoningRendererProps) {
 				)}
 			</button>
 			{isExpanded && (
-				<div className="mt-2 p-3 bg-muted/30 rounded-md border border-border max-h-48 overflow-y-auto">
+				<div
+					ref={scrollRef}
+					className="mt-2 p-3 bg-muted/30 rounded-md border border-border max-h-48 overflow-y-auto"
+				>
 					<div className="text-sm text-muted-foreground whitespace-pre-wrap font-mono">
 						{content}
 					</div>
