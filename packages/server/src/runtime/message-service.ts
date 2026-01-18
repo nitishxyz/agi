@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { generateText, streamText } from 'ai';
 import { eq } from 'drizzle-orm';
 import type { AGIConfig } from '@agi-cli/sdk';
 import type { DB } from '@agi-cli/database';
@@ -252,7 +252,11 @@ async function generateSessionTitle(args: {
 
 		// Use a smaller, faster model for title generation
 		// Look up the cheapest/fastest model from the catalog for this provider
-		const titleModel = getFastModel(provider) ?? modelName;
+		// For OpenAI OAuth, use codex-mini as it works with ChatGPT backend
+		const titleModel =
+			needsSpoof && provider === 'openai'
+				? 'gpt-5.1-codex-mini'
+				: (getFastModel(provider) ?? modelName);
 		debugLog(`[TITLE_GEN] Using title model: ${titleModel}`);
 		const model = await resolveModel(provider, titleModel, cfg);
 
@@ -303,15 +307,29 @@ async function generateSessionTitle(args: {
 			);
 		}
 
-		debugLog('[TITLE_GEN] Calling generateText...');
 		let modelTitle = '';
 		try {
-			const out = await generateText({
-				model,
-				system,
-				messages: messagesArray,
-			});
-			modelTitle = (out?.text || '').trim();
+			// ChatGPT backend requires streaming - use streamText for OAuth
+			if (needsSpoof) {
+				debugLog('[TITLE_GEN] Using streamText for OAuth...');
+				const result = streamText({
+					model,
+					system,
+					messages: messagesArray,
+				});
+				for await (const chunk of result.textStream) {
+					modelTitle += chunk;
+				}
+				modelTitle = modelTitle.trim();
+			} else {
+				debugLog('[TITLE_GEN] Using generateText...');
+				const out = await generateText({
+					model,
+					system,
+					messages: messagesArray,
+				});
+				modelTitle = (out?.text || '').trim();
+			}
 
 			debugLog('[TITLE_GEN] Raw response from model:');
 			debugLog(`[TITLE_GEN] "${modelTitle}"`);

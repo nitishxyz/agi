@@ -110,6 +110,7 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 				const parsed = JSON.parse(body);
 
 				parsed.store = false;
+				// ChatGPT backend codex endpoint requires streaming
 				parsed.stream = true;
 				parsed.instructions = instructions;
 

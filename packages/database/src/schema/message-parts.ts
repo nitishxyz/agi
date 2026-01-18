@@ -16,6 +16,7 @@ export const messageParts = sqliteTable('message_parts', {
 	// Timestamps
 	startedAt: integer('started_at', { mode: 'number' }),
 	completedAt: integer('completed_at', { mode: 'number' }),
+	compactedAt: integer('compacted_at', { mode: 'number' }),
 	// Tool metadata (for tool_call/tool_result)
 	toolName: text('tool_name'),
 	toolCallId: text('tool_call_id'),

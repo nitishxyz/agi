@@ -418,9 +418,14 @@ export async function performAutoCompaction(
 
 		// 2. Stream the compaction summary
 
-		// Use gpt-4o-mini for fast, cheap summarization
+		// Use codex-mini for OAuth (works with ChatGPT backend), gpt-4o-mini for API key
+		const { getAuth } = await import('@agi-cli/sdk');
 		const cfg = await loadConfig();
-		const model = await resolveModel('openai', 'gpt-4o-mini', cfg);
+		const auth = await getAuth('openai', cfg.projectRoot);
+		const compactModel =
+			auth?.type === 'oauth' ? 'gpt-5.1-codex-mini' : 'gpt-4o-mini';
+		debugLog(`[compaction] Using model ${compactModel} for auto-compaction`);
+		const model = await resolveModel('openai', compactModel, cfg);
 
 		// Create a text part for the compaction summary (after model created successfully)
 		const compactPartId = crypto.randomUUID();
@@ -435,7 +440,7 @@ export async function performAutoCompaction(
 			content: JSON.stringify({ text: '' }),
 			agent: 'system',
 			provider: 'openai',
-			model: 'gpt-4o-mini',
+			model: compactModel,
 			startedAt: now,
 		});
 

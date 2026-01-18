@@ -15,6 +15,7 @@ import mig0004 from '../../drizzle/0004_left_the_professor.sql' with {
 	type: 'text',
 };
 import mig0005 from '../../drizzle/0005_hard_gravity.sql' with { type: 'text' };
+import mig0006 from '../../drizzle/0006_jazzy_warlock.sql' with { type: 'text' };
 
 export const bundledMigrations: Array<{ name: string; content: string }> = [
 	{ name: '0000_tense_shadow_king.sql', content: mig0000 },
@@ -23,4 +24,5 @@ export const bundledMigrations: Array<{ name: string; content: string }> = [
 	{ name: '0003_pale_violations.sql', content: mig0003 },
 	{ name: '0004_left_the_professor.sql', content: mig0004 },
 	{ name: '0005_hard_gravity.sql', content: mig0005 },
+	{ name: '0006_jazzy_warlock.sql', content: mig0006 },
 ];
