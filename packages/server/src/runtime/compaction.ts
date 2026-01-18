@@ -18,6 +18,9 @@ import type { getDb } from '@agi-cli/database';
 import { messages, messageParts } from '@agi-cli/database/schema';
 import { eq, desc, asc, and, lt } from 'drizzle-orm';
 import { debugLog } from './debug.ts';
+import { streamText } from 'ai';
+import { resolveModel } from './provider.ts';
+import { loadConfig } from '@agi-cli/sdk';
 
 // Token thresholds
 export const PRUNE_PROTECT = 40_000; // Protect last N tokens worth of tool calls
@@ -382,3 +385,122 @@ export function isCompacted(part: { compactedAt?: number | null }): boolean {
 }
 
 export const COMPACTED_PLACEHOLDER = '[Compacted]';
+
+/**
+ * Perform auto-compaction when context overflows.
+ * Streams the compaction summary (like /compact does), marks old parts as compacted.
+ * Returns info needed for caller to trigger a retry.
+ */
+export async function performAutoCompaction(
+	db: Awaited<ReturnType<typeof getDb>>,
+	sessionId: string,
+	assistantMessageId: string,
+	publishFn: (event: {
+		type: string;
+		sessionId: string;
+		payload: Record<string, unknown>;
+	}) => void,
+): Promise<{
+	success: boolean;
+	summary?: string;
+	error?: string;
+	compactMessageId?: string;
+}> {
+	debugLog(`[compaction] Starting auto-compaction for session ${sessionId}`);
+
+	try {
+		// 1. Build compaction context
+		const context = await buildCompactionContext(db, sessionId);
+		if (!context || context.length < 100) {
+			debugLog('[compaction] Not enough context to compact');
+			return { success: false, error: 'Not enough context to compact' };
+		}
+
+		// 2. Stream the compaction summary
+
+		// Use gpt-4o-mini for fast, cheap summarization
+		const cfg = await loadConfig();
+		const model = await resolveModel('openai', 'gpt-4o-mini', cfg);
+
+		// Create a text part for the compaction summary (after model created successfully)
+		const compactPartId = crypto.randomUUID();
+		const now = Date.now();
+
+		await db.insert(messageParts).values({
+			id: compactPartId,
+			messageId: assistantMessageId,
+			index: 0,
+			stepIndex: 0,
+			type: 'text',
+			content: JSON.stringify({ text: '' }),
+			agent: 'system',
+			provider: 'openai',
+			model: 'gpt-4o-mini',
+			startedAt: now,
+		});
+
+		const prompt = getCompactionSystemPrompt();
+		const result = streamText({
+			model,
+			system: prompt,
+			messages: [
+				{
+					role: 'user',
+					content: `<conversation-to-summarize>\n${context.slice(0, 60000)}\n</conversation-to-summarize>`,
+				},
+			],
+			maxTokens: 2000,
+		});
+
+		// Stream the summary
+		let summary = '';
+		for await (const chunk of result.textStream) {
+			summary += chunk;
+
+			// Publish delta event so UI updates in real-time
+			publishFn({
+				type: 'message.part.delta',
+				sessionId,
+				payload: {
+					messageId: assistantMessageId,
+					partId: compactPartId,
+					stepIndex: 0,
+					type: 'text',
+					delta: chunk,
+				},
+			});
+		}
+
+		// Update the part with final content
+		await db
+			.update(messageParts)
+			.set({
+				content: JSON.stringify({ text: summary }),
+				completedAt: Date.now(),
+			})
+			.where(eq(messageParts.id, compactPartId));
+
+		if (!summary || summary.length < 50) {
+			debugLog('[compaction] Failed to generate summary');
+			return { success: false, error: 'Failed to generate summary' };
+		}
+
+		debugLog(`[compaction] Generated summary: ${summary.slice(0, 100)}...`);
+
+		// 3. Mark old parts as compacted (using the assistant message as the cutoff)
+		const compactResult = await markSessionCompacted(
+			db,
+			sessionId,
+			assistantMessageId,
+		);
+		debugLog(
+			`[compaction] Marked ${compactResult.compacted} parts as compacted, saved ~${compactResult.saved} tokens`,
+		);
+
+		return { success: true, summary, compactMessageId: assistantMessageId };
+	} catch (err) {
+		const errorMsg = err instanceof Error ? err.message : String(err);
+		debugLog(`[compaction] Auto-compaction failed: ${errorMsg}`);
+		return { success: false, error: errorMsg };
+	}
+}

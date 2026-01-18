@@ -14,8 +14,10 @@ import {
 	getModelLimits,
 	type TokenUsage,
 	markSessionCompacted,
+	performAutoCompaction,
 } from './compaction.ts';
 import { debugLog } from './debug.ts';
+import { enqueueAssistantRun } from './session-queue.ts';
 
 type StepFinishEvent = {
 	usage?: UsageData;
@@ -132,14 +134,141 @@ export function createErrorHandler(
 	db: Awaited<ReturnType<typeof getDb>>,
 	getStepIndex: () => number,
 	sharedCtx: ToolAdapterContext,
+	retryCallback?: (sessionId: string) => Promise<void>,
 ) {
 	return async (err: unknown) => {
 		const errorPayload = toErrorPayload(err);
 		const isApiError = APICallError.isInstance(err);
 		const stepIndex = getStepIndex();
 
+		// Check if this is a prompt-too-long error and auto-compact
+		// Handle nested error structures from AI SDK
+		const errObj = err as Record<string, unknown>;
+		const nestedError = (errObj?.error as Record<string, unknown>)?.error as
+			| Record<string, unknown>
+			| undefined;
+		const errorCode =
+			(errObj?.code as string) ?? (nestedError?.code as string) ?? '';
+		const errorType =
+			(errObj?.apiErrorType as string) ?? (nestedError?.type as string) ?? '';
+		const fullErrorStr = JSON.stringify(err).toLowerCase();
+
+		const isPromptTooLong =
+			fullErrorStr.includes('prompt is too long') ||
+			fullErrorStr.includes('maximum context length') ||
+			fullErrorStr.includes('too many tokens') ||
+			fullErrorStr.includes('context_length_exceeded') ||
+			fullErrorStr.includes('request too large') ||
+			fullErrorStr.includes('exceeds the model') ||
+			fullErrorStr.includes('context window') ||
+			fullErrorStr.includes('input is too long') ||
+			errorCode === 'context_length_exceeded' ||
+			errorType === 'invalid_request_error';
+
+		debugLog(
+			`[stream-handlers] isPromptTooLong: ${isPromptTooLong}, errorCode: ${errorCode}, errorType: ${errorType}`,
+		);
+
+		if (isPromptTooLong && !opts.isCompactCommand) {
+			debugLog(
+				'[stream-handlers] Prompt too long detected, auto-compacting...',
+			);
+			let compactionSucceeded = false;
+			try {
+				// Stream the compaction summary with proper publish function
+				const compactResult = await performAutoCompaction(
+					db,
+					opts.sessionId,
+					opts.assistantMessageId,
+					publish,
+				);
+				if (compactResult.success) {
+					debugLog(
+						`[stream-handlers] Auto-compaction succeeded: ${compactResult.summary?.slice(0, 100)}...`,
+					);
+					compactionSucceeded = true;
+				} else {
+					debugLog(
+						`[stream-handlers] Auto-compaction failed: ${compactResult.error}, falling back to prune`,
+					);
+					// Fall back to simple prune
+					const pruneResult = await pruneSession(db, opts.sessionId);
+					debugLog(
+						`[stream-handlers] Fallback pruned ${pruneResult.pruned} parts, saved ~${pruneResult.saved} tokens`,
+					);
+					compactionSucceeded = pruneResult.pruned > 0;
+				}
+			} catch (compactErr) {
+				debugLog(
+					`[stream-handlers] Auto-compact error: ${compactErr instanceof Error ? compactErr.message : String(compactErr)}`,
+				);
+			}
+
+			// If compaction succeeded, complete this message and trigger retry
+			if (compactionSucceeded) {
+				// Mark this compaction message as completed
+				await db
+					.update(messages)
+					.set({
+						status: 'completed',
+					})
+					.where(eq(messages.id, opts.assistantMessageId));
+
+				// Publish completion event for the compaction message
+				publish({
+					type: 'message.completed',
+					sessionId: opts.sessionId,
+					payload: {
+						id: opts.assistantMessageId,
+						autoCompacted: true,
+					},
+				});
+
+				// Trigger retry - create a new assistant message and enqueue the run
+				if (retryCallback) {
+					debugLog('[stream-handlers] Triggering retry after compaction...');
+					const newAssistantMessageId = crypto.randomUUID();
+					await db.insert(messages).values({
+						id: newAssistantMessageId,
+						sessionId: opts.sessionId,
+						role: 'assistant',
+						status: 'pending',
+						agent: opts.agent,
+						provider: opts.provider,
+						model: opts.model,
+						createdAt: Date.now(),
+					});
+
+					publish({
+						type: 'message.created',
+						sessionId: opts.sessionId,
+						payload: { id: newAssistantMessageId, role: 'assistant' },
+					});
+
+					// Enqueue the retry with the new assistant message
+					enqueueAssistantRun(
+						{
+							...opts,
+							assistantMessageId: newAssistantMessageId,
+						},
+						retryCallback,
+					);
+				} else {
+					debugLog(
+						'[stream-handlers] No retryCallback provided, cannot auto-retry',
+					);
+				}
+
+				return; // Don't show error, compaction and retry handled it
+			}
+		}
+
 		// Create error part for UI display
 		const errorPartId = crypto.randomUUID();
+		const displayMessage =
+			isPromptTooLong && !opts.isCompactCommand
+				? `${errorPayload.message}. Context auto-compacted - please retry your message.`
+				: errorPayload.message;
 		await db.insert(messageParts).values({
 			id: errorPartId,
 			messageId: opts.assistantMessageId,
@@ -147,7 +276,7 @@ export function createErrorHandler(
 			stepIndex,
 			type: 'error',
 			content: JSON.stringify({
-				message: errorPayload.message,
+				message: displayMessage,
 				type: errorPayload.type,
 				details: errorPayload.details,
 				isAborted: false,
@@ -164,11 +293,12 @@ export function createErrorHandler(
 			.update(messages)
 			.set({
 				status: 'error',
-				error: errorPayload.message,
+				error: displayMessage,
 				errorType: errorPayload.type,
 				errorDetails: JSON.stringify({
 					...errorPayload.details,
 					isApiError,
+					autoCompacted: isPromptTooLong && !opts.isCompactCommand,
 				}),
 				isAborted: false,
 			})
@@ -181,10 +311,11 @@ export function createErrorHandler(
 			payload: {
 				messageId: opts.assistantMessageId,
 				partId: errorPartId,
-				error: errorPayload.message,
+				error: displayMessage,
 				errorType: errorPayload.type,
 				details: errorPayload.details,
 				isAborted: false,
+				autoCompacted: isPromptTooLong && !opts.isCompactCommand,
 			},
 		});
 	};
@@ -275,23 +406,39 @@ export function createFinishHandler(
 		} catch {}
 
 		// If this was a /compact command, mark old parts as compacted
-		if (opts.isCompactCommand) {
-			try {
+		// Only mark as compacted if the response was successful and has content
+		if (opts.isCompactCommand && fin.finishReason !== 'error') {
+			// Verify the assistant actually generated text content (the summary)
+			const assistantParts = await db
+				.select()
+				.from(messageParts)
+				.where(eq(messageParts.messageId, opts.assistantMessageId));
+			const hasTextContent = assistantParts.some(
+				(p) => p.type === 'text' && p.content && p.content !== '{"text":""}',
+			);
+
+			if (!hasTextContent) {
 				debugLog(
-					`[stream-handlers] /compact complete, marking session compacted`,
+					'[stream-handlers] /compact finished but no summary generated, skipping compaction marking',
 				);
-				const result = await markSessionCompacted(
-					db,
-					opts.sessionId,
-					opts.assistantMessageId,
-				);
-				debugLog(
-					`[stream-handlers] Compacted ${result.compacted} parts, saved ~${result.saved} tokens`,
-				);
-			} catch (err) {
-				debugLog(
-					`[stream-handlers] Compaction failed: ${err instanceof Error ? err.message : String(err)}`,
-				);
+			} else {
+				try {
+					debugLog(
+						`[stream-handlers] /compact complete, marking session compacted`,
+					);
+					const result = await markSessionCompacted(
+						db,
+						opts.sessionId,
+						opts.assistantMessageId,
+					);
+					debugLog(
+						`[stream-handlers] Compacted ${result.compacted} parts, saved ~${result.saved} tokens`,
+					);
+				} catch (err) {
+					debugLog(
+						`[stream-handlers] Compaction failed: ${err instanceof Error ? err.message : String(err)}`,
+					);
+				}
 			}
 		}
 

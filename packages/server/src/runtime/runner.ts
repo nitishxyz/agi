@@ -32,7 +32,7 @@ import {
 	createAbortHandler,
 	createFinishHandler,
 } from './stream-handlers.ts';
-import { getCompactionSystemPrompt } from './compaction.ts';
+import { getCompactionSystemPrompt, pruneSession } from './compaction.ts';
 
 export { enqueueAssistantRun, abortSession } from './session-queue.ts';
 export { getRunnerState } from './session-queue.ts';
@@ -79,8 +79,15 @@ async function runAssistant(opts: RunOpts) {
 
 	const agentPrompt = agentCfg.prompt || '';
 
+	// For /compact command, use minimal history - the compaction context has everything needed
 	const historyTimer = time('runner:buildHistory');
-	const history = await buildHistoryMessages(db, opts.sessionId);
+	let history: Awaited<ReturnType<typeof buildHistoryMessages>>;
+	if (opts.isCompactCommand && opts.compactionContext) {
+		debugLog('[RUNNER] Using minimal history for /compact command');
+		history = [];
+	} else {
+		history = await buildHistoryMessages(db, opts.sessionId);
+	}
 	historyTimer.end({ messages: history.length });
 
 	// Fetch session to get context summary for compaction
@@ -314,7 +321,13 @@ async function runAssistant(opts: RunOpts) {
 		updateMessageTokensIncremental,
 	);
 
-	const onError = createErrorHandler(opts, db, getStepIndex, sharedCtx);
+	const onError = createErrorHandler(
+		opts,
+		db,
+		getStepIndex,
+		sharedCtx,
+		runSessionLoop,
+	);
 
 	const onAbort = createAbortHandler(opts, db, getStepIndex, sharedCtx);
 
@@ -519,6 +532,67 @@ async function runAssistant(opts: RunOpts) {
 	} catch (err) {
 		unsubscribeFinish();
 		const payload = toErrorPayload(err);
+
+		// Check if this is a "prompt too long" error and auto-compact
+		const errorMessage = err instanceof Error ? err.message : String(err);
+		const errorCode = (err as { code?: string })?.code ?? '';
+		const responseBody = (err as { responseBody?: string })?.responseBody ?? '';
+		const apiErrorType = (err as { apiErrorType?: string })?.apiErrorType ?? '';
+		const combinedError = `${errorMessage} ${responseBody}`.toLowerCase();
+		debugLog(`[RUNNER] Error caught - message: ${errorMessage.slice(0, 100)}`);
+		debugLog(
+			`[RUNNER] Error caught - code: ${errorCode}, apiErrorType: ${apiErrorType}`,
+		);
+		debugLog(
+			`[RUNNER] Error caught - responseBody: ${responseBody.slice(0, 200)}`,
+		);
+		const isPromptTooLong =
+			combinedError.includes('prompt is too long') ||
+			combinedError.includes('maximum context length') ||
+			combinedError.includes('too many tokens') ||
+			combinedError.includes('context_length_exceeded') ||
+			combinedError.includes('request too large') ||
+			combinedError.includes('exceeds the model') ||
+			combinedError.includes('input is too long') ||
+			errorCode === 'context_length_exceeded' ||
+			apiErrorType === 'invalid_request_error';
+		debugLog(
+			`[RUNNER] isPromptTooLong: ${isPromptTooLong}, isCompactCommand: ${opts.isCompactCommand}`,
+		);
+
+		if (isPromptTooLong && !opts.isCompactCommand) {
+			debugLog(
+				'[RUNNER] Prompt too long - auto-compacting and will retry on next user message',
+			);
+			try {
+				const pruneResult = await pruneSession(db, opts.sessionId);
+				debugLog(
+					`[RUNNER] Auto-pruned ${pruneResult.pruned} parts, saved ~${pruneResult.saved} tokens`,
+				);
+
+				// Publish a system message to inform the user
+				publish({
+					type: 'error',
+					sessionId: opts.sessionId,
+					payload: {
+						...payload,
+						message: `Context too large (${errorMessage.match(/\d+/)?.[0] || 'many'} tokens). Auto-compacted old tool results. Please retry your message.`,
+						name: 'ContextOverflow',
+					},
+				});
+
+				// Complete the message as failed
+				try {
+					await completeAssistantMessage({}, opts, db);
+				} catch {}
+				return;
+			} catch (pruneErr) {
+				debugLog(
+					`[RUNNER] Auto-prune failed: ${pruneErr instanceof Error ? pruneErr.message : String(pruneErr)}`,
+				);
+			}
+		}
+
 		debugLog(`[RUNNER] Error during stream: ${payload.message}`);
 		debugLog(
 			`[RUNNER] Error stack: ${err instanceof Error ? err.stack : 'no stack'}`,
