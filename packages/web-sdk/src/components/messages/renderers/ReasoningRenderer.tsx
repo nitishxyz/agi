@@ -21,7 +21,7 @@ export function ReasoningRenderer({ part }: ReasoningRendererProps) {
 		if (scrollRef.current && isExpanded && !part.completedAt) {
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 		}
-	}, [content, isExpanded, part.completedAt]);
+	}, [isExpanded, part.completedAt]);
 
 	if (!content || !content.trim()) {
 		return null;

@@ -114,9 +114,12 @@ export const UserMessageGroup = memo(
 
 				{expandedImage && (
 					<div
+						role="dialog"
+						aria-modal="true"
 						className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
 						onClick={() => setExpandedImage(null)}
 						onKeyDown={(e) => e.key === 'Escape' && setExpandedImage(null)}
+						tabIndex={-1}
 					>
 						<button
 							type="button"
@@ -130,6 +133,7 @@ export const UserMessageGroup = memo(
 							alt="Expanded attachment"
 							className="max-w-full max-h-full object-contain rounded-lg"
 							onClick={(e) => e.stopPropagation()}
+							onKeyDown={(e) => e.key === 'Enter' && e.stopPropagation()}
 						/>
 					</div>
 				)}

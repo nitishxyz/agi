@@ -23,9 +23,9 @@
  *   B) Just PascalCase naming convention (would accept any PascalCase tool)
  */
 
-import { readFileSync, existsSync, writeFileSync } from 'fs';
-import { homedir } from 'os';
-import { join } from 'path';
+import { readFileSync, existsSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 
 const CLAUDE_CODE_VERSION = '2.1.2';
 const TOKEN_ENDPOINT = 'https://console.anthropic.com/v1/oauth/token';
@@ -102,7 +102,7 @@ async function getOAuthToken(): Promise<string | null> {
 
 					return oauth.access;
 				}
-			} catch (e) {
+			} catch (_e) {
 				// Continue to next path
 			}
 		}
@@ -256,7 +256,6 @@ function getToolsForMode(mode: string) {
 		case 'agi-only':
 			console.log('Testing with AGI-only tools (should fail if whitelist)');
 			return AGI_ONLY_TOOLS;
-		case 'agi-mixed':
 		default:
 			console.log('Testing with mixed tools (Claude Code + AGI-only)');
 			return [...CLAUDE_CODE_STANDARD_TOOLS, ...AGI_ONLY_TOOLS];
@@ -395,7 +394,7 @@ async function main() {
 	console.log('  message:', requestBody.messages[0].content[0].text);
 	console.log(
 		'  metadata.user_id:',
-		requestBody.metadata.user_id.slice(0, 40) + '...',
+		`${requestBody.metadata.user_id.slice(0, 40)}...`,
 	);
 
 	console.log('\n--- Sending Request ---\n');

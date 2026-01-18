@@ -1,5 +1,5 @@
 import { hasToolCall, streamText } from 'ai';
-import { loadConfig, getAuth } from '@agi-cli/sdk';
+import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { messageParts } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
@@ -178,7 +178,10 @@ async function runAssistant(opts: RunOpts) {
 
 	// FIX: For OAuth, ALWAYS prepend the system message because it's never in history
 	// For API key mode, only add on first message (when additionalSystemMessages is empty)
-	const messagesWithSystemInstructions: any[] = [
+	const messagesWithSystemInstructions: Array<{
+		role: string;
+		content: string | Array<unknown>;
+	}> = [
 		...additionalSystemMessages, // Always add for OAuth, empty for API key mode
 		...history,
 	];

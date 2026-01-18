@@ -98,86 +98,83 @@ export function BashRenderer({
 						</div>
 					</ToolContentBox>
 
-					{hasOutput && (
-						<>
-							{exitCode === 0 ? (
-								<ToolContentBox
-									title="output"
-									copyText={combinedOutput}
-									maxHeight="max-h-80"
+					{hasOutput &&
+						(exitCode === 0 ? (
+							<ToolContentBox
+								title="output"
+								copyText={combinedOutput}
+								maxHeight="max-h-80"
+							>
+								<SyntaxHighlighter
+									language="bash"
+									style={syntaxTheme}
+									customStyle={{
+										margin: 0,
+										padding: '0.75rem',
+										fontSize: '0.75rem',
+										lineHeight: '1.5',
+										background: 'transparent',
+										maxWidth: '100%',
+									}}
+									wrapLines
+									wrapLongLines
 								>
-									<SyntaxHighlighter
-										language="bash"
-										style={syntaxTheme}
-										customStyle={{
-											margin: 0,
-											padding: '0.75rem',
-											fontSize: '0.75rem',
-											lineHeight: '1.5',
-											background: 'transparent',
-											maxWidth: '100%',
-										}}
-										wrapLines
-										wrapLongLines
+									{combinedOutput}
+								</SyntaxHighlighter>
+							</ToolContentBox>
+						) : (
+							<>
+								{stdout && (
+									<ToolContentBox
+										title="stdout"
+										copyText={stdout}
+										maxHeight="max-h-40"
 									>
-										{combinedOutput}
-									</SyntaxHighlighter>
-								</ToolContentBox>
-							) : (
-								<>
-									{stdout && (
-										<ToolContentBox
-											title="stdout"
-											copyText={stdout}
-											maxHeight="max-h-40"
+										<SyntaxHighlighter
+											language="bash"
+											style={syntaxTheme}
+											customStyle={{
+												margin: 0,
+												padding: '0.75rem',
+												fontSize: '0.75rem',
+												lineHeight: '1.5',
+												background: 'transparent',
+												maxWidth: '100%',
+											}}
+											wrapLines
+											wrapLongLines
 										>
-											<SyntaxHighlighter
-												language="bash"
-												style={syntaxTheme}
-												customStyle={{
-													margin: 0,
-													padding: '0.75rem',
-													fontSize: '0.75rem',
-													lineHeight: '1.5',
-													background: 'transparent',
-													maxWidth: '100%',
-												}}
-												wrapLines
-												wrapLongLines
-											>
-												{stdout}
-											</SyntaxHighlighter>
-										</ToolContentBox>
-									)}
-									{hasStderr && (
-										<ToolContentBox
-											title="stderr"
-											copyText={stderr}
-											variant="error"
-											maxHeight="max-h-40"
+											{stdout}
+										</SyntaxHighlighter>
+									</ToolContentBox>
+								)}
+								{hasStderr && (
+									<ToolContentBox
+										title="stderr"
+										copyText={stderr}
+										variant="error"
+										maxHeight="max-h-40"
+									>
+										<SyntaxHighlighter
+											language="bash"
+											style={syntaxTheme}
+											customStyle={{
+												margin: 0,
+												padding: '0.75rem',
+												fontSize: '0.75rem',
+												lineHeight: '1.5',
+												background: 'transparent',
+												maxWidth: '100%',
+											}}
+											wrapLines
+											wrapLongLines
 										>
-											<SyntaxHighlighter
-												language="bash"
-												style={syntaxTheme}
-												customStyle={{
-													margin: 0,
-													padding: '0.75rem',
-													fontSize: '0.75rem',
-													lineHeight: '1.5',
-													background: 'transparent',
-													maxWidth: '100%',
-												}}
-												wrapLines
-												wrapLongLines
-											>
-												{stderr}
-											</SyntaxHighlighter>
-										</ToolContentBox>
-									)}
-								</>
-							)}
-						</>
-					)}
+											{stderr}
+										</SyntaxHighlighter>
+									</ToolContentBox>
+								)}
+							</>
+						))}
 				</div>
 			)}
 		</div>

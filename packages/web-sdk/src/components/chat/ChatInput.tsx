@@ -8,7 +8,7 @@ import {
 	useImperativeHandle,
 	useMemo,
 } from 'react';
-import type { ChangeEvent, DragEvent, ClipboardEvent } from 'react';
+import type { ChangeEvent, ClipboardEvent } from 'react';
 
 import { ArrowUp, MoreVertical, X, ImageIcon, Brain } from 'lucide-react';
 import { Textarea } from '../ui/Textarea';
