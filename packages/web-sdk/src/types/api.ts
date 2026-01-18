@@ -70,6 +70,7 @@ export interface UpdateSessionRequest {
 
 export interface SendMessageRequest {
 	content: string;
+	images?: Array<{ data: string; mediaType: string }>;
 	agent?: string;
 	provider?: string;
 	model?: string;

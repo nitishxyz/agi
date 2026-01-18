@@ -13,6 +13,7 @@ import { useAllModels } from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useGitStatus, useStageFiles } from '../../hooks/useGit';
 import { useGitStore } from '../../stores/gitStore';
+import { useImageUpload } from '../../hooks/useImageUpload';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
 
@@ -49,6 +50,14 @@ export const ChatInputContainer = memo(
 			const stageFiles = useStageFiles();
 			const openCommitModal = useGitStore((state) => state.openCommitModal);
 
+			const {
+				images,
+				isDragging,
+				removeImage,
+				clearImages,
+				handlePaste,
+			} = useImageUpload();
+
 			const modelSupportsReasoning = allModels?.[provider]?.models?.find(
 				(m) => m.id === model,
 			)?.reasoning;
@@ -74,8 +83,17 @@ export const ChatInputContainer = memo(
 			const handleSendMessage = useCallback(
 				async (content: string) => {
 					try {
+						const imageData =
+							images.length > 0
+								? images.map((img) => ({
+										data: img.data,
+										mediaType: img.mediaType,
+									}))
+								: undefined;
+
 						await sendMessage.mutateAsync({
 							content,
+							images: imageData,
 							agent: agent || undefined,
 							provider: provider || undefined,
 							model: model || undefined,
@@ -85,12 +103,16 @@ export const ChatInputContainer = memo(
 									? true
 									: undefined,
 						});
+
+						clearImages();
 					} catch (error) {
 						console.error('Failed to send message:', error);
 					}
 				},
 				[
 					sendMessage,
+					images,
+					clearImages,
 					agent,
 					provider,
 					model,
@@ -233,7 +255,11 @@ export const ChatInputContainer = memo(
 							modelSupportsReasoning && preferences.reasoningEnabled
 						}
 						sessionId={sessionId}
-					/>
+					images={images}
+					onImageRemove={removeImage}
+					isDragging={isDragging}
+					onPaste={handlePaste}
+				/>
 				</>
 			);
 		},

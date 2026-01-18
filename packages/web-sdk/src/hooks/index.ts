@@ -9,3 +9,4 @@ export * from './useSessionStream';
 export * from './useTheme';
 export * from './useWorkingDirectory';
 export * from './useKeyboardShortcuts';
+export * from './useImageUpload';

@@ -8,8 +8,9 @@ import {
 	useImperativeHandle,
 	useMemo,
 } from 'react';
-import type { ChangeEvent } from 'react';
-import { ArrowUp, MoreVertical } from 'lucide-react';
+import type { ChangeEvent, DragEvent, ClipboardEvent } from 'react';
+
+import { ArrowUp, MoreVertical, X, ImageIcon } from 'lucide-react';
 import { Textarea } from '../ui/Textarea';
 import { FileMentionPopup } from './FileMentionPopup';
 import { CommandSuggestionsPopup } from './CommandSuggestionsPopup';
@@ -20,6 +21,7 @@ import { useVimMode } from '../../hooks/useVimMode';
 import { useFileMention } from '../../hooks/useFileMention';
 import { useCommandSuggestions } from '../../hooks/useCommandSuggestions';
 import { createChatInputKeyHandler } from './ChatInputKeyHandler';
+import type { ImageAttachment } from '../../hooks/useImageUpload';
 
 interface ChatInputProps {
 	onSend: (message: string) => void;
@@ -30,6 +32,10 @@ interface ChatInputProps {
 	isPlanMode?: boolean;
 	reasoningEnabled?: boolean;
 	sessionId?: string;
+	images?: ImageAttachment[];
+	onImageRemove?: (id: string) => void;
+	isDragging?: boolean;
+	onPaste?: (e: ClipboardEvent) => void;
 }
 
 export const ChatInput = memo(
@@ -43,6 +49,10 @@ export const ChatInput = memo(
 			isPlanMode: externalIsPlanMode,
 			reasoningEnabled,
 			sessionId,
+			images = [],
+			onImageRemove,
+			isDragging = false,
+			onPaste,
 		},
 		ref,
 	) {
@@ -265,8 +275,31 @@ export const ChatInput = memo(
 			}
 		}, [preferences.vimMode, setVimMode]);
 
+		const handleTextareaPaste = useCallback(
+			(e: ClipboardEvent<HTMLTextAreaElement>) => {
+				onPaste?.(e as unknown as ClipboardEvent);
+			},
+			[onPaste],
+		);
+
+		const hasImages = images.length > 0;
+
 		return (
-			<div className="absolute bottom-0 left-0 right-0 pt-16 pb-6 md:pb-8 px-2 md:px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20 safe-area-inset-bottom">
+			<>
+				{isDragging && (
+					<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-none">
+						<div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-card border-2 border-dashed border-primary/50">
+							<div className="p-4 rounded-full bg-primary/10">
+								<ImageIcon className="w-12 h-12 text-primary" />
+							</div>
+							<div className="text-center">
+								<p className="text-lg font-medium text-foreground">Drop images here</p>
+								<p className="text-sm text-muted-foreground">PNG, JPEG, GIF, WebP up to 5MB</p>
+							</div>
+						</div>
+					</div>
+				)}
+				<div className="absolute bottom-0 left-0 right-0 pt-16 pb-6 md:pb-8 px-2 md:px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20 safe-area-inset-bottom">
 				<div className="max-w-3xl mx-auto pointer-events-auto mb-2 md:mb-0 relative">
 					{preferences.vimMode && vimMode === 'normal' && (
 						<div className="absolute -top-6 right-0 px-2 py-0.5 text-xs font-mono font-semibold bg-amber-500/90 text-white rounded shadow-sm">
@@ -279,50 +312,77 @@ export const ChatInput = memo(
 						</div>
 					)}
 					<div
-						className={`flex items-end gap-1 rounded-3xl p-1 transition-all touch-manipulation ${
+						className={`relative flex flex-col rounded-3xl p-1 transition-all touch-manipulation ${
 							isPlanMode
 								? 'bg-slate-100 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-700 focus-within:border-slate-400 dark:focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-300 dark:focus-within:ring-slate-700'
 								: 'bg-card border border-border focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40'
 						}`}
 					>
-						{onConfigClick && (
+					{hasImages && (
+							<div className="flex flex-wrap gap-2 px-3 pt-2 pb-1">
+								{images.map((img) => (
+									<div
+										key={img.id}
+										className="relative group w-12 h-12 rounded-lg overflow-hidden bg-muted"
+									>
+										<img
+											src={img.preview}
+											alt="Attachment"
+											className="w-full h-full object-cover"
+										/>
+										<button
+											type="button"
+											onClick={() => onImageRemove?.(img.id)}
+											className="absolute top-0 right-0 p-0.5 bg-black/60 rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity"
+										>
+											<X className="w-3 h-3 text-white" />
+										</button>
+									</div>
+								))}
+							</div>
+						)}
+
+						<div className="flex items-end gap-1">
+							{onConfigClick && (
+								<button
+									type="button"
+									onClick={onConfigClick}
+									className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-background/50 active:bg-background/70 transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 touch-manipulation"
+								>
+									<MoreVertical className="w-4 h-4" />
+								</button>
+							)}
+							<Textarea
+								ref={textareaRef}
+								value={message}
+								onChange={handleChange}
+								onKeyDown={handleKeyDown}
+								onPaste={handleTextareaPaste}
+								placeholder={
+									isPlanMode
+										? 'Plan mode - Type a message...'
+										: 'Type a message...'
+								}
+								disabled={disabled}
+								rows={1}
+								className={`border-0 bg-transparent pl-1 pr-2 py-2 max-h-[200px] overflow-y-auto leading-normal resize-none scrollbar-hide text-base ${
+									preferences.vimMode && vimMode === 'normal' ? 'caret-[6px]' : ''
+								}`}
+								style={{ height: '2.5rem' }}
+							/>
 							<button
 								type="button"
-								onClick={onConfigClick}
-								className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-background/50 active:bg-background/70 transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 touch-manipulation"
+								onClick={handleSend}
+								disabled={disabled || (!message.trim() && !hasImages)}
+								className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors flex-shrink-0 touch-manipulation ${
+									message.trim() || hasImages
+										? 'bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground'
+										: 'bg-transparent text-muted-foreground'
+								}`}
 							>
-								<MoreVertical className="w-4 h-4" />
+								<ArrowUp className="w-4 h-4" />
 							</button>
-						)}
-						<Textarea
-							ref={textareaRef}
-							value={message}
-							onChange={handleChange}
-							onKeyDown={handleKeyDown}
-							placeholder={
-								isPlanMode
-									? 'Plan mode - Type a message...'
-									: 'Type a message...'
-							}
-							disabled={disabled}
-							rows={1}
-							className={`border-0 bg-transparent pl-1 pr-2 py-2 max-h-[200px] overflow-y-auto leading-normal resize-none scrollbar-hide text-base ${
-								preferences.vimMode && vimMode === 'normal' ? 'caret-[6px]' : ''
-							}`}
-							style={{ height: '2.5rem' }}
-						/>
-						<button
-							type="button"
-							onClick={handleSend}
-							disabled={disabled || !message.trim()}
-							className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors flex-shrink-0 touch-manipulation ${
-								message.trim()
-									? 'bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground'
-									: 'bg-transparent text-muted-foreground'
-							}`}
-						>
-							<ArrowUp className="w-4 h-4" />
-						</button>
+						</div>
 					</div>
 
 					{reasoningEnabled && (
@@ -361,7 +421,8 @@ export const ChatInput = memo(
 						onClose={() => setShowShortcutsModal(false)}
 					/>
 				</div>
-			</div>
+				</div>
+			</>
 		);
 	}),
 );

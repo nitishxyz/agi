@@ -38,17 +38,32 @@ export async function buildHistoryMessages(
 			.where(eq(messageParts.messageId, m.id))
 			.orderBy(asc(messageParts.index));
 
-		if (m.role === 'user') {
-			const uparts: UIMessage['parts'] = [];
-			for (const p of parts) {
-				if (p.type !== 'text') continue;
+	if (m.role === 'user') {
+		const uparts: UIMessage['parts'] = [];
+		for (const p of parts) {
+			if (p.type === 'text') {
 				try {
 					const obj = JSON.parse(p.content ?? '{}');
 					const t = String(obj.text ?? '');
 					if (t) uparts.push({ type: 'text', text: t });
 				} catch {}
+			} else if (p.type === 'image') {
+				try {
+					const obj = JSON.parse(p.content ?? '{}') as {
+						data?: string;
+						mediaType?: string;
+					};
+					if (obj.data && obj.mediaType) {
+						uparts.push({
+							type: 'file',
+							mediaType: obj.mediaType,
+							url: `data:${obj.mediaType};base64,${obj.data}`,
+						} as never);
+					}
+				} catch {}
 			}
-			if (uparts.length) {
+		}
+		if (uparts.length) {
 				ui.push({ id: m.id, role: 'user', parts: uparts });
 			}
 			continue;

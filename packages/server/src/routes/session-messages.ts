@@ -111,6 +111,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 			const agent = body?.agent ?? sess.agent ?? cfg.defaults.agent;
 			const content = body?.content ?? '';
 			const userContext = body?.userContext;
+			const images = Array.isArray(body?.images) ? body.images : undefined;
 
 			// DEBUG: Log extracted userContext
 			logger.info('[API] Extracted userContext', {
@@ -155,6 +156,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				oneShot: Boolean(body?.oneShot),
 				userContext,
 				reasoning,
+				images,
 			});
 			return c.json({ messageId: assistantMessageId }, 202);
 		} catch (error) {

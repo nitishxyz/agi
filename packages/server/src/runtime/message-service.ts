@@ -23,6 +23,7 @@ type DispatchOptions = {
 	oneShot?: boolean;
 	userContext?: string;
 	reasoning?: boolean;
+	images?: Array<{ data: string; mediaType: string }>;
 };
 
 export async function dispatchAssistantMessage(
@@ -39,6 +40,7 @@ export async function dispatchAssistantMessage(
 		oneShot,
 		userContext,
 		reasoning,
+		images,
 	} = options;
 
 	// DEBUG: Log userContext in dispatch
@@ -70,6 +72,23 @@ export async function dispatchAssistantMessage(
 		provider,
 		model,
 	});
+
+	if (images && images.length > 0) {
+		for (let i = 0; i < images.length; i++) {
+			const img = images[i];
+			await db.insert(messageParts).values({
+				id: crypto.randomUUID(),
+				messageId: userMessageId,
+				index: i + 1,
+				type: 'image',
+				content: JSON.stringify({ data: img.data, mediaType: img.mediaType }),
+				agent,
+				provider,
+				model,
+			});
+		}
+	}
+
 	publish({
 		type: 'message.created',
 		sessionId,
