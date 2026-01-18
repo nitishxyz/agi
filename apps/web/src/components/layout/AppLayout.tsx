@@ -30,7 +30,7 @@ export const AppLayout = memo(function AppLayout({
 	onToggleTheme,
 }: AppLayoutProps) {
 	return (
-		<div className="h-screen flex bg-background touch-manipulation">
+		<div className="h-screen flex bg-background touch-manipulation border-t border-border/50">
 			{/* Left sidebar - Sessions */}
 			<Sidebar onNewSession={onNewSession}>{sidebar}</Sidebar>
 
@@ -50,12 +50,12 @@ export const AppLayout = memo(function AppLayout({
 				{/* Tab buttons - always visible, stacked vertically, full height */}
 				<div className="flex flex-col w-12 border-l border-border bg-background">
 					<GitSidebarToggle />
-					<TerminalsSidebarToggle />
-					<div className="flex-1" />
-					<div className="border-t border-border p-2 flex items-center justify-center">
-						<Button
-							variant="ghost"
-							size="icon"
+				<TerminalsSidebarToggle />
+				<div className="flex-1" />
+				<div className="h-12 border-t border-border flex items-center justify-center">
+					<Button
+						variant="ghost"
+						size="icon"
 							onClick={onToggleTheme}
 							title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
 							aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}

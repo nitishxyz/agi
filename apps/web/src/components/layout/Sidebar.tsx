@@ -43,18 +43,18 @@ export const Sidebar = memo(function Sidebar({
 					</Button>
 				</div>
 
-				<button
-					type="button"
-					className="flex-1 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation"
-					onClick={!isDiffOpen ? toggleCollapse : undefined}
-					title={!isDiffOpen ? 'Expand sidebar' : undefined}
-					aria-label="Expand sidebar"
-				/>
+			<button
+				type="button"
+				className="flex-1 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation"
+				onClick={!isDiffOpen ? toggleCollapse : undefined}
+				title={!isDiffOpen ? 'Expand sidebar' : undefined}
+				aria-label="Expand sidebar"
+			/>
 
-				<div className="border-t border-border p-2 flex items-center justify-center">
-					<Button
-						variant="ghost"
-						size="icon"
+			<div className="h-12 border-t border-border flex items-center justify-center">
+				<Button
+					variant="ghost"
+					size="icon"
 						onClick={toggleCollapse}
 						title="Expand sidebar"
 						disabled={isDiffOpen}
@@ -105,12 +105,12 @@ export const Sidebar = memo(function Sidebar({
 					</Button>
 				</div>
 
-				<div className="flex-1 overflow-y-auto scrollbar-hide">{children}</div>
+			<div className="flex-1 overflow-y-auto scrollbar-hide">{children}</div>
 
-				<div className="border-t border-border p-2 flex items-center justify-end">
-					<Button
-						variant="ghost"
-						size="icon"
+			<div className="h-12 border-t border-border px-2 flex items-center justify-end">
+				<Button
+					variant="ghost"
+					size="icon"
 						onClick={toggleCollapse}
 						title="Collapse sidebar"
 						disabled={isDiffOpen}
