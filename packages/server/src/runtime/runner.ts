@@ -301,7 +301,7 @@ async function runAssistant(opts: RunOpts) {
 	// Build provider options for reasoning/extended thinking
 	const providerOptions: Record<string, unknown> = {};
 	const THINKING_BUDGET = 16000;
-	// When reasoning is enabled for Anthropic, the API requires max_tokens to fit 
+	// When reasoning is enabled for Anthropic, the API requires max_tokens to fit
 	// both thinking tokens AND response tokens. AI SDK adds budgetTokens to maxOutputTokens,
 	// so we need to reduce maxOutputTokens to leave room for thinking.
 	let effectiveMaxOutputTokens = maxOutputTokens;
@@ -332,7 +332,9 @@ async function runAssistant(opts: RunOpts) {
 			tools: toolset,
 			...(cachedSystem ? { system: cachedSystem } : {}),
 			messages: optimizedMessages,
-			...(effectiveMaxOutputTokens ? { maxOutputTokens: effectiveMaxOutputTokens } : {}),
+			...(effectiveMaxOutputTokens
+				? { maxOutputTokens: effectiveMaxOutputTokens }
+				: {}),
 			...(Object.keys(providerOptions).length > 0 ? { providerOptions } : {}),
 			abortSignal: opts.abortSignal,
 			stopWhen: hasToolCall('finish'),
