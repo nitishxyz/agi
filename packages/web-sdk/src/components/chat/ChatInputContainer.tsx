@@ -50,13 +50,8 @@ export const ChatInputContainer = memo(
 			const stageFiles = useStageFiles();
 			const openCommitModal = useGitStore((state) => state.openCommitModal);
 
-			const {
-				images,
-				isDragging,
-				removeImage,
-				clearImages,
-				handlePaste,
-			} = useImageUpload();
+			const { images, isDragging, removeImage, clearImages, handlePaste } =
+				useImageUpload();
 
 			const modelSupportsReasoning = allModels?.[provider]?.models?.find(
 				(m) => m.id === model,
@@ -259,12 +254,12 @@ export const ChatInputContainer = memo(
 							modelSupportsReasoning && preferences.reasoningEnabled
 						}
 						sessionId={sessionId}
-				images={images}
-				onImageRemove={removeImage}
-				isDragging={isDragging}
-				onPaste={handlePaste}
-				visionEnabled={modelSupportsVision}
-			/>
+						images={images}
+						onImageRemove={removeImage}
+						isDragging={isDragging}
+						onPaste={handlePaste}
+						visionEnabled={modelSupportsVision}
+					/>
 				</>
 			);
 		},
