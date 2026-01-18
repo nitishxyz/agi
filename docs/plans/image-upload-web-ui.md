@@ -45,6 +45,13 @@ Images appear inside the input container, seamlessly above the textarea:
 | Max file size | 5MB |
 | Supported formats | PNG, JPEG, GIF, WebP |
 
+### Vision Model Detection
+
+- Image upload is **only enabled** when the current model supports vision
+- Models with `modalities.input` including `'image'` are vision-capable
+- A "Supports images" indicator appears at the bottom-right of the input
+- Drag & drop overlay only appears for vision-capable models
+
 ### Interactions
 
 - **Drag & Drop**: Drag files onto input area, blue overlay appears

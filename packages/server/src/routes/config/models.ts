@@ -43,6 +43,7 @@ export function registerModelsRoutes(app: Hono) {
 					label: m.label || m.id,
 					toolCall: m.toolCall,
 					reasoning: m.reasoning,
+					vision: m.modalities?.input?.includes('image') ?? false,
 				})),
 				default: getDefault(
 					embeddedConfig?.model,
@@ -89,12 +90,13 @@ export function registerModelsRoutes(app: Hono) {
 				if (providerCatalog) {
 					modelsMap[provider] = {
 						label: providerCatalog.label || provider,
-						models: providerCatalog.models.map((m) => ({
-							id: m.id,
-							label: m.label || m.id,
-							toolCall: m.toolCall,
-							reasoning: m.reasoning,
-						})),
+					models: providerCatalog.models.map((m) => ({
+						id: m.id,
+						label: m.label || m.id,
+						toolCall: m.toolCall,
+						reasoning: m.reasoning,
+						vision: m.modalities?.input?.includes('image') ?? false,
+					})),
 					};
 				}
 			}

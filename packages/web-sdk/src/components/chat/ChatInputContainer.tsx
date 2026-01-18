@@ -62,6 +62,10 @@ export const ChatInputContainer = memo(
 				(m) => m.id === model,
 			)?.reasoning;
 
+			const modelSupportsVision = allModels?.[provider]?.models?.find(
+				(m) => m.id === model,
+			)?.vision;
+
 			useEffect(() => {
 				if (session) {
 					setAgent(session.agent);
@@ -255,11 +259,12 @@ export const ChatInputContainer = memo(
 							modelSupportsReasoning && preferences.reasoningEnabled
 						}
 						sessionId={sessionId}
-					images={images}
-					onImageRemove={removeImage}
-					isDragging={isDragging}
-					onPaste={handlePaste}
-				/>
+				images={images}
+				onImageRemove={removeImage}
+				isDragging={isDragging}
+				onPaste={handlePaste}
+				visionEnabled={modelSupportsVision}
+			/>
 				</>
 			);
 		},

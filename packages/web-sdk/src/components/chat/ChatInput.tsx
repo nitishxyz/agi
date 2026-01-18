@@ -36,6 +36,7 @@ interface ChatInputProps {
 	onImageRemove?: (id: string) => void;
 	isDragging?: boolean;
 	onPaste?: (e: ClipboardEvent) => void;
+	visionEnabled?: boolean;
 }
 
 export const ChatInput = memo(
@@ -53,6 +54,7 @@ export const ChatInput = memo(
 			onImageRemove,
 			isDragging = false,
 			onPaste,
+			visionEnabled = false,
 		},
 		ref,
 	) {
@@ -286,7 +288,7 @@ export const ChatInput = memo(
 
 		return (
 			<>
-				{isDragging && (
+				{isDragging && visionEnabled && (
 					<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-none">
 						<div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-card border-2 border-dashed border-primary/50">
 							<div className="p-4 rounded-full bg-primary/10">
@@ -317,9 +319,9 @@ export const ChatInput = memo(
 								? 'bg-slate-100 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-700 focus-within:border-slate-400 dark:focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-300 dark:focus-within:ring-slate-700'
 								: 'bg-card border border-border focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40'
 						}`}
-					>
-					{hasImages && (
-							<div className="flex flex-wrap gap-2 px-3 pt-2 pb-1">
+				>
+				{hasImages && visionEnabled && (
+						<div className="flex flex-wrap gap-2 px-3 pt-2 pb-1">
 								{images.map((img) => (
 									<div
 										key={img.id}
@@ -385,14 +387,26 @@ export const ChatInput = memo(
 						</div>
 					</div>
 
-				{reasoningEnabled && (
-					<div className="flex items-center justify-start mt-1 pl-3">
-						<span className="text-[10px] text-indigo-600 dark:text-indigo-300 flex items-center gap-1">
-							<Brain className="h-3 w-3" />
-							Extended thinking enabled
-						</span>
+			{(reasoningEnabled || visionEnabled) && (
+				<div className="flex items-center justify-between mt-1 px-3">
+					<div>
+						{reasoningEnabled && (
+							<span className="text-[10px] text-indigo-600 dark:text-indigo-300 flex items-center gap-1">
+								<Brain className="h-3 w-3" />
+								Extended thinking enabled
+							</span>
+						)}
 					</div>
-					)}
+					<div>
+						{visionEnabled && (
+							<span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+								<ImageIcon className="h-3 w-3" />
+								Supports images
+							</span>
+						)}
+					</div>
+				</div>
+			)}
 
 					{showFileMention && !filesLoading && (
 						<FileMentionPopup

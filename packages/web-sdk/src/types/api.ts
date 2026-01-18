@@ -88,6 +88,7 @@ export interface ModelInfo {
 	label: string;
 	toolCall?: boolean;
 	reasoning?: boolean;
+	vision?: boolean;
 }
 
 export interface ProviderModels {
