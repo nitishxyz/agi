@@ -155,7 +155,7 @@ export function BashRenderer({
 							{/* When exit code is 0, combine stdout/stderr as "output" */}
 							{exitCode === 0 ? (
 								<>
-									<div className="flex items-center justify-between gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/30 border-b border-border sticky top-0 z-10">
+									<div className="flex items-center justify-between gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/30 border-b border-border sticky top-0">
 										<span>output</span>
 										<CopyButton text={combinedOutput} />
 									</div>
@@ -183,7 +183,7 @@ export function BashRenderer({
 									{/* When exit code != 0, show stdout and stderr separately */}
 									{stdout && (
 										<>
-											<div className="flex items-center justify-between gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/30 border-b border-border sticky top-0 z-10">
+											<div className="flex items-center justify-between gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/30 border-b border-border sticky top-0">
 												<span>stdout</span>
 												<CopyButton text={stdout} />
 											</div>
@@ -209,7 +209,7 @@ export function BashRenderer({
 									)}
 									{hasStderr && (
 										<>
-											<div className="flex items-center justify-between gap-2 text-xs text-red-600 dark:text-red-400 px-3 py-1.5 bg-red-500/10 border-b border-border sticky top-0 z-10">
+											<div className="flex items-center justify-between gap-2 text-xs text-red-600 dark:text-red-400 px-3 py-1.5 bg-red-500/10 border-b border-border sticky top-0">
 												<span>stderr</span>
 												<CopyButton text={stderr} />
 											</div>
