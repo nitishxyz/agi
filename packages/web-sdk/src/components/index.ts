@@ -43,3 +43,8 @@ export * from './terminals/TerminalsSidebar';
 export * from './terminals/TerminalsSidebarToggle';
 export * from './terminals/TerminalList';
 export * from './terminals/TerminalViewer';
+
+// Session Files Components
+export * from './session-files/SessionFilesSidebar';
+export * from './session-files/SessionFilesSidebarToggle';
+export * from './session-files/SessionFilesDiffPanel';

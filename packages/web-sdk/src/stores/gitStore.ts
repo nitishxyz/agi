@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useTerminalStore } from './terminalStore';
+import { useSessionFilesStore } from './sessionFilesStore';
 
 interface GitState {
 	// Sidebar state
@@ -46,6 +47,7 @@ export const useGitStore = create<GitState>((set) => ({
 			const newExpanded = !state.isExpanded;
 			if (newExpanded) {
 				useTerminalStore.getState().collapseSidebar();
+				useSessionFilesStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});

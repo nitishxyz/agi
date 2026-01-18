@@ -177,6 +177,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 			onNewSession={handleNewSession}
 			theme={theme}
 			onToggleTheme={toggleTheme}
+			sessionId={sessionId}
 			sidebar={
 				<SessionListContainer
 					activeSessionId={sessionId}

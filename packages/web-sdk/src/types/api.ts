@@ -180,3 +180,32 @@ export interface GitBranchInfo {
 export interface GitPushResponse {
 	output: string;
 }
+
+export interface SessionFileOperation {
+	path: string;
+	operation: 'write' | 'patch' | 'edit' | 'create';
+	timestamp: number;
+	toolCallId: string;
+	toolName: string;
+	patch?: string;
+	content?: string;
+	artifact?: {
+		kind: string;
+		patch?: string;
+		summary?: { additions: number; deletions: number };
+	};
+}
+
+export interface SessionFile {
+	path: string;
+	operations: SessionFileOperation[];
+	operationCount: number;
+	firstModified: number;
+	lastModified: number;
+}
+
+export interface SessionFilesResponse {
+	files: SessionFile[];
+	totalFiles: number;
+	totalOperations: number;
+}

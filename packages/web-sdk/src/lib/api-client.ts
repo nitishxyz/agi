@@ -39,6 +39,7 @@ import type {
 	GitPushResponse,
 	UpdateSessionRequest,
 	AllModelsResponse,
+	SessionFilesResponse,
 } from '../types/api';
 import { API_BASE_URL } from './config';
 
@@ -414,6 +415,27 @@ class ApiClient {
 			changedFiles: Array<{ path: string; status: string }>;
 			truncated: boolean;
 		};
+	}
+
+	async getSessionFiles(sessionId: string): Promise<SessionFilesResponse> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/sessions/${sessionId}/files`,
+			{
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to fetch session files' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
 	}
 }
 
