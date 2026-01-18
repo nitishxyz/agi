@@ -23,3 +23,8 @@ export type {
 	SolforgeAuth,
 	SolforgeProviderOptions,
 } from './solforge-client.ts';
+export {
+	createOpenAIOAuthFetch,
+	createOpenAIOAuthModel,
+} from './openai-oauth-client.ts';
+export type { OpenAIOAuthConfig } from './openai-oauth-client.ts';

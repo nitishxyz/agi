@@ -3,7 +3,12 @@ import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
 import { google, createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { catalog, createSolforgeModel } from '../../../providers/src/index.ts';
+import {
+	catalog,
+	createSolforgeModel,
+	createOpenAIOAuthModel,
+} from '../../../providers/src/index.ts';
+import type { OAuth } from '../../../types/src/index.ts';
 
 export type ProviderName =
 	| 'openai'
@@ -19,6 +24,8 @@ export type ModelConfig = {
 	apiKey?: string;
 	customFetch?: typeof fetch;
 	baseURL?: string;
+	oauth?: OAuth;
+	projectRoot?: string;
 };
 
 export async function resolveModel(
@@ -27,6 +34,19 @@ export async function resolveModel(
 	config: ModelConfig = {},
 ) {
 	if (provider === 'openai') {
+		if (config.oauth) {
+			return createOpenAIOAuthModel(model, {
+				oauth: config.oauth,
+				projectRoot: config.projectRoot,
+			});
+		}
+		if (config.customFetch) {
+			const instance = createOpenAI({
+				apiKey: config.apiKey || 'oauth-token',
+				fetch: config.customFetch,
+			});
+			return instance(model);
+		}
 		if (config.apiKey) {
 			const instance = createOpenAI({ apiKey: config.apiKey });
 			return instance(model);

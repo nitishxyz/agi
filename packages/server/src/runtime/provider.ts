@@ -2,6 +2,7 @@ import type { AGIConfig, ProviderId } from '@agi-cli/sdk';
 import {
 	catalog,
 	createSolforgeModel,
+	createOpenAIOAuthModel,
 	getAuth,
 	refreshToken,
 	setAuth,
@@ -437,7 +438,23 @@ export async function resolveModel(
 	model: string,
 	cfg: AGIConfig,
 ) {
-	if (provider === 'openai') return openai(model);
+	if (provider === 'openai') {
+		const auth = await getAuth('openai', cfg.projectRoot);
+		if (auth?.type === 'oauth') {
+			const isCodexModel = model.toLowerCase().includes('codex');
+			return createOpenAIOAuthModel(model, {
+				oauth: auth,
+				projectRoot: cfg.projectRoot,
+				reasoningEffort: isCodexModel ? 'high' : 'medium',
+				reasoningSummary: 'auto',
+			});
+		}
+		if (auth?.type === 'api' && auth.key) {
+			const instance = createOpenAI({ apiKey: auth.key });
+			return instance(model);
+		}
+		return openai(model);
+	}
 	if (provider === 'anthropic') {
 		const instance = await getAnthropicInstance(cfg);
 		return instance(model);

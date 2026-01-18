@@ -68,3 +68,12 @@ export {
 	openAuthUrl,
 	createApiKey,
 } from './oauth.ts';
+
+export {
+	authorizeOpenAI,
+	exchangeOpenAI,
+	refreshOpenAIToken,
+	openOpenAIAuthUrl,
+	obtainOpenAIApiKey,
+	type OpenAIOAuthResult,
+} from './openai-oauth.ts';

@@ -19,6 +19,10 @@ import {
 	openAuthUrl,
 	createApiKey,
 	providerIds,
+	authorizeOpenAI,
+	exchangeOpenAI,
+	openOpenAIAuthUrl,
+	obtainOpenAIApiKey,
 } from '@agi-cli/sdk';
 import { loadConfig } from '@agi-cli/sdk';
 import { catalog } from '@agi-cli/sdk';
@@ -141,6 +145,10 @@ export async function runAuthLogin(_args: string[]) {
 		return await runAuthLoginAnthropic(cfg, wantLocal);
 	}
 
+	if (provider === 'openai') {
+		return await runAuthLoginOpenAI(cfg, wantLocal);
+	}
+
 	if (provider === 'solforge') {
 		return await runAuthLoginSolforge(cfg, wantLocal);
 	}
@@ -167,6 +175,140 @@ export async function runAuthLogin(_args: string[]) {
 	log.success('Saved');
 	log.info(`Tip: you can also set ${meta.env} in your environment.`);
 	outro('Done');
+}
+
+async function runAuthLoginOpenAI(
+	cfg: Awaited<ReturnType<typeof loadConfig>>,
+	wantLocal: boolean,
+) {
+	try {
+		const authMethod = (await select({
+			message: 'Select authentication method',
+			options: [
+				{
+					value: 'oauth',
+					label: 'ChatGPT Plus/Pro (Free with subscription)',
+				},
+				{ value: 'manual', label: 'Manually enter API Key' },
+			],
+		})) as 'oauth' | 'manual' | symbol;
+
+		if (isCancel(authMethod)) return cancel('Cancelled');
+
+		if (authMethod === 'manual') {
+			const meta = PROVIDER_LINKS.openai;
+			log.info(`Open in browser: ${meta.url}`);
+			const key = await password({
+				message: `Paste ${meta.env} here`,
+				validate: (v) =>
+					v && String(v).trim().length > 0 ? undefined : 'Required',
+			});
+			if (isCancel(key)) return cancel('Cancelled');
+			await setAuth(
+				'openai',
+				{ type: 'api', key: String(key) },
+				cfg.projectRoot,
+				'global',
+			);
+			if (wantLocal)
+				log.warn(
+					'Local credential storage is disabled; saved to secure global location.',
+				);
+			await ensureGlobalConfigDefaults('openai');
+			log.success('Saved');
+			log.info(
+				`Tip: you can also set ${PROVIDER_LINKS.openai.env} in your environment.`,
+			);
+			return outro('Done');
+		}
+
+		log.info('Starting OpenAI OAuth flow...');
+		log.info(
+			'⚠️  If the official Codex CLI is running, please stop it first (both use port 1455).\n',
+		);
+
+		const oauthResult = await authorizeOpenAI();
+
+		log.info('Opening browser for authorization...');
+		log.info(`URL: ${oauthResult.url}\n`);
+
+		const opened = await openOpenAIAuthUrl(oauthResult.url);
+		if (!opened) {
+			log.warn(
+				'⚠️  Could not open browser automatically. Please visit the URL above manually.\n',
+			);
+		}
+
+		log.info('Waiting for authorization callback...');
+		log.info('(Complete the login in your browser)\n');
+
+		try {
+			const code = await oauthResult.waitForCallback();
+			oauthResult.close();
+
+			log.info('🔄 Exchanging authorization code for tokens...');
+
+			const tokens = await exchangeOpenAI(code, oauthResult.verifier);
+
+			let useApiKey = false;
+			let apiKey = '';
+
+			try {
+				log.info('🔑 Trying to obtain API key...');
+				apiKey = await obtainOpenAIApiKey(tokens.idToken);
+				useApiKey = true;
+			} catch {
+				log.info('ℹ️  API key not available (no OpenAI Platform org). Using OAuth tokens.');
+			}
+
+			if (useApiKey && apiKey) {
+				await setAuth(
+					'openai',
+					{ type: 'api', key: apiKey },
+					cfg.projectRoot,
+					'global',
+				);
+				log.success('API key saved!');
+			} else {
+				await setAuth(
+					'openai',
+					{
+						type: 'oauth',
+						refresh: tokens.refresh,
+						access: tokens.access,
+						expires: tokens.expires,
+						accountId: tokens.accountId,
+						idToken: tokens.idToken,
+					},
+					cfg.projectRoot,
+					'global',
+				);
+				log.success(`OAuth tokens saved!${tokens.accountId ? ` (Account: ${tokens.accountId.slice(0, 8)}...)` : ''}`);
+			}
+
+			log.info(
+				'\n💡 You can now use GPT-5.x Codex models with your ChatGPT subscription!',
+			);
+
+			if (wantLocal)
+				log.warn(
+					'Local credential storage is disabled; saved to secure global location.',
+				);
+
+			await ensureGlobalConfigDefaults('openai');
+			outro('Done');
+		} catch (error: unknown) {
+			oauthResult.close();
+			const message =
+				error instanceof Error ? error.message : 'Unknown error occurred';
+			log.error(`Authentication failed: ${message}`);
+			outro('Failed');
+		}
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		log.error(`Failed to initialize authentication: ${message}`);
+		outro('Failed');
+	}
 }
 
 async function runAuthLoginAnthropic(

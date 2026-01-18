@@ -18,6 +18,8 @@ export type OAuth = {
 	access: string;
 	refresh: string;
 	expires: number;
+	accountId?: string;
+	idToken?: string;
 };
 
 /**

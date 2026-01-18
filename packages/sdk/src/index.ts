@@ -60,6 +60,11 @@ export type {
 	SolforgeAuth,
 	SolforgeProviderOptions,
 } from './providers/src/index.ts';
+export {
+	createOpenAIOAuthFetch,
+	createOpenAIOAuthModel,
+} from './providers/src/index.ts';
+export type { OpenAIOAuthConfig } from './providers/src/index.ts';
 
 // =======================
 // Authentication (from internal auth module)
@@ -75,6 +80,14 @@ export {
 	openAuthUrl,
 	createApiKey,
 } from './auth/src/index.ts';
+export {
+	authorizeOpenAI,
+	exchangeOpenAI,
+	refreshOpenAIToken,
+	openOpenAIAuthUrl,
+	obtainOpenAIApiKey,
+} from './auth/src/index.ts';
+export type { OpenAIOAuthResult } from './auth/src/index.ts';
 
 // =======================
 // Configuration (from internal config module)
