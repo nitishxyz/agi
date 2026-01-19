@@ -21,15 +21,18 @@ export const MessageThread = memo(function MessageThread({
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const sessionHeaderRef = useRef<HTMLDivElement>(null);
 	const [autoScroll, setAutoScroll] = useState(true);
+	const autoScrollRef = useRef(true);
 	const [showLeanHeader, setShowLeanHeader] = useState(false);
 	const userScrollingRef = useRef(false);
-	const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+	const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 	const targetScrollRef = useRef(0);
-	const animationFrameRef = useRef<number>();
+	const animationFrameRef = useRef<number | undefined>(undefined);
 	const initialScrollDoneRef = useRef(false);
 	const lastSessionIdRef = useRef<string | undefined>(session?.id);
 	const prevMessagesLengthRef = useRef(messages.length);
 	const prevIsGeneratingRef = useRef(isGenerating);
+	const lastScrollHeightRef = useRef(0);
+	const lastScrollTopRef = useRef(0);
 
 	const handleScroll = useCallback(() => {
 		const container = scrollContainerRef.current;
@@ -38,11 +41,24 @@ export const MessageThread = memo(function MessageThread({
 		const { scrollTop, scrollHeight, clientHeight } = container;
 		const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
+		const scrollHeightIncreased = scrollHeight > lastScrollHeightRef.current;
+		const userScrolledUp = scrollTop < lastScrollTopRef.current - 5;
+
+		lastScrollHeightRef.current = scrollHeight;
+		lastScrollTopRef.current = scrollTop;
+
 		if (distanceFromBottom < 100) {
+			autoScrollRef.current = true;
 			setAutoScroll(true);
-		} else {
+		} else if (userScrolledUp) {
+			autoScrollRef.current = false;
 			setAutoScroll(false);
 			userScrollingRef.current = true;
+		} else if (!scrollHeightIncreased && autoScrollRef.current) {
+			autoScrollRef.current = false;
+			setAutoScroll(false);
+		}
+		if (userScrolledUp || (!autoScrollRef.current && distanceFromBottom >= 100)) {
 			if (userScrollTimeoutRef.current) {
 				clearTimeout(userScrollTimeoutRef.current);
 			}
@@ -87,6 +103,7 @@ export const MessageThread = memo(function MessageThread({
 		// Scroll to bottom when generation starts (user just sent a message)
 		if (justStartedGenerating) {
 			userScrollingRef.current = false;
+			autoScrollRef.current = true;
 			setAutoScroll(true);
 			requestAnimationFrame(() => {
 				requestAnimationFrame(() => {
@@ -97,7 +114,8 @@ export const MessageThread = memo(function MessageThread({
 				});
 			});
 		} else if (messagesAdded && !userScrollingRef.current && !isGenerating) {
-			setAutoScroll(true);
+				autoScrollRef.current = true;
+				setAutoScroll(true);
 		}
 	}, [messages.length, isGenerating]);
 
@@ -150,6 +168,7 @@ export const MessageThread = memo(function MessageThread({
 
 	const scrollToBottom = () => {
 		userScrollingRef.current = false;
+		autoScrollRef.current = true;
 		setAutoScroll(true);
 		const container = scrollContainerRef.current;
 		if (container) {
