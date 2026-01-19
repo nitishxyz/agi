@@ -61,7 +61,7 @@ describe('Built-in Tools', () => {
 		expect(names).toContain('progress_update');
 		expect(names).toContain('websearch');
 		expect(names).toContain('edit');
-		expect(names).toContain('update_plan');
+		expect(names).toContain('update_todos');
 	});
 
 	describe('read tool', () => {
@@ -275,15 +275,15 @@ describe('Built-in Tools', () => {
 		});
 	});
 
-	describe('update_plan tool', () => {
-		it('should update plan items', async () => {
+	describe('update_todos tool', () => {
+		it('should update todo items', async () => {
 			const tools = await discoverProjectTools(projectRoot);
-			const planTool = tools.find((t) => t.name === 'update_plan');
+			const todosTool = tools.find((t) => t.name === 'update_todos');
 
-			const result = await planTool?.tool.execute({
-				items: [
-					{ step: 'Task 1', status: 'done' },
-					{ step: 'Task 2', status: 'in-progress' },
+			const result = await todosTool?.tool.execute({
+				todos: [
+					{ step: 'Task 1', status: 'completed' },
+					{ step: 'Task 2', status: 'in_progress' },
 				],
 			});
 			expect(result).toHaveProperty('items');

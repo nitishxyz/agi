@@ -42,7 +42,7 @@ export const CANONICAL_TO_PASCAL: Record<string, string> = {
 	apply_patch: 'ApplyPatch',
 
 	// Task management
-	update_plan: 'UpdatePlan',
+	update_todos: 'UpdateTodos',
 	progress_update: 'ProgressUpdate',
 	finish: 'Finish',
 
@@ -81,7 +81,7 @@ export const PASCAL_TO_CANONICAL: Record<string, string> = {
 	ApplyPatch: 'apply_patch',
 
 	// Task management
-	UpdatePlan: 'update_plan',
+	UpdateTodos: 'update_todos',
 	ProgressUpdate: 'progress_update',
 	Finish: 'finish',
 

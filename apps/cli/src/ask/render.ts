@@ -39,7 +39,7 @@ const TOOL_COLORS = {
 	// Meta operations - cyan
 	finish: chalk.cyan,
 	progress_update: chalk.cyan,
-	update_plan: chalk.cyan,
+	update_todos: chalk.cyan,
 };
 
 function getToolColor(toolName: string): typeof chalk.cyan {
@@ -117,9 +117,13 @@ function extractArgPreview(toolName: string, args: unknown): string {
 					: obj.message;
 			}
 			break;
-		case 'update_plan':
+		case 'update_todos':
+			if (Array.isArray(obj.todos)) {
+				return `${obj.todos.length} ${obj.todos.length === 1 ? 'todo' : 'todos'}`;
+			}
+			// Also support legacy 'items' key
 			if (Array.isArray(obj.items)) {
-				return `${obj.items.length} ${obj.items.length === 1 ? 'step' : 'steps'}`;
+				return `${obj.items.length} ${obj.items.length === 1 ? 'todo' : 'todos'}`;
 			}
 			break;
 		case 'ls':
@@ -188,7 +192,7 @@ export function logToolError(
 export function printPlan(items: unknown, note?: string): void {
 	if (!Array.isArray(items) || items.length === 0) return;
 
-	console.log(chalk.bold('\n📋 Plan:'));
+	console.log(chalk.bold('\n📋 Todos:'));
 	if (note) {
 		console.log(chalk.dim(`   ${note}`));
 	}
@@ -200,8 +204,14 @@ export function printPlan(items: unknown, note?: string): void {
 
 		if (typeof item === 'string') {
 			step = item;
-		} else if (item && typeof item === 'object' && 'step' in item) {
-			step = String(item.step);
+		} else if (
+			item &&
+			typeof item === 'object' &&
+			('step' in item || 'description' in item)
+		) {
+			// Support both old 'step' format and new 'description' format
+			step =
+				'description' in item ? String(item.description) : String(item.step);
 			status = 'status' in item ? String(item.status) : undefined;
 		} else {
 			continue;
@@ -212,7 +222,9 @@ export function printPlan(items: unknown, note?: string): void {
 				? chalk.green('✓')
 				: status === 'in_progress'
 					? chalk.yellow('⋯')
-					: chalk.dim('○');
+					: status === 'cancelled'
+						? chalk.dim('✗')
+						: chalk.dim('○');
 
 		console.log(`   ${statusIcon} ${step}`);
 	}
@@ -312,8 +324,8 @@ export function printToolResult(
 		return;
 	}
 
-	// Handle update_plan - show the plan
-	if (toolName === 'update_plan') {
+	// Handle update_todos - show the todos
+	if (toolName === 'update_todos') {
 		if (typeof result === 'object' && result !== null && 'items' in result) {
 			printPlan(
 				result.items,

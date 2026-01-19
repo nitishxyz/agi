@@ -1,0 +1,7 @@
+- Create and manage a list of subtasks for complex requests
+- Displays ordered todo items with status and optional note to the user
+
+Usage tips:
+- Keep descriptions concise (imperative verbs)
+- Update the todos whenever scope changes or new tasks emerge
+- Mark items as in_progress when starting, completed when done

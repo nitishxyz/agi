@@ -1,18 +1,18 @@
-import { CheckCircle2, Circle, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Circle, ArrowRight, XCircle } from 'lucide-react';
 import type { RendererProps } from './types';
 
-interface PlanItem {
+interface TodoItem {
 	step: string;
-	status: 'pending' | 'in_progress' | 'completed';
+	status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
 }
 
-interface UpdatePlanResult {
-	items?: PlanItem[];
+interface TodosResult {
+	items?: TodoItem[];
 	note?: string;
 }
 
-export function UpdatePlanRenderer({ contentJson }: RendererProps) {
-	const result = (contentJson.result || {}) as UpdatePlanResult;
+export function TodosRenderer({ contentJson }: RendererProps) {
+	const result = (contentJson.result || {}) as TodosResult;
 	const items = result.items || [];
 	const note = result.note;
 
@@ -36,13 +36,18 @@ export function UpdatePlanRenderer({ contentJson }: RendererProps) {
 							{item.status === 'pending' && (
 								<Circle className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
 							)}
+							{item.status === 'cancelled' && (
+								<XCircle className="h-4 w-4 text-muted-foreground/50 flex-shrink-0 mt-0.5" />
+							)}
 							<span
 								className={`text-sm ${
 									item.status === 'completed'
 										? 'text-muted-foreground line-through'
 										: item.status === 'in_progress'
 											? 'text-foreground'
-											: 'text-muted-foreground/80'
+											: item.status === 'cancelled'
+												? 'text-muted-foreground/50 line-through'
+												: 'text-muted-foreground/80'
 								}`}
 							>
 								{item.step}

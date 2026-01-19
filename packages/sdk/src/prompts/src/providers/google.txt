@@ -19,7 +19,7 @@ Your primary tools for coding tasks are:
 - **Discovery**: `glob` (find files), `ripgrep` (search content), `tree` (directory structure)
 - **Reading**: `read` (individual files), `ls` (directory listing)
 - **Execution**: `bash` (run commands), `git_*` tools (version control)
-- **Planning**: `update_plan` (create and track task plans)
+- **Planning**: `update_todos` (create and track task plans)
 - **Progress**: `progress_update` (inform user of current phase)
 
 ## Search & Discovery Workflow

@@ -1,0 +1,66 @@
+import { tool, type Tool } from 'ai';
+import { z } from 'zod';
+import DESCRIPTION from './todos.txt' with { type: 'text' };
+
+const STATUS_ENUM = z.enum([
+	'pending',
+	'in_progress',
+	'completed',
+	'cancelled',
+]);
+
+const TODO_SCHEMA = z
+	.union([
+		z.string().min(1, 'Todo steps must be non-empty'),
+		z.object({
+			step: z.string().min(1, 'Todo steps must be non-empty'),
+			status: STATUS_ENUM.optional(),
+		}),
+	])
+	.describe('Todo item');
+
+type TodoItemInput = z.infer<typeof TODO_SCHEMA>;
+
+function normalizeItems(
+	raw: TodoItemInput[],
+): Array<{ step: string; status: z.infer<typeof STATUS_ENUM> }> {
+	const normalized = raw.map((item) => {
+		if (typeof item === 'string') {
+			return { step: item.trim(), status: 'pending' as const };
+		}
+		const step = item.step.trim();
+		const status = item.status ?? 'pending';
+		return { step, status };
+	});
+
+	const filtered = normalized.filter((item) => item.step.length > 0);
+	if (!filtered.length) {
+		throw new Error('At least one todo item is required');
+	}
+
+	const inProgressCount = filtered.filter(
+		(item) => item.status === 'in_progress',
+	).length;
+	if (inProgressCount > 1) {
+		throw new Error('Only one todo item may be marked as in_progress');
+	}
+
+	return filtered;
+}
+
+export const updateTodosTool: Tool = tool({
+	description: DESCRIPTION,
+	inputSchema: z.object({
+		todos: z
+			.array(TODO_SCHEMA)
+			.min(1)
+			.describe('The complete list of todo items'),
+		note: z
+			.string()
+			.optional()
+			.describe('Optional note or context for the update'),
+	}),
+	async execute({ todos, note }: { todos: TodoItemInput[]; note?: string }) {
+		return { items: normalizeItems(todos), note };
+	},
+});

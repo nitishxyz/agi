@@ -455,7 +455,7 @@ export async function listAvailableTools(
 		'tree',
 		'ripgrep',
 		'apply_patch',
-		'update_plan',
+		'update_todos',
 		'git_status',
 		'git_diff',
 		'git_commit',

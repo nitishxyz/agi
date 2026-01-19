@@ -9,7 +9,7 @@ import { buildRipgrepTool } from './builtin/ripgrep.ts';
 import { buildGrepTool } from './builtin/grep.ts';
 import { buildGlobTool } from './builtin/glob.ts';
 import { buildApplyPatchTool } from './builtin/patch.ts';
-import { updatePlanTool } from './builtin/plan.ts';
+import { updateTodosTool } from './builtin/todos.ts';
 import { editTool } from './builtin/edit.ts';
 import { buildWebSearchTool } from './builtin/websearch.ts';
 import { buildTerminalTool } from './builtin/terminal.ts';
@@ -125,8 +125,8 @@ export async function discoverProjectTools(
 	// Patch/apply
 	const ap = buildApplyPatchTool(projectRoot);
 	tools.set(ap.name, ap.tool);
-	// Plan update
-	tools.set('update_plan', updatePlanTool);
+	// Todo tracking
+	tools.set('update_todos', updateTodosTool);
 	// Edit
 	tools.set('edit', editTool);
 	// Web search

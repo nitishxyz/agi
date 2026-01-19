@@ -522,7 +522,7 @@ export function adaptTools(
 							sessionId: ctx.sessionId,
 							payload: { ...contentObj, stepIndex: stepIndexForEvent },
 						});
-						if (name === 'update_plan') {
+						if (name === 'update_todos') {
 							try {
 								const resultValue = (contentObj as { result?: unknown })
 									.result as { items?: unknown; note?: unknown } | undefined;

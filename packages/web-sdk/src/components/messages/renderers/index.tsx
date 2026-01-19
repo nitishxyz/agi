@@ -14,7 +14,7 @@ import { SearchRenderer } from './SearchRenderer';
 import { FinishRenderer } from './FinishRenderer';
 import { GenericRenderer } from './GenericRenderer';
 import { DebugRenderer } from './DebugRenderer';
-import { UpdatePlanRenderer } from './UpdatePlanRenderer';
+import { TodosRenderer } from './TodosRenderer';
 import { ProgressUpdateRenderer } from './ProgressUpdateRenderer';
 import { WebSearchRenderer } from './WebSearchRenderer';
 import { ErrorRenderer } from './ErrorRenderer';
@@ -60,7 +60,8 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
 	ApplyPatch: 'apply_patch',
 
 	// Task management
-	UpdatePlan: 'update_plan',
+	UpdateTodos: 'update_todos',
+	UpdatePlan: 'update_todos', // Legacy data compatibility
 	ProgressUpdate: 'progress_update',
 	Finish: 'finish',
 
@@ -121,8 +122,9 @@ export function ToolResultRenderer({
 			return <WebSearchRenderer {...props} />;
 		case 'finish':
 			return <FinishRenderer {...props} />;
-		case 'update_plan':
-			return <UpdatePlanRenderer {...props} />;
+		case 'update_todos':
+		case 'update_plan': // Legacy data compatibility
+			return <TodosRenderer {...props} />;
 		case 'progress_update':
 			return <ProgressUpdateRenderer {...props} />;
 		case 'error':
