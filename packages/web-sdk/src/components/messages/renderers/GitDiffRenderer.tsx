@@ -1,7 +1,17 @@
-import { ChevronRight } from 'lucide-react';
+import { GitBranch } from 'lucide-react';
 import type { RendererProps } from './types';
 import { DiffView } from './DiffView';
-import { formatDuration } from './utils';
+import { formatDuration, isToolError, getErrorMessage } from './utils';
+import { ToolErrorDisplay } from './ToolErrorDisplay';
+import {
+	ToolHeader,
+	ToolHeaderSeparator,
+	ToolHeaderDetail,
+	ToolHeaderMeta,
+	ToolHeaderSuccess,
+	ToolHeaderError,
+	ToolContentBox,
+} from './shared';
 
 export function GitDiffRenderer({
 	contentJson,
@@ -10,11 +20,20 @@ export function GitDiffRenderer({
 	onToggle,
 }: RendererProps) {
 	const result = contentJson.result || {};
+	const args = contentJson.args || {};
 	const patch = String(result.patch || result.diff || '');
-	const all = result.all;
+	const all = args.all || result.all;
 	const timeStr = formatDuration(toolDurationMs);
 
-	// Count files, additions, and deletions from patch
+	const hasError = isToolError(result) || !!contentJson.error;
+	const errorMessage =
+		getErrorMessage(result) ||
+		(typeof contentJson.error === 'string' ? contentJson.error : null);
+	const errorStack =
+		result && typeof result === 'object' && 'stack' in result
+			? String(result.stack)
+			: undefined;
+
 	const lines = patch.split('\n');
 	let files = 0;
 	let additions = 0;
@@ -25,47 +44,75 @@ export function GitDiffRenderer({
 		else if (line.startsWith('-') && !line.startsWith('---')) deletions += 1;
 	}
 
+	const hasChanges = files > 0;
+
 	return (
 		<div className="text-xs">
-			<button
-				type="button"
-				onClick={onToggle}
-				className="flex items-center gap-2 text-purple-700 dark:text-purple-300 transition-colors hover:text-purple-600 dark:hover:text-purple-200 w-full"
+			<ToolHeader
+				toolName="git diff"
+				isExpanded={isExpanded}
+				onToggle={onToggle}
+				isError={hasError}
+				colorVariant="purple"
+				canExpand={true}
 			>
-				<ChevronRight
-					className={`h-3 w-3 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-				/>
-				<span className="font-medium flex-shrink-0">git diff</span>
 				{all && (
-					<span className="text-xs text-muted-foreground/60 flex-shrink-0">
-						(all)
-					</span>
-				)}
-				<span className="text-muted-foreground/70 flex-shrink-0">·</span>
-				{files > 0 && (
 					<>
-						<span className="text-foreground/70 flex-shrink-0">
-							{files} {files === 1 ? 'file' : 'files'}
-						</span>
-						{additions > 0 && (
-							<span className="text-emerald-600 dark:text-emerald-400 flex-shrink-0">
-								+{additions}
-							</span>
-						)}
-						{deletions > 0 && (
-							<span className="text-red-600 dark:text-red-400 flex-shrink-0">
-								-{deletions}
-							</span>
-						)}
+						<ToolHeaderSeparator />
+						<span className="text-muted-foreground/60">(all)</span>
 					</>
 				)}
-				<span className="text-muted-foreground/80 flex-shrink-0">
-					· {timeStr}
-				</span>
-			</button>
-			{isExpanded && patch && (
-				<div className="mt-2 ml-5">
-					<DiffView patch={patch} />
+				<ToolHeaderSeparator />
+				{hasChanges ? (
+					<>
+						<ToolHeaderDetail>
+							{files} {files === 1 ? 'file' : 'files'}
+						</ToolHeaderDetail>
+						{additions > 0 && (
+							<>
+								<ToolHeaderSeparator />
+								<ToolHeaderSuccess>+{additions}</ToolHeaderSuccess>
+							</>
+						)}
+						{deletions > 0 && (
+							<>
+								<ToolHeaderSeparator />
+								<ToolHeaderError>-{deletions}</ToolHeaderError>
+							</>
+						)}
+					</>
+				) : (
+					<span className="text-muted-foreground/60">no changes</span>
+				)}
+				<ToolHeaderSeparator />
+				<ToolHeaderMeta>{timeStr}</ToolHeaderMeta>
+			</ToolHeader>
+
+			{isExpanded && hasError && errorMessage && (
+				<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />
+			)}
+
+			{isExpanded && !hasError && (
+				<div className="mt-2 ml-5 flex flex-col gap-2 max-w-full">
+					<ToolContentBox
+						title="options"
+						icon={<GitBranch className="h-3 w-3" />}
+						maxHeight=""
+					>
+						<div className="px-3 py-2 font-mono text-xs bg-muted/10">
+							{all ? 'git diff (all working tree)' : 'git diff (staged only)'}
+						</div>
+					</ToolContentBox>
+
+					{patch && <DiffView patch={patch} />}
+
+					{!patch && (
+						<ToolContentBox title="diff" maxHeight="">
+							<div className="px-3 py-2 text-muted-foreground/60 italic">
+								No changes to show
+							</div>
+						</ToolContentBox>
+					)}
 				</div>
 			)}
 		</div>

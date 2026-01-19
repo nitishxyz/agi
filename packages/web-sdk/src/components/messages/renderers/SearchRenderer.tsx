@@ -1,3 +1,4 @@
+import { Search } from 'lucide-react';
 import type { RendererProps } from './types';
 import { formatDuration, isToolError, getErrorMessage } from './utils';
 import { ToolErrorDisplay } from './ToolErrorDisplay';
@@ -6,6 +7,7 @@ import {
 	ToolHeaderSeparator,
 	ToolHeaderDetail,
 	ToolHeaderMeta,
+	ToolContentBox,
 } from './shared';
 
 export function SearchRenderer({
@@ -15,6 +17,7 @@ export function SearchRenderer({
 	onToggle,
 }: RendererProps) {
 	const result = contentJson.result || {};
+	const args = (contentJson.args || {}) as Record<string, unknown>;
 	const matches = (result.matches as Array<unknown>) || [];
 	const files = (result.files as Array<unknown>) || [];
 	const timeStr = formatDuration(toolDurationMs);
@@ -28,7 +31,6 @@ export function SearchRenderer({
 			? String(result.stack)
 			: undefined;
 
-	// Determine what to show - matches for grep/ripgrep, files for glob
 	const itemCount = matches.length > 0 ? matches.length : files.length;
 	const itemLabel =
 		matches.length > 0
@@ -39,18 +41,17 @@ export function SearchRenderer({
 				? 'file'
 				: 'files';
 
-	// Extract search term from args
 	const searchTerm = (() => {
-		const args = contentJson.args as Record<string, unknown> | undefined;
-		if (args && typeof args === 'object') {
-			if (typeof args.pattern === 'string') return args.pattern;
-			if (typeof args.query === 'string') return args.query;
-			if (typeof args.filePattern === 'string') return args.filePattern;
-		}
+		if (typeof args.pattern === 'string') return args.pattern;
+		if (typeof args.query === 'string') return args.query;
+		if (typeof args.filePattern === 'string') return args.filePattern;
 		return '';
 	})();
 
-	const canExpand = itemCount > 0 || hasError;
+	const searchPath = (() => {
+		if (typeof args.path === 'string' && args.path !== '.') return args.path;
+		return undefined;
+	})();
 
 	return (
 		<div className="text-xs">
@@ -60,12 +61,15 @@ export function SearchRenderer({
 				onToggle={onToggle}
 				isError={hasError}
 				colorVariant="amber"
-				canExpand={canExpand}
+				canExpand={true}
 			>
 				{searchTerm && (
 					<>
 						<ToolHeaderSeparator />
-						<span className="font-mono text-foreground/90 text-[11px]">
+						<span
+							className="font-mono text-foreground/90 text-[11px] truncate min-w-0"
+							title={searchTerm}
+						>
 							"
 							{searchTerm.length > 30
 								? `${searchTerm.slice(0, 30)}…`
@@ -81,37 +85,91 @@ export function SearchRenderer({
 				<ToolHeaderSeparator />
 				<ToolHeaderMeta>{timeStr}</ToolHeaderMeta>
 			</ToolHeader>
+
 			{isExpanded && hasError && errorMessage && (
 				<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />
 			)}
-			{isExpanded && !hasError && matches.length > 0 && (
-				<div className="mt-2 ml-5 space-y-1 max-h-96 overflow-y-auto">
-					{matches.map((match, i) => {
-						const m = match as { file?: string; line?: number; text?: string };
-						return (
-							<div
-								key={`${m.file}-${m.line}-${i}`}
-								className="text-xs font-mono bg-card/60 border border-border rounded px-2 py-1"
-							>
-								<div className="text-blue-600 dark:text-blue-400 truncate">
-									{m.file}:{m.line}
-								</div>
-								<div className="text-foreground/80 truncate">{m.text}</div>
-							</div>
-						);
-					})}
-				</div>
-			)}
-			{isExpanded && !hasError && files.length > 0 && matches.length === 0 && (
-				<div className="mt-2 ml-5 space-y-0.5 max-h-96 overflow-y-auto">
-					{files.map((file) => (
-						<div
-							key={String(file)}
-							className="text-xs font-mono text-foreground/70 truncate"
-						>
-							{String(file)}
+
+			{isExpanded && !hasError && (
+				<div className="mt-2 ml-5 flex flex-col gap-2 max-w-full">
+					<ToolContentBox
+						title="query"
+						icon={<Search className="h-3 w-3" />}
+						subtitle={searchPath}
+						copyText={searchTerm}
+						maxHeight=""
+					>
+						<div className="px-3 py-2 font-mono text-xs bg-muted/10 break-all">
+							{searchTerm || '(empty)'}
 						</div>
-					))}
+					</ToolContentBox>
+
+					{matches.length > 0 && (
+						<ToolContentBox
+							title="results"
+							copyText={matches
+								.map((m) => {
+									const match = m as {
+										file?: string;
+										line?: number;
+										text?: string;
+									};
+									return `${match.file}:${match.line}: ${match.text}`;
+								})
+								.join('\n')}
+							maxHeight="max-h-80"
+						>
+							<div className="divide-y divide-border/50">
+								{matches.map((match, i) => {
+									const m = match as {
+										file?: string;
+										line?: number;
+										text?: string;
+									};
+									return (
+										<div
+											key={`${m.file}-${m.line}-${i}`}
+											className="px-3 py-1.5 font-mono hover:bg-muted/20"
+										>
+											<div className="text-blue-600 dark:text-blue-400 truncate">
+												{m.file}:{m.line}
+											</div>
+											<div className="text-foreground/80 truncate">
+												{m.text}
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</ToolContentBox>
+					)}
+
+					{files.length > 0 && matches.length === 0 && (
+						<ToolContentBox
+							title="files"
+							copyText={files.map(String).join('\n')}
+							maxHeight="max-h-80"
+						>
+							<div className="divide-y divide-border/50">
+								{files.map((file) => (
+									<div
+										key={String(file)}
+										className="px-3 py-1 font-mono text-foreground/80 truncate hover:bg-muted/20"
+									>
+										{String(file)}
+									</div>
+								))}
+							</div>
+						</ToolContentBox>
+					)}
+
+					{itemCount === 0 && (
+						<ToolContentBox title="results" maxHeight="">
+							<div className="px-3 py-2 text-muted-foreground/60 italic">
+								No results found
+							</div>
+						</ToolContentBox>
+					)}
 				</div>
 			)}
 		</div>
