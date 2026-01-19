@@ -1,4 +1,4 @@
-import { useEffect, useMemo, memo } from 'react';
+import { useEffect, useMemo, memo, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import {
@@ -349,13 +349,9 @@ export const SessionFilesDiffPanel = memo(function SessionFilesDiffPanel() {
 	);
 	const closeDiff = useSessionFilesStore((state) => state.closeDiff);
 
-	const wasCollapsedBeforeDiff = useSidebarStore(
-		(state) => state.wasCollapsedBeforeDiff,
-	);
-	const setWasCollapsedBeforeDiff = useSidebarStore(
-		(state) => state.setWasCollapsedBeforeDiff,
-	);
 	const setCollapsed = useSidebarStore((state) => state.setCollapsed);
+	const wasCollapsedRef = useRef<boolean | null>(null);
+	const prevDiffOpenRef = useRef(false);
 
 	const selectedOperation = allOperations[selectedOperationIndex];
 
@@ -386,21 +382,21 @@ export const SessionFilesDiffPanel = memo(function SessionFilesDiffPanel() {
 	}, [selectedOperation, selectedFile]);
 
 	useEffect(() => {
-		const { isCollapsed } = useSidebarStore.getState();
-
-		if (isDiffOpen) {
-			setWasCollapsedBeforeDiff(isCollapsed);
+		// Only act on transitions
+		if (isDiffOpen && !prevDiffOpenRef.current) {
+			// Diff just opened - save current state and collapse
+			const { isCollapsed } = useSidebarStore.getState();
+			wasCollapsedRef.current = isCollapsed;
 			setCollapsed(true);
-		} else if (wasCollapsedBeforeDiff !== null) {
-			setCollapsed(wasCollapsedBeforeDiff);
-			setWasCollapsedBeforeDiff(null);
+		} else if (!isDiffOpen && prevDiffOpenRef.current) {
+			// Diff just closed - restore previous state
+			if (wasCollapsedRef.current !== null) {
+				setCollapsed(wasCollapsedRef.current);
+				wasCollapsedRef.current = null;
+			}
 		}
-	}, [
-		isDiffOpen,
-		setWasCollapsedBeforeDiff,
-		setCollapsed,
-		wasCollapsedBeforeDiff,
-	]);
+		prevDiffOpenRef.current = isDiffOpen;
+	}, [isDiffOpen, setCollapsed]);
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {

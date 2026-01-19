@@ -5,6 +5,7 @@ import {
 	FileCode,
 	FilePlus,
 	FileEdit,
+	RefreshCw,
 } from 'lucide-react';
 import { useSessionFilesStore } from '../../stores/sessionFilesStore';
 import { useSessionFiles } from '../../hooks/useSessionFiles';
@@ -126,7 +127,7 @@ export const SessionFilesSidebar = memo(function SessionFilesSidebar({
 	const collapseSidebar = useSessionFilesStore(
 		(state) => state.collapseSidebar,
 	);
-	const { data, isLoading, error } = useSessionFiles(sessionId);
+	const { data, isLoading, error, refetch } = useSessionFiles(sessionId);
 
 	if (!isExpanded) return null;
 
@@ -169,13 +170,30 @@ export const SessionFilesSidebar = memo(function SessionFilesSidebar({
 				)}
 			</div>
 
-			{data && data.totalOperations > 0 && (
-				<div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
-					{data.totalFiles} file{data.totalFiles !== 1 ? 's' : ''} •{' '}
-					{data.totalOperations} operation
-					{data.totalOperations !== 1 ? 's' : ''}
+			<div className="h-12 px-4 border-t border-border text-xs text-muted-foreground flex items-center justify-between gap-2">
+				<div className="flex items-center gap-2 min-w-0 flex-1">
+					<FilePen className="w-3 h-3 flex-shrink-0" />
+					{data && data.totalOperations > 0 ? (
+						<span className="truncate">
+							{data.totalFiles} file{data.totalFiles !== 1 ? 's' : ''} • {data.totalOperations} op{data.totalOperations !== 1 ? 's' : ''}
+						</span>
+					) : (
+						<span className="truncate">No changes</span>
+					)}
 				</div>
-			)}
+				<div className="flex items-center gap-1 flex-shrink-0">
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={() => refetch()}
+						title="Refresh session files"
+						className="h-6 w-6 transition-transform duration-200 hover:scale-110"
+						disabled={isLoading}
+					>
+						<RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+					</Button>
+				</div>
+			</div>
 		</div>
 	);
 });

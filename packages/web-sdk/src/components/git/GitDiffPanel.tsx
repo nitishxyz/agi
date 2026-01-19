@@ -1,4 +1,4 @@
-import { useEffect, memo } from 'react';
+import { useEffect, useRef, memo } from 'react';
 import { X } from 'lucide-react';
 import { useGitStore } from '../../stores/gitStore';
 import { useSidebarStore } from '../../stores/sidebarStore';
@@ -13,38 +13,31 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 	const selectedFileStaged = useGitStore((state) => state.selectedFileStaged);
 	const closeDiff = useGitStore((state) => state.closeDiff);
 
-	const wasCollapsedBeforeDiff = useSidebarStore(
-		(state) => state.wasCollapsedBeforeDiff,
-	);
-	const setWasCollapsedBeforeDiff = useSidebarStore(
-		(state) => state.setWasCollapsedBeforeDiff,
-	);
 	const setCollapsed = useSidebarStore((state) => state.setCollapsed);
+	const wasCollapsedRef = useRef<boolean | null>(null);
+	const prevDiffOpenRef = useRef(false);
 
 	const { data: diff, isLoading } = useGitDiff(
 		selectedFile,
 		selectedFileStaged,
 	);
 
-	// Auto-collapse left sidebar when diff opens, and restore when it closes
 	useEffect(() => {
-		const { isCollapsed } = useSidebarStore.getState();
-
-		if (isDiffOpen) {
-			// Save current state and collapse
-			setWasCollapsedBeforeDiff(isCollapsed);
+		// Only act on transitions
+		if (isDiffOpen && !prevDiffOpenRef.current) {
+			// Diff just opened - save current state and collapse
+			const { isCollapsed } = useSidebarStore.getState();
+			wasCollapsedRef.current = isCollapsed;
 			setCollapsed(true);
-		} else if (wasCollapsedBeforeDiff !== null) {
-			// Restore previous state when diff closes
-			setCollapsed(wasCollapsedBeforeDiff);
-			setWasCollapsedBeforeDiff(null);
+		} else if (!isDiffOpen && prevDiffOpenRef.current) {
+			// Diff just closed - restore previous state
+			if (wasCollapsedRef.current !== null) {
+				setCollapsed(wasCollapsedRef.current);
+				wasCollapsedRef.current = null;
+			}
 		}
-	}, [
-		isDiffOpen,
-		setWasCollapsedBeforeDiff,
-		setCollapsed,
-		wasCollapsedBeforeDiff,
-	]);
+		prevDiffOpenRef.current = isDiffOpen;
+	}, [isDiffOpen, setCollapsed]);
 
 	// Handle ESC key
 	useEffect(() => {
