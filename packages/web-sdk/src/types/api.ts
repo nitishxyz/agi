@@ -36,7 +36,14 @@ export interface MessagePart {
 	messageId: string;
 	index: number;
 	stepIndex: number | null;
-	type: 'text' | 'tool_call' | 'tool_result' | 'image' | 'error' | 'reasoning';
+	type:
+		| 'text'
+		| 'tool_call'
+		| 'tool_result'
+		| 'image'
+		| 'file'
+		| 'error'
+		| 'reasoning';
 	content: string;
 	contentJson?: Record<string, unknown>;
 	agent: string;
@@ -71,6 +78,13 @@ export interface UpdateSessionRequest {
 export interface SendMessageRequest {
 	content: string;
 	images?: Array<{ data: string; mediaType: string }>;
+	files?: Array<{
+		type: 'image' | 'pdf' | 'text';
+		name: string;
+		data: string;
+		mediaType: string;
+		textContent?: string;
+	}>;
 	agent?: string;
 	provider?: string;
 	model?: string;

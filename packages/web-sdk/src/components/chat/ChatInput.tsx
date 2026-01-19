@@ -10,7 +10,15 @@ import {
 } from 'react';
 import type { ChangeEvent, ClipboardEvent } from 'react';
 
-import { ArrowUp, MoreVertical, X, ImageIcon, Brain } from 'lucide-react';
+import {
+	ArrowUp,
+	MoreVertical,
+	X,
+	ImageIcon,
+	Brain,
+	FileText,
+	FileIcon,
+} from 'lucide-react';
 import { Textarea } from '../ui/Textarea';
 import { FileMentionPopup } from './FileMentionPopup';
 import { CommandSuggestionsPopup } from './CommandSuggestionsPopup';
@@ -21,7 +29,7 @@ import { useVimMode } from '../../hooks/useVimMode';
 import { useFileMention } from '../../hooks/useFileMention';
 import { useCommandSuggestions } from '../../hooks/useCommandSuggestions';
 import { createChatInputKeyHandler } from './ChatInputKeyHandler';
-import type { ImageAttachment } from '../../hooks/useImageUpload';
+import type { FileAttachment } from '../../hooks/useFileUpload';
 
 interface ChatInputProps {
 	onSend: (message: string) => void;
@@ -32,8 +40,9 @@ interface ChatInputProps {
 	isPlanMode?: boolean;
 	reasoningEnabled?: boolean;
 	sessionId?: string;
-	images?: ImageAttachment[];
-	onImageRemove?: (id: string) => void;
+	images?: FileAttachment[];
+	documents?: FileAttachment[];
+	onFileRemove?: (id: string) => void;
 	isDragging?: boolean;
 	onPaste?: (e: ClipboardEvent) => void;
 	visionEnabled?: boolean;
@@ -51,7 +60,8 @@ export const ChatInput = memo(
 			reasoningEnabled,
 			sessionId,
 			images = [],
-			onImageRemove,
+			documents = [],
+			onFileRemove,
 			isDragging = false,
 			onPaste,
 			visionEnabled = false,
@@ -285,21 +295,23 @@ export const ChatInput = memo(
 		);
 
 		const hasImages = images.length > 0;
+		const hasDocuments = documents.length > 0;
+		const hasFiles = hasImages || hasDocuments;
 
 		return (
 			<>
-				{isDragging && visionEnabled && (
+				{isDragging && (
 					<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-none">
 						<div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-card border-2 border-dashed border-primary/50">
 							<div className="p-4 rounded-full bg-primary/10">
-								<ImageIcon className="w-12 h-12 text-primary" />
+								<FileIcon className="w-12 h-12 text-primary" />
 							</div>
 							<div className="text-center">
 								<p className="text-lg font-medium text-foreground">
-									Drop images here
+									Drop files here
 								</p>
 								<p className="text-sm text-muted-foreground">
-									PNG, JPEG, GIF, WebP up to 5MB
+									Images, PDF, Markdown, Text up to 10MB
 								</p>
 							</div>
 						</div>
@@ -324,7 +336,7 @@ export const ChatInput = memo(
 									: 'bg-card border border-border focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40'
 							}`}
 						>
-							{hasImages && visionEnabled && (
+							{hasFiles && (
 								<div className="flex flex-wrap gap-2 px-3 pt-2 pb-1">
 									{images.map((img) => (
 										<div
@@ -338,7 +350,27 @@ export const ChatInput = memo(
 											/>
 											<button
 												type="button"
-												onClick={() => onImageRemove?.(img.id)}
+												onClick={() => onFileRemove?.(img.id)}
+												className="absolute top-0 right-0 p-0.5 bg-black/60 rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity"
+											>
+												<X className="w-3 h-3 text-white" />
+											</button>
+										</div>
+									))}
+									{documents.map((doc) => (
+										<div
+											key={doc.id}
+											className="relative group flex items-center gap-2 px-3 py-2 rounded-lg bg-muted max-w-[200px]"
+										>
+											{doc.type === 'pdf' ? (
+												<FileIcon className="w-4 h-4 text-red-500 flex-shrink-0" />
+											) : (
+												<FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+											)}
+											<span className="text-xs truncate">{doc.name}</span>
+											<button
+												type="button"
+												onClick={() => onFileRemove?.(doc.id)}
 												className="absolute top-0 right-0 p-0.5 bg-black/60 rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity"
 											>
 												<X className="w-3 h-3 text-white" />
@@ -381,9 +413,9 @@ export const ChatInput = memo(
 								<button
 									type="button"
 									onClick={handleSend}
-									disabled={disabled || (!message.trim() && !hasImages)}
+									disabled={disabled || (!message.trim() && !hasFiles)}
 									className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors flex-shrink-0 touch-manipulation ${
-										message.trim() || hasImages
+										message.trim() || hasFiles
 											? 'bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground'
 											: 'bg-transparent text-muted-foreground'
 									}`}

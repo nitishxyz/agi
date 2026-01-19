@@ -112,6 +112,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 			const content = body?.content ?? '';
 			const userContext = body?.userContext;
 			const images = Array.isArray(body?.images) ? body.images : undefined;
+			const files = Array.isArray(body?.files) ? body.files : undefined;
 
 			// DEBUG: Log extracted userContext
 			logger.info('[API] Extracted userContext', {
@@ -157,6 +158,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				userContext,
 				reasoning,
 				images,
+				files,
 			});
 			return c.json({ messageId: assistantMessageId }, 202);
 		} catch (error) {

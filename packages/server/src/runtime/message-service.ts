@@ -25,6 +25,13 @@ type DispatchOptions = {
 	userContext?: string;
 	reasoning?: boolean;
 	images?: Array<{ data: string; mediaType: string }>;
+	files?: Array<{
+		type: 'image' | 'pdf' | 'text';
+		name: string;
+		data: string;
+		mediaType: string;
+		textContent?: string;
+	}>;
 };
 
 export async function dispatchAssistantMessage(
@@ -42,6 +49,7 @@ export async function dispatchAssistantMessage(
 		userContext,
 		reasoning,
 		images,
+		files,
 	} = options;
 
 	// DEBUG: Log userContext in dispatch
@@ -83,6 +91,29 @@ export async function dispatchAssistantMessage(
 				index: i + 1,
 				type: 'image',
 				content: JSON.stringify({ data: img.data, mediaType: img.mediaType }),
+				agent,
+				provider,
+				model,
+			});
+		}
+	}
+
+	let nextIndex = (images?.length ?? 0) + 1;
+	if (files && files.length > 0) {
+		for (const file of files) {
+			const partType = file.type === 'image' ? 'image' : 'file';
+			await db.insert(messageParts).values({
+				id: crypto.randomUUID(),
+				messageId: userMessageId,
+				index: nextIndex++,
+				type: partType,
+				content: JSON.stringify({
+					type: file.type,
+					name: file.name,
+					data: file.data,
+					mediaType: file.mediaType,
+					textContent: file.textContent,
+				}),
 				agent,
 				provider,
 				model,

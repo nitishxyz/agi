@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { User, X } from 'lucide-react';
+import { User, X, FileText, FileIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message } from '../../types/api';
@@ -14,6 +14,14 @@ interface ImageData {
 	mediaType: string;
 }
 
+interface FileData {
+	type: 'image' | 'pdf' | 'text';
+	name: string;
+	data: string;
+	mediaType: string;
+	textContent?: string;
+}
+
 export const UserMessageGroup = memo(
 	function UserMessageGroup({ message }: UserMessageGroupProps) {
 		const [expandedImage, setExpandedImage] = useState<string | null>(null);
@@ -21,6 +29,7 @@ export const UserMessageGroup = memo(
 
 		const textParts = parts.filter((p) => p.type === 'text');
 		const imageParts = parts.filter((p) => p.type === 'image');
+		const fileParts = parts.filter((p) => p.type === 'file');
 
 		const firstTextPart = textParts[0];
 		let content = '';
@@ -48,6 +57,26 @@ export const UserMessageGroup = memo(
 			} catch {}
 		}
 
+		const files: Array<{ id: string; type: string; name: string }> = [];
+		for (const part of fileParts) {
+			try {
+				const data = part.contentJson || JSON.parse(part.content || '{}');
+				if (data && typeof data === 'object' && 'type' in data) {
+					const fileData = data as FileData;
+					if (fileData.type === 'image' && fileData.data) {
+						const src = `data:${fileData.mediaType};base64,${fileData.data}`;
+						images.push({ id: part.id, src });
+					} else {
+						files.push({
+							id: part.id,
+							type: fileData.type,
+							name: fileData.name,
+						});
+					}
+				}
+			} catch {}
+		}
+
 		const formatTime = (ts?: number) => {
 			if (!ts) return '';
 			const date = new Date(ts);
@@ -59,8 +88,9 @@ export const UserMessageGroup = memo(
 
 		const hasContent = content.trim().length > 0;
 		const hasImages = images.length > 0;
+		const hasFiles = files.length > 0;
 
-		if (!hasContent && !hasImages) return null;
+		if (!hasContent && !hasImages && !hasFiles) return null;
 
 		return (
 			<>
@@ -92,6 +122,25 @@ export const UserMessageGroup = memo(
 													className="w-full h-full object-cover"
 												/>
 											</button>
+										))}
+									</div>
+								)}
+								{hasFiles && (
+									<div className="flex flex-wrap gap-2 mb-2">
+										{files.map((file) => (
+											<div
+												key={file.id}
+												className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border"
+											>
+												{file.type === 'pdf' ? (
+													<FileIcon className="w-4 h-4 text-red-500 flex-shrink-0" />
+												) : (
+													<FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+												)}
+												<span className="text-xs truncate max-w-[150px]">
+													{file.name}
+												</span>
+											</div>
 										))}
 									</div>
 								)}

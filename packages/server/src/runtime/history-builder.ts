@@ -60,6 +60,34 @@ export async function buildHistoryMessages(
 							} as never);
 						}
 					} catch {}
+				} else if (p.type === 'file') {
+					try {
+						const obj = JSON.parse(p.content ?? '{}') as {
+							type?: 'image' | 'pdf' | 'text';
+							name?: string;
+							data?: string;
+							mediaType?: string;
+							textContent?: string;
+						};
+						if (obj.type === 'text' && obj.textContent) {
+							uparts.push({
+								type: 'text',
+								text: `<file name="${obj.name || 'file'}">\n${obj.textContent}\n</file>`,
+							});
+						} else if (obj.type === 'pdf' && obj.data && obj.mediaType) {
+							uparts.push({
+								type: 'file',
+								mediaType: obj.mediaType,
+								url: `data:${obj.mediaType};base64,${obj.data}`,
+							} as never);
+						} else if (obj.type === 'image' && obj.data && obj.mediaType) {
+							uparts.push({
+								type: 'file',
+								mediaType: obj.mediaType,
+								url: `data:${obj.mediaType};base64,${obj.data}`,
+							} as never);
+						}
+					} catch {}
 				}
 			}
 			if (uparts.length) {

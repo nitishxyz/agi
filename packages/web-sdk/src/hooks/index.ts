@@ -10,4 +10,5 @@ export * from './useTheme';
 export * from './useWorkingDirectory';
 export * from './useKeyboardShortcuts';
 export * from './useImageUpload';
+export * from './useFileUpload';
 export * from './useSessionFiles';

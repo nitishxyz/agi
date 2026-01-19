@@ -13,7 +13,7 @@ import { useAllModels } from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useGitStatus, useStageFiles } from '../../hooks/useGit';
 import { useGitStore } from '../../stores/gitStore';
-import { useImageUpload } from '../../hooks/useImageUpload';
+import { useFileUpload } from '../../hooks/useFileUpload';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
 
@@ -50,8 +50,14 @@ export const ChatInputContainer = memo(
 			const stageFiles = useStageFiles();
 			const openCommitModal = useGitStore((state) => state.openCommitModal);
 
-			const { images, isDragging, removeImage, clearImages, handlePaste } =
-				useImageUpload();
+			const {
+				images,
+				documents,
+				isDragging,
+				removeFile,
+				clearFiles,
+				handlePaste,
+			} = useFileUpload();
 
 			const modelSupportsReasoning = allModels?.[provider]?.models?.find(
 				(m) => m.id === model,
@@ -90,9 +96,21 @@ export const ChatInputContainer = memo(
 									}))
 								: undefined;
 
+						const fileData =
+							documents.length > 0
+								? documents.map((f) => ({
+										type: f.type,
+										name: f.name,
+										data: f.data,
+										mediaType: f.mediaType,
+										textContent: f.textContent,
+									}))
+								: undefined;
+
 						await sendMessage.mutateAsync({
 							content,
 							images: imageData,
+							files: fileData,
 							agent: agent || undefined,
 							provider: provider || undefined,
 							model: model || undefined,
@@ -103,15 +121,16 @@ export const ChatInputContainer = memo(
 									: undefined,
 						});
 
-						clearImages();
+						clearFiles();
 					} catch (error) {
 						console.error('Failed to send message:', error);
 					}
 				},
 				[
 					sendMessage,
+					documents,
 					images,
-					clearImages,
+					clearFiles,
 					agent,
 					provider,
 					model,
@@ -263,7 +282,8 @@ export const ChatInputContainer = memo(
 						}
 						sessionId={sessionId}
 						images={images}
-						onImageRemove={removeImage}
+						documents={documents}
+						onFileRemove={removeFile}
 						isDragging={isDragging}
 						onPaste={handlePaste}
 						visionEnabled={modelSupportsVision}
