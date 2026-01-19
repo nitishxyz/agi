@@ -175,7 +175,8 @@ export const SessionFilesSidebar = memo(function SessionFilesSidebar({
 					<FilePen className="w-3 h-3 flex-shrink-0" />
 					{data && data.totalOperations > 0 ? (
 						<span className="truncate">
-							{data.totalFiles} file{data.totalFiles !== 1 ? 's' : ''} • {data.totalOperations} op{data.totalOperations !== 1 ? 's' : ''}
+							{data.totalFiles} file{data.totalFiles !== 1 ? 's' : ''} •{' '}
+							{data.totalOperations} op{data.totalOperations !== 1 ? 's' : ''}
 						</span>
 					) : (
 						<span className="truncate">No changes</span>
@@ -190,7 +191,9 @@ export const SessionFilesSidebar = memo(function SessionFilesSidebar({
 						className="h-6 w-6 transition-transform duration-200 hover:scale-110"
 						disabled={isLoading}
 					>
-						<RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+						<RefreshCw
+							className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`}
+						/>
 					</Button>
 				</div>
 			</div>
