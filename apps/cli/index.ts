@@ -3,6 +3,7 @@ import {
 	isProviderAuthorized,
 	getTerminalManager,
 	type ProviderId,
+	openAuthUrl,
 } from '@agi-cli/sdk';
 import {
 	createApp as createServer,
@@ -21,25 +22,23 @@ import { runAgents } from './src/agents.ts';
 import { runToolsList } from './src/tools.ts';
 import { runDoctor } from './src/doctor.ts';
 import { createWebServer } from './src/web-server.ts';
+import { colors } from './src/ui.ts';
 
 const createApp = createServer;
-// Load package version for --version flag (works in compiled binary)
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import PKG from './package.json' with { type: 'json' };
 
-// Handle both compiled binaries and regular bun execution
 let argv = process.argv.slice(2);
 
-// In compiled binaries, sometimes the binary name appears in argv
-// Remove it if the first argument is just "agi" (the binary name)
 if (argv[0] === 'agi' || argv[0]?.endsWith('/agi')) {
 	argv = argv.slice(1);
 }
 
 const cmd = argv[0];
 
+const ASK_ALIASES = new Set(['ask', 'run', 'do', 'a']);
+
 async function main() {
-	// Parse --debug and --trace flags early
 	const debugEnabled = argv.includes('--debug');
 	const traceEnabled = argv.includes('--trace');
 
@@ -55,14 +54,12 @@ async function main() {
 		}
 	}
 
-	// Debug: Check what arguments we received (only in debug mode)
 	if (debugEnabled) {
 		console.log('DEBUG: process.argv:', process.argv);
 		console.log('DEBUG: argv (after cleanup):', argv);
 		console.log('DEBUG: cmd:', cmd);
 	}
 
-	// Global version/help (no auth required)
 	const wantsVersion = argv.includes('--version') || argv.includes('-v');
 	if (wantsVersion) {
 		const version = (PKG as { version: string }).version;
@@ -70,7 +67,6 @@ async function main() {
 		return;
 	}
 
-	// Global help (no auth required) with project command discovery
 	const wantsHelp = argv.includes('--help') || argv.includes('-h');
 	if (wantsHelp) {
 		const projectRoot = process.cwd();
@@ -79,97 +75,6 @@ async function main() {
 			cmds = await discoverCommands(projectRoot);
 		} catch {}
 		printHelp(cmds);
-		return;
-	}
-	if (cmd === 'serve') {
-		// Ensure DB exists and migrations are applied before serving
-		const projectRoot = process.cwd();
-		if (!(await ensureSomeAuth(projectRoot))) return;
-		const cfg = await loadConfig(projectRoot);
-		await getDb(cfg.projectRoot);
-
-		const app = createApp();
-		const portFlagIndex = argv.indexOf('--port');
-		const networkFlag = argv.includes('--network');
-		const portEnv = process.env.PORT ? Number(process.env.PORT) : undefined;
-
-		// Use explicit port if provided, otherwise use PORT env, otherwise use 0 (random)
-		const requestedPort =
-			portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : (portEnv ?? 0);
-
-		// Determine hostname based on --network flag
-		const hostname = networkFlag ? '0.0.0.0' : 'localhost';
-
-		// Start the AGI server
-		const agiServer = Bun.serve({
-			port: requestedPort,
-			hostname,
-			fetch: app.fetch,
-			idleTimeout: 240,
-		});
-
-		// Get display URL based on hostname
-		const displayHost = networkFlag ? getLocalIP() : 'localhost';
-		console.log(
-			`🚀 agi server listening on http://${displayHost}:${agiServer.port}`,
-		);
-		if (networkFlag) {
-			console.log(`   Also accessible at http://localhost:${agiServer.port}`);
-		}
-
-		// Start the Web UI server on the next port
-		const webPort = agiServer.port + 1;
-		let webServer: ReturnType<typeof createWebServer>['server'] | null = null;
-		try {
-			const { port: actualWebPort, server } = createWebServer(
-				webPort,
-				agiServer.port,
-				networkFlag,
-			);
-			webServer = server;
-			console.log(
-				`🌐 Web UI available at http://${displayHost}:${actualWebPort}`,
-			);
-			if (networkFlag) {
-				console.log(`   Also accessible at http://localhost:${actualWebPort}`);
-			}
-		} catch (error) {
-			console.error('❌ Failed to start Web UI server:', error);
-			console.log('   AGI server is still running without Web UI');
-		}
-
-		let shuttingDown = false;
-		const shutdown = async (signal: NodeJS.Signals) => {
-			if (shuttingDown) return;
-			shuttingDown = true;
-			console.log(`\nReceived ${signal}, shutting down...`);
-			try {
-				const terminalManager = getTerminalManager();
-				if (terminalManager) {
-					await terminalManager.killAll();
-				}
-			} catch (error) {
-				console.error('Error cleaning up terminals:', error);
-			}
-
-			try {
-				webServer?.stop(true);
-			} catch (error) {
-				console.error('Error stopping web server:', error);
-			}
-
-			try {
-				agiServer.stop(true);
-			} catch (error) {
-				console.error('Error stopping API server:', error);
-			}
-
-			process.exit(0);
-		};
-
-		process.once('SIGINT', shutdown);
-		process.once('SIGTERM', shutdown);
-
 		return;
 	}
 
@@ -181,7 +86,6 @@ async function main() {
 		if (!(await ensureSomeAuth(projectRoot))) return;
 		const json = argv.includes('--json');
 		const listFlag = argv.includes('--list');
-		// Default behavior: interactive pick unless --list or --json is provided
 		const pick = !listFlag && !json ? true : argv.includes('--pick');
 		const limitIdx = argv.indexOf('--limit');
 		const limit = limitIdx >= 0 ? Number(argv[limitIdx + 1]) : undefined;
@@ -227,20 +131,26 @@ async function main() {
 		return;
 	}
 
-	// note: commit and other project commands are handled by discovered command dispatcher
-
 	if (cmd === 'auth') {
 		await runAuth(argv.slice(1));
 		return;
 	}
 
 	if (cmd === 'setup') {
-		// Setup is now just auth login
 		await runAuth(['login']);
 		return;
 	}
 
-	// Discovered commands from project manifests
+	if (cmd === 'serve') {
+		await handleServeCommand(argv.slice(1));
+		return;
+	}
+
+	if (ASK_ALIASES.has(cmd)) {
+		await handleAskCommand(argv.slice(1));
+		return;
+	}
+
 	if (cmd && !cmd.startsWith('-')) {
 		const projectIdx = argv.indexOf('--project');
 		const projectRoot = (
@@ -249,33 +159,37 @@ async function main() {
 		if (await runDiscoveredCommand(cmd, argv.slice(1), projectRoot)) return;
 	}
 
-	// One-shot: agi "<prompt>" [--agent] [--provider] [--model] [--project]
-	if (cmd && !cmd.startsWith('-')) {
-		if (debugEnabled) {
-			console.log('DEBUG: Entering one-shot mode with cmd:', cmd);
-		}
-		const prompt = cmd;
-		const agentIdx = argv.indexOf('--agent');
-		const providerIdx = argv.indexOf('--provider');
-		const modelIdx = argv.indexOf('--model');
-		const projectIdx = argv.indexOf('--project');
-		const lastFlag = argv.includes('--last');
-		const sessionIdx = argv.indexOf('--session');
-		const agent = agentIdx >= 0 ? argv[agentIdx + 1] : undefined;
-		const provider =
-			providerIdx >= 0
-				? (argv[providerIdx + 1] as
-						| 'openai'
-						| 'anthropic'
-						| 'google'
-						| 'openrouter'
-						| 'opencode'
-						| 'solforge')
-				: undefined;
-		const model = modelIdx >= 0 ? argv[modelIdx + 1] : undefined;
-		const project = projectIdx >= 0 ? argv[projectIdx + 1] : undefined;
-		const sessionId = sessionIdx >= 0 ? argv[sessionIdx + 1] : undefined;
-		if (!(await ensureSomeAuth(project ?? process.cwd()))) return;
+	await handleServeCommand(argv);
+}
+
+async function handleAskCommand(args: string[]) {
+	const prompt = args.find((a) => !a.startsWith('-'));
+	const agentIdx = args.indexOf('--agent');
+	const providerIdx = args.indexOf('--provider');
+	const modelIdx = args.indexOf('--model');
+	const projectIdx = args.indexOf('--project');
+	const lastFlag = args.includes('--last');
+	const sessionIdx = args.indexOf('--session');
+
+	const agent = agentIdx >= 0 ? args[agentIdx + 1] : undefined;
+	const provider =
+		providerIdx >= 0
+			? (args[providerIdx + 1] as
+					| 'openai'
+					| 'anthropic'
+					| 'google'
+					| 'openrouter'
+					| 'opencode'
+					| 'solforge')
+			: undefined;
+	const model = modelIdx >= 0 ? args[modelIdx + 1] : undefined;
+	const project = projectIdx >= 0 ? args[projectIdx + 1] : undefined;
+	const sessionId = sessionIdx >= 0 ? args[sessionIdx + 1] : undefined;
+
+	const projectRoot = project ?? process.cwd();
+	if (!(await ensureSomeAuth(projectRoot))) return;
+
+	if (prompt) {
 		await runAsk(prompt, {
 			agent,
 			provider,
@@ -287,47 +201,19 @@ async function main() {
 		return;
 	}
 
-	// No non-flag command provided: context-aware interactive mode
-	// Respect flags like --project, --last, --session (and optionally agent/provider/model)
-	if (debugEnabled) {
-		console.log('DEBUG: Entering interactive mode - will prompt for input');
-	}
-	const projectIdx = argv.indexOf('--project');
-	const projectRoot = (
-		projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd()
-	) as string;
-	if (!(await ensureSomeAuth(projectRoot))) return;
 	const cfg = await loadConfig(projectRoot);
 	await getDb(cfg.projectRoot);
 
-	// Prompt for input if none provided
-	intro('agi');
+	intro('agi ask');
 	const input = await text({ message: 'What would you like to ask?' });
 	if (isCancel(input)) return cancel('Cancelled');
-	const prompt = String(input ?? '').trim();
-	if (!prompt) {
+	const userPrompt = String(input ?? '').trim();
+	if (!userPrompt) {
 		outro('No input provided. Exiting.');
 		return;
 	}
-	const agentIdx = argv.indexOf('--agent');
-	const providerIdx = argv.indexOf('--provider');
-	const modelIdx = argv.indexOf('--model');
-	const lastFlag = argv.includes('--last');
-	const sessionIdx = argv.indexOf('--session');
-	const agent = agentIdx >= 0 ? argv[agentIdx + 1] : undefined;
-	const provider =
-		providerIdx >= 0
-			? (argv[providerIdx + 1] as
-					| 'openai'
-					| 'anthropic'
-					| 'google'
-					| 'openrouter'
-					| 'opencode'
-					| 'solforge')
-			: undefined;
-	const model = modelIdx >= 0 ? argv[modelIdx + 1] : undefined;
-	const sessionId = sessionIdx >= 0 ? argv[sessionIdx + 1] : undefined;
-	await runAsk(prompt, {
+
+	await runAsk(userPrompt, {
 		project: projectRoot,
 		agent,
 		provider,
@@ -335,6 +221,112 @@ async function main() {
 		last: lastFlag,
 		sessionId,
 	});
+}
+
+async function handleServeCommand(args: string[]) {
+	const projectIdx = args.indexOf('--project');
+	const projectRoot = (
+		projectIdx >= 0 ? args[projectIdx + 1] : process.cwd()
+	) as string;
+	const noOpen = args.includes('--no-open');
+
+	if (!(await ensureSomeAuth(projectRoot))) return;
+
+	const cfg = await loadConfig(projectRoot);
+	await getDb(cfg.projectRoot);
+
+	const app = createApp();
+	const portFlagIndex = args.indexOf('--port');
+	const networkFlag = args.includes('--network');
+	const portEnv = process.env.PORT ? Number(process.env.PORT) : undefined;
+
+	const requestedPort =
+		portFlagIndex >= 0 ? Number(args[portFlagIndex + 1]) : (portEnv ?? 0);
+
+	const hostname = networkFlag ? '0.0.0.0' : 'localhost';
+
+	const agiServer = Bun.serve({
+		port: requestedPort,
+		hostname,
+		fetch: app.fetch,
+		idleTimeout: 240,
+	});
+
+	const displayHost = networkFlag ? getLocalIP() : 'localhost';
+	const apiUrl = `http://${displayHost}:${agiServer.port}`;
+
+	const webPort = agiServer.port + 1;
+	let webServer: ReturnType<typeof createWebServer>['server'] | null = null;
+	let webUrl: string | null = null;
+	try {
+		const { port: actualWebPort, server } = createWebServer(
+			webPort,
+			agiServer.port,
+			networkFlag,
+		);
+		webServer = server;
+		webUrl = `http://${displayHost}:${actualWebPort}`;
+	} catch (error) {
+		console.error('❌ Failed to start Web UI server:', error);
+		console.log('   AGI server is still running without Web UI');
+	}
+
+	const version = (PKG as { version: string }).version;
+	console.log('');
+	console.log(colors.bold('  ⚡ AGI') + colors.dim(` v${version}`));
+	console.log('');
+	console.log(`  ${colors.dim('API')}     ${colors.cyan(apiUrl)}`);
+	if (webUrl) {
+		console.log(`  ${colors.dim('Web UI')}  ${colors.cyan(webUrl)}`);
+	}
+	if (networkFlag) {
+		console.log('');
+		console.log(
+			colors.dim(`  Also accessible at http://localhost:${agiServer.port}`),
+		);
+	}
+	console.log('');
+	console.log(colors.dim('  Press Ctrl+C to stop'));
+	console.log('');
+
+	if (webUrl && !noOpen) {
+		const opened = await openAuthUrl(webUrl);
+		if (!opened) {
+			console.log(colors.dim(`  Could not open browser automatically`));
+		}
+	}
+
+	let shuttingDown = false;
+	const shutdown = async (signal: NodeJS.Signals) => {
+		if (shuttingDown) return;
+		shuttingDown = true;
+		console.log(`\nReceived ${signal}, shutting down...`);
+		try {
+			const terminalManager = getTerminalManager();
+			if (terminalManager) {
+				await terminalManager.killAll();
+			}
+		} catch (error) {
+			console.error('Error cleaning up terminals:', error);
+		}
+
+		try {
+			webServer?.stop(true);
+		} catch (error) {
+			console.error('Error stopping web server:', error);
+		}
+
+		try {
+			agiServer.stop(true);
+		} catch (error) {
+			console.error('Error stopping API server:', error);
+		}
+
+		process.exit(0);
+	};
+
+	process.once('SIGINT', shutdown);
+	process.once('SIGTERM', shutdown);
 }
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -354,10 +346,12 @@ function printHelp(
 	discovered?: Record<string, { name: string; description?: string }>,
 ) {
 	const lines = [
-		'Usage: agi [command] [options] [prompt]',
+		'Usage: agi [command] [options]',
 		'',
 		'Commands:',
-		'  serve [--port <port>] [--network]  Start the HTTP server (AGI API + Web UI)',
+		'  (default)                          Start API server + Web UI',
+		'  ask|run|do|a "<prompt>"            One-shot ask (or interactive if no prompt)',
+		'  serve [--port <port>] [--network]  Explicit alias for default behavior',
 		'  sessions [--list|--json]           Manage or pick sessions (default: pick)',
 		'  auth <login|list|logout>           Manage provider credentials',
 		'  setup                              Alias for `auth login`',
@@ -366,20 +360,25 @@ function printHelp(
 		'  agents [--local]                   Edit agents.json entries (interactive)',
 		'  tools                              List discovered tools and agent access',
 		'  doctor                             Diagnose auth, defaults, and agent/tool issues',
-		'  chat [--last|--session]            Start an interactive chat (if enabled)',
 		'',
-		'One-shot ask:',
-		'  agi "<prompt>" [--agent <name>] [--provider <p>] [--model <m>] [--project <path>] [--last|--session <id>]',
-		'',
-		'Common options:',
+		'Ask options:',
+		'  --agent <name>           Override agent',
+		'  --provider <p>           Override provider (openai, anthropic, google, etc.)',
+		'  --model <m>              Override model',
 		'  --project <path>         Use project at <path> (default: cwd)',
-		'  --last                   Send to most-recent session',
-		'  --session <id>           Send to a specific session',
-		'  --network                Bind to 0.0.0.0 for network access (serve only)',
-		'  --debug                  Enable debug logging (errors, warnings, debug messages)',
-		'  --trace                  Enable stack traces in error logs (requires --debug)',
-		'  --json | --json-stream   Machine-readable outputs',
+		'  --last                   Continue most recent session',
+		'  --session <id>           Continue specific session',
+		'',
+		'Server options:',
+		'  --port <port>            Specify port (default: random)',
+		'  --network                Bind to 0.0.0.0 for network access',
+		'  --no-open                Do not open browser automatically',
+		'',
+		'Global options:',
+		'  --debug                  Enable debug logging',
+		'  --trace                  Enable stack traces in error logs',
 		'  --version, -v            Print version and exit',
+		'  --help, -h               Show this help',
 	];
 	if (discovered && Object.keys(discovered).length) {
 		lines.push('', 'Project commands:');
@@ -431,14 +430,11 @@ function getLocalIP(): string {
 		const nets = networkInterfaces();
 		for (const name of Object.keys(nets)) {
 			for (const net of nets[name]) {
-				// Skip internal (loopback) and non-IPv4 addresses
 				if (net.family === 'IPv4' && !net.internal) {
 					return net.address;
 				}
 			}
 		}
-	} catch {
-		// Fallback if we can't get the IP
-	}
+	} catch {}
 	return '0.0.0.0';
 }
