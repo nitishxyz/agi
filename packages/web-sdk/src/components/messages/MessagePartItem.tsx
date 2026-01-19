@@ -15,7 +15,12 @@ import {
 	XOctagon,
 	Brain,
 } from 'lucide-react';
-import { Fragment, memo, type ReactNode } from 'react';
+import {
+	Fragment,
+	memo,
+	type ReactNode,
+	type ComponentPropsWithoutRef,
+} from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { MessagePart } from '../../types/api';
@@ -24,6 +29,7 @@ import {
 	ReasoningRenderer,
 	type ContentJson,
 } from './renderers';
+import { CopyButton } from './renderers/shared';
 
 function getToolCallPayload(part: MessagePart): Record<string, unknown> | null {
 	const fromJson = part.contentJson;
@@ -306,8 +312,68 @@ export const MessagePartItem = memo(
 				}
 
 				return (
-					<div className="text-base text-foreground leading-relaxed markdown-content max-w-full overflow-hidden">
-						<ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+					<div className="relative group">
+						<div className="absolute -top-1 right-0 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+							<CopyButton
+								text={content}
+								className="bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm"
+								size="md"
+							/>
+						</div>
+						<div className="text-base text-foreground leading-relaxed markdown-content max-w-full overflow-hidden">
+							<ReactMarkdown
+								remarkPlugins={[remarkGfm]}
+								components={{
+									pre: ({
+										children,
+										...props
+									}: ComponentPropsWithoutRef<'pre'>) => {
+										const codeContent = (() => {
+											if (!children) return '';
+											const child = Array.isArray(children)
+												? children[0]
+												: children;
+											if (
+												child &&
+												typeof child === 'object' &&
+												'props' in child
+											) {
+												const codeProps = child.props as { children?: unknown };
+												if (typeof codeProps.children === 'string') {
+													return codeProps.children;
+												}
+											}
+											return '';
+										})();
+										return (
+											<div className="relative group/code my-3">
+												<div className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity z-10">
+													<CopyButton
+														text={codeContent}
+														className="bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm"
+														size="sm"
+													/>
+												</div>
+												<pre {...props} className="overflow-x-auto">
+													{children}
+												</pre>
+											</div>
+										);
+									},
+								}}
+							>
+								{content}
+							</ReactMarkdown>
+						</div>
+						{content.length > 500 && (
+							<div className="absolute -bottom-1 right-0 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+								<CopyButton
+									text={content}
+									className="bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm"
+									size="md"
+								/>
+							</div>
+						)}
 					</div>
 				);
 			}
