@@ -125,11 +125,11 @@ export function BashRenderer({
 						) : (
 							<>
 								{stdout && (
-								<ToolContentBox
-									title="stdout"
-									copyText={stdout}
-									maxHeight="max-h-60"
-								>
+									<ToolContentBox
+										title="stdout"
+										copyText={stdout}
+										maxHeight="max-h-60"
+									>
 										<SyntaxHighlighter
 											language="bash"
 											style={syntaxTheme}
@@ -149,12 +149,12 @@ export function BashRenderer({
 									</ToolContentBox>
 								)}
 								{hasStderr && (
-								<ToolContentBox
-									title="stderr"
-									copyText={stderr}
-									variant="error"
-									maxHeight="max-h-60"
-								>
+									<ToolContentBox
+										title="stderr"
+										copyText={stderr}
+										variant="error"
+										maxHeight="max-h-60"
+									>
 										<SyntaxHighlighter
 											language="bash"
 											style={syntaxTheme}
