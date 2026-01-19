@@ -24,7 +24,9 @@ export const MessageThread = memo(function MessageThread({
 	const autoScrollRef = useRef(true);
 	const [showLeanHeader, setShowLeanHeader] = useState(false);
 	const userScrollingRef = useRef(false);
-	const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+	const userScrollTimeoutRef = useRef<
+		ReturnType<typeof setTimeout> | undefined
+	>(undefined);
 	const targetScrollRef = useRef(0);
 	const animationFrameRef = useRef<number | undefined>(undefined);
 	const initialScrollDoneRef = useRef(false);
@@ -58,7 +60,10 @@ export const MessageThread = memo(function MessageThread({
 			autoScrollRef.current = false;
 			setAutoScroll(false);
 		}
-		if (userScrolledUp || (!autoScrollRef.current && distanceFromBottom >= 100)) {
+		if (
+			userScrolledUp ||
+			(!autoScrollRef.current && distanceFromBottom >= 100)
+		) {
 			if (userScrollTimeoutRef.current) {
 				clearTimeout(userScrollTimeoutRef.current);
 			}
@@ -114,8 +119,8 @@ export const MessageThread = memo(function MessageThread({
 				});
 			});
 		} else if (messagesAdded && !userScrollingRef.current && !isGenerating) {
-				autoScrollRef.current = true;
-				setAutoScroll(true);
+			autoScrollRef.current = true;
+			setAutoScroll(true);
 		}
 	}, [messages.length, isGenerating]);
 
