@@ -32,12 +32,12 @@ export function ReasoningRenderer({ part }: ReasoningRendererProps) {
 			<button
 				type="button"
 				onClick={() => setIsExpanded(!isExpanded)}
-				className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full py-0.5"
+				className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
 			>
 				{isExpanded ? (
-					<ChevronDown className="h-3.5 w-3.5" />
+					<ChevronDown className="h-3 w-3 flex-shrink-0" />
 				) : (
-					<ChevronRight className="h-3.5 w-3.5" />
+					<ChevronRight className="h-3 w-3 flex-shrink-0" />
 				)}
 				<span className="font-medium">Reasoning</span>
 				{!part.completedAt && (

@@ -168,14 +168,15 @@ export const MessagePartItem = memo(
 
 		const contentClasses = ['flex-1', 'min-w-0', 'max-w-full'];
 
-		if (isToolMessage) {
-			contentClasses.push('pt-0.5', 'mt-[1px]');
+		if (isToolMessage || part.type === 'reasoning') {
+			contentClasses.push('pt-1');
+		} else if (part.type === 'error') {
+			contentClasses.push('pt-0.5');
+		} else if (part.type === 'text') {
+			contentClasses.push('pt-0');
+			contentClasses.push('-mt-0.5');
 		} else {
 			contentClasses.push('pt-0');
-		}
-
-		if (part.type === 'text') {
-			contentClasses.push('-mt-0.5');
 		}
 
 		const contentClassName = contentClasses.join(' ');
