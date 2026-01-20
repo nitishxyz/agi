@@ -2,8 +2,10 @@ import { memo } from 'react';
 import { Sparkles } from 'lucide-react';
 import type { Message } from '../../types/api';
 import { MessagePartItem } from './MessagePartItem';
+import { useMessageQueuePosition } from '../../hooks/useQueueState';
 
 interface AssistantMessageGroupProps {
+	sessionId?: string;
 	message: Message;
 	showHeader: boolean;
 	hasNextAssistantMessage: boolean;
@@ -22,20 +24,20 @@ const loadingMessages = [
 ];
 
 function getLoadingMessage(messageId: string) {
-	// Use messageId to consistently pick the same message for this session
 	const hash = messageId
 		.split('')
 		.reduce((acc, char) => acc + char.charCodeAt(0), 0);
 	return loadingMessages[hash % loadingMessages.length];
 }
 
-// Memoize the component to prevent re-renders when props haven't changed
 export const AssistantMessageGroup = memo(
 	function AssistantMessageGroup({
+		sessionId,
 		message,
 		showHeader,
 		hasNextAssistantMessage,
 	}: AssistantMessageGroupProps) {
+		const { isQueued } = useMessageQueuePosition(sessionId, message.id);
 		const parts = message.parts || [];
 		const hasFinish = parts.some((part) => part.toolName === 'finish');
 		const latestProgressUpdateIndex = parts.reduce(
@@ -60,7 +62,7 @@ export const AssistantMessageGroup = memo(
 			!hasFinish &&
 			Boolean(latestProgressUpdatePart);
 		const shouldShowLoadingFallback =
-			message.status === 'pending' && !hasFinish && !latestProgressUpdatePart;
+			message.status === 'pending' && !hasFinish && !latestProgressUpdatePart && !isQueued;
 		const formatTime = (ts?: number) => {
 			if (!ts) return '';
 			const date = new Date(ts);
@@ -70,9 +72,12 @@ export const AssistantMessageGroup = memo(
 			});
 		};
 
+		if (isQueued) {
+			return null;
+		}
+
 		return (
 			<div className="relative">
-				{/* Header with avatar */}
 				{showHeader && (
 					<div className="pb-2">
 						<div className="inline-flex items-center bg-violet-500/10 border border-violet-500/30 dark:bg-violet-500/5 dark:border-violet-500/20 rounded-full pr-3 md:pr-4">
@@ -112,11 +117,9 @@ export const AssistantMessageGroup = memo(
 					</div>
 				)}
 
-				{/* Message parts with timeline */}
 				<div className="relative ml-1">
 					{parts.map((part, index) => {
 						const isLastPart = index === parts.length - 1;
-						// Don't show line after finish tool
 						const isFinishTool =
 							part.type === 'tool_result' && part.toolName === 'finish';
 						const showLine =
@@ -151,7 +154,6 @@ export const AssistantMessageGroup = memo(
 						/>
 					)}
 
-					{/* Show loading state if message is incomplete and no progress/finish */}
 					{shouldShowLoadingFallback && (
 						<div className="flex gap-3 pb-2 relative">
 							<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
@@ -171,17 +173,13 @@ export const AssistantMessageGroup = memo(
 		);
 	},
 	(prevProps, nextProps) => {
-		// Custom comparison function for better memoization
-		// Only re-render if the message content or display props have actually changed
 		const prevParts = prevProps.message.parts || [];
 		const nextParts = nextProps.message.parts || [];
 
-		// Check if parts have changed
 		if (prevParts.length !== nextParts.length) {
 			return false;
 		}
 
-		// Check each part's content
 		for (let i = 0; i < prevParts.length; i++) {
 			const prevPart = prevParts[i];
 			const nextPart = nextParts[i];
@@ -196,14 +194,14 @@ export const AssistantMessageGroup = memo(
 			}
 		}
 
-		// Check message-level props
 		return (
 			prevProps.message.id === nextProps.message.id &&
 			prevProps.message.status === nextProps.message.status &&
 			prevProps.message.completedAt === nextProps.message.completedAt &&
 			prevProps.showHeader === nextProps.showHeader &&
 			prevProps.hasNextAssistantMessage === nextProps.hasNextAssistantMessage &&
-			prevProps.isLastMessage === nextProps.isLastMessage
+			prevProps.isLastMessage === nextProps.isLastMessage &&
+			prevProps.sessionId === nextProps.sessionId
 		);
 	},
 );

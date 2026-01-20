@@ -34,8 +34,14 @@ import {
 } from './stream-handlers.ts';
 import { getCompactionSystemPrompt, pruneSession } from './compaction.ts';
 
-export { enqueueAssistantRun, abortSession } from './session-queue.ts';
-export { getRunnerState } from './session-queue.ts';
+export {
+	enqueueAssistantRun,
+	abortSession,
+	abortMessage,
+	removeFromQueue,
+	getQueueState,
+	getRunnerState,
+} from './session-queue.ts';
 
 /**
  * Main loop that processes the queue for a given session.

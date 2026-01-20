@@ -14,6 +14,7 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { useGitStatus, useStageFiles } from '../../hooks/useGit';
 import { useGitStore } from '../../stores/gitStore';
 import { useFileUpload } from '../../hooks/useFileUpload';
+import { useQueueStore } from '../../stores/queueStore';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
 
@@ -40,7 +41,7 @@ export const ChatInputContainer = memo(
 			>(null);
 			const [inputKey, setInputKey] = useState(0);
 
-			const chatInputRef = useRef<{ focus: () => void }>(null);
+			const chatInputRef = useRef<{ focus: () => void; setValue: (value: string) => void }>(null);
 
 			const sendMessage = useSendMessage(sessionId);
 			const updateSession = useUpdateSession(sessionId);
@@ -78,6 +79,18 @@ export const ChatInputContainer = memo(
 			useEffect(() => {
 				setInputKey((prev) => prev + 1);
 			}, []);
+
+			const pendingRestoreText = useQueueStore((state) => state.pendingRestoreText);
+			const consumeRestoreText = useQueueStore((state) => state.consumeRestoreText);
+
+			useEffect(() => {
+				if (pendingRestoreText) {
+					const text = consumeRestoreText();
+					if (text) {
+						chatInputRef.current?.setValue(text);
+					}
+				}
+			}, [pendingRestoreText, consumeRestoreText]);
 
 			useImperativeHandle(ref, () => ({
 				focus: () => {

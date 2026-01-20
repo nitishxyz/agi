@@ -206,6 +206,50 @@ class ApiClient {
 		return response.data as { success: boolean };
 	}
 
+	async abortMessage(
+		sessionId: string,
+		messageId: string,
+	): Promise<{ success: boolean; wasRunning: boolean; messageId: string }> {
+		const baseUrl = this.baseUrl;
+		const response = await fetch(`${baseUrl}/v1/sessions/${sessionId}/abort`, {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ messageId }),
+		});
+		if (!response.ok) {
+			throw new Error('Failed to abort message');
+		}
+		return response.json();
+	}
+
+	async getQueueState(sessionId: string): Promise<{
+		currentMessageId: string | null;
+		queuedMessages: Array<{ messageId: string; position: number }>;
+		isRunning: boolean;
+	}> {
+		const baseUrl = this.baseUrl;
+		const response = await fetch(`${baseUrl}/v1/sessions/${sessionId}/queue`);
+		if (!response.ok) {
+			throw new Error('Failed to get queue state');
+		}
+		return response.json();
+	}
+
+	async removeFromQueue(
+		sessionId: string,
+		messageId: string,
+	): Promise<{ success: boolean; removed: boolean; wasQueued?: boolean; wasRunning?: boolean }> {
+		const baseUrl = this.baseUrl;
+		const response = await fetch(
+			`${baseUrl}/v1/sessions/${sessionId}/queue/${messageId}`,
+			{ method: 'DELETE' },
+		);
+		if (!response.ok) {
+			throw new Error('Failed to remove from queue');
+		}
+		return response.json();
+	}
+
 	async getMessages(sessionId: string): Promise<Message[]> {
 		const response = await apiListMessages({
 			path: { id: sessionId },

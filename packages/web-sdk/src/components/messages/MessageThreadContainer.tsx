@@ -38,6 +38,7 @@ export const MessageThreadContainer = memo(function MessageThreadContainer({
 	return (
 		<MessageThread
 			messages={messages}
+			sessionId={sessionId}
 			session={session}
 			isGenerating={isGenerating}
 		/>

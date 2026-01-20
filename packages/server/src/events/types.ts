@@ -11,6 +11,7 @@ export type AGIEventType =
 	| 'plan.updated'
 	| 'finish-step'
 	| 'usage'
+	| 'queue.updated'
 	| 'error'
 	| 'heartbeat';
 

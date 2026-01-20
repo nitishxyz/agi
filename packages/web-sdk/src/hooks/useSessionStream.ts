@@ -414,12 +414,24 @@ export function useSessionStream(sessionId: string | undefined) {
 					if (messageId) {
 						clearEphemeralForMessage(messageId);
 					}
-					// Error parts are created by the server and will be loaded via query invalidation
-					break;
-				}
-				default:
-					break;
+				// Error parts are created by the server and will be loaded via query invalidation
+				break;
 			}
+			case 'queue.updated': {
+				const queueState = {
+					currentMessageId: payload?.currentMessageId as string | null,
+					queuedMessages: (payload?.queuedMessages ?? []) as Array<{
+						messageId: string;
+						position: number;
+					}>,
+					queueLength: (payload?.queueLength ?? 0) as number,
+				};
+				queryClient.setQueryData(['queueState', sessionId], queueState);
+				break;
+			}
+			default:
+				break;
+		}
 
 			if (invalidatingEvents.has(event.type)) {
 				// Use throttled invalidation instead of immediate

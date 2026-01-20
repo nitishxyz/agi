@@ -50,7 +50,7 @@ interface ChatInputProps {
 }
 
 export const ChatInput = memo(
-	forwardRef<{ focus: () => void }, ChatInputProps>(function ChatInput(
+	forwardRef<{ focus: () => void; setValue: (value: string) => void }, ChatInputProps>(function ChatInput(
 		{
 			onSend,
 			onCommand,
@@ -136,6 +136,10 @@ export const ChatInput = memo(
 
 		useImperativeHandle(ref, () => ({
 			focus: () => {
+				textareaRef.current?.focus();
+			},
+			setValue: (value: string) => {
+				setMessage(value);
 				textareaRef.current?.focus();
 			},
 		}));

@@ -1,12 +1,18 @@
 import { memo, useState } from 'react';
-import { User, X, FileText, FileIcon } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { User, X, FileText, FileIcon, Clock, Trash2, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message } from '../../types/api';
+import { useMessageQueuePosition } from '../../hooks/useQueueState';
+import { useQueueStore } from '../../stores/queueStore';
+import { apiClient } from '../../lib/api-client';
 
 interface UserMessageGroupProps {
+	sessionId?: string;
 	message: Message;
 	isFirst: boolean;
+	nextAssistantMessageId?: string;
 }
 
 interface ImageData {
@@ -23,9 +29,22 @@ interface FileData {
 }
 
 export const UserMessageGroup = memo(
-	function UserMessageGroup({ message }: UserMessageGroupProps) {
+	function UserMessageGroup({
+		sessionId,
+		message,
+		nextAssistantMessageId,
+	}: UserMessageGroupProps) {
 		const [expandedImage, setExpandedImage] = useState<string | null>(null);
 		const parts = message.parts || [];
+		const queryClient = useQueryClient();
+
+		const { isQueued, position } = useMessageQueuePosition(
+			sessionId,
+			nextAssistantMessageId ?? '',
+		);
+		const setPendingRestoreText = useQueueStore(
+			(state) => state.setPendingRestoreText,
+		);
 
 		const textParts = parts.filter((p) => p.type === 'text');
 		const imageParts = parts.filter((p) => p.type === 'image');
@@ -92,6 +111,29 @@ export const UserMessageGroup = memo(
 
 		if (!hasContent && !hasImages && !hasFiles) return null;
 
+		const handleCancel = async () => {
+			if (!sessionId || !nextAssistantMessageId) return;
+			setPendingRestoreText(content);
+			try {
+				await apiClient.removeFromQueue(sessionId, nextAssistantMessageId);
+				// Invalidate messages to refresh UI
+				queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+			} catch (err) {
+				console.error('Failed to cancel queued message:', err);
+			}
+		};
+
+		const handleDelete = async () => {
+			if (!sessionId || !nextAssistantMessageId) return;
+			try {
+				await apiClient.removeFromQueue(sessionId, nextAssistantMessageId);
+				// Invalidate messages to refresh UI
+				queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+			} catch (err) {
+				console.error('Failed to delete queued message:', err);
+			}
+		};
+
 		return (
 			<>
 				<div className="relative pb-8 pt-6">
@@ -104,6 +146,15 @@ export const UserMessageGroup = memo(
 								{message.createdAt && <span>·</span>}
 								{message.createdAt && (
 									<span>{formatTime(message.createdAt)}</span>
+								)}
+								{isQueued && (
+									<>
+										<span>·</span>
+										<span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+											<Clock className="h-3 w-3" />
+											Queued{position !== null && position > 0 ? ` #${position + 1}` : ''}
+										</span>
+									</>
 								)}
 							</div>
 							<div className="inline-block max-w-full text-sm text-foreground leading-relaxed bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3 [word-break:break-word] overflow-hidden">
@@ -152,6 +203,28 @@ export const UserMessageGroup = memo(
 									</div>
 								)}
 							</div>
+							{isQueued && (
+								<div className="flex items-center gap-2 mt-2">
+									<button
+										type="button"
+										onClick={handleCancel}
+										className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+										title="Cancel and restore to input"
+									>
+										<RotateCcw className="h-3 w-3" />
+										Cancel
+									</button>
+									<button
+										type="button"
+										onClick={handleDelete}
+										className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
+										title="Delete from queue"
+									>
+										<Trash2 className="h-3 w-3" />
+										Delete
+									</button>
+								</div>
+							)}
 						</div>
 						<div className="flex-shrink-0 w-8 flex items-start justify-center">
 							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-emerald-500/50 bg-emerald-500/20 dark:bg-emerald-500/10 relative bg-background">
@@ -198,7 +271,9 @@ export const UserMessageGroup = memo(
 			prevFirstPart?.content === nextFirstPart?.content &&
 			prevFirstPart?.contentJson === nextFirstPart?.contentJson &&
 			prevProps.message.createdAt === nextProps.message.createdAt &&
-			prevProps.message.parts?.length === nextProps.message.parts?.length
+			prevProps.message.parts?.length === nextProps.message.parts?.length &&
+			prevProps.sessionId === nextProps.sessionId &&
+			prevProps.nextAssistantMessageId === nextProps.nextAssistantMessageId
 		);
 	},
 );

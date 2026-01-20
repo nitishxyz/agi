@@ -1,8 +1,8 @@
 import type { Hono } from 'hono';
 import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
-import { sessions } from '@agi-cli/database/schema';
-import { desc, eq } from 'drizzle-orm';
+import { sessions, messages, messageParts } from '@agi-cli/database/schema';
+import { desc, eq, and, inArray } from 'drizzle-orm';
 import type { ProviderId } from '@agi-cli/sdk';
 import { isProviderId, catalog } from '@agi-cli/sdk';
 import { resolveAgentConfig } from '../runtime/agent-registry.ts';
@@ -194,8 +194,99 @@ export function registerSessionsRoutes(app: Hono) {
 	// Abort session stream
 	app.delete('/v1/sessions/:sessionId/abort', async (c) => {
 		const sessionId = c.req.param('sessionId');
-		const { abortSession } = await import('../runtime/runner.ts');
-		abortSession(sessionId);
+		const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
+		const messageId = typeof body.messageId === 'string' ? body.messageId : undefined;
+		const clearQueue = body.clearQueue === true;
+
+		const { abortSession, abortMessage } = await import('../runtime/runner.ts');
+
+		if (messageId) {
+			const result = abortMessage(sessionId, messageId);
+			return c.json({
+				success: result.removed,
+				wasRunning: result.wasRunning,
+				messageId,
+			});
+		}
+
+		abortSession(sessionId, clearQueue);
 		return c.json({ success: true });
+	});
+
+	// Get queue state for a session
+	app.get('/v1/sessions/:sessionId/queue', async (c) => {
+		const sessionId = c.req.param('sessionId');
+		const { getQueueState } = await import('../runtime/session-queue.ts');
+		const state = getQueueState(sessionId);
+		return c.json(state ?? {
+			currentMessageId: null,
+			queuedMessages: [],
+			isRunning: false,
+		});
+	});
+
+	// Remove a message from the queue
+	app.delete('/v1/sessions/:sessionId/queue/:messageId', async (c) => {
+		const sessionId = c.req.param('sessionId');
+		const messageId = c.req.param('messageId');
+		const projectRoot = c.req.query('project') || process.cwd();
+		const cfg = await loadConfig(projectRoot);
+		const db = await getDb(cfg.projectRoot);
+		const { removeFromQueue, abortMessage } = await import('../runtime/session-queue.ts');
+
+		// First try to remove from queue (queued messages)
+		const removed = removeFromQueue(sessionId, messageId);
+		if (removed) {
+			// Delete messages from database
+			try {
+				// Find the assistant message to get its creation time
+				const assistantMsg = await db
+					.select()
+					.from(messages)
+					.where(eq(messages.id, messageId))
+					.limit(1);
+
+				if (assistantMsg.length > 0) {
+					// Find the user message that came right before (same session, created just before)
+					const userMsg = await db
+						.select()
+						.from(messages)
+						.where(
+							and(
+								eq(messages.sessionId, sessionId),
+								eq(messages.role, 'user'),
+							),
+						)
+						.orderBy(desc(messages.createdAt))
+						.limit(1);
+
+					const messageIdsToDelete = [messageId];
+					if (userMsg.length > 0) {
+						messageIdsToDelete.push(userMsg[0].id);
+					}
+
+					// Delete message parts first (foreign key constraint)
+					await db.delete(messageParts).where(inArray(messageParts.messageId, messageIdsToDelete));
+					// Delete messages
+					await db.delete(messages).where(inArray(messages.id, messageIdsToDelete));
+				}
+			} catch (err) {
+				logger.error('Failed to delete queued messages from DB', err);
+			}
+			return c.json({ success: true, removed: true, wasQueued: true });
+		}
+
+		// If not in queue, try to abort (might be running)
+		const result = abortMessage(sessionId, messageId);
+		if (result.removed) {
+			return c.json({
+				success: true,
+				removed: true,
+				wasQueued: false,
+				wasRunning: result.wasRunning,
+			});
+		}
+
+		return c.json({ success: false, removed: false }, 404);
 	});
 }
