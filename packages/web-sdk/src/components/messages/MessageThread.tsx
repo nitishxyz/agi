@@ -218,7 +218,7 @@ export const MessageThread = memo(function MessageThread({
 				</div>
 
 				{/* Messages */}
-				<div className="p-6 pb-32">
+				<div className="p-6 pb-64">
 					<div className="max-w-3xl mx-auto space-y-6">
 						{filteredMessages.map((message, idx) => {
 							const prevMessage = filteredMessages[idx - 1];
