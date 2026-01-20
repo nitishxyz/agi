@@ -68,7 +68,10 @@ export async function getDb(projectRootInput?: string) {
 			}
 			migratedPaths.add(dbPath);
 		} catch (error) {
-			console.error('❌ Local database migration failed:', error);
+			console.error(
+				'❌ Local database migration failed:',
+				error instanceof Error ? error.message : String(error),
+			);
 			throw error;
 		}
 	}

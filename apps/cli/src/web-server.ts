@@ -93,7 +93,10 @@ export function createWebServer(
 								},
 							});
 						} catch (error) {
-							console.error('Error reading HTML file for fallback:', error);
+							console.error(
+								'Error reading HTML file for fallback:',
+								error instanceof Error ? error.message : String(error),
+							);
 						}
 					}
 				}
@@ -146,7 +149,10 @@ export function createWebServer(
 								},
 							});
 						} catch (error) {
-							console.error('Error reading HTML file:', error);
+							console.error(
+								'Error reading HTML file:',
+								error instanceof Error ? error.message : String(error),
+							);
 						}
 					}
 

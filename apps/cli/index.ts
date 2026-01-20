@@ -267,7 +267,10 @@ async function handleServeCommand(args: string[]) {
 		webServer = server;
 		webUrl = `http://${displayHost}:${actualWebPort}`;
 	} catch (error) {
-		console.error('❌ Failed to start Web UI server:', error);
+		console.error(
+			'❌ Failed to start Web UI server:',
+			error instanceof Error ? error.message : String(error),
+		);
 		console.log('   AGI server is still running without Web UI');
 	}
 
@@ -307,19 +310,28 @@ async function handleServeCommand(args: string[]) {
 				await terminalManager.killAll();
 			}
 		} catch (error) {
-			console.error('Error cleaning up terminals:', error);
+			console.error(
+				'Error cleaning up terminals:',
+				error instanceof Error ? error.message : String(error),
+			);
 		}
 
 		try {
 			webServer?.stop(true);
 		} catch (error) {
-			console.error('Error stopping web server:', error);
+			console.error(
+				'Error stopping web server:',
+				error instanceof Error ? error.message : String(error),
+			);
 		}
 
 		try {
 			agiServer.stop(true);
 		} catch (error) {
-			console.error('Error stopping API server:', error);
+			console.error(
+				'Error stopping API server:',
+				error instanceof Error ? error.message : String(error),
+			);
 		}
 
 		process.exit(0);
@@ -329,14 +341,14 @@ async function handleServeCommand(args: string[]) {
 	process.once('SIGTERM', shutdown);
 }
 
-process.on('unhandledRejection', (reason, promise) => {
-	console.error('\n[FATAL] Unhandled Promise Rejection:', reason);
-	console.error('Promise:', promise);
+process.on('unhandledRejection', (reason) => {
+	const message = reason instanceof Error ? reason.message : String(reason);
+	console.error('\n[FATAL] Unhandled Promise Rejection:', message);
 	process.exit(1);
 });
 
 process.on('uncaughtException', (error) => {
-	console.error('\n[FATAL] Uncaught Exception:', error);
+	console.error('\n[FATAL] Uncaught Exception:', error.message);
 	process.exit(1);
 });
 
