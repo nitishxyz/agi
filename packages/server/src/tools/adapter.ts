@@ -191,6 +191,7 @@ export function adaptTools(
 						delta,
 						stepIndex: meta?.stepIndex ?? ctx.stepIndex,
 						callId: meta?.callId,
+						messageId: ctx.messageId,
 					},
 				});
 				if (typeof base.onInputDelta === 'function')
@@ -235,6 +236,7 @@ export function adaptTools(
 							args,
 							callId,
 							stepIndex: ctx.stepIndex,
+							messageId: ctx.messageId,
 						},
 					});
 					// Persist synchronously to maintain correct ordering
@@ -266,7 +268,7 @@ export function adaptTools(
 				publish({
 					type: 'tool.call',
 					sessionId: ctx.sessionId,
-					payload: { name, args, callId, stepIndex: ctx.stepIndex },
+					payload: { name, args, callId, stepIndex: ctx.stepIndex, messageId: ctx.messageId },
 				});
 				// Persist synchronously to maintain correct ordering
 				try {
@@ -373,6 +375,7 @@ export function adaptTools(
 										delta: chunk,
 										stepIndex: stepIndexForEvent,
 										callId: callIdFromQueue,
+										messageId: ctx.messageId,
 									},
 								});
 							}
