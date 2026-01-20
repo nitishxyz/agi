@@ -151,10 +151,7 @@ export function abortMessage(
 /**
  * Removes a queued message (not the currently running one).
  */
-export function removeFromQueue(
-	sessionId: string,
-	messageId: string,
-): boolean {
+export function removeFromQueue(sessionId: string, messageId: string): boolean {
 	const state = runners.get(sessionId);
 	if (!state) return false;
 
@@ -211,10 +208,7 @@ export function setRunning(sessionId: string, running: boolean) {
 	if (state) state.running = running;
 }
 
-export function setCurrentMessage(
-	sessionId: string,
-	messageId: string | null,
-) {
+export function setCurrentMessage(sessionId: string, messageId: string | null) {
 	const state = runners.get(sessionId);
 	if (state) {
 		state.currentMessageId = messageId;

@@ -268,7 +268,13 @@ export function adaptTools(
 				publish({
 					type: 'tool.call',
 					sessionId: ctx.sessionId,
-					payload: { name, args, callId, stepIndex: ctx.stepIndex, messageId: ctx.messageId },
+					payload: {
+						name,
+						args,
+						callId,
+						stepIndex: ctx.stepIndex,
+						messageId: ctx.messageId,
+					},
 				});
 				// Persist synchronously to maintain correct ordering
 				try {

@@ -62,7 +62,10 @@ export const AssistantMessageGroup = memo(
 			!hasFinish &&
 			Boolean(latestProgressUpdatePart);
 		const shouldShowLoadingFallback =
-			message.status === 'pending' && !hasFinish && !latestProgressUpdatePart && !isQueued;
+			message.status === 'pending' &&
+			!hasFinish &&
+			!latestProgressUpdatePart &&
+			!isQueued;
 		const formatTime = (ts?: number) => {
 			if (!ts) return '';
 			const date = new Date(ts);

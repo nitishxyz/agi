@@ -225,21 +225,21 @@ export const MessageThread = memo(function MessageThread({
 							const nextMessage = filteredMessages[idx + 1];
 							const isLastMessage = idx === filteredMessages.length - 1;
 
-						if (message.role === 'user') {
-							const nextAssistantMessage =
-								nextMessage && nextMessage.role === 'assistant'
-									? nextMessage
-									: undefined;
-							return (
-								<UserMessageGroup
-									key={message.id}
-									sessionId={sessionId}
-									message={message}
-									isFirst={idx === 0}
-									nextAssistantMessageId={nextAssistantMessage?.id}
-								/>
-							);
-						}
+							if (message.role === 'user') {
+								const nextAssistantMessage =
+									nextMessage && nextMessage.role === 'assistant'
+										? nextMessage
+										: undefined;
+								return (
+									<UserMessageGroup
+										key={message.id}
+										sessionId={sessionId}
+										message={message}
+										isFirst={idx === 0}
+										nextAssistantMessageId={nextAssistantMessage?.id}
+									/>
+								);
+							}
 
 							if (message.role === 'assistant') {
 								const showHeader =
@@ -247,13 +247,13 @@ export const MessageThread = memo(function MessageThread({
 								const nextIsAssistant =
 									nextMessage && nextMessage.role === 'assistant';
 
-						return (
-							<AssistantMessageGroup
-								key={message.id}
-								sessionId={sessionId}
-								message={message}
-								showHeader={showHeader}
-								hasNextAssistantMessage={nextIsAssistant}
+								return (
+									<AssistantMessageGroup
+										key={message.id}
+										sessionId={sessionId}
+										message={message}
+										showHeader={showHeader}
+										hasNextAssistantMessage={nextIsAssistant}
 										isLastMessage={isLastMessage}
 									/>
 								);

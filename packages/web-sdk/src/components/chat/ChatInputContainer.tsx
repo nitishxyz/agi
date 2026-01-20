@@ -41,7 +41,10 @@ export const ChatInputContainer = memo(
 			>(null);
 			const [inputKey, setInputKey] = useState(0);
 
-			const chatInputRef = useRef<{ focus: () => void; setValue: (value: string) => void }>(null);
+			const chatInputRef = useRef<{
+				focus: () => void;
+				setValue: (value: string) => void;
+			}>(null);
 
 			const sendMessage = useSendMessage(sessionId);
 			const updateSession = useUpdateSession(sessionId);
@@ -80,8 +83,12 @@ export const ChatInputContainer = memo(
 				setInputKey((prev) => prev + 1);
 			}, []);
 
-			const pendingRestoreText = useQueueStore((state) => state.pendingRestoreText);
-			const consumeRestoreText = useQueueStore((state) => state.consumeRestoreText);
+			const pendingRestoreText = useQueueStore(
+				(state) => state.pendingRestoreText,
+			);
+			const consumeRestoreText = useQueueStore(
+				(state) => state.consumeRestoreText,
+			);
 
 			useEffect(() => {
 				if (pendingRestoreText) {

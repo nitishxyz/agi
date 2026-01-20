@@ -50,7 +50,10 @@ interface ChatInputProps {
 }
 
 export const ChatInput = memo(
-	forwardRef<{ focus: () => void; setValue: (value: string) => void }, ChatInputProps>(function ChatInput(
+	forwardRef<
+		{ focus: () => void; setValue: (value: string) => void },
+		ChatInputProps
+	>(function ChatInput(
 		{
 			onSend,
 			onCommand,

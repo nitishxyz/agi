@@ -238,7 +238,12 @@ class ApiClient {
 	async removeFromQueue(
 		sessionId: string,
 		messageId: string,
-	): Promise<{ success: boolean; removed: boolean; wasQueued?: boolean; wasRunning?: boolean }> {
+	): Promise<{
+		success: boolean;
+		removed: boolean;
+		wasQueued?: boolean;
+		wasRunning?: boolean;
+	}> {
 		const baseUrl = this.baseUrl;
 		const response = await fetch(
 			`${baseUrl}/v1/sessions/${sessionId}/queue/${messageId}`,

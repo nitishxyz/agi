@@ -194,8 +194,12 @@ export function registerSessionsRoutes(app: Hono) {
 	// Abort session stream
 	app.delete('/v1/sessions/:sessionId/abort', async (c) => {
 		const sessionId = c.req.param('sessionId');
-		const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
-		const messageId = typeof body.messageId === 'string' ? body.messageId : undefined;
+		const body = (await c.req.json().catch(() => ({}))) as Record<
+			string,
+			unknown
+		>;
+		const messageId =
+			typeof body.messageId === 'string' ? body.messageId : undefined;
 		const clearQueue = body.clearQueue === true;
 
 		const { abortSession, abortMessage } = await import('../runtime/runner.ts');
@@ -218,11 +222,13 @@ export function registerSessionsRoutes(app: Hono) {
 		const sessionId = c.req.param('sessionId');
 		const { getQueueState } = await import('../runtime/session-queue.ts');
 		const state = getQueueState(sessionId);
-		return c.json(state ?? {
-			currentMessageId: null,
-			queuedMessages: [],
-			isRunning: false,
-		});
+		return c.json(
+			state ?? {
+				currentMessageId: null,
+				queuedMessages: [],
+				isRunning: false,
+			},
+		);
 	});
 
 	// Remove a message from the queue
@@ -232,7 +238,9 @@ export function registerSessionsRoutes(app: Hono) {
 		const projectRoot = c.req.query('project') || process.cwd();
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
-		const { removeFromQueue, abortMessage } = await import('../runtime/session-queue.ts');
+		const { removeFromQueue, abortMessage } = await import(
+			'../runtime/session-queue.ts'
+		);
 
 		// First try to remove from queue (queued messages)
 		const removed = removeFromQueue(sessionId, messageId);
@@ -252,10 +260,7 @@ export function registerSessionsRoutes(app: Hono) {
 						.select()
 						.from(messages)
 						.where(
-							and(
-								eq(messages.sessionId, sessionId),
-								eq(messages.role, 'user'),
-							),
+							and(eq(messages.sessionId, sessionId), eq(messages.role, 'user')),
 						)
 						.orderBy(desc(messages.createdAt))
 						.limit(1);
@@ -266,9 +271,13 @@ export function registerSessionsRoutes(app: Hono) {
 					}
 
 					// Delete message parts first (foreign key constraint)
-					await db.delete(messageParts).where(inArray(messageParts.messageId, messageIdsToDelete));
+					await db
+						.delete(messageParts)
+						.where(inArray(messageParts.messageId, messageIdsToDelete));
 					// Delete messages
-					await db.delete(messages).where(inArray(messages.id, messageIdsToDelete));
+					await db
+						.delete(messages)
+						.where(inArray(messages.id, messageIdsToDelete));
 				}
 			} catch (err) {
 				logger.error('Failed to delete queued messages from DB', err);

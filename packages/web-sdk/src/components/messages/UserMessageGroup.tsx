@@ -1,6 +1,14 @@
 import { memo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { User, X, FileText, FileIcon, Clock, Trash2, RotateCcw } from 'lucide-react';
+import {
+	User,
+	X,
+	FileText,
+	FileIcon,
+	Clock,
+	Trash2,
+	RotateCcw,
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message } from '../../types/api';
@@ -152,7 +160,10 @@ export const UserMessageGroup = memo(
 										<span>·</span>
 										<span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
 											<Clock className="h-3 w-3" />
-											Queued{position !== null && position > 0 ? ` #${position + 1}` : ''}
+											Queued
+											{position !== null && position > 0
+												? ` #${position + 1}`
+												: ''}
 										</span>
 									</>
 								)}
