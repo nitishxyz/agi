@@ -29,6 +29,9 @@ export * from './sessions/SessionListContainer';
 export * from './sessions/SessionHeader';
 export * from './sessions/LeanHeader';
 
+// Branch Components
+export * from './branch/BranchModal';
+
 // Git Components
 export * from './git/GitDiffViewer';
 export * from './git/GitFileList';

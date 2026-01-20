@@ -1,29 +1,31 @@
 import { useMemo } from 'react';
 import type { Session } from '../../types/api';
-import { Clock, DollarSign, Hash } from 'lucide-react';
+import { Clock, DollarSign, Hash, GitBranch, ArrowUpRight } from 'lucide-react';
+import { useParentSession } from '../../hooks/useBranch';
 
 interface SessionHeaderProps {
 	session: Session;
+	onNavigateToSession?: (sessionId: string) => void;
 }
 
-export function SessionHeader({ session }: SessionHeaderProps) {
-	// Calculate total tokens
+export function SessionHeader({
+	session,
+	onNavigateToSession,
+}: SessionHeaderProps) {
+	const { data: parentData } = useParentSession(
+		session.sessionType === 'branch' ? session.id : undefined,
+	);
+
 	const totalTokens = useMemo(() => {
 		const input = session.totalInputTokens || 0;
 		const output = session.totalOutputTokens || 0;
 		return input + output;
 	}, [session.totalInputTokens, session.totalOutputTokens]);
 
-	// Calculate estimated cost (example rates for GPT-4)
-	// These should be adjusted based on the actual model
 	const estimatedCost = useMemo(() => {
 		const input = session.totalInputTokens || 0;
 		const output = session.totalOutputTokens || 0;
 
-		// Example rates (per 1M tokens):
-		// GPT-4: $30 input, $60 output
-		// GPT-3.5: $0.50 input, $1.50 output
-		// These are approximate and should be updated based on actual model
 		const inputCostPer1M = 30;
 		const outputCostPer1M = 60;
 
@@ -33,7 +35,6 @@ export function SessionHeader({ session }: SessionHeaderProps) {
 		return inputCost + outputCost;
 	}, [session.totalInputTokens, session.totalOutputTokens]);
 
-	// Format time duration
 	const formatDuration = (ms: number | null) => {
 		if (!ms) return '0s';
 
@@ -52,22 +53,47 @@ export function SessionHeader({ session }: SessionHeaderProps) {
 		return `${seconds}s`;
 	};
 
-	// Format number with commas
 	const formatNumber = (num: number) => {
 		return num.toLocaleString('en-US');
 	};
 
+	const isBranch = session.sessionType === 'branch';
+	const parentSession = parentData?.parent;
+
 	return (
 		<div className="border-b border-border bg-background/95 backdrop-blur-sm">
 			<div className="max-w-3xl mx-auto px-6 py-6">
-				{/* Title */}
+				{isBranch && (
+					<div className="flex items-center gap-2 mb-2 text-sm">
+						<GitBranch className="h-4 w-4 text-violet-500" />
+						<span className="text-violet-600 dark:text-violet-400">Branch</span>
+						{parentSession && (
+							<>
+								<span className="text-muted-foreground">from</span>
+								<button
+									type="button"
+									onClick={() => onNavigateToSession?.(parentSession.id)}
+									className="text-primary hover:underline flex items-center gap-1"
+								>
+									{parentSession.title ||
+										`Session ${parentSession.id.slice(0, 8)}`}
+									<ArrowUpRight className="h-3 w-3" />
+								</button>
+							</>
+						)}
+						{!parentSession && session.parentSessionId && (
+							<span className="text-muted-foreground italic">
+								(parent deleted)
+							</span>
+						)}
+					</div>
+				)}
+
 				<h1 className="text-2xl font-semibold text-foreground mb-4">
 					{session.title || 'Untitled Session'}
 				</h1>
 
-				{/* Session Stats */}
 				<div className="flex flex-wrap gap-6 text-sm">
-					{/* Total Tokens */}
 					<div className="flex items-center gap-2 text-muted-foreground">
 						<Hash className="w-4 h-4" />
 						<div className="flex flex-col">
@@ -86,7 +112,6 @@ export function SessionHeader({ session }: SessionHeaderProps) {
 						</div>
 					</div>
 
-					{/* Total Time */}
 					<div className="flex items-center gap-2 text-muted-foreground">
 						<Clock className="w-4 h-4" />
 						<div className="flex flex-col">
@@ -99,7 +124,6 @@ export function SessionHeader({ session }: SessionHeaderProps) {
 						</div>
 					</div>
 
-					{/* Estimated Cost */}
 					{estimatedCost > 0 && (
 						<div className="flex items-center gap-2 text-muted-foreground">
 							<DollarSign className="w-4 h-4" />
@@ -114,7 +138,6 @@ export function SessionHeader({ session }: SessionHeaderProps) {
 						</div>
 					)}
 
-					{/* Model Info */}
 					<div className="flex items-center gap-2 text-muted-foreground ml-auto">
 						<div className="flex flex-col items-end">
 							<span className="text-xs uppercase tracking-wide opacity-70">

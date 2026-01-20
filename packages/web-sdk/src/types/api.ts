@@ -11,6 +11,9 @@ export interface Session {
 	totalOutputTokens: number | null;
 	totalToolTimeMs: number | null;
 	toolCounts?: Record<string, number>;
+	parentSessionId?: string | null;
+	branchPointMessageId?: string | null;
+	sessionType?: 'main' | 'branch';
 }
 
 export interface Message {
@@ -222,4 +225,36 @@ export interface SessionFilesResponse {
 	files: SessionFile[];
 	totalFiles: number;
 	totalOperations: number;
+}
+
+// Session branching types
+export interface CreateBranchRequest {
+	fromMessageId: string;
+	provider?: string;
+	model?: string;
+	agent?: string;
+	title?: string;
+}
+
+export interface BranchResult {
+	session: Session;
+	parentSessionId: string;
+	branchPointMessageId: string;
+	copiedMessages: number;
+	copiedParts: number;
+}
+
+export interface BranchInfo {
+	session: Session;
+	branchPointMessageId: string | null;
+	branchPointPreview: string | null;
+	createdAt: number;
+}
+
+export interface ListBranchesResponse {
+	branches: BranchInfo[];
+}
+
+export interface ParentSessionResponse {
+	parent: Session | null;
 }

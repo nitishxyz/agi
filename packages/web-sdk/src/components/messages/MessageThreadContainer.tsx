@@ -6,10 +6,12 @@ import { MessageThread } from './MessageThread';
 
 interface MessageThreadContainerProps {
 	sessionId: string;
+	onSelectSession?: (sessionId: string) => void;
 }
 
 export const MessageThreadContainer = memo(function MessageThreadContainer({
 	sessionId,
+	onSelectSession,
 }: MessageThreadContainerProps) {
 	const { data: messages = [], isLoading } = useMessages(sessionId);
 	const { data: sessions = [] } = useSessions();
@@ -41,6 +43,7 @@ export const MessageThreadContainer = memo(function MessageThreadContainer({
 			sessionId={sessionId}
 			session={session}
 			isGenerating={isGenerating}
+			onSelectSession={onSelectSession}
 		/>
 	);
 });

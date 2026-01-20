@@ -9,6 +9,7 @@ import {
 	GitBranch,
 	Check,
 	Minimize2,
+	Split,
 } from 'lucide-react';
 
 export interface Command {
@@ -87,6 +88,12 @@ export const COMMANDS: Command[] = [
 		label: '/compact',
 		description: 'Compact conversation to reduce context size',
 		icon: Minimize2,
+	},
+	{
+		id: 'branch',
+		label: '/branch',
+		description: 'Branch session from last message',
+		icon: Split,
 	},
 ];
 

@@ -11,6 +11,7 @@ interface MessageThreadProps {
 	session?: Session;
 	sessionId?: string;
 	isGenerating?: boolean;
+	onSelectSession?: (sessionId: string) => void;
 }
 
 export const MessageThread = memo(function MessageThread({
@@ -18,6 +19,7 @@ export const MessageThread = memo(function MessageThread({
 	session,
 	sessionId,
 	isGenerating,
+	onSelectSession,
 }: MessageThreadProps) {
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -204,6 +206,7 @@ export const MessageThread = memo(function MessageThread({
 					session={session}
 					isVisible={showLeanHeader}
 					isGenerating={isGenerating}
+					onNavigateToSession={onSelectSession}
 				/>
 			)}
 
@@ -214,7 +217,12 @@ export const MessageThread = memo(function MessageThread({
 			>
 				{/* Session Header - scrolls with content */}
 				<div ref={sessionHeaderRef}>
-					{session && <SessionHeader session={session} />}
+					{session && (
+						<SessionHeader
+							session={session}
+							onNavigateToSession={onSelectSession}
+						/>
+					)}
 				</div>
 
 				{/* Messages */}
@@ -255,6 +263,7 @@ export const MessageThread = memo(function MessageThread({
 										showHeader={showHeader}
 										hasNextAssistantMessage={nextIsAssistant}
 										isLastMessage={isLastMessage}
+										onBranchCreated={onSelectSession}
 									/>
 								);
 							}

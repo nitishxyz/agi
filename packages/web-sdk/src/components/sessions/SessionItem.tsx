@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, GitBranch } from 'lucide-react';
 import type { Session } from '../../types/api';
 
 interface SessionItemProps {
@@ -28,6 +28,8 @@ export const SessionItem = memo(function SessionItem({
 		return date.toLocaleDateString();
 	};
 
+	const isBranch = session.sessionType === 'branch';
+
 	const baseStyles =
 		'group w-full rounded-lg px-3 py-3 text-left transition-colors duration-150';
 	const activeStyles = 'bg-primary/10';
@@ -40,14 +42,25 @@ export const SessionItem = memo(function SessionItem({
 			className={`${baseStyles} ${isActive ? activeStyles : inactiveStyles}`}
 		>
 			<div className="flex items-start gap-3">
-				<MessageSquare
-					className={`h-4 w-4 shrink-0 mt-1 text-muted-foreground ${isActive ? 'text-primary' : ''}`}
-				/>
+				{isBranch ? (
+					<GitBranch
+						className={`h-4 w-4 shrink-0 mt-1 text-muted-foreground ${isActive ? 'text-primary' : ''}`}
+					/>
+				) : (
+					<MessageSquare
+						className={`h-4 w-4 shrink-0 mt-1 text-muted-foreground ${isActive ? 'text-primary' : ''}`}
+					/>
+				)}
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
 						<h3 className="truncate text-sm font-semibold text-foreground">
 							{session.title || `Session ${session.id.slice(0, 8)}`}
 						</h3>
+						{isBranch && (
+							<span className="text-[10px] px-1.5 py-0.5 bg-violet-500/10 text-violet-600 dark:text-violet-400 rounded-full shrink-0">
+								branch
+							</span>
+						)}
 					</div>
 					<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground/80">
 						{session.agent && (

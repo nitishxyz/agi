@@ -1,8 +1,9 @@
-import { memo } from 'react';
-import { Sparkles } from 'lucide-react';
+import { memo, useState, useCallback } from 'react';
+import { Sparkles, GitBranch, Copy, Check } from 'lucide-react';
 import type { Message } from '../../types/api';
 import { MessagePartItem } from './MessagePartItem';
 import { useMessageQueuePosition } from '../../hooks/useQueueState';
+import { BranchModal } from '../branch/BranchModal';
 
 interface AssistantMessageGroupProps {
 	sessionId?: string;
@@ -10,6 +11,7 @@ interface AssistantMessageGroupProps {
 	showHeader: boolean;
 	hasNextAssistantMessage: boolean;
 	isLastMessage: boolean;
+	onBranchCreated?: (newSessionId: string) => void;
 }
 
 const loadingMessages = [
@@ -36,8 +38,13 @@ export const AssistantMessageGroup = memo(
 		message,
 		showHeader,
 		hasNextAssistantMessage,
+		onBranchCreated,
 	}: AssistantMessageGroupProps) {
 		const { isQueued } = useMessageQueuePosition(sessionId, message.id);
+		const [isHovered, setIsHovered] = useState(false);
+		const [showBranchModal, setShowBranchModal] = useState(false);
+		const [copied, setCopied] = useState(false);
+
 		const parts = message.parts || [];
 		const hasFinish = parts.some((part) => part.toolName === 'finish');
 		const latestProgressUpdateIndex = parts.reduce(
@@ -75,19 +82,48 @@ export const AssistantMessageGroup = memo(
 			});
 		};
 
+		const isComplete = message.status === 'complete';
+
+		const handleCopy = useCallback(() => {
+			const textParts = parts
+				.filter((p) => p.type === 'text')
+				.map((p) => {
+					try {
+						const parsed = JSON.parse(p.content || '{}');
+						return parsed?.text || '';
+					} catch {
+						return p.content || '';
+					}
+				})
+				.join('\n');
+
+			navigator.clipboard.writeText(textParts);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		}, [parts]);
+
+		const handleBranchClick = useCallback(() => {
+			setShowBranchModal(true);
+		}, []);
+
 		if (isQueued) {
 			return null;
 		}
 
 		return (
-			<div className="relative">
+			// biome-ignore lint/a11y/noStaticElementInteractions: hover state for showing actions
+			<div
+				className="relative group"
+				onMouseEnter={() => setIsHovered(true)}
+				onMouseLeave={() => setIsHovered(false)}
+			>
 				{showHeader && (
-					<div className="pb-2">
-						<div className="inline-flex items-center bg-violet-500/10 border border-violet-500/30 dark:bg-violet-500/5 dark:border-violet-500/20 rounded-full pr-3 md:pr-4">
+					<div className="pb-2 flex items-center justify-between">
+						<div className="inline-flex items-center bg-violet-500/10 border border-violet-500/30 dark:bg-violet-500/5 dark:border-violet-500/20 rounded-full pr-3 md:pr-4 flex-shrink min-w-0">
 							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-violet-500/50 bg-violet-500/20 dark:bg-violet-500/10">
 								<Sparkles className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
 							</div>
-							<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs md:text-sm text-muted-foreground pl-3">
+							<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs md:text-sm text-muted-foreground pl-3 min-w-0">
 								{message.agent && (
 									<span className="font-medium text-violet-700 dark:text-violet-300 whitespace-nowrap">
 										{message.agent}
@@ -117,6 +153,16 @@ export const AssistantMessageGroup = memo(
 								)}
 							</div>
 						</div>
+						{isHovered && isComplete && sessionId && (
+							<button
+								type="button"
+								onClick={handleBranchClick}
+								className="ml-4 p-1.5 text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
+								title="Branch from this message"
+							>
+								<GitBranch className="h-4 w-4" />
+							</button>
+						)}
 					</div>
 				)}
 
@@ -172,6 +218,46 @@ export const AssistantMessageGroup = memo(
 						</div>
 					)}
 				</div>
+
+				{isHovered && isComplete && sessionId && (
+					<div className="flex gap-2 mt-2 ml-7">
+						<button
+							type="button"
+							onClick={handleBranchClick}
+							className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-colors"
+						>
+							<GitBranch className="h-3 w-3" />
+							Branch
+						</button>
+						<button
+							type="button"
+							onClick={handleCopy}
+							className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-colors"
+						>
+							{copied ? (
+								<>
+									<Check className="h-3 w-3 text-green-500" />
+									Copied
+								</>
+							) : (
+								<>
+									<Copy className="h-3 w-3" />
+									Copy
+								</>
+							)}
+						</button>
+					</div>
+				)}
+
+				{showBranchModal && sessionId && (
+					<BranchModal
+						isOpen={showBranchModal}
+						onClose={() => setShowBranchModal(false)}
+						sessionId={sessionId}
+						message={message}
+						onBranchCreated={onBranchCreated}
+					/>
+				)}
 			</div>
 		);
 	},

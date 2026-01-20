@@ -162,7 +162,10 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 
 		return (
 			<>
-				<MessageThreadContainer sessionId={sessionId} />
+				<MessageThreadContainer
+					sessionId={sessionId}
+					onSelectSession={handleSelectSession}
+				/>
 				<ChatInputContainer
 					ref={chatInputRef}
 					sessionId={sessionId}
@@ -170,7 +173,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 				/>
 			</>
 		);
-	}, [sessionId, handleNewSession]);
+	}, [sessionId, handleNewSession, handleSelectSession]);
 
 	return (
 		<AppLayout

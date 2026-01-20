@@ -40,6 +40,10 @@ import type {
 	UpdateSessionRequest,
 	AllModelsResponse,
 	SessionFilesResponse,
+	CreateBranchRequest,
+	BranchResult,
+	ListBranchesResponse,
+	ParentSessionResponse,
 } from '../types/api';
 import { API_BASE_URL } from './config';
 
@@ -481,6 +485,73 @@ class ApiClient {
 			const errorData = await response
 				.json()
 				.catch(() => ({ error: 'Failed to fetch session files' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async createBranch(
+		sessionId: string,
+		data: CreateBranchRequest,
+	): Promise<BranchResult> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/sessions/${sessionId}/branch`,
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(data),
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to create branch' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async listBranches(sessionId: string): Promise<ListBranchesResponse> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/sessions/${sessionId}/branches`,
+			{
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to list branches' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async getParentSession(sessionId: string): Promise<ParentSessionResponse> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/sessions/${sessionId}/parent`,
+			{
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to get parent session' }));
 			throw new Error(extractErrorMessage(errorData));
 		}
 

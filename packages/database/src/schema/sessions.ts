@@ -19,4 +19,8 @@ export const sessions = sqliteTable('sessions', {
 	// Compaction
 	contextSummary: text('context_summary'), // LLM-generated summary of conversation context
 	lastCompactedAt: integer('last_compacted_at', { mode: 'number' }),
+	// Branching
+	parentSessionId: text('parent_session_id'),
+	branchPointMessageId: text('branch_point_message_id'),
+	sessionType: text('session_type').default('main'),
 });

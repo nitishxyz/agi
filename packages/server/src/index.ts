@@ -14,6 +14,7 @@ import { registerFilesRoutes } from './routes/files.ts';
 import { registerGitRoutes } from './routes/git/index.ts';
 import { registerTerminalsRoutes } from './routes/terminals.ts';
 import { registerSessionFilesRoutes } from './routes/session-files.ts';
+import { registerBranchRoutes } from './routes/branch.ts';
 import type { AgentConfigEntry } from './runtime/agent-registry.ts';
 
 const globalTerminalManager = new TerminalManager();
@@ -64,6 +65,7 @@ function initApp() {
 	registerGitRoutes(app);
 	registerTerminalsRoutes(app, globalTerminalManager);
 	registerSessionFilesRoutes(app);
+	registerBranchRoutes(app);
 
 	return app;
 }
@@ -130,6 +132,7 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	registerGitRoutes(honoApp);
 	registerTerminalsRoutes(honoApp, globalTerminalManager);
 	registerSessionFilesRoutes(honoApp);
+	registerBranchRoutes(honoApp);
 
 	return honoApp;
 }
@@ -224,6 +227,7 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 	registerGitRoutes(honoApp);
 	registerTerminalsRoutes(honoApp, globalTerminalManager);
 	registerSessionFilesRoutes(honoApp);
+	registerBranchRoutes(honoApp);
 
 	return honoApp;
 }
