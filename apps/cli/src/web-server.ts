@@ -5,6 +5,7 @@
 
 import type { Server } from 'bun';
 import { webAssetPaths, assetPaths, getEmbeddedAsset } from './web-assets';
+import { logger } from '@agi-cli/sdk';
 
 const decoder = new TextDecoder();
 
@@ -93,10 +94,7 @@ export function createWebServer(
 								},
 							});
 						} catch (error) {
-							console.error(
-								'Error reading HTML file for fallback:',
-								error instanceof Error ? error.message : String(error),
-							);
+							logger.error('Error reading HTML file for fallback', error);
 						}
 					}
 				}
@@ -149,10 +147,7 @@ export function createWebServer(
 								},
 							});
 						} catch (error) {
-							console.error(
-								'Error reading HTML file:',
-								error instanceof Error ? error.message : String(error),
-							);
+							logger.error('Error reading HTML file', error);
 						}
 					}
 

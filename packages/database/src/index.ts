@@ -1,6 +1,6 @@
 import { Database } from 'bun:sqlite';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import { loadConfig } from '@agi-cli/sdk';
+import { loadConfig, logger } from '@agi-cli/sdk';
 import * as schema from './schema/index.ts';
 import { bundledMigrations } from './runtime/migrations-bundled.ts';
 
@@ -68,10 +68,7 @@ export async function getDb(projectRootInput?: string) {
 			}
 			migratedPaths.add(dbPath);
 		} catch (error) {
-			console.error(
-				'❌ Local database migration failed:',
-				error instanceof Error ? error.message : String(error),
-			);
+			logger.error('Local database migration failed', error);
 			throw error;
 		}
 	}

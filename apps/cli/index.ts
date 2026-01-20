@@ -4,6 +4,7 @@ import {
 	getTerminalManager,
 	type ProviderId,
 	openAuthUrl,
+	logger,
 } from '@agi-cli/sdk';
 import {
 	createApp as createServer,
@@ -267,10 +268,7 @@ async function handleServeCommand(args: string[]) {
 		webServer = server;
 		webUrl = `http://${displayHost}:${actualWebPort}`;
 	} catch (error) {
-		console.error(
-			'❌ Failed to start Web UI server:',
-			error instanceof Error ? error.message : String(error),
-		);
+		logger.error('Failed to start Web UI server', error);
 		console.log('   AGI server is still running without Web UI');
 	}
 
@@ -310,28 +308,19 @@ async function handleServeCommand(args: string[]) {
 				await terminalManager.killAll();
 			}
 		} catch (error) {
-			console.error(
-				'Error cleaning up terminals:',
-				error instanceof Error ? error.message : String(error),
-			);
+			logger.error('Error cleaning up terminals', error);
 		}
 
 		try {
 			webServer?.stop(true);
 		} catch (error) {
-			console.error(
-				'Error stopping web server:',
-				error instanceof Error ? error.message : String(error),
-			);
+			logger.error('Error stopping web server', error);
 		}
 
 		try {
 			agiServer.stop(true);
 		} catch (error) {
-			console.error(
-				'Error stopping API server:',
-				error instanceof Error ? error.message : String(error),
-			);
+			logger.error('Error stopping API server', error);
 		}
 
 		process.exit(0);
@@ -342,13 +331,12 @@ async function handleServeCommand(args: string[]) {
 }
 
 process.on('unhandledRejection', (reason) => {
-	const message = reason instanceof Error ? reason.message : String(reason);
-	console.error('\n[FATAL] Unhandled Promise Rejection:', message);
+	logger.error('Unhandled Promise Rejection', reason);
 	process.exit(1);
 });
 
 process.on('uncaughtException', (error) => {
-	console.error('\n[FATAL] Uncaught Exception:', error.message);
+	logger.error('Uncaught Exception', error);
 	process.exit(1);
 });
 
