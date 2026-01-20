@@ -437,6 +437,7 @@ export async function resolveModel(
 	provider: ProviderName,
 	model: string,
 	cfg: AGIConfig,
+	options?: { systemPrompt?: string },
 ) {
 	if (provider === 'openai') {
 		const auth = await getAuth('openai', cfg.projectRoot);
@@ -447,6 +448,7 @@ export async function resolveModel(
 				projectRoot: cfg.projectRoot,
 				reasoningEffort: isCodexModel ? 'high' : 'medium',
 				reasoningSummary: 'auto',
+				instructions: options?.systemPrompt,
 			});
 		}
 		if (auth?.type === 'api' && auth.key) {

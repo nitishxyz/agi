@@ -253,7 +253,14 @@ async function runAssistant(opts: RunOpts) {
 		);
 	}
 
-	const model = await resolveModel(opts.provider, opts.model, cfg);
+	// For OpenAI OAuth, pass the full system prompt as instructions
+	const oauthSystemPrompt =
+		needsSpoof && opts.provider === 'openai' && additionalSystemMessages[0]
+			? additionalSystemMessages[0].content
+			: undefined;
+	const model = await resolveModel(opts.provider, opts.model, cfg, {
+		systemPrompt: oauthSystemPrompt,
+	});
 	debugLog(
 		`[RUNNER] Model created: ${JSON.stringify({ id: model.modelId, provider: model.provider })}`,
 	);
