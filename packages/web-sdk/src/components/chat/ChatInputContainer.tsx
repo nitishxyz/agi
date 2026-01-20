@@ -287,6 +287,7 @@ export const ChatInputContainer = memo(
 						isDragging={isDragging}
 						onPaste={handlePaste}
 						visionEnabled={modelSupportsVision}
+						modelName={model}
 					/>
 				</>
 			);

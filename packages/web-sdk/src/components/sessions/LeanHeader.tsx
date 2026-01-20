@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Session } from '../../types/api';
-import { Hash, DollarSign, Bot } from 'lucide-react';
+import { Hash, DollarSign, MessageSquare } from 'lucide-react';
 import { StopButton } from '../chat/StopButton';
 
 interface LeanHeaderProps {
@@ -38,16 +38,16 @@ export function LeanHeader({
 			}`}
 		>
 			<div className="h-full px-6 flex items-center justify-between gap-6 text-sm">
-				<div className="flex items-center gap-4">
-					<div className="flex items-center gap-2 text-muted-foreground">
-						<Bot className="w-4 h-4" />
-						<span className="text-foreground font-medium">{session.agent}</span>
-					</div>
-
-					{isGenerating && <StopButton sessionId={session.id} />}
+				<div className="flex-1 min-w-0 flex items-center gap-2 text-muted-foreground">
+					<MessageSquare className="w-4 h-4 flex-shrink-0" />
+					<span className="text-foreground font-medium truncate">
+						{session.title || 'Untitled Session'}
+					</span>
 				</div>
 
-				<div className="flex items-center gap-6">
+				<div className="flex-shrink-0 flex items-center gap-6">
+					{isGenerating && <StopButton sessionId={session.id} />}
+
 					<div className="flex items-center gap-2 text-muted-foreground">
 						<Hash className="w-4 h-4" />
 						<span className="text-foreground font-medium">

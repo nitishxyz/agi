@@ -46,6 +46,7 @@ interface ChatInputProps {
 	isDragging?: boolean;
 	onPaste?: (e: ClipboardEvent) => void;
 	visionEnabled?: boolean;
+	modelName?: string;
 }
 
 export const ChatInput = memo(
@@ -65,6 +66,7 @@ export const ChatInput = memo(
 			isDragging = false,
 			onPaste,
 			visionEnabled = false,
+			modelName,
 		},
 		ref,
 	) {
@@ -425,13 +427,20 @@ export const ChatInput = memo(
 							</div>
 						</div>
 
-						{(reasoningEnabled || visionEnabled) && (
+						{(reasoningEnabled || visionEnabled || modelName) && (
 							<div className="flex items-center justify-between mt-1 px-3">
 								<div>
 									{reasoningEnabled && (
 										<span className="text-[10px] text-indigo-600 dark:text-indigo-300 flex items-center gap-1">
 											<Brain className="h-3 w-3" />
 											Extended thinking enabled
+										</span>
+									)}
+								</div>
+								<div>
+									{modelName && (
+										<span className="text-[10px] text-muted-foreground">
+											{modelName}
 										</span>
 									)}
 								</div>
