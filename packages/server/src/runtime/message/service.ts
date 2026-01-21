@@ -7,7 +7,7 @@ import { publish } from '../../events/bus.ts';
 import { enqueueAssistantRun } from '../session/queue.ts';
 import { runSessionLoop } from '../agent/runner.ts';
 import { resolveModel } from '../provider/index.ts';
-import { getFastModel, type ProviderId } from '@agi-cli/sdk';
+import { getFastModelForAuth, type ProviderId } from '@agi-cli/sdk';
 import { debugLog } from '../debug/index.ts';
 import { isCompactCommand, buildCompactionContext } from './compaction.ts';
 
@@ -287,20 +287,14 @@ async function generateSessionTitle(args: {
 		debugLog(`[TITLE_GEN] Provider: ${provider}, Model: ${modelName}`);
 
 		const { getAuth } = await import('@agi-cli/sdk');
-		const { getProviderSpoofPrompt } = await import('./prompt.ts');
+		const { getProviderSpoofPrompt } = await import('../prompt/builder.ts');
 		const auth = await getAuth(provider, cfg.projectRoot);
 		const needsSpoof = auth?.type === 'oauth';
 		const spoofPrompt = needsSpoof
 			? getProviderSpoofPrompt(provider)
 			: undefined;
 
-		// Use a smaller, faster model for title generation
-		// Look up the cheapest/fastest model from the catalog for this provider
-		// For OpenAI OAuth, use codex-mini as it works with ChatGPT backend
-		const titleModel =
-			needsSpoof && provider === 'openai'
-				? 'gpt-5.1-codex-mini'
-				: (getFastModel(provider) ?? modelName);
+		const titleModel = getFastModelForAuth(provider, auth?.type) ?? modelName;
 		debugLog(`[TITLE_GEN] Using title model: ${titleModel}`);
 		const model = await resolveModel(provider, titleModel, cfg);
 

@@ -12,6 +12,7 @@ export {
 	defaultModelFor,
 	hasModel,
 	getFastModel,
+	getFastModelForAuth,
 } from './utils.ts';
 export { validateProviderModel } from './validate.ts';
 export { estimateModelCostUsd } from './pricing.ts';

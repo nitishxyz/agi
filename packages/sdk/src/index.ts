@@ -41,6 +41,7 @@ export {
 	defaultModelFor,
 	hasModel,
 	getFastModel,
+	getFastModelForAuth,
 } from './providers/src/index.ts';
 export {
 	isProviderAuthorized,

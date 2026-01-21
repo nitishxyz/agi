@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { generateText } from 'ai';
 import type { ProviderId } from '@agi-cli/sdk';
-import { loadConfig, getAuth } from '@agi-cli/sdk';
+import { loadConfig, getAuth, getFastModelForAuth } from '@agi-cli/sdk';
 import { gitCommitSchema, gitGenerateCommitMessageSchema } from './schemas.ts';
 import { validateAndGetGitRoot, parseGitStatus } from './utils.ts';
 import { resolveModel } from '../../runtime/provider/index.ts';
@@ -96,7 +96,6 @@ export function registerCommitRoutes(app: Hono) {
 			const config = await loadConfig();
 
 			const provider = (config.defaults?.provider || 'anthropic') as ProviderId;
-			const modelId = config.defaults?.model || 'claude-3-5-sonnet-20241022';
 
 			const auth = await getAuth(provider, config.projectRoot);
 			const needsSpoof = auth?.type === 'oauth';
@@ -104,6 +103,10 @@ export function registerCommitRoutes(app: Hono) {
 				? getProviderSpoofPrompt(provider)
 				: undefined;
 
+			const modelId =
+				getFastModelForAuth(provider, auth?.type) ??
+				config.defaults?.model ??
+				'claude-3-5-sonnet-20241022';
 			const model = await resolveModel(provider, modelId, config);
 
 			const userPrompt = `Generate a concise, conventional commit message for these git changes.
