@@ -78,6 +78,7 @@ export const BUILTIN_TOOLS = [
 	'websearch',
 	'progress_update',
 	'finish',
+	'skill',
 ] as const;
 
 export type BuiltinAgent = keyof typeof BUILTIN_AGENTS;

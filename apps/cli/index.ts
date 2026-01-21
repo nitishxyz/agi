@@ -24,6 +24,7 @@ import { runToolsList } from './src/tools.ts';
 import { runDoctor } from './src/doctor.ts';
 import { createWebServer } from './src/web-server.ts';
 import { colors } from './src/ui.ts';
+import { runSkills } from './src/skills.ts';
 
 const createApp = createServer;
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
@@ -122,6 +123,14 @@ async function main() {
 		const projectIdx = argv.indexOf('--project');
 		const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
 		await runToolsList({ project: projectRoot });
+		return;
+	}
+
+	if (cmd === 'skills') {
+		const projectIdx = argv.indexOf('--project');
+		const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
+		const subcommand = argv[1];
+		await runSkills(subcommand, argv.slice(2), projectRoot);
 		return;
 	}
 
@@ -359,6 +368,7 @@ function printHelp(
 		'  scaffold|generate                  Create agents, tools, or commands (interactive)',
 		'  agents [--local]                   Edit agents.json entries (interactive)',
 		'  tools                              List discovered tools and agent access',
+		'  skills [list|show|create|validate] Manage agent skills',
 		'  doctor                             Diagnose auth, defaults, and agent/tool issues',
 		'',
 		'Ask options:',

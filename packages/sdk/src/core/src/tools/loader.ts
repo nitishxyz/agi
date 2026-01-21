@@ -14,6 +14,7 @@ import { editTool } from './builtin/edit.ts';
 import { buildWebSearchTool } from './builtin/websearch.ts';
 import { buildTerminalTool } from './builtin/terminal.ts';
 import type { TerminalManager } from '../terminals/index.ts';
+import { initializeSkills, buildSkillTool } from '../../../skills/index.ts';
 import fg from 'fast-glob';
 import { dirname, isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -137,6 +138,11 @@ export async function discoverProjectTools(
 		const term = buildTerminalTool(projectRoot, globalTerminalManager);
 		tools.set(term.name, term.tool);
 	}
+	// Skills
+	// Always reinitialize to ensure skills are discovered for the current project
+	await initializeSkills(projectRoot);
+	const skillTool = buildSkillTool();
+	tools.set(skillTool.name, skillTool.tool);
 
 	async function loadFromBase(base: string | null | undefined) {
 		if (!base) return;

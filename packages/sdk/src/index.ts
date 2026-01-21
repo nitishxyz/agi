@@ -208,3 +208,41 @@ export { z } from './core/src/index.ts';
 // SDK-specific Agent Types
 // =======================
 export type { AgentConfig, AgentConfigEntry } from './agent/types.ts';
+
+// =======================
+// Skills (from internal skills module)
+// =======================
+export type {
+	SkillScope,
+	SkillMetadata,
+	SkillDefinition,
+	DiscoveredSkill,
+	SkillLoadResult,
+	SkillErrorResult,
+	SkillResult,
+} from './skills/index.ts';
+
+export {
+	validateMetadata as validateSkillMetadata,
+	validateSkillName,
+	SkillValidationError,
+} from './skills/index.ts';
+
+export { parseSkillFile, extractFrontmatter } from './skills/index.ts';
+
+export {
+	discoverSkills,
+	loadSkill,
+	getSkillCache,
+	clearSkillCache,
+	findGitRoot,
+	listSkillsInDir,
+} from './skills/index.ts';
+
+export {
+	initializeSkills,
+	getDiscoveredSkills,
+	isSkillsInitialized,
+	buildSkillTool,
+	rebuildSkillDescription,
+} from './skills/index.ts';
