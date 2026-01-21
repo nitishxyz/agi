@@ -117,6 +117,7 @@ export function registerModelsRoutes(app: Hono) {
 					);
 					modelsMap[provider] = {
 						label: providerCatalog.label || provider,
+						authType,
 						models: filteredModels.map((m) => ({
 							id: m.id,
 							label: m.label || m.id,

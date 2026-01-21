@@ -110,6 +110,7 @@ export interface ModelInfo {
 
 export interface ProviderModels {
 	label: string;
+	authType?: 'api' | 'oauth' | 'wallet';
 	models: ModelInfo[];
 }
 

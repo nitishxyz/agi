@@ -47,6 +47,8 @@ interface ChatInputProps {
 	onPaste?: (e: ClipboardEvent) => void;
 	visionEnabled?: boolean;
 	modelName?: string;
+	providerName?: string;
+	authType?: 'api' | 'oauth' | 'wallet';
 }
 
 export const ChatInput = memo(
@@ -70,6 +72,8 @@ export const ChatInput = memo(
 			onPaste,
 			visionEnabled = false,
 			modelName,
+			providerName,
+			authType,
 		},
 		ref,
 	) {
@@ -434,24 +438,39 @@ export const ChatInput = memo(
 							</div>
 						</div>
 
-						{(reasoningEnabled || visionEnabled || modelName) && (
-							<div className="flex items-center justify-between mt-1 px-3">
-								<div>
+						{(reasoningEnabled ||
+							visionEnabled ||
+							modelName ||
+							providerName ||
+							authType) && (
+							<div className="grid grid-cols-3 items-center mt-1 px-3">
+								<div className="justify-self-start">
 									{reasoningEnabled && (
 										<span className="text-[10px] text-indigo-600 dark:text-indigo-300 flex items-center gap-1">
 											<Brain className="h-3 w-3" />
-											Extended thinking enabled
+											Extended thinking
 										</span>
 									)}
 								</div>
-								<div>
-									{modelName && (
-										<span className="text-[10px] text-muted-foreground">
-											{modelName}
+								<div className="justify-self-center">
+									{(providerName || modelName || authType) && (
+										<span className="text-[10px] text-muted-foreground flex items-center gap-1">
+											{providerName && (
+												<span className="opacity-60">{providerName}</span>
+											)}
+											{providerName && modelName && (
+												<span className="opacity-40">/</span>
+											)}
+											{modelName && <span>{modelName}</span>}
+											{authType && authType !== 'api' && (
+												<span className="opacity-50">
+													({authType === 'oauth' ? 'pro' : 'wallet'})
+												</span>
+											)}
 										</span>
 									)}
 								</div>
-								<div>
+								<div className="justify-self-end">
 									{visionEnabled && (
 										<span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
 											<ImageIcon className="h-3 w-3" />

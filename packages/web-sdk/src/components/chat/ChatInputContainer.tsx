@@ -71,6 +71,8 @@ export const ChatInputContainer = memo(
 				(m) => m.id === model,
 			)?.vision;
 
+			const providerAuthType = allModels?.[provider]?.authType;
+
 			useEffect(() => {
 				if (session) {
 					setAgent(session.agent);
@@ -308,6 +310,8 @@ export const ChatInputContainer = memo(
 						onPaste={handlePaste}
 						visionEnabled={modelSupportsVision}
 						modelName={model}
+						providerName={provider}
+						authType={providerAuthType}
 					/>
 				</>
 			);
