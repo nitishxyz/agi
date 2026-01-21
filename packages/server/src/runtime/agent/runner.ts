@@ -26,7 +26,6 @@ import { pruneSession } from '../message/compaction.ts';
 import { setupRunner } from './runner-setup.ts';
 import {
 	type ReasoningState,
-	serializeReasoningContent,
 	handleReasoningStart,
 	handleReasoningDelta,
 	handleReasoningEnd,
@@ -157,11 +156,11 @@ async function runAssistant(opts: RunOpts) {
 	const onFinish = createFinishHandler(opts, db, completeAssistantMessage);
 
 	try {
-		// biome-ignore lint/suspicious/noExplicitAny: AI SDK message types are complex
 		const result = streamText({
 			model,
 			tools: toolset,
 			...(system ? { system } : {}),
+			// biome-ignore lint/suspicious/noExplicitAny: AI SDK message types are complex
 			messages: messagesWithSystemInstructions as any,
 			...(effectiveMaxOutputTokens
 				? { maxOutputTokens: effectiveMaxOutputTokens }
@@ -169,10 +168,15 @@ async function runAssistant(opts: RunOpts) {
 			...(Object.keys(providerOptions).length > 0 ? { providerOptions } : {}),
 			abortSignal: opts.abortSignal,
 			stopWhen: hasToolCall('finish'),
+			// biome-ignore lint/suspicious/noExplicitAny: AI SDK callback types mismatch
 			onStepFinish: onStepFinish as any,
+			// biome-ignore lint/suspicious/noExplicitAny: AI SDK callback types mismatch
 			onError: onError as any,
+			// biome-ignore lint/suspicious/noExplicitAny: AI SDK callback types mismatch
 			onAbort: onAbort as any,
+			// biome-ignore lint/suspicious/noExplicitAny: AI SDK callback types mismatch
 			onFinish: onFinish as any,
+			// biome-ignore lint/suspicious/noExplicitAny: AI SDK streamText options type
 		} as any);
 
 		for await (const part of result.fullStream) {
