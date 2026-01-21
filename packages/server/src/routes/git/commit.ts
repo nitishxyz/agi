@@ -123,33 +123,43 @@ export function registerCommitRoutes(app: Hono) {
 				'claude-3-5-sonnet-20241022';
 			const model = await resolveModel(provider, modelId, config);
 
-			const userPrompt = `Generate a concise, conventional commit message for these git changes.
+			const userPrompt = `Generate a commit message for these git changes.
 
 Staged files:
 ${fileList}
 
-Diff (first 2000 chars):
-${diff.slice(0, 2000)}
+Diff (first 4000 chars):
+${diff.slice(0, 4000)}
 
 Guidelines:
-- Use conventional commits format (feat:, fix:, docs:, etc.)
-- Keep the first line under 72 characters
-- Be specific but concise
-- Focus on what changed and why, not how
-- Do not include any markdown formatting or code blocks
+- CAREFULLY READ the diff above - describe what ACTUALLY changed
+- Use conventional commits format: type(scope): description
+- First line under 72 characters
+- Add a blank line, then 2-4 short bullet points
+- Each bullet describes ONE specific change you see in the diff
+- Be ACCURATE - don't invent changes that aren't in the diff
+- Keep bullets short (under 80 chars each)
+- Do not include markdown code blocks or backticks
 - Return ONLY the commit message text, nothing else
+
+Example (for a diff that adds boolean returns to functions):
+refactor(auth): return success status from login functions
+
+- Add boolean return type to auth functions
+- Return false on user cancellation or failure
+- Check return value before proceeding with auth flow
 
 Commit message:`;
 
 			const systemPrompt = spoofPrompt
 				? spoofPrompt
-				: 'You are a helpful assistant that generates git commit messages.';
+				: 'You are a helpful assistant that generates accurate git commit messages based on the actual diff content.';
 
 			const { text } = await generateText({
 				model,
 				system: systemPrompt,
 				prompt: userPrompt,
-				maxTokens: 200,
+				maxTokens: 500,
 			});
 
 			const message = text.trim();
