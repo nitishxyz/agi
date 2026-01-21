@@ -29,3 +29,8 @@ export {
 	createOpenAIOAuthModel,
 } from './openai-oauth-client.ts';
 export type { OpenAIOAuthConfig } from './openai-oauth-client.ts';
+export {
+	isModelAllowedForOAuth,
+	filterModelsForAuthType,
+	getOAuthModelPrefixes,
+} from './oauth-models.ts';

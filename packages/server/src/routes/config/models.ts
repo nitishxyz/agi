@@ -1,5 +1,10 @@
 import type { Hono } from 'hono';
-import { loadConfig, catalog, type ProviderId } from '@agi-cli/sdk';
+import {
+	loadConfig,
+	catalog,
+	type ProviderId,
+	filterModelsForAuthType,
+} from '@agi-cli/sdk';
 import type { EmbeddedAppConfig } from '../../index.ts';
 import { logger } from '@agi-cli/sdk';
 import { serializeError } from '../../runtime/errors/api-error.ts';
@@ -7,6 +12,7 @@ import {
 	isProviderAuthorizedHybrid,
 	getAuthorizedProviders,
 	getDefault,
+	getAuthTypeForProvider,
 } from './utils.ts';
 
 export function registerModelsRoutes(app: Hono) {
@@ -37,8 +43,19 @@ export function registerModelsRoutes(app: Hono) {
 				return c.json({ error: 'Provider not found' }, 404);
 			}
 
+			const authType = await getAuthTypeForProvider(
+				embeddedConfig,
+				provider,
+				projectRoot,
+			);
+			const filteredModels = filterModelsForAuthType(
+				provider,
+				providerCatalog.models,
+				authType,
+			);
+
 			return c.json({
-				models: providerCatalog.models.map((m) => ({
+				models: filteredModels.map((m) => ({
 					id: m.id,
 					label: m.label || m.id,
 					toolCall: m.toolCall,
@@ -88,9 +105,19 @@ export function registerModelsRoutes(app: Hono) {
 			for (const provider of authorizedProviders) {
 				const providerCatalog = catalog[provider];
 				if (providerCatalog) {
+					const authType = await getAuthTypeForProvider(
+						embeddedConfig,
+						provider,
+						projectRoot,
+					);
+					const filteredModels = filterModelsForAuthType(
+						provider,
+						providerCatalog.models,
+						authType,
+					);
 					modelsMap[provider] = {
 						label: providerCatalog.label || provider,
-						models: providerCatalog.models.map((m) => ({
+						models: filteredModels.map((m) => ({
 							id: m.id,
 							label: m.label || m.id,
 							toolCall: m.toolCall,

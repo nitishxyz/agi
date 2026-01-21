@@ -66,6 +66,11 @@ export {
 	createOpenAIOAuthModel,
 } from './providers/src/index.ts';
 export type { OpenAIOAuthConfig } from './providers/src/index.ts';
+export {
+	isModelAllowedForOAuth,
+	filterModelsForAuthType,
+	getOAuthModelPrefixes,
+} from './providers/src/index.ts';
 
 // =======================
 // Authentication (from internal auth module)

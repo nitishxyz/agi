@@ -11,6 +11,7 @@ import { loadConfig } from '@agi-cli/sdk';
 import { catalog, type ProviderId, type ModelInfo } from '@agi-cli/sdk';
 import { getGlobalConfigDir, getGlobalConfigPath } from '@agi-cli/sdk';
 import { isProviderAuthorized } from '@agi-cli/sdk';
+import { getAuth, filterModelsForAuthType } from '@agi-cli/sdk';
 import { runAuth } from './auth.ts';
 
 export async function runModels(
@@ -67,7 +68,14 @@ export async function runModels(
 	})) as ProviderId | symbol;
 	if (isCancel(provider)) return cancel('Cancelled');
 
-	const models = catalog[provider as ProviderId]?.models ?? [];
+	const allModels = catalog[provider as ProviderId]?.models ?? [];
+	const auth = await getAuth(provider as ProviderId, projectRoot);
+	const authType = auth?.type as 'api' | 'oauth' | 'wallet' | undefined;
+	const models = filterModelsForAuthType(
+		provider as ProviderId,
+		allModels,
+		authType,
+	);
 	if (!models.length) {
 		log.error('No models available for this provider.');
 		return outro('');

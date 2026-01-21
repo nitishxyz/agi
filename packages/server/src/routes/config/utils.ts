@@ -3,6 +3,7 @@ import {
 	type ProviderId,
 	isProviderAuthorized,
 	getGlobalAgentsDir,
+	getAuth,
 } from '@agi-cli/sdk';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -54,6 +55,18 @@ export function getDefault<T>(
 	fileValue: T,
 ): T {
 	return embeddedValue ?? embeddedDefaultValue ?? fileValue;
+}
+
+export async function getAuthTypeForProvider(
+	embeddedConfig: EmbeddedAppConfig | undefined,
+	provider: ProviderId,
+	projectRoot: string,
+): Promise<'api' | 'oauth' | 'wallet' | undefined> {
+	if (embeddedConfig?.auth?.[provider]) {
+		return embeddedConfig.auth[provider].type as 'api' | 'oauth' | 'wallet';
+	}
+	const auth = await getAuth(provider, projectRoot);
+	return auth?.type as 'api' | 'oauth' | 'wallet' | undefined;
 }
 
 export async function discoverAllAgents(
