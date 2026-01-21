@@ -2,8 +2,11 @@ import type { Hono } from 'hono';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { generateText } from 'ai';
+import { eq } from 'drizzle-orm';
 import type { ProviderId } from '@agi-cli/sdk';
 import { loadConfig, getAuth, getFastModelForAuth } from '@agi-cli/sdk';
+import { getDb } from '@agi-cli/database';
+import { sessions } from '@agi-cli/database/schema';
 import { gitCommitSchema, gitGenerateCommitMessageSchema } from './schemas.ts';
 import { validateAndGetGitRoot, parseGitStatus } from './utils.ts';
 import { resolveModel } from '../../runtime/provider/index.ts';
@@ -53,7 +56,7 @@ export function registerCommitRoutes(app: Hono) {
 	app.post('/v1/git/generate-commit-message', async (c) => {
 		try {
 			const body = await c.req.json();
-			const { project } = gitGenerateCommitMessageSchema.parse(body);
+			const { project, sessionId } = gitGenerateCommitMessageSchema.parse(body);
 
 			const requestedPath = project || process.cwd();
 
@@ -95,7 +98,18 @@ export function registerCommitRoutes(app: Hono) {
 
 			const config = await loadConfig();
 
-			const provider = (config.defaults?.provider || 'anthropic') as ProviderId;
+			let provider = (config.defaults?.provider || 'anthropic') as ProviderId;
+
+			if (sessionId) {
+				const db = getDb();
+				const [session] = await db
+					.select({ provider: sessions.provider })
+					.from(sessions)
+					.where(eq(sessions.id, sessionId));
+				if (session?.provider) {
+					provider = session.provider as ProviderId;
+				}
+			}
 
 			const auth = await getAuth(provider, config.projectRoot);
 			const needsSpoof = auth?.type === 'oauth';

@@ -40,6 +40,7 @@ export const gitCommitSchema = z.object({
 
 export const gitGenerateCommitMessageSchema = z.object({
 	project: z.string().optional(),
+	sessionId: z.string().optional(),
 });
 
 export const gitPushSchema = z.object({

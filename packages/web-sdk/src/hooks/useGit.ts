@@ -41,9 +41,9 @@ export function useGitBranch() {
 	});
 }
 
-export function useGenerateCommitMessage() {
+export function useGenerateCommitMessage(sessionId?: string | null) {
 	return useMutation({
-		mutationFn: () => apiClient.generateCommitMessage(),
+		mutationFn: () => apiClient.generateCommitMessage(sessionId ?? undefined),
 	});
 }
 

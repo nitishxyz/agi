@@ -366,9 +366,11 @@ class ApiClient {
 		return (response.data as any)?.data as GitDiffResponse;
 	}
 
-	async generateCommitMessage(): Promise<GitGenerateCommitMessageResponse> {
+	async generateCommitMessage(
+		sessionId?: string,
+	): Promise<GitGenerateCommitMessageResponse> {
 		const response = await apiGenerateCommitMessage({
-			body: {},
+			body: sessionId ? { sessionId } : {},
 		});
 		if (response.error) {
 			throw new Error(extractErrorMessage(response.error));

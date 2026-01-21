@@ -8,8 +8,9 @@ import { Modal } from '../ui/Modal';
 
 export function GitCommitModal() {
 	const { isCommitModalOpen, closeCommitModal } = useGitStore();
+	const commitSessionId = useGitStore((state) => state.commitSessionId);
 	const commitChanges = useCommitChanges();
-	const generateMessage = useGenerateCommitMessage();
+	const generateMessage = useGenerateCommitMessage(commitSessionId);
 	const [message, setMessage] = useState('');
 	const messageId = useId();
 

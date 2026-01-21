@@ -268,6 +268,10 @@ export const gitPaths = {
 							type: 'object',
 							properties: {
 								project: { type: 'string' },
+								sessionId: {
+									type: 'string',
+									description: 'Session ID to use session provider',
+								},
 							},
 						},
 					},

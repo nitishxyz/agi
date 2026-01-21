@@ -13,6 +13,7 @@ interface GitState {
 
 	// Commit modal state
 	isCommitModalOpen: boolean;
+	commitSessionId: string | null;
 
 	// Session list collapse state (when diff is open)
 	wasSessionListCollapsed: boolean;
@@ -27,6 +28,7 @@ interface GitState {
 	switchFile: (file: string, staged: boolean) => void;
 
 	openCommitModal: () => void;
+	openCommitModalForSession: (sessionId: string) => void;
 	closeCommitModal: () => void;
 
 	setSessionListCollapsed: (collapsed: boolean) => void;
@@ -39,6 +41,7 @@ export const useGitStore = create<GitState>((set) => ({
 	selectedFileStaged: false,
 	isDiffOpen: false,
 	isCommitModalOpen: false,
+	commitSessionId: null,
 	wasSessionListCollapsed: false,
 
 	// Sidebar actions
@@ -77,7 +80,10 @@ export const useGitStore = create<GitState>((set) => ({
 
 	// Commit modal actions
 	openCommitModal: () => set({ isCommitModalOpen: true }),
-	closeCommitModal: () => set({ isCommitModalOpen: false }),
+	openCommitModalForSession: (sessionId: string) =>
+		set({ isCommitModalOpen: true, commitSessionId: sessionId }),
+	closeCommitModal: () =>
+		set({ isCommitModalOpen: false, commitSessionId: null }),
 
 	// Session list collapse
 	setSessionListCollapsed: (collapsed) =>
