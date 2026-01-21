@@ -37,7 +37,6 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	const createSession = useCreateSession();
 	const { data: config } = useConfig();
 	const { theme, toggleTheme } = useTheme();
-	const setCollapsed = useSidebarStore((state) => state.setCollapsed);
 	const { openCommitModal, openDiff } = useGitStore();
 	const navigate = useNavigate();
 	const { data: sessions = [] } = useSessions();
@@ -70,12 +69,11 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 				params: { sessionId: session.id },
 				replace: false,
 			});
-			setCollapsed(true);
 			focusInput();
 		} catch (error) {
 			console.error('Failed to create session:', error);
 		}
-	}, [createSession, config, navigate, setCollapsed, focusInput]);
+	}, [createSession, config, navigate, focusInput]);
 
 	const handleSelectSession = useCallback(
 		(id: string) => {
@@ -83,10 +81,9 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 				to: '/sessions/$sessionId',
 				params: { sessionId: id },
 			});
-			setCollapsed(true);
 			focusInput();
 		},
-		[navigate, setCollapsed, focusInput],
+		[navigate, focusInput],
 	);
 
 	const gitFiles = useMemo(() => {
