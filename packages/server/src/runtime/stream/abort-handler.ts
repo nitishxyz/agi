@@ -1,0 +1,65 @@
+import type { getDb } from '@agi-cli/database';
+import { messages, messageParts } from '@agi-cli/database/schema';
+import { eq } from 'drizzle-orm';
+import { publish } from '../../events/bus.ts';
+import type { RunOpts } from '../session/queue.ts';
+import type { ToolAdapterContext } from '../../tools/adapter.ts';
+import type { AbortEvent } from './types.ts';
+
+export function createAbortHandler(
+	opts: RunOpts,
+	db: Awaited<ReturnType<typeof getDb>>,
+	getStepIndex: () => number,
+	sharedCtx: ToolAdapterContext,
+) {
+	return async ({ steps }: AbortEvent) => {
+		const stepIndex = getStepIndex();
+
+		const abortPartId = crypto.randomUUID();
+		await db.insert(messageParts).values({
+			id: abortPartId,
+			messageId: opts.assistantMessageId,
+			index: await sharedCtx.nextIndex(),
+			stepIndex,
+			type: 'error',
+			content: JSON.stringify({
+				message: 'Generation stopped by user',
+				type: 'abort',
+				isAborted: true,
+				stepsCompleted: steps.length,
+			}),
+			agent: opts.agent,
+			provider: opts.provider,
+			model: opts.model,
+			startedAt: Date.now(),
+			completedAt: Date.now(),
+		});
+
+		await db
+			.update(messages)
+			.set({
+				status: 'error',
+				error: 'Generation stopped by user',
+				errorType: 'abort',
+				errorDetails: JSON.stringify({
+					stepsCompleted: steps.length,
+					abortedAt: Date.now(),
+				}),
+				isAborted: true,
+			})
+			.where(eq(messages.id, opts.assistantMessageId));
+
+		publish({
+			type: 'error',
+			sessionId: opts.sessionId,
+			payload: {
+				messageId: opts.assistantMessageId,
+				partId: abortPartId,
+				error: 'Generation stopped by user',
+				errorType: 'abort',
+				isAborted: true,
+				stepsCompleted: steps.length,
+			},
+		});
+	};
+}
