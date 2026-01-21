@@ -14,11 +14,7 @@ import {
 	useWorkingDirectory,
 	useKeyboardShortcuts,
 } from '@agi-cli/web-sdk/hooks';
-import {
-	useSidebarStore,
-	useGitStore,
-	useConfirmationStore,
-} from '@agi-cli/web-sdk/stores';
+import { useGitStore, useConfirmationStore } from '@agi-cli/web-sdk/stores';
 import {
 	useGitStatus,
 	useStageFiles,
