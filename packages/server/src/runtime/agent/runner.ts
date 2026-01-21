@@ -1,28 +1,15 @@
 import { hasToolCall, streamText } from 'ai';
-import { loadConfig } from '@agi-cli/sdk';
-import { getDb } from '@agi-cli/database';
-import { messageParts, sessions } from '@agi-cli/database/schema';
+import { messageParts } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
-import { resolveModel } from '../provider/index.ts';
-import { resolveAgentConfig } from './registry.ts';
-import {
-	composeSystemPrompt,
-	getProviderSpoofPrompt,
-} from '../prompt/builder.ts';
-import { discoverProjectTools } from '@agi-cli/sdk';
-import { adaptTools } from '../../tools/adapter.ts';
 import { publish, subscribe } from '../../events/bus.ts';
 import { debugLog, time } from '../debug/index.ts';
-import { buildHistoryMessages } from '../message/history-builder.ts';
 import { toErrorPayload } from '../errors/handling.ts';
-import { getMaxOutputTokens } from '../utils/token.ts';
 import {
 	type RunOpts,
 	setRunning,
 	dequeueJob,
 	cleanupSession,
 } from '../session/queue.ts';
-import { setupToolContext } from '../tools/setup.ts';
 import {
 	updateSessionTokensIncremental,
 	updateMessageTokensIncremental,
@@ -35,10 +22,15 @@ import {
 	createAbortHandler,
 	createFinishHandler,
 } from '../stream/handlers.ts';
+import { pruneSession } from '../message/compaction.ts';
+import { setupRunner } from './runner-setup.ts';
 import {
-	getCompactionSystemPrompt,
-	pruneSession,
-} from '../message/compaction.ts';
+	type ReasoningState,
+	serializeReasoningContent,
+	handleReasoningStart,
+	handleReasoningDelta,
+	handleReasoningEnd,
+} from './runner-reasoning.ts';
 
 export {
 	enqueueAssistantRun,
@@ -49,9 +41,6 @@ export {
 	getRunnerState,
 } from '../session/queue.ts';
 
-/**
- * Main loop that processes the queue for a given session.
- */
 export async function runSessionLoop(sessionId: string) {
 	setRunning(sessionId, true);
 
@@ -70,9 +59,6 @@ export async function runSessionLoop(sessionId: string) {
 	cleanupSession(sessionId);
 }
 
-/**
- * Main function to run the assistant for a given request.
- */
 async function runAssistant(opts: RunOpts) {
 	const separator = '='.repeat(72);
 	debugLog(separator);
@@ -80,165 +66,28 @@ async function runAssistant(opts: RunOpts) {
 		`[RUNNER] Starting turn for session ${opts.sessionId}, message ${opts.assistantMessageId}`,
 	);
 
-	const cfgTimer = time('runner:loadConfig+db');
-	const cfg = await loadConfig(opts.projectRoot);
-	const db = await getDb(cfg.projectRoot);
-	cfgTimer.end();
+	const setup = await setupRunner(opts);
+	const {
+		db,
+		history,
+		system,
+		additionalSystemMessages,
+		model,
+		effectiveMaxOutputTokens,
+		toolset,
+		sharedCtx,
+		firstToolTimer,
+		firstToolSeen,
+		providerOptions,
+	} = setup;
 
-	const agentTimer = time('runner:resolveAgentConfig');
-	const agentCfg = await resolveAgentConfig(cfg.projectRoot, opts.agent);
-	agentTimer.end({ agent: opts.agent });
-
-	const agentPrompt = agentCfg.prompt || '';
-
-	// For /compact command, use minimal history - the compaction context has everything needed
-	const historyTimer = time('runner:buildHistory');
-	let history: Awaited<ReturnType<typeof buildHistoryMessages>>;
-	if (opts.isCompactCommand && opts.compactionContext) {
-		debugLog('[RUNNER] Using minimal history for /compact command');
-		history = [];
-	} else {
-		history = await buildHistoryMessages(db, opts.sessionId);
-	}
-	historyTimer.end({ messages: history.length });
-
-	// Fetch session to get context summary for compaction
-	const sessionRows = await db
-		.select()
-		.from(sessions)
-		.where(eq(sessions.id, opts.sessionId))
-		.limit(1);
-	const contextSummary = sessionRows[0]?.contextSummary ?? undefined;
-	if (contextSummary) {
-		debugLog(
-			`[RUNNER] Using context summary from compaction (${contextSummary.length} chars)`,
-		);
-	}
-
-	// FIX: For OAuth, we need to check if this is the first ASSISTANT message
-	// The user message is already in history by this point, so history.length will be > 0
-	// We need to add additionalSystemMessages on the first assistant turn
 	const isFirstMessage = !history.some((m) => m.role === 'assistant');
 
-	debugLog(`[RUNNER] isFirstMessage: ${isFirstMessage}`);
-	debugLog(`[RUNNER] userContext provided: ${opts.userContext ? 'YES' : 'NO'}`);
-	if (opts.userContext) {
-		debugLog(
-			`[RUNNER] userContext value: ${opts.userContext.substring(0, 100)}${opts.userContext.length > 100 ? '...' : ''}`,
-		);
-	}
-
-	const systemTimer = time('runner:composeSystemPrompt');
-	const { getAuth } = await import('@agi-cli/sdk');
-	const auth = await getAuth(opts.provider, cfg.projectRoot);
-	const needsSpoof = auth?.type === 'oauth';
-	const spoofPrompt = needsSpoof
-		? getProviderSpoofPrompt(opts.provider)
-		: undefined;
-
-	debugLog(`[RUNNER] needsSpoof (OAuth): ${needsSpoof}`);
-	debugLog(
-		`[RUNNER] spoofPrompt: ${spoofPrompt ? `present (${opts.provider})` : 'none'}`,
-	);
-
-	let system: string;
-	let systemComponents: string[] = [];
-	let oauthFullPromptComponents: string[] | undefined;
-	let additionalSystemMessages: Array<{ role: 'system'; content: string }> = [];
-
-	if (spoofPrompt) {
-		// OAuth mode: short spoof in system field, full instructions in messages array
-		system = spoofPrompt;
-		systemComponents = [`spoof:${opts.provider || 'unknown'}`];
-		const fullPrompt = await composeSystemPrompt({
-			provider: opts.provider,
-			model: opts.model,
-			projectRoot: cfg.projectRoot,
-			agentPrompt,
-			oneShot: opts.oneShot,
-			spoofPrompt: undefined,
-			includeProjectTree: isFirstMessage,
-			userContext: opts.userContext,
-			contextSummary,
-		});
-		oauthFullPromptComponents = fullPrompt.components;
-
-		// FIX: Always add the system message for OAuth because:
-		// 1. System messages are NOT stored in the database
-		// 2. buildHistoryMessages only returns user/assistant messages
-		// 3. We need the full instructions on every turn
-		additionalSystemMessages = [{ role: 'system', content: fullPrompt.prompt }];
-
-		debugLog('[RUNNER] OAuth mode: additionalSystemMessages created');
-		const includesUserContext =
-			!!opts.userContext && fullPrompt.prompt.includes(opts.userContext);
-		debugLog(
-			`[system] oauth-full summary: ${JSON.stringify({
-				components: oauthFullPromptComponents ?? [],
-				length: fullPrompt.prompt.length,
-				includesUserContext,
-			})}`,
-		);
-	} else {
-		// API key mode: full instructions in system field
-		const composed = await composeSystemPrompt({
-			provider: opts.provider,
-			model: opts.model,
-			projectRoot: cfg.projectRoot,
-			agentPrompt,
-			oneShot: opts.oneShot,
-			spoofPrompt: undefined,
-			includeProjectTree: isFirstMessage,
-			userContext: opts.userContext,
-			contextSummary,
-		});
-		system = composed.prompt;
-		systemComponents = composed.components;
-	}
-	systemTimer.end();
-	debugLog(
-		`[system] summary: ${JSON.stringify({
-			components: systemComponents,
-			length: system.length,
-		})}`,
-	);
-
-	// Inject compaction prompt if this is a /compact command
-	if (opts.isCompactCommand && opts.compactionContext) {
-		debugLog('[RUNNER] Injecting compaction context for /compact command');
-		const compactPrompt = getCompactionSystemPrompt();
-		// Add compaction instructions as system message
-		// Don't modify `system` directly as it may contain OAuth spoof prompt
-		additionalSystemMessages.push({
-			role: 'system',
-			content: compactPrompt,
-		});
-		// Add the conversation context as a USER message (Anthropic requires at least one user message)
-		additionalSystemMessages.push({
-			role: 'user',
-			content: `Please summarize this conversation:\n\n<conversation-to-summarize>\n${opts.compactionContext}\n</conversation-to-summarize>`,
-		});
-	}
-
-	const toolsTimer = time('runner:discoverTools');
-	const allTools = await discoverProjectTools(cfg.projectRoot);
-	toolsTimer.end({ count: allTools.length });
-	const allowedNames = new Set([...(agentCfg.tools || []), 'finish']);
-	const gated = allTools.filter((tool) => allowedNames.has(tool.name));
-	debugLog(`[tools] ${gated.length} allowed tools`);
-
-	// FIX: For OAuth, ALWAYS prepend the system message because it's never in history
-	// For API key mode, only add on first message (when additionalSystemMessages is empty)
 	const messagesWithSystemInstructions: Array<{
 		role: string;
 		content: string | Array<unknown>;
-	}> = [
-		...additionalSystemMessages, // Always add for OAuth, empty for API key mode
-		...history,
-	];
+	}> = [...additionalSystemMessages, ...history];
 
-	// Inject a reminder for subsequent turns to prevent "abrupt stops"
-	// This reinforces the instruction to call finish and maintain context
 	if (!isFirstMessage) {
 		messagesWithSystemInstructions.push({
 			role: 'user',
@@ -247,48 +96,9 @@ async function runAssistant(opts: RunOpts) {
 		});
 	}
 
-	debugLog(`[RUNNER] About to create model with provider: ${opts.provider}`);
-	debugLog(`[RUNNER] About to create model ID: ${opts.model}`);
 	debugLog(
 		`[RUNNER] messagesWithSystemInstructions length: ${messagesWithSystemInstructions.length}`,
 	);
-	debugLog(
-		`[RUNNER] additionalSystemMessages length: ${additionalSystemMessages.length}`,
-	);
-	if (additionalSystemMessages.length > 0) {
-		debugLog(
-			'[RUNNER] ✅ additionalSystemMessages ADDED to messagesWithSystemInstructions',
-		);
-		debugLog(
-			`[RUNNER] This happens on EVERY turn for OAuth (system messages not stored in DB)`,
-		);
-	}
-
-	// For OpenAI OAuth, pass the full system prompt as instructions
-	const oauthSystemPrompt =
-		needsSpoof && opts.provider === 'openai' && additionalSystemMessages[0]
-			? additionalSystemMessages[0].content
-			: undefined;
-	const model = await resolveModel(opts.provider, opts.model, cfg, {
-		systemPrompt: oauthSystemPrompt,
-	});
-	debugLog(
-		`[RUNNER] Model created: ${JSON.stringify({ id: model.modelId, provider: model.provider })}`,
-	);
-
-	const maxOutputTokens = getMaxOutputTokens(opts.provider, opts.model);
-	debugLog(`[RUNNER] maxOutputTokens for ${opts.model}: ${maxOutputTokens}`);
-
-	// Setup tool context
-	const { sharedCtx, firstToolTimer, firstToolSeen } = await setupToolContext(
-		opts,
-		db,
-	);
-
-	// Get auth type for Claude Code OAuth detection
-	const providerAuth = await getAuth(opts.provider, opts.projectRoot);
-	const authType = providerAuth?.type;
-	const toolset = adaptTools(gated, sharedCtx, opts.provider, authType);
 
 	let _finishObserved = false;
 	const unsubscribeFinish = subscribe(opts.sessionId, (evt) => {
@@ -301,9 +111,11 @@ async function runAssistant(opts: RunOpts) {
 
 	const streamStartTimer = time('runner:first-delta');
 	let firstDeltaSeen = false;
-	debugLog(`[streamText] Calling with maxOutputTokens: ${maxOutputTokens}`);
 
-	// State management helpers
+	let currentPartId: string | null = null;
+	let accumulated = '';
+	let stepIndex = 0;
+
 	const getCurrentPartId = () => currentPartId;
 	const getStepIndex = () => stepIndex;
 	const updateCurrentPartId = (id: string | null) => {
@@ -317,20 +129,8 @@ async function runAssistant(opts: RunOpts) {
 		return stepIndex;
 	};
 
-	type ReasoningState = {
-		partId: string;
-		text: string;
-		providerMetadata?: unknown;
-	};
 	const reasoningStates = new Map<string, ReasoningState>();
-	const serializeReasoningContent = (state: ReasoningState) =>
-		JSON.stringify(
-			state.providerMetadata != null
-				? { text: state.text, providerMetadata: state.providerMetadata }
-				: { text: state.text },
-		);
 
-	// Create stream handlers
 	const onStepFinish = createStepFinishHandler(
 		opts,
 		db,
@@ -356,63 +156,28 @@ async function runAssistant(opts: RunOpts) {
 
 	const onFinish = createFinishHandler(opts, db, completeAssistantMessage);
 
-	// Use messages directly without truncation or optimization
-	const optimizedMessages = messagesWithSystemInstructions;
-	const cachedSystem = system;
-
-	// Part tracking - will be created on first text-delta
-	let currentPartId: string | null = null;
-	let accumulated = '';
-	let stepIndex = 0;
-
-	// Build provider options for reasoning/extended thinking
-	const providerOptions: Record<string, unknown> = {};
-	const THINKING_BUDGET = 16000;
-	// When reasoning is enabled for Anthropic, the API requires max_tokens to fit
-	// both thinking tokens AND response tokens. AI SDK adds budgetTokens to maxOutputTokens,
-	// so we need to reduce maxOutputTokens to leave room for thinking.
-	let effectiveMaxOutputTokens = maxOutputTokens;
-
-	if (opts.reasoning) {
-		if (opts.provider === 'anthropic') {
-			providerOptions.anthropic = {
-				thinking: { type: 'enabled', budgetTokens: THINKING_BUDGET },
-			};
-			// Reduce max output to leave room for thinking budget
-			if (maxOutputTokens && maxOutputTokens > THINKING_BUDGET) {
-				effectiveMaxOutputTokens = maxOutputTokens - THINKING_BUDGET;
-			}
-		} else if (opts.provider === 'openai') {
-			providerOptions.openai = {
-				reasoningSummary: 'auto',
-			};
-		} else if (opts.provider === 'google') {
-			providerOptions.google = {
-				thinkingConfig: { thinkingBudget: THINKING_BUDGET },
-			};
-		}
-	}
-
 	try {
+		// biome-ignore lint/suspicious/noExplicitAny: AI SDK message types are complex
 		const result = streamText({
 			model,
 			tools: toolset,
-			...(cachedSystem ? { system: cachedSystem } : {}),
-			messages: optimizedMessages,
+			...(system ? { system } : {}),
+			messages: messagesWithSystemInstructions as any,
 			...(effectiveMaxOutputTokens
 				? { maxOutputTokens: effectiveMaxOutputTokens }
 				: {}),
 			...(Object.keys(providerOptions).length > 0 ? { providerOptions } : {}),
 			abortSignal: opts.abortSignal,
 			stopWhen: hasToolCall('finish'),
-			onStepFinish,
-			onError,
-			onAbort,
-			onFinish,
-		});
+			onStepFinish: onStepFinish as any,
+			onError: onError as any,
+			onAbort: onAbort as any,
+			onFinish: onFinish as any,
+		} as any);
 
 		for await (const part of result.fullStream) {
 			if (!part) continue;
+
 			if (part.type === 'text-delta') {
 				const delta = part.text;
 				if (!delta) continue;
@@ -421,14 +186,13 @@ async function runAssistant(opts: RunOpts) {
 					streamStartTimer.end();
 				}
 
-				// Create text part on first delta
 				if (!currentPartId) {
 					currentPartId = crypto.randomUUID();
 					sharedCtx.assistantPartId = currentPartId;
 					await db.insert(messageParts).values({
 						id: currentPartId,
 						messageId: opts.assistantMessageId,
-						index: sharedCtx.nextIndex(),
+						index: await sharedCtx.nextIndex(),
 						stepIndex: null,
 						type: 'text',
 						content: JSON.stringify({ text: '' }),
@@ -460,80 +224,36 @@ async function runAssistant(opts: RunOpts) {
 			if (part.type === 'reasoning-start') {
 				const reasoningId = part.id;
 				if (!reasoningId) continue;
-				const reasoningPartId = crypto.randomUUID();
-				const state: ReasoningState = {
-					partId: reasoningPartId,
-					text: '',
-					providerMetadata: part.providerMetadata,
-				};
-				reasoningStates.set(reasoningId, state);
-				try {
-					await db.insert(messageParts).values({
-						id: reasoningPartId,
-						messageId: opts.assistantMessageId,
-						index: sharedCtx.nextIndex(),
-						stepIndex: getStepIndex(),
-						type: 'reasoning',
-						content: serializeReasoningContent(state),
-						agent: opts.agent,
-						provider: opts.provider,
-						model: opts.model,
-						startedAt: Date.now(),
-					});
-				} catch {}
+				await handleReasoningStart(
+					reasoningId,
+					part.providerMetadata,
+					opts,
+					db,
+					sharedCtx,
+					getStepIndex,
+					reasoningStates,
+				);
 				continue;
 			}
 
 			if (part.type === 'reasoning-delta') {
-				const state = reasoningStates.get(part.id);
-				if (!state) continue;
-				state.text += part.text;
-				if (part.providerMetadata != null) {
-					state.providerMetadata = part.providerMetadata;
-				}
-				publish({
-					type: 'reasoning.delta',
-					sessionId: opts.sessionId,
-					payload: {
-						messageId: opts.assistantMessageId,
-						partId: state.partId,
-						stepIndex: getStepIndex(),
-						delta: part.text,
-					},
-				});
-				try {
-					await db
-						.update(messageParts)
-						.set({ content: serializeReasoningContent(state) })
-						.where(eq(messageParts.id, state.partId));
-				} catch {}
+				await handleReasoningDelta(
+					part.id,
+					part.text,
+					part.providerMetadata,
+					opts,
+					db,
+					getStepIndex,
+					reasoningStates,
+				);
 				continue;
 			}
 
 			if (part.type === 'reasoning-end') {
-				const state = reasoningStates.get(part.id);
-				if (!state) continue;
-				// Delete the reasoning part if it's empty
-				if (!state.text || state.text.trim() === '') {
-					try {
-						await db
-							.delete(messageParts)
-							.where(eq(messageParts.id, state.partId));
-					} catch {}
-					reasoningStates.delete(part.id);
-					continue;
-				}
-				try {
-					await db
-						.update(messageParts)
-						.set({ completedAt: Date.now() })
-						.where(eq(messageParts.id, state.partId));
-				} catch {}
-				reasoningStates.delete(part.id);
+				await handleReasoningEnd(part.id, db, reasoningStates);
 			}
 		}
 
-		// Emit finish-step at the end if there were no tool calls and no finish
 		const fs = firstToolSeen();
 		if (!fs && !_finishObserved) {
 			publish({
@@ -544,9 +264,7 @@ async function runAssistant(opts: RunOpts) {
 		}
 
 		unsubscribeFinish();
-
 		await cleanupEmptyTextParts(opts, db);
-
 		firstToolTimer.end({ seen: firstToolSeen() });
 
 		debugLog(
@@ -556,19 +274,12 @@ async function runAssistant(opts: RunOpts) {
 		unsubscribeFinish();
 		const payload = toErrorPayload(err);
 
-		// Check if this is a "prompt too long" error and auto-compact
 		const errorMessage = err instanceof Error ? err.message : String(err);
 		const errorCode = (err as { code?: string })?.code ?? '';
 		const responseBody = (err as { responseBody?: string })?.responseBody ?? '';
 		const apiErrorType = (err as { apiErrorType?: string })?.apiErrorType ?? '';
 		const combinedError = `${errorMessage} ${responseBody}`.toLowerCase();
-		debugLog(`[RUNNER] Error caught - message: ${errorMessage.slice(0, 100)}`);
-		debugLog(
-			`[RUNNER] Error caught - code: ${errorCode}, apiErrorType: ${apiErrorType}`,
-		);
-		debugLog(
-			`[RUNNER] Error caught - responseBody: ${responseBody.slice(0, 200)}`,
-		);
+
 		const isPromptTooLong =
 			combinedError.includes('prompt is too long') ||
 			combinedError.includes('maximum context length') ||
@@ -579,32 +290,29 @@ async function runAssistant(opts: RunOpts) {
 			combinedError.includes('input is too long') ||
 			errorCode === 'context_length_exceeded' ||
 			apiErrorType === 'invalid_request_error';
+
 		debugLog(
 			`[RUNNER] isPromptTooLong: ${isPromptTooLong}, isCompactCommand: ${opts.isCompactCommand}`,
 		);
 
 		if (isPromptTooLong && !opts.isCompactCommand) {
-			debugLog(
-				'[RUNNER] Prompt too long - auto-compacting and will retry on next user message',
-			);
+			debugLog('[RUNNER] Prompt too long - auto-compacting');
 			try {
 				const pruneResult = await pruneSession(db, opts.sessionId);
 				debugLog(
 					`[RUNNER] Auto-pruned ${pruneResult.pruned} parts, saved ~${pruneResult.saved} tokens`,
 				);
 
-				// Publish a system message to inform the user
 				publish({
 					type: 'error',
 					sessionId: opts.sessionId,
 					payload: {
 						...payload,
-						message: `Context too large (${errorMessage.match(/\d+/)?.[0] || 'many'} tokens). Auto-compacted old tool results. Please retry your message.`,
+						message: `Context too large. Auto-compacted old tool results. Please retry your message.`,
 						name: 'ContextOverflow',
 					},
 				});
 
-				// Complete the message as failed
 				try {
 					await completeAssistantMessage({}, opts, db);
 				} catch {}
@@ -617,32 +325,21 @@ async function runAssistant(opts: RunOpts) {
 		}
 
 		debugLog(`[RUNNER] Error during stream: ${payload.message}`);
-		debugLog(
-			`[RUNNER] Error stack: ${err instanceof Error ? err.stack : 'no stack'}`,
-		);
-		debugLog(
-			`[RUNNER] db is: ${typeof db}, db.select is: ${typeof db?.select}`,
-		);
 		publish({
 			type: 'error',
 			sessionId: opts.sessionId,
 			payload,
 		});
+
 		try {
 			await updateSessionTokensIncremental(
-				{
-					inputTokens: 0,
-					outputTokens: 0,
-				},
+				{ inputTokens: 0, outputTokens: 0 },
 				undefined,
 				opts,
 				db,
 			);
 			await updateMessageTokensIncremental(
-				{
-					inputTokens: 0,
-					outputTokens: 0,
-				},
+				{ inputTokens: 0, outputTokens: 0 },
 				undefined,
 				opts,
 				db,

@@ -45,12 +45,10 @@ Split into 6 modules:
 - `compaction-auto.ts` - Auto-compaction (~137 lines)
 
 #### `runtime/agent/runner.ts` (659 lines) - HELPER MODULES CREATED
-Helper modules created for incremental migration:
+COMPLETED - Refactored to use helper modules:
 - `runner-setup.ts` - Config loading, agent resolution, system prompt (~265 lines)
 - `runner-reasoning.ts` - Reasoning state management (~108 lines)
-- `runner.ts` - Main orchestration (still large, can migrate incrementally)
-
-Note: The main runner.ts can be refactored incrementally to use these helpers.
+- `runner.ts` - Main orchestration (~357 lines, down from 659)
 
 #### `tools/adapter.ts` (606 lines) - DEFERRED
 Deferred due to tight coupling and complex state management.
@@ -106,7 +104,7 @@ These can be addressed later:
 | provider/index.ts | ✅ Complete | 7 modules |
 | stream/handlers.ts | ✅ Complete | 5 modules |
 | message/compaction.ts | ✅ Complete | 6 modules |
-| agent/runner.ts | ⚠️ Helpers created | 2 helper modules, main file unchanged |
+| agent/runner.ts | ✅ Complete | 3 modules, 659→357 lines |
 | tools/adapter.ts | ❌ Deferred | Too tightly coupled |
 
 ---
