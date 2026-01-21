@@ -220,7 +220,9 @@ Project content.
 
 		test('does not find project skills in empty temp dir', async () => {
 			const skills = await discoverSkills(tempDir);
-			const projectSkills = skills.filter((s) => s.scope === 'cwd' || s.scope === 'repo');
+			const projectSkills = skills.filter(
+				(s) => s.scope === 'cwd' || s.scope === 'repo',
+			);
 			expect(projectSkills).toEqual([]);
 		});
 
