@@ -1,7 +1,7 @@
 import type { getDb } from '@agi-cli/database';
-import { time } from './debug.ts';
-import type { ToolAdapterContext } from '../tools/adapter.ts';
-import type { RunOpts } from './session-queue.ts';
+import { time } from '../debug/index.ts';
+import type { ToolAdapterContext } from '../../tools/adapter.ts';
+import type { RunOpts } from '../session/queue.ts';
 
 export type RunnerToolContext = ToolAdapterContext & { stepIndex: number };
 

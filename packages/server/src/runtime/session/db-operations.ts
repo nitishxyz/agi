@@ -1,7 +1,7 @@
 import type { getDb } from '@agi-cli/database';
 import { messages, messageParts, sessions } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
-import type { RunOpts } from './session-queue.ts';
+import type { RunOpts } from './queue.ts';
 
 export type UsageData = {
 	inputTokens?: number;

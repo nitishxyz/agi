@@ -8,7 +8,7 @@ import {
 	ensureProviderEnv,
 	type ProviderId,
 } from '@agi-cli/sdk';
-import { publish } from '../events/bus.ts';
+import { publish } from '../../events/bus.ts';
 
 type SessionRow = typeof sessions.$inferSelect;
 

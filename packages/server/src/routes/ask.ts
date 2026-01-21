@@ -3,11 +3,11 @@ import type {
 	AskServerRequest,
 	InjectableConfig,
 	InjectableCredentials,
-} from '../runtime/ask-service.ts';
-import { handleAskRequest } from '../runtime/ask-service.ts';
-import type { EmbeddedAppConfig } from '../index.ts';
-import { serializeError } from '../runtime/api-error.ts';
+} from '../runtime/ask/service.ts';
+import { handleAskRequest } from '../runtime/ask/service.ts';
+import { serializeError } from '../runtime/errors/api-error.ts';
 import { logger } from '@agi-cli/sdk';
+import type { EmbeddedAppConfig } from '../index.ts';
 
 export function registerAskRoutes(app: Hono) {
 	app.post('/v1/ask', async (c) => {
@@ -32,19 +32,18 @@ export function registerAskRoutes(app: Hono) {
 
 		if (embeddedConfig && Object.keys(embeddedConfig).length > 0) {
 			// Has embedded config - build injectable config from it
+			const defaults = embeddedConfig.defaults;
 			const hasDefaults =
-				embeddedConfig.defaults ||
+				defaults ||
 				embeddedConfig.provider ||
 				embeddedConfig.model ||
 				embeddedConfig.agent;
 
 			if (hasDefaults) {
 				injectableConfig = {
-					defaults: embeddedConfig.defaults || {
-						agent: embeddedConfig.agent,
-						provider: embeddedConfig.provider,
-						model: embeddedConfig.model,
-					},
+					provider: defaults?.provider ?? embeddedConfig.provider,
+					model: defaults?.model ?? embeddedConfig.model,
+					agent: defaults?.agent ?? embeddedConfig.agent,
 				};
 			}
 
@@ -52,12 +51,12 @@ export function registerAskRoutes(app: Hono) {
 			const hasAuth = embeddedConfig.auth || embeddedConfig.apiKey;
 			if (hasAuth) {
 				if (embeddedConfig.auth) {
-					injectableCredentials = {};
+					injectableCredentials = {} as InjectableCredentials;
 					for (const [provider, auth] of Object.entries(embeddedConfig.auth)) {
 						if ('apiKey' in auth) {
-							injectableCredentials[provider] = { apiKey: auth.apiKey };
-						} else {
-							injectableCredentials[provider] = auth;
+							(injectableCredentials as Record<string, { apiKey: string }>)[
+								provider
+							] = { apiKey: auth.apiKey };
 						}
 					}
 				} else if (embeddedConfig.apiKey && embeddedConfig.provider) {

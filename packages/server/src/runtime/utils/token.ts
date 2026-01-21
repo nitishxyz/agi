@@ -1,6 +1,6 @@
 import { catalog } from '@agi-cli/sdk';
-import { debugLog } from './debug.ts';
-import type { ProviderName } from './provider.ts';
+import { debugLog } from '../debug/index.ts';
+import type { ProviderName } from '../provider/index.ts';
 
 /**
  * Gets the maximum output tokens allowed for a given provider/model combination.

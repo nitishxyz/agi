@@ -8,9 +8,9 @@ import {
 	isProviderAuthorized,
 	ensureProviderEnv,
 } from '@agi-cli/sdk';
-import { dispatchAssistantMessage } from '../runtime/message-service.ts';
+import { dispatchAssistantMessage } from '../runtime/message/service.ts';
 import { logger } from '@agi-cli/sdk';
-import { serializeError } from '../runtime/api-error.ts';
+import { serializeError } from '../runtime/errors/api-error.ts';
 
 type MessagePartRow = typeof messageParts.$inferSelect;
 type SessionRow = typeof sessions.$inferSelect;

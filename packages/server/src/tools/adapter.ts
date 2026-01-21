@@ -3,18 +3,18 @@ import { messageParts, sessions } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish } from '../events/bus.ts';
 import type { DiscoveredTool } from '@agi-cli/sdk';
-import { getCwd, setCwd, joinRelative } from '../runtime/cwd.ts';
+import { getCwd, setCwd, joinRelative } from '../runtime/utils/cwd.ts';
 import type {
 	ToolAdapterContext,
 	StepExecutionState,
-} from '../runtime/tool-context.ts';
+} from '../runtime/tools/context.ts';
 import { isToolError } from '@agi-cli/sdk/tools/error';
 import {
 	toClaudeCodeName,
 	requiresClaudeCodeNaming,
-} from '../runtime/tool-mapping.ts';
+} from '../runtime/tools/mapping.ts';
 
-export type { ToolAdapterContext } from '../runtime/tool-context.ts';
+export type { ToolAdapterContext } from '../runtime/tools/context.ts';
 
 type ToolExecuteSignature = Tool['execute'] extends (
 	input: infer Input,

@@ -5,8 +5,8 @@
  * across all API endpoints.
  */
 
-import { isDebugEnabled } from './debug-state';
-import { toErrorPayload } from './error-handling';
+import { isDebugEnabled } from '../debug/state.ts';
+import { toErrorPayload } from './handling.ts';
 
 /**
  * Standard API error response format

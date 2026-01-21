@@ -5,13 +5,13 @@ import {
 	createSession,
 	getLastSession,
 	getSessionById,
-} from './session-manager.ts';
+} from '../session/manager.ts';
 import {
 	selectProviderAndModel,
 	type ProviderSelection,
-} from './provider-selection.ts';
-import { resolveAgentConfig } from './agent-registry.ts';
-import { dispatchAssistantMessage } from './message-service.ts';
+} from '../provider/selection.ts';
+import { resolveAgentConfig } from '../agent/registry.ts';
+import { dispatchAssistantMessage } from '../message/service.ts';
 import {
 	validateProviderModel,
 	isProviderAuthorized,
@@ -21,7 +21,7 @@ import {
 	type ProviderId,
 } from '@agi-cli/sdk';
 import { sessions } from '@agi-cli/database/schema';
-import { time } from './debug.ts';
+import { time } from '../debug/index.ts';
 
 export class AskServiceError extends Error {
 	constructor(

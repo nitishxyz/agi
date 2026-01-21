@@ -1,5 +1,5 @@
-import type { ProviderName } from './provider.ts';
-import { publish } from '../events/bus.ts';
+import type { ProviderName } from '../provider/index.ts';
+import { publish } from '../../events/bus.ts';
 
 export type RunOpts = {
 	sessionId: string;

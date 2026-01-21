@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import type { EmbeddedAppConfig } from '../../index.ts';
 import type { AGIConfig } from '@agi-cli/sdk';
 import { logger } from '@agi-cli/sdk';
-import { loadAgentsConfig } from '../../runtime/agent-registry.ts';
+import { loadAgentsConfig } from '../../runtime/agent/registry.ts';
 
 export async function isProviderAuthorizedHybrid(
 	embeddedConfig: EmbeddedAppConfig | undefined,

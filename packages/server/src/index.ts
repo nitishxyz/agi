@@ -15,7 +15,7 @@ import { registerGitRoutes } from './routes/git/index.ts';
 import { registerTerminalsRoutes } from './routes/terminals.ts';
 import { registerSessionFilesRoutes } from './routes/session-files.ts';
 import { registerBranchRoutes } from './routes/branch.ts';
-import type { AgentConfigEntry } from './runtime/agent-registry.ts';
+import type { AgentConfigEntry } from './runtime/agent/registry.ts';
 
 const globalTerminalManager = new TerminalManager();
 setTerminalManager(globalTerminalManager);
@@ -235,17 +235,17 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 export {
 	resolveAgentConfig,
 	defaultToolsForAgent,
-} from './runtime/agent-registry.ts';
+} from './runtime/agent/registry.ts';
 export {
 	composeSystemPrompt,
 	type ComposedSystemPrompt,
-} from './runtime/prompt.ts';
+} from './runtime/prompt/builder.ts';
 export {
 	AskServiceError,
 	handleAskRequest,
 	deriveStatusFromMessage,
 	inferStatus,
-} from './runtime/ask-service.ts';
+} from './runtime/ask/service.ts';
 export { registerSessionsRoutes } from './routes/sessions.ts';
 export { registerAskRoutes } from './routes/ask.ts';
 export {
@@ -261,5 +261,5 @@ export {
 	isDebugEnabled,
 	setTraceEnabled,
 	isTraceEnabled,
-} from './runtime/debug-state.ts';
+} from './runtime/debug/state.ts';
 export { logger } from '@agi-cli/sdk';

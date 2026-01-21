@@ -17,9 +17,9 @@
 import type { getDb } from '@agi-cli/database';
 import { messages, messageParts } from '@agi-cli/database/schema';
 import { eq, desc, asc, and, lt } from 'drizzle-orm';
-import { debugLog } from './debug.ts';
+import { debugLog } from '../debug/index.ts';
 import { streamText } from 'ai';
-import { resolveModel } from './provider.ts';
+import { resolveModel } from '../provider/index.ts';
 import { loadConfig } from '@agi-cli/sdk';
 
 // Token thresholds

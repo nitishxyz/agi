@@ -3,7 +3,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import { serializeError } from '../runtime/api-error.ts';
+import { serializeError } from '../runtime/errors/api-error.ts';
 import { logger } from '@agi-cli/sdk';
 
 const execAsync = promisify(exec);

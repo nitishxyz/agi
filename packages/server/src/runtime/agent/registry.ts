@@ -1,5 +1,5 @@
 import { getGlobalAgentsJsonPath, getGlobalAgentsDir } from '@agi-cli/sdk';
-import { debugLog } from './debug.ts';
+import { debugLog } from '../debug/index.ts';
 import type { ProviderName } from '@agi-cli/sdk';
 import { catalog } from '@agi-cli/sdk';
 // Embed default agent prompts; only user overrides read from disk.

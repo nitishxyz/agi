@@ -2,12 +2,12 @@ import type { getDb } from '@agi-cli/database';
 import { messages, messageParts } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
 import { APICallError } from 'ai';
-import { publish } from '../events/bus.ts';
+import { publish } from '../../events/bus.ts';
 import { estimateModelCostUsd } from '@agi-cli/sdk';
-import { toErrorPayload } from './error-handling.ts';
-import type { RunOpts } from './session-queue.ts';
-import type { ToolAdapterContext } from '../tools/adapter.ts';
-import type { ProviderMetadata, UsageData } from './db-operations.ts';
+import { toErrorPayload } from '../errors/handling.ts';
+import type { RunOpts } from '../session/queue.ts';
+import type { ToolAdapterContext } from '../../tools/adapter.ts';
+import type { ProviderMetadata, UsageData } from '../session/db-operations.ts';
 import {
 	pruneSession,
 	isOverflow,
@@ -15,9 +15,9 @@ import {
 	type TokenUsage,
 	markSessionCompacted,
 	performAutoCompaction,
-} from './compaction.ts';
-import { debugLog } from './debug.ts';
-import { enqueueAssistantRun } from './session-queue.ts';
+} from '../message/compaction.ts';
+import { debugLog } from '../debug/index.ts';
+import { enqueueAssistantRun } from '../session/queue.ts';
 
 type StepFinishEvent = {
 	usage?: UsageData;

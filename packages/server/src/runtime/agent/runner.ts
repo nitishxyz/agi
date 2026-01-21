@@ -3,36 +3,42 @@ import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { messageParts, sessions } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
-import { resolveModel } from './provider.ts';
-import { resolveAgentConfig } from './agent-registry.ts';
-import { composeSystemPrompt } from './prompt.ts';
+import { resolveModel } from '../provider/index.ts';
+import { resolveAgentConfig } from './registry.ts';
+import {
+	composeSystemPrompt,
+	getProviderSpoofPrompt,
+} from '../prompt/builder.ts';
 import { discoverProjectTools } from '@agi-cli/sdk';
-import { adaptTools } from '../tools/adapter.ts';
-import { publish, subscribe } from '../events/bus.ts';
-import { debugLog, time } from './debug.ts';
-import { buildHistoryMessages } from './history-builder.ts';
-import { toErrorPayload } from './error-handling.ts';
-import { getMaxOutputTokens } from './token-utils.ts';
+import { adaptTools } from '../../tools/adapter.ts';
+import { publish, subscribe } from '../../events/bus.ts';
+import { debugLog, time } from '../debug/index.ts';
+import { buildHistoryMessages } from '../message/history-builder.ts';
+import { toErrorPayload } from '../errors/handling.ts';
+import { getMaxOutputTokens } from '../utils/token.ts';
 import {
 	type RunOpts,
 	setRunning,
 	dequeueJob,
 	cleanupSession,
-} from './session-queue.ts';
-import { setupToolContext } from './tool-context-setup.ts';
+} from '../session/queue.ts';
+import { setupToolContext } from '../tools/setup.ts';
 import {
 	updateSessionTokensIncremental,
 	updateMessageTokensIncremental,
 	completeAssistantMessage,
 	cleanupEmptyTextParts,
-} from './db-operations.ts';
+} from '../session/db-operations.ts';
 import {
 	createStepFinishHandler,
 	createErrorHandler,
 	createAbortHandler,
 	createFinishHandler,
-} from './stream-handlers.ts';
-import { getCompactionSystemPrompt, pruneSession } from './compaction.ts';
+} from '../stream/handlers.ts';
+import {
+	getCompactionSystemPrompt,
+	pruneSession,
+} from '../message/compaction.ts';
 
 export {
 	enqueueAssistantRun,
@@ -41,7 +47,7 @@ export {
 	removeFromQueue,
 	getQueueState,
 	getRunnerState,
-} from './session-queue.ts';
+} from '../session/queue.ts';
 
 /**
  * Main loop that processes the queue for a given session.
@@ -124,7 +130,6 @@ async function runAssistant(opts: RunOpts) {
 
 	const systemTimer = time('runner:composeSystemPrompt');
 	const { getAuth } = await import('@agi-cli/sdk');
-	const { getProviderSpoofPrompt } = await import('./prompt.ts');
 	const auth = await getAuth(opts.provider, cfg.projectRoot);
 	const needsSpoof = auth?.type === 'oauth';
 	const spoofPrompt = needsSpoof

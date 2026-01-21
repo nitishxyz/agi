@@ -5,7 +5,7 @@
  * centralized debug-state and logger modules.
  */
 
-import { isDebugEnabled as isDebugEnabledNew } from './debug-state';
+import { isDebugEnabled as isDebugEnabledNew } from './state.ts';
 import { time as timeNew, debug as debugNew } from '@agi-cli/sdk';
 
 const TRUTHY = new Set(['1', 'true', 'yes', 'on']);

@@ -6,8 +6,8 @@ import {
 	createBranch,
 	listBranches,
 	getParentSession,
-} from '../runtime/branch.ts';
-import { serializeError } from '../runtime/api-error.ts';
+} from '../runtime/session/branch.ts';
+import { serializeError } from '../runtime/errors/api-error.ts';
 
 export function registerBranchRoutes(app: Hono) {
 	app.post('/v1/sessions/:sessionId/branch', async (c) => {

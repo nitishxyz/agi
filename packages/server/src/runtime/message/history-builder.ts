@@ -2,8 +2,8 @@ import { convertToModelMessages, type ModelMessage, type UIMessage } from 'ai';
 import type { getDb } from '@agi-cli/database';
 import { messages, messageParts } from '@agi-cli/database/schema';
 import { eq, asc } from 'drizzle-orm';
-import { debugLog } from './debug.ts';
-import { ToolHistoryTracker } from './history/tool-history-tracker.ts';
+import { debugLog } from '../debug/index.ts';
+import { ToolHistoryTracker } from './tool-history-tracker.ts';
 
 /**
  * Builds the conversation history for a session from the database,

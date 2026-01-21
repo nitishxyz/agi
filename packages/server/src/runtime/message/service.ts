@@ -3,12 +3,12 @@ import { eq } from 'drizzle-orm';
 import type { AGIConfig } from '@agi-cli/sdk';
 import type { DB } from '@agi-cli/database';
 import { messages, messageParts, sessions } from '@agi-cli/database/schema';
-import { publish } from '../events/bus.ts';
-import { enqueueAssistantRun } from './session-queue.ts';
-import { runSessionLoop } from './runner.ts';
-import { resolveModel } from './provider.ts';
+import { publish } from '../../events/bus.ts';
+import { enqueueAssistantRun } from '../session/queue.ts';
+import { runSessionLoop } from '../agent/runner.ts';
+import { resolveModel } from '../provider/index.ts';
 import { getFastModel, type ProviderId } from '@agi-cli/sdk';
-import { debugLog } from './debug.ts';
+import { debugLog } from '../debug/index.ts';
 import { isCompactCommand, buildCompactionContext } from './compaction.ts';
 
 type SessionRow = typeof sessions.$inferSelect;

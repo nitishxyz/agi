@@ -6,8 +6,8 @@ import type { ProviderId } from '@agi-cli/sdk';
 import { loadConfig, getAuth } from '@agi-cli/sdk';
 import { gitCommitSchema, gitGenerateCommitMessageSchema } from './schemas.ts';
 import { validateAndGetGitRoot, parseGitStatus } from './utils.ts';
-import { resolveModel } from '../../runtime/provider.ts';
-import { getProviderSpoofPrompt } from '../../runtime/prompt.ts';
+import { resolveModel } from '../../runtime/provider/index.ts';
+import { getProviderSpoofPrompt } from '../../runtime/prompt/builder.ts';
 
 const execFileAsync = promisify(execFile);
 

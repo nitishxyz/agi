@@ -11,7 +11,7 @@ import { openai, createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { google, createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { toClaudeCodeName } from './tool-mapping.ts';
+import { toClaudeCodeName } from '../tools/mapping.ts';
 
 // Version to report in user-agent for Claude Code compatibility
 const CLAUDE_CLI_VERSION = '1.0.61';

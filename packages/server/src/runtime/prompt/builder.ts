@@ -1,5 +1,5 @@
 import { providerBasePrompt } from '@agi-cli/sdk';
-import { composeEnvironmentAndInstructions } from './environment.ts';
+import { composeEnvironmentAndInstructions } from '../context/environment.ts';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import BASE_PROMPT from '@agi-cli/sdk/prompts/base.txt' with { type: 'text' };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports

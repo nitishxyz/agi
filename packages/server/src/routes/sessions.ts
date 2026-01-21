@@ -5,9 +5,9 @@ import { sessions, messages, messageParts } from '@agi-cli/database/schema';
 import { desc, eq, and, inArray } from 'drizzle-orm';
 import type { ProviderId } from '@agi-cli/sdk';
 import { isProviderId, catalog } from '@agi-cli/sdk';
-import { resolveAgentConfig } from '../runtime/agent-registry.ts';
-import { createSession as createSessionRow } from '../runtime/session-manager.ts';
-import { serializeError } from '../runtime/api-error.ts';
+import { resolveAgentConfig } from '../runtime/agent/registry.ts';
+import { createSession as createSessionRow } from '../runtime/session/manager.ts';
+import { serializeError } from '../runtime/errors/api-error.ts';
 import { logger } from '@agi-cli/sdk';
 
 export function registerSessionsRoutes(app: Hono) {
@@ -202,7 +202,9 @@ export function registerSessionsRoutes(app: Hono) {
 			typeof body.messageId === 'string' ? body.messageId : undefined;
 		const clearQueue = body.clearQueue === true;
 
-		const { abortSession, abortMessage } = await import('../runtime/runner.ts');
+		const { abortSession, abortMessage } = await import(
+			'../runtime/agent/runner.ts'
+		);
 
 		if (messageId) {
 			const result = abortMessage(sessionId, messageId);
@@ -220,7 +222,7 @@ export function registerSessionsRoutes(app: Hono) {
 	// Get queue state for a session
 	app.get('/v1/sessions/:sessionId/queue', async (c) => {
 		const sessionId = c.req.param('sessionId');
-		const { getQueueState } = await import('../runtime/session-queue.ts');
+		const { getQueueState } = await import('../runtime/session/queue.ts');
 		const state = getQueueState(sessionId);
 		return c.json(
 			state ?? {
@@ -239,7 +241,7 @@ export function registerSessionsRoutes(app: Hono) {
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
 		const { removeFromQueue, abortMessage } = await import(
-			'../runtime/session-queue.ts'
+			'../runtime/session/queue.ts'
 		);
 
 		// First try to remove from queue (queued messages)

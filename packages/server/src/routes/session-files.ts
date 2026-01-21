@@ -3,7 +3,7 @@ import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { messages, messageParts, sessions } from '@agi-cli/database/schema';
 import { eq, and, inArray } from 'drizzle-orm';
-import { serializeError } from '../runtime/api-error.ts';
+import { serializeError } from '../runtime/errors/api-error.ts';
 import { logger } from '@agi-cli/sdk';
 
 const FILE_EDIT_TOOLS = [
