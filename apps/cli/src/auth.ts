@@ -76,13 +76,14 @@ const PROVIDER_LINKS: Record<
 
 export async function runAuth(args: string[]) {
 	const sub = args[0];
-	if (sub === 'login') return runAuthLogin(args.slice(1));
-	if (sub === 'list' || sub === 'ls') return runAuthList(args.slice(1));
+	if (sub === 'login') return await runAuthLogin(args.slice(1));
+	if (sub === 'list' || sub === 'ls') return await runAuthList(args.slice(1));
 	if (sub === 'logout' || sub === 'rm' || sub === 'remove')
-		return runAuthLogout(args.slice(1));
+		return await runAuthLogout(args.slice(1));
 	intro('agi auth');
 	log.info('usage: agi auth login|list|logout');
 	outro('');
+	return false;
 }
 
 export async function runAuthList(_args: string[]) {
@@ -113,7 +114,7 @@ export async function runAuthList(_args: string[]) {
 	if (envRows.length) box('Environment', envRows);
 }
 
-export async function runAuthLogin(_args: string[]) {
+export async function runAuthLogin(_args: string[]): Promise<boolean> {
 	const cfg = await loadConfig(process.cwd());
 	const wantLocal = _args.includes('--local');
 	const providerArg = _args.find((arg) =>
@@ -137,20 +138,23 @@ export async function runAuthLogin(_args: string[]) {
 				{ value: 'zai-coding', label: PROVIDER_LINKS['zai-coding'].name },
 			],
 		})) as ProviderId | symbol;
-		if (isCancel(selected)) return cancel('Cancelled');
+		if (isCancel(selected)) {
+			cancel('Cancelled');
+			return false;
+		}
 		provider = selected as ProviderId;
 	}
 
 	if (provider === 'anthropic') {
-		return await runAuthLoginAnthropic(cfg, wantLocal);
+		return runAuthLoginAnthropic(cfg, wantLocal);
 	}
 
 	if (provider === 'openai') {
-		return await runAuthLoginOpenAI(cfg, wantLocal);
+		return runAuthLoginOpenAI(cfg, wantLocal);
 	}
 
 	if (provider === 'solforge') {
-		return await runAuthLoginSolforge(cfg, wantLocal);
+		return runAuthLoginSolforge(cfg, wantLocal);
 	}
 
 	const meta = PROVIDER_LINKS[provider];
@@ -160,7 +164,10 @@ export async function runAuthLogin(_args: string[]) {
 		validate: (v) =>
 			v && String(v).trim().length > 0 ? undefined : 'Required',
 	});
-	if (isCancel(key)) return cancel('Cancelled');
+	if (isCancel(key)) {
+		cancel('Cancelled');
+		return false;
+	}
 	await setAuth(
 		provider,
 		{ type: 'api', key: String(key) },
@@ -175,12 +182,13 @@ export async function runAuthLogin(_args: string[]) {
 	log.success('Saved');
 	log.info(`Tip: you can also set ${meta.env} in your environment.`);
 	outro('Done');
+	return true;
 }
 
 async function runAuthLoginOpenAI(
 	cfg: Awaited<ReturnType<typeof loadConfig>>,
 	wantLocal: boolean,
-) {
+): Promise<boolean> {
 	try {
 		const authMethod = (await select({
 			message: 'Select authentication method',
@@ -193,7 +201,10 @@ async function runAuthLoginOpenAI(
 			],
 		})) as 'oauth' | 'manual' | symbol;
 
-		if (isCancel(authMethod)) return cancel('Cancelled');
+		if (isCancel(authMethod)) {
+			cancel('Cancelled');
+			return false;
+		}
 
 		if (authMethod === 'manual') {
 			const meta = PROVIDER_LINKS.openai;
@@ -203,7 +214,10 @@ async function runAuthLoginOpenAI(
 				validate: (v) =>
 					v && String(v).trim().length > 0 ? undefined : 'Required',
 			});
-			if (isCancel(key)) return cancel('Cancelled');
+			if (isCancel(key)) {
+				cancel('Cancelled');
+				return false;
+			}
 			await setAuth(
 				'openai',
 				{ type: 'api', key: String(key) },
@@ -219,7 +233,8 @@ async function runAuthLoginOpenAI(
 			log.info(
 				`Tip: you can also set ${PROVIDER_LINKS.openai.env} in your environment.`,
 			);
-			return outro('Done');
+			outro('Done');
+			return true;
 		}
 
 		log.info('Starting OpenAI OAuth flow...');
@@ -301,24 +316,27 @@ async function runAuthLoginOpenAI(
 
 			await ensureGlobalConfigDefaults('openai');
 			outro('Done');
+			return true;
 		} catch (error: unknown) {
 			oauthResult.close();
 			const message =
 				error instanceof Error ? error.message : 'Unknown error occurred';
 			log.error(`Authentication failed: ${message}`);
 			outro('Failed');
+			return false;
 		}
 	} catch (error: unknown) {
 		const message = error instanceof Error ? error.message : String(error);
 		log.error(`Failed to initialize authentication: ${message}`);
 		outro('Failed');
+		return false;
 	}
 }
 
 async function runAuthLoginAnthropic(
 	cfg: Awaited<ReturnType<typeof loadConfig>>,
 	wantLocal: boolean,
-) {
+): Promise<boolean> {
 	try {
 		const authMethod = (await select({
 			message: 'Select authentication method',
@@ -329,7 +347,10 @@ async function runAuthLoginAnthropic(
 			],
 		})) as 'max' | 'console' | 'manual' | symbol;
 
-		if (isCancel(authMethod)) return cancel('Cancelled');
+		if (isCancel(authMethod)) {
+			cancel('Cancelled');
+			return false;
+		}
 
 		if (authMethod === 'manual') {
 			const meta = PROVIDER_LINKS.anthropic;
@@ -339,7 +360,10 @@ async function runAuthLoginAnthropic(
 				validate: (v) =>
 					v && String(v).trim().length > 0 ? undefined : 'Required',
 			});
-			if (isCancel(key)) return cancel('Cancelled');
+			if (isCancel(key)) {
+				cancel('Cancelled');
+				return false;
+			}
 			await setAuth(
 				'anthropic',
 				{ type: 'api', key: String(key) },
@@ -355,7 +379,8 @@ async function runAuthLoginAnthropic(
 			log.info(
 				`Tip: you can also set ${PROVIDER_LINKS.anthropic.env} in your environment.`,
 			);
-			return outro('Done');
+			outro('Done');
+			return true;
 		}
 
 		const oauthMode: 'max' | 'console' =
@@ -383,7 +408,10 @@ async function runAuthLoginAnthropic(
 				v && String(v).includes('#') ? undefined : 'Code must include #',
 		});
 
-		if (isCancel(code) || !code) return cancel('Cancelled');
+		if (isCancel(code) || !code) {
+			cancel('Cancelled');
+			return false;
+		}
 
 		log.info('\n🔄 Exchanging authorization code for tokens...');
 
@@ -423,23 +451,26 @@ async function runAuthLoginAnthropic(
 
 			await ensureGlobalConfigDefaults('anthropic');
 			outro('Done');
+			return true;
 		} catch (error: unknown) {
 			const message =
 				error instanceof Error ? error.message : 'Unknown error occurred';
 			log.error(`Authentication failed: ${message}`);
 			outro('Failed');
+			return false;
 		}
 	} catch (error: unknown) {
 		const message = error instanceof Error ? error.message : String(error);
 		log.error(`Failed to initialize authentication: ${message}`);
 		outro('Failed');
+		return false;
 	}
 }
 
 async function runAuthLoginSolforge(
 	cfg: Awaited<ReturnType<typeof loadConfig>>,
 	wantLocal: boolean,
-) {
+): Promise<boolean> {
 	log.info(
 		'Solforge uses a Solana wallet private key (base58 encoded). Keep it secure.',
 	);
@@ -448,7 +479,10 @@ async function runAuthLoginSolforge(
 		validate: (v) =>
 			v && String(v).trim().length > 0 ? undefined : 'Private key is required',
 	});
-	if (isCancel(key)) return cancel('Cancelled');
+	if (isCancel(key)) {
+		cancel('Cancelled');
+		return false;
+	}
 	await setAuth(
 		'solforge',
 		{ type: 'wallet', secret: String(key) },
@@ -464,7 +498,8 @@ async function runAuthLoginSolforge(
 	log.info(
 		`Tip: you can also set ${PROVIDER_LINKS.solforge.env} in your environment.`,
 	);
-	return outro('Done');
+	outro('Done');
+	return true;
 }
 
 export async function runAuthLogout(_args: string[]) {

@@ -409,19 +409,23 @@ async function ensureSomeAuth(projectRoot: string): Promise<boolean> {
 		return statuses.some(Boolean);
 	};
 
+	// Check if already authorized (default provider or any provider)
 	const defaultAuthorized = await isProviderAuthorized(cfg, defaultProvider);
 	if (defaultAuthorized) return true;
-
-	await runAuth(['login', defaultProvider]);
-	cfg = await loadConfig(projectRoot);
-	if (await isProviderAuthorized(cfg, defaultProvider)) return true;
-
 	if (await checkAny(cfg)) return true;
 
-	await runAuth(['login']);
+	// No auth found - run interactive login flow
+	const authSuccess = await runAuth(['login', defaultProvider]);
+	if (!authSuccess) {
+		// User cancelled or auth failed
+		return false;
+	}
+
+	// Verify auth was saved
 	cfg = await loadConfig(projectRoot);
-	if (await isProviderAuthorized(cfg, defaultProvider)) return true;
-	return await checkAny(cfg);
+	return (
+		(await isProviderAuthorized(cfg, defaultProvider)) || (await checkAny(cfg))
+	);
 }
 
 function getLocalIP(): string {
