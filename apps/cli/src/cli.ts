@@ -12,6 +12,7 @@ import {
 	registerSkillsCommand,
 	registerScaffoldCommand,
 	registerDoctorCommand,
+	registerUpgradeCommand,
 } from './commands/index.ts';
 import { runDiscoveredCommand } from './custom-commands.ts';
 import { handleServe } from './commands/serve.ts';
@@ -51,6 +52,7 @@ export function createCli(version: string): Command {
 	registerSkillsCommand(program);
 	registerScaffoldCommand(program);
 	registerDoctorCommand(program);
+	registerUpgradeCommand(program, version);
 
 	return program;
 }
