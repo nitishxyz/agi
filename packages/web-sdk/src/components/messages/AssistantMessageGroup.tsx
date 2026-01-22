@@ -152,7 +152,7 @@ export const AssistantMessageGroup = memo(
 											·
 										</span>
 										<span
-											className="hidden md:inline text-muted-foreground truncate max-w-[120px]"
+											className={`hidden md:inline text-muted-foreground ${compact ? 'truncate max-w-[120px]' : ''}`}
 											title={message.model}
 										>
 											{message.model}
