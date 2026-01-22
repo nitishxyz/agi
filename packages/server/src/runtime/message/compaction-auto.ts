@@ -3,6 +3,8 @@ import { messageParts } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
 import { streamText } from 'ai';
 import { resolveModel } from '../provider/index.ts';
+import { getAuth } from '@agi-cli/sdk';
+import { getProviderSpoofPrompt } from '../prompt/builder.ts';
 import { loadConfig } from '@agi-cli/sdk';
 import { debugLog } from '../debug/index.ts';
 import { getModelLimits } from './compaction-limits.ts';
@@ -52,11 +54,28 @@ export async function performAutoCompaction(
 		debugLog(
 			`[compaction] Using session model ${provider}/${modelId} for auto-compaction`,
 		);
+
+		const auth = await getAuth(provider as 'anthropic' | 'openai' | 'google' | 'openrouter' | 'opencode' | 'solforge' | 'zai' | 'zai-coding', cfg.projectRoot);
+		const needsSpoof = auth?.type === 'oauth';
+		const spoofPrompt = needsSpoof
+			? getProviderSpoofPrompt(provider as 'anthropic' | 'openai')
+			: undefined;
+
+		debugLog(`[compaction] OAuth mode: ${needsSpoof}, spoof: ${spoofPrompt ? 'yes' : 'no'}`);
+
 		const model = await resolveModel(
 			provider as Parameters<typeof resolveModel>[0],
 			modelId,
 			cfg,
 		);
+
+		const compactionPrompt = getCompactionSystemPrompt();
+		const systemPrompt = spoofPrompt
+			? spoofPrompt
+			: compactionPrompt;
+		const userInstructions = spoofPrompt
+			? `${compactionPrompt}\n\nIMPORTANT: Generate a comprehensive summary. This will replace the detailed conversation history.`
+			: 'IMPORTANT: Generate a comprehensive summary. This will replace the detailed conversation history.';
 
 		const compactPartId = crypto.randomUUID();
 		const now = Date.now();
@@ -74,14 +93,13 @@ export async function performAutoCompaction(
 			startedAt: now,
 		});
 
-		const prompt = getCompactionSystemPrompt();
 		const result = streamText({
 			model,
-			system: `${prompt}\n\nIMPORTANT: Generate a comprehensive summary. This will replace the detailed conversation history.`,
+			system: systemPrompt,
 			messages: [
 				{
 					role: 'user',
-					content: `Please summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`,
+					content: `${userInstructions}\n\nPlease summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`,
 				},
 			],
 			maxOutputTokens: 2000,
