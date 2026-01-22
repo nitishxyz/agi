@@ -14,6 +14,7 @@ import {
 	AlertCircle,
 	XOctagon,
 	Brain,
+	Database,
 } from 'lucide-react';
 import {
 	Fragment,
@@ -53,13 +54,11 @@ function getToolCallArgs(
 	const payload = getToolCallPayload(part);
 	if (!payload) return undefined;
 
-	// The args should be nested under an 'args' key
 	const args = (payload as { args?: unknown }).args;
 	if (args && typeof args === 'object' && !Array.isArray(args)) {
 		return args as Record<string, unknown>;
 	}
 
-	// No valid args found
 	return undefined;
 }
 
@@ -132,21 +131,21 @@ interface MessagePartItemProps {
 	isFirstPart: boolean;
 	isLastToolCall?: boolean;
 	isLastProgressUpdate?: boolean;
+	onNavigateToSession?: (sessionId: string) => void;
 }
 
-// Memoize the component to prevent re-renders when props haven't changed
 export const MessagePartItem = memo(
 	function MessagePartItem({
 		part,
 		showLine,
 		isLastToolCall,
 		isLastProgressUpdate,
+		onNavigateToSession,
 	}: MessagePartItemProps) {
 		if (part.type === 'tool_call' && !isLastToolCall) {
 			return null;
 		}
 
-		// Hide progress_update unless it's the latest one (before finish)
 		if (
 			part.type === 'tool_result' &&
 			part.toolName === 'progress_update' &&
@@ -155,7 +154,6 @@ export const MessagePartItem = memo(
 			return null;
 		}
 
-		// Hide empty text parts
 		if (part.type === 'text') {
 			const data = part.contentJson || part.content;
 			let content = '';
@@ -201,7 +199,6 @@ export const MessagePartItem = memo(
 			}
 
 			if (part.type === 'error') {
-				// Check if it's an abort
 				const payload = getToolCallPayload(part);
 				const isAborted = payload?.isAborted === true;
 				return isAborted ? (
@@ -261,6 +258,16 @@ export const MessagePartItem = memo(
 					return (
 						<Check className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
 					);
+				if (
+					toolName === 'query_sessions' ||
+					toolName === 'query_messages' ||
+					toolName === 'search_history' ||
+					toolName === 'get_session_context' ||
+					toolName === 'get_parent_session'
+				)
+					return (
+						<Database className="h-4 w-4 text-teal-600 dark:text-teal-300" />
+					);
 				return <Terminal className="h-4 w-4 text-muted-foreground" />;
 			}
 
@@ -291,6 +298,7 @@ export const MessagePartItem = memo(
 					contentJson={contentJson}
 					toolDurationMs={part.toolDurationMs}
 					debug={false}
+					onNavigateToSession={onNavigateToSession}
 				/>
 			);
 		};
@@ -379,7 +387,6 @@ export const MessagePartItem = memo(
 			}
 
 			if (part.type === 'error') {
-				// Render error using ToolResultRenderer with 'error' as toolName
 				let contentJson: ContentJson;
 				try {
 					if (part.contentJson && typeof part.contentJson === 'object') {
@@ -448,8 +455,6 @@ export const MessagePartItem = memo(
 					});
 				}
 
-				// If there are no segments at all (no primary target, no args preview),
-				// show "running…"
 				if (segments.length === 0) {
 					segments.push({
 						key: 'running',
@@ -483,12 +488,10 @@ export const MessagePartItem = memo(
 
 		return (
 			<div className="flex gap-3 pb-2 relative max-w-full overflow-hidden">
-				{/* Icon with vertical line */}
 				<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
 					<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative bg-background">
 						{renderIcon()}
 					</div>
-					{/* Vertical line */}
 					{showLine && (
 						<div
 							className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-border z-0"
@@ -497,14 +500,11 @@ export const MessagePartItem = memo(
 					)}
 				</div>
 
-				{/* Content */}
 				<div className={contentClassName}>{renderContent()}</div>
 			</div>
 		);
 	},
 	(prevProps, nextProps) => {
-		// Custom comparison function for better memoization
-		// Only re-render if the part content, showLine, or flags have actually changed
 		return (
 			prevProps.part.id === nextProps.part.id &&
 			prevProps.part.content === nextProps.part.content &&
@@ -513,7 +513,8 @@ export const MessagePartItem = memo(
 			prevProps.part.completedAt === nextProps.part.completedAt &&
 			prevProps.showLine === nextProps.showLine &&
 			prevProps.isLastToolCall === nextProps.isLastToolCall &&
-			prevProps.isLastProgressUpdate === nextProps.isLastProgressUpdate
+			prevProps.isLastProgressUpdate === nextProps.isLastProgressUpdate &&
+			prevProps.onNavigateToSession === nextProps.onNavigateToSession
 		);
 	},
 );

@@ -15,6 +15,9 @@ import AGENT_PLAN from '@agi-cli/sdk/prompts/agents/plan.txt' with {
 import AGENT_GENERAL from '@agi-cli/sdk/prompts/agents/general.txt' with {
 	type: 'text',
 };
+import AGENT_RESEARCH from '@agi-cli/sdk/prompts/agents/research.txt' with {
+	type: 'text',
+};
 
 export type AgentConfig = {
 	name: string;
@@ -140,6 +143,20 @@ const defaultToolExtras: Record<string, string[]> = {
 	],
 	git: ['git_status', 'git_diff', 'git_commit', 'read', 'ls'],
 	commit: ['git_status', 'git_diff', 'git_commit', 'read', 'ls'],
+	research: [
+		'read',
+		'ls',
+		'tree',
+		'ripgrep',
+		'websearch',
+		'update_todos',
+		'query_sessions',
+		'query_messages',
+		'get_session_context',
+		'search_history',
+		'get_parent_session',
+		'present_action',
+	],
 };
 
 export function defaultToolsForAgent(name: string): string[] {
@@ -288,6 +305,7 @@ export async function resolveAgentConfig(
 			if (n === 'build') return AGENT_BUILD;
 			if (n === 'plan') return AGENT_PLAN;
 			if (n === 'general') return AGENT_GENERAL;
+			if (n === 'research') return AGENT_RESEARCH;
 			return undefined;
 		};
 		const candidate = byName(name)?.trim();

@@ -13,6 +13,8 @@ import {
 	SessionFilesSidebarToggle,
 	SessionFilesSidebar,
 	SessionFilesDiffPanel,
+	ResearchSidebar,
+	ResearchSidebarToggle,
 } from '@agi-cli/web-sdk/components';
 import { Sidebar } from './Sidebar';
 import { Moon, Sun } from 'lucide-react';
@@ -24,6 +26,7 @@ interface AppLayoutProps {
 	theme: Theme;
 	onToggleTheme: () => void;
 	sessionId?: string;
+	onNavigateToSession?: (sessionId: string) => void;
 }
 
 export const AppLayout = memo(function AppLayout({
@@ -33,6 +36,7 @@ export const AppLayout = memo(function AppLayout({
 	theme,
 	onToggleTheme,
 	sessionId,
+	onNavigateToSession,
 }: AppLayoutProps) {
 	return (
 		<div className="h-screen flex bg-background touch-manipulation border-t border-border/50">
@@ -53,14 +57,19 @@ export const AppLayout = memo(function AppLayout({
 				<GitSidebar />
 				<SessionFilesSidebar sessionId={sessionId} />
 				<TerminalsSidebar />
+				<ResearchSidebar
+					parentSessionId={sessionId ?? null}
+					onNavigateToSession={onNavigateToSession}
+				/>
 
 				{/* Tab buttons - always visible, stacked vertically, full height */}
 				<div className="flex flex-col w-12 border-l border-border bg-background">
-					<GitSidebarToggle />
-					<SessionFilesSidebarToggle sessionId={sessionId} />
-					<TerminalsSidebarToggle />
-					<div className="flex-1" />
-					<div className="h-12 border-t border-border flex items-center justify-center">
+				<GitSidebarToggle />
+				<SessionFilesSidebarToggle sessionId={sessionId} />
+				<TerminalsSidebarToggle />
+				<ResearchSidebarToggle parentSessionId={sessionId} />
+				<div className="flex-1" />
+				<div className="h-12 border-t border-border flex items-center justify-center">
 						<Button
 							variant="ghost"
 							size="icon"

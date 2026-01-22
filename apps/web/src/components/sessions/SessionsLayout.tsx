@@ -174,6 +174,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 			theme={theme}
 			onToggleTheme={toggleTheme}
 			sessionId={sessionId}
+			onNavigateToSession={handleSelectSession}
 			sidebar={
 				<SessionListContainer
 					activeSessionId={sessionId}

@@ -2,7 +2,7 @@ import type { Hono } from 'hono';
 import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { sessions, messages, messageParts } from '@agi-cli/database/schema';
-import { desc, eq, and, inArray } from 'drizzle-orm';
+import { desc, eq, and, or, isNull, ne, inArray } from 'drizzle-orm';
 import type { ProviderId } from '@agi-cli/sdk';
 import { isProviderId, catalog } from '@agi-cli/sdk';
 import { resolveAgentConfig } from '../runtime/agent/registry.ts';
@@ -20,7 +20,15 @@ export function registerSessionsRoutes(app: Hono) {
 		const rows = await db
 			.select()
 			.from(sessions)
-			.where(eq(sessions.projectPath, cfg.projectRoot))
+			.where(
+				and(
+					eq(sessions.projectPath, cfg.projectRoot),
+					or(
+						eq(sessions.sessionType, 'main'),
+						isNull(sessions.sessionType)
+					)
+				)
+			)
 			.orderBy(desc(sessions.lastActiveAt), desc(sessions.createdAt));
 		const normalized = rows.map((r) => {
 			let counts: Record<string, unknown> | undefined;

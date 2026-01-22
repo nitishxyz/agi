@@ -51,3 +51,10 @@ export * from './terminals/TerminalViewer';
 export * from './session-files/SessionFilesSidebar';
 export * from './session-files/SessionFilesSidebarToggle';
 export * from './session-files/SessionFilesDiffPanel';
+
+// Research Components
+export * from './research/ResearchSidebar';
+export * from './research/ResearchSidebarToggle';
+
+// Common Components
+export * from './common/ProviderLogo';

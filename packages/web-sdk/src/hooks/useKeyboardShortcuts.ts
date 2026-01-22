@@ -2,6 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useFocusStore } from '../stores/focusStore';
 import { useSidebarStore } from '../stores/sidebarStore';
 import { useGitStore } from '../stores/gitStore';
+import { useResearchStore } from '../stores/researchStore';
 
 interface UseKeyboardShortcutsOptions {
 	sessionIds: string[];
@@ -51,6 +52,7 @@ export function useKeyboardShortcuts({
 	} = useSidebarStore();
 	const { isExpanded: isGitExpanded, toggleSidebar: toggleGit } = useGitStore();
 	const closeDiff = useGitStore((state) => state.closeDiff);
+	const toggleResearch = useResearchStore((state) => state.toggleSidebar);
 
 	const currentSessionIndex = sessionIds.indexOf(activeSessionId || '');
 
@@ -131,6 +133,12 @@ export function useKeyboardShortcuts({
 			if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
 				e.preventDefault();
 				toggleGit();
+				return;
+			}
+
+			if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'r') {
+				e.preventDefault();
+				toggleResearch();
 				return;
 			}
 
@@ -273,6 +281,7 @@ export function useKeyboardShortcuts({
 			resetGitFileIndex,
 			setSessionListCollapsed,
 			toggleGit,
+			toggleResearch,
 			toggleSessionList,
 			onSelectSession,
 			onNewSession,

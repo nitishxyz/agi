@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { useGitStore } from './gitStore';
 import { useSessionFilesStore } from './sessionFilesStore';
+import { useResearchStore } from './researchStore';
 
 interface TerminalState {
 	isExpanded: boolean;
@@ -22,6 +23,7 @@ export const useTerminalStore = create<TerminalState>((set) => ({
 			if (newExpanded) {
 				useGitStore.getState().collapseSidebar();
 				useSessionFilesStore.getState().collapseSidebar();
+				useResearchStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});

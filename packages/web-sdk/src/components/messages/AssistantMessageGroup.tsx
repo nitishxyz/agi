@@ -4,6 +4,7 @@ import type { Message } from '../../types/api';
 import { MessagePartItem } from './MessagePartItem';
 import { useMessageQueuePosition } from '../../hooks/useQueueState';
 import { BranchModal } from '../branch/BranchModal';
+import { ProviderLogo } from '../common/ProviderLogo';
 
 interface AssistantMessageGroupProps {
 	sessionId?: string;
@@ -12,6 +13,8 @@ interface AssistantMessageGroupProps {
 	hasNextAssistantMessage: boolean;
 	isLastMessage: boolean;
 	onBranchCreated?: (newSessionId: string) => void;
+	compact?: boolean;
+	onNavigateToSession?: (sessionId: string) => void;
 }
 
 const loadingMessages = [
@@ -39,6 +42,8 @@ export const AssistantMessageGroup = memo(
 		showHeader,
 		hasNextAssistantMessage,
 		onBranchCreated,
+		compact,
+		onNavigateToSession,
 	}: AssistantMessageGroupProps) {
 		const { isQueued } = useMessageQueuePosition(sessionId, message.id);
 		const [isHovered, setIsHovered] = useState(false);
@@ -123,33 +128,44 @@ export const AssistantMessageGroup = memo(
 							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-violet-500/50 bg-violet-500/20 dark:bg-violet-500/10">
 								<Sparkles className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
 							</div>
-							<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs md:text-sm text-muted-foreground pl-3 min-w-0">
-								{message.agent && (
+							<div className="flex items-center gap-x-1.5 md:gap-x-2 text-xs md:text-sm text-muted-foreground pl-2 md:pl-3 min-w-0">
+								{message.agent && !compact && (
 									<span className="font-medium text-violet-700 dark:text-violet-300 whitespace-nowrap">
 										{message.agent}
 									</span>
 								)}
-								{message.agent && message.provider && (
-									<span className="hidden md:inline">·</span>
-								)}
 								{message.provider && (
-									<span className="text-muted-foreground whitespace-nowrap">
-										{message.provider}
-									</span>
+									<>
+										{!compact && message.agent && (
+											<span className="text-muted-foreground/50">·</span>
+										)}
+										<ProviderLogo
+											provider={message.provider}
+											size={14}
+											className="opacity-70"
+										/>
+									</>
 								)}
-								{message.model && <span className="hidden md:inline">·</span>}
 								{message.model && (
-									<span className="text-muted-foreground break-all md:break-normal">
-										{message.model}
-									</span>
+									<>
+										<span className="hidden md:inline text-muted-foreground/50">
+											·
+										</span>
+										<span
+											className="hidden md:inline text-muted-foreground truncate max-w-[120px]"
+											title={message.model}
+										>
+											{message.model}
+										</span>
+									</>
 								)}
 								{message.createdAt && (
-									<span className="hidden md:inline">·</span>
-								)}
-								{message.createdAt && (
-									<span className="text-muted-foreground whitespace-nowrap">
-										{formatTime(message.createdAt)}
-									</span>
+									<>
+										<span className="text-muted-foreground/50">·</span>
+										<span className="text-muted-foreground whitespace-nowrap">
+											{formatTime(message.createdAt)}
+										</span>
+									</>
 								)}
 							</div>
 						</div>
@@ -189,6 +205,7 @@ export const AssistantMessageGroup = memo(
 								showLine={showLine}
 								isFirstPart={index === firstVisiblePartIndex && !showHeader}
 								isLastToolCall={isLastToolCall}
+								onNavigateToSession={onNavigateToSession}
 							/>
 						);
 					})}
@@ -290,7 +307,9 @@ export const AssistantMessageGroup = memo(
 			prevProps.showHeader === nextProps.showHeader &&
 			prevProps.hasNextAssistantMessage === nextProps.hasNextAssistantMessage &&
 			prevProps.isLastMessage === nextProps.isLastMessage &&
-			prevProps.sessionId === nextProps.sessionId
+			prevProps.sessionId === nextProps.sessionId &&
+			prevProps.compact === nextProps.compact &&
+			prevProps.onNavigateToSession === nextProps.onNavigateToSession
 		);
 	},
 );

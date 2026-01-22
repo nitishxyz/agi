@@ -18,23 +18,21 @@ import { TodosRenderer } from './TodosRenderer';
 import { ProgressUpdateRenderer } from './ProgressUpdateRenderer';
 import { WebSearchRenderer } from './WebSearchRenderer';
 import { ErrorRenderer } from './ErrorRenderer';
+import { DatabaseToolRenderer } from './DatabaseToolRenderer';
 
 interface ToolResultRendererProps {
 	toolName: string;
 	contentJson: ContentJson;
 	toolDurationMs?: number | null;
 	debug?: boolean;
+	onNavigateToSession?: (sessionId: string) => void;
 }
 
 /**
  * Normalize tool names to canonical form for rendering.
  * Handles both snake_case (canonical) and PascalCase (OAuth) names.
- *
- * Claude Code OAuth requires PascalCase but doesn't whitelist tools,
- * so we can use all AGI tools with PascalCase naming.
  */
 const TOOL_NAME_ALIASES: Record<string, string> = {
-	// File system operations
 	Read: 'read',
 	Write: 'write',
 	Edit: 'edit',
@@ -43,29 +41,23 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
 	Cd: 'cd',
 	Pwd: 'pwd',
 
-	// Search operations
 	Glob: 'glob',
 	Grep: 'ripgrep',
 
-	// Execution
 	Bash: 'bash',
 	Terminal: 'terminal',
 
-	// Git operations
 	GitStatus: 'git_status',
 	GitDiff: 'git_diff',
 	GitCommit: 'git_commit',
 
-	// Patch/edit
 	ApplyPatch: 'apply_patch',
 
-	// Task management
 	UpdateTodos: 'update_todos',
-	UpdatePlan: 'update_todos', // Legacy data compatibility
+	UpdatePlan: 'update_todos',
 	ProgressUpdate: 'progress_update',
 	Finish: 'finish',
 
-	// Web operations
 	WebSearch: 'websearch',
 };
 
@@ -78,15 +70,18 @@ export function ToolResultRenderer({
 	contentJson,
 	toolDurationMs,
 	debug,
+	onNavigateToSession,
 }: ToolResultRendererProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const normalizedName = normalizeToolName(toolName);
+
+	const handleToggle = () => setIsExpanded(!isExpanded);
 
 	const props = {
 		contentJson,
 		toolDurationMs: toolDurationMs ?? undefined,
 		isExpanded,
-		onToggle: () => setIsExpanded(!isExpanded),
+		onToggle: handleToggle,
 	};
 
 	if (debug) {
@@ -123,12 +118,28 @@ export function ToolResultRenderer({
 		case 'finish':
 			return <FinishRenderer {...props} />;
 		case 'update_todos':
-		case 'update_plan': // Legacy data compatibility
+		case 'update_plan':
 			return <TodosRenderer {...props} />;
 		case 'progress_update':
 			return <ProgressUpdateRenderer {...props} />;
 		case 'error':
 			return <ErrorRenderer {...props} />;
+		case 'query_sessions':
+		case 'query_messages':
+	case 'search_history':
+	case 'get_session_context':
+	case 'get_parent_session':
+	case 'present_action':
+		return (
+			<DatabaseToolRenderer
+				toolName={toolName}
+					contentJson={contentJson}
+					toolDurationMs={toolDurationMs}
+					isExpanded={isExpanded}
+					onToggle={handleToggle}
+					onNavigateToSession={onNavigateToSession}
+				/>
+			);
 		default:
 			return <GenericRenderer {...props} toolName={toolName} />;
 	}
