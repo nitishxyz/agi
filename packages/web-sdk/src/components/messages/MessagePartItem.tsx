@@ -132,6 +132,7 @@ interface MessagePartItemProps {
 	isLastToolCall?: boolean;
 	isLastProgressUpdate?: boolean;
 	onNavigateToSession?: (sessionId: string) => void;
+	compact?: boolean;
 }
 
 export const MessagePartItem = memo(
@@ -141,6 +142,7 @@ export const MessagePartItem = memo(
 		isLastToolCall,
 		isLastProgressUpdate,
 		onNavigateToSession,
+		compact,
 	}: MessagePartItemProps) {
 		if (part.type === 'tool_call' && !isLastToolCall) {
 			return null;
@@ -299,6 +301,7 @@ export const MessagePartItem = memo(
 					toolDurationMs={part.toolDurationMs}
 					debug={false}
 					onNavigateToSession={onNavigateToSession}
+					compact={compact}
 				/>
 			);
 		};
@@ -408,6 +411,7 @@ export const MessagePartItem = memo(
 						contentJson={contentJson}
 						toolDurationMs={part.toolDurationMs}
 						debug={false}
+						compact={compact}
 					/>
 				);
 			}

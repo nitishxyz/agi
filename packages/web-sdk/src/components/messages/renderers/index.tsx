@@ -26,6 +26,7 @@ interface ToolResultRendererProps {
 	toolDurationMs?: number | null;
 	debug?: boolean;
 	onNavigateToSession?: (sessionId: string) => void;
+	compact?: boolean;
 }
 
 /**
@@ -71,6 +72,7 @@ export function ToolResultRenderer({
 	toolDurationMs,
 	debug,
 	onNavigateToSession,
+	compact,
 }: ToolResultRendererProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const normalizedName = normalizeToolName(toolName);
@@ -82,6 +84,7 @@ export function ToolResultRenderer({
 		toolDurationMs: toolDurationMs ?? undefined,
 		isExpanded,
 		onToggle: handleToggle,
+		compact,
 	};
 
 	if (debug) {
@@ -133,12 +136,9 @@ export function ToolResultRenderer({
 		return (
 			<DatabaseToolRenderer
 				toolName={toolName}
-					contentJson={contentJson}
-					toolDurationMs={toolDurationMs}
-					isExpanded={isExpanded}
-					onToggle={handleToggle}
-					onNavigateToSession={onNavigateToSession}
-				/>
+				{...props}
+				onNavigateToSession={onNavigateToSession}
+			/>
 			);
 		default:
 			return <GenericRenderer {...props} toolName={toolName} />;

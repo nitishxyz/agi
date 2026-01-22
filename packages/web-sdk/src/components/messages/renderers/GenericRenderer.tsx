@@ -14,6 +14,7 @@ export function GenericRenderer({
 	toolDurationMs,
 	isExpanded,
 	onToggle,
+	compact,
 }: GenericRendererProps) {
 	const result = contentJson.result;
 	const timeStr = formatDuration(toolDurationMs);
@@ -67,10 +68,14 @@ export function GenericRenderer({
 					{toolName}
 					{hasError ? ' error' : ''}
 				</span>
-				<span className="text-muted-foreground/70 flex-shrink-0">·</span>
-				<span className="text-muted-foreground/80 flex-shrink-0">
-					{timeStr}
-				</span>
+				{!compact && (
+					<>
+						<span className="text-muted-foreground/70 flex-shrink-0">·</span>
+						<span className="text-muted-foreground/80 flex-shrink-0">
+							{timeStr}
+						</span>
+					</>
+				)}
 			</button>
 			{isExpanded && hasError && errorMessage && (
 				<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />

@@ -21,6 +21,7 @@ export function BashRenderer({
 	toolDurationMs,
 	isExpanded,
 	onToggle,
+	compact,
 }: RendererProps) {
 	const result = contentJson.result || {};
 	const args = contentJson.args || {};
@@ -61,11 +62,15 @@ export function BashRenderer({
 				colorVariant="default"
 				canExpand={true}
 			>
-				<ToolHeaderSeparator />
-				<span className="text-foreground/70 min-w-0 truncate" title={cmd}>
-					{cmd}
-				</span>
-				{!hasToolError && (
+				{!compact && (
+					<>
+						<ToolHeaderSeparator />
+						<span className="text-foreground/70 min-w-0 truncate font-mono text-[11px]" title={cmd}>
+							{cmd}
+						</span>
+					</>
+				)}
+				{!hasToolError && !compact && (
 					<>
 						<ToolHeaderSeparator />
 						{exitCode === 0 ? (
@@ -77,7 +82,7 @@ export function BashRenderer({
 						<ToolHeaderMeta>{timeStr}</ToolHeaderMeta>
 					</>
 				)}
-				{hasToolError && <ToolHeaderMeta>· {timeStr}</ToolHeaderMeta>}
+				{hasToolError && !compact && <ToolHeaderMeta>· {timeStr}</ToolHeaderMeta>}
 			</ToolHeader>
 
 			{isExpanded && hasToolError && errorMessage && (

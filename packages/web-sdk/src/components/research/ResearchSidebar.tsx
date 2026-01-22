@@ -8,6 +8,7 @@ import {
 	ArrowUp,
 	ArrowDownToLine,
 	ExternalLink,
+	ChevronDown,
 } from 'lucide-react';
 import { useResearchStore } from '../../stores/researchStore';
 import {
@@ -17,12 +18,16 @@ import {
 	useExportToSession,
 	type ResearchSession,
 } from '../../hooks/useResearch';
+import { useUpdateSession } from '../../hooks/useSessions';
+import { useAllModels } from '../../hooks/useConfig';
 import { useMessages } from '../../hooks/useMessages';
 import { useSessionStream } from '../../hooks/useSessionStream';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api-client';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
+import { Modal } from '../ui/Modal';
+import { UnifiedModelSelector } from '../chat/UnifiedModelSelector';
 import { AssistantMessageGroup } from '../messages/AssistantMessageGroup';
 import { UserMessageGroup } from '../messages/UserMessageGroup';
 
@@ -46,6 +51,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 
 	const [showHistory, setShowHistory] = useState(false);
 	const [inputValue, setInputValue] = useState('');
+	const [showModelSelector, setShowModelSelector] = useState(false);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +63,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 	const createMutation = useCreateResearchSession();
 	const injectMutation = useInjectContext();
 	const exportMutation = useExportToSession();
+	const { data: allModels } = useAllModels();
 
 	const { data: messagesData } = useMessages(
 		activeResearchSessionId ?? undefined,
@@ -64,6 +71,8 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 
 	// Enable streaming for the active research session
 	useSessionStream(activeResearchSessionId ?? undefined);
+
+	const updateSession = useUpdateSession(activeResearchSessionId ?? '');
 
 	const queryClient = useQueryClient();
 	const sendMessage = useMutation({
@@ -216,11 +225,34 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 		[messagesData],
 	);
 
+	const handleModelChange = useCallback(
+		async (newProvider: string, newModel: string) => {
+			if (!activeResearchSessionId) return;
+			try {
+				await updateSession.mutateAsync({
+					provider: newProvider,
+					model: newModel,
+				});
+				setShowModelSelector(false);
+			} catch (err) {
+				console.error('Failed to update research session model:', err);
+			}
+		},
+		[activeResearchSessionId, updateSession],
+	);
+
 	if (!isExpanded) return null;
 
 	const sessions = researchData?.sessions ?? [];
 	const activeSession = sessions.find((s) => s.id === activeResearchSessionId);
 	const messages = messagesData ?? [];
+
+	const currentProviderLabel =
+		allModels?.[activeSession?.provider ?? '']?.label ?? activeSession?.provider;
+	const currentModelLabel =
+		allModels?.[activeSession?.provider ?? '']?.models.find(
+			(m) => m.id === activeSession?.model,
+		)?.label ?? activeSession?.model;
 
 	return (
 		<div className="w-96 border-l border-border bg-background flex flex-col h-full">
@@ -308,19 +340,6 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 				</div>
 			) : (
 				<>
-					{/* Session info bar */}
-					{activeSession && (
-						<div className="px-3 py-2 border-b border-border text-xs text-muted-foreground flex items-center gap-1">
-							<span className="text-teal-600 dark:text-teal-400 font-medium">
-								research
-							</span>
-							<span>·</span>
-							<span>{activeSession.provider}</span>
-							<span>·</span>
-							<span className="truncate">{activeSession.model}</span>
-						</div>
-					)}
-
 					{/* Messages area - using the same components as main chat, but smaller */}
 					<div className="flex-1 overflow-y-auto px-3 py-3 research-messages text-[13px]">
 						{!activeResearchSessionId ? (
@@ -414,23 +433,12 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 									) : (
 										<ArrowUp className="w-4 h-4" />
 									)}
-								</button>
-							</div>
-						</div>
+						</button>
+					</div>
+				</div>
 
-						{/* Model info */}
-						{activeSession && (
-							<div className="flex items-center justify-center mt-1.5">
-								<span className="text-[10px] text-muted-foreground">
-									<span className="opacity-60">{activeSession.provider}</span>
-									<span className="opacity-40 mx-1">/</span>
-									<span>{activeSession.model}</span>
-								</span>
-							</div>
-						)}
-
-						{/* Action buttons */}
-						<div className="flex gap-2 mt-2">
+				{/* Action buttons */}
+				<div className="flex gap-2 mt-2">
 							<button
 								type="button"
 								onClick={handleInject}
@@ -478,13 +486,34 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 					{sessions.length} research session{sessions.length !== 1 ? 's' : ''}
 				</span>
 				{activeSession && (
-					<div className="flex items-center gap-1 text-[10px]">
-						<span className="opacity-60">{activeSession.provider}</span>
+					<button
+						type="button"
+						onClick={() => setShowModelSelector(true)}
+						className="flex items-center gap-1 text-[10px] hover:text-foreground transition-colors"
+					>
+						<span className="opacity-60">{currentProviderLabel}</span>
 						<span className="opacity-40">/</span>
-						<span>{activeSession.model}</span>
-					</div>
+						<span>{currentModelLabel}</span>
+						<ChevronDown className="w-3 h-3 opacity-40" />
+					</button>
 				)}
 			</div>
+
+			{/* Model Selector Modal */}
+			<Modal
+				isOpen={showModelSelector}
+				onClose={() => setShowModelSelector(false)}
+				title="Select Model for Research"
+				maxWidth="md"
+			>
+				{activeSession && (
+					<UnifiedModelSelector
+						provider={activeSession.provider}
+						model={activeSession.model}
+						onChange={handleModelChange}
+					/>
+				)}
+			</Modal>
 		</div>
 	);
 });

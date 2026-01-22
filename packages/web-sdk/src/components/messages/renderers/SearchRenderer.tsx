@@ -15,6 +15,7 @@ export function SearchRenderer({
 	toolDurationMs,
 	isExpanded,
 	onToggle,
+	compact,
 }: RendererProps) {
 	const result = contentJson.result || {};
 	const args = (contentJson.args || {}) as Record<string, unknown>;
@@ -63,7 +64,7 @@ export function SearchRenderer({
 				colorVariant="amber"
 				canExpand={true}
 			>
-				{searchTerm && (
+				{searchTerm && !compact && (
 					<>
 						<ToolHeaderSeparator />
 						<span
@@ -78,12 +79,16 @@ export function SearchRenderer({
 						</span>
 					</>
 				)}
-				<ToolHeaderSeparator />
-				<ToolHeaderDetail>
-					{itemCount} {itemLabel}
-				</ToolHeaderDetail>
-				<ToolHeaderSeparator />
-				<ToolHeaderMeta>{timeStr}</ToolHeaderMeta>
+				{!compact && (
+					<>
+						<ToolHeaderSeparator />
+						<ToolHeaderDetail>
+							{itemCount} {itemLabel}
+						</ToolHeaderDetail>
+						<ToolHeaderSeparator />
+						<ToolHeaderMeta>{timeStr}</ToolHeaderMeta>
+					</>
+				)}
 			</ToolHeader>
 
 			{isExpanded && hasError && errorMessage && (

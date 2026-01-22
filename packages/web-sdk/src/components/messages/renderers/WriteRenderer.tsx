@@ -9,6 +9,7 @@ export function WriteRenderer({
 	toolDurationMs,
 	isExpanded,
 	onToggle,
+	compact,
 }: RendererProps) {
 	const result = contentJson.result || {};
 	const args = contentJson.args || {};
@@ -60,20 +61,24 @@ export function WriteRenderer({
 				<span className="font-medium flex-shrink-0">
 					write{hasToolError ? ' error' : ''}
 				</span>
-				<span className="text-muted-foreground/70 flex-shrink-0">·</span>
-				<span
-					className="text-foreground/70 min-w-0 flex-shrink overflow-hidden text-ellipsis whitespace-nowrap"
-					dir="rtl"
-					title={path}
-				>
-					{path}
-				</span>
-				{!hasToolError && bytes > 0 && (
+				{!compact && (
+					<>
+						<span className="text-muted-foreground/70 flex-shrink-0">·</span>
+						<span
+							className="text-foreground/70 min-w-0 flex-shrink overflow-hidden text-ellipsis whitespace-nowrap"
+							dir="rtl"
+							title={path}
+						>
+							{path}
+						</span>
+					</>
+				)}
+				{!hasToolError && bytes > 0 && !compact && (
 					<span className="text-muted-foreground/80 whitespace-nowrap flex-shrink-0">
 						· {bytes} bytes · {timeStr}
 					</span>
 				)}
-				{hasToolError && (
+				{hasToolError && !compact && (
 					<span className="text-muted-foreground/80 flex-shrink-0">
 						· {timeStr}
 					</span>

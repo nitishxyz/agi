@@ -57,6 +57,7 @@ export function ReadRenderer({
 	toolDurationMs,
 	isExpanded,
 	onToggle,
+	compact,
 }: RendererProps) {
 	const result = contentJson.result || {};
 	const args = contentJson.args || {};
@@ -118,20 +119,24 @@ export function ReadRenderer({
 				<span className="font-medium flex-shrink-0">
 					read{hasToolError ? ' error' : ''}
 				</span>
-				<span className="text-muted-foreground/70 flex-shrink-0">·</span>
-				<span
-					className="text-foreground/70 min-w-0 flex-shrink overflow-hidden text-ellipsis whitespace-nowrap"
-					dir="rtl"
-					title={displayText}
-				>
-					{displayText}
-				</span>
-				{!hasToolError && lines.length > 0 && (
+				{!compact && (
+					<>
+						<span className="text-muted-foreground/70 flex-shrink-0">·</span>
+						<span
+							className="text-foreground/70 min-w-0 flex-shrink overflow-hidden text-ellipsis whitespace-nowrap"
+							dir="rtl"
+							title={displayText}
+						>
+							{displayText}
+						</span>
+					</>
+				)}
+				{!hasToolError && lines.length > 0 && !compact && (
 					<span className="text-muted-foreground/80 flex-shrink-0 whitespace-nowrap">
 						· {lines.length} lines · {timeStr}
 					</span>
 				)}
-				{hasToolError && (
+				{hasToolError && !compact && (
 					<span className="text-muted-foreground/80 flex-shrink-0">
 						· {timeStr}
 					</span>

@@ -67,10 +67,30 @@ function formatDate(timestamp?: number): string {
 function SessionLink({
 	session,
 	onNavigate,
+	compact,
 }: {
 	session: SessionResult;
 	onNavigate?: (id: string) => void;
+	compact?: boolean;
 }) {
+	if (compact) {
+		return (
+			<button
+				type="button"
+				onClick={() => onNavigate?.(session.id)}
+				disabled={!onNavigate}
+				className="w-full text-left py-1 px-2 rounded text-xs hover:bg-muted/50 transition-colors flex items-center justify-between gap-2"
+			>
+				<span className="truncate text-foreground">
+					{session.title || 'Untitled'}
+				</span>
+				{onNavigate && (
+					<ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+				)}
+			</button>
+		);
+	}
+
 	return (
 		<button
 			type="button"
@@ -114,9 +134,11 @@ function SessionLink({
 function MessageLink({
 	message,
 	onNavigate,
+	compact,
 }: {
 	message: MessageResult | SearchResult;
 	onNavigate?: (sessionId: string) => void;
+	compact?: boolean;
 }) {
 	const sessionId = 'sessionId' in message ? message.sessionId : '';
 	const sessionTitle = 'sessionTitle' in message ? message.sessionTitle : null;
@@ -128,6 +150,24 @@ function MessageLink({
 				: 'matchedContent' in message
 					? message.matchedContent
 					: '';
+
+	if (compact) {
+		return (
+			<button
+				type="button"
+				onClick={() => onNavigate?.(sessionId)}
+				disabled={!onNavigate || !sessionId}
+				className="w-full text-left py-1 px-2 rounded text-xs hover:bg-muted/50 transition-colors flex items-center justify-between gap-2"
+			>
+				<span className="truncate text-foreground/80">
+					{content?.slice(0, 50) || sessionTitle || sessionId.slice(0, 8)}
+				</span>
+				{onNavigate && sessionId && (
+					<ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+				)}
+			</button>
+		);
+	}
 
 	return (
 		<button
@@ -209,6 +249,7 @@ export function DatabaseToolRenderer({
 	isExpanded,
 	onToggle,
 	onNavigateToSession,
+	compact,
 }: DatabaseToolRendererProps) {
 	const result = contentJson.result || {};
 	const args = (contentJson.args || {}) as Record<string, unknown>;
@@ -305,31 +346,32 @@ export function DatabaseToolRenderer({
 	};
 
 	const renderContent = () => {
-		const hasArgs = Object.keys(args).length > 0;
+		const hasArgs = Object.keys(args).length > 0 && !compact;
 
 		switch (toolName) {
 			case 'query_sessions': {
 				const sessions =
 					(result as { sessions?: SessionResult[] }).sessions || [];
 				return (
-					<div className="p-2">
+					<div className={compact ? "p-1" : "p-2"}>
 						{hasArgs && <ArgsPreview args={args} toolName={toolName} />}
 						{sessions.length === 0 ? (
 							<div className="text-xs text-muted-foreground">
 								No sessions found
 							</div>
 						) : (
-							<div className="space-y-2">
-								{sessions.slice(0, 10).map((session) => (
+							<div className={compact ? "space-y-0.5" : "space-y-2"}>
+								{sessions.slice(0, compact ? 5 : 10).map((session) => (
 									<SessionLink
 										key={session.id}
 										session={session}
 										onNavigate={onNavigateToSession}
+										compact={compact}
 									/>
 								))}
-								{sessions.length > 10 && (
+								{sessions.length > (compact ? 5 : 10) && (
 									<div className="text-xs text-muted-foreground text-center">
-										+{sessions.length - 10} more
+										+{sessions.length - (compact ? 5 : 10)} more
 									</div>
 								)}
 							</div>
@@ -338,71 +380,73 @@ export function DatabaseToolRenderer({
 				);
 			}
 
-			case 'query_messages': {
-				const messages =
-					(result as { messages?: MessageResult[] }).messages || [];
-				return (
-					<div className="p-2">
-						{hasArgs && <ArgsPreview args={args} toolName={toolName} />}
-						{messages.length === 0 ? (
-							<div className="text-xs text-muted-foreground">
-								No messages found
-							</div>
-						) : (
-							<div className="space-y-2">
-								{messages.slice(0, 10).map((msg) => (
-									<MessageLink
-										key={msg.id}
-										message={msg}
-										onNavigate={onNavigateToSession}
-									/>
-								))}
-								{messages.length > 10 && (
-									<div className="text-xs text-muted-foreground text-center">
-										+{messages.length - 10} more
-									</div>
-								)}
-							</div>
-						)}
-					</div>
-				);
-			}
+		case 'query_messages': {
+			const messages =
+				(result as { messages?: MessageResult[] }).messages || [];
+			return (
+				<div className={compact ? "p-1" : "p-2"}>
+					{hasArgs && <ArgsPreview args={args} toolName={toolName} />}
+					{messages.length === 0 ? (
+						<div className="text-xs text-muted-foreground">
+							No messages found
+						</div>
+					) : (
+						<div className={compact ? "space-y-0.5" : "space-y-2"}>
+							{messages.slice(0, compact ? 5 : 10).map((msg) => (
+								<MessageLink
+									key={msg.id}
+									message={msg}
+									onNavigate={onNavigateToSession}
+									compact={compact}
+								/>
+							))}
+							{messages.length > (compact ? 5 : 10) && (
+								<div className="text-xs text-muted-foreground text-center">
+									+{messages.length - (compact ? 5 : 10)} more
+								</div>
+							)}
+						</div>
+					)}
+				</div>
+			);
+		}
 
-			case 'search_history': {
-				const results = (result as { results?: SearchResult[] }).results || [];
-				const query = args.query as string | undefined;
-				return (
-					<div className="p-2">
-						{query && (
-							<div className="flex items-center gap-1.5 text-xs mb-2 pb-2 border-b border-border">
-								<Search className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-								<span className="text-muted-foreground">Query:</span>
-								<span className="text-foreground font-medium">"{query}"</span>
-							</div>
-						)}
-						{results.length === 0 ? (
-							<div className="text-xs text-muted-foreground">
-								No results found
-							</div>
-						) : (
-							<div className="space-y-2">
-								{results.slice(0, 10).map((r, i) => (
-									<MessageLink
-										key={`${r.sessionId}-${r.messageId}-${i}`}
-										message={r}
-										onNavigate={onNavigateToSession}
-									/>
-								))}
-								{results.length > 10 && (
-									<div className="text-xs text-muted-foreground text-center">
-										+{results.length - 10} more
-									</div>
-								)}
-							</div>
-						)}
-					</div>
-				);
-			}
+		case 'search_history': {
+			const results = (result as { results?: SearchResult[] }).results || [];
+			const query = args.query as string | undefined;
+			return (
+				<div className={compact ? "p-1" : "p-2"}>
+					{query && !compact && (
+						<div className="flex items-center gap-1.5 text-xs mb-2 pb-2 border-b border-border">
+							<Search className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+							<span className="text-muted-foreground">Query:</span>
+							<span className="text-foreground font-medium">"{query}"</span>
+						</div>
+					)}
+					{results.length === 0 ? (
+						<div className="text-xs text-muted-foreground">
+							No results found
+						</div>
+					) : (
+						<div className={compact ? "space-y-0.5" : "space-y-2"}>
+							{results.slice(0, compact ? 5 : 10).map((r, i) => (
+								<MessageLink
+									key={`${r.sessionId}-${r.messageId}-${i}`}
+									message={r}
+									onNavigate={onNavigateToSession}
+									compact={compact}
+								/>
+							))}
+							{results.length > (compact ? 5 : 10) && (
+								<div className="text-xs text-muted-foreground text-center">
+									+{results.length - (compact ? 5 : 10)} more
+								</div>
+							)}
+						</div>
+					)}
+				</div>
+			);
+		}
 
 			case 'get_session_context':
 			case 'get_parent_session': {
@@ -426,17 +470,25 @@ export function DatabaseToolRenderer({
 					}
 				).messages;
 
-				if (!session) {
-					return (
-						<div className="text-xs text-muted-foreground p-2">
-							Session not found
-						</div>
-					);
-				}
-
+			if (!session) {
 				return (
-					<div className="p-2 space-y-3">
-						<SessionLink session={session} onNavigate={onNavigateToSession} />
+					<div className={`text-xs text-muted-foreground ${compact ? "p-1" : "p-2"}`}>
+						Session not found
+					</div>
+				);
+			}
+
+			if (compact) {
+				return (
+					<div className="p-1">
+						<SessionLink session={session} onNavigate={onNavigateToSession} compact />
+					</div>
+				);
+			}
+
+			return (
+				<div className="p-2 space-y-3">
+					<SessionLink session={session} onNavigate={onNavigateToSession} />
 
 						{stats && (
 							<div className="flex gap-4 text-xs text-muted-foreground">
@@ -494,11 +546,15 @@ export function DatabaseToolRenderer({
 				colorVariant="default"
 				canExpand={true}
 			>
-				<ToolHeaderSeparator />
-				<span className="text-foreground/70 min-w-0 truncate">
-					{getDescription()}
-				</span>
-				{!hasToolError && (
+				{!compact && (
+					<>
+						<ToolHeaderSeparator />
+						<span className="text-foreground/70 min-w-0 truncate">
+							{getDescription()}
+						</span>
+					</>
+				)}
+				{!hasToolError && !compact && (
 					<>
 						<ToolHeaderSeparator />
 						<ToolHeaderSuccess>Done</ToolHeaderSuccess>
@@ -506,7 +562,7 @@ export function DatabaseToolRenderer({
 						<ToolHeaderMeta>{timeStr}</ToolHeaderMeta>
 					</>
 				)}
-				{hasToolError && (
+				{hasToolError && !compact && (
 					<>
 						<ToolHeaderSeparator />
 						<ToolHeaderError>Error</ToolHeaderError>
@@ -519,13 +575,19 @@ export function DatabaseToolRenderer({
 				<ToolErrorDisplay error={errorMessage} />
 			)}
 
-			{isExpanded && !hasToolError && (
-				<div className="mt-2 ml-5">
+		{isExpanded && !hasToolError && (
+			<div className={compact ? "mt-1 ml-3" : "mt-2 ml-5"}>
+				{compact ? (
+					<div className="border border-border rounded-md overflow-hidden max-h-48 overflow-y-auto">
+						{renderContent()}
+					</div>
+				) : (
 					<ToolContentBox title="results" maxHeight="max-h-96">
 						{renderContent()}
 					</ToolContentBox>
-				</div>
-			)}
+				)}
+			</div>
+		)}
 		</div>
 	);
 }

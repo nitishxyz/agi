@@ -125,6 +125,7 @@ export interface RendererProps {
 	toolDurationMs?: number;
 	isExpanded: boolean;
 	onToggle: () => void;
+	compact?: boolean;
 }
 
 export interface GenericRendererProps extends RendererProps {
