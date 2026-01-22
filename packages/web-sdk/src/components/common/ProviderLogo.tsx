@@ -58,7 +58,7 @@ export const ProviderLogo = memo(function ProviderLogo({
 			dangerouslySetInnerHTML={{
 				__html: logoSvg.replace(
 					/<svg/,
-					`<svg width="${size}" height="${size}" style="width:${size}px;height:${size}px"`
+					`<svg width="${size}" height="${size}" style="width:${size}px;height:${size}px"`,
 				),
 			}}
 		/>

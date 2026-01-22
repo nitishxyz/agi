@@ -39,8 +39,8 @@ export function registerResearchRoutes(app: Hono) {
 			.where(
 				and(
 					eq(sessions.parentSessionId, parentId),
-					eq(sessions.sessionType, 'research')
-				)
+					eq(sessions.sessionType, 'research'),
+				),
 			)
 			.orderBy(desc(sessions.lastActiveAt), desc(sessions.createdAt));
 
@@ -54,7 +54,7 @@ export function registerResearchRoutes(app: Hono) {
 					...row,
 					messageCount: msgCount[0]?.count ?? 0,
 				};
-			})
+			}),
 		);
 
 		return c.json({ sessions: sessionsWithCounts });
@@ -65,7 +65,10 @@ export function registerResearchRoutes(app: Hono) {
 		const projectRoot = c.req.query('project') || process.cwd();
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
-		const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
+		const body = (await c.req.json().catch(() => ({}))) as Record<
+			string,
+			unknown
+		>;
 
 		const parentRows = await db
 			.select()
@@ -79,13 +82,16 @@ export function registerResearchRoutes(app: Hono) {
 
 		const parent = parentRows[0];
 
-		const providerCandidate = typeof body.provider === 'string' ? body.provider : undefined;
+		const providerCandidate =
+			typeof body.provider === 'string' ? body.provider : undefined;
 		const provider: ProviderId = (() => {
-			if (providerCandidate && isProviderId(providerCandidate)) return providerCandidate;
+			if (providerCandidate && isProviderId(providerCandidate))
+				return providerCandidate;
 			return parent.provider as ProviderId;
 		})();
 
-		const modelCandidate = typeof body.model === 'string' ? body.model.trim() : undefined;
+		const modelCandidate =
+			typeof body.model === 'string' ? body.model.trim() : undefined;
 		const model = modelCandidate?.length ? modelCandidate : parent.model;
 
 		const id = crypto.randomUUID();
@@ -140,7 +146,10 @@ export function registerResearchRoutes(app: Hono) {
 
 		const session = rows[0];
 		if (session.projectPath !== cfg.projectRoot) {
-			return c.json({ error: 'Research session not found in this project' }, 404);
+			return c.json(
+				{ error: 'Research session not found in this project' },
+				404,
+			);
 		}
 
 		if (session.sessionType !== 'research') {
@@ -148,7 +157,11 @@ export function registerResearchRoutes(app: Hono) {
 		}
 
 		await db.delete(sessions).where(eq(sessions.id, researchId));
-		publish({ type: 'session.deleted', sessionId: researchId, payload: { id: researchId } });
+		publish({
+			type: 'session.deleted',
+			sessionId: researchId,
+			payload: { id: researchId },
+		});
 
 		return c.json({ success: true });
 	});
@@ -158,10 +171,15 @@ export function registerResearchRoutes(app: Hono) {
 		const projectRoot = c.req.query('project') || process.cwd();
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
-		const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
+		const body = (await c.req.json().catch(() => ({}))) as Record<
+			string,
+			unknown
+		>;
 
-		const researchSessionId = typeof body.researchSessionId === 'string' ? body.researchSessionId : '';
-		const label = typeof body.label === 'string' ? body.label : 'Research context';
+		const researchSessionId =
+			typeof body.researchSessionId === 'string' ? body.researchSessionId : '';
+		const label =
+			typeof body.label === 'string' ? body.label : 'Research context';
 
 		if (!researchSessionId) {
 			return c.json({ error: 'researchSessionId is required' }, 400);
@@ -169,7 +187,11 @@ export function registerResearchRoutes(app: Hono) {
 
 		const [parentRows, researchRows] = await Promise.all([
 			db.select().from(sessions).where(eq(sessions.id, parentId)).limit(1),
-			db.select().from(sessions).where(eq(sessions.id, researchSessionId)).limit(1),
+			db
+				.select()
+				.from(sessions)
+				.where(eq(sessions.id, researchSessionId))
+				.limit(1),
 		]);
 
 		if (!parentRows.length || parentRows[0].projectPath !== cfg.projectRoot) {
@@ -264,7 +286,10 @@ export function registerResearchRoutes(app: Hono) {
 		const projectRoot = c.req.query('project') || process.cwd();
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
-		const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
+		const body = (await c.req.json().catch(() => ({}))) as Record<
+			string,
+			unknown
+		>;
 
 		const researchRows = await db
 			.select()
@@ -282,16 +307,20 @@ export function registerResearchRoutes(app: Hono) {
 			return c.json({ error: 'Research session not in this project' }, 404);
 		}
 
-		const providerCandidate = typeof body.provider === 'string' ? body.provider : undefined;
+		const providerCandidate =
+			typeof body.provider === 'string' ? body.provider : undefined;
 		const provider: ProviderId = (() => {
-			if (providerCandidate && isProviderId(providerCandidate)) return providerCandidate;
+			if (providerCandidate && isProviderId(providerCandidate))
+				return providerCandidate;
 			return cfg.defaults.provider;
 		})();
 
-		const modelCandidate = typeof body.model === 'string' ? body.model.trim() : undefined;
+		const modelCandidate =
+			typeof body.model === 'string' ? body.model.trim() : undefined;
 		const model = modelCandidate?.length ? modelCandidate : cfg.defaults.model;
 
-		const agentCandidate = typeof body.agent === 'string' ? body.agent.trim() : undefined;
+		const agentCandidate =
+			typeof body.agent === 'string' ? body.agent.trim() : undefined;
 		const agent = agentCandidate?.length ? agentCandidate : cfg.defaults.agent;
 
 		const researchMessages = await db
@@ -371,7 +400,11 @@ export function registerResearchRoutes(app: Hono) {
 			model,
 		});
 
-		publish({ type: 'session.created', sessionId: newSessionId, payload: { id: newSessionId } });
+		publish({
+			type: 'session.created',
+			sessionId: newSessionId,
+			payload: { id: newSessionId },
+		});
 
 		const newSession = await db
 			.select()
@@ -379,9 +412,12 @@ export function registerResearchRoutes(app: Hono) {
 			.where(eq(sessions.id, newSessionId))
 			.limit(1);
 
-		return c.json({
-			newSession: newSession[0],
-			injectedContext,
-		}, 201);
+		return c.json(
+			{
+				newSession: newSession[0],
+				injectedContext,
+			},
+			201,
+		);
 	});
 }

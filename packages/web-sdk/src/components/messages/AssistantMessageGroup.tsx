@@ -198,29 +198,29 @@ export const AssistantMessageGroup = memo(
 							return null;
 						}
 
-					return (
+						return (
+							<MessagePartItem
+								key={part.id}
+								part={part}
+								showLine={showLine}
+								isFirstPart={index === firstVisiblePartIndex && !showHeader}
+								isLastToolCall={isLastToolCall}
+								onNavigateToSession={onNavigateToSession}
+								compact={compact}
+							/>
+						);
+					})}
+
+					{shouldShowProgressUpdate && latestProgressUpdatePart && (
 						<MessagePartItem
-							key={part.id}
-							part={part}
-							showLine={showLine}
-							isFirstPart={index === firstVisiblePartIndex && !showHeader}
-							isLastToolCall={isLastToolCall}
-							onNavigateToSession={onNavigateToSession}
+							key={latestProgressUpdatePart.id}
+							part={latestProgressUpdatePart}
+							showLine={hasNextAssistantMessage}
+							isFirstPart={!hasVisibleNonProgressParts && !showHeader}
+							isLastProgressUpdate
 							compact={compact}
 						/>
-					);
-				})}
-
-				{shouldShowProgressUpdate && latestProgressUpdatePart && (
-					<MessagePartItem
-						key={latestProgressUpdatePart.id}
-						part={latestProgressUpdatePart}
-						showLine={hasNextAssistantMessage}
-						isFirstPart={!hasVisibleNonProgressParts && !showHeader}
-						isLastProgressUpdate
-						compact={compact}
-					/>
-				)}
+					)}
 
 					{shouldShowLoadingFallback && (
 						<div className="flex gap-3 pb-2 relative">

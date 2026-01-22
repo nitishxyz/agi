@@ -55,13 +55,26 @@ export async function performAutoCompaction(
 			`[compaction] Using session model ${provider}/${modelId} for auto-compaction`,
 		);
 
-		const auth = await getAuth(provider as 'anthropic' | 'openai' | 'google' | 'openrouter' | 'opencode' | 'solforge' | 'zai' | 'zai-coding', cfg.projectRoot);
+		const auth = await getAuth(
+			provider as
+				| 'anthropic'
+				| 'openai'
+				| 'google'
+				| 'openrouter'
+				| 'opencode'
+				| 'solforge'
+				| 'zai'
+				| 'zai-coding',
+			cfg.projectRoot,
+		);
 		const needsSpoof = auth?.type === 'oauth';
 		const spoofPrompt = needsSpoof
 			? getProviderSpoofPrompt(provider as 'anthropic' | 'openai')
 			: undefined;
 
-		debugLog(`[compaction] OAuth mode: ${needsSpoof}, spoof: ${spoofPrompt ? 'yes' : 'no'}`);
+		debugLog(
+			`[compaction] OAuth mode: ${needsSpoof}, spoof: ${spoofPrompt ? 'yes' : 'no'}`,
+		);
 
 		const model = await resolveModel(
 			provider as Parameters<typeof resolveModel>[0],
@@ -70,9 +83,7 @@ export async function performAutoCompaction(
 		);
 
 		const compactionPrompt = getCompactionSystemPrompt();
-		const systemPrompt = spoofPrompt
-			? spoofPrompt
-			: compactionPrompt;
+		const systemPrompt = spoofPrompt ? spoofPrompt : compactionPrompt;
 		const userInstructions = spoofPrompt
 			? `${compactionPrompt}\n\nIMPORTANT: Generate a comprehensive summary. This will replace the detailed conversation history.`
 			: 'IMPORTANT: Generate a comprehensive summary. This will replace the detailed conversation history.';

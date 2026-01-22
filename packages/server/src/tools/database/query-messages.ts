@@ -6,26 +6,44 @@ import { eq, desc, asc, gte, lte, and, like, count, sql } from 'drizzle-orm';
 
 const inputSchema = z.object({
 	sessionId: z.string().optional().describe('Filter by specific session ID'),
-	role: z.enum(['user', 'assistant', 'system', 'tool']).optional().describe('Filter by message role'),
+	role: z
+		.enum(['user', 'assistant', 'system', 'tool'])
+		.optional()
+		.describe('Filter by message role'),
 	search: z.string().optional().describe('Full-text search in message content'),
-	toolName: z.string().optional().describe('Filter by tool calls with this name'),
-	limit: z.number().min(1).max(100).default(50).describe('Max messages to return'),
+	toolName: z
+		.string()
+		.optional()
+		.describe('Filter by tool calls with this name'),
+	limit: z
+		.number()
+		.min(1)
+		.max(100)
+		.default(50)
+		.describe('Max messages to return'),
 	offset: z.number().min(0).default(0).describe('Offset for pagination'),
-	startDate: z.string().optional().describe('Filter messages created after this ISO date'),
-	endDate: z.string().optional().describe('Filter messages created before this ISO date'),
+	startDate: z
+		.string()
+		.optional()
+		.describe('Filter messages created after this ISO date'),
+	endDate: z
+		.string()
+		.optional()
+		.describe('Filter messages created before this ISO date'),
 });
 
 export function buildQueryMessagesTool(projectRoot: string) {
 	return {
 		name: 'query_messages',
 		tool: tool({
-			description: 'Search messages across sessions. Find specific conversations, tool calls, or content patterns in session history.',
+			description:
+				'Search messages across sessions. Find specific conversations, tool calls, or content patterns in session history.',
 			inputSchema,
 			async execute(input) {
 				const db = await getDb(projectRoot);
-				
+
 				const conditions = [];
-				
+
 				if (input.sessionId) {
 					conditions.push(eq(messages.sessionId, input.sessionId));
 				} else {
@@ -33,24 +51,26 @@ export function buildQueryMessagesTool(projectRoot: string) {
 						.select({ id: sessions.id })
 						.from(sessions)
 						.where(eq(sessions.projectPath, projectRoot));
-					conditions.push(sql`${messages.sessionId} IN (SELECT id FROM sessions WHERE project_path = ${projectRoot})`);
+					conditions.push(
+						sql`${messages.sessionId} IN (SELECT id FROM sessions WHERE project_path = ${projectRoot})`,
+					);
 				}
-				
+
 				if (input.role) {
 					conditions.push(eq(messages.role, input.role));
 				}
-				
+
 				if (input.startDate) {
 					const startTs = new Date(input.startDate).getTime();
 					conditions.push(gte(messages.createdAt, startTs));
 				}
-				
+
 				if (input.endDate) {
 					const endTs = new Date(input.endDate).getTime();
 					conditions.push(lte(messages.createdAt, endTs));
 				}
-				
-				let rows = await db
+
+				const rows = await db
 					.select({
 						id: messages.id,
 						sessionId: messages.sessionId,
@@ -66,7 +86,7 @@ export function buildQueryMessagesTool(projectRoot: string) {
 					.orderBy(desc(messages.createdAt))
 					.limit(input.limit * 2)
 					.offset(input.offset);
-				
+
 				const messagesWithContent = await Promise.all(
 					rows.map(async (msg) => {
 						const parts = await db
@@ -79,10 +99,10 @@ export function buildQueryMessagesTool(projectRoot: string) {
 							.where(eq(messageParts.messageId, msg.id))
 							.orderBy(asc(messageParts.index))
 							.limit(10);
-						
+
 						let contentPreview = '';
 						let hasMatchingTool = false;
-						
+
 						for (const part of parts) {
 							if (part.type === 'text' && part.content) {
 								contentPreview = part.content.slice(0, 300);
@@ -91,37 +111,42 @@ export function buildQueryMessagesTool(projectRoot: string) {
 								hasMatchingTool = true;
 							}
 						}
-						
+
 						if (input.toolName && !hasMatchingTool) {
 							return null;
 						}
-						
-						if (input.search && !contentPreview.toLowerCase().includes(input.search.toLowerCase())) {
+
+						if (
+							input.search &&
+							!contentPreview.toLowerCase().includes(input.search.toLowerCase())
+						) {
 							return null;
 						}
-						
+
 						const session = await db
 							.select({ title: sessions.title })
 							.from(sessions)
 							.where(eq(sessions.id, msg.sessionId))
 							.limit(1);
-						
+
 						return {
 							...msg,
 							sessionTitle: session[0]?.title ?? null,
 							contentPreview: contentPreview.slice(0, 200),
 						};
-					})
+					}),
 				);
-				
-				const filtered = messagesWithContent.filter((m): m is NonNullable<typeof m> => m !== null);
+
+				const filtered = messagesWithContent.filter(
+					(m): m is NonNullable<typeof m> => m !== null,
+				);
 				const limited = filtered.slice(0, input.limit);
-				
+
 				const countResult = await db
 					.select({ total: count() })
 					.from(messages)
 					.where(conditions.length > 0 ? and(...conditions) : undefined);
-				
+
 				return {
 					ok: true,
 					messages: limited,

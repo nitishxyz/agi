@@ -47,15 +47,16 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
 	setParentSessionId: (id) => {
 		const currentParentId = get().parentSessionId;
 		if (currentParentId !== id) {
-			set({ 
-				parentSessionId: id, 
+			set({
+				parentSessionId: id,
 				activeResearchSessionId: null,
 			});
 		}
 	},
 
-	reset: () => set({ 
-		activeResearchSessionId: null, 
-		parentSessionId: null,
-	}),
+	reset: () =>
+		set({
+			activeResearchSessionId: null,
+			parentSessionId: null,
+		}),
 }));

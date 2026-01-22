@@ -171,19 +171,21 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 
 	const toolsTimer = time('runner:discoverTools');
 	const allTools = await discoverProjectTools(cfg.projectRoot);
-	
+
 	if (opts.agent === 'research') {
 		// Get parent session ID for research sessions
 		const currentSession = sessionRows[0];
 		const parentSessionId = currentSession?.parentSessionId ?? null;
-		
+
 		const dbTools = buildDatabaseTools(cfg.projectRoot, parentSessionId);
 		for (const dt of dbTools) {
 			allTools.push(dt);
 		}
-		debugLog(`[tools] Added ${dbTools.length} database tools for research agent (parent: ${parentSessionId ?? 'none'})`);
+		debugLog(
+			`[tools] Added ${dbTools.length} database tools for research agent (parent: ${parentSessionId ?? 'none'})`,
+		);
 	}
-	
+
 	toolsTimer.end({ count: allTools.length });
 	const allowedNames = new Set([...(agentCfg.tools || []), 'finish']);
 	const gated = allTools.filter((tool) => allowedNames.has(tool.name));

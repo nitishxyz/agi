@@ -50,17 +50,21 @@ class ResearchApiClient {
 		return API_BASE_URL;
 	}
 
-	async listResearchSessions(parentSessionId: string): Promise<ResearchSessionsResponse> {
+	async listResearchSessions(
+		parentSessionId: string,
+	): Promise<ResearchSessionsResponse> {
 		const response = await fetch(
 			`${this.baseUrl}/v1/sessions/${parentSessionId}/research`,
 			{
 				method: 'GET',
 				headers: { 'Content-Type': 'application/json' },
-			}
+			},
 		);
 
 		if (!response.ok) {
-			const error = await response.json().catch(() => ({ error: 'Failed to fetch research sessions' }));
+			const error = await response
+				.json()
+				.catch(() => ({ error: 'Failed to fetch research sessions' }));
 			throw new Error(error.error || 'Failed to fetch research sessions');
 		}
 
@@ -69,7 +73,7 @@ class ResearchApiClient {
 
 	async createResearchSession(
 		parentSessionId: string,
-		data: { provider?: string; model?: string; title?: string }
+		data: { provider?: string; model?: string; title?: string },
 	): Promise<CreateResearchResponse> {
 		const response = await fetch(
 			`${this.baseUrl}/v1/sessions/${parentSessionId}/research`,
@@ -77,28 +81,31 @@ class ResearchApiClient {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(data),
-			}
+			},
 		);
 
 		if (!response.ok) {
-			const error = await response.json().catch(() => ({ error: 'Failed to create research session' }));
+			const error = await response
+				.json()
+				.catch(() => ({ error: 'Failed to create research session' }));
 			throw new Error(error.error || 'Failed to create research session');
 		}
 
 		return response.json();
 	}
 
-	async deleteResearchSession(researchId: string): Promise<{ success: boolean }> {
-		const response = await fetch(
-			`${this.baseUrl}/v1/research/${researchId}`,
-			{
-				method: 'DELETE',
-				headers: { 'Content-Type': 'application/json' },
-			}
-		);
+	async deleteResearchSession(
+		researchId: string,
+	): Promise<{ success: boolean }> {
+		const response = await fetch(`${this.baseUrl}/v1/research/${researchId}`, {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+		});
 
 		if (!response.ok) {
-			const error = await response.json().catch(() => ({ error: 'Failed to delete research session' }));
+			const error = await response
+				.json()
+				.catch(() => ({ error: 'Failed to delete research session' }));
 			throw new Error(error.error || 'Failed to delete research session');
 		}
 
@@ -108,7 +115,7 @@ class ResearchApiClient {
 	async injectContext(
 		parentSessionId: string,
 		researchSessionId: string,
-		label?: string
+		label?: string,
 	): Promise<InjectContextResponse> {
 		const response = await fetch(
 			`${this.baseUrl}/v1/sessions/${parentSessionId}/inject`,
@@ -116,11 +123,13 @@ class ResearchApiClient {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ researchSessionId, label }),
-			}
+			},
 		);
 
 		if (!response.ok) {
-			const error = await response.json().catch(() => ({ error: 'Failed to inject context' }));
+			const error = await response
+				.json()
+				.catch(() => ({ error: 'Failed to inject context' }));
 			throw new Error(error.error || 'Failed to inject context');
 		}
 
@@ -129,7 +138,7 @@ class ResearchApiClient {
 
 	async exportToNewSession(
 		researchId: string,
-		data?: { provider?: string; model?: string; agent?: string }
+		data?: { provider?: string; model?: string; agent?: string },
 	): Promise<ExportToSessionResponse> {
 		const response = await fetch(
 			`${this.baseUrl}/v1/research/${researchId}/export`,
@@ -137,11 +146,13 @@ class ResearchApiClient {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(data ?? {}),
-			}
+			},
 		);
 
 		if (!response.ok) {
-			const error = await response.json().catch(() => ({ error: 'Failed to export to session' }));
+			const error = await response
+				.json()
+				.catch(() => ({ error: 'Failed to export to session' }));
 			throw new Error(error.error || 'Failed to export to session');
 		}
 
@@ -172,7 +183,9 @@ export function useCreateResearchSession() {
 			data?: { provider?: string; model?: string; title?: string };
 		}) => researchApi.createResearchSession(parentSessionId, data ?? {}),
 		onSuccess: (_, { parentSessionId }) => {
-			queryClient.invalidateQueries({ queryKey: ['research', 'sessions', parentSessionId] });
+			queryClient.invalidateQueries({
+				queryKey: ['research', 'sessions', parentSessionId],
+			});
 		},
 	});
 }
@@ -181,7 +194,8 @@ export function useDeleteResearchSession() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (researchId: string) => researchApi.deleteResearchSession(researchId),
+		mutationFn: (researchId: string) =>
+			researchApi.deleteResearchSession(researchId),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['research', 'sessions'] });
 		},
@@ -202,7 +216,9 @@ export function useInjectContext() {
 			label?: string;
 		}) => researchApi.injectContext(parentSessionId, researchSessionId, label),
 		onSuccess: (_, { parentSessionId }) => {
-			queryClient.invalidateQueries({ queryKey: ['messages', parentSessionId] });
+			queryClient.invalidateQueries({
+				queryKey: ['messages', parentSessionId],
+			});
 		},
 	});
 }

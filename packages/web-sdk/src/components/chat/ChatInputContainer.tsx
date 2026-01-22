@@ -71,63 +71,64 @@ export const ChatInputContainer = memo(
 				(m) => m.id === model,
 			)?.reasoning;
 
-		const modelSupportsVision = allModels?.[provider]?.models?.find(
+			const modelSupportsVision = allModels?.[provider]?.models?.find(
 				(m) => m.id === model,
-		)?.vision;
+			)?.vision;
 
-		const queryClient = useQueryClient();
+			const queryClient = useQueryClient();
 
-		const researchContexts = useMemo(() => {
-			if (!messages) return [];
-			return messages
-				.filter(
-					(m) =>
-						m.role === 'system' &&
-						m.parts?.some(
+			const researchContexts = useMemo(() => {
+				if (!messages) return [];
+				return messages
+					.filter(
+						(m) =>
+							m.role === 'system' &&
+							m.parts?.some(
+								(p) =>
+									typeof p.content === 'string' &&
+									p.content.includes('<research-context'),
+							),
+					)
+					.map((m) => {
+						const part = m.parts?.find(
 							(p) =>
 								typeof p.content === 'string' &&
 								p.content.includes('<research-context'),
-						),
-				)
-				.map((m) => {
-					const part = m.parts?.find(
-						(p) =>
-							typeof p.content === 'string' &&
-							p.content.includes('<research-context'),
+						);
+						const content =
+							typeof part?.content === 'string' ? part.content : '';
+						const labelMatch = content.match(/label="([^"]+)"/);
+						return {
+							id: m.id,
+							label: labelMatch?.[1] || 'Research context',
+						};
+					});
+			}, [messages]);
+
+			const deleteResearchContext = useMutation({
+				mutationFn: async (messageId: string) => {
+					const response = await fetch(
+						`${API_BASE_URL}/v1/sessions/${sessionId}/queue/${messageId}`,
+						{ method: 'DELETE' },
 					);
-					const content = typeof part?.content === 'string' ? part.content : '';
-					const labelMatch = content.match(/label="([^"]+)"/);
-					return {
-						id: m.id,
-						label: labelMatch?.[1] || 'Research context',
-					};
-				});
-		}, [messages]);
+					if (!response.ok) {
+						throw new Error('Failed to delete research context');
+					}
+					return response.json();
+				},
+				onSuccess: () => {
+					queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+				},
+			});
 
-		const deleteResearchContext = useMutation({
-			mutationFn: async (messageId: string) => {
-				const response = await fetch(
-					`${API_BASE_URL}/v1/sessions/${sessionId}/queue/${messageId}`,
-					{ method: 'DELETE' },
-				);
-				if (!response.ok) {
-					throw new Error('Failed to delete research context');
-				}
-				return response.json();
-			},
-			onSuccess: () => {
-				queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
-			},
-		});
+			const handleResearchContextRemove = useCallback(
+				(messageId: string) => {
+					deleteResearchContext.mutate(messageId);
+				},
+				[deleteResearchContext],
+			);
 
-		const handleResearchContextRemove = useCallback(
-			(messageId: string) => {
-				deleteResearchContext.mutate(messageId);
-			},
-			[deleteResearchContext],
-		);
-
-		const providerAuthType = allModels?.[provider]?.authType;
+			const providerAuthType = allModels?.[provider]?.authType;
 
 			useEffect(() => {
 				if (session) {
@@ -344,10 +345,10 @@ export const ChatInputContainer = memo(
 						onAgentChange={handleAgentChange}
 						onProviderChange={handleProviderChange}
 						onModelChange={handleModelChange}
-					onModelSelectorChange={handleModelSelectorChange}
-				/>
-				<ChatInput
-					ref={chatInputRef}
+						onModelSelectorChange={handleModelSelectorChange}
+					/>
+					<ChatInput
+						ref={chatInputRef}
 						key={inputKey}
 						onSend={handleSendMessage}
 						onCommand={handleCommand}
@@ -364,13 +365,13 @@ export const ChatInputContainer = memo(
 						onFileRemove={removeFile}
 						isDragging={isDragging}
 						onPaste={handlePaste}
-				visionEnabled={modelSupportsVision}
-				modelName={model}
-				providerName={provider}
-				authType={providerAuthType}
-				researchContexts={researchContexts}
-				onResearchContextRemove={handleResearchContextRemove}
-			/>
+						visionEnabled={modelSupportsVision}
+						modelName={model}
+						providerName={provider}
+						authType={providerAuthType}
+						researchContexts={researchContexts}
+						onResearchContextRemove={handleResearchContextRemove}
+					/>
 				</>
 			);
 		},

@@ -202,14 +202,23 @@ function MessageLink({
 	);
 }
 
-function ArgsPreview({ args, toolName }: { args: Record<string, unknown>; toolName: string }) {
+function ArgsPreview({
+	args,
+	toolName,
+}: {
+	args: Record<string, unknown>;
+	toolName: string;
+}) {
 	const renderArg = (key: string, value: unknown) => {
 		if (value === undefined || value === null) return null;
 		if (typeof value === 'boolean' && !value) return null;
 		if (Array.isArray(value) && value.length === 0) return null;
-		
+
 		return (
-			<span key={key} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+			<span
+				key={key}
+				className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
+			>
 				<span className="opacity-60">{key}:</span>
 				<span className="text-foreground/80">
 					{typeof value === 'string' ? value : JSON.stringify(value)}
@@ -228,8 +237,8 @@ function ArgsPreview({ args, toolName }: { args: Record<string, unknown>; toolNa
 
 	const keysToShow = importantArgs[toolName] || Object.keys(args).slice(0, 3);
 	const argsToRender = keysToShow
-		.filter(k => args[k] !== undefined && args[k] !== null)
-		.map(k => renderArg(k, args[k]))
+		.filter((k) => args[k] !== undefined && args[k] !== null)
+		.map((k) => renderArg(k, args[k]))
 		.filter(Boolean);
 
 	if (argsToRender.length === 0) return null;
@@ -273,7 +282,9 @@ export function DatabaseToolRenderer({
 		return (
 			<div className="mt-2 mb-1">
 				{title && (
-					<div className="text-sm font-medium text-foreground mb-1.5">{title}</div>
+					<div className="text-sm font-medium text-foreground mb-1.5">
+						{title}
+					</div>
 				)}
 				{summary && (
 					<div className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
@@ -292,9 +303,13 @@ export function DatabaseToolRenderer({
 								className="w-full text-left px-3 py-2 rounded-lg border border-teal-500/30 bg-teal-500/5 hover:bg-teal-500/10 transition-colors group flex items-center justify-between gap-2"
 							>
 								<div>
-									<div className="font-medium text-sm text-foreground">{link.title}</div>
+									<div className="font-medium text-sm text-foreground">
+										{link.title}
+									</div>
 									{link.description && (
-										<div className="text-xs text-muted-foreground mt-0.5">{link.description}</div>
+										<div className="text-xs text-muted-foreground mt-0.5">
+											{link.description}
+										</div>
 									)}
 								</div>
 								{onNavigateToSession && (
@@ -324,7 +339,9 @@ export function DatabaseToolRenderer({
 			case 'search_history': {
 				const query = args.query as string | undefined;
 				const results = (result as { results?: SearchResult[] }).results || [];
-				const queryPreview = query ? `"${query.slice(0, 20)}${query.length > 20 ? '…' : ''}"` : '';
+				const queryPreview = query
+					? `"${query.slice(0, 20)}${query.length > 20 ? '…' : ''}"`
+					: '';
 				return `${results.length} result${results.length !== 1 ? 's' : ''}${queryPreview ? ` for ${queryPreview}` : ''}`;
 			}
 			case 'get_session_context': {
@@ -353,14 +370,14 @@ export function DatabaseToolRenderer({
 				const sessions =
 					(result as { sessions?: SessionResult[] }).sessions || [];
 				return (
-					<div className={compact ? "p-1" : "p-2"}>
+					<div className={compact ? 'p-1' : 'p-2'}>
 						{hasArgs && <ArgsPreview args={args} toolName={toolName} />}
 						{sessions.length === 0 ? (
 							<div className="text-xs text-muted-foreground">
 								No sessions found
 							</div>
 						) : (
-							<div className={compact ? "space-y-0.5" : "space-y-2"}>
+							<div className={compact ? 'space-y-0.5' : 'space-y-2'}>
 								{sessions.slice(0, compact ? 5 : 10).map((session) => (
 									<SessionLink
 										key={session.id}
@@ -380,73 +397,73 @@ export function DatabaseToolRenderer({
 				);
 			}
 
-		case 'query_messages': {
-			const messages =
-				(result as { messages?: MessageResult[] }).messages || [];
-			return (
-				<div className={compact ? "p-1" : "p-2"}>
-					{hasArgs && <ArgsPreview args={args} toolName={toolName} />}
-					{messages.length === 0 ? (
-						<div className="text-xs text-muted-foreground">
-							No messages found
-						</div>
-					) : (
-						<div className={compact ? "space-y-0.5" : "space-y-2"}>
-							{messages.slice(0, compact ? 5 : 10).map((msg) => (
-								<MessageLink
-									key={msg.id}
-									message={msg}
-									onNavigate={onNavigateToSession}
-									compact={compact}
-								/>
-							))}
-							{messages.length > (compact ? 5 : 10) && (
-								<div className="text-xs text-muted-foreground text-center">
-									+{messages.length - (compact ? 5 : 10)} more
-								</div>
-							)}
-						</div>
-					)}
-				</div>
-			);
-		}
+			case 'query_messages': {
+				const messages =
+					(result as { messages?: MessageResult[] }).messages || [];
+				return (
+					<div className={compact ? 'p-1' : 'p-2'}>
+						{hasArgs && <ArgsPreview args={args} toolName={toolName} />}
+						{messages.length === 0 ? (
+							<div className="text-xs text-muted-foreground">
+								No messages found
+							</div>
+						) : (
+							<div className={compact ? 'space-y-0.5' : 'space-y-2'}>
+								{messages.slice(0, compact ? 5 : 10).map((msg) => (
+									<MessageLink
+										key={msg.id}
+										message={msg}
+										onNavigate={onNavigateToSession}
+										compact={compact}
+									/>
+								))}
+								{messages.length > (compact ? 5 : 10) && (
+									<div className="text-xs text-muted-foreground text-center">
+										+{messages.length - (compact ? 5 : 10)} more
+									</div>
+								)}
+							</div>
+						)}
+					</div>
+				);
+			}
 
-		case 'search_history': {
-			const results = (result as { results?: SearchResult[] }).results || [];
-			const query = args.query as string | undefined;
-			return (
-				<div className={compact ? "p-1" : "p-2"}>
-					{query && !compact && (
-						<div className="flex items-center gap-1.5 text-xs mb-2 pb-2 border-b border-border">
-							<Search className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-							<span className="text-muted-foreground">Query:</span>
-							<span className="text-foreground font-medium">"{query}"</span>
-						</div>
-					)}
-					{results.length === 0 ? (
-						<div className="text-xs text-muted-foreground">
-							No results found
-						</div>
-					) : (
-						<div className={compact ? "space-y-0.5" : "space-y-2"}>
-							{results.slice(0, compact ? 5 : 10).map((r, i) => (
-								<MessageLink
-									key={`${r.sessionId}-${r.messageId}-${i}`}
-									message={r}
-									onNavigate={onNavigateToSession}
-									compact={compact}
-								/>
-							))}
-							{results.length > (compact ? 5 : 10) && (
-								<div className="text-xs text-muted-foreground text-center">
-									+{results.length - (compact ? 5 : 10)} more
-								</div>
-							)}
-						</div>
-					)}
-				</div>
-			);
-		}
+			case 'search_history': {
+				const results = (result as { results?: SearchResult[] }).results || [];
+				const query = args.query as string | undefined;
+				return (
+					<div className={compact ? 'p-1' : 'p-2'}>
+						{query && !compact && (
+							<div className="flex items-center gap-1.5 text-xs mb-2 pb-2 border-b border-border">
+								<Search className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+								<span className="text-muted-foreground">Query:</span>
+								<span className="text-foreground font-medium">"{query}"</span>
+							</div>
+						)}
+						{results.length === 0 ? (
+							<div className="text-xs text-muted-foreground">
+								No results found
+							</div>
+						) : (
+							<div className={compact ? 'space-y-0.5' : 'space-y-2'}>
+								{results.slice(0, compact ? 5 : 10).map((r, i) => (
+									<MessageLink
+										key={`${r.sessionId}-${r.messageId}-${i}`}
+										message={r}
+										onNavigate={onNavigateToSession}
+										compact={compact}
+									/>
+								))}
+								{results.length > (compact ? 5 : 10) && (
+									<div className="text-xs text-muted-foreground text-center">
+										+{results.length - (compact ? 5 : 10)} more
+									</div>
+								)}
+							</div>
+						)}
+					</div>
+				);
+			}
 
 			case 'get_session_context':
 			case 'get_parent_session': {
@@ -470,25 +487,31 @@ export function DatabaseToolRenderer({
 					}
 				).messages;
 
-			if (!session) {
-				return (
-					<div className={`text-xs text-muted-foreground ${compact ? "p-1" : "p-2"}`}>
-						Session not found
-					</div>
-				);
-			}
+				if (!session) {
+					return (
+						<div
+							className={`text-xs text-muted-foreground ${compact ? 'p-1' : 'p-2'}`}
+						>
+							Session not found
+						</div>
+					);
+				}
 
-			if (compact) {
-				return (
-					<div className="p-1">
-						<SessionLink session={session} onNavigate={onNavigateToSession} compact />
-					</div>
-				);
-			}
+				if (compact) {
+					return (
+						<div className="p-1">
+							<SessionLink
+								session={session}
+								onNavigate={onNavigateToSession}
+								compact
+							/>
+						</div>
+					);
+				}
 
-			return (
-				<div className="p-2 space-y-3">
-					<SessionLink session={session} onNavigate={onNavigateToSession} />
+				return (
+					<div className="p-2 space-y-3">
+						<SessionLink session={session} onNavigate={onNavigateToSession} />
 
 						{stats && (
 							<div className="flex gap-4 text-xs text-muted-foreground">
@@ -575,19 +598,19 @@ export function DatabaseToolRenderer({
 				<ToolErrorDisplay error={errorMessage} />
 			)}
 
-		{isExpanded && !hasToolError && (
-			<div className={compact ? "mt-1 ml-3" : "mt-2 ml-5"}>
-				{compact ? (
-					<div className="border border-border rounded-md overflow-hidden max-h-48 overflow-y-auto">
-						{renderContent()}
-					</div>
-				) : (
-					<ToolContentBox title="results" maxHeight="max-h-96">
-						{renderContent()}
-					</ToolContentBox>
-				)}
-			</div>
-		)}
+			{isExpanded && !hasToolError && (
+				<div className={compact ? 'mt-1 ml-3' : 'mt-2 ml-5'}>
+					{compact ? (
+						<div className="border border-border rounded-md overflow-hidden max-h-48 overflow-y-auto">
+							{renderContent()}
+						</div>
+					) : (
+						<ToolContentBox title="results" maxHeight="max-h-96">
+							{renderContent()}
+						</ToolContentBox>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }

@@ -23,11 +23,8 @@ export function registerSessionsRoutes(app: Hono) {
 			.where(
 				and(
 					eq(sessions.projectPath, cfg.projectRoot),
-					or(
-						eq(sessions.sessionType, 'main'),
-						isNull(sessions.sessionType)
-					)
-				)
+					or(eq(sessions.sessionType, 'main'), isNull(sessions.sessionType)),
+				),
 			)
 			.orderBy(desc(sessions.lastActiveAt), desc(sessions.createdAt));
 		const normalized = rows.map((r) => {
@@ -312,7 +309,9 @@ export function registerSessionsRoutes(app: Hono) {
 			const existingMsg = await db
 				.select()
 				.from(messages)
-				.where(and(eq(messages.id, messageId), eq(messages.sessionId, sessionId)))
+				.where(
+					and(eq(messages.id, messageId), eq(messages.sessionId, sessionId)),
+				)
 				.limit(1);
 
 			if (existingMsg.length > 0) {
@@ -321,9 +320,7 @@ export function registerSessionsRoutes(app: Hono) {
 					.delete(messageParts)
 					.where(eq(messageParts.messageId, messageId));
 				// Delete message
-				await db
-					.delete(messages)
-					.where(eq(messages.id, messageId));
+				await db.delete(messages).where(eq(messages.id, messageId));
 
 				return c.json({ success: true, removed: true, wasStored: true });
 			}

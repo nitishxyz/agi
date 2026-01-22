@@ -65,7 +65,10 @@ export function BashRenderer({
 				{!compact && (
 					<>
 						<ToolHeaderSeparator />
-						<span className="text-foreground/70 min-w-0 truncate font-mono text-[11px]" title={cmd}>
+						<span
+							className="text-foreground/70 min-w-0 truncate font-mono text-[11px]"
+							title={cmd}
+						>
 							{cmd}
 						</span>
 					</>
@@ -82,7 +85,9 @@ export function BashRenderer({
 						<ToolHeaderMeta>{timeStr}</ToolHeaderMeta>
 					</>
 				)}
-				{hasToolError && !compact && <ToolHeaderMeta>· {timeStr}</ToolHeaderMeta>}
+				{hasToolError && !compact && (
+					<ToolHeaderMeta>· {timeStr}</ToolHeaderMeta>
+				)}
 			</ToolHeader>
 
 			{isExpanded && hasToolError && errorMessage && (

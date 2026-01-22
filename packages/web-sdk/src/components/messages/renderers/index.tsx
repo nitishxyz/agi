@@ -129,16 +129,16 @@ export function ToolResultRenderer({
 			return <ErrorRenderer {...props} />;
 		case 'query_sessions':
 		case 'query_messages':
-	case 'search_history':
-	case 'get_session_context':
-	case 'get_parent_session':
-	case 'present_action':
-		return (
-			<DatabaseToolRenderer
-				toolName={toolName}
-				{...props}
-				onNavigateToSession={onNavigateToSession}
-			/>
+		case 'search_history':
+		case 'get_session_context':
+		case 'get_parent_session':
+		case 'present_action':
+			return (
+				<DatabaseToolRenderer
+					toolName={toolName}
+					{...props}
+					onNavigateToSession={onNavigateToSession}
+				/>
 			);
 		default:
 			return <GenericRenderer {...props} toolName={toolName} />;

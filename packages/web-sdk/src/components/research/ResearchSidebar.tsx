@@ -54,7 +54,9 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 	const [showHistory, setShowHistory] = useState(false);
 	const [inputValue, setInputValue] = useState('');
 	const [showModelSelector, setShowModelSelector] = useState(false);
-	const [injectionStatus, setInjectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+	const [injectionStatus, setInjectionStatus] = useState<
+		'idle' | 'success' | 'error'
+	>('idle');
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -174,7 +176,10 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 
 		// Generate a descriptive label with timestamp
 		const now = new Date();
-		const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		const timeStr = now.toLocaleTimeString([], {
+			hour: '2-digit',
+			minute: '2-digit',
+		});
 		const label = `Research ${timeStr}`;
 
 		try {
@@ -186,13 +191,21 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 			setInjectionStatus('success');
 			setTimeout(() => setInjectionStatus('idle'), 5000);
 			// Invalidate parent messages to update the UI
-			queryClient.invalidateQueries({ queryKey: ['messages', parentSessionId] });
+			queryClient.invalidateQueries({
+				queryKey: ['messages', parentSessionId],
+			});
 		} catch (err) {
 			console.error('Failed to inject context:', err);
 			setInjectionStatus('error');
 			setTimeout(() => setInjectionStatus('idle'), 3000);
 		}
-	}, [parentSessionId, activeResearchSessionId, injectMutation, parentMessagesData, queryClient]);
+	}, [
+		parentSessionId,
+		activeResearchSessionId,
+		injectMutation,
+		parentMessagesData,
+		queryClient,
+	]);
 
 	const handleExport = useCallback(async () => {
 		if (!activeResearchSessionId) return;
@@ -296,7 +309,8 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 	const messages = messagesData ?? [];
 
 	const currentProviderLabel =
-		allModels?.[activeSession?.provider ?? '']?.label ?? activeSession?.provider;
+		allModels?.[activeSession?.provider ?? '']?.label ??
+		activeSession?.provider;
 	const currentModelLabel =
 		allModels?.[activeSession?.provider ?? '']?.models.find(
 			(m) => m.id === activeSession?.model,
@@ -481,65 +495,71 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 									) : (
 										<ArrowUp className="w-4 h-4" />
 									)}
-						</button>
-					</div>
-				</div>
+								</button>
+							</div>
+						</div>
 
-				{/* Injection status banner */}
-				{injectionStatus === 'success' && (
-					<div className="flex items-center gap-2 mt-2 px-2 py-1.5 text-xs rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-600 dark:text-teal-400">
-						<Check className="w-3 h-3 flex-shrink-0" />
-						<span className="flex-1">Context injected — will be used on next request</span>
-						<button
-							type="button"
-							onClick={() => setInjectionStatus('idle')}
-							className="hover:text-teal-500"
-						>
-							<X className="w-3 h-3" />
-						</button>
-					</div>
-				)}
-				{injectionStatus === 'error' && (
-					<div className="flex items-center gap-2 mt-2 px-2 py-1.5 text-xs rounded-lg bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400">
-						<X className="w-3 h-3 flex-shrink-0" />
-						<span className="flex-1">Failed to inject context</span>
-						<button
-							type="button"
-							onClick={() => setInjectionStatus('idle')}
-							className="hover:text-red-500"
-						>
-							<X className="w-3 h-3" />
-						</button>
-					</div>
-				)}
-
-			{/* Action buttons */}
-			<div className="flex gap-2 mt-2">
-					<button
-						type="button"
-						onClick={handleInject}
-						disabled={
-							!activeResearchSessionId ||
-							injectMutation.isPending ||
-							isGenerating ||
-							isAlreadyInjected
-						}
-						className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-							isAlreadyInjected
-								? 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/30'
-								: 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
-						}`}
-						title={isAlreadyInjected ? "Already injected into main session" : "Inject findings into main session"}
-					>
-						{injectMutation.isPending ? (
-							<Loader2 className="w-3 h-3 animate-spin" />
-						) : isAlreadyInjected ? (
-							<Check className="w-3 h-3" />
-						) : (
-							<ArrowDownToLine className="w-3 h-3" />
+						{/* Injection status banner */}
+						{injectionStatus === 'success' && (
+							<div className="flex items-center gap-2 mt-2 px-2 py-1.5 text-xs rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-600 dark:text-teal-400">
+								<Check className="w-3 h-3 flex-shrink-0" />
+								<span className="flex-1">
+									Context injected — will be used on next request
+								</span>
+								<button
+									type="button"
+									onClick={() => setInjectionStatus('idle')}
+									className="hover:text-teal-500"
+								>
+									<X className="w-3 h-3" />
+								</button>
+							</div>
 						)}
-						{isAlreadyInjected ? 'Injected' : 'Inject'}
-					</button>
+						{injectionStatus === 'error' && (
+							<div className="flex items-center gap-2 mt-2 px-2 py-1.5 text-xs rounded-lg bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400">
+								<X className="w-3 h-3 flex-shrink-0" />
+								<span className="flex-1">Failed to inject context</span>
+								<button
+									type="button"
+									onClick={() => setInjectionStatus('idle')}
+									className="hover:text-red-500"
+								>
+									<X className="w-3 h-3" />
+								</button>
+							</div>
+						)}
+
+						{/* Action buttons */}
+						<div className="flex gap-2 mt-2">
+							<button
+								type="button"
+								onClick={handleInject}
+								disabled={
+									!activeResearchSessionId ||
+									injectMutation.isPending ||
+									isGenerating ||
+									isAlreadyInjected
+								}
+								className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+									isAlreadyInjected
+										? 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/30'
+										: 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+								}`}
+								title={
+									isAlreadyInjected
+										? 'Already injected into main session'
+										: 'Inject findings into main session'
+								}
+							>
+								{injectMutation.isPending ? (
+									<Loader2 className="w-3 h-3 animate-spin" />
+								) : isAlreadyInjected ? (
+									<Check className="w-3 h-3" />
+								) : (
+									<ArrowDownToLine className="w-3 h-3" />
+								)}
+								{isAlreadyInjected ? 'Injected' : 'Inject'}
+							</button>
 							<button
 								type="button"
 								onClick={handleExport}

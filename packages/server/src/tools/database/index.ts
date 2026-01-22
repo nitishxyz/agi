@@ -5,7 +5,7 @@ import { buildSearchHistoryTool } from './search-history.ts';
 import { buildGetParentSessionTool } from './get-parent-session.ts';
 import { buildPresentActionTool } from './present-session-links.ts';
 
-export type DatabaseTool = 
+export type DatabaseTool =
 	| ReturnType<typeof buildQuerySessionsTool>
 	| ReturnType<typeof buildQueryMessagesTool>
 	| ReturnType<typeof buildGetSessionContextTool>
@@ -13,7 +13,10 @@ export type DatabaseTool =
 	| ReturnType<typeof buildPresentActionTool>
 	| ReturnType<typeof buildGetParentSessionTool>;
 
-export function buildDatabaseTools(projectRoot: string, parentSessionId?: string | null): DatabaseTool[] {
+export function buildDatabaseTools(
+	projectRoot: string,
+	parentSessionId?: string | null,
+): DatabaseTool[] {
 	const tools: DatabaseTool[] = [
 		buildQuerySessionsTool(projectRoot),
 		buildQueryMessagesTool(projectRoot),

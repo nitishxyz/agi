@@ -5,21 +5,34 @@ import { sessions, messages, messageParts } from '@agi-cli/database/schema';
 import { eq, asc, count } from 'drizzle-orm';
 
 const inputSchema = z.object({
-	includeMessages: z.boolean().default(true).describe('Include message content from the parent session'),
-	messageLimit: z.number().min(1).max(100).default(50).describe('Max messages to include'),
+	includeMessages: z
+		.boolean()
+		.default(true)
+		.describe('Include message content from the parent session'),
+	messageLimit: z
+		.number()
+		.min(1)
+		.max(100)
+		.default(50)
+		.describe('Max messages to include'),
 });
 
-export function buildGetParentSessionTool(projectRoot: string, parentSessionId: string | null) {
+export function buildGetParentSessionTool(
+	projectRoot: string,
+	parentSessionId: string | null,
+) {
 	return {
 		name: 'get_parent_session',
 		tool: tool({
-			description: 'Get the context of the parent session that this research session is attached to. Use this to understand what the user was working on and what they might be asking about. This is the FIRST tool you should call when the user asks about "this session" or "current work".',
+			description:
+				'Get the context of the parent session that this research session is attached to. Use this to understand what the user was working on and what they might be asking about. This is the FIRST tool you should call when the user asks about "this session" or "current work".',
 			inputSchema,
 			async execute(input) {
 				if (!parentSessionId) {
 					return {
 						ok: false,
-						error: 'No parent session - this research session is not attached to a main session',
+						error:
+							'No parent session - this research session is not attached to a main session',
 					};
 				}
 
@@ -64,7 +77,8 @@ export function buildGetParentSessionTool(projectRoot: string, parentSessionId: 
 					}
 				}
 
-				const totalTokens = (session.totalInputTokens ?? 0) + (session.totalOutputTokens ?? 0);
+				const totalTokens =
+					(session.totalInputTokens ?? 0) + (session.totalOutputTokens ?? 0);
 
 				const stats = {
 					totalMessages: msgCountResult[0]?.count ?? 0,
@@ -75,13 +89,15 @@ export function buildGetParentSessionTool(projectRoot: string, parentSessionId: 
 					totalOutputTokens: session.totalOutputTokens ?? 0,
 				};
 
-				let messagesData: Array<{
-					id: string;
-					role: string;
-					content: string;
-					toolCalls?: Array<{ name: string; args?: string }>;
-					createdAt: number;
-				}> | undefined;
+				let messagesData:
+					| Array<{
+							id: string;
+							role: string;
+							content: string;
+							toolCalls?: Array<{ name: string; args?: string }>;
+							createdAt: number;
+					  }>
+					| undefined;
 
 				if (input.includeMessages) {
 					const msgRows = await db
@@ -138,7 +154,7 @@ export function buildGetParentSessionTool(projectRoot: string, parentSessionId: 
 								...(toolCalls.length > 0 ? { toolCalls } : {}),
 								createdAt: msg.createdAt,
 							};
-						})
+						}),
 					);
 				}
 

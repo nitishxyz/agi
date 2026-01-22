@@ -64,12 +64,12 @@ export const AppLayout = memo(function AppLayout({
 
 				{/* Tab buttons - always visible, stacked vertically, full height */}
 				<div className="flex flex-col w-12 border-l border-border bg-background">
-				<GitSidebarToggle />
-				<SessionFilesSidebarToggle sessionId={sessionId} />
-				<TerminalsSidebarToggle />
-				<ResearchSidebarToggle parentSessionId={sessionId} />
-				<div className="flex-1" />
-				<div className="h-12 border-t border-border flex items-center justify-center">
+					<GitSidebarToggle />
+					<SessionFilesSidebarToggle sessionId={sessionId} />
+					<TerminalsSidebarToggle />
+					<ResearchSidebarToggle parentSessionId={sessionId} />
+					<div className="flex-1" />
+					<div className="h-12 border-t border-border flex items-center justify-center">
 						<Button
 							variant="ghost"
 							size="icon"
