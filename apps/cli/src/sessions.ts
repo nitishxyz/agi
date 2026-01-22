@@ -53,10 +53,7 @@ export async function runSessions(opts: SessionsOptions = {}) {
 	}
 
 	if (!rows.length) {
-		Bun.write(
-			Bun.stdout,
-			'No sessions found. Start one with: agi "<prompt>"\n',
-		);
+		Bun.write(Bun.stdout, 'No sessions found. Start one with: agi ask "<prompt>"\n');
 		return;
 	}
 
@@ -64,6 +61,7 @@ export async function runSessions(opts: SessionsOptions = {}) {
 		intro('Select a session');
 		const choice = await select({
 			message: 'Choose a session:',
+			maxItems: 10,
 			options: rows.map((r) => ({
 				value: r.id as string,
 				label: formatRow(r),
