@@ -6,8 +6,10 @@ import {
 	useRef,
 	forwardRef,
 	useImperativeHandle,
+	useMemo,
 } from 'react';
-import { useSendMessage } from '../../hooks/useMessages';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSendMessage, useMessages } from '../../hooks/useMessages';
 import { useSession, useUpdateSession } from '../../hooks/useSessions';
 import { useAllModels } from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -17,6 +19,7 @@ import { useFileUpload } from '../../hooks/useFileUpload';
 import { useQueueStore } from '../../stores/queueStore';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
+import { API_BASE_URL } from '../../lib/config';
 
 interface ChatInputContainerProps {
 	sessionId: string;
@@ -47,6 +50,7 @@ export const ChatInputContainer = memo(
 			}>(null);
 
 			const sendMessage = useSendMessage(sessionId);
+			const { data: messages } = useMessages(sessionId);
 			const updateSession = useUpdateSession(sessionId);
 			const { data: allModels } = useAllModels();
 			const { preferences } = usePreferences();
@@ -67,11 +71,63 @@ export const ChatInputContainer = memo(
 				(m) => m.id === model,
 			)?.reasoning;
 
-			const modelSupportsVision = allModels?.[provider]?.models?.find(
+		const modelSupportsVision = allModels?.[provider]?.models?.find(
 				(m) => m.id === model,
-			)?.vision;
+		)?.vision;
 
-			const providerAuthType = allModels?.[provider]?.authType;
+		const queryClient = useQueryClient();
+
+		const researchContexts = useMemo(() => {
+			if (!messages) return [];
+			return messages
+				.filter(
+					(m) =>
+						m.role === 'system' &&
+						m.parts?.some(
+							(p) =>
+								typeof p.content === 'string' &&
+								p.content.includes('<research-context'),
+						),
+				)
+				.map((m) => {
+					const part = m.parts?.find(
+						(p) =>
+							typeof p.content === 'string' &&
+							p.content.includes('<research-context'),
+					);
+					const content = typeof part?.content === 'string' ? part.content : '';
+					const labelMatch = content.match(/label="([^"]+)"/);
+					return {
+						id: m.id,
+						label: labelMatch?.[1] || 'Research context',
+					};
+				});
+		}, [messages]);
+
+		const deleteResearchContext = useMutation({
+			mutationFn: async (messageId: string) => {
+				const response = await fetch(
+					`${API_BASE_URL}/v1/sessions/${sessionId}/queue/${messageId}`,
+					{ method: 'DELETE' },
+				);
+				if (!response.ok) {
+					throw new Error('Failed to delete research context');
+				}
+				return response.json();
+			},
+			onSuccess: () => {
+				queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+			},
+		});
+
+		const handleResearchContextRemove = useCallback(
+			(messageId: string) => {
+				deleteResearchContext.mutate(messageId);
+			},
+			[deleteResearchContext],
+		);
+
+		const providerAuthType = allModels?.[provider]?.authType;
 
 			useEffect(() => {
 				if (session) {
@@ -288,10 +344,10 @@ export const ChatInputContainer = memo(
 						onAgentChange={handleAgentChange}
 						onProviderChange={handleProviderChange}
 						onModelChange={handleModelChange}
-						onModelSelectorChange={handleModelSelectorChange}
-					/>
-					<ChatInput
-						ref={chatInputRef}
+					onModelSelectorChange={handleModelSelectorChange}
+				/>
+				<ChatInput
+					ref={chatInputRef}
 						key={inputKey}
 						onSend={handleSendMessage}
 						onCommand={handleCommand}
@@ -308,11 +364,13 @@ export const ChatInputContainer = memo(
 						onFileRemove={removeFile}
 						isDragging={isDragging}
 						onPaste={handlePaste}
-						visionEnabled={modelSupportsVision}
-						modelName={model}
-						providerName={provider}
-						authType={providerAuthType}
-					/>
+				visionEnabled={modelSupportsVision}
+				modelName={model}
+				providerName={provider}
+				authType={providerAuthType}
+				researchContexts={researchContexts}
+				onResearchContextRemove={handleResearchContextRemove}
+			/>
 				</>
 			);
 		},

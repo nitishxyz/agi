@@ -306,6 +306,32 @@ export function registerSessionsRoutes(app: Hono) {
 			});
 		}
 
+		// If not queued or running, try to delete directly from database
+		// This handles system messages (like injected research context)
+		try {
+			const existingMsg = await db
+				.select()
+				.from(messages)
+				.where(and(eq(messages.id, messageId), eq(messages.sessionId, sessionId)))
+				.limit(1);
+
+			if (existingMsg.length > 0) {
+				// Delete message parts first (foreign key constraint)
+				await db
+					.delete(messageParts)
+					.where(eq(messageParts.messageId, messageId));
+				// Delete message
+				await db
+					.delete(messages)
+					.where(eq(messages.id, messageId));
+
+				return c.json({ success: true, removed: true, wasStored: true });
+			}
+		} catch (err) {
+			logger.error('Failed to delete message from DB', err);
+			return c.json({ success: false, error: 'Failed to delete message' }, 500);
+		}
+
 		return c.json({ success: false, removed: false }, 404);
 	});
 }

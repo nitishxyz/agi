@@ -18,6 +18,7 @@ import {
 	Brain,
 	FileText,
 	FileIcon,
+	FlaskConical,
 } from 'lucide-react';
 import { Textarea } from '../ui/Textarea';
 import { FileMentionPopup } from './FileMentionPopup';
@@ -49,6 +50,8 @@ interface ChatInputProps {
 	modelName?: string;
 	providerName?: string;
 	authType?: 'api' | 'oauth' | 'wallet';
+	researchContexts?: Array<{ id: string; label: string }>;
+	onResearchContextRemove?: (id: string) => void;
 }
 
 export const ChatInput = memo(
@@ -74,6 +77,8 @@ export const ChatInput = memo(
 			modelName,
 			providerName,
 			authType,
+			researchContexts = [],
+			onResearchContextRemove,
 		},
 		ref,
 	) {
@@ -337,13 +342,13 @@ export const ChatInput = memo(
 								NORMAL
 							</div>
 						)}
-						{preferences.vimMode && vimMode === 'insert' && (
-							<div className="absolute -top-6 right-0 px-2 py-0.5 text-xs font-mono font-semibold bg-green-500/90 text-white rounded shadow-sm">
-								INSERT
-							</div>
-						)}
-						<div
-							className={`relative flex flex-col rounded-3xl p-1 transition-all touch-manipulation ${
+				{preferences.vimMode && vimMode === 'insert' && (
+					<div className="absolute -top-6 right-0 px-2 py-0.5 text-xs font-mono font-semibold bg-green-500/90 text-white rounded shadow-sm">
+						INSERT
+					</div>
+				)}
+				<div
+					className={`relative flex flex-col rounded-3xl p-1 transition-all touch-manipulation ${
 								isPlanMode
 									? 'bg-slate-100 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-700 focus-within:border-slate-400 dark:focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-300 dark:focus-within:ring-slate-700'
 									: 'bg-card border border-border focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40'
@@ -388,13 +393,36 @@ export const ChatInput = memo(
 											>
 												<X className="w-3 h-3 text-white" />
 											</button>
-										</div>
-									))}
 								</div>
-							)}
+							))}
+						</div>
+					)}
 
-							<div className="flex items-end gap-1">
-								{onConfigClick && (
+					{researchContexts.length > 0 && (
+						<div className="flex flex-wrap gap-2 px-3 pt-2 pb-1">
+							{researchContexts.map((ctx) => (
+								<div
+									key={ctx.id}
+									className="relative group flex items-center gap-2 px-3 py-2 rounded-lg bg-teal-500/10 border border-teal-500/30 max-w-[200px]"
+								>
+									<FlaskConical className="w-4 h-4 text-teal-500 flex-shrink-0" />
+									<span className="text-xs truncate text-teal-600 dark:text-teal-400">{ctx.label}</span>
+									{onResearchContextRemove && (
+										<button
+											type="button"
+											onClick={() => onResearchContextRemove(ctx.id)}
+											className="absolute top-0 right-0 p-0.5 bg-black/60 rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity"
+										>
+											<X className="w-3 h-3 text-white" />
+										</button>
+									)}
+								</div>
+							))}
+						</div>
+					)}
+
+					<div className="flex items-end gap-1">
+						{onConfigClick && (
 									<button
 										type="button"
 										onClick={onConfigClick}
