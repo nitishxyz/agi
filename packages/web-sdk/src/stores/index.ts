@@ -5,3 +5,4 @@ export * from './confirmationStore';
 export * from './sessionFilesStore';
 export * from './queueStore';
 export * from './researchStore';
+export * from './pendingResearchStore';

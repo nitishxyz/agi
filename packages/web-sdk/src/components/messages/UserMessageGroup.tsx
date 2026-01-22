@@ -8,6 +8,7 @@ import {
 	Clock,
 	Trash2,
 	RotateCcw,
+	FlaskConical,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,6 +16,7 @@ import type { Message } from '../../types/api';
 import { useMessageQueuePosition } from '../../hooks/useQueueState';
 import { useQueueStore } from '../../stores/queueStore';
 import { apiClient } from '../../lib/api-client';
+import { parseResearchContext } from '../../lib/parseResearchContext';
 
 interface UserMessageGroupProps {
 	sessionId?: string;
@@ -59,18 +61,21 @@ export const UserMessageGroup = memo(
 		const fileParts = parts.filter((p) => p.type === 'file');
 
 		const firstTextPart = textParts[0];
-		let content = '';
+		let rawContent = '';
 
 		if (firstTextPart) {
 			const data = firstTextPart.contentJson || firstTextPart.content;
 			if (data && typeof data === 'object' && 'text' in data) {
-				content = String(data.text);
+				rawContent = String(data.text);
 			} else if (typeof data === 'string') {
-				content = data;
+				rawContent = data;
 			} else if (data) {
-				content = JSON.stringify(data, null, 2);
+				rawContent = JSON.stringify(data, null, 2);
 			}
 		}
+
+		const { researchContexts: parsedResearchContexts, cleanContent: content } =
+			parseResearchContext(rawContent);
 
 		const images: Array<{ id: string; src: string }> = [];
 		for (const part of imageParts) {
@@ -116,8 +121,10 @@ export const UserMessageGroup = memo(
 		const hasContent = content.trim().length > 0;
 		const hasImages = images.length > 0;
 		const hasFiles = files.length > 0;
+		const hasResearchContexts = parsedResearchContexts.length > 0;
 
-		if (!hasContent && !hasImages && !hasFiles) return null;
+		if (!hasContent && !hasImages && !hasFiles && !hasResearchContexts)
+			return null;
 
 		const handleCancel = async () => {
 			if (!sessionId || !nextAssistantMessageId) return;
@@ -201,6 +208,21 @@ export const UserMessageGroup = memo(
 												)}
 												<span className="text-xs truncate max-w-[150px]">
 													{file.name}
+												</span>
+											</div>
+										))}
+									</div>
+								)}
+								{hasResearchContexts && (
+									<div className="flex flex-wrap gap-2 mb-2">
+										{parsedResearchContexts.map((ctx) => (
+											<div
+												key={ctx.id}
+												className="flex items-center gap-2 px-3 py-2 rounded-lg bg-teal-500/10 border border-teal-500/30"
+											>
+												<FlaskConical className="w-4 h-4 text-teal-500 flex-shrink-0" />
+												<span className="text-xs text-teal-600 dark:text-teal-400">
+													{ctx.label}
 												</span>
 											</div>
 										))}

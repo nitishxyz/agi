@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '../lib/config';
+import { usePendingResearchStore } from '../stores/pendingResearchStore';
 
 export interface ResearchSession {
 	id: string;
@@ -21,7 +22,10 @@ export interface CreateResearchResponse {
 }
 
 export interface InjectContextResponse {
-	injectedMessageId: string;
+	content: string;
+	label: string;
+	sessionId: string;
+	parentSessionId: string;
 	tokenEstimate: number;
 }
 
@@ -203,7 +207,7 @@ export function useDeleteResearchSession() {
 }
 
 export function useInjectContext() {
-	const queryClient = useQueryClient();
+	const addContext = usePendingResearchStore((state) => state.addContext);
 
 	return useMutation({
 		mutationFn: ({
@@ -215,9 +219,12 @@ export function useInjectContext() {
 			researchSessionId: string;
 			label?: string;
 		}) => researchApi.injectContext(parentSessionId, researchSessionId, label),
-		onSuccess: (_, { parentSessionId }) => {
-			queryClient.invalidateQueries({
-				queryKey: ['messages', parentSessionId],
+		onSuccess: (data, { parentSessionId }) => {
+			addContext(parentSessionId, {
+				id: data.sessionId,
+				sessionId: data.sessionId,
+				label: data.label,
+				content: data.content,
 			});
 		},
 	});

@@ -233,50 +233,13 @@ export function registerResearchRoutes(app: Hono) {
 
 		const injectedContext = `<research-context from="${researchSessionId}" label="${label}" injected-at="${new Date().toISOString()}">\n${contextContent}</research-context>`;
 
-		const msgId = crypto.randomUUID();
-		const partId = crypto.randomUUID();
-		const now = Date.now();
-
-		await db.insert(messages).values({
-			id: msgId,
-			sessionId: parentId,
-			role: 'system',
-			status: 'complete',
-			agent: parentRows[0].agent,
-			provider: parentRows[0].provider,
-			model: parentRows[0].model,
-			createdAt: now,
-			completedAt: now,
-		});
-
-		await db.insert(messageParts).values({
-			id: partId,
-			messageId: msgId,
-			index: 0,
-			type: 'text',
-			content: injectedContext,
-			agent: parentRows[0].agent,
-			provider: parentRows[0].provider,
-			model: parentRows[0].model,
-		});
-
-		await db
-			.update(sessions)
-			.set({ lastActiveAt: now })
-			.where(eq(sessions.id, parentId));
-
-		publish({
-			type: 'message.created',
-			sessionId: parentId,
-			payload: {
-				id: msgId,
-				role: 'system',
-				content: injectedContext,
-			},
-		});
-
+		// Return the content to the client instead of creating a system message
+		// The client will store it in zustand and include it in the next user message
 		return c.json({
-			injectedMessageId: msgId,
+			content: injectedContext,
+			label,
+			sessionId: researchSessionId,
+			parentSessionId: parentId,
 			tokenEstimate: Math.ceil(injectedContext.length / 4),
 		});
 	});

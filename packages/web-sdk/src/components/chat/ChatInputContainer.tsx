@@ -8,7 +8,6 @@ import {
 	useImperativeHandle,
 	useMemo,
 } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSendMessage, useMessages } from '../../hooks/useMessages';
 import { useSession, useUpdateSession } from '../../hooks/useSessions';
 import { useAllModels } from '../../hooks/useConfig';
@@ -17,9 +16,10 @@ import { useGitStatus, useStageFiles } from '../../hooks/useGit';
 import { useGitStore } from '../../stores/gitStore';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useQueueStore } from '../../stores/queueStore';
+import { usePendingResearchStore } from '../../stores/pendingResearchStore';
+import { formatResearchContextForMessage } from '../../lib/parseResearchContext';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
-import { API_BASE_URL } from '../../lib/config';
 
 interface ChatInputContainerProps {
 	sessionId: string;
@@ -50,7 +50,7 @@ export const ChatInputContainer = memo(
 			}>(null);
 
 			const sendMessage = useSendMessage(sessionId);
-			const { data: messages } = useMessages(sessionId);
+			useMessages(sessionId);
 			const updateSession = useUpdateSession(sessionId);
 			const { data: allModels } = useAllModels();
 			const { preferences } = usePreferences();
@@ -75,57 +75,32 @@ export const ChatInputContainer = memo(
 				(m) => m.id === model,
 			)?.vision;
 
-			const queryClient = useQueryClient();
+			const pendingContextsMap = usePendingResearchStore(
+				(state) => state.pendingContexts,
+			);
+			const removeResearchContext = usePendingResearchStore(
+				(state) => state.removeContext,
+			);
+			const consumeResearchContexts = usePendingResearchStore(
+				(state) => state.consumeContexts,
+			);
 
-			const researchContexts = useMemo(() => {
-				if (!messages) return [];
-				return messages
-					.filter(
-						(m) =>
-							m.role === 'system' &&
-							m.parts?.some(
-								(p) =>
-									typeof p.content === 'string' &&
-									p.content.includes('<research-context'),
-							),
-					)
-					.map((m) => {
-						const part = m.parts?.find(
-							(p) =>
-								typeof p.content === 'string' &&
-								p.content.includes('<research-context'),
-						);
-						const content =
-							typeof part?.content === 'string' ? part.content : '';
-						const labelMatch = content.match(/label="([^"]+)"/);
-						return {
-							id: m.id,
-							label: labelMatch?.[1] || 'Research context',
-						};
-					});
-			}, [messages]);
+			const pendingResearchContexts = pendingContextsMap.get(sessionId) || [];
 
-			const deleteResearchContext = useMutation({
-				mutationFn: async (messageId: string) => {
-					const response = await fetch(
-						`${API_BASE_URL}/v1/sessions/${sessionId}/queue/${messageId}`,
-						{ method: 'DELETE' },
-					);
-					if (!response.ok) {
-						throw new Error('Failed to delete research context');
-					}
-					return response.json();
-				},
-				onSuccess: () => {
-					queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
-				},
-			});
+			const researchContexts = useMemo(
+				() =>
+					pendingResearchContexts.map((ctx) => ({
+						id: ctx.id,
+						label: ctx.label,
+					})),
+				[pendingResearchContexts],
+			);
 
 			const handleResearchContextRemove = useCallback(
-				(messageId: string) => {
-					deleteResearchContext.mutate(messageId);
+				(contextId: string) => {
+					removeResearchContext(sessionId, contextId);
 				},
-				[deleteResearchContext],
+				[sessionId, removeResearchContext],
 			);
 
 			const providerAuthType = allModels?.[provider]?.authType;
@@ -167,6 +142,13 @@ export const ChatInputContainer = memo(
 			const handleSendMessage = useCallback(
 				async (content: string) => {
 					try {
+						const researchCtxs = consumeResearchContexts(sessionId);
+						const researchPrefix =
+							formatResearchContextForMessage(researchCtxs);
+						const finalContent = researchPrefix
+							? `${researchPrefix}\n\n${content}`
+							: content;
+
 						const imageData =
 							images.length > 0
 								? images.map((img) => ({
@@ -187,7 +169,7 @@ export const ChatInputContainer = memo(
 								: undefined;
 
 						await sendMessage.mutateAsync({
-							content,
+							content: finalContent,
 							images: imageData,
 							files: fileData,
 							agent: agent || undefined,
@@ -216,6 +198,8 @@ export const ChatInputContainer = memo(
 					userContext,
 					modelSupportsReasoning,
 					preferences.reasoningEnabled,
+					sessionId,
+					consumeResearchContexts,
 				],
 			);
 

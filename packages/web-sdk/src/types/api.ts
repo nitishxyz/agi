@@ -259,3 +259,11 @@ export interface ListBranchesResponse {
 export interface ParentSessionResponse {
 	parent: Session | null;
 }
+
+export interface InjectResearchContextResponse {
+	content: string;
+	label: string;
+	sessionId: string;
+	parentSessionId: string;
+	tokenEstimate: number;
+}
