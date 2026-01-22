@@ -1,0 +1,10 @@
+export { registerServeCommand } from './serve.ts';
+export { registerAskCommand } from './ask.ts';
+export { registerSessionsCommand } from './sessions.ts';
+export { registerAuthCommand } from './auth.ts';
+export { registerModelsCommand } from './models.ts';
+export { registerAgentsCommand } from './agents.ts';
+export { registerToolsCommand } from './tools.ts';
+export { registerSkillsCommand } from './skills.ts';
+export { registerScaffoldCommand } from './scaffold.ts';
+export { registerDoctorCommand } from './doctor.ts';

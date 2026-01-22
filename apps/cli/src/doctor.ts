@@ -1,12 +1,12 @@
 import { isAbsolute, join } from 'node:path';
 import { read as readMerged, isAuthorized } from '@agi-cli/sdk';
-import { discoverCommands } from './commands.ts';
+import { discoverCommands } from './custom-commands.ts';
 import { box, colors } from './ui.ts';
 import type { ProviderId } from '@agi-cli/sdk';
 import type { AgentConfigEntry } from '@agi-cli/server/runtime/agent-registry';
 import { buildFsTools } from '@agi-cli/sdk';
 import { buildGitTools } from '@agi-cli/sdk';
-import type { CommandManifest } from './commands.ts';
+import type { CommandManifest } from './custom-commands.ts';
 import {
 	getSecureAuthPath,
 	getGlobalAgentsJsonPath,
