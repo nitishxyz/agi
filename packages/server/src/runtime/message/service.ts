@@ -424,7 +424,7 @@ async function touchSessionLastActive(args: {
 	try {
 		await db
 			.update(sessions)
-			.set({ updatedAt: Date.now() })
+			.set({ lastActiveAt: Date.now() })
 			.where(eq(sessions.id, sessionId))
 			.run();
 	} catch (err) {
