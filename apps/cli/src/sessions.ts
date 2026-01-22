@@ -53,7 +53,10 @@ export async function runSessions(opts: SessionsOptions = {}) {
 	}
 
 	if (!rows.length) {
-		Bun.write(Bun.stdout, 'No sessions found. Start one with: agi ask "<prompt>"\n');
+		Bun.write(
+			Bun.stdout,
+			'No sessions found. Start one with: agi ask "<prompt>"\n',
+		);
 		return;
 	}
 
