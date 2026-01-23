@@ -6,11 +6,11 @@ describe('solforge catalog entry', () => {
 		expect(providerIds).toContain('solforge');
 	});
 
-	it('mirrors OpenAI/Anthropic models with gpt-4o-mini default', () => {
+	it('mirrors OpenAI/Anthropic models with codex-mini-latest default', () => {
 		const entry = catalog.solforge;
 		expect(entry).toBeDefined();
 		expect(entry?.models.length).toBeGreaterThan(0);
-		expect(entry?.models[0]?.id).toBe('gpt-4o-mini');
+		expect(entry?.models[0]?.id).toBe('codex-mini-latest');
 		const providers = new Set(
 			entry?.models
 				.map((model) => model.provider?.npm)

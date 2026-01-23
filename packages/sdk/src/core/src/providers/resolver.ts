@@ -10,6 +10,20 @@ import {
 } from '../../../providers/src/index.ts';
 import type { OAuth } from '../../../types/src/index.ts';
 
+function needsResponsesApi(model: string): boolean {
+	const m = model.toLowerCase();
+	if (m.includes('gpt-5')) return true;
+	if (m.startsWith('o1')) return true;
+	if (m.startsWith('o3')) return true;
+	if (m.startsWith('o4')) return true;
+	if (m.includes('codex-mini')) return true;
+	return false;
+}
+
+function resolveOpenAIModel(instance: ReturnType<typeof createOpenAI>, model: string) {
+	return needsResponsesApi(model) ? instance.responses(model) : instance(model);
+}
+
 export type ProviderName =
 	| 'openai'
 	| 'anthropic'
@@ -45,13 +59,13 @@ export async function resolveModel(
 				apiKey: config.apiKey || 'oauth-token',
 				fetch: config.customFetch,
 			});
-			return instance(model);
+			return resolveOpenAIModel(instance, model);
 		}
 		if (config.apiKey) {
 			const instance = createOpenAI({ apiKey: config.apiKey });
-			return instance(model);
+			return resolveOpenAIModel(instance, model);
 		}
-		return openai(model);
+		return needsResponsesApi(model) ? openai.responses(model) : openai(model);
 	}
 
 	if (provider === 'anthropic') {

@@ -183,7 +183,7 @@ export function createSolforgeModel(
 		apiKey: 'solforge-wallet-auth',
 		fetch: customFetch,
 	});
-	return openai(model);
+	return openai.responses(model);
 }
 
 function trimTrailingSlash(url: string) {

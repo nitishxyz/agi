@@ -7,6 +7,20 @@ import type {
 type CatalogMap = Partial<Record<ProviderId, ProviderCatalogEntry>>;
 
 const SOLFORGE_ID: ProviderId = 'solforge';
+
+const isAllowedOpenAIModel = (id: string): boolean => {
+	if (id === 'codex-mini-latest') return true;
+	if (id.startsWith('gpt-5')) return true;
+	if (id.includes('codex')) return true;
+	return false;
+};
+
+const isAllowedAnthropicModel = (id: string): boolean => {
+	if (id.includes('-4-') || id.includes('-4.')) return true;
+	if (id.match(/claude-(haiku|sonnet|opus)-4/)) return true;
+	return false;
+};
+
 const SOLFORGE_SOURCES: Array<{ id: ProviderId; npm: string }> = [
 	{
 		id: 'openai',
@@ -39,7 +53,12 @@ function cloneModel(model: ModelInfo): ModelInfo {
 
 function buildSolforgeEntry(base: CatalogMap): ProviderCatalogEntry | null {
 	const solforgeModels = SOLFORGE_SOURCES.flatMap(({ id, npm }) => {
-		const sourceModels = base[id]?.models ?? [];
+		const allModels = base[id]?.models ?? [];
+		const sourceModels = allModels.filter((model) => {
+			if (id === 'openai') return isAllowedOpenAIModel(model.id);
+			if (id === 'anthropic') return isAllowedAnthropicModel(model.id);
+			return true;
+		});
 		return sourceModels.map((model) => {
 			const cloned = cloneModel(model);
 			cloned.provider = { ...(cloned.provider ?? {}), npm };
@@ -61,7 +80,7 @@ function buildSolforgeEntry(base: CatalogMap): ProviderCatalogEntry | null {
 		return providerA.localeCompare(providerB);
 	});
 
-	const defaultModelId = 'gpt-4o-mini';
+	const defaultModelId = 'codex-mini-latest';
 	const defaultIdx = solforgeModels.findIndex((m) => m.id === defaultModelId);
 	if (defaultIdx > 0) {
 		const [picked] = solforgeModels.splice(defaultIdx, 1);

@@ -324,7 +324,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				cost: {
 					input: 1.25,
 					output: 10,
-					cacheRead: 0.13,
+					cacheRead: 0.125,
 				},
 				limit: {
 					context: 400000,
@@ -398,7 +398,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				cost: {
 					input: 0.25,
 					output: 2,
-					cacheRead: 0.03,
+					cacheRead: 0.025,
 				},
 				limit: {
 					context: 400000,
@@ -423,7 +423,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				cost: {
 					input: 0.05,
 					output: 0.4,
-					cacheRead: 0.01,
+					cacheRead: 0.005,
 				},
 				limit: {
 					context: 400000,
@@ -633,7 +633,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'gpt-5.2-codex',
 				label: 'GPT-5.2 Codex',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -4279,6 +4279,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'openai/gpt-5.1-codex-max',
+				label: 'GPT-5.1-Codex-Max',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2024-09-30',
+				releaseDate: '2025-11-13',
+				lastUpdated: '2025-11-13',
+				openWeights: false,
+				cost: {
+					input: 1.1,
+					output: 9,
+					cacheRead: 0.11,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
 				id: 'openai/gpt-5.1-codex-mini',
 				label: 'GPT-5.1-Codex-Mini',
 				modalities: {
@@ -5926,6 +5951,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'glm-4.7',
+				label: 'GLM-4.7',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2025-12-22',
+				lastUpdated: '2025-12-22',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 2.2,
+					cacheRead: 0.1,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+			},
+			{
 				id: 'glm-4.7-free',
 				label: 'GLM-4.7',
 				modalities: {
@@ -6178,7 +6228,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'gpt-5.2-codex',
 				label: 'GPT-5.2 Codex',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -6691,6 +6741,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 				limit: {
 					context: 204800,
+					output: 131072,
+				},
+			},
+			{
+				id: 'glm-4.7-flash',
+				label: 'GLM-4.7-Flash',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoning: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2026-01-19',
+				lastUpdated: '2026-01-19',
+				openWeights: true,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
+				},
+				limit: {
+					context: 200000,
 					output: 131072,
 				},
 			},
