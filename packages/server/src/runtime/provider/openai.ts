@@ -5,7 +5,11 @@ import { openai, createOpenAI } from '@ai-sdk/openai';
 export async function resolveOpenAIModel(
 	model: string,
 	cfg: AGIConfig,
-	options?: { systemPrompt?: string },
+	options?: {
+		systemPrompt?: string;
+		promptCacheKey?: string;
+		promptCacheRetention?: 'in_memory' | '24h';
+	},
 ) {
 	const auth = await getAuth('openai', cfg.projectRoot);
 	if (auth?.type === 'oauth') {
@@ -16,6 +20,8 @@ export async function resolveOpenAIModel(
 			reasoningEffort: isCodexModel ? 'high' : 'medium',
 			reasoningSummary: 'auto',
 			instructions: options?.systemPrompt,
+			promptCacheKey: options?.promptCacheKey,
+			promptCacheRetention: options?.promptCacheRetention,
 		});
 	}
 	if (auth?.type === 'api' && auth.key) {

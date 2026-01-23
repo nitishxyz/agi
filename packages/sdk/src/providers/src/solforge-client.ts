@@ -30,6 +30,8 @@ export type SolforgeProviderOptions = {
 	maxPaymentAttempts?: number;
 	callbacks?: SolforgePaymentCallbacks;
 	providerNpm?: string;
+	promptCacheKey?: string;
+	promptCacheRetention?: 'in_memory' | '24h';
 };
 
 export type SolforgeAuth = {
@@ -76,6 +78,8 @@ export function createSolforgeFetch(
 	const maxPaymentAttempts =
 		options.maxPaymentAttempts ?? DEFAULT_MAX_PAYMENT_ATTEMPTS;
 	const callbacks = options.callbacks ?? {};
+	const promptCacheKey = options.promptCacheKey;
+	const promptCacheRetention = options.promptCacheRetention;
 
 	const baseFetch = globalThis.fetch.bind(globalThis);
 	let paymentAttempts = 0;
@@ -98,12 +102,29 @@ export function createSolforgeFetch(
 
 		while (attempt < maxAttempts) {
 			attempt++;
+			let body = init?.body;
+			if (
+				body &&
+				typeof body === 'string' &&
+				(promptCacheKey || promptCacheRetention)
+			) {
+				try {
+					const parsed = JSON.parse(body);
+					if (promptCacheKey) {
+						parsed.prompt_cache_key = promptCacheKey;
+					}
+					if (promptCacheRetention) {
+						parsed.prompt_cache_retention = promptCacheRetention;
+					}
+					body = JSON.stringify(parsed);
+				} catch {}
+			}
 			const headers = new Headers(init?.headers);
 			const walletHeaders = buildWalletHeaders();
 			headers.set('x-wallet-address', walletHeaders['x-wallet-address']);
 			headers.set('x-wallet-nonce', walletHeaders['x-wallet-nonce']);
 			headers.set('x-wallet-signature', walletHeaders['x-wallet-signature']);
-			const response = await baseFetch(input, { ...init, headers });
+			const response = await baseFetch(input, { ...init, body, headers });
 
 			if (response.status !== 402) {
 				return response;
