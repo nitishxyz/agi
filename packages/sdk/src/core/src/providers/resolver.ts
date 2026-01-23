@@ -20,7 +20,10 @@ function needsResponsesApi(model: string): boolean {
 	return false;
 }
 
-function resolveOpenAIModel(instance: ReturnType<typeof createOpenAI>, model: string) {
+function resolveOpenAIModel(
+	instance: ReturnType<typeof createOpenAI>,
+	model: string,
+) {
 	return needsResponsesApi(model) ? instance.responses(model) : instance(model);
 }
 

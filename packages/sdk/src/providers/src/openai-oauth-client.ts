@@ -44,10 +44,38 @@ async function ensureValidToken(
 
 function stripIdsFromInput(input: unknown): unknown {
 	if (Array.isArray(input)) {
-		return input
+		const filtered = input.filter((item) => {
+			if (item && typeof item === 'object' && 'type' in item) {
+				if (item.type === 'item_reference') return false;
+			}
+			return true;
+		});
+
+		const validCallIds = new Set<string>();
+		for (const item of filtered) {
+			if (
+				item &&
+				typeof item === 'object' &&
+				'type' in item &&
+				item.type === 'function_call' &&
+				'call_id' in item &&
+				typeof item.call_id === 'string'
+			) {
+				validCallIds.add(item.call_id);
+			}
+		}
+
+		return filtered
 			.filter((item) => {
-				if (item && typeof item === 'object' && 'type' in item) {
-					if (item.type === 'item_reference') return false;
+				if (
+					item &&
+					typeof item === 'object' &&
+					'type' in item &&
+					item.type === 'function_call_output' &&
+					'call_id' in item &&
+					typeof item.call_id === 'string'
+				) {
+					return validCallIds.has(item.call_id);
 				}
 				return true;
 			})
