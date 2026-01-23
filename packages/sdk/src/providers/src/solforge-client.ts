@@ -9,7 +9,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
 const DEFAULT_BASE_URL = 'https://router.solforge.sh';
-const DEFAULT_RPC_URL = 'https://api.devnet.solana.com';
+const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const DEFAULT_TOPUP_AMOUNT = '5000000'; // $5.00
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_MAX_PAYMENT_ATTEMPTS = 20;
