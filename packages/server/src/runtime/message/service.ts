@@ -305,9 +305,10 @@ async function generateSessionTitle(args: {
 		const promptText = String(content ?? '').slice(0, 2000);
 
 		const titlePrompt = [
-			"Create a short, descriptive session title from the user's request.",
-			'Max 6–8 words. No quotes. No trailing punctuation.',
-			'Avoid generic phrases like "help me"; be specific.',
+			'Generate a brief title (6-8 words) summarizing what the user wants to do.',
+			'Rules: Plain text only. No markdown, no quotes, no punctuation, no emojis.',
+			'Focus on the core task or topic. Be specific but concise.',
+			'Examples: "Fix TypeScript build errors", "Add dark mode toggle", "Refactor auth middleware"',
 		].join(' ');
 
 		// Build system prompt and messages
@@ -409,8 +410,17 @@ async function generateSessionTitle(args: {
 
 function sanitizeTitle(raw: string): string {
 	let s = raw.trim();
+	s = s.replace(/^#+\s*/, '');
+	s = s.replace(/\*\*([^*]+)\*\*/g, '$1');
+	s = s.replace(/\*([^*]+)\*/g, '$1');
+	s = s.replace(/__([^_]+)__/g, '$1');
+	s = s.replace(/_([^_]+)_/g, '$1');
+	s = s.replace(/`([^`]+)`/g, '$1');
+	s = s.replace(/~~([^~]+)~~/g, '$1');
+	s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
 	s = s.replace(/^["']|["']$/g, '');
-	s = s.replace(/[.!?]+$/, '');
+	s = s.replace(/^[-–—•*]\s*/, '');
+	s = s.replace(/[.!?:;,]+$/, '');
 	s = s.replace(/\s+/g, ' ');
 	if (s.length > 80) s = s.slice(0, 80).trim();
 	return s;
