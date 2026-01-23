@@ -1,15 +1,17 @@
 import { memo } from 'react';
 
-import anthropicLogo from '../../assets/providers/anthropic.svg?raw';
-import openaiLogo from '../../assets/providers/openai.svg?raw';
-import googleLogo from '../../assets/providers/google.svg?raw';
-import openrouterLogo from '../../assets/providers/openrouter.svg?raw';
-import groqLogo from '../../assets/providers/groq.svg?raw';
-import deepseekLogo from '../../assets/providers/deepseek.svg?raw';
-import xaiLogo from '../../assets/providers/xai.svg?raw';
-import zaiLogo from '../../assets/providers/zai.svg?raw';
-import solforgeLogo from '../../assets/providers/solforge.svg?raw';
-import opencodeLogo from '../../assets/providers/opencode.svg?raw';
+import {
+	anthropicLogo,
+	openaiLogo,
+	googleLogo,
+	openrouterLogo,
+	groqLogo,
+	deepseekLogo,
+	xaiLogo,
+	zaiLogo,
+	solforgeLogo,
+	opencodeLogo,
+} from '../../assets/provider-logos';
 
 const providerLogos: Record<string, string> = {
 	anthropic: anthropicLogo,
