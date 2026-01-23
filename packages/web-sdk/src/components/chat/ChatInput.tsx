@@ -90,15 +90,15 @@ export const ChatInput = memo(
 
 		const { data: filesData, isLoading: filesLoading } = useFiles();
 		const { preferences, updatePreferences } = usePreferences();
-	const files = filesData?.files || [];
-	const changedFiles = filesData?.changedFiles || [];
+		const files = filesData?.files || [];
+		const changedFiles = filesData?.changedFiles || [];
 
-	const solforgeBalance = useSolforgeStore((s) => s.balance);
-	const isSolforge = providerName === 'solforge';
+		const solforgeBalance = useSolforgeStore((s) => s.balance);
+		const isSolforge = providerName === 'solforge';
 
-	const handleSendRef = useRef<() => void>(() => {});
+		const handleSendRef = useRef<() => void>(() => {});
 
-	const {
+		const {
 			showFileMention,
 			mentionQuery,
 			mentionSelectedIndex,
@@ -498,17 +498,17 @@ export const ChatInput = memo(
 											{modelName && <span>{modelName}</span>}
 											{authType && authType !== 'api' && (
 												<span className="opacity-50">
-									({authType === 'oauth' ? 'pro' : 'wallet'})
-								</span>
-							)}
-							{isSolforge && solforgeBalance !== null && (
-								<span className="text-emerald-600 dark:text-emerald-400">
-									${solforgeBalance.toFixed(2)}
-								</span>
-							)}
-						</span>
-					)}
-				</div>
+													({authType === 'oauth' ? 'pro' : 'wallet'})
+												</span>
+											)}
+											{isSolforge && solforgeBalance !== null && (
+												<span className="text-emerald-600 dark:text-emerald-400">
+													${solforgeBalance.toFixed(2)}
+												</span>
+											)}
+										</span>
+									)}
+								</div>
 								<div className="justify-self-end">
 									{visionEnabled && (
 										<span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">

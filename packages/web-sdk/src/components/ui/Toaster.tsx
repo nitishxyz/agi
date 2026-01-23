@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, Loader2, CreditCard } from 'lucide-react';
-import { useToastStore, type Toast, type ToastType } from '../../stores/toastStore';
+import {
+	useToastStore,
+	type Toast,
+	type ToastType,
+} from '../../stores/toastStore';
 
 const icons: Record<ToastType, React.ReactNode> = {
 	default: <CreditCard className="h-4 w-4" />,

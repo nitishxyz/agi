@@ -35,14 +35,16 @@ export const useToastStore = create<ToastState>((set) => ({
 		})),
 	updateToast: (id, updates) =>
 		set((state) => ({
-			toasts: state.toasts.map((t) =>
-				t.id === id ? { ...t, ...updates } : t
-			),
+			toasts: state.toasts.map((t) => (t.id === id ? { ...t, ...updates } : t)),
 		})),
 	clearToasts: () => set({ toasts: [] }),
 }));
 
-export function toast(message: string, type: ToastType = 'default', duration = 4000) {
+export function toast(
+	message: string,
+	type: ToastType = 'default',
+	duration = 4000,
+) {
 	const id = useToastStore.getState().addToast({ message, type, duration });
 	if (duration > 0) {
 		setTimeout(() => {
@@ -52,6 +54,8 @@ export function toast(message: string, type: ToastType = 'default', duration = 4
 	return id;
 }
 
-toast.success = (message: string, duration = 4000) => toast(message, 'success', duration);
-toast.error = (message: string, duration = 5000) => toast(message, 'error', duration);
+toast.success = (message: string, duration = 4000) =>
+	toast(message, 'success', duration);
+toast.error = (message: string, duration = 5000) =>
+	toast(message, 'error', duration);
 toast.loading = (message: string) => toast(message, 'loading', 0);

@@ -40,7 +40,9 @@ export interface SetupResult {
 
 const THINKING_BUDGET = 16000;
 
-function getSolforgeUnderlyingProvider(model: string): 'anthropic' | 'openai' | null {
+function getSolforgeUnderlyingProvider(
+	model: string,
+): 'anthropic' | 'openai' | null {
 	const entry = catalog.solforge?.models?.find((m) => m.id === model);
 	const npm = entry?.provider?.npm;
 	if (npm === '@ai-sdk/anthropic') return 'anthropic';
@@ -204,8 +206,8 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 
 	const oauthSystemPrompt =
 		needsSpoof && opts.provider === 'openai' && additionalSystemMessages[0]
-		? additionalSystemMessages[0].content
-		: undefined;
+			? additionalSystemMessages[0].content
+			: undefined;
 	const model = await resolveModel(opts.provider, opts.model, cfg, {
 		systemPrompt: oauthSystemPrompt,
 		sessionId: opts.sessionId,

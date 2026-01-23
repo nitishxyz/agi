@@ -1,4 +1,8 @@
-import { createSolforgeModel, catalog, type SolforgePaymentCallbacks } from '@agi-cli/sdk';
+import {
+	createSolforgeModel,
+	catalog,
+	type SolforgePaymentCallbacks,
+} from '@agi-cli/sdk';
 import { publish } from '../../events/bus.ts';
 
 function getProviderNpm(model: string): string | undefined {

@@ -150,11 +150,11 @@ export function createSolforgeFetch(
 
 /**
  * Create a Solforge-backed AI model.
- * 
+ *
  * Uses native AI SDK providers:
  * - OpenAI models → /v1/responses (via @ai-sdk/openai)
  * - Anthropic models → /v1/messages (via @ai-sdk/anthropic)
- * 
+ *
  * Provider is determined by options.providerNpm from catalog.
  */
 export function createSolforgeModel(
@@ -307,12 +307,14 @@ async function processSinglePayment(args: {
 	}
 
 	if (parsed) {
-		const amountUsd = typeof parsed.amount_usd === 'string' 
-			? parseFloat(parsed.amount_usd) 
-			: (parsed.amount_usd ?? parsed.amount ?? 0);
-		const newBalance = typeof parsed.new_balance === 'string'
-			? parseFloat(parsed.new_balance)
-			: (parsed.new_balance ?? parsed.balance ?? 0);
+		const amountUsd =
+			typeof parsed.amount_usd === 'string'
+				? parseFloat(parsed.amount_usd)
+				: (parsed.amount_usd ?? parsed.amount ?? 0);
+		const newBalance =
+			typeof parsed.new_balance === 'string'
+				? parseFloat(parsed.new_balance)
+				: (parsed.new_balance ?? parsed.balance ?? 0);
 		args.callbacks.onPaymentComplete?.({
 			amountUsd,
 			newBalance,

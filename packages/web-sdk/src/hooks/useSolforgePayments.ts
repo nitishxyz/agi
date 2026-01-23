@@ -40,19 +40,27 @@ export function useSolforgePayments(sessionId: string | undefined) {
 							message: '✍️ Signing transaction...',
 						});
 					} else {
-						loadingToastIdRef.current = toast.loading('✍️ Signing transaction...');
+						loadingToastIdRef.current = toast.loading(
+							'✍️ Signing transaction...',
+						);
 					}
 					break;
 				}
 				case 'solforge.payment.complete': {
 					const rawAmount = payload?.amountUsd;
 					const rawBalance = payload?.newBalance;
-					const amountUsd = typeof rawAmount === 'number' 
-						? rawAmount 
-						: (typeof rawAmount === 'string' ? parseFloat(rawAmount) : 0);
-					const newBalance = typeof rawBalance === 'number'
-						? rawBalance
-						: (typeof rawBalance === 'string' ? parseFloat(rawBalance) : 0);
+					const amountUsd =
+						typeof rawAmount === 'number'
+							? rawAmount
+							: typeof rawAmount === 'string'
+								? parseFloat(rawAmount)
+								: 0;
+					const newBalance =
+						typeof rawBalance === 'number'
+							? rawBalance
+							: typeof rawBalance === 'string'
+								? parseFloat(rawBalance)
+								: 0;
 					setBalance(newBalance);
 					setPaymentPending(false);
 					if (loadingToastIdRef.current) {
@@ -66,7 +74,9 @@ export function useSolforgePayments(sessionId: string | undefined) {
 				}
 				case 'solforge.payment.error': {
 					const error =
-						typeof payload?.error === 'string' ? payload.error : 'Payment failed';
+						typeof payload?.error === 'string'
+							? payload.error
+							: 'Payment failed';
 					setPaymentPending(false);
 					if (loadingToastIdRef.current) {
 						removeToast(loadingToastIdRef.current);

@@ -174,20 +174,20 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	return (
 		<>
 			<AppLayout
-			onNewSession={handleNewSession}
-			theme={theme}
-			onToggleTheme={toggleTheme}
-			sessionId={sessionId}
-			onNavigateToSession={handleSelectSession}
-			sidebar={
-				<SessionListContainer
-					activeSessionId={sessionId}
-					onSelectSession={handleSelectSession}
-				/>
-			}
-		>
-			{mainContent}
-		</AppLayout>
+				onNewSession={handleNewSession}
+				theme={theme}
+				onToggleTheme={toggleTheme}
+				sessionId={sessionId}
+				onNavigateToSession={handleSelectSession}
+				sidebar={
+					<SessionListContainer
+						activeSessionId={sessionId}
+						onSelectSession={handleSelectSession}
+					/>
+				}
+			>
+				{mainContent}
+			</AppLayout>
 			<Toaster />
 		</>
 	);
