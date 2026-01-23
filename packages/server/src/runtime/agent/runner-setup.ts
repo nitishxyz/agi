@@ -1,4 +1,4 @@
-import { loadConfig } from '@agi-cli/sdk';
+import { loadConfig, catalog } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { sessions } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
@@ -39,6 +39,14 @@ export interface SetupResult {
 }
 
 const THINKING_BUDGET = 16000;
+
+function getSolforgeUnderlyingProvider(model: string): 'anthropic' | 'openai' | null {
+	const entry = catalog.solforge?.models?.find((m) => m.id === model);
+	const npm = entry?.provider?.npm;
+	if (npm === '@ai-sdk/anthropic') return 'anthropic';
+	if (npm === '@ai-sdk/openai') return 'openai';
+	return null;
+}
 
 export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const cfgTimer = time('runner:loadConfig+db');
@@ -196,10 +204,11 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 
 	const oauthSystemPrompt =
 		needsSpoof && opts.provider === 'openai' && additionalSystemMessages[0]
-			? additionalSystemMessages[0].content
-			: undefined;
+		? additionalSystemMessages[0].content
+		: undefined;
 	const model = await resolveModel(opts.provider, opts.model, cfg, {
 		systemPrompt: oauthSystemPrompt,
+		sessionId: opts.sessionId,
 	});
 	debugLog(
 		`[RUNNER] Model created: ${JSON.stringify({ id: model.modelId, provider: model.provider })}`,
@@ -236,6 +245,20 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 			providerOptions.google = {
 				thinkingConfig: { thinkingBudget: THINKING_BUDGET },
 			};
+		} else if (opts.provider === 'solforge') {
+			const underlying = getSolforgeUnderlyingProvider(opts.model);
+			if (underlying === 'anthropic') {
+				providerOptions.anthropic = {
+					thinking: { type: 'enabled', budgetTokens: THINKING_BUDGET },
+				};
+				if (maxOutputTokens && maxOutputTokens > THINKING_BUDGET) {
+					effectiveMaxOutputTokens = maxOutputTokens - THINKING_BUDGET;
+				}
+			} else if (underlying === 'openai') {
+				providerOptions.openai = {
+					reasoningSummary: 'auto',
+				};
+			}
 		}
 	}
 

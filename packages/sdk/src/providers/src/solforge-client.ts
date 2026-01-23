@@ -5,13 +5,21 @@ import { createPaymentHeader } from 'x402/client';
 import type { PaymentRequirements } from 'x402/types';
 import { svm } from 'x402/shared';
 import nacl from 'tweetnacl';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createOpenAI } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
 
-const DEFAULT_BASE_URL = 'https://ai.solforge.sh';
-const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
-const DEFAULT_TOPUP_AMOUNT = '100000'; // $0.10
+const DEFAULT_BASE_URL = 'https://router.solforge.sh';
+const DEFAULT_RPC_URL = 'https://api.devnet.solana.com';
+const DEFAULT_TOPUP_AMOUNT = '5000000'; // $5.00
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_MAX_PAYMENT_ATTEMPTS = 20;
+
+export type SolforgePaymentCallbacks = {
+	onPaymentRequired?: (amountUsd: number) => void;
+	onPaymentSigning?: () => void;
+	onPaymentComplete?: (data: { amountUsd: number; newBalance: number }) => void;
+	onPaymentError?: (error: string) => void;
+};
 
 export type SolforgeProviderOptions = {
 	baseURL?: string;
@@ -20,6 +28,8 @@ export type SolforgeProviderOptions = {
 	topupAmountMicroUsdc?: string;
 	maxRequestAttempts?: number;
 	maxPaymentAttempts?: number;
+	callbacks?: SolforgePaymentCallbacks;
+	providerNpm?: string;
 };
 
 export type SolforgeAuth = {
@@ -46,8 +56,10 @@ type PaymentPayload = {
 };
 
 type PaymentResponse = {
-	amount_usd: number;
-	new_balance: number;
+	amount_usd?: number | string;
+	new_balance?: number | string;
+	amount?: number;
+	balance?: number;
 };
 
 export function createSolforgeFetch(
@@ -63,6 +75,7 @@ export function createSolforgeFetch(
 	const maxAttempts = options.maxRequestAttempts ?? DEFAULT_MAX_ATTEMPTS;
 	const maxPaymentAttempts =
 		options.maxPaymentAttempts ?? DEFAULT_MAX_PAYMENT_ATTEMPTS;
+	const callbacks = options.callbacks ?? {};
 
 	const baseFetch = globalThis.fetch.bind(globalThis);
 	let paymentAttempts = 0;
@@ -99,18 +112,24 @@ export function createSolforgeFetch(
 			const payload = await response.json().catch(() => ({}));
 			const requirement = pickPaymentRequirement(payload, targetTopup);
 			if (!requirement) {
+				callbacks.onPaymentError?.('Unsupported payment requirement');
 				throw new Error('Solforge: unsupported payment requirement');
 			}
 			if (attempt >= maxAttempts) {
+				callbacks.onPaymentError?.('Payment failed after multiple attempts');
 				throw new Error('Solforge: payment failed after multiple attempts');
 			}
 
 			const remainingPayments = maxPaymentAttempts - paymentAttempts;
 			if (remainingPayments <= 0) {
+				callbacks.onPaymentError?.('Maximum payment attempts exceeded');
 				throw new Error(
 					'Solforge: payment failed after maximum payment attempts.',
 				);
 			}
+
+			const amountUsd = parseInt(requirement.maxAmountRequired, 10) / 1_000_000;
+			callbacks.onPaymentRequired?.(amountUsd);
 
 			const outcome = await handlePayment({
 				requirement,
@@ -120,6 +139,7 @@ export function createSolforgeFetch(
 				baseFetch,
 				buildWalletHeaders,
 				maxAttempts: remainingPayments,
+				callbacks,
 			});
 			paymentAttempts += outcome.attemptsUsed;
 		}
@@ -128,6 +148,15 @@ export function createSolforgeFetch(
 	};
 }
 
+/**
+ * Create a Solforge-backed AI model.
+ * 
+ * Uses native AI SDK providers:
+ * - OpenAI models → /v1/responses (via @ai-sdk/openai)
+ * - Anthropic models → /v1/messages (via @ai-sdk/anthropic)
+ * 
+ * Provider is determined by options.providerNpm from catalog.
+ */
 export function createSolforgeModel(
 	model: string,
 	auth: SolforgeAuth,
@@ -136,14 +165,25 @@ export function createSolforgeModel(
 	const baseURL = `${trimTrailingSlash(
 		options.baseURL ?? DEFAULT_BASE_URL,
 	)}/v1`;
-	const fetch = createSolforgeFetch(auth, options);
-	const provider = createOpenAICompatible({
-		name: 'solforge',
+	const customFetch = createSolforgeFetch(auth, options);
+	const providerNpm = options.providerNpm ?? '@ai-sdk/openai';
+
+	if (providerNpm === '@ai-sdk/anthropic') {
+		const anthropic = createAnthropic({
+			baseURL,
+			apiKey: 'solforge-wallet-auth',
+			fetch: customFetch,
+		});
+		return anthropic(model);
+	}
+
+	// Default to OpenAI
+	const openai = createOpenAI({
 		baseURL,
-		headers: { 'Content-Type': 'application/json' },
-		fetch,
+		apiKey: 'solforge-wallet-auth',
+		fetch: customFetch,
 	});
-	return provider(model);
+	return openai(model);
 }
 
 function trimTrailingSlash(url: string) {
@@ -192,6 +232,7 @@ async function handlePayment(args: {
 	baseFetch: typeof fetch;
 	buildWalletHeaders: () => Record<string, string>;
 	maxAttempts: number;
+	callbacks: SolforgePaymentCallbacks;
 }): Promise<{ attemptsUsed: number }> {
 	let attempts = 0;
 	while (attempts < args.maxAttempts) {
@@ -226,7 +267,10 @@ async function processSinglePayment(args: {
 	baseURL: string;
 	baseFetch: typeof fetch;
 	buildWalletHeaders: () => Record<string, string>;
+	callbacks: SolforgePaymentCallbacks;
 }): Promise<{ attempts: number; balance?: number | string }> {
+	args.callbacks.onPaymentSigning?.();
+
 	const paymentPayload = await createPaymentPayload(args);
 	const walletHeaders = args.buildWalletHeaders();
 	const headers = {
@@ -251,6 +295,7 @@ async function processSinglePayment(args: {
 			console.log('Solforge payment already processed; continuing.');
 			return { attempts: 1 };
 		}
+		args.callbacks.onPaymentError?.(`Topup failed: ${response.status}`);
 		throw new Error(`Solforge topup failed (${response.status}): ${rawBody}`);
 	}
 
@@ -262,10 +307,20 @@ async function processSinglePayment(args: {
 	}
 
 	if (parsed) {
+		const amountUsd = typeof parsed.amount_usd === 'string' 
+			? parseFloat(parsed.amount_usd) 
+			: (parsed.amount_usd ?? parsed.amount ?? 0);
+		const newBalance = typeof parsed.new_balance === 'string'
+			? parseFloat(parsed.new_balance)
+			: (parsed.new_balance ?? parsed.balance ?? 0);
+		args.callbacks.onPaymentComplete?.({
+			amountUsd,
+			newBalance,
+		});
 		console.log(
-			`Solforge payment complete: +$${parsed.amount_usd ?? 0} (balance: $${parsed.new_balance ?? 0})`,
+			`Solforge payment complete: +$${amountUsd} (balance: $${newBalance})`,
 		);
-		return { attempts: 1, balance: parsed.new_balance };
+		return { attempts: 1, balance: newBalance };
 	}
 	console.log('Solforge payment complete.');
 	return { attempts: 1 };

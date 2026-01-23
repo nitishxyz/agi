@@ -59,7 +59,7 @@ const PROVIDER_LINKS: Record<
 	},
 	solforge: {
 		name: 'Solforge',
-		url: 'https://ai.solforge.sh',
+		url: 'https://router.solforge.sh',
 		env: 'SOLFORGE_PRIVATE_KEY',
 	},
 	zai: {

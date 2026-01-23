@@ -13,7 +13,7 @@ export async function resolveModel(
 	provider: ProviderName,
 	model: string,
 	cfg: AGIConfig,
-	options?: { systemPrompt?: string },
+	options?: { systemPrompt?: string; sessionId?: string },
 ) {
 	if (provider === 'openai') {
 		return resolveOpenAIModel(model, cfg, options);
@@ -32,7 +32,7 @@ export async function resolveModel(
 		return resolveOpencodeModel(model, cfg);
 	}
 	if (provider === 'solforge') {
-		return resolveSolforgeModel(model);
+		return resolveSolforgeModel(model, options?.sessionId);
 	}
 	if (provider === 'zai') {
 		return getZaiInstance(cfg, model);

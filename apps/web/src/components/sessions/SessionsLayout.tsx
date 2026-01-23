@@ -6,6 +6,7 @@ import {
 	MessageThreadContainer,
 	ChatInputContainer,
 	type ChatInputContainerRef,
+	Toaster,
 } from '@agi-cli/web-sdk/components';
 import {
 	useCreateSession,
@@ -18,6 +19,7 @@ import { useGitStore, useConfirmationStore } from '@agi-cli/web-sdk/stores';
 import {
 	useGitStatus,
 	useStageFiles,
+	useSolforgePayments,
 	useUnstageFiles,
 	useRestoreFiles,
 	useDeleteFiles,
@@ -46,6 +48,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	);
 
 	useWorkingDirectory();
+	useSolforgePayments(sessionId);
 
 	const focusInput = useCallback(() => {
 		setTimeout(() => {
@@ -169,7 +172,8 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	}, [sessionId, handleNewSession, handleSelectSession]);
 
 	return (
-		<AppLayout
+		<>
+			<AppLayout
 			onNewSession={handleNewSession}
 			theme={theme}
 			onToggleTheme={toggleTheme}
@@ -184,5 +188,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 		>
 			{mainContent}
 		</AppLayout>
+			<Toaster />
+		</>
 	);
 }

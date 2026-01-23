@@ -1,4 +1,8 @@
 export type AGIEventType =
+	| 'solforge.payment.required'
+	| 'solforge.payment.signing'
+	| 'solforge.payment.complete'
+	| 'solforge.payment.error'
 	| 'session.created'
 	| 'session.updated'
 	| 'message.created'

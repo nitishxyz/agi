@@ -72,9 +72,8 @@ function buildSolforgeEntry(base: CatalogMap): ProviderCatalogEntry | null {
 		id: SOLFORGE_ID,
 		label: 'Solforge',
 		env: ['SOLFORGE_PRIVATE_KEY'],
-		api: 'https://ai.solforge.sh/v1',
-		doc: 'https://ai.solforge.sh/docs',
-		npm: '@ai-sdk/openai-compatible',
+		api: 'https://router.solforge.sh/v1',
+		doc: 'https://router.solforge.sh/docs',
 		models: solforgeModels,
 	};
 }

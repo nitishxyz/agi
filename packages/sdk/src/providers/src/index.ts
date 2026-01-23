@@ -24,6 +24,7 @@ export {
 export type {
 	SolforgeAuth,
 	SolforgeProviderOptions,
+	SolforgePaymentCallbacks,
 } from './solforge-client.ts';
 export {
 	createOpenAIOAuthFetch,
