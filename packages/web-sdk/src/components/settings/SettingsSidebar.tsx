@@ -1,9 +1,22 @@
 import { memo, useState, useMemo } from 'react';
-import { Settings, ChevronRight, Wallet, Cpu, Zap, User, ChevronDown, RefreshCw } from 'lucide-react';
+import {
+	Settings,
+	ChevronRight,
+	Wallet,
+	Cpu,
+	Zap,
+	User,
+	ChevronDown,
+	RefreshCw,
+} from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '../ui/Button';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { useConfig, useAllModels, useUpdateDefaults } from '../../hooks/useConfig';
+import {
+	useConfig,
+	useAllModels,
+	useUpdateDefaults,
+} from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useSolforgeStore } from '../../stores/solforgeStore';
 import { useSolforgeBalance } from '../../hooks/useSolforgeBalance';
@@ -157,7 +170,9 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 	const solforgeLoading = useSolforgeStore((s) => s.isLoading);
 
 	const hasSolforge = config?.providers?.includes('solforge');
-	const { fetchBalance: refreshSolforgeBalance } = useSolforgeBalance(hasSolforge ? 'solforge' : undefined);
+	const { fetchBalance: refreshSolforgeBalance } = useSolforgeBalance(
+		hasSolforge ? 'solforge' : undefined,
+	);
 
 	const providerOptions = useMemo(() => {
 		if (!config?.providers || !allModels) return [];
@@ -274,22 +289,24 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 					/>
 				</SettingsSection>
 
-			{config?.providers?.includes('solforge') && (
-				<SettingsSection
-					title="Solforge Wallet"
-					icon={<Wallet className="w-4 h-4 text-muted-foreground" />}
-					action={
-						<button
-							type="button"
-							onClick={refreshSolforgeBalance}
-							disabled={solforgeLoading}
-							className="p-1 hover:bg-muted rounded transition-colors disabled:opacity-50"
-							title="Refresh balances"
-						>
-							<RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${solforgeLoading ? 'animate-spin' : ''}`} />
-						</button>
-					}
-				>
+				{config?.providers?.includes('solforge') && (
+					<SettingsSection
+						title="Solforge Wallet"
+						icon={<Wallet className="w-4 h-4 text-muted-foreground" />}
+						action={
+							<button
+								type="button"
+								onClick={refreshSolforgeBalance}
+								disabled={solforgeLoading}
+								className="p-1 hover:bg-muted rounded transition-colors disabled:opacity-50"
+								title="Refresh balances"
+							>
+								<RefreshCw
+									className={`w-3.5 h-3.5 text-muted-foreground ${solforgeLoading ? 'animate-spin' : ''}`}
+								/>
+							</button>
+						}
+					>
 						{solforgeWallet && (
 							<div className="flex justify-center pb-3">
 								<div className="p-2 bg-white rounded-lg">
@@ -306,9 +323,15 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 							label="Address"
 							value={truncateWallet(solforgeWallet)}
 						/>
-				<SettingRow label="Balance" value={formatBalance(solforgeBalance)} />
-				<SettingRow label="USDC" value={formatUsdcBalance(solforgeUsdcBalance)} />
-			</SettingsSection>
+						<SettingRow
+							label="Balance"
+							value={formatBalance(solforgeBalance)}
+						/>
+						<SettingRow
+							label="USDC"
+							value={formatUsdcBalance(solforgeUsdcBalance)}
+						/>
+					</SettingsSection>
 				)}
 
 				<SettingsSection

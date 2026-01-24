@@ -35,10 +35,20 @@ export function useSolforgeBalance(providerName: string | undefined) {
 		} finally {
 			setLoading(false);
 		}
-	}, [providerName, network, setBalance, setUsdcBalance, setWalletAddress, setLoading]);
+	}, [
+		providerName,
+		network,
+		setBalance,
+		setUsdcBalance,
+		setWalletAddress,
+		setLoading,
+	]);
 
 	useEffect(() => {
-		if (providerName === 'solforge' && (balance === null || usdcBalance === null)) {
+		if (
+			providerName === 'solforge' &&
+			(balance === null || usdcBalance === null)
+		) {
 			fetchBalance();
 		}
 	}, [providerName, balance, usdcBalance, fetchBalance]);

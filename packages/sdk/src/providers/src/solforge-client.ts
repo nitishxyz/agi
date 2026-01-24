@@ -77,24 +77,24 @@ const globalPaymentAttempts = new Map<string, number>();
 
 async function acquirePaymentLock(walletAddress: string): Promise<() => void> {
 	const existing = paymentQueues.get(walletAddress);
-	
+
 	let resolveFunc: () => void = () => {};
 	const newPromise = new Promise<void>((resolve) => {
 		resolveFunc = resolve;
 	});
-	
+
 	const entry: PaymentQueueEntry = {
 		promise: newPromise,
 		resolve: resolveFunc,
 	};
-	
+
 	paymentQueues.set(walletAddress, entry);
-	
+
 	if (existing) {
 		console.log('[Solforge] Waiting for pending payment to complete...');
 		await existing.promise;
 	}
-	
+
 	return () => {
 		if (paymentQueues.get(walletAddress) === entry) {
 			paymentQueues.delete(walletAddress);
@@ -145,7 +145,8 @@ export function createSolforgeFetch(
 					const parsed = JSON.parse(body);
 
 					if (promptCacheKey) parsed.prompt_cache_key = promptCacheKey;
-					if (promptCacheRetention) parsed.prompt_cache_retention = promptCacheRetention;
+					if (promptCacheRetention)
+						parsed.prompt_cache_retention = promptCacheRetention;
 
 					const MAX_SYSTEM_CACHE = 1;
 					const MAX_MESSAGE_CACHE = 1;
@@ -263,9 +264,10 @@ export function createSolforgeFetch(
 			}
 
 			const releaseLock = await acquirePaymentLock(walletAddress);
-			
+
 			try {
-				const amountUsd = parseInt(requirement.maxAmountRequired, 10) / 1_000_000;
+				const amountUsd =
+					parseInt(requirement.maxAmountRequired, 10) / 1_000_000;
 				callbacks.onPaymentRequired?.(amountUsd);
 
 				const outcome = await handlePayment({
@@ -278,7 +280,7 @@ export function createSolforgeFetch(
 					maxAttempts: remainingPayments,
 					callbacks,
 				});
-				
+
 				const newTotal = currentAttempts + outcome.attemptsUsed;
 				globalPaymentAttempts.set(walletAddress, newTotal);
 			} finally {
@@ -581,9 +583,7 @@ export async function fetchSolanaUsdcBalance(
 		const walletAddress = keypair.publicKey.toBase58();
 
 		const rpcUrl =
-			network === 'devnet'
-				? 'https://api.devnet.solana.com'
-				: DEFAULT_RPC_URL;
+			network === 'devnet' ? 'https://api.devnet.solana.com' : DEFAULT_RPC_URL;
 
 		const usdcMint =
 			network === 'devnet' ? USDC_MINT_DEVNET : USDC_MINT_MAINNET;
@@ -595,11 +595,7 @@ export async function fetchSolanaUsdcBalance(
 				jsonrpc: '2.0',
 				id: 1,
 				method: 'getTokenAccountsByOwner',
-				params: [
-					walletAddress,
-					{ mint: usdcMint },
-					{ encoding: 'jsonParsed' },
-				],
+				params: [walletAddress, { mint: usdcMint }, { encoding: 'jsonParsed' }],
 			}),
 		});
 

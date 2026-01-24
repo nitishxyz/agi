@@ -4,7 +4,8 @@ export const solforgePaths = {
 			tags: ['solforge'],
 			operationId: 'getSolforgeBalance',
 			summary: 'Get Solforge account balance',
-			description: 'Returns wallet balance, total spent, total topups, and request count',
+			description:
+				'Returns wallet balance, total spent, total topups, and request count',
 			responses: {
 				200: {
 					description: 'OK',
@@ -19,7 +20,13 @@ export const solforgePaths = {
 									totalTopups: { type: 'number' },
 									requestCount: { type: 'number' },
 								},
-								required: ['walletAddress', 'balance', 'totalSpent', 'totalTopups', 'requestCount'],
+								required: [
+									'walletAddress',
+									'balance',
+									'totalSpent',
+									'totalTopups',
+									'requestCount',
+								],
 							},
 						},
 					},
@@ -56,7 +63,8 @@ export const solforgePaths = {
 			tags: ['solforge'],
 			operationId: 'getSolforgeWallet',
 			summary: 'Get Solforge wallet info',
-			description: 'Returns whether the wallet is configured and its public key',
+			description:
+				'Returns whether the wallet is configured and its public key',
 			responses: {
 				200: {
 					description: 'OK',
@@ -82,7 +90,8 @@ export const solforgePaths = {
 			tags: ['solforge'],
 			operationId: 'getSolforgeUsdcBalance',
 			summary: 'Get USDC token balance',
-			description: 'Fetches USDC balance from Solana blockchain for the configured wallet',
+			description:
+				'Fetches USDC balance from Solana blockchain for the configured wallet',
 			parameters: [
 				{
 					in: 'query',

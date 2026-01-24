@@ -635,7 +635,9 @@ class ApiClient {
 		}
 	}
 
-	async getSolforgeUsdcBalance(network: 'mainnet' | 'devnet' = 'mainnet'): Promise<{
+	async getSolforgeUsdcBalance(
+		network: 'mainnet' | 'devnet' = 'mainnet',
+	): Promise<{
 		walletAddress: string;
 		usdcBalance: number;
 		network: 'mainnet' | 'devnet';

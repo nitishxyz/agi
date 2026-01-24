@@ -15,8 +15,11 @@ export function registerDefaultsRoute(app: Hono) {
 			}>();
 
 			const scope = body.scope || 'local';
-			const updates: Partial<{ agent: string; provider: string; model: string }> =
-				{};
+			const updates: Partial<{
+				agent: string;
+				provider: string;
+				model: string;
+			}> = {};
 
 			if (body.agent) updates.agent = body.agent;
 			if (body.provider) updates.provider = body.provider;

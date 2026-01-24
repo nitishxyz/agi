@@ -76,13 +76,11 @@ export function registerSolforgeRoutes(app: Hono) {
 		try {
 			const privateKey = await getSolforgePrivateKey();
 			if (!privateKey) {
-				return c.json(
-					{ error: 'Solforge wallet not configured' },
-					401,
-				);
+				return c.json({ error: 'Solforge wallet not configured' }, 401);
 			}
 
-			const network = (c.req.query('network') as 'mainnet' | 'devnet') || 'mainnet';
+			const network =
+				(c.req.query('network') as 'mainnet' | 'devnet') || 'mainnet';
 
 			const balance = await fetchSolanaUsdcBalance({ privateKey }, network);
 			if (!balance) {
