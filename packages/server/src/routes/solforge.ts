@@ -29,18 +29,12 @@ export function registerSolforgeRoutes(app: Hono) {
 		try {
 			const privateKey = await getSolforgePrivateKey();
 			if (!privateKey) {
-				return c.json(
-					{ error: 'Solforge wallet not configured' },
-					401,
-				);
+				return c.json({ error: 'Solforge wallet not configured' }, 401);
 			}
 
 			const balance = await fetchSolforgeBalance({ privateKey });
 			if (!balance) {
-				return c.json(
-					{ error: 'Failed to fetch balance from Solforge' },
-					502,
-				);
+				return c.json({ error: 'Failed to fetch balance from Solforge' }, 502);
 			}
 
 			return c.json(balance);
@@ -63,10 +57,7 @@ export function registerSolforgeRoutes(app: Hono) {
 
 			const publicKey = getPublicKeyFromPrivate(privateKey);
 			if (!publicKey) {
-				return c.json(
-					{ error: 'Invalid private key', configured: false },
-					200,
-				);
+				return c.json({ error: 'Invalid private key', configured: false }, 200);
 			}
 
 			return c.json({

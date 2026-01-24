@@ -149,8 +149,7 @@ export function registerSolforgeCommand(program: Command) {
 				process.env.SOLANA_RPC_URL ||
 				DEFAULT_RPC_URL;
 			const network = detectNetwork(rpcUrl);
-			const solforgeUrl =
-				process.env.SOLFORGE_BASE_URL || DEFAULT_SOLFORGE_URL;
+			const solforgeUrl = process.env.SOLFORGE_BASE_URL || DEFAULT_SOLFORGE_URL;
 
 			const networkLabel =
 				network === 'mainnet'
@@ -183,7 +182,9 @@ export function registerSolforgeCommand(program: Command) {
 			]);
 
 			if (usdcResult.balance !== null) {
-				console.log(`  USDC:     ${colors.green(`${usdcResult.balance.toFixed(2)} USDC`)}`);
+				console.log(
+					`  USDC:     ${colors.green(`${usdcResult.balance.toFixed(2)} USDC`)}`,
+				);
 			} else if (usdcResult.error) {
 				console.log(`  USDC:     ${colors.dim(usdcResult.error)}`);
 			}

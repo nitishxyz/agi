@@ -2,7 +2,10 @@
 const originalWarn = console.warn;
 console.warn = (...args: unknown[]) => {
 	const msg = args[0];
-	if (typeof msg === 'string' && msg.includes('bigint: Failed to load bindings')) {
+	if (
+		typeof msg === 'string' &&
+		msg.includes('bigint: Failed to load bindings')
+	) {
 		return;
 	}
 	originalWarn.apply(console, args);
