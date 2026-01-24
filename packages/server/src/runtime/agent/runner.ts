@@ -191,7 +191,11 @@ async function runAssistant(opts: RunOpts) {
 					firstDeltaSeen = true;
 					streamStartTimer.end();
 					if (isFirstMessage) {
-						void triggerDeferredTitleGeneration({ cfg, db, sessionId: opts.sessionId });
+						void triggerDeferredTitleGeneration({
+							cfg,
+							db,
+							sessionId: opts.sessionId,
+						});
 					}
 				}
 

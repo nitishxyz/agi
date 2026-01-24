@@ -151,7 +151,7 @@ refactor(auth): return success status from login functions
 
 Commit message:`;
 
-		const systemPrompt = spoofPrompt
+			const systemPrompt = spoofPrompt
 				? spoofPrompt
 				: 'You are a helpful assistant that generates accurate git commit messages based on the actual diff content.';
 

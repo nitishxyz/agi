@@ -8,7 +8,11 @@ export type ZaiProviderConfig = {
 export function createZaiModel(model: string, config?: ZaiProviderConfig) {
 	const entry = catalog.zai;
 	const baseURL = entry?.api || 'https://api.z.ai/api/paas/v4';
-	const apiKey = config?.apiKey || process.env.ZAI_API_KEY || process.env.ZHIPU_API_KEY || '';
+	const apiKey =
+		config?.apiKey ||
+		process.env.ZAI_API_KEY ||
+		process.env.ZHIPU_API_KEY ||
+		'';
 	const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
 
 	const instance = createOpenAICompatible({
@@ -20,10 +24,17 @@ export function createZaiModel(model: string, config?: ZaiProviderConfig) {
 	return instance(model);
 }
 
-export function createZaiCodingModel(model: string, config?: ZaiProviderConfig) {
+export function createZaiCodingModel(
+	model: string,
+	config?: ZaiProviderConfig,
+) {
 	const entry = catalog['zai-coding'];
 	const baseURL = entry?.api || 'https://api.z.ai/api/coding/paas/v4';
-	const apiKey = config?.apiKey || process.env.ZAI_API_KEY || process.env.ZHIPU_API_KEY || '';
+	const apiKey =
+		config?.apiKey ||
+		process.env.ZAI_API_KEY ||
+		process.env.ZHIPU_API_KEY ||
+		'';
 	const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
 
 	const instance = createOpenAICompatible({

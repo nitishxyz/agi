@@ -175,16 +175,16 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 							config.reasoningEffort ||
 							'medium';
 					}
-				if (!parsed.reasoning.summary) {
-					parsed.reasoning.summary =
-						providerOpts.reasoningSummary ||
-						config.reasoningSummary ||
-						'auto';
+					if (!parsed.reasoning.summary) {
+						parsed.reasoning.summary =
+							providerOpts.reasoningSummary ||
+							config.reasoningSummary ||
+							'auto';
+					}
 				}
-			}
 
-			delete parsed.max_output_tokens;
-			delete parsed.max_completion_tokens;
+				delete parsed.max_output_tokens;
+				delete parsed.max_completion_tokens;
 
 				body = JSON.stringify(parsed);
 			} catch {}

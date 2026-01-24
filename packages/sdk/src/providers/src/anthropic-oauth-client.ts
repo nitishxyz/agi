@@ -55,7 +55,11 @@ function filterExistingHeaders(
 		});
 	} else if (Array.isArray(initHeaders)) {
 		for (const [key, value] of initHeaders) {
-			if (key && key.toLowerCase() !== 'x-api-key' && typeof value === 'string') {
+			if (
+				key &&
+				key.toLowerCase() !== 'x-api-key' &&
+				typeof value === 'string'
+			) {
 				headers[key] = value;
 			}
 		}
@@ -69,7 +73,9 @@ function filterExistingHeaders(
 	return headers;
 }
 
-export function createAnthropicOAuthFetch(config: AnthropicOAuthConfig): typeof fetch {
+export function createAnthropicOAuthFetch(
+	config: AnthropicOAuthConfig,
+): typeof fetch {
 	const { oauth, toolNameTransformer } = config;
 
 	return async (input: string | URL | Request, init?: RequestInit) => {
@@ -102,9 +108,20 @@ export function createAnthropicOAuthFetch(config: AnthropicOAuthConfig): typeof 
 							(msg: { content: unknown; [key: string]: unknown }) => {
 								if (Array.isArray(msg.content)) {
 									const content = msg.content.map(
-										(block: { type: string; name?: string; [key: string]: unknown }) => {
-											if ((block.type === 'tool_use' || block.type === 'tool_result') && block.name) {
-												return { ...block, name: toolNameTransformer(block.name) };
+										(block: {
+											type: string;
+											name?: string;
+											[key: string]: unknown;
+										}) => {
+											if (
+												(block.type === 'tool_use' ||
+													block.type === 'tool_result') &&
+												block.name
+											) {
+												return {
+													...block,
+													name: toolNameTransformer(block.name),
+												};
 											}
 											return block;
 										},

@@ -145,13 +145,13 @@ export function createSolforgeFetch(
 				try {
 					const parsed = JSON.parse(body);
 
-				if (promptCacheKey) parsed.prompt_cache_key = promptCacheKey;
-				if (promptCacheRetention)
-					parsed.prompt_cache_retention = promptCacheRetention;
+					if (promptCacheKey) parsed.prompt_cache_key = promptCacheKey;
+					if (promptCacheRetention)
+						parsed.prompt_cache_retention = promptCacheRetention;
 
-				addAnthropicCacheControl(parsed);
-				body = JSON.stringify(parsed);
-			} catch {}
+					addAnthropicCacheControl(parsed);
+					body = JSON.stringify(parsed);
+				} catch {}
 			}
 			const headers = new Headers(init?.headers);
 			const walletHeaders = buildWalletHeaders();

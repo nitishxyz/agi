@@ -4,7 +4,7 @@ import type { AGIEvent } from '../events/types.ts';
 
 function safeStringify(obj: unknown): string {
 	return JSON.stringify(obj, (_key, value) =>
-		typeof value === 'bigint' ? Number(value) : value
+		typeof value === 'bigint' ? Number(value) : value,
 	);
 }
 

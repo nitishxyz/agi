@@ -10,7 +10,10 @@ function isAnthropicModel(model: string): boolean {
 	return lower.includes('anthropic') || lower.includes('claude');
 }
 
-export function getOpenRouterInstance(model?: string, config?: OpenRouterProviderConfig) {
+export function getOpenRouterInstance(
+	model?: string,
+	config?: OpenRouterProviderConfig,
+) {
 	const apiKey = config?.apiKey ?? process.env.OPENROUTER_API_KEY ?? '';
 	const customFetch = model
 		? createConditionalCachingFetch(isAnthropicModel, model)
@@ -18,7 +21,10 @@ export function getOpenRouterInstance(model?: string, config?: OpenRouterProvide
 	return createOpenRouter({ apiKey, fetch: customFetch });
 }
 
-export function createOpenRouterModel(model: string, config?: OpenRouterProviderConfig) {
+export function createOpenRouterModel(
+	model: string,
+	config?: OpenRouterProviderConfig,
+) {
 	const openrouter = getOpenRouterInstance(model, config);
 	return openrouter.chat(model);
 }

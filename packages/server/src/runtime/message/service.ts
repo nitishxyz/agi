@@ -342,7 +342,12 @@ ${promptText}
 		} else {
 			// API key mode: normal flow
 			system = titleInstructions;
-			messagesArray = [{ role: 'user', content: `<user-message>\n${promptText}\n</user-message>` }];
+			messagesArray = [
+				{
+					role: 'user',
+					content: `<user-message>\n${promptText}\n</user-message>`,
+				},
+			];
 
 			debugLog(
 				`[TITLE_GEN] Using API key mode (prompts: title-generator, user-request)`,
@@ -464,7 +469,9 @@ export async function triggerDeferredTitleGeneration(args: {
 			.limit(1);
 
 		if (!userMessages.length || userMessages[0].role !== 'user') {
-			debugLog('[TITLE_GEN] No user message found for deferred title generation');
+			debugLog(
+				'[TITLE_GEN] No user message found for deferred title generation',
+			);
 			return;
 		}
 
@@ -476,7 +483,9 @@ export async function triggerDeferredTitleGeneration(args: {
 			.limit(1);
 
 		if (!parts.length) {
-			debugLog('[TITLE_GEN] No message parts found for deferred title generation');
+			debugLog(
+				'[TITLE_GEN] No message parts found for deferred title generation',
+			);
 			return;
 		}
 

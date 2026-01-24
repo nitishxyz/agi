@@ -14,7 +14,10 @@ function normalizeModelIdentifier(provider: ProviderId, model: string): string {
 	return model.startsWith(prefix) ? model.slice(prefix.length) : model;
 }
 
-export function createOpencodeModel(model: string, config?: OpencodeProviderConfig) {
+export function createOpencodeModel(
+	model: string,
+	config?: OpencodeProviderConfig,
+) {
 	const entry = catalog.opencode;
 	const normalizedModel = normalizeModelIdentifier('opencode', model);
 	const modelInfo =
