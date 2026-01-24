@@ -8,6 +8,7 @@ import { streamPaths } from './paths/stream';
 import { schemas } from './schemas';
 
 import { terminalsPath } from './paths/terminals';
+import { solforgePaths } from './paths/solforge';
 
 export function getOpenAPISpec() {
 	const spec = {
@@ -27,6 +28,7 @@ export function getOpenAPISpec() {
 			{ name: 'files' },
 			{ name: 'git' },
 			{ name: 'terminals' },
+			{ name: 'solforge' },
 		],
 		paths: {
 			...askPaths,
@@ -37,6 +39,7 @@ export function getOpenAPISpec() {
 			...filesPaths,
 			...gitPaths,
 			...terminalsPath,
+			...solforgePaths,
 		},
 		components: {
 			schemas,

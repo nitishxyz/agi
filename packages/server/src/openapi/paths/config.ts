@@ -161,4 +161,58 @@ export const configPaths = {
 			},
 		},
 	},
+	'/v1/config/defaults': {
+		patch: {
+			tags: ['config'],
+			operationId: 'updateDefaults',
+			summary: 'Update default configuration',
+			description: 'Update the default agent, provider, and/or model',
+			parameters: [projectQueryParam()],
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								agent: { type: 'string' },
+								provider: { type: 'string' },
+								model: { type: 'string' },
+								scope: {
+									type: 'string',
+									enum: ['global', 'local'],
+									default: 'local',
+								},
+							},
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: { type: 'boolean' },
+									defaults: {
+										type: 'object',
+										properties: {
+											agent: { type: 'string' },
+											provider: { type: 'string' },
+											model: { type: 'string' },
+										},
+										required: ['agent', 'provider', 'model'],
+									},
+								},
+								required: ['success', 'defaults'],
+							},
+						},
+					},
+				},
+			},
+		},
+	},
 } as const;
