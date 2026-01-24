@@ -4,14 +4,14 @@
 
 ## Overview
 
-`@agi-cli/sdk` is the unified SDK for building AI agents with AGI CLI. It re-exports all functionality from the underlying packages (`@agi-cli/core`, `@agi-cli/providers`, `@agi-cli/auth`, etc.) in a tree-shakable way.
+`@agi-cli/sdk` is the unified SDK for building AI agents with AGI CLI. All authentication, configuration, providers, prompts, tools, and core AI functionality are included in this single package.
 
 **Why use the SDK?**
 - ✅ **Single import**: All functionality from one package
 - ✅ **Tree-shakable**: Bundlers only include what you use
 - ✅ **Type-safe**: Full TypeScript support with comprehensive types
 - ✅ **Zero circular dependencies**: Clean architecture
-- ✅ **Consistent API**: No need to remember which package exports what
+- ✅ **Consistent API**: No need to remember which module exports what
 
 ## Installation
 
@@ -25,7 +25,7 @@ bun add @agi-cli/sdk
 import { generateText, resolveModel } from '@agi-cli/sdk';
 import type { ProviderId } from '@agi-cli/sdk';
 
-const model = resolveModel('anthropic', 'claude-3-5-sonnet-20241022');
+const model = resolveModel('anthropic', 'claude-sonnet-4-20250514');
 
 const { text } = await generateText({
   model,
@@ -37,7 +37,7 @@ console.log(text);
 
 ## What's Included?
 
-### Types (from `@agi-cli/types`)
+### Types
 
 All shared types are available:
 
@@ -52,7 +52,7 @@ import type {
 } from '@agi-cli/sdk';
 ```
 
-### Providers (from `@agi-cli/providers`)
+### Providers
 
 Provider catalog and utilities:
 
@@ -72,16 +72,16 @@ import {
 } from '@agi-cli/sdk';
 
 // Check available providers
-console.log(providerIds); // ['openai', 'anthropic', 'google', 'openrouter', 'opencode']
+console.log(providerIds); // ['openai', 'anthropic', 'google', 'openrouter', 'opencode', 'solforge']
 
 // Get model information
 const models = catalog.anthropic.models;
 
 // Validate provider/model combination
-const result = validateProviderModel('anthropic', 'claude-3-5-sonnet-20241022');
+const result = validateProviderModel('anthropic', 'claude-sonnet-4-20250514');
 ```
 
-### Authentication (from `@agi-cli/auth`)
+### Authentication
 
 Manage API keys and OAuth:
 
@@ -106,35 +106,30 @@ const url = await authorize('anthropic');
 console.log(`Visit: ${url}`);
 ```
 
-### Configuration (from `@agi-cli/config`)
+### Configuration
 
 Load and manage configuration:
 
 ```typescript
-import { loadConfig, readConfig } from '@agi-cli/sdk';
+import { loadConfig } from '@agi-cli/sdk';
 import type { AGIConfig } from '@agi-cli/sdk';
 
 const config = await loadConfig();
 console.log(config.provider); // 'anthropic'
-console.log(config.model);    // 'claude-3-5-sonnet-20241022'
+console.log(config.model);    // 'claude-sonnet-4-20250514'
 ```
 
-### Prompts (from `@agi-cli/prompts`)
+### Prompts
 
 Pre-built system prompts:
 
 ```typescript
-import { systemPrompt, codeContext } from '@agi-cli/sdk';
+import { providerBasePrompt } from '@agi-cli/sdk';
 
-const prompt = systemPrompt('dev', {
-  workdir: '/home/user/project',
-  platform: 'linux',
-});
-
-const context = codeContext({ includeGitInfo: true });
+const prompt = providerBasePrompt('anthropic');
 ```
 
-### Core AI Functions (from `@agi-cli/core`)
+### Core AI Functions
 
 AI SDK re-exports and utilities:
 
@@ -181,28 +176,7 @@ const { object } = await generateObject({
 const tools = await discoverProjectTools('/path/to/project');
 ```
 
-### Database (from `@agi-cli/database`)
-
-Database access:
-
-```typescript
-import { getDb, dbSchema } from '@agi-cli/sdk';
-
-const db = getDb();
-const messages = await db.select().from(dbSchema.messages);
-```
-
-### Server (from `@agi-cli/server`)
-
-Create an HTTP server:
-
-```typescript
-import { createServer } from '@agi-cli/sdk';
-
-const app = createServer();
-```
-
-### Error Handling (from `@agi-cli/core`)
+### Error Handling
 
 Typed error classes:
 
@@ -237,38 +211,29 @@ The SDK is fully tree-shakable. Modern bundlers (Vite, Rollup, esbuild, webpack)
 import { generateText, resolveModel } from '@agi-cli/sdk';
 ```
 
-## Direct Package Access (Not Recommended)
-
-While you _can_ import directly from individual packages, we recommend using the SDK for consistency:
-
-```typescript
-// ❌ Discouraged - fragmented imports
-import { catalog } from '@agi-cli/providers';
-import { generateText } from '@agi-cli/core';
-import type { ProviderId } from '@agi-cli/types';
-
-// ✅ Recommended - single source of truth
-import { catalog, generateText } from '@agi-cli/sdk';
-import type { ProviderId } from '@agi-cli/sdk';
-```
-
 ## Architecture
 
-The SDK follows a clean dependency graph with zero circular dependencies:
+The SDK contains all functionality internally:
 
 ```
-@agi-cli/types (foundation)
-    ↓
-@agi-cli/providers, @agi-cli/auth, @agi-cli/config
-    ↓
-@agi-cli/database, @agi-cli/prompts
-    ↓
-@agi-cli/core
-    ↓
-@agi-cli/server
-    ↓
-@agi-cli/sdk ← YOU ARE HERE (single source of truth)
+@agi-cli/sdk/src/
+├── auth/           ← Authentication (OAuth, API keys)
+├── config/         ← Configuration (global + project)
+├── core/           ← Core AI functionality
+│   ├── providers/     (model resolution)
+│   ├── tools/         (builtin tools)
+│   ├── streaming/     (artifacts)
+│   └── errors.ts      (error classes)
+├── prompts/        ← System prompts
+├── providers/      ← Provider catalog & utilities
+└── index.ts        ← Main exports
 ```
+
+Related packages:
+- `@agi-cli/database` - SQLite persistence (depends on sdk)
+- `@agi-cli/server` - HTTP API (depends on sdk, database)
+- `@agi-cli/api` - Type-safe API client (standalone)
+- `@agi-cli/web-sdk` - React hooks & components (depends on api)
 
 ## Examples
 
@@ -356,8 +321,7 @@ import type {
   CoreMessage,
   Tool,
   DiscoveredTool,
-  Artifact,
-  ExecutionContext
+  Artifact
 } from '@agi-cli/sdk';
 
 // All types are fully documented and type-safe

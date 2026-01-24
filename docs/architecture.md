@@ -10,22 +10,22 @@ AGI CLI is organized as a **Bun workspace monorepo** with 7 packages and 2 appli
 agi/
 ├── apps/
 │   ├── cli/                    # AGI CLI application (main binary)
-│   └── install/                # npm installer package
+│   └── web/                    # Web application (standalone)
 ├── packages/
-│   ├── auth/                   # Authentication & credential management
-│   ├── config/                 # Configuration system
+│   ├── api/                    # Type-safe API client
 │   ├── database/               # SQLite database & Drizzle ORM
-│   ├── prompts/                # System prompts for agents
-│   ├── providers/              # AI provider catalog & utilities
-│   ├── sdk/                    # Core SDK (tools, streaming, agents)
-│   └── server/                 # HTTP server (Hono-based)
+│   ├── install/                # npm installer package
+│   ├── sdk/                    # Core SDK (tools, streaming, agents, auth, config, providers, prompts)
+│   ├── server/                 # HTTP server (Hono-based)
+│   ├── web-sdk/                # React components, hooks, and utilities
+│   └── web-ui/                 # Pre-built static web UI assets
 ├── package.json                # Workspace root configuration
 └── bun.lock
 ```
 
 ## Package Descriptions
 
-### `@agi-cli/install` (Application)
+### `@agi-cli/install`
 
 **Purpose:** npm installer package that downloads and installs the AGI CLI binary.
 
@@ -55,49 +55,6 @@ bun install -g @agi-cli/install
 
 ---
 
-### `@agi-cli/auth`
-
-**Purpose:** Manages authentication and credentials for AI providers.
-
-**Key Features:**
-
-- OAuth flow support
-- API key management
-- Secure credential storage (`~/Library/Application Support/agi/auth.json`)
-- Provider-specific authentication
-
-**Exports:**
-
-- `getAllAuth`, `getAuth`, `setAuth`, `removeAuth`
-- `authorize`, `exchange`, `refreshToken`, `openAuthUrl`, `createApiKey`
-- Types: `AuthInfo`, `OAuth`, `ProviderId`
-
-**Dependencies:** `@agi-cli/config`, `@agi-cli/providers`
-
----
-
-### `@agi-cli/config`
-
-**Purpose:** Configuration management for global and project-local settings.
-
-**Key Features:**
-
-- XDG Base Directory support (`~/.config/agi/`)
-- Project-local config (`.agi/config.json`)
-- Config merging (defaults → global → local)
-- Path resolution utilities
-
-**Exports:**
-
-- `loadConfig`, `read`, `writeDefaults`, `writeAuth`, `removeAuth`
-- `isAuthorized`, `ensureEnv`
-- Path utilities from `./paths` submodule
-- Types: `AGIConfig`, `ProviderConfig`, `Scope`
-
-**Dependencies:** `@agi-cli/providers`, `@agi-cli/auth`
-
----
-
 ### `@agi-cli/database`
 
 **Purpose:** SQLite database with Drizzle ORM for session/message persistence.
@@ -115,60 +72,13 @@ bun install -g @agi-cli/install
 - Schema exports: `sessions`, `messages`, `messageParts`, `artifacts`
 - Types: `Session`, `Message`, `MessagePart`
 
-**Dependencies:** None (standalone)
-
----
-
-### `@agi-cli/providers`
-
-**Purpose:** AI provider catalog with models, pricing, and capabilities.
-
-**Key Features:**
-
-- Provider catalog (OpenAI, Anthropic, Google, OpenRouter, OpenCode, Solforge)
-- Model information (capabilities, pricing, context windows)
-- Environment variable management for API keys
-- Provider validation
-- Solforge wallet auth support via `SOLFORGE_PRIVATE_KEY` (base58 Solana secret)
-
-**Exports:**
-
-- `catalog` - Provider/model metadata
-- `providerIds`, `isProviderId`, `defaultModelFor`, `hasModel`
-- `validateProviderModel` - Validates provider/model combinations
-- `estimateModelCostUsd` - Cost estimation
-- `isProviderAuthorized`, `ensureProviderEnv`
-- `readEnvKey`, `setEnvKey`, `providerEnvVar`
-- Types: `ProviderId`, `ModelInfo`
-
-**Dependencies:** None (standalone catalog)
-
----
-
-### `@agi-cli/prompts`
-
-**Purpose:** System prompts for agents and providers.
-
-**Key Features:**
-
-- Base system prompt composition
-- Agent-specific prompts (general, build, plan)
-- Provider-specific prompt adaptations
-- Template system
-
-**Exports:**
-
-- Prompt loading utilities
-- Agent prompts
-- Provider prompt templates
-
-**Dependencies:** None
+**Dependencies:** `@agi-cli/sdk`
 
 ---
 
 ### `@agi-cli/sdk`
 
-**Purpose:** Core SDK with tools, streaming, and agent system.
+**Purpose:** Core SDK with tools, streaming, agent system, authentication, configuration, and providers.
 
 **Key Features:**
 
@@ -176,16 +86,22 @@ bun install -g @agi-cli/install
 - Tool loader (supports custom tools)
 - Streaming infrastructure (SSE, artifacts)
 - Agent registry
-- Provider resolution
+- Provider resolution and catalog
+- OAuth flow support and API key management
+- Configuration system (global and project-local)
+- System prompts for agents
 
 **Exports:**
 
 - Tool system: `loadTools`, `tool` definitions
 - Streaming: artifact management, SSE utilities
 - Agent types and registry
-- Provider resolver
+- Provider resolver and catalog
+- Auth utilities
+- Config loading and management
+- Prompt composition
 
-**Dependencies:** `@agi-cli/auth`, `@agi-cli/config`, `@agi-cli/providers`, `@agi-cli/database`
+**Dependencies:** None (standalone - includes everything)
 
 ---
 
@@ -208,7 +124,63 @@ bun install -g @agi-cli/install
 - Runtime services (askService, sessionManager, messageService)
 - Event system
 
-**Dependencies:** `@agi-cli/sdk`, `@agi-cli/auth`, `@agi-cli/config`, `@agi-cli/providers`, `@agi-cli/database`
+**Dependencies:** `@agi-cli/sdk`, `@agi-cli/database`
+
+---
+
+### `@agi-cli/api`
+
+**Purpose:** Type-safe API client for AGI CLI server.
+
+**Key Features:**
+
+- Generated from OpenAPI spec
+- Axios-based HTTP client
+- SSE streaming support
+- Full TypeScript types
+
+**Exports:**
+
+- API client functions
+- Request/response types
+
+**Dependencies:** None (standalone client)
+
+---
+
+### `@agi-cli/web-sdk`
+
+**Purpose:** Reusable React components, hooks, and utilities for building AGI CLI web interfaces.
+
+**Key Features:**
+
+- React hooks for API interactions
+- UI components for chat interfaces
+- State management utilities
+- Terminal rendering with xterm.js
+
+**Exports:**
+
+- React components
+- Custom hooks
+- State stores
+- Utility functions
+
+**Dependencies:** `@agi-cli/api`
+
+---
+
+### `@agi-cli/web-ui`
+
+**Purpose:** Pre-built static web UI assets for embedding in the CLI binary.
+
+**Key Features:**
+
+- Pre-compiled static assets
+- Embeddable in CLI binary
+- Express middleware for serving
+
+**Dependencies:** None (standalone assets)
 
 ---
 
@@ -231,7 +203,7 @@ bun install -g @agi-cli/install
 - `bun run dev` - Run in development mode
 - `bun run build` - Build standalone binary (61MB)
 
-**Dependencies:** All packages
+**Dependencies:** `@agi-cli/sdk`, `@agi-cli/server`, `@agi-cli/database`
 
 ---
 
@@ -239,7 +211,7 @@ bun install -g @agi-cli/install
 
 ```
                  ┌─────────┐
-                 │ install │ (installer app)
+                 │ install │ (npm installer)
                  └─────────┘
                       │
                       │ (downloads binary)
@@ -251,26 +223,28 @@ bun install -g @agi-cli/install
       ┌───────────────┼───────────────┐
       │               │               │
  ┌────▼────┐     ┌───▼────┐     ┌───▼─────┐
- │ server  │     │  sdk   │     │ prompts │
- └────┬────┘     └───┬────┘     └─────────┘
-      │              │
-      └──────┬───────┘
-             │
-      ┌──────┼───────┬─────────┐
-      │      │       │         │
- ┌────▼──┐ ┌▼─────┐ ┌▼────────┐ ┌──────────┐
- │ auth  │ │config│ │providers│ │ database │
- └───────┘ └──────┘ └─────────┘ └──────────┘
+ │ server  │     │  sdk   │     │database │
+ └────┬────┘     └────────┘     └─────────┘
+      │
+      └──────────────────────────────────┐
+                                         │
+                                    ┌────▼────┐
+                                    │   api   │
+                                    └────┬────┘
+                                         │
+                                    ┌────▼────┐
+                                    │ web-sdk │
+                                    └─────────┘
 ```
 
 **Dependency Rules:**
 
-- **Level 0** (no deps): `database`, `providers`, `prompts`, `install` (standalone)
-- **Level 1**: `auth` → config, providers
-- **Level 1**: `config` → providers, auth
-- **Level 2**: `sdk` → auth, config, providers, database
-- **Level 3**: `server` → sdk + all level 1-2 packages
-- **Level 4**: `cli` → all packages
+- **Level 0** (no deps): `install`, `api`, `web-ui`
+- **Level 1**: `sdk` (standalone - includes auth, config, providers, prompts)
+- **Level 2**: `database` (depends on sdk for paths)
+- **Level 3**: `server` (depends on sdk, database)
+- **Level 4**: `web-sdk` (depends on api)
+- **Level 5**: `cli` (depends on sdk, server, database)
 
 ---
 
@@ -279,7 +253,6 @@ bun install -g @agi-cli/install
 ### Import Paths
 
 - **Workspace packages:** `@agi-cli/package-name`
-- **Submodules:** `@agi-cli/config/paths`, `@agi-cli/config/manager`
 - **Local imports:** `./file.ts` or `../file.ts`
 - **Never use:** `@/` path aliases (removed during migration)
 
@@ -328,7 +301,7 @@ bun run build
 ### Testing
 
 ```bash
-./test-monorepo.sh
+bun test
 ```
 
 ### Linting
@@ -394,101 +367,6 @@ bun lint
 
 ---
 
-## Architecture Benefits
-
-### Clear Separation of Concerns
-
-- Each package has a single, well-defined responsibility
-- Dependencies are explicit and documented
-- No circular dependencies
-
-### Independent Testing
-
-- Packages can be tested in isolation
-- Clear boundaries make mocking easier
-
-### Reusability
-
-- Packages can be used independently
-- Server package can run standalone
-- SDK can be imported into other projects
-
-### Maintainability
-
-- Easier to understand codebase
-- Changes are localized to specific packages
-- Clear dependency graph prevents tangled code
-
-### Build Optimization
-
-- Only rebuild changed packages
-- Bun workspace provides fast installs
-- Single 61MB binary bundles everything
-
-### Easy Distribution
-
-- npm installer package for simple installation
-- Binary releases for all platforms
-- SDK package for embedding in other projects
-
----
-
-## Binary Build
-
-The CLI binary is built with `bun build --compile`:
-
-**Features:**
-
-- **Self-contained:** All dependencies bundled
-- **Fast startup:** ~50ms cold start
-- **Size:** 61MB (includes Bun runtime + 684 modules)
-- **Platform-specific:** Built per-platform (macOS, Linux, Windows)
-
-**Build Process:**
-
-```bash
-cd apps/cli
-bun run prebuild
-bun build --compile ./index.ts --outfile dist/agi
-```
-
-**Output:** `apps/cli/dist/agi` (executable)
-
----
-
-## Configuration Hierarchy
-
-AGI CLI uses a three-level configuration system:
-
-1. **Defaults** (hardcoded in code)
-2. **Global config** (`~/.config/agi/config.json`)
-3. **Project config** (`.agi/config.json`)
-
-**Merge strategy:** Defaults → Global → Project (later overrides earlier)
-
-**Example:**
-
-```javascript
-// Defaults
-{
-  defaults: { agent: "general", provider: "openai", model: "gpt-4o-mini" },
-  providers: { openai: { enabled: true }, ... }
-}
-
-// Merged with global (~/.config/agi/config.json)
-{
-  defaults: { provider: "anthropic", model: "claude-sonnet-4" }
-}
-
-// Final config (project overrides)
-{
-  defaults: { agent: "general", provider: "anthropic", model: "claude-sonnet-4" },
-  providers: { ... }
-}
-```
-
----
-
 ## Installation Methods
 
 AGI CLI supports multiple installation methods:
@@ -540,5 +418,3 @@ AGI CLI is a well-structured monorepo with clear boundaries, explicit dependenci
 - **Full testability** with isolated packages
 - **Single self-contained binary** for distribution
 - **Automated CI/CD** with version synchronization
-
-The addition of the `@agi-cli/install` package provides a streamlined installation experience while maintaining flexibility for advanced users.

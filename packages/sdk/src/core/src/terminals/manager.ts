@@ -112,7 +112,7 @@ export class TerminalManager {
 	async killAll(): Promise<void> {
 		const killPromises = Array.from(this.terminals.keys()).map((id) =>
 			this.kill(id).catch((err) =>
-				console.error(`Failed to kill terminal ${id}:`, err),
+				logger.error(`Failed to kill terminal ${id}`, err),
 			),
 		);
 

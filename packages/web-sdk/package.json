@@ -50,11 +50,11 @@
 		"sdk",
 		"web"
 	],
-	"author": "AGI CLI Team",
+	"author": "ntishxyz",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/yourusername/agi-cli.git",
+		"url": "git+https://github.com/ntishxyz/agi.git",
 		"directory": "packages/web-sdk"
 	},
 	"dependencies": {

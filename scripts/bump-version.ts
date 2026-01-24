@@ -192,6 +192,10 @@ function main() {
 	const cliPackagePath = resolve(process.cwd(), 'apps/cli/package.json');
 	updatePackageVersion(cliPackagePath, nextVersion, dryRun);
 
+	// Update web app package.json
+	const webAppPackagePath = resolve(process.cwd(), 'apps/web/package.json');
+	updatePackageVersion(webAppPackagePath, nextVersion, dryRun);
+
 	// Update install package.json (moved to packages/)
 	const installPackagePath = resolve(
 		process.cwd(),

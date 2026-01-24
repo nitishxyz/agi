@@ -150,14 +150,13 @@ See [architecture.md](architecture.md) for detailed architecture information.
 
 Use workspace package imports for cross-package dependencies:
 
-- `@agi-cli/auth` - Authentication & credentials
-- `@agi-cli/config` - Configuration system
+- `@agi-cli/api` - Type-safe API client
 - `@agi-cli/database` - SQLite + Drizzle ORM
-- `@agi-cli/prompts` - System prompts
-- `@agi-cli/providers` - AI provider catalog
-- `@agi-cli/sdk` - Core SDK (tools, streaming, agents)
+- `@agi-cli/install` - npm installer package
+- `@agi-cli/sdk` - Core SDK (tools, streaming, agents, auth, config, providers, prompts)
 - `@agi-cli/server` - HTTP server
-- `@agi-cli/web-ui` - Web UI components
+- `@agi-cli/web-sdk` - React components, hooks, and utilities
+- `@agi-cli/web-ui` - Pre-built static web UI assets
 
 **Rules:**
 - Use workspace imports (`@agi-cli/...`) for cross-package dependencies

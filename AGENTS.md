@@ -21,14 +21,13 @@ This file defines conventions for AI agents and human contributors working in th
 
 Use workspace package imports for cross-package dependencies:
 
-- `@agi-cli/auth` - Authentication & credentials
-- `@agi-cli/config` - Configuration system
+- `@agi-cli/api` - Type-safe API client
 - `@agi-cli/database` - SQLite + Drizzle ORM
-- `@agi-cli/prompts` - System prompts
-- `@agi-cli/providers` - AI provider catalog
-- `@agi-cli/sdk` - Core SDK (tools, streaming, agents)
+- `@agi-cli/install` - npm installer package
+- `@agi-cli/sdk` - Core SDK (tools, streaming, agents, auth, config, providers, prompts)
 - `@agi-cli/server` - HTTP server
-- `@agi-cli/web-ui` - Web UI components
+- `@agi-cli/web-sdk` - React components, hooks, and utilities
+- `@agi-cli/web-ui` - Pre-built static web UI assets
 
 **Import Rules:**
 
@@ -70,7 +69,7 @@ When you need schema/database changes:
 ## AI SDK and Agents
 
 - Use AI SDK v5 APIs (`generateText`, `streamText`, `generateObject`, `streamObject`, `tool`, `embed`, `rerank`)
-- Support provider switching via `@agi-cli/providers` (OpenAI, Anthropic, Google, OpenRouter, OpenCode, Solforge)
+- Support provider switching via SDK (OpenAI, Anthropic, Google, OpenRouter, OpenCode, Solforge)
 - Solforge uses Solana wallet auth — store the base58 private key with `agi auth login solforge` or via `SOLFORGE_PRIVATE_KEY`
 - Agents and tools are modular
 - Load defaults from `packages/sdk/src/tools/`
@@ -102,11 +101,12 @@ Each package under `packages/` should have:
 
 - Follow dependency graph levels documented in [docs/architecture.md](docs/architecture.md)
 - No circular dependencies between packages
-- Level 0 (no deps): database, providers, prompts
-- Level 1: auth, config (depend on providers)
-- Level 2: sdk (depends on auth, config, providers, database)
-- Level 3: server (depends on sdk + all lower levels)
-- Level 4: cli (depends on all packages)
+- Level 0 (no deps): database, install
+- Level 1: sdk (standalone - includes auth, config, providers, prompts)
+- Level 2: api (standalone API client)
+- Level 3: server (depends on sdk, database)
+- Level 4: web-sdk (depends on api)
+- Level 5: cli (depends on sdk, server, database)
 
 ## Documentation
 
