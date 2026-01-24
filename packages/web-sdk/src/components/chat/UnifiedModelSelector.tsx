@@ -286,13 +286,13 @@ export const UnifiedModelSelector = forwardRef<
 						) : (
 							Object.entries(filteredModels).map(
 								([providerKey, providerData]) => (
-									<div
-										key={providerKey}
-										className="border-b border-[hsl(var(--border))] last:border-0"
-									>
-										<div className="px-3 py-2 text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider bg-[hsl(var(--muted))]">
-											{providerData.label}
-										</div>
+								<div
+									key={providerKey}
+									className="border-b border-[hsl(var(--border))] last:border-0"
+								>
+									<div className="sticky top-0 px-3 py-2 text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider bg-[hsl(var(--muted))] z-10">
+										{providerData.label}
+									</div>
 										<div>
 											{providerData.models.map((modelItem) => {
 												const isSelected =
