@@ -16,7 +16,9 @@ export async function resolveModel(
 	options?: { systemPrompt?: string; sessionId?: string },
 ) {
 	if (provider === 'openai') {
-		return resolveOpenAIModel(model, cfg, options);
+		return resolveOpenAIModel(model, cfg, {
+			systemPrompt: options?.systemPrompt,
+		});
 	}
 	if (provider === 'anthropic') {
 		const instance = await getAnthropicInstance(cfg);

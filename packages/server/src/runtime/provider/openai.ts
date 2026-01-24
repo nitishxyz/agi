@@ -7,8 +7,6 @@ export async function resolveOpenAIModel(
 	cfg: AGIConfig,
 	options?: {
 		systemPrompt?: string;
-		promptCacheKey?: string;
-		promptCacheRetention?: 'in_memory' | '24h';
 	},
 ) {
 	const auth = await getAuth('openai', cfg.projectRoot);
@@ -20,8 +18,6 @@ export async function resolveOpenAIModel(
 			reasoningEffort: isCodexModel ? 'high' : 'medium',
 			reasoningSummary: 'auto',
 			instructions: options?.systemPrompt,
-			promptCacheKey: options?.promptCacheKey,
-			promptCacheRetention: options?.promptCacheRetention,
 		});
 	}
 	if (auth?.type === 'api' && auth.key) {

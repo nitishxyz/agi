@@ -14,8 +14,6 @@ export type OpenAIOAuthConfig = {
 	instructions?: string;
 	reasoningEffort?: 'none' | 'low' | 'medium' | 'high' | 'xhigh';
 	reasoningSummary?: 'auto' | 'detailed';
-	promptCacheKey?: string;
-	promptCacheRetention?: 'in_memory' | '24h';
 };
 
 async function ensureValidToken(
@@ -177,29 +175,16 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 							config.reasoningEffort ||
 							'medium';
 					}
-					if (!parsed.reasoning.summary) {
-						parsed.reasoning.summary =
-							providerOpts.reasoningSummary ||
-							config.reasoningSummary ||
-							'auto';
-					}
+				if (!parsed.reasoning.summary) {
+					parsed.reasoning.summary =
+						providerOpts.reasoningSummary ||
+						config.reasoningSummary ||
+						'auto';
 				}
+			}
 
-				const cacheKey =
-					parsed.providerOptions?.openai?.promptCacheKey ||
-					config.promptCacheKey;
-				const cacheRetention =
-					parsed.providerOptions?.openai?.promptCacheRetention ||
-					config.promptCacheRetention;
-				if (cacheKey) {
-					parsed.prompt_cache_key = cacheKey;
-				}
-				if (cacheRetention) {
-					parsed.prompt_cache_retention = cacheRetention;
-				}
-
-				delete parsed.max_output_tokens;
-				delete parsed.max_completion_tokens;
+			delete parsed.max_output_tokens;
+			delete parsed.max_completion_tokens;
 
 				body = JSON.stringify(parsed);
 			} catch {}

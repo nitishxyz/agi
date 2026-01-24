@@ -98,3 +98,24 @@ export function getFastModelForAuth(
 
 	return sorted[0]?.id ?? filteredModels[0]?.id;
 }
+
+export function getModelNpmBinding(
+	provider: ProviderId,
+	model: string,
+): string | undefined {
+	const entry = catalog[provider];
+	if (!entry) return undefined;
+	const modelInfo = entry.models?.find((m) => m.id === model);
+	return modelInfo?.provider?.npm ?? entry.npm;
+}
+
+export function isAnthropicBasedModel(
+	provider: ProviderId,
+	model: string,
+): boolean {
+	if (provider === 'anthropic') return true;
+	const npm = getModelNpmBinding(provider, model);
+	if (npm === '@ai-sdk/anthropic') return true;
+	const lower = model.toLowerCase();
+	return lower.includes('claude') || lower.includes('anthropic');
+}

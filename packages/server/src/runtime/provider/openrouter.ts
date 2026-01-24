@@ -1,11 +1,7 @@
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { getOpenRouterInstance, createOpenRouterModel } from '@agi-cli/sdk';
 
-export function getOpenRouterInstance() {
-	const apiKey = process.env.OPENROUTER_API_KEY ?? '';
-	return createOpenRouter({ apiKey });
-}
+export { getOpenRouterInstance };
 
 export function resolveOpenRouterModel(model: string) {
-	const openrouter = getOpenRouterInstance();
-	return openrouter.chat(model);
+	return createOpenRouterModel(model);
 }

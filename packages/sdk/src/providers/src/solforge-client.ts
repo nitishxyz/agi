@@ -7,6 +7,7 @@ import { svm } from 'x402/shared';
 import nacl from 'tweetnacl';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { addAnthropicCacheControl } from './anthropic-caching.ts';
 
 const DEFAULT_BASE_URL = 'https://router.solforge.sh';
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
@@ -144,93 +145,13 @@ export function createSolforgeFetch(
 				try {
 					const parsed = JSON.parse(body);
 
-					if (promptCacheKey) parsed.prompt_cache_key = promptCacheKey;
-					if (promptCacheRetention)
-						parsed.prompt_cache_retention = promptCacheRetention;
+				if (promptCacheKey) parsed.prompt_cache_key = promptCacheKey;
+				if (promptCacheRetention)
+					parsed.prompt_cache_retention = promptCacheRetention;
 
-					const MAX_SYSTEM_CACHE = 1;
-					const MAX_MESSAGE_CACHE = 1;
-					let systemCacheUsed = 0;
-					let messageCacheUsed = 0;
-
-					if (parsed.system && Array.isArray(parsed.system)) {
-						parsed.system = parsed.system.map(
-							(
-								block: { type: string; cache_control?: unknown },
-								index: number,
-							) => {
-								if (block.cache_control) return block;
-								if (
-									systemCacheUsed < MAX_SYSTEM_CACHE &&
-									index === 0 &&
-									block.type === 'text'
-								) {
-									systemCacheUsed++;
-									return { ...block, cache_control: { type: 'ephemeral' } };
-								}
-								return block;
-							},
-						);
-					}
-
-					if (parsed.messages && Array.isArray(parsed.messages)) {
-						const messageCount = parsed.messages.length;
-						parsed.messages = parsed.messages.map(
-							(
-								msg: {
-									role: string;
-									content: unknown;
-									[key: string]: unknown;
-								},
-								msgIndex: number,
-							) => {
-								const isLast = msgIndex === messageCount - 1;
-
-								if (Array.isArray(msg.content)) {
-									const blocks = msg.content as {
-										type: string;
-										cache_control?: unknown;
-									}[];
-									const content = blocks.map((block, blockIndex) => {
-										if (block.cache_control) return block;
-										if (
-											isLast &&
-											messageCacheUsed < MAX_MESSAGE_CACHE &&
-											blockIndex === blocks.length - 1
-										) {
-											messageCacheUsed++;
-											return { ...block, cache_control: { type: 'ephemeral' } };
-										}
-										return block;
-									});
-									return { ...msg, content };
-								}
-
-								if (
-									isLast &&
-									messageCacheUsed < MAX_MESSAGE_CACHE &&
-									typeof msg.content === 'string'
-								) {
-									messageCacheUsed++;
-									return {
-										...msg,
-										content: [
-											{
-												type: 'text',
-												text: msg.content,
-												cache_control: { type: 'ephemeral' },
-											},
-										],
-									};
-								}
-
-								return msg;
-							},
-						);
-					}
-
-					body = JSON.stringify(parsed);
-				} catch {}
+				addAnthropicCacheControl(parsed);
+				body = JSON.stringify(parsed);
+			} catch {}
 			}
 			const headers = new Headers(init?.headers);
 			const walletHeaders = buildWalletHeaders();

@@ -42,6 +42,8 @@ export {
 	hasModel,
 	getFastModel,
 	getFastModelForAuth,
+	getModelNpmBinding,
+	isAnthropicBasedModel,
 } from './providers/src/index.ts';
 export {
 	isProviderAuthorized,
@@ -77,6 +79,27 @@ export {
 	filterModelsForAuthType,
 	getOAuthModelPrefixes,
 } from './providers/src/index.ts';
+export {
+	addAnthropicCacheControl,
+	createAnthropicCachingFetch,
+	createConditionalCachingFetch,
+} from './providers/src/index.ts';
+export {
+	createAnthropicOAuthFetch,
+	createAnthropicOAuthModel,
+} from './providers/src/index.ts';
+export type { AnthropicOAuthConfig } from './providers/src/index.ts';
+export { createGoogleModel } from './providers/src/index.ts';
+export type { GoogleProviderConfig } from './providers/src/index.ts';
+export { createZaiModel, createZaiCodingModel } from './providers/src/index.ts';
+export type { ZaiProviderConfig } from './providers/src/index.ts';
+export {
+	getOpenRouterInstance,
+	createOpenRouterModel,
+} from './providers/src/index.ts';
+export type { OpenRouterProviderConfig } from './providers/src/index.ts';
+export { createOpencodeModel } from './providers/src/index.ts';
+export type { OpencodeProviderConfig } from './providers/src/index.ts';
 
 // =======================
 // Authentication (from internal auth module)
