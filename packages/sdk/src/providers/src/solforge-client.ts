@@ -67,6 +67,42 @@ type PaymentResponse = {
 	transaction?: string;
 };
 
+type PaymentQueueEntry = {
+	promise: Promise<void>;
+	resolve: () => void;
+};
+
+const paymentQueues = new Map<string, PaymentQueueEntry>();
+const globalPaymentAttempts = new Map<string, number>();
+
+async function acquirePaymentLock(walletAddress: string): Promise<() => void> {
+	const existing = paymentQueues.get(walletAddress);
+	
+	let resolveFunc: () => void = () => {};
+	const newPromise = new Promise<void>((resolve) => {
+		resolveFunc = resolve;
+	});
+	
+	const entry: PaymentQueueEntry = {
+		promise: newPromise,
+		resolve: resolveFunc,
+	};
+	
+	paymentQueues.set(walletAddress, entry);
+	
+	if (existing) {
+		console.log('[Solforge] Waiting for pending payment to complete...');
+		await existing.promise;
+	}
+	
+	return () => {
+		if (paymentQueues.get(walletAddress) === entry) {
+			paymentQueues.delete(walletAddress);
+		}
+		resolveFunc();
+	};
+}
+
 export function createSolforgeFetch(
 	auth: SolforgeAuth,
 	options: SolforgeProviderOptions = {},
@@ -84,7 +120,6 @@ export function createSolforgeFetch(
 	const promptCacheRetention = options.promptCacheRetention;
 
 	const baseFetch = globalThis.fetch.bind(globalThis);
-	let paymentAttempts = 0;
 
 	const buildWalletHeaders = () => {
 		const nonce = Date.now().toString();
@@ -105,19 +140,94 @@ export function createSolforgeFetch(
 		while (attempt < maxAttempts) {
 			attempt++;
 			let body = init?.body;
-			if (
-				body &&
-				typeof body === 'string' &&
-				(promptCacheKey || promptCacheRetention)
-			) {
+			if (body && typeof body === 'string') {
 				try {
 					const parsed = JSON.parse(body);
-					if (promptCacheKey) {
-						parsed.prompt_cache_key = promptCacheKey;
+
+					if (promptCacheKey) parsed.prompt_cache_key = promptCacheKey;
+					if (promptCacheRetention) parsed.prompt_cache_retention = promptCacheRetention;
+
+					const MAX_SYSTEM_CACHE = 1;
+					const MAX_MESSAGE_CACHE = 1;
+					let systemCacheUsed = 0;
+					let messageCacheUsed = 0;
+
+					if (parsed.system && Array.isArray(parsed.system)) {
+						parsed.system = parsed.system.map(
+							(
+								block: { type: string; cache_control?: unknown },
+								index: number,
+							) => {
+								if (block.cache_control) return block;
+								if (
+									systemCacheUsed < MAX_SYSTEM_CACHE &&
+									index === 0 &&
+									block.type === 'text'
+								) {
+									systemCacheUsed++;
+									return { ...block, cache_control: { type: 'ephemeral' } };
+								}
+								return block;
+							},
+						);
 					}
-					if (promptCacheRetention) {
-						parsed.prompt_cache_retention = promptCacheRetention;
+
+					if (parsed.messages && Array.isArray(parsed.messages)) {
+						const messageCount = parsed.messages.length;
+						parsed.messages = parsed.messages.map(
+							(
+								msg: {
+									role: string;
+									content: unknown;
+									[key: string]: unknown;
+								},
+								msgIndex: number,
+							) => {
+								const isLast = msgIndex === messageCount - 1;
+
+								if (Array.isArray(msg.content)) {
+									const blocks = msg.content as {
+										type: string;
+										cache_control?: unknown;
+									}[];
+									const content = blocks.map((block, blockIndex) => {
+										if (block.cache_control) return block;
+										if (
+											isLast &&
+											messageCacheUsed < MAX_MESSAGE_CACHE &&
+											blockIndex === blocks.length - 1
+										) {
+											messageCacheUsed++;
+											return { ...block, cache_control: { type: 'ephemeral' } };
+										}
+										return block;
+									});
+									return { ...msg, content };
+								}
+
+								if (
+									isLast &&
+									messageCacheUsed < MAX_MESSAGE_CACHE &&
+									typeof msg.content === 'string'
+								) {
+									messageCacheUsed++;
+									return {
+										...msg,
+										content: [
+											{
+												type: 'text',
+												text: msg.content,
+												cache_control: { type: 'ephemeral' },
+											},
+										],
+									};
+								}
+
+								return msg;
+							},
+						);
 					}
+
 					body = JSON.stringify(parsed);
 				} catch {}
 			}
@@ -143,7 +253,8 @@ export function createSolforgeFetch(
 				throw new Error('Solforge: payment failed after multiple attempts');
 			}
 
-			const remainingPayments = maxPaymentAttempts - paymentAttempts;
+			const currentAttempts = globalPaymentAttempts.get(walletAddress) ?? 0;
+			const remainingPayments = maxPaymentAttempts - currentAttempts;
 			if (remainingPayments <= 0) {
 				callbacks.onPaymentError?.('Maximum payment attempts exceeded');
 				throw new Error(
@@ -151,20 +262,28 @@ export function createSolforgeFetch(
 				);
 			}
 
-			const amountUsd = parseInt(requirement.maxAmountRequired, 10) / 1_000_000;
-			callbacks.onPaymentRequired?.(amountUsd);
+			const releaseLock = await acquirePaymentLock(walletAddress);
+			
+			try {
+				const amountUsd = parseInt(requirement.maxAmountRequired, 10) / 1_000_000;
+				callbacks.onPaymentRequired?.(amountUsd);
 
-			const outcome = await handlePayment({
-				requirement,
-				keypair,
-				rpcURL,
-				baseURL,
-				baseFetch,
-				buildWalletHeaders,
-				maxAttempts: remainingPayments,
-				callbacks,
-			});
-			paymentAttempts += outcome.attemptsUsed;
+				const outcome = await handlePayment({
+					requirement,
+					keypair,
+					rpcURL,
+					baseURL,
+					baseFetch,
+					buildWalletHeaders,
+					maxAttempts: remainingPayments,
+					callbacks,
+				});
+				
+				const newTotal = currentAttempts + outcome.attemptsUsed;
+				globalPaymentAttempts.set(walletAddress, newTotal);
+			} finally {
+				releaseLock();
+			}
 		}
 
 		throw new Error('Solforge: max attempts exceeded');
