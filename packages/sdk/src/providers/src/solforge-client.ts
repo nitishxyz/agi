@@ -16,7 +16,11 @@ const DEFAULT_MAX_PAYMENT_ATTEMPTS = 20;
 export type SolforgePaymentCallbacks = {
 	onPaymentRequired?: (amountUsd: number) => void;
 	onPaymentSigning?: () => void;
-	onPaymentComplete?: (data: { amountUsd: number; newBalance: number }) => void;
+	onPaymentComplete?: (data: {
+		amountUsd: number;
+		newBalance: number;
+		transactionId?: string;
+	}) => void;
 	onPaymentError?: (error: string) => void;
 };
 
@@ -60,6 +64,7 @@ type PaymentResponse = {
 	new_balance?: number | string;
 	amount?: number;
 	balance?: number;
+	transaction?: string;
 };
 
 export function createSolforgeFetch(
@@ -127,9 +132,9 @@ export function createSolforgeFetch(
 				return response;
 			}
 
-		const payload = await response.json().catch(() => ({}));
-		const requirement = pickPaymentRequirement(payload);
-		if (!requirement) {
+			const payload = await response.json().catch(() => ({}));
+			const requirement = pickPaymentRequirement(payload);
+			if (!requirement) {
 				callbacks.onPaymentError?.('Unsupported payment requirement');
 				throw new Error('Solforge: unsupported payment requirement');
 			}
@@ -228,9 +233,7 @@ function pickPaymentRequirement(
 	const accepts = Array.isArray(acceptsValue)
 		? (acceptsValue as ExactPaymentRequirement[])
 		: [];
-	return accepts.find(
-		(option) => option && option.scheme === 'exact',
-	) ?? null;
+	return accepts.find((option) => option && option.scheme === 'exact') ?? null;
 }
 
 async function handlePayment(args: {
@@ -327,6 +330,7 @@ async function processSinglePayment(args: {
 		args.callbacks.onPaymentComplete?.({
 			amountUsd,
 			newBalance,
+			transactionId: parsed.transaction,
 		});
 		console.log(
 			`Solforge payment complete: +$${amountUsd} (balance: $${newBalance})`,

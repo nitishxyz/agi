@@ -18,6 +18,8 @@ import { useFileUpload } from '../../hooks/useFileUpload';
 import { useQueueStore } from '../../stores/queueStore';
 import { usePendingResearchStore } from '../../stores/pendingResearchStore';
 import { formatResearchContextForMessage } from '../../lib/parseResearchContext';
+import { useSolforgeBalance } from '../../hooks/useSolforgeBalance';
+import { useSolforgeStore } from '../../stores/solforgeStore';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
 
@@ -104,6 +106,9 @@ export const ChatInputContainer = memo(
 			);
 
 			const providerAuthType = allModels?.[provider]?.authType;
+
+			const { fetchBalance } = useSolforgeBalance(provider);
+			const isBalanceLoading = useSolforgeStore((s) => s.isLoading);
 
 			useEffect(() => {
 				if (session) {
@@ -355,6 +360,10 @@ export const ChatInputContainer = memo(
 						authType={providerAuthType}
 						researchContexts={researchContexts}
 						onResearchContextRemove={handleResearchContextRemove}
+						onRefreshBalance={
+							provider === 'solforge' ? fetchBalance : undefined
+						}
+						isBalanceLoading={isBalanceLoading}
 					/>
 				</>
 			);

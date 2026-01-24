@@ -19,6 +19,7 @@ import {
 	FileText,
 	FileIcon,
 	FlaskConical,
+	RefreshCw,
 } from 'lucide-react';
 import { Textarea } from '../ui/Textarea';
 import { FileMentionPopup } from './FileMentionPopup';
@@ -54,6 +55,8 @@ interface ChatInputProps {
 	authType?: 'api' | 'oauth' | 'wallet';
 	researchContexts?: Array<{ id: string; label: string }>;
 	onResearchContextRemove?: (id: string) => void;
+	onRefreshBalance?: () => void;
+	isBalanceLoading?: boolean;
 }
 
 export const ChatInput = memo(
@@ -81,6 +84,8 @@ export const ChatInput = memo(
 			authType,
 			researchContexts = [],
 			onResearchContextRemove,
+			onRefreshBalance,
+			isBalanceLoading = false,
 		},
 		ref,
 	) {
@@ -487,24 +492,46 @@ export const ChatInput = memo(
 										</span>
 									)}
 								</div>
-							<div className="justify-self-center">
-								{(providerName || modelName || authType) && (
-									<span className="text-[10px] text-muted-foreground flex items-center gap-1">
-										{providerName && (<>
-											<ProviderLogo provider={providerName} size={12} className="opacity-70" />
-											<span className="opacity-40">/</span>
-										</>
-										)}
-										{modelName && <span>{modelName}</span>}
+								<div className="justify-self-center">
+									{(providerName || modelName || authType) && (
+										<span className="text-[10px] text-muted-foreground flex items-center gap-1">
+											{providerName && (
+												<>
+													<ProviderLogo
+														provider={providerName}
+														size={12}
+														className="opacity-70"
+													/>
+													<span className="opacity-40">/</span>
+												</>
+											)}
+											{modelName && <span>{modelName}</span>}
 											{authType && authType !== 'api' && (
 												<span className="opacity-50">
 													({authType === 'oauth' ? 'pro' : 'wallet'})
 												</span>
 											)}
 											{isSolforge && solforgeBalance !== null && (
-												<span className="text-emerald-600 dark:text-emerald-400">
-													${solforgeBalance.toFixed(2)}
-												</span>
+												<>
+													<span className="text-emerald-600 dark:text-emerald-400">
+														${solforgeBalance.toFixed(2)}
+													</span>
+													{onRefreshBalance && (
+														<button
+															type="button"
+															onClick={(e) => {
+																e.stopPropagation();
+																onRefreshBalance();
+															}}
+															disabled={isBalanceLoading}
+															className="p-0.5 hover:bg-background/50 rounded transition-colors disabled:opacity-50"
+														>
+															<RefreshCw
+																className={`h-2.5 w-2.5 text-muted-foreground ${isBalanceLoading ? 'animate-spin' : ''}`}
+															/>
+														</button>
+													)}
+												</>
 											)}
 										</span>
 									)}

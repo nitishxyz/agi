@@ -1,5 +1,6 @@
 import type { Command } from 'commander';
 import { log } from '@clack/prompts';
+import qrcode from 'qrcode-terminal';
 import { box, colors } from '../ui.ts';
 import { loadConfig, getAuth } from '@agi-cli/sdk';
 import { Keypair, Connection, PublicKey } from '@solana/web3.js';
@@ -151,11 +152,6 @@ export function registerSolforgeCommand(program: Command) {
 			const solforgeUrl =
 				process.env.SOLFORGE_BASE_URL || DEFAULT_SOLFORGE_URL;
 
-			const [balanceData, usdcResult] = await Promise.all([
-				fetchSolforgeBalance(privateKey, solforgeUrl),
-				fetchUsdcBalance(keypair.publicKey, rpcUrl, network),
-			]);
-
 			const networkLabel =
 				network === 'mainnet'
 					? colors.green('mainnet')
@@ -163,6 +159,7 @@ export function registerSolforgeCommand(program: Command) {
 						? colors.yellow('devnet')
 						: colors.dim('unknown');
 
+			// Show static wallet info immediately
 			const walletLines = [
 				`Public Key: ${colors.cyan(publicKey)}`,
 				`Network:    ${networkLabel}`,
@@ -170,15 +167,26 @@ export function registerSolforgeCommand(program: Command) {
 				`Solforge:   ${colors.dim(solforgeUrl)}`,
 			];
 
-			if (usdcResult.balance !== null) {
-				walletLines.push(
-					`USDC:       ${colors.green(`${usdcResult.balance.toFixed(2)} USDC`)}`,
-				);
-			} else if (usdcResult.error) {
-				walletLines.push(`USDC:       ${colors.dim(usdcResult.error)}`);
-			}
-
 			box('Wallet', walletLines);
+
+			console.log(colors.bold('  Wallet QR Code'));
+			console.log('');
+			qrcode.generate(publicKey, { small: true }, (qr: string) => {
+				console.log(qr);
+			});
+
+			// Fetch balances from remote
+			console.log(colors.dim('  Fetching balances...'));
+			const [balanceData, usdcResult] = await Promise.all([
+				fetchSolforgeBalance(privateKey, solforgeUrl),
+				fetchUsdcBalance(keypair.publicKey, rpcUrl, network),
+			]);
+
+			if (usdcResult.balance !== null) {
+				console.log(`  USDC:     ${colors.green(`${usdcResult.balance.toFixed(2)} USDC`)}`);
+			} else if (usdcResult.error) {
+				console.log(`  USDC:     ${colors.dim(usdcResult.error)}`);
+			}
 
 			if (balanceData) {
 				box('Solforge Account', [

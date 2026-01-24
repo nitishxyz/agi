@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Loader2, CreditCard } from 'lucide-react';
+import {
+	CheckCircle,
+	XCircle,
+	Loader2,
+	CreditCard,
+	ExternalLink,
+} from 'lucide-react';
 import {
 	useToastStore,
 	type Toast,
@@ -29,7 +35,7 @@ function ToastItem({ toast }: { toast: Toast }) {
 	return (
 		<div
 			className={`
-				flex items-center gap-3 px-4 py-3 
+				flex items-center gap-3 px-4 py-3
 				bg-card border border-border rounded-lg shadow-lg
 				transition-all duration-150 ease-out cursor-pointer
 				hover:bg-accent/50
@@ -40,6 +46,18 @@ function ToastItem({ toast }: { toast: Toast }) {
 		>
 			{icons[toast.type]}
 			<span className="text-sm text-foreground">{toast.message}</span>
+			{toast.action && (
+				<a
+					href={toast.action.href}
+					target="_blank"
+					rel="noopener noreferrer"
+					onClick={(e) => e.stopPropagation()}
+					className="ml-auto flex items-center gap-1 text-xs text-primary hover:underline"
+				>
+					{toast.action.label}
+					<ExternalLink className="h-3 w-3" />
+				</a>
+			)}
 		</div>
 	);
 }

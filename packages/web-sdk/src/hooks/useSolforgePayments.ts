@@ -49,6 +49,10 @@ export function useSolforgePayments(sessionId: string | undefined) {
 				case 'solforge.payment.complete': {
 					const rawAmount = payload?.amountUsd;
 					const rawBalance = payload?.newBalance;
+					const transactionId =
+						typeof payload?.transactionId === 'string'
+							? payload.transactionId
+							: undefined;
 					const amountUsd =
 						typeof rawAmount === 'number'
 							? rawAmount
@@ -67,9 +71,15 @@ export function useSolforgePayments(sessionId: string | undefined) {
 						removeToast(loadingToastIdRef.current);
 						loadingToastIdRef.current = null;
 					}
-					toast.success(
-						`✅ Paid $${amountUsd.toFixed(2)} • Balance: $${newBalance.toFixed(2)}`,
-					);
+					const message = `✅ Paid $${amountUsd.toFixed(2)}`;
+					if (transactionId) {
+						toast.successWithAction(message, {
+							label: 'View Tx',
+							href: `https://orbmarkets.io/tx/${transactionId}`,
+						});
+					} else {
+						toast.success(message);
+					}
 					break;
 				}
 				case 'solforge.payment.error': {

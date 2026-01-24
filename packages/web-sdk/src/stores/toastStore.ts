@@ -8,6 +8,10 @@ export interface Toast {
 	type: ToastType;
 	duration?: number;
 	icon?: string;
+	action?: {
+		label: string;
+		href: string;
+	};
 }
 
 interface ToastState {
@@ -59,3 +63,22 @@ toast.success = (message: string, duration = 4000) =>
 toast.error = (message: string, duration = 5000) =>
 	toast(message, 'error', duration);
 toast.loading = (message: string) => toast(message, 'loading', 0);
+
+toast.successWithAction = (
+	message: string,
+	action: { label: string; href: string },
+	duration = 6000,
+) => {
+	const id = useToastStore.getState().addToast({
+		message,
+		type: 'success',
+		duration,
+		action,
+	});
+	if (duration > 0) {
+		setTimeout(() => {
+			useToastStore.getState().removeToast(id);
+		}, duration);
+	}
+	return id;
+};
