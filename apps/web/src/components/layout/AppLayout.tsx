@@ -15,6 +15,8 @@ import {
 	SessionFilesDiffPanel,
 	ResearchSidebar,
 	ResearchSidebarToggle,
+	SettingsSidebar,
+	SettingsSidebarToggle,
 } from '@agi-cli/web-sdk/components';
 import { Sidebar } from './Sidebar';
 import { Moon, Sun } from 'lucide-react';
@@ -61,6 +63,7 @@ export const AppLayout = memo(function AppLayout({
 					parentSessionId={sessionId ?? null}
 					onNavigateToSession={onNavigateToSession}
 				/>
+				<SettingsSidebar />
 
 				{/* Tab buttons - always visible, stacked vertically, full height */}
 				<div className="flex flex-col w-12 border-l border-border bg-background">
@@ -69,6 +72,7 @@ export const AppLayout = memo(function AppLayout({
 					<TerminalsSidebarToggle />
 					<ResearchSidebarToggle parentSessionId={sessionId} />
 					<div className="flex-1" />
+					<SettingsSidebarToggle />
 					<div className="h-12 border-t border-border flex items-center justify-center">
 						<Button
 							variant="ghost"

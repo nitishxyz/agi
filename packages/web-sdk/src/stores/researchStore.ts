@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { useGitStore } from './gitStore';
 import { useTerminalStore } from './terminalStore';
 import { useSessionFilesStore } from './sessionFilesStore';
+import { useSettingsStore } from './settingsStore';
 
 interface ResearchState {
 	isExpanded: boolean;
@@ -28,6 +29,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
 				useGitStore.getState().collapseSidebar();
 				useTerminalStore.getState().collapseSidebar();
 				useSessionFilesStore.getState().collapseSidebar();
+				useSettingsStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
@@ -37,6 +39,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
 		useGitStore.getState().collapseSidebar();
 		useTerminalStore.getState().collapseSidebar();
 		useSessionFilesStore.getState().collapseSidebar();
+		useSettingsStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
 

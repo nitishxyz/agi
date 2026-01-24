@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { useTerminalStore } from './terminalStore';
 import { useSessionFilesStore } from './sessionFilesStore';
 import { useResearchStore } from './researchStore';
+import { useSettingsStore } from './settingsStore';
 
 interface GitState {
 	// Sidebar state
@@ -53,6 +54,7 @@ export const useGitStore = create<GitState>((set) => ({
 				useTerminalStore.getState().collapseSidebar();
 				useSessionFilesStore.getState().collapseSidebar();
 				useResearchStore.getState().collapseSidebar();
+				useSettingsStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});

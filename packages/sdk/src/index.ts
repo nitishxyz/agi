@@ -59,11 +59,13 @@ export {
 	createSolforgeModel,
 	fetchSolforgeBalance,
 	getPublicKeyFromPrivate,
+	fetchSolanaUsdcBalance,
 } from './providers/src/index.ts';
 export type {
 	SolforgeAuth,
 	SolforgeProviderOptions,
 	SolforgeBalanceResponse,
+	SolanaUsdcBalanceResponse,
 } from './providers/src/index.ts';
 export {
 	createOpenAIOAuthFetch,

@@ -57,5 +57,9 @@ export * from './session-files/SessionFilesDiffPanel';
 export * from './research/ResearchSidebar';
 export * from './research/ResearchSidebarToggle';
 
+// Settings Components
+export * from './settings/SettingsSidebar';
+export * from './settings/SettingsSidebarToggle';
+
 // Common Components
 export * from './common/ProviderLogo';

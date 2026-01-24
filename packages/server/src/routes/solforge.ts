@@ -4,6 +4,7 @@ import {
 	getPublicKeyFromPrivate,
 	getAuth,
 	loadConfig,
+	fetchSolanaUsdcBalance,
 } from '@agi-cli/sdk';
 import { logger } from '@agi-cli/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
@@ -66,6 +67,34 @@ export function registerSolforgeRoutes(app: Hono) {
 			});
 		} catch (error) {
 			logger.error('Failed to get Solforge wallet info', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
+	app.get('/v1/solforge/usdc-balance', async (c) => {
+		try {
+			const privateKey = await getSolforgePrivateKey();
+			if (!privateKey) {
+				return c.json(
+					{ error: 'Solforge wallet not configured' },
+					401,
+				);
+			}
+
+			const network = (c.req.query('network') as 'mainnet' | 'devnet') || 'mainnet';
+
+			const balance = await fetchSolanaUsdcBalance({ privateKey }, network);
+			if (!balance) {
+				return c.json(
+					{ error: 'Failed to fetch USDC balance from Solana' },
+					502,
+				);
+			}
+
+			return c.json(balance);
+		} catch (error) {
+			logger.error('Failed to fetch USDC balance', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}

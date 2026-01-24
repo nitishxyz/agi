@@ -22,12 +22,14 @@ export {
 	createSolforgeModel,
 	fetchSolforgeBalance,
 	getPublicKeyFromPrivate,
+	fetchSolanaUsdcBalance,
 } from './solforge-client.ts';
 export type {
 	SolforgeAuth,
 	SolforgeProviderOptions,
 	SolforgePaymentCallbacks,
 	SolforgeBalanceResponse,
+	SolanaUsdcBalanceResponse,
 } from './solforge-client.ts';
 export {
 	createOpenAIOAuthFetch,

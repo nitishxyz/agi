@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { useGitStore } from './gitStore';
 import { useTerminalStore } from './terminalStore';
 import { useResearchStore } from './researchStore';
+import { useSettingsStore } from './settingsStore';
 import type { SessionFileOperation } from '../types/api';
 
 interface SessionFilesState {
@@ -33,6 +34,7 @@ export const useSessionFilesStore = create<SessionFilesState>((set) => ({
 				useGitStore.getState().collapseSidebar();
 				useTerminalStore.getState().collapseSidebar();
 				useResearchStore.getState().collapseSidebar();
+				useSettingsStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
@@ -41,6 +43,7 @@ export const useSessionFilesStore = create<SessionFilesState>((set) => ({
 		useGitStore.getState().collapseSidebar();
 		useTerminalStore.getState().collapseSidebar();
 		useResearchStore.getState().collapseSidebar();
+		useSettingsStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
 	collapseSidebar: () =>

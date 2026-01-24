@@ -339,6 +339,33 @@ class ApiClient {
 		return await response.json();
 	}
 
+	async updateDefaults(data: {
+		agent?: string;
+		provider?: string;
+		model?: string;
+		scope?: 'global' | 'local';
+	}): Promise<{
+		success: boolean;
+		defaults: { agent: string; provider: string; model: string };
+	}> {
+		const response = await fetch(`${this.baseUrl}/v1/config/defaults`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(data),
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to update defaults' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
 	// Git methods using new API
 	async getGitStatus(): Promise<GitStatusResponse> {
 		const response = await apiGetGitStatus();
@@ -605,6 +632,32 @@ class ApiClient {
 			return await response.json();
 		} catch {
 			return { configured: false };
+		}
+	}
+
+	async getSolforgeUsdcBalance(network: 'mainnet' | 'devnet' = 'mainnet'): Promise<{
+		walletAddress: string;
+		usdcBalance: number;
+		network: 'mainnet' | 'devnet';
+	} | null> {
+		try {
+			const response = await fetch(
+				`${this.baseUrl}/v1/solforge/usdc-balance?network=${network}`,
+				{
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			);
+
+			if (!response.ok) {
+				return null;
+			}
+
+			return await response.json();
+		} catch {
+			return null;
 		}
 	}
 }

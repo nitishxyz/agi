@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 
 export function useConfig() {
@@ -20,5 +20,21 @@ export function useAllModels() {
 	return useQuery({
 		queryKey: ['models', 'all'],
 		queryFn: () => apiClient.getAllModels(),
+	});
+}
+
+export function useUpdateDefaults() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (data: {
+			agent?: string;
+			provider?: string;
+			model?: string;
+			scope?: 'global' | 'local';
+		}) => apiClient.updateDefaults(data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['config'] });
+		},
 	});
 }

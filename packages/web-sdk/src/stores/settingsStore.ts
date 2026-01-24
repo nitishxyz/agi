@@ -2,21 +2,17 @@ import { create } from 'zustand';
 import { useGitStore } from './gitStore';
 import { useSessionFilesStore } from './sessionFilesStore';
 import { useResearchStore } from './researchStore';
-import { useSettingsStore } from './settingsStore';
+import { useTerminalStore } from './terminalStore';
 
-interface TerminalState {
+interface SettingsState {
 	isExpanded: boolean;
-	selectedTerminalId: string | null;
-
 	toggleSidebar: () => void;
 	expandSidebar: () => void;
 	collapseSidebar: () => void;
-	selectTerminal: (id: string | null) => void;
 }
 
-export const useTerminalStore = create<TerminalState>((set) => ({
+export const useSettingsStore = create<SettingsState>((set) => ({
 	isExpanded: false,
-	selectedTerminalId: null,
 
 	toggleSidebar: () => {
 		set((state) => {
@@ -25,12 +21,11 @@ export const useTerminalStore = create<TerminalState>((set) => ({
 				useGitStore.getState().collapseSidebar();
 				useSessionFilesStore.getState().collapseSidebar();
 				useResearchStore.getState().collapseSidebar();
-				useSettingsStore.getState().collapseSidebar();
+				useTerminalStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
 	},
 	expandSidebar: () => set({ isExpanded: true }),
-	collapseSidebar: () => set({ isExpanded: false, selectedTerminalId: null }),
-	selectTerminal: (id) => set({ selectedTerminalId: id }),
+	collapseSidebar: () => set({ isExpanded: false }),
 }));

@@ -442,3 +442,85 @@ export function getPublicKeyFromPrivate(privateKey: string): string | null {
 		return null;
 	}
 }
+
+const USDC_MINT_MAINNET = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+const USDC_MINT_DEVNET = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
+
+export type SolanaUsdcBalanceResponse = {
+	walletAddress: string;
+	usdcBalance: number;
+	network: 'mainnet' | 'devnet';
+};
+
+export async function fetchSolanaUsdcBalance(
+	auth: SolforgeAuth,
+	network: 'mainnet' | 'devnet' = 'mainnet',
+): Promise<SolanaUsdcBalanceResponse | null> {
+	try {
+		const privateKeyBytes = bs58.decode(auth.privateKey);
+		const keypair = Keypair.fromSecretKey(privateKeyBytes);
+		const walletAddress = keypair.publicKey.toBase58();
+
+		const rpcUrl =
+			network === 'devnet'
+				? 'https://api.devnet.solana.com'
+				: DEFAULT_RPC_URL;
+
+		const usdcMint =
+			network === 'devnet' ? USDC_MINT_DEVNET : USDC_MINT_MAINNET;
+
+		const response = await fetch(rpcUrl, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				jsonrpc: '2.0',
+				id: 1,
+				method: 'getTokenAccountsByOwner',
+				params: [
+					walletAddress,
+					{ mint: usdcMint },
+					{ encoding: 'jsonParsed' },
+				],
+			}),
+		});
+
+		if (!response.ok) {
+			return null;
+		}
+
+		const data = (await response.json()) as {
+			result?: {
+				value?: Array<{
+					account: {
+						data: {
+							parsed: {
+								info: {
+									tokenAmount: {
+										uiAmount: number;
+									};
+								};
+							};
+						};
+					};
+				}>;
+			};
+		};
+
+		const accounts = data.result?.value ?? [];
+		let totalUsdcBalance = 0;
+
+		for (const account of accounts) {
+			const uiAmount =
+				account.account.data.parsed.info.tokenAmount.uiAmount ?? 0;
+			totalUsdcBalance += uiAmount;
+		}
+
+		return {
+			walletAddress,
+			usdcBalance: totalUsdcBalance,
+			network,
+		};
+	} catch {
+		return null;
+	}
+}
