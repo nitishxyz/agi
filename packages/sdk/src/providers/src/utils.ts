@@ -37,11 +37,16 @@ const PREFERRED_FAST_MODELS: Partial<Record<ProviderId, string[]>> = {
 		'gemini-2.5-flash-lite',
 	],
 	openrouter: [
+		'anthropic/claude-3.5-haiku',
 		'openai/gpt-4o-mini',
 		'google/gemini-2.0-flash-001',
-		'anthropic/claude-3.5-haiku',
 	],
-	opencode: ['gpt-5-nano', 'claude-3-5-haiku', 'gemini-3-flash'],
+	opencode: ['claude-3-5-haiku', 'gpt-5-nano', 'gemini-3-flash'],
+	solforge: [
+		'claude-3-5-haiku-latest',
+		'claude-3-5-haiku-20241022',
+		'codex-mini-latest',
+	],
 	zai: ['glm-4.5-flash', 'glm-4.5-air'],
 };
 

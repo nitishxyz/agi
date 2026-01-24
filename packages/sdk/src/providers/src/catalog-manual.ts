@@ -16,6 +16,8 @@ const isAllowedOpenAIModel = (id: string): boolean => {
 };
 
 const isAllowedAnthropicModel = (id: string): boolean => {
+	if (id.includes('-3-5-') || id.includes('-3.5-')) return true;
+	if (id.match(/claude-(haiku|sonnet|opus)-3/)) return true;
 	if (id.includes('-4-') || id.includes('-4.')) return true;
 	if (id.match(/claude-(haiku|sonnet|opus)-4/)) return true;
 	return false;
