@@ -4,12 +4,27 @@ type Subscriber = (evt: AGIEvent) => void;
 
 const subscribers = new Map<string, Set<Subscriber>>(); // sessionId -> subs
 
+function sanitizeBigInt<T>(obj: T): T {
+	if (obj === null || obj === undefined) return obj;
+	if (typeof obj === 'bigint') return Number(obj) as T;
+	if (Array.isArray(obj)) return obj.map(sanitizeBigInt) as T;
+	if (typeof obj === 'object') {
+		const result: Record<string, unknown> = {};
+		for (const [key, value] of Object.entries(obj)) {
+			result[key] = sanitizeBigInt(value);
+		}
+		return result as T;
+	}
+	return obj;
+}
+
 export function publish(event: AGIEvent) {
+	const sanitizedEvent = sanitizeBigInt(event);
 	const subs = subscribers.get(event.sessionId);
 	if (!subs) return;
 	for (const sub of subs) {
 		try {
-			sub(event);
+			sub(sanitizedEvent);
 		} catch {}
 	}
 }

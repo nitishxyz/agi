@@ -1,5 +1,5 @@
 import { generateText, streamText } from 'ai';
-import { eq } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import type { AGIConfig } from '@agi-cli/sdk';
 import type { DB } from '@agi-cli/database';
 import { messages, messageParts, sessions } from '@agi-cli/database/schema';
@@ -126,8 +126,6 @@ export async function dispatchAssistantMessage(
 		sessionId,
 		payload: { id: userMessageId, role: 'user' },
 	});
-
-	enqueueSessionTitle({ cfg, db, sessionId, content });
 
 	const assistantMessageId = crypto.randomUUID();
 	await db.insert(messages).values({
@@ -439,5 +437,59 @@ async function touchSessionLastActive(args: {
 			.run();
 	} catch (err) {
 		debugLog('[touchSessionLastActive] Error:', err);
+	}
+}
+
+export async function triggerDeferredTitleGeneration(args: {
+	cfg: AGIConfig;
+	db: DB;
+	sessionId: string;
+}): Promise<void> {
+	const { cfg, db, sessionId } = args;
+
+	try {
+		const userMessages = await db
+			.select()
+			.from(messages)
+			.where(eq(messages.sessionId, sessionId))
+			.orderBy(asc(messages.createdAt))
+			.limit(1);
+
+		if (!userMessages.length || userMessages[0].role !== 'user') {
+			debugLog('[TITLE_GEN] No user message found for deferred title generation');
+			return;
+		}
+
+		const parts = await db
+			.select()
+			.from(messageParts)
+			.where(eq(messageParts.messageId, userMessages[0].id))
+			.orderBy(asc(messageParts.index))
+			.limit(1);
+
+		if (!parts.length) {
+			debugLog('[TITLE_GEN] No message parts found for deferred title generation');
+			return;
+		}
+
+		let content = '';
+		try {
+			const parsed = JSON.parse(parts[0].content ?? '{}');
+			content = String(parsed.text ?? '');
+		} catch {
+			debugLog('[TITLE_GEN] Failed to parse message part content');
+			return;
+		}
+
+		if (!content) {
+			debugLog('[TITLE_GEN] Empty content for deferred title generation');
+			return;
+		}
+
+		debugLog('[TITLE_GEN] Triggering deferred title generation');
+		enqueueSessionTitle({ cfg, db, sessionId, content });
+	} catch (err) {
+		debugLog('[TITLE_GEN] Error in triggerDeferredTitleGeneration:');
+		debugLog(err);
 	}
 }

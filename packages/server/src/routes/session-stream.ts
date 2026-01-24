@@ -2,6 +2,12 @@ import type { Hono } from 'hono';
 import { subscribe } from '../events/bus.ts';
 import type { AGIEvent } from '../events/types.ts';
 
+function safeStringify(obj: unknown): string {
+	return JSON.stringify(obj, (_key, value) =>
+		typeof value === 'bigint' ? Number(value) : value
+	);
+}
+
 export function registerSessionStreamRoute(app: Hono) {
 	app.get('/v1/sessions/:id/stream', async (c) => {
 		const sessionId = c.req.param('id');
@@ -16,9 +22,14 @@ export function registerSessionStreamRoute(app: Hono) {
 		const stream = new ReadableStream<Uint8Array>({
 			start(controller) {
 				const write = (evt: AGIEvent) => {
-					const line =
-						`event: ${evt.type}\n` +
-						`data: ${JSON.stringify(evt.payload ?? {})}\n\n`;
+					let line: string;
+					try {
+						line =
+							`event: ${evt.type}\n` +
+							`data: ${safeStringify(evt.payload ?? {})}\n\n`;
+					} catch {
+						line = `event: ${evt.type}\ndata: {}\n\n`;
+					}
 					controller.enqueue(encoder.encode(line));
 				};
 				const unsubscribe = subscribe(sessionId, write);

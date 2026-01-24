@@ -23,6 +23,7 @@ import {
 	createFinishHandler,
 } from '../stream/handlers.ts';
 import { pruneSession } from '../message/compaction.ts';
+import { triggerDeferredTitleGeneration } from '../message/service.ts';
 import { setupRunner } from './runner-setup.ts';
 import {
 	type ReasoningState,
@@ -67,6 +68,7 @@ async function runAssistant(opts: RunOpts) {
 
 	const setup = await setupRunner(opts);
 	const {
+		cfg,
 		db,
 		history,
 		system,
@@ -188,6 +190,9 @@ async function runAssistant(opts: RunOpts) {
 				if (!firstDeltaSeen) {
 					firstDeltaSeen = true;
 					streamStartTimer.end();
+					if (isFirstMessage) {
+						void triggerDeferredTitleGeneration({ cfg, db, sessionId: opts.sessionId });
+					}
 				}
 
 				if (!currentPartId) {

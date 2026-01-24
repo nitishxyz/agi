@@ -404,7 +404,21 @@ async function processSinglePayment(args: {
 }): Promise<{ attempts: number; balance?: number | string }> {
 	args.callbacks.onPaymentSigning?.();
 
-	const paymentPayload = await createPaymentPayload(args);
+	let paymentPayload: PaymentPayload;
+	try {
+		paymentPayload = await createPaymentPayload(args);
+	} catch (err) {
+		const errMsg = err instanceof Error ? err.message : String(err);
+		const isInsufficientFunds =
+			errMsg.toLowerCase().includes('insufficient') ||
+			errMsg.toLowerCase().includes('not enough') ||
+			errMsg.toLowerCase().includes('balance');
+		const userMsg = isInsufficientFunds
+			? 'Insufficient USDC balance in wallet for payment'
+			: `Payment failed: ${errMsg}`;
+		args.callbacks.onPaymentError?.(userMsg);
+		throw new Error(`Solforge: ${userMsg}`);
+	}
 	const walletHeaders = args.buildWalletHeaders();
 	const headers = {
 		'Content-Type': 'application/json',
