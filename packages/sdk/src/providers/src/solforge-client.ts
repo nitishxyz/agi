@@ -9,6 +9,34 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { addAnthropicCacheControl } from './anthropic-caching.ts';
 
+function simplifyPaymentError(errMsg: string): string {
+	const lower = errMsg.toLowerCase();
+	if (
+		lower.includes('insufficient') ||
+		lower.includes('not enough') ||
+		lower.includes('balance')
+	) {
+		return 'Insufficient USDC balance';
+	}
+	if (lower.includes('simulation') || lower.includes('compute unit')) {
+		return 'Transaction simulation failed';
+	}
+	if (lower.includes('blockhash') || lower.includes('expired')) {
+		return 'Transaction expired, please retry';
+	}
+	if (lower.includes('timeout') || lower.includes('timed out')) {
+		return 'Transaction timed out';
+	}
+	if (lower.includes('rejected') || lower.includes('cancelled')) {
+		return 'Transaction rejected';
+	}
+	if (lower.includes('network') || lower.includes('connection')) {
+		return 'Network error';
+	}
+	const short = errMsg.split('.')[0].slice(0, 80);
+	return short.length < errMsg.length ? `${short}...` : errMsg;
+}
+
 const DEFAULT_BASE_URL = 'https://router.solforge.sh';
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const DEFAULT_MAX_ATTEMPTS = 3;
@@ -330,13 +358,7 @@ async function processSinglePayment(args: {
 		paymentPayload = await createPaymentPayload(args);
 	} catch (err) {
 		const errMsg = err instanceof Error ? err.message : String(err);
-		const isInsufficientFunds =
-			errMsg.toLowerCase().includes('insufficient') ||
-			errMsg.toLowerCase().includes('not enough') ||
-			errMsg.toLowerCase().includes('balance');
-		const userMsg = isInsufficientFunds
-			? 'Insufficient USDC balance in wallet for payment'
-			: `Payment failed: ${errMsg}`;
+		const userMsg = `Payment failed: ${simplifyPaymentError(errMsg)}`;
 		args.callbacks.onPaymentError?.(userMsg);
 		throw new Error(`Solforge: ${userMsg}`);
 	}
