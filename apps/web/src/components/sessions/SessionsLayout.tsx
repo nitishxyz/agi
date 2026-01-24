@@ -24,6 +24,7 @@ import {
 	useRestoreFiles,
 	useDeleteFiles,
 	useSessions,
+	useSolforgeBalance,
 } from '@agi-cli/web-sdk/hooks';
 
 interface SessionsLayoutProps {
@@ -49,6 +50,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 
 	useWorkingDirectory();
 	useSolforgePayments(sessionId);
+	useSolforgeBalance(config?.defaults?.provider);
 
 	const focusInput = useCallback(() => {
 		setTimeout(() => {

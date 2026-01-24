@@ -160,14 +160,12 @@ export async function resolveModel(
 		}
 		const baseURL = config.baseURL || process.env.SOLFORGE_BASE_URL;
 		const rpcURL = process.env.SOLFORGE_SOLANA_RPC_URL;
-		const topupAmount = process.env.SOLFORGE_TOPUP_MICRO_USDC;
 		return createSolforgeModel(
 			model,
 			{ privateKey },
 			{
 				baseURL,
 				rpcURL,
-				topupAmountMicroUsdc: topupAmount,
 			},
 		);
 	}

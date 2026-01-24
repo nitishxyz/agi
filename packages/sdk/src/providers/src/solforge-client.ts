@@ -10,7 +10,6 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 
 const DEFAULT_BASE_URL = 'https://router.solforge.sh';
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
-const DEFAULT_TOPUP_AMOUNT = '5000000'; // $5.00
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_MAX_PAYMENT_ATTEMPTS = 20;
 
@@ -25,7 +24,6 @@ export type SolforgeProviderOptions = {
 	baseURL?: string;
 	rpcURL?: string;
 	network?: string;
-	topupAmountMicroUsdc?: string;
 	maxRequestAttempts?: number;
 	maxPaymentAttempts?: number;
 	callbacks?: SolforgePaymentCallbacks;
@@ -73,7 +71,6 @@ export function createSolforgeFetch(
 	const walletAddress = keypair.publicKey.toBase58();
 	const baseURL = trimTrailingSlash(options.baseURL ?? DEFAULT_BASE_URL);
 	const rpcURL = options.rpcURL ?? DEFAULT_RPC_URL;
-	const targetTopup = options.topupAmountMicroUsdc ?? DEFAULT_TOPUP_AMOUNT;
 	const maxAttempts = options.maxRequestAttempts ?? DEFAULT_MAX_ATTEMPTS;
 	const maxPaymentAttempts =
 		options.maxPaymentAttempts ?? DEFAULT_MAX_PAYMENT_ATTEMPTS;
@@ -130,9 +127,9 @@ export function createSolforgeFetch(
 				return response;
 			}
 
-			const payload = await response.json().catch(() => ({}));
-			const requirement = pickPaymentRequirement(payload, targetTopup);
-			if (!requirement) {
+		const payload = await response.json().catch(() => ({}));
+		const requirement = pickPaymentRequirement(payload);
+		if (!requirement) {
 				callbacks.onPaymentError?.('Unsupported payment requirement');
 				throw new Error('Solforge: unsupported payment requirement');
 			}
@@ -223,7 +220,6 @@ type PaymentRequirementResponse = {
 
 function pickPaymentRequirement(
 	payload: unknown,
-	targetAmount: string,
 ): ExactPaymentRequirement | null {
 	const acceptsValue =
 		typeof payload === 'object' && payload !== null
@@ -232,17 +228,9 @@ function pickPaymentRequirement(
 	const accepts = Array.isArray(acceptsValue)
 		? (acceptsValue as ExactPaymentRequirement[])
 		: [];
-	const exactMatch = accepts.find(
-		(option) =>
-			option &&
-			option.scheme === 'exact' &&
-			option.maxAmountRequired === targetAmount,
-	);
-	if (exactMatch) return exactMatch;
-	const fallback = accepts.find(
+	return accepts.find(
 		(option) => option && option.scheme === 'exact',
-	);
-	return fallback ?? null;
+	) ?? null;
 }
 
 async function handlePayment(args: {
@@ -380,4 +368,73 @@ async function createPaymentPayload(args: {
 			transaction: decoded.payload.transaction,
 		},
 	} as PaymentPayload;
+}
+
+export type SolforgeBalanceResponse = {
+	walletAddress: string;
+	balance: number;
+	totalSpent: number;
+	totalTopups: number;
+	requestCount: number;
+	createdAt?: string;
+	lastRequest?: string;
+};
+
+export async function fetchSolforgeBalance(
+	auth: SolforgeAuth,
+	baseURL?: string,
+): Promise<SolforgeBalanceResponse | null> {
+	try {
+		const privateKeyBytes = bs58.decode(auth.privateKey);
+		const keypair = Keypair.fromSecretKey(privateKeyBytes);
+		const walletAddress = keypair.publicKey.toBase58();
+		const url = trimTrailingSlash(baseURL ?? DEFAULT_BASE_URL);
+
+		const nonce = Date.now().toString();
+		const signature = signNonce(nonce, privateKeyBytes);
+
+		const response = await fetch(`${url}/v1/balance`, {
+			headers: {
+				'x-wallet-address': walletAddress,
+				'x-wallet-nonce': nonce,
+				'x-wallet-signature': signature,
+			},
+		});
+
+		if (!response.ok) {
+			return null;
+		}
+
+		const data = (await response.json()) as {
+			wallet_address: string;
+			balance_usd: number;
+			total_spent: number;
+			total_topups: number;
+			request_count: number;
+			created_at?: string;
+			last_request?: string;
+		};
+
+		return {
+			walletAddress: data.wallet_address,
+			balance: data.balance_usd,
+			totalSpent: data.total_spent,
+			totalTopups: data.total_topups,
+			requestCount: data.request_count,
+			createdAt: data.created_at,
+			lastRequest: data.last_request,
+		};
+	} catch {
+		return null;
+	}
+}
+
+export function getPublicKeyFromPrivate(privateKey: string): string | null {
+	try {
+		const privateKeyBytes = bs58.decode(privateKey);
+		const keypair = Keypair.fromSecretKey(privateKeyBytes);
+		return keypair.publicKey.toBase58();
+	} catch {
+		return null;
+	}
 }

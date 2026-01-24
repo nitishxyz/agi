@@ -559,6 +559,54 @@ class ApiClient {
 
 		return await response.json();
 	}
+
+	async getSolforgeBalance(): Promise<{
+		walletAddress: string;
+		balance: number;
+		totalSpent: number;
+		totalTopups: number;
+		requestCount: number;
+	} | null> {
+		try {
+			const response = await fetch(`${this.baseUrl}/v1/solforge/balance`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+
+			if (!response.ok) {
+				return null;
+			}
+
+			return await response.json();
+		} catch {
+			return null;
+		}
+	}
+
+	async getSolforgeWallet(): Promise<{
+		configured: boolean;
+		publicKey?: string;
+		error?: string;
+	}> {
+		try {
+			const response = await fetch(`${this.baseUrl}/v1/solforge/wallet`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+
+			if (!response.ok) {
+				return { configured: false };
+			}
+
+			return await response.json();
+		} catch {
+			return { configured: false };
+		}
+	}
 }
 
 export const apiClient = new ApiClient();

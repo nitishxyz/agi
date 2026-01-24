@@ -24,6 +24,7 @@ import { Textarea } from '../ui/Textarea';
 import { FileMentionPopup } from './FileMentionPopup';
 import { CommandSuggestionsPopup } from './CommandSuggestionsPopup';
 import { ShortcutsModal } from './ShortcutsModal';
+import { ProviderLogo } from '../common/ProviderLogo';
 import { useFiles } from '../../hooks/useFiles';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useVimMode } from '../../hooks/useVimMode';
@@ -486,16 +487,15 @@ export const ChatInput = memo(
 										</span>
 									)}
 								</div>
-								<div className="justify-self-center">
-									{(providerName || modelName || authType) && (
-										<span className="text-[10px] text-muted-foreground flex items-center gap-1">
-											{providerName && (
-												<span className="opacity-60">{providerName}</span>
-											)}
-											{providerName && modelName && (
-												<span className="opacity-40">/</span>
-											)}
-											{modelName && <span>{modelName}</span>}
+							<div className="justify-self-center">
+								{(providerName || modelName || authType) && (
+									<span className="text-[10px] text-muted-foreground flex items-center gap-1">
+										{providerName && (<>
+											<ProviderLogo provider={providerName} size={12} className="opacity-70" />
+											<span className="opacity-40">/</span>
+										</>
+										)}
+										{modelName && <span>{modelName}</span>}
 											{authType && authType !== 'api' && (
 												<span className="opacity-50">
 													({authType === 'oauth' ? 'pro' : 'wallet'})

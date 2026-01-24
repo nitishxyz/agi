@@ -24,6 +24,8 @@ import {
 	openOpenAIAuthUrl,
 	obtainOpenAIApiKey,
 } from '@agi-cli/sdk';
+import { Keypair } from '@solana/web3.js';
+import bs58 from 'bs58';
 import { loadConfig } from '@agi-cli/sdk';
 import { catalog } from '@agi-cli/sdk';
 import { getGlobalConfigDir, getGlobalConfigPath } from '@agi-cli/sdk';
@@ -471,21 +473,57 @@ async function runAuthLoginSolforge(
 	cfg: Awaited<ReturnType<typeof loadConfig>>,
 	wantLocal: boolean,
 ): Promise<boolean> {
-	log.info(
-		'Solforge uses a Solana wallet private key (base58 encoded). Keep it secure.',
-	);
-	const key = await password({
-		message: `Paste ${PROVIDER_LINKS.solforge.env} (base58 private key)`,
-		validate: (v) =>
-			v && String(v).trim().length > 0 ? undefined : 'Private key is required',
-	});
-	if (isCancel(key)) {
+	log.info('Solforge uses a Solana wallet for authentication.');
+
+	const authMethod = (await select({
+		message: 'Select wallet option',
+		options: [
+			{ value: 'create', label: 'Create new wallet' },
+			{ value: 'import', label: 'Import existing wallet' },
+		],
+	})) as 'create' | 'import' | symbol;
+
+	if (isCancel(authMethod)) {
 		cancel('Cancelled');
 		return false;
 	}
+
+	let privateKeyBase58: string;
+	let publicKey: string;
+
+	if (authMethod === 'create') {
+		const keypair = Keypair.generate();
+		privateKeyBase58 = bs58.encode(keypair.secretKey);
+		publicKey = keypair.publicKey.toBase58();
+		log.info('Generated new Solana wallet');
+	} else {
+		const key = await password({
+			message: `Paste ${PROVIDER_LINKS.solforge.env} (base58 private key)`,
+			validate: (v) =>
+				v && String(v).trim().length > 0
+					? undefined
+					: 'Private key is required',
+		});
+		if (isCancel(key)) {
+			cancel('Cancelled');
+			return false;
+		}
+		try {
+			const privateKeyBytes = bs58.decode(String(key));
+			const keypair = Keypair.fromSecretKey(privateKeyBytes);
+			privateKeyBase58 = String(key);
+			publicKey = keypair.publicKey.toBase58();
+		} catch {
+			log.error(
+				'Invalid private key format. Please provide a valid base58 encoded private key.',
+			);
+			return false;
+		}
+	}
+
 	await setAuth(
 		'solforge',
-		{ type: 'wallet', secret: String(key) },
+		{ type: 'wallet', secret: privateKeyBase58 },
 		cfg.projectRoot,
 		'global',
 	);
@@ -495,8 +533,9 @@ async function runAuthLoginSolforge(
 		);
 	await ensureGlobalConfigDefaults('solforge');
 	log.success('Saved');
-	log.info(
-		`Tip: you can also set ${PROVIDER_LINKS.solforge.env} in your environment.`,
+	console.log(`  Wallet Public Key: ${colors.cyan(publicKey)}`);
+	console.log(
+		`  Tip: you can also set ${PROVIDER_LINKS.solforge.env} in your environment.`,
 	);
 	outro('Done');
 	return true;

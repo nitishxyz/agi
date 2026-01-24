@@ -16,3 +16,4 @@ export * from './useQueueState';
 export * from './useBranch';
 export * from './useResearch';
 export * from './useSolforgePayments';
+export * from './useSolforgeBalance';

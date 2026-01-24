@@ -9,3 +9,4 @@ export { registerSkillsCommand } from './skills.ts';
 export { registerScaffoldCommand } from './scaffold.ts';
 export { registerDoctorCommand } from './doctor.ts';
 export { registerUpgradeCommand } from './upgrade.ts';
+export { registerSolforgeCommand } from './solforge.ts';

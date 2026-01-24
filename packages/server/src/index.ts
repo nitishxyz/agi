@@ -16,6 +16,7 @@ import { registerTerminalsRoutes } from './routes/terminals.ts';
 import { registerSessionFilesRoutes } from './routes/session-files.ts';
 import { registerBranchRoutes } from './routes/branch.ts';
 import { registerResearchRoutes } from './routes/research.ts';
+import { registerSolforgeRoutes } from './routes/solforge.ts';
 import type { AgentConfigEntry } from './runtime/agent/registry.ts';
 
 const globalTerminalManager = new TerminalManager();
@@ -68,6 +69,7 @@ function initApp() {
 	registerSessionFilesRoutes(app);
 	registerBranchRoutes(app);
 	registerResearchRoutes(app);
+	registerSolforgeRoutes(app);
 
 	return app;
 }
@@ -136,6 +138,7 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	registerSessionFilesRoutes(honoApp);
 	registerBranchRoutes(honoApp);
 	registerResearchRoutes(honoApp);
+	registerSolforgeRoutes(honoApp);
 
 	return honoApp;
 }
@@ -232,6 +235,7 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 	registerSessionFilesRoutes(honoApp);
 	registerBranchRoutes(honoApp);
 	registerResearchRoutes(honoApp);
+	registerSolforgeRoutes(honoApp);
 
 	return honoApp;
 }

@@ -19,7 +19,6 @@ export function resolveSolforgeModel(model: string, sessionId?: string) {
 	}
 	const baseURL = process.env.SOLFORGE_BASE_URL;
 	const rpcURL = process.env.SOLFORGE_SOLANA_RPC_URL;
-	const topupAmount = process.env.SOLFORGE_TOPUP_MICRO_USDC;
 
 	const callbacks: SolforgePaymentCallbacks = sessionId
 		? {
@@ -62,7 +61,6 @@ export function resolveSolforgeModel(model: string, sessionId?: string) {
 		{
 			baseURL,
 			rpcURL,
-			topupAmountMicroUsdc: topupAmount,
 			callbacks,
 			providerNpm,
 		},

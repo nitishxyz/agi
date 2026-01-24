@@ -20,11 +20,14 @@ export { providerEnvVar, readEnvKey, setEnvKey } from './env.ts';
 export {
 	createSolforgeFetch,
 	createSolforgeModel,
+	fetchSolforgeBalance,
+	getPublicKeyFromPrivate,
 } from './solforge-client.ts';
 export type {
 	SolforgeAuth,
 	SolforgeProviderOptions,
 	SolforgePaymentCallbacks,
+	SolforgeBalanceResponse,
 } from './solforge-client.ts';
 export {
 	createOpenAIOAuthFetch,

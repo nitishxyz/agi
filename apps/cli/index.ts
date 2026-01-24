@@ -1,3 +1,6 @@
+// Side-effect import to suppress bigint-buffer warning - must be first
+import './src/suppress-warnings.ts';
+
 import PKG from './package.json' with { type: 'json' };
 import { runCli } from './src/cli.ts';
 

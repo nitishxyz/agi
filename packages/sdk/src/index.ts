@@ -57,10 +57,13 @@ export {
 export {
 	createSolforgeFetch,
 	createSolforgeModel,
+	fetchSolforgeBalance,
+	getPublicKeyFromPrivate,
 } from './providers/src/index.ts';
 export type {
 	SolforgeAuth,
 	SolforgeProviderOptions,
+	SolforgeBalanceResponse,
 } from './providers/src/index.ts';
 export {
 	createOpenAIOAuthFetch,
