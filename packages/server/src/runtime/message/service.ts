@@ -302,12 +302,20 @@ async function generateSessionTitle(args: {
 
 		const promptText = String(content ?? '').slice(0, 2000);
 
-		const titlePrompt = [
-			'Generate a brief title (6-8 words) summarizing what the user wants to do.',
-			'Rules: Plain text only. No markdown, no quotes, no punctuation, no emojis.',
-			'Focus on the core task or topic. Be specific but concise.',
-			'Examples: "Fix TypeScript build errors", "Add dark mode toggle", "Refactor auth middleware"',
-		].join(' ');
+		const titleInstructions = `Generate a brief title (6-8 words) summarizing what the user wants to do.
+Rules: Plain text only. No markdown, no quotes, no punctuation, no emojis.
+Focus on the core task or topic. Be specific but concise.
+Examples: "Fix TypeScript build errors", "Add dark mode toggle", "Refactor auth middleware"
+
+Output ONLY the title, nothing else.`;
+
+		const userMessageWithTags = `<task>
+${titleInstructions}
+</task>
+
+<user-message>
+${promptText}
+</user-message>`;
 
 		// Build system prompt and messages
 		// For OAuth: Keep spoof pure, add instructions to user message
@@ -321,7 +329,7 @@ async function generateSessionTitle(args: {
 			messagesArray = [
 				{
 					role: 'user',
-					content: `${titlePrompt}\n\n${promptText}`,
+					content: userMessageWithTags,
 				},
 			];
 
@@ -333,8 +341,8 @@ async function generateSessionTitle(args: {
 			);
 		} else {
 			// API key mode: normal flow
-			system = titlePrompt;
-			messagesArray = [{ role: 'user', content: promptText }];
+			system = titleInstructions;
+			messagesArray = [{ role: 'user', content: `<user-message>\n${promptText}\n</user-message>` }];
 
 			debugLog(
 				`[TITLE_GEN] Using API key mode (prompts: title-generator, user-request)`,
