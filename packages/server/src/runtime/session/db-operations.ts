@@ -1,6 +1,7 @@
 import type { getDb } from '@agi-cli/database';
 import { messages, messageParts, sessions } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
+import { catalog, type ProviderId } from '@agi-cli/sdk';
 import type { RunOpts } from './queue.ts';
 
 export type UsageData = {
@@ -8,6 +9,7 @@ export type UsageData = {
 	outputTokens?: number;
 	totalTokens?: number;
 	cachedInputTokens?: number;
+	cacheCreationInputTokens?: number;
 	reasoningTokens?: number;
 };
 
@@ -16,7 +18,76 @@ export type ProviderMetadata = Record<string, unknown> & {
 		cachedPromptTokens?: number;
 		[key: string]: unknown;
 	};
+	anthropic?: {
+		cacheCreationInputTokens?: number;
+		cacheReadInputTokens?: number;
+		[key: string]: unknown;
+	};
 };
+
+export function normalizeUsage(
+	usage: UsageData,
+	providerMetadata: ProviderMetadata | undefined,
+	provider: ProviderId,
+): UsageData {
+	const rawInputTokens = Number(usage.inputTokens ?? 0);
+	const outputTokens = Number(usage.outputTokens ?? 0);
+	const reasoningTokens = Number(usage.reasoningTokens ?? 0);
+
+	const cachedInputTokens =
+		usage.cachedInputTokens != null
+			? Number(usage.cachedInputTokens)
+			: providerMetadata?.openai?.cachedPromptTokens != null
+				? Number(providerMetadata.openai.cachedPromptTokens)
+				: providerMetadata?.anthropic?.cacheReadInputTokens != null
+					? Number(providerMetadata.anthropic.cacheReadInputTokens)
+					: undefined;
+
+	const cacheCreationInputTokens =
+		usage.cacheCreationInputTokens != null
+			? Number(usage.cacheCreationInputTokens)
+			: providerMetadata?.anthropic?.cacheCreationInputTokens != null
+				? Number(providerMetadata.anthropic.cacheCreationInputTokens)
+				: undefined;
+
+	const cachedValue = cachedInputTokens ?? 0;
+	const cacheCreationValue = cacheCreationInputTokens ?? 0;
+
+	let inputTokens = rawInputTokens;
+	if (provider === 'openai') {
+		inputTokens = Math.max(0, rawInputTokens - cachedValue);
+	} else if (provider === 'anthropic') {
+		inputTokens = Math.max(0, rawInputTokens - cacheCreationValue);
+	}
+
+	return {
+		inputTokens,
+		outputTokens,
+		cachedInputTokens,
+		cacheCreationInputTokens,
+		reasoningTokens,
+	};
+}
+
+export function resolveUsageProvider(
+	provider: ProviderId,
+	model: string,
+): ProviderId {
+	if (provider !== 'solforge' && provider !== 'openrouter' && provider !== 'opencode') {
+		return provider;
+	}
+	const entry = catalog[provider];
+	const normalizedModel = model.includes('/') ? model.split('/').at(-1) : model;
+	const modelEntry = entry?.models.find(
+		(m) => m.id?.toLowerCase() === normalizedModel?.toLowerCase(),
+	);
+	const npm = modelEntry?.provider?.npm ?? '';
+	if (npm.includes('openai')) return 'openai';
+	if (npm.includes('anthropic')) return 'anthropic';
+	if (npm.includes('google')) return 'google';
+	if (npm.includes('zai')) return 'zai';
+	return provider;
+}
 
 /**
  * Updates session token counts incrementally after each step.
@@ -30,6 +101,13 @@ export async function updateSessionTokensIncremental(
 ) {
 	if (!usage || !db) return;
 
+	const usageProvider = resolveUsageProvider(opts.provider, opts.model);
+	const normalizedUsage = normalizeUsage(
+		usage,
+		providerMetadata,
+		usageProvider,
+	);
+
 	// Read session totals
 	const sessRows = await db
 		.select()
@@ -42,6 +120,7 @@ export async function updateSessionTokensIncremental(
 	const priorInputSess = Number(sess.totalInputTokens ?? 0);
 	const priorOutputSess = Number(sess.totalOutputTokens ?? 0);
 	const priorCachedSess = Number(sess.totalCachedTokens ?? 0);
+	const priorCacheCreationSess = Number(sess.totalCacheCreationTokens ?? 0);
 	const priorReasoningSess = Number(sess.totalReasoningTokens ?? 0);
 
 	// Read current message totals to compute delta
@@ -54,38 +133,48 @@ export async function updateSessionTokensIncremental(
 	const priorPromptMsg = Number(msg?.promptTokens ?? 0);
 	const priorCompletionMsg = Number(msg?.completionTokens ?? 0);
 	const priorCachedMsg = Number(msg?.cachedInputTokens ?? 0);
+	const priorCacheCreationMsg = Number(msg?.cacheCreationInputTokens ?? 0);
 	const priorReasoningMsg = Number(msg?.reasoningTokens ?? 0);
 
 	// Treat usage as cumulative per-message for this step
 	const cumPrompt =
-		usage.inputTokens != null ? Number(usage.inputTokens) : priorPromptMsg;
+		normalizedUsage.inputTokens != null
+			? Number(normalizedUsage.inputTokens)
+			: priorPromptMsg;
 	const cumCompletion =
-		usage.outputTokens != null
-			? Number(usage.outputTokens)
+		normalizedUsage.outputTokens != null
+			? Number(normalizedUsage.outputTokens)
 			: priorCompletionMsg;
 	const cumReasoning =
-		usage.reasoningTokens != null
-			? Number(usage.reasoningTokens)
+		normalizedUsage.reasoningTokens != null
+			? Number(normalizedUsage.reasoningTokens)
 			: priorReasoningMsg;
 
 	const cumCached =
-		usage.cachedInputTokens != null
-			? Number(usage.cachedInputTokens)
-			: providerMetadata?.openai?.cachedPromptTokens != null
-				? Number(providerMetadata.openai.cachedPromptTokens)
-				: priorCachedMsg;
+		normalizedUsage.cachedInputTokens != null
+			? Number(normalizedUsage.cachedInputTokens)
+			: priorCachedMsg;
+
+	const cumCacheCreation =
+		normalizedUsage.cacheCreationInputTokens != null
+			? Number(normalizedUsage.cacheCreationInputTokens)
+			: priorCacheCreationMsg;
 
 	// Compute deltas for this step; clamp to 0 in case provider reports smaller values
 	const deltaInput = Math.max(0, cumPrompt - priorPromptMsg);
 	const deltaOutput = Math.max(0, cumCompletion - priorCompletionMsg);
 	const deltaCached = Math.max(0, cumCached - priorCachedMsg);
+	const deltaCacheCreation = Math.max(
+		0,
+		cumCacheCreation - priorCacheCreationMsg,
+	);
 	const deltaReasoning = Math.max(0, cumReasoning - priorReasoningMsg);
 
-	// Note: AI SDK's inputTokens already excludes cached tokens for Anthropic,
-	// so we don't need to subtract deltaCached here. Just accumulate directly.
 	const nextInputSess = priorInputSess + deltaInput;
 	const nextOutputSess = priorOutputSess + deltaOutput;
 	const nextCachedSess = priorCachedSess + deltaCached;
+	const nextCacheCreationSess =
+		priorCacheCreationSess + deltaCacheCreation;
 	const nextReasoningSess = priorReasoningSess + deltaReasoning;
 
 	await db
@@ -94,6 +183,7 @@ export async function updateSessionTokensIncremental(
 			totalInputTokens: nextInputSess,
 			totalOutputTokens: nextOutputSess,
 			totalCachedTokens: nextCachedSess,
+			totalCacheCreationTokens: nextCacheCreationSess,
 			totalReasoningTokens: nextReasoningSess,
 		})
 		.where(eq(sessions.id, opts.sessionId));
@@ -144,6 +234,13 @@ export async function updateMessageTokensIncremental(
 ) {
 	if (!usage || !db) return;
 
+	const usageProvider = resolveUsageProvider(opts.provider, opts.model);
+	const normalizedUsage = normalizeUsage(
+		usage,
+		providerMetadata,
+		usageProvider,
+	);
+
 	const msgRows = await db
 		.select()
 		.from(messages)
@@ -154,28 +251,39 @@ export async function updateMessageTokensIncremental(
 		const priorPrompt = Number(msg.promptTokens ?? 0);
 		const priorCompletion = Number(msg.completionTokens ?? 0);
 		const priorCached = Number(msg.cachedInputTokens ?? 0);
+		const priorCacheCreation = Number(msg.cacheCreationInputTokens ?? 0);
 		const priorReasoning = Number(msg.reasoningTokens ?? 0);
 
 		// Treat usage as cumulative per-message - REPLACE not ADD
 		const cumPrompt =
-			usage.inputTokens != null ? Number(usage.inputTokens) : priorPrompt;
+			normalizedUsage.inputTokens != null
+				? Number(normalizedUsage.inputTokens)
+				: priorPrompt;
 		const cumCompletion =
-			usage.outputTokens != null ? Number(usage.outputTokens) : priorCompletion;
+			normalizedUsage.outputTokens != null
+				? Number(normalizedUsage.outputTokens)
+				: priorCompletion;
 		const cumReasoning =
-			usage.reasoningTokens != null
-				? Number(usage.reasoningTokens)
+			normalizedUsage.reasoningTokens != null
+				? Number(normalizedUsage.reasoningTokens)
 				: priorReasoning;
 
 		const cumCached =
-			usage.cachedInputTokens != null
-				? Number(usage.cachedInputTokens)
-				: providerMetadata?.openai?.cachedPromptTokens != null
-					? Number(providerMetadata.openai.cachedPromptTokens)
-					: priorCached;
+			normalizedUsage.cachedInputTokens != null
+				? Number(normalizedUsage.cachedInputTokens)
+				: priorCached;
 
-		// Note: AI SDK's totalTokens excludes cachedInputTokens for Anthropic,
-		// so we always compute total ourselves to include all token types.
-		const cumTotal = cumPrompt + cumCompletion + cumCached + cumReasoning;
+		const cumCacheCreation =
+			normalizedUsage.cacheCreationInputTokens != null
+				? Number(normalizedUsage.cacheCreationInputTokens)
+				: priorCacheCreation;
+
+		const cumTotal =
+			cumPrompt +
+			cumCompletion +
+			cumCached +
+			cumCacheCreation +
+			cumReasoning;
 
 		await db
 			.update(messages)
@@ -184,6 +292,7 @@ export async function updateMessageTokensIncremental(
 				completionTokens: cumCompletion,
 				totalTokens: cumTotal,
 				cachedInputTokens: cumCached,
+				cacheCreationInputTokens: cumCacheCreation,
 				reasoningTokens: cumReasoning,
 			})
 			.where(eq(messages.id, opts.assistantMessageId));

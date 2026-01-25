@@ -6,6 +6,8 @@ type ProviderName = ProviderId;
 type UsageLike = {
 	inputTokens?: number | null;
 	outputTokens?: number | null;
+	cachedInputTokens?: number | null;
+	cacheCreationInputTokens?: number | null;
 };
 
 type PricingEntry = {
@@ -119,7 +121,19 @@ export function estimateModelCostUsd(
 		typeof usage.inputTokens === 'number' ? usage.inputTokens : 0;
 	const outputTokens =
 		typeof usage.outputTokens === 'number' ? usage.outputTokens : 0;
-	if (!inputTokens && !outputTokens) return undefined;
+	const cachedInputTokens =
+		typeof usage.cachedInputTokens === 'number' ? usage.cachedInputTokens : 0;
+	const cacheCreationInputTokens =
+		typeof usage.cacheCreationInputTokens === 'number'
+			? usage.cacheCreationInputTokens
+			: 0;
+	if (
+		!inputTokens &&
+		!outputTokens &&
+		!cachedInputTokens &&
+		!cacheCreationInputTokens
+	)
+		return undefined;
 
 	// Prefer centralized catalog costs when available
 	const m = findCatalogModel(provider, model);
@@ -128,9 +142,20 @@ export function estimateModelCostUsd(
 			typeof m.cost?.input === 'number' ? m.cost.input : 0;
 		const outputPerMillion =
 			typeof m.cost?.output === 'number' ? m.cost.output : 0;
+		const cacheReadPerMillion =
+			typeof m.cost?.cacheRead === 'number'
+				? m.cost.cacheRead
+				: 0;
+		const cacheWritePerMillion =
+			typeof m.cost?.cacheWrite === 'number'
+				? m.cost.cacheWrite
+				: 0;
 		const inputCost = (inputTokens * inputPerMillion) / 1_000_000;
 		const outputCost = (outputTokens * outputPerMillion) / 1_000_000;
-		const total = inputCost + outputCost;
+		const cacheReadCost = (cachedInputTokens * cacheReadPerMillion) / 1_000_000;
+		const cacheWriteCost =
+			(cacheCreationInputTokens * cacheWritePerMillion) / 1_000_000;
+		const total = inputCost + outputCost + cacheReadCost + cacheWriteCost;
 		return Number.isFinite(total) ? Number(total.toFixed(6)) : undefined;
 	}
 

@@ -82,6 +82,8 @@ export function buildQuerySessionsTool(projectRoot: string) {
 						lastActiveAt: sessions.lastActiveAt,
 						totalInputTokens: sessions.totalInputTokens,
 						totalOutputTokens: sessions.totalOutputTokens,
+						totalCachedTokens: sessions.totalCachedTokens,
+						totalCacheCreationTokens: sessions.totalCacheCreationTokens,
 						sessionType: sessions.sessionType,
 						parentSessionId: sessions.parentSessionId,
 					})

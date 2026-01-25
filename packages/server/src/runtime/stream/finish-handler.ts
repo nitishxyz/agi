@@ -13,6 +13,10 @@ import {
 } from '../message/compaction.ts';
 import { debugLog } from '../debug/index.ts';
 import type { FinishEvent } from './types.ts';
+import {
+	normalizeUsage,
+	resolveUsageProvider,
+} from '../session/db-operations.ts';
 
 export function createFinishHandler(
 	opts: RunOpts,
@@ -73,8 +77,17 @@ export function createFinishHandler(
 					outputTokens: Number(sessRows[0].completionTokens ?? 0),
 					totalTokens: Number(sessRows[0].totalTokens ?? 0),
 					cachedInputTokens: Number(sessRows[0].cachedInputTokens ?? 0),
+					cacheCreationInputTokens: Number(
+						sessRows[0].cacheCreationInputTokens ?? 0,
+					),
 				}
-			: fin.usage;
+			: fin.usage
+				? normalizeUsage(
+						fin.usage,
+						undefined,
+						resolveUsageProvider(opts.provider, opts.model),
+					)
+				: undefined;
 
 		const costUsd = usage
 			? estimateModelCostUsd(opts.provider, opts.model, usage)
@@ -89,6 +102,9 @@ export function createFinishHandler(
 						output: usage.outputTokens ?? 0,
 						cacheRead:
 							(usage as { cachedInputTokens?: number }).cachedInputTokens ?? 0,
+						cacheWrite:
+							(usage as { cacheCreationInputTokens?: number })
+								.cacheCreationInputTokens ?? 0,
 					};
 
 					if (isOverflow(tokenUsage, limits)) {

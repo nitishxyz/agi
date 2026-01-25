@@ -9,6 +9,8 @@ export interface Session {
 	lastActiveAt: number | null;
 	totalInputTokens: number | null;
 	totalOutputTokens: number | null;
+	totalCachedTokens?: number | null;
+	totalCacheCreationTokens?: number | null;
 	totalToolTimeMs: number | null;
 	toolCounts?: Record<string, number>;
 	parentSessionId?: string | null;

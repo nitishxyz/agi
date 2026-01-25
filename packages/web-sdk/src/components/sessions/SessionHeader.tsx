@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { estimateModelCostUsd, type ProviderId } from '@agi-cli/sdk/browser';
 import type { Session } from '../../types/api';
 import { Clock, DollarSign, Hash, GitBranch, ArrowUpRight } from 'lucide-react';
 import { useParentSession } from '../../hooks/useBranch';
@@ -19,21 +20,37 @@ export function SessionHeader({
 	const totalTokens = useMemo(() => {
 		const input = session.totalInputTokens || 0;
 		const output = session.totalOutputTokens || 0;
-		return input + output;
-	}, [session.totalInputTokens, session.totalOutputTokens]);
+		const cached = session.totalCachedTokens || 0;
+		const cacheCreation = session.totalCacheCreationTokens || 0;
+		return input + output + cached + cacheCreation;
+	}, [
+		session.totalInputTokens,
+		session.totalOutputTokens,
+		session.totalCachedTokens,
+		session.totalCacheCreationTokens,
+	]);
 
 	const estimatedCost = useMemo(() => {
-		const input = session.totalInputTokens || 0;
-		const output = session.totalOutputTokens || 0;
-
-		const inputCostPer1M = 30;
-		const outputCostPer1M = 60;
-
-		const inputCost = (input / 1_000_000) * inputCostPer1M;
-		const outputCost = (output / 1_000_000) * outputCostPer1M;
-
-		return inputCost + outputCost;
-	}, [session.totalInputTokens, session.totalOutputTokens]);
+		const inputTokens = session.totalInputTokens || 0;
+		const outputTokens = session.totalOutputTokens || 0;
+		const cachedInputTokens = session.totalCachedTokens || 0;
+		const cacheCreationInputTokens = session.totalCacheCreationTokens || 0;
+		return (
+			estimateModelCostUsd(session.provider as ProviderId, session.model, {
+				inputTokens,
+				outputTokens,
+				cachedInputTokens,
+				cacheCreationInputTokens,
+			}) ?? 0
+		);
+	}, [
+		session.provider,
+		session.model,
+		session.totalInputTokens,
+		session.totalOutputTokens,
+		session.totalCachedTokens,
+		session.totalCacheCreationTokens,
+	]);
 
 	const formatDuration = (ms: number | null) => {
 		if (!ms) return '0s';
@@ -107,6 +124,13 @@ export function SessionHeader({
 								<span className="text-xs opacity-60">
 									{formatNumber(session.totalInputTokens || 0)} in /{' '}
 									{formatNumber(session.totalOutputTokens || 0)} out
+									{(session.totalCachedTokens || session.totalCacheCreationTokens) && (
+										<span>
+											{' '}
+											(+{formatNumber(session.totalCachedTokens || 0)} cached,
+											+{formatNumber(session.totalCacheCreationTokens || 0)} write)
+										</span>
+									)}
 								</span>
 							)}
 						</div>

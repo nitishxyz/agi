@@ -34,6 +34,10 @@ export function registerResearchRoutes(app: Hono) {
 				lastActiveAt: sessions.lastActiveAt,
 				provider: sessions.provider,
 				model: sessions.model,
+				totalInputTokens: sessions.totalInputTokens,
+				totalOutputTokens: sessions.totalOutputTokens,
+				totalCachedTokens: sessions.totalCachedTokens,
+				totalCacheCreationTokens: sessions.totalCacheCreationTokens,
 			})
 			.from(sessions)
 			.where(
@@ -112,6 +116,7 @@ export function registerResearchRoutes(app: Hono) {
 			totalInputTokens: null,
 			totalOutputTokens: null,
 			totalCachedTokens: null,
+			totalCacheCreationTokens: null,
 			totalReasoningTokens: null,
 			totalToolTimeMs: null,
 			toolCountsJson: null,
@@ -318,24 +323,25 @@ export function registerResearchRoutes(app: Hono) {
 		const newSessionId = crypto.randomUUID();
 		const now = Date.now();
 
-		await db.insert(sessions).values({
-			id: newSessionId,
-			title: researchSession.title ? `From: ${researchSession.title}` : null,
-			agent,
-			provider,
-			model,
-			projectPath: cfg.projectRoot,
-			createdAt: now,
-			lastActiveAt: now,
-			parentSessionId: null,
-			sessionType: 'main',
-			totalInputTokens: null,
-			totalOutputTokens: null,
-			totalCachedTokens: null,
-			totalReasoningTokens: null,
-			totalToolTimeMs: null,
-			toolCountsJson: null,
-		});
+			await db.insert(sessions).values({
+				id: newSessionId,
+				title: researchSession.title ? `From: ${researchSession.title}` : null,
+				agent,
+				provider,
+				model,
+				projectPath: cfg.projectRoot,
+				createdAt: now,
+				lastActiveAt: now,
+				parentSessionId: null,
+				sessionType: 'main',
+				totalInputTokens: null,
+				totalOutputTokens: null,
+				totalCachedTokens: null,
+				totalCacheCreationTokens: null,
+				totalReasoningTokens: null,
+				totalToolTimeMs: null,
+				toolCountsJson: null,
+			});
 
 		const msgId = crypto.randomUUID();
 		const partId = crypto.randomUUID();

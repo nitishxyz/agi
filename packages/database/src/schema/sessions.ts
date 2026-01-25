@@ -13,6 +13,7 @@ export const sessions = sqliteTable('sessions', {
 	totalInputTokens: integer('total_input_tokens'),
 	totalOutputTokens: integer('total_output_tokens'),
 	totalCachedTokens: integer('total_cached_tokens'),
+	totalCacheCreationTokens: integer('total_cache_creation_tokens'),
 	totalReasoningTokens: integer('total_reasoning_tokens'),
 	totalToolTimeMs: integer('total_tool_time_ms'),
 	toolCountsJson: text('tool_counts_json'), // JSON object of name->count

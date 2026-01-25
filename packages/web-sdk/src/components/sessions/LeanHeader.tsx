@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { estimateModelCostUsd, type ProviderId } from '@agi-cli/sdk/browser';
 import type { Session } from '../../types/api';
 import {
 	Hash,
@@ -28,17 +29,26 @@ export function LeanHeader({
 	);
 
 	const estimatedCost = useMemo(() => {
-		const input = session.totalInputTokens || 0;
-		const output = session.totalOutputTokens || 0;
-
-		const inputCostPer1M = 30;
-		const outputCostPer1M = 60;
-
-		const inputCost = (input / 1_000_000) * inputCostPer1M;
-		const outputCost = (output / 1_000_000) * outputCostPer1M;
-
-		return inputCost + outputCost;
-	}, [session.totalInputTokens, session.totalOutputTokens]);
+		const inputTokens = session.totalInputTokens || 0;
+		const outputTokens = session.totalOutputTokens || 0;
+		const cachedInputTokens = session.totalCachedTokens || 0;
+		const cacheCreationInputTokens = session.totalCacheCreationTokens || 0;
+		return (
+			estimateModelCostUsd(session.provider as ProviderId, session.model, {
+				inputTokens,
+				outputTokens,
+				cachedInputTokens,
+				cacheCreationInputTokens,
+			}) ?? 0
+		);
+	}, [
+		session.provider,
+		session.model,
+		session.totalInputTokens,
+		session.totalOutputTokens,
+		session.totalCachedTokens,
+		session.totalCacheCreationTokens,
+	]);
 
 	const formatNumber = (num: number) => {
 		return num.toLocaleString('en-US');
@@ -94,7 +104,13 @@ export function LeanHeader({
 						<Hash className="w-4 h-4" />
 						<span className="text-foreground font-medium">
 							{formatNumber(session.totalInputTokens || 0)} /{' '}
-							{formatNumber(session.totalOutputTokens || 0)}
+							{formatNumber(session.totalOutputTokens || 0)}{' '}
+							{(session.totalCachedTokens || session.totalCacheCreationTokens) && (
+								<span className="text-xs opacity-60">
+									(+{formatNumber(session.totalCachedTokens || 0)} cached,
+									+{formatNumber(session.totalCacheCreationTokens || 0)} write)
+								</span>
+							)}
 						</span>
 					</div>
 

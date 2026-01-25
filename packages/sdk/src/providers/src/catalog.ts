@@ -1026,6 +1026,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.8,
 					output: 4,
 					cacheRead: 0.08,
+					cacheWrite: 1,
 				},
 				limit: {
 					context: 200000,
@@ -1051,6 +1052,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.8,
 					output: 4,
 					cacheRead: 0.08,
+					cacheWrite: 1,
 				},
 				limit: {
 					context: 200000,
@@ -1076,6 +1078,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 200000,
@@ -1101,6 +1104,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 200000,
@@ -1126,6 +1130,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 200000,
@@ -1151,6 +1156,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 200000,
@@ -1176,6 +1182,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.25,
 					output: 1.25,
 					cacheRead: 0.03,
+					cacheWrite: 0.3,
 				},
 				limit: {
 					context: 200000,
@@ -1201,6 +1208,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 15,
 					output: 75,
 					cacheRead: 1.5,
+					cacheWrite: 18.75,
 				},
 				limit: {
 					context: 200000,
@@ -1226,6 +1234,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 0.3,
 				},
 				limit: {
 					context: 200000,
@@ -1251,6 +1260,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 1,
 					output: 5,
 					cacheRead: 0.1,
+					cacheWrite: 1.25,
 				},
 				limit: {
 					context: 200000,
@@ -1276,6 +1286,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 1,
 					output: 5,
 					cacheRead: 0.1,
+					cacheWrite: 1.25,
 				},
 				limit: {
 					context: 200000,
@@ -1301,6 +1312,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 15,
 					output: 75,
 					cacheRead: 1.5,
+					cacheWrite: 18.75,
 				},
 				limit: {
 					context: 200000,
@@ -1326,6 +1338,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 15,
 					output: 75,
 					cacheRead: 1.5,
+					cacheWrite: 18.75,
 				},
 				limit: {
 					context: 200000,
@@ -1351,6 +1364,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 15,
 					output: 75,
 					cacheRead: 1.5,
+					cacheWrite: 18.75,
 				},
 				limit: {
 					context: 200000,
@@ -1376,6 +1390,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 15,
 					output: 75,
 					cacheRead: 1.5,
+					cacheWrite: 18.75,
 				},
 				limit: {
 					context: 200000,
@@ -1401,6 +1416,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 5,
 					output: 25,
 					cacheRead: 0.5,
+					cacheWrite: 6.25,
 				},
 				limit: {
 					context: 200000,
@@ -1426,6 +1442,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 5,
 					output: 25,
 					cacheRead: 0.5,
+					cacheWrite: 6.25,
 				},
 				limit: {
 					context: 200000,
@@ -1451,6 +1468,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 200000,
@@ -1476,6 +1494,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 200000,
@@ -1501,6 +1520,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 200000,
@@ -1526,6 +1546,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 200000,
@@ -2213,6 +2234,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.8,
 					output: 4,
 					cacheRead: 0.08,
+					cacheWrite: 1,
 				},
 				limit: {
 					context: 200000,
@@ -2238,6 +2260,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 15,
 					output: 75,
 					cacheRead: 1.5,
+					cacheWrite: 18.75,
 				},
 				limit: {
 					context: 200000,
@@ -2263,6 +2286,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 1,
 					output: 5,
 					cacheRead: 0.1,
+					cacheWrite: 1.25,
 				},
 				limit: {
 					context: 200000,
@@ -2288,6 +2312,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 15,
 					output: 75,
 					cacheRead: 1.5,
+					cacheWrite: 18.75,
 				},
 				limit: {
 					context: 200000,
@@ -2313,6 +2338,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 15,
 					output: 75,
 					cacheRead: 1.5,
+					cacheWrite: 18.75,
 				},
 				limit: {
 					context: 200000,
@@ -2338,6 +2364,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 5,
 					output: 25,
 					cacheRead: 0.5,
+					cacheWrite: 6.25,
 				},
 				limit: {
 					context: 200000,
@@ -2363,6 +2390,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 200000,
@@ -2388,6 +2416,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 1000000,
@@ -3343,6 +3372,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.28,
 					output: 1.15,
 					cacheRead: 0.28,
+					cacheWrite: 1.15,
 				},
 				limit: {
 					context: 196600,
@@ -5258,6 +5288,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.75,
+					cacheWrite: 15,
 				},
 				limit: {
 					context: 131072,
@@ -5283,6 +5314,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.75,
+					cacheWrite: 15,
 				},
 				limit: {
 					context: 131072,
@@ -5308,6 +5340,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.3,
 					output: 0.5,
 					cacheRead: 0.075,
+					cacheWrite: 0.5,
 				},
 				limit: {
 					context: 131072,
@@ -5333,6 +5366,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.3,
 					output: 0.5,
 					cacheRead: 0.075,
+					cacheWrite: 0.5,
 				},
 				limit: {
 					context: 131072,
@@ -5358,6 +5392,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.75,
+					cacheWrite: 15,
 				},
 				limit: {
 					context: 256000,
@@ -5383,6 +5418,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.2,
 					output: 0.5,
 					cacheRead: 0.05,
+					cacheWrite: 0.05,
 				},
 				limit: {
 					context: 2000000,
@@ -5408,6 +5444,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.2,
 					output: 0.5,
 					cacheRead: 0.05,
+					cacheWrite: 0.05,
 				},
 				limit: {
 					context: 2000000,
@@ -5624,59 +5661,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 		id: 'opencode',
 		models: [
 			{
-				id: 'alpha-gd4',
-				label: 'Alpha GD4',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: true,
-				attachment: false,
-				temperature: true,
-				knowledge: '2025-01',
-				releaseDate: '2025-01-01',
-				lastUpdated: '2025-01-01',
-				openWeights: true,
-				cost: {
-					input: 0.5,
-					output: 2,
-					cacheRead: 0.15,
-				},
-				limit: {
-					context: 262144,
-					output: 32768,
-				},
-				provider: {
-					npm: '@ai-sdk/anthropic',
-				},
-			},
-			{
-				id: 'alpha-glm-4.7',
-				label: 'Alpha GLM-4.7',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoning: true,
-				attachment: false,
-				temperature: true,
-				knowledge: '2025-04',
-				releaseDate: '2025-12-22',
-				lastUpdated: '2025-12-22',
-				openWeights: true,
-				cost: {
-					input: 0.6,
-					output: 2.2,
-					cacheRead: 0.6,
-				},
-				limit: {
-					context: 204800,
-					output: 131072,
-				},
-			},
-			{
 				id: 'big-pickle',
 				label: 'Big Pickle',
 				modalities: {
@@ -5695,6 +5679,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0,
 					output: 0,
 					cacheRead: 0,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 200000,
@@ -5720,6 +5705,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.8,
 					output: 4,
 					cacheRead: 0.08,
+					cacheWrite: 1,
 				},
 				limit: {
 					context: 200000,
@@ -5748,6 +5734,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 1,
 					output: 5,
 					cacheRead: 0.1,
+					cacheWrite: 1.25,
 				},
 				limit: {
 					context: 200000,
@@ -5776,6 +5763,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 15,
 					output: 75,
 					cacheRead: 1.5,
+					cacheWrite: 18.75,
 				},
 				limit: {
 					context: 200000,
@@ -5804,6 +5792,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 5,
 					output: 25,
 					cacheRead: 0.5,
+					cacheWrite: 6.25,
 				},
 				limit: {
 					context: 200000,
@@ -5832,6 +5821,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 1000000,
@@ -5860,6 +5850,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 3,
 					output: 15,
 					cacheRead: 0.3,
+					cacheWrite: 3.75,
 				},
 				limit: {
 					context: 1000000,
@@ -6270,6 +6261,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0,
 					output: 0,
 					cacheRead: 0,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 256000,
@@ -6407,6 +6399,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.6,
 					output: 2.2,
 					cacheRead: 0.11,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 131072,
@@ -6432,6 +6425,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.2,
 					output: 1.1,
 					cacheRead: 0.03,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 131072,
@@ -6457,6 +6451,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0,
 					output: 0,
 					cacheRead: 0,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 131072,
@@ -6506,6 +6501,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.6,
 					output: 2.2,
 					cacheRead: 0.11,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 204800,
@@ -6555,6 +6551,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0.6,
 					output: 2.2,
 					cacheRead: 0.11,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 204800,
@@ -6590,6 +6587,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0,
 					output: 0,
 					cacheRead: 0,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 131072,
@@ -6615,6 +6613,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0,
 					output: 0,
 					cacheRead: 0,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 131072,
@@ -6640,6 +6639,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0,
 					output: 0,
 					cacheRead: 0,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 131072,
@@ -6689,6 +6689,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0,
 					output: 0,
 					cacheRead: 0,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 204800,
@@ -6738,6 +6739,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0,
 					output: 0,
 					cacheRead: 0,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 204800,
@@ -6763,6 +6765,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 0,
 					output: 0,
 					cacheRead: 0,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 200000,

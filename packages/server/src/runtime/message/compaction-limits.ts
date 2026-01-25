@@ -20,7 +20,11 @@ export interface ModelLimits {
 export function isOverflow(tokens: TokenUsage, limits: ModelLimits): boolean {
 	if (limits.context === 0) return false;
 
-	const count = tokens.input + (tokens.cacheRead ?? 0) + tokens.output;
+	const count =
+		tokens.input +
+		(tokens.cacheRead ?? 0) +
+		(tokens.cacheWrite ?? 0) +
+		tokens.output;
 	const usableContext = limits.context - limits.output;
 
 	return count > usableContext;

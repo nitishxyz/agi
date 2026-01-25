@@ -75,7 +75,10 @@ export function buildGetSessionContextTool(projectRoot: string) {
 				}
 
 				const totalTokens =
-					(session.totalInputTokens ?? 0) + (session.totalOutputTokens ?? 0);
+					(session.totalInputTokens ?? 0) +
+					(session.totalOutputTokens ?? 0) +
+					(session.totalCachedTokens ?? 0) +
+					(session.totalCacheCreationTokens ?? 0);
 
 				const stats = {
 					totalMessages: msgCountResult[0]?.count ?? 0,
@@ -84,6 +87,8 @@ export function buildGetSessionContextTool(projectRoot: string) {
 					totalTokens,
 					totalInputTokens: session.totalInputTokens ?? 0,
 					totalOutputTokens: session.totalOutputTokens ?? 0,
+					totalCachedTokens: session.totalCachedTokens ?? 0,
+					totalCacheCreationTokens: session.totalCacheCreationTokens ?? 0,
 				};
 
 				let messagesData:

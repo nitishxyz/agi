@@ -64,6 +64,8 @@ export const schemas = {
 			lastActiveAt: { type: 'integer', format: 'int64', nullable: true },
 			totalInputTokens: { type: 'integer', nullable: true },
 			totalOutputTokens: { type: 'integer', nullable: true },
+			totalCachedTokens: { type: 'integer', nullable: true },
+			totalCacheCreationTokens: { type: 'integer', nullable: true },
 			totalToolTimeMs: { type: 'integer', nullable: true },
 			toolCounts: {
 				type: 'object',

@@ -51,6 +51,7 @@ export async function createSession({
 		totalInputTokens: null,
 		totalOutputTokens: null,
 		totalCachedTokens: null,
+		totalCacheCreationTokens: null,
 		totalReasoningTokens: null,
 		totalToolTimeMs: null,
 		toolCountsJson: null,

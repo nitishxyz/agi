@@ -156,11 +156,19 @@ function normalizeCost(value: unknown) {
 	const input = toNumber(obj.input);
 	const output = toNumber(obj.output);
 	const cacheRead = toNumber(obj.cache_read ?? obj.cacheRead);
-	if (input == null && output == null && cacheRead == null) return undefined;
+	const cacheWrite = toNumber(obj.cache_write ?? obj.cacheWrite);
+	if (
+		input == null &&
+		output == null &&
+		cacheRead == null &&
+		cacheWrite == null
+	)
+		return undefined;
 	return {
 		input: input ?? undefined,
 		output: output ?? undefined,
 		cacheRead: cacheRead ?? undefined,
+		cacheWrite: cacheWrite ?? undefined,
 	};
 }
 

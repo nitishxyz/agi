@@ -8,7 +8,15 @@ export type StepFinishEvent = {
 };
 
 export type FinishEvent = {
-	usage?: Pick<UsageData, 'inputTokens' | 'outputTokens' | 'totalTokens'>;
+	usage?: Pick<
+		UsageData,
+		| 'inputTokens'
+		| 'outputTokens'
+		| 'totalTokens'
+		| 'cachedInputTokens'
+		| 'cacheCreationInputTokens'
+		| 'reasoningTokens'
+	>;
 	finishReason?: string;
 };
 

@@ -33,7 +33,12 @@ export type ModelInfo = {
 	releaseDate?: string;
 	lastUpdated?: string;
 	openWeights?: boolean;
-	cost?: { input?: number; output?: number; cacheRead?: number };
+	cost?: {
+		input?: number;
+		output?: number;
+		cacheRead?: number;
+		cacheWrite?: number;
+	};
 	limit?: { context?: number; output?: number };
 	provider?: ModelProviderBinding;
 };
