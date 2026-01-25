@@ -182,9 +182,7 @@ function updateReadmeBadge(
 		writeFileSync(readmePath, updated);
 		console.log(`✓ Updated ${readmePath} badge to ${nextVersion}`);
 	} else {
-		console.log(
-			`[DRY RUN] Would update ${readmePath} badge to ${nextVersion}`,
-		);
+		console.log(`[DRY RUN] Would update ${readmePath} badge to ${nextVersion}`);
 	}
 }
 
@@ -296,10 +294,7 @@ function main() {
 	updateReadmeBadge(readmePath, nextVersion, dryRun);
 
 	// Update Getting Started pinned version
-	const gettingStartedPath = resolve(
-		process.cwd(),
-		'docs/getting-started.md',
-	);
+	const gettingStartedPath = resolve(process.cwd(), 'docs/getting-started.md');
 	updateGettingStartedPin(gettingStartedPath, nextVersion, dryRun);
 
 	console.log(`\n✓ All packages updated to version: ${nextVersion}`);
