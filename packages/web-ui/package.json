@@ -21,11 +21,11 @@
 		"embed",
 		"static"
 	],
-	"author": "ntishxyz",
+	"author": "nitishxyz",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/ntishxyz/agi.git",
+		"url": "git+https://github.com/nitishxyz/agi.git",
 		"directory": "packages/web-ui"
 	},
 	"devDependencies": {

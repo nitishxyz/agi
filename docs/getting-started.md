@@ -23,7 +23,7 @@ curl -fsSL https://install.agi.nitish.sh | sh
 **Pin a specific version:**
 
 ```bash
-AGI_VERSION=v0.1.92 curl -fsSL https://install.agi.nitish.sh | sh
+AGI_VERSION=v0.1.135 curl -fsSL https://install.agi.nitish.sh | sh
 ```
 
 ### 📦 Alternative: npm or Bun

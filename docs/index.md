@@ -73,14 +73,12 @@ agi/
 │   ├── cli/          # Main CLI application
 │   └── web/          # Web interface
 ├── packages/
-│   ├── auth/         # Authentication
-│   ├── config/       # Configuration
+│   ├── api/          # Type-safe API client
 │   ├── database/     # SQLite + Drizzle
 │   ├── install/      # npm installer
-│   ├── prompts/      # System prompts
-│   ├── providers/    # Provider catalog
 │   ├── sdk/          # Core SDK
 │   ├── server/       # HTTP server
+│   ├── web-sdk/      # React hooks/components
 │   └── web-ui/       # Web UI components
 └── docs/             # Documentation (you are here)
 ```

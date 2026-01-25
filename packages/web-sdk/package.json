@@ -50,11 +50,11 @@
 		"sdk",
 		"web"
 	],
-	"author": "ntishxyz",
+	"author": "nitishxyz",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/ntishxyz/agi.git",
+		"url": "git+https://github.com/nitishxyz/agi.git",
 		"directory": "packages/web-sdk"
 	},
 	"dependencies": {

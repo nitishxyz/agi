@@ -12,21 +12,19 @@
 
 ```
 agi/
-├── src/
-│   ├── ai/              # AI agents, tools, and provider logic
-│   │   ├── agents/      # Agent registry and defaults
-│   │   ├── tools/       # Built-in tool implementations
-│   │   └── types.ts     # TypeScript interfaces
-│   ├── cli/             # CLI commands and interface
-│   ├── config/          # Configuration management
-│   ├── db/              # Database schemas and migrations
-│   │   └── schema/      # Drizzle ORM schemas
-│   ├── providers/       # AI provider integrations
-│   ├── runtime/         # Runtime assets and utilities
-│   └── server/          # HTTP server and API routes
+├── apps/
+│   ├── cli/             # Main CLI application
+│   └── web/             # Web interface
+├── packages/
+│   ├── api/             # Type-safe API client
+│   ├── database/        # SQLite + Drizzle
+│   ├── install/         # npm installer
+│   ├── sdk/             # Core SDK
+│   ├── server/          # HTTP server
+│   ├── web-sdk/         # React hooks/components
+│   └── web-ui/          # Web UI components
 ├── tests/               # Test suites
 ├── scripts/             # Build and utility scripts
-├── drizzle/             # Database migrations
 ├── docs/                # Additional documentation
 └── AGENTS.md            # Contributor conventions
 ```

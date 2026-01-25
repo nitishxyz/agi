@@ -23,11 +23,11 @@
 		"typescript",
 		"openapi"
 	],
-	"author": "ntishxyz",
+	"author": "nitishxyz",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/ntishxyz/agi.git",
+		"url": "https://github.com/nitishxyz/agi.git",
 		"directory": "packages/api"
 	},
 	"dependencies": {

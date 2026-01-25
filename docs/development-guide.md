@@ -76,14 +76,12 @@ agi/
 │   ├── cli/              # CLI application (main binary)
 │   └── web/              # Web interface (React + Vite)
 ├── packages/
-│   ├── auth/             # Authentication & credentials
-│   ├── config/           # Configuration system
+│   ├── api/              # Type-safe API client
 │   ├── database/         # SQLite + Drizzle ORM
 │   ├── install/          # npm installer package
-│   ├── prompts/          # System prompts
-│   ├── providers/        # AI provider catalog
 │   ├── sdk/              # Core SDK
 │   ├── server/           # HTTP server (Hono)
+│   ├── web-sdk/           # React hooks/components
 │   └── web-ui/           # Web UI components (pre-built)
 └── docs/                 # Documentation
 ```

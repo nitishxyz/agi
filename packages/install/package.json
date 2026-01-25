@@ -2,16 +2,16 @@
 	"name": "@agi-cli/install",
 	"version": "0.1.135",
 	"description": "AI-powered development assistant CLI - npm installer",
-	"author": "ntishxyz",
+	"author": "nitishxyz",
 	"license": "MIT",
-	"homepage": "https://github.com/ntishxyz/agi#readme",
+	"homepage": "https://github.com/nitishxyz/agi#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/ntishxyz/agi.git",
+		"url": "git+https://github.com/nitishxyz/agi.git",
 		"directory": "packages/install"
 	},
 	"bugs": {
-		"url": "https://github.com/ntishxyz/agi/issues"
+		"url": "https://github.com/nitishxyz/agi/issues"
 	},
 	"keywords": [
 		"ai",

@@ -2,16 +2,16 @@
 	"name": "@agi-cli/sdk",
 	"version": "0.1.135",
 	"description": "AI agent SDK for building intelligent assistants - tree-shakable and comprehensive",
-	"author": "ntishxyz",
+	"author": "nitishxyz",
 	"license": "MIT",
-	"homepage": "https://github.com/ntishxyz/agi#readme",
+	"homepage": "https://github.com/nitishxyz/agi#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/ntishxyz/agi.git",
+		"url": "git+https://github.com/nitishxyz/agi.git",
 		"directory": "packages/sdk"
 	},
 	"bugs": {
-		"url": "https://github.com/ntishxyz/agi/issues"
+		"url": "https://github.com/nitishxyz/agi/issues"
 	},
 	"type": "module",
 	"main": "./src/index.ts",

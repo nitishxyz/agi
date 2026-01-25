@@ -163,6 +163,58 @@ function updatePackageVersion(
 	}
 }
 
+function updateReadmeBadge(
+	readmePath: string,
+	nextVersion: string,
+	dryRun: boolean,
+): void {
+	const content = readFileSync(readmePath, 'utf8');
+	const updated = content.replace(
+		/(https:\/\/img\.shields\.io\/badge\/version-)([0-9A-Za-z.-]+)(-blue)/,
+		`$1${nextVersion}$3`,
+	);
+
+	if (updated === content) {
+		throw new Error('README badge version not found');
+	}
+
+	if (!dryRun) {
+		writeFileSync(readmePath, updated);
+		console.log(`✓ Updated ${readmePath} badge to ${nextVersion}`);
+	} else {
+		console.log(
+			`[DRY RUN] Would update ${readmePath} badge to ${nextVersion}`,
+		);
+	}
+}
+
+function updateGettingStartedPin(
+	gettingStartedPath: string,
+	nextVersion: string,
+	dryRun: boolean,
+): void {
+	const content = readFileSync(gettingStartedPath, 'utf8');
+	const updated = content.replace(
+		/AGI_VERSION=v([0-9A-Za-z.-]+)\s+curl/,
+		`AGI_VERSION=v${nextVersion} curl`,
+	);
+
+	if (updated === content) {
+		throw new Error('Getting started version pin not found');
+	}
+
+	if (!dryRun) {
+		writeFileSync(gettingStartedPath, updated);
+		console.log(
+			`✓ Updated ${gettingStartedPath} version pin to ${nextVersion}`,
+		);
+	} else {
+		console.log(
+			`[DRY RUN] Would update ${gettingStartedPath} version pin to ${nextVersion}`,
+		);
+	}
+}
+
 function main() {
 	const { type, preid, dryRun } = parseArgs(process.argv.slice(2));
 	if (!type) {
@@ -238,6 +290,17 @@ function main() {
 		'packages/server/package.json',
 	);
 	updatePackageVersion(serverPackagePath, nextVersion, dryRun);
+
+	// Update README badge
+	const readmePath = resolve(process.cwd(), 'README.md');
+	updateReadmeBadge(readmePath, nextVersion, dryRun);
+
+	// Update Getting Started pinned version
+	const gettingStartedPath = resolve(
+		process.cwd(),
+		'docs/getting-started.md',
+	);
+	updateGettingStartedPin(gettingStartedPath, nextVersion, dryRun);
 
 	console.log(`\n✓ All packages updated to version: ${nextVersion}`);
 }

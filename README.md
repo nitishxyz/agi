@@ -3,7 +3,7 @@
 > **AI-Powered Development Assistant for Your Terminal** 🚀
 > Your intelligent coding companion - bringing multi-provider AI assistance, powerful agents, and seamless integrations directly to your command line. Build faster, debug smarter, code with confidence.
 
-[![Version](https://img.shields.io/badge/version-0.1.92-blue)](https://github.com/nitishxyz/agi)
+[![Version](https://img.shields.io/badge/version-0.1.135-blue)](https://github.com/nitishxyz/agi)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Powered by AI SDK](https://img.shields.io/badge/powered%20by-AI%20SDK%20v5-purple)](https://sdk.vercel.ai)
 [![Bun](https://img.shields.io/badge/runtime-Bun-orange)](https://bun.sh)

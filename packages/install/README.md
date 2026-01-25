@@ -30,4 +30,4 @@ curl -fsSL https://install.agi.nitish.sh | sh
 
 ## More Information
 
-For more information, visit: https://github.com/ntishxyz/agi
+For more information, visit: https://github.com/nitishxyz/agi

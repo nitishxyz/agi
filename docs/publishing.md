@@ -85,6 +85,8 @@ Versions are automatically synchronized across packages by the `scripts/bump-ver
 - `packages/install/package.json` (installer version - source of truth for publishing)
 - `apps/cli/package.json` (CLI version - kept in sync but not published)
 - `packages/sdk/package.json` (SDK version)
+- `README.md` badge version
+- `docs/getting-started.md` pinned install version
 
 **Important:** The CI will sync all package versions automatically.
 
@@ -211,7 +213,7 @@ After publishing, verify:
 
 ### 1. GitHub Release
 
-- Go to: https://github.com/ntishxyz/agi/releases
+- Go to: https://github.com/nitishxyz/agi/releases
 - Check: All platform binaries attached
 - Test: Download and run binary
 
