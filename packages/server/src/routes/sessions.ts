@@ -2,7 +2,7 @@ import type { Hono } from 'hono';
 import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { sessions, messages, messageParts } from '@agi-cli/database/schema';
-import { desc, eq, and, or, isNull, ne, inArray } from 'drizzle-orm';
+import { desc, eq, and, ne, inArray } from 'drizzle-orm';
 import type { ProviderId } from '@agi-cli/sdk';
 import { isProviderId, catalog } from '@agi-cli/sdk';
 import { resolveAgentConfig } from '../runtime/agent/registry.ts';
@@ -16,14 +16,14 @@ export function registerSessionsRoutes(app: Hono) {
 		const projectRoot = c.req.query('project') || process.cwd();
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
-		// Only return sessions for this project
+		// Only return sessions for this project, excluding research sessions
 		const rows = await db
 			.select()
 			.from(sessions)
 			.where(
 				and(
 					eq(sessions.projectPath, cfg.projectRoot),
-					or(eq(sessions.sessionType, 'main'), isNull(sessions.sessionType)),
+					ne(sessions.sessionType, 'research'),
 				),
 			)
 			.orderBy(desc(sessions.lastActiveAt), desc(sessions.createdAt));
