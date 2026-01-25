@@ -143,13 +143,9 @@ export function estimateModelCostUsd(
 		const outputPerMillion =
 			typeof m.cost?.output === 'number' ? m.cost.output : 0;
 		const cacheReadPerMillion =
-			typeof m.cost?.cacheRead === 'number'
-				? m.cost.cacheRead
-				: 0;
+			typeof m.cost?.cacheRead === 'number' ? m.cost.cacheRead : 0;
 		const cacheWritePerMillion =
-			typeof m.cost?.cacheWrite === 'number'
-				? m.cost.cacheWrite
-				: 0;
+			typeof m.cost?.cacheWrite === 'number' ? m.cost.cacheWrite : 0;
 		const inputCost = (inputTokens * inputPerMillion) / 1_000_000;
 		const outputCost = (outputTokens * outputPerMillion) / 1_000_000;
 		const cacheReadCost = (cachedInputTokens * cacheReadPerMillion) / 1_000_000;

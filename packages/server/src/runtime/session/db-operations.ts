@@ -73,7 +73,11 @@ export function resolveUsageProvider(
 	provider: ProviderId,
 	model: string,
 ): ProviderId {
-	if (provider !== 'solforge' && provider !== 'openrouter' && provider !== 'opencode') {
+	if (
+		provider !== 'solforge' &&
+		provider !== 'openrouter' &&
+		provider !== 'opencode'
+	) {
 		return provider;
 	}
 	const entry = catalog[provider];
@@ -173,8 +177,7 @@ export async function updateSessionTokensIncremental(
 	const nextInputSess = priorInputSess + deltaInput;
 	const nextOutputSess = priorOutputSess + deltaOutput;
 	const nextCachedSess = priorCachedSess + deltaCached;
-	const nextCacheCreationSess =
-		priorCacheCreationSess + deltaCacheCreation;
+	const nextCacheCreationSess = priorCacheCreationSess + deltaCacheCreation;
 	const nextReasoningSess = priorReasoningSess + deltaReasoning;
 
 	await db
@@ -279,11 +282,7 @@ export async function updateMessageTokensIncremental(
 				: priorCacheCreation;
 
 		const cumTotal =
-			cumPrompt +
-			cumCompletion +
-			cumCached +
-			cumCacheCreation +
-			cumReasoning;
+			cumPrompt + cumCompletion + cumCached + cumCacheCreation + cumReasoning;
 
 		await db
 			.update(messages)

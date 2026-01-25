@@ -124,11 +124,13 @@ export function SessionHeader({
 								<span className="text-xs opacity-60">
 									{formatNumber(session.totalInputTokens || 0)} in /{' '}
 									{formatNumber(session.totalOutputTokens || 0)} out
-									{(session.totalCachedTokens || session.totalCacheCreationTokens) && (
+									{(session.totalCachedTokens ||
+										session.totalCacheCreationTokens) && (
 										<span>
 											{' '}
-											(+{formatNumber(session.totalCachedTokens || 0)} cached,
-											+{formatNumber(session.totalCacheCreationTokens || 0)} write)
+											(+{formatNumber(session.totalCachedTokens || 0)} cached, +
+											{formatNumber(session.totalCacheCreationTokens || 0)}{' '}
+											write)
 										</span>
 									)}
 								</span>

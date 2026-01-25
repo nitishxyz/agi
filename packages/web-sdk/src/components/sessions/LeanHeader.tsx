@@ -105,10 +105,11 @@ export function LeanHeader({
 						<span className="text-foreground font-medium">
 							{formatNumber(session.totalInputTokens || 0)} /{' '}
 							{formatNumber(session.totalOutputTokens || 0)}{' '}
-							{(session.totalCachedTokens || session.totalCacheCreationTokens) && (
+							{(session.totalCachedTokens ||
+								session.totalCacheCreationTokens) && (
 								<span className="text-xs opacity-60">
-									(+{formatNumber(session.totalCachedTokens || 0)} cached,
-									+{formatNumber(session.totalCacheCreationTokens || 0)} write)
+									(+{formatNumber(session.totalCachedTokens || 0)} cached, +
+									{formatNumber(session.totalCacheCreationTokens || 0)} write)
 								</span>
 							)}
 						</span>
