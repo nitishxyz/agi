@@ -283,3 +283,19 @@ export interface ShareStatus {
 	pendingMessages?: number;
 	isSynced?: boolean;
 }
+
+export interface ShareSessionResponse {
+	shared: boolean;
+	shareId: string;
+	url: string;
+	message?: string;
+	error?: string;
+}
+
+export interface SyncSessionResponse {
+	synced: boolean;
+	url: string;
+	newMessages: number;
+	message?: string;
+	error?: string;
+}

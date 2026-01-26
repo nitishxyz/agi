@@ -11,6 +11,8 @@ import {
 	Minimize2,
 	Split,
 	Trash2,
+	Share2,
+	RefreshCw,
 } from 'lucide-react';
 
 export interface Command {
@@ -23,6 +25,7 @@ export interface Command {
 export interface CommandState {
 	vimModeEnabled: boolean;
 	reasoningEnabled: boolean;
+	isShared?: boolean;
 }
 
 export const COMMANDS: Command[] = [
@@ -102,6 +105,18 @@ export const COMMANDS: Command[] = [
 		description: 'Delete current session',
 		icon: Trash2,
 	},
+	{
+		id: 'share',
+		label: '/share',
+		description: 'Share session publicly',
+		icon: Share2,
+	},
+	{
+		id: 'sync',
+		label: '/sync',
+		description: 'Sync new messages to shared session',
+		icon: RefreshCw,
+	},
 ];
 
 export function getCommandDescription(
@@ -114,14 +129,20 @@ export function getCommandDescription(
 }
 
 export function filterCommands(query: string, state: CommandState): Command[] {
+	const baseCommands = COMMANDS.filter((cmd) => {
+		if (cmd.id === 'share' && state.isShared) return false;
+		if (cmd.id === 'sync' && !state.isShared) return false;
+		return true;
+	});
+
 	if (!query) {
-		return COMMANDS;
+		return baseCommands;
 	}
 
 	const lowerQuery = query.toLowerCase();
 	const matches: (Command & { matchScore: number })[] = [];
 
-	for (const cmd of COMMANDS) {
+	for (const cmd of baseCommands) {
 		const desc = getCommandDescription(cmd, state);
 		const labelMatch = cmd.label.toLowerCase().includes(lowerQuery);
 		const descriptionMatch = desc.toLowerCase().includes(lowerQuery);

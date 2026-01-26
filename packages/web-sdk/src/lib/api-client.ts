@@ -45,6 +45,8 @@ import type {
 	ListBranchesResponse,
 	ParentSessionResponse,
 	ShareStatus,
+	ShareSessionResponse,
+	SyncSessionResponse,
 } from '../types/api';
 import { API_BASE_URL } from './config';
 
@@ -695,6 +697,48 @@ class ApiClient {
 
 		if (!response.ok) {
 			return { shared: false };
+		}
+
+		return await response.json();
+	}
+
+	async shareSession(sessionId: string): Promise<ShareSessionResponse> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/sessions/${sessionId}/share`,
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to share session' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async syncSession(sessionId: string): Promise<SyncSessionResponse> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/sessions/${sessionId}/share`,
+			{
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to sync session' }));
+			throw new Error(extractErrorMessage(errorData));
 		}
 
 		return await response.json();

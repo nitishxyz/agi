@@ -171,7 +171,15 @@ async function createShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: str
 		provider: session.provider,
 		model: session.model,
 		createdAt: session.createdAt,
-		tokenCount: (session.totalInputTokens ?? 0) + (session.totalOutputTokens ?? 0),
+		stats: {
+			inputTokens: session.totalInputTokens ?? 0,
+			outputTokens: session.totalOutputTokens ?? 0,
+			cachedTokens: session.totalCachedTokens ?? 0,
+			cacheCreationTokens: session.totalCacheCreationTokens ?? 0,
+			reasoningTokens: session.totalReasoningTokens ?? 0,
+			toolTimeMs: session.totalToolTimeMs ?? 0,
+			toolCounts: session.toolCountsJson ? JSON.parse(session.toolCountsJson) : {},
+		},
 		messages: messagesToShare.map((m) => ({
 			id: m.id,
 			role: m.role,
@@ -273,7 +281,15 @@ async function updateShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: str
 		provider: session.provider,
 		model: session.model,
 		createdAt: session.createdAt,
-		tokenCount: (session.totalInputTokens ?? 0) + (session.totalOutputTokens ?? 0),
+		stats: {
+			inputTokens: session.totalInputTokens ?? 0,
+			outputTokens: session.totalOutputTokens ?? 0,
+			cachedTokens: session.totalCachedTokens ?? 0,
+			cacheCreationTokens: session.totalCacheCreationTokens ?? 0,
+			reasoningTokens: session.totalReasoningTokens ?? 0,
+			toolTimeMs: session.totalToolTimeMs ?? 0,
+			toolCounts: session.toolCountsJson ? JSON.parse(session.toolCountsJson) : {},
+		},
 		messages: allMessages.map((m) => ({
 			id: m.id,
 			role: m.role,

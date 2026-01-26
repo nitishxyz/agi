@@ -1,7 +1,17 @@
 import type { FC } from 'react';
 import { AssistantMessageGroup, UserMessageGroup } from '@agi-cli/web-sdk';
 import type { Message } from '@agi-cli/web-sdk';
-import { Clock, Eye, Hash, User, Cpu } from 'lucide-react';
+import { estimateModelCostUsd, type ProviderId } from '@agi-cli/sdk/browser';
+
+interface SessionStats {
+	inputTokens: number;
+	outputTokens: number;
+	cachedTokens: number;
+	cacheCreationTokens: number;
+	reasoningTokens: number;
+	toolTimeMs: number;
+	toolCounts: Record<string, number>;
+}
 
 interface SharedSessionData {
 	title: string | null;
@@ -11,6 +21,7 @@ interface SharedSessionData {
 	model: string;
 	createdAt: number;
 	tokenCount?: number;
+	stats?: SessionStats;
 	messages: SharedMessage[];
 }
 
@@ -106,10 +117,42 @@ function formatCompactNumber(num: number): string {
 	return num.toString();
 }
 
+function formatDuration(ms: number): string {
+	if (!ms) return '0s';
+	const seconds = Math.floor(ms / 1000);
+	const minutes = Math.floor(seconds / 60);
+	const hours = Math.floor(minutes / 60);
+	if (hours > 0) return `${hours}h ${minutes % 60}m`;
+	if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+	return `${seconds}s`;
+}
+
 const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 	const { sessionData, shareId, title, createdAt, viewCount } = data;
 	const messages = transformMessages(sessionData.messages, sessionData, shareId);
 	const filteredMessages = messages.filter((m) => m.role !== 'system');
+	
+	const stats = sessionData.stats;
+	const totalTokens = stats 
+		? stats.inputTokens + stats.outputTokens + stats.cachedTokens + stats.cacheCreationTokens
+		: sessionData.tokenCount ?? 0;
+
+	const toolCountEntries = stats?.toolCounts 
+		? Object.entries(stats.toolCounts).sort((a, b) => b[1] - a[1])
+		: [];
+
+	const estimatedCost = stats
+		? estimateModelCostUsd(
+				sessionData.provider as ProviderId,
+				sessionData.model,
+				{
+					inputTokens: stats.inputTokens,
+					outputTokens: stats.outputTokens,
+					cachedInputTokens: stats.cachedTokens,
+					cacheCreationInputTokens: stats.cacheCreationTokens,
+				}
+			) ?? 0
+		: 0;
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -120,37 +163,23 @@ const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 						{title || sessionData.title || 'Untitled Session'}
 					</h1>
 					
-					<div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+					{/* Author & Date */}
+					<div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
 						{sessionData.username && (
-							<div className="flex items-center gap-1.5">
-								<User className="w-4 h-4" />
-								<span className="font-medium text-foreground">{sessionData.username}</span>
-							</div>
+							<span className="font-medium text-foreground">{sessionData.username}</span>
 						)}
-						
-						<div className="flex items-center gap-1.5">
-							<Clock className="w-4 h-4" />
-							<span>{formatDate(createdAt)}</span>
-						</div>
+						{!sessionData.username && <span />}
+						<span className="text-muted-foreground">{formatDate(createdAt)}</span>
+					</div>
 
-						<div className="flex items-center gap-1.5">
-							<Cpu className="w-4 h-4" />
+					{/* Model & Provider */}
+					<div className="flex items-center justify-between text-sm text-muted-foreground">
+						<div className="flex items-center gap-2">
 							<span className="font-medium text-foreground">{sessionData.model}</span>
 							<span className="opacity-50">·</span>
 							<span>{sessionData.provider}</span>
 						</div>
-
-						{sessionData.tokenCount && sessionData.tokenCount > 0 && (
-							<div className="flex items-center gap-1.5">
-								<Hash className="w-4 h-4" />
-								<span>{formatCompactNumber(sessionData.tokenCount)} tokens</span>
-							</div>
-						)}
-
-						<div className="flex items-center gap-1.5">
-							<Eye className="w-4 h-4" />
-							<span>{viewCount} views</span>
-						</div>
+						<span>{viewCount} views</span>
 					</div>
 				</div>
 			</header>
@@ -193,6 +222,7 @@ const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 									showHeader={showHeader}
 									hasNextAssistantMessage={nextIsAssistant}
 									isLastMessage={isLastMessage}
+									showBranchButton={false}
 								/>
 							);
 						}
@@ -202,8 +232,74 @@ const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 				</div>
 			</main>
 
+			{/* Session Stats Summary */}
+			{(stats || totalTokens > 0) && (
+				<section className="border-t border-border">
+					<div className="max-w-3xl mx-auto px-6 py-10">
+						{/* Token Stats Row */}
+						<div className="flex flex-wrap items-baseline gap-x-8 gap-y-3 text-sm">
+							{stats ? (
+								<>
+									<div>
+										<span className="text-2xl font-light text-foreground">{formatCompactNumber(stats.inputTokens)}</span>
+										<span className="text-muted-foreground ml-1.5">in</span>
+									</div>
+									<div>
+										<span className="text-2xl font-light text-foreground">{formatCompactNumber(stats.outputTokens)}</span>
+										<span className="text-muted-foreground ml-1.5">out</span>
+									</div>
+									{stats.cachedTokens > 0 && (
+										<div>
+											<span className="text-2xl font-light text-foreground">{formatCompactNumber(stats.cachedTokens)}</span>
+											<span className="text-muted-foreground ml-1.5">cached</span>
+										</div>
+									)}
+									{stats.toolTimeMs > 0 && (
+										<div>
+											<span className="text-2xl font-light text-foreground">{formatDuration(stats.toolTimeMs)}</span>
+											<span className="text-muted-foreground ml-1.5">tool time</span>
+										</div>
+									)}
+									{estimatedCost > 0 && (
+										<div>
+											<span className="text-2xl font-light text-foreground">${estimatedCost.toFixed(2)}</span>
+											<span className="text-muted-foreground ml-1.5">est.</span>
+										</div>
+									)}
+								</>
+							) : (
+								<div>
+									<span className="text-2xl font-light text-foreground">{formatCompactNumber(totalTokens)}</span>
+									<span className="text-muted-foreground ml-1.5">tokens</span>
+								</div>
+							)}
+						</div>
+
+						{/* Tools Row */}
+						{toolCountEntries.length > 0 && (
+							<div className="flex flex-wrap gap-2 mt-6">
+								{toolCountEntries.slice(0, 8).map(([tool, count]) => (
+									<span
+										key={tool}
+										className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted/50 text-xs"
+									>
+										<span className="text-foreground">{tool}</span>
+										<span className="text-muted-foreground ml-1.5">×{count}</span>
+									</span>
+								))}
+								{toolCountEntries.length > 8 && (
+									<span className="inline-flex items-center px-2.5 py-1 text-xs text-muted-foreground">
+										+{toolCountEntries.length - 8} more
+									</span>
+								)}
+							</div>
+						)}
+					</div>
+				</section>
+			)}
+
 			{/* Footer */}
-			<footer className="border-t border-border py-6 mt-8">
+			<footer className="border-t border-border py-6">
 				<div className="max-w-3xl mx-auto px-6 flex items-center justify-between text-sm text-muted-foreground">
 					<div className="flex items-center gap-2">
 						{sessionData.username && (

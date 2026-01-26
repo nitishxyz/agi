@@ -1,5 +1,6 @@
 import type { Hono } from 'hono';
 import { loadConfig } from '@agi-cli/sdk';
+import { userInfo } from 'node:os';
 import { getDb } from '@agi-cli/database';
 import { sessions, messages, messageParts, shares } from '@agi-cli/database/schema';
 import { desc, eq, and, ne, inArray } from 'drizzle-orm';
@@ -418,7 +419,241 @@ export function registerSessionsRoutes(app: Hono) {
 			syncedMessages,
 			totalMessages,
 			pendingMessages,
-			isSynced: pendingMessages === 0,
+		isSynced: pendingMessages === 0,
+		});
+	});
+
+	const SHARE_API_URL = process.env.AGI_SHARE_API_URL || 'https://api.share.agi.nitish.sh';
+
+	function getUsername(): string {
+		try {
+			return userInfo().username;
+		} catch {
+			return 'anonymous';
+		}
+	}
+
+	app.post('/v1/sessions/:sessionId/share', async (c) => {
+		const sessionId = c.req.param('sessionId');
+		const projectRoot = c.req.query('project') || process.cwd();
+		const cfg = await loadConfig(projectRoot);
+		const db = await getDb(cfg.projectRoot);
+
+		const session = await db.select().from(sessions).where(eq(sessions.id, sessionId)).limit(1);
+		if (!session.length) {
+			return c.json({ error: 'Session not found' }, 404);
+		}
+
+		const existingShare = await db.select().from(shares).where(eq(shares.sessionId, sessionId)).limit(1);
+		if (existingShare.length) {
+			return c.json({
+				shared: true,
+				shareId: existingShare[0].shareId,
+				url: existingShare[0].url,
+				message: 'Already shared',
+			});
+		}
+
+		const allMessages = await db
+			.select()
+			.from(messages)
+			.where(eq(messages.sessionId, sessionId))
+			.orderBy(messages.createdAt);
+
+		if (!allMessages.length) {
+			return c.json({ error: 'Session has no messages' }, 400);
+		}
+
+		const msgParts = await db
+			.select()
+			.from(messageParts)
+			.where(inArray(messageParts.messageId, allMessages.map((m) => m.id)))
+			.orderBy(messageParts.index);
+
+		const partsByMessage = new Map<string, typeof msgParts>();
+		for (const part of msgParts) {
+			const list = partsByMessage.get(part.messageId) || [];
+			list.push(part);
+			partsByMessage.set(part.messageId, list);
+		}
+
+		const lastMessageId = allMessages[allMessages.length - 1].id;
+		const sess = session[0];
+
+		const sessionData = {
+			title: sess.title,
+			username: getUsername(),
+			agent: sess.agent,
+			provider: sess.provider,
+			model: sess.model,
+			createdAt: sess.createdAt,
+			stats: {
+				inputTokens: sess.totalInputTokens ?? 0,
+				outputTokens: sess.totalOutputTokens ?? 0,
+				cachedTokens: sess.totalCachedTokens ?? 0,
+				cacheCreationTokens: sess.totalCacheCreationTokens ?? 0,
+				reasoningTokens: sess.totalReasoningTokens ?? 0,
+				toolTimeMs: sess.totalToolTimeMs ?? 0,
+				toolCounts: sess.toolCountsJson ? JSON.parse(sess.toolCountsJson) : {},
+			},
+			messages: allMessages.map((m) => ({
+				id: m.id,
+				role: m.role,
+				createdAt: m.createdAt,
+				parts: (partsByMessage.get(m.id) || []).map((p) => ({
+					type: p.type,
+					content: p.content,
+					toolName: p.toolName,
+					toolCallId: p.toolCallId,
+				})),
+			})),
+		};
+
+		const res = await fetch(`${SHARE_API_URL}/share`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				sessionData,
+				title: sess.title,
+				lastMessageId,
+			}),
+		});
+
+		if (!res.ok) {
+			const err = await res.text();
+			return c.json({ error: `Failed to create share: ${err}` }, 500);
+		}
+
+		const data = (await res.json()) as { shareId: string; secret: string; url: string };
+
+		await db.insert(shares).values({
+			sessionId,
+			shareId: data.shareId,
+			secret: data.secret,
+			url: data.url,
+			title: sess.title,
+			description: null,
+			createdAt: Date.now(),
+			lastSyncedAt: Date.now(),
+			lastSyncedMessageId: lastMessageId,
+		});
+
+		return c.json({
+			shared: true,
+			shareId: data.shareId,
+			url: data.url,
+		});
+	});
+
+	app.put('/v1/sessions/:sessionId/share', async (c) => {
+		const sessionId = c.req.param('sessionId');
+		const projectRoot = c.req.query('project') || process.cwd();
+		const cfg = await loadConfig(projectRoot);
+		const db = await getDb(cfg.projectRoot);
+
+		const share = await db.select().from(shares).where(eq(shares.sessionId, sessionId)).limit(1);
+		if (!share.length) {
+			return c.json({ error: 'Session not shared. Use share first.' }, 400);
+		}
+
+		const session = await db.select().from(sessions).where(eq(sessions.id, sessionId)).limit(1);
+		if (!session.length) {
+			return c.json({ error: 'Session not found' }, 404);
+		}
+
+		const allMessages = await db
+			.select()
+			.from(messages)
+			.where(eq(messages.sessionId, sessionId))
+			.orderBy(messages.createdAt);
+
+		const msgParts = await db
+			.select()
+			.from(messageParts)
+			.where(inArray(messageParts.messageId, allMessages.map((m) => m.id)))
+			.orderBy(messageParts.index);
+
+		const partsByMessage = new Map<string, typeof msgParts>();
+		for (const part of msgParts) {
+			const list = partsByMessage.get(part.messageId) || [];
+			list.push(part);
+			partsByMessage.set(part.messageId, list);
+		}
+
+		const lastSyncedIdx = allMessages.findIndex((m) => m.id === share[0].lastSyncedMessageId);
+		const newMessages = lastSyncedIdx === -1 ? allMessages : allMessages.slice(lastSyncedIdx + 1);
+		const lastMessageId = allMessages[allMessages.length - 1]?.id ?? share[0].lastSyncedMessageId;
+
+		if (newMessages.length === 0) {
+			return c.json({
+				synced: true,
+				url: share[0].url,
+				newMessages: 0,
+				message: 'Already synced',
+			});
+		}
+
+		const sess = session[0];
+		const sessionData = {
+			title: sess.title,
+			username: getUsername(),
+			agent: sess.agent,
+			provider: sess.provider,
+			model: sess.model,
+			createdAt: sess.createdAt,
+			stats: {
+				inputTokens: sess.totalInputTokens ?? 0,
+				outputTokens: sess.totalOutputTokens ?? 0,
+				cachedTokens: sess.totalCachedTokens ?? 0,
+				cacheCreationTokens: sess.totalCacheCreationTokens ?? 0,
+				reasoningTokens: sess.totalReasoningTokens ?? 0,
+				toolTimeMs: sess.totalToolTimeMs ?? 0,
+				toolCounts: sess.toolCountsJson ? JSON.parse(sess.toolCountsJson) : {},
+			},
+			messages: allMessages.map((m) => ({
+				id: m.id,
+				role: m.role,
+				createdAt: m.createdAt,
+				parts: (partsByMessage.get(m.id) || []).map((p) => ({
+					type: p.type,
+					content: p.content,
+					toolName: p.toolName,
+					toolCallId: p.toolCallId,
+				})),
+			})),
+		};
+
+		const res = await fetch(`${SHARE_API_URL}/share/${share[0].shareId}`, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-Share-Secret': share[0].secret,
+			},
+			body: JSON.stringify({
+				sessionData,
+				title: sess.title,
+				lastMessageId,
+			}),
+		});
+
+		if (!res.ok) {
+			const err = await res.text();
+			return c.json({ error: `Failed to sync share: ${err}` }, 500);
+		}
+
+		await db
+			.update(shares)
+			.set({
+				title: sess.title,
+				lastSyncedAt: Date.now(),
+				lastSyncedMessageId: lastMessageId,
+			})
+			.where(eq(shares.sessionId, sessionId));
+
+		return c.json({
+			synced: true,
+			url: share[0].url,
+			newMessages: newMessages.length,
 		});
 	});
 }

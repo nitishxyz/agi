@@ -566,6 +566,7 @@ export const ChatInput = memo(
 								onSelect={handleCommandSelect}
 								onEnterSelect={handleCommandEnterSelect}
 								onClose={handleCommandClose}
+								sessionId={sessionId}
 							/>
 						)}
 

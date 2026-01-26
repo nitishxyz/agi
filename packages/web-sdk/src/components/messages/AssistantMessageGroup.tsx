@@ -14,6 +14,7 @@ interface AssistantMessageGroupProps {
 	isLastMessage: boolean;
 	onBranchCreated?: (newSessionId: string) => void;
 	compact?: boolean;
+	showBranchButton?: boolean;
 	onNavigateToSession?: (sessionId: string) => void;
 }
 
@@ -43,6 +44,7 @@ export const AssistantMessageGroup = memo(
 		hasNextAssistantMessage,
 		onBranchCreated,
 		compact,
+		showBranchButton = true,
 		onNavigateToSession,
 	}: AssistantMessageGroupProps) {
 		const { isQueued } = useMessageQueuePosition(sessionId, message.id);
@@ -167,12 +169,12 @@ export const AssistantMessageGroup = memo(
 										</span>
 									</>
 								)}
-							</div>
 						</div>
-						{isHovered && isComplete && sessionId && (
-							<button
-								type="button"
-								onClick={handleBranchClick}
+					</div>
+					{isHovered && isComplete && sessionId && showBranchButton && (
+						<button
+							type="button"
+							onClick={handleBranchClick}
 								className="ml-4 p-1.5 text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
 								title="Branch from this message"
 							>
@@ -240,14 +242,16 @@ export const AssistantMessageGroup = memo(
 
 				{isHovered && isComplete && sessionId && (
 					<div className="flex gap-2 mt-2 ml-7">
-						<button
-							type="button"
-							onClick={handleBranchClick}
-							className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-colors"
-						>
-							<GitBranch className="h-3 w-3" />
-							Branch
-						</button>
+						{showBranchButton && (
+							<button
+								type="button"
+								onClick={handleBranchClick}
+								className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-colors"
+							>
+								<GitBranch className="h-3 w-3" />
+								Branch
+							</button>
+						)}
 						<button
 							type="button"
 							onClick={handleCopy}

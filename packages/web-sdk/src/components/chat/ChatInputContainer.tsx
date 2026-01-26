@@ -8,6 +8,7 @@ import {
 	useImperativeHandle,
 	useMemo,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSendMessage, useMessages } from '../../hooks/useMessages';
 import { useSession, useUpdateSession, useDeleteSession } from '../../hooks/useSessions';
 import { useAllModels } from '../../hooks/useConfig';
@@ -20,6 +21,9 @@ import { usePendingResearchStore } from '../../stores/pendingResearchStore';
 import { formatResearchContextForMessage } from '../../lib/parseResearchContext';
 import { useSolforgeBalance } from '../../hooks/useSolforgeBalance';
 import { useSolforgeStore } from '../../stores/solforgeStore';
+import { toast } from '../../stores/toastStore';
+import { useToastStore } from '../../stores/toastStore';
+import { apiClient } from '../../lib/api-client';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
 
@@ -59,8 +63,9 @@ export const ChatInputContainer = memo(
 			const { data: allModels } = useAllModels();
 			const { preferences } = usePreferences();
 			const { data: gitStatus } = useGitStatus();
-			const stageFiles = useStageFiles();
-			const openCommitModal = useGitStore((state) => state.openCommitModal);
+		const stageFiles = useStageFiles();
+		const openCommitModal = useGitStore((state) => state.openCommitModal);
+		const queryClient = useQueryClient();
 
 			const {
 				images,
@@ -219,9 +224,9 @@ export const ChatInputContainer = memo(
 				setConfigFocusTarget(null);
 			}, []);
 
-			const handleCommand = useCallback(
-				(commandId: string) => {
-					if (commandId === 'models') {
+		const handleCommand = useCallback(
+			async (commandId: string) => {
+				if (commandId === 'models') {
 						setConfigFocusTarget('model');
 						setIsConfigOpen(true);
 					} else if (commandId === 'agents') {
@@ -241,14 +246,46 @@ export const ChatInputContainer = memo(
 					openCommitModal();
 				} else if (commandId === 'compact') {
 					handleSendMessage('/compact');
-				} else if (commandId === 'delete') {
-					deleteSession.mutate(sessionId, {
-						onSuccess: () => {
-							onDeleteSession?.();
-						},
-					});
+			} else if (commandId === 'delete') {
+				deleteSession.mutate(sessionId, {
+					onSuccess: () => {
+						onDeleteSession?.();
+					},
+				});
+			} else if (commandId === 'share') {
+				const toastId = toast.loading('Sharing session...');
+				try {
+					const result = await apiClient.shareSession(sessionId);
+					if (result.shared) {
+						toast.successWithAction(
+							result.message === 'Already shared' ? 'Already shared' : 'Session shared!',
+							{ label: 'Open', href: result.url },
+						);
+						queryClient.invalidateQueries({ queryKey: ['share-status', sessionId] });
+					}
+				} catch (error) {
+					toast.error(error instanceof Error ? error.message : 'Failed to share');
+				} finally {
+					useToastStore.getState().removeToast(toastId);
 				}
-			},
+			} else if (commandId === 'sync') {
+				const toastId = toast.loading('Syncing session...');
+				try {
+					const result = await apiClient.syncSession(sessionId);
+					if (result.synced) {
+						const msg = result.newMessages > 0
+							? `Synced ${result.newMessages} new messages`
+							: 'Already synced';
+						toast.successWithAction(msg, { label: 'Open', href: result.url });
+						queryClient.invalidateQueries({ queryKey: ['share-status', sessionId] });
+					}
+				} catch (error) {
+					toast.error(error instanceof Error ? error.message : 'Failed to sync');
+				} finally {
+					useToastStore.getState().removeToast(toastId);
+				}
+			}
+		},
 			[
 				onNewSession,
 				gitStatus,
@@ -258,6 +295,7 @@ export const ChatInputContainer = memo(
 				deleteSession,
 				sessionId,
 				onDeleteSession,
+				queryClient,
 			],
 		);
 
