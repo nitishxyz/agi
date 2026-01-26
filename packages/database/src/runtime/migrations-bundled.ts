@@ -22,6 +22,9 @@ import mig0007 from '../../drizzle/0007_milky_rhodey.sql' with { type: 'text' };
 import mig0008 from '../../drizzle/0008_chunky_miss_america.sql' with {
 	type: 'text',
 };
+import mig0009 from '../../drizzle/0009_natural_hellfire_club.sql' with {
+	type: 'text',
+};
 
 export const bundledMigrations: Array<{ name: string; content: string }> = [
 	{ name: '0000_tense_shadow_king.sql', content: mig0000 },
@@ -33,4 +36,5 @@ export const bundledMigrations: Array<{ name: string; content: string }> = [
 	{ name: '0006_jazzy_warlock.sql', content: mig0006 },
 	{ name: '0007_milky_rhodey.sql', content: mig0007 },
 	{ name: '0008_chunky_miss_america.sql', content: mig0008 },
+	{ name: '0009_natural_hellfire_club.sql', content: mig0009 },
 ];

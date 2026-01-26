@@ -1,0 +1,63 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ChatPreviewWrapper from '../../components/ChatPreviewWrapper';
+
+const { shareId } = Astro.params;
+const API_URL = import.meta.env.PUBLIC_API_URL || 'https://api.share.agi.nitish.sh';
+
+let data: any = null;
+let error: string | null = null;
+
+try {
+	const response = await fetch(`${API_URL}/share/${shareId}`);
+	if (!response.ok) {
+		if (response.status === 404) {
+			error = 'Share not found';
+		} else if (response.status === 410) {
+			error = 'This share has expired';
+		} else {
+			error = 'Failed to load share';
+		}
+	} else {
+		data = await response.json();
+	}
+} catch (e) {
+	error = 'Failed to connect to API';
+}
+
+const pageTitle = data?.title || 'AGI Session';
+const pageDescription =
+	data?.description ||
+	(data ? `${data.sessionData.messages.length} messages • ${data.sessionData.model}` : '');
+const ogImageUrl = `${API_URL}/og/${shareId}`;
+---
+
+<Layout title={`${pageTitle} | AGI Share`}>
+	<Fragment slot="head">
+		<meta property="og:title" content={pageTitle} />
+		<meta property="og:description" content={pageDescription} />
+		<meta property="og:image" content={ogImageUrl} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:type" content="website" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={pageTitle} />
+		<meta name="twitter:description" content={pageDescription} />
+		<meta name="twitter:image" content={ogImageUrl} />
+	</Fragment>
+
+	{
+		error ? (
+			<main class="flex min-h-screen flex-col items-center justify-center p-8">
+				<div class="text-center">
+					<h1 class="mb-4 text-2xl font-bold">{error}</h1>
+					<a href="/" class="text-primary underline">
+						Go home
+					</a>
+				</div>
+			</main>
+		) : (
+			<ChatPreviewWrapper data={data} client:only="react" />
+		)
+	}
+</Layout>

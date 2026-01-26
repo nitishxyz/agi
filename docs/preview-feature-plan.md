@@ -11,6 +11,7 @@ Enable users to share AGI sessions publicly via `agi share <sessionId>`, generat
 3. Manual re-sync support for updating shared sessions
 4. Privacy-first: explicit user action required, no auto-upload
 5. Zero-cost infrastructure (free tiers)
+6. **Rich link previews** with dynamic OG images
 
 ---
 
@@ -18,14 +19,16 @@ Enable users to share AGI sessions publicly via `agi share <sessionId>`, generat
 
 ```
 ┌─────────────────┐       ┌───────────────────────────┐       ┌──────────────┐
-│   agi CLI       │──────►│    Cloudflare Workers     │──────►│    Turso     │
-│  `agi share`    │ POST  │  api.share.agi.nitish.sh  │       │  (libsql)    │
+│   agi CLI       │──────►│    Cloudflare Workers     │──────►│ Cloudflare   │
+│  `agi share`    │ POST  │  api.share.agi.nitish.sh  │       │     D1       │
 └─────────────────┘       └───────────────────────────┘       └──────────────┘
                                     │
+                                    │ /og/:shareId → Satori PNG
+                                    │
                           ┌─────────▼───────────┐
-                          │  Cloudflare Pages │
-                          │  share.agi.nitish.sh│
-                          │  (React SPA)      │
+                          │  Cloudflare Pages   │
+                          │ share.agi.nitish.sh │
+                          │  (Astro + React)    │
                           └─────────────────────┘
 ```
 
@@ -36,21 +39,30 @@ Enable users to share AGI sessions publicly via `agi share <sessionId>`, generat
 | Component | Technology | Rationale |
 |-----------|------------|-----------|
 | **API** | SST + Cloudflare Workers + Hono | Edge-deployed via SST, same pattern as `install.agi.nitish.sh` |
-| **Database** | Turso (libsql) | SQLite-compatible, edge-replicated, free tier: 500M reads/mo, 10M writes/mo |
-| **Frontend** | Cloudflare Pages + React | Static hosting, unlimited requests, instant deploys |
-| **ORM** | Drizzle | Already used in project, native Turso/libsql support |
+| **Database** | Cloudflare D1 | Native SST support, same provider as Workers, no external accounts |
+| **Frontend** | Astro + React (Cloudflare adapter) | SSR for meta tags, React islands for chat UI |
+| **OG Images** | Satori + resvg-wasm | Dynamic PNG generation at edge |
+| **ORM** | Drizzle | Already used in project, native D1 support |
 
-### Why Turso?
+### Why Cloudflare D1?
 
-1. **SQLite-compatible** - Same SQL dialect as local `.agi/agi.sqlite`
-2. **Edge-distributed** - Automatic geo-replication, low latency everywhere
-3. **Drizzle-native** - First-class ORM support, type-safe queries
-4. **Generous free tier**:
-   - 100 databases (we only need 1)
+1. **Native SST support** - `sst.cloudflare.D1` with simple config
+2. **Same provider** - No cross-service auth, lower latency
+3. **No external account** - Unlike Turso, no separate signup needed
+4. **Drizzle-native** - First-class ORM support, type-safe queries
+5. **Generous free tier**:
    - 5GB storage
-   - 500M reads/month
-   - 10M writes/month
-5. **Cloudflare integration** - Native Workers integration via `@libsql/client/web`
+   - 5M reads/day
+   - 100k writes/day
+   - Unlimited databases
+
+### Why Astro + React?
+
+1. **SSR for meta tags** - Crawlers (Twitter, Slack, Discord) see `<meta og:image>` without JS
+2. **Hybrid rendering** - Static landing page, SSR for `/s/:shareId`
+3. **React islands** - Full `@agi-cli/web-sdk` chat components, hydrated client-side
+4. **Cloudflare adapter** - First-class `@astrojs/cloudflare` support
+5. **Faster initial load** - HTML streamed with content, not blank SPA shell
 
 ### Why Cloudflare Workers?
 
@@ -61,38 +73,246 @@ Enable users to share AGI sessions publicly via `agi share <sessionId>`, generat
 
 ---
 
+## Dynamic OG Images
+
+### Overview
+
+Generate rich preview images dynamically for each shared session:
+
+```
+Twitter/Slack/Discord requests:
+  https://share.agi.nitish.sh/s/V1StGXR8_Z5jdHi6B
+
+Astro SSR injects:
+  <meta property="og:image" content="https://api.share.agi.nitish.sh/og/V1StGXR8_Z5jdHi6B">
+
+Worker generates PNG on demand → cached in KV/R2
+```
+
+### Image Content
+
+| Element | Source | Customizable |
+|---------|--------|--------------|
+| **Title** | `--title` flag or session title | ✅ Yes |
+| **Description** | `--description` flag or auto-generated | ✅ Yes |
+| **Username** | System username (e.g., "bat") | No |
+| **Model badge** | `claude-sonnet-4`, `gpt-4o`, etc. | No |
+| **Message count** | Computed from session | No |
+| **Token count** | Computed from session | No |
+| **Timestamp** | Session created date | No |
+| **Backdrop** | Gradient/pattern seeded by shareId | Consistent per share |
+| **AGI branding** | Corner logo | No |
+
+### Username Capture
+
+Get the system username when sharing:
+
+```typescript
+import { userInfo } from 'os';
+
+function getUsername(): string {
+  try {
+    return userInfo().username;
+  } catch {
+    return 'anonymous';
+  }
+}
+```
+
+This is **not unique** — multiple users can have the same system username. It's purely for display purposes in the OG image and preview header (e.g., "Shared by bat").
+
+### Implementation
+
+```typescript
+// apps/preview-api/src/routes/og.ts
+import satori from 'satori';
+import { Resvg } from '@resvg/resvg-wasm';
+
+app.get('/og/:shareId', async (c) => {
+  const { shareId } = c.req.param();
+  
+  // Check KV cache first
+  const cached = await c.env.OG_CACHE.get(shareId, 'arrayBuffer');
+  if (cached) {
+    return new Response(cached, { headers: { 'Content-Type': 'image/png' } });
+  }
+  
+  // Fetch session data
+  const session = await db.query.sharedSessions.findFirst({
+    where: eq(sharedSessions.shareId, shareId)
+  });
+  
+  if (!session) return c.notFound();
+  
+  const data = JSON.parse(session.sessionData);
+  
+  // Generate SVG with Satori
+  const svg = await satori(
+    <OGImage
+      title={session.title || 'AGI Session'}
+      description={session.description}
+      username={data.username}
+      model={data.model}
+      messageCount={data.messages.length}
+      tokenCount={data.tokenCount}
+      createdAt={session.createdAt}
+      shareId={shareId}
+    />,
+    {
+      width: 1200,
+      height: 630,
+      fonts: [/* load fonts */],
+    }
+  );
+  
+  // Convert to PNG
+  const resvg = new Resvg(svg);
+  const png = resvg.render().asPng();
+  
+  // Cache for 24 hours
+  await c.env.OG_CACHE.put(shareId, png, { expirationTtl: 86400 });
+  
+  return new Response(png, {
+    headers: {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
+});
+```
+
+### OG Image Component
+
+```tsx
+// apps/preview-api/src/components/OGImage.tsx
+function OGImage({ title, description, username, model, messageCount, tokenCount, createdAt, shareId }) {
+  // Generate consistent gradient from shareId
+  const gradient = generateGradient(shareId);
+  
+  return (
+    <div style={{
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      background: gradient,
+      padding: 60,
+    }}>
+      {/* AGI logo top-left */}
+      <div style={{ position: 'absolute', top: 40, left: 40 }}>
+        <span style={{ fontSize: 24, fontWeight: 600 }}>AGI</span>
+      </div>
+      
+      {/* Model badge top-right */}
+      <div style={{ position: 'absolute', top: 40, right: 40 }}>
+        <span style={{ 
+          background: 'rgba(255,255,255,0.2)', 
+          padding: '8px 16px',
+          borderRadius: 8,
+          fontSize: 18,
+        }}>
+          {model}
+        </span>
+      </div>
+      
+      {/* Main content */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <h1 style={{ fontSize: 56, fontWeight: 700, marginBottom: 16 }}>
+          {title}
+        </h1>
+        {description && (
+          <p style={{ fontSize: 28, opacity: 0.8 }}>
+            {description}
+          </p>
+        )}
+      </div>
+      
+      {/* Stats footer */}
+      <div style={{ display: 'flex', gap: 40, fontSize: 20, opacity: 0.7 }}>
+        <span>by {username}</span>
+        <span>{messageCount} messages</span>
+        <span>{tokenCount?.toLocaleString()} tokens</span>
+        <span>{formatDate(createdAt)}</span>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
 ## Database Schema
 
-Single Turso database: `agi-preview`
+Cloudflare D1 database bound to the Worker.
 
 ```sql
 CREATE TABLE shared_sessions (
-  share_id TEXT PRIMARY KEY,           -- nanoid(21), unguessable
-  secret TEXT NOT NULL,                 -- nanoid(32), for updates/deletes
+  share_id TEXT PRIMARY KEY,
+  secret TEXT NOT NULL,
   title TEXT,
-  session_data TEXT NOT NULL,           -- JSON blob
+  description TEXT,
+  session_data TEXT NOT NULL,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
-  expires_at INTEGER,                   -- optional TTL (Unix timestamp)
+  expires_at INTEGER,
   view_count INTEGER DEFAULT 0,
-  last_synced_message_id TEXT           -- for delta sync
+  last_synced_message_id TEXT NOT NULL  -- boundary: messages up to this ID are included
 );
 
 CREATE INDEX idx_expires_at ON shared_sessions(expires_at);
 ```
 
+### Drizzle Schema
+
+```typescript
+// apps/preview-api/src/db/schema.ts
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+
+export const sharedSessions = sqliteTable('shared_sessions', {
+  shareId: text('share_id').primaryKey(),
+  secret: text('secret').notNull(),
+  title: text('title'),
+  description: text('description'),
+  sessionData: text('session_data').notNull(),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+  expiresAt: integer('expires_at'),
+  viewCount: integer('view_count').default(0),
+  lastSyncedMessageId: text('last_synced_message_id').notNull(), // boundary: messages up to this ID are included
+});
+```
+
+### Drizzle Config & Migrations
+
+All Drizzle config and migrations live in `apps/preview-api/`:
+
+```typescript
+// apps/preview-api/drizzle.config.ts
+import { defineConfig } from 'drizzle-kit';
+
+export default defineConfig({
+  schema: './src/db/schema.ts',
+  out: './drizzle',
+  dialect: 'sqlite',
+});
+```
+
+**Migration workflow:**
+1. Edit `apps/preview-api/src/db/schema.ts`
+2. Run `bunx drizzle-kit generate` from `apps/preview-api/`
+3. **Never manually write migration files** — always use drizzle-kit
+
 ### Session Data JSON Structure
 
 ```typescript
 interface SharedSessionData {
-  // Session metadata
   title: string | null;
+  username: string;
   agent: string;
   provider: string;
   model: string;
   createdAt: number;
-  
-  // Messages (scrubbed)
+  tokenCount?: number;
   messages: SharedMessage[];
 }
 
@@ -105,7 +325,7 @@ interface SharedMessage {
 
 interface SharedMessagePart {
   type: 'text' | 'tool_call' | 'tool_result' | 'thinking' | 'error';
-  content: string;  // JSON string (same as local DB)
+  content: string;
   toolName?: string;
   toolCallId?: string;
 }
@@ -124,7 +344,9 @@ POST /share
 Content-Type: application/json
 
 {
-  "sessionData": SharedSessionData
+  "sessionData": SharedSessionData,
+  "title": "Optional custom title",
+  "description": "Optional description for OG preview"
 }
 
 Response 201:
@@ -132,7 +354,7 @@ Response 201:
   "shareId": "V1StGXR8_Z5jdHi6B",
   "secret": "sk_abc123...",
   "url": "https://share.agi.nitish.sh/s/V1StGXR8_Z5jdHi6B",
-  "expiresAt": 1740000000  // 30 days default
+  "expiresAt": 1740000000
 }
 ```
 
@@ -145,7 +367,9 @@ Content-Type: application/json
 
 {
   "sessionData": SharedSessionData,
-  "lastMessageId": "msg_xyz"  // optional, for delta append
+  "title": "Updated title",
+  "description": "Updated description",
+  "lastMessageId": "msg_xyz"
 }
 
 Response 200:
@@ -165,10 +389,23 @@ Response 200:
 {
   "shareId": "V1StGXR8_Z5jdHi6B",
   "title": "Fix authentication bug",
+  "description": "Debugging OAuth flow with Claude",
   "sessionData": SharedSessionData,
   "createdAt": 1737312000,
   "viewCount": 42
 }
+```
+
+### Get OG Image
+
+```
+GET /og/:shareId
+
+Response 200:
+Content-Type: image/png
+Cache-Control: public, max-age=86400
+
+<PNG binary>
 ```
 
 ### Delete Share
@@ -187,15 +424,17 @@ Response 204 (No Content)
 ### `agi share [sessionId]`
 
 ```bash
-# Share a specific session
-$ agi share abc123
+# Share with custom title and description
+$ agi share abc123 --title "OAuth Bug Fix" --description "Debugging the refresh token flow"
+
+# Share only up to a specific message
+$ agi share abc123 --until msg_xyz
 
 # Interactive picker if no sessionId
 $ agi share
 ? Select a session to share:
   ❯ Fix authentication bug (2 hours ago, 24 messages)
     Refactor database schema (yesterday, 156 messages)
-    Add preview feature (3 days ago, 89 messages)
 
 # Confirmation prompt
 ⚠️  Share this session publicly?
@@ -216,6 +455,15 @@ $ agi share abc123 --update
 
 ✓ Updated share with 12 new messages
   https://share.agi.nitish.sh/s/V1StGXR8_Z5jdHi6B
+
+# Sync up to a specific message (not beyond)
+$ agi share abc123 --update --until msg_abc
+
+✓ Updated share (synced until msg_abc)
+  https://share.agi.nitish.sh/s/V1StGXR8_Z5jdHi6B
+
+# Update title/description
+$ agi share abc123 --update --title "New Title" --description "New description"
 ```
 
 ### `agi share <sessionId> --delete`
@@ -225,6 +473,31 @@ $ agi share abc123 --delete
 
 ? Delete this shared session? [y/N] y
 ✓ Share deleted
+```
+
+### `agi share <sessionId> --status`
+
+Check the current share state — see what's published vs local:
+
+```bash
+$ agi share abc123 --status
+
+Share Status: abc123
+  URL: https://share.agi.nitish.sh/s/V1StGXR8_Z5jdHi6B
+  Title: "OAuth Bug Fix"
+  
+  Synced until: msg_xyz (message 24 of 36)
+  12 new messages since last sync
+  
+  Last synced: 2 hours ago
+  Views: 42
+
+# If not shared yet
+$ agi share def456 --status
+
+Session def456 is not shared.
+  Messages: 89
+  Run `agi share def456` to share it.
 ```
 
 ### `agi share --list`
@@ -239,22 +512,36 @@ Shared Sessions:
 
 ---
 
-## Local Storage
+## Local Storage (SQLite)
 
-File: `.agi/shares.json`
+Store share metadata in the existing local SQLite database (`~/.agi/agi.sqlite`), not a JSON file.
 
-```json
-{
-  "abc123": {
-    "shareId": "V1StGXR8_Z5jdHi6B",
-    "secret": "sk_abc123xyz789...",
-    "url": "https://share.agi.nitish.sh/s/V1StGXR8_Z5jdHi6B",
-    "createdAt": 1737312000,
-    "lastSyncedAt": 1737312000,
-    "lastSyncedMessageId": "msg_xyz"
-  }
-}
+### Schema Addition (packages/database)
+
+```typescript
+// packages/database/src/schema/shares.ts
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+
+export const shares = sqliteTable('shares', {
+  sessionId: text('session_id').primaryKey(),
+  shareId: text('share_id').notNull().unique(),
+  secret: text('secret').notNull(),
+  url: text('url').notNull(),
+  title: text('title'),
+  description: text('description'),
+  createdAt: integer('created_at').notNull(),
+  lastSyncedAt: integer('last_synced_at').notNull(),
+  lastSyncedMessageId: text('last_synced_message_id').notNull(), // boundary: messages up to this ID are shared
+});
 ```
+
+### Migration Workflow
+
+1. Add schema file: `packages/database/src/schema/shares.ts`
+2. Export from index: `packages/database/src/schema/index.ts`
+3. Generate migration: `bunx drizzle-kit generate`
+4. Update `packages/database/src/migrations-bundled.ts` to include new migration
+5. **Never manually write migration files** — always use drizzle-kit
 
 ---
 
@@ -274,9 +561,7 @@ Before upload, scrub sensitive data:
 function scrubSessionData(session: Session, messages: Message[]): SharedSessionData {
   return {
     ...session,
-    // Remove local paths
     projectPath: undefined,
-    
     messages: messages.map(msg => ({
       ...msg,
       parts: msg.parts.map(part => scrubPart(part))
@@ -285,21 +570,13 @@ function scrubSessionData(session: Session, messages: Message[]): SharedSessionD
 }
 
 function scrubPart(part: MessagePart): SharedMessagePart {
-  // For tool results, redact potentially sensitive outputs
   if (part.type === 'tool_result') {
     const content = JSON.parse(part.content);
-    
-    // Redact environment variables
     if (part.toolName === 'bash' && containsEnvVars(content)) {
       content.output = '[redacted: environment variables]';
     }
-    
-    // Redact file paths (optional, configurable)
-    // content.output = redactPaths(content.output);
-    
     return { ...part, content: JSON.stringify(content) };
   }
-  
   return part;
 }
 ```
@@ -318,91 +595,161 @@ function scrubPart(part: MessagePart): SharedMessagePart {
 
 ---
 
-## Preview Web App
+## Preview Web App (Astro)
 
 ### Routes
 
-| Route | Component | Description |
+| Route | Rendering | Description |
 |-------|-----------|-------------|
-| `/` | `HomePage` | Landing page, explanation |
-| `/s/:shareId` | `PreviewPage` | Renders shared session |
+| `/` | Static | Landing page, explanation |
+| `/s/:shareId` | SSR | Renders shared session with OG meta tags |
 
-### Component Reuse
+### Astro Page with React
 
-Import from `@agi-cli/web-sdk`:
+```astro
+---
+// apps/preview-web/src/pages/s/[shareId].astro
+import Layout from '../../layouts/Layout.astro';
+import ChatPreview from '../../components/ChatPreview';
 
-```typescript
-// Preview-specific read-only wrapper
+const { shareId } = Astro.params;
+const API_URL = import.meta.env.PUBLIC_API_URL;
+
+const response = await fetch(`${API_URL}/share/${shareId}`);
+if (!response.ok) {
+  return Astro.redirect('/404');
+}
+
+const data = await response.json();
+const { title, description, sessionData } = data;
+
+const ogImageUrl = `${API_URL}/og/${shareId}`;
+const pageTitle = title || 'AGI Session';
+const pageDescription = description || `${sessionData.messages.length} messages • ${sessionData.model}`;
+---
+
+<Layout>
+  <Fragment slot="head">
+    <title>{pageTitle} | AGI Share</title>
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    <meta name="twitter:image" content={ogImageUrl} />
+  </Fragment>
+  
+  <ChatPreview data={data} client:load />
+</Layout>
+```
+
+### ChatPreview Component
+
+```tsx
+// apps/preview-web/src/components/ChatPreview.tsx
 import { MessageThread } from '@agi-cli/web-sdk/components';
 
-function PreviewPage({ shareId }: { shareId: string }) {
-  const { data, isLoading } = useShare(shareId);
-  
-  if (isLoading) return <Loading />;
-  
+interface ChatPreviewProps {
+  data: {
+    shareId: string;
+    title: string | null;
+    description: string | null;
+    sessionData: SharedSessionData;
+    createdAt: number;
+    viewCount: number;
+  };
+}
+
+export default function ChatPreview({ data }: ChatPreviewProps) {
   return (
     <div className="preview-container">
       <PreviewHeader 
-        title={data.title} 
+        title={data.title || 'AGI Session'} 
+        description={data.description}
+        model={data.sessionData.model}
         createdAt={data.createdAt}
         viewCount={data.viewCount}
+        messageCount={data.sessionData.messages.length}
       />
       <MessageThread 
         messages={data.sessionData.messages}
         readOnly={true}
       />
+      <PreviewFooter shareId={data.shareId} />
     </div>
   );
 }
 ```
 
+### Astro Config
+
+```typescript
+// apps/preview-web/astro.config.mjs
+import { defineConfig } from 'astro/config';
+import react from '@astrojs/react';
+import cloudflare from '@astrojs/cloudflare';
+import tailwind from '@astrojs/tailwind';
+
+export default defineConfig({
+  output: 'hybrid',
+  adapter: cloudflare(),
+  integrations: [react(), tailwind()],
+});
+```
+
 ### Styling
 
-- Dark/light theme toggle
+- **Match existing webapp** — Use same color scheme and styling as `@agi-cli/web-ui`
+- Import Tailwind config or CSS variables from web-ui for consistency
+- Dark/light theme toggle (same as webapp)
 - Responsive design
-- Minimal branding
-- Copy link button
-- "Made with AGI" footer
+- Minimal AGI branding (corner logo, "Made with AGI" footer)
 
 ---
 
 ## Project Structure
 
-### Infrastructure (SST)
-
 ```
 infra/
   domains.ts                      # ADD share.agi.nitish.sh domain
-  preview-api.ts                  # NEW - Worker definition
-  preview-web.ts                  # NEW - Static site definition
+  preview-api.ts                  # NEW - Worker + D1 definition
+  preview-web.ts                  # NEW - Astro site definition
 
 apps/
   preview-api/                    # NEW - Cloudflare Worker
     src/
       index.ts                    # Hono app entry
       db/
-        client.ts                 # Turso client
+        client.ts                 # D1 client via Drizzle
         schema.ts                 # Drizzle schema
+      routes/
+        share.ts                  # CRUD endpoints
+        og.ts                     # OG image generation
+      components/
+        OGImage.tsx               # Satori JSX component
       lib/
         nanoid.ts                 # ID generation
+        gradient.ts               # Backdrop generation
     wrangler.toml
     drizzle.config.ts
 
-  preview-web/                    # NEW - Cloudflare Pages
+  preview-web/                    # NEW - Astro + React
     src/
-      main.tsx
-      App.tsx
-      routes/
-        HomePage.tsx
-        PreviewPage.tsx
+      pages/
+        index.astro               # Landing page
+        s/[shareId].astro         # Session preview (SSR)
+        404.astro
+      layouts/
+        Layout.astro
       components/
+        ChatPreview.tsx           # React island
         PreviewHeader.tsx
-        PreviewThread.tsx         # Wrapper around web-sdk MessageThread
-      hooks/
-        useShare.ts
-      lib/
-        api.ts
-    vite.config.ts
+        PreviewFooter.tsx
+    astro.config.mjs
+    tailwind.config.js
 
 apps/cli/
   src/
@@ -420,8 +767,8 @@ const HOST = 'agi.nitish.sh';
 
 export const domains = {
   sh: `${SUB}install.${HOST}`,
-  previewApi: `${SUB}api.share.${HOST}`,   // NEW
-  previewWeb: `${SUB}share.${HOST}`,       // NEW
+  previewApi: `${SUB}api.share.${HOST}`,
+  previewWeb: `${SUB}share.${HOST}`,
 };
 ```
 
@@ -430,14 +777,14 @@ export const domains = {
 ```typescript
 import { domains } from './domains';
 
-// Turso credentials as secrets
-const tursoUrl = new sst.Secret('TursoUrl');
-const tursoAuthToken = new sst.Secret('TursoAuthToken');
+export const previewDb = new sst.cloudflare.D1('PreviewDB');
+
+export const ogCache = new sst.cloudflare.Kv('OGCache');
 
 export const previewApi = new sst.cloudflare.Worker('PreviewApi', {
   domain: domains.previewApi,
   handler: 'apps/preview-api/src/index.ts',
-  link: [tursoUrl, tursoAuthToken],
+  link: [previewDb, ogCache],
   url: true,
 });
 ```
@@ -448,15 +795,12 @@ export const previewApi = new sst.cloudflare.Worker('PreviewApi', {
 import { domains } from './domains';
 import { previewApi } from './preview-api';
 
-export const previewWeb = new sst.cloudflare.StaticSite('PreviewWeb', {
+export const previewWeb = new sst.cloudflare.Astro('PreviewWeb', {
   domain: domains.previewWeb,
   path: 'apps/preview-web',
-  build: {
-    command: 'bun run build',
-    output: 'dist',
-  },
+  link: [previewApi],
   environment: {
-    VITE_API_URL: previewApi.url,
+    PUBLIC_API_URL: previewApi.url,
   },
 });
 ```
@@ -466,7 +810,7 @@ export const previewWeb = new sst.cloudflare.StaticSite('PreviewWeb', {
 ```typescript
 async run() {
   const { script } = await import('./infra/script');
-  const { previewApi } = await import('./infra/preview-api');
+  const { previewApi, previewDb } = await import('./infra/preview-api');
   const { previewWeb } = await import('./infra/preview-web');
 
   return {
@@ -481,44 +825,45 @@ async run() {
 
 ## Implementation Phases
 
-### Phase 1: Infrastructure Setup (1-2 hours)
+### Phase 1: Infrastructure Setup (1 hour)
 
-1. Create Turso database `agi-preview` via CLI
-2. Generate auth tokens via `turso db tokens create`
-3. Add SST secrets: `bunx sst secret set TursoUrl <url>` and `TursoAuthToken`
-4. Update `infra/domains.ts` with new domains
-5. Create `infra/preview-api.ts` and `infra/preview-web.ts`
+1. Update `infra/domains.ts` with new domains
+2. Create `infra/preview-api.ts` with D1 + KV bindings
+3. Create `infra/preview-web.ts` with Astro config
+4. Deploy infrastructure: `bunx sst deploy`
 
-### Phase 2: Preview API (2-3 hours)
+### Phase 2: Preview API (3-4 hours)
 
 1. Create `apps/preview-api/` with Hono app
-2. Setup Drizzle schema for `shared_sessions`
+2. Setup Drizzle schema for D1
 3. Implement CRUD routes (create, get, update, delete)
-4. Test locally with `bunx sst dev`
-5. Deploy with `bunx sst deploy`
-
-Turso URL format: `libsql://agi-preview-<username>.turso.io`
+4. Implement OG image generation with Satori
+5. Test locally with `bunx sst dev`
+6. Deploy with `bunx sst deploy`
 
 ### Phase 3: CLI Command (2-3 hours)
 
 1. Add `share` command to CLI
 2. Implement session export/scrubbing
-3. Add `.agi/shares.json` management
-4. Test create/update/delete flows
+3. Add `--title` and `--description` flags
+4. Add `.agi/shares.json` management
+5. Test create/update/delete flows
 
 ### Phase 4: Preview Web App (3-4 hours)
 
-1. Create `apps/preview-web/` with Vite + React
-2. Build `PreviewPage` component
-3. Reuse `@agi-cli/web-sdk` message renderers
-4. Deploy with `bunx sst deploy`
+1. Create `apps/preview-web/` with Astro
+2. Setup `@astrojs/cloudflare` adapter
+3. Build SSR page for `/s/:shareId` with OG meta tags
+4. Import `@agi-cli/web-sdk` components for chat rendering
+5. Deploy with `bunx sst deploy`
 
 ### Phase 5: Polish (1-2 hours)
 
 1. Add expiration cleanup (Cron Trigger)
 2. Improve scrubbing logic
 3. Add `--expires` flag
-4. Documentation
+4. OG image caching in KV
+5. Documentation
 
 **Total Estimated Time: 10-14 hours**
 
@@ -526,28 +871,35 @@ Turso URL format: `libsql://agi-preview-<username>.turso.io`
 
 ## Cost Analysis
 
-### Turso (Free Tier)
+### Cloudflare D1 (Free Tier)
 
 | Resource | Limit | Expected Usage |
 |----------|-------|----------------|
-| Databases | 100 | 1 |
 | Storage | 5GB | ~100MB (10k shares × 10KB avg) |
-| Reads | 500M/mo | ~50k/mo (5k views × 10 queries) |
-| Writes | 10M/mo | ~5k/mo (1k new shares + updates) |
+| Reads | 5M/day | ~5k/day |
+| Writes | 100k/day | ~500/day |
 
 ### Cloudflare Workers (Free Tier)
 
 | Resource | Limit | Expected Usage |
 |----------|-------|----------------|
-| Requests | 100k/day | ~1k/day |
-| CPU time | 10ms/req | ~2ms/req |
+| Requests | 100k/day | ~2k/day |
+| CPU time | 10ms/req | ~5ms/req (OG gen ~50ms cached) |
+
+### Cloudflare KV (Free Tier)
+
+| Resource | Limit | Expected Usage |
+|----------|-------|----------------|
+| Reads | 100k/day | ~1k/day (OG cache hits) |
+| Writes | 1k/day | ~100/day (new OG images) |
+| Storage | 1GB | ~50MB (OG images ~50KB each) |
 
 ### Cloudflare Pages (Free Tier)
 
 | Resource | Limit | Expected Usage |
 |----------|-------|----------------|
+| Requests | Unlimited | ~5k/day |
 | Bandwidth | Unlimited | ~10GB/mo |
-| Builds | 500/mo | ~20/mo |
 
 **Total Monthly Cost: $0**
 
@@ -562,21 +914,24 @@ Turso URL format: `libsql://agi-preview-<username>.turso.io`
 5. **Embed widget** - `<iframe>` embed code
 6. **Export formats** - Markdown, JSON download
 7. **Comments** - Allow viewers to add comments
+8. **Custom OG backgrounds** - User-uploaded images
 
 ---
 
 ## Open Questions
 
-1. **Domain**: `share.agi.nitish.sh` or `preview.agi.nitish.sh`?
+1. ~~**Domain**: `share.agi.nitish.sh` or `preview.agi.nitish.sh`?~~ → `share.agi.nitish.sh`
 2. **Default expiration**: 30 days or 7 days?
 3. **Max session size**: Limit message count or total JSON size?
 4. **Scrubbing depth**: How aggressive with path/secret redaction?
+5. **OG image fonts**: Which fonts to bundle for Satori?
 
 ---
 
 ## References
 
-- [Turso + Cloudflare Workers Tutorial](https://developers.cloudflare.com/workers/tutorials/connect-to-turso-using-workers/)
-- [Drizzle + Turso Integration](https://orm.drizzle.team/docs/tutorials/drizzle-with-turso)
-- [Turso Pricing](https://turso.tech/pricing)
+- [Cloudflare D1 + Drizzle](https://orm.drizzle.team/docs/tutorials/drizzle-with-d1)
+- [SST Cloudflare D1](https://sst.dev/docs/component/cloudflare/d1)
+- [Astro Cloudflare Adapter](https://docs.astro.build/en/guides/integrations-guide/cloudflare/)
+- [Satori - OG Image Generation](https://github.com/vercel/satori)
 - [Cloudflare Workers Pricing](https://developers.cloudflare.com/workers/platform/pricing/)

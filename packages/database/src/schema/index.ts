@@ -3,11 +3,13 @@ export { sessions } from './sessions.ts';
 export { messages } from './messages.ts';
 export { messageParts } from './message-parts.ts';
 export { artifacts } from './artifacts.ts';
+export { shares } from './shares.ts';
 
 import { sessions } from './sessions.ts';
 import { messages } from './messages.ts';
 import { messageParts } from './message-parts.ts';
 import { artifacts } from './artifacts.ts';
+import { shares } from './shares.ts';
 
 export const sessionsRelations = relations(sessions, ({ many }) => ({
 	messages: many(messages),
@@ -32,5 +34,12 @@ export const artifactsRelations = relations(artifacts, ({ one }) => ({
 	part: one(messageParts, {
 		fields: [artifacts.messagePartId],
 		references: [messageParts.id],
+	}),
+}));
+
+export const sharesRelations = relations(shares, ({ one }) => ({
+	session: one(sessions, {
+		fields: [shares.sessionId],
+		references: [sessions.id],
 	}),
 }));

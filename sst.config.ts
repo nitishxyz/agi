@@ -8,6 +8,7 @@ export default $config({
 			// protect: ["prod"].includes(input?.stage),
 			home: 'aws',
 			providers: {
+				cloudflare: true,
 				aws: {
 					profile: 'slashforge',
 					region: 'us-east-1',
@@ -17,9 +18,13 @@ export default $config({
 	},
 	async run() {
 		const { script } = await import('./infra/script');
+		const { previewApiUrl } = await import('./infra/preview-api');
+		const { previewWeb } = await import('./infra/preview-web');
 
 		return {
 			script: script.url,
+			previewApi: previewApiUrl,
+			previewWeb: previewWeb.url,
 		};
 	},
 });

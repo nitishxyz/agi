@@ -1,69 +1,76 @@
 {
-	"version": "7",
-	"dialect": "sqlite",
-	"entries": [
-		{
-			"idx": 0,
-			"version": "6",
-			"when": 1757903506317,
-			"tag": "0000_tense_shadow_king",
-			"breakpoints": true
-		},
-		{
-			"idx": 1,
-			"version": "6",
-			"when": 1757926724962,
-			"tag": "0001_past_kabuki",
-			"breakpoints": true
-		},
-		{
-			"idx": 2,
-			"version": "6",
-			"when": 1758380042084,
-			"tag": "0002_vengeful_warlock",
-			"breakpoints": true
-		},
-		{
-			"idx": 3,
-			"version": "6",
-			"when": 1759590176611,
-			"tag": "0003_pale_violations",
-			"breakpoints": true
-		},
-		{
-			"idx": 4,
-			"version": "6",
-			"when": 1759825214699,
-			"tag": "0004_left_the_professor",
-			"breakpoints": true
-		},
-		{
-			"idx": 5,
-			"version": "6",
-			"when": 1768726485564,
-			"tag": "0005_hard_gravity",
-			"breakpoints": true
-		},
-		{
-			"idx": 6,
-			"version": "6",
-			"when": 1768756477152,
-			"tag": "0006_jazzy_warlock",
-			"breakpoints": true
-		},
-		{
-			"idx": 7,
-			"version": "6",
-			"when": 1768941311425,
-			"tag": "0007_milky_rhodey",
-			"breakpoints": true
-		},
-		{
-			"idx": 8,
-			"version": "6",
-			"when": 1769321704801,
-			"tag": "0008_chunky_miss_america",
-			"breakpoints": true
-		}
-	]
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1757903506317,
+      "tag": "0000_tense_shadow_king",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1757926724962,
+      "tag": "0001_past_kabuki",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1758380042084,
+      "tag": "0002_vengeful_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1759590176611,
+      "tag": "0003_pale_violations",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1759825214699,
+      "tag": "0004_left_the_professor",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1768726485564,
+      "tag": "0005_hard_gravity",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1768756477152,
+      "tag": "0006_jazzy_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1768941311425,
+      "tag": "0007_milky_rhodey",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1769321704801,
+      "tag": "0008_chunky_miss_america",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1769408237498,
+      "tag": "0009_natural_hellfire_club",
+      "breakpoints": true
+    }
+  ]
 }

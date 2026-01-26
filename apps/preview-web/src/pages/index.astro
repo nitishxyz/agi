@@ -1,0 +1,27 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="AGI Share">
+	<main class="flex min-h-screen flex-col items-center justify-center p-8">
+		<div class="max-w-2xl text-center">
+			<h1 class="mb-4 text-4xl font-bold">AGI Share</h1>
+			<p class="mb-8 text-lg text-muted-foreground">
+				Share your AI coding sessions publicly. Generated links work with any
+				platform that supports rich previews.
+			</p>
+			<div class="rounded-lg border border-border bg-card p-6">
+				<h2 class="mb-4 text-xl font-semibold">How to share</h2>
+				<code class="block rounded bg-muted px-4 py-2 text-sm">
+					agi share [sessionId]
+				</code>
+				<p class="mt-4 text-sm text-muted-foreground">
+					Run this command in your terminal to share a session.
+				</p>
+			</div>
+		</div>
+	</main>
+	<footer class="fixed bottom-4 w-full text-center text-sm text-muted-foreground">
+		Made with AGI
+	</footer>
+</Layout>
