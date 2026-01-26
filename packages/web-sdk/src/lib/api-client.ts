@@ -200,6 +200,24 @@ class ApiClient {
 		return convertSession(sessionData);
 	}
 
+	async deleteSession(sessionId: string): Promise<{ success: boolean }> {
+		const response = await fetch(`${this.baseUrl}/v1/sessions/${sessionId}`, {
+			method: 'DELETE',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to delete session' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
 	async abortSession(sessionId: string): Promise<{ success: boolean }> {
 		const response = await apiAbortSession({
 			path: { sessionId },

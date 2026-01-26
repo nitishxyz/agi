@@ -9,7 +9,7 @@ import {
 	useMemo,
 } from 'react';
 import { useSendMessage, useMessages } from '../../hooks/useMessages';
-import { useSession, useUpdateSession } from '../../hooks/useSessions';
+import { useSession, useUpdateSession, useDeleteSession } from '../../hooks/useSessions';
 import { useAllModels } from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useGitStatus, useStageFiles } from '../../hooks/useGit';
@@ -27,6 +27,7 @@ interface ChatInputContainerProps {
 	sessionId: string;
 	userContext?: string;
 	onNewSession?: () => void;
+	onDeleteSession?: () => void;
 }
 
 export interface ChatInputContainerRef {
@@ -35,7 +36,7 @@ export interface ChatInputContainerRef {
 
 export const ChatInputContainer = memo(
 	forwardRef<ChatInputContainerRef, ChatInputContainerProps>(
-		function ChatInputContainer({ sessionId, userContext, onNewSession }, ref) {
+		function ChatInputContainer({ sessionId, userContext, onNewSession, onDeleteSession }, ref) {
 			const session = useSession(sessionId);
 			const [agent, setAgent] = useState('');
 			const [provider, setProvider] = useState('');
@@ -54,6 +55,7 @@ export const ChatInputContainer = memo(
 			const sendMessage = useSendMessage(sessionId);
 			useMessages(sessionId);
 			const updateSession = useUpdateSession(sessionId);
+			const deleteSession = useDeleteSession();
 			const { data: allModels } = useAllModels();
 			const { preferences } = usePreferences();
 			const { data: gitStatus } = useGitStatus();
@@ -235,20 +237,29 @@ export const ChatInputContainer = memo(
 						if (allUnstaged.length > 0) {
 							stageFiles.mutate(allUnstaged);
 						}
-					} else if (commandId === 'commit') {
-						openCommitModal();
-					} else if (commandId === 'compact') {
-						handleSendMessage('/compact');
-					}
-				},
-				[
-					onNewSession,
-					gitStatus,
-					stageFiles,
-					openCommitModal,
-					handleSendMessage,
-				],
-			);
+				} else if (commandId === 'commit') {
+					openCommitModal();
+				} else if (commandId === 'compact') {
+					handleSendMessage('/compact');
+				} else if (commandId === 'delete') {
+					deleteSession.mutate(sessionId, {
+						onSuccess: () => {
+							onDeleteSession?.();
+						},
+					});
+				}
+			},
+			[
+				onNewSession,
+				gitStatus,
+				stageFiles,
+				openCommitModal,
+				handleSendMessage,
+				deleteSession,
+				sessionId,
+				onDeleteSession,
+			],
+		);
 
 			const handleAgentChange = useCallback(
 				async (value: string) => {

@@ -76,6 +76,10 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 		}
 	}, [createSession, config, navigate, focusInput]);
 
+	const handleDeleteSession = useCallback(() => {
+		navigate({ to: '/sessions' });
+	}, [navigate]);
+
 	const handleSelectSession = useCallback(
 		(id: string) => {
 			navigate({
@@ -164,14 +168,15 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 					sessionId={sessionId}
 					onSelectSession={handleSelectSession}
 				/>
-				<ChatInputContainer
-					ref={chatInputRef}
-					sessionId={sessionId}
-					onNewSession={handleNewSession}
-				/>
-			</>
-		);
-	}, [sessionId, handleNewSession, handleSelectSession]);
+			<ChatInputContainer
+				ref={chatInputRef}
+				sessionId={sessionId}
+				onNewSession={handleNewSession}
+				onDeleteSession={handleDeleteSession}
+			/>
+		</>
+	);
+}, [sessionId, handleNewSession, handleSelectSession, handleDeleteSession]);
 
 	return (
 		<>

@@ -10,6 +10,7 @@ import {
 	Check,
 	Minimize2,
 	Split,
+	Trash2,
 } from 'lucide-react';
 
 export interface Command {
@@ -94,6 +95,12 @@ export const COMMANDS: Command[] = [
 		label: '/branch',
 		description: 'Branch session from last message',
 		icon: Split,
+	},
+	{
+		id: 'delete',
+		label: '/delete',
+		description: 'Delete current session',
+		icon: Trash2,
 	},
 ];
 

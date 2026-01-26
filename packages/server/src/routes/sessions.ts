@@ -181,16 +181,62 @@ export function registerSessionsRoutes(app: Hono) {
 			// Perform update
 			await db.update(sessions).set(updates).where(eq(sessions.id, sessionId));
 
-			// Return updated session
-			const updatedRows = await db
+		// Return updated session
+		const updatedRows = await db
+			.select()
+			.from(sessions)
+			.where(eq(sessions.id, sessionId))
+			.limit(1);
+
+		return c.json(updatedRows[0]);
+	} catch (err) {
+		logger.error('Failed to update session', err);
+		const errorResponse = serializeError(err);
+		return c.json(errorResponse, errorResponse.error.status || 500);
+	}
+});
+
+	// Delete session
+	app.delete('/v1/sessions/:sessionId', async (c) => {
+		try {
+			const sessionId = c.req.param('sessionId');
+			const projectRoot = c.req.query('project') || process.cwd();
+			const cfg = await loadConfig(projectRoot);
+			const db = await getDb(cfg.projectRoot);
+
+			const existingRows = await db
 				.select()
 				.from(sessions)
 				.where(eq(sessions.id, sessionId))
 				.limit(1);
 
-			return c.json(updatedRows[0]);
+			if (!existingRows.length) {
+				return c.json({ error: 'Session not found' }, 404);
+			}
+
+			const existingSession = existingRows[0];
+
+			if (existingSession.projectPath !== cfg.projectRoot) {
+				return c.json({ error: 'Session not found in this project' }, 404);
+			}
+
+			await db
+				.delete(messageParts)
+				.where(
+					inArray(
+						messageParts.messageId,
+						db
+							.select({ id: messages.id })
+							.from(messages)
+							.where(eq(messages.sessionId, sessionId)),
+					),
+				);
+			await db.delete(messages).where(eq(messages.sessionId, sessionId));
+			await db.delete(sessions).where(eq(sessions.id, sessionId));
+
+			return c.json({ success: true });
 		} catch (err) {
-			logger.error('Failed to update session', err);
+			logger.error('Failed to delete session', err);
 			const errorResponse = serializeError(err);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}

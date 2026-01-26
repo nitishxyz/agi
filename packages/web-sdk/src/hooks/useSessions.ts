@@ -38,3 +38,14 @@ export function useUpdateSession(sessionId: string) {
 		},
 	});
 }
+
+export function useDeleteSession() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (sessionId: string) => apiClient.deleteSession(sessionId),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['sessions'] });
+		},
+	});
+}
