@@ -18,13 +18,13 @@ export function createStepFinishHandler(
 	sharedCtx: ToolAdapterContext,
 	updateSessionTokensIncrementalFn: (
 		usage: UsageData,
-		providerMetadata: ProviderMetadata | undefined,
+		providerOptions: ProviderMetadata | undefined,
 		opts: RunOpts,
 		db: Awaited<ReturnType<typeof getDb>>,
 	) => Promise<void>,
 	updateMessageTokensIncrementalFn: (
 		usage: UsageData,
-		providerMetadata: ProviderMetadata | undefined,
+		providerOptions: ProviderMetadata | undefined,
 		opts: RunOpts,
 		db: Awaited<ReturnType<typeof getDb>>,
 	) => Promise<void>,

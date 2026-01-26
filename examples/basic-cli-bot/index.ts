@@ -47,7 +47,7 @@ async function main() {
 		// Show usage stats if available
 		if (result.usage) {
 			console.log(
-				`\\n📊 Tokens: ${result.usage.totalTokens} total (${result.usage.promptTokens} prompt, ${result.usage.completionTokens} completion)`,
+				`\\n📊 Tokens: ${result.usage.totalTokens} total (${result.usage.inputTokens} prompt, ${result.usage.outputTokens} completion)`,
 			);
 		}
 	} catch (error) {

@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import DESCRIPTION from './ripgrep.txt' with { type: 'text' };

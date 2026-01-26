@@ -95,7 +95,7 @@ export interface SendMessageRequest {
 	model?: string;
 	oneShot?: boolean;
 	userContext?: string;
-	reasoning?: boolean;
+	reasoningText?: boolean;
 }
 
 export interface SendMessageResponse {
@@ -106,7 +106,7 @@ export interface ModelInfo {
 	id: string;
 	label: string;
 	toolCall?: boolean;
-	reasoning?: boolean;
+	reasoningText?: boolean;
 	vision?: boolean;
 }
 

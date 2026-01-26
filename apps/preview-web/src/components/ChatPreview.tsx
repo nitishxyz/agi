@@ -89,8 +89,8 @@ function transformMessages(
 		createdAt: msg.createdAt,
 		completedAt: msg.createdAt,
 		latencyMs: null,
-		promptTokens: null,
-		completionTokens: null,
+		inputTokens: null,
+		outputTokens: null,
 		totalTokens: null,
 		error: null,
 		parts: msg.parts.map((part, partIndex) => ({

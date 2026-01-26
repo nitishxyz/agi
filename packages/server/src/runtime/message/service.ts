@@ -23,7 +23,7 @@ type DispatchOptions = {
 	content: string;
 	oneShot?: boolean;
 	userContext?: string;
-	reasoning?: boolean;
+	reasoningText?: boolean;
 	images?: Array<{ data: string; mediaType: string }>;
 	files?: Array<{
 		type: 'image' | 'pdf' | 'text';
@@ -47,7 +47,7 @@ export async function dispatchAssistantMessage(
 		content,
 		oneShot,
 		userContext,
-		reasoning,
+		reasoningText,
 		images,
 		files,
 	} = options;
@@ -181,7 +181,7 @@ export async function dispatchAssistantMessage(
 			projectRoot: cfg.projectRoot,
 			oneShot: Boolean(oneShot),
 			userContext,
-			reasoning,
+			reasoningText,
 			isCompactCommand: isCompact,
 			compactionContext,
 		},

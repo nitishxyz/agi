@@ -211,7 +211,7 @@ export async function buildHistoryMessages(
 		}
 	}
 
-	return convertToModelMessages(ui);
+	return await convertToModelMessages(ui);
 }
 
 async function logPendingToolParts(

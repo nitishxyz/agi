@@ -26,7 +26,7 @@ export type ModelInfo = {
 	label?: string;
 	modalities?: { input?: string[]; output?: string[] };
 	toolCall?: boolean;
-	reasoning?: boolean;
+	reasoningText?: boolean;
 	attachment?: boolean;
 	temperature?: boolean | number;
 	knowledge?: string;

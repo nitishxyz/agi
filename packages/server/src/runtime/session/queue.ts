@@ -10,7 +10,7 @@ export type RunOpts = {
 	projectRoot: string;
 	oneShot?: boolean;
 	userContext?: string;
-	reasoning?: boolean;
+	reasoningText?: boolean;
 	abortSignal?: AbortSignal;
 	isCompactCommand?: boolean;
 	compactionContext?: string;

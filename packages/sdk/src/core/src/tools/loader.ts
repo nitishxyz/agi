@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { finishTool } from './builtin/finish.ts';
 import { buildFsTools } from './builtin/fs/index.ts';
 import { buildGitTools } from './builtin/git.ts';

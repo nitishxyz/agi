@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { expandTilde, isAbsoluteLike, resolveSafePath } from './util.ts';

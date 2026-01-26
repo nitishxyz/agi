@@ -231,7 +231,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const providerOptions: Record<string, unknown> = {};
 	let effectiveMaxOutputTokens = maxOutputTokens;
 
-	if (opts.reasoning) {
+	if (opts.reasoningText) {
 		if (opts.provider === 'anthropic') {
 			providerOptions.anthropic = {
 				thinking: { type: 'enabled', budgetTokens: THINKING_BUDGET },

@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import DESCRIPTION from './todos.txt' with { type: 'text' };
 
 const STATUS_ENUM = z.enum([

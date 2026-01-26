@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import DESCRIPTION from './patch.txt' with { type: 'text' };
 import { createToolError, type ToolResponse } from '../error.ts';
 import { applyPatchOperations } from './patch/apply.ts';

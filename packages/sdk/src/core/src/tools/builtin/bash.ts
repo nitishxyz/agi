@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { spawn } from 'node:child_process';
 import DESCRIPTION from './bash.txt' with { type: 'text' };
 import { createToolError, type ToolResponse } from '../error.ts';

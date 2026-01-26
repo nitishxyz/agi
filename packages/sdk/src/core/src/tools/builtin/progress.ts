@@ -1,5 +1,5 @@
 import { tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import DESCRIPTION from './progress.txt' with { type: 'text' };
 
 // Progress update tool: allows the model to emit lightweight status signals

@@ -1,5 +1,5 @@
 import { tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { getDb } from '@agi-cli/database';
 import { sessions, messages } from '@agi-cli/database/schema';
 import { eq, desc, asc, gte, lte, and, sql, count } from 'drizzle-orm';

@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import DESCRIPTION from './cd.txt' with { type: 'text' };
 
 // description imported above

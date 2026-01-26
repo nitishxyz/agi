@@ -8,7 +8,7 @@ export {
 	streamObject,
 	tool,
 } from 'ai';
-export type { CoreMessage, Tool } from 'ai';
+export type { ModelMessage, Tool } from 'ai';
 
 // =======================
 // Provider & Model Resolution

@@ -1,5 +1,5 @@
 import { tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 const sessionLinkSchema = z.object({
 	sessionId: z.string().describe('The session ID to link to'),

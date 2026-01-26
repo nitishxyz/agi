@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { readFile, writeFile, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import DESCRIPTION from './edit.txt' with { type: 'text' };

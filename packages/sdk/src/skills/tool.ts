@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { loadSkill, discoverSkills, findGitRoot } from './loader.ts';
 import type { DiscoveredSkill, SkillResult } from './types.ts';
 

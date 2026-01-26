@@ -159,7 +159,7 @@ Commit message:`;
 				model,
 				system: systemPrompt,
 				prompt: userPrompt,
-				maxTokens: 500,
+				maxOutputTokens: 500,
 			});
 
 			const message = text.trim();

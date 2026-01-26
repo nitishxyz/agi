@@ -27,7 +27,7 @@ export type ProviderMetadata = Record<string, unknown> & {
 
 export function normalizeUsage(
 	usage: UsageData,
-	providerMetadata: ProviderMetadata | undefined,
+	providerOptions: ProviderMetadata | undefined,
 	provider: ProviderId,
 ): UsageData {
 	const rawInputTokens = Number(usage.inputTokens ?? 0);
@@ -37,17 +37,17 @@ export function normalizeUsage(
 	const cachedInputTokens =
 		usage.cachedInputTokens != null
 			? Number(usage.cachedInputTokens)
-			: providerMetadata?.openai?.cachedPromptTokens != null
-				? Number(providerMetadata.openai.cachedPromptTokens)
-				: providerMetadata?.anthropic?.cacheReadInputTokens != null
-					? Number(providerMetadata.anthropic.cacheReadInputTokens)
+			: providerOptions?.openai?.cachedPromptTokens != null
+				? Number(providerOptions.openai.cachedPromptTokens)
+				: providerOptions?.anthropic?.cacheReadInputTokens != null
+					? Number(providerOptions.anthropic.cacheReadInputTokens)
 					: undefined;
 
 	const cacheCreationInputTokens =
 		usage.cacheCreationInputTokens != null
 			? Number(usage.cacheCreationInputTokens)
-			: providerMetadata?.anthropic?.cacheCreationInputTokens != null
-				? Number(providerMetadata.anthropic.cacheCreationInputTokens)
+			: providerOptions?.anthropic?.cacheCreationInputTokens != null
+				? Number(providerOptions.anthropic.cacheCreationInputTokens)
 				: undefined;
 
 	const cachedValue = cachedInputTokens ?? 0;
@@ -99,7 +99,7 @@ export function resolveUsageProvider(
  */
 export async function updateSessionTokensIncremental(
 	usage: UsageData,
-	providerMetadata: ProviderMetadata | undefined,
+	providerOptions: ProviderMetadata | undefined,
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
@@ -108,7 +108,7 @@ export async function updateSessionTokensIncremental(
 	const usageProvider = resolveUsageProvider(opts.provider, opts.model);
 	const normalizedUsage = normalizeUsage(
 		usage,
-		providerMetadata,
+		providerOptions,
 		usageProvider,
 	);
 
@@ -134,8 +134,8 @@ export async function updateSessionTokensIncremental(
 		.where(eq(messages.id, opts.assistantMessageId));
 
 	const msg = msgRows[0];
-	const priorPromptMsg = Number(msg?.promptTokens ?? 0);
-	const priorCompletionMsg = Number(msg?.completionTokens ?? 0);
+	const priorPromptMsg = Number(msg?.inputTokens ?? 0);
+	const priorCompletionMsg = Number(msg?.outputTokens ?? 0);
 	const priorCachedMsg = Number(msg?.cachedInputTokens ?? 0);
 	const priorCacheCreationMsg = Number(msg?.cacheCreationInputTokens ?? 0);
 	const priorReasoningMsg = Number(msg?.reasoningTokens ?? 0);
@@ -231,7 +231,7 @@ export async function updateSessionTokens(
  */
 export async function updateMessageTokensIncremental(
 	usage: UsageData,
-	providerMetadata: ProviderMetadata | undefined,
+	providerOptions: ProviderMetadata | undefined,
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
 ) {
@@ -240,7 +240,7 @@ export async function updateMessageTokensIncremental(
 	const usageProvider = resolveUsageProvider(opts.provider, opts.model);
 	const normalizedUsage = normalizeUsage(
 		usage,
-		providerMetadata,
+		providerOptions,
 		usageProvider,
 	);
 
@@ -251,8 +251,8 @@ export async function updateMessageTokensIncremental(
 
 	if (msgRows.length > 0 && msgRows[0]) {
 		const msg = msgRows[0];
-		const priorPrompt = Number(msg.promptTokens ?? 0);
-		const priorCompletion = Number(msg.completionTokens ?? 0);
+		const priorPrompt = Number(msg.inputTokens ?? 0);
+		const priorCompletion = Number(msg.outputTokens ?? 0);
 		const priorCached = Number(msg.cachedInputTokens ?? 0);
 		const priorCacheCreation = Number(msg.cacheCreationInputTokens ?? 0);
 		const priorReasoning = Number(msg.reasoningTokens ?? 0);
@@ -287,8 +287,8 @@ export async function updateMessageTokensIncremental(
 		await db
 			.update(messages)
 			.set({
-				promptTokens: cumPrompt,
-				completionTokens: cumCompletion,
+				inputTokens: cumPrompt,
+				outputTokens: cumCompletion,
 				totalTokens: cumTotal,
 				cachedInputTokens: cumCached,
 				cacheCreationInputTokens: cumCacheCreation,

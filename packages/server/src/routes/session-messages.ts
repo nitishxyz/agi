@@ -122,7 +122,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				typeOf: typeof userContext,
 			});
 
-			const reasoning = body?.reasoning === true;
+			const reasoning = body?.reasoningText === true;
 
 			// Validate model capabilities if tools are allowed for this agent
 			const wantsToolCalls = true; // agent toolset may be non-empty
@@ -153,13 +153,13 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				agent,
 				provider,
 				model: modelName,
-				content,
-				oneShot: Boolean(body?.oneShot),
-				userContext,
-				reasoning,
-				images,
-				files,
-			});
+			content,
+			oneShot: Boolean(body?.oneShot),
+			userContext,
+			reasoningText: reasoning,
+			images,
+			files,
+		});
 			return c.json({ messageId: assistantMessageId }, 202);
 		} catch (error) {
 			logger.error('Failed to create session message', error);

@@ -85,7 +85,7 @@ export const ChatInputContainer = memo(
 
 			const modelSupportsReasoning = allModels?.[provider]?.models?.find(
 				(m) => m.id === model,
-			)?.reasoning;
+			)?.reasoningText;
 
 			const modelSupportsVision = allModels?.[provider]?.models?.find(
 				(m) => m.id === model,
@@ -195,7 +195,7 @@ export const ChatInputContainer = memo(
 							provider: provider || undefined,
 							model: model || undefined,
 							userContext: userContext || undefined,
-							reasoning:
+							reasoningText:
 								modelSupportsReasoning && preferences.reasoningEnabled
 									? true
 									: undefined,

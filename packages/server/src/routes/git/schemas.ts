@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 export const gitStatusSchema = z.object({
 	project: z.string().optional(),

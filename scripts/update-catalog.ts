@@ -111,7 +111,7 @@ function mapModel(id: string, raw?: Record<string, unknown>): ModelInfo {
 	const modalities = normalizeModalities(m.modalities);
 	if (modalities) info.modalities = modalities;
 	if (hasValue(m.tool_call)) info.toolCall = Boolean(m.tool_call);
-	if (hasValue(m.reasoning)) info.reasoning = Boolean(m.reasoning);
+	if (hasValue(m.reasoningText)) info.reasoningText = Boolean(m.reasoningText);
 	if (hasValue(m.attachment)) info.attachment = Boolean(m.attachment);
 	const temperature = normalizeTemperature(m.temperature);
 	if (temperature !== undefined) info.temperature = temperature;

@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import DESCRIPTION from './terminal.txt' with { type: 'text' };
 import { createToolError } from '../error.ts';
 import type { TerminalManager } from '../../terminals/index.ts';

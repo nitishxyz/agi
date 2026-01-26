@@ -73,8 +73,8 @@ export function createFinishHandler(
 
 		const usage = sessRows[0]
 			? {
-					inputTokens: Number(sessRows[0].promptTokens ?? 0),
-					outputTokens: Number(sessRows[0].completionTokens ?? 0),
+					inputTokens: Number(sessRows[0].inputTokens ?? 0),
+					outputTokens: Number(sessRows[0].outputTokens ?? 0),
 					totalTokens: Number(sessRows[0].totalTokens ?? 0),
 					cachedInputTokens: Number(sessRows[0].cachedInputTokens ?? 0),
 					cacheCreationInputTokens: Number(
@@ -97,7 +97,7 @@ export function createFinishHandler(
 			try {
 				const limits = getModelLimits(opts.provider, opts.model);
 				if (limits) {
-					const tokenUsage: TokenUsage = {
+					const tokenUsage: LanguageModelUsage = {
 						input: usage.inputTokens ?? 0,
 						output: usage.outputTokens ?? 0,
 						cacheRead:

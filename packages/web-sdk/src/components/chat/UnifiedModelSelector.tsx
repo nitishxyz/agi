@@ -23,7 +23,7 @@ interface FlattenedModel {
 	modelId: string;
 	modelLabel: string;
 	toolCall?: boolean;
-	reasoning?: boolean;
+	reasoningText?: boolean;
 }
 
 export interface UnifiedModelSelectorRef {
@@ -62,7 +62,7 @@ export const UnifiedModelSelector = forwardRef<
 					modelId: modelItem.id,
 					modelLabel: modelItem.label,
 					toolCall: modelItem.toolCall,
-					reasoning: modelItem.reasoning,
+					reasoningText: modelItem.reasoningText,
 				});
 			}
 		}
@@ -127,7 +127,7 @@ export const UnifiedModelSelector = forwardRef<
 					id: item.modelId,
 					label: item.modelLabel,
 					toolCall: item.toolCall,
-					reasoning: item.reasoning,
+					reasoningText: item.reasoningText,
 				});
 			}
 		}
@@ -145,7 +145,7 @@ export const UnifiedModelSelector = forwardRef<
 					modelId: modelItem.id,
 					modelLabel: modelItem.label,
 					toolCall: modelItem.toolCall,
-					reasoning: modelItem.reasoning,
+					reasoningText: modelItem.reasoningText,
 				});
 			}
 		}
@@ -240,8 +240,8 @@ export const UnifiedModelSelector = forwardRef<
 		allModels?.[provider]?.models.find((m) => m.id === model)?.label || model;
 
 	return (
-		<div ref={dropdownRef} className="relative w-full">
-			<button
+        <div ref={dropdownRef} className="relative w-full">
+            <button
 				type="button"
 				onClick={() => !disabled && setIsOpen(!isOpen)}
 				disabled={disabled || isLoading}
@@ -260,8 +260,7 @@ export const UnifiedModelSelector = forwardRef<
 					className={`w-4 h-4 text-[hsl(var(--muted-foreground))] transition-transform ${isOpen ? 'rotate-180' : ''}`}
 				/>
 			</button>
-
-			{isOpen && !isLoading && allModels && (
+            {isOpen && !isLoading && allModels && (
 				<div className="absolute z-50 mt-1 w-full bg-[hsl(var(--popover))] border border-[hsl(var(--border))] rounded-md shadow-lg max-h-80 overflow-hidden flex flex-col">
 					<div className="p-2 border-b border-[hsl(var(--border))]">
 						<div className="relative">
@@ -305,7 +304,7 @@ export const UnifiedModelSelector = forwardRef<
 												const isHighlighted = flatIndex === highlightedIndex;
 
 												return (
-													<button
+                                                    <button
 														key={modelItem.id}
 														ref={(el) => {
 															if (flatIndex >= 0) {
@@ -327,23 +326,23 @@ export const UnifiedModelSelector = forwardRef<
 																: 'text-[hsl(var(--foreground))]'
 														}`}
 													>
-														<span className="truncate">{modelItem.label}</span>
-														{(modelItem.toolCall || modelItem.reasoning) && (
+                                                        <span className="truncate">{modelItem.label}</span>
+                                                        {(modelItem.toolCall || modelItem.reasoningText) && (
 															<div className="flex gap-1 ml-2 flex-shrink-0">
 																{modelItem.toolCall && (
 																	<span className="text-[10px] px-1.5 py-0.5 bg-green-600/20 text-green-400 rounded">
 																		Tools
 																	</span>
 																)}
-																{modelItem.reasoning && (
+																{modelItem.reasoningText && (
 																	<span className="text-[10px] px-1.5 py-0.5 bg-purple-600/20 text-purple-400 rounded">
 																		Reasoning
 																	</span>
 																)}
 															</div>
 														)}
-													</button>
-												);
+                                                    </button>
+                                                );
 											})}
 										</div>
 									</div>
@@ -353,6 +352,6 @@ export const UnifiedModelSelector = forwardRef<
 					</div>
 				</div>
 			)}
-		</div>
-	);
+        </div>
+    );
 });

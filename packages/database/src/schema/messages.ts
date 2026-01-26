@@ -15,8 +15,8 @@ export const messages = sqliteTable('messages', {
 	// Metadata
 	completedAt: integer('completed_at', { mode: 'number' }),
 	latencyMs: integer('latency_ms'),
-	promptTokens: integer('prompt_tokens'),
-	completionTokens: integer('completion_tokens'),
+	inputTokens: integer('prompt_tokens'),
+	outputTokens: integer('completion_tokens'),
 	totalTokens: integer('total_tokens'),
 	cachedInputTokens: integer('cached_input_tokens'),
 	cacheCreationInputTokens: integer('cache_creation_input_tokens'),

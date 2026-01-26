@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import fg from 'fast-glob';
 import { join } from 'node:path';
 import { stat } from 'node:fs/promises';

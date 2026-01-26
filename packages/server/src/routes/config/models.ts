@@ -59,7 +59,7 @@ export function registerModelsRoutes(app: Hono) {
 					id: m.id,
 					label: m.label || m.id,
 					toolCall: m.toolCall,
-					reasoning: m.reasoning,
+					reasoningText: m.reasoningText,
 					vision: m.modalities?.input?.includes('image') ?? false,
 				})),
 				default: getDefault(
@@ -97,7 +97,7 @@ export function registerModelsRoutes(app: Hono) {
 						id: string;
 						label: string;
 						toolCall?: boolean;
-						reasoning?: boolean;
+						reasoningText?: boolean;
 					}>;
 				}
 			> = {};
@@ -122,7 +122,7 @@ export function registerModelsRoutes(app: Hono) {
 							id: m.id,
 							label: m.label || m.id,
 							toolCall: m.toolCall,
-							reasoning: m.reasoning,
+							reasoningText: m.reasoningText,
 							vision: m.modalities?.input?.includes('image') ?? false,
 						})),
 					};

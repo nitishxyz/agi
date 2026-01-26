@@ -1,5 +1,5 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import GIT_STATUS_DESCRIPTION from './git.status.txt' with { type: 'text' };
@@ -37,7 +37,7 @@ export function buildGitTools(
 
 	const git_status = tool({
 		description: GIT_STATUS_DESCRIPTION,
-		inputSchema: z.object({}).optional(),
+		inputSchema: z.object({}),
 		async execute(): Promise<
 			ToolResponse<{ staged: number; unstaged: number; raw: string[] }>
 		> {

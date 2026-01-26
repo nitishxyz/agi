@@ -165,7 +165,7 @@ export {
 	streamObject,
 	tool,
 } from './core/src/index.ts';
-export type { CoreMessage, Tool } from './core/src/index.ts';
+export type { ModelMessage, Tool } from './core/src/index.ts';
 // Re-export from AI SDK
 export type { ToolCallPart } from 'ai';
 

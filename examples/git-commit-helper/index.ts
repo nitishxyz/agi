@@ -11,7 +11,7 @@
  */
 
 import { generateObject, resolveModel, type ProviderId } from '@agi-cli/sdk';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 

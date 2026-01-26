@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { tool } from 'ai';
 import DESCRIPTION from './finish.txt' with { type: 'text' };
 import type { ToolResponse } from '../error.ts';

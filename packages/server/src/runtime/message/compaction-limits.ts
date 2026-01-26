@@ -9,7 +9,7 @@ export interface TokenUsage {
 	output: number;
 	cacheRead?: number;
 	cacheWrite?: number;
-	reasoning?: number;
+	reasoningText?: number;
 }
 
 export interface ModelLimits {
@@ -17,7 +17,7 @@ export interface ModelLimits {
 	output: number;
 }
 
-export function isOverflow(tokens: TokenUsage, limits: ModelLimits): boolean {
+export function isOverflow(tokens: LanguageModelUsage, limits: ModelLimits): boolean {
 	if (limits.context === 0) return false;
 
 	const count =
