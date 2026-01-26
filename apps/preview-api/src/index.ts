@@ -11,7 +11,7 @@ app.use(
 		origin: ['https://share.agi.nitish.sh', 'http://localhost:4321'],
 		allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 		allowHeaders: ['Content-Type', 'X-Share-Secret'],
-	})
+	}),
 );
 
 app.get('/', (c) => {

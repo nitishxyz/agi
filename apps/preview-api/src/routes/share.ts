@@ -37,7 +37,7 @@ shareRoutes.post('/', async (c) => {
 			url: `https://share.agi.nitish.sh/s/${shareId}`,
 			expiresAt,
 		},
-		201
+		201,
 	);
 });
 
@@ -114,7 +114,10 @@ shareRoutes.put('/:shareId', async (c) => {
 		updates.lastSyncedMessageId = body.lastMessageId;
 	}
 
-	await db.update(sharedSessions).set(updates).where(eq(sharedSessions.shareId, shareId));
+	await db
+		.update(sharedSessions)
+		.set(updates)
+		.where(eq(sharedSessions.shareId, shareId));
 
 	await Resource.OGCache.delete(shareId);
 

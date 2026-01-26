@@ -129,7 +129,8 @@ export function SessionHeader({
 						>
 							<Share2 className="h-3 w-3" />
 							<span>Shared</span>
-							{shareStatus.pendingMessages && shareStatus.pendingMessages > 0 ? (
+							{shareStatus.pendingMessages &&
+							shareStatus.pendingMessages > 0 ? (
 								<span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
 									<RefreshCw className="h-2.5 w-2.5" />
 									{shareStatus.pendingMessages}

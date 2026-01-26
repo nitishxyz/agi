@@ -1,11 +1,19 @@
 import { loadConfig } from '@agi-cli/sdk';
 import { getDb, dbSchema } from '@agi-cli/database';
 import { eq, desc } from 'drizzle-orm';
-import { intro, outro, select, confirm, isCancel, cancel } from '@clack/prompts';
+import {
+	intro,
+	outro,
+	select,
+	confirm,
+	isCancel,
+	cancel,
+} from '@clack/prompts';
 import { box } from './ui.ts';
 import { userInfo } from 'node:os';
 
-const API_URL = process.env.AGI_SHARE_API_URL || 'https://api.share.agi.nitish.sh';
+const API_URL =
+	process.env.AGI_SHARE_API_URL || 'https://api.share.agi.nitish.sh';
 
 export interface ShareOptions {
 	project: string;
@@ -79,7 +87,10 @@ export async function runShare(opts: ShareOptions) {
 	await createShare(db, sessionId, opts);
 }
 
-async function pickSession(db: Awaited<ReturnType<typeof getDb>>, projectRoot: string): Promise<string | null> {
+async function pickSession(
+	db: Awaited<ReturnType<typeof getDb>>,
+	projectRoot: string,
+): Promise<string | null> {
 	const sessions = await db.query.sessions.findMany({
 		where: eq(dbSchema.sessions.projectPath, projectRoot),
 		orderBy: [desc(dbSchema.sessions.lastActiveAt)],
@@ -109,7 +120,11 @@ async function pickSession(db: Awaited<ReturnType<typeof getDb>>, projectRoot: s
 	return choice as string;
 }
 
-async function createShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: string, opts: ShareOptions) {
+async function createShare(
+	db: Awaited<ReturnType<typeof getDb>>,
+	sessionId: string,
+	opts: ShareOptions,
+) {
 	const session = await db.query.sessions.findFirst({
 		where: eq(dbSchema.sessions.id, sessionId),
 	});
@@ -178,7 +193,9 @@ async function createShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: str
 			cacheCreationTokens: session.totalCacheCreationTokens ?? 0,
 			reasoningTokens: session.totalReasoningTokens ?? 0,
 			toolTimeMs: session.totalToolTimeMs ?? 0,
-			toolCounts: session.toolCountsJson ? JSON.parse(session.toolCountsJson) : {},
+			toolCounts: session.toolCountsJson
+				? JSON.parse(session.toolCountsJson)
+				: {},
 		},
 		messages: messagesToShare.map((m) => ({
 			id: m.id,
@@ -210,7 +227,11 @@ async function createShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: str
 		return;
 	}
 
-	const data = await res.json() as { shareId: string; secret: string; url: string };
+	const data = (await res.json()) as {
+		shareId: string;
+		secret: string;
+		url: string;
+	};
 
 	await db.insert(dbSchema.shares).values({
 		sessionId,
@@ -228,7 +249,11 @@ async function createShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: str
 	console.log('  (Secret saved for future updates)');
 }
 
-async function updateShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: string, opts: ShareOptions) {
+async function updateShare(
+	db: Awaited<ReturnType<typeof getDb>>,
+	sessionId: string,
+	opts: ShareOptions,
+) {
 	const share = await db.query.shares.findFirst({
 		where: eq(dbSchema.shares.sessionId, sessionId),
 	});
@@ -253,9 +278,13 @@ async function updateShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: str
 		with: { parts: true },
 	});
 
-	const lastSyncedIdx = messages.findIndex((m) => m.id === share.lastSyncedMessageId);
-	let newMessages = lastSyncedIdx === -1 ? messages : messages.slice(lastSyncedIdx + 1);
-	let newLastMessageId = messages[messages.length - 1]?.id ?? share.lastSyncedMessageId;
+	const lastSyncedIdx = messages.findIndex(
+		(m) => m.id === share.lastSyncedMessageId,
+	);
+	let newMessages =
+		lastSyncedIdx === -1 ? messages : messages.slice(lastSyncedIdx + 1);
+	let newLastMessageId =
+		messages[messages.length - 1]?.id ?? share.lastSyncedMessageId;
 
 	if (opts.until) {
 		const untilIdx = messages.findIndex((m) => m.id === opts.until);
@@ -272,7 +301,10 @@ async function updateShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: str
 		newLastMessageId = opts.until;
 	}
 
-	const allMessages = messages.slice(0, messages.findIndex((m) => m.id === newLastMessageId) + 1);
+	const allMessages = messages.slice(
+		0,
+		messages.findIndex((m) => m.id === newLastMessageId) + 1,
+	);
 
 	const sessionData = {
 		title: opts.title ?? session.title,
@@ -288,7 +320,9 @@ async function updateShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: str
 			cacheCreationTokens: session.totalCacheCreationTokens ?? 0,
 			reasoningTokens: session.totalReasoningTokens ?? 0,
 			toolTimeMs: session.totalToolTimeMs ?? 0,
-			toolCounts: session.toolCountsJson ? JSON.parse(session.toolCountsJson) : {},
+			toolCounts: session.toolCountsJson
+				? JSON.parse(session.toolCountsJson)
+				: {},
 		},
 		messages: allMessages.map((m) => ({
 			id: m.id,
@@ -323,7 +357,8 @@ async function updateShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: str
 		return;
 	}
 
-	await db.update(dbSchema.shares)
+	await db
+		.update(dbSchema.shares)
 		.set({
 			title: opts.title ?? share.title,
 			description: opts.description ?? share.description,
@@ -333,11 +368,16 @@ async function updateShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: str
 		.where(eq(dbSchema.shares.sessionId, sessionId));
 
 	const addedCount = newMessages.length;
-	console.log(`✓ Updated share${addedCount > 0 ? ` with ${addedCount} new messages` : ''}`);
+	console.log(
+		`✓ Updated share${addedCount > 0 ? ` with ${addedCount} new messages` : ''}`,
+	);
 	console.log(`  ${share.url}`);
 }
 
-async function deleteShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: string) {
+async function deleteShare(
+	db: Awaited<ReturnType<typeof getDb>>,
+	sessionId: string,
+) {
 	const share = await db.query.shares.findFirst({
 		where: eq(dbSchema.shares.sessionId, sessionId),
 	});
@@ -368,12 +408,18 @@ async function deleteShare(db: Awaited<ReturnType<typeof getDb>>, sessionId: str
 		return;
 	}
 
-	await db.delete(dbSchema.shares).where(eq(dbSchema.shares.sessionId, sessionId));
+	await db
+		.delete(dbSchema.shares)
+		.where(eq(dbSchema.shares.sessionId, sessionId));
 
 	outro('✓ Share deleted');
 }
 
-async function showStatus(db: Awaited<ReturnType<typeof getDb>>, sessionId: string, _projectRoot: string) {
+async function showStatus(
+	db: Awaited<ReturnType<typeof getDb>>,
+	sessionId: string,
+	_projectRoot: string,
+) {
 	const share = await db.query.shares.findFirst({
 		where: eq(dbSchema.shares.sessionId, sessionId),
 	});
@@ -393,7 +439,9 @@ async function showStatus(db: Awaited<ReturnType<typeof getDb>>, sessionId: stri
 		orderBy: [dbSchema.messages.createdAt],
 	});
 
-	const syncedIdx = messages.findIndex((m) => m.id === share.lastSyncedMessageId);
+	const syncedIdx = messages.findIndex(
+		(m) => m.id === share.lastSyncedMessageId,
+	);
 	const syncedCount = syncedIdx === -1 ? 0 : syncedIdx + 1;
 	const totalCount = messages.length;
 	const newCount = totalCount - syncedCount;
@@ -402,13 +450,18 @@ async function showStatus(db: Awaited<ReturnType<typeof getDb>>, sessionId: stri
 	console.log(`  URL: ${share.url}`);
 	if (share.title) console.log(`  Title: "${share.title}"`);
 	console.log('');
-	console.log(`  Synced until: ${share.lastSyncedMessageId.slice(0, 8)} (message ${syncedCount} of ${totalCount})`);
+	console.log(
+		`  Synced until: ${share.lastSyncedMessageId.slice(0, 8)} (message ${syncedCount} of ${totalCount})`,
+	);
 	if (newCount > 0) console.log(`  ${newCount} new messages since last sync`);
 	console.log('');
 	console.log(`  Last synced: ${relativeTime(share.lastSyncedAt)}`);
 }
 
-async function listShares(db: Awaited<ReturnType<typeof getDb>>, _projectRoot: string) {
+async function listShares(
+	db: Awaited<ReturnType<typeof getDb>>,
+	_projectRoot: string,
+) {
 	const shares = await db.query.shares.findMany();
 
 	if (!shares.length) {

@@ -13,7 +13,7 @@ const CACHE_TTL = 86400;
 
 async function loadFont(): Promise<ArrayBuffer> {
 	const response = await fetch(
-		'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2'
+		'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2',
 	);
 	return response.arrayBuffer();
 }
@@ -72,7 +72,7 @@ ogRoutes.get('/:shareId', async (c) => {
 					style: 'normal',
 				},
 			],
-		}
+		},
 	);
 
 	await Resource.OGCache.put(shareId, svg, { expirationTtl: CACHE_TTL });

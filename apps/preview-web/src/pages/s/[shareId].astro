@@ -3,7 +3,8 @@ import Layout from '../../layouts/Layout.astro';
 import ChatPreviewWrapper from '../../components/ChatPreviewWrapper';
 
 const { shareId } = Astro.params;
-const API_URL = import.meta.env.PUBLIC_API_URL || 'https://api.share.agi.nitish.sh';
+const API_URL =
+	import.meta.env.PUBLIC_API_URL || 'https://api.share.agi.nitish.sh';
 
 let data: any = null;
 let error: string | null = null;
@@ -28,7 +29,9 @@ try {
 const pageTitle = data?.title || 'AGI Session';
 const pageDescription =
 	data?.description ||
-	(data ? `${data.sessionData.messages.length} messages • ${data.sessionData.model}` : '');
+	(data
+		? `${data.sessionData.messages.length} messages • ${data.sessionData.model}`
+		: '');
 const ogImageUrl = `${API_URL}/og/${shareId}`;
 ---
 

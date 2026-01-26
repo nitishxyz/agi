@@ -33,7 +33,13 @@ interface SharedMessage {
 }
 
 interface SharedMessagePart {
-	type: 'text' | 'tool_call' | 'tool_result' | 'thinking' | 'reasoning' | 'error';
+	type:
+		| 'text'
+		| 'tool_call'
+		| 'tool_result'
+		| 'thinking'
+		| 'reasoning'
+		| 'error';
 	content: string;
 	toolName?: string;
 	toolCallId?: string;
@@ -54,7 +60,12 @@ function parseTextContent(content: string): string {
 	try {
 		const parsed = JSON.parse(content);
 		if (typeof parsed === 'object' && parsed !== null) {
-			return parsed.text || parsed.content || parsed.message || JSON.stringify(parsed, null, 2);
+			return (
+				parsed.text ||
+				parsed.content ||
+				parsed.message ||
+				JSON.stringify(parsed, null, 2)
+			);
 		}
 		return content;
 	} catch {
@@ -65,7 +76,7 @@ function parseTextContent(content: string): string {
 function transformMessages(
 	sharedMessages: SharedMessage[],
 	sessionData: SharedSessionData,
-	shareId: string
+	shareId: string,
 ): Message[] {
 	return sharedMessages.map((msg) => ({
 		id: msg.id,
@@ -88,9 +99,12 @@ function transformMessages(
 			index: partIndex,
 			stepIndex: null,
 			type: part.type === 'thinking' ? 'reasoning' : part.type,
-			content: (part.type === 'text' || part.type === 'thinking' || part.type === 'reasoning') 
-				? parseTextContent(part.content)
-				: part.content,
+			content:
+				part.type === 'text' ||
+				part.type === 'thinking' ||
+				part.type === 'reasoning'
+					? parseTextContent(part.content)
+					: part.content,
 			agent: sessionData.agent,
 			provider: sessionData.provider,
 			model: sessionData.model,
@@ -129,20 +143,27 @@ function formatDuration(ms: number): string {
 
 const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 	const { sessionData, shareId, title, createdAt, viewCount } = data;
-	const messages = transformMessages(sessionData.messages, sessionData, shareId);
+	const messages = transformMessages(
+		sessionData.messages,
+		sessionData,
+		shareId,
+	);
 	const filteredMessages = messages.filter((m) => m.role !== 'system');
-	
-	const stats = sessionData.stats;
-	const totalTokens = stats 
-		? stats.inputTokens + stats.outputTokens + stats.cachedTokens + stats.cacheCreationTokens
-		: sessionData.tokenCount ?? 0;
 
-	const toolCountEntries = stats?.toolCounts 
+	const stats = sessionData.stats;
+	const totalTokens = stats
+		? stats.inputTokens +
+			stats.outputTokens +
+			stats.cachedTokens +
+			stats.cacheCreationTokens
+		: (sessionData.tokenCount ?? 0);
+
+	const toolCountEntries = stats?.toolCounts
 		? Object.entries(stats.toolCounts).sort((a, b) => b[1] - a[1])
 		: [];
 
 	const estimatedCost = stats
-		? estimateModelCostUsd(
+		? (estimateModelCostUsd(
 				sessionData.provider as ProviderId,
 				sessionData.model,
 				{
@@ -150,8 +171,8 @@ const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 					outputTokens: stats.outputTokens,
 					cachedInputTokens: stats.cachedTokens,
 					cacheCreationInputTokens: stats.cacheCreationTokens,
-				}
-			) ?? 0
+				},
+			) ?? 0)
 		: 0;
 
 	return (
@@ -162,20 +183,26 @@ const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 					<h1 className="text-3xl font-bold text-foreground leading-tight mb-4">
 						{title || sessionData.title || 'Untitled Session'}
 					</h1>
-					
+
 					{/* Author & Date */}
 					<div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
 						{sessionData.username && (
-							<span className="font-medium text-foreground">{sessionData.username}</span>
+							<span className="font-medium text-foreground">
+								{sessionData.username}
+							</span>
 						)}
 						{!sessionData.username && <span />}
-						<span className="text-muted-foreground">{formatDate(createdAt)}</span>
+						<span className="text-muted-foreground">
+							{formatDate(createdAt)}
+						</span>
 					</div>
 
 					{/* Model & Provider */}
 					<div className="flex items-center justify-between text-sm text-muted-foreground">
 						<div className="flex items-center gap-2">
-							<span className="font-medium text-foreground">{sessionData.model}</span>
+							<span className="font-medium text-foreground">
+								{sessionData.model}
+							</span>
 							<span className="opacity-50">·</span>
 							<span>{sessionData.provider}</span>
 						</div>
@@ -241,35 +268,51 @@ const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 							{stats ? (
 								<>
 									<div>
-										<span className="text-2xl font-light text-foreground">{formatCompactNumber(stats.inputTokens)}</span>
+										<span className="text-2xl font-light text-foreground">
+											{formatCompactNumber(stats.inputTokens)}
+										</span>
 										<span className="text-muted-foreground ml-1.5">in</span>
 									</div>
 									<div>
-										<span className="text-2xl font-light text-foreground">{formatCompactNumber(stats.outputTokens)}</span>
+										<span className="text-2xl font-light text-foreground">
+											{formatCompactNumber(stats.outputTokens)}
+										</span>
 										<span className="text-muted-foreground ml-1.5">out</span>
 									</div>
 									{stats.cachedTokens > 0 && (
 										<div>
-											<span className="text-2xl font-light text-foreground">{formatCompactNumber(stats.cachedTokens)}</span>
-											<span className="text-muted-foreground ml-1.5">cached</span>
+											<span className="text-2xl font-light text-foreground">
+												{formatCompactNumber(stats.cachedTokens)}
+											</span>
+											<span className="text-muted-foreground ml-1.5">
+												cached
+											</span>
 										</div>
 									)}
 									{stats.toolTimeMs > 0 && (
 										<div>
-											<span className="text-2xl font-light text-foreground">{formatDuration(stats.toolTimeMs)}</span>
-											<span className="text-muted-foreground ml-1.5">tool time</span>
+											<span className="text-2xl font-light text-foreground">
+												{formatDuration(stats.toolTimeMs)}
+											</span>
+											<span className="text-muted-foreground ml-1.5">
+												tool time
+											</span>
 										</div>
 									)}
 									{estimatedCost > 0 && (
 										<div>
-											<span className="text-2xl font-light text-foreground">${estimatedCost.toFixed(2)}</span>
+											<span className="text-2xl font-light text-foreground">
+												${estimatedCost.toFixed(2)}
+											</span>
 											<span className="text-muted-foreground ml-1.5">est.</span>
 										</div>
 									)}
 								</>
 							) : (
 								<div>
-									<span className="text-2xl font-light text-foreground">{formatCompactNumber(totalTokens)}</span>
+									<span className="text-2xl font-light text-foreground">
+										{formatCompactNumber(totalTokens)}
+									</span>
 									<span className="text-muted-foreground ml-1.5">tokens</span>
 								</div>
 							)}
@@ -284,7 +327,9 @@ const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 										className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted/50 text-xs"
 									>
 										<span className="text-foreground">{tool}</span>
-										<span className="text-muted-foreground ml-1.5">×{count}</span>
+										<span className="text-muted-foreground ml-1.5">
+											×{count}
+										</span>
 									</span>
 								))}
 								{toolCountEntries.length > 8 && (
@@ -305,7 +350,9 @@ const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 						{sessionData.username && (
 							<>
 								<span>Shared by</span>
-								<span className="font-medium text-foreground">{sessionData.username}</span>
+								<span className="font-medium text-foreground">
+									{sessionData.username}
+								</span>
 								<span className="opacity-50">·</span>
 							</>
 						)}

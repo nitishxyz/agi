@@ -168,15 +168,15 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 					sessionId={sessionId}
 					onSelectSession={handleSelectSession}
 				/>
-			<ChatInputContainer
-				ref={chatInputRef}
-				sessionId={sessionId}
-				onNewSession={handleNewSession}
-				onDeleteSession={handleDeleteSession}
-			/>
-		</>
-	);
-}, [sessionId, handleNewSession, handleSelectSession, handleDeleteSession]);
+				<ChatInputContainer
+					ref={chatInputRef}
+					sessionId={sessionId}
+					onNewSession={handleNewSession}
+					onDeleteSession={handleDeleteSession}
+				/>
+			</>
+		);
+	}, [sessionId, handleNewSession, handleSelectSession, handleDeleteSession]);
 
 	return (
 		<>

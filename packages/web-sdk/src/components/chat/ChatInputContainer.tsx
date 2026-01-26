@@ -10,7 +10,11 @@ import {
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSendMessage, useMessages } from '../../hooks/useMessages';
-import { useSession, useUpdateSession, useDeleteSession } from '../../hooks/useSessions';
+import {
+	useSession,
+	useUpdateSession,
+	useDeleteSession,
+} from '../../hooks/useSessions';
 import { useAllModels } from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useGitStatus, useStageFiles } from '../../hooks/useGit';
@@ -40,7 +44,10 @@ export interface ChatInputContainerRef {
 
 export const ChatInputContainer = memo(
 	forwardRef<ChatInputContainerRef, ChatInputContainerProps>(
-		function ChatInputContainer({ sessionId, userContext, onNewSession, onDeleteSession }, ref) {
+		function ChatInputContainer(
+			{ sessionId, userContext, onNewSession, onDeleteSession },
+			ref,
+		) {
 			const session = useSession(sessionId);
 			const [agent, setAgent] = useState('');
 			const [provider, setProvider] = useState('');
@@ -63,9 +70,9 @@ export const ChatInputContainer = memo(
 			const { data: allModels } = useAllModels();
 			const { preferences } = usePreferences();
 			const { data: gitStatus } = useGitStatus();
-		const stageFiles = useStageFiles();
-		const openCommitModal = useGitStore((state) => state.openCommitModal);
-		const queryClient = useQueryClient();
+			const stageFiles = useStageFiles();
+			const openCommitModal = useGitStore((state) => state.openCommitModal);
+			const queryClient = useQueryClient();
 
 			const {
 				images,
@@ -224,9 +231,9 @@ export const ChatInputContainer = memo(
 				setConfigFocusTarget(null);
 			}, []);
 
-		const handleCommand = useCallback(
-			async (commandId: string) => {
-				if (commandId === 'models') {
+			const handleCommand = useCallback(
+				async (commandId: string) => {
+					if (commandId === 'models') {
 						setConfigFocusTarget('model');
 						setIsConfigOpen(true);
 					} else if (commandId === 'agents') {
@@ -242,62 +249,76 @@ export const ChatInputContainer = memo(
 						if (allUnstaged.length > 0) {
 							stageFiles.mutate(allUnstaged);
 						}
-				} else if (commandId === 'commit') {
-					openCommitModal();
-				} else if (commandId === 'compact') {
-					handleSendMessage('/compact');
-			} else if (commandId === 'delete') {
-				deleteSession.mutate(sessionId, {
-					onSuccess: () => {
-						onDeleteSession?.();
-					},
-				});
-			} else if (commandId === 'share') {
-				const toastId = toast.loading('Sharing session...');
-				try {
-					const result = await apiClient.shareSession(sessionId);
-					if (result.shared) {
-						toast.successWithAction(
-							result.message === 'Already shared' ? 'Already shared' : 'Session shared!',
-							{ label: 'Open', href: result.url },
-						);
-						queryClient.invalidateQueries({ queryKey: ['share-status', sessionId] });
+					} else if (commandId === 'commit') {
+						openCommitModal();
+					} else if (commandId === 'compact') {
+						handleSendMessage('/compact');
+					} else if (commandId === 'delete') {
+						deleteSession.mutate(sessionId, {
+							onSuccess: () => {
+								onDeleteSession?.();
+							},
+						});
+					} else if (commandId === 'share') {
+						const toastId = toast.loading('Sharing session...');
+						try {
+							const result = await apiClient.shareSession(sessionId);
+							if (result.shared) {
+								toast.successWithAction(
+									result.message === 'Already shared'
+										? 'Already shared'
+										: 'Session shared!',
+									{ label: 'Open', href: result.url },
+								);
+								queryClient.invalidateQueries({
+									queryKey: ['share-status', sessionId],
+								});
+							}
+						} catch (error) {
+							toast.error(
+								error instanceof Error ? error.message : 'Failed to share',
+							);
+						} finally {
+							useToastStore.getState().removeToast(toastId);
+						}
+					} else if (commandId === 'sync') {
+						const toastId = toast.loading('Syncing session...');
+						try {
+							const result = await apiClient.syncSession(sessionId);
+							if (result.synced) {
+								const msg =
+									result.newMessages > 0
+										? `Synced ${result.newMessages} new messages`
+										: 'Already synced';
+								toast.successWithAction(msg, {
+									label: 'Open',
+									href: result.url,
+								});
+								queryClient.invalidateQueries({
+									queryKey: ['share-status', sessionId],
+								});
+							}
+						} catch (error) {
+							toast.error(
+								error instanceof Error ? error.message : 'Failed to sync',
+							);
+						} finally {
+							useToastStore.getState().removeToast(toastId);
+						}
 					}
-				} catch (error) {
-					toast.error(error instanceof Error ? error.message : 'Failed to share');
-				} finally {
-					useToastStore.getState().removeToast(toastId);
-				}
-			} else if (commandId === 'sync') {
-				const toastId = toast.loading('Syncing session...');
-				try {
-					const result = await apiClient.syncSession(sessionId);
-					if (result.synced) {
-						const msg = result.newMessages > 0
-							? `Synced ${result.newMessages} new messages`
-							: 'Already synced';
-						toast.successWithAction(msg, { label: 'Open', href: result.url });
-						queryClient.invalidateQueries({ queryKey: ['share-status', sessionId] });
-					}
-				} catch (error) {
-					toast.error(error instanceof Error ? error.message : 'Failed to sync');
-				} finally {
-					useToastStore.getState().removeToast(toastId);
-				}
-			}
-		},
-			[
-				onNewSession,
-				gitStatus,
-				stageFiles,
-				openCommitModal,
-				handleSendMessage,
-				deleteSession,
-				sessionId,
-				onDeleteSession,
-				queryClient,
-			],
-		);
+				},
+				[
+					onNewSession,
+					gitStatus,
+					stageFiles,
+					openCommitModal,
+					handleSendMessage,
+					deleteSession,
+					sessionId,
+					onDeleteSession,
+					queryClient,
+				],
+			);
 
 			const handleAgentChange = useCallback(
 				async (value: string) => {

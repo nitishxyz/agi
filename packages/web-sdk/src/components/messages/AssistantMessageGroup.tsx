@@ -169,12 +169,12 @@ export const AssistantMessageGroup = memo(
 										</span>
 									</>
 								)}
+							</div>
 						</div>
-					</div>
-					{isHovered && isComplete && sessionId && showBranchButton && (
-						<button
-							type="button"
-							onClick={handleBranchClick}
+						{isHovered && isComplete && sessionId && showBranchButton && (
+							<button
+								type="button"
+								onClick={handleBranchClick}
 								className="ml-4 p-1.5 text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
 								title="Branch from this message"
 							>

@@ -2,7 +2,12 @@ import type { Hono } from 'hono';
 import { loadConfig } from '@agi-cli/sdk';
 import { userInfo } from 'node:os';
 import { getDb } from '@agi-cli/database';
-import { sessions, messages, messageParts, shares } from '@agi-cli/database/schema';
+import {
+	sessions,
+	messages,
+	messageParts,
+	shares,
+} from '@agi-cli/database/schema';
 import { desc, eq, and, ne, inArray } from 'drizzle-orm';
 import type { ProviderId } from '@agi-cli/sdk';
 import { isProviderId, catalog } from '@agi-cli/sdk';
@@ -182,20 +187,20 @@ export function registerSessionsRoutes(app: Hono) {
 			// Perform update
 			await db.update(sessions).set(updates).where(eq(sessions.id, sessionId));
 
-		// Return updated session
-		const updatedRows = await db
-			.select()
-			.from(sessions)
-			.where(eq(sessions.id, sessionId))
-			.limit(1);
+			// Return updated session
+			const updatedRows = await db
+				.select()
+				.from(sessions)
+				.where(eq(sessions.id, sessionId))
+				.limit(1);
 
-		return c.json(updatedRows[0]);
-	} catch (err) {
-		logger.error('Failed to update session', err);
-		const errorResponse = serializeError(err);
-		return c.json(errorResponse, errorResponse.error.status || 500);
-	}
-});
+			return c.json(updatedRows[0]);
+		} catch (err) {
+			logger.error('Failed to update session', err);
+			const errorResponse = serializeError(err);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
 
 	// Delete session
 	app.delete('/v1/sessions/:sessionId', async (c) => {
@@ -419,11 +424,12 @@ export function registerSessionsRoutes(app: Hono) {
 			syncedMessages,
 			totalMessages,
 			pendingMessages,
-		isSynced: pendingMessages === 0,
+			isSynced: pendingMessages === 0,
 		});
 	});
 
-	const SHARE_API_URL = process.env.AGI_SHARE_API_URL || 'https://api.share.agi.nitish.sh';
+	const SHARE_API_URL =
+		process.env.AGI_SHARE_API_URL || 'https://api.share.agi.nitish.sh';
 
 	function getUsername(): string {
 		try {
@@ -439,12 +445,20 @@ export function registerSessionsRoutes(app: Hono) {
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
 
-		const session = await db.select().from(sessions).where(eq(sessions.id, sessionId)).limit(1);
+		const session = await db
+			.select()
+			.from(sessions)
+			.where(eq(sessions.id, sessionId))
+			.limit(1);
 		if (!session.length) {
 			return c.json({ error: 'Session not found' }, 404);
 		}
 
-		const existingShare = await db.select().from(shares).where(eq(shares.sessionId, sessionId)).limit(1);
+		const existingShare = await db
+			.select()
+			.from(shares)
+			.where(eq(shares.sessionId, sessionId))
+			.limit(1);
 		if (existingShare.length) {
 			return c.json({
 				shared: true,
@@ -467,7 +481,12 @@ export function registerSessionsRoutes(app: Hono) {
 		const msgParts = await db
 			.select()
 			.from(messageParts)
-			.where(inArray(messageParts.messageId, allMessages.map((m) => m.id)))
+			.where(
+				inArray(
+					messageParts.messageId,
+					allMessages.map((m) => m.id),
+				),
+			)
 			.orderBy(messageParts.index);
 
 		const partsByMessage = new Map<string, typeof msgParts>();
@@ -524,7 +543,11 @@ export function registerSessionsRoutes(app: Hono) {
 			return c.json({ error: `Failed to create share: ${err}` }, 500);
 		}
 
-		const data = (await res.json()) as { shareId: string; secret: string; url: string };
+		const data = (await res.json()) as {
+			shareId: string;
+			secret: string;
+			url: string;
+		};
 
 		await db.insert(shares).values({
 			sessionId,
@@ -551,12 +574,20 @@ export function registerSessionsRoutes(app: Hono) {
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
 
-		const share = await db.select().from(shares).where(eq(shares.sessionId, sessionId)).limit(1);
+		const share = await db
+			.select()
+			.from(shares)
+			.where(eq(shares.sessionId, sessionId))
+			.limit(1);
 		if (!share.length) {
 			return c.json({ error: 'Session not shared. Use share first.' }, 400);
 		}
 
-		const session = await db.select().from(sessions).where(eq(sessions.id, sessionId)).limit(1);
+		const session = await db
+			.select()
+			.from(sessions)
+			.where(eq(sessions.id, sessionId))
+			.limit(1);
 		if (!session.length) {
 			return c.json({ error: 'Session not found' }, 404);
 		}
@@ -570,7 +601,12 @@ export function registerSessionsRoutes(app: Hono) {
 		const msgParts = await db
 			.select()
 			.from(messageParts)
-			.where(inArray(messageParts.messageId, allMessages.map((m) => m.id)))
+			.where(
+				inArray(
+					messageParts.messageId,
+					allMessages.map((m) => m.id),
+				),
+			)
 			.orderBy(messageParts.index);
 
 		const partsByMessage = new Map<string, typeof msgParts>();
@@ -580,9 +616,13 @@ export function registerSessionsRoutes(app: Hono) {
 			partsByMessage.set(part.messageId, list);
 		}
 
-		const lastSyncedIdx = allMessages.findIndex((m) => m.id === share[0].lastSyncedMessageId);
-		const newMessages = lastSyncedIdx === -1 ? allMessages : allMessages.slice(lastSyncedIdx + 1);
-		const lastMessageId = allMessages[allMessages.length - 1]?.id ?? share[0].lastSyncedMessageId;
+		const lastSyncedIdx = allMessages.findIndex(
+			(m) => m.id === share[0].lastSyncedMessageId,
+		);
+		const newMessages =
+			lastSyncedIdx === -1 ? allMessages : allMessages.slice(lastSyncedIdx + 1);
+		const lastMessageId =
+			allMessages[allMessages.length - 1]?.id ?? share[0].lastSyncedMessageId;
 
 		if (newMessages.length === 0) {
 			return c.json({

@@ -13,7 +13,10 @@ export interface ShareCommandOptions {
 	list?: boolean;
 }
 
-export async function handleShare(sessionId: string | undefined, opts: ShareCommandOptions) {
+export async function handleShare(
+	sessionId: string | undefined,
+	opts: ShareCommandOptions,
+) {
 	if (!(await ensureAuth(opts.project))) return;
 
 	await runShare({
