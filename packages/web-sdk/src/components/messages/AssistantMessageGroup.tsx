@@ -240,35 +240,42 @@ export const AssistantMessageGroup = memo(
 					)}
 				</div>
 
-				{isHovered && isComplete && sessionId && (
-					<div className="flex gap-2 mt-2 ml-7">
-						{showBranchButton && (
-							<button
-								type="button"
-								onClick={handleBranchClick}
-								className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-colors"
-							>
-								<GitBranch className="h-3 w-3" />
-								Branch
-							</button>
-						)}
-						<button
-							type="button"
-							onClick={handleCopy}
-							className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-colors"
-						>
-							{copied ? (
-								<>
-									<Check className="h-3 w-3 text-green-500" />
-									Copied
-								</>
-							) : (
-								<>
-									<Copy className="h-3 w-3" />
-									Copy
-								</>
-							)}
-						</button>
+				{isComplete && sessionId && (
+					<div
+						className="grid ml-7 transition-[grid-template-rows] duration-200 ease-out"
+						style={{ gridTemplateRows: isHovered ? '1fr' : '0fr' }}
+					>
+						<div className="overflow-hidden">
+							<div className="flex gap-2 mt-2">
+								{showBranchButton && (
+									<button
+										type="button"
+										onClick={handleBranchClick}
+										className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-colors"
+									>
+										<GitBranch className="h-3 w-3" />
+										Branch
+									</button>
+								)}
+								<button
+									type="button"
+									onClick={handleCopy}
+									className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded transition-colors"
+								>
+									{copied ? (
+										<>
+											<Check className="h-3 w-3 text-green-500" />
+											Copied
+										</>
+									) : (
+										<>
+											<Copy className="h-3 w-3" />
+											Copy
+										</>
+									)}
+								</button>
+							</div>
+						</div>
 					</div>
 				)}
 
