@@ -269,3 +269,17 @@ export interface InjectResearchContextResponse {
 	parentSessionId: string;
 	tokenEstimate: number;
 }
+
+export interface ShareStatus {
+	shared: boolean;
+	shareId?: string;
+	url?: string;
+	title?: string | null;
+	createdAt?: number;
+	lastSyncedAt?: number;
+	lastSyncedMessageId?: string;
+	syncedMessages?: number;
+	totalMessages?: number;
+	pendingMessages?: number;
+	isSynced?: boolean;
+}

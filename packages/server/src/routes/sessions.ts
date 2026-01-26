@@ -1,7 +1,7 @@
 import type { Hono } from 'hono';
 import { loadConfig } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
-import { sessions, messages, messageParts } from '@agi-cli/database/schema';
+import { sessions, messages, messageParts, shares } from '@agi-cli/database/schema';
 import { desc, eq, and, ne, inArray } from 'drizzle-orm';
 import type { ProviderId } from '@agi-cli/sdk';
 import { isProviderId, catalog } from '@agi-cli/sdk';
@@ -376,5 +376,49 @@ export function registerSessionsRoutes(app: Hono) {
 		}
 
 		return c.json({ success: false, removed: false }, 404);
+	});
+
+	app.get('/v1/sessions/:sessionId/share', async (c) => {
+		const sessionId = c.req.param('sessionId');
+		const projectRoot = c.req.query('project') || process.cwd();
+		const cfg = await loadConfig(projectRoot);
+		const db = await getDb(cfg.projectRoot);
+
+		const share = await db
+			.select()
+			.from(shares)
+			.where(eq(shares.sessionId, sessionId))
+			.limit(1);
+
+		if (!share.length) {
+			return c.json({ shared: false });
+		}
+
+		const allMessages = await db
+			.select({ id: messages.id })
+			.from(messages)
+			.where(eq(messages.sessionId, sessionId))
+			.orderBy(messages.createdAt);
+
+		const totalMessages = allMessages.length;
+		const syncedIdx = allMessages.findIndex(
+			(m) => m.id === share[0].lastSyncedMessageId,
+		);
+		const syncedMessages = syncedIdx === -1 ? 0 : syncedIdx + 1;
+		const pendingMessages = totalMessages - syncedMessages;
+
+		return c.json({
+			shared: true,
+			shareId: share[0].shareId,
+			url: share[0].url,
+			title: share[0].title,
+			createdAt: share[0].createdAt,
+			lastSyncedAt: share[0].lastSyncedAt,
+			lastSyncedMessageId: share[0].lastSyncedMessageId,
+			syncedMessages,
+			totalMessages,
+			pendingMessages,
+			isSynced: pendingMessages === 0,
+		});
 	});
 }

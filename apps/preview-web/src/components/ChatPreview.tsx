@@ -1,6 +1,7 @@
 import type { FC } from 'react';
-import { MessageThread } from '@agi-cli/web-sdk';
-import type { Message, Session } from '@agi-cli/web-sdk';
+import { AssistantMessageGroup, UserMessageGroup } from '@agi-cli/web-sdk';
+import type { Message } from '@agi-cli/web-sdk';
+import { Clock, Eye, Hash, User, Cpu } from 'lucide-react';
 
 interface SharedSessionData {
 	title: string | null;
@@ -21,7 +22,7 @@ interface SharedMessage {
 }
 
 interface SharedMessagePart {
-	type: 'text' | 'tool_call' | 'tool_result' | 'thinking' | 'error';
+	type: 'text' | 'tool_call' | 'tool_result' | 'thinking' | 'reasoning' | 'error';
 	content: string;
 	toolName?: string;
 	toolCallId?: string;
@@ -38,12 +39,10 @@ interface ChatPreviewProps {
 	};
 }
 
-// Parse content that might be JSON with a text field
 function parseTextContent(content: string): string {
 	try {
 		const parsed = JSON.parse(content);
 		if (typeof parsed === 'object' && parsed !== null) {
-			// Handle various JSON formats
 			return parsed.text || parsed.content || parsed.message || JSON.stringify(parsed, null, 2);
 		}
 		return content;
@@ -52,7 +51,6 @@ function parseTextContent(content: string): string {
 	}
 }
 
-// Transform shared messages to web-sdk Message format
 function transformMessages(
 	sharedMessages: SharedMessage[],
 	sessionData: SharedSessionData,
@@ -79,9 +77,8 @@ function transformMessages(
 			index: partIndex,
 			stepIndex: null,
 			type: part.type === 'thinking' ? 'reasoning' : part.type,
-			// Parse JSON content for text and reasoning parts
-			content: (part.type === 'text' || part.type === 'thinking') 
-				? parseTextContent(part.content) 
+			content: (part.type === 'text' || part.type === 'thinking' || part.type === 'reasoning') 
+				? parseTextContent(part.content)
 				: part.content,
 			agent: sessionData.agent,
 			provider: sessionData.provider,
@@ -95,56 +92,138 @@ function transformMessages(
 	}));
 }
 
-// Transform to web-sdk Session format
-function transformSession(data: ChatPreviewProps['data']): Session {
-	const { sessionData, shareId, title, createdAt } = data;
-	return {
-		id: shareId,
-		title: title || sessionData.title,
-		agent: sessionData.agent,
-		provider: sessionData.provider,
-		model: sessionData.model,
-		projectPath: '',
-		createdAt: sessionData.createdAt,
-		lastActiveAt: createdAt,
-		totalInputTokens: sessionData.tokenCount ?? null,
-		totalOutputTokens: null,
-		totalCachedTokens: null,
-		totalCacheCreationTokens: null,
-		totalToolTimeMs: null,
-		toolCounts: {},
-	};
+function formatDate(timestamp: number): string {
+	return new Date(timestamp).toLocaleDateString('en-US', {
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+	});
+}
+
+function formatCompactNumber(num: number): string {
+	if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+	if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+	return num.toString();
 }
 
 const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
-	const { sessionData, shareId } = data;
-
+	const { sessionData, shareId, title, createdAt, viewCount } = data;
 	const messages = transformMessages(sessionData.messages, sessionData, shareId);
-	const session = transformSession(data);
+	const filteredMessages = messages.filter((m) => m.role !== 'system');
 
 	return (
-		<div className="flex flex-col h-screen">
-			{/* Message Thread - using web-sdk component */}
-			<main className="flex-1 relative overflow-hidden">
-				<MessageThread
-					messages={messages}
-					session={session}
-					sessionId={shareId}
-					isGenerating={false}
-				/>
+		<div className="min-h-screen bg-background">
+			{/* Blog-style Header */}
+			<header className="border-b border-border">
+				<div className="max-w-3xl mx-auto px-6 py-8">
+					<h1 className="text-3xl font-bold text-foreground leading-tight mb-4">
+						{title || sessionData.title || 'Untitled Session'}
+					</h1>
+					
+					<div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+						{sessionData.username && (
+							<div className="flex items-center gap-1.5">
+								<User className="w-4 h-4" />
+								<span className="font-medium text-foreground">{sessionData.username}</span>
+							</div>
+						)}
+						
+						<div className="flex items-center gap-1.5">
+							<Clock className="w-4 h-4" />
+							<span>{formatDate(createdAt)}</span>
+						</div>
+
+						<div className="flex items-center gap-1.5">
+							<Cpu className="w-4 h-4" />
+							<span className="font-medium text-foreground">{sessionData.model}</span>
+							<span className="opacity-50">·</span>
+							<span>{sessionData.provider}</span>
+						</div>
+
+						{sessionData.tokenCount && sessionData.tokenCount > 0 && (
+							<div className="flex items-center gap-1.5">
+								<Hash className="w-4 h-4" />
+								<span>{formatCompactNumber(sessionData.tokenCount)} tokens</span>
+							</div>
+						)}
+
+						<div className="flex items-center gap-1.5">
+							<Eye className="w-4 h-4" />
+							<span>{viewCount} views</span>
+						</div>
+					</div>
+				</div>
+			</header>
+
+			{/* Messages */}
+			<main className="max-w-3xl mx-auto px-6 py-8">
+				<div className="space-y-6">
+					{filteredMessages.map((message, idx) => {
+						const prevMessage = filteredMessages[idx - 1];
+						const nextMessage = filteredMessages[idx + 1];
+						const isLastMessage = idx === filteredMessages.length - 1;
+
+						if (message.role === 'user') {
+							const nextAssistantMessage =
+								nextMessage && nextMessage.role === 'assistant'
+									? nextMessage
+									: undefined;
+							return (
+								<UserMessageGroup
+									key={message.id}
+									sessionId={shareId}
+									message={message}
+									isFirst={idx === 0}
+									nextAssistantMessageId={nextAssistantMessage?.id}
+								/>
+							);
+						}
+
+						if (message.role === 'assistant') {
+							const showHeader =
+								!prevMessage || prevMessage.role !== 'assistant';
+							const nextIsAssistant =
+								nextMessage && nextMessage.role === 'assistant';
+
+							return (
+								<AssistantMessageGroup
+									key={message.id}
+									sessionId={shareId}
+									message={message}
+									showHeader={showHeader}
+									hasNextAssistantMessage={nextIsAssistant}
+									isLastMessage={isLastMessage}
+								/>
+							);
+						}
+
+						return null;
+					})}
+				</div>
 			</main>
 
 			{/* Footer */}
-			<footer className="border-t border-border p-3 text-center text-sm text-muted-foreground">
-				Shared via{' '}
-				<a
-					href="https://github.com/nitishxyz/agi"
-					className="text-primary underline"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					AGI
-				</a>
+			<footer className="border-t border-border py-6 mt-8">
+				<div className="max-w-3xl mx-auto px-6 flex items-center justify-between text-sm text-muted-foreground">
+					<div className="flex items-center gap-2">
+						{sessionData.username && (
+							<>
+								<span>Shared by</span>
+								<span className="font-medium text-foreground">{sessionData.username}</span>
+								<span className="opacity-50">·</span>
+							</>
+						)}
+						<span>{sessionData.messages.length} messages</span>
+					</div>
+					<a
+						href="https://github.com/sst/opencode"
+						className="text-primary hover:underline flex items-center gap-1"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						Powered by AGI
+					</a>
+				</div>
 			</footer>
 		</div>
 	);

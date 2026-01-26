@@ -44,6 +44,7 @@ import type {
 	BranchResult,
 	ListBranchesResponse,
 	ParentSessionResponse,
+	ShareStatus,
 } from '../types/api';
 import { API_BASE_URL } from './config';
 
@@ -679,6 +680,24 @@ class ApiClient {
 		} catch {
 			return null;
 		}
+	}
+
+	async getShareStatus(sessionId: string): Promise<ShareStatus> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/sessions/${sessionId}/share`,
+			{
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			},
+		);
+
+		if (!response.ok) {
+			return { shared: false };
+		}
+
+		return await response.json();
 	}
 }
 

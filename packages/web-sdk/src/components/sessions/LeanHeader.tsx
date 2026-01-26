@@ -7,9 +7,13 @@ import {
 	MessageSquare,
 	GitBranch,
 	ArrowUpRight,
+	Share2,
+	ExternalLink,
+	RefreshCw,
 } from 'lucide-react';
 import { StopButton } from '../chat/StopButton';
 import { useParentSession } from '../../hooks/useBranch';
+import { useShareStatus } from '../../hooks/useShareStatus';
 
 interface LeanHeaderProps {
 	session: Session;
@@ -27,6 +31,20 @@ export function LeanHeader({
 	const { data: parentData } = useParentSession(
 		session.sessionType === 'branch' ? session.id : undefined,
 	);
+	const { data: shareStatus } = useShareStatus(session.id);
+
+	const totalTokens = useMemo(() => {
+		const input = session.totalInputTokens || 0;
+		const output = session.totalOutputTokens || 0;
+		const cached = session.totalCachedTokens || 0;
+		const cacheCreation = session.totalCacheCreationTokens || 0;
+		return input + output + cached + cacheCreation;
+	}, [
+		session.totalInputTokens,
+		session.totalOutputTokens,
+		session.totalCachedTokens,
+		session.totalCacheCreationTokens,
+	]);
 
 	const estimatedCost = useMemo(() => {
 		const inputTokens = session.totalInputTokens || 0;
@@ -50,8 +68,10 @@ export function LeanHeader({
 		session.totalCacheCreationTokens,
 	]);
 
-	const formatNumber = (num: number) => {
-		return num.toLocaleString('en-US');
+	const formatCompactNumber = (num: number) => {
+		if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+		if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+		return num.toString();
 	};
 
 	const isBranch = session.sessionType === 'branch';
@@ -63,7 +83,7 @@ export function LeanHeader({
 				isVisible ? 'translate-y-0' : '-translate-y-full'
 			}`}
 		>
-			<div className="h-full px-6 flex items-center justify-between gap-6 text-sm">
+			<div className="h-full px-6 flex items-center justify-between gap-4 text-sm">
 				<div className="flex-1 min-w-0 flex items-center gap-2 text-muted-foreground">
 					{isBranch ? (
 						<GitBranch className="w-4 h-4 flex-shrink-0 text-violet-500" />
@@ -73,6 +93,24 @@ export function LeanHeader({
 					<span className="text-foreground font-medium truncate">
 						{session.title || 'Untitled Session'}
 					</span>
+					{shareStatus?.shared && (
+						<a
+							href={shareStatus.url}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors text-xs font-medium flex-shrink-0"
+						>
+							<Share2 className="h-3 w-3" />
+							{shareStatus.pendingMessages && shareStatus.pendingMessages > 0 ? (
+								<span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+									<RefreshCw className="h-2.5 w-2.5" />
+									{shareStatus.pendingMessages}
+								</span>
+							) : (
+								<ExternalLink className="h-2.5 w-2.5 opacity-60" />
+							)}
+						</a>
+					)}
 					{isBranch && parentSession && (
 						<>
 							<span className="text-muted-foreground hidden sm:inline">
@@ -97,32 +135,30 @@ export function LeanHeader({
 					)}
 				</div>
 
-				<div className="flex-shrink-0 flex items-center gap-6">
+				<div className="flex-shrink-0 flex items-center gap-5 text-muted-foreground">
 					{isGenerating && <StopButton sessionId={session.id} />}
 
-					<div className="flex items-center gap-2 text-muted-foreground">
+					<div className="flex items-center gap-2">
 						<Hash className="w-4 h-4" />
 						<span className="text-foreground font-medium">
-							{formatNumber(session.totalInputTokens || 0)} /{' '}
-							{formatNumber(session.totalOutputTokens || 0)}{' '}
-							{(session.totalCachedTokens ||
-								session.totalCacheCreationTokens) && (
-								<span className="text-xs opacity-60">
-									(+{formatNumber(session.totalCachedTokens || 0)} cached, +
-									{formatNumber(session.totalCacheCreationTokens || 0)} write)
-								</span>
-							)}
+							{formatCompactNumber(totalTokens)}
 						</span>
 					</div>
 
 					{estimatedCost > 0 && (
-						<div className="flex items-center gap-2 text-muted-foreground">
+						<div className="flex items-center gap-1.5">
 							<DollarSign className="w-4 h-4" />
 							<span className="text-foreground font-medium">
-								${estimatedCost.toFixed(4)}
+								{estimatedCost.toFixed(4)}
 							</span>
 						</div>
 					)}
+
+					<div className="hidden sm:flex items-center gap-2">
+						<span className="font-medium text-foreground">{session.model}</span>
+						<span className="opacity-50">·</span>
+						<span className="opacity-70">{session.provider}</span>
+					</div>
 				</div>
 			</div>
 		</div>

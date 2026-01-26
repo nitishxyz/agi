@@ -11,6 +11,7 @@ interface MessageThreadProps {
 	session?: Session;
 	sessionId?: string;
 	isGenerating?: boolean;
+	disableAutoScroll?: boolean;
 	onSelectSession?: (sessionId: string) => void;
 }
 
@@ -19,6 +20,7 @@ export const MessageThread = memo(function MessageThread({
 	session,
 	sessionId,
 	isGenerating,
+	disableAutoScroll = false,
 	onSelectSession,
 }: MessageThreadProps) {
 	const bottomRef = useRef<HTMLDivElement>(null);
@@ -86,6 +88,8 @@ export const MessageThread = memo(function MessageThread({
 
 	// Immediate scroll to bottom on initial load or session change
 	useEffect(() => {
+		if (disableAutoScroll) return;
+
 		const sessionChanged = session?.id !== lastSessionIdRef.current;
 		lastSessionIdRef.current = session?.id;
 
@@ -103,6 +107,8 @@ export const MessageThread = memo(function MessageThread({
 	}, [messages.length, session?.id]);
 
 	useEffect(() => {
+		if (disableAutoScroll) return;
+
 		const justStartedGenerating = isGenerating && !prevIsGeneratingRef.current;
 		const messagesAdded = messages.length > prevMessagesLengthRef.current;
 
@@ -130,6 +136,8 @@ export const MessageThread = memo(function MessageThread({
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: messages dep needed for streaming content updates
 	useEffect(() => {
+		if (disableAutoScroll) return;
+
 		const container = scrollContainerRef.current;
 		if (!container || !autoScroll || userScrollingRef.current) return;
 
