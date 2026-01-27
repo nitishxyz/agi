@@ -8,7 +8,7 @@ import { getAssociatedTokenAddress } from '@solana/spl-token';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 
-const DEFAULT_SOLFORGE_URL = 'https://router.solforge.sh';
+const DEFAULT_SOLFORGE_URL = 'https://router.agi.nitish.sh';
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const USDC_MINT_MAINNET = new PublicKey(
 	'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
