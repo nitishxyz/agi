@@ -449,7 +449,9 @@ export const MessagePartItem = memo(
 				// Use args from pending approval if available (for early approval display)
 				// Fall back to part args for normal tool calls
 				const partArgs = getToolCallArgs(part);
-				const approvalArgs = pendingApproval?.args as Record<string, unknown> | undefined;
+				const approvalArgs = pendingApproval?.args as
+					| Record<string, unknown>
+					| undefined;
 				const args = partArgs || approvalArgs;
 				const primary = normalizeToolTarget(rawToolName, args);
 				const argsPreview = formatArgsPreview(args, primary?.key);
@@ -482,26 +484,27 @@ export const MessagePartItem = memo(
 								{argsPreview}
 							</span>
 						),
-				});
-			}
+					});
+				}
 
-			// Check if this tool call has a pending approval
-			const hasPendingApproval = pendingApproval && pendingApproval.callId === part.toolCallId;
+				// Check if this tool call has a pending approval
+				const hasPendingApproval =
+					pendingApproval && pendingApproval.callId === part.toolCallId;
 
-			if (hasPendingApproval) {
-				return (
-					<ToolApprovalCard
-						toolName={rawToolName}
-						args={args}
-						pendingApproval={pendingApproval}
-						onApprove={onApprove!}
-						onReject={onReject!}
-					/>
-				);
-			} else if (segments.length === 0) {
-				segments.push({
-					key: 'running',
-					node: <span className="text-muted-foreground/75">running…</span>,
+				if (hasPendingApproval) {
+					return (
+						<ToolApprovalCard
+							toolName={rawToolName}
+							args={args}
+							pendingApproval={pendingApproval}
+							onApprove={onApprove!}
+							onReject={onReject!}
+						/>
+					);
+				} else if (segments.length === 0) {
+					segments.push({
+						key: 'running',
+						node: <span className="text-muted-foreground/75">running…</span>,
 					});
 				}
 

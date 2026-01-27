@@ -13,7 +13,10 @@ import {
 	toClaudeCodeName,
 	requiresClaudeCodeNaming,
 } from '../runtime/tools/mapping.ts';
-import { requiresApproval, requestApproval } from '../runtime/tools/approval.ts';
+import {
+	requiresApproval,
+	requestApproval,
+} from '../runtime/tools/approval.ts';
 
 export type { ToolAdapterContext } from '../runtime/tools/context.ts';
 
@@ -167,16 +170,16 @@ export function adaptTools(
 		out[registrationName] = {
 			...base,
 			...(providerOptions ? { providerOptions } : {}),
-		async onInputStart(options: unknown) {
-			const queue = getPendingQueue(pendingCalls, name);
-			queue.push({
-				callId: crypto.randomUUID(),
-				startTs: Date.now(),
-				stepIndex: ctx.stepIndex,
-			});
-			if (typeof base.onInputStart === 'function')
-				// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
-				await base.onInputStart(options as any);
+			async onInputStart(options: unknown) {
+				const queue = getPendingQueue(pendingCalls, name);
+				queue.push({
+					callId: crypto.randomUUID(),
+					startTs: Date.now(),
+					stepIndex: ctx.stepIndex,
+				});
+				if (typeof base.onInputStart === 'function')
+					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+					await base.onInputStart(options as any);
 			},
 			async onInputDelta(options: unknown) {
 				const delta = (options as { inputTextDelta?: string } | undefined)
@@ -343,7 +346,10 @@ export function adaptTools(
 						if (meta?.approvalPromise) {
 							const approved = await meta.approvalPromise;
 							if (!approved) {
-								return { ok: false, error: 'Tool execution rejected by user' } as ToolExecuteReturn;
+								return {
+									ok: false,
+									error: 'Tool execution rejected by user',
+								} as ToolExecuteReturn;
 							}
 						}
 						// Handle session-relative paths and cwd tools

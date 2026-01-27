@@ -4,7 +4,7 @@ export type StepFinishEvent = {
 	usage?: UsageData;
 	finishReason?: string;
 	response?: unknown;
-	experimental_providerMetadata?: ProviderMetadata;
+	providerMetadata?: ProviderMetadata;
 };
 
 export type FinishEvent = {

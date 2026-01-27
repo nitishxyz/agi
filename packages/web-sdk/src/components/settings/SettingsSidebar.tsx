@@ -284,26 +284,26 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 					<ToggleRow
 						label="Show Reasoning"
 						checked={preferences.reasoningEnabled}
-					onChange={(checked) =>
-						updatePreferences({ reasoningEnabled: checked })
-					}
-			/>
-			<SelectRow
-				label="Tool Approval"
-				value={config?.defaults?.toolApproval ?? 'auto'}
-				options={[
-					{ id: 'auto', label: 'Auto (no approval)' },
-					{ id: 'dangerous', label: 'Dangerous only' },
-					{ id: 'all', label: 'All tools' },
-				]}
-				onChange={(value) =>
-					updateDefaults.mutate({
-						toolApproval: value as 'auto' | 'dangerous' | 'all',
-					})
-				}
-				disabled={updateDefaults.isPending}
-			/>
-		</SettingsSection>
+						onChange={(checked) =>
+							updatePreferences({ reasoningEnabled: checked })
+						}
+					/>
+					<SelectRow
+						label="Tool Approval"
+						value={config?.defaults?.toolApproval ?? 'auto'}
+						options={[
+							{ id: 'auto', label: 'Auto (no approval)' },
+							{ id: 'dangerous', label: 'Dangerous only' },
+							{ id: 'all', label: 'All tools' },
+						]}
+						onChange={(value) =>
+							updateDefaults.mutate({
+								toolApproval: value as 'auto' | 'dangerous' | 'all',
+							})
+						}
+						disabled={updateDefaults.isPending}
+					/>
+				</SettingsSection>
 
 				{config?.providers?.includes('solforge') && (
 					<SettingsSection

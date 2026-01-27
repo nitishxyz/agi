@@ -17,7 +17,10 @@ interface ToolApprovalDialogProps {
 	sessionId: string;
 }
 
-export function ToolApprovalDialog({ baseUrl, sessionId }: ToolApprovalDialogProps) {
+export function ToolApprovalDialog({
+	baseUrl,
+	sessionId,
+}: ToolApprovalDialogProps) {
 	const { pendingApprovals, removePendingApproval } = useToolApprovalStore();
 	const [processingId, setProcessingId] = useState<string | null>(null);
 

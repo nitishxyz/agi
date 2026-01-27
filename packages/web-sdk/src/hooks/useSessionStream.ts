@@ -11,7 +11,12 @@ export function useSessionStream(sessionId: string | undefined) {
 	const assistantMessageIdRef = useRef<string | null>(null);
 	const lastInvalidationRef = useRef<number>(0);
 
-	const { addPendingApproval, removePendingApproval, updatePendingApproval, setPendingApprovals } = useToolApprovalStore();
+	const {
+		addPendingApproval,
+		removePendingApproval,
+		updatePendingApproval,
+		setPendingApprovals,
+	} = useToolApprovalStore();
 
 	useEffect(() => {
 		// console.log('[useSessionStream] Hook called with sessionId:', sessionId)
@@ -21,17 +26,20 @@ export function useSessionStream(sessionId: string | undefined) {
 		}
 
 		assistantMessageIdRef.current = null;
-		
+
 		// Fetch pending approvals from server for this session
-		apiClient.getPendingApprovals(sessionId).then((result) => {
-			if (result.ok && result.pending.length > 0) {
-				setPendingApprovals(result.pending);
-			} else {
+		apiClient
+			.getPendingApprovals(sessionId)
+			.then((result) => {
+				if (result.ok && result.pending.length > 0) {
+					setPendingApprovals(result.pending);
+				} else {
+					setPendingApprovals([]);
+				}
+			})
+			.catch(() => {
 				setPendingApprovals([]);
-			}
-		}).catch(() => {
-			setPendingApprovals([]);
-		});
+			});
 
 		const client = new SSEClient();
 		clientRef.current = client;
@@ -220,18 +228,18 @@ export function useSessionStream(sessionId: string | undefined) {
 					const targetMessage = nextMessages[targetIndex];
 					const parts = targetMessage.parts ? [...targetMessage.parts] : [];
 					let partIndex = -1;
-				if (callId) {
-					partIndex = parts.findIndex(
-						(part) => part.toolCallId === callId && part.ephemeral,
-					);
-				}
-				// Only fallback to name match if we don't have a callId
-				if (partIndex === -1 && !callId) {
-					partIndex = parts.findIndex(
-						(part) => part.ephemeral && part.toolName === name,
-					);
-				}
-				const args = (payload as { args?: unknown }).args;
+					if (callId) {
+						partIndex = parts.findIndex(
+							(part) => part.toolCallId === callId && part.ephemeral,
+						);
+					}
+					// Only fallback to name match if we don't have a callId
+					if (partIndex === -1 && !callId) {
+						partIndex = parts.findIndex(
+							(part) => part.ephemeral && part.toolName === name,
+						);
+					}
+					const args = (payload as { args?: unknown }).args;
 					const stepIndex =
 						typeof payload.stepIndex === 'number' ? payload.stepIndex : null;
 					const contentJsonBase: Record<string, unknown> = { name };
@@ -423,9 +431,12 @@ export function useSessionStream(sessionId: string | undefined) {
 					break;
 				}
 				case 'tool.approval.required': {
-					const callId = typeof payload?.callId === 'string' ? payload.callId : null;
-					const toolName = typeof payload?.toolName === 'string' ? payload.toolName : null;
-					const messageId = typeof payload?.messageId === 'string' ? payload.messageId : null;
+					const callId =
+						typeof payload?.callId === 'string' ? payload.callId : null;
+					const toolName =
+						typeof payload?.toolName === 'string' ? payload.toolName : null;
+					const messageId =
+						typeof payload?.messageId === 'string' ? payload.messageId : null;
 					const args = payload?.args;
 					if (callId && toolName && messageId) {
 						addPendingApproval({
@@ -439,14 +450,16 @@ export function useSessionStream(sessionId: string | undefined) {
 					break;
 				}
 				case 'tool.approval.resolved': {
-					const callId = typeof payload?.callId === 'string' ? payload.callId : null;
+					const callId =
+						typeof payload?.callId === 'string' ? payload.callId : null;
 					if (callId) {
 						removePendingApproval(callId);
 					}
 					break;
 				}
 				case 'tool.approval.updated': {
-					const callId = typeof payload?.callId === 'string' ? payload.callId : null;
+					const callId =
+						typeof payload?.callId === 'string' ? payload.callId : null;
 					const args = payload?.args;
 					if (callId) {
 						updatePendingApproval(callId, args);

@@ -47,7 +47,7 @@ export function createStepFinishHandler(
 			try {
 				await updateSessionTokensIncrementalFn(
 					step.usage,
-					step.experimental_providerMetadata,
+					step.providerMetadata,
 					opts,
 					db,
 				);
@@ -56,7 +56,7 @@ export function createStepFinishHandler(
 			try {
 				await updateMessageTokensIncrementalFn(
 					step.usage,
-					step.experimental_providerMetadata,
+					step.providerMetadata,
 					opts,
 					db,
 				);

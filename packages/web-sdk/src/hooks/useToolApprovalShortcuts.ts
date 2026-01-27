@@ -5,7 +5,7 @@ import { apiClient } from '../lib/api-client';
 /**
  * Hook for handling keyboard shortcuts for tool approval.
  * Only responds to shortcuts when there are pending approvals for the given session.
- * 
+ *
  * Shortcuts:
  * - Y: Approve first pending
  * - N or Escape: Reject first pending
@@ -90,5 +90,11 @@ export function useToolApprovalShortcuts(sessionId: string | undefined) {
 
 		window.addEventListener('keydown', handleKeyDown);
 		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, [sessionId, sessionPendingApprovals, handleApprove, handleReject, handleApproveAll]);
+	}, [
+		sessionId,
+		sessionPendingApprovals,
+		handleApprove,
+		handleReject,
+		handleApproveAll,
+	]);
 }

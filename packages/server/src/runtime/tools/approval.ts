@@ -49,7 +49,12 @@ export async function requestApproval(
 	args: unknown,
 	timeoutMs = 120000,
 ): Promise<boolean> {
-	console.log('[approval] requestApproval called', { sessionId, messageId, callId, toolName });
+	console.log('[approval] requestApproval called', {
+		sessionId,
+		messageId,
+		callId,
+		toolName,
+	});
 	return new Promise((resolve) => {
 		const approval: PendingApproval = {
 			callId,
@@ -62,7 +67,10 @@ export async function requestApproval(
 		};
 
 		pendingApprovals.set(callId, approval);
-		console.log('[approval] Added to pendingApprovals, count:', pendingApprovals.size);
+		console.log(
+			'[approval] Added to pendingApprovals, count:',
+			pendingApprovals.size,
+		);
 
 		publish({
 			type: 'tool.approval.required',
@@ -98,7 +106,12 @@ export function resolveApproval(
 	callId: string,
 	approved: boolean,
 ): { ok: boolean; error?: string } {
-	console.log('[approval] resolveApproval called', { callId, approved, pendingCount: pendingApprovals.size, pendingIds: [...pendingApprovals.keys()] });
+	console.log('[approval] resolveApproval called', {
+		callId,
+		approved,
+		pendingCount: pendingApprovals.size,
+		pendingIds: [...pendingApprovals.keys()],
+	});
 	const approval = pendingApprovals.get(callId);
 	if (!approval) {
 		console.log('[approval] No pending approval found for callId:', callId);
@@ -122,19 +135,18 @@ export function resolveApproval(
 	return { ok: true };
 }
 
-export function getPendingApproval(callId: string): PendingApproval | undefined {
+export function getPendingApproval(
+	callId: string,
+): PendingApproval | undefined {
 	return pendingApprovals.get(callId);
 }
 
-export function updateApprovalArgs(
-	callId: string,
-	args: unknown,
-): boolean {
+export function updateApprovalArgs(callId: string, args: unknown): boolean {
 	const approval = pendingApprovals.get(callId);
 	if (!approval) return false;
-	
+
 	approval.args = args;
-	
+
 	publish({
 		type: 'tool.approval.updated',
 		sessionId: approval.sessionId,
@@ -145,7 +157,7 @@ export function updateApprovalArgs(
 			messageId: approval.messageId,
 		},
 	});
-	
+
 	return true;
 }
 

@@ -135,20 +135,29 @@ export function SessionHeader({
 
 				<div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-sm text-muted-foreground">
 					<div className="flex items-center gap-3">
-						<div className="flex items-center gap-1.5" title={`${formatNumber(inputTokens)} input tokens`}>
+						<div
+							className="flex items-center gap-1.5"
+							title={`${formatNumber(inputTokens)} input tokens`}
+						>
 							<span className="text-xs opacity-70">in</span>
 							<span className="font-medium text-foreground">
 								{formatCompactNumber(inputTokens)}
 							</span>
 						</div>
-						<div className="flex items-center gap-1.5" title={`${formatNumber(outputTokens)} output tokens`}>
+						<div
+							className="flex items-center gap-1.5"
+							title={`${formatNumber(outputTokens)} output tokens`}
+						>
 							<span className="text-xs opacity-70">out</span>
 							<span className="font-medium text-foreground">
 								{formatCompactNumber(outputTokens)}
 							</span>
 						</div>
 						{cachedTokens > 0 && (
-							<div className="flex items-center gap-1.5" title={`${formatNumber(cachedTokens)} cached tokens`}>
+							<div
+								className="flex items-center gap-1.5"
+								title={`${formatNumber(cachedTokens)} cached tokens`}
+							>
 								<span className="text-xs opacity-70">cached</span>
 								<span className="font-medium text-foreground">
 									{formatCompactNumber(cachedTokens)}
@@ -175,7 +184,9 @@ export function SessionHeader({
 
 					<div className="flex items-center gap-2 ml-auto">
 						<ProviderLogo provider={session.provider} size={18} />
-						<span className="font-medium text-foreground truncate max-w-48">{session.model}</span>
+						<span className="font-medium text-foreground truncate max-w-48">
+							{session.model}
+						</span>
 					</div>
 				</div>
 			</div>

@@ -215,7 +215,9 @@ export const ToolApprovalCard = memo(function ToolApprovalCard({
 				>
 					<X className="w-3 h-3" />
 					Reject
-					<kbd className="ml-1 text-[10px] text-muted-foreground opacity-70">N</kbd>
+					<kbd className="ml-1 text-[10px] text-muted-foreground opacity-70">
+						N
+					</kbd>
 				</button>
 				<button
 					type="button"

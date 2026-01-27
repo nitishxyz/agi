@@ -187,21 +187,21 @@ export const ChatInputContainer = memo(
 									}))
 								: undefined;
 
-					await sendMessage.mutateAsync({
-						content: finalContent,
-						images: imageData,
-						files: fileData,
-						agent: agent || undefined,
-						provider: provider || undefined,
-						model: model || undefined,
-					userContext: userContext || undefined,
-					reasoningText:
-						modelSupportsReasoning && preferences.reasoningEnabled
-							? true
-							: undefined,
-				});
+						await sendMessage.mutateAsync({
+							content: finalContent,
+							images: imageData,
+							files: fileData,
+							agent: agent || undefined,
+							provider: provider || undefined,
+							model: model || undefined,
+							userContext: userContext || undefined,
+							reasoningText:
+								modelSupportsReasoning && preferences.reasoningEnabled
+									? true
+									: undefined,
+						});
 
-					clearFiles();
+						clearFiles();
 					} catch (error) {
 						console.error('Failed to send message:', error);
 					}
@@ -214,12 +214,12 @@ export const ChatInputContainer = memo(
 					agent,
 					provider,
 					model,
-				userContext,
-				modelSupportsReasoning,
-				preferences.reasoningEnabled,
-				sessionId,
-				consumeResearchContexts,
-			],
+					userContext,
+					modelSupportsReasoning,
+					preferences.reasoningEnabled,
+					sessionId,
+					consumeResearchContexts,
+				],
 			);
 
 			const handleToggleConfig = useCallback(() => {

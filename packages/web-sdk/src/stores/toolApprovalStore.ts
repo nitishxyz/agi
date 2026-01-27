@@ -27,19 +27,19 @@ export const useToolApprovalStore = create<ToolApprovalState>((set) => ({
 
 	removePendingApproval: (callId) =>
 		set((state) => ({
-		pendingApprovals: state.pendingApprovals.filter((a) => a.callId !== callId),
-	})),
+			pendingApprovals: state.pendingApprovals.filter(
+				(a) => a.callId !== callId,
+			),
+		})),
 
 	updatePendingApproval: (callId, args) =>
 		set((state) => ({
 			pendingApprovals: state.pendingApprovals.map((a) =>
-				a.callId === callId ? { ...a, args } : a
+				a.callId === callId ? { ...a, args } : a,
 			),
 		})),
 
-	clearPendingApprovals: () =>
-		set({ pendingApprovals: [] }),
+	clearPendingApprovals: () => set({ pendingApprovals: [] }),
 
-	setPendingApprovals: (approvals) =>
-		set({ pendingApprovals: approvals }),
+	setPendingApprovals: (approvals) => set({ pendingApprovals: approvals }),
 }));

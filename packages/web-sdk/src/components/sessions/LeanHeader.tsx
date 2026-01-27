@@ -155,7 +155,9 @@ export function LeanHeader({
 
 					<div className="hidden sm:flex items-center gap-2">
 						<ProviderLogo provider={session.provider} size={16} />
-						<span className="font-medium text-foreground truncate max-w-40">{session.model}</span>
+						<span className="font-medium text-foreground truncate max-w-40">
+							{session.model}
+						</span>
 					</div>
 				</div>
 			</div>
