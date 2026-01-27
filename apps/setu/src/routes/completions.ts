@@ -19,13 +19,16 @@ interface OpenAIUsage {
 	prompt_tokens_details?: {
 		cached_tokens?: number;
 	};
+	cached_tokens?: number; // Moonshot returns cached_tokens at top level
 }
 
 function normalizeUsage(
 	usage: OpenAIUsage | null | undefined,
 ): UsageInfo | null {
 	if (!usage) return null;
-	const cachedTokens = usage.prompt_tokens_details?.cached_tokens ?? 0;
+	// Check both OpenAI format (nested) and Moonshot format (top-level)
+	const cachedTokens =
+		usage.prompt_tokens_details?.cached_tokens ?? usage.cached_tokens ?? 0;
 	return {
 		inputTokens: (usage.prompt_tokens ?? 0) - cachedTokens,
 		outputTokens: usage.completion_tokens ?? 0,
