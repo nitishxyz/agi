@@ -121,6 +121,46 @@ export function isAnthropicBasedModel(
 	if (provider === 'anthropic') return true;
 	const npm = getModelNpmBinding(provider, model);
 	if (npm === '@ai-sdk/anthropic') return true;
-	const lower = model.toLowerCase();
-	return lower.includes('claude') || lower.includes('anthropic');
+	return false;
+}
+
+export type UnderlyingProviderKey =
+	| 'anthropic'
+	| 'openai'
+	| 'google'
+	| 'openai-compatible'
+	| null;
+
+export function getUnderlyingProviderKey(
+	provider: ProviderId,
+	model: string,
+): UnderlyingProviderKey {
+	if (provider === 'anthropic') return 'anthropic';
+	if (provider === 'openai') return 'openai';
+	if (provider === 'google') return 'google';
+
+	const npm = getModelNpmBinding(provider, model);
+	if (npm === '@ai-sdk/anthropic') return 'anthropic';
+	if (npm === '@ai-sdk/openai') return 'openai';
+	if (npm === '@ai-sdk/google') return 'google';
+	if (npm === '@ai-sdk/openai-compatible') return 'openai-compatible';
+	if (npm === '@openrouter/ai-sdk-provider') return 'openai-compatible';
+	return null;
+}
+
+export function getModelInfo(
+	provider: ProviderId,
+	model: string,
+): ModelInfo | undefined {
+	const entry = catalog[provider];
+	if (!entry) return undefined;
+	return entry.models?.find((m) => m.id === model);
+}
+
+export function modelSupportsReasoning(
+	provider: ProviderId,
+	model: string,
+): boolean {
+	const info = getModelInfo(provider, model);
+	return info?.reasoningText === true;
 }

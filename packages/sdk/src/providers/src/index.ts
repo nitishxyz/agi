@@ -15,7 +15,11 @@ export {
 	getFastModelForAuth,
 	getModelNpmBinding,
 	isAnthropicBasedModel,
+	getUnderlyingProviderKey,
+	getModelInfo,
+	modelSupportsReasoning,
 } from './utils.ts';
+export type { UnderlyingProviderKey } from './utils.ts';
 export { validateProviderModel } from './validate.ts';
 export { estimateModelCostUsd } from './pricing.ts';
 export { providerEnvVar, readEnvKey, setEnvKey } from './env.ts';

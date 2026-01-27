@@ -55,26 +55,10 @@ export function createOpencodeModel(
 		return instance(resolvedModelId);
 	}
 
-	const ocOpenAI = createOpenAI({ apiKey, baseURL });
-	const cachingFetch = createAnthropicCachingFetch();
-	const ocAnthropic = createAnthropic({
-		apiKey,
-		baseURL,
-		fetch: cachingFetch as typeof fetch,
-	});
-	const ocCompat = createOpenAICompatible({
+	const defaultInstance = createOpenAICompatible({
 		name: entry?.label ?? 'opencode',
 		baseURL,
 		headers,
 	});
-
-	const id = resolvedModelId.toLowerCase();
-	if (id.includes('claude')) return ocAnthropic(resolvedModelId);
-	if (
-		id.includes('qwen3-coder') ||
-		id.includes('grok-code') ||
-		id.includes('kimi-k2')
-	)
-		return ocCompat(resolvedModelId);
-	return ocOpenAI(resolvedModelId);
+	return defaultInstance(resolvedModelId);
 }

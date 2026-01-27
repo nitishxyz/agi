@@ -2,6 +2,8 @@
 // Loads src/prompts/providers/<provider>.txt and returns its contents (trimmed).
 
 import { debugLog } from './debug.ts';
+import { getModelNpmBinding, isProviderId } from '../../providers/src/utils.ts';
+import type { ProviderId } from '../../types/src/index.ts';
 // Embed default provider prompts into the binary via text imports
 // Only user-defined overrides should be read from disk.
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
@@ -22,18 +24,14 @@ function sanitizeModelId(modelId: string): string {
 		.replace(/[/]+/g, '__');
 }
 
-function inferFamilyFromModel(modelId: string): string | undefined {
-	const m = modelId.toLowerCase();
-	if (m.includes('claude')) return 'anthropic';
-	if (m.includes('gemini')) return 'google';
-	if (m.includes('gpt') || m.startsWith('o') || m.includes('openai'))
-		return 'openai';
-	// Other common families you may add prompts for later:
-	// if (m.includes('llama')) return 'meta';
-	// if (m.includes('mistral')) return 'mistral';
-	// if (m.includes('deepseek')) return 'deepseek';
-	// if (m.includes('qwen')) return 'qwen';
-	// if (m.includes('moonshot') || m.includes('kimi')) return 'moonshot';
+function inferFamilyFromModel(
+	provider: ProviderId,
+	modelId: string,
+): string | undefined {
+	const npm = getModelNpmBinding(provider, modelId);
+	if (npm === '@ai-sdk/anthropic') return 'anthropic';
+	if (npm === '@ai-sdk/openai') return 'openai';
+	if (npm === '@ai-sdk/google') return 'google';
 	return undefined;
 }
 
@@ -66,10 +64,15 @@ export async function providerBasePrompt(
 
 	// 2) Provider-family fallback for openrouter/opencode/solforge using embedded defaults
 	if (
-		(id === 'openrouter' || id === 'opencode' || id === 'solforge') &&
+		isProviderId(id) &&
+		(id === 'openrouter' ||
+			id === 'opencode' ||
+			id === 'solforge' ||
+			id === 'zai' ||
+			id === 'zai-coding') &&
 		modelId
 	) {
-		const family = inferFamilyFromModel(modelId);
+		const family = inferFamilyFromModel(id, modelId);
 		if (family) {
 			const embedded = (
 				family === 'openai'

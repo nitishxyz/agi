@@ -1,13 +1,14 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createConditionalCachingFetch } from './anthropic-caching.ts';
+import { getModelNpmBinding } from './utils.ts';
 
 export type OpenRouterProviderConfig = {
 	apiKey?: string;
 };
 
 function isAnthropicModel(model: string): boolean {
-	const lower = model.toLowerCase();
-	return lower.includes('anthropic') || lower.includes('claude');
+	const npm = getModelNpmBinding('openrouter', model);
+	return npm === '@ai-sdk/anthropic';
 }
 
 export function getOpenRouterInstance(

@@ -44,7 +44,11 @@ export {
 	getFastModelForAuth,
 	getModelNpmBinding,
 	isAnthropicBasedModel,
+	getUnderlyingProviderKey,
+	getModelInfo,
+	modelSupportsReasoning,
 } from './providers/src/index.ts';
+export type { UnderlyingProviderKey } from './providers/src/index.ts';
 export {
 	isProviderAuthorized,
 	ensureProviderEnv,

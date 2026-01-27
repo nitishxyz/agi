@@ -169,6 +169,19 @@ export const MessagePartItem = memo(
 			}
 		}
 
+		if (part.type === 'reasoning') {
+			const data = part.contentJson || part.content;
+			let content = '';
+			if (data && typeof data === 'object' && 'text' in data) {
+				content = String(data.text);
+			} else if (typeof data === 'string') {
+				content = data;
+			}
+			if (!content || !content.trim()) {
+				return null;
+			}
+		}
+
 		const isToolMessage =
 			part.type === 'tool_call' || part.type === 'tool_result';
 

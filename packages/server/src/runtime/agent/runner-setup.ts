@@ -1,4 +1,4 @@
-import { loadConfig, catalog } from '@agi-cli/sdk';
+import { loadConfig, getUnderlyingProviderKey } from '@agi-cli/sdk';
 import { getDb } from '@agi-cli/database';
 import { sessions } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
@@ -39,16 +39,6 @@ export interface SetupResult {
 }
 
 const THINKING_BUDGET = 16000;
-
-function getSolforgeUnderlyingProvider(
-	model: string,
-): 'anthropic' | 'openai' | null {
-	const entry = catalog.solforge?.models?.find((m) => m.id === model);
-	const npm = entry?.provider?.npm;
-	if (npm === '@ai-sdk/anthropic') return 'anthropic';
-	if (npm === '@ai-sdk/openai') return 'openai';
-	return null;
-}
 
 export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const cfgTimer = time('runner:loadConfig+db');
@@ -232,35 +222,30 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	let effectiveMaxOutputTokens = maxOutputTokens;
 
 	if (opts.reasoningText) {
-		if (opts.provider === 'anthropic') {
+		const underlyingProvider = getUnderlyingProviderKey(
+			opts.provider,
+			opts.model,
+		);
+
+		if (underlyingProvider === 'anthropic') {
 			providerOptions.anthropic = {
 				thinking: { type: 'enabled', budgetTokens: THINKING_BUDGET },
 			};
 			if (maxOutputTokens && maxOutputTokens > THINKING_BUDGET) {
 				effectiveMaxOutputTokens = maxOutputTokens - THINKING_BUDGET;
 			}
-		} else if (opts.provider === 'openai') {
+		} else if (underlyingProvider === 'openai') {
 			providerOptions.openai = {
 				reasoningSummary: 'auto',
 			};
-		} else if (opts.provider === 'google') {
+		} else if (underlyingProvider === 'google') {
 			providerOptions.google = {
 				thinkingConfig: { thinkingBudget: THINKING_BUDGET },
 			};
-		} else if (opts.provider === 'solforge') {
-			const underlying = getSolforgeUnderlyingProvider(opts.model);
-			if (underlying === 'anthropic') {
-				providerOptions.anthropic = {
-					thinking: { type: 'enabled', budgetTokens: THINKING_BUDGET },
-				};
-				if (maxOutputTokens && maxOutputTokens > THINKING_BUDGET) {
-					effectiveMaxOutputTokens = maxOutputTokens - THINKING_BUDGET;
-				}
-			} else if (underlying === 'openai') {
-				providerOptions.openai = {
-					reasoningSummary: 'auto',
-				};
-			}
+		} else if (underlyingProvider === 'openai-compatible') {
+			providerOptions['openai-compatible'] = {
+				reasoningEffort: 'high',
+			};
 		}
 	}
 
