@@ -1,6 +1,6 @@
 {
 	"name": "@agi-cli/web-sdk",
-	"version": "0.1.139",
+	"version": "0.1.140",
 	"description": "Reusable React components, hooks, and utilities for building AGI CLI web interfaces",
 	"type": "module",
 	"main": "./dist/index.js",

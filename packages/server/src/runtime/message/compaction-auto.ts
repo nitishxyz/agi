@@ -105,16 +105,16 @@ export async function performAutoCompaction(
 		});
 
 		const result = streamText({
-		model,
-		system: systemPrompt,
-		messages: [
-			{
-				role: 'user',
-				content: `${userInstructions}\n\nPlease summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`,
-			},
-		],
-		maxOutputTokens: 2000,
-	});
+			model,
+			system: systemPrompt,
+			messages: [
+				{
+					role: 'user',
+					content: `${userInstructions}\n\nPlease summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`,
+				},
+			],
+			maxOutputTokens: 2000,
+		});
 
 		let summary = '';
 		for await (const chunk of result.textStream) {

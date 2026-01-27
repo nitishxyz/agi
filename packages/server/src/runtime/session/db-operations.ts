@@ -106,11 +106,7 @@ export async function updateSessionTokensIncremental(
 	if (!usage || !db) return;
 
 	const usageProvider = resolveUsageProvider(opts.provider, opts.model);
-	const normalizedUsage = normalizeUsage(
-		usage,
-		providerOptions,
-		usageProvider,
-	);
+	const normalizedUsage = normalizeUsage(usage, providerOptions, usageProvider);
 
 	// Read session totals
 	const sessRows = await db
@@ -238,11 +234,7 @@ export async function updateMessageTokensIncremental(
 	if (!usage || !db) return;
 
 	const usageProvider = resolveUsageProvider(opts.provider, opts.model);
-	const normalizedUsage = normalizeUsage(
-		usage,
-		providerOptions,
-		usageProvider,
-	);
+	const normalizedUsage = normalizeUsage(usage, providerOptions, usageProvider);
 
 	const msgRows = await db
 		.select()

@@ -153,13 +153,13 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				agent,
 				provider,
 				model: modelName,
-			content,
-			oneShot: Boolean(body?.oneShot),
-			userContext,
-			reasoningText: reasoning,
-			images,
-			files,
-		});
+				content,
+				oneShot: Boolean(body?.oneShot),
+				userContext,
+				reasoningText: reasoning,
+				images,
+				files,
+			});
 			return c.json({ messageId: assistantMessageId }, 202);
 		} catch (error) {
 			logger.error('Failed to create session message', error);

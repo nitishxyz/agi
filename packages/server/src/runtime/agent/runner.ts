@@ -236,13 +236,13 @@ async function runAssistant(opts: RunOpts) {
 
 			if (part.type === 'reasoning-start') {
 				const reasoningId = part.id;
-			if (!reasoningId) continue;
-			await handleReasoningStart(
-				reasoningId,
-				part.providerMetadata,
-				opts,
-				db,
-				sharedCtx,
+				if (!reasoningId) continue;
+				await handleReasoningStart(
+					reasoningId,
+					part.providerMetadata,
+					opts,
+					db,
+					sharedCtx,
 					getStepIndex,
 					reasoningStates,
 				);
@@ -250,13 +250,13 @@ async function runAssistant(opts: RunOpts) {
 			}
 
 			if (part.type === 'reasoning-delta') {
-			await handleReasoningDelta(
-				part.id,
-				part.text,
-				part.providerMetadata,
-				opts,
-				db,
-				getStepIndex,
+				await handleReasoningDelta(
+					part.id,
+					part.text,
+					part.providerMetadata,
+					opts,
+					db,
+					getStepIndex,
 					reasoningStates,
 				);
 				continue;
