@@ -6,7 +6,13 @@
 const SOURCE = 'https://models.dev/api.json';
 const TARGET = 'src/catalog/index.ts';
 
-type ProviderId = 'openai' | 'anthropic';
+type ProviderId = 'openai' | 'anthropic' | 'moonshot';
+
+const FEED_TO_PROVIDER: Record<string, ProviderId> = {
+	openai: 'openai',
+	anthropic: 'anthropic',
+	'moonshotai-cn': 'moonshot',
+};
 
 const isAllowedOpenAIModel = (id: string): boolean => {
 	if (id === 'codex-mini-latest') return true;
@@ -19,6 +25,11 @@ const isAllowedAnthropicModel = (id: string): boolean => {
 	if (id.includes('-3-5-')) return true;
 	if (id.includes('-4-') || id.includes('-4.')) return true;
 	if (id.match(/claude-(haiku|sonnet|opus)-4/)) return true;
+	return false;
+};
+
+const isAllowedMoonshotModel = (id: string): boolean => {
+	if (id.startsWith('kimi-k2')) return true;
 	return false;
 };
 
@@ -73,7 +84,7 @@ interface FeedProvider {
 
 type Feed = Record<string, FeedProvider>;
 
-const SUPPORTED_PROVIDERS: ProviderId[] = ['openai', 'anthropic'];
+const SUPPORTED_PROVIDERS: ProviderId[] = ['openai', 'anthropic', 'moonshot'];
 
 function mapModel(id: string, raw?: FeedModel): ModelInfo {
 	const m = raw ?? {};
@@ -115,9 +126,9 @@ function pickProviders(feed: Feed): Record<ProviderId, ProviderEntry> {
 	}
 
 	for (const [key, entry] of Object.entries(feed)) {
-		if (!SUPPORTED_PROVIDERS.includes(key as ProviderId)) continue;
+		const providerId = FEED_TO_PROVIDER[key];
+		if (!providerId) continue;
 
-		const providerId = key as ProviderId;
 		const models: ModelInfo[] = [];
 
 		for (const [modelId, modelData] of Object.entries(entry.models || {})) {
@@ -125,6 +136,9 @@ function pickProviders(feed: Feed): Record<ProviderId, ProviderEntry> {
 				continue;
 			}
 			if (providerId === 'anthropic' && !isAllowedAnthropicModel(modelId)) {
+				continue;
+			}
+			if (providerId === 'moonshot' && !isAllowedMoonshotModel(modelId)) {
 				continue;
 			}
 			models.push(mapModel(modelId, modelData));
@@ -143,7 +157,7 @@ function generateTs(catalog: Record<ProviderId, ProviderEntry>): string {
 `;
 
 	const types = `
-export type ProviderId = 'openai' | 'anthropic';
+export type ProviderId = 'openai' | 'anthropic' | 'moonshot';
 
 export interface ModelCost {
   input?: number;
@@ -190,9 +204,10 @@ async function main() {
 
 	const openaiCount = catalog.openai.models.length;
 	const anthropicCount = catalog.anthropic.models.length;
+	const moonshotCount = catalog.moonshot.models.length;
 
 	console.log(
-		`Found ${openaiCount} OpenAI models, ${anthropicCount} Anthropic models`,
+		`Found ${openaiCount} OpenAI models, ${anthropicCount} Anthropic models, ${moonshotCount} Moonshot models`,
 	);
 
 	const ts = generateTs(catalog);

@@ -7,6 +7,7 @@ import balance from './routes/balance';
 import topup from './routes/topup';
 import messages from './routes/messages';
 import responses from './routes/responses';
+import completions from './routes/completions';
 
 const app = new Hono();
 
@@ -30,6 +31,7 @@ app.get('/', (c) => {
 		endpoints: {
 			openai: '/v1/responses',
 			anthropic: '/v1/messages',
+			moonshot: '/v1/chat/completions',
 			models: '/v1/models',
 			balance: '/v1/balance',
 			topup: '/v1/topup',
@@ -50,6 +52,7 @@ app.route('/', balance);
 app.route('/', topup);
 app.route('/', messages);
 app.route('/', responses);
+app.route('/', completions);
 
 app.onError((err, c) => {
 	console.error('Unhandled error:', err);

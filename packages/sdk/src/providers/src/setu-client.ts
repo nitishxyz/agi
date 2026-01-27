@@ -7,6 +7,7 @@ import { svm } from 'x402/shared';
 import nacl from 'tweetnacl';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { addAnthropicCacheControl } from './anthropic-caching.ts';
 
 function simplifyPaymentError(errMsg: string): string {
@@ -245,6 +246,7 @@ export function createSetuFetch(
  * Uses native AI SDK providers:
  * - OpenAI models → /v1/responses (via @ai-sdk/openai)
  * - Anthropic models → /v1/messages (via @ai-sdk/anthropic)
+ * - Moonshot models → /v1/chat/completions (via @ai-sdk/openai-compatible)
  *
  * Provider is determined by options.providerNpm from catalog.
  */
@@ -266,6 +268,18 @@ export function createSetuModel(
 			fetch: customFetch,
 		});
 		return anthropic(model);
+	}
+
+	if (providerNpm === '@ai-sdk/openai-compatible') {
+		const compatible = createOpenAICompatible({
+			name: 'setu-moonshot',
+			baseURL,
+			headers: {
+				Authorization: 'Bearer setu-wallet-auth',
+			},
+			fetch: customFetch,
+		});
+		return compatible(model);
 	}
 
 	// Default to OpenAI

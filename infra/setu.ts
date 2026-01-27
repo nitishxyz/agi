@@ -2,6 +2,8 @@ import { domains } from './domains';
 import {
 	anthropicApiKey,
 	databaseUrl,
+	googleAiApiKey,
+	moonshotAiApiKey,
 	openAiApiKey,
 	platformWallet,
 } from './secrets';
@@ -14,6 +16,8 @@ export const setu = !DEPLOYED_STAGES.includes($app.stage)
 				DATABASE_URL: databaseUrl.value,
 				OPENAI_API_KEY: openAiApiKey.value,
 				ANTHROPIC_API_KEY: anthropicApiKey.value,
+				GOOGLE_AI_API_KEY: googleAiApiKey.value,
+				MOONSHOT_AI_API_KEY: moonshotAiApiKey.value,
 				PLATFORM_WALLET: platformWallet.value,
 				STAGE: $app.stage || 'dev',
 			},
@@ -26,6 +30,8 @@ export const setu = !DEPLOYED_STAGES.includes($app.stage)
 				DATABASE_URL: databaseUrl.value,
 				OPENAI_API_KEY: openAiApiKey.value,
 				ANTHROPIC_API_KEY: anthropicApiKey.value,
+				GOOGLE_AI_API_KEY: googleAiApiKey.value,
+				MOONSHOT_AI_API_KEY: moonshotAiApiKey.value,
 				PLATFORM_WALLET: platformWallet.value,
 				STAGE: $app.stage || 'prod',
 			},

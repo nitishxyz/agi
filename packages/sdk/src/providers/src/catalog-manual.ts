@@ -32,6 +32,10 @@ const SETU_SOURCES: Array<{ id: ProviderId; npm: string }> = [
 		id: 'anthropic',
 		npm: '@ai-sdk/anthropic',
 	},
+	{
+		id: 'moonshot',
+		npm: '@ai-sdk/openai-compatible',
+	},
 ];
 
 function cloneModel(model: ModelInfo): ModelInfo {

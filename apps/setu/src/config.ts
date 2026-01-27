@@ -21,6 +21,11 @@ export const config = {
 		baseUrl: 'https://api.anthropic.com/v1',
 	},
 
+	moonshot: {
+		apiKey: process.env.MOONSHOT_AI_API_KEY || '',
+		baseUrl: 'https://api.moonshot.ai/v1',
+	},
+
 	facilitator: {
 		url: 'https://facilitator.payai.network',
 	},
