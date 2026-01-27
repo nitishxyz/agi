@@ -56,13 +56,18 @@ async function handleCompletions(c: Context<{ Variables: Variables }>) {
 
 	const isStream = Boolean(body.stream);
 
+	const requestBody = {
+		...body,
+		...(isStream && { stream_options: { include_usage: true } }),
+	};
+
 	const response = await fetch(`${config.moonshot.baseUrl}/chat/completions`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
 			Authorization: `Bearer ${config.moonshot.apiKey}`,
 		},
-		body: JSON.stringify(body),
+		body: JSON.stringify(requestBody),
 	});
 
 	if (!response.ok) {

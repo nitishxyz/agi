@@ -6350,7 +6350,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				id: 'kimi-k2.5',
 				label: 'Kimi K2.5',
 				modalities: {
-					input: ['text'],
+					input: ['text', 'image', 'video'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -6979,6 +6979,32 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 2.4,
 					output: 10,
 					cacheRead: 0.6,
+				},
+				limit: {
+					context: 262144,
+					output: 262144,
+				},
+			},
+			{
+				id: 'kimi-k2.5',
+				label: 'Kimi K2.5',
+				modalities: {
+					input: ['text', 'image', 'video'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2026-01',
+				lastUpdated: '2026-01',
+				openWeights: true,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
+					cacheWrite: 0,
 				},
 				limit: {
 					context: 262144,
