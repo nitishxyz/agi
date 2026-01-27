@@ -207,9 +207,7 @@ export function createSetuFetch(
 			const remainingPayments = maxPaymentAttempts - currentAttempts;
 			if (remainingPayments <= 0) {
 				callbacks.onPaymentError?.('Maximum payment attempts exceeded');
-				throw new Error(
-					'Setu: payment failed after maximum payment attempts.',
-				);
+				throw new Error('Setu: payment failed after maximum payment attempts.');
 			}
 
 			const releaseLock = await acquirePaymentLock(walletAddress);
@@ -337,9 +335,7 @@ async function handlePayment(args: {
 			`Setu balance still negative (${balanceValue.toFixed(8)}). Sending another top-up...`,
 		);
 	}
-	throw new Error(
-		`Setu: payment failed after ${attempts} additional top-ups.`,
-	);
+	throw new Error(`Setu: payment failed after ${attempts} additional top-ups.`);
 }
 
 async function processSinglePayment(args: {

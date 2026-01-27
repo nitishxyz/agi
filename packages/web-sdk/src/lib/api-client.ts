@@ -672,9 +672,7 @@ class ApiClient {
 		}
 	}
 
-	async getSetuUsdcBalance(
-		network: 'mainnet' | 'devnet' = 'mainnet',
-	): Promise<{
+	async getSetuUsdcBalance(network: 'mainnet' | 'devnet' = 'mainnet'): Promise<{
 		walletAddress: string;
 		usdcBalance: number;
 		network: 'mainnet' | 'devnet';

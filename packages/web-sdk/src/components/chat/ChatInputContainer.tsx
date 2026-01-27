@@ -430,9 +430,7 @@ export const ChatInputContainer = memo(
 						authType={providerAuthType}
 						researchContexts={researchContexts}
 						onResearchContextRemove={handleResearchContextRemove}
-						onRefreshBalance={
-							provider === 'setu' ? fetchBalance : undefined
-						}
+						onRefreshBalance={provider === 'setu' ? fetchBalance : undefined}
 						isBalanceLoading={isBalanceLoading}
 					/>
 				</>

@@ -45,10 +45,7 @@ export function useSetuBalance(providerName: string | undefined) {
 	]);
 
 	useEffect(() => {
-		if (
-			providerName === 'setu' &&
-			(balance === null || usdcBalance === null)
-		) {
+		if (providerName === 'setu' && (balance === null || usdcBalance === null)) {
 			fetchBalance();
 		}
 	}, [providerName, balance, usdcBalance, fetchBalance]);

@@ -335,14 +335,8 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 								</div>
 							</div>
 						)}
-						<SettingRow
-							label="Address"
-							value={truncateWallet(setuWallet)}
-						/>
-						<SettingRow
-							label="Balance"
-							value={formatBalance(setuBalance)}
-						/>
+						<SettingRow label="Address" value={truncateWallet(setuWallet)} />
+						<SettingRow label="Balance" value={formatBalance(setuBalance)} />
 						<SettingRow
 							label="USDC"
 							value={formatUsdcBalance(setuUsdcBalance)}
