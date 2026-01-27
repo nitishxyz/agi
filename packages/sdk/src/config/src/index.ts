@@ -17,6 +17,7 @@ const DEFAULTS: {
 		agent: 'general',
 		provider: 'openai',
 		model: 'gpt-4o-mini',
+		toolApproval: 'auto',
 	},
 	providers: {
 		openai: { enabled: true },

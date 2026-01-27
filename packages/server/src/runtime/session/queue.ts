@@ -1,5 +1,6 @@
 import type { ProviderName } from '../provider/index.ts';
 import { publish } from '../../events/bus.ts';
+import type { ToolApprovalMode } from '../tools/approval.ts';
 
 export type RunOpts = {
 	sessionId: string;
@@ -14,6 +15,7 @@ export type RunOpts = {
 	abortSignal?: AbortSignal;
 	isCompactCommand?: boolean;
 	compactionContext?: string;
+	toolApprovalMode?: ToolApprovalMode;
 };
 
 export type QueuedMessage = {

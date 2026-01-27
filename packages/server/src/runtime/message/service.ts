@@ -171,6 +171,9 @@ export async function dispatchAssistantMessage(
 		);
 	}
 
+	// Read tool approval mode from config
+	const toolApprovalMode = cfg.defaults.toolApproval ?? 'auto';
+
 	enqueueAssistantRun(
 		{
 			sessionId,
@@ -184,6 +187,7 @@ export async function dispatchAssistantMessage(
 			reasoningText,
 			isCompactCommand: isCompact,
 			compactionContext,
+			toolApprovalMode,
 		},
 		runSessionLoop,
 	);

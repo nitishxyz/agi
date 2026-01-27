@@ -16,4 +16,5 @@ export type {
 	DefaultConfig,
 	PathConfig,
 	AGIConfig,
+	ToolApprovalMode,
 } from './config';

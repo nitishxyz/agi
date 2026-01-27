@@ -31,6 +31,7 @@ export function useUpdateDefaults() {
 			agent?: string;
 			provider?: string;
 			model?: string;
+			toolApproval?: 'auto' | 'dangerous' | 'all';
 			scope?: 'global' | 'local';
 		}) => apiClient.updateDefaults(data),
 		onSuccess: () => {

@@ -9,3 +9,4 @@ export * from './pendingResearchStore';
 export * from './toastStore';
 export * from './solforgeStore';
 export * from './settingsStore';
+export * from './toolApprovalStore';

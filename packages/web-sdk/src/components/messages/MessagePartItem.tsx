@@ -15,6 +15,8 @@ import {
 	XOctagon,
 	Brain,
 	Database,
+	Shield,
+	X,
 } from 'lucide-react';
 import {
 	Fragment,
@@ -22,6 +24,8 @@ import {
 	type ReactNode,
 	type ComponentPropsWithoutRef,
 } from 'react';
+import { useState } from 'react';
+import type { PendingToolApproval } from '../../stores/toolApprovalStore';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { MessagePart } from '../../types/api';
@@ -133,6 +137,9 @@ interface MessagePartItemProps {
 	isLastProgressUpdate?: boolean;
 	onNavigateToSession?: (sessionId: string) => void;
 	compact?: boolean;
+	pendingApproval?: PendingToolApproval | null;
+	onApprove?: (callId: string) => void;
+	onReject?: (callId: string) => void;
 }
 
 export const MessagePartItem = memo(
@@ -143,8 +150,14 @@ export const MessagePartItem = memo(
 		isLastProgressUpdate,
 		onNavigateToSession,
 		compact,
+		pendingApproval,
+		onApprove,
+		onReject,
 	}: MessagePartItemProps) {
-		if (part.type === 'tool_call' && !isLastToolCall) {
+		const [isProcessing, setIsProcessing] = useState(false);
+
+		// Show tool_call if it's the last one OR if it has a pending approval
+		if (part.type === 'tool_call' && !isLastToolCall && !pendingApproval) {
 			return null;
 		}
 
@@ -469,13 +482,66 @@ export const MessagePartItem = memo(
 								{argsPreview}
 							</span>
 						),
-					});
-				}
+				});
+			}
 
-				if (segments.length === 0) {
-					segments.push({
-						key: 'running',
-						node: <span className="text-muted-foreground/75">running…</span>,
+			// Check if this tool call has a pending approval
+			const hasPendingApproval = pendingApproval && pendingApproval.callId === part.toolCallId;
+
+			if (hasPendingApproval) {
+				const handleApprove = async () => {
+					if (onApprove && pendingApproval) {
+						setIsProcessing(true);
+						onApprove(pendingApproval.callId);
+					}
+				};
+				const handleReject = async () => {
+					if (onReject && pendingApproval) {
+						setIsProcessing(true);
+						onReject(pendingApproval.callId);
+					}
+				};
+
+				return (
+					<div className="flex flex-col gap-2">
+						<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground/80 max-w-full">
+							<Shield className="h-4 w-4 text-amber-500" />
+							<span className="font-medium text-foreground">{toolLabel}</span>
+							<span className="text-amber-600 dark:text-amber-400 font-medium">requires approval</span>
+						</div>
+						{segments.length > 0 && (
+							<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground ml-6">
+								{segments.map((segment) => (
+									<Fragment key={segment.key}>{segment.node}</Fragment>
+								))}
+							</div>
+						)}
+						<div className="flex items-center gap-2 ml-6">
+							<button
+								type="button"
+								onClick={handleReject}
+								disabled={isProcessing}
+								className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-border hover:bg-muted transition-colors disabled:opacity-50"
+							>
+								<X className="w-3 h-3" />
+								Reject
+							</button>
+							<button
+								type="button"
+								onClick={handleApprove}
+								disabled={isProcessing}
+								className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+							>
+								<Check className="w-3 h-3" />
+								{isProcessing ? 'Approving...' : 'Approve'}
+							</button>
+						</div>
+					</div>
+				);
+			} else if (segments.length === 0) {
+				segments.push({
+					key: 'running',
+					node: <span className="text-muted-foreground/75">running…</span>,
 					});
 				}
 
@@ -531,7 +597,10 @@ export const MessagePartItem = memo(
 			prevProps.showLine === nextProps.showLine &&
 			prevProps.isLastToolCall === nextProps.isLastToolCall &&
 			prevProps.isLastProgressUpdate === nextProps.isLastProgressUpdate &&
-			prevProps.onNavigateToSession === nextProps.onNavigateToSession
+			prevProps.onNavigateToSession === nextProps.onNavigateToSession &&
+			prevProps.pendingApproval?.callId === nextProps.pendingApproval?.callId &&
+			prevProps.onApprove === nextProps.onApprove &&
+			prevProps.onReject === nextProps.onReject
 		);
 	},
 );

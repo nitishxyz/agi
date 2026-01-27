@@ -11,6 +11,7 @@ export function registerDefaultsRoute(app: Hono) {
 				agent?: string;
 				provider?: string;
 				model?: string;
+				toolApproval?: 'auto' | 'dangerous' | 'all';
 				scope?: 'global' | 'local';
 			}>();
 
@@ -24,6 +25,7 @@ export function registerDefaultsRoute(app: Hono) {
 			if (body.agent) updates.agent = body.agent;
 			if (body.provider) updates.provider = body.provider;
 			if (body.model) updates.model = body.model;
+			if (body.toolApproval) updates.toolApproval = body.toolApproval;
 
 			await setConfig(scope, updates, projectRoot);
 

@@ -13,6 +13,7 @@ import {
 	toClaudeCodeName,
 	requiresClaudeCodeNaming,
 } from '../runtime/tools/mapping.ts';
+import { requiresApproval, requestApproval } from '../runtime/tools/approval.ts';
 
 export type { ToolAdapterContext } from '../runtime/tools/context.ts';
 
@@ -33,6 +34,7 @@ type PendingCallMeta = {
 	startTs: number;
 	stepIndex?: number;
 	args?: unknown;
+	approvalPromise?: Promise<boolean>;
 };
 
 function getPendingQueue(
@@ -294,6 +296,19 @@ export function adaptTools(
 						toolCallId: callId,
 					});
 				} catch {}
+				// Start approval request immediately so UI shows it right away
+				if (
+					ctx.toolApprovalMode &&
+					requiresApproval(name, ctx.toolApprovalMode)
+				) {
+					meta.approvalPromise = requestApproval(
+						ctx.sessionId,
+						ctx.messageId,
+						callId,
+						name,
+						args,
+					);
+				}
 				if (typeof base.onInputAvailable === 'function') {
 					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
 					await base.onInputAvailable(options as any);
@@ -324,6 +339,13 @@ export function adaptTools(
 
 				const executeWithGuards = async (): Promise<ToolExecuteReturn> => {
 					try {
+						// Await approval if it was requested in onInputAvailable
+						if (meta?.approvalPromise) {
+							const approved = await meta.approvalPromise;
+							if (!approved) {
+								return { ok: false, error: 'Tool execution rejected by user' } as ToolExecuteReturn;
+							}
+						}
 						// Handle session-relative paths and cwd tools
 						let res: ToolExecuteReturn | { cwd: string } | null | undefined;
 						const cwd = getCwd(ctx.sessionId);

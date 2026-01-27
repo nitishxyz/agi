@@ -32,6 +32,7 @@ export async function setupToolContext(
 		model: opts.model,
 		projectRoot: opts.projectRoot,
 		stepExecution: { states: new Map() },
+		toolApprovalMode: opts.toolApprovalMode,
 		onFirstToolCall: () => {
 			if (firstToolSeen) return;
 			firstToolSeen = true;

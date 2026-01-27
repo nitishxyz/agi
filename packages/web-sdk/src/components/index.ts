@@ -5,6 +5,7 @@ export * from './ui/Input';
 export * from './ui/Textarea';
 export * from './ui/ConfirmationDialog';
 export * from './ui/Toaster';
+export * from './ui/ToolApprovalDialog';
 
 // Chat Components
 export * from './chat/ChatInput';

@@ -16,6 +16,7 @@ import { registerTerminalsRoutes } from './routes/terminals.ts';
 import { registerSessionFilesRoutes } from './routes/session-files.ts';
 import { registerBranchRoutes } from './routes/branch.ts';
 import { registerResearchRoutes } from './routes/research.ts';
+import { registerSessionApprovalRoute } from './routes/session-approval.ts';
 import { registerSolforgeRoutes } from './routes/solforge.ts';
 import type { AgentConfigEntry } from './runtime/agent/registry.ts';
 
@@ -59,6 +60,7 @@ function initApp() {
 	registerRootRoutes(app);
 	registerOpenApiRoute(app);
 	registerSessionsRoutes(app);
+	registerSessionApprovalRoute(app);
 	registerSessionMessagesRoutes(app);
 	registerSessionStreamRoute(app);
 	registerAskRoutes(app);
@@ -128,6 +130,7 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	registerRootRoutes(honoApp);
 	registerOpenApiRoute(honoApp);
 	registerSessionsRoutes(honoApp);
+	registerSessionApprovalRoute(honoApp);
 	registerSessionMessagesRoutes(honoApp);
 	registerSessionStreamRoute(honoApp);
 	registerAskRoutes(honoApp);
@@ -225,6 +228,7 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 	registerRootRoutes(honoApp);
 	registerOpenApiRoute(honoApp);
 	registerSessionsRoutes(honoApp);
+	registerSessionApprovalRoute(honoApp);
 	registerSessionMessagesRoutes(honoApp);
 	registerSessionStreamRoute(honoApp);
 	registerAskRoutes(honoApp);

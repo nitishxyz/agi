@@ -13,10 +13,13 @@ export type ProviderConfig = { enabled: boolean; apiKey?: string };
 /**
  * Default settings for the CLI
  */
+export type ToolApprovalMode = 'auto' | 'dangerous' | 'all';
+
 export type DefaultConfig = {
 	agent: string;
 	provider: ProviderId;
 	model: string;
+	toolApproval?: ToolApprovalMode;
 };
 
 /**

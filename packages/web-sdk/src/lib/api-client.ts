@@ -312,7 +312,12 @@ class ApiClient {
 	async getConfig(): Promise<{
 		agents: string[];
 		providers: string[];
-		defaults: { agent: string; provider: string; model: string };
+		defaults: {
+			agent: string;
+			provider: string;
+			model: string;
+			toolApproval?: 'auto' | 'dangerous' | 'all';
+		};
 	}> {
 		const response = await apiGetConfig();
 		if (response.error) {
@@ -321,7 +326,12 @@ class ApiClient {
 		return response.data as {
 			agents: string[];
 			providers: string[];
-			defaults: { agent: string; provider: string; model: string };
+			defaults: {
+				agent: string;
+				provider: string;
+				model: string;
+				toolApproval?: 'auto' | 'dangerous' | 'all';
+			};
 		};
 	}
 
@@ -364,10 +374,16 @@ class ApiClient {
 		agent?: string;
 		provider?: string;
 		model?: string;
+		toolApproval?: 'auto' | 'dangerous' | 'all';
 		scope?: 'global' | 'local';
 	}): Promise<{
 		success: boolean;
-		defaults: { agent: string; provider: string; model: string };
+		defaults: {
+			agent: string;
+			provider: string;
+			model: string;
+			toolApproval?: 'auto' | 'dangerous' | 'all';
+		};
 	}> {
 		const response = await fetch(`${this.baseUrl}/v1/config/defaults`, {
 			method: 'PATCH',
@@ -741,6 +757,25 @@ class ApiClient {
 			throw new Error(extractErrorMessage(errorData));
 		}
 
+		return await response.json();
+	}
+
+	async approveToolCall(
+		sessionId: string,
+		callId: string,
+		approved: boolean,
+	): Promise<{ ok: boolean; callId: string; approved: boolean }> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/sessions/${sessionId}/approval`,
+			{
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ callId, approved }),
+			},
+		);
+		if (!response.ok) {
+			throw new Error('Failed to send tool approval');
+		}
 		return await response.json();
 	}
 }

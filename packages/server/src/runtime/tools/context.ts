@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import type { DB } from '@agi-cli/database';
 import { messageParts } from '@agi-cli/database/schema';
+import type { ToolApprovalMode } from './approval.ts';
 import { publish } from '../../events/bus.ts';
 
 export type StepExecutionState = {
@@ -24,6 +25,7 @@ export type ToolAdapterContext = {
 	stepExecution?: {
 		states: Map<number, StepExecutionState>;
 	};
+	toolApprovalMode?: ToolApprovalMode;
 };
 
 export function extractFinishText(input: unknown): string | undefined {

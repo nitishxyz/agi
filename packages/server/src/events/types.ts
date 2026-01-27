@@ -1,4 +1,6 @@
 export type AGIEventType =
+	| 'tool.approval.required'
+	| 'tool.approval.resolved'
 	| 'solforge.payment.required'
 	| 'solforge.payment.signing'
 	| 'solforge.payment.complete'

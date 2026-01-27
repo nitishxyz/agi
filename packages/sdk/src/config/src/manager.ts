@@ -54,20 +54,23 @@ export async function ensureEnv(
 
 export async function writeDefaults(
 	scope: Scope,
-	updates: Partial<{ agent: string; provider: ProviderId; model: string }>,
+	updates: Partial<{
+		agent: string;
+		provider: ProviderId;
+		model: string;
+		toolApproval: 'auto' | 'dangerous' | 'all';
+	}>,
 	projectRoot?: string,
 ) {
 	const { cfg } = await read(projectRoot);
 	if (scope === 'local') {
 		const next = {
-			projectRoot: cfg.projectRoot,
 			defaults: {
-				agent: updates.agent ?? cfg.defaults.agent,
+				...cfg.defaults,
+				...updates,
 				provider: (updates.provider ?? cfg.defaults.provider) as ProviderId,
-				model: updates.model ?? cfg.defaults.model,
 			},
 			providers: cfg.providers,
-			paths: cfg.paths,
 		};
 		const path = `${cfg.paths.dataDir}/config.json`;
 		await Bun.write(path, JSON.stringify(next, null, 2));
@@ -77,9 +80,9 @@ export async function writeDefaults(
 	const path = getGlobalConfigPath();
 	const next = {
 		defaults: {
-			agent: updates.agent ?? cfg.defaults.agent,
+			...cfg.defaults,
+			...updates,
 			provider: (updates.provider ?? cfg.defaults.provider) as ProviderId,
-			model: updates.model ?? cfg.defaults.model,
 		},
 		providers: cfg.providers,
 	};
