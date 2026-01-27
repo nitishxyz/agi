@@ -13,6 +13,7 @@ interface ToolApprovalState {
 	addPendingApproval: (approval: PendingToolApproval) => void;
 	removePendingApproval: (callId: string) => void;
 	clearPendingApprovals: () => void;
+	setPendingApprovals: (approvals: PendingToolApproval[]) => void;
 }
 
 export const useToolApprovalStore = create<ToolApprovalState>((set) => ({
@@ -30,4 +31,7 @@ export const useToolApprovalStore = create<ToolApprovalState>((set) => ({
 
 	clearPendingApprovals: () =>
 		set({ pendingApprovals: [] }),
+
+	setPendingApprovals: (approvals) =>
+		set({ pendingApprovals: approvals }),
 }));

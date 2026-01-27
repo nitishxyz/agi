@@ -1,5 +1,12 @@
 import { memo, useState, useCallback, useMemo } from 'react';
-import { Sparkles, GitBranch, Copy, Check, Shield, CheckCheck } from 'lucide-react';
+import {
+	Sparkles,
+	GitBranch,
+	Copy,
+	Check,
+	Shield,
+	CheckCheck,
+} from 'lucide-react';
 import type { Message } from '../../types/api';
 import { MessagePartItem } from './MessagePartItem';
 import { useMessageQueuePosition } from '../../hooks/useQueueState';
@@ -57,47 +64,65 @@ export const AssistantMessageGroup = memo(
 		// Tool approval handling
 		const { pendingApprovals, removePendingApproval } = useToolApprovalStore();
 
-		const handleApprove = useCallback(async (callId: string) => {
+		const handleApprove = useCallback(
+			async (callId: string) => {
+				if (!sessionId) return;
+				try {
+					await apiClient.approveToolCall(sessionId, callId, true);
+					removePendingApproval(callId);
+				} catch (error) {
+					console.error('Failed to approve tool call:', error);
+				}
+			},
+			[sessionId, removePendingApproval],
+		);
+
+		const handleReject = useCallback(
+			async (callId: string) => {
+				if (!sessionId) return;
+				try {
+					await apiClient.approveToolCall(sessionId, callId, false);
+					removePendingApproval(callId);
+				} catch (error) {
+					console.error('Failed to reject tool call:', error);
+				}
+			},
+			[sessionId, removePendingApproval],
+		);
+
+		// Handle approving all pending approvals for this message
+		const messagePendingApprovals = useMemo(() => {
+			return pendingApprovals.filter((a) => a.messageId === message.id);
+		}, [pendingApprovals, message.id]);
+
+		const handleApproveAll = useCallback(async () => {
 			if (!sessionId) return;
 			try {
-				await apiClient.approveToolCall(sessionId, callId, true);
-				removePendingApproval(callId);
+				await Promise.all(
+					messagePendingApprovals.map((a) =>
+						apiClient.approveToolCall(sessionId, a.callId, true),
+					),
+				);
+				for (const a of messagePendingApprovals) {
+					removePendingApproval(a.callId);
+				}
 			} catch (error) {
-				console.error('Failed to approve tool call:', error);
+				console.error('Failed to approve all tool calls:', error);
 			}
-		}, [sessionId, removePendingApproval]);
+		}, [sessionId, messagePendingApprovals, removePendingApproval]);
 
-		const handleReject = useCallback(async (callId: string) => {
-			if (!sessionId) return;
-			try {
-				await apiClient.approveToolCall(sessionId, callId, false);
-				removePendingApproval(callId);
-			} catch (error) {
-				console.error('Failed to reject tool call:', error);
-		}
-	}, [sessionId, removePendingApproval]);
+		// Sort parts by index to maintain correct order when tool results come in
+		const parts = useMemo(() => {
+			const rawParts = message.parts || [];
+			return [...rawParts].sort((a, b) => {
+				const indexDiff = (a.index ?? 0) - (b.index ?? 0);
+				if (indexDiff !== 0) return indexDiff;
+				// Secondary sort by startedAt for parts with same index
+				return (a.startedAt ?? 0) - (b.startedAt ?? 0);
+			});
+		}, [message.parts]);
 
-	// Handle approving all pending approvals for this message
-	const messagePendingApprovals = useMemo(() => {
-		return pendingApprovals.filter((a) => a.messageId === message.id);
-	}, [pendingApprovals, message.id]);
-
-	const handleApproveAll = useCallback(async () => {
-		if (!sessionId) return;
-		try {
-			await Promise.all(
-				messagePendingApprovals.map((a) => apiClient.approveToolCall(sessionId, a.callId, true))
-			);
-			for (const a of messagePendingApprovals) {
-				removePendingApproval(a.callId);
-			}
-		} catch (error) {
-			console.error('Failed to approve all tool calls:', error);
-		}
-	}, [sessionId, messagePendingApprovals, removePendingApproval]);
-
-	const parts = message.parts || [];
-	const hasFinish = parts.some((part) => part.toolName === 'finish');
+		const hasFinish = parts.some((part) => part.toolName === 'finish');
 		const latestProgressUpdateIndex = parts.reduce(
 			(lastIndex, part, index) =>
 				part.type === 'tool_result' && part.toolName === 'progress_update'
@@ -229,15 +254,17 @@ export const AssistantMessageGroup = memo(
 				)}
 
 				<div className="relative ml-1">
-				{parts.map((part, index) => {
-					const isLastPart = index === parts.length - 1;
-					// Find pending approval for this part's tool call
-					const pendingApproval = part.type === 'tool_call' && part.toolCallId
-						? pendingApprovals.find((a) => a.callId === part.toolCallId) ?? null
-						: null;
-					const isFinishTool =
-						part.type === 'tool_result' && part.toolName === 'finish';
-					const showLine =
+					{parts.map((part, index) => {
+						const isLastPart = index === parts.length - 1;
+						// Find pending approval for this part's tool call
+						const pendingApproval =
+							part.type === 'tool_call' && part.toolCallId
+								? (pendingApprovals.find((a) => a.callId === part.toolCallId) ??
+									null)
+								: null;
+						const isFinishTool =
+							part.type === 'tool_result' && part.toolName === 'finish';
+						const showLine =
 							(!isLastPart || hasNextAssistantMessage) && !isFinishTool;
 						const isLastToolCall = part.type === 'tool_call' && isLastPart;
 						const isProgressUpdate =
@@ -254,37 +281,37 @@ export const AssistantMessageGroup = memo(
 								part={part}
 								showLine={showLine}
 								isFirstPart={index === firstVisiblePartIndex && !showHeader}
-						isLastToolCall={isLastToolCall}
-						onNavigateToSession={onNavigateToSession}
-						compact={compact}
-						pendingApproval={pendingApproval}
-						onApprove={handleApprove}
-						onReject={handleReject}
-					/>
-			);
-		})}
+								isLastToolCall={isLastToolCall}
+								onNavigateToSession={onNavigateToSession}
+								compact={compact}
+								pendingApproval={pendingApproval}
+								onApprove={handleApprove}
+								onReject={handleReject}
+							/>
+						);
+					})}
 
-				{/* Approve All banner when multiple approvals pending */}
-				{messagePendingApprovals.length > 1 && (
-					<div className="flex items-center gap-3 py-2 px-3 my-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-						<Shield className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-						<span className="text-sm text-amber-800 dark:text-amber-200 flex-1">
-							{messagePendingApprovals.length} tools waiting for approval
-						</span>
-						<button
-							type="button"
-							onClick={handleApproveAll}
-							className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-amber-600 text-white hover:bg-amber-700 transition-colors"
-						>
-							<CheckCheck className="w-3.5 h-3.5" />
-							Approve All
-						</button>
-					</div>
-				)}
+					{/* Approve All banner when multiple approvals pending */}
+					{messagePendingApprovals.length > 1 && (
+						<div className="flex items-center gap-3 py-2 px-3 my-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+							<Shield className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+							<span className="text-sm text-amber-800 dark:text-amber-200 flex-1">
+								{messagePendingApprovals.length} tools waiting for approval
+							</span>
+							<button
+								type="button"
+								onClick={handleApproveAll}
+								className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+							>
+								<CheckCheck className="w-3.5 h-3.5" />
+								Approve All
+							</button>
+						</div>
+					)}
 
-				{shouldShowProgressUpdate && latestProgressUpdatePart && (
-					<MessagePartItem
-						key={latestProgressUpdatePart.id}
+					{shouldShowProgressUpdate && latestProgressUpdatePart && (
+						<MessagePartItem
+							key={latestProgressUpdatePart.id}
 							part={latestProgressUpdatePart}
 							showLine={hasNextAssistantMessage}
 							isFirstPart={!hasVisibleNonProgressParts && !showHeader}

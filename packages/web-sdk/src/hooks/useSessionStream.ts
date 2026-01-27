@@ -11,10 +11,10 @@ export function useSessionStream(sessionId: string | undefined) {
 	const assistantMessageIdRef = useRef<string | null>(null);
 	const lastInvalidationRef = useRef<number>(0);
 
-	const { addPendingApproval, removePendingApproval, clearPendingApprovals } = useToolApprovalStore();
+	const { addPendingApproval, removePendingApproval, setPendingApprovals } = useToolApprovalStore();
 
 	useEffect(() => {
-		// console.log('[useSessionStream] Hook called with sessionId:', sessionId);
+		// console.log('[useSessionStream] Hook called with sessionId:', sessionId)
 		if (!sessionId) {
 			console.log('[useSessionStream] No sessionId, skipping');
 			return;
@@ -22,8 +22,16 @@ export function useSessionStream(sessionId: string | undefined) {
 
 		assistantMessageIdRef.current = null;
 		
-		// Clear any stale pending approvals when switching sessions
-		clearPendingApprovals();
+		// Fetch pending approvals from server for this session
+		apiClient.getPendingApprovals(sessionId).then((result) => {
+			if (result.ok && result.pending.length > 0) {
+				setPendingApprovals(result.pending);
+			} else {
+				setPendingApprovals([]);
+			}
+		}).catch(() => {
+			setPendingApprovals([]);
+		});
 
 		const client = new SSEClient();
 		clientRef.current = client;

@@ -778,6 +778,29 @@ class ApiClient {
 		}
 		return await response.json();
 	}
+
+	async getPendingApprovals(sessionId: string): Promise<{
+		ok: boolean;
+		pending: Array<{
+			callId: string;
+			toolName: string;
+			args: unknown;
+			messageId: string;
+			createdAt: number;
+		}>;
+	}> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/sessions/${sessionId}/approval/pending`,
+			{
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			},
+		);
+		if (!response.ok) {
+			return { ok: false, pending: [] };
+		}
+		return await response.json();
+	}
 }
 
 export const apiClient = new ApiClient();
