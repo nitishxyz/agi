@@ -18,3 +18,4 @@ export * from './useResearch';
 export * from './useSolforgePayments';
 export * from './useSolforgeBalance';
 export * from './useShareStatus';
+export * from './useToolApprovalShortcuts';

@@ -62,6 +62,14 @@ function parseDiff(patch: string): { lines: DiffLine[]; filePath: string } {
 
 	for (const line of lines) {
 		// Extract file path from diff headers
+		// Also enter hunk mode for enveloped format
+		if (line.startsWith('*** Update File:') || line.startsWith('*** Add File:')) {
+			const match = line.match(/\*\*\* (?:Update|Add) File: (.+)/);
+			if (match) filePath = match[1];
+			inHunk = true;
+			newLineNum = 1;
+			oldLineNum = 1;
+		}
 		if (line.startsWith('+++') || line.startsWith('*** Update File:')) {
 			const match =
 				line.match(/\+\+\+ b\/(.+)/) || line.match(/\*\*\* Update File: (.+)/);
@@ -74,6 +82,17 @@ function parseDiff(patch: string): { lines: DiffLine[]; filePath: string } {
 		if (hunkMatch) {
 			oldLineNum = Number.parseInt(hunkMatch[1], 10);
 			newLineNum = Number.parseInt(hunkMatch[2], 10);
+			inHunk = true;
+			result.push({
+				content: line,
+				codeContent: line,
+				type: 'header',
+			});
+			continue;
+		}
+
+		// Handle enveloped format @@ comment lines (not standard hunk headers)
+		if (line.startsWith('@@') && !line.match(/^@@ -\d+/)) {
 			inHunk = true;
 			result.push({
 				content: line,

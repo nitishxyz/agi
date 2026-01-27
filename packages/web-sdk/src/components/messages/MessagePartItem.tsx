@@ -15,8 +15,6 @@ import {
 	XOctagon,
 	Brain,
 	Database,
-	Shield,
-	X,
 } from 'lucide-react';
 import {
 	Fragment,
@@ -24,10 +22,10 @@ import {
 	type ReactNode,
 	type ComponentPropsWithoutRef,
 } from 'react';
-import { useState } from 'react';
 import type { PendingToolApproval } from '../../stores/toolApprovalStore';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ToolApprovalCard } from './ToolApprovalCard';
 import type { MessagePart } from '../../types/api';
 import {
 	ToolResultRenderer,
@@ -154,8 +152,6 @@ export const MessagePartItem = memo(
 		onApprove,
 		onReject,
 	}: MessagePartItemProps) {
-		const [isProcessing, setIsProcessing] = useState(false);
-
 		// Show tool_call if it's the last one OR if it has a pending approval
 		if (part.type === 'tool_call' && !isLastToolCall && !pendingApproval) {
 			return null;
@@ -493,63 +489,14 @@ export const MessagePartItem = memo(
 			const hasPendingApproval = pendingApproval && pendingApproval.callId === part.toolCallId;
 
 			if (hasPendingApproval) {
-				const handleApprove = async () => {
-					if (onApprove && pendingApproval) {
-						setIsProcessing(true);
-						onApprove(pendingApproval.callId);
-					}
-				};
-				const handleReject = async () => {
-					if (onReject && pendingApproval) {
-						setIsProcessing(true);
-						onReject(pendingApproval.callId);
-					}
-				};
-
-				// Get the primary display value for approval (path, cmd, etc.)
-				const approvalTarget = command || primary?.value;
-
 				return (
-					<div className="flex flex-col gap-2 py-1">
-						<div className="flex items-center gap-2 text-sm">
-							<Shield className="h-4 w-4 text-amber-500" />
-							<span className="font-medium text-foreground">{toolLabel}</span>
-							<span className="text-amber-600 dark:text-amber-400 font-medium">requires approval</span>
-						</div>
-						{approvalTarget && (
-							<div className="ml-6 max-w-full overflow-hidden">
-								<code className="block text-xs font-mono bg-muted/50 px-2 py-1.5 rounded border border-border/50 text-foreground/90 whitespace-pre-wrap break-all">
-									{approvalTarget}
-								</code>
-							</div>
-						)}
-						{/* Show additional context for complex operations */}
-						{argsPreview && !command && !primary && (
-							<div className="ml-6 text-xs text-muted-foreground">
-								{argsPreview}
-							</div>
-						)}
-						<div className="flex items-center gap-2 ml-6 mt-1">
-							<button
-								type="button"
-								onClick={handleReject}
-								disabled={isProcessing}
-								className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border border-border bg-background hover:bg-muted transition-colors disabled:opacity-50"
-							>
-								<X className="w-3 h-3" />
-								Reject
-							</button>
-							<button
-								type="button"
-								onClick={handleApprove}
-								disabled={isProcessing}
-								className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-amber-600 text-white hover:bg-amber-700 transition-colors disabled:opacity-50"
-							>
-								<Check className="w-3 h-3" />
-								{isProcessing ? 'Approving...' : 'Approve'}
-							</button>
-						</div>
-					</div>
+					<ToolApprovalCard
+						toolName={rawToolName}
+						args={args}
+						pendingApproval={pendingApproval}
+						onApprove={onApprove!}
+						onReject={onReject!}
+					/>
 				);
 			} else if (segments.length === 0) {
 				segments.push({

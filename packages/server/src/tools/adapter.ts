@@ -13,7 +13,7 @@ import {
 	toClaudeCodeName,
 	requiresClaudeCodeNaming,
 } from '../runtime/tools/mapping.ts';
-import { requiresApproval, requestApproval, updateApprovalArgs } from '../runtime/tools/approval.ts';
+import { requiresApproval, requestApproval } from '../runtime/tools/approval.ts';
 
 export type { ToolAdapterContext } from '../runtime/tools/context.ts';
 
@@ -35,54 +35,7 @@ type PendingCallMeta = {
 	stepIndex?: number;
 	args?: unknown;
 	approvalPromise?: Promise<boolean>;
-	inputBuffer?: string;
-	earlyApprovalStarted?: boolean;
 };
-
-// Fields to extract early for approval context (before full args are available)
-const EARLY_EXTRACT_FIELDS: Record<string, string[]> = {
-	write: ['path'],
-	read: ['path'],
-	bash: ['cmd'],
-	terminal: ['command', 'operation'],
-	edit: ['path'],
-	git_commit: ['message'],
-};
-
-// Try to extract early fields from partial JSON input
-function extractEarlyArgs(toolName: string, partialJson: string): Record<string, unknown> | null {
-	const fields = EARLY_EXTRACT_FIELDS[toolName];
-	
-	// Special handling for apply_patch: extract file path from patch content
-	if (toolName === 'apply_patch') {
-		// Look for *** Update File: path or *** Add File: path patterns
-		const patchFileMatch = partialJson.match(/\*\*\*\s+(?:Update|Add|Delete)\s+File:\s*([^\n\\]+)/);
-		if (patchFileMatch) {
-			const filePath = patchFileMatch[1].trim();
-			if (filePath) {
-				return { path: filePath };
-			}
-		}
-		return null;
-	}
-	
-	if (!fields) return null;
-	
-	const result: Record<string, unknown> = {};
-	let foundAny = false;
-	
-	for (const field of fields) {
-		// Match "field":"value" or "field": "value" patterns
-		const regex = new RegExp(`"${field}"\\s*:\\s*"([^"]*)"`, 's');
-		const match = partialJson.match(regex);
-		if (match) {
-			result[field] = match[1];
-			foundAny = true;
-		}
-	}
-	
-	return foundAny ? result : null;
-}
 
 function getPendingQueue(
 	map: Map<string, PendingCallMeta[]>,
@@ -230,10 +183,6 @@ export function adaptTools(
 					?.inputTextDelta;
 				const queue = pendingCalls.get(name);
 				const meta = queue?.length ? queue[queue.length - 1] : undefined;
-				// Accumulate input for early arg extraction
-				if (meta && delta) {
-					meta.inputBuffer = (meta.inputBuffer || '') + delta;
-				}
 				// Stream tool argument deltas as events if needed
 				publish({
 					type: 'tool.delta',
@@ -250,26 +199,6 @@ export function adaptTools(
 				if (typeof base.onInputDelta === 'function')
 					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
 					await base.onInputDelta(options as any);
-				
-				// Try to start approval early with partial args
-				if (
-					meta &&
-					!meta.earlyApprovalStarted &&
-					ctx.toolApprovalMode &&
-					requiresApproval(name, ctx.toolApprovalMode)
-				) {
-					const earlyArgs = extractEarlyArgs(name, meta.inputBuffer || '');
-					if (earlyArgs) {
-						meta.earlyApprovalStarted = true;
-						meta.approvalPromise = requestApproval(
-							ctx.sessionId,
-							ctx.messageId,
-							meta.callId,
-							name,
-							earlyArgs,
-						);
-					}
-				}
 			},
 			async onInputAvailable(options: unknown) {
 				const args = (options as { input?: unknown } | undefined)?.input;
@@ -367,24 +296,18 @@ export function adaptTools(
 						toolCallId: callId,
 					});
 				} catch {}
-				// Handle approval: either update existing (started early) or start new
+				// Start approval request with full args
 				if (
 					ctx.toolApprovalMode &&
 					requiresApproval(name, ctx.toolApprovalMode)
 				) {
-					if (meta.earlyApprovalStarted) {
-						// Update the pending approval with full args
-						updateApprovalArgs(callId, args);
-					} else {
-						// Start new approval with full args
-						meta.approvalPromise = requestApproval(
-							ctx.sessionId,
-							ctx.messageId,
-							callId,
-							name,
-							args,
-						);
-					}
+					meta.approvalPromise = requestApproval(
+						ctx.sessionId,
+						ctx.messageId,
+						callId,
+						name,
+						args,
+					);
 				}
 				if (typeof base.onInputAvailable === 'function') {
 					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex

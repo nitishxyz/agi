@@ -3,6 +3,7 @@ import { useMessages } from '../../hooks/useMessages';
 import { useSessionStream } from '../../hooks/useSessionStream';
 import { useSessions } from '../../hooks/useSessions';
 import { MessageThread } from './MessageThread';
+import { useToolApprovalShortcuts } from '../../hooks/useToolApprovalShortcuts';
 
 interface MessageThreadContainerProps {
 	sessionId: string;
@@ -17,6 +18,9 @@ export const MessageThreadContainer = memo(function MessageThreadContainer({
 	const { data: sessions = [] } = useSessions();
 
 	useSessionStream(sessionId);
+
+	// Enable keyboard shortcuts (Y/N/A) for tool approval in this session
+	useToolApprovalShortcuts(sessionId);
 
 	const session = useMemo(
 		() => sessions.find((s) => s.id === sessionId),

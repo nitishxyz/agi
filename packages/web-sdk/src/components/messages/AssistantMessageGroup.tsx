@@ -301,10 +301,12 @@ export const AssistantMessageGroup = memo(
 							<button
 								type="button"
 								onClick={handleApproveAll}
+								title="Approve All (A)"
 								className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-amber-600 text-white hover:bg-amber-700 transition-colors"
 							>
 								<CheckCheck className="w-3.5 h-3.5" />
 								Approve All
+								<kbd className="ml-1 text-[10px] opacity-70">A</kbd>
 							</button>
 						</div>
 					)}
