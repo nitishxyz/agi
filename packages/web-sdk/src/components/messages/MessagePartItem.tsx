@@ -450,7 +450,11 @@ export const MessagePartItem = memo(
 						? ((payload as { name?: unknown }).name as string)
 						: 'tool');
 				const toolLabel = rawToolName.replace(/_/g, ' ');
-				const args = getToolCallArgs(part);
+				// Use args from pending approval if available (for early approval display)
+				// Fall back to part args for normal tool calls
+				const partArgs = getToolCallArgs(part);
+				const approvalArgs = pendingApproval?.args as Record<string, unknown> | undefined;
+				const args = partArgs || approvalArgs;
 				const primary = normalizeToolTarget(rawToolName, args);
 				const argsPreview = formatArgsPreview(args, primary?.key);
 				const command = rawToolName === 'bash' ? getPrimaryCommand(args) : null;
