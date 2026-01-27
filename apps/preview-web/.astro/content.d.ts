@@ -21,7 +21,9 @@ declare module 'astro:content' {
 	type Flatten<T> = T extends { [K: string]: infer U } ? U : never;
 
 	export type CollectionKey = keyof AnyEntryMap;
-	export type CollectionEntry<C extends CollectionKey> = Flatten<AnyEntryMap[C]>;
+	export type CollectionEntry<C extends CollectionKey> = Flatten<
+		AnyEntryMap[C]
+	>;
 
 	export type ContentCollectionKey = keyof ContentEntryMap;
 	export type DataCollectionKey = keyof DataEntryMap;
@@ -45,7 +47,9 @@ declare module 'astro:content' {
 		collection: C;
 		slug: E;
 	};
-	export type ReferenceLiveEntry<C extends keyof LiveContentConfig['collections']> = {
+	export type ReferenceLiveEntry<
+		C extends keyof LiveContentConfig['collections'],
+	> = {
 		collection: C;
 		id: string;
 	};
@@ -63,12 +67,15 @@ declare module 'astro:content' {
 		: Promise<CollectionEntry<C> | undefined>;
 
 	/** @deprecated Use `getEntry` instead. */
-	export function getDataEntryById<C extends keyof DataEntryMap, E extends keyof DataEntryMap[C]>(
-		collection: C,
-		entryId: E,
-	): Promise<CollectionEntry<C>>;
+	export function getDataEntryById<
+		C extends keyof DataEntryMap,
+		E extends keyof DataEntryMap[C],
+	>(collection: C, entryId: E): Promise<CollectionEntry<C>>;
 
-	export function getCollection<C extends keyof AnyEntryMap, E extends CollectionEntry<C>>(
+	export function getCollection<
+		C extends keyof AnyEntryMap,
+		E extends CollectionEntry<C>,
+	>(
 		collection: C,
 		filter?: (entry: CollectionEntry<C>) => entry is E,
 	): Promise<E[]>;
@@ -77,11 +84,16 @@ declare module 'astro:content' {
 		filter?: (entry: CollectionEntry<C>) => unknown,
 	): Promise<CollectionEntry<C>[]>;
 
-	export function getLiveCollection<C extends keyof LiveContentConfig['collections']>(
+	export function getLiveCollection<
+		C extends keyof LiveContentConfig['collections'],
+	>(
 		collection: C,
 		filter?: LiveLoaderCollectionFilterType<C>,
 	): Promise<
-		import('astro').LiveDataCollectionResult<LiveLoaderDataType<C>, LiveLoaderErrorType<C>>
+		import('astro').LiveDataCollectionResult<
+			LiveLoaderDataType<C>,
+			LiveLoaderErrorType<C>
+		>
 	>;
 
 	export function getEntry<
@@ -120,10 +132,17 @@ declare module 'astro:content' {
 			? Promise<DataEntryMap[C][E]> | undefined
 			: Promise<DataEntryMap[C][E]>
 		: Promise<CollectionEntry<C> | undefined>;
-	export function getLiveEntry<C extends keyof LiveContentConfig['collections']>(
+	export function getLiveEntry<
+		C extends keyof LiveContentConfig['collections'],
+	>(
 		collection: C,
 		filter: string | LiveLoaderEntryFilterType<C>,
-	): Promise<import('astro').LiveDataEntryResult<LiveLoaderDataType<C>, LiveLoaderErrorType<C>>>;
+	): Promise<
+		import('astro').LiveDataEntryResult<
+			LiveLoaderDataType<C>,
+			LiveLoaderErrorType<C>
+		>
+	>;
 
 	/** Resolve an array of entry references from the same collection */
 	export function getEntries<C extends keyof ContentEntryMap>(
@@ -153,17 +172,14 @@ declare module 'astro:content' {
 	): import('astro/zod').ZodEffects<import('astro/zod').ZodString, never>;
 
 	type ReturnTypeOrOriginal<T> = T extends (...args: any[]) => infer R ? R : T;
-	type InferEntrySchema<C extends keyof AnyEntryMap> = import('astro/zod').infer<
-		ReturnTypeOrOriginal<Required<ContentConfig['collections'][C]>['schema']>
-	>;
+	type InferEntrySchema<C extends keyof AnyEntryMap> =
+		import('astro/zod').infer<
+			ReturnTypeOrOriginal<Required<ContentConfig['collections'][C]>['schema']>
+		>;
 
-	type ContentEntryMap = {
-		
-	};
+	type ContentEntryMap = {};
 
-	type DataEntryMap = {
-		
-	};
+	type DataEntryMap = {};
 
 	type AnyEntryMap = ContentEntryMap & DataEntryMap;
 
@@ -173,11 +189,22 @@ declare module 'astro:content' {
 		infer TCollectionFilter,
 		infer TError
 	>
-		? { data: TData; entryFilter: TEntryFilter; collectionFilter: TCollectionFilter; error: TError }
-		: { data: never; entryFilter: never; collectionFilter: never; error: never };
+		? {
+				data: TData;
+				entryFilter: TEntryFilter;
+				collectionFilter: TCollectionFilter;
+				error: TError;
+			}
+		: {
+				data: never;
+				entryFilter: never;
+				collectionFilter: never;
+				error: never;
+			};
 	type ExtractDataType<T> = ExtractLoaderTypes<T>['data'];
 	type ExtractEntryFilterType<T> = ExtractLoaderTypes<T>['entryFilter'];
-	type ExtractCollectionFilterType<T> = ExtractLoaderTypes<T>['collectionFilter'];
+	type ExtractCollectionFilterType<T> =
+		ExtractLoaderTypes<T>['collectionFilter'];
 	type ExtractErrorType<T> = ExtractLoaderTypes<T>['error'];
 
 	type LiveLoaderDataType<C extends keyof LiveContentConfig['collections']> =
@@ -186,14 +213,17 @@ declare module 'astro:content' {
 			: import('astro/zod').infer<
 					Exclude<LiveContentConfig['collections'][C]['schema'], undefined>
 				>;
-	type LiveLoaderEntryFilterType<C extends keyof LiveContentConfig['collections']> =
-		ExtractEntryFilterType<LiveContentConfig['collections'][C]['loader']>;
-	type LiveLoaderCollectionFilterType<C extends keyof LiveContentConfig['collections']> =
-		ExtractCollectionFilterType<LiveContentConfig['collections'][C]['loader']>;
-	type LiveLoaderErrorType<C extends keyof LiveContentConfig['collections']> = ExtractErrorType<
+	type LiveLoaderEntryFilterType<
+		C extends keyof LiveContentConfig['collections'],
+	> = ExtractEntryFilterType<LiveContentConfig['collections'][C]['loader']>;
+	type LiveLoaderCollectionFilterType<
+		C extends keyof LiveContentConfig['collections'],
+	> = ExtractCollectionFilterType<
 		LiveContentConfig['collections'][C]['loader']
 	>;
+	type LiveLoaderErrorType<C extends keyof LiveContentConfig['collections']> =
+		ExtractErrorType<LiveContentConfig['collections'][C]['loader']>;
 
-	export type ContentConfig = typeof import("../src/content.config.mjs");
+	export type ContentConfig = typeof import('../src/content.config.mjs');
 	export type LiveContentConfig = never;
 }

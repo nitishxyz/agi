@@ -21,7 +21,7 @@ export default $config({
 		const { previewApiUrl } = await import('./infra/preview-api');
 		const { previewWeb } = await import('./infra/preview-web');
 
-		const { routerUrl } = await import("./infra/router");
+		const { routerUrl } = await import('./infra/router');
 		return {
 			script: script.url,
 			previewApi: previewApiUrl,
