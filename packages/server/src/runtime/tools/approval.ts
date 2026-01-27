@@ -12,6 +12,12 @@ export const DANGEROUS_TOOLS = new Set([
 	'git_push',
 ]);
 
+export const SAFE_TOOLS = new Set([
+	'finish',
+	'progress_update',
+	'update_todos',
+]);
+
 export interface PendingApproval {
 	callId: string;
 	toolName: string;
@@ -28,6 +34,7 @@ export function requiresApproval(
 	toolName: string,
 	mode: ToolApprovalMode,
 ): boolean {
+	if (SAFE_TOOLS.has(toolName)) return false;
 	if (mode === 'auto') return false;
 	if (mode === 'all') return true;
 	if (mode === 'dangerous') return DANGEROUS_TOOLS.has(toolName);

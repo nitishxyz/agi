@@ -49,12 +49,17 @@ export function registerMainConfigRoute(app: Hono) {
 				),
 				model: getDefault(
 					embeddedConfig?.model,
-					embeddedConfig?.defaults?.model,
-					cfg.defaults.model,
-				),
-			};
+				embeddedConfig?.defaults?.model,
+				cfg.defaults.model,
+			),
+			toolApproval: getDefault(
+				undefined,
+				embeddedConfig?.defaults?.toolApproval,
+				cfg.defaults.toolApproval,
+			) as 'auto' | 'dangerous' | 'all',
+		};
 
-			return c.json({
+		return c.json({
 				agents: allAgents,
 				providers: authorizedProviders,
 				defaults,

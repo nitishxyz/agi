@@ -20,6 +20,7 @@ export function registerDefaultsRoute(app: Hono) {
 				agent: string;
 				provider: string;
 				model: string;
+				toolApproval: 'auto' | 'dangerous' | 'all';
 			}> = {};
 
 			if (body.agent) updates.agent = body.agent;
