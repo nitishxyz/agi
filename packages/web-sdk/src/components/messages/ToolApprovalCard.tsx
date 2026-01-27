@@ -69,9 +69,20 @@ function normalizeToolTarget(
 		terminal: ['command'],
 		git_commit: ['message'],
 		git_diff: ['file'],
+		tree: ['path'],
+		ls: ['path'],
+		web_search: ['query', 'url'],
+		skill: ['name'],
 	};
 	const keys = keyMap[toolName];
-	if (!keys) return null;
+	if (!keys) {
+		for (const [key, value] of Object.entries(args)) {
+			if (typeof value === 'string' && value.length > 0 && value.length < 200) {
+				return { key, value };
+			}
+		}
+		return null;
+	}
 	for (const key of keys) {
 		const value = args[key];
 		if (typeof value === 'string' && value.length > 0) {
