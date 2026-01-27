@@ -61,11 +61,15 @@ function pickProviders(
 		opencode: createEmptyEntry('opencode'),
 		zai: createEmptyEntry('zai'),
 		'zai-coding': createEmptyEntry('zai-coding'),
+		moonshot: createEmptyEntry('moonshot'),
 	};
 	for (const providerKey of Object.keys(feed)) {
 		let targetKey = providerKey as ProviderId;
 		if (providerKey === 'zai-coding-plan') {
 			targetKey = 'zai-coding';
+		}
+		if (providerKey === 'moonshotai') {
+			targetKey = 'moonshot';
 		}
 		if (
 			![
@@ -76,6 +80,7 @@ function pickProviders(
 				'opencode',
 				'zai',
 				'zai-coding-plan',
+				'moonshotai',
 			].includes(providerKey)
 		)
 			continue;

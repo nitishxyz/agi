@@ -9,7 +9,8 @@ export type ProviderId =
 	| 'opencode'
 	| 'solforge'
 	| 'zai'
-	| 'zai-coding';
+	| 'zai-coding'
+	| 'moonshot';
 
 export type ModelProviderBinding = {
 	id?: string;

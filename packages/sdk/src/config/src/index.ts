@@ -28,6 +28,7 @@ const DEFAULTS: {
 		solforge: { enabled: false },
 		zai: { enabled: false },
 		'zai-coding': { enabled: false },
+		moonshot: { enabled: false },
 	},
 };
 

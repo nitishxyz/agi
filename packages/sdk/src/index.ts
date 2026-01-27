@@ -104,6 +104,8 @@ export {
 export type { OpenRouterProviderConfig } from './providers/src/index.ts';
 export { createOpencodeModel } from './providers/src/index.ts';
 export type { OpencodeProviderConfig } from './providers/src/index.ts';
+export { createMoonshotModel } from './providers/src/index.ts';
+export type { MoonshotProviderConfig } from './providers/src/index.ts';
 
 // =======================
 // Authentication (from internal auth module)

@@ -85,6 +85,9 @@ const pricingTable: Record<ProviderName, PricingEntry[]> = {
 	'zai-coding': [
 		// Pricing from catalog entries; leave empty here
 	],
+	moonshot: [
+		// Pricing from catalog entries; leave empty here
+	],
 };
 
 function findPricing(

@@ -68,3 +68,5 @@ export {
 export type { OpenRouterProviderConfig } from './openrouter-client.ts';
 export { createOpencodeModel } from './opencode-client.ts';
 export type { OpencodeProviderConfig } from './opencode-client.ts';
+export { createMoonshotModel } from './moonshot-client.ts';
+export type { MoonshotProviderConfig } from './moonshot-client.ts';

@@ -6,6 +6,7 @@ import { resolveOpenRouterModel } from './openrouter.ts';
 import { resolveSolforgeModel } from './solforge.ts';
 import { getZaiInstance, getZaiCodingInstance } from './zai.ts';
 import { resolveOpencodeModel } from './opencode.ts';
+import { getMoonshotInstance } from './moonshot.ts';
 
 export type ProviderName = ProviderId;
 
@@ -41,6 +42,9 @@ export async function resolveModel(
 	}
 	if (provider === 'zai-coding') {
 		return getZaiCodingInstance(cfg, model);
+	}
+	if (provider === 'moonshot') {
+		return getMoonshotInstance(cfg, model);
 	}
 	throw new Error(`Unsupported provider: ${provider}`);
 }

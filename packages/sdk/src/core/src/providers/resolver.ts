@@ -35,7 +35,8 @@ export type ProviderName =
 	| 'opencode'
 	| 'solforge'
 	| 'zai'
-	| 'zai-coding';
+	| 'zai-coding'
+	| 'moonshot';
 
 export type ModelConfig = {
 	apiKey?: string;
@@ -200,6 +201,20 @@ export async function resolveModel(
 		const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
 		const instance = createOpenAICompatible({
 			name: entry?.label ?? 'Z.AI Coding',
+			baseURL,
+			headers,
+		});
+		return instance(model);
+	}
+
+	if (provider === 'moonshot') {
+		const entry = catalog[provider];
+		const apiKey = config.apiKey || process.env.MOONSHOT_API_KEY || '';
+		const baseURL =
+			config.baseURL || entry?.api || 'https://api.moonshot.ai/v1';
+		const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
+		const instance = createOpenAICompatible({
+			name: entry?.label ?? 'Moonshot AI',
 			baseURL,
 			headers,
 		});

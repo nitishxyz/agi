@@ -74,6 +74,11 @@ const PROVIDER_LINKS: Record<
 		url: 'https://z.ai/manage-apikey/apikey-list',
 		env: 'ZAI_API_KEY',
 	},
+	moonshot: {
+		name: 'Moonshot AI (Kimi)',
+		url: 'https://platform.moonshot.ai/console/api-keys',
+		env: 'MOONSHOT_API_KEY',
+	},
 };
 
 export async function runAuth(args: string[]) {
@@ -138,6 +143,7 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 				{ value: 'solforge', label: PROVIDER_LINKS.solforge.name },
 				{ value: 'zai', label: PROVIDER_LINKS.zai.name },
 				{ value: 'zai-coding', label: PROVIDER_LINKS['zai-coding'].name },
+				{ value: 'moonshot', label: PROVIDER_LINKS.moonshot.name },
 			],
 		})) as ProviderId | symbol;
 		if (isCancel(selected)) {

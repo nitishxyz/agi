@@ -23,6 +23,9 @@ export async function runSetup(projectRoot?: string) {
 			{ value: 'openrouter', label: 'OpenRouter' },
 			{ value: 'opencode', label: 'OpenCode' },
 			{ value: 'solforge', label: 'Solforge' },
+			{ value: 'zai', label: 'Z.AI (GLM)' },
+			{ value: 'zai-coding', label: 'Z.AI Coding Plan' },
+			{ value: 'moonshot', label: 'Moonshot AI (Kimi)' },
 		],
 		initialValues: Object.entries(cfg.providers)
 			.filter(([, v]) => v.enabled)
@@ -37,6 +40,9 @@ export async function runSetup(projectRoot?: string) {
 		openrouter: { enabled: false },
 		opencode: { enabled: false },
 		solforge: { enabled: false },
+		zai: { enabled: false },
+		'zai-coding': { enabled: false },
+		moonshot: { enabled: false },
 	};
 	for (const p of providersPicked as ProviderId[]) providers[p].enabled = true;
 
@@ -54,7 +60,11 @@ export async function runSetup(projectRoot?: string) {
 							? 'OPENROUTER_API_KEY'
 							: p === 'opencode'
 								? 'OPENCODE_API_KEY'
-								: 'SOLFORGE_PRIVATE_KEY';
+								: p === 'solforge'
+									? 'SOLFORGE_PRIVATE_KEY'
+									: p === 'zai' || p === 'zai-coding'
+										? 'ZAI_API_KEY'
+										: 'MOONSHOT_API_KEY';
 		const key = await text({
 			message: `Enter ${keyLabel} (leave empty to skip)`,
 			initialValue: '',
