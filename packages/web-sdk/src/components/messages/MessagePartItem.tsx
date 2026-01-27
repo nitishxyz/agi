@@ -506,26 +506,35 @@ export const MessagePartItem = memo(
 					}
 				};
 
+				// Get the primary display value for approval (path, cmd, etc.)
+				const approvalTarget = command || primary?.value;
+
 				return (
-					<div className="flex flex-col gap-2">
-						<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground/80 max-w-full">
+					<div className="flex flex-col gap-2 py-1">
+						<div className="flex items-center gap-2 text-sm">
 							<Shield className="h-4 w-4 text-amber-500" />
 							<span className="font-medium text-foreground">{toolLabel}</span>
 							<span className="text-amber-600 dark:text-amber-400 font-medium">requires approval</span>
 						</div>
-						{segments.length > 0 && (
-							<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground ml-6">
-								{segments.map((segment) => (
-									<Fragment key={segment.key}>{segment.node}</Fragment>
-								))}
+						{approvalTarget && (
+							<div className="ml-6 max-w-full overflow-hidden">
+								<code className="block text-xs font-mono bg-muted/50 px-2 py-1.5 rounded border border-border/50 text-foreground/90 whitespace-pre-wrap break-all">
+									{approvalTarget}
+								</code>
 							</div>
 						)}
-						<div className="flex items-center gap-2 ml-6">
+						{/* Show additional context for complex operations */}
+						{argsPreview && !command && !primary && (
+							<div className="ml-6 text-xs text-muted-foreground">
+								{argsPreview}
+							</div>
+						)}
+						<div className="flex items-center gap-2 ml-6 mt-1">
 							<button
 								type="button"
 								onClick={handleReject}
 								disabled={isProcessing}
-								className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-border hover:bg-muted transition-colors disabled:opacity-50"
+								className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border border-border bg-background hover:bg-muted transition-colors disabled:opacity-50"
 							>
 								<X className="w-3 h-3" />
 								Reject
@@ -534,7 +543,7 @@ export const MessagePartItem = memo(
 								type="button"
 								onClick={handleApprove}
 								disabled={isProcessing}
-								className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+								className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-amber-600 text-white hover:bg-amber-700 transition-colors disabled:opacity-50"
 							>
 								<Check className="w-3 h-3" />
 								{isProcessing ? 'Approving...' : 'Approve'}

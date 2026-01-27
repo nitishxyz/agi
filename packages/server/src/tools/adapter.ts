@@ -42,7 +42,6 @@ type PendingCallMeta = {
 // Fields to extract early for approval context (before full args are available)
 const EARLY_EXTRACT_FIELDS: Record<string, string[]> = {
 	write: ['path'],
-	apply_patch: ['patch'],
 	read: ['path'],
 	bash: ['cmd'],
 	terminal: ['command', 'operation'],
@@ -53,6 +52,20 @@ const EARLY_EXTRACT_FIELDS: Record<string, string[]> = {
 // Try to extract early fields from partial JSON input
 function extractEarlyArgs(toolName: string, partialJson: string): Record<string, unknown> | null {
 	const fields = EARLY_EXTRACT_FIELDS[toolName];
+	
+	// Special handling for apply_patch: extract file path from patch content
+	if (toolName === 'apply_patch') {
+		// Look for *** Update File: path or *** Add File: path patterns
+		const patchFileMatch = partialJson.match(/\*\*\*\s+(?:Update|Add|Delete)\s+File:\s*([^\n\\]+)/);
+		if (patchFileMatch) {
+			const filePath = patchFileMatch[1].trim();
+			if (filePath) {
+				return { path: filePath };
+			}
+		}
+		return null;
+	}
+	
 	if (!fields) return null;
 	
 	const result: Record<string, unknown> = {};
