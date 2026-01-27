@@ -13,7 +13,7 @@
 		"hono": "^4.6.0",
 		"nanoid": "^5.0.9",
 		"satori": "^0.12.0",
-		"sst": "^3.0.0"
+		"sst": "3.17.13"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20250109.0",

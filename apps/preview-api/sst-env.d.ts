@@ -2,27 +2,46 @@
 /* tslint:disable */
 /* eslint-disable */
 /* deno-fmt-ignore-file */
-/* biome-ignore-all lint: auto-generated */
 
-import 'sst';
-declare module 'sst' {
-	export interface Resource {
-		PreviewWeb: {
-			type: 'sst.aws.Astro';
-			url: string;
-		};
-	}
+import "sst"
+declare module "sst" {
+  export interface Resource {
+    "AnthropicApiKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "DatabaseUrl": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "GoogleAiApiKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "OpenAiApiKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "PlatformWallet": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "PreviewWeb": {
+      "type": "sst.aws.Astro"
+      "url": string
+    }
+  }
 }
-// cloudflare
-import * as cloudflare from '@cloudflare/workers-types';
-declare module 'sst' {
-	export interface Resource {
-		AgiSh: cloudflare.Service;
-		OGCache: cloudflare.KVNamespace;
-		PreviewApi: cloudflare.Service;
-		PreviewDB: cloudflare.D1Database;
-	}
+// cloudflare 
+import * as cloudflare from "@cloudflare/workers-types";
+declare module "sst" {
+  export interface Resource {
+    "AgiSh": cloudflare.Service
+    "OGCache": cloudflare.KVNamespace
+    "PreviewApi": cloudflare.Service
+    "PreviewDB": cloudflare.D1Database
+  }
 }
 
-import 'sst';
-export {};
+import "sst"
+export {}

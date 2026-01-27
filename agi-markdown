@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# Run AGI with buffered markdown rendering (no streaming, but formatted output)
-# Use this when you want pretty formatted output instead of real-time streaming
-AGI_RENDER_MARKDOWN=1 exec bun run "$(dirname "$0")/index.ts" "$@"
