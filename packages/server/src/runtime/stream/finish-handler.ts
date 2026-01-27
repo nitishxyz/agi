@@ -8,7 +8,6 @@ import {
 	pruneSession,
 	isOverflow,
 	getModelLimits,
-	type TokenUsage,
 	markSessionCompacted,
 } from '../message/compaction.ts';
 import { debugLog } from '../debug/index.ts';

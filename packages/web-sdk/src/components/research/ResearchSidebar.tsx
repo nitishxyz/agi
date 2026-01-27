@@ -118,7 +118,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 
 	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-	}, [messagesData]);
+	}, []);
 
 	const adjustTextareaHeight = useCallback(() => {
 		const textarea = textareaRef.current;
@@ -129,7 +129,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 
 	useEffect(() => {
 		adjustTextareaHeight();
-	}, [inputValue, adjustTextareaHeight]);
+	}, [adjustTextareaHeight]);
 
 	const handleCreateNew = useCallback(async () => {
 		if (!parentSessionId) return;

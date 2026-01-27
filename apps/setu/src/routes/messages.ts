@@ -15,7 +15,16 @@ const messages = new Hono<{ Variables: Variables }>();
 
 const API_VERSION = '2023-06-01';
 
-function normalizeUsage(usage: any): UsageInfo | null {
+interface AnthropicUsage {
+	input_tokens?: number;
+	output_tokens?: number;
+	cache_read_input_tokens?: number;
+	cache_creation_input_tokens?: number;
+}
+
+function normalizeUsage(
+	usage: AnthropicUsage | null | undefined,
+): UsageInfo | null {
 	if (!usage) return null;
 	return {
 		inputTokens: usage.input_tokens ?? 0,
@@ -78,7 +87,7 @@ async function handleMessages(c: Context<{ Variables: Variables }>) {
 				buffer = lines.pop() || '';
 
 				for (const line of lines) {
-					await writer.write(line + '\n');
+					await writer.write(`${line}\n`);
 
 					if (line.startsWith('data:')) {
 						try {

@@ -3,13 +3,13 @@ import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-type CommandsModule = typeof import('@agi-cli/cli/src/commands.ts');
+type CommandsModule = typeof import('@agi-cli/cli/src/custom-commands.ts');
 
 const runAskMock = mock(async () => {});
 mock.module('@agi-cli/cli/src/ask.ts', () => ({ runAsk: runAskMock }));
 
 const commandsModulePromise: Promise<CommandsModule> = import(
-	'@agi-cli/cli/src/commands.ts'
+	'@agi-cli/cli/src/custom-commands.ts'
 );
 
 describe('command discovery', () => {

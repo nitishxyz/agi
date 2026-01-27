@@ -104,7 +104,7 @@ export const MessageThread = memo(function MessageThread({
 				container.scrollTop = container.scrollHeight;
 			}
 		}
-	}, [messages.length, session?.id]);
+	}, [messages.length, session?.id, disableAutoScroll]);
 
 	useEffect(() => {
 		if (disableAutoScroll) return;
@@ -132,7 +132,7 @@ export const MessageThread = memo(function MessageThread({
 			autoScrollRef.current = true;
 			setAutoScroll(true);
 		}
-	}, [messages.length, isGenerating]);
+	}, [messages.length, isGenerating, disableAutoScroll]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: messages dep needed for streaming content updates
 	useEffect(() => {

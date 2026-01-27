@@ -491,14 +491,14 @@ export const MessagePartItem = memo(
 				const hasPendingApproval =
 					pendingApproval && pendingApproval.callId === part.toolCallId;
 
-				if (hasPendingApproval) {
+				if (hasPendingApproval && onApprove && onReject) {
 					return (
 						<ToolApprovalCard
 							toolName={rawToolName}
 							args={args}
 							pendingApproval={pendingApproval}
-							onApprove={onApprove!}
-							onReject={onReject!}
+							onApprove={onApprove}
+							onReject={onReject}
 						/>
 					);
 				} else if (segments.length === 0) {

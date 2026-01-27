@@ -7,7 +7,6 @@ import {
 	Zap,
 	User,
 	ChevronDown,
-	Shield,
 	RefreshCw,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -129,9 +128,11 @@ const SelectRow = memo(function SelectRow({
 				</button>
 				{isOpen && (
 					<>
+						{/* biome-ignore lint/a11y/noStaticElementInteractions: click-away backdrop pattern */}
 						<div
 							className="fixed inset-0 z-40"
 							onClick={() => setIsOpen(false)}
+							role="presentation"
 						/>
 						<div className="absolute right-0 top-full mt-1 z-50 min-w-[160px] max-h-[200px] overflow-y-auto bg-popover border border-border rounded-md shadow-lg">
 							{options.map((option) => (

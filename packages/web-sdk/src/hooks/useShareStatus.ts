@@ -9,7 +9,7 @@ export function useShareStatus(sessionId: string | undefined): {
 } {
 	const { data, isLoading, error } = useQuery({
 		queryKey: ['share-status', sessionId],
-		queryFn: () => apiClient.getShareStatus(sessionId!),
+		queryFn: () => apiClient.getShareStatus(sessionId as string),
 		enabled: !!sessionId,
 		staleTime: 30000,
 	});

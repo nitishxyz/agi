@@ -1,7 +1,7 @@
 import { Resource } from 'sst';
 import { $ } from 'bun';
-import { readdirSync } from 'fs';
-import { join } from 'path';
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 const MIGRATIONS_DIR = join(import.meta.dir, '../drizzle');
 
@@ -23,12 +23,16 @@ async function migrate() {
 	const result = await $`wrangler d1 list --json`.text();
 	const databases = JSON.parse(result);
 
-	const db = databases.find((d: any) => d.uuid === dbId);
+	const db = databases.find(
+		(d: { uuid: string; name: string }) => d.uuid === dbId,
+	);
 	if (!db) {
 		console.error(`Database with ID ${dbId} not found`);
 		console.log(
 			'Available databases:',
-			databases.map((d: any) => `${d.name} (${d.uuid})`).join('\n'),
+			databases
+				.map((d: { uuid: string; name: string }) => `${d.name} (${d.uuid})`)
+				.join('\n'),
 		);
 		process.exit(1);
 	}

@@ -27,7 +27,7 @@ export const walletAuth: MiddlewareHandler = async (c, next) => {
 			return c.json({ error: 'Invalid signature' }, 401);
 		}
 
-		const nonceTime = parseInt(nonce);
+		const nonceTime = parseInt(nonce, 10);
 		const now = Date.now();
 		if (Math.abs(now - nonceTime) > 60000) {
 			return c.json({ error: 'Nonce expired' }, 401);
@@ -35,9 +35,12 @@ export const walletAuth: MiddlewareHandler = async (c, next) => {
 
 		c.set('walletAddress', walletAddress);
 		await next();
-	} catch (error: any) {
+	} catch (error) {
 		return c.json(
-			{ error: 'Authentication failed', details: error.message },
+			{
+				error: 'Authentication failed',
+				details: error instanceof Error ? error.message : 'Unknown error',
+			},
 			401,
 		);
 	}

@@ -13,7 +13,17 @@ type Variables = { walletAddress: string };
 
 const responses = new Hono<{ Variables: Variables }>();
 
-function normalizeUsage(usage: any): UsageInfo | null {
+interface OpenAIUsage {
+	input_tokens?: number;
+	output_tokens?: number;
+	input_tokens_details?: {
+		cached_tokens?: number;
+	};
+}
+
+function normalizeUsage(
+	usage: OpenAIUsage | null | undefined,
+): UsageInfo | null {
 	if (!usage) return null;
 	const cachedTokens = usage.input_tokens_details?.cached_tokens ?? 0;
 	return {
@@ -88,7 +98,7 @@ async function handleResponses(c: Context<{ Variables: Variables }>) {
 				buffer = lines.pop() || '';
 
 				for (const line of lines) {
-					await writer.write(line + '\n');
+					await writer.write(`${line}\n`);
 
 					if (line.startsWith('data:')) {
 						try {

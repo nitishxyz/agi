@@ -33,6 +33,7 @@ function ToastItem({ toast }: { toast: Toast }) {
 	};
 
 	return (
+		// biome-ignore lint/a11y/useKeyWithClickEvents: toast click-to-dismiss is supplementary
 		<div
 			className={`
 				flex items-center gap-3 px-4 py-3

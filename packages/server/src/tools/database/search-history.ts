@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod/v3';
 import { getDb } from '@agi-cli/database';
 import { sessions, messages, messageParts } from '@agi-cli/database/schema';
-import { eq, desc, asc, like, and, sql } from 'drizzle-orm';
+import { eq, like, and } from 'drizzle-orm';
 
 const inputSchema = z.object({
 	query: z.string().min(1).describe('Search term to find in message content'),

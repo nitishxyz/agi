@@ -502,5 +502,12 @@ export function useSessionStream(sessionId: string | undefined) {
 			unsubscribe();
 			client.disconnect();
 		};
-	}, [sessionId, queryClient]);
+	}, [
+		sessionId,
+		queryClient,
+		addPendingApproval,
+		removePendingApproval,
+		setPendingApprovals,
+		updatePendingApproval,
+	]);
 }

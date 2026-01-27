@@ -4,8 +4,26 @@ import { config } from '../config';
 
 const models = new Hono();
 
+interface ModelData {
+	id: string;
+	object: string;
+	created: number;
+	owned_by: string;
+	pricing?: {
+		input: number;
+		output: number;
+		cache_read?: number;
+	};
+	context_length?: number;
+	max_output?: number;
+	capabilities: {
+		tool_call: boolean;
+		reasoning: boolean;
+	};
+}
+
 models.get('/v1/models', async (c) => {
-	const data: any[] = [];
+	const data: ModelData[] = [];
 
 	for (const [providerId, entry] of Object.entries(catalog)) {
 		for (const model of entry.models) {

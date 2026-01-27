@@ -100,7 +100,7 @@ export async function settlePayment(
 }
 
 export function usdcToUsd(usdcAmount: string): number {
-	return parseInt(usdcAmount) / 1_000_000;
+	return parseInt(usdcAmount, 10) / 1_000_000;
 }
 
 export function isSupportedTopupAmount(usdcAmount: string): boolean {

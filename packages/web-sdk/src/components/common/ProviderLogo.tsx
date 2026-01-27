@@ -57,6 +57,7 @@ export const ProviderLogo = memo(function ProviderLogo({
 			className={`inline-flex items-center justify-center text-foreground/70 dark:text-foreground/80 ${className}`}
 			style={{ width: size, height: size }}
 			title={provider}
+			// biome-ignore lint/security/noDangerouslySetInnerHtml: SVG logos are hardcoded trusted content
 			dangerouslySetInnerHTML={{
 				__html: logoSvg.replace(
 					/<svg/,

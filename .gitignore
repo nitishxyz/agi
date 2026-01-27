@@ -40,6 +40,9 @@ reference
 .sst
 .agi
 
+# astro generated
+.astro
+
 # web-dist (generated build output)
 apps/cli/src/web-dist
 .turbo

@@ -15,7 +15,7 @@ interface ChatPreviewWrapperProps {
 		shareId: string;
 		title: string | null;
 		description: string | null;
-		sessionData: any;
+		sessionData: Record<string, unknown>;
 		createdAt: number;
 		viewCount: number;
 	};

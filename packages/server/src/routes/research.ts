@@ -4,7 +4,7 @@ import { getDb } from '@agi-cli/database';
 import { sessions, messages, messageParts } from '@agi-cli/database/schema';
 import { desc, eq, and, asc, count } from 'drizzle-orm';
 import type { ProviderId } from '@agi-cli/sdk';
-import { isProviderId, catalog } from '@agi-cli/sdk';
+import { isProviderId } from '@agi-cli/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
 import { logger } from '@agi-cli/sdk';
 import { publish } from '../events/bus.ts';
@@ -207,7 +207,7 @@ export function registerResearchRoutes(app: Hono) {
 			return c.json({ error: 'Research session not found' }, 404);
 		}
 
-		const researchSession = researchRows[0];
+		const _researchSession = researchRows[0];
 
 		const researchMessages = await db
 			.select({

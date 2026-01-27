@@ -136,12 +136,12 @@ export function buildGetParentSessionTool(
 									try {
 										const parsed = JSON.parse(part.content);
 										if (parsed?.text) {
-											textContent += parsed.text + '\n';
+											textContent += `${parsed.text}\n`;
 										} else {
-											textContent += part.content + '\n';
+											textContent += `${part.content}\n`;
 										}
 									} catch {
-										textContent += part.content + '\n';
+										textContent += `${part.content}\n`;
 									}
 								}
 								if (part.type === 'tool_call' && part.toolName) {

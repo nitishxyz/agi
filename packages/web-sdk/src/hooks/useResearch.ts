@@ -169,7 +169,7 @@ const researchApi = new ResearchApiClient();
 export function useResearchSessions(parentSessionId: string | null) {
 	return useQuery({
 		queryKey: ['research', 'sessions', parentSessionId],
-		queryFn: () => researchApi.listResearchSessions(parentSessionId!),
+		queryFn: () => researchApi.listResearchSessions(parentSessionId as string),
 		enabled: !!parentSessionId,
 		staleTime: 30000,
 	});

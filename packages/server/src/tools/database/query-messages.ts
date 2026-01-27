@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod/v3';
 import { getDb } from '@agi-cli/database';
 import { sessions, messages, messageParts } from '@agi-cli/database/schema';
-import { eq, desc, asc, gte, lte, and, like, count, sql } from 'drizzle-orm';
+import { eq, desc, asc, gte, lte, and, count, sql } from 'drizzle-orm';
 
 const inputSchema = z.object({
 	sessionId: z.string().optional().describe('Filter by specific session ID'),
@@ -47,7 +47,7 @@ export function buildQueryMessagesTool(projectRoot: string) {
 				if (input.sessionId) {
 					conditions.push(eq(messages.sessionId, input.sessionId));
 				} else {
-					const projectSessions = db
+					const _projectSessions = db
 						.select({ id: sessions.id })
 						.from(sessions)
 						.where(eq(sessions.projectPath, projectRoot));

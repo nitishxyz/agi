@@ -10,6 +10,7 @@ import {
 	usdcToUsd,
 	type PaymentRequirement,
 	type X402PaymentPayload,
+	type X402SettleResponse,
 } from '../services/x402';
 
 type Variables = { walletAddress: string };
@@ -81,12 +82,15 @@ topup.post('/v1/topup', walletAuth, async (c) => {
 	}
 
 	return withWalletLock(walletAddress, async () => {
-		let settlement;
+		let settlement: X402SettleResponse;
 		try {
 			settlement = await settlePayment(paymentPayload, paymentRequirement);
-		} catch (error: any) {
+		} catch (error) {
 			return c.json(
-				{ error: 'Payment settlement failed', details: error.message },
+				{
+					error: 'Payment settlement failed',
+					details: error instanceof Error ? error.message : 'Unknown error',
+				},
 				400,
 			);
 		}

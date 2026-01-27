@@ -18,7 +18,7 @@ import bs58 from 'bs58';
 import { createPaymentHeader, selectPaymentRequirements } from 'x402/client';
 import { svm } from 'x402/shared';
 import type { PaymentRequirements } from 'x402/types';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 
 const BASE_URL = process.env.ROUTER_URL || 'http://localhost:4002';
 const RPC_URL = process.env.RPC_URL || 'https://api.devnet.solana.com';
@@ -61,7 +61,7 @@ async function handleTopup(body: any): Promise<boolean> {
 
 	if (!requirement) return false;
 
-	const amount = parseInt(requirement.maxAmountRequired) / 1_000_000;
+	const amount = parseInt(requirement.maxAmountRequired, 10) / 1_000_000;
 	console.log(`💳 Auto top-up: $${amount.toFixed(2)} USDC`);
 
 	const privateKeyBase58 = bs58.encode(keypair.secretKey);
