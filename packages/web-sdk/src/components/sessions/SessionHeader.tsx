@@ -4,7 +4,6 @@ import type { Session } from '../../types/api';
 import {
 	Clock,
 	DollarSign,
-	Hash,
 	GitBranch,
 	ArrowUpRight,
 	Share2,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useParentSession } from '../../hooks/useBranch';
 import { useShareStatus } from '../../hooks/useShareStatus';
+import { ProviderLogo } from '../common/ProviderLogo';
 
 interface SessionHeaderProps {
 	session: Session;
@@ -27,19 +27,6 @@ export function SessionHeader({
 		session.sessionType === 'branch' ? session.id : undefined,
 	);
 	const { data: shareStatus } = useShareStatus(session.id);
-
-	const totalTokens = useMemo(() => {
-		const input = session.totalInputTokens || 0;
-		const output = session.totalOutputTokens || 0;
-		const cached = session.totalCachedTokens || 0;
-		const cacheCreation = session.totalCacheCreationTokens || 0;
-		return input + output + cached + cacheCreation;
-	}, [
-		session.totalInputTokens,
-		session.totalOutputTokens,
-		session.totalCachedTokens,
-		session.totalCacheCreationTokens,
-	]);
 
 	const estimatedCost = useMemo(() => {
 		const inputTokens = session.totalInputTokens || 0;
@@ -80,6 +67,10 @@ export function SessionHeader({
 		if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
 		return num.toString();
 	};
+
+	const inputTokens = session.totalInputTokens || 0;
+	const outputTokens = session.totalOutputTokens || 0;
+	const cachedTokens = session.totalCachedTokens || 0;
 
 	const isBranch = session.sessionType === 'branch';
 	const parentSession = parentData?.parent;
@@ -143,15 +134,27 @@ export function SessionHeader({
 				</div>
 
 				<div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-sm text-muted-foreground">
-					<div
-						className="flex items-center gap-2"
-						title={`${formatNumber(session.totalInputTokens || 0)} in / ${formatNumber(session.totalOutputTokens || 0)} out${session.totalCachedTokens ? ` (+${formatNumber(session.totalCachedTokens)} cached)` : ''}`}
-					>
-						<Hash className="w-4 h-4" />
-						<span className="font-medium text-foreground">
-							{formatCompactNumber(totalTokens)}
-						</span>
-						<span className="opacity-70">tokens</span>
+					<div className="flex items-center gap-3">
+						<div className="flex items-center gap-1.5" title={`${formatNumber(inputTokens)} input tokens`}>
+							<span className="text-xs opacity-70">in</span>
+							<span className="font-medium text-foreground">
+								{formatCompactNumber(inputTokens)}
+							</span>
+						</div>
+						<div className="flex items-center gap-1.5" title={`${formatNumber(outputTokens)} output tokens`}>
+							<span className="text-xs opacity-70">out</span>
+							<span className="font-medium text-foreground">
+								{formatCompactNumber(outputTokens)}
+							</span>
+						</div>
+						{cachedTokens > 0 && (
+							<div className="flex items-center gap-1.5" title={`${formatNumber(cachedTokens)} cached tokens`}>
+								<span className="text-xs opacity-70">cached</span>
+								<span className="font-medium text-foreground">
+									{formatCompactNumber(cachedTokens)}
+								</span>
+							</div>
+						)}
 					</div>
 
 					<div className="flex items-center gap-2">
@@ -171,9 +174,8 @@ export function SessionHeader({
 					)}
 
 					<div className="flex items-center gap-2 ml-auto">
-						<span className="font-medium text-foreground">{session.model}</span>
-						<span className="opacity-50">·</span>
-						<span className="opacity-70">{session.provider}</span>
+						<ProviderLogo provider={session.provider} size={18} />
+						<span className="font-medium text-foreground truncate max-w-48">{session.model}</span>
 					</div>
 				</div>
 			</div>

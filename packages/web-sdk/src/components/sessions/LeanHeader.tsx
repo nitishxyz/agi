@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { estimateModelCostUsd, type ProviderId } from '@agi-cli/sdk/browser';
 import type { Session } from '../../types/api';
 import {
-	Hash,
 	DollarSign,
 	MessageSquare,
 	GitBranch,
@@ -14,6 +13,7 @@ import {
 import { StopButton } from '../chat/StopButton';
 import { useParentSession } from '../../hooks/useBranch';
 import { useShareStatus } from '../../hooks/useShareStatus';
+import { ProviderLogo } from '../common/ProviderLogo';
 
 interface LeanHeaderProps {
 	session: Session;
@@ -32,19 +32,6 @@ export function LeanHeader({
 		session.sessionType === 'branch' ? session.id : undefined,
 	);
 	const { data: shareStatus } = useShareStatus(session.id);
-
-	const totalTokens = useMemo(() => {
-		const input = session.totalInputTokens || 0;
-		const output = session.totalOutputTokens || 0;
-		const cached = session.totalCachedTokens || 0;
-		const cacheCreation = session.totalCacheCreationTokens || 0;
-		return input + output + cached + cacheCreation;
-	}, [
-		session.totalInputTokens,
-		session.totalOutputTokens,
-		session.totalCachedTokens,
-		session.totalCacheCreationTokens,
-	]);
 
 	const estimatedCost = useMemo(() => {
 		const inputTokens = session.totalInputTokens || 0;
@@ -73,6 +60,9 @@ export function LeanHeader({
 		if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
 		return num.toString();
 	};
+
+	const inputTokens = session.totalInputTokens || 0;
+	const outputTokens = session.totalOutputTokens || 0;
 
 	const isBranch = session.sessionType === 'branch';
 	const parentSession = parentData?.parent;
@@ -139,11 +129,19 @@ export function LeanHeader({
 				<div className="flex-shrink-0 flex items-center gap-5 text-muted-foreground">
 					{isGenerating && <StopButton sessionId={session.id} />}
 
-					<div className="flex items-center gap-2">
-						<Hash className="w-4 h-4" />
-						<span className="text-foreground font-medium">
-							{formatCompactNumber(totalTokens)}
-						</span>
+					<div className="flex items-center gap-3">
+						<div className="flex items-center gap-1">
+							<span className="text-xs opacity-70">in</span>
+							<span className="text-foreground font-medium">
+								{formatCompactNumber(inputTokens)}
+							</span>
+						</div>
+						<div className="flex items-center gap-1">
+							<span className="text-xs opacity-70">out</span>
+							<span className="text-foreground font-medium">
+								{formatCompactNumber(outputTokens)}
+							</span>
+						</div>
 					</div>
 
 					{estimatedCost > 0 && (
@@ -156,9 +154,8 @@ export function LeanHeader({
 					)}
 
 					<div className="hidden sm:flex items-center gap-2">
-						<span className="font-medium text-foreground">{session.model}</span>
-						<span className="opacity-50">·</span>
-						<span className="opacity-70">{session.provider}</span>
+						<ProviderLogo provider={session.provider} size={16} />
+						<span className="font-medium text-foreground truncate max-w-40">{session.model}</span>
 					</div>
 				</div>
 			</div>
