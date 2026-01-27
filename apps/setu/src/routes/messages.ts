@@ -11,47 +11,39 @@ import { sanitizeProviderError } from '../utils/error-sanitizer';
 
 type Variables = { walletAddress: string };
 
-const responses = new Hono<{ Variables: Variables }>();
+const messages = new Hono<{ Variables: Variables }>();
+
+const API_VERSION = '2023-06-01';
 
 function normalizeUsage(usage: any): UsageInfo | null {
   if (!usage) return null;
-  const cachedTokens = usage.input_tokens_details?.cached_tokens ?? 0;
   return {
-    inputTokens: (usage.input_tokens ?? 0) - cachedTokens,
+    inputTokens: usage.input_tokens ?? 0,
     outputTokens: usage.output_tokens ?? 0,
-    cachedInputTokens: cachedTokens,
-    cacheCreationInputTokens: 0,
+    cachedInputTokens: usage.cache_read_input_tokens ?? 0,
+    cacheCreationInputTokens: usage.cache_creation_input_tokens ?? 0,
   };
 }
 
-function isProModel(model: string): boolean {
-  return model.includes('-pro') || model.includes('o1-pro') || model.includes('o3-pro');
-}
-
-async function handleResponses(c: Context<{ Variables: Variables }>) {
+async function handleMessages(c: Context<{ Variables: Variables }>) {
   const walletAddress = c.get('walletAddress');
   const body = await c.req.json();
   const model = body.model;
 
-  if (!model) {
-    return c.json({ error: 'Model is required' }, 400);
+  if (!model || !model.startsWith('claude')) {
+    return c.json({ error: 'This endpoint only supports Claude models' }, 400);
   }
 
   const isStream = Boolean(body.stream);
-  const isPro = isProModel(model);
 
-  const requestBody = {
-    ...body,
-    ...(isPro && { background: true }),
-  };
-
-  const response = await fetch('https://api.openai.com/v1/responses', {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${config.openai.apiKey}`,
+      'x-api-key': config.anthropic.apiKey,
+      'anthropic-version': API_VERSION,
     },
-    body: JSON.stringify(requestBody),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -64,7 +56,7 @@ async function handleResponses(c: Context<{ Variables: Variables }>) {
     return stream(c, async (writer) => {
       const reader = response.body?.getReader();
       if (!reader) {
-        await writer.write('data: {"error": "No response body"}\n\n');
+        await writer.write('event: error\ndata: {"error": "No response body"}\n\n');
         return;
       }
 
@@ -86,11 +78,18 @@ async function handleResponses(c: Context<{ Variables: Variables }>) {
           if (line.startsWith('data:')) {
             try {
               const data = JSON.parse(line.slice(5).trim());
-              if (data.type === 'response.completed' && data.response?.usage) {
-                usage = normalizeUsage(data.response.usage);
+              
+              if (data.type === 'message_start' && data.message?.usage) {
+                usage = normalizeUsage(data.message.usage);
               }
-              if (data.usage) {
-                usage = normalizeUsage(data.usage);
+              
+              if (data.type === 'message_delta' && data.usage) {
+                const outputTokens = data.usage.output_tokens ?? 0;
+                if (usage) {
+                  usage.outputTokens = outputTokens;
+                } else {
+                  usage = { inputTokens: 0, outputTokens, cachedInputTokens: 0, cacheCreationInputTokens: 0 };
+                }
               }
             } catch {}
           }
@@ -100,7 +99,7 @@ async function handleResponses(c: Context<{ Variables: Variables }>) {
       if (usage) {
         const { cost, newBalance } = await deductCost(
           walletAddress,
-          'openai',
+          'anthropic',
           model,
           usage,
           config.markup,
@@ -112,7 +111,7 @@ async function handleResponses(c: Context<{ Variables: Variables }>) {
           input_tokens: usage.inputTokens,
           output_tokens: usage.outputTokens,
         };
-        await writer.write(`: solforge ${JSON.stringify(costData)}\n`);
+        await writer.write(`: setu ${JSON.stringify(costData)}\n`);
       }
     });
   }
@@ -123,7 +122,7 @@ async function handleResponses(c: Context<{ Variables: Variables }>) {
   if (usage) {
     const { cost, newBalance } = await deductCost(
       walletAddress,
-      'openai',
+      'anthropic',
       model,
       usage,
       config.markup,
@@ -138,6 +137,7 @@ async function handleResponses(c: Context<{ Variables: Variables }>) {
   return c.json(json);
 }
 
-responses.post('/v1/responses', walletAuth, balanceCheck, handleResponses);
+messages.post('/v1/messages', walletAuth, balanceCheck, handleMessages);
+messages.post('/messages', walletAuth, balanceCheck, handleMessages);
 
-export default responses;
+export default messages;

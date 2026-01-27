@@ -6,7 +6,7 @@ import type {
 
 type CatalogMap = Partial<Record<ProviderId, ProviderCatalogEntry>>;
 
-const SOLFORGE_ID: ProviderId = 'solforge';
+const SETU_ID: ProviderId = 'setu';
 
 const isAllowedOpenAIModel = (id: string): boolean => {
 	if (id === 'codex-mini-latest') return true;
@@ -23,7 +23,7 @@ const isAllowedAnthropicModel = (id: string): boolean => {
 	return false;
 };
 
-const SOLFORGE_SOURCES: Array<{ id: ProviderId; npm: string }> = [
+const SETU_SOURCES: Array<{ id: ProviderId; npm: string }> = [
 	{
 		id: 'openai',
 		npm: '@ai-sdk/openai',
@@ -53,8 +53,8 @@ function cloneModel(model: ModelInfo): ModelInfo {
 	};
 }
 
-function buildSolforgeEntry(base: CatalogMap): ProviderCatalogEntry | null {
-	const solforgeModels = SOLFORGE_SOURCES.flatMap(({ id, npm }) => {
+function buildSetuEntry(base: CatalogMap): ProviderCatalogEntry | null {
+	const setuModels = SETU_SOURCES.flatMap(({ id, npm }) => {
 		const allModels = base[id]?.models ?? [];
 		const sourceModels = allModels.filter((model) => {
 			if (id === 'openai') return isAllowedOpenAIModel(model.id);
@@ -68,10 +68,10 @@ function buildSolforgeEntry(base: CatalogMap): ProviderCatalogEntry | null {
 		});
 	});
 
-	if (!solforgeModels.length) return null;
+	if (!setuModels.length) return null;
 
 	// Prefer OpenAI-family models first so defaults are stable
-	solforgeModels.sort((a, b) => {
+	setuModels.sort((a, b) => {
 		const providerA = a.provider?.npm ?? '';
 		const providerB = b.provider?.npm ?? '';
 		if (providerA === providerB) {
@@ -83,31 +83,31 @@ function buildSolforgeEntry(base: CatalogMap): ProviderCatalogEntry | null {
 	});
 
 	const defaultModelId = 'codex-mini-latest';
-	const defaultIdx = solforgeModels.findIndex((m) => m.id === defaultModelId);
+	const defaultIdx = setuModels.findIndex((m) => m.id === defaultModelId);
 	if (defaultIdx > 0) {
-		const [picked] = solforgeModels.splice(defaultIdx, 1);
-		solforgeModels.unshift(picked);
+		const [picked] = setuModels.splice(defaultIdx, 1);
+		setuModels.unshift(picked);
 	}
 
 	return {
-		id: SOLFORGE_ID,
-		label: 'Solforge',
-		env: ['SOLFORGE_PRIVATE_KEY'],
-		api: 'https://router.solforge.sh/v1',
-		doc: 'https://router.solforge.sh/docs',
-		models: solforgeModels,
+		id: SETU_ID,
+		label: 'Setu',
+		env: ['SETU_PRIVATE_KEY'],
+		api: 'https://setu.agi.nitish.sh/v1',
+		doc: 'https://setu.agi.nitish.sh/docs',
+		models: setuModels,
 	};
 }
 
 export function mergeManualCatalog(
 	base: CatalogMap,
 ): Record<ProviderId, ProviderCatalogEntry> {
-	const manualEntry = buildSolforgeEntry(base);
+	const manualEntry = buildSetuEntry(base);
 	const merged: Record<ProviderId, ProviderCatalogEntry> = {
 		...(base as Record<ProviderId, ProviderCatalogEntry>),
 	};
 	if (manualEntry) {
-		merged[SOLFORGE_ID] = manualEntry;
+		merged[SETU_ID] = manualEntry;
 	}
 	return merged;
 }

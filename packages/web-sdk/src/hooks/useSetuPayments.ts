@@ -2,13 +2,13 @@ import { useEffect, useRef } from 'react';
 import { SSEClient } from '../lib/sse-client';
 import { apiClient } from '../lib/api-client';
 import { toast, useToastStore } from '../stores/toastStore';
-import { useSolforgeStore } from '../stores/solforgeStore';
+import { useSetuStore } from '../stores/setuStore';
 
-export function useSolforgePayments(sessionId: string | undefined) {
+export function useSetuPayments(sessionId: string | undefined) {
 	const clientRef = useRef<SSEClient | null>(null);
 	const loadingToastIdRef = useRef<string | null>(null);
-	const setBalance = useSolforgeStore((s) => s.setBalance);
-	const setPaymentPending = useSolforgeStore((s) => s.setPaymentPending);
+	const setBalance = useSetuStore((s) => s.setBalance);
+	const setPaymentPending = useSetuStore((s) => s.setPaymentPending);
 	const removeToast = useToastStore((s) => s.removeToast);
 	const updateToast = useToastStore((s) => s.updateToast);
 
@@ -25,7 +25,7 @@ export function useSolforgePayments(sessionId: string | undefined) {
 			const payload = event.payload as Record<string, unknown> | undefined;
 
 			switch (event.type) {
-				case 'solforge.payment.required': {
+				case 'setu.payment.required': {
 					const amountUsd =
 						typeof payload?.amountUsd === 'number' ? payload.amountUsd : 0;
 					setPaymentPending(true);
@@ -34,7 +34,7 @@ export function useSolforgePayments(sessionId: string | undefined) {
 					);
 					break;
 				}
-				case 'solforge.payment.signing': {
+				case 'setu.payment.signing': {
 					if (loadingToastIdRef.current) {
 						updateToast(loadingToastIdRef.current, {
 							message: '✍️ Signing transaction...',
@@ -46,7 +46,7 @@ export function useSolforgePayments(sessionId: string | undefined) {
 					}
 					break;
 				}
-				case 'solforge.payment.complete': {
+				case 'setu.payment.complete': {
 					const rawAmount = payload?.amountUsd;
 					const rawBalance = payload?.newBalance;
 					const transactionId =
@@ -82,7 +82,7 @@ export function useSolforgePayments(sessionId: string | undefined) {
 					}
 					break;
 				}
-				case 'solforge.payment.error': {
+				case 'setu.payment.error': {
 					const error =
 						typeof payload?.error === 'string'
 							? payload.error

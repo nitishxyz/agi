@@ -624,7 +624,7 @@ class ApiClient {
 		return await response.json();
 	}
 
-	async getSolforgeBalance(): Promise<{
+	async getSetuBalance(): Promise<{
 		walletAddress: string;
 		balance: number;
 		totalSpent: number;
@@ -632,7 +632,7 @@ class ApiClient {
 		requestCount: number;
 	} | null> {
 		try {
-			const response = await fetch(`${this.baseUrl}/v1/solforge/balance`, {
+			const response = await fetch(`${this.baseUrl}/v1/setu/balance`, {
 				method: 'GET',
 				headers: {
 					'Content-Type': 'application/json',
@@ -649,13 +649,13 @@ class ApiClient {
 		}
 	}
 
-	async getSolforgeWallet(): Promise<{
+	async getSetuWallet(): Promise<{
 		configured: boolean;
 		publicKey?: string;
 		error?: string;
 	}> {
 		try {
-			const response = await fetch(`${this.baseUrl}/v1/solforge/wallet`, {
+			const response = await fetch(`${this.baseUrl}/v1/setu/wallet`, {
 				method: 'GET',
 				headers: {
 					'Content-Type': 'application/json',
@@ -672,7 +672,7 @@ class ApiClient {
 		}
 	}
 
-	async getSolforgeUsdcBalance(
+	async getSetuUsdcBalance(
 		network: 'mainnet' | 'devnet' = 'mainnet',
 	): Promise<{
 		walletAddress: string;
@@ -681,7 +681,7 @@ class ApiClient {
 	} | null> {
 		try {
 			const response = await fetch(
-				`${this.baseUrl}/v1/solforge/usdc-balance?network=${network}`,
+				`${this.baseUrl}/v1/setu/usdc-balance?network=${network}`,
 				{
 					method: 'GET',
 					headers: {

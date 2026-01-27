@@ -8,8 +8,8 @@ import {
 
 const DEPLOYED_STAGES = ["prod", "dev"];
 
-export const router = !DEPLOYED_STAGES.includes($app.stage)
-  ? new sst.x.DevCommand("Router", {
+export const setu = !DEPLOYED_STAGES.includes($app.stage)
+  ? new sst.x.DevCommand("Setu", {
       environment: {
         DATABASE_URL: databaseUrl.value,
         OPENAI_API_KEY: openAiApiKey.value,
@@ -17,11 +17,11 @@ export const router = !DEPLOYED_STAGES.includes($app.stage)
         PLATFORM_WALLET: platformWallet.value,
         STAGE: $app.stage || "dev",
       },
-      dev: { command: "bun dev", directory: "apps/router" },
+      dev: { command: "bun dev", directory: "apps/setu" },
     })
-  : new sst.cloudflare.Worker("Router", {
+  : new sst.cloudflare.Worker("Setu", {
       url: true,
-      handler: "apps/router/src/index.ts",
+      handler: "apps/setu/src/index.ts",
       environment: {
         DATABASE_URL: databaseUrl.value,
         OPENAI_API_KEY: openAiApiKey.value,
@@ -29,7 +29,7 @@ export const router = !DEPLOYED_STAGES.includes($app.stage)
         PLATFORM_WALLET: platformWallet.value,
         STAGE: $app.stage || "prod",
       },
-      domain: domains.router,
+      domain: domains.setu,
       transform: {
         worker: {
           observability: {
@@ -44,5 +44,5 @@ export const router = !DEPLOYED_STAGES.includes($app.stage)
     });
 
 export const routerUrl = DEPLOYED_STAGES.includes($app.stage)
-  ? (router as sst.cloudflare.Worker).url
+  ? (setu as sst.cloudflare.Worker).url
   : "http://localhost:4002";

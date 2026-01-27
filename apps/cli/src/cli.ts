@@ -13,7 +13,7 @@ import {
 	registerScaffoldCommand,
 	registerDoctorCommand,
 	registerUpgradeCommand,
-	registerSolforgeCommand,
+	registerSetuCommand,
 	registerShareCommand,
 } from './commands/index.ts';
 import { runDiscoveredCommand } from './custom-commands.ts';
@@ -55,7 +55,7 @@ export function createCli(version: string): Command {
 	registerScaffoldCommand(program);
 	registerDoctorCommand(program);
 	registerUpgradeCommand(program, version);
-	registerSolforgeCommand(program);
+	registerSetuCommand(program);
 	registerShareCommand(program);
 
 	return program;

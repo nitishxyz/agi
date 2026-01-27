@@ -19,12 +19,12 @@ import { useGitStore, useConfirmationStore } from '@agi-cli/web-sdk/stores';
 import {
 	useGitStatus,
 	useStageFiles,
-	useSolforgePayments,
+	useSetuPayments,
 	useUnstageFiles,
 	useRestoreFiles,
 	useDeleteFiles,
 	useSessions,
-	useSolforgeBalance,
+	useSetuBalance,
 } from '@agi-cli/web-sdk/hooks';
 
 interface SessionsLayoutProps {
@@ -49,8 +49,8 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	);
 
 	useWorkingDirectory();
-	useSolforgePayments(sessionId);
-	useSolforgeBalance(config?.defaults?.provider);
+	useSetuPayments(sessionId);
+	useSetuBalance(config?.defaults?.provider);
 
 	const focusInput = useCallback(() => {
 		setTimeout(() => {

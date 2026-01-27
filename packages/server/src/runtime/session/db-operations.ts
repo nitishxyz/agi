@@ -74,7 +74,7 @@ export function resolveUsageProvider(
 	model: string,
 ): ProviderId {
 	if (
-		provider !== 'solforge' &&
+		provider !== 'setu' &&
 		provider !== 'openrouter' &&
 		provider !== 'opencode'
 	) {

@@ -25,7 +25,7 @@ const DEFAULTS: {
 		google: { enabled: true },
 		openrouter: { enabled: false },
 		opencode: { enabled: false },
-		solforge: { enabled: false },
+		setu: { enabled: false },
 		zai: { enabled: false },
 		'zai-coding': { enabled: false },
 		moonshot: { enabled: false },

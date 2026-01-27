@@ -23,8 +23,8 @@ import { useFileUpload } from '../../hooks/useFileUpload';
 import { useQueueStore } from '../../stores/queueStore';
 import { usePendingResearchStore } from '../../stores/pendingResearchStore';
 import { formatResearchContextForMessage } from '../../lib/parseResearchContext';
-import { useSolforgeBalance } from '../../hooks/useSolforgeBalance';
-import { useSolforgeStore } from '../../stores/solforgeStore';
+import { useSetuBalance } from '../../hooks/useSetuBalance';
+import { useSetuStore } from '../../stores/setuStore';
 import { toast } from '../../stores/toastStore';
 import { useToastStore } from '../../stores/toastStore';
 import { apiClient } from '../../lib/api-client';
@@ -121,8 +121,8 @@ export const ChatInputContainer = memo(
 
 			const providerAuthType = allModels?.[provider]?.authType;
 
-			const { fetchBalance } = useSolforgeBalance(provider);
-			const isBalanceLoading = useSolforgeStore((s) => s.isLoading);
+			const { fetchBalance } = useSetuBalance(provider);
+			const isBalanceLoading = useSetuStore((s) => s.isLoading);
 
 			useEffect(() => {
 				if (session) {
@@ -431,7 +431,7 @@ export const ChatInputContainer = memo(
 						researchContexts={researchContexts}
 						onResearchContextRemove={handleResearchContextRemove}
 						onRefreshBalance={
-							provider === 'solforge' ? fetchBalance : undefined
+							provider === 'setu' ? fetchBalance : undefined
 						}
 						isBalanceLoading={isBalanceLoading}
 					/>

@@ -62,12 +62,12 @@ export async function providerBasePrompt(
 		}
 	}
 
-	// 2) Provider-family fallback for openrouter/opencode/solforge using embedded defaults
+	// 2) Provider-family fallback for openrouter/opencode/setu using embedded defaults
 	if (
 		isProviderId(id) &&
 		(id === 'openrouter' ||
 			id === 'opencode' ||
-			id === 'solforge' ||
+			id === 'setu' ||
 			id === 'zai' ||
 			id === 'zai-coding') &&
 		modelId

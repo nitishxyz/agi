@@ -47,7 +47,7 @@ bun run test/ai-sdk-client.ts
 ## Expected Output
 
 ```
-🚀 Solforge Router Test Client
+🚀 Setu Router Test Client
 ================================
 📡 Router URL: http://localhost:4002
 🔗 RPC URL: https://api.devnet.solana.com

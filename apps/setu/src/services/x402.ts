@@ -35,7 +35,7 @@ export interface X402SettleResponse {
 function normalizeResource(resource: string): string {
   if (resource.startsWith('http')) return resource;
   const suffix = resource.startsWith('/') ? resource : `/${resource}`;
-  return `https://router.solforge.sh${suffix}`;
+  return `https://setu.agi.nitish.sh${suffix}`;
 }
 
 export function createPaymentRequirement(

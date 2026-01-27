@@ -6,5 +6,5 @@ export const domains = {
 	sh: `${SUB}install.${HOST}`,
 	previewApi: `${SUB}api.share.${HOST}`,
 	previewWeb: `${SUB}share.${HOST}`,
-	router: `${SUB}router.${HOST}`,
+	setu: `${SUB}setu.${HOST}`,
 };

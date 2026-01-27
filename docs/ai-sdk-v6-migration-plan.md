@@ -70,7 +70,7 @@ All tools use `tool()` and `Tool` type from 'ai':
 | `packages/sdk/src/core/src/providers/resolver.ts` | `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@ai-sdk/openai-compatible` |
 | `packages/server/src/runtime/provider/openai.ts` | `@ai-sdk/openai` |
 | `packages/server/src/runtime/provider/anthropic.ts` | `@ai-sdk/anthropic` |
-| `packages/sdk/src/providers/src/solforge-client.ts` | `@ai-sdk/openai`, `@ai-sdk/anthropic` |
+| `packages/sdk/src/providers/src/setu-client.ts` | `@ai-sdk/openai`, `@ai-sdk/anthropic` |
 | `packages/sdk/src/providers/src/opencode-client.ts` | `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/openai-compatible` |
 | `packages/sdk/src/providers/src/google-client.ts` | `@ai-sdk/google` |
 | `packages/sdk/src/providers/src/zai-client.ts` | `@ai-sdk/openai-compatible` |

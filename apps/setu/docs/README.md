@@ -1,4 +1,4 @@
-# Solforge Router
+# Setu Router
 
 **AI Proxy powered by x402 payments on Solana**
 
@@ -7,7 +7,7 @@ Pay for AI inference with USDC using your Solana wallet. No API keys needed - ju
 ## Architecture
 
 ```
-Client → Solforge Router → OpenAI/Anthropic APIs
+Client → Setu Router → OpenAI/Anthropic APIs
          ↓
    (Wallet Auth + x402 Payments + Usage Billing)
 ```
@@ -174,7 +174,7 @@ When your balance falls below **$0.05**, the router returns `402 Payment Require
       "maxAmountRequired": "100000",
       "asset": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
       "payTo": "<company-wallet>",
-      "resource": "https://router.solforge.sh/v1/responses",
+      "resource": "https://setu.agi.nitish.sh/v1/responses",
       "description": "Top-up required for API access (0.10 USD)",
       "mimeType": "application/json",
       "maxTimeoutSeconds": 60,
@@ -211,7 +211,7 @@ The `accepts` array contains multiple top-up options. **The client picks any opt
 ### Top-up Request
 
 ```typescript
-const response = await fetch('https://router.solforge.sh/v1/topup', {
+const response = await fetch('https://setu.agi.nitish.sh/v1/topup', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -276,12 +276,12 @@ x-balance-remaining: 4.99998766
 
 Costs injected as SSE comment at stream end:
 ```
-: solforge {"cost_usd":"0.00000904","balance_remaining":"4.99856275","input_tokens":20,"output_tokens":11}
+: setu {"cost_usd":"0.00000904","balance_remaining":"4.99856275","input_tokens":20,"output_tokens":11}
 ```
 
 Parse with:
 ```typescript
-const lines = chunk.split('\n').filter(l => l.startsWith(': solforge '));
+const lines = chunk.split('\n').filter(l => l.startsWith(': setu '));
 for (const line of lines) {
   const data = JSON.parse(line.slice(11));
   console.log(`Cost: $${data.cost_usd}, Balance: $${data.balance_remaining}`);
@@ -299,14 +299,14 @@ Cached tokens are billed at reduced rates:
 ### Using with Vercel AI SDK
 
 ```typescript
-import { createSolforgeModel } from '@agi-cli/sdk';
+import { createSetuModel } from '@agi-cli/sdk';
 import { generateText } from 'ai';
 
-const model = createSolforgeModel(
+const model = createSetuModel(
   'gpt-5-mini',
   { privateKey: process.env.SOLANA_PRIVATE_KEY },
   { 
-    baseURL: 'https://router.solforge.sh',
+    baseURL: 'https://setu.agi.nitish.sh',
     providerNpm: '@ai-sdk/openai',
   }
 );
@@ -446,7 +446,7 @@ const result = await generateText({
 curl -H "x-wallet-address: YOUR_WALLET" \
      -H "x-wallet-signature: SIGNATURE" \
      -H "x-wallet-nonce: TIMESTAMP" \
-     https://router.solforge.sh/v1/balance
+     https://setu.agi.nitish.sh/v1/balance
 ```
 
 Response:
@@ -478,9 +478,9 @@ Response:
 
 | Variable | Description |
 |----------|-------------|
-| `SOLFORGE_BASE_URL` | Router URL (default: `https://router.solforge.sh`) |
-| `SOLFORGE_SOLANA_RPC_URL` | Solana RPC (default: `https://api.mainnet-beta.solana.com`) |
-| `SOLFORGE_PRIVATE_KEY` | Base58-encoded Solana private key |
+| `SETU_BASE_URL` | Router URL (default: `https://setu.agi.nitish.sh`) |
+| `SETU_SOLANA_RPC_URL` | Solana RPC (default: `https://api.mainnet-beta.solana.com`) |
+| `SETU_PRIVATE_KEY` | Base58-encoded Solana private key |
 
 ## Error Handling
 
@@ -548,4 +548,4 @@ apps/router/
 
 ## Support
 
-- GitHub Issues: [sst/solforge](https://github.com/sst/solforge/issues)
+- GitHub Issues: [sst/setu](https://github.com/sst/setu/issues)

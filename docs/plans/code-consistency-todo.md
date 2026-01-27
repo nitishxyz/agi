@@ -10,7 +10,7 @@ The SDK has a logger at `packages/sdk/src/core/src/utils/logger.ts` but some fil
 
 | File | Usage | Recommendation |
 |------|-------|----------------|
-| `providers/src/solforge-client.ts` | `console.log` for payment status | Keep - user-facing payment feedback |
+| `providers/src/setu-client.ts` | `console.log` for payment status | Keep - user-facing payment feedback |
 | `skills/loader.ts` | `console.warn/error` when `AGI_DEBUG=1` | Consider using logger.warn/error |
 | `core/src/tools/loader.ts` | `console.error` when `AGI_DEBUG_TOOLS=1` | Consider using logger.error |
 | `core/src/tools/builtin/edit.ts` | `console.warn` for missing text | Consider using logger.warn |
@@ -18,7 +18,7 @@ The SDK has a logger at `packages/sdk/src/core/src/utils/logger.ts` but some fil
 
 ### Recommendations
 
-- **solforge-client.ts**: The console.log calls are intentional for user feedback during payment processing. Could use a callback pattern instead.
+- **setu-client.ts**: The console.log calls are intentional for user feedback during payment processing. Could use a callback pattern instead.
 - **skills/loader.ts & tools/loader.ts**: These check environment variables before logging. Could be unified with the logger which already checks `isDebugEnabled()`.
 - **edit.ts**: Should use logger.warn for consistency.
 
@@ -98,11 +98,11 @@ All routes should use `serializeError()` which returns:
 - [ ] Test all git endpoints
 
 ### Phase 3 - SDK Logging (Low Priority)
-- [ ] Evaluate solforge-client.ts logging strategy
+- [ ] Evaluate setu-client.ts logging strategy
 - [ ] Unify debug-conditional logging in skills/tools loaders
 
 ## Notes
 
 - The logger only outputs when `AGI_DEBUG=1` or `AGI_TRACE=1` for most levels
 - Error logging should always happen (logger.error respects this)
-- Payment status messages in solforge-client are intentionally user-facing
+- Payment status messages in setu-client are intentionally user-facing

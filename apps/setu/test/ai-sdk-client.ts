@@ -1,5 +1,5 @@
 /**
- * AI SDK Test Client for Solforge Router
+ * AI SDK Test Client for Setu Router
  * 
  * Uses native AI SDK providers:
  * - @ai-sdk/openai for OpenAI models (via /v1/responses)

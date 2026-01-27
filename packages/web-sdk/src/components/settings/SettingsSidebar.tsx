@@ -19,8 +19,8 @@ import {
 	useUpdateDefaults,
 } from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
-import { useSolforgeStore } from '../../stores/solforgeStore';
-import { useSolforgeBalance } from '../../hooks/useSolforgeBalance';
+import { useSetuStore } from '../../stores/setuStore';
+import { useSetuBalance } from '../../hooks/useSetuBalance';
 
 interface SettingsSectionProps {
 	title: string;
@@ -165,14 +165,14 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 	const { data: allModels } = useAllModels();
 	const { preferences, updatePreferences } = usePreferences();
 	const updateDefaults = useUpdateDefaults();
-	const solforgeBalance = useSolforgeStore((s) => s.balance);
-	const solforgeWallet = useSolforgeStore((s) => s.walletAddress);
-	const solforgeUsdcBalance = useSolforgeStore((s) => s.usdcBalance);
-	const solforgeLoading = useSolforgeStore((s) => s.isLoading);
+	const setuBalance = useSetuStore((s) => s.balance);
+	const setuWallet = useSetuStore((s) => s.walletAddress);
+	const setuUsdcBalance = useSetuStore((s) => s.usdcBalance);
+	const setuLoading = useSetuStore((s) => s.isLoading);
 
-	const hasSolforge = config?.providers?.includes('solforge');
-	const { fetchBalance: refreshSolforgeBalance } = useSolforgeBalance(
-		hasSolforge ? 'solforge' : undefined,
+	const hasSetu = config?.providers?.includes('setu');
+	const { fetchBalance: refreshSetuBalance } = useSetuBalance(
+		hasSetu ? 'setu' : undefined,
 	);
 
 	const providerOptions = useMemo(() => {
@@ -305,29 +305,29 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 					/>
 				</SettingsSection>
 
-				{config?.providers?.includes('solforge') && (
+				{config?.providers?.includes('setu') && (
 					<SettingsSection
-						title="Solforge Wallet"
+						title="Setu Wallet"
 						icon={<Wallet className="w-4 h-4 text-muted-foreground" />}
 						action={
 							<button
 								type="button"
-								onClick={refreshSolforgeBalance}
-								disabled={solforgeLoading}
+								onClick={refreshSetuBalance}
+								disabled={setuLoading}
 								className="p-1 hover:bg-muted rounded transition-colors disabled:opacity-50"
 								title="Refresh balances"
 							>
 								<RefreshCw
-									className={`w-3.5 h-3.5 text-muted-foreground ${solforgeLoading ? 'animate-spin' : ''}`}
+									className={`w-3.5 h-3.5 text-muted-foreground ${setuLoading ? 'animate-spin' : ''}`}
 								/>
 							</button>
 						}
 					>
-						{solforgeWallet && (
+						{setuWallet && (
 							<div className="flex justify-center pb-3">
 								<div className="p-2 bg-white rounded-lg">
 									<QRCodeSVG
-										value={solforgeWallet}
+										value={setuWallet}
 										size={120}
 										level="M"
 										includeMargin={false}
@@ -337,15 +337,15 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 						)}
 						<SettingRow
 							label="Address"
-							value={truncateWallet(solforgeWallet)}
+							value={truncateWallet(setuWallet)}
 						/>
 						<SettingRow
 							label="Balance"
-							value={formatBalance(solforgeBalance)}
+							value={formatBalance(setuBalance)}
 						/>
 						<SettingRow
 							label="USDC"
-							value={formatUsdcBalance(solforgeUsdcBalance)}
+							value={formatUsdcBalance(setuUsdcBalance)}
 						/>
 					</SettingsSection>
 				)}

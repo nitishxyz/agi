@@ -250,7 +250,7 @@ async function chatOpenAI(
       }
 
       // Parse SSE comments for cost metadata
-      const commentLines = chunk.split('\n').filter(l => l.startsWith(': solforge '));
+      const commentLines = chunk.split('\n').filter(l => l.startsWith(': setu '));
       for (const line of commentLines) {
         try {
           const costData = JSON.parse(line.slice(11));
@@ -342,7 +342,7 @@ async function chatAnthropic(
       }
 
       // Parse SSE comments for cost metadata
-      const commentLines = chunk.split('\n').filter(l => l.startsWith(': solforge '));
+      const commentLines = chunk.split('\n').filter(l => l.startsWith(': setu '));
       for (const line of commentLines) {
         try {
           const costData = JSON.parse(line.slice(11));
@@ -369,7 +369,7 @@ async function chatAnthropic(
 }
 
 async function main() {
-  console.log('🚀 Solforge Router Test Client');
+  console.log('🚀 Setu Router Test Client');
   console.log('================================');
   console.log(`📡 Router URL: ${BASE_URL}`);
   console.log(`🔗 RPC URL: ${RPC_URL}`);

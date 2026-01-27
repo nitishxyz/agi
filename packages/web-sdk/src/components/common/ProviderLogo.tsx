@@ -9,7 +9,7 @@ import {
 	deepseekLogo,
 	xaiLogo,
 	zaiLogo,
-	solforgeLogo,
+	setuLogo,
 	opencodeLogo,
 } from '../../assets/provider-logos';
 
@@ -23,7 +23,7 @@ const providerLogos: Record<string, string> = {
 	xai: xaiLogo,
 	zai: zaiLogo,
 	'zai-coding': zaiLogo,
-	solforge: solforgeLogo,
+	setu: setuLogo,
 	opencode: opencodeLogo,
 };
 

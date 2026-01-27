@@ -61,16 +61,16 @@ export {
 	setEnvKey,
 } from './providers/src/index.ts';
 export {
-	createSolforgeFetch,
-	createSolforgeModel,
-	fetchSolforgeBalance,
+	createSetuFetch,
+	createSetuModel,
+	fetchSetuBalance,
 	getPublicKeyFromPrivate,
 	fetchSolanaUsdcBalance,
 } from './providers/src/index.ts';
 export type {
-	SolforgeAuth,
-	SolforgeProviderOptions,
-	SolforgeBalanceResponse,
+	SetuAuth,
+	SetuProviderOptions,
+	SetuBalanceResponse,
 	SolanaUsdcBalanceResponse,
 } from './providers/src/index.ts';
 export {

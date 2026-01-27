@@ -14,7 +14,7 @@ const FALLBACK_ORDER: ProviderId[] = [
 	'google',
 	'opencode',
 	'openrouter',
-	'solforge',
+	'setu',
 ];
 
 type SelectionInput = {

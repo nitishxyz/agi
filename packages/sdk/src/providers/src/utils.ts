@@ -42,7 +42,7 @@ const PREFERRED_FAST_MODELS: Partial<Record<ProviderId, string[]>> = {
 		'google/gemini-2.0-flash-001',
 	],
 	opencode: ['claude-3-5-haiku', 'gpt-5-nano', 'gemini-3-flash'],
-	solforge: [
+	setu: [
 		'claude-3-5-haiku-latest',
 		'claude-3-5-haiku-20241022',
 		'codex-mini-latest',

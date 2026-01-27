@@ -21,9 +21,9 @@ describe('provider base prompts', () => {
 		expect(typeof txt).toBe('string');
 	});
 
-	it('uses provider family for solforge models', async () => {
+	it('uses provider family for setu models', async () => {
 		const txt = await providerBasePrompt(
-			'solforge',
+			'setu',
 			'gpt-4o-mini',
 			process.cwd(),
 		);

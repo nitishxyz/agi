@@ -63,7 +63,7 @@ export function registerAskCommand(program: Command) {
 		.option('--agent <name>', 'Override agent')
 		.option(
 			'--provider <provider>',
-			'Override provider (openai, anthropic, google, openrouter, opencode, solforge)',
+			'Override provider (openai, anthropic, google, openrouter, opencode, setu)',
 		)
 		.option('--model <model>', 'Override model')
 		.option('--project <path>', 'Use project at <path>', process.cwd())

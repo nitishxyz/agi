@@ -3,7 +3,7 @@ import { getAnthropicInstance } from './anthropic.ts';
 import { resolveOpenAIModel } from './openai.ts';
 import { resolveGoogleModel } from './google.ts';
 import { resolveOpenRouterModel } from './openrouter.ts';
-import { resolveSolforgeModel } from './solforge.ts';
+import { resolveSetuModel } from './setu.ts';
 import { getZaiInstance, getZaiCodingInstance } from './zai.ts';
 import { resolveOpencodeModel } from './opencode.ts';
 import { getMoonshotInstance } from './moonshot.ts';
@@ -34,8 +34,8 @@ export async function resolveModel(
 	if (provider === 'opencode') {
 		return resolveOpencodeModel(model, cfg);
 	}
-	if (provider === 'solforge') {
-		return resolveSolforgeModel(model, options?.sessionId);
+	if (provider === 'setu') {
+		return resolveSetuModel(model, options?.sessionId);
 	}
 	if (provider === 'zai') {
 		return getZaiInstance(cfg, model);

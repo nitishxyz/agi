@@ -8,7 +8,7 @@ import { getAssociatedTokenAddress } from '@solana/spl-token';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 
-const DEFAULT_SOLFORGE_URL = 'https://router.agi.nitish.sh';
+const DEFAULT_SETU_URL = 'https://setu.agi.nitish.sh';
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const USDC_MINT_MAINNET = new PublicKey(
 	'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
@@ -30,9 +30,9 @@ function detectNetwork(rpcUrl: string): 'mainnet' | 'devnet' | 'unknown' {
 	return 'unknown';
 }
 
-async function fetchSolforgeBalance(
+async function fetchSetuBalance(
 	privateKey: string,
-	solforgeUrl: string,
+	setuUrl: string,
 ): Promise<{
 	balance: number;
 	totalSpent: number;
@@ -47,7 +47,7 @@ async function fetchSolforgeBalance(
 		const nonce = Date.now().toString();
 		const signature = signNonce(nonce, privateKeyBytes);
 
-		const response = await fetch(`${solforgeUrl}/v1/balance`, {
+		const response = await fetch(`${setuUrl}/v1/balance`, {
 			headers: {
 				'x-wallet-address': walletAddress,
 				'x-wallet-nonce': nonce,
@@ -98,33 +98,33 @@ async function fetchUsdcBalance(
 	}
 }
 
-export function registerSolforgeCommand(program: Command) {
+export function registerSetuCommand(program: Command) {
 	program
-		.command('solforge')
-		.description('Manage Solforge wallet and view balance')
-		.option('--login', 'Login/setup Solforge wallet')
+		.command('setu')
+		.description('Manage Setu wallet and view balance')
+		.option('--login', 'Login/setup Setu wallet')
 		.action(async (options) => {
 			const { runAuth } = await import('../auth.ts');
 
 			if (options.login) {
-				await runAuth(['login', 'solforge']);
+				await runAuth(['login', 'setu']);
 				return;
 			}
 
 			console.log('');
-			console.log(colors.bold('  Solforge Wallet'));
+			console.log(colors.bold('  Setu Wallet'));
 			console.log('');
 
 			const cfg = await loadConfig(process.cwd());
-			const auth = await getAuth('solforge', cfg.projectRoot);
+			const auth = await getAuth('setu', cfg.projectRoot);
 
 			if (!auth || auth.type !== 'wallet') {
-				log.warn('No Solforge wallet configured.');
+				log.warn('No Setu wallet configured.');
 				console.log(
-					`  Run ${colors.cyan('agi solforge --login')} to setup your wallet.`,
+					`  Run ${colors.cyan('agi setu --login')} to setup your wallet.`,
 				);
 				console.log(
-					`  Or set ${colors.cyan('SOLFORGE_PRIVATE_KEY')} environment variable.`,
+					`  Or set ${colors.cyan('SETU_PRIVATE_KEY')} environment variable.`,
 				);
 				console.log('');
 				return;
@@ -145,11 +145,11 @@ export function registerSolforgeCommand(program: Command) {
 			}
 
 			const rpcUrl =
-				process.env.SOLFORGE_SOLANA_RPC_URL ||
+				process.env.SETU_SOLANA_RPC_URL ||
 				process.env.SOLANA_RPC_URL ||
 				DEFAULT_RPC_URL;
 			const network = detectNetwork(rpcUrl);
-			const solforgeUrl = process.env.SOLFORGE_BASE_URL || DEFAULT_SOLFORGE_URL;
+			const setuUrl = process.env.SETU_BASE_URL || DEFAULT_SETU_URL;
 
 			const networkLabel =
 				network === 'mainnet'
@@ -163,7 +163,7 @@ export function registerSolforgeCommand(program: Command) {
 				`Public Key: ${colors.cyan(publicKey)}`,
 				`Network:    ${networkLabel}`,
 				`RPC:        ${colors.dim(rpcUrl)}`,
-				`Solforge:   ${colors.dim(solforgeUrl)}`,
+				`Setu:   ${colors.dim(setuUrl)}`,
 			];
 
 			box('Wallet', walletLines);
@@ -177,7 +177,7 @@ export function registerSolforgeCommand(program: Command) {
 			// Fetch balances from remote
 			console.log(colors.dim('  Fetching balances...'));
 			const [balanceData, usdcResult] = await Promise.all([
-				fetchSolforgeBalance(privateKey, solforgeUrl),
+				fetchSetuBalance(privateKey, setuUrl),
 				fetchUsdcBalance(keypair.publicKey, rpcUrl, network),
 			]);
 
@@ -190,18 +190,18 @@ export function registerSolforgeCommand(program: Command) {
 			}
 
 			if (balanceData) {
-				box('Solforge Account', [
+				box('Setu Account', [
 					`Balance:      ${colors.green(`$${balanceData.balance.toFixed(4)}`)}`,
 					`Total Spent:  ${colors.dim(`$${balanceData.totalSpent.toFixed(4)}`)}`,
 					`Total Topups: ${colors.dim(`$${balanceData.totalTopups.toFixed(4)}`)}`,
 					`Requests:     ${colors.dim(balanceData.requestCount.toString())}`,
 				]);
 			} else {
-				log.warn('Could not fetch Solforge account balance.');
+				log.warn('Could not fetch Setu account balance.');
 			}
 
 			console.log('');
 		});
 }
 
-export { fetchSolforgeBalance };
+export { fetchSetuBalance };

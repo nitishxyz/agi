@@ -17,7 +17,7 @@ export type CommandManifest = {
 			| 'google'
 			| 'openrouter'
 			| 'opencode'
-			| 'solforge';
+			| 'setu';
 		model?: string;
 		agent?: string;
 	};
@@ -188,7 +188,7 @@ export async function runDiscoveredCommand(
 					| 'google'
 					| 'openrouter'
 					| 'opencode'
-					| 'solforge')
+					| 'setu')
 			: undefined) || cmd.defaults?.provider;
 	const model =
 		(modelFlagIdx >= 0 ? argv[modelFlagIdx + 1] : undefined) ||

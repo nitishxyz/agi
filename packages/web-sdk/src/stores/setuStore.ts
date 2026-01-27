@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-interface SolforgeState {
+interface SetuState {
 	balance: number | null;
 	usdcBalance: number | null;
 	network: 'mainnet' | 'devnet';
@@ -17,7 +17,7 @@ interface SolforgeState {
 	setLoading: (loading: boolean) => void;
 }
 
-export const useSolforgeStore = create<SolforgeState>((set) => ({
+export const useSetuStore = create<SetuState>((set) => ({
 	balance: null,
 	usdcBalance: null,
 	network: 'mainnet',

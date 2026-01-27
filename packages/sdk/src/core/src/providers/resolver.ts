@@ -5,7 +5,7 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
 	catalog,
-	createSolforgeModel,
+	createSetuModel,
 	createOpenAIOAuthModel,
 } from '../../../providers/src/index.ts';
 import type { OAuth } from '../../../types/src/index.ts';
@@ -33,7 +33,7 @@ export type ProviderName =
 	| 'google'
 	| 'openrouter'
 	| 'opencode'
-	| 'solforge'
+	| 'setu'
 	| 'zai'
 	| 'zai-coding'
 	| 'moonshot';
@@ -152,16 +152,16 @@ export async function resolveModel(
 		return ocOpenAI(resolvedModelId);
 	}
 
-	if (provider === 'solforge') {
-		const privateKey = config.apiKey || process.env.SOLFORGE_PRIVATE_KEY || '';
+	if (provider === 'setu') {
+		const privateKey = config.apiKey || process.env.SETU_PRIVATE_KEY || '';
 		if (!privateKey) {
 			throw new Error(
-				'Solforge provider requires SOLFORGE_PRIVATE_KEY (base58 Solana secret).',
+				'Setu provider requires SETU_PRIVATE_KEY (base58 Solana secret).',
 			);
 		}
-		const baseURL = config.baseURL || process.env.SOLFORGE_BASE_URL;
-		const rpcURL = process.env.SOLFORGE_SOLANA_RPC_URL;
-		return createSolforgeModel(
+		const baseURL = config.baseURL || process.env.SETU_BASE_URL;
+		const rpcURL = process.env.SETU_SOLANA_RPC_URL;
+		return createSetuModel(
 			model,
 			{ privateKey },
 			{

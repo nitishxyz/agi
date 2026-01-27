@@ -1,9 +1,9 @@
-export const solforgePaths = {
-	'/v1/solforge/balance': {
+export const setuPaths = {
+	'/v1/setu/balance': {
 		get: {
-			tags: ['solforge'],
-			operationId: 'getSolforgeBalance',
-			summary: 'Get Solforge account balance',
+			tags: ['setu'],
+			operationId: 'getSetuBalance',
+			summary: 'Get Setu account balance',
 			description:
 				'Returns wallet balance, total spent, total topups, and request count',
 			responses: {
@@ -44,7 +44,7 @@ export const solforgePaths = {
 					},
 				},
 				502: {
-					description: 'Failed to fetch balance from Solforge',
+					description: 'Failed to fetch balance from Setu',
 					content: {
 						'application/json': {
 							schema: {
@@ -58,11 +58,11 @@ export const solforgePaths = {
 			},
 		},
 	},
-	'/v1/solforge/wallet': {
+	'/v1/setu/wallet': {
 		get: {
-			tags: ['solforge'],
-			operationId: 'getSolforgeWallet',
-			summary: 'Get Solforge wallet info',
+			tags: ['setu'],
+			operationId: 'getSetuWallet',
+			summary: 'Get Setu wallet info',
 			description:
 				'Returns whether the wallet is configured and its public key',
 			responses: {
@@ -85,10 +85,10 @@ export const solforgePaths = {
 			},
 		},
 	},
-	'/v1/solforge/usdc-balance': {
+	'/v1/setu/usdc-balance': {
 		get: {
-			tags: ['solforge'],
-			operationId: 'getSolforgeUsdcBalance',
+			tags: ['setu'],
+			operationId: 'getSetuUsdcBalance',
 			summary: 'Get USDC token balance',
 			description:
 				'Fetches USDC balance from Solana blockchain for the configured wallet',

@@ -21,7 +21,7 @@ Split into 7 modules:
 - `openai.ts` - OpenAI provider setup (~26 lines)
 - `google.ts` - Google provider setup (~12 lines)
 - `openrouter.ts` - OpenRouter provider setup (~11 lines)
-- `solforge.ts` - Solforge provider setup (~22 lines)
+- `setu.ts` - Setu provider setup (~22 lines)
 - `zai.ts` - ZAI provider setup (~53 lines)
 - `opencode.ts` - OpenCode provider setup (~61 lines)
 

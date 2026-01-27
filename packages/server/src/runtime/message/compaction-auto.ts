@@ -62,7 +62,7 @@ export async function performAutoCompaction(
 				| 'google'
 				| 'openrouter'
 				| 'opencode'
-				| 'solforge'
+				| 'setu'
 				| 'zai'
 				| 'zai-coding',
 			cfg.projectRoot,

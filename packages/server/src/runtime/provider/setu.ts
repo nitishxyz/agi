@@ -1,51 +1,51 @@
 import {
-	createSolforgeModel,
+	createSetuModel,
 	catalog,
-	type SolforgePaymentCallbacks,
+	type SetuPaymentCallbacks,
 } from '@agi-cli/sdk';
 import { publish } from '../../events/bus.ts';
 
 function getProviderNpm(model: string): string | undefined {
-	const entry = catalog.solforge?.models?.find((m) => m.id === model);
+	const entry = catalog.setu?.models?.find((m) => m.id === model);
 	return entry?.provider?.npm;
 }
 
-export function resolveSolforgeModel(model: string, sessionId?: string) {
-	const privateKey = process.env.SOLFORGE_PRIVATE_KEY ?? '';
+export function resolveSetuModel(model: string, sessionId?: string) {
+	const privateKey = process.env.SETU_PRIVATE_KEY ?? '';
 	if (!privateKey) {
 		throw new Error(
-			'Solforge provider requires SOLFORGE_PRIVATE_KEY (base58 Solana secret).',
+			'Setu provider requires SETU_PRIVATE_KEY (base58 Solana secret).',
 		);
 	}
-	const baseURL = process.env.SOLFORGE_BASE_URL;
-	const rpcURL = process.env.SOLFORGE_SOLANA_RPC_URL;
+	const baseURL = process.env.SETU_BASE_URL;
+	const rpcURL = process.env.SETU_SOLANA_RPC_URL;
 
-	const callbacks: SolforgePaymentCallbacks = sessionId
+	const callbacks: SetuPaymentCallbacks = sessionId
 		? {
 				onPaymentRequired: (amountUsd) => {
 					publish({
-						type: 'solforge.payment.required',
+						type: 'setu.payment.required',
 						sessionId,
 						payload: { amountUsd },
 					});
 				},
 				onPaymentSigning: () => {
 					publish({
-						type: 'solforge.payment.signing',
+						type: 'setu.payment.signing',
 						sessionId,
 						payload: {},
 					});
 				},
 				onPaymentComplete: (data) => {
 					publish({
-						type: 'solforge.payment.complete',
+						type: 'setu.payment.complete',
 						sessionId,
 						payload: data,
 					});
 				},
 				onPaymentError: (error) => {
 					publish({
-						type: 'solforge.payment.error',
+						type: 'setu.payment.error',
 						sessionId,
 						payload: { error },
 					});
@@ -55,7 +55,7 @@ export function resolveSolforgeModel(model: string, sessionId?: string) {
 
 	const providerNpm = getProviderNpm(model);
 
-	return createSolforgeModel(
+	return createSetuModel(
 		model,
 		{ privateKey },
 		{

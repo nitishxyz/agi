@@ -23,7 +23,7 @@ app.use(
 
 app.get('/', (c) => {
   return c.json({
-    service: 'router.solforge.sh',
+    service: 'setu.agi.nitish.sh',
     version: '0.1.0',
     status: 'online',
     description: 'AI Proxy powered by x402 payments',

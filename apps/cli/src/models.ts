@@ -27,7 +27,7 @@ export async function runModels(
 		'google',
 		'openrouter',
 		'opencode',
-		'solforge',
+		'setu',
 	];
 	const authorization = await Promise.all(
 		providers.map((p) => isProviderAuthorized(cfg, p)),
@@ -46,7 +46,7 @@ export async function runModels(
 			'google',
 			'openrouter',
 			'opencode',
-			'solforge',
+			'setu',
 		] as ProviderId[];
 		const authz2 = await Promise.all(
 			allProviders.map((p) => isProviderAuthorized(cfg2, p)),

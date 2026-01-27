@@ -24,19 +24,19 @@ export { validateProviderModel } from './validate.ts';
 export { estimateModelCostUsd } from './pricing.ts';
 export { providerEnvVar, readEnvKey, setEnvKey } from './env.ts';
 export {
-	createSolforgeFetch,
-	createSolforgeModel,
-	fetchSolforgeBalance,
+	createSetuFetch,
+	createSetuModel,
+	fetchSetuBalance,
 	getPublicKeyFromPrivate,
 	fetchSolanaUsdcBalance,
-} from './solforge-client.ts';
+} from './setu-client.ts';
 export type {
-	SolforgeAuth,
-	SolforgeProviderOptions,
-	SolforgePaymentCallbacks,
-	SolforgeBalanceResponse,
+	SetuAuth,
+	SetuProviderOptions,
+	SetuPaymentCallbacks,
+	SetuBalanceResponse,
 	SolanaUsdcBalanceResponse,
-} from './solforge-client.ts';
+} from './setu-client.ts';
 export {
 	createOpenAIOAuthFetch,
 	createOpenAIOAuthModel,

@@ -1,6 +1,6 @@
 import type { Hono } from 'hono';
 import {
-	fetchSolforgeBalance,
+	fetchSetuBalance,
 	getPublicKeyFromPrivate,
 	getAuth,
 	loadConfig,
@@ -9,14 +9,14 @@ import {
 import { logger } from '@agi-cli/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
 
-async function getSolforgePrivateKey(): Promise<string | null> {
-	if (process.env.SOLFORGE_PRIVATE_KEY) {
-		return process.env.SOLFORGE_PRIVATE_KEY;
+async function getSetuPrivateKey(): Promise<string | null> {
+	if (process.env.SETU_PRIVATE_KEY) {
+		return process.env.SETU_PRIVATE_KEY;
 	}
 
 	try {
 		const cfg = await loadConfig(process.cwd());
-		const auth = await getAuth('solforge', cfg.projectRoot);
+		const auth = await getAuth('setu', cfg.projectRoot);
 		if (auth?.type === 'wallet' && auth.secret) {
 			return auth.secret;
 		}
@@ -25,33 +25,33 @@ async function getSolforgePrivateKey(): Promise<string | null> {
 	return null;
 }
 
-export function registerSolforgeRoutes(app: Hono) {
-	app.get('/v1/solforge/balance', async (c) => {
+export function registerSetuRoutes(app: Hono) {
+	app.get('/v1/setu/balance', async (c) => {
 		try {
-			const privateKey = await getSolforgePrivateKey();
+			const privateKey = await getSetuPrivateKey();
 			if (!privateKey) {
-				return c.json({ error: 'Solforge wallet not configured' }, 401);
+				return c.json({ error: 'Setu wallet not configured' }, 401);
 			}
 
-			const balance = await fetchSolforgeBalance({ privateKey });
+			const balance = await fetchSetuBalance({ privateKey });
 			if (!balance) {
-				return c.json({ error: 'Failed to fetch balance from Solforge' }, 502);
+				return c.json({ error: 'Failed to fetch balance from Setu' }, 502);
 			}
 
 			return c.json(balance);
 		} catch (error) {
-			logger.error('Failed to fetch Solforge balance', error);
+			logger.error('Failed to fetch Setu balance', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}
 	});
 
-	app.get('/v1/solforge/wallet', async (c) => {
+	app.get('/v1/setu/wallet', async (c) => {
 		try {
-			const privateKey = await getSolforgePrivateKey();
+			const privateKey = await getSetuPrivateKey();
 			if (!privateKey) {
 				return c.json(
-					{ error: 'Solforge wallet not configured', configured: false },
+					{ error: 'Setu wallet not configured', configured: false },
 					200,
 				);
 			}
@@ -66,17 +66,17 @@ export function registerSolforgeRoutes(app: Hono) {
 				publicKey,
 			});
 		} catch (error) {
-			logger.error('Failed to get Solforge wallet info', error);
+			logger.error('Failed to get Setu wallet info', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}
 	});
 
-	app.get('/v1/solforge/usdc-balance', async (c) => {
+	app.get('/v1/setu/usdc-balance', async (c) => {
 		try {
-			const privateKey = await getSolforgePrivateKey();
+			const privateKey = await getSetuPrivateKey();
 			if (!privateKey) {
-				return c.json({ error: 'Solforge wallet not configured' }, 401);
+				return c.json({ error: 'Setu wallet not configured' }, 401);
 			}
 
 			const network =

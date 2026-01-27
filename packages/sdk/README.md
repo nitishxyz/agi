@@ -72,7 +72,7 @@ import {
 } from '@agi-cli/sdk';
 
 // Check available providers
-console.log(providerIds); // ['openai', 'anthropic', 'google', 'openrouter', 'opencode', 'solforge']
+console.log(providerIds); // ['openai', 'anthropic', 'google', 'openrouter', 'opencode', 'setu']
 
 // Get model information
 const models = catalog.anthropic.models;

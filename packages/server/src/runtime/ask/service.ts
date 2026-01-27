@@ -127,7 +127,7 @@ async function processAskRequest(
 				google: { enabled: true },
 				openrouter: { enabled: true },
 				opencode: { enabled: true },
-				solforge: { enabled: true },
+				setu: { enabled: true },
 			},
 			paths: {
 				dataDir: `${projectRoot}/.agi`,

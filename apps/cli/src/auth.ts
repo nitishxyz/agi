@@ -59,10 +59,10 @@ const PROVIDER_LINKS: Record<
 		url: 'https://opencode.ai',
 		env: 'OPENCODE_API_KEY',
 	},
-	solforge: {
-		name: 'Solforge',
-		url: 'https://router.solforge.sh',
-		env: 'SOLFORGE_PRIVATE_KEY',
+	setu: {
+		name: 'Setu',
+		url: 'https://setu.agi.nitish.sh',
+		env: 'SETU_PRIVATE_KEY',
 	},
 	zai: {
 		name: 'Z.AI (GLM)',
@@ -140,7 +140,7 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 				{ value: 'google', label: PROVIDER_LINKS.google.name },
 				{ value: 'openrouter', label: PROVIDER_LINKS.openrouter.name },
 				{ value: 'opencode', label: PROVIDER_LINKS.opencode.name },
-				{ value: 'solforge', label: PROVIDER_LINKS.solforge.name },
+				{ value: 'setu', label: PROVIDER_LINKS.setu.name },
 				{ value: 'zai', label: PROVIDER_LINKS.zai.name },
 				{ value: 'zai-coding', label: PROVIDER_LINKS['zai-coding'].name },
 				{ value: 'moonshot', label: PROVIDER_LINKS.moonshot.name },
@@ -161,8 +161,8 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 		return runAuthLoginOpenAI(cfg, wantLocal);
 	}
 
-	if (provider === 'solforge') {
-		return runAuthLoginSolforge(cfg, wantLocal);
+	if (provider === 'setu') {
+		return runAuthLoginSetu(cfg, wantLocal);
 	}
 
 	const meta = PROVIDER_LINKS[provider];
@@ -475,11 +475,11 @@ async function runAuthLoginAnthropic(
 	}
 }
 
-async function runAuthLoginSolforge(
+async function runAuthLoginSetu(
 	cfg: Awaited<ReturnType<typeof loadConfig>>,
 	wantLocal: boolean,
 ): Promise<boolean> {
-	log.info('Solforge uses a Solana wallet for authentication.');
+	log.info('Setu uses a Solana wallet for authentication.');
 
 	const authMethod = (await select({
 		message: 'Select wallet option',
@@ -504,7 +504,7 @@ async function runAuthLoginSolforge(
 		log.info('Generated new Solana wallet');
 	} else {
 		const key = await password({
-			message: `Paste ${PROVIDER_LINKS.solforge.env} (base58 private key)`,
+			message: `Paste ${PROVIDER_LINKS.setu.env} (base58 private key)`,
 			validate: (v) =>
 				v && String(v).trim().length > 0
 					? undefined
@@ -528,7 +528,7 @@ async function runAuthLoginSolforge(
 	}
 
 	await setAuth(
-		'solforge',
+		'setu',
 		{ type: 'wallet', secret: privateKeyBase58 },
 		cfg.projectRoot,
 		'global',
@@ -537,11 +537,11 @@ async function runAuthLoginSolforge(
 		log.warn(
 			'Local credential storage is disabled; saved to secure global location.',
 		);
-	await ensureGlobalConfigDefaults('solforge');
+	await ensureGlobalConfigDefaults('setu');
 	log.success('Saved');
 	console.log(`  Wallet Public Key: ${colors.cyan(publicKey)}`);
 	console.log(
-		`  Tip: you can also set ${PROVIDER_LINKS.solforge.env} in your environment.`,
+		`  Tip: you can also set ${PROVIDER_LINKS.setu.env} in your environment.`,
 	);
 	outro('Done');
 	return true;
@@ -599,7 +599,7 @@ async function ensureGlobalConfigDefaults(provider: ProviderId) {
 			google: { enabled: provider === 'google' },
 			openrouter: { enabled: provider === 'openrouter' },
 			opencode: { enabled: provider === 'opencode' },
-			solforge: { enabled: provider === 'solforge' },
+			setu: { enabled: provider === 'setu' },
 		},
 	};
 	// Ensure directory and write file

@@ -32,7 +32,7 @@ import { useVimMode } from '../../hooks/useVimMode';
 import { useFileMention } from '../../hooks/useFileMention';
 import { useCommandSuggestions } from '../../hooks/useCommandSuggestions';
 import { createChatInputKeyHandler } from './ChatInputKeyHandler';
-import { useSolforgeStore } from '../../stores/solforgeStore';
+import { useSetuStore } from '../../stores/setuStore';
 import type { FileAttachment } from '../../hooks/useFileUpload';
 
 interface ChatInputProps {
@@ -99,8 +99,8 @@ export const ChatInput = memo(
 		const files = filesData?.files || [];
 		const changedFiles = filesData?.changedFiles || [];
 
-		const solforgeBalance = useSolforgeStore((s) => s.balance);
-		const isSolforge = providerName === 'solforge';
+		const setuBalance = useSetuStore((s) => s.balance);
+		const isSetu = providerName === 'setu';
 
 		const handleSendRef = useRef<() => void>(() => {});
 
@@ -511,10 +511,10 @@ export const ChatInput = memo(
 													({authType === 'oauth' ? 'pro' : 'wallet'})
 												</span>
 											)}
-											{isSolforge && solforgeBalance !== null && (
+											{isSetu && setuBalance !== null && (
 												<>
 													<span className="text-emerald-600 dark:text-emerald-400">
-														${solforgeBalance.toFixed(2)}
+														${setuBalance.toFixed(2)}
 													</span>
 													{onRefreshBalance && (
 														<button

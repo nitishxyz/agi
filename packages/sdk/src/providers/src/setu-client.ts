@@ -37,12 +37,12 @@ function simplifyPaymentError(errMsg: string): string {
 	return short.length < errMsg.length ? `${short}...` : errMsg;
 }
 
-const DEFAULT_BASE_URL = 'https://router.solforge.sh';
+const DEFAULT_BASE_URL = 'https://setu.agi.nitish.sh';
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_MAX_PAYMENT_ATTEMPTS = 20;
 
-export type SolforgePaymentCallbacks = {
+export type SetuPaymentCallbacks = {
 	onPaymentRequired?: (amountUsd: number) => void;
 	onPaymentSigning?: () => void;
 	onPaymentComplete?: (data: {
@@ -53,19 +53,19 @@ export type SolforgePaymentCallbacks = {
 	onPaymentError?: (error: string) => void;
 };
 
-export type SolforgeProviderOptions = {
+export type SetuProviderOptions = {
 	baseURL?: string;
 	rpcURL?: string;
 	network?: string;
 	maxRequestAttempts?: number;
 	maxPaymentAttempts?: number;
-	callbacks?: SolforgePaymentCallbacks;
+	callbacks?: SetuPaymentCallbacks;
 	providerNpm?: string;
 	promptCacheKey?: string;
 	promptCacheRetention?: 'in_memory' | '24h';
 };
 
-export type SolforgeAuth = {
+export type SetuAuth = {
 	privateKey: string;
 };
 
@@ -120,7 +120,7 @@ async function acquirePaymentLock(walletAddress: string): Promise<() => void> {
 	paymentQueues.set(walletAddress, entry);
 
 	if (existing) {
-		console.log('[Solforge] Waiting for pending payment to complete...');
+		console.log('[Setu] Waiting for pending payment to complete...');
 		await existing.promise;
 	}
 
@@ -132,9 +132,9 @@ async function acquirePaymentLock(walletAddress: string): Promise<() => void> {
 	};
 }
 
-export function createSolforgeFetch(
-	auth: SolforgeAuth,
-	options: SolforgeProviderOptions = {},
+export function createSetuFetch(
+	auth: SetuAuth,
+	options: SetuProviderOptions = {},
 ): typeof fetch {
 	const privateKeyBytes = bs58.decode(auth.privateKey);
 	const keypair = Keypair.fromSecretKey(privateKeyBytes);
@@ -196,11 +196,11 @@ export function createSolforgeFetch(
 			const requirement = pickPaymentRequirement(payload);
 			if (!requirement) {
 				callbacks.onPaymentError?.('Unsupported payment requirement');
-				throw new Error('Solforge: unsupported payment requirement');
+				throw new Error('Setu: unsupported payment requirement');
 			}
 			if (attempt >= maxAttempts) {
 				callbacks.onPaymentError?.('Payment failed after multiple attempts');
-				throw new Error('Solforge: payment failed after multiple attempts');
+				throw new Error('Setu: payment failed after multiple attempts');
 			}
 
 			const currentAttempts = globalPaymentAttempts.get(walletAddress) ?? 0;
@@ -208,7 +208,7 @@ export function createSolforgeFetch(
 			if (remainingPayments <= 0) {
 				callbacks.onPaymentError?.('Maximum payment attempts exceeded');
 				throw new Error(
-					'Solforge: payment failed after maximum payment attempts.',
+					'Setu: payment failed after maximum payment attempts.',
 				);
 			}
 
@@ -237,12 +237,12 @@ export function createSolforgeFetch(
 			}
 		}
 
-		throw new Error('Solforge: max attempts exceeded');
+		throw new Error('Setu: max attempts exceeded');
 	};
 }
 
 /**
- * Create a Solforge-backed AI model.
+ * Create a Setu-backed AI model.
  *
  * Uses native AI SDK providers:
  * - OpenAI models → /v1/responses (via @ai-sdk/openai)
@@ -250,21 +250,21 @@ export function createSolforgeFetch(
  *
  * Provider is determined by options.providerNpm from catalog.
  */
-export function createSolforgeModel(
+export function createSetuModel(
 	model: string,
-	auth: SolforgeAuth,
-	options: SolforgeProviderOptions = {},
+	auth: SetuAuth,
+	options: SetuProviderOptions = {},
 ) {
 	const baseURL = `${trimTrailingSlash(
 		options.baseURL ?? DEFAULT_BASE_URL,
 	)}/v1`;
-	const customFetch = createSolforgeFetch(auth, options);
+	const customFetch = createSetuFetch(auth, options);
 	const providerNpm = options.providerNpm ?? '@ai-sdk/openai';
 
 	if (providerNpm === '@ai-sdk/anthropic') {
 		const anthropic = createAnthropic({
 			baseURL,
-			apiKey: 'solforge-wallet-auth',
+			apiKey: 'setu-wallet-auth',
 			fetch: customFetch,
 		});
 		return anthropic(model);
@@ -273,7 +273,7 @@ export function createSolforgeModel(
 	// Default to OpenAI
 	const openai = createOpenAI({
 		baseURL,
-		apiKey: 'solforge-wallet-auth',
+		apiKey: 'setu-wallet-auth',
 		fetch: customFetch,
 	});
 	return openai.responses(model);
@@ -314,7 +314,7 @@ async function handlePayment(args: {
 	baseFetch: typeof fetch;
 	buildWalletHeaders: () => Record<string, string>;
 	maxAttempts: number;
-	callbacks: SolforgePaymentCallbacks;
+	callbacks: SetuPaymentCallbacks;
 }): Promise<{ attemptsUsed: number }> {
 	let attempts = 0;
 	while (attempts < args.maxAttempts) {
@@ -334,11 +334,11 @@ async function handlePayment(args: {
 			return { attemptsUsed: attempts };
 		}
 		console.log(
-			`Solforge balance still negative (${balanceValue.toFixed(8)}). Sending another top-up...`,
+			`Setu balance still negative (${balanceValue.toFixed(8)}). Sending another top-up...`,
 		);
 	}
 	throw new Error(
-		`Solforge: payment failed after ${attempts} additional top-ups.`,
+		`Setu: payment failed after ${attempts} additional top-ups.`,
 	);
 }
 
@@ -349,7 +349,7 @@ async function processSinglePayment(args: {
 	baseURL: string;
 	baseFetch: typeof fetch;
 	buildWalletHeaders: () => Record<string, string>;
-	callbacks: SolforgePaymentCallbacks;
+	callbacks: SetuPaymentCallbacks;
 }): Promise<{ attempts: number; balance?: number | string }> {
 	args.callbacks.onPaymentSigning?.();
 
@@ -360,7 +360,7 @@ async function processSinglePayment(args: {
 		const errMsg = err instanceof Error ? err.message : String(err);
 		const userMsg = `Payment failed: ${simplifyPaymentError(errMsg)}`;
 		args.callbacks.onPaymentError?.(userMsg);
-		throw new Error(`Solforge: ${userMsg}`);
+		throw new Error(`Setu: ${userMsg}`);
 	}
 	const walletHeaders = args.buildWalletHeaders();
 	const headers = {
@@ -382,11 +382,11 @@ async function processSinglePayment(args: {
 			response.status === 400 &&
 			rawBody.toLowerCase().includes('already processed')
 		) {
-			console.log('Solforge payment already processed; continuing.');
+			console.log('Setu payment already processed; continuing.');
 			return { attempts: 1 };
 		}
 		args.callbacks.onPaymentError?.(`Topup failed: ${response.status}`);
-		throw new Error(`Solforge topup failed (${response.status}): ${rawBody}`);
+		throw new Error(`Setu topup failed (${response.status}): ${rawBody}`);
 	}
 
 	let parsed: PaymentResponse | undefined;
@@ -411,11 +411,11 @@ async function processSinglePayment(args: {
 			transactionId: parsed.transaction,
 		});
 		console.log(
-			`Solforge payment complete: +$${amountUsd} (balance: $${newBalance})`,
+			`Setu payment complete: +$${amountUsd} (balance: $${newBalance})`,
 		);
 		return { attempts: 1, balance: newBalance };
 	}
-	console.log('Solforge payment complete.');
+	console.log('Setu payment complete.');
 	return { attempts: 1 };
 }
 
@@ -452,7 +452,7 @@ async function createPaymentPayload(args: {
 	} as PaymentPayload;
 }
 
-export type SolforgeBalanceResponse = {
+export type SetuBalanceResponse = {
 	walletAddress: string;
 	balance: number;
 	totalSpent: number;
@@ -462,10 +462,10 @@ export type SolforgeBalanceResponse = {
 	lastRequest?: string;
 };
 
-export async function fetchSolforgeBalance(
-	auth: SolforgeAuth,
+export async function fetchSetuBalance(
+	auth: SetuAuth,
 	baseURL?: string,
-): Promise<SolforgeBalanceResponse | null> {
+): Promise<SetuBalanceResponse | null> {
 	try {
 		const privateKeyBytes = bs58.decode(auth.privateKey);
 		const keypair = Keypair.fromSecretKey(privateKeyBytes);
@@ -531,7 +531,7 @@ export type SolanaUsdcBalanceResponse = {
 };
 
 export async function fetchSolanaUsdcBalance(
-	auth: SolforgeAuth,
+	auth: SetuAuth,
 	network: 'mainnet' | 'devnet' = 'mainnet',
 ): Promise<SolanaUsdcBalanceResponse | null> {
 	try {

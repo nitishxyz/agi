@@ -7,7 +7,7 @@ export type ProviderId =
 	| 'google'
 	| 'openrouter'
 	| 'opencode'
-	| 'solforge'
+	| 'setu'
 	| 'zai'
 	| 'zai-coding'
 	| 'moonshot';

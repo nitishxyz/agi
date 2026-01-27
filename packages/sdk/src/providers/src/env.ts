@@ -6,7 +6,7 @@ const ENV_VARS: Record<ProviderId, string> = {
 	google: 'GOOGLE_GENERATIVE_AI_API_KEY',
 	openrouter: 'OPENROUTER_API_KEY',
 	opencode: 'OPENCODE_API_KEY',
-	solforge: 'SOLFORGE_PRIVATE_KEY',
+	setu: 'SETU_PRIVATE_KEY',
 	zai: 'ZAI_API_KEY',
 	'zai-coding': 'ZAI_API_KEY',
 	moonshot: 'MOONSHOT_API_KEY',

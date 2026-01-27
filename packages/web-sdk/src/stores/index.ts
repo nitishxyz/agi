@@ -7,6 +7,6 @@ export * from './queueStore';
 export * from './researchStore';
 export * from './pendingResearchStore';
 export * from './toastStore';
-export * from './solforgeStore';
+export * from './setuStore';
 export * from './settingsStore';
 export * from './toolApprovalStore';

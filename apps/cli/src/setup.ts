@@ -22,7 +22,7 @@ export async function runSetup(projectRoot?: string) {
 			{ value: 'google', label: 'Google (Gemini)' },
 			{ value: 'openrouter', label: 'OpenRouter' },
 			{ value: 'opencode', label: 'OpenCode' },
-			{ value: 'solforge', label: 'Solforge' },
+			{ value: 'setu', label: 'Setu' },
 			{ value: 'zai', label: 'Z.AI (GLM)' },
 			{ value: 'zai-coding', label: 'Z.AI Coding Plan' },
 			{ value: 'moonshot', label: 'Moonshot AI (Kimi)' },
@@ -39,7 +39,7 @@ export async function runSetup(projectRoot?: string) {
 		google: { enabled: false },
 		openrouter: { enabled: false },
 		opencode: { enabled: false },
-		solforge: { enabled: false },
+		setu: { enabled: false },
 		zai: { enabled: false },
 		'zai-coding': { enabled: false },
 		moonshot: { enabled: false },
@@ -60,8 +60,8 @@ export async function runSetup(projectRoot?: string) {
 							? 'OPENROUTER_API_KEY'
 							: p === 'opencode'
 								? 'OPENCODE_API_KEY'
-								: p === 'solforge'
-									? 'SOLFORGE_PRIVATE_KEY'
+								: p === 'setu'
+									? 'SETU_PRIVATE_KEY'
 									: p === 'zai' || p === 'zai-coding'
 										? 'ZAI_API_KEY'
 										: 'MOONSHOT_API_KEY';
@@ -121,7 +121,7 @@ export async function runSetup(projectRoot?: string) {
 			google: providers.google,
 			openrouter: providers.openrouter,
 			opencode: providers.opencode,
-			solforge: providers.solforge,
+			setu: providers.setu,
 		},
 		paths: cfg.paths,
 	};
