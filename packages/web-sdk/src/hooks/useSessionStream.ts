@@ -11,7 +11,7 @@ export function useSessionStream(sessionId: string | undefined) {
 	const assistantMessageIdRef = useRef<string | null>(null);
 	const lastInvalidationRef = useRef<number>(0);
 
-	const { addPendingApproval, removePendingApproval, setPendingApprovals } = useToolApprovalStore();
+	const { addPendingApproval, removePendingApproval, updatePendingApproval, setPendingApprovals } = useToolApprovalStore();
 
 	useEffect(() => {
 		// console.log('[useSessionStream] Hook called with sessionId:', sessionId)
@@ -442,6 +442,14 @@ export function useSessionStream(sessionId: string | undefined) {
 					const callId = typeof payload?.callId === 'string' ? payload.callId : null;
 					if (callId) {
 						removePendingApproval(callId);
+					}
+					break;
+				}
+				case 'tool.approval.updated': {
+					const callId = typeof payload?.callId === 'string' ? payload.callId : null;
+					const args = payload?.args;
+					if (callId) {
+						updatePendingApproval(callId, args);
 					}
 					break;
 				}

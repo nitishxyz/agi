@@ -13,7 +13,7 @@ import {
 	toClaudeCodeName,
 	requiresClaudeCodeNaming,
 } from '../runtime/tools/mapping.ts';
-import { requiresApproval, requestApproval } from '../runtime/tools/approval.ts';
+import { requiresApproval, requestApproval, updateApprovalArgs } from '../runtime/tools/approval.ts';
 
 export type { ToolAdapterContext } from '../runtime/tools/context.ts';
 
@@ -167,16 +167,31 @@ export function adaptTools(
 		out[registrationName] = {
 			...base,
 			...(providerOptions ? { providerOptions } : {}),
-			async onInputStart(options: unknown) {
-				const queue = getPendingQueue(pendingCalls, name);
-				queue.push({
-					callId: crypto.randomUUID(),
-					startTs: Date.now(),
-					stepIndex: ctx.stepIndex,
-				});
-				if (typeof base.onInputStart === 'function')
-					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
-					await base.onInputStart(options as any);
+		async onInputStart(options: unknown) {
+			const queue = getPendingQueue(pendingCalls, name);
+			const meta: PendingCallMeta = {
+				callId: crypto.randomUUID(),
+				startTs: Date.now(),
+				stepIndex: ctx.stepIndex,
+			};
+			queue.push(meta);
+			// Start approval request EARLY - before args are streamed
+			// This way user can decide while LLM generates the content
+			if (
+				ctx.toolApprovalMode &&
+				requiresApproval(name, ctx.toolApprovalMode)
+			) {
+				meta.approvalPromise = requestApproval(
+					ctx.sessionId,
+					ctx.messageId,
+					meta.callId,
+					name,
+					undefined, // args not yet available
+				);
+			}
+			if (typeof base.onInputStart === 'function')
+				// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
+				await base.onInputStart(options as any);
 			},
 			async onInputDelta(options: unknown) {
 				const delta = (options as { inputTextDelta?: string } | undefined)
@@ -296,18 +311,22 @@ export function adaptTools(
 						toolCallId: callId,
 					});
 				} catch {}
-				// Start approval request immediately so UI shows it right away
+				// Handle approval: either update existing (started in onInputStart) or start new
 				if (
 					ctx.toolApprovalMode &&
 					requiresApproval(name, ctx.toolApprovalMode)
 				) {
-					meta.approvalPromise = requestApproval(
-						ctx.sessionId,
-						ctx.messageId,
-						callId,
-						name,
-						args,
-					);
+					if (meta.approvalPromise) {
+						updateApprovalArgs(callId, args);
+					} else {
+						meta.approvalPromise = requestApproval(
+							ctx.sessionId,
+							ctx.messageId,
+							callId,
+							name,
+							args,
+						);
+					}
 				}
 				if (typeof base.onInputAvailable === 'function') {
 					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex

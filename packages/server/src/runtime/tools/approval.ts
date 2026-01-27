@@ -126,6 +126,29 @@ export function getPendingApproval(callId: string): PendingApproval | undefined 
 	return pendingApprovals.get(callId);
 }
 
+export function updateApprovalArgs(
+	callId: string,
+	args: unknown,
+): boolean {
+	const approval = pendingApprovals.get(callId);
+	if (!approval) return false;
+	
+	approval.args = args;
+	
+	publish({
+		type: 'tool.approval.updated',
+		sessionId: approval.sessionId,
+		payload: {
+			callId,
+			toolName: approval.toolName,
+			args,
+			messageId: approval.messageId,
+		},
+	});
+	
+	return true;
+}
+
 export function getPendingApprovalsForSession(
 	sessionId: string,
 ): PendingApproval[] {
