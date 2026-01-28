@@ -41,6 +41,7 @@ export const GitSidebar = memo(function GitSidebar() {
 	if (!isExpanded) return null;
 
 	const allFiles = [
+		...(status?.conflicted || []),
 		...(status?.staged || []),
 		...(status?.unstaged || []),
 		...(status?.untracked || []),

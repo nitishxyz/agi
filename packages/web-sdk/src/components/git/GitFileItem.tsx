@@ -4,6 +4,7 @@ import {
 	FileX,
 	Check,
 	AlertCircle,
+	AlertTriangle,
 	RotateCcw,
 	Trash2,
 } from 'lucide-react';
@@ -144,16 +145,23 @@ export function GitFileItem({
 					label: 'M',
 					labelColor: 'text-blue-500',
 				};
-			case 'renamed':
-				return {
-					icon: FileIcon,
-					color: 'text-purple-500',
-					label: 'R',
-					labelColor: 'text-purple-500',
-				};
-			default:
-				return {
-					icon: FileIcon,
+		case 'renamed':
+			return {
+				icon: FileIcon,
+				color: 'text-purple-500',
+				label: 'R',
+				labelColor: 'text-purple-500',
+			};
+		case 'conflicted':
+			return {
+				icon: AlertTriangle,
+				color: 'text-red-500',
+				label: 'C',
+				labelColor: 'text-red-500',
+			};
+		default:
+			return {
+				icon: FileIcon,
 					color: 'text-muted-foreground',
 					label: '?',
 					labelColor: 'text-muted-foreground',

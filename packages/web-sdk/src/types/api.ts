@@ -122,12 +122,13 @@ export type AllModelsResponse = Record<string, ProviderModels>;
 export interface GitFileStatus {
 	path: string;
 	absPath: string; // NEW: Absolute filesystem path
-	status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked';
+	status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked' | 'conflicted';
 	staged: boolean;
 	insertions?: number;
 	deletions?: number;
 	oldPath?: string; // For renamed files
 	isNew: boolean; // NEW: True for untracked or newly added files
+	conflictType?: 'both-modified' | 'deleted-by-us' | 'deleted-by-them' | 'both-added' | 'both-deleted';
 }
 
 export interface GitStatusResponse {
@@ -139,7 +140,9 @@ export interface GitStatusResponse {
 	staged: GitFileStatus[];
 	unstaged: GitFileStatus[];
 	untracked: GitFileStatus[];
+	conflicted: GitFileStatus[];
 	hasChanges: boolean;
+	hasConflicts: boolean;
 }
 
 export interface GitDiffResponse {

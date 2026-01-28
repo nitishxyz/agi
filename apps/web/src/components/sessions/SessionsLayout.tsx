@@ -94,6 +94,11 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	const gitFiles = useMemo(() => {
 		if (!gitStatus) return [];
 		return [
+			...(gitStatus.conflicted ?? []).map((f) => ({
+				path: f.path,
+				staged: false,
+				status: f.status,
+			})),
 			...gitStatus.staged.map((f) => ({
 				path: f.path,
 				staged: true,

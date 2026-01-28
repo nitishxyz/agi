@@ -121,6 +121,25 @@ function getStatusFromCodeV2(code: string): GitFile['status'] {
 	}
 }
 
+function getConflictType(xy: string): GitFile['conflictType'] {
+	switch (xy) {
+		case 'UU':
+			return 'both-modified';
+		case 'AA':
+			return 'both-added';
+		case 'DD':
+			return 'both-deleted';
+		case 'DU':
+		case 'UD':
+			return 'deleted-by-us';
+		case 'AU':
+		case 'UA':
+			return 'deleted-by-them';
+		default:
+			return 'both-modified';
+	}
+}
+
 export function parseGitStatus(
 	statusOutput: string,
 	gitRoot: string,
@@ -128,11 +147,13 @@ export function parseGitStatus(
 	staged: GitFile[];
 	unstaged: GitFile[];
 	untracked: GitFile[];
+	conflicted: GitFile[];
 } {
 	const lines = statusOutput.trim().split('\n').filter(Boolean);
 	const staged: GitFile[] = [];
 	const unstaged: GitFile[] = [];
 	const untracked: GitFile[] = [];
+	const conflicted: GitFile[] = [];
 
 	for (const line of lines) {
 		if (line.startsWith('1 ') || line.startsWith('2 ')) {
@@ -174,10 +195,26 @@ export function parseGitStatus(
 				staged: false,
 				isNew: true,
 			});
+		} else if (line.startsWith('u ')) {
+			const parts = line.split(' ');
+			if (parts.length < 11) continue;
+
+			const xy = parts[1];
+			const path = parts.slice(10).join(' ');
+			const absPath = join(gitRoot, path);
+
+			conflicted.push({
+				path,
+				absPath,
+				status: 'conflicted',
+				staged: false,
+				isNew: false,
+				conflictType: getConflictType(xy),
+			});
 		}
 	}
 
-	return { staged, unstaged, untracked };
+	return { staged, unstaged, untracked, conflicted };
 }
 
 export async function getAheadBehind(

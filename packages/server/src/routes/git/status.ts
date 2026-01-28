@@ -36,7 +36,7 @@ export function registerStatusRoute(app: Hono) {
 				{ cwd: gitRoot },
 			);
 
-			const { staged, unstaged, untracked } = parseGitStatus(
+			const { staged, unstaged, untracked, conflicted } = parseGitStatus(
 				statusOutput,
 				gitRoot,
 			);
@@ -46,7 +46,9 @@ export function registerStatusRoute(app: Hono) {
 			const branch = await getCurrentBranch(gitRoot);
 
 			const hasChanges =
-				staged.length > 0 || unstaged.length > 0 || untracked.length > 0;
+				staged.length > 0 || unstaged.length > 0 || untracked.length > 0 || conflicted.length > 0;
+
+			const hasConflicts = conflicted.length > 0;
 
 			return c.json({
 				status: 'ok',
@@ -59,7 +61,9 @@ export function registerStatusRoute(app: Hono) {
 					staged,
 					unstaged,
 					untracked,
+					conflicted,
 					hasChanges,
+					hasConflicts,
 				},
 			});
 		} catch (error) {

@@ -228,7 +228,12 @@ export const schemas = {
 				type: 'array',
 				items: { $ref: '#/components/schemas/GitFile' },
 			},
+			conflicted: {
+				type: 'array',
+				items: { $ref: '#/components/schemas/GitFile' },
+			},
 			hasChanges: { type: 'boolean' },
+			hasConflicts: { type: 'boolean' },
 		},
 		required: [
 			'branch',
@@ -237,7 +242,9 @@ export const schemas = {
 			'staged',
 			'unstaged',
 			'untracked',
+			'conflicted',
 			'hasChanges',
+			'hasConflicts',
 		],
 	},
 	GitFile: {
@@ -246,12 +253,16 @@ export const schemas = {
 			path: { type: 'string' },
 			status: {
 				type: 'string',
-				enum: ['modified', 'added', 'deleted', 'renamed', 'untracked'],
+				enum: ['modified', 'added', 'deleted', 'renamed', 'untracked', 'conflicted'],
 			},
 			staged: { type: 'boolean' },
 			insertions: { type: 'integer' },
 			deletions: { type: 'integer' },
 			oldPath: { type: 'string' },
+			conflictType: {
+				type: 'string',
+				enum: ['both-modified', 'deleted-by-us', 'deleted-by-them', 'both-added', 'both-deleted'],
+			},
 		},
 		required: ['path', 'status', 'staged'],
 	},
