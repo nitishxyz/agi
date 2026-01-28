@@ -243,7 +243,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 				thinkingConfig: { thinkingBudget: THINKING_BUDGET },
 			};
 		} else if (underlyingProvider === 'openai-compatible') {
-			providerOptions['openai-compatible'] = {
+			providerOptions['openaiCompatible'] = {
 				reasoningEffort: 'high',
 			};
 		}
