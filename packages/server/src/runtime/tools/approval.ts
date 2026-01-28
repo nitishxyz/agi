@@ -1,4 +1,5 @@
 import { publish } from '../../events/bus.ts';
+import { debugLog } from '../debug/index.ts';
 
 export type ToolApprovalMode = 'auto' | 'dangerous' | 'all';
 
@@ -49,7 +50,7 @@ export async function requestApproval(
 	args: unknown,
 	timeoutMs = 120000,
 ): Promise<boolean> {
-	console.log('[approval] requestApproval called', {
+	debugLog('[approval] requestApproval called', {
 		sessionId,
 		messageId,
 		callId,
@@ -67,7 +68,7 @@ export async function requestApproval(
 		};
 
 		pendingApprovals.set(callId, approval);
-		console.log(
+		debugLog(
 			'[approval] Added to pendingApprovals, count:',
 			pendingApprovals.size,
 		);
@@ -106,7 +107,7 @@ export function resolveApproval(
 	callId: string,
 	approved: boolean,
 ): { ok: boolean; error?: string } {
-	console.log('[approval] resolveApproval called', {
+	debugLog('[approval] resolveApproval called', {
 		callId,
 		approved,
 		pendingCount: pendingApprovals.size,
@@ -114,7 +115,7 @@ export function resolveApproval(
 	});
 	const approval = pendingApprovals.get(callId);
 	if (!approval) {
-		console.log('[approval] No pending approval found for callId:', callId);
+		debugLog('[approval] No pending approval found for callId:', callId);
 		return { ok: false, error: 'No pending approval found for this callId' };
 	}
 
