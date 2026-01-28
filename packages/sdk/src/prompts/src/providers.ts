@@ -43,12 +43,19 @@ async function readIfExists(path: string): Promise<string | undefined> {
 	return undefined;
 }
 
+export type ProviderPromptResult = {
+	prompt: string;
+	resolvedType: string;
+};
+
 export async function providerBasePrompt(
 	provider: string,
 	modelId: string | undefined,
 	_projectRoot: string,
-): Promise<string> {
+): Promise<ProviderPromptResult> {
 	const id = String(provider || '').toLowerCase();
+	let promptType: string;
+	let result: string;
 
 	// 1) Model-specific override: src/prompts/models/<sanitizedModel>.txt
 	if (modelId) {
@@ -56,9 +63,9 @@ export async function providerBasePrompt(
 		const modelPath = `src/prompts/models/${sanitized}.txt`;
 		const modelText = await readIfExists(modelPath);
 		if (modelText) {
-			debugLog(`[provider] base prompt source: file:${modelPath}`);
-			debugLog(`[provider] base prompt for model ${modelId}:\n${modelText}`);
-			return modelText;
+			promptType = `model:${sanitized}`;
+			debugLog(`[provider] prompt: ${promptType} (${modelText.length} chars)`);
+			return { prompt: modelText, resolvedType: promptType };
 		}
 	}
 
@@ -74,49 +81,48 @@ export async function providerBasePrompt(
 	) {
 		const family = inferFamilyFromModel(id, modelId);
 		if (family) {
-			const embedded = (
+			result = (
 				family === 'openai'
 					? PROVIDER_OPENAI
 					: family === 'anthropic'
 						? PROVIDER_ANTHROPIC
 						: family === 'google'
 							? PROVIDER_GOOGLE
-							: PROVIDER_DEFAULT
+					: PROVIDER_DEFAULT
 			).trim();
-			debugLog(
-				`[provider] base prompt source: embedded:${family}.txt (family from model: ${modelId})`,
-			);
-			debugLog(`[provider] base prompt for family ${family}:\n${embedded}`);
-			return embedded;
+			promptType = `family:${family} (via ${id}/${modelId})`;
+			debugLog(`[provider] prompt: ${promptType} (${result.length} chars)`);
+			return { prompt: result, resolvedType: family };
 		}
 	}
 
 	// 3) Provider-specific embedded defaults for known providers
 	if (id === 'openai') {
-		const txt = PROVIDER_OPENAI.trim();
-		debugLog('[provider] base prompt source: embedded:providers/openai.txt');
-		return txt;
+		result = PROVIDER_OPENAI.trim();
+		debugLog(`[provider] prompt: openai (${result.length} chars)`);
+		return { prompt: result, resolvedType: 'openai' };
 	}
 	if (id === 'anthropic') {
-		const txt = PROVIDER_ANTHROPIC.trim();
-		debugLog('[provider] base prompt source: embedded:providers/anthropic.txt');
-		return txt;
+		result = PROVIDER_ANTHROPIC.trim();
+		debugLog(`[provider] prompt: anthropic (${result.length} chars)`);
+		return { prompt: result, resolvedType: 'anthropic' };
 	}
 	if (id === 'google') {
-		const txt = PROVIDER_GOOGLE.trim();
-		debugLog('[provider] base prompt source: embedded:providers/google.txt');
-		return txt;
+		result = PROVIDER_GOOGLE.trim();
+		debugLog(`[provider] prompt: google (${result.length} chars)`);
+		return { prompt: result, resolvedType: 'google' };
 	}
+
 	// If a project adds a custom provider file, allow reading it from disk (user-defined)
 	const providerPath = `src/prompts/providers/${id}.txt`;
 	const providerText = await readIfExists(providerPath);
 	if (providerText) {
-		debugLog(`[provider] base prompt source: file:${providerPath}`);
-		debugLog(`[provider] base prompt for ${id}:\n${providerText}`);
-		return providerText;
+		debugLog(`[provider] prompt: custom:${id} (${providerText.length} chars)`);
+		return { prompt: providerText, resolvedType: `custom:${id}` };
 	}
 
 	// 4) Generic default
-	debugLog('[provider] base prompt source: embedded:providers/default.txt');
-	return PROVIDER_DEFAULT.trim();
+	result = PROVIDER_DEFAULT.trim();
+	debugLog(`[provider] prompt: default (${result.length} chars)`);
+	return { prompt: result, resolvedType: 'default' };
 }

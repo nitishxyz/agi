@@ -8,6 +8,7 @@ import { deductCost } from '../services/balance';
 import { config } from '../config';
 import type { UsageInfo } from '../types';
 import { sanitizeProviderError } from '../utils/error-sanitizer';
+import { resolveProvider } from '../services/pricing';
 
 type Variables = { walletAddress: string };
 
@@ -37,10 +38,6 @@ function normalizeUsage(
 	};
 }
 
-function isMoonshotModel(model: string): boolean {
-	return model.startsWith('kimi-') || model.startsWith('moonshot-');
-}
-
 async function handleCompletions(c: Context<{ Variables: Variables }>) {
 	const walletAddress = c.get('walletAddress');
 	const body = await c.req.json();
@@ -50,9 +47,10 @@ async function handleCompletions(c: Context<{ Variables: Variables }>) {
 		return c.json({ error: 'Model is required' }, 400);
 	}
 
-	if (!isMoonshotModel(model)) {
+	const provider = resolveProvider(model);
+	if (provider !== 'moonshot') {
 		return c.json(
-			{ error: 'This endpoint only supports Moonshot models (kimi-*)' },
+			{ error: 'This endpoint only supports Moonshot models' },
 			400,
 		);
 	}
@@ -75,9 +73,10 @@ async function handleCompletions(c: Context<{ Variables: Variables }>) {
 
 	if (!response.ok) {
 		const error = await response.text();
+		console.error('Moonshot error:', response.status, error);
 		const sanitized = sanitizeProviderError(error, response.status);
 		return c.json(
-			{ error: sanitized.message },
+			{ error: sanitized.message, code: sanitized.code },
 			sanitized.status as ContentfulStatusCode,
 		);
 	}

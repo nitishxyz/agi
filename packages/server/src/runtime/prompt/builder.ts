@@ -1,4 +1,5 @@
 import { providerBasePrompt } from '@agi-cli/sdk';
+import { debugLog } from '../debug/index.ts';
 import { composeEnvironmentAndInstructions } from '../context/environment.ts';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import BASE_PROMPT from '@agi-cli/sdk/prompts/base.txt' with { type: 'text' };
@@ -44,7 +45,7 @@ export async function composeSystemPrompt(options: {
 
 	const parts: string[] = [];
 
-	const providerPrompt = await providerBasePrompt(
+	const providerResult = await providerBasePrompt(
 		options.provider,
 		options.model,
 		options.projectRoot,
@@ -52,15 +53,12 @@ export async function composeSystemPrompt(options: {
 	const baseInstructions = (BASE_PROMPT || '').trim();
 
 	parts.push(
-		providerPrompt.trim(),
+		providerResult.prompt.trim(),
 		baseInstructions.trim(),
 		options.agentPrompt.trim(),
 	);
-	if (providerPrompt.trim()) {
-		const providerComponent = options.provider
-			? `provider:${options.provider}`
-			: 'provider:unknown';
-		components.push(providerComponent);
+	if (providerResult.prompt.trim()) {
+		components.push(`provider:${providerResult.resolvedType}`);
 	}
 	if (baseInstructions.trim()) {
 		components.push('base');
@@ -131,6 +129,7 @@ export async function composeSystemPrompt(options: {
 
 	const composed = parts.filter(Boolean).join('\n\n').trim();
 	if (composed) {
+		debugLog(`[system] pieces: ${dedupeComponents(components).join(', ')}`);
 		return {
 			prompt: composed,
 			components: dedupeComponents(components),

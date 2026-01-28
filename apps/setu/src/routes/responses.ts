@@ -8,6 +8,7 @@ import { deductCost } from '../services/balance';
 import { config } from '../config';
 import type { UsageInfo } from '../types';
 import { sanitizeProviderError } from '../utils/error-sanitizer';
+import { resolveProvider } from '../services/pricing';
 
 type Variables = { walletAddress: string };
 
@@ -51,6 +52,11 @@ async function handleResponses(c: Context<{ Variables: Variables }>) {
 		return c.json({ error: 'Model is required' }, 400);
 	}
 
+	const provider = resolveProvider(model);
+	if (provider !== 'openai') {
+		return c.json({ error: 'This endpoint only supports OpenAI models' }, 400);
+	}
+
 	const isStream = Boolean(body.stream);
 	const isPro = isProModel(model);
 
@@ -70,9 +76,10 @@ async function handleResponses(c: Context<{ Variables: Variables }>) {
 
 	if (!response.ok) {
 		const error = await response.text();
+		console.error('OpenAI error:', response.status, error);
 		const sanitized = sanitizeProviderError(error, response.status);
 		return c.json(
-			{ error: sanitized.message },
+			{ error: sanitized.message, code: sanitized.code },
 			sanitized.status as ContentfulStatusCode,
 		);
 	}

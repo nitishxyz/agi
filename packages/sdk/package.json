@@ -102,10 +102,10 @@
 		"bun-pty": "^0.3.2",
 		"diff": "^8.0.2",
 		"fast-glob": "^3.3.2",
-		"hono": "^4.9.7",
+		"hono": "^4.9.9",
 		"opencode-anthropic-auth": "^0.0.2",
 		"tweetnacl": "^1.0.3",
-		"x402": "^0.7.1",
+		"x402": "^1.1.0",
 		"zod": "^4.1.8"
 	},
 	"devDependencies": {

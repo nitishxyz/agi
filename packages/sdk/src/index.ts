@@ -158,7 +158,10 @@ export type { Scope } from './config/src/manager.ts';
 // =======================
 // Prompts (from internal prompts module)
 // =======================
-export { providerBasePrompt } from './prompts/src/providers.ts';
+export {
+	providerBasePrompt,
+	type ProviderPromptResult,
+} from './prompts/src/providers.ts';
 
 // =======================
 // Core AI Functions (from internal core module)

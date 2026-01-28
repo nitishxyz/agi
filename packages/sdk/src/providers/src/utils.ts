@@ -108,10 +108,20 @@ export function getModelNpmBinding(
 	provider: ProviderId,
 	model: string,
 ): string | undefined {
+	// 1) Check provider's own catalog entry
 	const entry = catalog[provider];
-	if (!entry) return undefined;
-	const modelInfo = entry.models?.find((m) => m.id === model);
-	return modelInfo?.provider?.npm ?? entry.npm;
+	const modelInfo = entry?.models?.find((m) => m.id === model);
+	if (modelInfo?.provider?.npm) return modelInfo.provider.npm;
+	if (entry?.npm) return entry.npm;
+
+	// 2) Search entire catalog for the model
+	for (const key of Object.keys(catalog) as ProviderId[]) {
+		const e = catalog[key];
+		const m = e?.models?.find((x) => x.id === model);
+		if (m?.provider?.npm) return m.provider.npm;
+		if (m && e?.npm) return e.npm;
+	}
+	return undefined;
 }
 
 export function isAnthropicBasedModel(

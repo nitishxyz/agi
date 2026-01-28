@@ -3,57 +3,54 @@
 /* eslint-disable */
 /* deno-fmt-ignore-file */
 
-declare module 'sst' {
-	export interface Resource {
-		AgiSh: {
-			type: 'sst.cloudflare.Worker';
-			url: string;
-		};
-		AnthropicApiKey: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		DatabaseUrl: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		GoogleAiApiKey: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		MoonshotAiApiKey: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		OGCache: {
-			type: 'sst.cloudflare.Kv';
-		};
-		OpenAiApiKey: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		PlatformWallet: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		PreviewApi: {
-			type: 'sst.cloudflare.Worker';
-			url: string;
-		};
-		PreviewDB: {
-			databaseId: string;
-			type: 'sst.cloudflare.D1';
-		};
-		PreviewWeb: {
-			type: 'sst.aws.Astro';
-			url: string;
-		};
-		Setu: {
-			type: 'sst.cloudflare.Worker';
-			url: string;
-		};
-	}
+declare module "sst" {
+  export interface Resource {
+    "AgiSh": {
+      "type": "sst.cloudflare.Worker"
+      "url": string
+    }
+    "AnthropicApiKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "DatabaseUrl": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "GoogleAiApiKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "MoonshotAiApiKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "OGCache": {
+      "type": "sst.cloudflare.Kv"
+    }
+    "OpenAiApiKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "PlatformWallet": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "PreviewApi": {
+      "type": "sst.cloudflare.Worker"
+      "url": string
+    }
+    "PreviewDB": {
+      "databaseId": string
+      "type": "sst.cloudflare.D1"
+    }
+    "PreviewWeb": {
+      "type": "sst.aws.Astro"
+      "url": string
+    }
+  }
 }
 /// <reference path="sst-env.d.ts" />
 
-import 'sst';
+import "sst"
+export {}

@@ -32,7 +32,7 @@ const SessionsSessionIdRoute = SessionsSessionIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/sessions/$sessionId': typeof SessionsSessionIdRoute
-  '/sessions': typeof SessionsIndexRoute
+  '/sessions/': typeof SessionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -47,7 +47,7 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sessions/$sessionId' | '/sessions'
+  fullPaths: '/' | '/sessions/$sessionId' | '/sessions/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/sessions/$sessionId' | '/sessions'
   id: '__root__' | '/' | '/sessions/$sessionId' | '/sessions/'
@@ -71,7 +71,7 @@ declare module '@tanstack/react-router' {
     '/sessions/': {
       id: '/sessions/'
       path: '/sessions'
-      fullPath: '/sessions'
+      fullPath: '/sessions/'
       preLoaderRoute: typeof SessionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }

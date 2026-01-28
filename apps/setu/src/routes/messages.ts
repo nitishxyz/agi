@@ -8,6 +8,7 @@ import { deductCost } from '../services/balance';
 import { config } from '../config';
 import type { UsageInfo } from '../types';
 import { sanitizeProviderError } from '../utils/error-sanitizer';
+import { resolveProvider } from '../services/pricing';
 
 type Variables = { walletAddress: string };
 
@@ -39,8 +40,16 @@ async function handleMessages(c: Context<{ Variables: Variables }>) {
 	const body = await c.req.json();
 	const model = body.model;
 
-	if (!model || !model.startsWith('claude')) {
-		return c.json({ error: 'This endpoint only supports Claude models' }, 400);
+	if (!model) {
+		return c.json({ error: 'Model is required' }, 400);
+	}
+
+	const provider = resolveProvider(model);
+	if (provider !== 'anthropic') {
+		return c.json(
+			{ error: 'This endpoint only supports Anthropic models' },
+			400,
+		);
 	}
 
 	const isStream = Boolean(body.stream);
@@ -57,9 +66,10 @@ async function handleMessages(c: Context<{ Variables: Variables }>) {
 
 	if (!response.ok) {
 		const error = await response.text();
+		console.error('Anthropic error:', response.status, error);
 		const sanitized = sanitizeProviderError(error, response.status);
 		return c.json(
-			{ error: sanitized.message },
+			{ error: sanitized.message, code: sanitized.code },
 			sanitized.status as ContentfulStatusCode,
 		);
 	}
