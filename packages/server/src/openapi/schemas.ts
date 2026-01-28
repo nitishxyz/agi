@@ -253,7 +253,14 @@ export const schemas = {
 			path: { type: 'string' },
 			status: {
 				type: 'string',
-				enum: ['modified', 'added', 'deleted', 'renamed', 'untracked', 'conflicted'],
+				enum: [
+					'modified',
+					'added',
+					'deleted',
+					'renamed',
+					'untracked',
+					'conflicted',
+				],
 			},
 			staged: { type: 'boolean' },
 			insertions: { type: 'integer' },
@@ -261,7 +268,13 @@ export const schemas = {
 			oldPath: { type: 'string' },
 			conflictType: {
 				type: 'string',
-				enum: ['both-modified', 'deleted-by-us', 'deleted-by-them', 'both-added', 'both-deleted'],
+				enum: [
+					'both-modified',
+					'deleted-by-us',
+					'deleted-by-them',
+					'both-added',
+					'both-deleted',
+				],
 			},
 		},
 		required: ['path', 'status', 'staged'],

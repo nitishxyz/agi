@@ -46,7 +46,10 @@ export function registerStatusRoute(app: Hono) {
 			const branch = await getCurrentBranch(gitRoot);
 
 			const hasChanges =
-				staged.length > 0 || unstaged.length > 0 || untracked.length > 0 || conflicted.length > 0;
+				staged.length > 0 ||
+				unstaged.length > 0 ||
+				untracked.length > 0 ||
+				conflicted.length > 0;
 
 			const hasConflicts = conflicted.length > 0;
 
