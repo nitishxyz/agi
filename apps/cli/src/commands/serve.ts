@@ -9,7 +9,6 @@ import { createApp as createServer } from '@agi-cli/server';
 import { getDb } from '@agi-cli/database';
 import { createWebServer } from '../web-server.ts';
 import { colors } from '../ui.ts';
-import { ensureAuth } from '../middleware/with-auth.ts';
 
 function getLocalIP(): string {
 	try {
@@ -35,8 +34,6 @@ export interface ServeOptions {
 
 export async function handleServe(opts: ServeOptions, version: string) {
 	const projectRoot = opts.project;
-
-	if (!(await ensureAuth(projectRoot))) return;
 
 	const cfg = await loadConfig(projectRoot);
 	await getDb(cfg.projectRoot);
