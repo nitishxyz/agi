@@ -753,7 +753,10 @@ export function registerSessionsRoutes(app: Hono) {
 						eq(messageParts.messageId, messageId),
 						or(
 							eq(messageParts.type, 'error'),
-							and(eq(messageParts.type, 'tool_call'), eq(messageParts.toolName, 'finish')),
+							and(
+								eq(messageParts.type, 'tool_call'),
+								eq(messageParts.toolName, 'finish'),
+							),
 						),
 					),
 				);

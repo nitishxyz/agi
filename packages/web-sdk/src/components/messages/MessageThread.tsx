@@ -224,14 +224,21 @@ export const MessageThread = memo(function MessageThread({
 						if (!oldMessages) return oldMessages;
 						return oldMessages.map((msg) => {
 							if (msg.id !== messageId) return msg;
-							const partsToKeep = msg.parts?.filter(
-								(part: { type: string; toolName?: string }) => {
-									if (part.type === 'error') return false;
-									if (part.type === 'tool_call' && part.toolName === 'finish') return false;
-									return true;
-								},
-							) ?? [];
-							return { ...msg, status: 'pending', parts: partsToKeep, error: null };
+							const partsToKeep =
+								msg.parts?.filter(
+									(part: { type: string; toolName?: string }) => {
+										if (part.type === 'error') return false;
+										if (part.type === 'tool_call' && part.toolName === 'finish')
+											return false;
+										return true;
+									},
+								) ?? [];
+							return {
+								...msg,
+								status: 'pending',
+								parts: partsToKeep,
+								error: null,
+							};
 						});
 					},
 				);
