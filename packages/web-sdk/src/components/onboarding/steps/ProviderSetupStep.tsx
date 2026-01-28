@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, useRef } from 'react';
 import {
 	Copy,
 	Check,
@@ -15,7 +15,7 @@ import type { AuthStatus } from '../../../stores/onboardingStore';
 import { useSetuStore } from '../../../stores/setuStore';
 import { useSetuBalance } from '../../../hooks/useSetuBalance';
 
-interface WalletSetupStepProps {
+interface ProviderSetupStepProps {
 	authStatus: AuthStatus;
 	onSetupWallet: () => Promise<unknown>;
 	onAddProvider: (provider: string, apiKey: string) => Promise<unknown>;
@@ -36,7 +36,7 @@ interface WalletSetupStepProps {
 	onClose?: () => void;
 }
 
-export const WalletSetupStep = memo(function WalletSetupStep({
+export const ProviderSetupStep = memo(function ProviderSetupStep({
 	authStatus,
 	onSetupWallet,
 	onAddProvider,
@@ -48,7 +48,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 	onNext,
 	manageMode = false,
 	onClose,
-}: WalletSetupStepProps) {
+}: ProviderSetupStepProps) {
 	const [copied, setCopied] = useState(false);
 	const [isSettingUp, setIsSettingUp] = useState(false);
 	const [addingProvider, setAddingProvider] = useState<string | null>(null);
@@ -57,12 +57,16 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 	const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 	const [oauthSession, setOauthSession] = useState<{
 		provider: string;
-		sessionId: string;
+		sessionId: string | null;
+		mode?: string;
 	} | null>(null);
 	const [oauthCodeInput, setOauthCodeInput] = useState('');
 	const [isExchangingCode, setIsExchangingCode] = useState(false);
+	const [isOpeningPopup, setIsOpeningPopup] = useState(false);
 	const balance = useSetuStore((s) => s.balance);
 	const usdcBalance = useSetuStore((s) => s.usdcBalance);
+	const apiKeyInputRef = useRef<HTMLInputElement>(null);
+	const oauthCodeInputRef = useRef<HTMLInputElement>(null);
 
 	useSetuBalance('setu');
 
@@ -72,6 +76,18 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 			onSetupWallet().finally(() => setIsSettingUp(false));
 		}
 	}, [authStatus.setu.configured, onSetupWallet, isSettingUp]);
+
+	useEffect(() => {
+		if (addingProvider && apiKeyInputRef.current) {
+			apiKeyInputRef.current.focus();
+		}
+	}, [addingProvider]);
+
+	useEffect(() => {
+		if (oauthSession && oauthCodeInputRef.current) {
+			oauthCodeInputRef.current.focus();
+		}
+	}, [oauthSession]);
 
 	const handleCopy = async () => {
 		if (authStatus.setu.publicKey) {
@@ -113,19 +129,30 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 
 	const handleStartOAuth = async (providerId: string, mode?: string) => {
 		if (providerId === 'anthropic') {
-			try {
-				const { sessionId } = await onStartOAuthManual(providerId, mode);
-				setOauthSession({ provider: providerId, sessionId });
-			} catch (err) {
-				console.error('Failed to start OAuth:', err);
-			}
+			setOauthSession({ provider: providerId, sessionId: null, mode });
 		} else {
 			onStartOAuth(providerId, mode);
 		}
 	};
 
+	const handleOpenPopup = async () => {
+		if (!oauthSession) return;
+		setIsOpeningPopup(true);
+		try {
+			const { sessionId } = await onStartOAuthManual(
+				oauthSession.provider,
+				oauthSession.mode,
+			);
+			setOauthSession({ ...oauthSession, sessionId });
+		} catch (err) {
+			console.error('Failed to start OAuth:', err);
+		}
+		setIsOpeningPopup(false);
+	};
+
 	const handleExchangeCode = async () => {
-		if (!oauthSession || !oauthCodeInput.trim()) return;
+		if (!oauthSession || !oauthSession.sessionId || !oauthCodeInput.trim())
+			return;
 		setIsExchangingCode(true);
 		try {
 			await onExchangeOAuthCode(
@@ -184,35 +211,35 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 
 					<div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
 						{/* Left Column - Wallet */}
-					<div className="xl:col-span-1">
-						<div className="bg-card rounded-2xl border border-border p-5 h-full">
-							{authStatus.setu.configured && authStatus.setu.publicKey ? (
-								<div className="flex flex-col h-full">
-									{/* Setu Default Provider Badge */}
-									<div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
-										<ProviderLogo provider="setu" size={16} />
+						<div className="xl:col-span-1">
+							<div className="bg-card rounded-2xl border border-border p-5 h-full">
+								{authStatus.setu.configured && authStatus.setu.publicKey ? (
+									<div className="flex flex-col h-full">
+										{/* Setu Default Provider Badge */}
+										<div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+											<ProviderLogo provider="setu" size={16} />
 											<span className="text-sm font-medium text-green-600 dark:text-green-400">
 												Setu
 											</span>
 											<span className="text-xs text-green-600/60 dark:text-green-500/60 ml-auto">
 												Default Provider
-										</span>
-									</div>
+											</span>
+										</div>
 
-									<div className="flex justify-center py-4 mt-4">
-										<div className="bg-white p-2 rounded-lg">
-											<QRCodeSVG
-												value={authStatus.setu.publicKey}
+										<div className="flex justify-center py-4 mt-4">
+											<div className="bg-white p-2 rounded-lg">
+												<QRCodeSVG
+													value={authStatus.setu.publicKey}
 													size={140}
 													level="M"
 												/>
+											</div>
 										</div>
-									</div>
 
-									<div className="space-y-2 mt-4">
-										<button
-											type="button"
-											onClick={handleCopy}
+										<div className="space-y-2 mt-4">
+											<button
+												type="button"
+												onClick={handleCopy}
 												className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-lg text-xs font-mono text-muted-foreground transition-colors"
 											>
 												{truncateAddress(authStatus.setu.publicKey)}
@@ -230,28 +257,28 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 												<span className="font-mono text-sm text-foreground">
 													${((balance ?? 0) + (usdcBalance ?? 0)).toFixed(4)}
 												</span>
+											</div>
 										</div>
-									</div>
 
-									{/* OR Divider */}
-									<div className="flex items-center gap-4 py-4">
-										<div className="flex-1 h-px bg-border" />
-										<span className="text-xs text-muted-foreground font-medium">
-											OR
-										</span>
-										<div className="flex-1 h-px bg-border" />
-									</div>
+										{/* OR Divider */}
+										<div className="flex items-center gap-4 py-4">
+											<div className="flex-1 h-px bg-border" />
+											<span className="text-xs text-muted-foreground font-medium">
+												OR
+											</span>
+											<div className="flex-1 h-px bg-border" />
+										</div>
 
-									<button
-										type="button"
-										onClick={onOpenTopup}
-										className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-									>
-										<CreditCard className="w-4 h-4" />
-										Pay via Card
-									</button>
-								</div>
-							) : (
+										<button
+											type="button"
+											onClick={onOpenTopup}
+											className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+										>
+											<CreditCard className="w-4 h-4" />
+											Pay via Card
+										</button>
+									</div>
+								) : (
 									<div className="flex items-center justify-center py-16">
 										<Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
 									</div>
@@ -346,51 +373,6 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 								)}
 							</div>
 
-							{/* OAuth Code Entry */}
-							{oauthSession && (
-								<div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-									<h3 className="font-medium text-foreground mb-2">
-										Enter Authorization Code
-									</h3>
-									<p className="text-sm text-muted-foreground mb-3">
-										Copy the code from the authorization page and paste it
-										below:
-									</p>
-									<div className="flex items-center gap-2">
-										<input
-											type="text"
-											value={oauthCodeInput}
-											onChange={(e) => setOauthCodeInput(e.target.value)}
-											placeholder="Paste authorization code..."
-											className="flex-1 px-3 py-2 bg-card border border-input rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition-colors"
-											onKeyDown={(e) => {
-												if (e.key === 'Enter') handleExchangeCode();
-												if (e.key === 'Escape') handleCancelOAuth();
-											}}
-										/>
-										<button
-											type="button"
-											onClick={handleExchangeCode}
-											disabled={!oauthCodeInput.trim() || isExchangingCode}
-											className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
-										>
-											{isExchangingCode ? (
-												<Loader2 className="w-4 h-4 animate-spin" />
-											) : (
-												'Connect'
-											)}
-										</button>
-										<button
-											type="button"
-											onClick={handleCancelOAuth}
-											className="px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
-										>
-											<X className="w-4 h-4" />
-										</button>
-									</div>
-								</div>
-							)}
-
 							{/* Add Providers */}
 							<div>
 								<h2 className="font-semibold text-foreground mb-4">
@@ -403,6 +385,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 												<div className="flex items-center gap-2 p-3 bg-card border border-ring rounded-xl">
 													<ProviderLogo provider={id} size={18} />
 													<input
+														ref={apiKeyInputRef}
 														type="password"
 														value={apiKeyInput}
 														onChange={(e) => setApiKeyInput(e.target.value)}
@@ -512,6 +495,97 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 					)}
 				</div>
 			</div>
+
+			{/* OAuth Code Modal */}
+			{oauthSession && (
+				<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+					<div className="bg-background border border-border rounded-xl w-full max-w-lg mx-6 shadow-2xl">
+						<div className="flex items-center gap-3 p-6 border-b border-border">
+							<ProviderLogo provider={oauthSession.provider} size={24} />
+							<h3 className="text-lg font-semibold">
+								Connect{' '}
+								{authStatus.providers[oauthSession.provider]?.label ||
+									oauthSession.provider}
+							</h3>
+						</div>
+
+						{!oauthSession.sessionId ? (
+							<div className="p-6">
+								<p className="text-sm text-muted-foreground mb-6">
+									You'll be redirected to{' '}
+									{authStatus.providers[oauthSession.provider]?.label ||
+										oauthSession.provider}{' '}
+									to authorize access. After authorizing, copy the code and
+									return here.
+								</p>
+								<div className="flex gap-3">
+									<button
+										type="button"
+										onClick={handleCancelOAuth}
+										className="flex-1 h-11 px-4 bg-transparent border border-border text-foreground rounded-lg font-medium hover:bg-muted/50 transition-colors"
+									>
+										Cancel
+									</button>
+									<button
+										type="button"
+										onClick={handleOpenPopup}
+										disabled={isOpeningPopup}
+										className="flex-1 h-11 px-4 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+									>
+										{isOpeningPopup ? (
+											<Loader2 className="w-4 h-4 animate-spin" />
+										) : (
+											<>
+												Continue
+												<ExternalLink className="w-4 h-4" />
+											</>
+										)}
+									</button>
+								</div>
+							</div>
+						) : (
+							<div className="p-6">
+								<p className="text-sm text-muted-foreground mb-4">
+									Paste the authorization code:
+								</p>
+								<input
+									type="text"
+									ref={oauthCodeInputRef}
+									value={oauthCodeInput}
+									onChange={(e) => setOauthCodeInput(e.target.value)}
+									placeholder="Paste code here..."
+									className="w-full h-11 px-4 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 transition-colors mb-4 font-mono text-sm"
+									onKeyDown={(e) => {
+										if (e.key === 'Enter') handleExchangeCode();
+										if (e.key === 'Escape') handleCancelOAuth();
+									}}
+								/>
+								<div className="flex gap-3">
+									<button
+										type="button"
+										onClick={handleCancelOAuth}
+										className="flex-1 h-11 px-4 bg-transparent border border-border text-foreground rounded-lg font-medium hover:bg-muted/50 transition-colors"
+									>
+										Cancel
+									</button>
+									<button
+										type="button"
+										onClick={handleExchangeCode}
+										disabled={!oauthCodeInput.trim() || isExchangingCode}
+										className="flex-1 h-11 px-4 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+									>
+										{isExchangingCode ? (
+											<Loader2 className="w-4 h-4 animate-spin" />
+										) : (
+											'Connect'
+										)}
+									</button>
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 });

@@ -168,18 +168,20 @@ export function registerAuthRoutes(app: Hono) {
 				'global',
 			);
 
-		return c.json({ success: true, provider });
-	} catch (error) {
-		logger.error('Failed to add provider', error);
-		const errorResponse = serializeError(error);
-		return c.json(errorResponse, errorResponse.error.status || 500);
-	}
-});
+			return c.json({ success: true, provider });
+		} catch (error) {
+			logger.error('Failed to add provider', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
 
 	app.post('/v1/auth/:provider/oauth/url', async (c) => {
 		try {
 			const provider = c.req.param('provider');
-			const { mode = 'max' } = await c.req.json<{ mode?: string }>().catch(() => ({}));
+			const { mode = 'max' } = await c.req
+				.json<{ mode?: string }>()
+				.catch(() => ({}));
 
 			let url: string;
 			let verifier: string;
@@ -189,7 +191,13 @@ export function registerAuthRoutes(app: Hono) {
 				url = result.url;
 				verifier = result.verifier;
 			} else if (provider === 'openai') {
-				return c.json({ error: 'OpenAI OAuth requires localhost callback. Use the redirect flow instead.' }, 400);
+				return c.json(
+					{
+						error:
+							'OpenAI OAuth requires localhost callback. Use the redirect flow instead.',
+					},
+					400,
+				);
 			} else {
 				return c.json({ error: 'OAuth not supported for this provider' }, 400);
 			}
@@ -214,7 +222,10 @@ export function registerAuthRoutes(app: Hono) {
 	app.post('/v1/auth/:provider/oauth/exchange', async (c) => {
 		try {
 			const provider = c.req.param('provider');
-			const { code, sessionId } = await c.req.json<{ code: string; sessionId: string }>();
+			const { code, sessionId } = await c.req.json<{
+				code: string;
+				sessionId: string;
+			}>();
 
 			if (!code || !sessionId) {
 				return c.json({ error: 'Code and sessionId required' }, 400);
@@ -276,25 +287,28 @@ export function registerAuthRoutes(app: Hono) {
 				url = result.url;
 				verifier = result.verifier;
 				callbackUrl = 'localhost';
-				result.waitForCallback().then(async (code) => {
-					const tokens = await exchangeOpenAI(code, verifier);
-					await setAuth(
-						'openai',
-						{
-							type: 'oauth',
-							refresh: tokens.refresh,
-							access: tokens.access,
-							expires: tokens.expires,
-							accountId: tokens.accountId,
-							idToken: tokens.idToken,
-						},
-						undefined,
-						'global',
-					);
-					result.close();
-				}).catch(() => {
-					result.close();
-				});
+				result
+					.waitForCallback()
+					.then(async (code) => {
+						const tokens = await exchangeOpenAI(code, verifier);
+						await setAuth(
+							'openai',
+							{
+								type: 'oauth',
+								refresh: tokens.refresh,
+								access: tokens.access,
+								expires: tokens.expires,
+								accountId: tokens.accountId,
+								idToken: tokens.idToken,
+							},
+							undefined,
+							'global',
+						);
+						result.close();
+					})
+					.catch(() => {
+						result.close();
+					});
 			} else {
 				return c.json({ error: 'OAuth not supported for this provider' }, 400);
 			}
@@ -331,34 +345,34 @@ export function registerAuthRoutes(app: Hono) {
 			const sessionMatch = cookies.match(/oauth_session=([^;]+)/);
 			const sessionId = sessionMatch?.[1];
 
-		if (!sessionId || !oauthVerifiers.has(sessionId)) {
-			return c.html(
-				'<html><body><h1>Session expired</h1><p>Please close this window and try again.</p><script>setTimeout(() => window.close(), 3000);</script></body></html>',
-			);
-		}
+			if (!sessionId || !oauthVerifiers.has(sessionId)) {
+				return c.html(
+					'<html><body><h1>Session expired</h1><p>Please close this window and try again.</p><script>setTimeout(() => window.close(), 3000);</script></body></html>',
+				);
+			}
 
-		const { verifier, callbackUrl } = oauthVerifiers.get(sessionId)!;
-		oauthVerifiers.delete(sessionId);
+			const { verifier, callbackUrl } = oauthVerifiers.get(sessionId)!;
+			oauthVerifiers.delete(sessionId);
 
-		if (provider === 'anthropic') {
-			const fullCode = fragment ? `${code}#${fragment}` : code;
-			const tokens = await exchangeWeb(fullCode!, verifier, callbackUrl);
+			if (provider === 'anthropic') {
+				const fullCode = fragment ? `${code}#${fragment}` : code;
+				const tokens = await exchangeWeb(fullCode!, verifier, callbackUrl);
 
-			await setAuth(
-				'anthropic',
-				{
-					type: 'oauth',
-					refresh: tokens.refresh,
-					access: tokens.access,
-					expires: tokens.expires,
-				},
-				undefined,
-				'global',
-			);
-		} else if (provider === 'openai') {
-			return c.html(
-				'<html><body><h1>OpenAI uses localhost callback</h1><p>This route is not used for OpenAI. Please close this window.</p><script>setTimeout(() => window.close(), 3000);</script></body></html>',
-			);
+				await setAuth(
+					'anthropic',
+					{
+						type: 'oauth',
+						refresh: tokens.refresh,
+						access: tokens.access,
+						expires: tokens.expires,
+					},
+					undefined,
+					'global',
+				);
+			} else if (provider === 'openai') {
+				return c.html(
+					'<html><body><h1>OpenAI uses localhost callback</h1><p>This route is not used for OpenAI. Please close this window.</p><script>setTimeout(() => window.close(), 3000);</script></body></html>',
+				);
 			}
 
 			return c.html(`

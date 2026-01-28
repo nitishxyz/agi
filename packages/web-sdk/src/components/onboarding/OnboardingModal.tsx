@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { WalletSetupStep } from './steps/WalletSetupStep';
+import { ProviderSetupStep } from './steps/ProviderSetupStep';
 import { DefaultsStep } from './steps/DefaultsStep';
 import { useOnboardingStore } from '../../stores/onboardingStore';
 import { useSetuStore } from '../../stores/setuStore';
@@ -30,7 +30,7 @@ export const OnboardingModal = memo(function OnboardingModal() {
 	return (
 		<div className="fixed inset-0 z-[9999] bg-background text-foreground overflow-y-auto">
 			{currentStep === 'wallet' && (
-				<WalletSetupStep
+				<ProviderSetupStep
 					authStatus={authStatus}
 					onSetupWallet={setupWallet}
 					onAddProvider={addProvider}

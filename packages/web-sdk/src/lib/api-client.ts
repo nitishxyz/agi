@@ -1115,11 +1115,14 @@ class ApiClient {
 		provider: string,
 		mode?: string,
 	): Promise<{ url: string; sessionId: string; provider: string }> {
-		const response = await fetch(`${this.baseUrl}/v1/auth/${provider}/oauth/url`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ mode }),
-		});
+		const response = await fetch(
+			`${this.baseUrl}/v1/auth/${provider}/oauth/url`,
+			{
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ mode }),
+			},
+		);
 
 		if (!response.ok) {
 			const errorData = await response

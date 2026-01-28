@@ -1,3 +1,3 @@
 export { OnboardingModal } from './OnboardingModal';
-export { WalletSetupStep } from './steps/WalletSetupStep';
+export { ProviderSetupStep } from './steps/ProviderSetupStep';
 export { DefaultsStep } from './steps/DefaultsStep';

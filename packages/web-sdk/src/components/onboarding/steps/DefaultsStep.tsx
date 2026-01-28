@@ -39,12 +39,8 @@ export const DefaultsStep = memo(function DefaultsStep({
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 
-	const [selectedProvider, setSelectedProvider] = useState(
-		authStatus.defaults.provider || 'setu',
-	);
-	const [selectedModel, setSelectedModel] = useState(
-		authStatus.defaults.model || '',
-	);
+	const [selectedProvider, setSelectedProvider] = useState('setu');
+	const [selectedModel, setSelectedModel] = useState('kimi-k2.5');
 	const [selectedAgent, setSelectedAgent] = useState(authStatus.defaults.agent);
 	const [selectedApproval, setSelectedApproval] = useState<
 		'auto' | 'dangerous' | 'all'
@@ -107,7 +103,9 @@ export const DefaultsStep = memo(function DefaultsStep({
 	}
 
 	const availableProviders = config?.providers.filter(
-		(p) => authStatus.providers[p]?.configured || p === 'setu',
+		(p) =>
+			(authStatus.providers[p]?.configured || p === 'setu') &&
+			allModels?.[p]?.models?.length > 0,
 	) || ['setu'];
 
 	const currentProviderModels = allModels?.[selectedProvider]?.models || [];

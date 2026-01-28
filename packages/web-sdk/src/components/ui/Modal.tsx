@@ -112,7 +112,7 @@ export function Modal({
 					)}
 
 					{/* Content */}
-					<div className="p-4">{children}</div>
+					<div className="p-6">{children}</div>
 				</div>
 			</div>
 		</>
