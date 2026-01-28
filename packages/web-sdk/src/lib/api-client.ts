@@ -969,6 +969,191 @@ class ApiClient {
 
 		return await response.json();
 	}
+
+	async getAuthStatus(): Promise<{
+		onboardingComplete: boolean;
+		setu: { configured: boolean; publicKey?: string };
+		providers: Record<
+			string,
+			{
+				configured: boolean;
+				type?: 'api' | 'oauth' | 'wallet';
+				label: string;
+				supportsOAuth: boolean;
+				modelCount: number;
+				costRange?: { min: number; max: number };
+			}
+		>;
+		defaults: {
+			agent: string;
+			provider: string;
+			model: string;
+			toolApproval?: 'auto' | 'dangerous' | 'all';
+		};
+	}> {
+		const response = await fetch(`${this.baseUrl}/v1/auth/status`, {
+			method: 'GET',
+			headers: { 'Content-Type': 'application/json' },
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to get auth status' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async setupSetuWallet(): Promise<{
+		success: boolean;
+		publicKey: string;
+		isNew: boolean;
+	}> {
+		const response = await fetch(`${this.baseUrl}/v1/auth/setu/setup`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to setup wallet' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async importSetuWallet(privateKey: string): Promise<{
+		success: boolean;
+		publicKey: string;
+	}> {
+		const response = await fetch(`${this.baseUrl}/v1/auth/setu/import`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ privateKey }),
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to import wallet' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async addProvider(
+		provider: string,
+		apiKey: string,
+	): Promise<{ success: boolean; provider: string }> {
+		const response = await fetch(`${this.baseUrl}/v1/auth/${provider}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ apiKey }),
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to add provider' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async removeProvider(
+		provider: string,
+	): Promise<{ success: boolean; provider: string }> {
+		const response = await fetch(`${this.baseUrl}/v1/auth/${provider}`, {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to remove provider' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async completeOnboarding(): Promise<{ success: boolean }> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/auth/onboarding/complete`,
+			{
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to complete onboarding' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	getOAuthStartUrl(provider: string, mode?: string): string {
+		const baseUrl = `${this.baseUrl}/v1/auth/${provider}/oauth/start`;
+		if (mode) {
+			return `${baseUrl}?mode=${mode}`;
+		}
+		return baseUrl;
+	}
+
+	async getOAuthUrl(
+		provider: string,
+		mode?: string,
+	): Promise<{ url: string; sessionId: string; provider: string }> {
+		const response = await fetch(`${this.baseUrl}/v1/auth/${provider}/oauth/url`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ mode }),
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to get OAuth URL' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async exchangeOAuthCode(
+		provider: string,
+		code: string,
+		sessionId: string,
+	): Promise<{ success: boolean; provider: string }> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/auth/${provider}/oauth/exchange`,
+			{
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ code, sessionId }),
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to exchange OAuth code' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
 }
 
 export const apiClient = new ApiClient();

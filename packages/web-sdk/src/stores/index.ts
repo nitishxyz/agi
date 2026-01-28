@@ -11,3 +11,4 @@ export * from './setuStore';
 export * from './settingsStore';
 export * from './toolApprovalStore';
 export * from './topupApprovalStore';
+export * from './onboardingStore';

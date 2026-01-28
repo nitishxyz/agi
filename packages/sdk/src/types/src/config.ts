@@ -40,4 +40,5 @@ export type AGIConfig = {
 	defaults: DefaultConfig;
 	providers: Record<ProviderId, ProviderConfig>;
 	paths: PathConfig;
+	onboardingComplete?: boolean;
 };

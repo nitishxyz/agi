@@ -109,3 +109,43 @@ export async function removeAuth(
 ) {
 	await removeAuthFile(provider, projectRoot, scope);
 }
+
+export async function getOnboardingComplete(
+	_projectRoot?: string,
+): Promise<boolean> {
+	const globalPath = getGlobalConfigPath();
+	const f = Bun.file(globalPath);
+	if (await f.exists()) {
+		try {
+			const data = await f.json();
+			return data?.onboardingComplete === true;
+		} catch {
+			return false;
+		}
+	}
+	return false;
+}
+
+export async function setOnboardingComplete(
+	_projectRoot?: string,
+): Promise<void> {
+	const globalPath = getGlobalConfigPath();
+	const base = getGlobalConfigDir();
+
+	let existing: Record<string, unknown> = {};
+	const f = Bun.file(globalPath);
+	if (await f.exists()) {
+		try {
+			existing = (await f.json()) as Record<string, unknown>;
+		} catch {}
+	}
+
+	const next = { ...existing, onboardingComplete: true };
+
+	try {
+		const { promises: fs } = await import('node:fs');
+		await fs.mkdir(base, { recursive: true }).catch(() => {});
+	} catch {}
+
+	await Bun.write(globalPath, JSON.stringify(next, null, 2));
+}

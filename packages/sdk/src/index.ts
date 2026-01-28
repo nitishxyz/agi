@@ -120,6 +120,8 @@ export {
 	refreshToken,
 	openAuthUrl,
 	createApiKey,
+	authorizeWeb,
+	exchangeWeb,
 } from './auth/src/index.ts';
 export {
 	authorizeOpenAI,
@@ -127,8 +129,17 @@ export {
 	refreshOpenAIToken,
 	openOpenAIAuthUrl,
 	obtainOpenAIApiKey,
+	authorizeOpenAIWeb,
+	exchangeOpenAIWeb,
 } from './auth/src/index.ts';
 export type { OpenAIOAuthResult } from './auth/src/index.ts';
+export {
+	generateWallet,
+	importWallet,
+	getSetuWallet,
+	ensureSetuWallet,
+} from './auth/src/index.ts';
+export type { WalletInfo } from './auth/src/index.ts';
 
 // =======================
 // Configuration (from internal config module)
@@ -152,6 +163,8 @@ export {
 	writeDefaults as setConfig,
 	writeAuth,
 	removeAuth as removeConfig,
+	getOnboardingComplete,
+	setOnboardingComplete,
 } from './config/src/manager.ts';
 export type { Scope } from './config/src/manager.ts';
 

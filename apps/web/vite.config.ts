@@ -8,13 +8,13 @@ export default defineConfig({
 	plugins: [TanStackRouterVite(), react()],
 	server: {
 		watch: {
-			// Watch for changes in workspace packages
-			ignored: ['!**/node_modules/@agi-cli/**'],
+			// Watch the web-sdk source directory
+			ignored: ['!**/packages/web-sdk/**'],
 		},
 	},
 	optimizeDeps: {
-		// Force Vite to include workspace packages in dependency optimization
-		include: ['@agi-cli/web-sdk'],
+		// EXCLUDE web-sdk from pre-bundling so changes are picked up immediately
+		exclude: ['@agi-cli/web-sdk'],
 	},
 	resolve: {
 		alias: {
@@ -25,14 +25,11 @@ export default defineConfig({
 		dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
 	},
 	build: {
-		// Additional build options to ensure proper bundling
 		rollupOptions: {
 			output: {
-				// Ensure consistent chunk splitting
 				manualChunks: undefined,
 			},
 		},
-		// Increase chunk size warning limit
 		chunkSizeWarningLimit: 1000,
 	},
 });

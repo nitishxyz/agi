@@ -170,3 +170,65 @@ export async function createApiKey(accessToken: string) {
 	const json = (await result.json()) as { raw_key: string };
 	return json.raw_key;
 }
+
+export function authorizeWeb(mode: Mode, redirectUri: string) {
+	const pkce = generatePKCE();
+
+	const url = new URL(
+		`https://${mode === 'console' ? 'console.anthropic.com' : 'claude.ai'}/oauth/authorize`,
+	);
+	url.searchParams.set('code', 'true');
+	url.searchParams.set('client_id', CLIENT_ID);
+	url.searchParams.set('response_type', 'code');
+	url.searchParams.set('redirect_uri', redirectUri);
+	url.searchParams.set(
+		'scope',
+		'org:create_api_key user:profile user:inference',
+	);
+	url.searchParams.set('code_challenge', pkce.challenge);
+	url.searchParams.set('code_challenge_method', 'S256');
+	url.searchParams.set('state', pkce.verifier);
+
+	return {
+		url: url.toString(),
+		verifier: pkce.verifier,
+	};
+}
+
+export async function exchangeWeb(
+	code: string,
+	verifier: string,
+	redirectUri: string,
+) {
+	const splits = code.split('#');
+	const result = await fetch('https://console.anthropic.com/v1/oauth/token', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			code: splits[0],
+			state: splits[1],
+			grant_type: 'authorization_code',
+			client_id: CLIENT_ID,
+			redirect_uri: redirectUri,
+			code_verifier: verifier,
+		}),
+	});
+
+	if (!result.ok) {
+		const error = await result.text();
+		throw new Error(`Token exchange failed: ${error}`);
+	}
+
+	const json = (await result.json()) as {
+		refresh_token: string;
+		access_token: string;
+		expires_in: number;
+	};
+	return {
+		refresh: json.refresh_token,
+		access: json.access_token,
+		expires: Date.now() + json.expires_in * 1000,
+	};
+}

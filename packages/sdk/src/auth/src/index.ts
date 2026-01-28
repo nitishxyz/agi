@@ -67,6 +67,8 @@ export {
 	refreshToken,
 	openAuthUrl,
 	createApiKey,
+	authorizeWeb,
+	exchangeWeb,
 } from './oauth.ts';
 
 export {
@@ -75,5 +77,15 @@ export {
 	refreshOpenAIToken,
 	openOpenAIAuthUrl,
 	obtainOpenAIApiKey,
+	authorizeOpenAIWeb,
+	exchangeOpenAIWeb,
 	type OpenAIOAuthResult,
 } from './openai-oauth.ts';
+
+export {
+	generateWallet,
+	importWallet,
+	getSetuWallet,
+	ensureSetuWallet,
+	type WalletInfo,
+} from './wallet.ts';

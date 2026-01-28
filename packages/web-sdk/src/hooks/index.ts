@@ -20,3 +20,4 @@ export * from './useSetuBalance';
 export * from './useShareStatus';
 export * from './useToolApprovalShortcuts';
 export * from './useTopupCallback';
+export * from './useAuthStatus';

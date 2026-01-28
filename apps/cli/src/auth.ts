@@ -23,9 +23,9 @@ import {
 	exchangeOpenAI,
 	openOpenAIAuthUrl,
 	obtainOpenAIApiKey,
+	generateWallet,
+	importWallet,
 } from '@agi-cli/sdk';
-import { Keypair } from '@solana/web3.js';
-import bs58 from 'bs58';
 import { loadConfig } from '@agi-cli/sdk';
 import { catalog } from '@agi-cli/sdk';
 import { getGlobalConfigDir, getGlobalConfigPath } from '@agi-cli/sdk';
@@ -498,9 +498,9 @@ async function runAuthLoginSetu(
 	let publicKey: string;
 
 	if (authMethod === 'create') {
-		const keypair = Keypair.generate();
-		privateKeyBase58 = bs58.encode(keypair.secretKey);
-		publicKey = keypair.publicKey.toBase58();
+		const wallet = generateWallet();
+		privateKeyBase58 = wallet.privateKey;
+		publicKey = wallet.publicKey;
 		log.info('Generated new Solana wallet');
 	} else {
 		const key = await password({
@@ -515,10 +515,9 @@ async function runAuthLoginSetu(
 			return false;
 		}
 		try {
-			const privateKeyBytes = bs58.decode(String(key));
-			const keypair = Keypair.fromSecretKey(privateKeyBytes);
-			privateKeyBase58 = String(key);
-			publicKey = keypair.publicKey.toBase58();
+			const wallet = importWallet(String(key));
+			privateKeyBase58 = wallet.privateKey;
+			publicKey = wallet.publicKey;
 		} catch {
 			log.error(
 				'Invalid private key format. Please provide a valid base58 encoded private key.',

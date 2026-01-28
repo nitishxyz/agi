@@ -123,10 +123,46 @@ export async function authorizeOpenAI(): Promise<OpenAIOAuthResult> {
 				res.writeHead(200, { 'Content-Type': 'text/html' });
 				res.end(`
 					<html>
-					<head><title>AGI - Authentication Successful</title></head>
-					<body style="font-family: system-ui; text-align: center; padding: 50px;">
-						<h1>✅ Authentication Successful</h1>
-						<p>You can close this window and return to the terminal.</p>
+					<head>
+						<title>AGI - Authentication Successful</title>
+						<style>
+							body {
+								font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+								display: flex;
+								justify-content: center;
+								align-items: center;
+								height: 100vh;
+								margin: 0;
+								background: linear-gradient(135deg, #10a37f 0%, #1a7f5a 100%);
+								color: white;
+							}
+							.container {
+								text-align: center;
+								padding: 2rem;
+								background: rgba(255,255,255,0.1);
+								border-radius: 16px;
+								backdrop-filter: blur(10px);
+							}
+							.checkmark { font-size: 4rem; margin-bottom: 1rem; }
+							h1 { margin: 0 0 0.5rem 0; }
+							p { margin: 0; opacity: 0.9; }
+						</style>
+					</head>
+					<body>
+						<div class="container">
+							<div class="checkmark">✓</div>
+							<h1>Connected!</h1>
+							<p>You can close this window.</p>
+						</div>
+						<script>
+							// Delay to allow server to complete token exchange
+							setTimeout(() => {
+								if (window.opener) {
+									window.opener.postMessage({ type: 'oauth-success', provider: 'openai' }, '*');
+								}
+								setTimeout(() => window.close(), 500);
+							}, 1500);
+						</script>
 					</body>
 					</html>
 				`);
@@ -280,4 +316,79 @@ export async function obtainOpenAIApiKey(idToken: string): Promise<string> {
 	};
 
 	return json.access_token;
+}
+
+export function authorizeOpenAIWeb(redirectUri: string): {
+	url: string;
+	verifier: string;
+	state: string;
+} {
+	const pkce = generatePKCE();
+	const state = generateState();
+
+	const params = new URLSearchParams({
+		response_type: 'code',
+		client_id: OPENAI_CLIENT_ID,
+		redirect_uri: redirectUri,
+		scope: 'openid profile email offline_access',
+		code_challenge: pkce.challenge,
+		code_challenge_method: 'S256',
+		id_token_add_organizations: 'true',
+		codex_cli_simplified_flow: 'true',
+		state: state,
+	});
+
+	return {
+		url: `${OPENAI_ISSUER}/oauth/authorize?${params.toString()}`,
+		verifier: pkce.verifier,
+		state,
+	};
+}
+
+export async function exchangeOpenAIWeb(
+	code: string,
+	verifier: string,
+	redirectUri: string,
+) {
+	const response = await fetch(`${OPENAI_ISSUER}/oauth/token`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+		},
+		body: new URLSearchParams({
+			grant_type: 'authorization_code',
+			code,
+			redirect_uri: redirectUri,
+			client_id: OPENAI_CLIENT_ID,
+			code_verifier: verifier,
+		}).toString(),
+	});
+
+	if (!response.ok) {
+		const error = await response.text();
+		throw new Error(`Token exchange failed: ${error}`);
+	}
+
+	const json = (await response.json()) as {
+		id_token: string;
+		access_token: string;
+		refresh_token: string;
+		expires_in?: number;
+	};
+
+	let accountId: string | undefined;
+	try {
+		const payload = JSON.parse(
+			Buffer.from(json.access_token.split('.')[1], 'base64').toString(),
+		);
+		accountId = payload['https://api.openai.com/auth']?.chatgpt_account_id;
+	} catch {}
+
+	return {
+		idToken: json.id_token,
+		access: json.access_token,
+		refresh: json.refresh_token,
+		expires: Date.now() + (json.expires_in || 3600) * 1000,
+		accountId,
+	};
 }
