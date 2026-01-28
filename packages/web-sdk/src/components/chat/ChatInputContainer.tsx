@@ -256,14 +256,14 @@ export const ChatInputContainer = memo(
 						const untrackedPaths =
 							gitStatus?.untracked?.map((f) => f.path) ?? [];
 						const allUnstaged = [...unstagedPaths, ...untrackedPaths];
-					if (allUnstaged.length > 0) {
-						stageFiles.mutate(allUnstaged);
-					}
-				} else if (commandId === 'commit') {
-					openCommitModalForSession(sessionId);
-				} else if (commandId === 'compact') {
-					handleSendMessage('/compact');
-				} else if (commandId === 'delete') {
+						if (allUnstaged.length > 0) {
+							stageFiles.mutate(allUnstaged);
+						}
+					} else if (commandId === 'commit') {
+						openCommitModalForSession(sessionId);
+					} else if (commandId === 'compact') {
+						handleSendMessage('/compact');
+					} else if (commandId === 'delete') {
 						deleteSession.mutate(sessionId, {
 							onSuccess: () => {
 								onDeleteSession?.();
@@ -318,13 +318,13 @@ export const ChatInputContainer = memo(
 					}
 				},
 				[
-				onNewSession,
-				gitStatus,
-				stageFiles,
-				openCommitModalForSession,
-				handleSendMessage,
-				deleteSession,
-				sessionId,
+					onNewSession,
+					gitStatus,
+					stageFiles,
+					openCommitModalForSession,
+					handleSendMessage,
+					deleteSession,
+					sessionId,
 					onDeleteSession,
 					queryClient,
 				],
