@@ -178,7 +178,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 					<div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
 						{/* Left Column - Wallet */}
 						<div className="xl:col-span-1">
-							<div className="bg-card rounded-2xl border border-border p-5">
+							<div className="bg-card rounded-2xl border border-border p-5 h-full">
 								{authStatus.setu.configured && authStatus.setu.publicKey ? (
 									<div className="space-y-4">
 										{/* Setu Default Provider Badge */}
