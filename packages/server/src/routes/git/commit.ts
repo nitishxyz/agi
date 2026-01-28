@@ -101,7 +101,7 @@ export function registerCommitRoutes(app: Hono) {
 			let provider = (config.defaults?.provider || 'anthropic') as ProviderId;
 
 			if (sessionId) {
-				const db = getDb();
+				const db = await getDb();
 				const [session] = await db
 					.select({ provider: sessions.provider })
 					.from(sessions)

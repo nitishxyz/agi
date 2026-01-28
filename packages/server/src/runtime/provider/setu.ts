@@ -2,6 +2,8 @@ import {
 	createSetuModel,
 	catalog,
 	type SetuPaymentCallbacks,
+	getAuth,
+	loadConfig,
 } from '@agi-cli/sdk';
 import { publish } from '../../events/bus.ts';
 import {
@@ -21,12 +23,26 @@ export interface ResolveSetuModelOptions {
 	topupApprovalMode?: 'auto' | 'approval';
 }
 
-export function resolveSetuModel(
+async function getSetuPrivateKey(): Promise<string> {
+	if (process.env.SETU_PRIVATE_KEY) {
+		return process.env.SETU_PRIVATE_KEY;
+	}
+	try {
+		const cfg = await loadConfig(process.cwd());
+		const auth = await getAuth('setu', cfg.projectRoot);
+		if (auth?.type === 'wallet' && auth.secret) {
+			return auth.secret;
+		}
+	} catch {}
+	return '';
+}
+
+export async function resolveSetuModel(
 	model: string,
 	sessionId?: string,
 	options: ResolveSetuModelOptions = {},
 ) {
-	const privateKey = process.env.SETU_PRIVATE_KEY ?? '';
+	const privateKey = await getSetuPrivateKey();
 	if (!privateKey) {
 		throw new Error(
 			'Setu provider requires SETU_PRIVATE_KEY (base58 Solana secret).',

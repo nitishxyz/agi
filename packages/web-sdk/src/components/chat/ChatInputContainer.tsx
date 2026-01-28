@@ -71,7 +71,12 @@ export const ChatInputContainer = memo(
 			const { preferences } = usePreferences();
 			const { data: gitStatus } = useGitStatus();
 			const stageFiles = useStageFiles();
-			const openCommitModal = useGitStore((state) => state.openCommitModal);
+			const openCommitModalForSession = useGitStore(
+				(state) => state.openCommitModalForSession,
+			);
+			const setActiveSessionId = useGitStore(
+				(state) => state.setActiveSessionId,
+			);
 			const queryClient = useQueryClient();
 
 			const {
@@ -131,6 +136,11 @@ export const ChatInputContainer = memo(
 					setModel(session.model);
 				}
 			}, [session]);
+
+			useEffect(() => {
+				setActiveSessionId(sessionId);
+				return () => setActiveSessionId(null);
+			}, [sessionId, setActiveSessionId]);
 
 			useEffect(() => {
 				setInputKey((prev) => prev + 1);
@@ -246,14 +256,14 @@ export const ChatInputContainer = memo(
 						const untrackedPaths =
 							gitStatus?.untracked?.map((f) => f.path) ?? [];
 						const allUnstaged = [...unstagedPaths, ...untrackedPaths];
-						if (allUnstaged.length > 0) {
-							stageFiles.mutate(allUnstaged);
-						}
-					} else if (commandId === 'commit') {
-						openCommitModal();
-					} else if (commandId === 'compact') {
-						handleSendMessage('/compact');
-					} else if (commandId === 'delete') {
+					if (allUnstaged.length > 0) {
+						stageFiles.mutate(allUnstaged);
+					}
+				} else if (commandId === 'commit') {
+					openCommitModalForSession(sessionId);
+				} else if (commandId === 'compact') {
+					handleSendMessage('/compact');
+				} else if (commandId === 'delete') {
 						deleteSession.mutate(sessionId, {
 							onSuccess: () => {
 								onDeleteSession?.();
@@ -308,13 +318,13 @@ export const ChatInputContainer = memo(
 					}
 				},
 				[
-					onNewSession,
-					gitStatus,
-					stageFiles,
-					openCommitModal,
-					handleSendMessage,
-					deleteSession,
-					sessionId,
+				onNewSession,
+				gitStatus,
+				stageFiles,
+				openCommitModalForSession,
+				handleSendMessage,
+				deleteSession,
+				sessionId,
 					onDeleteSession,
 					queryClient,
 				],

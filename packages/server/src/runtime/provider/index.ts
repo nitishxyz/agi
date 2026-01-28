@@ -40,7 +40,7 @@ export async function resolveModel(
 		return resolveOpencodeModel(model, cfg);
 	}
 	if (provider === 'setu') {
-		return resolveSetuModel(model, options?.sessionId, {
+		return await resolveSetuModel(model, options?.sessionId, {
 			messageId: options?.messageId,
 			topupApprovalMode: options?.topupApprovalMode,
 		});

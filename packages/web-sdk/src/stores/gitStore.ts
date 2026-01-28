@@ -8,6 +8,9 @@ interface GitState {
 	// Sidebar state
 	isExpanded: boolean;
 
+	// Active session tracking (for commit message generation)
+	activeSessionId: string | null;
+
 	// Diff panel state
 	selectedFile: string | null;
 	selectedFileStaged: boolean;
@@ -33,12 +36,14 @@ interface GitState {
 	openCommitModalForSession: (sessionId: string) => void;
 	closeCommitModal: () => void;
 
+	setActiveSessionId: (sessionId: string | null) => void;
 	setSessionListCollapsed: (collapsed: boolean) => void;
 }
 
 export const useGitStore = create<GitState>((set) => ({
 	// Initial state
 	isExpanded: false,
+	activeSessionId: null,
 	selectedFile: null,
 	selectedFileStaged: false,
 	isDiffOpen: false,
@@ -83,13 +88,18 @@ export const useGitStore = create<GitState>((set) => ({
 		}),
 
 	// Commit modal actions
-	openCommitModal: () => set({ isCommitModalOpen: true }),
+	openCommitModal: () =>
+		set((state) => ({
+			isCommitModalOpen: true,
+			commitSessionId: state.activeSessionId,
+		})),
 	openCommitModalForSession: (sessionId: string) =>
 		set({ isCommitModalOpen: true, commitSessionId: sessionId }),
 	closeCommitModal: () =>
 		set({ isCommitModalOpen: false, commitSessionId: null }),
 
 	// Session list collapse
+	setActiveSessionId: (sessionId) => set({ activeSessionId: sessionId }),
 	setSessionListCollapsed: (collapsed) =>
 		set({ wasSessionListCollapsed: collapsed }),
 }));

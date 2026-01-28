@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useId } from 'react';
+import { memo, useState, useEffect, useId, useRef } from 'react';
 import { Loader2, ArrowLeft, Sparkles, ChevronDown } from 'lucide-react';
 import { apiClient } from '../../../lib/api-client';
 import type { AuthStatus } from '../../../stores/onboardingStore';
@@ -45,6 +45,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 	const [selectedApproval, setSelectedApproval] = useState<
 		'auto' | 'dangerous' | 'all'
 	>(authStatus.defaults.toolApproval || 'auto');
+	const hasUserChangedProvider = useRef(false);
 
 	const providerId = useId();
 	const modelId = useId();
@@ -69,7 +70,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 	}, []);
 
 	useEffect(() => {
-		if (allModels?.[selectedProvider]) {
+		if (allModels?.[selectedProvider] && hasUserChangedProvider.current) {
 			const providerModels = allModels[selectedProvider];
 			if (!providerModels.models.some((m) => m.id === selectedModel)) {
 				setSelectedModel(providerModels.models[0]?.id || '');
@@ -151,7 +152,10 @@ export const DefaultsStep = memo(function DefaultsStep({
 								<select
 									id={providerId}
 									value={selectedProvider}
-									onChange={(e) => setSelectedProvider(e.target.value)}
+									onChange={(e) => {
+										hasUserChangedProvider.current = true;
+										setSelectedProvider(e.target.value);
+									}}
 									className="w-full px-4 py-3 bg-card border border-border rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:border-ring transition-colors"
 								>
 									{availableProviders.map((p) => (
