@@ -5,6 +5,7 @@ import {
 	createCheckoutSession,
 	calculateChargeAmount,
 } from '../services/polar';
+import { db } from '../../db';
 
 type Variables = { walletAddress: string };
 
@@ -101,6 +102,34 @@ polarTopup.get('/v1/topup/polar/estimate', async (c) => {
 			fixedCents: config.polar.fees.fixedCents,
 		},
 	});
+});
+
+polarTopup.get('/v1/topup/polar/status', async (c) => {
+	const checkoutId = c.req.query('checkoutId');
+
+	if (!checkoutId) {
+		return c.json({ error: 'Missing checkoutId parameter' }, 400);
+	}
+
+	try {
+		const payment = await db.query.paymentLogs.findFirst({
+			where: (logs, { eq, and }) =>
+				and(
+					eq(logs.polarCheckoutId, checkoutId),
+					eq(logs.status, 'confirmed'),
+				),
+		});
+
+		return c.json({
+			checkoutId,
+			confirmed: !!payment,
+			amountUsd: payment ? parseFloat(payment.amountUsd) : null,
+			confirmedAt: payment?.createdAt ?? null,
+		});
+	} catch (error) {
+		console.error('[POLAR] Status check failed:', error);
+		return c.json({ error: 'Failed to check status' }, 500);
+	}
 });
 
 export default polarTopup;

@@ -8,6 +8,7 @@ import {
 	User,
 	ChevronDown,
 	RefreshCw,
+	Plus,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '../ui/Button';
@@ -19,7 +20,9 @@ import {
 } from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useSetuStore } from '../../stores/setuStore';
+import { SetuTopupModal } from './SetuTopupModal';
 import { useSetuBalance } from '../../hooks/useSetuBalance';
+import { useTopupCallback } from '../../hooks/useTopupCallback';
 
 interface SettingsSectionProps {
 	title: string;
@@ -170,6 +173,10 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 	const setuWallet = useSetuStore((s) => s.walletAddress);
 	const setuUsdcBalance = useSetuStore((s) => s.usdcBalance);
 	const setuLoading = useSetuStore((s) => s.isLoading);
+	const openTopupModal = useSetuStore((s) => s.openTopupModal);
+
+	// Handle topup success callback from Polar checkout redirect
+	useTopupCallback();
 
 	const hasSetu = config?.providers?.includes('setu');
 	const { fetchBalance: refreshSetuBalance } = useSetuBalance(
@@ -339,13 +346,24 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 						<SettingRow label="Address" value={truncateWallet(setuWallet)} />
 						<SettingRow label="Balance" value={formatBalance(setuBalance)} />
 						<SettingRow
-							label="USDC"
-							value={formatUsdcBalance(setuUsdcBalance)}
-						/>
-					</SettingsSection>
-				)}
+					label="USDC"
+					value={formatUsdcBalance(setuUsdcBalance)}
+				/>
+				<Button
+					variant="secondary"
+					size="sm"
+					onClick={openTopupModal}
+					className="w-full mt-2 gap-2"
+				>
+					<Plus className="w-4 h-4" />
+					Top Up Balance
+				</Button>
+			</SettingsSection>
+		)}
 
-				<SettingsSection
+		<SetuTopupModal />
+
+		<SettingsSection
 					title="Providers"
 					icon={<Zap className="w-4 h-4 text-muted-foreground" />}
 				>

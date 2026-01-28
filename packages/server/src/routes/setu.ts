@@ -8,6 +8,16 @@ import {
 } from '@agi-cli/sdk';
 import { logger } from '@agi-cli/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
+import { Keypair } from '@solana/web3.js';
+import bs58 from 'bs58';
+import nacl from 'tweetnacl';
+
+const SETU_BASE_URL =
+	process.env.SETU_BASE_URL || 'https://setu.agi.nitish.sh';
+
+function getSetuBaseUrl(): string {
+	return SETU_BASE_URL.endsWith('/') ? SETU_BASE_URL.slice(0, -1) : SETU_BASE_URL;
+}
 
 async function getSetuPrivateKey(): Promise<string | null> {
 	if (process.env.SETU_PRIVATE_KEY) {
@@ -23,6 +33,25 @@ async function getSetuPrivateKey(): Promise<string | null> {
 	} catch {}
 
 	return null;
+}
+
+function signNonce(nonce: string, privateKeyBytes: Uint8Array): string {
+	const data = new TextEncoder().encode(nonce);
+	const signature = nacl.sign.detached(data, privateKeyBytes);
+	return bs58.encode(signature);
+}
+
+function buildWalletHeaders(privateKey: string): Record<string, string> {
+	const privateKeyBytes = bs58.decode(privateKey);
+	const keypair = Keypair.fromSecretKey(privateKeyBytes);
+	const walletAddress = keypair.publicKey.toBase58();
+	const nonce = Date.now().toString();
+	const signature = signNonce(nonce, privateKeyBytes);
+	return {
+		'x-wallet-address': walletAddress,
+		'x-wallet-nonce': nonce,
+		'x-wallet-signature': signature,
+	};
 }
 
 export function registerSetuRoutes(app: Hono) {
@@ -93,6 +122,110 @@ export function registerSetuRoutes(app: Hono) {
 			return c.json(balance);
 		} catch (error) {
 			logger.error('Failed to fetch USDC balance', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
+	app.get('/v1/setu/topup/polar/estimate', async (c) => {
+		try {
+			const amount = c.req.query('amount');
+			if (!amount) {
+				return c.json({ error: 'Missing amount parameter' }, 400);
+			}
+
+			const baseUrl = getSetuBaseUrl();
+			const response = await fetch(
+				`${baseUrl}/v1/topup/polar/estimate?amount=${amount}`,
+				{
+					method: 'GET',
+					headers: { 'Content-Type': 'application/json' },
+				},
+			);
+
+			const data = await response.json();
+			if (!response.ok) {
+				return c.json(data, response.status as 400 | 500);
+			}
+
+			return c.json(data);
+		} catch (error) {
+			logger.error('Failed to get Polar estimate', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
+	app.post('/v1/setu/topup/polar', async (c) => {
+		try {
+			const privateKey = await getSetuPrivateKey();
+			if (!privateKey) {
+				return c.json({ error: 'Setu wallet not configured' }, 401);
+			}
+
+			const body = await c.req.json();
+			const { amount, successUrl } = body as {
+				amount: number;
+				successUrl: string;
+			};
+
+			if (!amount || typeof amount !== 'number') {
+				return c.json({ error: 'Invalid amount' }, 400);
+			}
+
+			if (!successUrl || typeof successUrl !== 'string') {
+				return c.json({ error: 'Missing successUrl' }, 400);
+			}
+
+			const walletHeaders = buildWalletHeaders(privateKey);
+			const baseUrl = getSetuBaseUrl();
+
+			const response = await fetch(`${baseUrl}/v1/topup/polar`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					...walletHeaders,
+				},
+				body: JSON.stringify({ amount, successUrl }),
+			});
+
+			const data = await response.json();
+			if (!response.ok) {
+				return c.json(data, response.status as 400 | 500);
+			}
+
+			return c.json(data);
+		} catch (error) {
+			logger.error('Failed to create Polar checkout', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
+	app.get('/v1/setu/topup/polar/status', async (c) => {
+		try {
+			const checkoutId = c.req.query('checkoutId');
+			if (!checkoutId) {
+				return c.json({ error: 'Missing checkoutId parameter' }, 400);
+			}
+
+			const baseUrl = getSetuBaseUrl();
+			const response = await fetch(
+				`${baseUrl}/v1/topup/polar/status?checkoutId=${checkoutId}`,
+				{
+					method: 'GET',
+					headers: { 'Content-Type': 'application/json' },
+				},
+			);
+
+			const data = await response.json();
+			if (!response.ok) {
+				return c.json(data, response.status as 400 | 500);
+			}
+
+			return c.json(data);
+		} catch (error) {
+			logger.error('Failed to check Polar status', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}

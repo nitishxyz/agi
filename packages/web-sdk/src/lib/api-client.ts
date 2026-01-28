@@ -799,6 +799,87 @@ class ApiClient {
 		}
 		return await response.json();
 	}
+
+	async getPolarTopupEstimate(amount: number): Promise<{
+		creditAmount: number;
+		chargeAmount: number;
+		feeAmount: number;
+		feeBreakdown: {
+			basePercent: number;
+			internationalPercent: number;
+			fixedCents: number;
+		};
+	} | null> {
+		try {
+			const response = await fetch(
+				`${this.baseUrl}/v1/setu/topup/polar/estimate?amount=${amount}`,
+				{
+					method: 'GET',
+					headers: { 'Content-Type': 'application/json' },
+				},
+			);
+
+			if (!response.ok) {
+				return null;
+			}
+
+			return await response.json();
+		} catch {
+			return null;
+		}
+	}
+
+	async createPolarCheckout(
+		amount: number,
+		successUrl: string,
+	): Promise<{
+		success: boolean;
+		checkoutId: string;
+		checkoutUrl: string;
+		creditAmount: number;
+		chargeAmount: number;
+		feeAmount: number;
+	}> {
+		const response = await fetch(`${this.baseUrl}/v1/setu/topup/polar`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ amount, successUrl }),
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to create checkout' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async getPolarTopupStatus(checkoutId: string): Promise<{
+		checkoutId: string;
+		confirmed: boolean;
+		amountUsd: number | null;
+		confirmedAt: string | null;
+	} | null> {
+		try {
+			const response = await fetch(
+				`${this.baseUrl}/v1/setu/topup/polar/status?checkoutId=${checkoutId}`,
+				{
+					method: 'GET',
+					headers: { 'Content-Type': 'application/json' },
+				},
+			);
+
+			if (!response.ok) {
+				return null;
+			}
+
+			return await response.json();
+		} catch {
+			return null;
+		}
+	}
 }
 
 export const apiClient = new ApiClient();

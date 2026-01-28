@@ -8,6 +8,7 @@ interface SetuState {
 	lastPaymentAmount: number | null;
 	walletAddress: string | null;
 	isLoading: boolean;
+	isTopupModalOpen: boolean;
 	setBalance: (balance: number | null) => void;
 	setUsdcBalance: (usdcBalance: number | null) => void;
 	setNetwork: (network: 'mainnet' | 'devnet') => void;
@@ -15,6 +16,8 @@ interface SetuState {
 	setLastPaymentAmount: (amount: number | null) => void;
 	setWalletAddress: (address: string | null) => void;
 	setLoading: (loading: boolean) => void;
+	openTopupModal: () => void;
+	closeTopupModal: () => void;
 }
 
 export const useSetuStore = create<SetuState>((set) => ({
@@ -25,6 +28,7 @@ export const useSetuStore = create<SetuState>((set) => ({
 	lastPaymentAmount: null,
 	walletAddress: null,
 	isLoading: false,
+	isTopupModalOpen: false,
 	setBalance: (balance) => set({ balance }),
 	setUsdcBalance: (usdcBalance) => set({ usdcBalance }),
 	setNetwork: (network) => set({ network }),
@@ -32,4 +36,6 @@ export const useSetuStore = create<SetuState>((set) => ({
 	setLastPaymentAmount: (lastPaymentAmount) => set({ lastPaymentAmount }),
 	setWalletAddress: (walletAddress) => set({ walletAddress }),
 	setLoading: (isLoading) => set({ isLoading }),
+	openTopupModal: () => set({ isTopupModalOpen: true }),
+	closeTopupModal: () => set({ isTopupModalOpen: false }),
 }));

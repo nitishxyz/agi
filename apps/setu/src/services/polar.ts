@@ -29,7 +29,9 @@ export function calculateChargeAmount(creditAmountUsd: number): {
 	const { basePercent, internationalPercent, fixedCents } = config.polar.fees;
 	const totalPercent = basePercent + internationalPercent;
 	const creditCents = Math.round(creditAmountUsd * 100);
-	const chargeAmountCents = Math.ceil((creditCents + fixedCents) / (1 - totalPercent));
+	const chargeAmountCents = Math.ceil(
+		(creditCents + fixedCents) / (1 - totalPercent),
+	);
 	const feeAmountCents = chargeAmountCents - creditCents;
 	return { chargeAmountCents, feeAmountCents };
 }
@@ -40,7 +42,8 @@ export async function createCheckoutSession(
 	successUrl: string,
 ): Promise<CheckoutResult> {
 	const polar = getPolarClient();
-	const { chargeAmountCents, feeAmountCents } = calculateChargeAmount(creditAmountUsd);
+	const { chargeAmountCents, feeAmountCents } =
+		calculateChargeAmount(creditAmountUsd);
 	const productId = config.polar.productId;
 
 	const checkout = await polar.checkouts.create({
@@ -61,8 +64,27 @@ export async function createCheckoutSession(
 		},
 	});
 
+	const checkoutId = checkout.id;
+
+	// Update the checkout to include the checkoutId in metadata
+	// This allows the webhook to track which checkout was paid
+	try {
+		await polar.checkouts.update({
+			id: checkoutId,
+			checkoutUpdate: {
+				metadata: {
+					walletAddress,
+					creditAmountUsd: creditAmountUsd.toFixed(2),
+					checkoutId,
+				},
+			},
+		});
+	} catch {
+		// If update fails, continue - we'll use order ID as fallback
+	}
+
 	return {
-		checkoutId: checkout.id,
+		checkoutId,
 		checkoutUrl: checkout.url,
 		creditAmount: creditAmountUsd,
 		chargeAmount: chargeAmountCents / 100,

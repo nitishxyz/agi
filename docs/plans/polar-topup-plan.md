@@ -1,5 +1,11 @@
 # Polar.sh Fiat Top-up Integration Plan
 
+Note: User can specify any amount between $5-$500 (custom amounts, no fixed tiers).
+Polar fees (4% + $0.40, +1.5% intl) are calculated and shown transparently.
+**Implementation Status**: ✅ Complete
+- Setu app routes and services implemented
+- AGI server proxy routes added
+- Web UI topup modal with amount selection and fee preview
 ## Overview
 
 Enable non-crypto users to top up their Setu AI service balance using fiat payments via **Polar.sh**. This creates a seamless dual-payment system where:

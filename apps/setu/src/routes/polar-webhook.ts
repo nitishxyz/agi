@@ -18,7 +18,10 @@ polarWebhook.post('/v1/webhooks/polar', async (c) => {
 		event = verifyWebhook(rawBody, headers);
 	} catch (error) {
 		if (error instanceof WebhookVerificationError) {
-			console.error('[POLAR WEBHOOK] Signature verification failed:', error.message);
+			console.error(
+				'[POLAR WEBHOOK] Signature verification failed:',
+				error.message,
+			);
 			return c.json({ error: 'Invalid signature' }, 403);
 		}
 		throw error;
@@ -27,23 +30,40 @@ polarWebhook.post('/v1/webhooks/polar', async (c) => {
 	console.log(`[POLAR WEBHOOK] Received event: ${event.type}`);
 
 	if (event.type === 'order.paid') {
-		const { id, metadata } = event.data;
+		const orderId = event.data.id;
+		const metadata = event.data.metadata;
+
+		// Use checkoutId from metadata if available, otherwise fall back to orderId
+		const checkoutId = metadata?.checkoutId || orderId;
+
+		console.log(
+			`[POLAR WEBHOOK] Processing order.paid - Order: ${orderId}, Checkout: ${checkoutId}`,
+		);
 
 		if (!metadata?.walletAddress || !metadata?.creditAmountUsd) {
-			console.error('[POLAR WEBHOOK] Missing metadata in order.paid event');
+			console.error(
+				'[POLAR WEBHOOK] Missing metadata in order.paid event:',
+				metadata,
+			);
 			return c.json({ error: 'Missing metadata' }, 400);
 		}
 
 		const walletAddress = metadata.walletAddress;
 		const creditAmountUsd = parseFloat(metadata.creditAmountUsd);
-		const checkoutId = id;
 
+		// Check for duplicate using checkoutId (primary) or orderId (fallback)
 		const existing = await db.query.paymentLogs.findFirst({
-			where: (logs, { eq }) => eq(logs.polarCheckoutId, checkoutId),
+			where: (logs, { eq, or }) =>
+				or(
+					eq(logs.polarCheckoutId, checkoutId),
+					eq(logs.polarCheckoutId, orderId),
+				),
 		});
 
 		if (existing) {
-			console.log(`[POLAR WEBHOOK] Duplicate order.paid for checkout ${checkoutId}, skipping`);
+			console.log(
+				`[POLAR WEBHOOK] Duplicate: ${checkoutId} already processed, skipping`,
+			);
 			return c.json({ success: true, duplicate: true });
 		}
 
@@ -61,7 +81,9 @@ polarWebhook.post('/v1/webhooks/polar', async (c) => {
 			.returning();
 
 		if (inserted.length === 0) {
-			console.log(`[POLAR WEBHOOK] Race condition: checkout ${checkoutId} already processed`);
+			console.log(
+				`[POLAR WEBHOOK] Race condition: ${checkoutId} already processed`,
+			);
 			return c.json({ success: true, duplicate: true });
 		}
 
@@ -78,6 +100,7 @@ polarWebhook.post('/v1/webhooks/polar', async (c) => {
 		return c.json({ success: true, credited: creditAmountUsd, newBalance });
 	}
 
+	console.log(`[POLAR WEBHOOK] Ignoring event type: ${event.type}`);
 	return c.json({ success: true, ignored: true });
 });
 
