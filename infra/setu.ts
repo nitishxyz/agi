@@ -6,6 +6,9 @@ import {
 	moonshotAiApiKey,
 	openAiApiKey,
 	platformWallet,
+	polarAccessToken,
+	polarProductId,
+	polarWebhookSecret,
 } from './secrets';
 
 const DEPLOYED_STAGES = ['prod', 'dev'];
@@ -19,6 +22,9 @@ export const setu = !DEPLOYED_STAGES.includes($app.stage)
 				GOOGLE_AI_API_KEY: googleAiApiKey.value,
 				MOONSHOT_AI_API_KEY: moonshotAiApiKey.value,
 				PLATFORM_WALLET: platformWallet.value,
+				POLAR_ACCESS_TOKEN: polarAccessToken.value,
+				POLAR_WEBHOOK_SECRET: polarWebhookSecret.value,
+				POLAR_PRODUCT_ID: polarProductId.value,
 				STAGE: $app.stage || 'dev',
 			},
 			dev: { command: 'bun dev', directory: 'apps/setu' },
@@ -33,6 +39,9 @@ export const setu = !DEPLOYED_STAGES.includes($app.stage)
 				GOOGLE_AI_API_KEY: googleAiApiKey.value,
 				MOONSHOT_AI_API_KEY: moonshotAiApiKey.value,
 				PLATFORM_WALLET: platformWallet.value,
+				POLAR_ACCESS_TOKEN: polarAccessToken.value,
+				POLAR_WEBHOOK_SECRET: polarWebhookSecret.value,
+				POLAR_PRODUCT_ID: polarProductId.value,
 				STAGE: $app.stage || 'prod',
 			},
 			domain: domains.setu,

@@ -35,4 +35,18 @@ export const config = {
 		network: isProdStage ? 'solana' : 'solana-devnet',
 		usdcMint: isProdStage ? SOLANA_MAINNET_USDC_MINT : SOLANA_DEVNET_USDC_MINT,
 	},
+
+	polar: {
+		accessToken: process.env.POLAR_ACCESS_TOKEN || '',
+		webhookSecret: process.env.POLAR_WEBHOOK_SECRET || '',
+		productId: process.env.POLAR_PRODUCT_ID || '',
+		server: isProdStage ? 'production' : 'sandbox',
+		minTopupUsd: 5,
+		maxTopupUsd: 500,
+		fees: {
+			basePercent: 0.04,
+			internationalPercent: 0.015,
+			fixedCents: 40,
+		},
+	},
 } as const;

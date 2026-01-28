@@ -4,3 +4,7 @@ export const anthropicApiKey = new sst.Secret('AnthropicApiKey');
 export const googleAiApiKey = new sst.Secret('GoogleAiApiKey');
 export const moonshotAiApiKey = new sst.Secret('MoonshotAiApiKey');
 export const platformWallet = new sst.Secret('PlatformWallet');
+
+export const polarAccessToken = new sst.Secret('PolarAccessToken');
+export const polarWebhookSecret = new sst.Secret('PolarWebhookSecret');
+export const polarProductId = new sst.Secret('PolarProductId');

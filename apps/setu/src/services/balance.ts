@@ -108,3 +108,44 @@ export async function creditBalance(
 
 	return { newBalance };
 }
+
+export async function creditBalancePolar(
+	walletAddress: string,
+	amount: number,
+	polarCheckoutId: string,
+): Promise<{ newBalance: number }> {
+	let user = await db.query.users.findFirst({
+		where: eq(users.walletAddress, walletAddress),
+	});
+
+	if (!user) {
+		const [newUser] = await db
+			.insert(users)
+			.values({ walletAddress, balanceUsd: '0.00000000' })
+			.returning();
+		user = newUser;
+	}
+
+	const oldBalance = parseFloat(user.balanceUsd);
+	const newBalance = oldBalance + amount;
+
+	await db
+		.update(users)
+		.set({
+			balanceUsd: newBalance.toFixed(8),
+			totalTopups: (parseFloat(user.totalTopups) + amount).toFixed(2),
+		})
+		.where(eq(users.walletAddress, walletAddress));
+
+	await db.insert(transactions).values({
+		walletAddress,
+		type: 'topup',
+		amountUsd: amount.toFixed(8),
+		provider: 'polar',
+		txSignature: `polar:${polarCheckoutId}`,
+		balanceBefore: oldBalance.toFixed(8),
+		balanceAfter: newBalance.toFixed(8),
+	});
+
+	return { newBalance };
+}

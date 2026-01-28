@@ -8,6 +8,8 @@ import topup from './routes/topup';
 import messages from './routes/messages';
 import responses from './routes/responses';
 import completions from './routes/completions';
+import polarTopup from './routes/polar-topup';
+import polarWebhook from './routes/polar-webhook';
 
 const app = new Hono();
 
@@ -35,6 +37,8 @@ app.get('/', (c) => {
 			models: '/v1/models',
 			balance: '/v1/balance',
 			topup: '/v1/topup',
+			topupPolar: '/v1/topup/polar',
+			topupPolarEstimate: '/v1/topup/polar/estimate',
 			health: '/health',
 		},
 	});
@@ -53,6 +57,8 @@ app.route('/', topup);
 app.route('/', messages);
 app.route('/', responses);
 app.route('/', completions);
+app.route('/', polarTopup);
+app.route('/', polarWebhook);
 
 app.onError((err, c) => {
 	console.error('Unhandled error:', err);
