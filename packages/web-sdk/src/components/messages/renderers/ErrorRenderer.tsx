@@ -1,15 +1,21 @@
 import type React from 'react';
 import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, RefreshCw, CreditCard } from 'lucide-react';
 import type { ContentJson } from './types';
 
 interface ErrorRendererProps {
 	contentJson: ContentJson;
 	debug?: boolean;
+	sessionId?: string;
+	onRetry?: () => void;
 }
 
-export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
+export function ErrorRenderer({ contentJson, debug, sessionId, onRetry }: ErrorRendererProps) {
 	const [showRawDetails, setShowRawDetails] = useState(false);
+
+	// Check for special error types
+	const isBalanceLow = contentJson.type === 'balance_low' || contentJson.errorType === 'balance_low';
+	const isRetryable = contentJson.isRetryable === true || isBalanceLow;
 
 	// Handle different error structures:
 	// 1. { error: { name, url, statusCode, ... } } - from API errors
@@ -85,6 +91,34 @@ export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
 		}
 	}
 
+	// Special UI for balance_low errors
+	if (isBalanceLow) {
+		return (
+			<div className="space-y-3">
+				<div className="flex items-center gap-2">
+					<CreditCard className="h-4 w-4 text-amber-500" />
+					<span className="font-medium text-foreground">Balance too low</span>
+				</div>
+				<p className="text-sm text-muted-foreground">
+					Complete your top-up in the modal, then retry your request.
+				</p>
+				{onRetry && (
+					<div className="pt-1">
+						<button
+							type="button"
+							onClick={onRetry}
+							className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+						>
+							<RefreshCw className="w-3 h-3" />
+							Retry
+						</button>
+					</div>
+				)}
+			</div>
+		);
+	}
+
+	// Default error UI
 	const renderValue = (value: unknown): React.JSX.Element => {
 		if (value === null || value === undefined) {
 			return <span className="text-muted-foreground">null</span>;
@@ -170,6 +204,20 @@ export function ErrorRenderer({ contentJson, debug }: ErrorRendererProps) {
 							Type: {errorType}
 						</div>
 					)}
+				</div>
+			)}
+
+			{/* Retry button */}
+			{onRetry && (
+				<div className="pt-2">
+					<button
+						type="button"
+						onClick={onRetry}
+						className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+					>
+						<RefreshCw className="w-3 h-3" />
+						Retry
+					</button>
 				</div>
 			)}
 

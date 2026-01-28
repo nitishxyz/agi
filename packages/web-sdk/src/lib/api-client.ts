@@ -856,6 +856,73 @@ class ApiClient {
 		return await response.json();
 	}
 
+	async selectTopupMethod(
+		sessionId: string,
+		method: 'crypto' | 'fiat',
+	): Promise<{ success: boolean; method: string }> {
+		const response = await fetch(`${this.baseUrl}/v1/setu/topup/select`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ sessionId, method }),
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to select topup method' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async cancelTopup(
+		sessionId: string,
+		reason?: string,
+	): Promise<{ success: boolean }> {
+		const response = await fetch(`${this.baseUrl}/v1/setu/topup/cancel`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ sessionId, reason }),
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to cancel topup' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async getPendingTopup(sessionId: string): Promise<{
+		hasPending: boolean;
+		sessionId?: string;
+		messageId?: string;
+		amountUsd?: number;
+		currentBalance?: number;
+		createdAt?: number;
+	}> {
+		try {
+			const response = await fetch(
+				`${this.baseUrl}/v1/setu/topup/pending?sessionId=${sessionId}`,
+				{
+					method: 'GET',
+					headers: { 'Content-Type': 'application/json' },
+				},
+			);
+
+			if (!response.ok) {
+				return { hasPending: false };
+			}
+
+			return await response.json();
+		} catch {
+			return { hasPending: false };
+		}
+	}
+
 	async getPolarTopupStatus(checkoutId: string): Promise<{
 		checkoutId: string;
 		confirmed: boolean;
@@ -879,6 +946,26 @@ class ApiClient {
 		} catch {
 			return null;
 		}
+	}
+
+	async retryMessage(
+		sessionId: string,
+		messageId: string,
+	): Promise<{ success: boolean; messageId: string }> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/sessions/${sessionId}/messages/${messageId}/retry`,
+			{
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({ error: 'Failed to retry message' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
 	}
 }
 

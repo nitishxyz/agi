@@ -25,6 +25,7 @@ interface AssistantMessageGroupProps {
 	compact?: boolean;
 	showBranchButton?: boolean;
 	onNavigateToSession?: (sessionId: string) => void;
+	onRetry?: () => void;
 }
 
 const loadingMessages = [
@@ -55,6 +56,7 @@ export const AssistantMessageGroup = memo(
 		compact,
 		showBranchButton = true,
 		onNavigateToSession,
+		onRetry,
 	}: AssistantMessageGroupProps) {
 		const { isQueued } = useMessageQueuePosition(sessionId, message.id);
 		const [isHovered, setIsHovered] = useState(false);
@@ -275,21 +277,23 @@ export const AssistantMessageGroup = memo(
 							return null;
 						}
 
-						return (
-							<MessagePartItem
-								key={part.id}
-								part={part}
-								showLine={showLine}
-								isFirstPart={index === firstVisiblePartIndex && !showHeader}
-								isLastToolCall={isLastToolCall}
-								onNavigateToSession={onNavigateToSession}
-								compact={compact}
-								pendingApproval={pendingApproval}
-								onApprove={handleApprove}
-								onReject={handleReject}
-							/>
-						);
-					})}
+							return (
+								<MessagePartItem
+									key={part.id}
+									part={part}
+									showLine={showLine}
+									isFirstPart={index === firstVisiblePartIndex && !showHeader}
+									isLastToolCall={isLastToolCall}
+									onNavigateToSession={onNavigateToSession}
+									compact={compact}
+									pendingApproval={pendingApproval}
+									onApprove={handleApprove}
+									onReject={handleReject}
+									sessionId={sessionId}
+									onRetry={onRetry}
+								/>
+							);
+						})}
 
 					{/* Approve All banner when multiple approvals pending */}
 					{messagePendingApprovals.length > 1 && (

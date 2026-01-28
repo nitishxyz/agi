@@ -3,7 +3,10 @@ import { getAnthropicInstance } from './anthropic.ts';
 import { resolveOpenAIModel } from './openai.ts';
 import { resolveGoogleModel } from './google.ts';
 import { resolveOpenRouterModel } from './openrouter.ts';
-import { resolveSetuModel } from './setu.ts';
+import {
+	resolveSetuModel,
+	type ResolveSetuModelOptions,
+} from './setu.ts';
 import { getZaiInstance, getZaiCodingInstance } from './zai.ts';
 import { resolveOpencodeModel } from './opencode.ts';
 import { getMoonshotInstance } from './moonshot.ts';
@@ -14,7 +17,12 @@ export async function resolveModel(
 	provider: ProviderName,
 	model: string,
 	cfg: AGIConfig,
-	options?: { systemPrompt?: string; sessionId?: string },
+	options?: {
+		systemPrompt?: string;
+		sessionId?: string;
+		messageId?: string;
+		topupApprovalMode?: ResolveSetuModelOptions['topupApprovalMode'];
+	},
 ) {
 	if (provider === 'openai') {
 		return resolveOpenAIModel(model, cfg, {
@@ -35,7 +43,10 @@ export async function resolveModel(
 		return resolveOpencodeModel(model, cfg);
 	}
 	if (provider === 'setu') {
-		return resolveSetuModel(model, options?.sessionId);
+		return resolveSetuModel(model, options?.sessionId, {
+			messageId: options?.messageId,
+			topupApprovalMode: options?.topupApprovalMode,
+		});
 	}
 	if (provider === 'zai') {
 		return getZaiInstance(cfg, model);

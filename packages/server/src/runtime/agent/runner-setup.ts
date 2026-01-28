@@ -201,6 +201,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const model = await resolveModel(opts.provider, opts.model, cfg, {
 		systemPrompt: oauthSystemPrompt,
 		sessionId: opts.sessionId,
+		messageId: opts.assistantMessageId,
 	});
 	debugLog(
 		`[RUNNER] Model created: ${JSON.stringify({ id: model.modelId, provider: model.provider })}`,

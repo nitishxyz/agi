@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState, useMemo, memo, useCallback } from 'react';
 import { ArrowDown } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Message, Session } from '../../types/api';
 import { AssistantMessageGroup } from './AssistantMessageGroup';
 import { UserMessageGroup } from './UserMessageGroup';
 import { SessionHeader } from '../sessions/SessionHeader';
 import { LeanHeader } from '../sessions/LeanHeader';
+import { TopupApprovalCard } from './TopupApprovalCard';
+import { useTopupApprovalStore } from '../../stores/topupApprovalStore';
+import { apiClient } from '../../lib/api-client';
+import { toast } from '../../stores/toastStore';
 
 interface MessageThreadProps {
 	messages: Message[];
@@ -23,6 +28,7 @@ export const MessageThread = memo(function MessageThread({
 	disableAutoScroll = false,
 	onSelectSession,
 }: MessageThreadProps) {
+	const queryClient = useQueryClient();
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const sessionHeaderRef = useRef<HTMLDivElement>(null);
@@ -41,6 +47,12 @@ export const MessageThread = memo(function MessageThread({
 	const prevIsGeneratingRef = useRef(isGenerating);
 	const lastScrollHeightRef = useRef(0);
 	const lastScrollTopRef = useRef(0);
+
+	const pendingTopup = useTopupApprovalStore((s) => s.pendingTopup);
+	const clearPendingTopup = useTopupApprovalStore((s) => s.clearPendingTopup);
+
+	const showTopupApproval =
+		pendingTopup && pendingTopup.sessionId === sessionId;
 
 	const handleScroll = useCallback(() => {
 		const container = scrollContainerRef.current;
@@ -198,6 +210,38 @@ export const MessageThread = memo(function MessageThread({
 		return messages.filter((message) => message.role !== 'system');
 	}, [messages]);
 
+	// Create a retry handler for error messages
+	const createRetryHandler = useCallback(
+		(messageId: string) => {
+			return async () => {
+				if (!sessionId) return;
+				if (!messageId) return;
+				
+				// Optimistically update the message to pending state and clear parts
+				queryClient.setQueryData<Message[]>(
+					['messages', sessionId],
+					(oldMessages) => {
+						if (!oldMessages) return oldMessages;
+						return oldMessages.map((msg) =>
+							msg.id === messageId
+								? { ...msg, status: 'pending', parts: [], error: null }
+								: msg,
+						);
+					},
+				);
+				
+				try {
+					await apiClient.retryMessage(sessionId, messageId);
+				} catch (error) {
+					toast.error(
+						error instanceof Error ? error.message : 'Failed to retry',
+					);
+			}
+		};
+	},
+	[sessionId, queryClient],
+);
+
 	if (messages.length === 0) {
 		return (
 			<div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
@@ -269,16 +313,29 @@ export const MessageThread = memo(function MessageThread({
 										sessionId={sessionId}
 										message={message}
 										showHeader={showHeader}
-										hasNextAssistantMessage={nextIsAssistant}
-										isLastMessage={isLastMessage}
-										onBranchCreated={onSelectSession}
-									/>
-								);
-							}
+							hasNextAssistantMessage={nextIsAssistant}
+							isLastMessage={isLastMessage}
+							onBranchCreated={onSelectSession}
+							onRetry={createRetryHandler(message.id)}
+						/>
+					);
+				}
 
-							return null;
-						})}
-						<div ref={bottomRef} />
+						return null;
+					})}
+
+					{/* Topup Approval Card - shown when payment required */}
+					{showTopupApproval && pendingTopup && (
+						<div className="py-4">
+							<TopupApprovalCard
+								pendingTopup={pendingTopup}
+								onMethodSelected={() => clearPendingTopup()}
+								onCancel={() => clearPendingTopup()}
+							/>
+						</div>
+					)}
+
+					<div ref={bottomRef} />
 					</div>
 				</div>
 			</div>

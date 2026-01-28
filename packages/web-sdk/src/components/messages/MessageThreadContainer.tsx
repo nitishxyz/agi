@@ -4,6 +4,7 @@ import { useSessionStream } from '../../hooks/useSessionStream';
 import { useSessions } from '../../hooks/useSessions';
 import { MessageThread } from './MessageThread';
 import { useToolApprovalShortcuts } from '../../hooks/useToolApprovalShortcuts';
+import { SetuTopupModal } from '../settings/SetuTopupModal';
 
 interface MessageThreadContainerProps {
 	sessionId: string;
@@ -42,12 +43,15 @@ export const MessageThreadContainer = memo(function MessageThreadContainer({
 	}
 
 	return (
-		<MessageThread
-			messages={messages}
-			sessionId={sessionId}
-			session={session}
-			isGenerating={isGenerating}
-			onSelectSession={onSelectSession}
-		/>
+		<>
+			<MessageThread
+				messages={messages}
+				sessionId={sessionId}
+				session={session}
+				isGenerating={isGenerating}
+				onSelectSession={onSelectSession}
+			/>
+			<SetuTopupModal />
+		</>
 	);
 });

@@ -696,4 +696,99 @@ export function registerSessionsRoutes(app: Hono) {
 			newMessages: newMessages.length,
 		});
 	});
+
+	// Retry a failed assistant message
+	app.post('/v1/sessions/:sessionId/messages/:messageId/retry', async (c) => {
+		try {
+			const sessionId = c.req.param('sessionId');
+			const messageId = c.req.param('messageId');
+			const projectRoot = c.req.query('project') || process.cwd();
+			const cfg = await loadConfig(projectRoot);
+			const db = await getDb(cfg.projectRoot);
+
+			// Get the assistant message
+			const [assistantMsg] = await db
+				.select()
+				.from(messages)
+				.where(
+					and(
+						eq(messages.id, messageId),
+						eq(messages.sessionId, sessionId),
+						eq(messages.role, 'assistant'),
+					),
+				)
+				.limit(1);
+
+			if (!assistantMsg) {
+				return c.json({ error: 'Message not found' }, 404);
+			}
+
+			// Only allow retry on error or complete messages
+			if (assistantMsg.status !== 'error' && assistantMsg.status !== 'complete') {
+				return c.json({ error: 'Can only retry error or complete messages' }, 400);
+			}
+
+			// Get session for context
+			const [session] = await db
+				.select()
+				.from(sessions)
+				.where(eq(sessions.id, sessionId))
+				.limit(1);
+
+			if (!session) {
+				return c.json({ error: 'Session not found' }, 404);
+			}
+
+			// Delete existing message parts (the error content)
+			await db
+				.delete(messageParts)
+				.where(eq(messageParts.messageId, messageId));
+
+			// Reset message status to pending
+			await db
+				.update(messages)
+				.set({
+					status: 'pending',
+					error: null,
+					errorType: null,
+					errorDetails: null,
+					completedAt: null,
+				})
+				.where(eq(messages.id, messageId));
+
+			// Emit event so UI updates
+			const { publish } = await import('../events/bus.ts');
+			publish({
+				type: 'message.updated',
+				sessionId,
+				payload: { id: messageId, status: 'pending' },
+			});
+
+			// Re-enqueue the assistant run
+			const { enqueueAssistantRun } = await import('../runtime/session/queue.ts');
+			const { runSessionLoop } = await import('../runtime/agent/runner.ts');
+
+			const toolApprovalMode = cfg.defaults.toolApproval ?? 'auto';
+
+			enqueueAssistantRun(
+				{
+					sessionId,
+					assistantMessageId: messageId,
+					agent: assistantMsg.agent ?? 'build',
+					provider: (assistantMsg.provider ?? cfg.defaults.provider) as ProviderId,
+					model: assistantMsg.model ?? cfg.defaults.model,
+					projectRoot: cfg.projectRoot,
+					oneShot: false,
+					toolApprovalMode,
+				},
+				runSessionLoop,
+			);
+
+			return c.json({ success: true, messageId });
+		} catch (err) {
+			logger.error('Failed to retry message', err);
+			const errorResponse = serializeError(err);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
 }

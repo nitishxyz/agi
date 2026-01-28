@@ -138,6 +138,8 @@ interface MessagePartItemProps {
 	pendingApproval?: PendingToolApproval | null;
 	onApprove?: (callId: string) => void;
 	onReject?: (callId: string) => void;
+	sessionId?: string;
+	onRetry?: () => void;
 }
 
 export const MessagePartItem = memo(
@@ -151,6 +153,8 @@ export const MessagePartItem = memo(
 		pendingApproval,
 		onApprove,
 		onReject,
+		sessionId,
+		onRetry,
 	}: MessagePartItemProps) {
 		// Show tool_call if it's the last one OR if it has a pending approval
 		if (part.type === 'tool_call' && !isLastToolCall && !pendingApproval) {
@@ -333,12 +337,12 @@ export const MessagePartItem = memo(
 				return <ReasoningRenderer part={part} />;
 			}
 
-			if (part.type === 'text') {
-				let content = '';
-				const data = part.contentJson || part.content;
-				if (data && typeof data === 'object' && 'text' in data) {
-					content = String(data.text);
-				} else if (typeof data === 'string') {
+		if (part.type === 'text') {
+			let content = '';
+			const data = part.contentJson || part.content;
+			if (data && typeof data === 'object' && 'text' in data) {
+				content = String(data.text);
+			} else if (typeof data === 'string') {
 					content = data;
 				} else if (data) {
 					content = JSON.stringify(data, null, 2);
@@ -404,12 +408,12 @@ export const MessagePartItem = memo(
 									text={content}
 									className="bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm"
 									size="md"
-								/>
-							</div>
-						)}
-					</div>
-				);
-			}
+					/>
+				</div>
+			)}
+		</div>
+	);
+}
 
 			if (part.type === 'error') {
 				let contentJson: ContentJson;
@@ -434,6 +438,8 @@ export const MessagePartItem = memo(
 						toolDurationMs={part.toolDurationMs}
 						debug={false}
 						compact={compact}
+						sessionId={sessionId}
+						onRetry={onRetry}
 					/>
 				);
 			}

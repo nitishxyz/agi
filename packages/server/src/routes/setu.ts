@@ -11,6 +11,13 @@ import { serializeError } from '../runtime/errors/api-error.ts';
 import { Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
+import { publish } from '../events/bus.ts';
+import {
+	resolveTopupMethodSelection,
+	rejectTopupSelection,
+	getPendingTopup,
+	type TopupMethod,
+} from '../runtime/topup/manager.ts';
 
 const SETU_BASE_URL =
 	process.env.SETU_BASE_URL || 'https://setu.agi.nitish.sh';
@@ -197,6 +204,99 @@ export function registerSetuRoutes(app: Hono) {
 			return c.json(data);
 		} catch (error) {
 			logger.error('Failed to create Polar checkout', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
+	app.post('/v1/setu/topup/select', async (c) => {
+		try {
+			const body = await c.req.json();
+			const { sessionId, method } = body as {
+				sessionId: string;
+				method: TopupMethod;
+			};
+
+			if (!sessionId || typeof sessionId !== 'string') {
+				return c.json({ error: 'Missing sessionId' }, 400);
+			}
+
+			if (!method || !['crypto', 'fiat'].includes(method)) {
+				return c.json({ error: 'Invalid method, must be "crypto" or "fiat"' }, 400);
+			}
+
+			const resolved = resolveTopupMethodSelection(sessionId, method);
+			if (!resolved) {
+				return c.json({ error: 'No pending topup request found for this session' }, 404);
+			}
+
+			publish({
+				type: 'setu.topup.method_selected',
+				sessionId,
+				payload: { method },
+			});
+
+			return c.json({ success: true, method });
+		} catch (error) {
+			logger.error('Failed to select topup method', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
+	app.post('/v1/setu/topup/cancel', async (c) => {
+		try {
+			const body = await c.req.json();
+			const { sessionId, reason } = body as {
+				sessionId: string;
+				reason?: string;
+			};
+
+			if (!sessionId || typeof sessionId !== 'string') {
+				return c.json({ error: 'Missing sessionId' }, 400);
+			}
+
+			const rejected = rejectTopupSelection(sessionId, reason ?? 'User cancelled');
+			if (!rejected) {
+				return c.json({ error: 'No pending topup request found for this session' }, 404);
+			}
+
+			publish({
+				type: 'setu.topup.cancelled',
+				sessionId,
+				payload: { reason: reason ?? 'User cancelled' },
+			});
+
+			return c.json({ success: true });
+		} catch (error) {
+			logger.error('Failed to cancel topup', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
+	app.get('/v1/setu/topup/pending', async (c) => {
+		try {
+			const sessionId = c.req.query('sessionId');
+			if (!sessionId) {
+				return c.json({ error: 'Missing sessionId parameter' }, 400);
+			}
+
+			const pending = getPendingTopup(sessionId);
+			if (!pending) {
+				return c.json({ hasPending: false });
+			}
+
+			return c.json({
+				hasPending: true,
+				sessionId: pending.sessionId,
+				messageId: pending.messageId,
+				amountUsd: pending.amountUsd,
+				currentBalance: pending.currentBalance,
+				createdAt: pending.createdAt,
+			});
+		} catch (error) {
+			logger.error('Failed to get pending topup', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}

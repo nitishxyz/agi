@@ -27,6 +27,8 @@ interface ToolResultRendererProps {
 	debug?: boolean;
 	onNavigateToSession?: (sessionId: string) => void;
 	compact?: boolean;
+	sessionId?: string;
+	onRetry?: () => void;
 }
 
 /**
@@ -73,6 +75,8 @@ export function ToolResultRenderer({
 	debug,
 	onNavigateToSession,
 	compact,
+	sessionId,
+	onRetry,
 }: ToolResultRendererProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const normalizedName = normalizeToolName(toolName);
@@ -126,7 +130,7 @@ export function ToolResultRenderer({
 		case 'progress_update':
 			return <ProgressUpdateRenderer {...props} />;
 		case 'error':
-			return <ErrorRenderer {...props} />;
+			return <ErrorRenderer {...props} sessionId={sessionId} onRetry={onRetry} />;
 		case 'query_sessions':
 		case 'query_messages':
 		case 'search_history':

@@ -9,6 +9,7 @@ import type { ToolAdapterContext } from '../../tools/adapter.ts';
 import { pruneSession, performAutoCompaction } from '../message/compaction.ts';
 import { debugLog } from '../debug/index.ts';
 import { enqueueAssistantRun } from '../session/queue.ts';
+import { clearPendingTopup } from '../topup/manager.ts';
 
 export function createErrorHandler(
 	opts: RunOpts,
@@ -26,21 +27,134 @@ export function createErrorHandler(
 		const nestedError = (errObj?.error as Record<string, unknown>)?.error as
 			| Record<string, unknown>
 			| undefined;
+		const causeError = errObj?.cause as Record<string, unknown> | undefined;
+		
+		// Check for SETU_FIAT_SELECTED code specifically (not string matching)
 		const errorCode =
-			(errObj?.code as string) ?? (nestedError?.code as string) ?? '';
+			(errObj?.code as string) ??
+			(errObj?.error as Record<string, unknown>)?.code as string ??
+			((errObj?.error as Record<string, unknown>)?.error as Record<string, unknown>)?.code as string ??
+			(errObj?.data as Record<string, unknown>)?.code as string ??
+			(errObj?.cause as Record<string, unknown>)?.code as string ??
+			((errObj?.cause as Record<string, unknown>)?.error as Record<string, unknown>)?.code as string ??
+			(nestedError?.code as string) ??
+			(causeError?.code as string) ??
+			'';
+		
+		// Also check error message for the exact fiat selection message
+		const errorMessage =
+			(errObj?.message as string) ??
+			(errObj?.error as Record<string, unknown>)?.message as string ??
+			((errObj?.error as Record<string, unknown>)?.error as Record<string, unknown>)?.message as string ??
+			(errObj?.data as Record<string, unknown>)?.message as string ??
+			(errObj?.cause as Record<string, unknown>)?.message as string ??
+			((errObj?.cause as Record<string, unknown>)?.error as Record<string, unknown>)?.message as string ??
+			(nestedError?.message as string) ??
+			(causeError?.message as string) ??
+			'';
+		
+		// Also do a JSON stringify check specifically for the code
+		const fullErrorStr = JSON.stringify(err);
+		const hasSetuFiatCode = fullErrorStr.includes('"code":"SETU_FIAT_SELECTED"') ||
+			fullErrorStr.includes("'code':'SETU_FIAT_SELECTED'");
+		
+		// Only match if the error code is SETU_FIAT_SELECTED OR the exact error message
+		const isFiatSelected =
+			errorCode === 'SETU_FIAT_SELECTED' ||
+			errorMessage === 'Setu: fiat payment selected' ||
+			hasSetuFiatCode;
+
+		// Handle fiat payment selected - this is not an error, just a signal to pause
+		if (isFiatSelected) {
+			debugLog('[stream-handlers] Fiat payment selected, pausing request');
+			clearPendingTopup(opts.sessionId);
+
+		// Add a helpful message part telling user to complete payment
+		const partId = crypto.randomUUID();
+		await db.insert(messageParts).values({
+			id: partId,
+			messageId: opts.assistantMessageId,
+			index: await sharedCtx.nextIndex(),
+		stepIndex: getStepIndex(),
+		type: 'error',
+		content: JSON.stringify({
+			message: 'Balance too low — Complete your top-up, then retry.',
+			type: 'balance_low',
+			errorType: 'balance_low',
+			isRetryable: true,
+		}),
+		agent: opts.agent,
+		provider: opts.provider,
+				model: opts.model,
+				startedAt: Date.now(),
+				completedAt: Date.now(),
+			});
+
+			// Mark the message as completed (not error, not pending)
+			await db
+				.update(messages)
+				.set({
+					status: 'complete',
+					completedAt: Date.now(),
+					error: null,
+					errorType: null,
+					errorDetails: null,
+				})
+				.where(eq(messages.id, opts.assistantMessageId));
+
+			// Emit the message part
+			publish({
+				type: 'message.part.delta',
+				sessionId: opts.sessionId,
+			payload: {
+				messageId: opts.assistantMessageId,
+			partId,
+			type: 'error',
+			content: JSON.stringify({
+				message: 'Balance too low — Complete your top-up, then retry.',
+				type: 'balance_low',
+				errorType: 'balance_low',
+				isRetryable: true,
+			}),
+		},
+	});
+
+			// Emit message completed
+			publish({
+				type: 'message.completed',
+				sessionId: opts.sessionId,
+				payload: {
+					id: opts.assistantMessageId,
+					fiatTopupRequired: true,
+				},
+			});
+
+			// Emit a special event so UI knows to show topup modal
+			publish({
+				type: 'setu.fiat.checkout_created',
+				sessionId: opts.sessionId,
+				payload: {
+					messageId: opts.assistantMessageId,
+					needsTopup: true,
+				},
+			});
+
+			return;
+		}
+
 		const errorType =
 			(errObj?.apiErrorType as string) ?? (nestedError?.type as string) ?? '';
-		const fullErrorStr = JSON.stringify(err).toLowerCase();
+		const fullErrorStrLower = JSON.stringify(err).toLowerCase();
 
 		const isPromptTooLong =
-			fullErrorStr.includes('prompt is too long') ||
-			fullErrorStr.includes('maximum context length') ||
-			fullErrorStr.includes('too many tokens') ||
-			fullErrorStr.includes('context_length_exceeded') ||
-			fullErrorStr.includes('request too large') ||
-			fullErrorStr.includes('exceeds the model') ||
-			fullErrorStr.includes('context window') ||
-			fullErrorStr.includes('input is too long') ||
+			fullErrorStrLower.includes('prompt is too long') ||
+			fullErrorStrLower.includes('maximum context length') ||
+			fullErrorStrLower.includes('too many tokens') ||
+			fullErrorStrLower.includes('context_length_exceeded') ||
+			fullErrorStrLower.includes('request too large') ||
+			fullErrorStrLower.includes('exceeds the model') ||
+			fullErrorStrLower.includes('context window') ||
+			fullErrorStrLower.includes('input is too long') ||
 			errorCode === 'context_length_exceeded' ||
 			errorType === 'invalid_request_error';
 

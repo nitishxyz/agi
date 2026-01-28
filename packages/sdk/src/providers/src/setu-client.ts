@@ -44,7 +44,7 @@ const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_MAX_PAYMENT_ATTEMPTS = 20;
 
 export type SetuPaymentCallbacks = {
-	onPaymentRequired?: (amountUsd: number) => void;
+	onPaymentRequired?: (amountUsd: number, currentBalance?: number) => void;
 	onPaymentSigning?: () => void;
 	onPaymentComplete?: (data: {
 		amountUsd: number;
@@ -52,6 +52,10 @@ export type SetuPaymentCallbacks = {
 		transactionId?: string;
 	}) => void;
 	onPaymentError?: (error: string) => void;
+	onPaymentApproval?: (info: {
+		amountUsd: number;
+		currentBalance: number;
+	}) => Promise<'crypto' | 'fiat' | 'cancel'>;
 };
 
 export type SetuProviderOptions = {
@@ -64,6 +68,7 @@ export type SetuProviderOptions = {
 	providerNpm?: string;
 	promptCacheKey?: string;
 	promptCacheRetention?: 'in_memory' | '24h';
+	topupApprovalMode?: 'auto' | 'approval';
 };
 
 export type SetuAuth = {
@@ -148,6 +153,7 @@ export function createSetuFetch(
 	const callbacks = options.callbacks ?? {};
 	const promptCacheKey = options.promptCacheKey;
 	const promptCacheRetention = options.promptCacheRetention;
+	const topupApprovalMode = options.topupApprovalMode ?? 'auto';
 
 	const baseFetch = globalThis.fetch.bind(globalThis);
 
@@ -216,7 +222,26 @@ export function createSetuFetch(
 			try {
 				const amountUsd =
 					parseInt(requirement.maxAmountRequired, 10) / 1_000_000;
-				callbacks.onPaymentRequired?.(amountUsd);
+				
+				if (topupApprovalMode === 'approval' && callbacks.onPaymentApproval) {
+					const approval = await callbacks.onPaymentApproval({
+						amountUsd,
+						currentBalance: 0,
+					});
+
+					if (approval === 'cancel') {
+						callbacks.onPaymentError?.('Payment cancelled by user');
+						throw new Error('Setu: payment cancelled by user');
+					}
+
+					if (approval === 'fiat') {
+						const err = new Error('Setu: fiat payment selected');
+						(err as Error & { code: string }).code = 'SETU_FIAT_SELECTED';
+						throw err;
+					}
+				}
+
+				callbacks.onPaymentRequired?.(amountUsd, 0);
 
 				const outcome = await handlePayment({
 					requirement,

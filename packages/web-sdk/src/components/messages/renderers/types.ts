@@ -118,6 +118,8 @@ export interface ContentJson {
 	message?: string;
 	type?: string;
 	isAborted?: boolean;
+	errorType?: string;
+	isRetryable?: boolean;
 }
 
 export interface RendererProps {
