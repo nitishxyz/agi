@@ -114,10 +114,7 @@ polarTopup.get('/v1/topup/polar/status', async (c) => {
 	try {
 		const payment = await db.query.paymentLogs.findFirst({
 			where: (logs, { eq, and }) =>
-				and(
-					eq(logs.polarCheckoutId, checkoutId),
-					eq(logs.status, 'confirmed'),
-				),
+				and(eq(logs.polarCheckoutId, checkoutId), eq(logs.status, 'confirmed')),
 		});
 
 		return c.json({

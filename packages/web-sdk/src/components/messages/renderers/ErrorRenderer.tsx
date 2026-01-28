@@ -10,11 +10,18 @@ interface ErrorRendererProps {
 	onRetry?: () => void;
 }
 
-export function ErrorRenderer({ contentJson, debug, sessionId, onRetry }: ErrorRendererProps) {
+export function ErrorRenderer({
+	contentJson,
+	debug,
+	sessionId,
+	onRetry,
+}: ErrorRendererProps) {
 	const [showRawDetails, setShowRawDetails] = useState(false);
 
 	// Check for special error types
-	const isBalanceLow = contentJson.type === 'balance_low' || contentJson.errorType === 'balance_low';
+	const isBalanceLow =
+		contentJson.type === 'balance_low' ||
+		contentJson.errorType === 'balance_low';
 	const isRetryable = contentJson.isRetryable === true || isBalanceLow;
 
 	// Handle different error structures:

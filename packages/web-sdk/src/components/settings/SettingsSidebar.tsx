@@ -346,24 +346,24 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 						<SettingRow label="Address" value={truncateWallet(setuWallet)} />
 						<SettingRow label="Balance" value={formatBalance(setuBalance)} />
 						<SettingRow
-					label="USDC"
-					value={formatUsdcBalance(setuUsdcBalance)}
-				/>
-				<Button
-					variant="secondary"
-					size="sm"
-					onClick={openTopupModal}
-					className="w-full mt-2 gap-2"
-				>
-					<Plus className="w-4 h-4" />
-					Top Up Balance
-				</Button>
-			</SettingsSection>
-		)}
+							label="USDC"
+							value={formatUsdcBalance(setuUsdcBalance)}
+						/>
+						<Button
+							variant="secondary"
+							size="sm"
+							onClick={openTopupModal}
+							className="w-full mt-2 gap-2"
+						>
+							<Plus className="w-4 h-4" />
+							Top Up Balance
+						</Button>
+					</SettingsSection>
+				)}
 
-		<SetuTopupModal />
+				<SetuTopupModal />
 
-		<SettingsSection
+				<SettingsSection
 					title="Providers"
 					icon={<Zap className="w-4 h-4 text-muted-foreground" />}
 				>

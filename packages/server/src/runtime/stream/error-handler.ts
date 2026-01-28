@@ -28,36 +28,57 @@ export function createErrorHandler(
 			| Record<string, unknown>
 			| undefined;
 		const causeError = errObj?.cause as Record<string, unknown> | undefined;
-		
+
 		// Check for SETU_FIAT_SELECTED code specifically (not string matching)
 		const errorCode =
 			(errObj?.code as string) ??
-			(errObj?.error as Record<string, unknown>)?.code as string ??
-			((errObj?.error as Record<string, unknown>)?.error as Record<string, unknown>)?.code as string ??
-			(errObj?.data as Record<string, unknown>)?.code as string ??
-			(errObj?.cause as Record<string, unknown>)?.code as string ??
-			((errObj?.cause as Record<string, unknown>)?.error as Record<string, unknown>)?.code as string ??
+			((errObj?.error as Record<string, unknown>)?.code as string) ??
+			((
+				(errObj?.error as Record<string, unknown>)?.error as Record<
+					string,
+					unknown
+				>
+			)?.code as string) ??
+			((errObj?.data as Record<string, unknown>)?.code as string) ??
+			((errObj?.cause as Record<string, unknown>)?.code as string) ??
+			((
+				(errObj?.cause as Record<string, unknown>)?.error as Record<
+					string,
+					unknown
+				>
+			)?.code as string) ??
 			(nestedError?.code as string) ??
 			(causeError?.code as string) ??
 			'';
-		
+
 		// Also check error message for the exact fiat selection message
 		const errorMessage =
 			(errObj?.message as string) ??
-			(errObj?.error as Record<string, unknown>)?.message as string ??
-			((errObj?.error as Record<string, unknown>)?.error as Record<string, unknown>)?.message as string ??
-			(errObj?.data as Record<string, unknown>)?.message as string ??
-			(errObj?.cause as Record<string, unknown>)?.message as string ??
-			((errObj?.cause as Record<string, unknown>)?.error as Record<string, unknown>)?.message as string ??
+			((errObj?.error as Record<string, unknown>)?.message as string) ??
+			((
+				(errObj?.error as Record<string, unknown>)?.error as Record<
+					string,
+					unknown
+				>
+			)?.message as string) ??
+			((errObj?.data as Record<string, unknown>)?.message as string) ??
+			((errObj?.cause as Record<string, unknown>)?.message as string) ??
+			((
+				(errObj?.cause as Record<string, unknown>)?.error as Record<
+					string,
+					unknown
+				>
+			)?.message as string) ??
 			(nestedError?.message as string) ??
 			(causeError?.message as string) ??
 			'';
-		
+
 		// Also do a JSON stringify check specifically for the code
 		const fullErrorStr = JSON.stringify(err);
-		const hasSetuFiatCode = fullErrorStr.includes('"code":"SETU_FIAT_SELECTED"') ||
+		const hasSetuFiatCode =
+			fullErrorStr.includes('"code":"SETU_FIAT_SELECTED"') ||
 			fullErrorStr.includes("'code':'SETU_FIAT_SELECTED'");
-		
+
 		// Only match if the error code is SETU_FIAT_SELECTED OR the exact error message
 		const isFiatSelected =
 			errorCode === 'SETU_FIAT_SELECTED' ||
@@ -69,22 +90,22 @@ export function createErrorHandler(
 			debugLog('[stream-handlers] Fiat payment selected, pausing request');
 			clearPendingTopup(opts.sessionId);
 
-		// Add a helpful message part telling user to complete payment
-		const partId = crypto.randomUUID();
-		await db.insert(messageParts).values({
-			id: partId,
-			messageId: opts.assistantMessageId,
-			index: await sharedCtx.nextIndex(),
-		stepIndex: getStepIndex(),
-		type: 'error',
-		content: JSON.stringify({
-			message: 'Balance too low — Complete your top-up, then retry.',
-			type: 'balance_low',
-			errorType: 'balance_low',
-			isRetryable: true,
-		}),
-		agent: opts.agent,
-		provider: opts.provider,
+			// Add a helpful message part telling user to complete payment
+			const partId = crypto.randomUUID();
+			await db.insert(messageParts).values({
+				id: partId,
+				messageId: opts.assistantMessageId,
+				index: await sharedCtx.nextIndex(),
+				stepIndex: getStepIndex(),
+				type: 'error',
+				content: JSON.stringify({
+					message: 'Balance too low — Complete your top-up, then retry.',
+					type: 'balance_low',
+					errorType: 'balance_low',
+					isRetryable: true,
+				}),
+				agent: opts.agent,
+				provider: opts.provider,
 				model: opts.model,
 				startedAt: Date.now(),
 				completedAt: Date.now(),
@@ -106,18 +127,18 @@ export function createErrorHandler(
 			publish({
 				type: 'message.part.delta',
 				sessionId: opts.sessionId,
-			payload: {
-				messageId: opts.assistantMessageId,
-			partId,
-			type: 'error',
-			content: JSON.stringify({
-				message: 'Balance too low — Complete your top-up, then retry.',
-				type: 'balance_low',
-				errorType: 'balance_low',
-				isRetryable: true,
-			}),
-		},
-	});
+				payload: {
+					messageId: opts.assistantMessageId,
+					partId,
+					type: 'error',
+					content: JSON.stringify({
+						message: 'Balance too low — Complete your top-up, then retry.',
+						type: 'balance_low',
+						errorType: 'balance_low',
+						isRetryable: true,
+					}),
+				},
+			});
 
 			// Emit message completed
 			publish({

@@ -3,10 +3,7 @@ import { getAnthropicInstance } from './anthropic.ts';
 import { resolveOpenAIModel } from './openai.ts';
 import { resolveGoogleModel } from './google.ts';
 import { resolveOpenRouterModel } from './openrouter.ts';
-import {
-	resolveSetuModel,
-	type ResolveSetuModelOptions,
-} from './setu.ts';
+import { resolveSetuModel, type ResolveSetuModelOptions } from './setu.ts';
 import { getZaiInstance, getZaiCodingInstance } from './zai.ts';
 import { resolveOpencodeModel } from './opencode.ts';
 import { getMoonshotInstance } from './moonshot.ts';

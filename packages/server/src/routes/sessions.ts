@@ -724,8 +724,14 @@ export function registerSessionsRoutes(app: Hono) {
 			}
 
 			// Only allow retry on error or complete messages
-			if (assistantMsg.status !== 'error' && assistantMsg.status !== 'complete') {
-				return c.json({ error: 'Can only retry error or complete messages' }, 400);
+			if (
+				assistantMsg.status !== 'error' &&
+				assistantMsg.status !== 'complete'
+			) {
+				return c.json(
+					{ error: 'Can only retry error or complete messages' },
+					400,
+				);
 			}
 
 			// Get session for context
@@ -765,7 +771,9 @@ export function registerSessionsRoutes(app: Hono) {
 			});
 
 			// Re-enqueue the assistant run
-			const { enqueueAssistantRun } = await import('../runtime/session/queue.ts');
+			const { enqueueAssistantRun } = await import(
+				'../runtime/session/queue.ts'
+			);
 			const { runSessionLoop } = await import('../runtime/agent/runner.ts');
 
 			const toolApprovalMode = cfg.defaults.toolApproval ?? 'auto';
@@ -775,7 +783,8 @@ export function registerSessionsRoutes(app: Hono) {
 					sessionId,
 					assistantMessageId: messageId,
 					agent: assistantMsg.agent ?? 'build',
-					provider: (assistantMsg.provider ?? cfg.defaults.provider) as ProviderId,
+					provider: (assistantMsg.provider ??
+						cfg.defaults.provider) as ProviderId,
 					model: assistantMsg.model ?? cfg.defaults.model,
 					projectRoot: cfg.projectRoot,
 					oneShot: false,

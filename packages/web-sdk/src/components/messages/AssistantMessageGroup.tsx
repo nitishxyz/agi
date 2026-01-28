@@ -277,23 +277,23 @@ export const AssistantMessageGroup = memo(
 							return null;
 						}
 
-							return (
-								<MessagePartItem
-									key={part.id}
-									part={part}
-									showLine={showLine}
-									isFirstPart={index === firstVisiblePartIndex && !showHeader}
-									isLastToolCall={isLastToolCall}
-									onNavigateToSession={onNavigateToSession}
-									compact={compact}
-									pendingApproval={pendingApproval}
-									onApprove={handleApprove}
-									onReject={handleReject}
-									sessionId={sessionId}
-									onRetry={onRetry}
-								/>
-							);
-						})}
+						return (
+							<MessagePartItem
+								key={part.id}
+								part={part}
+								showLine={showLine}
+								isFirstPart={index === firstVisiblePartIndex && !showHeader}
+								isLastToolCall={isLastToolCall}
+								onNavigateToSession={onNavigateToSession}
+								compact={compact}
+								pendingApproval={pendingApproval}
+								onApprove={handleApprove}
+								onReject={handleReject}
+								sessionId={sessionId}
+								onRetry={onRetry}
+							/>
+						);
+					})}
 
 					{/* Approve All banner when multiple approvals pending */}
 					{messagePendingApprovals.length > 1 && (

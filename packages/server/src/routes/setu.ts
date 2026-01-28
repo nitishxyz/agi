@@ -19,11 +19,12 @@ import {
 	type TopupMethod,
 } from '../runtime/topup/manager.ts';
 
-const SETU_BASE_URL =
-	process.env.SETU_BASE_URL || 'https://setu.agi.nitish.sh';
+const SETU_BASE_URL = process.env.SETU_BASE_URL || 'https://setu.agi.nitish.sh';
 
 function getSetuBaseUrl(): string {
-	return SETU_BASE_URL.endsWith('/') ? SETU_BASE_URL.slice(0, -1) : SETU_BASE_URL;
+	return SETU_BASE_URL.endsWith('/')
+		? SETU_BASE_URL.slice(0, -1)
+		: SETU_BASE_URL;
 }
 
 async function getSetuPrivateKey(): Promise<string | null> {
@@ -222,12 +223,18 @@ export function registerSetuRoutes(app: Hono) {
 			}
 
 			if (!method || !['crypto', 'fiat'].includes(method)) {
-				return c.json({ error: 'Invalid method, must be "crypto" or "fiat"' }, 400);
+				return c.json(
+					{ error: 'Invalid method, must be "crypto" or "fiat"' },
+					400,
+				);
 			}
 
 			const resolved = resolveTopupMethodSelection(sessionId, method);
 			if (!resolved) {
-				return c.json({ error: 'No pending topup request found for this session' }, 404);
+				return c.json(
+					{ error: 'No pending topup request found for this session' },
+					404,
+				);
 			}
 
 			publish({
@@ -256,9 +263,15 @@ export function registerSetuRoutes(app: Hono) {
 				return c.json({ error: 'Missing sessionId' }, 400);
 			}
 
-			const rejected = rejectTopupSelection(sessionId, reason ?? 'User cancelled');
+			const rejected = rejectTopupSelection(
+				sessionId,
+				reason ?? 'User cancelled',
+			);
 			if (!rejected) {
-				return c.json({ error: 'No pending topup request found for this session' }, 404);
+				return c.json(
+					{ error: 'No pending topup request found for this session' },
+					404,
+				);
 			}
 
 			publish({

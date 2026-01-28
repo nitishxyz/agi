@@ -23,8 +23,10 @@ export const useTopupApprovalStore = create<TopupApprovalState>((set) => ({
 	pendingTopup: null,
 	isProcessing: false,
 	selectedMethod: null,
-	setPendingTopup: (pendingTopup) => set({ pendingTopup, isProcessing: false, selectedMethod: null }),
+	setPendingTopup: (pendingTopup) =>
+		set({ pendingTopup, isProcessing: false, selectedMethod: null }),
 	setProcessing: (isProcessing) => set({ isProcessing }),
 	setSelectedMethod: (selectedMethod) => set({ selectedMethod }),
-	clearPendingTopup: () => set({ pendingTopup: null, isProcessing: false, selectedMethod: null }),
+	clearPendingTopup: () =>
+		set({ pendingTopup: null, isProcessing: false, selectedMethod: null }),
 }));

@@ -72,7 +72,7 @@ export function useSetuPayments(sessionId: string | undefined) {
 						typeof payload?.reason === 'string'
 							? payload.reason
 							: 'Request cancelled';
-				toast(`⚠️ ${reason}`);
+					toast(`⚠️ ${reason}`);
 					break;
 				}
 
@@ -139,20 +139,20 @@ export function useSetuPayments(sessionId: string | undefined) {
 					break;
 				}
 
-			case 'setu.fiat.checkout_created': {
-				clearPendingTopup();
-				setPaymentPending(false);
-				if (loadingToastIdRef.current) {
-					removeToast(loadingToastIdRef.current);
-					loadingToastIdRef.current = null;
+				case 'setu.fiat.checkout_created': {
+					clearPendingTopup();
+					setPaymentPending(false);
+					if (loadingToastIdRef.current) {
+						removeToast(loadingToastIdRef.current);
+						loadingToastIdRef.current = null;
+					}
+					// Modal is already opened by TopupApprovalCard
+					// Just show a helpful toast
+					toast.success('💳 Complete payment, then retry your message');
+					break;
 				}
-				// Modal is already opened by TopupApprovalCard
-				// Just show a helpful toast
-				toast.success('💳 Complete payment, then retry your message');
-				break;
-			}
 
-			case 'setu.payment.error': {
+				case 'setu.payment.error': {
 					clearPendingTopup();
 					const error =
 						typeof payload?.error === 'string'

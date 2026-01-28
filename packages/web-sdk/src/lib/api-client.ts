@@ -961,7 +961,9 @@ class ApiClient {
 		);
 
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({ error: 'Failed to retry message' }));
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to retry message' }));
 			throw new Error(extractErrorMessage(errorData));
 		}
 

@@ -130,7 +130,9 @@ export function ToolResultRenderer({
 		case 'progress_update':
 			return <ProgressUpdateRenderer {...props} />;
 		case 'error':
-			return <ErrorRenderer {...props} sessionId={sessionId} onRetry={onRetry} />;
+			return (
+				<ErrorRenderer {...props} sessionId={sessionId} onRetry={onRetry} />
+			);
 		case 'query_sessions':
 		case 'query_messages':
 		case 'search_history':

@@ -17,7 +17,9 @@ export const TopupApprovalCard = memo(function TopupApprovalCard({
 	onCancel,
 }: TopupApprovalCardProps) {
 	const [isProcessing, setIsProcessing] = useState(false);
-	const [selectedMethod, setSelectedMethod] = useState<'crypto' | 'fiat' | null>(null);
+	const [selectedMethod, setSelectedMethod] = useState<
+		'crypto' | 'fiat' | null
+	>(null);
 	const openTopupModal = useSetuStore((s) => s.openTopupModal);
 
 	const handleSelectCrypto = async () => {
@@ -27,7 +29,9 @@ export const TopupApprovalCard = memo(function TopupApprovalCard({
 			await apiClient.selectTopupMethod(pendingTopup.sessionId, 'crypto');
 			onMethodSelected('crypto');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to process payment');
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to process payment',
+			);
 			setIsProcessing(false);
 			setSelectedMethod(null);
 		}
@@ -59,7 +63,9 @@ export const TopupApprovalCard = memo(function TopupApprovalCard({
 		<div className="flex flex-col gap-3 py-2">
 			<div className="flex items-center gap-2">
 				<AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-				<span className="font-medium text-foreground text-sm">Insufficient Balance</span>
+				<span className="font-medium text-foreground text-sm">
+					Insufficient Balance
+				</span>
 				<span className="text-amber-600 dark:text-amber-400 font-medium text-sm">
 					payment required
 				</span>
@@ -68,11 +74,15 @@ export const TopupApprovalCard = memo(function TopupApprovalCard({
 			<div className="ml-6 bg-muted/30 rounded-lg p-3 space-y-2 text-sm">
 				<div className="flex justify-between">
 					<span className="text-muted-foreground">Request cost</span>
-					<span className="font-mono">~${pendingTopup.amountUsd.toFixed(4)}</span>
+					<span className="font-mono">
+						~${pendingTopup.amountUsd.toFixed(4)}
+					</span>
 				</div>
 				<div className="flex justify-between">
 					<span className="text-muted-foreground">Current balance</span>
-					<span className="font-mono">${pendingTopup.currentBalance.toFixed(4)}</span>
+					<span className="font-mono">
+						${pendingTopup.currentBalance.toFixed(4)}
+					</span>
 				</div>
 			</div>
 

@@ -222,7 +222,7 @@ export function createSetuFetch(
 			try {
 				const amountUsd =
 					parseInt(requirement.maxAmountRequired, 10) / 1_000_000;
-				
+
 				if (topupApprovalMode === 'approval' && callbacks.onPaymentApproval) {
 					const approval = await callbacks.onPaymentApproval({
 						amountUsd,

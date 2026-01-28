@@ -216,7 +216,7 @@ export const MessageThread = memo(function MessageThread({
 			return async () => {
 				if (!sessionId) return;
 				if (!messageId) return;
-				
+
 				// Optimistically update the message to pending state and clear parts
 				queryClient.setQueryData<Message[]>(
 					['messages', sessionId],
@@ -229,18 +229,18 @@ export const MessageThread = memo(function MessageThread({
 						);
 					},
 				);
-				
+
 				try {
 					await apiClient.retryMessage(sessionId, messageId);
 				} catch (error) {
 					toast.error(
 						error instanceof Error ? error.message : 'Failed to retry',
 					);
-			}
-		};
-	},
-	[sessionId, queryClient],
-);
+				}
+			};
+		},
+		[sessionId, queryClient],
+	);
 
 	if (messages.length === 0) {
 		return (
@@ -313,29 +313,29 @@ export const MessageThread = memo(function MessageThread({
 										sessionId={sessionId}
 										message={message}
 										showHeader={showHeader}
-							hasNextAssistantMessage={nextIsAssistant}
-							isLastMessage={isLastMessage}
-							onBranchCreated={onSelectSession}
-							onRetry={createRetryHandler(message.id)}
-						/>
-					);
-				}
+										hasNextAssistantMessage={nextIsAssistant}
+										isLastMessage={isLastMessage}
+										onBranchCreated={onSelectSession}
+										onRetry={createRetryHandler(message.id)}
+									/>
+								);
+							}
 
-						return null;
-					})}
+							return null;
+						})}
 
-					{/* Topup Approval Card - shown when payment required */}
-					{showTopupApproval && pendingTopup && (
-						<div className="py-4">
-							<TopupApprovalCard
-								pendingTopup={pendingTopup}
-								onMethodSelected={() => clearPendingTopup()}
-								onCancel={() => clearPendingTopup()}
-							/>
-						</div>
-					)}
+						{/* Topup Approval Card - shown when payment required */}
+						{showTopupApproval && pendingTopup && (
+							<div className="py-4">
+								<TopupApprovalCard
+									pendingTopup={pendingTopup}
+									onMethodSelected={() => clearPendingTopup()}
+									onCancel={() => clearPendingTopup()}
+								/>
+							</div>
+						)}
 
-					<div ref={bottomRef} />
+						<div ref={bottomRef} />
 					</div>
 				</div>
 			</div>
