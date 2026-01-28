@@ -22,7 +22,11 @@ describe('provider base prompts', () => {
 	});
 
 	it('uses provider family for setu models', async () => {
-		const result = await providerBasePrompt('setu', 'gpt-4o-mini', process.cwd());
+		const result = await providerBasePrompt(
+			'setu',
+			'gpt-4o-mini',
+			process.cwd(),
+		);
 		expect(result.resolvedType).toBe('openai');
 		expect(result.prompt.length).toBeGreaterThan(0);
 	});

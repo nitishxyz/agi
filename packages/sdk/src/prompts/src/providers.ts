@@ -88,7 +88,7 @@ export async function providerBasePrompt(
 						? PROVIDER_ANTHROPIC
 						: family === 'google'
 							? PROVIDER_GOOGLE
-					: PROVIDER_DEFAULT
+							: PROVIDER_DEFAULT
 			).trim();
 			promptType = `family:${family} (via ${id}/${modelId})`;
 			debugLog(`[provider] prompt: ${promptType} (${result.length} chars)`);

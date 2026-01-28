@@ -4,7 +4,10 @@ export function sanitizeProviderError(
 ): { message: string; status: number; code?: string } {
 	const lowerError = errorText.toLowerCase();
 
-	if (lowerError.includes('engine_overloaded') || lowerError.includes('overloaded')) {
+	if (
+		lowerError.includes('engine_overloaded') ||
+		lowerError.includes('overloaded')
+	) {
 		return {
 			message: 'Upstream provider is overloaded. Please try again later.',
 			status: 503,
