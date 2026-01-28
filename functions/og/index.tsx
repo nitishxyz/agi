@@ -23,7 +23,7 @@ const MODEL_COSTS: Record<string, { input: number; output: number }> = {
 	'gpt-4o': { input: 2.5, output: 10 },
 	'gpt-4o-mini': { input: 0.15, output: 0.6 },
 	'gpt-4-turbo': { input: 10, output: 30 },
-	'o1': { input: 15, output: 60 },
+	o1: { input: 15, output: 60 },
 	'o1-mini': { input: 1.1, output: 4.4 },
 	'o3-mini': { input: 1.1, output: 4.4 },
 	'gemini-2.0-flash': { input: 0.1, output: 0.4 },
@@ -86,9 +86,7 @@ export const handler = async (event: {
 		cachedTokens: params.cachedTokens
 			? parseInt(params.cachedTokens, 10)
 			: undefined,
-		tokenCount: params.tokenCount
-			? parseInt(params.tokenCount, 10)
-			: undefined,
+		tokenCount: params.tokenCount ? parseInt(params.tokenCount, 10) : undefined,
 		createdAt: parseInt(params.createdAt || Date.now().toString(), 10),
 		shareId: params.shareId || 'default',
 	};
@@ -106,159 +104,157 @@ export const handler = async (event: {
 	const cardColor = '#1c1b22';
 
 	const svg = await satori(
-		(
+		<div
+			style={{
+				width: '100%',
+				height: '100%',
+				display: 'flex',
+				flexDirection: 'column',
+				background: bgColor,
+				padding: '56px',
+				fontFamily: 'IBM Plex Mono',
+				color: fgColor,
+			}}
+		>
+			{/* Header */}
 			<div
 				style={{
-					width: '100%',
-					height: '100%',
 					display: 'flex',
-					flexDirection: 'column',
-					background: bgColor,
-					padding: '56px',
-					fontFamily: 'IBM Plex Mono',
-					color: fgColor,
+					justifyContent: 'space-between',
+					alignItems: 'center',
+					marginBottom: '40px',
 				}}
 			>
-				{/* Header */}
+				<div
+					style={{
+						fontSize: '24px',
+						fontWeight: 600,
+						color: fgColor,
+						letterSpacing: '-0.02em',
+					}}
+				>
+					AGI
+				</div>
+				<div
+					style={{
+						fontSize: '16px',
+						color: mutedColor,
+					}}
+				>
+					{data.model}
+				</div>
+			</div>
+
+			{/* Title */}
+			<div
+				style={{
+					flex: 1,
+					display: 'flex',
+					flexDirection: 'column',
+					justifyContent: 'center',
+				}}
+			>
+				<div
+					style={{
+						fontSize: '48px',
+						fontWeight: 600,
+						lineHeight: 1.2,
+						color: fgColor,
+						letterSpacing: '-0.02em',
+						maxWidth: '1000px',
+					}}
+				>
+					{data.title}
+				</div>
+			</div>
+
+			{/* Stats Footer */}
+			<div
+				style={{
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'flex-end',
+				}}
+			>
+				{/* Left side - meta info */}
 				<div
 					style={{
 						display: 'flex',
-						justifyContent: 'space-between',
 						alignItems: 'center',
-						marginBottom: '40px',
+						fontSize: '16px',
+						color: mutedColor,
 					}}
 				>
-					<div
-						style={{
-							fontSize: '24px',
-							fontWeight: 600,
-							color: fgColor,
-							letterSpacing: '-0.02em',
-						}}
-					>
-						AGI
-					</div>
-					<div
-						style={{
-							fontSize: '16px',
-							color: mutedColor,
-						}}
-					>
-						{data.model}
-					</div>
+					<span>{data.username}</span>
+					<span style={{ margin: '0 16px', opacity: 0.5 }}>·</span>
+					<span>{data.messageCount} messages</span>
+					<span style={{ margin: '0 16px', opacity: 0.5 }}>·</span>
+					<span>{formatDate(data.createdAt)}</span>
 				</div>
 
-				{/* Title */}
-				<div
-					style={{
-						flex: 1,
-						display: 'flex',
-						flexDirection: 'column',
-						justifyContent: 'center',
-					}}
-				>
-					<div
-						style={{
-							fontSize: '48px',
-							fontWeight: 600,
-							lineHeight: 1.2,
-							color: fgColor,
-							letterSpacing: '-0.02em',
-							maxWidth: '1000px',
-						}}
-					>
-						{data.title}
-					</div>
-				</div>
-
-				{/* Stats Footer */}
-				<div
-					style={{
-						display: 'flex',
-						justifyContent: 'space-between',
-						alignItems: 'flex-end',
-					}}
-				>
-					{/* Left side - meta info */}
+				{/* Right side - usage stats */}
+				{(data.inputTokens || data.tokenCount) && (
 					<div
 						style={{
 							display: 'flex',
 							alignItems: 'center',
-							fontSize: '16px',
-							color: mutedColor,
+							background: cardColor,
+							padding: '14px 24px',
+							borderRadius: '8px',
+							fontSize: '18px',
 						}}
 					>
-						<span>{data.username}</span>
-						<span style={{ margin: '0 16px', opacity: 0.5 }}>·</span>
-						<span>{data.messageCount} messages</span>
-						<span style={{ margin: '0 16px', opacity: 0.5 }}>·</span>
-						<span>{formatDate(data.createdAt)}</span>
+						{data.inputTokens && data.outputTokens ? (
+							<>
+								<span style={{ color: mutedColor, marginRight: '8px' }}>
+									in
+								</span>
+								<span style={{ color: fgColor, fontWeight: 500 }}>
+									{formatCompactNumber(data.inputTokens)}
+								</span>
+								<span
+									style={{
+										color: mutedColor,
+										marginLeft: '24px',
+										marginRight: '8px',
+									}}
+								>
+									out
+								</span>
+								<span style={{ color: fgColor, fontWeight: 500 }}>
+									{formatCompactNumber(data.outputTokens)}
+								</span>
+								{cost > 0 && (
+									<>
+										<span
+											style={{
+												color: mutedColor,
+												marginLeft: '24px',
+												marginRight: '4px',
+											}}
+										>
+											$
+										</span>
+										<span style={{ color: fgColor, fontWeight: 500 }}>
+											{cost.toFixed(2)}
+										</span>
+									</>
+								)}
+							</>
+						) : (
+							<>
+								<span style={{ color: fgColor, fontWeight: 500 }}>
+									{formatCompactNumber(data.tokenCount || 0)}
+								</span>
+								<span style={{ color: mutedColor, marginLeft: '8px' }}>
+									tokens
+								</span>
+							</>
+						)}
 					</div>
-
-					{/* Right side - usage stats */}
-					{(data.inputTokens || data.tokenCount) && (
-						<div
-							style={{
-								display: 'flex',
-								alignItems: 'center',
-								background: cardColor,
-								padding: '14px 24px',
-								borderRadius: '8px',
-								fontSize: '18px',
-							}}
-						>
-							{data.inputTokens && data.outputTokens ? (
-								<>
-									<span style={{ color: mutedColor, marginRight: '8px' }}>
-										in
-									</span>
-									<span style={{ color: fgColor, fontWeight: 500 }}>
-										{formatCompactNumber(data.inputTokens)}
-									</span>
-									<span
-										style={{
-											color: mutedColor,
-											marginLeft: '24px',
-											marginRight: '8px',
-										}}
-									>
-										out
-									</span>
-									<span style={{ color: fgColor, fontWeight: 500 }}>
-										{formatCompactNumber(data.outputTokens)}
-									</span>
-									{cost > 0 && (
-										<>
-											<span
-												style={{
-													color: mutedColor,
-													marginLeft: '24px',
-													marginRight: '4px',
-												}}
-											>
-												$
-											</span>
-											<span style={{ color: fgColor, fontWeight: 500 }}>
-												{cost.toFixed(2)}
-											</span>
-										</>
-									)}
-								</>
-							) : (
-								<>
-									<span style={{ color: fgColor, fontWeight: 500 }}>
-										{formatCompactNumber(data.tokenCount || 0)}
-									</span>
-									<span style={{ color: mutedColor, marginLeft: '8px' }}>
-										tokens
-									</span>
-								</>
-							)}
-						</div>
-					)}
-				</div>
+				)}
 			</div>
-		),
+		</div>,
 		{
 			width: 1200,
 			height: 630,
