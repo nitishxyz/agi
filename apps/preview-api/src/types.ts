@@ -6,7 +6,18 @@ export interface SharedSessionData {
 	model: string;
 	createdAt: number;
 	tokenCount?: number;
+	stats?: SessionStats;
 	messages: SharedMessage[];
+}
+
+export interface SessionStats {
+	inputTokens: number;
+	outputTokens: number;
+	cachedTokens: number;
+	cacheCreationTokens: number;
+	reasoningTokens: number;
+	toolTimeMs: number;
+	toolCounts: Record<string, number>;
 }
 
 export interface SharedMessage {

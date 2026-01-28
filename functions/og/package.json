@@ -1,0 +1,13 @@
+{
+	"name": "@agi-cli/og-function",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"preview": "bun preview.tsx"
+	},
+	"dependencies": {
+		"satori": "^0.12.0",
+		"@resvg/resvg-js": "^2.6.2"
+	}
+}

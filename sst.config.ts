@@ -21,6 +21,7 @@ export default $config({
 		const { script } = await import('./infra/script');
 		const { previewApiUrl } = await import('./infra/preview-api');
 		const { previewWeb } = await import('./infra/preview-web');
+		const { ogFunctionUrl } = await import('./infra/og');
 
 		const { routerUrl } = await import('./infra/setu');
 		await import('./infra/orm');
@@ -30,6 +31,7 @@ export default $config({
 			previewApi: previewApiUrl,
 			previewWeb: previewWeb.url,
 			setu: routerUrl,
+			ogFunction: ogFunctionUrl,
 		};
 	},
 });
