@@ -1,6 +1,5 @@
 import { memo, useEffect, useState } from 'react';
 import {
-	Wallet,
 	Copy,
 	Check,
 	CreditCard,
@@ -143,7 +142,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 	};
 
 	const configuredProviders = Object.entries(authStatus.providers).filter(
-		([, info]) => info.configured,
+		([id, info]) => info.configured && id !== 'setu',
 	);
 	const unconfiguredProviders = Object.entries(authStatus.providers).filter(
 		([id, info]) => !info.configured && id !== 'setu',
@@ -172,51 +171,55 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 							Welcome to AGI
 						</h1>
 						<p className="text-lg text-gray-400 max-w-2xl">
-							Set up your wallet and connect AI providers to start building
+							Setu is your default AI provider, powered by your wallet. Add more
+							providers below if you'd like.
 						</p>
 					</div>
 
 					<div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
 						{/* Left Column - Wallet */}
 						<div className="xl:col-span-1">
-							<div className="bg-[#111113] rounded-2xl border border-gray-800/50 p-6">
-								<div className="flex items-center gap-2 mb-6">
-									<Wallet className="w-5 h-5 text-gray-400" />
-									<h2 className="font-semibold text-white">Your Wallet</h2>
-									{authStatus.setu.configured && (
-										<Check className="w-4 h-4 text-green-500 ml-auto" />
-									)}
-								</div>
-
+							<div className="bg-[#111113] rounded-2xl border border-gray-800/50 p-5">
 								{authStatus.setu.configured && authStatus.setu.publicKey ? (
-									<div className="space-y-6">
-										<div className="flex justify-center">
-											<div className="bg-white p-3 rounded-xl">
+									<div className="space-y-4">
+										{/* Setu Default Provider Badge */}
+										<div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+											<ProviderLogo provider="setu" size={16} />
+											<span className="text-sm font-medium text-green-400">
+												Setu
+											</span>
+											<span className="text-xs text-green-500/60 ml-auto">
+												Default Provider
+											</span>
+										</div>
+
+										<div className="flex justify-center py-2">
+											<div className="bg-white p-2 rounded-lg">
 												<QRCodeSVG
 													value={authStatus.setu.publicKey}
-													size={180}
+													size={140}
 													level="M"
 												/>
 											</div>
 										</div>
 
-										<div className="space-y-3">
+										<div className="space-y-2">
 											<button
 												type="button"
 												onClick={handleCopy}
-												className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800/50 hover:bg-gray-800 rounded-lg text-sm font-mono text-gray-300 transition-colors"
+												className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-800 rounded-lg text-xs font-mono text-gray-300 transition-colors"
 											>
 												{truncateAddress(authStatus.setu.publicKey)}
 												{copied ? (
-													<Check className="w-4 h-4 text-green-500" />
+													<Check className="w-3.5 h-3.5 text-green-500" />
 												) : (
-													<Copy className="w-4 h-4 text-gray-500" />
+													<Copy className="w-3.5 h-3.5 text-gray-500" />
 												)}
 											</button>
 
-											<div className="flex items-center justify-between px-4 py-3 bg-gray-800/30 rounded-lg">
-												<span className="text-sm text-gray-500">Balance</span>
-												<span className="font-mono text-white">
+											<div className="flex items-center justify-between px-3 py-2 bg-gray-800/30 rounded-lg">
+												<span className="text-xs text-gray-500">Balance</span>
+												<span className="font-mono text-sm text-white">
 													${balance?.toFixed(4) ?? '0.0000'} USDC
 												</span>
 											</div>
@@ -225,14 +228,14 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 										<button
 											type="button"
 											onClick={onOpenTopup}
-											className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors"
+											className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
 										>
 											<CreditCard className="w-4 h-4" />
 											Add Funds
 										</button>
 									</div>
 								) : (
-									<div className="flex items-center justify-center py-20">
+									<div className="flex items-center justify-center py-16">
 										<Loader2 className="w-8 h-8 animate-spin text-gray-600" />
 									</div>
 								)}
@@ -309,69 +312,70 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 															No
 														</button>
 													</div>
-											) : (
-												id !== 'setu' && (
-													<button
-														type="button"
-														onClick={() => handleRemoveProvider(id)}
-														className="ml-1 p-1 text-green-500/40 hover:text-green-500/80 opacity-0 group-hover:opacity-100 transition-opacity"
-													>
-														<X className="w-3 h-3" />
-													</button>
-												)
-											)}
+												) : (
+													id !== 'setu' && (
+														<button
+															type="button"
+															onClick={() => handleRemoveProvider(id)}
+															className="ml-1 p-1 text-green-500/40 hover:text-green-500/80 opacity-0 group-hover:opacity-100 transition-opacity"
+														>
+															<X className="w-3 h-3" />
+														</button>
+													)
+												)}
 											</div>
 										))}
 									</div>
 								)}
-						</div>
-
-						{/* OAuth Code Entry */}
-						{oauthSession && (
-							<div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-								<h3 className="font-medium text-white mb-2">
-									Enter Authorization Code
-								</h3>
-								<p className="text-sm text-gray-400 mb-3">
-									Copy the code from the authorization page and paste it below:
-								</p>
-								<div className="flex items-center gap-2">
-									<input
-										type="text"
-										value={oauthCodeInput}
-										onChange={(e) => setOauthCodeInput(e.target.value)}
-										placeholder="Paste authorization code..."
-										className="flex-1 px-3 py-2 bg-[#111113] border border-gray-700 rounded-lg text-white placeholder:text-gray-600 outline-none focus:border-blue-500 transition-colors"
-										onKeyDown={(e) => {
-											if (e.key === 'Enter') handleExchangeCode();
-											if (e.key === 'Escape') handleCancelOAuth();
-										}}
-									/>
-									<button
-										type="button"
-										onClick={handleExchangeCode}
-										disabled={!oauthCodeInput.trim() || isExchangingCode}
-										className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
-									>
-										{isExchangingCode ? (
-											<Loader2 className="w-4 h-4 animate-spin" />
-										) : (
-											'Connect'
-										)}
-									</button>
-									<button
-										type="button"
-										onClick={handleCancelOAuth}
-										className="px-3 py-2 text-gray-400 hover:text-white transition-colors"
-									>
-										<X className="w-4 h-4" />
-									</button>
-								</div>
 							</div>
-						)}
 
-						{/* Add Providers */}
-						<div>
+							{/* OAuth Code Entry */}
+							{oauthSession && (
+								<div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+									<h3 className="font-medium text-white mb-2">
+										Enter Authorization Code
+									</h3>
+									<p className="text-sm text-gray-400 mb-3">
+										Copy the code from the authorization page and paste it
+										below:
+									</p>
+									<div className="flex items-center gap-2">
+										<input
+											type="text"
+											value={oauthCodeInput}
+											onChange={(e) => setOauthCodeInput(e.target.value)}
+											placeholder="Paste authorization code..."
+											className="flex-1 px-3 py-2 bg-[#111113] border border-gray-700 rounded-lg text-white placeholder:text-gray-600 outline-none focus:border-blue-500 transition-colors"
+											onKeyDown={(e) => {
+												if (e.key === 'Enter') handleExchangeCode();
+												if (e.key === 'Escape') handleCancelOAuth();
+											}}
+										/>
+										<button
+											type="button"
+											onClick={handleExchangeCode}
+											disabled={!oauthCodeInput.trim() || isExchangingCode}
+											className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
+										>
+											{isExchangingCode ? (
+												<Loader2 className="w-4 h-4 animate-spin" />
+											) : (
+												'Connect'
+											)}
+										</button>
+										<button
+											type="button"
+											onClick={handleCancelOAuth}
+											className="px-3 py-2 text-gray-400 hover:text-white transition-colors"
+										>
+											<X className="w-4 h-4" />
+										</button>
+									</div>
+								</div>
+							)}
+
+							{/* Add Providers */}
+							<div>
 								<h2 className="font-semibold text-white mb-4">Add Providers</h2>
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 									{unconfiguredProviders.map(([id, info]) => (
@@ -434,21 +438,21 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 															<Key className="w-3.5 h-3.5" />
 															API
 														</button>
-								{info.supportsOAuth && (
-									<button
-										type="button"
-										onClick={() =>
-											handleStartOAuth(
-												id,
-												id === 'anthropic' ? 'max' : undefined,
-											)
-										}
-										className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-									>
-										<ExternalLink className="w-3.5 h-3.5" />
-										{id === 'anthropic' ? 'Max' : 'OAuth'}
-									</button>
-								)}
+														{info.supportsOAuth && (
+															<button
+																type="button"
+																onClick={() =>
+																	handleStartOAuth(
+																		id,
+																		id === 'anthropic' ? 'max' : undefined,
+																	)
+																}
+																className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+															>
+																<ExternalLink className="w-3.5 h-3.5" />
+																{id === 'anthropic' ? 'Max' : 'OAuth'}
+															</button>
+														)}
 													</div>
 												</div>
 											)}
