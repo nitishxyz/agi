@@ -217,16 +217,22 @@ export const MessageThread = memo(function MessageThread({
 				if (!sessionId) return;
 				if (!messageId) return;
 
-				// Optimistically update the message to pending state and clear parts
+				// Optimistically update the message to pending state, removing only error parts
 				queryClient.setQueryData<Message[]>(
 					['messages', sessionId],
 					(oldMessages) => {
 						if (!oldMessages) return oldMessages;
-						return oldMessages.map((msg) =>
-							msg.id === messageId
-								? { ...msg, status: 'pending', parts: [], error: null }
-								: msg,
-						);
+						return oldMessages.map((msg) => {
+							if (msg.id !== messageId) return msg;
+							const partsToKeep = msg.parts?.filter(
+								(part: { type: string; toolName?: string }) => {
+									if (part.type === 'error') return false;
+									if (part.type === 'tool_call' && part.toolName === 'finish') return false;
+									return true;
+								},
+							) ?? [];
+							return { ...msg, status: 'pending', parts: partsToKeep, error: null };
+						});
 					},
 				);
 

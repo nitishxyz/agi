@@ -8,7 +8,7 @@ import {
 	messageParts,
 	shares,
 } from '@agi-cli/database/schema';
-import { desc, eq, and, ne, inArray } from 'drizzle-orm';
+import { desc, eq, and, ne, inArray, or } from 'drizzle-orm';
 import type { ProviderId } from '@agi-cli/sdk';
 import { isProviderId, catalog } from '@agi-cli/sdk';
 import { resolveAgentConfig } from '../runtime/agent/registry.ts';
@@ -745,10 +745,18 @@ export function registerSessionsRoutes(app: Hono) {
 				return c.json({ error: 'Session not found' }, 404);
 			}
 
-			// Delete existing message parts (the error content)
+			// Delete only error parts - preserve valid text/tool content
 			await db
 				.delete(messageParts)
-				.where(eq(messageParts.messageId, messageId));
+				.where(
+					and(
+						eq(messageParts.messageId, messageId),
+						or(
+							eq(messageParts.type, 'error'),
+							and(eq(messageParts.type, 'tool_call'), eq(messageParts.toolName, 'finish')),
+						),
+					),
+				);
 
 			// Reset message status to pending
 			await db
