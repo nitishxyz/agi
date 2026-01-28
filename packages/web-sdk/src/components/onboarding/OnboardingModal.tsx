@@ -8,9 +8,11 @@ import { useAuthStatus } from '../../hooks/useAuthStatus';
 export const OnboardingModal = memo(function OnboardingModal() {
 	const isOpen = useOnboardingStore((s) => s.isOpen);
 	const currentStep = useOnboardingStore((s) => s.currentStep);
+	const manageMode = useOnboardingStore((s) => s.manageMode);
 	const authStatus = useOnboardingStore((s) => s.authStatus);
 	const nextStep = useOnboardingStore((s) => s.nextStep);
 	const prevStep = useOnboardingStore((s) => s.prevStep);
+	const reset = useOnboardingStore((s) => s.reset);
 	const openTopupModal = useSetuStore((s) => s.openTopupModal);
 
 	const {
@@ -38,6 +40,8 @@ export const OnboardingModal = memo(function OnboardingModal() {
 					onExchangeOAuthCode={exchangeOAuthCode}
 					onOpenTopup={openTopupModal}
 					onNext={nextStep}
+					manageMode={manageMode}
+					onClose={reset}
 				/>
 			)}
 

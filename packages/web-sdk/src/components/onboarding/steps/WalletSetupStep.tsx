@@ -32,6 +32,8 @@ interface WalletSetupStepProps {
 	) => Promise<boolean>;
 	onOpenTopup: () => void;
 	onNext: () => void;
+	manageMode?: boolean;
+	onClose?: () => void;
 }
 
 export const WalletSetupStep = memo(function WalletSetupStep({
@@ -44,6 +46,8 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 	onExchangeOAuthCode,
 	onOpenTopup,
 	onNext,
+	manageMode = false,
+	onClose,
 }: WalletSetupStepProps) {
 	const [copied, setCopied] = useState(false);
 	const [isSettingUp, setIsSettingUp] = useState(false);
@@ -155,10 +159,12 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 					<ProviderLogo provider="setu" size={24} />
 					<span className="font-semibold text-foreground">AGI</span>
 				</div>
-				<div className="flex items-center gap-2 text-sm text-muted-foreground">
-					<span className="w-2 h-2 rounded-full bg-green-500" />
-					Step 1 of 2
-				</div>
+				{!manageMode && (
+					<div className="flex items-center gap-2 text-sm text-muted-foreground">
+						<span className="w-2 h-2 rounded-full bg-green-500" />
+						Step 1 of 2
+					</div>
+				)}
 			</div>
 
 			{/* Main Content */}
@@ -167,45 +173,46 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 					{/* Header */}
 					<div className="mb-10">
 						<h1 className="text-3xl lg:text-4xl font-semibold text-foreground mb-3">
-							Welcome to AGI
+							{manageMode ? 'Manage Providers' : 'Welcome to AGI'}
 						</h1>
 						<p className="text-lg text-muted-foreground max-w-2xl">
-							Setu is your default AI provider, powered by your wallet. Add more
-							providers below if you'd like.
+							{manageMode
+								? 'Add or remove AI providers. Your changes are saved automatically.'
+								: "Setu is your default AI provider, powered by your wallet. Add more providers below if you'd like."}
 						</p>
 					</div>
 
 					<div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
 						{/* Left Column - Wallet */}
-						<div className="xl:col-span-1">
-							<div className="bg-card rounded-2xl border border-border p-5 h-full">
-								{authStatus.setu.configured && authStatus.setu.publicKey ? (
-									<div className="space-y-4">
-										{/* Setu Default Provider Badge */}
-										<div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
-											<ProviderLogo provider="setu" size={16} />
+					<div className="xl:col-span-1">
+						<div className="bg-card rounded-2xl border border-border p-5 h-full">
+							{authStatus.setu.configured && authStatus.setu.publicKey ? (
+								<div className="flex flex-col h-full">
+									{/* Setu Default Provider Badge */}
+									<div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+										<ProviderLogo provider="setu" size={16} />
 											<span className="text-sm font-medium text-green-600 dark:text-green-400">
 												Setu
 											</span>
 											<span className="text-xs text-green-600/60 dark:text-green-500/60 ml-auto">
 												Default Provider
-											</span>
-										</div>
+										</span>
+									</div>
 
-										<div className="flex justify-center py-2">
-											<div className="bg-white p-2 rounded-lg">
-												<QRCodeSVG
-													value={authStatus.setu.publicKey}
+									<div className="flex justify-center py-4 mt-4">
+										<div className="bg-white p-2 rounded-lg">
+											<QRCodeSVG
+												value={authStatus.setu.publicKey}
 													size={140}
 													level="M"
 												/>
-											</div>
 										</div>
+									</div>
 
-										<div className="space-y-2">
-											<button
-												type="button"
-												onClick={handleCopy}
+									<div className="space-y-2 mt-4">
+										<button
+											type="button"
+											onClick={handleCopy}
 												className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-lg text-xs font-mono text-muted-foreground transition-colors"
 											>
 												{truncateAddress(authStatus.setu.publicKey)}
@@ -223,19 +230,28 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 												<span className="font-mono text-sm text-foreground">
 													${((balance ?? 0) + (usdcBalance ?? 0)).toFixed(4)}
 												</span>
-											</div>
 										</div>
-
-										<button
-											type="button"
-											onClick={onOpenTopup}
-											className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-										>
-											<CreditCard className="w-4 h-4" />
-											Add Funds
-										</button>
 									</div>
-								) : (
+
+									{/* OR Divider */}
+									<div className="flex items-center gap-4 py-4">
+										<div className="flex-1 h-px bg-border" />
+										<span className="text-xs text-muted-foreground font-medium">
+											OR
+										</span>
+										<div className="flex-1 h-px bg-border" />
+									</div>
+
+									<button
+										type="button"
+										onClick={onOpenTopup}
+										className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+									>
+										<CreditCard className="w-4 h-4" />
+										Pay via Card
+									</button>
+								</div>
+							) : (
 									<div className="flex items-center justify-center py-16">
 										<Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
 									</div>
@@ -471,17 +487,29 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 			{/* Bottom Bar */}
 			<div className="px-6 py-4 border-t border-border">
 				<div className="max-w-7xl mx-auto flex items-center justify-between">
-					<div className="text-sm text-muted-foreground">
-						You can add more providers later in settings
-					</div>
-					<button
-						type="button"
-						onClick={onNext}
-						className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-					>
-						Continue
-						<ArrowRight className="w-4 h-4" />
-					</button>
+					{!manageMode && (
+						<div className="text-sm text-muted-foreground">
+							You can add more providers later in settings
+						</div>
+					)}
+					{manageMode ? (
+						<button
+							type="button"
+							onClick={onClose}
+							className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors ml-auto"
+						>
+							Done
+						</button>
+					) : (
+						<button
+							type="button"
+							onClick={onNext}
+							className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+						>
+							Continue
+							<ArrowRight className="w-4 h-4" />
+						</button>
+					)}
 				</div>
 			</div>
 		</div>

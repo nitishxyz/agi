@@ -9,10 +9,13 @@ import {
 	ChevronDown,
 	RefreshCw,
 	Plus,
+	Pencil,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '../ui/Button';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useOnboardingStore } from '../../stores/onboardingStore';
+import { useAuthStatus } from '../../hooks/useAuthStatus';
 import {
 	useConfig,
 	useAllModels,
@@ -182,6 +185,11 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 	const { fetchBalance: refreshSetuBalance } = useSetuBalance(
 		hasSetu ? 'setu' : undefined,
 	);
+
+	const setOnboardingOpen = useOnboardingStore((s) => s.setOpen);
+	const setStep = useOnboardingStore((s) => s.setStep);
+	const setManageMode = useOnboardingStore((s) => s.setManageMode);
+	const { fetchAuthStatus } = useAuthStatus();
 
 	const providerOptions = useMemo(() => {
 		if (!config?.providers || !allModels) return [];
@@ -366,6 +374,22 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 				<SettingsSection
 					title="Providers"
 					icon={<Zap className="w-4 h-4 text-muted-foreground" />}
+					action={
+						<button
+							type="button"
+							onClick={() => {
+								fetchAuthStatus().then(() => {
+									setStep('wallet');
+									setManageMode(true);
+									setOnboardingOpen(true);
+								});
+							}}
+							className="p-1 hover:bg-muted rounded transition-colors"
+							title="Manage providers"
+						>
+							<Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+						</button>
+					}
 				>
 					<div className="flex flex-wrap gap-2">
 						{config?.providers?.map((provider) => (

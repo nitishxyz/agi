@@ -30,8 +30,17 @@ export function useAuthStatus() {
 
 	const checkOnboarding = useCallback(async () => {
 		const status = await fetchAuthStatus();
-		if (status && !status.onboardingComplete) {
-			setOpen(true);
+		if (status) {
+			const hasAnyProvider = Object.values(status.providers).some(
+				(p) => p.configured,
+			);
+			const needsOnboarding =
+				!status.onboardingComplete ||
+				!hasAnyProvider ||
+				!status.setu.configured;
+			if (needsOnboarding) {
+				setOpen(true);
+			}
 		}
 		setInitialized(true);
 	}, [fetchAuthStatus, setOpen]);

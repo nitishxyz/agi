@@ -26,11 +26,13 @@ export interface AuthStatus {
 interface OnboardingState {
 	isOpen: boolean;
 	currentStep: OnboardingStep;
+	manageMode: boolean;
 	isLoading: boolean;
 	error: string | null;
 	authStatus: AuthStatus | null;
 	setOpen: (open: boolean) => void;
 	setStep: (step: OnboardingStep) => void;
+	setManageMode: (manageMode: boolean) => void;
 	setLoading: (loading: boolean) => void;
 	setError: (error: string | null) => void;
 	setAuthStatus: (status: AuthStatus | null) => void;
@@ -44,11 +46,13 @@ const STEPS: OnboardingStep[] = ['wallet', 'defaults'];
 export const useOnboardingStore = create<OnboardingState>((set, get) => ({
 	isOpen: false,
 	currentStep: 'wallet',
+	manageMode: false,
 	isLoading: false,
 	error: null,
 	authStatus: null,
 	setOpen: (isOpen) => set({ isOpen }),
 	setStep: (currentStep) => set({ currentStep }),
+	setManageMode: (manageMode) => set({ manageMode }),
 	setLoading: (isLoading) => set({ isLoading }),
 	setError: (error) => set({ error }),
 	setAuthStatus: (authStatus) => set({ authStatus }),
@@ -70,6 +74,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
 		set({
 			isOpen: false,
 			currentStep: 'wallet',
+			manageMode: false,
 			isLoading: false,
 			error: null,
 		}),
