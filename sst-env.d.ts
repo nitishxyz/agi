@@ -65,6 +65,10 @@ declare module "sst" {
       "type": "sst.aws.Astro"
       "url": string
     }
+    "Setu": {
+      "type": "sst.cloudflare.Worker"
+      "url": string
+    }
   }
 }
 /// <reference path="sst-env.d.ts" />
