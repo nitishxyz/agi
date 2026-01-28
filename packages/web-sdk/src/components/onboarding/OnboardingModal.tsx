@@ -26,7 +26,7 @@ export const OnboardingModal = memo(function OnboardingModal() {
 	if (!isOpen || !authStatus) return null;
 
 	return (
-		<div className="fixed inset-0 z-[9999] bg-[#0a0a0b] text-gray-100 overflow-y-auto">
+		<div className="fixed inset-0 z-[9999] bg-background text-foreground overflow-y-auto">
 			{currentStep === 'wallet' && (
 				<WalletSetupStep
 					authStatus={authStatus}

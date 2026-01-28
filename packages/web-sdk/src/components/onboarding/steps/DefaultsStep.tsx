@@ -97,7 +97,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 	if (isLoading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
-				<Loader2 className="w-8 h-8 animate-spin text-gray-600" />
+				<Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
 			</div>
 		);
 	}
@@ -111,12 +111,12 @@ export const DefaultsStep = memo(function DefaultsStep({
 	return (
 		<div className="min-h-screen flex flex-col">
 			{/* Top Bar */}
-			<div className="flex items-center justify-between px-6 py-4 border-b border-gray-800/50">
+			<div className="flex items-center justify-between px-6 py-4 border-b border-border">
 				<div className="flex items-center gap-3">
 					<ProviderLogo provider="setu" size={24} />
-					<span className="font-semibold text-white">AGI</span>
+					<span className="font-semibold text-foreground">AGI</span>
 				</div>
-				<div className="flex items-center gap-2 text-sm text-gray-500">
+				<div className="flex items-center gap-2 text-sm text-muted-foreground">
 					<span className="w-2 h-2 rounded-full bg-blue-500" />
 					Step 2 of 2
 				</div>
@@ -127,10 +127,10 @@ export const DefaultsStep = memo(function DefaultsStep({
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
 					<div className="mb-10">
-						<h1 className="text-3xl lg:text-4xl font-semibold text-white mb-3">
+						<h1 className="text-3xl lg:text-4xl font-semibold text-foreground mb-3">
 							Configure Defaults
 						</h1>
-						<p className="text-lg text-gray-400">
+						<p className="text-lg text-muted-foreground">
 							Set your preferences. You can change these anytime in settings.
 						</p>
 					</div>
@@ -141,7 +141,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 						<div className="md:col-span-2">
 							<label
 								htmlFor={providerId}
-								className="block text-sm font-medium text-gray-400 mb-2"
+								className="block text-sm font-medium text-muted-foreground mb-2"
 							>
 								Default Provider
 							</label>
@@ -150,7 +150,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 									id={providerId}
 									value={selectedProvider}
 									onChange={(e) => setSelectedProvider(e.target.value)}
-									className="w-full px-4 py-3 bg-[#111113] border border-gray-800/50 rounded-xl text-white appearance-none cursor-pointer focus:outline-none focus:border-gray-600 transition-colors"
+									className="w-full px-4 py-3 bg-card border border-border rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:border-ring transition-colors"
 								>
 									{availableProviders.map((p) => (
 										<option key={p} value={p}>
@@ -158,7 +158,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 										</option>
 									))}
 								</select>
-								<ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" />
+								<ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
 							</div>
 						</div>
 
@@ -166,7 +166,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 						<div className="md:col-span-2">
 							<label
 								htmlFor={modelId}
-								className="block text-sm font-medium text-gray-400 mb-2"
+								className="block text-sm font-medium text-muted-foreground mb-2"
 							>
 								Default Model
 							</label>
@@ -175,7 +175,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 									id={modelId}
 									value={selectedModel}
 									onChange={(e) => setSelectedModel(e.target.value)}
-									className="w-full px-4 py-3 bg-[#111113] border border-gray-800/50 rounded-xl text-white appearance-none cursor-pointer focus:outline-none focus:border-gray-600 transition-colors"
+									className="w-full px-4 py-3 bg-card border border-border rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:border-ring transition-colors"
 								>
 									{currentProviderModels.map((m) => (
 										<option key={m.id} value={m.id}>
@@ -183,7 +183,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 										</option>
 									))}
 								</select>
-								<ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" />
+								<ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
 							</div>
 						</div>
 
@@ -191,7 +191,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 						<div>
 							<label
 								htmlFor={agentId}
-								className="block text-sm font-medium text-gray-400 mb-2"
+								className="block text-sm font-medium text-muted-foreground mb-2"
 							>
 								Default Agent
 							</label>
@@ -200,7 +200,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 									id={agentId}
 									value={selectedAgent}
 									onChange={(e) => setSelectedAgent(e.target.value)}
-									className="w-full px-4 py-3 bg-[#111113] border border-gray-800/50 rounded-xl text-white appearance-none cursor-pointer focus:outline-none focus:border-gray-600 transition-colors"
+									className="w-full px-4 py-3 bg-card border border-border rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:border-ring transition-colors"
 								>
 									{(config?.agents || ['build']).map((a) => (
 										<option key={a} value={a}>
@@ -208,7 +208,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 										</option>
 									))}
 								</select>
-								<ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" />
+								<ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
 							</div>
 						</div>
 
@@ -216,7 +216,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 						<div>
 							<label
 								htmlFor={approvalId}
-								className="block text-sm font-medium text-gray-400 mb-2"
+								className="block text-sm font-medium text-muted-foreground mb-2"
 							>
 								Tool Approval
 							</label>
@@ -229,7 +229,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 											e.target.value as 'auto' | 'dangerous' | 'all',
 										)
 									}
-									className="w-full px-4 py-3 bg-[#111113] border border-gray-800/50 rounded-xl text-white appearance-none cursor-pointer focus:outline-none focus:border-gray-600 transition-colors"
+									className="w-full px-4 py-3 bg-card border border-border rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:border-ring transition-colors"
 								>
 									<option value="auto">Auto - run without asking</option>
 									<option value="dangerous">
@@ -237,9 +237,9 @@ export const DefaultsStep = memo(function DefaultsStep({
 									</option>
 									<option value="all">All - approve every tool</option>
 								</select>
-								<ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" />
+								<ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
 							</div>
-							<p className="mt-2 text-sm text-gray-500">
+							<p className="mt-2 text-sm text-muted-foreground">
 								Controls when tool executions need approval
 							</p>
 						</div>
@@ -248,12 +248,12 @@ export const DefaultsStep = memo(function DefaultsStep({
 			</div>
 
 			{/* Bottom Bar */}
-			<div className="px-6 py-4 border-t border-gray-800/50">
+			<div className="px-6 py-4 border-t border-border">
 				<div className="max-w-7xl mx-auto flex items-center justify-between">
 					<button
 						type="button"
 						onClick={onBack}
-						className="flex items-center gap-2 px-4 py-3 text-gray-400 hover:text-white transition-colors"
+						className="flex items-center gap-2 px-4 py-3 text-muted-foreground hover:text-foreground transition-colors"
 					>
 						<ArrowLeft className="w-4 h-4" />
 						Back
@@ -262,7 +262,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 						type="button"
 						onClick={handleFinish}
 						disabled={isSaving}
-						className="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors disabled:opacity-50"
+						className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
 					>
 						{isSaving ? (
 							<>

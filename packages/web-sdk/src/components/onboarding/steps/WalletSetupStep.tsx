@@ -58,6 +58,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 	const [oauthCodeInput, setOauthCodeInput] = useState('');
 	const [isExchangingCode, setIsExchangingCode] = useState(false);
 	const balance = useSetuStore((s) => s.balance);
+	const usdcBalance = useSetuStore((s) => s.usdcBalance);
 
 	useSetuBalance('setu');
 
@@ -90,7 +91,6 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 
 	const handleRemoveProvider = async (providerId: string) => {
 		if (confirmingDelete === providerId) {
-			// User confirmed, proceed with deletion
 			setRemovingProvider(providerId);
 			try {
 				await onRemoveProvider(providerId);
@@ -99,7 +99,6 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 				setConfirmingDelete(null);
 			}
 		} else {
-			// First click, show confirmation
 			setConfirmingDelete(providerId);
 		}
 	};
@@ -151,12 +150,12 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 	return (
 		<div className="min-h-screen flex flex-col">
 			{/* Top Bar */}
-			<div className="flex items-center justify-between px-6 py-4 border-b border-gray-800/50">
+			<div className="flex items-center justify-between px-6 py-4 border-b border-border">
 				<div className="flex items-center gap-3">
 					<ProviderLogo provider="setu" size={24} />
-					<span className="font-semibold text-white">AGI</span>
+					<span className="font-semibold text-foreground">AGI</span>
 				</div>
-				<div className="flex items-center gap-2 text-sm text-gray-500">
+				<div className="flex items-center gap-2 text-sm text-muted-foreground">
 					<span className="w-2 h-2 rounded-full bg-green-500" />
 					Step 1 of 2
 				</div>
@@ -167,10 +166,10 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
 					<div className="mb-10">
-						<h1 className="text-3xl lg:text-4xl font-semibold text-white mb-3">
+						<h1 className="text-3xl lg:text-4xl font-semibold text-foreground mb-3">
 							Welcome to AGI
 						</h1>
-						<p className="text-lg text-gray-400 max-w-2xl">
+						<p className="text-lg text-muted-foreground max-w-2xl">
 							Setu is your default AI provider, powered by your wallet. Add more
 							providers below if you'd like.
 						</p>
@@ -179,16 +178,16 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 					<div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
 						{/* Left Column - Wallet */}
 						<div className="xl:col-span-1">
-							<div className="bg-[#111113] rounded-2xl border border-gray-800/50 p-5">
+							<div className="bg-card rounded-2xl border border-border p-5">
 								{authStatus.setu.configured && authStatus.setu.publicKey ? (
 									<div className="space-y-4">
 										{/* Setu Default Provider Badge */}
 										<div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
 											<ProviderLogo provider="setu" size={16} />
-											<span className="text-sm font-medium text-green-400">
+											<span className="text-sm font-medium text-green-600 dark:text-green-400">
 												Setu
 											</span>
-											<span className="text-xs text-green-500/60 ml-auto">
+											<span className="text-xs text-green-600/60 dark:text-green-500/60 ml-auto">
 												Default Provider
 											</span>
 										</div>
@@ -207,20 +206,22 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 											<button
 												type="button"
 												onClick={handleCopy}
-												className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-800 rounded-lg text-xs font-mono text-gray-300 transition-colors"
+												className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-lg text-xs font-mono text-muted-foreground transition-colors"
 											>
 												{truncateAddress(authStatus.setu.publicKey)}
 												{copied ? (
 													<Check className="w-3.5 h-3.5 text-green-500" />
 												) : (
-													<Copy className="w-3.5 h-3.5 text-gray-500" />
+													<Copy className="w-3.5 h-3.5 text-muted-foreground" />
 												)}
 											</button>
 
-											<div className="flex items-center justify-between px-3 py-2 bg-gray-800/30 rounded-lg">
-												<span className="text-xs text-gray-500">Balance</span>
-												<span className="font-mono text-sm text-white">
-													${balance?.toFixed(4) ?? '0.0000'} USDC
+											<div className="flex items-center justify-between px-3 py-2 bg-muted/50 rounded-lg">
+												<span className="text-xs text-muted-foreground">
+													Balance
+												</span>
+												<span className="font-mono text-sm text-foreground">
+													${((balance ?? 0) + (usdcBalance ?? 0)).toFixed(4)}
 												</span>
 											</div>
 										</div>
@@ -228,7 +229,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 										<button
 											type="button"
 											onClick={onOpenTopup}
-											className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+											className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
 										>
 											<CreditCard className="w-4 h-4" />
 											Add Funds
@@ -236,7 +237,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 									</div>
 								) : (
 									<div className="flex items-center justify-center py-16">
-										<Loader2 className="w-8 h-8 animate-spin text-gray-600" />
+										<Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
 									</div>
 								)}
 							</div>
@@ -247,18 +248,18 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 							{/* Connected Providers */}
 							<div>
 								<div className="flex items-center justify-between mb-4">
-									<h2 className="font-semibold text-white">
+									<h2 className="font-semibold text-foreground">
 										Connected Providers
 									</h2>
 									{configuredProviders.length > 0 && (
-										<span className="text-sm text-gray-500">
+										<span className="text-sm text-muted-foreground">
 											{configuredProviders.length} active
 										</span>
 									)}
 								</div>
 
 								{configuredProviders.length === 0 ? (
-									<div className="text-sm text-gray-500 py-4">
+									<div className="text-sm text-muted-foreground py-4">
 										No providers connected yet. Add one below.
 									</div>
 								) : (
@@ -268,7 +269,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 												key={id}
 												className={`flex items-center gap-2 pl-3 pr-2 py-2 rounded-full transition-all duration-200 ${
 													confirmingDelete === id
-														? 'bg-red-500/10 border border-red-500/30'
+														? 'bg-destructive/10 border border-destructive/30'
 														: 'group bg-green-500/10 border border-green-500/20'
 												}`}
 											>
@@ -276,27 +277,27 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 												<span
 													className={`text-sm font-medium transition-colors ${
 														confirmingDelete === id
-															? 'text-red-400'
-															: 'text-green-400'
+															? 'text-destructive'
+															: 'text-green-600 dark:text-green-400'
 													}`}
 												>
 													{info.label}
 												</span>
 												{confirmingDelete !== id && (
-													<span className="text-xs text-green-500/60">
+													<span className="text-xs text-green-600/60 dark:text-green-500/60">
 														{info.type === 'oauth' ? 'OAuth' : 'API'}
 													</span>
 												)}
 												{confirmingDelete === id ? (
 													<div className="flex items-center gap-1 ml-1">
-														<span className="text-xs text-red-400/80 mr-1">
+														<span className="text-xs text-destructive/80 mr-1">
 															Remove?
 														</span>
 														<button
 															type="button"
 															onClick={() => handleRemoveProvider(id)}
 															disabled={removingProvider === id}
-															className="px-2 py-0.5 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+															className="px-2 py-0.5 text-xs bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 transition-colors disabled:opacity-50"
 														>
 															{removingProvider === id ? (
 																<Loader2 className="w-3 h-3 animate-spin" />
@@ -307,7 +308,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 														<button
 															type="button"
 															onClick={handleCancelDelete}
-															className="px-2 py-0.5 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors"
+															className="px-2 py-0.5 text-xs bg-muted text-muted-foreground rounded hover:bg-muted/80 transition-colors"
 														>
 															No
 														</button>
@@ -317,7 +318,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 														<button
 															type="button"
 															onClick={() => handleRemoveProvider(id)}
-															className="ml-1 p-1 text-green-500/40 hover:text-green-500/80 opacity-0 group-hover:opacity-100 transition-opacity"
+															className="ml-1 p-1 text-green-600/40 dark:text-green-500/40 hover:text-green-600/80 dark:hover:text-green-500/80 opacity-0 group-hover:opacity-100 transition-opacity"
 														>
 															<X className="w-3 h-3" />
 														</button>
@@ -332,10 +333,10 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 							{/* OAuth Code Entry */}
 							{oauthSession && (
 								<div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-									<h3 className="font-medium text-white mb-2">
+									<h3 className="font-medium text-foreground mb-2">
 										Enter Authorization Code
 									</h3>
-									<p className="text-sm text-gray-400 mb-3">
+									<p className="text-sm text-muted-foreground mb-3">
 										Copy the code from the authorization page and paste it
 										below:
 									</p>
@@ -345,7 +346,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 											value={oauthCodeInput}
 											onChange={(e) => setOauthCodeInput(e.target.value)}
 											placeholder="Paste authorization code..."
-											className="flex-1 px-3 py-2 bg-[#111113] border border-gray-700 rounded-lg text-white placeholder:text-gray-600 outline-none focus:border-blue-500 transition-colors"
+											className="flex-1 px-3 py-2 bg-card border border-input rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition-colors"
 											onKeyDown={(e) => {
 												if (e.key === 'Enter') handleExchangeCode();
 												if (e.key === 'Escape') handleCancelOAuth();
@@ -366,7 +367,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 										<button
 											type="button"
 											onClick={handleCancelOAuth}
-											className="px-3 py-2 text-gray-400 hover:text-white transition-colors"
+											className="px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
 										>
 											<X className="w-4 h-4" />
 										</button>
@@ -376,19 +377,21 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 
 							{/* Add Providers */}
 							<div>
-								<h2 className="font-semibold text-white mb-4">Add Providers</h2>
+								<h2 className="font-semibold text-foreground mb-4">
+									Add Providers
+								</h2>
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 									{unconfiguredProviders.map(([id, info]) => (
 										<div key={id}>
 											{addingProvider === id ? (
-												<div className="flex items-center gap-2 p-3 bg-[#161618] border border-blue-500/30 rounded-xl">
+												<div className="flex items-center gap-2 p-3 bg-card border border-ring rounded-xl">
 													<ProviderLogo provider={id} size={18} />
 													<input
 														type="password"
 														value={apiKeyInput}
 														onChange={(e) => setApiKeyInput(e.target.value)}
 														placeholder={`${info.label} API key...`}
-														className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-600 text-white"
+														className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground"
 														onKeyDown={(e) => {
 															if (e.key === 'Enter') handleAddProvider(id);
 															if (e.key === 'Escape') {
@@ -401,7 +404,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 														type="button"
 														onClick={() => handleAddProvider(id)}
 														disabled={!apiKeyInput.trim()}
-														className="px-3 py-1.5 bg-white text-black text-sm font-medium rounded-lg disabled:opacity-50"
+														className="px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg disabled:opacity-50"
 													>
 														Add
 													</button>
@@ -411,20 +414,20 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 															setAddingProvider(null);
 															setApiKeyInput('');
 														}}
-														className="p-1.5 text-gray-500 hover:text-gray-300"
+														className="p-1.5 text-muted-foreground hover:text-foreground"
 													>
 														<X className="w-4 h-4" />
 													</button>
 												</div>
 											) : (
-												<div className="flex items-center justify-between p-3 bg-[#111113] border border-gray-800/50 hover:border-gray-700 rounded-xl transition-colors">
+												<div className="flex items-center justify-between p-3 bg-card border border-border hover:border-border/80 rounded-xl transition-colors">
 													<div className="flex items-center gap-3">
 														<ProviderLogo provider={id} size={20} />
 														<div>
-															<div className="font-medium text-white">
+															<div className="font-medium text-foreground">
 																{info.label}
 															</div>
-															<div className="text-xs text-gray-500">
+															<div className="text-xs text-muted-foreground">
 																{info.modelCount} models
 															</div>
 														</div>
@@ -433,7 +436,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 														<button
 															type="button"
 															onClick={() => setAddingProvider(id)}
-															className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+															className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
 														>
 															<Key className="w-3.5 h-3.5" />
 															API
@@ -447,7 +450,7 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 																		id === 'anthropic' ? 'max' : undefined,
 																	)
 																}
-																className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+																className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
 															>
 																<ExternalLink className="w-3.5 h-3.5" />
 																{id === 'anthropic' ? 'Max' : 'OAuth'}
@@ -466,15 +469,15 @@ export const WalletSetupStep = memo(function WalletSetupStep({
 			</div>
 
 			{/* Bottom Bar */}
-			<div className="px-6 py-4 border-t border-gray-800/50">
+			<div className="px-6 py-4 border-t border-border">
 				<div className="max-w-7xl mx-auto flex items-center justify-between">
-					<div className="text-sm text-gray-500">
+					<div className="text-sm text-muted-foreground">
 						You can add more providers later in settings
 					</div>
 					<button
 						type="button"
 						onClick={onNext}
-						className="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors"
+						className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
 					>
 						Continue
 						<ArrowRight className="w-4 h-4" />
