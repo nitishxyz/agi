@@ -77,6 +77,30 @@ function ProjectPicker({
 	const [tokenInput, setTokenInput] = useState('');
 	const [clonePath] = useState('');
 	const [cloning, setCloning] = useState(false);
+	const [isFullscreen, setIsFullscreen] = useState(false);
+
+	useEffect(() => {
+		const win = getCurrentWindow();
+		let unlisten: (() => void) | null = null;
+		
+		const checkFullscreen = async () => {
+			const fs = await win.isFullscreen();
+			setIsFullscreen(fs);
+		};
+		
+		checkFullscreen();
+		
+		win.onResized(async () => {
+			const fs = await win.isFullscreen();
+			setIsFullscreen(fs);
+		}).then((fn) => {
+			unlisten = fn;
+		});
+		
+		return () => {
+			unlisten?.();
+		};
+	}, []);
 
 	const handleOpenFolder = async () => {
 		const project = await openProjectDialog();
@@ -136,7 +160,7 @@ function ProjectPicker({
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
 			>
-				<div className="flex items-center gap-3 ml-16">
+				<div className={`flex items-center gap-3 ${isFullscreen ? '' : 'ml-16'}`}>
 					<SetuLogo size={24} />
 					<span className="font-semibold text-foreground">AGI Desktop</span>
 				</div>
@@ -488,6 +512,30 @@ function Workspace({
 	const { server, loading, error, startServer, stopServer } = useServer();
 	const startedRef = useRef(false);
 	const [iframeLoaded, setIframeLoaded] = useState(false);
+	const [isFullscreen, setIsFullscreen] = useState(false);
+
+	useEffect(() => {
+		const win = getCurrentWindow();
+		let unlisten: (() => void) | null = null;
+		
+		const checkFullscreen = async () => {
+			const fs = await win.isFullscreen();
+			setIsFullscreen(fs);
+		};
+		
+		checkFullscreen();
+		
+		win.onResized(async () => {
+			const fs = await win.isFullscreen();
+			setIsFullscreen(fs);
+		}).then((fn) => {
+			unlisten = fn;
+		});
+		
+		return () => {
+			unlisten?.();
+		};
+	}, []);
 
 	const handleBack = async () => {
 		await stopServer();
@@ -514,13 +562,13 @@ function Workspace({
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
 			>
-				<button
-					type="button"
-					onClick={handleBack}
-					className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ml-16"
-				>
-					←
-				</button>
+			<button
+				type="button"
+				onClick={handleBack}
+				className={`w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ${isFullscreen ? '' : 'ml-16'}`}
+			>
+				←
+			</button>
 				<div className="flex-1 min-w-0 flex items-center gap-2">
 					<span className="font-medium text-foreground truncate">{project.name}</span>
 					<span className="text-xs text-muted-foreground truncate">{project.path}</span>
