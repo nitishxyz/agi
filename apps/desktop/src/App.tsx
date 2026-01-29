@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useProjects } from './hooks/useProjects';
 import { useGitHub } from './hooks/useGitHub';
 import { useServer } from './hooks/useServer';
@@ -46,6 +47,14 @@ function formatTimeAgo(dateString: string): string {
 	if (diffDays < 7) return `${diffDays}d ago`;
 	return date.toLocaleDateString();
 }
+
+const handleTitleBarDrag = (e: React.MouseEvent) => {
+	const target = e.target as HTMLElement;
+	const isInteractive = target.closest('button, a, input, [role="button"]');
+	if (e.buttons === 1 && !isInteractive) {
+		getCurrentWindow().startDragging();
+	}
+};
 
 function ProjectPicker({
 	onSelectProject,
@@ -122,8 +131,11 @@ function ProjectPicker({
 	return (
 		<div className="min-h-screen flex flex-col bg-background text-foreground">
 			{/* Top Bar */}
-			<div className="flex items-center justify-between px-6 py-4 border-b border-border">
-				<div className="flex items-center gap-3">
+			<div 
+				className="flex items-center justify-between px-6 h-10 border-b border-border cursor-default select-none"
+				onMouseDown={handleTitleBarDrag}
+			>
+				<div className="flex items-center gap-3 ml-16">
 					<SetuLogo size={24} />
 					<span className="font-semibold text-foreground">AGI Desktop</span>
 				</div>
@@ -493,33 +505,26 @@ function Workspace({
 	return (
 		<div className="h-screen flex flex-col" style={{ backgroundColor: DARK_BG }}>
 			{/* Header */}
-			<div className="flex items-center gap-4 px-4 py-3 border-b border-border" style={{ backgroundColor: DARK_BG }}>
+			<div 
+				className="flex items-center gap-3 px-4 h-10 border-b border-border cursor-default select-none"
+				style={{ backgroundColor: DARK_BG }}
+				onMouseDown={handleTitleBarDrag}
+			>
 				<button
 					type="button"
 					onClick={onBack}
-					className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+					className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ml-16"
 				>
 					←
 				</button>
-				<div className="flex-1 min-w-0">
-					<div className="font-semibold text-foreground truncate">
-						{project.name}
-					</div>
-					<div className="text-xs text-muted-foreground truncate">
-						{project.path}
-					</div>
+				<div className="flex-1 min-w-0 flex items-center gap-2">
+					<span className="font-medium text-foreground truncate">{project.name}</span>
+					<span className="text-xs text-muted-foreground truncate">{project.path}</span>
 				</div>
 				{server && (
-					<div className="flex items-center gap-2 text-sm">
+					<div className="flex items-center gap-1.5 text-xs">
 						<span className="w-2 h-2 rounded-full bg-green-500" />
 						<span className="text-muted-foreground">Port {server.webPort}</span>
-						<button
-							type="button"
-							onClick={stopServer}
-							className="px-3 py-1.5 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-						>
-							Stop
-						</button>
 					</div>
 				)}
 			</div>
