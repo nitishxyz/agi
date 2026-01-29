@@ -535,9 +535,9 @@ function Workspace({
 
 			{/* Content */}
 			<div className="flex-1 relative flex items-center justify-center" style={{ backgroundColor: DARK_BG }}>
-				{loading && (
+				{(loading || (server && !iframeLoaded)) && (
 					<div className="text-center">
-						<div className="text-muted-foreground mb-2">Starting server...</div>
+						<div className="text-muted-foreground mb-2">{loading ? 'Starting server...' : 'Loading...'}</div>
 					</div>
 				)}
 				{error && !loading && (
@@ -555,15 +555,10 @@ function Workspace({
 						</button>
 					</div>
 				)}
-				{server && !iframeLoaded && (
-					<div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: DARK_BG }}>
-						<div className="text-muted-foreground">Loading...</div>
-					</div>
-				)}
 				{server && (
 					<iframe
 						src={`${server.url}?_t=${Date.now()}&_pid=${server.pid}&_project=${encodeURIComponent(project.path)}`}
-						className={`w-full h-full border-none ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
+						className={`absolute inset-0 w-full h-full border-none transition-opacity duration-200 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
 						style={{ backgroundColor: DARK_BG }}
 						title="AGI Workspace"
 						onLoad={() => setIframeLoaded(true)}
