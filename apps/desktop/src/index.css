@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	:root {
+		--background: 220 25% 95%;
+		--foreground: 220 10% 15%;
+		--card: 220 25% 98%;
+		--card-foreground: 220 10% 15%;
+		--popover: 220 25% 98%;
+		--popover-foreground: 220 10% 15%;
+		--primary: 222.2 47.4% 11.2%;
+		--primary-foreground: 210 40% 98%;
+		--secondary: 220 18% 88%;
+		--secondary-foreground: 222.2 35% 25%;
+		--muted: 220 18% 88%;
+		--muted-foreground: 220 15% 40%;
+		--accent: 220 20% 86%;
+		--accent-foreground: 222.2 35% 25%;
+		--destructive: 0 90% 65%;
+		--destructive-foreground: 210 40% 98%;
+		--border: 220 15% 89%;
+		--input: 220 15% 89%;
+		--ring: 222.2 84% 4.9%;
+		--radius: 0.5rem;
+		color-scheme: light;
+	}
+
+	.dark {
+		--background: 240 10% 8%;
+		--foreground: 0 0% 98%;
+		--card: 240 10% 10%;
+		--card-foreground: 0 0% 98%;
+		--popover: 240 10% 10%;
+		--popover-foreground: 0 0% 98%;
+		--primary: 0 0% 98%;
+		--primary-foreground: 240 5.9% 10%;
+		--secondary: 240 3.7% 15.9%;
+		--secondary-foreground: 0 0% 98%;
+		--muted: 240 3.7% 15.9%;
+		--muted-foreground: 240 5% 64.9%;
+		--accent: 240 3.7% 15.9%;
+		--accent-foreground: 0 0% 98%;
+		--destructive: 0 75% 45%;
+		--destructive-foreground: 0 0% 98%;
+		--border: 240 3.7% 15.9%;
+		--input: 240 3.7% 15.9%;
+		--ring: 240 4.9% 83.9%;
+		--radius: 0.5rem;
+		color-scheme: dark;
+	}
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: 'IBM Plex Mono', monospace;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	background-color: hsl(var(--background));
+	color: hsl(var(--foreground));
+}
+
+button:focus,
+button:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+
+.scrollbar-hide {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}
