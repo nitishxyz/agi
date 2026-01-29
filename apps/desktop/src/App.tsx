@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useProjects } from './hooks/useProjects';
 import { useGitHub } from './hooks/useGitHub';
 import { useServer } from './hooks/useServer';
@@ -463,6 +463,8 @@ function ProjectPicker({
 	);
 }
 
+const DARK_BG = 'hsl(240, 10%, 8%)';
+
 function Workspace({
 	project,
 	onBack,
@@ -471,18 +473,27 @@ function Workspace({
 	onBack: () => void;
 }) {
 	const { server, loading, error, startServer, stopServer } = useServer();
+	const startedRef = useRef(false);
+	const [iframeLoaded, setIframeLoaded] = useState(false);
 
 	useEffect(() => {
+		if (startedRef.current) return;
+		startedRef.current = true;
 		startServer(project.path);
+		
 		return () => {
 			stopServer();
 		};
-	}, [project.path]);
+	}, []);
+
+	useEffect(() => {
+		if (!server) setIframeLoaded(false);
+	}, [server]);
 
 	return (
-		<div className="h-screen flex flex-col bg-background text-foreground">
+		<div className="h-screen flex flex-col" style={{ backgroundColor: DARK_BG }}>
 			{/* Header */}
-			<div className="flex items-center gap-4 px-4 py-3 border-b border-border">
+			<div className="flex items-center gap-4 px-4 py-3 border-b border-border" style={{ backgroundColor: DARK_BG }}>
 				<button
 					type="button"
 					onClick={onBack}
@@ -514,29 +525,39 @@ function Workspace({
 			</div>
 
 			{/* Content */}
-			<div className="flex-1 flex items-center justify-center">
+			<div className="flex-1 relative flex items-center justify-center" style={{ backgroundColor: DARK_BG }}>
 				{loading && (
 					<div className="text-center">
 						<div className="text-muted-foreground mb-2">Starting server...</div>
 					</div>
 				)}
-				{error && (
+				{error && !loading && (
 					<div className="text-center max-w-md">
 						<div className="text-destructive mb-4">{error}</div>
 						<button
 							type="button"
-							onClick={() => startServer(project.path)}
+							onClick={() => {
+								startedRef.current = false;
+								startServer(project.path);
+							}}
 							className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
 						>
 							Retry
 						</button>
 					</div>
 				)}
+				{server && !iframeLoaded && (
+					<div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: DARK_BG }}>
+						<div className="text-muted-foreground">Loading...</div>
+					</div>
+				)}
 				{server && (
 					<iframe
 						src={server.url}
-						className="w-full h-full border-none"
+						className={`w-full h-full border-none ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
+						style={{ backgroundColor: DARK_BG }}
 						title="AGI Workspace"
+						onLoad={() => setIframeLoaded(true)}
 					/>
 				)}
 			</div>

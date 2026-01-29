@@ -1,24 +1,61 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { tauriBridge, type ServerInfo } from "../lib/tauri-bridge";
+
+async function waitForServer(apiPort: number, maxAttempts = 60): Promise<boolean> {
+  const apiUrl = `http://localhost:${apiPort}`;
+  
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const response = await fetch(apiUrl, { 
+        method: 'GET',
+        mode: 'no-cors'
+      });
+      if (response.ok || response.type === 'opaque') {
+        return true;
+      }
+    } catch {
+      // Server not ready yet
+    }
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  return false;
+}
 
 export function useServer() {
   const [server, setServer] = useState<ServerInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const startingRef = useRef(false);
 
   const startServer = useCallback(async (projectPath: string, port?: number) => {
+    if (startingRef.current) return null;
+    startingRef.current = true;
+    
     try {
       setLoading(true);
       setError(null);
+      
+      // Stop any existing servers first
+      try {
+        await tauriBridge.stopAllServers();
+      } catch {}
+      
       const info = await tauriBridge.startServer(projectPath, port);
-      setServer(info);
-      return info;
+      
+      const ready = await waitForServer(info.port);
+      if (ready) {
+        setServer(info);
+        return info;
+      } else {
+        throw new Error("Server started but not responding after 15s");
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to start server";
       setError(message);
-      throw err;
+      return null;
     } finally {
       setLoading(false);
+      startingRef.current = false;
     }
   }, []);
 
@@ -26,20 +63,11 @@ export function useServer() {
     if (!server) return;
     try {
       await tauriBridge.stopServer(server.pid);
-      setServer(null);
     } catch (err) {
       console.error("Failed to stop server:", err);
     }
+    setServer(null);
   }, [server]);
-
-  const stopAllServers = useCallback(async () => {
-    try {
-      await tauriBridge.stopAllServers();
-      setServer(null);
-    } catch (err) {
-      console.error("Failed to stop servers:", err);
-    }
-  }, []);
 
   return {
     server,
@@ -48,6 +76,5 @@ export function useServer() {
     isRunning: !!server,
     startServer,
     stopServer,
-    stopAllServers,
   };
 }

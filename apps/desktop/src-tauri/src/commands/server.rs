@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use tauri::{Manager, State};
+use std::net::TcpListener;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -46,45 +46,63 @@ fn get_binary_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String>
         format!("agi-{}-{}", os_name, arch_name)
     };
 
+    let mut candidates: Vec<std::path::PathBuf> = Vec::new();
+
     if let Ok(resource_dir) = app.path().resource_dir() {
-        let resource_path = resource_dir.join("binaries").join(&binary_name);
-        if resource_path.exists() {
-            return Ok(resource_path);
-        }
+        candidates.push(resource_dir.join("binaries").join(&binary_name));
     }
 
     if let Ok(exe_dir) = std::env::current_exe() {
         if let Some(parent) = exe_dir.parent() {
-            let dev_path = parent
-                .join("../../../resources/binaries")
-                .join(&binary_name);
-            if dev_path.exists() {
-                return Ok(dev_path);
-            }
+            candidates.push(
+                parent
+                    .join("../../../resources/binaries")
+                    .join(&binary_name),
+            );
+        }
+    }
+
+    if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
+        candidates.push(
+            std::path::PathBuf::from(&manifest_dir)
+                .join("resources/binaries")
+                .join(&binary_name),
+        );
+    }
+
+    let src_tauri_paths = [
+        "apps/desktop/src-tauri/resources/binaries",
+        "src-tauri/resources/binaries",
+        "../src-tauri/resources/binaries",
+    ];
+    if let Ok(cwd) = std::env::current_dir() {
+        for p in &src_tauri_paths {
+            candidates.push(cwd.join(p).join(&binary_name));
+        }
+    }
+
+    for candidate in &candidates {
+        if candidate.exists() {
+            return Ok(candidate.clone());
         }
     }
 
     Err(format!("Binary not found: {}", binary_name))
 }
 
-fn parse_server_port(child: &mut Child) -> Result<u16, String> {
-    let stdout = child.stdout.take().ok_or("No stdout")?;
-    let reader = BufReader::new(stdout);
-
-    for line in reader.lines().take(30) {
-        let line = line.map_err(|e| e.to_string())?;
-
-        if line.contains("listening on") || line.contains("localhost:") {
-            if let Some(port_str) = line.split(':').last() {
-                let port_str = port_str.trim().trim_end_matches('/');
-                if let Ok(port) = port_str.parse::<u16>() {
-                    return Ok(port);
-                }
-            }
+fn find_available_port() -> u16 {
+    let base = 19000u16;
+    for offset in 0..500u16 {
+        let port = base + (offset * 2);
+        if port > 60000 { break; }
+        
+        if TcpListener::bind(("127.0.0.1", port)).is_ok()
+            && TcpListener::bind(("127.0.0.1", port + 1)).is_ok()
+        {
+            return port;
         }
     }
-
-    Err("Could not parse server port from output".to_string())
+    19100
 }
 
 #[tauri::command]
@@ -96,17 +114,16 @@ pub async fn start_server(
 ) -> Result<ServerInfo, String> {
     let binary = get_binary_path(&app)?;
 
-    let port_arg = port.unwrap_or(0).to_string();
+    let actual_port = port.unwrap_or_else(find_available_port);
+    let port_arg = actual_port.to_string();
 
-    let mut child = Command::new(&binary)
+    let child = Command::new(&binary)
         .current_dir(&project_path)
-        .args(["serve", "--port", &port_arg])
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .args(["serve", "--port", &port_arg, "--no-open"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .map_err(|e| format!("Failed to start server: {}", e))?;
-
-    let actual_port = parse_server_port(&mut child).unwrap_or(3000);
 
     let info = ServerInfo {
         pid: child.id(),
