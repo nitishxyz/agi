@@ -1,152 +1,1048 @@
-# Desktop App (Tauri) - Implementation Plan
+# Desktop App (Tauri 2.0) - Implementation Plan
 
 ## Overview
-Desktop application built with Tauri that wraps the compiled AGI CLI binary, embeds the React-based web UI, and provides native project management. Launches the CLI as a subprocess on "Open Project" to run the AGI server in any directory.
+
+Desktop application built with Tauri 2.0 that wraps the compiled AGI CLI binary, embeds the React-based web UI, and provides native project management. Designed for **non-technical users** who don't want to touch a terminal, SSH keys, or git commands.
+
+### Key Goals
+- **Zero CLI knowledge required** - Double-click to run
+- **No SSH/Git setup** - Clone repos via GitHub OAuth (HTTPS)
+- **Full git workflow** - Clone, commit, push without terminal
+- **Project picker** - Open local folders or clone from GitHub
+
+## Why Tauri 2.0?
+
+Released October 2024, Tauri 2.0 provides:
+- **95% smaller binaries** than Electron (~10MB vs ~150MB)
+- **Mobile support** - iOS + Android (future bonus)
+- **Plugin system** - Modular, official plugins for OAuth, dialogs, etc.
+- **New permissions system** - Fine-grained capabilities (replaces allowlist)
+- **Deep linking** - Custom URL schemes (`agi://`)
+- **Hot Module Replacement** - Fast development iteration
 
 ## Current Architecture
 
 ### Existing Infrastructure (Already Built)
-- **CLI Binary**: Already compiled to static executables for darwin-arm64, darwin-x64, linux-x64, linux-arm64
+- **CLI Binary**: Compiled to static executables for darwin-arm64, darwin-x64, linux-x64, linux-arm64
 - **Build Process**: `bun build --compile` embeds web UI + all dependencies into single binary
 - **Web UI**: Embedded at `apps/cli/src/web-dist/` during build (Vite + TailwindCSS, React 19 + TanStack Router)
-- **API Connection**: Web UI detects `window.AGI_SERVER_URL` injected by `web-server.ts` for local development/serve
+- **API Connection**: Web UI detects `window.AGI_SERVER_URL` injected by `web-server.ts`
 - **Server**: CLI starts both AGI API server (Hono) and Web UI server on sequential ports
 - **Web SDK**: Shared hooks and components in `packages/web-sdk/` for API integration
 
 ### How Current System Works
 1. User runs `agi serve [--port X] [--network]`
 2. CLI spawns AGI server (Hono-based) on requested port
-3. CLI spawns Web UI server on port+1, injects `window.AGI_SERVER_URL = http://localhost:PORT`
-4. Web UI uses `window.AGI_SERVER_URL` for all API calls (fallback to `localhost:3001`)
+3. CLI spawns Web UI server on port+1, injects `window.AGI_SERVER_URL`
+4. Web UI uses `window.AGI_SERVER_URL` for all API calls
 5. Both servers run in subprocess, user opens browser to Web UI port
 
-## Desktop Architecture (Tauri Wrapper)
+## Desktop Architecture (Tauri 2.0)
+
+### High-Level Flow
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     AGI Desktop (Tauri 2.0)                     │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────────────────┐ │
+│  │  Project    │  │   GitHub     │  │   Git Operations       │ │
+│  │  Picker     │  │   OAuth      │  │   (git2-rs)            │ │
+│  │             │  │              │  │                        │ │
+│  │ • Open Folder│ │ • Login      │  │ • Clone (HTTPS+token)  │ │
+│  │ • Recent    │  │ • Repo list  │  │ • Commit               │ │
+│  │ • Clone     │  │ • Token mgmt │  │ • Push / Pull          │ │
+│  └─────────────┘  └──────────────┘  └────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│                     Rust Backend (Tauri)                        │
+│  • CLI subprocess manager (spawn agi serve)                     │
+│  • OS keychain (token storage via keyring crate)                │
+│  • File system access                                           │
+│  • Native dialogs                                               │
+├─────────────────────────────────────────────────────────────────┤
+│                     Embedded Web UI                             │
+│  • Same React app (apps/web)                                    │
+│  • Tauri bridge detection (__TAURI__)                           │
+│  • Desktop-specific UI (project picker, git panel)              │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ### Stack
-- **Framework**: Tauri 2.x + Rust backend
+- **Framework**: Tauri 2.0 + Rust backend
 - **Frontend**: Bundle existing web UI (Vite dist)
-- **CLI**: Reuse existing compiled binary (darwin-arm64, darwin-x64, linux-x64, linux-arm64)
-- **Backend**: Rust process manager + IPC bridge
-- **Lifecycle**: User opens project → Tauri spawns CLI binary → CLI starts servers → Tauri window loads Web UI at local URL
+- **CLI**: Reuse existing compiled binary
+- **Git**: `git2-rs` (libgit2 bindings) - native, no git CLI needed
+- **OAuth**: `tauri-plugin-oauth` - localhost redirect capture
+- **Secrets**: `keyring` crate - OS keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service)
 
 ### Key Components
 1. **Tauri Window** - Native desktop window (macOS, Windows, Linux)
-2. **Embedded Web UI** - Built from `apps/web/dist`, served by Tauri via `tauri://` protocol
+2. **Embedded Web UI** - Built from `apps/web/dist`, served via `tauri://` protocol
 3. **CLI Binary Launcher** - Rust command to spawn CLI subprocess with cwd
 4. **Project Manager** - Store recent projects, manage server ports/PIDs
-5. **Tauri IPC Bridge** - Frontend ↔ Rust backend communication
+5. **GitHub OAuth** - Browser-based login, token stored in OS keychain
+6. **Git Operations** - Clone, commit, push via `git2-rs` (no SSH needed)
+7. **Tauri IPC Bridge** - Frontend ↔ Rust backend communication
 
-## Phase 1: MVP Setup (Foundation)
+---
+
+## Phase 1: Tauri 2.0 Project Setup
 
 ### 1.1 Project Structure
 ```
 apps/desktop/
-├── src-tauri/              # Rust backend
-│   ├── src/
-│   │   ├── main.rs         # Window creation
-│   │   ├── commands.rs     # Tauri commands (IPC)
-│   │   ├── server.rs       # CLI process management
-│   │   └── projects.rs     # Project metadata + storage
-│   └── Cargo.toml
-├── src/                    # Minimal React wrapper (just a shell)
-├── src-web-embed/          # Copy of apps/web/dist (embedded at build time)
-├── public/                 # Icons, app images
-├── tauri.conf.json         # Tauri config (window, permissions, bundle)
-└── package.json
+├── src-tauri/
+│   ├── Cargo.toml
+│   ├── tauri.conf.json
+│   ├── capabilities/           # Tauri 2.0 permissions
+│   │   └── default.json
+│   └── src/
+│       ├── main.rs
+│       ├── lib.rs
+│       └── commands/
+│           ├── mod.rs
+│           ├── project.rs      # open_folder, recent_projects
+│           ├── server.rs       # start_server, stop_server
+│           ├── github.rs       # oauth, list_repos
+│           └── git.rs          # clone, commit, push, pull, status
+├── src/                        # Minimal React shell
+│   ├── App.tsx                 # Project picker UI
+│   └── main.tsx
+├── public/                     # Icons, app images
+├── package.json
+└── vite.config.ts
 ```
 
-### 1.2 Approach: Reuse Binary + Web UI
-- **No custom CLI embedding** - Use existing compiled binaries in `dist/` directory
-- **Binary Distribution**: Include precompiled binaries for each OS in Tauri resources
-- **Web UI Embedding**: Copy `apps/web/dist` → `apps/desktop/src-web-embed/` during Tauri build
-- **No Node.js Runtime Needed** - Binary is self-contained via Bun compilation
+### 1.2 Tauri 2.0 Configuration
+```json
+// tauri.conf.json (Tauri 2.0 format)
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/config.schema.json",
+  "productName": "AGI",
+  "version": "0.1.0",
+  "identifier": "com.agi-cli.desktop",
+  "build": {
+    "beforeBuildCommand": "bun run build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "AGI",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "app", "msi", "appimage"],
+    "icon": ["icons/icon.icns", "icons/icon.ico", "icons/icon.png"],
+    "resources": ["resources/binaries/*"]
+  },
+  "plugins": {
+    "oauth": {}
+  }
+}
+```
 
-### 1.3 MVP Scope
-- [ ] Create Tauri project (`cargo create-tauri-app`)
-- [ ] Set up Rust IPC command handlers
-- [ ] Add file dialog command for "Open Project"
-- [ ] Implement CLI subprocess spawning with cwd
-- [ ] Create minimal React wrapper that loads Web UI at `tauri://localhost:PORT`
-- [ ] Store & retrieve recent projects (JSON file)
-- [ ] Handle server lifecycle (start/stop/cleanup on app exit)
+### 1.3 Capabilities (Tauri 2.0 Permissions)
+```json
+// src-tauri/capabilities/default.json
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-utils/schema/capability.schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for AGI desktop",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "fs:default",
+    "shell:default",
+    "process:default",
+    "oauth:default"
+  ]
+}
+```
 
-### 1.4 Tauri IPC Commands
+### 1.4 Dependencies
+
+#### Rust (Cargo.toml)
+```toml
+[package]
+name = "agi-desktop"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-process = "2"
+tauri-plugin-oauth = "2"
+
+# Git operations
+git2 = "0.19"
+
+# Secure token storage
+keyring = "3"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# HTTP client (for GitHub API)
+reqwest = { version = "0.12", features = ["json"] }
+
+# Utils
+anyhow = "1"
+dirs = "5"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+```
+
+#### JavaScript (package.json)
+```json
+{
+  "name": "agi-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2",
+    "@tauri-apps/plugin-fs": "^2",
+    "@tauri-apps/plugin-shell": "^2",
+    "@fabianlars/tauri-plugin-oauth": "^2",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@vitejs/plugin-react": "^4",
+    "typescript": "^5",
+    "vite": "^6"
+  }
+}
+```
+
+---
+
+## Phase 2: Project Picker & Server Management
+
+### 2.1 Tauri IPC Commands (Project & Server)
 ```rust
-// commands/mod.rs
-#[tauri::command]
-async fn open_project_dialog() -> Result<String, String>
-  // File picker → directory path
+// src-tauri/src/commands/project.rs
+use tauri::State;
+use tauri_plugin_dialog::DialogExt;
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct Project {
+    pub path: String,
+    pub name: String,
+    pub last_opened: String,
+    pub pinned: bool,
+}
 
 #[tauri::command]
-async fn start_server(project_path: String, port: Option<u16>) -> Result<ServerInfo, String>
-  // Spawn CLI binary in project_path cwd → returns { port, url, pid }
+pub async fn open_project_dialog(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let folder = app
+        .dialog()
+        .file()
+        .pick_folder()
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    Ok(folder.map(|f| f.to_string()))
+}
 
 #[tauri::command]
-async fn stop_server(pid: u32) -> Result<(), String>
-  // Kill subprocess
+pub async fn get_recent_projects() -> Result<Vec<Project>, String> {
+    let config_path = dirs::home_dir()
+        .ok_or("No home directory")?
+        .join(".agi")
+        .join("desktop-projects.json");
+    
+    if !config_path.exists() {
+        return Ok(vec![]);
+    }
+    
+    let content = std::fs::read_to_string(&config_path)
+        .map_err(|e| e.to_string())?;
+    
+    serde_json::from_str(&content).map_err(|e| e.to_string())
+}
 
 #[tauri::command]
-async fn get_recent_projects() -> Result<Vec<Project>, String>
-  // Read from ~/.agi/desktop-projects.json
-
-#[tauri::command]
-async fn save_recent_project(path: String) -> Result<(), String>
-  // Add to recent list
+pub async fn save_recent_project(project: Project) -> Result<(), String> {
+    let config_dir = dirs::home_dir()
+        .ok_or("No home directory")?
+        .join(".agi");
+    
+    std::fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
+    
+    let config_path = config_dir.join("desktop-projects.json");
+    let mut projects = get_recent_projects().await.unwrap_or_default();
+    
+    // Remove if exists, add to front
+    projects.retain(|p| p.path != project.path);
+    projects.insert(0, project);
+    projects.truncate(10); // Keep last 10
+    
+    let content = serde_json::to_string_pretty(&projects)
+        .map_err(|e| e.to_string())?;
+    
+    std::fs::write(&config_path, content).map_err(|e| e.to_string())
+}
 ```
 
-## Phase 2: Web UI Integration
+### 2.2 Server Management
+```rust
+// src-tauri/src/commands/server.rs
+use std::process::{Child, Command, Stdio};
+use std::sync::Mutex;
+use tauri::State;
 
-### 2.1 Desktop Detection & Conditional UI
+#[derive(serde::Serialize, Clone)]
+pub struct ServerInfo {
+    pub pid: u32,
+    pub port: u16,
+    pub web_port: u16,
+    pub url: String,
+    pub project_path: String,
+}
+
+pub struct ServerState {
+    pub servers: Mutex<Vec<(Child, ServerInfo)>>,
+}
+
+#[tauri::command]
+pub async fn start_server(
+    project_path: String,
+    state: State<'_, ServerState>,
+    app: tauri::AppHandle,
+) -> Result<ServerInfo, String> {
+    // Get binary path for current platform
+    let binary = get_binary_path(&app)?;
+    
+    // Spawn: agi serve --port 0 (OS picks available port)
+    let mut child = Command::new(&binary)
+        .current_dir(&project_path)
+        .args(["serve", "--port", "0"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Failed to start server: {}", e))?;
+    
+    // Parse port from stdout (CLI logs: "🚀 agi server listening on http://localhost:PORT")
+    let port = parse_server_port(&mut child)?;
+    
+    let info = ServerInfo {
+        pid: child.id(),
+        port,
+        web_port: port + 1,
+        url: format!("http://localhost:{}", port + 1),
+        project_path: project_path.clone(),
+    };
+    
+    state.servers.lock().unwrap().push((child, info.clone()));
+    
+    Ok(info)
+}
+
+#[tauri::command]
+pub async fn stop_server(pid: u32, state: State<'_, ServerState>) -> Result<(), String> {
+    let mut servers = state.servers.lock().unwrap();
+    
+    if let Some(pos) = servers.iter().position(|(_, info)| info.pid == pid) {
+        let (mut child, _) = servers.remove(pos);
+        child.kill().map_err(|e| e.to_string())?;
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn stop_all_servers(state: State<'_, ServerState>) -> Result<(), String> {
+    let mut servers = state.servers.lock().unwrap();
+    
+    for (mut child, _) in servers.drain(..) {
+        let _ = child.kill();
+    }
+    
+    Ok(())
+}
+
+fn get_binary_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    let os = std::env::consts::OS;
+    let arch = std::env::consts::ARCH;
+    
+    // Map to our naming convention
+    let (os_name, arch_name) = match (os, arch) {
+        ("macos", "aarch64") => ("darwin", "arm64"),
+        ("macos", "x86_64") => ("darwin", "x64"),
+        ("linux", "x86_64") => ("linux", "x64"),
+        ("linux", "aarch64") => ("linux", "arm64"),
+        ("windows", "x86_64") => ("windows", "x64"),
+        _ => return Err(format!("Unsupported platform: {}-{}", os, arch)),
+    };
+    
+    let binary_name = format!("agi-{}-{}", os_name, arch_name);
+    
+    // Try resources first (bundled app)
+    let resource_path = app
+        .path()
+        .resource_dir()
+        .map_err(|e| e.to_string())?
+        .join("binaries")
+        .join(&binary_name);
+    
+    if resource_path.exists() {
+        return Ok(resource_path);
+    }
+    
+    Err(format!("Binary not found: {}", binary_name))
+}
+
+fn parse_server_port(child: &mut Child) -> Result<u16, String> {
+    use std::io::{BufRead, BufReader};
+    
+    let stdout = child.stdout.take()
+        .ok_or("No stdout")?;
+    
+    let reader = BufReader::new(stdout);
+    
+    for line in reader.lines().take(20) {
+        let line = line.map_err(|e| e.to_string())?;
+        
+        // Look for: "🚀 agi server listening on http://localhost:PORT"
+        if line.contains("listening on") {
+            if let Some(port_str) = line.split(':').last() {
+                if let Ok(port) = port_str.trim().parse::<u16>() {
+                    return Ok(port);
+                }
+            }
+        }
+    }
+    
+    Err("Could not parse server port from output".to_string())
+}
+```
+
+---
+
+## Phase 3: GitHub OAuth Integration
+
+### 3.1 OAuth Flow
+```
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│  AGI App    │ ───► │  Browser    │ ───► │  GitHub     │
+│  (desktop)  │      │  (OAuth)    │      │  (auth)     │
+└─────────────┘      └─────────────┘      └─────────────┘
+       │                                         │
+       │◄────────── access_token ────────────────┘
+       │           (stored in OS keychain)
+       ▼
+   ┌─────────────────────────────────────────────┐
+   │ Token stored in:                            │
+   │ • macOS: Keychain                           │
+   │ • Windows: Credential Manager               │
+   │ • Linux: Secret Service (GNOME Keyring)     │
+   └─────────────────────────────────────────────┘
+```
+
+### 3.2 GitHub OAuth Commands
+```rust
+// src-tauri/src/commands/github.rs
+use keyring::Entry;
+use tauri_plugin_oauth::start;
+
+const GITHUB_CLIENT_ID: &str = "YOUR_GITHUB_OAUTH_APP_CLIENT_ID";
+const KEYRING_SERVICE: &str = "agi-desktop";
+const KEYRING_USER: &str = "github-token";
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct GitHubRepo {
+    pub id: u64,
+    pub name: String,
+    pub full_name: String,
+    pub clone_url: String,
+    pub private: bool,
+    pub description: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+pub struct GitHubUser {
+    pub login: String,
+    pub name: Option<String>,
+    pub avatar_url: String,
+}
+
+#[tauri::command]
+pub async fn github_login(window: tauri::Window) -> Result<(), String> {
+    // Start localhost OAuth server (tauri-plugin-oauth)
+    let port = start(move |url| {
+        // Parse the callback URL for the code
+        if let Some(code) = extract_code_from_url(&url) {
+            // Exchange code for token (in a real app, do this server-side or use PKCE)
+            let _ = window.emit("github_oauth_code", code);
+        }
+    })
+    .map_err(|e| e.to_string())?;
+    
+    // Open browser to GitHub OAuth
+    let auth_url = format!(
+        "https://github.com/login/oauth/authorize?client_id={}&redirect_uri=http://localhost:{}&scope=repo,user",
+        GITHUB_CLIENT_ID,
+        port
+    );
+    
+    open::that(&auth_url).map_err(|e| e.to_string())?;
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn github_exchange_code(code: String) -> Result<String, String> {
+    // Exchange code for access token
+    // NOTE: In production, use PKCE flow or exchange via your backend
+    let client = reqwest::Client::new();
+    
+    let response = client
+        .post("https://github.com/login/oauth/access_token")
+        .header("Accept", "application/json")
+        .form(&[
+            ("client_id", GITHUB_CLIENT_ID),
+            ("code", &code),
+        ])
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    #[derive(serde::Deserialize)]
+    struct TokenResponse {
+        access_token: String,
+    }
+    
+    let token_response: TokenResponse = response
+        .json()
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    // Store in OS keychain
+    let entry = Entry::new(KEYRING_SERVICE, KEYRING_USER)
+        .map_err(|e| e.to_string())?;
+    
+    entry
+        .set_password(&token_response.access_token)
+        .map_err(|e| e.to_string())?;
+    
+    Ok(token_response.access_token)
+}
+
+#[tauri::command]
+pub async fn github_get_token() -> Result<Option<String>, String> {
+    let entry = Entry::new(KEYRING_SERVICE, KEYRING_USER)
+        .map_err(|e| e.to_string())?;
+    
+    match entry.get_password() {
+        Ok(token) => Ok(Some(token)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+pub async fn github_logout() -> Result<(), String> {
+    let entry = Entry::new(KEYRING_SERVICE, KEYRING_USER)
+        .map_err(|e| e.to_string())?;
+    
+    entry.delete_credential().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn github_get_user(token: String) -> Result<GitHubUser, String> {
+    let client = reqwest::Client::new();
+    
+    let response = client
+        .get("https://api.github.com/user")
+        .header("Authorization", format!("Bearer {}", token))
+        .header("User-Agent", "agi-desktop")
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    response.json().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn github_list_repos(token: String) -> Result<Vec<GitHubRepo>, String> {
+    let client = reqwest::Client::new();
+    
+    let response = client
+        .get("https://api.github.com/user/repos?sort=updated&per_page=50")
+        .header("Authorization", format!("Bearer {}", token))
+        .header("User-Agent", "agi-desktop")
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    response.json().await.map_err(|e| e.to_string())
+}
+
+fn extract_code_from_url(url: &str) -> Option<String> {
+    url::Url::parse(url)
+        .ok()?
+        .query_pairs()
+        .find(|(key, _)| key == "code")
+        .map(|(_, value)| value.to_string())
+}
+```
+
+---
+
+## Phase 4: Git Operations (No SSH Required)
+
+### 4.1 Git Commands via git2-rs
+```rust
+// src-tauri/src/commands/git.rs
+use git2::{Cred, FetchOptions, PushOptions, RemoteCallbacks, Repository};
+
+#[derive(serde::Serialize)]
+pub struct GitStatus {
+    pub branch: String,
+    pub ahead: usize,
+    pub behind: usize,
+    pub changed_files: Vec<ChangedFile>,
+    pub has_changes: bool,
+}
+
+#[derive(serde::Serialize)]
+pub struct ChangedFile {
+    pub path: String,
+    pub status: String, // "modified", "added", "deleted", "renamed"
+}
+
+/// Clone a repository using HTTPS + OAuth token (no SSH needed)
+#[tauri::command]
+pub async fn git_clone(
+    url: String,
+    path: String,
+    token: String,
+) -> Result<(), String> {
+    // Convert GitHub URL to authenticated HTTPS
+    // https://github.com/user/repo.git → https://x-access-token:TOKEN@github.com/user/repo.git
+    let auth_url = url.replace(
+        "https://github.com",
+        &format!("https://x-access-token:{}@github.com", token),
+    );
+    
+    let mut callbacks = RemoteCallbacks::new();
+    callbacks.credentials(|_url, _username, _allowed| {
+        Cred::userpass_plaintext("x-access-token", &token)
+    });
+    
+    let mut fetch_options = FetchOptions::new();
+    fetch_options.remote_callbacks(callbacks);
+    
+    let mut builder = git2::build::RepoBuilder::new();
+    builder.fetch_options(fetch_options);
+    
+    builder
+        .clone(&auth_url, std::path::Path::new(&path))
+        .map_err(|e| format!("Clone failed: {}", e))?;
+    
+    Ok(())
+}
+
+/// Get repository status
+#[tauri::command]
+pub async fn git_status(path: String) -> Result<GitStatus, String> {
+    let repo = Repository::open(&path)
+        .map_err(|e| format!("Not a git repository: {}", e))?;
+    
+    // Get current branch
+    let head = repo.head().map_err(|e| e.to_string())?;
+    let branch = head
+        .shorthand()
+        .unwrap_or("HEAD")
+        .to_string();
+    
+    // Get changed files
+    let mut changed_files = Vec::new();
+    let statuses = repo
+        .statuses(None)
+        .map_err(|e| e.to_string())?;
+    
+    for entry in statuses.iter() {
+        let status = entry.status();
+        let path = entry.path().unwrap_or("").to_string();
+        
+        let status_str = if status.is_index_new() || status.is_wt_new() {
+            "added"
+        } else if status.is_index_deleted() || status.is_wt_deleted() {
+            "deleted"
+        } else if status.is_index_renamed() || status.is_wt_renamed() {
+            "renamed"
+        } else {
+            "modified"
+        };
+        
+        changed_files.push(ChangedFile {
+            path,
+            status: status_str.to_string(),
+        });
+    }
+    
+    // Get ahead/behind (simplified)
+    let (ahead, behind) = (0, 0); // TODO: implement tracking
+    
+    Ok(GitStatus {
+        branch,
+        ahead,
+        behind,
+        has_changes: !changed_files.is_empty(),
+        changed_files,
+    })
+}
+
+/// Stage all changes and commit
+#[tauri::command]
+pub async fn git_commit(path: String, message: String) -> Result<String, String> {
+    let repo = Repository::open(&path)
+        .map_err(|e| e.to_string())?;
+    
+    // Stage all changes
+    let mut index = repo.index().map_err(|e| e.to_string())?;
+    index
+        .add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None)
+        .map_err(|e| e.to_string())?;
+    index.write().map_err(|e| e.to_string())?;
+    
+    // Create commit
+    let tree_id = index.write_tree().map_err(|e| e.to_string())?;
+    let tree = repo.find_tree(tree_id).map_err(|e| e.to_string())?;
+    
+    let head = repo.head().map_err(|e| e.to_string())?;
+    let parent = repo
+        .find_commit(head.target().ok_or("No HEAD target")?)
+        .map_err(|e| e.to_string())?;
+    
+    let sig = repo.signature().map_err(|e| e.to_string())?;
+    
+    let commit_id = repo
+        .commit(Some("HEAD"), &sig, &sig, &message, &tree, &[&parent])
+        .map_err(|e| e.to_string())?;
+    
+    Ok(commit_id.to_string())
+}
+
+/// Push to remote using OAuth token
+#[tauri::command]
+pub async fn git_push(path: String, token: String) -> Result<(), String> {
+    let repo = Repository::open(&path)
+        .map_err(|e| e.to_string())?;
+    
+    let mut remote = repo
+        .find_remote("origin")
+        .map_err(|e| e.to_string())?;
+    
+    let mut callbacks = RemoteCallbacks::new();
+    callbacks.credentials(|_url, _username, _allowed| {
+        Cred::userpass_plaintext("x-access-token", &token)
+    });
+    
+    let mut push_options = PushOptions::new();
+    push_options.remote_callbacks(callbacks);
+    
+    // Get current branch
+    let head = repo.head().map_err(|e| e.to_string())?;
+    let branch = head.shorthand().unwrap_or("main");
+    let refspec = format!("refs/heads/{}:refs/heads/{}", branch, branch);
+    
+    remote
+        .push(&[&refspec], Some(&mut push_options))
+        .map_err(|e| format!("Push failed: {}", e))?;
+    
+    Ok(())
+}
+
+/// Pull from remote
+#[tauri::command]
+pub async fn git_pull(path: String, token: String) -> Result<(), String> {
+    let repo = Repository::open(&path)
+        .map_err(|e| e.to_string())?;
+    
+    let mut remote = repo
+        .find_remote("origin")
+        .map_err(|e| e.to_string())?;
+    
+    let mut callbacks = RemoteCallbacks::new();
+    callbacks.credentials(|_url, _username, _allowed| {
+        Cred::userpass_plaintext("x-access-token", &token)
+    });
+    
+    let mut fetch_options = FetchOptions::new();
+    fetch_options.remote_callbacks(callbacks);
+    
+    // Fetch
+    let head = repo.head().map_err(|e| e.to_string())?;
+    let branch = head.shorthand().unwrap_or("main");
+    
+    remote
+        .fetch(&[branch], Some(&mut fetch_options), None)
+        .map_err(|e| format!("Fetch failed: {}", e))?;
+    
+    // Fast-forward merge (simplified)
+    let fetch_head = repo
+        .find_reference("FETCH_HEAD")
+        .map_err(|e| e.to_string())?;
+    let fetch_commit = repo
+        .reference_to_annotated_commit(&fetch_head)
+        .map_err(|e| e.to_string())?;
+    
+    let (analysis, _) = repo
+        .merge_analysis(&[&fetch_commit])
+        .map_err(|e| e.to_string())?;
+    
+    if analysis.is_fast_forward() {
+        let refname = format!("refs/heads/{}", branch);
+        let mut reference = repo
+            .find_reference(&refname)
+            .map_err(|e| e.to_string())?;
+        reference
+            .set_target(fetch_commit.id(), "Fast-forward")
+            .map_err(|e| e.to_string())?;
+        repo.set_head(&refname).map_err(|e| e.to_string())?;
+        repo.checkout_head(Some(
+            git2::build::CheckoutBuilder::default().force(),
+        ))
+        .map_err(|e| e.to_string())?;
+    }
+    
+    Ok(())
+}
+```
+
+---
+
+## Phase 5: Web UI Integration
+
+### 5.1 Tauri Bridge Module
 ```typescript
-// packages/web-sdk/src/lib/is-desktop.ts
-export const isDesktopApp = () => {
+// packages/web-sdk/src/lib/tauri-bridge.ts
+import { invoke } from '@tauri-apps/api/core';
+
+export interface Project {
+  path: string;
+  name: string;
+  lastOpened: string;
+  pinned: boolean;
+}
+
+export interface ServerInfo {
+  pid: number;
+  port: number;
+  webPort: number;
+  url: string;
+  projectPath: string;
+}
+
+export interface GitHubRepo {
+  id: number;
+  name: string;
+  fullName: string;
+  cloneUrl: string;
+  private: boolean;
+  description: string | null;
+}
+
+export interface GitHubUser {
+  login: string;
+  name: string | null;
+  avatarUrl: string;
+}
+
+export interface GitStatus {
+  branch: string;
+  ahead: number;
+  behind: number;
+  changedFiles: Array<{ path: string; status: string }>;
+  hasChanges: boolean;
+}
+
+export const isDesktopApp = (): boolean => {
   try {
     return '__TAURI__' in window;
   } catch {
     return false;
   }
 };
-```
-
-### 2.2 Tauri Bridge Module
-```typescript
-// packages/web-sdk/src/lib/tauri-bridge.ts
-import { invoke } from '@tauri-apps/api/core';
 
 export const tauriBridge = {
-  openProject: () => invoke('open_project_dialog'),
-  startServer: (path: string) => invoke('start_server', { project_path: path }),
-  stopServer: (pid: number) => invoke('stop_server', { pid }),
-  getRecentProjects: () => invoke('get_recent_projects'),
-  saveRecentProject: (path: string) => invoke('save_recent_project', { path }),
+  // Project management
+  openProjectDialog: () => invoke<string | null>('open_project_dialog'),
+  getRecentProjects: () => invoke<Project[]>('get_recent_projects'),
+  saveRecentProject: (project: Project) => 
+    invoke('save_recent_project', { project }),
+
+  // Server management
+  startServer: (projectPath: string) => 
+    invoke<ServerInfo>('start_server', { projectPath }),
+  stopServer: (pid: number) => 
+    invoke('stop_server', { pid }),
+  stopAllServers: () => 
+    invoke('stop_all_servers'),
+
+  // GitHub OAuth
+  githubLogin: () => invoke('github_login'),
+  githubExchangeCode: (code: string) => 
+    invoke<string>('github_exchange_code', { code }),
+  githubGetToken: () => invoke<string | null>('github_get_token'),
+  githubLogout: () => invoke('github_logout'),
+  githubGetUser: (token: string) => 
+    invoke<GitHubUser>('github_get_user', { token }),
+  githubListRepos: (token: string) => 
+    invoke<GitHubRepo[]>('github_list_repos', { token }),
+
+  // Git operations
+  gitClone: (url: string, path: string, token: string) => 
+    invoke('git_clone', { url, path, token }),
+  gitStatus: (path: string) => 
+    invoke<GitStatus>('git_status', { path }),
+  gitCommit: (path: string, message: string) => 
+    invoke<string>('git_commit', { path, message }),
+  gitPush: (path: string, token: string) => 
+    invoke('git_push', { path, token }),
+  gitPull: (path: string, token: string) => 
+    invoke('git_pull', { path, token }),
 };
 ```
 
-### 2.3 Web UI Updates
-Add to **apps/web** (not breaking existing web version):
-- [ ] Detect if running in Tauri → show "Open Project" button in header
-- [ ] On click: invoke `openProject()` → `startServer(path)` → redirect to server URL
-- [ ] Add desktop-only sidebar section for Recent Projects
-- [ ] Store current project path in localStorage
-- [ ] Desktop menu integration (File → Open Project, Preferences)
+### 5.2 Desktop Detection
+```typescript
+// packages/web-sdk/src/lib/is-desktop.ts
+export const isDesktopApp = (): boolean => {
+  try {
+    return '__TAURI__' in window;
+  } catch {
+    return false;
+  }
+};
 
-### 2.4 Server URL Injection
-- Tauri serves web UI via `tauri://` protocol OR custom handler
-- On project open: Tauri passes server URL via command-line arg or env var
-- Web UI updates `window.AGI_SERVER_URL` dynamically
+export const isTauri = isDesktopApp;
+```
 
-## Phase 3: Binary Distribution & Platform Support
+### 5.3 Desktop-Only UI Components
 
-### 3.1 Binary Distribution Strategy
+#### Welcome/Project Picker Screen
+```
+┌─────────────────────────────────────────────────────────────┐
+│  AGI Desktop                              [_][□][×]         │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   Welcome! Choose a project:                                │
+│                                                             │
+│   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│   │ 📁 Open     │  │ 🐙 Clone    │  │ ⭐ Recent   │        │
+│   │   Folder    │  │  from GitHub│  │  Projects   │        │
+│   └─────────────┘  └─────────────┘  └─────────────┘        │
+│                                                             │
+│   Recent:                                                   │
+│   ├─ ~/dev/my-app          (last opened 2h ago)            │
+│   ├─ ~/dev/another-project (last opened yesterday)         │
+│   └─ ~/dev/old-project     (last opened 3 days ago)        │
+│                                                             │
+│   ─────────────────────────────────────────────────         │
+│   👤 nitishxyz  [Disconnect GitHub]                         │
+│   or: Not logged in to GitHub  [Connect GitHub]             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Clone from GitHub Modal
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Clone from GitHub                                [×]       │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  🔍 Search repositories...                                  │
+│                                                             │
+│  Your Repositories:                                         │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 📦 nitishxyz/agi                                    │   │
+│  │    AI-powered development assistant                  │   │
+│  │                                          [Clone]     │   │
+│  ├─────────────────────────────────────────────────────┤   │
+│  │ 🔒 nitishxyz/private-project                        │   │
+│  │    Private project                                   │   │
+│  │                                          [Clone]     │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  Clone to: ~/Projects/[repo-name]  [Browse...]              │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Git Status Bar (Bottom of Main UI)
+```
+┌─────────────────────────────────────────────────────────────┐
+│ [Existing AGI Web UI - Chat, Agents, etc.]                  │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  🌿 main  │  3 files changed  │  [↑ Push]  [↓ Pull]  [📝]  │
+└─────────────────────────────────────────────────────────────┘
+
+Clicking 📝 opens commit dialog:
+┌─────────────────────────────────────────────────────────────┐
+│  Commit Changes                                    [×]      │
+├─────────────────────────────────────────────────────────────┤
+│  Changed files:                                             │
+│  ☑ M  src/components/Button.tsx                            │
+│  ☑ M  src/utils/helpers.ts                                 │
+│  ☑ A  src/components/Modal.tsx                             │
+│                                                             │
+│  Commit message:                                            │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Add modal component with animations                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌──────────────┐  ┌──────────────────────────┐            │
+│  │    Commit    │  │    Commit & Push         │            │
+│  └──────────────┘  └──────────────────────────┘            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Phase 6: Binary Distribution & Platform Support
+
+### 6.1 Binary Distribution Strategy
 ```
 dist/
 ├── agi-darwin-arm64     ← macOS ARM (Apple Silicon)
 ├── agi-darwin-x64       ← macOS Intel
 ├── agi-linux-x64        ← Linux x86_64
-└── agi-linux-arm64      ← Linux ARM (Raspberry Pi, etc.)
+├── agi-linux-arm64      ← Linux ARM
+└── agi-windows-x64.exe  ← Windows (future)
 
 // Tauri embeds appropriate binary for the platform at build time
-resources/
+apps/desktop/src-tauri/resources/
 └── binaries/
     ├── agi-darwin-arm64
     ├── agi-darwin-x64
@@ -154,225 +1050,88 @@ resources/
     └── agi-linux-arm64
 ```
 
-### 3.2 Tauri Configuration
-```toml
-# tauri.conf.json
-{
-  "build": {
-    "beforeBuildCommand": "bun run build:web && bun run build:all-bins",
-    "devPath": "http://localhost:5173",  // Vite dev server
-    "frontendDist": "../web/dist"
-  },
-  "bundle": {
-    "resources": ["./resources/binaries/*"],
-    "macOS": { "signingIdentity": "..." },
-    "windows": { "certificateThumbprint": "..." }
-  }
-}
+### 6.2 Build Output
+```
+apps/desktop/src-tauri/target/release/bundle/
+├── dmg/AGI_0.1.0_aarch64.dmg        (macOS ARM)
+├── dmg/AGI_0.1.0_x64.dmg            (macOS Intel)
+├── msi/AGI_0.1.0_x64.msi            (Windows)
+├── appimage/AGI_0.1.0_amd64.AppImage (Linux)
+└── deb/AGI_0.1.0_amd64.deb          (Debian/Ubuntu)
 ```
 
-### 3.3 Runtime Binary Selection
-```rust
-// src-tauri/src/server.rs
-fn get_binary_path() -> PathBuf {
-  let target = std::env::consts::OS;
-  let arch = std::env::consts::ARCH;
-  let binary_name = format!("agi-{}-{}", target, arch);
-  
-  // Try app resources first (compiled app), then fallback to parent dist/
-  let app_handle = /* from state */;
-  app_handle.path().resource_dir()
-    .join("binaries")
-    .join(binary_name)
-}
-```
-
-## Phase 4: Project Management & History
-
-### 4.1 Project State File
-```json
-// ~/.agi/desktop-projects.json
-{
-  "recent": [
-    {
-      "path": "/Users/me/my-project",
-      "name": "my-project",
-      "lastOpened": "2025-01-16T10:30:00Z",
-      "pinned": true
-    }
-  ]
-}
-```
-
-### 4.2 Server Registry (Runtime)
-Track active servers during session:
-```rust
-struct ServerInfo {
-  project_path: PathBuf,
-  port: u16,
-  pid: u32,
-  started_at: SystemTime,
-}
-
-static SERVERS: Mutex<Vec<ServerInfo>> = Mutex::new(Vec::new());
-```
-
-### 4.3 Features
-- [ ] Click project in Recent list → auto-restart server if needed
-- [ ] Pin/unpin projects for quick access
-- [ ] Show running server status (port, PID)
-- [ ] One-click "Open in Terminal" for project directory
-- [ ] Project settings/metadata view
-
-## Phase 5: Server Lifecycle & Connection Management
-
-### 5.1 Full Server Bootstrap Flow
-```
-1. User clicks "Open Project" button in Web UI
-2. Tauri file picker dialog opens (invoke tauri-bridge)
-3. User selects directory → Tauri command: `start_server(path)`
-4. Rust backend spawns CLI binary in that cwd: 
-   spawn("agi-darwin-arm64", ["serve", "--port", "0"])
-5. CLI outputs server port (parse stdout)
-6. Tauri returns { port: 3001, url: "http://localhost:3001" }
-7. Web UI receives response → `window.AGI_SERVER_URL = "http://localhost:3001"`
-8. Web UI redirects to `/` or project root → starts working
-9. On exit, Tauri kills subprocess
-```
-
-### 5.2 Port & Process Management
-```rust
-// src-tauri/src/server.rs
-pub fn start_server(project_path: &str, requested_port: Option<u16>) -> Result<ServerInfo> {
-  // 1. Find available port (use 0 = OS picks random)
-  let port = requested_port.unwrap_or(0);
-  
-  // 2. Get binary path for current platform
-  let binary = get_binary_path()?;
-  
-  // 3. Spawn: agi serve --port PORT in project_path cwd
-  let mut child = Command::new(binary)
-    .current_dir(project_path)
-    .args(&["serve", "--port", &port.to_string()])
-    .stdout(Stdio::piped())
-    .spawn()?;
-  
-  // 4. Parse actual port from stdout (CLI logs: "🚀 agi server listening on http://localhost:3001")
-  let actual_port = parse_server_port(child.stdout.as_mut())?;
-  
-  // 5. Store in registry
-  let info = ServerInfo { /* ... */ };
-  SERVERS.lock().unwrap().push(info.clone());
-  
-  Ok(info)
-}
-
-pub fn stop_server(pid: u32) {
-  // Kill process tree
-  #[cfg(unix)]
-  std::process::Command::new("kill").arg(pid.to_string()).output().ok();
-  
-  // Remove from registry
-  SERVERS.lock().unwrap().retain(|s| s.pid != pid);
-}
-```
-
-### 5.3 Graceful Shutdown
-- On app exit: Kill all registered servers
-- On project switch: Kill previous server, start new one
-- Trap SIGTERM/SIGINT to ensure cleanup
-
-## Dependencies & Build Setup
-
-### Rust
-```toml
-tauri = "2.x"
-tauri-build = "2.x"
-tauri-plugin-shell = "2.x"
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-dirs = "5.x"
-anyhow = "1.x"
-```
-
-### JavaScript/TypeScript
-```json
-{
-  "@tauri-apps/cli": "^2.x",
-  "@tauri-apps/api": "^2.x",
-  "@tauri-apps/plugin-shell": "^2.x",
-  "typescript": "latest"
-}
-```
-
-## Known Considerations & Gotchas
-
-1. **Binary Path Resolution**: Must work in both dev (`cargo tauri dev`) and production (bundled app)
-2. **Server Port Parsing**: Parse CLI stdout to get actual port (use streaming capture)
-3. **CWD Context**: Ensure CLI runs in correct directory for `.agi/config.json` discovery
-4. **Process Cleanup**: Must kill server subprocess when app closes OR user switches projects
-5. **Port Conflicts**: If port 3001 taken, CLI will pick random via `--port 0`
-6. **File Permissions**: Request `fs:all` in tauri.conf.json for file dialogs
-7. **Code Signing**: macOS requires signing; Windows needs code signing cert for MSI
-8. **Cross-Platform Paths**: Use `std::path::PathBuf` not hardcoded `/` paths
-9. **IPC Deadlocks**: Avoid blocking Tauri thread while waiting for long-running CLI processes
-10. **Web UI URL Injection**: May need to update `window.AGI_SERVER_URL` after page load
-
-## Distribution & Packaging Strategy
-
-### Build Output
-```
-src-tauri/target/release/
-├── bundle/
-│   ├── dmg/agi-0.1.0.dmg        (macOS)
-│   ├── msi/agi-0.1.0.msi        (Windows)
-│   └── appimage/agi-0.1.0.AppImage (Linux)
-```
-
-### Platform-Specific
+### 6.3 Platform-Specific Notes
 - **macOS**: Code sign + notarize DMG (requires Apple Developer account)
 - **Windows**: Sign MSI with code signing certificate
-- **Linux**: AppImage is self-contained; consider Snap for snap store
+- **Linux**: AppImage is self-contained; consider Snap/Flatpak for stores
 
-### Auto-Updates (Future)
-- Integrate `tauri-plugin-updater` for app version checking
-- Host releases on GitHub Releases or custom update server
-
-## Success Criteria for MVP
-
-- ✓ Tauri window opens with embedded web UI (localhost:1430 or tauri protocol)
-- ✓ "Open Project" button triggers file picker
-- ✓ Selected directory → CLI server spawns in that cwd → returns port
-- ✓ Web UI detects server URL, updates `window.AGI_SERVER_URL`, reloads
-- ✓ Can chat, run agents, browse sessions (same as web version)
-- ✓ App closes → server subprocess killed, no orphaned processes
-- ✓ Runs on macOS (Intel + ARM) and Linux
-- ✓ Can package as DMG (macOS) and AppImage (Linux)
+---
 
 ## Implementation Roadmap
 
-### Week 1: Foundation
-1. Initialize Tauri project (`npm create tauri-app`)
-2. Set up Rust IPC commands (open_project, start_server, stop_server)
+### Week 1: Foundation (Phase 1-2)
+1. Initialize Tauri 2.0 project with `bun create tauri-app`
+2. Set up Rust commands (project, server)
 3. Implement binary path resolution and subprocess spawning
-4. Test server startup from Tauri on macOS
+4. Create project picker UI
+5. Test server startup from Tauri on macOS
 
-### Week 2: Web UI Integration
-5. Create tauri-bridge.ts in web-sdk
-6. Add "Open Project" button to web UI (conditional on `isDesktopApp()`)
-7. Integrate project opening flow (invoke → start → redirect)
-8. Test web UI ↔ Rust IPC communication
+### Week 2: GitHub Integration (Phase 3)
+6. Set up GitHub OAuth App
+7. Implement `tauri-plugin-oauth` flow
+8. Add keyring token storage
+9. Create GitHub login UI
+10. Implement repo listing
 
-### Week 3: Refinement & Distribution
-9. Add Recent Projects UI and persistence
-10. Test project switching and server cleanup
-11. Build DMG and test macOS distribution
-12. Test AppImage for Linux
+### Week 3: Git Operations (Phase 4)
+11. Implement git clone via git2-rs
+12. Add git status command
+13. Implement commit functionality
+14. Add push/pull operations
+15. Create git status bar UI
 
-### Future Phases
-- Multi-project tabs (future enhancement)
-- Native menus and keyboard shortcuts
-- Settings panel for server options
-- Drag-drop project folder support
-- Workspace management
+### Week 4: Polish & Distribution (Phase 5-6)
+16. Complete tauri-bridge.ts in web-sdk
+17. Add desktop-only components to web UI
+18. Test full flow end-to-end
+19. Build DMG, MSI, AppImage
+20. Test on all platforms
+
+---
+
+## Security Considerations
+
+1. **OAuth tokens** - Stored in OS keychain, never in plaintext files
+2. **No client secret exposure** - Use PKCE flow or server-side exchange
+3. **HTTPS only** - All git operations use HTTPS, not SSH
+4. **Token scopes** - Request minimal scopes (`repo`, `user`)
+5. **Token revocation** - Users can revoke via GitHub settings anytime
+
+---
+
+## Success Criteria
+
+- [ ] Double-click to open AGI Desktop (no CLI needed)
+- [ ] "Open Folder" works with native file picker
+- [ ] "Connect GitHub" → OAuth login in browser → back to app
+- [ ] Clone any repo from GitHub (public or private)
+- [ ] View git status (branch, changed files)
+- [ ] Commit changes with message
+- [ ] Push to GitHub (no SSH keys needed)
+- [ ] Server starts automatically when project opens
+- [ ] App closes → server subprocess killed
+- [ ] Builds as DMG (macOS), MSI (Windows), AppImage (Linux)
+
+---
+
+## Future Enhancements
+
+- [ ] Multi-project tabs
+- [ ] Native menus and keyboard shortcuts
+- [ ] Branch switching UI
+- [ ] Pull request creation
+- [ ] Conflict resolution UI
+- [ ] Auto-updates via `tauri-plugin-updater`
+- [ ] Mobile companion app (iOS/Android) using Tauri 2.0 mobile
+- [ ] Workspace/multi-repo management
+- [ ] Drag-drop folder support
