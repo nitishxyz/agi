@@ -195,7 +195,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 			</div>
 
 			{/* Main Content */}
-			<div className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-12 lg:py-12 pb-24">
+			<div className="flex-1 px-4 pt-6 sm:px-6 sm:pt-8 lg:px-12 lg:pt-12 pb-32">
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
 					<div className="mb-10">
