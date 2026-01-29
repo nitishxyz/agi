@@ -82,21 +82,23 @@ function ProjectPicker({
 	useEffect(() => {
 		const win = getCurrentWindow();
 		let unlisten: (() => void) | null = null;
-		
+
 		const checkFullscreen = async () => {
 			const fs = await win.isFullscreen();
 			setIsFullscreen(fs);
 		};
-		
+
 		checkFullscreen();
-		
-		win.onResized(async () => {
-			const fs = await win.isFullscreen();
-			setIsFullscreen(fs);
-		}).then((fn) => {
-			unlisten = fn;
-		});
-		
+
+		win
+			.onResized(async () => {
+				const fs = await win.isFullscreen();
+				setIsFullscreen(fs);
+			})
+			.then((fn) => {
+				unlisten = fn;
+			});
+
 		return () => {
 			unlisten?.();
 		};
@@ -155,12 +157,14 @@ function ProjectPicker({
 	return (
 		<div className="min-h-screen flex flex-col bg-background text-foreground">
 			{/* Top Bar */}
-			<div 
+			<div
 				className="flex items-center justify-between px-6 h-10 border-b border-border cursor-default select-none"
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
 			>
-				<div className={`flex items-center gap-3 ${isFullscreen ? '' : 'ml-16'}`}>
+				<div
+					className={`flex items-center gap-3 ${isFullscreen ? '' : 'ml-16'}`}
+				>
 					<SetuLogo size={24} />
 					<span className="font-semibold text-foreground">AGI Desktop</span>
 				</div>
@@ -246,16 +250,16 @@ function ProjectPicker({
 									<span className="text-yellow-500">⭐</span> Pinned
 								</h2>
 								<div className="space-y-2">
-								{pinnedProjects.map((project) => (
-									<div
-										key={project.path}
-										className="group flex items-center gap-3 p-3 bg-card border border-border hover:border-ring rounded-xl transition-colors cursor-pointer"
-										onClick={() => onSelectProject(project)}
-									>
-										<div className="flex-1 flex items-center gap-3 text-left">
-											<div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-												<span className="text-lg">📂</span>
-											</div>
+									{pinnedProjects.map((project) => (
+										<div
+											key={project.path}
+											className="group flex items-center gap-3 p-3 bg-card border border-border hover:border-ring rounded-xl transition-colors cursor-pointer"
+											onClick={() => onSelectProject(project)}
+										>
+											<div className="flex-1 flex items-center gap-3 text-left">
+												<div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+													<span className="text-lg">📂</span>
+												</div>
 												<div className="flex-1 min-w-0">
 													<div className="font-medium text-foreground truncate">
 														{project.name}
@@ -264,25 +268,31 @@ function ProjectPicker({
 														{project.path}
 													</div>
 												</div>
-											<div className="text-xs text-muted-foreground">
-												{formatTimeAgo(project.lastOpened)}
+												<div className="text-xs text-muted-foreground">
+													{formatTimeAgo(project.lastOpened)}
+												</div>
 											</div>
-										</div>
-										<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-											<button
-												type="button"
-												onClick={(e) => { e.stopPropagation(); togglePinned(project.path); }}
-												className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-												title="Unpin"
-											>
+											<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+												<button
+													type="button"
+													onClick={(e) => {
+														e.stopPropagation();
+														togglePinned(project.path);
+													}}
+													className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+													title="Unpin"
+												>
 													⭐
-											</button>
-											<button
-												type="button"
-												onClick={(e) => { e.stopPropagation(); removeProject(project.path); }}
-												className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-												title="Remove"
-											>
+												</button>
+												<button
+													type="button"
+													onClick={(e) => {
+														e.stopPropagation();
+														removeProject(project.path);
+													}}
+													className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+													title="Remove"
+												>
 													✕
 												</button>
 											</div>
@@ -296,16 +306,16 @@ function ProjectPicker({
 							<div>
 								<h2 className="font-semibold text-foreground mb-4">Recent</h2>
 								<div className="space-y-2">
-								{recentProjects.map((project) => (
-									<div
-										key={project.path}
-										className="group flex items-center gap-3 p-3 bg-card border border-border hover:border-ring rounded-xl transition-colors cursor-pointer"
-										onClick={() => onSelectProject(project)}
-									>
-										<div className="flex-1 flex items-center gap-3 text-left">
-											<div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-												<span className="text-lg">📂</span>
-											</div>
+									{recentProjects.map((project) => (
+										<div
+											key={project.path}
+											className="group flex items-center gap-3 p-3 bg-card border border-border hover:border-ring rounded-xl transition-colors cursor-pointer"
+											onClick={() => onSelectProject(project)}
+										>
+											<div className="flex-1 flex items-center gap-3 text-left">
+												<div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+													<span className="text-lg">📂</span>
+												</div>
 												<div className="flex-1 min-w-0">
 													<div className="font-medium text-foreground truncate">
 														{project.name}
@@ -314,25 +324,31 @@ function ProjectPicker({
 														{project.path}
 													</div>
 												</div>
-											<div className="text-xs text-muted-foreground">
-												{formatTimeAgo(project.lastOpened)}
+												<div className="text-xs text-muted-foreground">
+													{formatTimeAgo(project.lastOpened)}
+												</div>
 											</div>
-										</div>
-										<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-											<button
-												type="button"
-												onClick={(e) => { e.stopPropagation(); togglePinned(project.path); }}
-												className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-												title="Pin"
-											>
+											<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+												<button
+													type="button"
+													onClick={(e) => {
+														e.stopPropagation();
+														togglePinned(project.path);
+													}}
+													className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+													title="Pin"
+												>
 													☆
-											</button>
-											<button
-												type="button"
-												onClick={(e) => { e.stopPropagation(); removeProject(project.path); }}
-												className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-												title="Remove"
-											>
+												</button>
+												<button
+													type="button"
+													onClick={(e) => {
+														e.stopPropagation();
+														removeProject(project.path);
+													}}
+													className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+													title="Remove"
+												>
 													✕
 												</button>
 											</div>
@@ -476,7 +492,9 @@ function ProjectPicker({
 											</div>
 											<button
 												type="button"
-												onClick={() => handleCloneRepo(repo.cloneUrl, repo.name)}
+												onClick={() =>
+													handleCloneRepo(repo.cloneUrl, repo.name)
+												}
 												disabled={cloning}
 												className="ml-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
 											>
@@ -511,21 +529,23 @@ function Workspace({
 	useEffect(() => {
 		const win = getCurrentWindow();
 		let unlisten: (() => void) | null = null;
-		
+
 		const checkFullscreen = async () => {
 			const fs = await win.isFullscreen();
 			setIsFullscreen(fs);
 		};
-		
+
 		checkFullscreen();
-		
-		win.onResized(async () => {
-			const fs = await win.isFullscreen();
-			setIsFullscreen(fs);
-		}).then((fn) => {
-			unlisten = fn;
-		});
-		
+
+		win
+			.onResized(async () => {
+				const fs = await win.isFullscreen();
+				setIsFullscreen(fs);
+			})
+			.then((fn) => {
+				unlisten = fn;
+			});
+
 		return () => {
 			unlisten?.();
 		};
@@ -539,7 +559,11 @@ function Workspace({
 	useEffect(() => {
 		if (startedRef.current) return;
 		startedRef.current = true;
-		console.log('[AGI] Workspace mounting for project:', project.path, project.name);
+		console.log(
+			'[AGI] Workspace mounting for project:',
+			project.path,
+			project.name,
+		);
 		startServer(project.path);
 	}, []);
 
@@ -548,24 +572,31 @@ function Workspace({
 	}, [server]);
 
 	return (
-		<div className="h-screen flex flex-col" style={{ backgroundColor: DARK_BG }}>
+		<div
+			className="h-screen flex flex-col"
+			style={{ backgroundColor: DARK_BG }}
+		>
 			{/* Header */}
-			<div 
+			<div
 				className="flex items-center gap-3 px-4 h-10 border-b border-border cursor-default select-none"
 				style={{ backgroundColor: DARK_BG }}
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
 			>
-			<button
-				type="button"
-				onClick={handleBack}
-				className={`w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ${isFullscreen ? '' : 'ml-16'}`}
-			>
-				←
-			</button>
+				<button
+					type="button"
+					onClick={handleBack}
+					className={`w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ${isFullscreen ? '' : 'ml-16'}`}
+				>
+					←
+				</button>
 				<div className="flex-1 min-w-0 flex items-center gap-2">
-					<span className="font-medium text-foreground truncate">{project.name}</span>
-					<span className="text-xs text-muted-foreground truncate">{project.path}</span>
+					<span className="font-medium text-foreground truncate">
+						{project.name}
+					</span>
+					<span className="text-xs text-muted-foreground truncate">
+						{project.path}
+					</span>
 				</div>
 				{server && (
 					<div className="flex items-center gap-1.5 text-xs">
@@ -576,10 +607,15 @@ function Workspace({
 			</div>
 
 			{/* Content */}
-			<div className="flex-1 relative flex items-center justify-center" style={{ backgroundColor: DARK_BG }}>
+			<div
+				className="flex-1 relative flex items-center justify-center"
+				style={{ backgroundColor: DARK_BG }}
+			>
 				{(loading || (server && !iframeLoaded)) && (
 					<div className="text-center">
-						<div className="text-muted-foreground mb-2">{loading ? 'Starting server...' : 'Loading...'}</div>
+						<div className="text-muted-foreground mb-2">
+							{loading ? 'Starting server...' : 'Loading...'}
+						</div>
 					</div>
 				)}
 				{error && !loading && (
@@ -635,7 +671,11 @@ function App() {
 				<ProjectPicker onSelectProject={handleSelectProject} />
 			)}
 			{view === 'workspace' && selectedProject && (
-				<Workspace key={selectedProject.path} project={selectedProject} onBack={handleBack} />
+				<Workspace
+					key={selectedProject.path}
+					project={selectedProject}
+					onBack={handleBack}
+				/>
 			)}
 		</>
 	);

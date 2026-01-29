@@ -210,10 +210,10 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 					</div>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-8">
-					{/* Left Column - Wallet */}
-					<div className="md:col-span-1">
-						<div className="bg-card rounded-2xl border border-border p-5">
-							{authStatus.setu.configured && authStatus.setu.publicKey ? (
+						{/* Left Column - Wallet */}
+						<div className="md:col-span-1">
+							<div className="bg-card rounded-2xl border border-border p-5">
+								{authStatus.setu.configured && authStatus.setu.publicKey ? (
 									<div className="flex flex-col h-full">
 										{/* Setu Default Provider Badge */}
 										<div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
@@ -286,9 +286,9 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 							</div>
 						</div>
 
-					{/* Right Column - Providers */}
-					<div className="md:col-span-1 xl:col-span-2 space-y-6">
-						{/* Connected Providers */}
+						{/* Right Column - Providers */}
+						<div className="md:col-span-1 xl:col-span-2 space-y-6">
+							{/* Connected Providers */}
 							<div>
 								<div className="flex items-center justify-between mb-4">
 									<h2 className="font-semibold text-foreground">
@@ -382,18 +382,18 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 									{unconfiguredProviders.map(([id, info]) => (
 										<div key={id}>
 											{addingProvider === id ? (
-									<div className="flex items-center gap-2 p-3 bg-card border border-ring rounded-xl overflow-hidden">
-										<div className="shrink-0">
-											<ProviderLogo provider={id} size={18} />
-										</div>
-										<input
-											ref={apiKeyInputRef}
-											type="password"
-											value={apiKeyInput}
-											onChange={(e) => setApiKeyInput(e.target.value)}
-											placeholder={`${info.label} API key...`}
-											className="flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground"
-											onKeyDown={(e) => {
+												<div className="flex items-center gap-2 p-3 bg-card border border-ring rounded-xl overflow-hidden">
+													<div className="shrink-0">
+														<ProviderLogo provider={id} size={18} />
+													</div>
+													<input
+														ref={apiKeyInputRef}
+														type="password"
+														value={apiKeyInput}
+														onChange={(e) => setApiKeyInput(e.target.value)}
+														placeholder={`${info.label} API key...`}
+														className="flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground"
+														onKeyDown={(e) => {
 															if (e.key === 'Enter') handleAddProvider(id);
 															if (e.key === 'Escape') {
 																setAddingProvider(null);
@@ -401,33 +401,33 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 															}
 														}}
 													/>
-										<button
-											type="button"
-											onClick={() => handleAddProvider(id)}
-											disabled={!apiKeyInput.trim()}
-											className="shrink-0 px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg disabled:opacity-50"
-										>
-											Add
-										</button>
-										<button
-											type="button"
-											onClick={() => {
-												setAddingProvider(null);
-												setApiKeyInput('');
-											}}
-											className="shrink-0 p-1.5 text-muted-foreground hover:text-foreground"
-										>
-											<X className="w-4 h-4" />
-										</button>
+													<button
+														type="button"
+														onClick={() => handleAddProvider(id)}
+														disabled={!apiKeyInput.trim()}
+														className="shrink-0 px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg disabled:opacity-50"
+													>
+														Add
+													</button>
+													<button
+														type="button"
+														onClick={() => {
+															setAddingProvider(null);
+															setApiKeyInput('');
+														}}
+														className="shrink-0 p-1.5 text-muted-foreground hover:text-foreground"
+													>
+														<X className="w-4 h-4" />
+													</button>
 												</div>
 											) : (
-									<div className="flex items-center justify-between p-3 bg-card border border-border hover:border-border/80 rounded-xl transition-colors gap-2">
-										<div className="flex items-center gap-3 min-w-0">
-											<ProviderLogo provider={id} size={20} />
-											<div className="min-w-0">
-												<div className="font-medium text-foreground truncate">
-													{info.label}
-												</div>
+												<div className="flex items-center justify-between p-3 bg-card border border-border hover:border-border/80 rounded-xl transition-colors gap-2">
+													<div className="flex items-center gap-3 min-w-0">
+														<ProviderLogo provider={id} size={20} />
+														<div className="min-w-0">
+															<div className="font-medium text-foreground truncate">
+																{info.label}
+															</div>
 															<div className="text-xs text-muted-foreground">
 																{info.modelCount} models
 															</div>
