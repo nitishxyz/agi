@@ -181,7 +181,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	return (
 		<div className="min-h-screen flex flex-col">
 			{/* Top Bar */}
-			<div className="flex items-center justify-between px-6 py-4 border-b border-border">
+			<div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border">
 				<div className="flex items-center gap-3">
 					<ProviderLogo provider="setu" size={24} />
 					<span className="font-semibold text-foreground">AGI</span>
@@ -195,11 +195,11 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 			</div>
 
 			{/* Main Content */}
-			<div className="flex-1 px-6 py-8 lg:px-12 lg:py-12">
+			<div className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-12 lg:py-12 pb-24">
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
 					<div className="mb-10">
-						<h1 className="text-3xl lg:text-4xl font-semibold text-foreground mb-3">
+						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-foreground mb-3">
 							{manageMode ? 'Manage Providers' : 'Welcome to AGI'}
 						</h1>
 						<p className="text-lg text-muted-foreground max-w-2xl">
@@ -209,11 +209,11 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 						</p>
 					</div>
 
-					<div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-						{/* Left Column - Wallet */}
-						<div className="xl:col-span-1">
-							<div className="bg-card rounded-2xl border border-border p-5 h-full">
-								{authStatus.setu.configured && authStatus.setu.publicKey ? (
+					<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-8">
+					{/* Left Column - Wallet */}
+					<div className="md:col-span-1">
+						<div className="bg-card rounded-2xl border border-border p-5">
+							{authStatus.setu.configured && authStatus.setu.publicKey ? (
 									<div className="flex flex-col h-full">
 										{/* Setu Default Provider Badge */}
 										<div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
@@ -286,9 +286,9 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 							</div>
 						</div>
 
-						{/* Right Column - Providers */}
-						<div className="xl:col-span-2 space-y-6">
-							{/* Connected Providers */}
+					{/* Right Column - Providers */}
+					<div className="md:col-span-1 xl:col-span-2 space-y-6">
+						{/* Connected Providers */}
 							<div>
 								<div className="flex items-center justify-between mb-4">
 									<h2 className="font-semibold text-foreground">
@@ -378,20 +378,22 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 								<h2 className="font-semibold text-foreground mb-4">
 									Add Providers
 								</h2>
-								<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
 									{unconfiguredProviders.map(([id, info]) => (
 										<div key={id}>
 											{addingProvider === id ? (
-												<div className="flex items-center gap-2 p-3 bg-card border border-ring rounded-xl">
-													<ProviderLogo provider={id} size={18} />
-													<input
-														ref={apiKeyInputRef}
-														type="password"
-														value={apiKeyInput}
-														onChange={(e) => setApiKeyInput(e.target.value)}
-														placeholder={`${info.label} API key...`}
-														className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground"
-														onKeyDown={(e) => {
+									<div className="flex items-center gap-2 p-3 bg-card border border-ring rounded-xl overflow-hidden">
+										<div className="shrink-0">
+											<ProviderLogo provider={id} size={18} />
+										</div>
+										<input
+											ref={apiKeyInputRef}
+											type="password"
+											value={apiKeyInput}
+											onChange={(e) => setApiKeyInput(e.target.value)}
+											placeholder={`${info.label} API key...`}
+											className="flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground"
+											onKeyDown={(e) => {
 															if (e.key === 'Enter') handleAddProvider(id);
 															if (e.key === 'Escape') {
 																setAddingProvider(null);
@@ -399,33 +401,33 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 															}
 														}}
 													/>
-													<button
-														type="button"
-														onClick={() => handleAddProvider(id)}
-														disabled={!apiKeyInput.trim()}
-														className="px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg disabled:opacity-50"
-													>
-														Add
-													</button>
-													<button
-														type="button"
-														onClick={() => {
-															setAddingProvider(null);
-															setApiKeyInput('');
-														}}
-														className="p-1.5 text-muted-foreground hover:text-foreground"
-													>
-														<X className="w-4 h-4" />
-													</button>
+										<button
+											type="button"
+											onClick={() => handleAddProvider(id)}
+											disabled={!apiKeyInput.trim()}
+											className="shrink-0 px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg disabled:opacity-50"
+										>
+											Add
+										</button>
+										<button
+											type="button"
+											onClick={() => {
+												setAddingProvider(null);
+												setApiKeyInput('');
+											}}
+											className="shrink-0 p-1.5 text-muted-foreground hover:text-foreground"
+										>
+											<X className="w-4 h-4" />
+										</button>
 												</div>
 											) : (
-												<div className="flex items-center justify-between p-3 bg-card border border-border hover:border-border/80 rounded-xl transition-colors">
-													<div className="flex items-center gap-3">
-														<ProviderLogo provider={id} size={20} />
-														<div>
-															<div className="font-medium text-foreground">
-																{info.label}
-															</div>
+									<div className="flex items-center justify-between p-3 bg-card border border-border hover:border-border/80 rounded-xl transition-colors gap-2">
+										<div className="flex items-center gap-3 min-w-0">
+											<ProviderLogo provider={id} size={20} />
+											<div className="min-w-0">
+												<div className="font-medium text-foreground truncate">
+													{info.label}
+												</div>
 															<div className="text-xs text-muted-foreground">
 																{info.modelCount} models
 															</div>
@@ -468,10 +470,10 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 			</div>
 
 			{/* Bottom Bar */}
-			<div className="px-6 py-4 border-t border-border">
+			<div className="fixed bottom-0 left-0 right-0 px-4 sm:px-6 py-4 border-t border-border bg-background">
 				<div className="max-w-7xl mx-auto flex items-center justify-between">
 					{!manageMode && (
-						<div className="text-sm text-muted-foreground">
+						<div className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
 							You can add more providers later in settings
 						</div>
 					)}

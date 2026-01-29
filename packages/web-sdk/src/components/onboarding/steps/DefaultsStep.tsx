@@ -126,7 +126,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 			</div>
 
 			{/* Main Content */}
-			<div className="flex-1 px-6 py-8 lg:px-12 lg:py-12">
+			<div className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-12 lg:py-12 pb-24">
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
 					<div className="mb-10">
@@ -254,7 +254,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 			</div>
 
 			{/* Bottom Bar */}
-			<div className="px-6 py-4 border-t border-border">
+			<div className="fixed bottom-0 left-0 right-0 px-4 sm:px-6 py-4 border-t border-border bg-background">
 				<div className="max-w-7xl mx-auto flex items-center justify-between">
 					<button
 						type="button"
