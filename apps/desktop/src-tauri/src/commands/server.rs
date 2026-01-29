@@ -48,12 +48,23 @@ fn get_binary_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String>
 
     let mut candidates: Vec<std::path::PathBuf> = Vec::new();
 
+    // Production: Tauri resource_dir (Contents/Resources in .app bundle)
     if let Ok(resource_dir) = app.path().resource_dir() {
+        // Tauri bundles resources to Contents/Resources/resources/
+        candidates.push(resource_dir.join("resources/binaries").join(&binary_name));
         candidates.push(resource_dir.join("binaries").join(&binary_name));
+        candidates.push(resource_dir.join(&binary_name));
     }
 
+    // Production macOS: relative to executable in .app bundle
+    // Structure: AGI.app/Contents/MacOS/AGI -> AGI.app/Contents/Resources/binaries/
     if let Ok(exe_dir) = std::env::current_exe() {
         if let Some(parent) = exe_dir.parent() {
+            // macOS .app bundle: MacOS -> Resources
+            candidates.push(parent.join("../Resources/resources/binaries").join(&binary_name));
+            candidates.push(parent.join("../Resources/binaries").join(&binary_name));
+            candidates.push(parent.join("../Resources").join(&binary_name));
+            // Dev mode path
             candidates.push(
                 parent
                     .join("../../../resources/binaries")
@@ -87,7 +98,15 @@ fn get_binary_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String>
         }
     }
 
-    Err(format!("Binary not found: {}", binary_name))
+    let tried_paths: Vec<String> = candidates
+        .iter()
+        .map(|p| p.display().to_string())
+        .collect();
+    Err(format!(
+        "Binary not found: {}. Tried paths:\n{}",
+        binary_name,
+        tried_paths.join("\n")
+    ))
 }
 
 fn find_available_port() -> u16 {

@@ -52,6 +52,9 @@
 		"dev:cli": "bun run --filter @agi-cli/cli dev",
 		"dev:server": "bun run --filter @agi-cli/server dev",
 		"dev:web": "bun run --filter web dev",
+		"dev:desktop": "bun run scripts/build-desktop.ts --dev",
+		"build:desktop": "bun run scripts/build-desktop.ts",
+		"build:desktop:all": "bun run scripts/build-desktop.ts --all-platforms",
 		"prepublishOnly": "bun run compile",
 		"version:bump": "bun run scripts/bump-version.ts"
 	},
