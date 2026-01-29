@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs::OpenOptions;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use tauri::{Manager, State};
 use std::net::TcpListener;
+use tauri::{Manager, State};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -48,23 +49,17 @@ fn get_binary_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String>
 
     let mut candidates: Vec<std::path::PathBuf> = Vec::new();
 
-    // Production: Tauri resource_dir (Contents/Resources in .app bundle)
     if let Ok(resource_dir) = app.path().resource_dir() {
-        // Tauri bundles resources to Contents/Resources/resources/
         candidates.push(resource_dir.join("resources/binaries").join(&binary_name));
         candidates.push(resource_dir.join("binaries").join(&binary_name));
         candidates.push(resource_dir.join(&binary_name));
     }
 
-    // Production macOS: relative to executable in .app bundle
-    // Structure: AGI.app/Contents/MacOS/AGI -> AGI.app/Contents/Resources/binaries/
     if let Ok(exe_dir) = std::env::current_exe() {
         if let Some(parent) = exe_dir.parent() {
-            // macOS .app bundle: MacOS -> Resources
             candidates.push(parent.join("../Resources/resources/binaries").join(&binary_name));
             candidates.push(parent.join("../Resources/binaries").join(&binary_name));
             candidates.push(parent.join("../Resources").join(&binary_name));
-            // Dev mode path
             candidates.push(
                 parent
                     .join("../../../resources/binaries")
@@ -109,16 +104,28 @@ fn get_binary_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String>
     ))
 }
 
-fn find_available_port() -> u16 {
+fn find_available_port(tracked_ports: &[u16]) -> u16 {
     let base = 19000u16;
+    
     for offset in 0..500u16 {
         let port = base + (offset * 2);
         if port > 60000 { break; }
         
-        if TcpListener::bind(("127.0.0.1", port)).is_ok()
-            && TcpListener::bind(("127.0.0.1", port + 1)).is_ok()
-        {
+        // Skip ports we're already tracking
+        if tracked_ports.contains(&port) {
+            eprintln!("[AGI] Port {} is tracked, skipping", port);
+            continue;
+        }
+        
+        // Check if port is actually available (both API and web ports)
+        let api_available = TcpListener::bind(("127.0.0.1", port)).is_ok();
+        let web_available = TcpListener::bind(("127.0.0.1", port + 1)).is_ok();
+        
+        if api_available && web_available {
+            eprintln!("[AGI] Found available port: {}", port);
             return port;
+        } else {
+            eprintln!("[AGI] Port {} not available (api={}, web={})", port, api_available, web_available);
         }
     }
     19100
@@ -132,15 +139,38 @@ pub async fn start_server(
     app: tauri::AppHandle,
 ) -> Result<ServerInfo, String> {
     let binary = get_binary_path(&app)?;
+    
+    // Get tracked ports from existing servers
+    let tracked_ports: Vec<u16> = {
+        let servers = state.servers.lock().unwrap();
+        eprintln!("[AGI] Currently tracking {} servers", servers.len());
+        servers.values().map(|(_, info)| {
+            eprintln!("[AGI]   - pid={} port={} project={}", info.pid, info.port, info.project_path);
+            info.port
+        }).collect()
+    };
 
-    let actual_port = port.unwrap_or_else(find_available_port);
+    let actual_port = port.unwrap_or_else(|| find_available_port(&tracked_ports));
     let port_arg = actual_port.to_string();
+    
+    eprintln!("[AGI] Starting server for project: {} on port: {}", project_path, actual_port);
+
+    let log_path = format!("/tmp/agi-server-{}.log", actual_port);
+    let log_file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(&log_path)
+        .ok();
+    
+    let stdout = log_file.as_ref().map(|f| Stdio::from(f.try_clone().unwrap())).unwrap_or(Stdio::null());
+    let stderr = log_file.map(|f| Stdio::from(f)).unwrap_or(Stdio::null());
 
     let child = Command::new(&binary)
         .current_dir(&project_path)
         .args(["serve", "--port", &port_arg, "--no-open"])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stdout(stdout)
+        .stderr(stderr)
         .spawn()
         .map_err(|e| format!("Failed to start server: {}", e))?;
 
@@ -151,6 +181,8 @@ pub async fn start_server(
         url: format!("http://localhost:{}", actual_port + 1),
         project_path: project_path.clone(),
     };
+    
+    eprintln!("[AGI] Server started with pid: {}, url: {}", info.pid, info.url);
 
     state
         .servers
@@ -165,8 +197,12 @@ pub async fn start_server(
 pub async fn stop_server(pid: u32, state: State<'_, ServerState>) -> Result<(), String> {
     let mut servers = state.servers.lock().unwrap();
 
-    if let Some((mut child, _)) = servers.remove(&pid) {
-        child.kill().map_err(|e| e.to_string())?;
+    if let Some((mut child, info)) = servers.remove(&pid) {
+        eprintln!("[AGI] Stopping server pid={} port={} for project={}", pid, info.port, info.project_path);
+        let _ = child.kill();
+        let _ = child.wait();
+    } else {
+        eprintln!("[AGI] No server found with pid={}", pid);
     }
 
     Ok(())
@@ -175,9 +211,12 @@ pub async fn stop_server(pid: u32, state: State<'_, ServerState>) -> Result<(), 
 #[tauri::command]
 pub async fn stop_all_servers(state: State<'_, ServerState>) -> Result<(), String> {
     let mut servers = state.servers.lock().unwrap();
+    eprintln!("[AGI] Stopping all {} servers", servers.len());
 
-    for (_, (mut child, _)) in servers.drain() {
+    for (pid, (mut child, info)) in servers.drain() {
+        eprintln!("[AGI] Stopping server pid={} for project={}", pid, info.project_path);
         let _ = child.kill();
+        let _ = child.wait();
     }
 
     Ok(())

@@ -62,6 +62,8 @@ export const tauriBridge = {
   stopAllServers: () => invoke("stop_all_servers"),
   listServers: () => invoke<ServerInfo[]>("list_servers"),
 
+  createNewWindow: () => invoke("create_new_window"),
+
   githubSaveToken: (token: string) => invoke("github_save_token", { token }),
   githubGetToken: () => invoke<string | null>("github_get_token"),
   githubLogout: () => invoke("github_logout"),

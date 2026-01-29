@@ -134,6 +134,7 @@ function ProjectPicker({
 			<div 
 				className="flex items-center justify-between px-6 h-10 border-b border-border cursor-default select-none"
 				onMouseDown={handleTitleBarDrag}
+				data-tauri-drag-region
 			>
 				<div className="flex items-center gap-3 ml-16">
 					<SetuLogo size={24} />
@@ -488,14 +489,16 @@ function Workspace({
 	const startedRef = useRef(false);
 	const [iframeLoaded, setIframeLoaded] = useState(false);
 
+	const handleBack = async () => {
+		await stopServer();
+		onBack();
+	};
+
 	useEffect(() => {
 		if (startedRef.current) return;
 		startedRef.current = true;
+		console.log('[AGI] Workspace mounting for project:', project.path, project.name);
 		startServer(project.path);
-		
-		return () => {
-			stopServer();
-		};
 	}, []);
 
 	useEffect(() => {
@@ -509,10 +512,11 @@ function Workspace({
 				className="flex items-center gap-3 px-4 h-10 border-b border-border cursor-default select-none"
 				style={{ backgroundColor: DARK_BG }}
 				onMouseDown={handleTitleBarDrag}
+				data-tauri-drag-region
 			>
 				<button
 					type="button"
-					onClick={onBack}
+					onClick={handleBack}
 					className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ml-16"
 				>
 					←
@@ -558,7 +562,7 @@ function Workspace({
 				)}
 				{server && (
 					<iframe
-						src={server.url}
+						src={`${server.url}?_t=${Date.now()}&_pid=${server.pid}&_project=${encodeURIComponent(project.path)}`}
 						className={`w-full h-full border-none ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
 						style={{ backgroundColor: DARK_BG }}
 						title="AGI Workspace"
@@ -594,7 +598,7 @@ function App() {
 				<ProjectPicker onSelectProject={handleSelectProject} />
 			)}
 			{view === 'workspace' && selectedProject && (
-				<Workspace project={selectedProject} onBack={handleBack} />
+				<Workspace key={selectedProject.path} project={selectedProject} onBack={handleBack} />
 			)}
 		</>
 	);

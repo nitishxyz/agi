@@ -26,6 +26,7 @@ export function useServer() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const startingRef = useRef(false);
+  const serverRef = useRef<ServerInfo | null>(null);
 
   const startServer = useCallback(async (projectPath: string, port?: number) => {
     if (startingRef.current) return null;
@@ -35,16 +36,15 @@ export function useServer() {
       setLoading(true);
       setError(null);
       
-      // Stop any existing servers first
-      try {
-        await tauriBridge.stopAllServers();
-      } catch {}
-      
+      // Always start a fresh server for this project
+      console.log('[AGI] Starting server for project:', projectPath);
       const info = await tauriBridge.startServer(projectPath, port);
+      console.log('[AGI] Server info returned:', info);
       
       const ready = await waitForServer(info.port);
       if (ready) {
         setServer(info);
+        serverRef.current = info;
         return info;
       } else {
         throw new Error("Server started but not responding after 15s");
@@ -60,14 +60,17 @@ export function useServer() {
   }, []);
 
   const stopServer = useCallback(async () => {
-    if (!server) return;
+    const currentServer = serverRef.current;
+    if (!currentServer) return;
+    console.log('[AGI] Stopping server:', currentServer.pid, currentServer.projectPath);
     try {
-      await tauriBridge.stopServer(server.pid);
+      await tauriBridge.stopServer(currentServer.pid);
     } catch (err) {
       console.error("Failed to stop server:", err);
     }
     setServer(null);
-  }, [server]);
+    serverRef.current = null;
+  }, []);
 
   return {
     server,
