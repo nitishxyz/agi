@@ -1,12 +1,10 @@
 #!/usr/bin/env bun
-/**
- * Build the web UI and copy it to the CLI package
- * Also generates a manifest of all assets for embedding
- */
-
 import { $ } from 'bun';
 import { join, relative } from 'node:path';
 import { readdirSync, statSync } from 'node:fs';
+import { Spinner, GREEN, DIM, BOLD, RED, CYAN, RESET } from './lib/spinner.ts';
+
+const verbose = process.argv.includes('--verbose');
 
 const ROOT = import.meta.dir.replace('/scripts', '');
 const API_DIR = join(ROOT, 'packages/api');
@@ -16,26 +14,50 @@ const CLI_DIR = join(ROOT, 'apps/cli');
 const WEB_DIST = join(WEB_DIR, 'dist');
 const CLI_WEB_DIST = join(CLI_DIR, 'src/web-dist');
 
-// Build dependencies in order
-console.log('📦 Building @agi-cli/api...');
-await $`bun run build`.cwd(API_DIR);
-console.log('✅ API built successfully');
+const startTime = performance.now();
+const spinner = new Spinner();
 
-console.log('📦 Building @agi-cli/web-sdk...');
-await $`bun run build`.cwd(WEB_SDK_DIR);
-console.log('✅ Web SDK built successfully');
+async function run(label: string, cmd: string[], cwd: string) {
+	spinner.begin(label);
 
-console.log('🔨 Building web UI...');
-await $`bun run build`.cwd(WEB_DIR);
-console.log('✅ Web UI built successfully');
+	if (verbose) {
+		spinner.succeed();
+		const result = Bun.spawnSync(cmd, { cwd, stdout: 'inherit', stderr: 'inherit' });
+		if (!result.success) {
+			console.error(`\n${RED}Build failed at: ${label}${RESET}`);
+			process.exit(1);
+		}
+		return;
+	}
 
-console.log('📦 Copying web UI to CLI...');
-await $`rm -rf ${CLI_WEB_DIST}`;
-await $`cp -r ${WEB_DIST} ${CLI_WEB_DIST}`;
-console.log('✅ Web UI copied to CLI');
+	const proc = Bun.spawn(cmd, { cwd, stdout: 'pipe', stderr: 'pipe' });
+	const exitCode = await proc.exited;
 
-// Generate manifest of all files
-console.log('📝 Generating asset manifest...');
+	if (exitCode !== 0) {
+		spinner.fail();
+		const stderr = await new Response(proc.stderr).text();
+		const stdout = await new Response(proc.stdout).text();
+		console.error(`\n${RED}Build failed at: ${label}${RESET}`);
+		if (stderr.trim()) console.error(stderr.trim());
+		if (stdout.trim()) console.error(stdout.trim());
+		process.exit(1);
+	}
+
+	spinner.succeed();
+}
+
+console.log(`\n${BOLD}${CYAN}agi${RESET} ${DIM}build${RESET}\n`);
+
+await run('Building @agi-cli/api', ['bun', 'run', 'build'], API_DIR);
+await run('Building @agi-cli/web-sdk', ['bun', 'run', 'build'], WEB_SDK_DIR);
+await run('Building web UI', ['bun', 'run', 'build'], WEB_DIR);
+
+spinner.begin('Copying web assets to CLI');
+await $`rm -rf ${CLI_WEB_DIST}`.quiet();
+await $`cp -r ${WEB_DIST} ${CLI_WEB_DIST}`.quiet();
+spinner.succeed();
+
+spinner.begin('Generating asset manifest');
 
 interface Manifest {
 	html: string;
@@ -57,7 +79,6 @@ function scanDirectory(dir: string, baseDir: string = dir): string[] {
 		if (stat.isDirectory()) {
 			files.push(...scanDirectory(fullPath, baseDir));
 		} else {
-			// Get path relative to base directory
 			const relativePath = relative(baseDir, fullPath);
 			files.push(relativePath);
 		}
@@ -66,7 +87,6 @@ function scanDirectory(dir: string, baseDir: string = dir): string[] {
 	return files;
 }
 
-// Scan all files in web-dist
 const allFiles = scanDirectory(CLI_WEB_DIST);
 
 const assetData = new Map<string, string>();
@@ -80,7 +100,6 @@ const manifest: Manifest = {
 	},
 };
 
-// Categorize files
 for (const file of allFiles) {
 	const urlPath = `/${file}`;
 	const filePath = join(CLI_WEB_DIST, file);
@@ -94,7 +113,6 @@ for (const file of allFiles) {
 	} else if (file.endsWith('.css')) {
 		manifest.assets.css.push(urlPath);
 	} else if (!file.endsWith('.map')) {
-		// Skip source maps
 		manifest.assets.other.push(urlPath);
 	}
 }
@@ -107,15 +125,11 @@ const embeddedAssetsEntries = Array.from(assetData.entries())
 	.map(([path, base64]) => `\t['${path}', ${formatBase64Literal(base64)}],`)
 	.join('\n');
 
-// Write manifest
 const manifestPath = join(CLI_WEB_DIST, 'manifest.json');
 await Bun.write(manifestPath, JSON.stringify(manifest, null, 2));
-console.log('✅ Manifest generated');
-console.log('📋 Manifest contents:', manifest);
+spinner.succeed(`${manifest.assets.js.length} js, ${manifest.assets.css.length} css, ${manifest.assets.other.length} other`);
 
-// Generate TypeScript file with asset paths
-// Expose helper URLs that work both in dev (filesystem) and in the compiled bundle
-console.log('📝 Generating imports file...');
+spinner.begin('Generating web-assets.ts');
 
 function normalizePath(path: string): string {
 	return path.replace(/^\//, '');
@@ -132,7 +146,7 @@ function formatAssetArray(files: string[]): string {
 
 	return `[
 ${items}
-	]`;
+\t]`;
 }
 
 const importsFile = `/**
@@ -144,37 +158,37 @@ const importsFile = `/**
  */
 
 const isCompiledBundle = (() => {
-	const url = import.meta.url;
-	return typeof url === 'string' && url.includes('/$bunfs/');
+\tconst url = import.meta.url;
+\treturn typeof url === 'string' && url.includes('/$bunfs/');
 })();
 
 const WEB_DIST_PREFIX = isCompiledBundle ? './src/web-dist/' : './web-dist/';
 
 if (process.env.DEBUG_AGI_WEB_ASSETS) {
-	console.log('[web-assets] import.meta.url:', import.meta.url);
-	console.log('[web-assets] isCompiledBundle:', isCompiledBundle);
-	console.log('[web-assets] webDistPrefix:', WEB_DIST_PREFIX);
+\tconsole.log('[web-assets] import.meta.url:', import.meta.url);
+\tconsole.log('[web-assets] isCompiledBundle:', isCompiledBundle);
+\tconsole.log('[web-assets] webDistPrefix:', WEB_DIST_PREFIX);
 }
 
 function resolveAsset(path: string) {
-	const specifier = WEB_DIST_PREFIX + path;
-	try {
-		const resolved = import.meta.resolveSync(specifier);
-		return resolved;
-	} catch {
-		if (process.env.DEBUG_AGI_WEB_ASSETS) {
-			console.warn('[web-assets] Falling back to specifier for', specifier);
-		}
-		return specifier;
-	}
+\tconst specifier = WEB_DIST_PREFIX + path;
+\ttry {
+\t\tconst resolved = import.meta.resolveSync(specifier);
+\t\treturn resolved;
+\t} catch {
+\t\tif (process.env.DEBUG_AGI_WEB_ASSETS) {
+\t\t\tconsole.warn('[web-assets] Falling back to specifier for', specifier);
+\t\t}
+\t\treturn specifier;
+\t}
 }
 
 // Export asset paths (filesystem paths for dev + resolveAsset helper)
 export const webAssetPaths = {
-	html: resolveAsset('index.html'),
-	js: ${formatAssetArray(manifest.assets.js)},
-	css: ${formatAssetArray(manifest.assets.css)},
-	other: ${formatAssetArray(manifest.assets.other)},
+\thtml: resolveAsset('index.html'),
+\tjs: ${formatAssetArray(manifest.assets.js)},
+\tcss: ${formatAssetArray(manifest.assets.css)},
+\tother: ${formatAssetArray(manifest.assets.other)},
 };
 
 // Export URL paths (for mapping requests to embedded files)
@@ -187,24 +201,25 @@ ${embeddedAssetsEntries}
 const embeddedAssetCache = new Map<string, Uint8Array>();
 
 export function getEmbeddedAsset(path: string): Uint8Array | undefined {
-	const cached = embeddedAssetCache.get(path);
-	if (cached) {
-		return cached;
-	}
+\tconst cached = embeddedAssetCache.get(path);
+\tif (cached) {
+\t\treturn cached;
+\t}
 
-	const base64 = embeddedAssetBase64.get(path);
-	if (!base64) {
-		return undefined;
-	}
+\tconst base64 = embeddedAssetBase64.get(path);
+\tif (!base64) {
+\t\treturn undefined;
+\t}
 
-	const buffer = Buffer.from(base64, 'base64');
-	embeddedAssetCache.set(path, buffer);
-	return buffer;
+\tconst buffer = Buffer.from(base64, 'base64');
+\tembeddedAssetCache.set(path, buffer);
+\treturn buffer;
 }
 `;
 
 const importsFilePath = join(CLI_DIR, 'src/web-assets.ts');
 await Bun.write(importsFilePath, importsFile);
-console.log('✅ Imports file generated');
+spinner.succeed();
 
-console.log('🎉 Web UI build complete!');
+const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+console.log(`\n${GREEN}${BOLD}  ✓${RESET} Web build complete ${DIM}in ${elapsed}s${RESET}\n`);
