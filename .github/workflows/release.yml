@@ -331,8 +331,8 @@ jobs:
             x86_64-unknown-linux-gnu) PLATFORM="linux-x64" ;;
             *) echo "Unknown target: ${{ matrix.target }}"; exit 1 ;;
           esac
-          bun run prebuild
           cd apps/cli
+          bun run prebuild
           mkdir -p dist
           bun build --compile --minify --target="bun-${PLATFORM}" ./index.ts --outfile "dist/agi-${PLATFORM}"
           mkdir -p ../desktop/src-tauri/resources/binaries
