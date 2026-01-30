@@ -157,10 +157,12 @@ jobs:
         run: |
           for bin in apps/desktop/src-tauri/resources/binaries/*; do
             if [ -f "$bin" ]; then
-              echo "Signing $bin with hardened runtime..."
-              codesign --force --options runtime --timestamp \
-                --sign "$APPLE_SIGNING_IDENTITY" "$bin"
-            fi
+             echo "Signing $bin with hardened runtime..."
+             codesign --force --options runtime --timestamp \
+                --sign "$APPLE_SIGNING_IDENTITY" \
+                --entitlements apps/desktop/src-tauri/resources/entitlements.plist \
+                "$bin"
+           fi
           done
 
       - name: Build Tauri App

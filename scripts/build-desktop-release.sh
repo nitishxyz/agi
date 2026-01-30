@@ -80,9 +80,11 @@ if [[ "$SKIP_CLI" == false ]]; then
  cp "dist/agi-$CURRENT_PLATFORM" "$BINARIES_DIR/agi-$CURRENT_PLATFORM"
   chmod +x "$BINARIES_DIR/agi-$CURRENT_PLATFORM"
 
-  echo "--- Signing CLI binary with hardened runtime ---"
+ echo "--- Signing CLI binary with hardened runtime ---"
+  ENTITLEMENTS="$DESKTOP_DIR/src-tauri/resources/entitlements.plist"
   codesign --force --options runtime --timestamp \
     --sign "$APPLE_SIGNING_IDENTITY" \
+    --entitlements "$ENTITLEMENTS" \
     "$BINARIES_DIR/agi-$CURRENT_PLATFORM"
   echo "CLI binary signed and ready."
 fi

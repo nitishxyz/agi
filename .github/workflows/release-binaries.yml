@@ -174,10 +174,12 @@ jobs:
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
-          BINARY="apps/cli/dist/agi-${{ matrix.os }}-${{ matrix.arch }}"
-          echo "Signing $BINARY with hardened runtime..."
-          codesign --force --options runtime --timestamp \
-            --sign "$APPLE_SIGNING_IDENTITY" "$BINARY"
+         BINARY="apps/cli/dist/agi-${{ matrix.os }}-${{ matrix.arch }}"
+         echo "Signing $BINARY with hardened runtime..."
+         codesign --force --options runtime --timestamp \
+            --sign "$APPLE_SIGNING_IDENTITY" \
+            --entitlements apps/desktop/src-tauri/resources/entitlements.plist \
+            "$BINARY"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

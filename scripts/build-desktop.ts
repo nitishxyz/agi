@@ -5,21 +5,27 @@
  * Builds the CLI binary for the current platform and packages the Tauri desktop app.
  *
  * Usage:
- *   bun run scripts/build-desktop.ts [--dev] [--all-platforms]
+ *   bun run scripts/build-desktop.ts [--dev] [--sign] [--all-platforms]
  *
  * Options:
  *   --dev            Build in dev mode (skip production build)
+ *   --sign           Sign the CLI binary with hardened runtime (macOS only, requires .env.desktop-signing)
  *   --all-platforms  Build CLI binaries for all platforms (requires cross-compile setup)
  */
 
 import { $ } from 'bun';
-import { existsSync, mkdirSync, copyFileSync } from 'fs';
+import { existsSync, mkdirSync, copyFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 const ROOT = join(import.meta.dir, '..');
 const CLI_DIR = join(ROOT, 'apps/cli');
 const DESKTOP_DIR = join(ROOT, 'apps/desktop');
 const BINARIES_DIR = join(DESKTOP_DIR, 'src-tauri/resources/binaries');
+const ENTITLEMENTS = join(
+	DESKTOP_DIR,
+	'src-tauri/resources/entitlements.plist',
+);
+const ENV_FILE = join(ROOT, '.env.desktop-signing');
 
 const PLATFORMS = {
 	'darwin-arm64': 'bun-darwin-arm64',
@@ -38,6 +44,45 @@ function detectPlatform(): keyof typeof PLATFORMS {
 	if (os === 'linux' && arch === 'arm64') return 'linux-arm64';
 
 	throw new Error(`Unsupported platform: ${os}-${arch}`);
+}
+
+function loadSigningEnv(): string | null {
+	if (!existsSync(ENV_FILE)) return null;
+
+	const content = readFileSync(ENV_FILE, 'utf-8');
+	for (const line of content.split('\n')) {
+		const trimmed = line.trim();
+		if (!trimmed || trimmed.startsWith('#')) continue;
+		const eqIdx = trimmed.indexOf('=');
+		if (eqIdx === -1) continue;
+		const key = trimmed.slice(0, eqIdx).trim();
+		let value = trimmed.slice(eqIdx + 1).trim();
+		if (
+			(value.startsWith('"') && value.endsWith('"')) ||
+			(value.startsWith("'") && value.endsWith("'"))
+		) {
+			value = value.slice(1, -1);
+		}
+		process.env[key] = value;
+	}
+
+	return process.env.APPLE_SIGNING_IDENTITY || null;
+}
+
+async function signBinary(binaryPath: string) {
+	const identity = loadSigningEnv();
+	if (!identity) {
+		throw new Error(
+			`Signing requires APPLE_SIGNING_IDENTITY. Set it in ${ENV_FILE} or env.`,
+		);
+	}
+
+	console.log(`\n🔏 Signing binary with hardened runtime...`);
+	console.log(`   Identity: ${identity}`);
+
+	await $`codesign --force --options runtime --timestamp --sign ${identity} --entitlements ${ENTITLEMENTS} ${binaryPath}`;
+
+	console.log(`   ✅ Binary signed`);
 }
 
 async function buildCliBinary(platform: keyof typeof PLATFORMS) {
@@ -62,10 +107,10 @@ async function copyBinaryToDesktop(binaryPath: string, platform: string) {
 	const destPath = join(BINARIES_DIR, `agi-${platform}`);
 	copyFileSync(binaryPath, destPath);
 
-	// Make executable
 	await $`chmod +x ${destPath}`;
 
 	console.log(`   ✅ Copied to ${destPath}`);
+	return destPath;
 }
 
 async function buildDesktopApp(devMode: boolean) {
@@ -83,27 +128,35 @@ async function buildDesktopApp(devMode: boolean) {
 async function main() {
 	const args = process.argv.slice(2);
 	const devMode = args.includes('--dev');
+	const signBin = args.includes('--sign');
 	const allPlatforms = args.includes('--all-platforms');
 
 	console.log('🚀 AGI Desktop Build Script');
 	console.log('===========================');
+	if (signBin) {
+		console.log('🔏 Code signing enabled');
+	}
 
 	try {
 		if (allPlatforms) {
-			// Build all platform binaries
 			for (const platform of Object.keys(
 				PLATFORMS,
 			) as (keyof typeof PLATFORMS)[]) {
 				const binaryPath = await buildCliBinary(platform);
-				await copyBinaryToDesktop(binaryPath, platform);
+				const destPath = await copyBinaryToDesktop(binaryPath, platform);
+				if (signBin && process.platform === 'darwin') {
+					await signBinary(destPath);
+				}
 			}
 		} else {
-			// Build for current platform only
 			const platform = detectPlatform();
 			console.log(`\n🔍 Detected platform: ${platform}`);
 
 			const binaryPath = await buildCliBinary(platform);
-			await copyBinaryToDesktop(binaryPath, platform);
+			const destPath = await copyBinaryToDesktop(binaryPath, platform);
+			if (signBin && process.platform === 'darwin') {
+				await signBinary(destPath);
+			}
 		}
 
 		if (!devMode) {
