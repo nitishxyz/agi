@@ -235,7 +235,11 @@ export function registerAuthRoutes(app: Hono) {
 				return c.json({ error: 'Session expired or invalid' }, 400);
 			}
 
-			const { verifier } = oauthVerifiers.get(sessionId)!;
+			const verifierEntry = oauthVerifiers.get(sessionId);
+			if (!verifierEntry) {
+				return c.json({ error: 'Session expired or invalid' }, 400);
+			}
+			const { verifier } = verifierEntry;
 			oauthVerifiers.delete(sessionId);
 
 			if (provider === 'anthropic') {
@@ -351,12 +355,18 @@ export function registerAuthRoutes(app: Hono) {
 				);
 			}
 
-			const { verifier, callbackUrl } = oauthVerifiers.get(sessionId)!;
+			const callbackEntry = oauthVerifiers.get(sessionId);
+			if (!callbackEntry) {
+				return c.html(
+					'<html><body><h1>Session expired</h1><p>Please close this window and try again.</p><script>setTimeout(() => window.close(), 3000);</script></body></html>',
+				);
+			}
+			const { verifier, callbackUrl } = callbackEntry;
 			oauthVerifiers.delete(sessionId);
 
 			if (provider === 'anthropic') {
-				const fullCode = fragment ? `${code}#${fragment}` : code;
-				const tokens = await exchangeWeb(fullCode!, verifier, callbackUrl);
+				const fullCode = fragment ? `${code}#${fragment}` : (code ?? '');
+				const tokens = await exchangeWeb(fullCode, verifier, callbackUrl);
 
 				await setAuth(
 					'anthropic',

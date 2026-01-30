@@ -76,6 +76,7 @@ export function ProjectPicker({
 				className="shrink-0 flex items-center justify-between px-6 h-10 border-b border-border cursor-default select-none"
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
+				role="toolbar"
 			>
 				<div
 					className={`flex items-center gap-2 ${isFullscreen ? '' : 'ml-16'}`}

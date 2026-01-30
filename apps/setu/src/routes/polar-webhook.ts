@@ -13,7 +13,7 @@ polarWebhook.post('/v1/webhooks/polar', async (c) => {
 		headers[key] = value;
 	});
 
-	let event;
+	let event: ReturnType<typeof verifyWebhook> | undefined;
 	try {
 		event = verifyWebhook(rawBody, headers);
 	} catch (error) {

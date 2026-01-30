@@ -12,8 +12,8 @@ interface ErrorRendererProps {
 
 export function ErrorRenderer({
 	contentJson,
-	debug,
-	sessionId,
+	debug: _debug,
+	sessionId: _sessionId,
 	onRetry,
 }: ErrorRendererProps) {
 	const [showRawDetails, setShowRawDetails] = useState(false);
@@ -22,7 +22,7 @@ export function ErrorRenderer({
 	const isBalanceLow =
 		contentJson.type === 'balance_low' ||
 		contentJson.errorType === 'balance_low';
-	const isRetryable = contentJson.isRetryable === true || isBalanceLow;
+	const _isRetryable = contentJson.isRetryable === true || isBalanceLow;
 
 	// Handle different error structures:
 	// 1. { error: { name, url, statusCode, ... } } - from API errors

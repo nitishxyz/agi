@@ -15,8 +15,9 @@ export function ProjectCard({
 	onRemove: () => void;
 }) {
 	return (
-		<div
-			className="group flex items-center gap-3 p-3 bg-card border border-border hover:border-ring rounded-xl transition-colors cursor-pointer"
+		<button
+			type="button"
+			className="group flex items-center gap-3 p-3 bg-card border border-border hover:border-ring rounded-xl transition-colors cursor-pointer w-full text-left"
 			onClick={onSelect}
 		>
 			<div className="flex-1 flex items-center gap-3 text-left">
@@ -59,6 +60,6 @@ export function ProjectCard({
 					✕
 				</button>
 			</div>
-		</div>
+		</button>
 	);
 }

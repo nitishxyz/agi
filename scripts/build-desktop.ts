@@ -14,8 +14,8 @@
  */
 
 import { $ } from 'bun';
-import { existsSync, mkdirSync, copyFileSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, mkdirSync, copyFileSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const ROOT = join(import.meta.dir, '..');
 const CLI_DIR = join(ROOT, 'apps/cli');

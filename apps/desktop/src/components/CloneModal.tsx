@@ -19,13 +19,20 @@ export function CloneModal({
 	onClose: () => void;
 }) {
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: modal backdrop overlay pattern
 		<div
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
 			onClick={onClose}
+			onKeyDown={(e) => {
+				if (e.key === 'Escape') onClose();
+			}}
+			tabIndex={-1}
 		>
 			<div
 				className="bg-background border border-border rounded-xl w-full max-w-2xl mx-6 shadow-2xl max-h-[80vh] flex flex-col"
 				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
+				role="dialog"
 			>
 				<div className="flex items-center justify-between p-6 border-b border-border">
 					<h3 className="text-lg font-semibold text-foreground">

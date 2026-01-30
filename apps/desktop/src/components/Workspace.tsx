@@ -32,7 +32,7 @@ export function Workspace({
 			project.name,
 		);
 		startServer(project.path);
-	}, []);
+	}, [project.path, project.name, startServer]);
 
 	useEffect(() => {
 		if (!server) setIframeLoaded(false);
@@ -48,6 +48,7 @@ export function Workspace({
 				style={{ backgroundColor: DARK_BG }}
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
+				role="toolbar"
 			>
 				<button
 					type="button"

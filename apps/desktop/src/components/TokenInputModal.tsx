@@ -19,13 +19,20 @@ export function TokenInputModal({
 	};
 
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: modal backdrop overlay pattern
 		<div
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
 			onClick={onClose}
+			onKeyDown={(e) => {
+				if (e.key === 'Escape') onClose();
+			}}
+			tabIndex={-1}
 		>
 			<div
 				className="bg-background border border-border rounded-xl w-full max-w-md mx-6 shadow-2xl"
 				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
+				role="dialog"
 			>
 				<div className="p-6 border-b border-border">
 					<h3 className="text-lg font-semibold text-foreground">
@@ -54,7 +61,6 @@ export function TokenInputModal({
 						placeholder="ghp_..."
 						value={tokenInput}
 						onChange={(e) => setTokenInput(e.target.value)}
-						autoFocus
 						className="w-full h-11 px-4 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition-colors font-mono text-sm"
 						onKeyDown={(e) => {
 							if (e.key === 'Enter') handleSave();

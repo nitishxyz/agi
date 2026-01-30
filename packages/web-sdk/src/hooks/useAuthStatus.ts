@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState } from 'react';
 import { apiClient } from '../lib/api-client';
-import { useOnboardingStore, type AuthStatus } from '../stores/onboardingStore';
+import { useOnboardingStore } from '../stores/onboardingStore';
 
 export function useAuthStatus() {
 	const setAuthStatus = useOnboardingStore((s) => s.setAuthStatus);
