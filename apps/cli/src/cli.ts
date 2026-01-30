@@ -18,6 +18,8 @@ import {
 } from './commands/index.ts';
 import { runDiscoveredCommand } from './custom-commands.ts';
 import { handleServe } from './commands/serve.ts';
+import { isDesktopInstalled, openDesktop } from './desktop.ts';
+import { colors } from './ui.ts';
 
 export function createCli(version: string): Command {
 	const program = new Command();
@@ -83,7 +85,8 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 			!argv.includes('-h') &&
 			!argv.includes('--help') &&
 			!argv.includes('-v') &&
-			!argv.includes('--version'))
+			!argv.includes('--version') &&
+			!argv.includes('--no-desktop'))
 	) {
 		const debugEnabled = argv.includes('--debug');
 		const traceEnabled = argv.includes('--trace');
@@ -96,6 +99,22 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 			if (debugEnabled) {
 				console.log('[debug] Trace mode enabled');
 			}
+		}
+
+		const noDesktop = argv.includes('--no-desktop');
+		if (!noDesktop && isDesktopInstalled()) {
+			console.log('');
+			console.log(
+				colors.bold('  ⚡ AGI') +
+					colors.dim(' — Opening desktop app...'),
+			);
+			console.log('');
+			const opened = openDesktop(projectRoot);
+			if (opened) return;
+			console.log(
+				colors.dim('  Failed to open desktop app, falling back to serve'),
+			);
+			console.log('');
 		}
 
 		const noOpen = argv.includes('--no-open');

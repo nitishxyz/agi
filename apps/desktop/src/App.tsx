@@ -3,7 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useProjects } from './hooks/useProjects';
 import { useGitHub } from './hooks/useGitHub';
 import { useServer } from './hooks/useServer';
-import type { Project } from './lib/tauri-bridge';
+import { tauriBridge, type Project } from './lib/tauri-bridge';
 import './index.css';
 
 type View = 'picker' | 'workspace';
@@ -653,6 +653,20 @@ function App() {
 
 	useEffect(() => {
 		document.documentElement.classList.add('dark');
+		tauriBridge.getInitialProject().then((path) => {
+			if (path) {
+				const name = path.split('/').pop() || path;
+				const project: Project = {
+					path,
+					name,
+					lastOpened: new Date().toISOString(),
+					pinned: false,
+				};
+				tauriBridge.saveRecentProject(project).catch(() => {});
+				setSelectedProject(project);
+				setView('workspace');
+			}
+		});
 	}, []);
 
 	const handleSelectProject = (project: Project) => {

@@ -1,6 +1,7 @@
 mod commands;
 
 use commands::server::ServerState;
+use std::sync::Mutex;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 
 #[cfg(unix)]
@@ -27,11 +28,40 @@ fn kill_orphan_servers() {
 #[cfg(not(unix))]
 fn kill_orphan_servers() {}
 
+pub struct InitialProjectState {
+    pub path: Mutex<Option<String>>,
+}
+
+fn parse_project_arg() -> Option<String> {
+    let args: Vec<String> = std::env::args().collect();
+    for i in 0..args.len() {
+        if args[i] == "--project" {
+            if let Some(path) = args.get(i + 1) {
+                let p = std::path::Path::new(path);
+                if p.exists() && p.is_dir() {
+                    return Some(path.clone());
+                }
+            }
+        }
+    }
+    None
+}
+
+#[tauri::command]
+fn get_initial_project(state: tauri::State<'_, InitialProjectState>) -> Option<String> {
+    state.path.lock().unwrap().take()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     eprintln!("[AGI] Cleaning up orphan servers on startup...");
     kill_orphan_servers();
-    
+
+    let initial_project = parse_project_arg();
+    if let Some(ref p) = initial_project {
+        eprintln!("[AGI] CLI requested project: {}", p);
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -39,6 +69,9 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
         .manage(ServerState::default())
+        .manage(InitialProjectState {
+            path: Mutex::new(initial_project),
+        })
         .setup(|app| {
             let new_window = MenuItemBuilder::new("New Window")
                 .id("new_window")
@@ -111,6 +144,7 @@ pub fn run() {
             commands::git::git_pull,
             commands::git::git_is_repo,
             commands::window::create_new_window,
+            get_initial_project,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

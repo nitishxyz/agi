@@ -64,6 +64,8 @@ export const tauriBridge = {
 
 	createNewWindow: () => invoke('create_new_window'),
 
+	getInitialProject: () => invoke<string | null>('get_initial_project'),
+
 	githubSaveToken: (token: string) => invoke('github_save_token', { token }),
 	githubGetToken: () => invoke<string | null>('github_get_token'),
 	githubLogout: () => invoke('github_logout'),
