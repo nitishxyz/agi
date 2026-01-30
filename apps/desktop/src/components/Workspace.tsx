@@ -4,6 +4,7 @@ import { useServer } from '../hooks/useServer';
 import { useFullscreen } from '../hooks/useFullscreen';
 import { handleTitleBarDrag } from '../utils/title-bar';
 import type { Project } from '../lib/tauri-bridge';
+import { tauriBridge } from '../lib/tauri-bridge';
 
 const DARK_BG = 'hsl(240, 10%, 8%)';
 
@@ -98,13 +99,25 @@ export function Workspace({
 						{project.path}
 					</span>
 				</div>
-				{server && (
-					<div className="flex items-center gap-1.5 text-xs">
-						<span className="w-2 h-2 rounded-full bg-green-500" />
-						<span className="text-muted-foreground">Port {server.webPort}</span>
-					</div>
-				)}
-			</div>
+			{server && (
+				<div className="flex items-center gap-1.5 text-xs">
+					<span className="w-2 h-2 rounded-full bg-green-500" />
+					<span className="text-muted-foreground">Port {server.webPort}</span>
+				</div>
+			)}
+			<button
+				type="button"
+				onClick={() => tauriBridge.createNewWindow()}
+				className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+				title="New Window"
+			>
+				<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+					<rect x="1" y="1" width="14" height="14" rx="2" />
+					<line x1="8" y1="4.5" x2="8" y2="11.5" />
+					<line x1="4.5" y1="8" x2="11.5" y2="8" />
+				</svg>
+			</button>
+		</div>
 
 			<div
 				className="flex-1 relative flex items-center justify-center"
