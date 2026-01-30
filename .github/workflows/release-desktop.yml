@@ -150,6 +150,19 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
 
+      - name: Sign bundled CLI binary
+        if: startsWith(matrix.platform, 'macos')
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          for bin in apps/desktop/src-tauri/resources/binaries/*; do
+            if [ -f "$bin" ]; then
+              echo "Signing $bin with hardened runtime..."
+              codesign --force --options runtime --timestamp \
+                --sign "$APPLE_SIGNING_IDENTITY" "$bin"
+            fi
+          done
+
       - name: Build Tauri App
         id: tauri-build
         uses: nick-fields/retry@v3
