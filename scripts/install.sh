@@ -54,9 +54,19 @@ asset="${BIN_NAME}-${os}-${arch}"
 ext=""
 filename="$asset$ext"
 
-# Build URL
+# Resolve CLI release tag
 if [ "$VERSION" = "latest" ]; then
-  base="https://github.com/$REPO/releases/latest/download"
+  info "Fetching latest CLI release..."
+  VERSION=$(http_get "https://api.github.com/repos/$REPO/releases?per_page=20" \
+    | grep -o '"tag_name":"v[0-9][^"]*"' \
+    | head -1 \
+    | cut -d'"' -f4)
+  if [ -z "$VERSION" ]; then
+    err "Could not determine latest CLI release"
+    exit 1
+  fi
+  info "Latest CLI version: $VERSION"
+  base="https://github.com/$REPO/releases/download/$VERSION"
 else
   base="https://github.com/$REPO/releases/download/$VERSION"
 fi
