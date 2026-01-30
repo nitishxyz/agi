@@ -10,4 +10,6 @@ if (argv[0] === 'agi' || argv[0]?.endsWith('/agi')) {
 	argv = argv.slice(1);
 }
 
-runCli(argv, (PKG as { version: string }).version);
+runCli(argv, (PKG as { version: string }).version)
+	.then(() => process.exit(0))
+	.catch(() => process.exit(1));

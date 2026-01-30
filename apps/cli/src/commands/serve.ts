@@ -125,6 +125,8 @@ export async function handleServe(opts: ServeOptions, version: string) {
 
 	process.once('SIGINT', shutdown);
 	process.once('SIGTERM', shutdown);
+
+	await new Promise(() => {});
 }
 
 export function registerServeCommand(program: Command, version: string) {
