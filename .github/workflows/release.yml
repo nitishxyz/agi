@@ -1,0 +1,564 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  check-flags:
+    runs-on: ubuntu-latest
+    outputs:
+      publish_cli: ${{ steps.check.outputs.publish_cli }}
+      publish_desktop: ${{ steps.check.outputs.publish_desktop }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read publish.env
+        id: check
+        shell: bash
+        run: |
+          if [ -f publish.env ]; then
+            source publish.env
+            echo "publish_cli=${PUBLISH_CLI:-false}" >> "$GITHUB_OUTPUT"
+            echo "publish_desktop=${PUBLISH_DESKTOP:-false}" >> "$GITHUB_OUTPUT"
+            echo "PUBLISH_CLI=${PUBLISH_CLI:-false}"
+            echo "PUBLISH_DESKTOP=${PUBLISH_DESKTOP:-false}"
+          else
+            echo "publish_cli=false" >> "$GITHUB_OUTPUT"
+            echo "publish_desktop=false" >> "$GITHUB_OUTPUT"
+            echo "publish.env not found"
+          fi
+
+  bump-version:
+    needs: check-flags
+    if: needs.check-flags.outputs.publish_cli == 'true' || needs.check-flags.outputs.publish_desktop == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      cli_version: ${{ steps.bump.outputs.cli_version }}
+      desktop_version: ${{ steps.bump.outputs.desktop_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Bump versions
+        id: bump
+        shell: bash
+        run: |
+          set -euo pipefail
+          PUBLISH_CLI="${{ needs.check-flags.outputs.publish_cli }}"
+          PUBLISH_DESKTOP="${{ needs.check-flags.outputs.publish_desktop }}"
+          CHANGED=false
+
+          if [ "$PUBLISH_CLI" = "true" ]; then
+            CURRENT=$(jq -r .version packages/install/package.json)
+            if git rev-parse "v${CURRENT}" >/dev/null 2>&1; then
+              echo "Tag v${CURRENT} exists; bumping patch"
+              MAJOR=$(echo "$CURRENT" | awk -F. '{print $1}')
+              MINOR=$(echo "$CURRENT" | awk -F. '{print $2}')
+              PATCH=$(echo "$CURRENT" | awk -F. '{print $3}')
+              CLI_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+              for pkg in package.json apps/cli/package.json packages/install/package.json packages/api/package.json packages/sdk/package.json packages/web-ui/package.json packages/web-sdk/package.json packages/database/package.json packages/server/package.json; do
+                tmpfile=$(mktemp)
+                jq ".version = \"${CLI_VERSION}\"" "$pkg" > "$tmpfile"
+                mv "$tmpfile" "$pkg"
+              done
+              CHANGED=true
+            else
+              CLI_VERSION="$CURRENT"
+            fi
+            echo "cli_version=${CLI_VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ "$PUBLISH_DESKTOP" = "true" ]; then
+            CURRENT=$(jq -r .version apps/desktop/package.json)
+            if git rev-parse "desktop-v${CURRENT}" >/dev/null 2>&1; then
+              echo "Tag desktop-v${CURRENT} exists; bumping patch"
+              MAJOR=$(echo "$CURRENT" | awk -F. '{print $1}')
+              MINOR=$(echo "$CURRENT" | awk -F. '{print $2}')
+              PATCH=$(echo "$CURRENT" | awk -F. '{print $3}')
+              DESKTOP_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+              for f in apps/desktop/package.json apps/desktop/src-tauri/tauri.conf.json; do
+                tmpfile=$(mktemp)
+                jq ".version = \"${DESKTOP_VERSION}\"" "$f" > "$tmpfile"
+                mv "$tmpfile" "$f"
+              done
+              CHANGED=true
+            else
+              DESKTOP_VERSION="$CURRENT"
+            fi
+            echo "desktop_version=${DESKTOP_VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ "$CHANGED" = "true" ]; then
+            bun lint --fix || true
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add .
+            git commit -m "chore: bump versions [skip ci]"
+            BRANCH=$(git rev-parse --abbrev-ref HEAD)
+            git push origin "$BRANCH"
+          fi
+
+  build-cli:
+    needs: [check-flags, bump-version]
+    if: needs.check-flags.outputs.publish_cli == 'true'
+    runs-on: ${{ matrix.runner }}
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    strategy:
+      matrix:
+        include:
+          - os: darwin
+            arch: x64
+            runner: macos-latest
+          - os: darwin
+            arch: arm64
+            runner: macos-latest
+          - os: linux
+            arch: x64
+            runner: ubuntu-latest
+          - os: linux
+            arch: arm64
+            runner: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync to latest branch tip
+        shell: bash
+        run: |
+          git fetch origin
+          git checkout "${{ github.ref_name }}"
+          git pull --ff-only origin "${{ github.ref_name }}"
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Regenerate clean lockfile
+        shell: bash
+        run: |
+          rm -f bun.lock
+          bun install
+
+      - name: Setup npm auth (optional)
+        if: ${{ env.NPM_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf "//registry.npmjs.org/:_authToken=%s\n" "$NPM_TOKEN" > .npmrc
+          echo "always-auth=true" >> .npmrc
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd apps/cli
+          mkdir -p dist
+          case "${{ matrix.os }}-${{ matrix.arch }}" in
+            darwin-arm64) bun run build:darwin-arm64 ;;
+            darwin-x64) bun run build:darwin-x64 ;;
+            linux-x64) bun run build:linux-x64 ;;
+            linux-arm64) bun run build:linux-arm64 ;;
+          esac
+
+      - name: Import Apple Certificate
+        if: matrix.os == 'darwin'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "No Apple certificate provided, skipping signing"
+            exit 0
+          fi
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Sign macOS binary
+        if: matrix.os == 'darwin'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+         BINARY="apps/cli/dist/agi-${{ matrix.os }}-${{ matrix.arch }}"
+         echo "Signing $BINARY with hardened runtime..."
+         codesign --force --options runtime --timestamp \
+            --sign "$APPLE_SIGNING_IDENTITY" \
+            --entitlements apps/desktop/src-tauri/resources/entitlements.plist \
+            "$BINARY"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agi-${{ matrix.os }}-${{ matrix.arch }}
+          path: apps/cli/dist/agi-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}
+
+  build-desktop:
+    needs: [check-flags, bump-version]
+    if: needs.check-flags.outputs.publish_desktop == 'true'
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-14-large
+            target: aarch64-apple-darwin
+            name: macOS-arm64
+          - platform: macos-14-large
+            target: x86_64-apple-darwin
+            name: macOS-x64
+          - platform: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: Linux-x64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync to latest branch tip
+        shell: bash
+        run: |
+          git fetch origin
+          git checkout "${{ github.ref_name }}"
+          git pull --ff-only origin "${{ github.ref_name }}"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: startsWith(matrix.platform, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libgtk-3-dev
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Import Apple Certificate
+        if: startsWith(matrix.platform, 'macos')
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "No Apple certificate provided, skipping signing"
+            exit 0
+          fi
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Sign bundled CLI binary
+        if: startsWith(matrix.platform, 'macos')
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          for bin in apps/desktop/src-tauri/resources/binaries/*; do
+            if [ -f "$bin" ]; then
+             echo "Signing $bin with hardened runtime..."
+             codesign --force --options runtime --timestamp \
+                --sign "$APPLE_SIGNING_IDENTITY" \
+                --entitlements apps/desktop/src-tauri/resources/entitlements.plist \
+                "$bin"
+           fi
+          done
+
+      - name: Build Tauri App
+        id: tauri-build
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 30
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: cd apps/desktop && npm run tauri build -- --target ${{ matrix.target }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.name }}
+          path: |
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+          if-no-files-found: ignore
+
+  publish-cli:
+    needs: [check-flags, bump-version, build-cli]
+    if: needs.check-flags.outputs.publish_cli == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download CLI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          pattern: agi-*
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p ./release
+          find ./artifacts -type f -exec cp {} ./release/ \;
+          ls -la ./release/
+
+      - name: Create and push CLI tag
+        shell: bash
+        run: |
+          VERSION="${{ needs.bump-version.outputs.cli_version }}"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git fetch origin
+          git checkout "${{ github.ref_name }}"
+          git pull --ff-only origin "${{ github.ref_name }}"
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.bump-version.outputs.cli_version }}
+          name: "AGI v${{ needs.bump-version.outputs.cli_version }}"
+          body: |
+            ## AGI v${{ needs.bump-version.outputs.cli_version }}
+
+            Platform binaries are attached below.
+
+            - macOS (Intel): agi-darwin-x64
+            - macOS (Apple Silicon): agi-darwin-arm64
+            - Linux (x64): agi-linux-x64
+            - Linux (ARM64): agi-linux-arm64
+          files: ./release/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-npm:
+    needs: [check-flags, bump-version, publish-cli]
+    if: needs.check-flags.outputs.publish_cli == 'true'
+    runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync to latest branch tip
+        shell: bash
+        run: |
+          git fetch origin
+          git checkout "${{ github.ref_name }}"
+          git pull --ff-only origin "${{ github.ref_name }}"
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Replace workspace dependencies
+        shell: bash
+        run: bun run scripts/prepare-publish.ts
+
+      - name: Regenerate clean lockfile
+        shell: bash
+        run: |
+          rm -f bun.lock
+          bun install
+
+      - name: Configure npm auth
+        if: ${{ env.NPM_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf "//registry.npmjs.org/:_authToken=%s\n" "$NPM_TOKEN" > .npmrc
+          echo "always-auth=true" >> .npmrc
+
+      - name: Verify publish token
+        shell: bash
+        run: |
+          if [ -z "${NPM_TOKEN}" ]; then
+            echo "NPM_TOKEN is not set; skipping npm publish" >&2
+            exit 1
+          fi
+
+      - name: Verify versions match
+        shell: bash
+        run: |
+          INSTALL_VERSION=$(jq -r .version packages/install/package.json)
+          for pkg in packages/api packages/sdk packages/web-ui packages/web-sdk packages/database packages/server; do
+            PKG_VERSION=$(jq -r .version "$pkg/package.json")
+            PKG_NAME=$(basename "$pkg")
+            if [ "${INSTALL_VERSION}" != "${PKG_VERSION}" ]; then
+              echo "Install version (${INSTALL_VERSION}) does not match ${PKG_NAME} version (${PKG_VERSION})" >&2
+              exit 1
+            fi
+          done
+          echo "✓ All packages version: ${INSTALL_VERSION}"
+
+      - name: Publish all packages to npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.bump-version.outputs.cli_version }}"
+          for pkg in packages/install packages/api packages/sdk packages/web-sdk packages/web-ui packages/database packages/server; do
+            PKG_NAME=$(jq -r .name "$pkg/package.json")
+            echo "Publishing ${PKG_NAME}@${VERSION} to npm..."
+            cd "$pkg"
+            bun publish --access public --tag latest
+            cd "$GITHUB_WORKSPACE"
+          done
+
+  publish-desktop:
+    needs: [check-flags, bump-version, build-desktop]
+    if: needs.check-flags.outputs.publish_desktop == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          pattern: desktop-*
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p ./release
+          find ./artifacts -type f -exec cp {} ./release/ \;
+          ls -la ./release/
+
+      - name: Create and push desktop tag
+        shell: bash
+        run: |
+          VERSION="${{ needs.bump-version.outputs.desktop_version }}"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git fetch origin
+          git checkout "${{ github.ref_name }}"
+          git pull --ff-only origin "${{ github.ref_name }}"
+          git tag "desktop-v${VERSION}"
+          git push origin "desktop-v${VERSION}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-v${{ needs.bump-version.outputs.desktop_version }}
+          name: "AGI Desktop v${{ needs.bump-version.outputs.desktop_version }}"
+          body: |
+            ## AGI Desktop v${{ needs.bump-version.outputs.desktop_version }}
+
+            ### Downloads
+
+            - **macOS (Apple Silicon)**: AGI_${{ needs.bump-version.outputs.desktop_version }}_aarch64.dmg
+            - **macOS (Intel)**: AGI_${{ needs.bump-version.outputs.desktop_version }}_x64.dmg
+            - **Linux**: AGI_${{ needs.bump-version.outputs.desktop_version }}_amd64.AppImage
+
+            ### Installation
+
+            **macOS**: Download the .dmg, open it, and drag AGI to Applications.
+
+
+            **Linux**: Download the AppImage, make it executable (`chmod +x`), and run it.
+          files: ./release/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  reset-flags:
+    needs: [check-flags, publish-npm, publish-desktop]
+    if: always() && needs.check-flags.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync to latest branch tip
+        shell: bash
+        run: |
+          git fetch origin
+          git checkout "${{ github.ref_name }}"
+          git pull --ff-only origin "${{ github.ref_name }}"
+
+      - name: Reset publish flags
+        shell: bash
+        run: |
+          CHANGED=false
+
+          if [ "${{ needs.check-flags.outputs.publish_cli }}" = "true" ] && [ "${{ needs.publish-npm.result }}" = "success" ]; then
+            sed -i 's/^PUBLISH_CLI=true$/PUBLISH_CLI=false/' publish.env
+            CHANGED=true
+          fi
+
+          if [ "${{ needs.check-flags.outputs.publish_desktop }}" = "true" ] && [ "${{ needs.publish-desktop.result }}" = "success" ]; then
+            sed -i 's/^PUBLISH_DESKTOP=true$/PUBLISH_DESKTOP=false/' publish.env
+            CHANGED=true
+          fi
+
+          if [ "$CHANGED" = "true" ]; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add publish.env
+            git commit -m "chore: reset publish flags [skip ci]" || echo "No changes to commit"
+            git push origin "${{ github.ref_name }}"
+          fi
