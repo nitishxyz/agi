@@ -235,7 +235,11 @@ export function getAugmentedPath(): string {
 	const seen = new Set<string>();
 	const parts: string[] = [];
 
-	for (const p of [binDir, ...(loginPath ? loginPath.split(sep) : []), ...current.split(sep)]) {
+	for (const p of [
+		binDir,
+		...(loginPath ? loginPath.split(sep) : []),
+		...current.split(sep),
+	]) {
 		if (p && !seen.has(p)) {
 			seen.add(p);
 			parts.push(p);
