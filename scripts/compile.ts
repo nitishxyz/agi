@@ -44,6 +44,30 @@ if (verbose) {
 	spinner.succeed();
 }
 
+spinner.begin('Preparing embedded binaries');
+const prepareTarget = target ? target.replace('--target=bun-', '') : undefined;
+const prepareArgs = ['bun', 'run', 'scripts/prepare-embedded-bins.ts'];
+if (prepareTarget) prepareArgs.push(prepareTarget);
+{
+	const proc = Bun.spawn(prepareArgs, {
+		cwd: ROOT,
+		stdout: verbose ? 'inherit' : 'pipe',
+		stderr: verbose ? 'inherit' : 'pipe',
+	});
+	const exitCode = await proc.exited;
+	if (exitCode !== 0) {
+		spinner.fail();
+		if (!verbose) {
+			const out =
+				(await new Response(proc.stderr).text()).trim() ||
+				(await new Response(proc.stdout).text()).trim();
+			if (out) console.error(out);
+		}
+		process.exit(1);
+	}
+}
+spinner.succeed();
+
 spinner.begin('Compiling binary');
 await $`mkdir -p dist`.quiet();
 

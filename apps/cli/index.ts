@@ -1,8 +1,11 @@
 // Side-effect import to suppress bigint-buffer warning - must be first
 import './src/suppress-warnings.ts';
 
+import { bootstrapBinaries } from './src/bootstrap-bins.ts';
 import PKG from './package.json' with { type: 'json' };
 import { runCli } from './src/cli.ts';
+
+bootstrapBinaries();
 
 let argv = process.argv.slice(2);
 

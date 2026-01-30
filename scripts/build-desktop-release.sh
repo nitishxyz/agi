@@ -90,31 +90,6 @@ if [[ "$SKIP_CLI" == false ]]; then
 fi
 
 echo ""
-echo "--- Copying vendor binaries ($CURRENT_PLATFORM) ---"
-VENDOR_SRC="$ROOT/vendor/bin/$CURRENT_PLATFORM"
-VENDOR_DST="$DESKTOP_DIR/src-tauri/resources/vendor/bin/$CURRENT_PLATFORM"
-mkdir -p "$VENDOR_DST"
-if [[ -d "$VENDOR_SRC" ]]; then
-  cp -v "$VENDOR_SRC"/* "$VENDOR_DST/"
-  chmod +x "$VENDOR_DST"/*
-  echo "Vendor binaries copied. Signing with hardened runtime..."
-  ENTITLEMENTS="$DESKTOP_DIR/src-tauri/resources/entitlements.plist"
-  for bin in "$VENDOR_DST"/*; do
-    if [[ -f "$bin" && -x "$bin" ]]; then
-      echo "  Signing $(basename "$bin")..."
-      codesign --force --options runtime --timestamp \
-        --sign "$APPLE_SIGNING_IDENTITY" \
-        --entitlements "$ENTITLEMENTS" \
-        "$bin"
-    fi
-  done
-  echo "Vendor binaries signed."
-else
-  echo "Warning: No vendor binaries found at $VENDOR_SRC"
-  echo "Run: ./scripts/download-vendor-bins.sh"
-fi
-
-echo ""
 echo "--- Building Tauri app ---"
 cd "$DESKTOP_DIR"
 

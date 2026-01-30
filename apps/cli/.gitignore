@@ -4,3 +4,5 @@ node_modules/
 .DS_Store
 web-dist/
 web-assets.ts
+vendor/
+src/generated/

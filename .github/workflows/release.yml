@@ -165,6 +165,28 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Download ripgrep binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          RIPGREP_VERSION="14.1.1"
+          PLATFORM="${{ matrix.os }}-${{ matrix.arch }}"
+          case "$PLATFORM" in
+            darwin-arm64) RG_TARGET="aarch64-apple-darwin" ;;
+            darwin-x64)   RG_TARGET="x86_64-apple-darwin" ;;
+            linux-x64)    RG_TARGET="x86_64-unknown-linux-musl" ;;
+            linux-arm64)  RG_TARGET="aarch64-unknown-linux-gnu" ;;
+            *) echo "Unknown platform: $PLATFORM"; exit 1 ;;
+          esac
+          VENDOR_DST="vendor/bin/${PLATFORM}"
+          mkdir -p "$VENDOR_DST"
+          ARCHIVE="ripgrep-${RIPGREP_VERSION}-${RG_TARGET}"
+          URL="https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/${ARCHIVE}.tar.gz"
+          curl -fsSL "$URL" | tar -xz -C /tmp
+          cp "/tmp/${ARCHIVE}/rg" "$VENDOR_DST/rg"
+          chmod +x "$VENDOR_DST/rg"
+          echo "Downloaded rg to ${VENDOR_DST}"
+
       - name: Build binary
         shell: bash
         run: |
@@ -189,15 +211,15 @@ jobs:
             echo "No Apple certificate provided, skipping signing"
             exit 0
           fi
-          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+          CERTIFICATE_PATH="$RUNNER_TEMP/certificate.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
 
       - name: Sign macOS binary
         if: matrix.os == 'darwin'
@@ -270,6 +292,35 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Download ripgrep binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          RIPGREP_VERSION="14.1.1"
+          case "${{ matrix.target }}" in
+            aarch64-apple-darwin)
+              PLATFORM="darwin-arm64"
+              RG_TARGET="aarch64-apple-darwin"
+              ;;
+            x86_64-apple-darwin)
+              PLATFORM="darwin-x64"
+              RG_TARGET="x86_64-apple-darwin"
+              ;;
+            x86_64-unknown-linux-gnu)
+              PLATFORM="linux-x64"
+              RG_TARGET="x86_64-unknown-linux-musl"
+              ;;
+            *) echo "Unknown target: ${{ matrix.target }}"; exit 1 ;;
+          esac
+          VENDOR_DST="vendor/bin/${PLATFORM}"
+          mkdir -p "$VENDOR_DST"
+          ARCHIVE="ripgrep-${RIPGREP_VERSION}-${RG_TARGET}"
+          URL="https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/${ARCHIVE}.tar.gz"
+          curl -fsSL "$URL" | tar -xz -C /tmp
+          cp "/tmp/${ARCHIVE}/rg" "$VENDOR_DST/rg"
+          chmod +x "$VENDOR_DST/rg"
+          echo "Downloaded rg to ${VENDOR_DST}"
+
       - name: Build CLI binary for desktop
         shell: bash
         run: |
@@ -280,14 +331,14 @@ jobs:
             x86_64-unknown-linux-gnu) PLATFORM="linux-x64" ;;
             *) echo "Unknown target: ${{ matrix.target }}"; exit 1 ;;
           esac
-          cd apps/cli
           bun run prebuild
+          cd apps/cli
           mkdir -p dist
           bun build --compile --minify --target="bun-${PLATFORM}" ./index.ts --outfile "dist/agi-${PLATFORM}"
           mkdir -p ../desktop/src-tauri/resources/binaries
           cp "dist/agi-${PLATFORM}" "../desktop/src-tauri/resources/binaries/agi-${PLATFORM}"
           chmod +x "../desktop/src-tauri/resources/binaries/agi-${PLATFORM}"
-          echo "Built and copied agi-${PLATFORM} to desktop resources"
+          echo "Built CLI with embedded rg and copied to desktop resources"
 
       - name: Import Apple Certificate
         if: startsWith(matrix.platform, 'macos')
@@ -300,15 +351,15 @@ jobs:
             echo "No Apple certificate provided, skipping signing"
             exit 0
           fi
-          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+          CERTIFICATE_PATH="$RUNNER_TEMP/certificate.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
 
       - name: Sign bundled CLI binary
         if: startsWith(matrix.platform, 'macos')
