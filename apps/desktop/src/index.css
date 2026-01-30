@@ -66,6 +66,11 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 	background-color: hsl(var(--background));
 	color: hsl(var(--foreground));
+	overscroll-behavior: none;
+}
+
+html {
+	overscroll-behavior: none;
 }
 
 button:focus,
