@@ -359,7 +359,7 @@ const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 						<span>{sessionData.messages.length} messages</span>
 					</div>
 					<a
-					href="https://github.com/nitishxyz/agi"
+						href="https://github.com/nitishxyz/agi"
 						className="text-primary hover:underline flex items-center gap-1"
 						target="_blank"
 						rel="noopener noreferrer"

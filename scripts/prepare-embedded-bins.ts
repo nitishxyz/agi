@@ -29,7 +29,12 @@ function getPlatformKey(target?: string): string {
 	}
 	const platform = process.platform;
 	const arch = process.arch;
-	const os = platform === 'darwin' ? 'darwin' : platform === 'win32' ? 'windows' : 'linux';
+	const os =
+		platform === 'darwin'
+			? 'darwin'
+			: platform === 'win32'
+				? 'windows'
+				: 'linux';
 	const cpu = arch === 'arm64' ? 'arm64' : 'x64';
 	return `${os}-${cpu}`;
 }

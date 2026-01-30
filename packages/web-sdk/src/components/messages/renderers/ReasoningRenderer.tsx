@@ -19,7 +19,12 @@ export function ReasoningRenderer({ part }: ReasoningRendererProps) {
 	}
 
 	useEffect(() => {
-		if (scrollRef.current && isExpanded && !part.completedAt && !isHoveredRef.current) {
+		if (
+			scrollRef.current &&
+			isExpanded &&
+			!part.completedAt &&
+			!isHoveredRef.current
+		) {
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 		}
 	}, [content, isExpanded, part.completedAt]);
@@ -51,8 +56,12 @@ export function ReasoningRenderer({ part }: ReasoningRendererProps) {
 				<div
 					ref={scrollRef}
 					className="mt-2 p-3 bg-muted/30 rounded-md border border-border max-h-48 overflow-y-auto"
-					onMouseEnter={() => { isHoveredRef.current = true; }}
-					onMouseLeave={() => { isHoveredRef.current = false; }}
+					onMouseEnter={() => {
+						isHoveredRef.current = true;
+					}}
+					onMouseLeave={() => {
+						isHoveredRef.current = false;
+					}}
 				>
 					<div className="text-sm text-muted-foreground whitespace-pre-wrap font-mono">
 						{content}

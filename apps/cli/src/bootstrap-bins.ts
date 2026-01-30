@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	writeFileSync,
+	chmodSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { embeddedRg } from './generated/embedded-rg.ts';
 
