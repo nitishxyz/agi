@@ -7,12 +7,15 @@ const GITHUB_REPO = 'nitishxyz/agi';
 async function fetchLatestVersion(): Promise<string | null> {
 	try {
 		const res = await fetch(
-			`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
+			`https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=20`,
 		);
 		if (!res.ok) return null;
-		const data = (await res.json()) as { tag_name?: string };
-		const tag = data.tag_name ?? null;
-		return tag?.replace(/^v/, '') ?? null;
+		const releases = (await res.json()) as { tag_name?: string; draft?: boolean; prerelease?: boolean }[];
+		const cliRelease = releases.find(
+			(r) => r.tag_name?.match(/^v\d/) && !r.draft && !r.prerelease,
+		);
+		if (!cliRelease?.tag_name) return null;
+		return cliRelease.tag_name.replace(/^v/, '');
 	} catch {
 		return null;
 	}
