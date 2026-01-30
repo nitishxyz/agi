@@ -1,11 +1,13 @@
 import { join } from 'node:path';
 import { promises as fs } from 'node:fs';
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
+import { homedir } from 'node:os';
 
 const AGI_BIN_DIR_NAME = 'bin';
 
 let cachedBinDir: string | null = null;
 const resolvedPaths = new Map<string, string>();
+let cachedLoginPath: string | null = null;
 
 function getConfigHome(): string {
 	const cfgHome = process.env.XDG_CONFIG_HOME;
@@ -188,10 +190,57 @@ export function clearBinaryCache(): void {
 	resolvedPaths.clear();
 }
 
+function getLoginShellPath(): string | null {
+	if (cachedLoginPath !== null) return cachedLoginPath;
+
+	if (process.platform === 'win32') {
+		cachedLoginPath = process.env.PATH || '';
+		return cachedLoginPath;
+	}
+
+	const home = process.env.HOME || homedir();
+	const shellCandidates = [
+		process.env.SHELL,
+		'/bin/zsh',
+		'/bin/bash',
+		'/bin/sh',
+	].filter(Boolean) as string[];
+
+	for (const shell of shellCandidates) {
+		try {
+			const result = execSync(`${shell} -ilc 'echo "___PATH___:$PATH"'`, {
+				timeout: 5000,
+				stdio: ['ignore', 'pipe', 'ignore'],
+				env: { HOME: home, USER: process.env.USER || '', SHELL: shell },
+			});
+			const output = result.toString();
+			const match = output.match(/___PATH___:(.*)/);
+			if (match?.[1]?.trim()) {
+				cachedLoginPath = match[1].trim();
+				return cachedLoginPath;
+			}
+		} catch {}
+	}
+
+	cachedLoginPath = null;
+	return null;
+}
+
 export function getAugmentedPath(): string {
+	const sep = process.platform === 'win32' ? ';' : ':';
 	const binDir = getAgiBinDir();
 	const current = process.env.PATH || '';
-	const commonPaths = ['/opt/homebrew/bin', '/usr/local/bin'];
-	const parts = [binDir, ...commonPaths, current];
-	return parts.join(process.platform === 'win32' ? ';' : ':');
+	const loginPath = getLoginShellPath();
+
+	const seen = new Set<string>();
+	const parts: string[] = [];
+
+	for (const p of [binDir, ...(loginPath ? loginPath.split(sep) : []), ...current.split(sep)]) {
+		if (p && !seen.has(p)) {
+			seen.add(p);
+			parts.push(p);
+		}
+	}
+
+	return parts.join(sep);
 }
