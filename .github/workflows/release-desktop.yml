@@ -208,11 +208,11 @@ jobs:
         with:
           path: ./artifacts
 
-     - name: Flatten artifacts
-       run: |
-         mkdir -p ./release
+      - name: Flatten artifacts
+        run: |
+          mkdir -p ./release
           find ./artifacts -type f -exec cp {} ./release/ \;
-         ls -la ./release/
+          ls -la ./release/
 
       - name: Create and push git tag
         shell: bash
