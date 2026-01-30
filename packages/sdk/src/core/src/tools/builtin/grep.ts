@@ -1,13 +1,11 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod/v3';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import DESCRIPTION from './grep.txt' with { type: 'text' };
 import { defaultIgnoreGlobs } from './ignore.ts';
 import { createToolError, type ToolResponse } from '../error.ts';
-
-const execAsync = promisify(exec);
+import { resolveBinary } from '../bin-manager.ts';
 
 function expandTilde(p: string) {
 	const home = process.env.HOME || process.env.USERPROFILE || '';
@@ -63,35 +61,44 @@ export function buildGrepTool(projectRoot: string): {
 			const isAbs = p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p);
 			const searchPath = p ? (isAbs ? p : join(projectRoot, p)) : projectRoot;
 
-			let cmd = `rg -n --color never`;
+			const rgBin = await resolveBinary('rg');
+			const args: string[] = ['-n', '--color', 'never'];
 			for (const g of defaultIgnoreGlobs(params.ignore)) {
-				cmd += ` --glob "${g.replace(/"/g, '\\"')}"`;
+				args.push('--glob', g);
 			}
 			if (params.include) {
-				cmd += ` --glob "${params.include.replace(/"/g, '\\"')}"`;
+				args.push('--glob', params.include);
 			}
-			cmd += ` "${pattern.replace(/"/g, '\\"')}" "${searchPath}"`;
+			args.push(pattern, searchPath);
 
 			let output = '';
 			try {
-				const result = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 });
-				output = result.stdout;
+				output = await new Promise<string>((resolve, reject) => {
+					const proc = spawn(rgBin, args, { cwd: projectRoot });
+					let stdout = '';
+					let stderr = '';
+					proc.stdout.on('data', (d) => {
+						stdout += d.toString();
+					});
+					proc.stderr.on('data', (d) => {
+						stderr += d.toString();
+					});
+					proc.on('close', (code) => {
+						if (code === 1) resolve('');
+						else if (code !== 0)
+							reject(new Error(stderr.trim() || 'ripgrep failed'));
+						else resolve(stdout);
+					});
+					proc.on('error', reject);
+				});
 			} catch (error: unknown) {
-				const err = error as { code?: number; stderr?: string };
-				if (err.code === 1) {
-					return { ok: true, count: 0, matches: [] };
-				}
-				const err2 = error as { stderr?: string; message?: string };
-				return createToolError(
-					`ripgrep failed: ${err2.stderr || err2.message}`,
-					'execution',
-					{
-						parameter: 'pattern',
-						value: pattern,
-						suggestion:
-							'Check if ripgrep (rg) is installed and the pattern is valid',
-					},
-				);
+				const err2 = error as { message?: string };
+				return createToolError(`ripgrep failed: ${err2.message}`, 'execution', {
+					parameter: 'pattern',
+					value: pattern,
+					suggestion:
+						'Check if ripgrep (rg) is installed and the pattern is valid',
+				});
 			}
 
 			const lines = output.trim().split('\n');

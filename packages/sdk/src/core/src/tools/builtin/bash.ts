@@ -3,6 +3,7 @@ import { z } from 'zod/v3';
 import { spawn } from 'node:child_process';
 import DESCRIPTION from './bash.txt' with { type: 'text' };
 import { createToolError, type ToolResponse } from '../error.ts';
+import { getAugmentedPath } from '../bin-manager.ts';
 
 function normalizePath(p: string) {
 	const parts = p.replace(/\\/g, '/').split('/');
@@ -73,6 +74,7 @@ export function buildBashTool(projectRoot: string): {
 					cwd: absCwd,
 					shell: true,
 					stdio: ['ignore', 'pipe', 'pipe'],
+					env: { ...process.env, PATH: getAugmentedPath() },
 				});
 
 				let stdout = '';

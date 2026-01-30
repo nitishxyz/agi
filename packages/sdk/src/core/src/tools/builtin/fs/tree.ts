@@ -1,15 +1,72 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod/v3';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import { promises as fs } from 'node:fs';
+import { join } from 'node:path';
 import { expandTilde, isAbsoluteLike, resolveSafePath } from './util.ts';
 import DESCRIPTION from './tree.txt' with { type: 'text' };
 import { toIgnoredBasenames } from '../ignore.ts';
 import { createToolError, type ToolResponse } from '../../error.ts';
 
-const execAsync = promisify(exec);
+async function walkTree(
+	dir: string,
+	ignored: Set<string>,
+	maxDepth: number | null,
+	currentDepth: number,
+	prefix: string,
+): Promise<{ lines: string[]; dirs: number; files: number }> {
+	let dirs = 0;
+	let files = 0;
+	const lines: string[] = [];
 
-// description imported above
+	if (maxDepth !== null && currentDepth >= maxDepth)
+		return { lines, dirs, files };
+
+	try {
+		const rawEntries = await fs.readdir(dir, { withFileTypes: true });
+		const entries = rawEntries.map((e) => ({
+			name: String(e.name),
+			isDir: e.isDirectory(),
+		}));
+
+		const filtered = entries
+			.filter((e) => !e.name.startsWith('.'))
+			.filter((e) => !(e.isDir && ignored.has(e.name)))
+			.sort((a, b) => {
+				if (a.isDir && !b.isDir) return -1;
+				if (!a.isDir && b.isDir) return 1;
+				return a.name.localeCompare(b.name);
+			});
+
+		for (let i = 0; i < filtered.length; i++) {
+			const entry = filtered[i];
+			const isLast = i === filtered.length - 1;
+			const connector = isLast ? '└── ' : '├── ';
+			const childPrefix = isLast ? '    ' : '│   ';
+
+			if (entry.isDir) {
+				dirs++;
+				lines.push(`${prefix}${connector}${entry.name}`);
+				const sub = await walkTree(
+					join(dir, entry.name),
+					ignored,
+					maxDepth,
+					currentDepth + 1,
+					`${prefix}${childPrefix}`,
+				);
+				lines.push(...sub.lines);
+				dirs += sub.dirs;
+				files += sub.files;
+			} else {
+				files++;
+				lines.push(`${prefix}${connector}${entry.name}`);
+			}
+		}
+	} catch {
+		return { lines, dirs, files };
+	}
+
+	return { lines, dirs, files };
+}
 
 export function buildTreeTool(projectRoot: string): {
 	name: string;
@@ -48,32 +105,35 @@ export function buildTreeTool(projectRoot: string): {
 				: resolveSafePath(projectRoot, req || '.');
 			const ignored = toIgnoredBasenames(ignore);
 
-			let cmd = 'tree';
-			if (typeof depth === 'number') cmd += ` -L ${depth}`;
-			if (ignored.size) {
-				const pattern = Array.from(ignored).join('|');
-				cmd += ` -I '${pattern.replace(/'/g, "'\\''")}'`;
+			try {
+				await fs.access(start);
+			} catch {
+				return createToolError(
+					`tree failed for ${req}: directory not found`,
+					'not_found',
+					{
+						parameter: 'path',
+						value: req,
+						suggestion: 'Check if the directory exists',
+					},
+				);
 			}
-			cmd += ' .';
 
 			try {
-				const { stdout } = await execAsync(cmd, {
-					cwd: start,
-					maxBuffer: 10 * 1024 * 1024,
-				});
-				const output = stdout.trimEnd();
+				const result = await walkTree(start, ignored, depth ?? null, 0, '');
+				const header = '.';
+				const summary = `\n${result.dirs} director${result.dirs === 1 ? 'y' : 'ies'}, ${result.files} file${result.files === 1 ? '' : 's'}`;
+				const output = [header, ...result.lines, summary].join('\n');
 				return { ok: true, path: req, depth: depth ?? null, tree: output };
 			} catch (error: unknown) {
-				const err = error as { stderr?: string; stdout?: string };
-				const message = (err.stderr || err.stdout || 'tree failed').trim();
+				const err = error as { message?: string };
 				return createToolError(
-					`tree failed for ${req}: ${message}`,
+					`tree failed for ${req}: ${err.message || 'unknown error'}`,
 					'execution',
 					{
 						parameter: 'path',
 						value: req,
-						suggestion:
-							'Check if the directory exists and tree command is installed',
+						suggestion: 'Check if the directory exists and is accessible',
 					},
 				);
 			}

@@ -1,15 +1,10 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod/v3';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import { promises as fs } from 'node:fs';
 import { expandTilde, isAbsoluteLike, resolveSafePath } from './util.ts';
 import DESCRIPTION from './ls.txt' with { type: 'text' };
 import { toIgnoredBasenames } from '../ignore.ts';
 import { createToolError, type ToolResponse } from '../../error.ts';
-
-const execAsync = promisify(exec);
-
-// description imported above
 
 export function buildLsTool(projectRoot: string): { name: string; tool: Tool } {
 	const ls = tool({
@@ -45,32 +40,29 @@ export function buildLsTool(projectRoot: string): { name: string; tool: Tool } {
 			const ignored = toIgnoredBasenames(ignore);
 
 			try {
-				const { stdout } = await execAsync('ls -1p', {
-					cwd: abs,
-					maxBuffer: 10 * 1024 * 1024,
-				});
-				const entries = stdout
-					.split('\n')
-					.map((line) => line.trim())
-					.filter((line) => line.length > 0 && !line.startsWith('.'))
-					.map((line) => ({
-						name: line.replace(/\/$/, ''),
-						type: line.endsWith('/') ? 'dir' : 'file',
+				const dirents = await fs.readdir(abs, { withFileTypes: true });
+				const entries = dirents
+					.filter((d) => !String(d.name).startsWith('.'))
+					.map((d) => ({
+						name: String(d.name),
+						type: d.isDirectory() ? 'dir' : 'file',
 					}))
-					.filter(
-						(entry) => !(entry.type === 'dir' && ignored.has(entry.name)),
-					);
+					.filter((entry) => !(entry.type === 'dir' && ignored.has(entry.name)))
+					.sort((a, b) => a.name.localeCompare(b.name));
 				return { ok: true, path: req, entries };
 			} catch (error: unknown) {
-				const err = error as { stderr?: string; stdout?: string };
-				const message = (err.stderr || err.stdout || 'ls failed').trim();
+				const err = error as { code?: string; message?: string };
+				const message = err.message || 'ls failed';
 				return createToolError(
 					`ls failed for ${req}: ${message}`,
-					'execution',
+					err.code === 'ENOENT' ? 'not_found' : 'execution',
 					{
 						parameter: 'path',
 						value: req,
-						suggestion: 'Check if the directory exists and is accessible',
+						suggestion:
+							err.code === 'ENOENT'
+								? 'Check if the directory exists'
+								: 'Check if the directory exists and is accessible',
 					},
 				);
 			}

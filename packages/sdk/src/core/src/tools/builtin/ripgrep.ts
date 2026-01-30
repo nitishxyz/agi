@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import DESCRIPTION from './ripgrep.txt' with { type: 'text' };
 import { createToolError, type ToolResponse } from '../error.ts';
+import { resolveBinary } from '../bin-manager.ts';
 
 export function buildRipgrepTool(projectRoot: string): {
 	name: string;
@@ -61,8 +62,9 @@ export function buildRipgrepTool(projectRoot: string): {
 			args.push(target);
 
 			try {
+				const rgBin = await resolveBinary('rg');
 				return await new Promise((resolve) => {
-					const proc = spawn('rg', args, { cwd: projectRoot });
+					const proc = spawn(rgBin, args, { cwd: projectRoot });
 					let stdout = '';
 					let stderr = '';
 

@@ -163,12 +163,24 @@ pub async fn start_server(
         .open(&log_path)
         .ok();
     
-    let stdout = log_file.as_ref().map(|f| Stdio::from(f.try_clone().unwrap())).unwrap_or(Stdio::null());
-    let stderr = log_file.map(|f| Stdio::from(f)).unwrap_or(Stdio::null());
+   let stdout = log_file.as_ref().map(|f| Stdio::from(f.try_clone().unwrap())).unwrap_or(Stdio::null());
+   let stderr = log_file.map(|f| Stdio::from(f)).unwrap_or(Stdio::null());
+
+    let agi_bin_dir = dirs::config_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
+        .join("agi")
+        .join("bin");
+    let current_path = std::env::var("PATH").unwrap_or_default();
+    let augmented_path = format!(
+        "{}:/opt/homebrew/bin:/usr/local/bin:{}",
+        agi_bin_dir.display(),
+        current_path
+    );
 
     let child = Command::new(&binary)
         .current_dir(&project_path)
         .args(["serve", "--port", &port_arg, "--no-open"])
+        .env("PATH", &augmented_path)
         .stdout(stdout)
         .stderr(stderr)
         .spawn()

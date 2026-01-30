@@ -3,6 +3,7 @@ import type { PtyOptions } from './bun-pty.ts';
 import { spawn as spawnPty } from './bun-pty.ts';
 import { Terminal } from './terminal.ts';
 import { logger } from '../utils/logger.ts';
+import { getAugmentedPath } from '../tools/bin-manager.ts';
 
 const MAX_TERMINALS = 10;
 const CLEANUP_DELAY_MS = 5 * 60 * 1000;
@@ -41,7 +42,10 @@ export class TerminalManager {
 				cols: 80,
 				rows: 30,
 				cwd: options.cwd,
-				env: process.env as Record<string, string>,
+				env: { ...process.env, PATH: getAugmentedPath() } as Record<
+					string,
+					string
+				>,
 			};
 
 			const pty = spawnPty(options.command, options.args || [], ptyOptions);
