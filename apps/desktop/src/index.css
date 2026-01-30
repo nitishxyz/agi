@@ -87,3 +87,36 @@ button:focus-visible {
 .scrollbar-hide::-webkit-scrollbar {
 	display: none;
 }
+
+.setu-loader-ring {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 72px;
+	height: 72px;
+}
+
+.setu-loader-ring::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	border: 2px solid hsl(var(--muted));
+}
+
+.setu-loader-ring::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	border: 2px solid transparent;
+	border-top-color: hsl(var(--foreground));
+	animation: setu-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes setu-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}

@@ -22,7 +22,11 @@ async function run(label: string, cmd: string[], cwd: string) {
 
 	if (verbose) {
 		spinner.succeed();
-		const result = Bun.spawnSync(cmd, { cwd, stdout: 'inherit', stderr: 'inherit' });
+		const result = Bun.spawnSync(cmd, {
+			cwd,
+			stdout: 'inherit',
+			stderr: 'inherit',
+		});
 		if (!result.success) {
 			console.error(`\n${RED}Build failed at: ${label}${RESET}`);
 			process.exit(1);
@@ -127,7 +131,9 @@ const embeddedAssetsEntries = Array.from(assetData.entries())
 
 const manifestPath = join(CLI_WEB_DIST, 'manifest.json');
 await Bun.write(manifestPath, JSON.stringify(manifest, null, 2));
-spinner.succeed(`${manifest.assets.js.length} js, ${manifest.assets.css.length} css, ${manifest.assets.other.length} other`);
+spinner.succeed(
+	`${manifest.assets.js.length} js, ${manifest.assets.css.length} css, ${manifest.assets.other.length} other`,
+);
 
 spinner.begin('Generating web-assets.ts');
 
@@ -222,4 +228,6 @@ await Bun.write(importsFilePath, importsFile);
 spinner.succeed();
 
 const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-console.log(`\n${GREEN}${BOLD}  ✓${RESET} Web build complete ${DIM}in ${elapsed}s${RESET}\n`);
+console.log(
+	`\n${GREEN}${BOLD}  ✓${RESET} Web build complete ${DIM}in ${elapsed}s${RESET}\n`,
+);

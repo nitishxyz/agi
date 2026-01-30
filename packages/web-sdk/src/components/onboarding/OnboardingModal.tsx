@@ -5,7 +5,13 @@ import { useOnboardingStore } from '../../stores/onboardingStore';
 import { useSetuStore } from '../../stores/setuStore';
 import { useAuthStatus } from '../../hooks/useAuthStatus';
 
-export const OnboardingModal = memo(function OnboardingModal() {
+interface OnboardingModalProps {
+	hideHeader?: boolean;
+}
+
+export const OnboardingModal = memo(function OnboardingModal({
+	hideHeader = false,
+}: OnboardingModalProps) {
 	const isOpen = useOnboardingStore((s) => s.isOpen);
 	const currentStep = useOnboardingStore((s) => s.currentStep);
 	const manageMode = useOnboardingStore((s) => s.manageMode);
@@ -42,6 +48,7 @@ export const OnboardingModal = memo(function OnboardingModal() {
 					onNext={nextStep}
 					manageMode={manageMode}
 					onClose={reset}
+					hideHeader={hideHeader}
 				/>
 			)}
 
@@ -50,6 +57,7 @@ export const OnboardingModal = memo(function OnboardingModal() {
 					authStatus={authStatus}
 					onComplete={completeOnboarding}
 					onBack={prevStep}
+					hideHeader={hideHeader}
 				/>
 			)}
 		</div>

@@ -84,38 +84,46 @@ export function ProjectPicker({
 					<SetuLogo size={20} />
 					<span className="font-semibold text-foreground">AGI Desktop</span>
 				</div>
-			{isAuthenticated && (
-				<div className="flex items-center gap-3">
-					{user?.avatarUrl && (
-						<img
-							src={user.avatarUrl}
-							alt=""
-							className="w-6 h-6 rounded-full"
-						/>
-					)}
-					<span className="text-sm text-muted-foreground">{user?.login}</span>
-					<button
-						type="button"
-						onClick={logout}
-						className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 hover:bg-muted rounded"
+				{isAuthenticated && (
+					<div className="flex items-center gap-3">
+						{user?.avatarUrl && (
+							<img
+								src={user.avatarUrl}
+								alt=""
+								className="w-6 h-6 rounded-full"
+							/>
+						)}
+						<span className="text-sm text-muted-foreground">{user?.login}</span>
+						<button
+							type="button"
+							onClick={logout}
+							className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 hover:bg-muted rounded"
+						>
+							Disconnect
+						</button>
+					</div>
+				)}
+				<button
+					type="button"
+					onClick={() => tauriBridge.createNewWindow()}
+					className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+					title="New Window"
+				>
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 16 16"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="1.5"
+						strokeLinecap="round"
 					>
-						Disconnect
-					</button>
-				</div>
-			)}
-			<button
-				type="button"
-				onClick={() => tauriBridge.createNewWindow()}
-				className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
-				title="New Window"
-			>
-				<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-					<rect x="1" y="1" width="14" height="14" rx="2" />
-					<line x1="8" y1="4.5" x2="8" y2="11.5" />
-					<line x1="4.5" y1="8" x2="11.5" y2="8" />
-				</svg>
-			</button>
-		</div>
+						<rect x="1" y="1" width="14" height="14" rx="2" />
+						<line x1="8" y1="4.5" x2="8" y2="11.5" />
+						<line x1="4.5" y1="8" x2="11.5" y2="8" />
+					</svg>
+				</button>
+			</div>
 
 			<div className="flex-1 overflow-y-auto px-6 py-8 lg:px-12 lg:py-12">
 				<div className="max-w-4xl mx-auto">

@@ -145,6 +145,13 @@ pub fn run() {
             commands::git::git_is_repo,
             commands::window::create_new_window,
             get_initial_project,
+            commands::onboarding::get_onboarding_status,
+            commands::onboarding::generate_wallet,
+            commands::onboarding::add_provider,
+            commands::onboarding::remove_provider,
+            commands::onboarding::set_defaults,
+            commands::onboarding::complete_onboarding,
+            commands::onboarding::get_home_directory,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

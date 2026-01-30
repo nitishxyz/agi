@@ -38,7 +38,9 @@ export class Spinner {
 	private render() {
 		const elapsed = formatElapsed(performance.now() - this.start);
 		const f = FRAMES[this.frame % FRAMES.length];
-		process.stdout.write(`${CLEAR_LINE}  ${CYAN}${f}${RESET} ${this.label} ${DIM}${elapsed}${RESET}`);
+		process.stdout.write(
+			`${CLEAR_LINE}  ${CYAN}${f}${RESET} ${this.label} ${DIM}${elapsed}${RESET}`,
+		);
 		this.frame++;
 	}
 
@@ -46,14 +48,18 @@ export class Spinner {
 		this.stop();
 		const elapsed = formatElapsed(performance.now() - this.start);
 		const suffix = extra ? ` ${DIM}${extra}${RESET}` : '';
-		process.stdout.write(`${CLEAR_LINE}  ${GREEN}✓${RESET} ${this.label} ${DIM}${elapsed}${RESET}${suffix}\n`);
+		process.stdout.write(
+			`${CLEAR_LINE}  ${GREEN}✓${RESET} ${this.label} ${DIM}${elapsed}${RESET}${suffix}\n`,
+		);
 		process.stdout.write(SHOW_CURSOR);
 	}
 
 	fail(extra?: string) {
 		this.stop();
 		const suffix = extra ? ` ${DIM}${extra}${RESET}` : '';
-		process.stdout.write(`${CLEAR_LINE}  ${RED}✗${RESET} ${this.label}${suffix}\n`);
+		process.stdout.write(
+			`${CLEAR_LINE}  ${RED}✗${RESET} ${this.label}${suffix}\n`,
+		);
 		process.stdout.write(SHOW_CURSOR);
 	}
 

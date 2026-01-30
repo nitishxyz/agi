@@ -1,0 +1,36 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Payment Successful — AGI">
+	<main class="flex min-h-screen flex-col items-center justify-center p-8">
+		<div class="max-w-md w-full text-center space-y-6">
+			<div class="mx-auto w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+				<svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+					<polyline points="22 4 12 14.01 9 11.01" />
+				</svg>
+			</div>
+
+			<div class="space-y-2">
+				<h1 class="text-2xl font-bold text-foreground">Payment Successful</h1>
+				<p class="text-muted-foreground">
+					Your credits have been added to your AGI balance.
+				</p>
+			</div>
+
+			<div class="rounded-lg border border-border bg-card p-5 space-y-3">
+				<p class="text-sm text-muted-foreground">
+					You can now close this tab and return to AGI.
+				</p>
+				<p class="text-xs text-muted-foreground/70">
+					Your balance will update automatically.
+				</p>
+		</div>
+
+	</div>
+	</main>
+	<footer class="fixed bottom-4 w-full text-center text-sm text-muted-foreground">
+		AGI — AI Coding Agent
+	</footer>
+</Layout>

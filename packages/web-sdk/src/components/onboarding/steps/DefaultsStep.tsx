@@ -8,6 +8,7 @@ interface DefaultsStepProps {
 	authStatus: AuthStatus;
 	onComplete: () => Promise<void>;
 	onBack: () => void;
+	hideHeader?: boolean;
 }
 
 interface ConfigData {
@@ -33,6 +34,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 	authStatus,
 	onComplete,
 	onBack,
+	hideHeader = false,
 }: DefaultsStepProps) {
 	const [config, setConfig] = useState<ConfigData | null>(null);
 	const [allModels, setAllModels] = useState<AllModels | null>(null);
@@ -113,20 +115,23 @@ export const DefaultsStep = memo(function DefaultsStep({
 
 	return (
 		<div className="min-h-screen flex flex-col">
-			{/* Top Bar */}
-			<div className="flex items-center justify-between px-6 py-4 border-b border-border">
-				<div className="flex items-center gap-3">
-					<ProviderLogo provider="setu" size={24} />
-					<span className="font-semibold text-foreground">AGI</span>
+			{!hideHeader && (
+				<div className="flex items-center justify-between px-6 py-4 border-b border-border">
+					<div className="flex items-center gap-3">
+						<ProviderLogo provider="setu" size={24} />
+						<span className="font-semibold text-foreground">AGI</span>
+					</div>
+					<div className="flex items-center gap-2 text-sm text-muted-foreground">
+						<span className="w-2 h-2 rounded-full bg-blue-500" />
+						Step 2 of 2
+					</div>
 				</div>
-				<div className="flex items-center gap-2 text-sm text-muted-foreground">
-					<span className="w-2 h-2 rounded-full bg-blue-500" />
-					Step 2 of 2
-				</div>
-			</div>
+			)}
 
 			{/* Main Content */}
-			<div className="flex-1 px-4 pt-6 sm:px-6 sm:pt-8 lg:px-12 lg:pt-12 pb-32">
+			<div
+				className={`flex-1 px-4 sm:px-6 lg:px-12 pb-32 ${hideHeader ? 'pt-8 sm:pt-10 lg:pt-14' : 'pt-6 sm:pt-8 lg:pt-12'}`}
+			>
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
 					<div className="mb-10">

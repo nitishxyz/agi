@@ -17,11 +17,14 @@ const webArgs = verbose ? ['--verbose'] : [];
 
 if (verbose) {
 	spinner.succeed();
-	const result = Bun.spawnSync(['bun', 'run', 'scripts/build-web.ts', ...webArgs], {
-		cwd: ROOT,
-		stdout: 'inherit',
-		stderr: 'inherit',
-	});
+	const result = Bun.spawnSync(
+		['bun', 'run', 'scripts/build-web.ts', ...webArgs],
+		{
+			cwd: ROOT,
+			stdout: 'inherit',
+			stderr: 'inherit',
+		},
+	);
 	if (!result.success) process.exit(1);
 } else {
 	const proc = Bun.spawn(['bun', 'run', 'scripts/build-web.ts', ...webArgs], {
@@ -32,7 +35,9 @@ if (verbose) {
 	const exitCode = await proc.exited;
 	if (exitCode !== 0) {
 		spinner.fail();
-		const out = (await new Response(proc.stderr).text()).trim() || (await new Response(proc.stdout).text()).trim();
+		const out =
+			(await new Response(proc.stderr).text()).trim() ||
+			(await new Response(proc.stdout).text()).trim();
 		if (out) console.error(out);
 		process.exit(1);
 	}
@@ -44,19 +49,31 @@ await $`mkdir -p dist`.quiet();
 
 const buildCmd = ['bun', 'build', '--compile', '--minify'];
 if (target) buildCmd.push(target);
-const outfile = target ? `dist/agi-${target.replace('--target=bun-', '')}` : 'dist/agi';
+const outfile = target
+	? `dist/agi-${target.replace('--target=bun-', '')}`
+	: 'dist/agi';
 buildCmd.push('./apps/cli/index.ts', '--outfile', outfile);
 
 if (verbose) {
 	spinner.succeed();
-	const result = Bun.spawnSync(buildCmd, { cwd: ROOT, stdout: 'inherit', stderr: 'inherit' });
+	const result = Bun.spawnSync(buildCmd, {
+		cwd: ROOT,
+		stdout: 'inherit',
+		stderr: 'inherit',
+	});
 	if (!result.success) process.exit(1);
 } else {
-	const proc = Bun.spawn(buildCmd, { cwd: ROOT, stdout: 'pipe', stderr: 'pipe' });
+	const proc = Bun.spawn(buildCmd, {
+		cwd: ROOT,
+		stdout: 'pipe',
+		stderr: 'pipe',
+	});
 	const exitCode = await proc.exited;
 	if (exitCode !== 0) {
 		spinner.fail();
-		const out = (await new Response(proc.stderr).text()).trim() || (await new Response(proc.stdout).text()).trim();
+		const out =
+			(await new Response(proc.stderr).text()).trim() ||
+			(await new Response(proc.stdout).text()).trim();
 		if (out) console.error(out);
 		process.exit(1);
 	}
@@ -64,4 +81,6 @@ if (verbose) {
 spinner.succeed(outfile);
 
 const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-console.log(`\n${GREEN}${BOLD}  ✓${RESET} Build complete ${DIM}in ${elapsed}s${RESET}\n`);
+console.log(
+	`\n${GREEN}${BOLD}  ✓${RESET} Build complete ${DIM}in ${elapsed}s${RESET}\n`,
+);
