@@ -209,9 +209,9 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 						</p>
 					</div>
 
-				<div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+					<div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
 						{/* Left Column - Wallet */}
-					<div>
+						<div>
 							<div className="bg-card rounded-2xl border border-border p-5">
 								{authStatus.setu.configured && authStatus.setu.publicKey ? (
 									<div className="flex flex-col h-full">
@@ -287,7 +287,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 						</div>
 
 						{/* Right Column - Providers */}
-					<div className="sm:col-span-2 space-y-6">
+						<div className="sm:col-span-2 space-y-6">
 							{/* Connected Providers */}
 							<div>
 								<div className="flex items-center justify-between mb-4">

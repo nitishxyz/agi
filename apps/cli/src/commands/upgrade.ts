@@ -10,7 +10,11 @@ async function fetchLatestVersion(): Promise<string | null> {
 			`https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=20`,
 		);
 		if (!res.ok) return null;
-		const releases = (await res.json()) as { tag_name?: string; draft?: boolean; prerelease?: boolean }[];
+		const releases = (await res.json()) as {
+			tag_name?: string;
+			draft?: boolean;
+			prerelease?: boolean;
+		}[];
 		const cliRelease = releases.find(
 			(r) => r.tag_name?.match(/^v\d/) && !r.draft && !r.prerelease,
 		);

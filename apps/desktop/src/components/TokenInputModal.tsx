@@ -44,13 +44,9 @@ export function TokenInputModal({
 							Personal Access Token
 						</a>{' '}
 						with{' '}
-						<code className="px-1.5 py-0.5 bg-muted rounded text-xs">
-							repo
-						</code>{' '}
+						<code className="px-1.5 py-0.5 bg-muted rounded text-xs">repo</code>{' '}
 						and{' '}
-						<code className="px-1.5 py-0.5 bg-muted rounded text-xs">
-							user
-						</code>{' '}
+						<code className="px-1.5 py-0.5 bg-muted rounded text-xs">user</code>{' '}
 						scopes.
 					</p>
 					<input

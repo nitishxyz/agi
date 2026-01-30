@@ -71,11 +71,11 @@ export function ProjectPicker({
 	const recentProjects = projects.filter((p) => !p.pinned);
 
 	return (
-	<div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
-		<div
-			className="shrink-0 flex items-center justify-between px-6 h-10 border-b border-border cursor-default select-none"
-			onMouseDown={handleTitleBarDrag}
-			data-tauri-drag-region
+		<div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
+			<div
+				className="shrink-0 flex items-center justify-between px-6 h-10 border-b border-border cursor-default select-none"
+				onMouseDown={handleTitleBarDrag}
+				data-tauri-drag-region
 			>
 				<div
 					className={`flex items-center gap-2 ${isFullscreen ? '' : 'ml-16'}`}
@@ -102,10 +102,10 @@ export function ProjectPicker({
 						</button>
 					</div>
 				)}
-		</div>
+			</div>
 
-		<div className="flex-1 overflow-y-auto px-6 py-8 lg:px-12 lg:py-12">
-			<div className="max-w-4xl mx-auto">
+			<div className="flex-1 overflow-y-auto px-6 py-8 lg:px-12 lg:py-12">
+				<div className="max-w-4xl mx-auto">
 					<div className="mb-10">
 						<h1 className="text-3xl lg:text-4xl font-semibold text-foreground mb-3">
 							Welcome to AGI

@@ -105,8 +105,7 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 		if (!noDesktop && isDesktopInstalled()) {
 			console.log('');
 			console.log(
-				colors.bold('  ⚡ AGI') +
-					colors.dim(' — Opening desktop app...'),
+				colors.bold('  ⚡ AGI') + colors.dim(' — Opening desktop app...'),
 			);
 			console.log('');
 			const opened = openDesktop(projectRoot);
