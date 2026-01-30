@@ -1,6 +1,6 @@
 {
 	"name": "agi-monorepo",
-	"version": "0.1.153",
+	"version": "0.1.154",
 	"private": true,
 	"description": "AI-powered development assistant CLI - monorepo",
 	"author": "nitishxyz",
