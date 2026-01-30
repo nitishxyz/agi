@@ -88,7 +88,7 @@ jobs:
     needs: check-version
     runs-on: ${{ matrix.runner }}
     env:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     strategy:
       matrix:
         include:
