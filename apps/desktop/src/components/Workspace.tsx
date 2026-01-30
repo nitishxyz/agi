@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { useServer } from '../hooks/useServer';
 import { useFullscreen } from '../hooks/useFullscreen';
 import { handleTitleBarDrag } from '../utils/title-bar';
@@ -15,6 +16,7 @@ export function Workspace({
 }) {
 	const { server, loading, error, startServer, stopServer } = useServer();
 	const startedRef = useRef(false);
+	const iframeRef = useRef<HTMLIFrameElement>(null);
 	const [iframeLoaded, setIframeLoaded] = useState(false);
 	const isFullscreen = useFullscreen();
 
@@ -37,6 +39,37 @@ export function Workspace({
 	useEffect(() => {
 		if (!server) setIframeLoaded(false);
 	}, [server]);
+
+	const focusIframe = useCallback(() => {
+		iframeRef.current?.contentWindow?.focus();
+	}, []);
+
+	useEffect(() => {
+		const handler = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement;
+			const isInIframe = target.ownerDocument !== document;
+			if (isInIframe) return;
+
+			const isInteractive = target.closest('button, a, input, [role="button"]');
+			if (isInteractive) return;
+
+			focusIframe();
+		};
+		document.addEventListener('keydown', handler);
+		return () => document.removeEventListener('keydown', handler);
+	}, [focusIframe]);
+
+	useEffect(() => {
+		const handler = (e: MessageEvent) => {
+			if (e.data?.type === 'agi-open-url' && typeof e.data.url === 'string') {
+				openUrl(e.data.url).catch((err: unknown) => {
+					console.error('[AGI] Failed to open URL:', err);
+				});
+			}
+		};
+		window.addEventListener('message', handler);
+		return () => window.removeEventListener('message', handler);
+	}, []);
 
 	return (
 		<div
@@ -101,11 +134,16 @@ export function Workspace({
 				)}
 				{server && (
 					<iframe
+						ref={iframeRef}
 						src={`${server.url}?_t=${Date.now()}&_pid=${server.pid}&_project=${encodeURIComponent(project.path)}`}
 						className={`absolute inset-0 w-full h-full border-none transition-opacity duration-200 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
 						style={{ backgroundColor: DARK_BG }}
 						title="AGI Workspace"
-						onLoad={() => setIframeLoaded(true)}
+						allow="clipboard-write; clipboard-read"
+						onLoad={() => {
+							setIframeLoaded(true);
+							focusIframe();
+						}}
 					/>
 				)}
 			</div>

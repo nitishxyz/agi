@@ -120,7 +120,14 @@ export const SetuTopupModal = memo(function SetuTopupModal() {
 	const handleOpenCheckout = () => {
 		if (checkoutInfo?.url) {
 			localStorage.setItem('pendingPolarCheckout', checkoutInfo.checkoutId);
-			window.open(checkoutInfo.url, '_blank');
+			if (window.self !== window.top) {
+				window.parent.postMessage(
+					{ type: 'agi-open-url', url: checkoutInfo.url },
+					'*',
+				);
+			} else {
+				window.open(checkoutInfo.url, '_blank');
+			}
 		}
 	};
 

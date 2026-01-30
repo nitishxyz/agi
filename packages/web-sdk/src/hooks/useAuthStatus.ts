@@ -1,6 +1,8 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { apiClient } from '../lib/api-client';
 import { useOnboardingStore } from '../stores/onboardingStore';
+
+const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
 
 export function useAuthStatus() {
 	const setAuthStatus = useOnboardingStore((s) => s.setAuthStatus);
@@ -11,6 +13,9 @@ export function useAuthStatus() {
 	const isOpen = useOnboardingStore((s) => s.isOpen);
 
 	const [initialized, setInitialized] = useState(false);
+	const [oauthPolling, setOauthPolling] = useState(false);
+	const oauthPollingRef = useRef<ReturnType<typeof setInterval>>();
+	const preOauthProvidersRef = useRef<Set<string>>(new Set());
 
 	const fetchAuthStatus = useCallback(async () => {
 		setLoading(true);
@@ -137,43 +142,63 @@ export function useAuthStatus() {
 		}
 	}, [fetchAuthStatus, setLoading, setError, setOpen]);
 
-	const startOAuth = useCallback((provider: string, mode?: string) => {
-		const url = apiClient.getOAuthStartUrl(provider, mode);
-		const width = 600;
-		const height = 700;
-		const left = window.screenX + (window.outerWidth - width) / 2;
-		const top = window.screenY + (window.outerHeight - height) / 2;
-		const popup = window.open(
-			url,
-			'oauth_popup',
-			`width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`,
-		);
-		return popup;
+	const snapshotConfiguredProviders = useCallback(() => {
+		const status = useOnboardingStore.getState().authStatus;
+		if (status) {
+			preOauthProvidersRef.current = new Set(
+				Object.entries(status.providers)
+					.filter(([, p]) => p.configured)
+					.map(([id]) => id),
+			);
+		}
 	}, []);
 
-	const startOAuthManual = useCallback(
-		async (provider: string, mode?: string) => {
-			// Open popup immediately to avoid browser blocking
+	const startOAuth = useCallback(
+		(provider: string, mode?: string) => {
+			const url = apiClient.getOAuthStartUrl(provider, mode);
+			if (isInIframe) {
+				snapshotConfiguredProviders();
+				window.parent.postMessage({ type: 'agi-open-url', url }, '*');
+				setOauthPolling(true);
+				return null;
+			}
 			const width = 600;
 			const height = 700;
 			const left = window.screenX + (window.outerWidth - width) / 2;
 			const top = window.screenY + (window.outerHeight - height) / 2;
 			const popup = window.open(
-				'about:blank',
+				url,
 				'oauth_popup',
 				`width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`,
 			);
+			return popup;
+		},
+		[snapshotConfiguredProviders],
+	);
 
+	const startOAuthManual = useCallback(
+		async (provider: string, mode?: string) => {
 			const { url, sessionId } = await apiClient.getOAuthUrl(provider, mode);
 
-			// Navigate popup to OAuth URL
-			if (popup) {
-				popup.location.href = url;
+			if (isInIframe) {
+				snapshotConfiguredProviders();
+				window.parent.postMessage({ type: 'agi-open-url', url }, '*');
+				setOauthPolling(true);
+				return { popup: null, sessionId };
 			}
 
+			const width = 600;
+			const height = 700;
+			const left = window.screenX + (window.outerWidth - width) / 2;
+			const top = window.screenY + (window.outerHeight - height) / 2;
+			const popup = window.open(
+				url,
+				'oauth_popup',
+				`width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`,
+			);
 			return { popup, sessionId };
 		},
-		[],
+		[snapshotConfiguredProviders],
 	);
 
 	const exchangeOAuthCode = useCallback(
@@ -195,6 +220,33 @@ export function useAuthStatus() {
 		},
 		[fetchAuthStatus, setLoading, setError],
 	);
+
+	useEffect(() => {
+		if (!oauthPolling || !isInIframe) return;
+		oauthPollingRef.current = setInterval(() => {
+			fetchAuthStatus();
+		}, 3000);
+		const timeout = setTimeout(() => {
+			setOauthPolling(false);
+		}, 300000);
+		return () => {
+			clearInterval(oauthPollingRef.current);
+			clearTimeout(timeout);
+		};
+	}, [oauthPolling, fetchAuthStatus]);
+
+	useEffect(() => {
+		if (!oauthPolling || !authStatus) return;
+		const currentConfigured = Object.entries(authStatus.providers).filter(
+			([, p]) => p.configured,
+		);
+		const hasNewProvider = currentConfigured.some(
+			([id]) => !preOauthProvidersRef.current.has(id),
+		);
+		if (hasNewProvider) {
+			setOauthPolling(false);
+		}
+	}, [authStatus, oauthPolling]);
 
 	useEffect(() => {
 		const handleOAuthMessage = (event: MessageEvent) => {

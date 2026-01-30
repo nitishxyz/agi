@@ -361,6 +361,32 @@ export const MessagePartItem = memo(
 							<ReactMarkdown
 								remarkPlugins={[remarkGfm]}
 								components={{
+									a: ({
+										href,
+										children,
+										...props
+									}: ComponentPropsWithoutRef<'a'>) => (
+										<a
+											href={href}
+											target="_blank"
+											rel="noopener noreferrer"
+											onClick={(e) => {
+												if (window.self !== window.top && href) {
+													e.preventDefault();
+													window.parent.postMessage(
+														{
+															type: 'agi-open-url',
+															url: href,
+														},
+														'*',
+													);
+												}
+											}}
+											{...props}
+										>
+											{children}
+										</a>
+									),
 									pre: ({
 										children,
 										...props

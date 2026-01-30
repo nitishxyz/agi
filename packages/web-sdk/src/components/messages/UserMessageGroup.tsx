@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useState, type ComponentPropsWithoutRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
 	User,
@@ -230,7 +230,37 @@ export const UserMessageGroup = memo(
 								)}
 								{hasContent && (
 									<div className="prose prose-invert prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_*]:[word-break:break-word] [&_*]:overflow-wrap-anywhere">
-										<ReactMarkdown remarkPlugins={[remarkGfm]}>
+										<ReactMarkdown
+											remarkPlugins={[remarkGfm]}
+											components={{
+												a: ({
+													href,
+													children,
+													...props
+												}: ComponentPropsWithoutRef<'a'>) => (
+													<a
+														href={href}
+														target="_blank"
+														rel="noopener noreferrer"
+														onClick={(e) => {
+															if (window.self !== window.top && href) {
+																e.preventDefault();
+																window.parent.postMessage(
+																	{
+																		type: 'agi-open-url',
+																		url: href,
+																	},
+																	'*',
+																);
+															}
+														}}
+														{...props}
+													>
+														{children}
+													</a>
+												),
+											}}
+										>
 											{content}
 										</ReactMarkdown>
 									</div>
