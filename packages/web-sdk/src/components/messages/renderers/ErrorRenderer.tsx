@@ -272,7 +272,7 @@ export function ErrorRenderer({
 				</div>
 			)}
 
-			{debug && (
+			{_debug && (
 				<details className="mt-4 text-xs">
 					<summary className="cursor-pointer text-muted-foreground">
 						Debug Info
