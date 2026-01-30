@@ -8,7 +8,7 @@ import './index.css';
 
 type View = 'picker' | 'workspace';
 
-const SetuLogo = ({ size = 24 }: { size?: number }) => (
+const SetuLogo = ({ size = 22 }: { size?: number }) => (
 	<span
 		className="inline-flex items-center justify-center text-foreground"
 		style={{ width: size, height: size }}
@@ -163,9 +163,9 @@ function ProjectPicker({
 				data-tauri-drag-region
 			>
 				<div
-					className={`flex items-center gap-3 ${isFullscreen ? '' : 'ml-16'}`}
+					className={`flex items-center gap-2 ${isFullscreen ? '' : 'ml-16'}`}
 				>
-					<SetuLogo size={24} />
+					<SetuLogo size={20} />
 					<span className="font-semibold text-foreground">AGI Desktop</span>
 				</div>
 				{isAuthenticated && (
@@ -197,10 +197,10 @@ function ProjectPicker({
 						<h1 className="text-3xl lg:text-4xl font-semibold text-foreground mb-3">
 							Welcome to AGI
 						</h1>
-						<p className="text-lg text-muted-foreground max-w-2xl">
-							AI-powered development assistant. Open a folder or clone a
-							repository to get started.
-						</p>
+			<p className="text-lg text-muted-foreground max-w-2xl">
+				AI-powered development assistant. Open a project or clone a
+				repository to get started.
+			</p>
 					</div>
 
 					{/* Actions */}
@@ -214,10 +214,10 @@ function ProjectPicker({
 								📁
 							</div>
 							<div>
-								<div className="font-medium text-foreground">Open Folder</div>
-								<div className="text-sm text-muted-foreground">
-									Open a local project directory
-								</div>
+							<div className="font-medium text-foreground">Open Project</div>
+							<div className="text-sm text-muted-foreground">
+								Open or create a new project
+							</div>
 							</div>
 						</button>
 
@@ -578,7 +578,7 @@ function Workspace({
 		>
 			{/* Header */}
 			<div
-				className="flex items-center gap-3 px-4 h-10 border-b border-border cursor-default select-none"
+				className="flex items-center gap-2 px-4 h-10 border-b border-border cursor-default select-none"
 				style={{ backgroundColor: DARK_BG }}
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
