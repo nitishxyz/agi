@@ -177,13 +177,14 @@ pub async fn start_server(
         current_path
     );
 
-    let child = Command::new(&binary)
-        .current_dir(&project_path)
-        .args(["serve", "--port", &port_arg, "--no-open"])
-        .env("PATH", &augmented_path)
-        .stdout(stdout)
-        .stderr(stderr)
-        .spawn()
+   let child = Command::new(&binary)
+       .current_dir(&project_path)
+       .args(["serve", "--port", &port_arg, "--no-open"])
+       .env("PATH", &augmented_path)
+        .env("TERM", "xterm-256color")
+       .stdout(stdout)
+       .stderr(stderr)
+       .spawn()
         .map_err(|e| format!("Failed to start server: {}", e))?;
 
     let info = ServerInfo {

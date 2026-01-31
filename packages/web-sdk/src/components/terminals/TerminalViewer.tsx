@@ -191,6 +191,19 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 			if (disposed) return;
 
 			const baseUrl = resolveApiBaseUrl();
+
+			const sendResize = (cols: number, rows: number) => {
+				fetch(`${baseUrl}/v1/terminals/${terminalId}/resize`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ cols, rows }),
+				}).catch(() => {});
+			};
+
+			if (xterm) {
+				sendResize(xterm.cols, xterm.rows);
+			}
+
 			const eventSource = new EventSource(
 				`${baseUrl}/v1/terminals/${terminalId}/output`,
 			);
@@ -237,6 +250,10 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 				}).catch((error) => {
 					console.error('Failed to send terminal input:', error);
 				});
+			});
+
+			xterm.onResize(({ cols, rows }) => {
+				sendResize(cols, rows);
 			});
 
 			xtermRef.current = xterm;

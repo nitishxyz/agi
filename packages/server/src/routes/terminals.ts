@@ -200,4 +200,28 @@ export function registerTerminalsRoutes(
 			return c.json({ error: message }, 500);
 		}
 	});
+
+	app.post('/v1/terminals/:id/resize', async (c) => {
+		const id = c.req.param('id');
+		const terminal = terminalManager.get(id);
+
+		if (!terminal) {
+			return c.json({ error: 'Terminal not found' }, 404);
+		}
+
+		try {
+			const body = await c.req.json();
+			const { cols, rows } = body;
+
+			if (!cols || !rows || cols < 1 || rows < 1) {
+				return c.json({ error: 'valid cols and rows are required' }, 400);
+			}
+
+			terminal.resize(cols, rows);
+			return c.json({ success: true });
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			return c.json({ error: message }, 500);
+		}
+	});
 }

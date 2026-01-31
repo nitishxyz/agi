@@ -44,7 +44,9 @@ export class TerminalManager {
 				cwd: options.cwd,
 				env: {
 					...process.env,
+					TERM: 'xterm-256color',
 					PATH: getAugmentedPath(),
+					PROMPT_EOL_MARK: '',
 				} as Record<string, string>,
 			};
 
@@ -55,16 +57,6 @@ export class TerminalManager {
 			});
 
 			const terminal = new Terminal(id, pty, options);
-
-			if (options.command.includes('zsh')) {
-				setTimeout(() => {
-					pty.write(' unsetopt prompt_sp 2>/dev/null\r');
-					setTimeout(() => {
-						pty.write(' clear\r');
-						terminal.clearBuffer();
-					}, 200);
-				}, 100);
-			}
 
 			terminal.onExit((_exitCode) => {
 				const timer = setTimeout(() => {

@@ -93,6 +93,10 @@ export class Terminal {
 		this.pty.kill(signal);
 	}
 
+	resize(cols: number, rows: number): void {
+		this.pty.resize(cols, rows);
+	}
+
 	onData(callback: (line: string) => void): void {
 		this.dataEmitter.on('data', callback);
 	}
