@@ -16,6 +16,6 @@ describe('setu catalog entry', () => {
 				.map((model) => model.provider?.npm)
 				.filter((val): val is string => Boolean(val)),
 		);
-		expect(providers).toEqual(new Set(['@ai-sdk/openai', '@ai-sdk/anthropic']));
+		expect(providers).toEqual(new Set(['@ai-sdk/openai', '@ai-sdk/anthropic', '@ai-sdk/openai-compatible']));
 	});
 });
