@@ -1,9 +1,7 @@
 export {
 	PRUNE_PROTECT,
 	estimateTokens,
-	type TokenUsage,
 	type ModelLimits,
-	isOverflow,
 	getModelLimits,
 	isCompacted,
 	COMPACTED_PLACEHOLDER,

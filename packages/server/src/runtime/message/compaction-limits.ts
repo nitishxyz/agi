@@ -7,33 +7,9 @@ export function estimateTokens(text: string): number {
 	return Math.max(0, Math.round((text || '').length / 4));
 }
 
-export interface TokenUsage {
-	input: number;
-	output: number;
-	cacheRead?: number;
-	cacheWrite?: number;
-	reasoningText?: number;
-}
-
 export interface ModelLimits {
 	context: number;
 	output: number;
-}
-
-export function isOverflow(
-	tokens: LanguageModelUsage,
-	limits: ModelLimits,
-): boolean {
-	if (limits.context === 0) return false;
-
-	const count =
-		tokens.input +
-		(tokens.cacheRead ?? 0) +
-		(tokens.cacheWrite ?? 0) +
-		tokens.output;
-	const usableContext = limits.context - limits.output;
-
-	return count > usableContext;
 }
 
 export function getModelLimits(

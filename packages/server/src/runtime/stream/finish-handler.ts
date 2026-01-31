@@ -5,9 +5,6 @@ import { publish } from '../../events/bus.ts';
 import { estimateModelCostUsd } from '@agi-cli/sdk';
 import type { RunOpts } from '../session/queue.ts';
 import {
-	pruneSession,
-	isOverflow,
-	getModelLimits,
 	markSessionCompacted,
 } from '../message/compaction.ts';
 import { debugLog } from '../debug/index.ts';
@@ -91,38 +88,6 @@ export function createFinishHandler(
 		const costUsd = usage
 			? estimateModelCostUsd(opts.provider, opts.model, usage)
 			: undefined;
-
-		if (usage) {
-			try {
-				const limits = getModelLimits(opts.provider, opts.model);
-				if (limits) {
-					const tokenUsage: LanguageModelUsage = {
-						input: usage.inputTokens ?? 0,
-						output: usage.outputTokens ?? 0,
-						cacheRead:
-							(usage as { cachedInputTokens?: number }).cachedInputTokens ?? 0,
-						cacheWrite:
-							(usage as { cacheCreationInputTokens?: number })
-								.cacheCreationInputTokens ?? 0,
-					};
-
-					if (isOverflow(tokenUsage, limits)) {
-						debugLog(
-							`[stream-handlers] Context overflow detected, triggering prune for session ${opts.sessionId}`,
-						);
-						pruneSession(db, opts.sessionId).catch((err) => {
-							debugLog(
-								`[stream-handlers] Prune failed: ${err instanceof Error ? err.message : String(err)}`,
-							);
-						});
-					}
-				}
-			} catch (err) {
-				debugLog(
-					`[stream-handlers] Overflow check failed: ${err instanceof Error ? err.message : String(err)}`,
-				);
-			}
-		}
 
 		publish({
 			type: 'message.completed',
