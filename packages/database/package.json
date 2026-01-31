@@ -1,6 +1,6 @@
 {
 	"name": "@agi-cli/database",
-	"version": "0.1.166",
+	"version": "0.1.167",
 	"description": "Database and persistence layer for AGI CLI",
 	"type": "module",
 	"main": "./src/index.ts",
