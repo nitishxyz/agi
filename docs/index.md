@@ -25,9 +25,6 @@
 ## Advanced
 
 - **[Embedding Guide](embedding-guide.md)** — Embed AGI in your own applications
-- **[Streaming Architecture](streaming-overhaul.md)** — Real-time streaming implementation
-- **[Tools & Artifacts](tools-and-artifacts.md)** — Tool system and artifact handling
-- **[File Editing](file-editing-solution.md)** — File editing tools (edit, apply_patch)
 
 ## Reference
 
