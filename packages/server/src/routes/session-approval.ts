@@ -20,7 +20,6 @@ export function registerSessionApprovalRoute(app: Hono) {
 			return c.json({ ok: false, error: 'approved must be a boolean' }, 400);
 		}
 
-
 		const result = resolveApproval(body.callId, body.approved);
 
 		if (!result.ok) {

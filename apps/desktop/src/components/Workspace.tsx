@@ -158,9 +158,9 @@ export function Workspace({
 				)}
 				{server && (
 					<iframe
-					ref={iframeRef}
-					src={iframeSrc ?? ''}
-					className={`absolute inset-0 w-full h-full border-none transition-opacity duration-200 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
+						ref={iframeRef}
+						src={iframeSrc ?? ''}
+						className={`absolute inset-0 w-full h-full border-none transition-opacity duration-200 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
 						style={{ backgroundColor: DARK_BG }}
 						title="AGI Workspace"
 						allow="clipboard-write; clipboard-read"
