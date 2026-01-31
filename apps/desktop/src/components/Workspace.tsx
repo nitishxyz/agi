@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useServer } from '../hooks/useServer';
 import { useFullscreen } from '../hooks/useFullscreen';
@@ -19,8 +19,13 @@ export function Workspace({
 	const { server, loading, error, startServer, stopServer } = useServer();
 	const startedRef = useRef(false);
 	const iframeRef = useRef<HTMLIFrameElement>(null);
-	const [iframeLoaded, setIframeLoaded] = useState(false);
+const [iframeLoaded, setIframeLoaded] = useState(false);
 	const isFullscreen = useFullscreen();
+
+	const iframeSrc = useMemo(() => {
+		if (!server) return null;
+		return `${server.url}?_t=${Date.now()}&_pid=${server.pid}&_project=${encodeURIComponent(project.path)}`;
+	}, [server, project.path]);
 
 	const handleBack = async () => {
 		await stopServer();
@@ -151,11 +156,11 @@ export function Workspace({
 						</button>
 					</div>
 				)}
-				{server && (
-					<iframe
-						ref={iframeRef}
-						src={`${server.url}?_t=${Date.now()}&_pid=${server.pid}&_project=${encodeURIComponent(project.path)}`}
-						className={`absolute inset-0 w-full h-full border-none transition-opacity duration-200 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
+			{server && (
+				<iframe
+					ref={iframeRef}
+					src={iframeSrc!}
+					className={`absolute inset-0 w-full h-full border-none transition-opacity duration-200 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
 						style={{ backgroundColor: DARK_BG }}
 						title="AGI Workspace"
 						allow="clipboard-write; clipboard-read"
