@@ -66,10 +66,7 @@ export async function buildCompactionContext(
 						olderLines.unshift(line);
 						olderChars += line.length;
 					}
-				} else if (
-					part.type === 'tool_result' &&
-					content.result !== null
-				) {
+				} else if (part.type === 'tool_result' && content.result !== null) {
 					const resultStr =
 						typeof content.result === 'string'
 							? content.result

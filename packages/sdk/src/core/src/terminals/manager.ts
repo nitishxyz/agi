@@ -42,10 +42,10 @@ export class TerminalManager {
 				cols: 80,
 				rows: 30,
 				cwd: options.cwd,
-			env: {
-				...process.env,
-				PATH: getAugmentedPath(),
-			} as Record<string, string>,
+				env: {
+					...process.env,
+					PATH: getAugmentedPath(),
+				} as Record<string, string>,
 			};
 
 			const pty = spawnPty(options.command, options.args || [], ptyOptions);

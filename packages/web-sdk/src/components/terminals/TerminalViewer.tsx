@@ -34,19 +34,39 @@ async function loadEmbeddedFont(): Promise<void> {
 	if (typeof document === 'undefined' || !('FontFace' in window)) return;
 
 	const variants = [
-		{ file: 'JetBrainsMonoNerdFontMono-Regular.woff2', weight: '400', style: 'normal' },
-		{ file: 'JetBrainsMonoNerdFontMono-Bold.woff2', weight: '700', style: 'normal' },
-		{ file: 'JetBrainsMonoNerdFontMono-Italic.woff2', weight: '400', style: 'italic' },
-		{ file: 'JetBrainsMonoNerdFontMono-BoldItalic.woff2', weight: '700', style: 'italic' },
+		{
+			file: 'JetBrainsMonoNerdFontMono-Regular.woff2',
+			weight: '400',
+			style: 'normal',
+		},
+		{
+			file: 'JetBrainsMonoNerdFontMono-Bold.woff2',
+			weight: '700',
+			style: 'normal',
+		},
+		{
+			file: 'JetBrainsMonoNerdFontMono-Italic.woff2',
+			weight: '400',
+			style: 'italic',
+		},
+		{
+			file: 'JetBrainsMonoNerdFontMono-BoldItalic.woff2',
+			weight: '700',
+			style: 'italic',
+		},
 	];
 
 	const loads = variants.map(async (v) => {
 		try {
 			const url = new URL(`../../assets/fonts/${v.file}`, import.meta.url).href;
-			const face = new FontFace('JetBrainsMono NFM', `url("${url}") format("woff2")`, {
-				weight: v.weight,
-				style: v.style,
-			});
+			const face = new FontFace(
+				'JetBrainsMono NFM',
+				`url("${url}") format("woff2")`,
+				{
+					weight: v.weight,
+					style: v.style,
+				},
+			);
 			const loaded = await face.load();
 			document.fonts.add(loaded);
 		} catch {
@@ -292,9 +312,24 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 					style={{ opacity: ready ? 0 : 1 }}
 				>
 					<div className="flex items-center gap-2 text-muted-foreground">
-						<svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-							<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-							<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+						<svg
+							className="animate-spin h-4 w-4"
+							viewBox="0 0 24 24"
+							fill="none"
+						>
+							<circle
+								className="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								strokeWidth="4"
+							/>
+							<path
+								className="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+							/>
 						</svg>
 						<span className="text-xs">Loading terminal…</span>
 					</div>
