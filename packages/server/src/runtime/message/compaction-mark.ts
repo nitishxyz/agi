@@ -1,6 +1,6 @@
 import type { getDb } from '@agi-cli/database';
 import { messages, messageParts } from '@agi-cli/database/schema';
-import { eq, desc, and, lt } from 'drizzle-orm';
+import { eq, asc, and, lt } from 'drizzle-orm';
 import { debugLog } from '../debug/index.ts';
 import { estimateTokens, PRUNE_PROTECT } from './compaction-limits.ts';
 
@@ -35,33 +35,22 @@ export async function markSessionCompacted(
 				lt(messages.createdAt, cutoffTime),
 			),
 		)
-		.orderBy(desc(messages.createdAt));
+		.orderBy(asc(messages.createdAt));
 
-	let totalTokens = 0;
-	let compactedTokens = 0;
-	const toCompact: Array<{ id: string; content: string }> = [];
-	let turns = 0;
+	type PartInfo = { id: string; tokens: number };
+	const allToolParts: PartInfo[] = [];
+	let totalToolTokens = 0;
 
 	for (const msg of oldMessages) {
-		if (msg.role === 'user') {
-			turns++;
-		}
-
-		if (turns < 2) continue;
-
 		const parts = await db
 			.select()
 			.from(messageParts)
 			.where(eq(messageParts.messageId, msg.id))
-			.orderBy(desc(messageParts.index));
+			.orderBy(asc(messageParts.index));
 
 		for (const part of parts) {
 			if (part.type !== 'tool_call' && part.type !== 'tool_result') continue;
-
-			if (part.toolName && PROTECTED_TOOLS.includes(part.toolName)) {
-				continue;
-			}
-
+			if (part.toolName && PROTECTED_TOOLS.includes(part.toolName)) continue;
 			if (part.compactedAt) continue;
 
 			let content: { result?: unknown; args?: unknown };
@@ -78,18 +67,25 @@ export async function markSessionCompacted(
 						: JSON.stringify(content.result ?? '')
 					: JSON.stringify(content.args ?? '');
 
-			const estimate = estimateTokens(contentStr);
-			totalTokens += estimate;
-
-			if (totalTokens > PRUNE_PROTECT) {
-				compactedTokens += estimate;
-				toCompact.push({ id: part.id, content: part.content ?? '{}' });
-			}
+			const tokens = estimateTokens(contentStr);
+			totalToolTokens += tokens;
+			allToolParts.push({ id: part.id, tokens });
 		}
 	}
 
+	const tokensToFree = Math.max(0, totalToolTokens - PRUNE_PROTECT);
+
+	const toCompact: PartInfo[] = [];
+	let freedTokens = 0;
+
+	for (const part of allToolParts) {
+		if (freedTokens >= tokensToFree) break;
+		freedTokens += part.tokens;
+		toCompact.push(part);
+	}
+
 	debugLog(
-		`[compaction] Found ${toCompact.length} parts to compact, saving ~${compactedTokens} tokens`,
+		`[compaction] Found ${toCompact.length} parts to compact (oldest first), saving ~${freedTokens} tokens`,
 	);
 
 	if (toCompact.length > 0) {
@@ -111,5 +107,5 @@ export async function markSessionCompacted(
 		debugLog(`[compaction] Marked ${toCompact.length} parts as compacted`);
 	}
 
-	return { compacted: toCompact.length, saved: compactedTokens };
+	return { compacted: toCompact.length, saved: freedTokens };
 }

@@ -1,6 +1,6 @@
 import type { getDb } from '@agi-cli/database';
 import { messages, messageParts } from '@agi-cli/database/schema';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, desc } from 'drizzle-orm';
 
 export async function buildCompactionContext(
 	db: Awaited<ReturnType<typeof getDb>>,
@@ -11,17 +11,22 @@ export async function buildCompactionContext(
 		.select()
 		.from(messages)
 		.where(eq(messages.sessionId, sessionId))
-		.orderBy(asc(messages.createdAt));
+		.orderBy(desc(messages.createdAt));
 
-	const lines: string[] = [];
-	let totalChars = 0;
 	const maxChars = contextTokenLimit ? contextTokenLimit * 4 : 60000;
+	const recentBudget = Math.floor(maxChars * 0.65);
+	const olderBudget = maxChars - recentBudget;
+
+	const recentLines: string[] = [];
+	const olderLines: string[] = [];
+	let recentChars = 0;
+	let olderChars = 0;
+	let userTurns = 0;
+	let inRecent = true;
 
 	for (const msg of allMessages) {
-		if (totalChars > maxChars) {
-			lines.unshift('[...earlier content truncated...]');
-			break;
-		}
+		if (msg.role === 'user') userTurns++;
+		if (userTurns > 3 && inRecent) inRecent = false;
 
 		const parts = await db
 			.select()
@@ -37,28 +42,63 @@ export async function buildCompactionContext(
 
 				if (part.type === 'text' && content.text) {
 					const text = `[${msg.role.toUpperCase()}]: ${content.text}`;
-					lines.push(text.slice(0, 3000));
-					totalChars += text.length;
+					const limit = inRecent ? 3000 : 1000;
+					const line = text.slice(0, limit);
+
+					if (inRecent && recentChars < recentBudget) {
+						recentLines.unshift(line);
+						recentChars += line.length;
+					} else if (olderChars < olderBudget) {
+						olderLines.unshift(line);
+						olderChars += line.length;
+					}
 				} else if (part.type === 'tool_call' && content.name) {
-					const argsStr =
-						typeof content.args === 'object'
-							? JSON.stringify(content.args).slice(0, 500)
-							: '';
-					const text = `[TOOL ${content.name}]: ${argsStr}`;
-					lines.push(text);
-					totalChars += text.length;
-				} else if (part.type === 'tool_result' && content.result !== null) {
+					if (inRecent && recentChars < recentBudget) {
+						const argsStr =
+							typeof content.args === 'object'
+								? JSON.stringify(content.args).slice(0, 1000)
+								: '';
+						const line = `[TOOL ${content.name}]: ${argsStr}`;
+						recentLines.unshift(line);
+						recentChars += line.length;
+					} else if (olderChars < olderBudget) {
+						const line = `[TOOL ${content.name}]`;
+						olderLines.unshift(line);
+						olderChars += line.length;
+					}
+				} else if (
+					part.type === 'tool_result' &&
+					content.result !== null
+				) {
 					const resultStr =
 						typeof content.result === 'string'
-							? content.result.slice(0, 1500)
-							: JSON.stringify(content.result ?? '').slice(0, 1500);
-					const text = `[RESULT]: ${resultStr}`;
-					lines.push(text);
-					totalChars += text.length;
+							? content.result
+							: JSON.stringify(content.result ?? '');
+
+					if (inRecent && recentChars < recentBudget) {
+						const line = `[RESULT]: ${resultStr.slice(0, 2000)}`;
+						recentLines.unshift(line);
+						recentChars += line.length;
+					} else if (olderChars < olderBudget) {
+						const line = `[RESULT]: ${resultStr.slice(0, 150)}...`;
+						olderLines.unshift(line);
+						olderChars += line.length;
+					}
 				}
 			} catch {}
 		}
+
+		if (olderChars >= olderBudget) break;
 	}
 
-	return lines.join('\n');
+	const result: string[] = [];
+	if (olderLines.length > 0) {
+		result.push('[...older conversation (tool data truncated)...]');
+		result.push(...olderLines);
+		result.push('');
+		result.push('[--- Recent conversation (full detail) ---]');
+	}
+	result.push(...recentLines);
+
+	return result.join('\n');
 }

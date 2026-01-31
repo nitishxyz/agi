@@ -187,50 +187,16 @@ export function createErrorHandler(
 			debugLog(
 				'[stream-handlers] Prompt too long detected, auto-compacting...',
 			);
-			let compactionSucceeded = false;
-			try {
-				const publishWrapper = (event: {
-					type: string;
-					sessionId: string;
-					payload: Record<string, unknown>;
-				}) => {
-					publish(event as Parameters<typeof publish>[0]);
-				};
-				const compactResult = await performAutoCompaction(
-					db,
-					opts.sessionId,
-					opts.assistantMessageId,
-					publishWrapper,
-					opts.provider,
-					opts.model,
-				);
-				if (compactResult.success) {
-					debugLog(
-						`[stream-handlers] Auto-compaction succeeded: ${compactResult.summary?.slice(0, 100)}...`,
-					);
-					compactionSucceeded = true;
-				} else {
-					debugLog(
-						`[stream-handlers] Auto-compaction failed: ${compactResult.error}, falling back to prune`,
-					);
-					const pruneResult = await pruneSession(db, opts.sessionId);
-					debugLog(
-						`[stream-handlers] Fallback pruned ${pruneResult.pruned} parts, saved ~${pruneResult.saved} tokens`,
-					);
-					compactionSucceeded = pruneResult.pruned > 0;
-				}
-			} catch (compactErr) {
-				debugLog(
-					`[stream-handlers] Auto-compact error: ${compactErr instanceof Error ? compactErr.message : String(compactErr)}`,
-				);
-			}
 
-			if (compactionSucceeded) {
+			const retries = opts.compactionRetries ?? 0;
+			if (retries >= 2) {
+				debugLog(
+					'[stream-handlers] Compaction retry limit reached, surfacing error',
+				);
+			} else {
 				await db
 					.update(messages)
-					.set({
-						status: 'completed',
-					})
+					.set({ status: 'completed', completedAt: Date.now() })
 					.where(eq(messages.id, opts.assistantMessageId));
 
 				publish({
@@ -242,11 +208,82 @@ export function createErrorHandler(
 					},
 				});
 
-				if (retryCallback) {
+				const compactMessageId = crypto.randomUUID();
+				const compactMessageTime = Date.now();
+				await db.insert(messages).values({
+					id: compactMessageId,
+					sessionId: opts.sessionId,
+					role: 'assistant',
+					status: 'pending',
+					agent: opts.agent,
+					provider: opts.provider,
+					model: opts.model,
+					createdAt: compactMessageTime,
+				});
+
+				publish({
+					type: 'message.created',
+					sessionId: opts.sessionId,
+					payload: { id: compactMessageId, role: 'assistant' },
+				});
+
+				let compactionSucceeded = false;
+				try {
+					const publishWrapper = (event: {
+						type: string;
+						sessionId: string;
+						payload: Record<string, unknown>;
+					}) => {
+						publish(event as Parameters<typeof publish>[0]);
+					};
+					const compactResult = await performAutoCompaction(
+						db,
+						opts.sessionId,
+						compactMessageId,
+						publishWrapper,
+						opts.provider,
+						opts.model,
+					);
+					if (compactResult.success) {
+						debugLog(
+							`[stream-handlers] Auto-compaction succeeded: ${compactResult.summary?.slice(0, 100)}...`,
+						);
+						compactionSucceeded = true;
+					} else {
+						debugLog(
+							`[stream-handlers] Auto-compaction failed: ${compactResult.error}, falling back to prune`,
+						);
+						const pruneResult = await pruneSession(db, opts.sessionId);
+						debugLog(
+							`[stream-handlers] Fallback pruned ${pruneResult.pruned} parts, saved ~${pruneResult.saved} tokens`,
+						);
+						compactionSucceeded = pruneResult.pruned > 0;
+					}
+				} catch (compactErr) {
+					debugLog(
+						`[stream-handlers] Auto-compact error: ${compactErr instanceof Error ? compactErr.message : String(compactErr)}`,
+					);
+				}
+
+				await db
+					.update(messages)
+					.set({
+						status: compactionSucceeded ? 'completed' : 'error',
+						completedAt: Date.now(),
+					})
+					.where(eq(messages.id, compactMessageId));
+
+				publish({
+					type: 'message.completed',
+					sessionId: opts.sessionId,
+					payload: { id: compactMessageId, autoCompacted: true },
+				});
+
+				if (compactionSucceeded && retryCallback) {
 					debugLog('[stream-handlers] Triggering retry after compaction...');
-					const newAssistantMessageId = crypto.randomUUID();
+					const retryMessageId = crypto.randomUUID();
 					await db.insert(messages).values({
-						id: newAssistantMessageId,
+						id: retryMessageId,
 						sessionId: opts.sessionId,
 						role: 'assistant',
 						status: 'pending',
@@ -259,23 +296,26 @@ export function createErrorHandler(
 					publish({
 						type: 'message.created',
 						sessionId: opts.sessionId,
-						payload: { id: newAssistantMessageId, role: 'assistant' },
+						payload: { id: retryMessageId, role: 'assistant' },
 					});
 
 					enqueueAssistantRun(
 						{
 							...opts,
-							assistantMessageId: newAssistantMessageId,
+							assistantMessageId: retryMessageId,
+							compactionRetries: retries + 1,
 						},
 						retryCallback,
 					);
-				} else {
+					return;
+				}
+
+				if (compactionSucceeded) {
 					debugLog(
 						'[stream-handlers] No retryCallback provided, cannot auto-retry',
 					);
+					return;
 				}
-
-				return;
 			}
 		}
 
