@@ -42,10 +42,10 @@ export class TerminalManager {
 				cols: 80,
 				rows: 30,
 				cwd: options.cwd,
-				env: { ...process.env, PATH: getAugmentedPath() } as Record<
-					string,
-					string
-				>,
+			env: {
+				...process.env,
+				PATH: getAugmentedPath(),
+			} as Record<string, string>,
 			};
 
 			const pty = spawnPty(options.command, options.args || [], ptyOptions);
@@ -55,6 +55,16 @@ export class TerminalManager {
 			});
 
 			const terminal = new Terminal(id, pty, options);
+
+			if (options.command.includes('zsh')) {
+				setTimeout(() => {
+					pty.write(' unsetopt prompt_sp 2>/dev/null\r');
+					setTimeout(() => {
+						pty.write(' clear\r');
+						terminal.clearBuffer();
+					}, 200);
+				}, 100);
+			}
 
 			terminal.onExit((_exitCode) => {
 				const timer = setTimeout(() => {

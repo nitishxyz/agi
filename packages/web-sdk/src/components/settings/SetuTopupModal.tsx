@@ -287,9 +287,9 @@ export const SetuTopupModal = memo(function SetuTopupModal() {
 									? 'grid-rows-[1fr] opacity-100'
 									: 'grid-rows-[0fr] opacity-0'
 							}`}
-						>
-							<div className="overflow-hidden">
-								<div className="space-y-3 py-4 border-t border-border">
+			>
+				<div className="overflow-hidden">
+						<div className="space-y-3 py-4 border-t border-border">
 									{isLoadingEstimate ? (
 										<>
 											<div className="flex justify-between items-center">
@@ -393,8 +393,16 @@ export const SetuTopupModal = memo(function SetuTopupModal() {
 							</button>
 						)}
 
-						{/* USDC Option */}
-						<div className="relative pt-6">
+				{/* USDC Option */}
+				<div
+					className={`grid transition-all duration-300 ease-out ${
+						checkoutInfo
+							? 'grid-rows-[0fr] opacity-0'
+							: 'grid-rows-[1fr] opacity-100'
+					}`}
+				>
+				<div className="overflow-hidden min-h-0">
+					<div className="relative pt-6">
 							<div className="absolute inset-x-0 top-0 flex items-center">
 								<div className="flex-1 h-px bg-border" />
 								<span className="px-3 text-xs text-muted-foreground">OR</span>
@@ -418,6 +426,8 @@ export const SetuTopupModal = memo(function SetuTopupModal() {
 								</div>
 							</div>
 						</div>
+					</div>
+				</div>
 					</>
 				)}
 			</div>

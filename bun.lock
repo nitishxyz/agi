@@ -38,7 +38,7 @@
     },
     "apps/cli": {
       "name": "@agi-cli/cli",
-      "version": "0.1.159",
+      "version": "0.1.160",
       "bin": {
         "agi": "./dist/agi",
       },
@@ -63,7 +63,7 @@
     },
     "apps/desktop": {
       "name": "@agi-cli/desktop",
-      "version": "0.1.7",
+      "version": "0.1.8",
       "dependencies": {
         "@agi-cli/web-sdk": "workspace:*",
         "@tauri-apps/api": "^2.9.1",
@@ -227,7 +227,7 @@
     },
     "packages/api": {
       "name": "@agi-cli/api",
-      "version": "0.1.159",
+      "version": "0.1.160",
       "dependencies": {
         "axios": "^1.7.9",
         "eventsource-parser": "^2.0.1",
@@ -240,7 +240,7 @@
     },
     "packages/database": {
       "name": "@agi-cli/database",
-      "version": "0.1.159",
+      "version": "0.1.160",
       "dependencies": {
         "@agi-cli/sdk": "workspace:*",
         "drizzle-orm": "^0.44.5",
@@ -253,14 +253,14 @@
     },
     "packages/install": {
       "name": "@agi-cli/install",
-      "version": "0.1.159",
+      "version": "0.1.160",
       "bin": {
         "agi": "./start.js",
       },
     },
     "packages/sdk": {
       "name": "@agi-cli/sdk",
-      "version": "0.1.159",
+      "version": "0.1.160",
       "dependencies": {
         "@ai-sdk/anthropic": "^3.0.0",
         "@ai-sdk/google": "^3.0.0",
@@ -287,7 +287,7 @@
     },
     "packages/server": {
       "name": "@agi-cli/server",
-      "version": "0.1.159",
+      "version": "0.1.160",
       "dependencies": {
         "@agi-cli/database": "workspace:*",
         "@agi-cli/sdk": "workspace:*",
@@ -302,15 +302,13 @@
     },
     "packages/web-sdk": {
       "name": "@agi-cli/web-sdk",
-      "version": "0.1.159",
+      "version": "0.1.160",
       "dependencies": {
         "@agi-cli/api": "workspace:*",
         "@agi-cli/sdk": "workspace:*",
-        "@xterm/addon-fit": "^0.10.0",
-        "@xterm/addon-unicode11": "^0.8.0",
-        "@xterm/xterm": "^5.5.0",
         "axios": "^1.7.9",
         "fuse.js": "^7.1.0",
+        "ghostty-web": "^0.4.0",
         "qrcode.react": "^4.2.0",
       },
       "devDependencies": {
@@ -342,7 +340,7 @@
     },
     "packages/web-ui": {
       "name": "@agi-cli/web-ui",
-      "version": "0.1.159",
+      "version": "0.1.160",
       "dependencies": {
         "express": "^5.1.0",
       },
@@ -1130,12 +1128,6 @@
 
     "@walletconnect/window-metadata": ["@walletconnect/window-metadata@1.0.1", "", { "dependencies": { "@walletconnect/window-getters": "^1.0.1", "tslib": "1.14.1" } }, "sha512-9koTqyGrM2cqFRW517BPY/iEtUDx2r1+Pwwu5m7sJ7ka79wi3EyqhqcICk/yDmv6jAS1rjKgTKXlEhanYjijcA=="],
 
-    "@xterm/addon-fit": ["@xterm/addon-fit@0.10.0", "", { "peerDependencies": { "@xterm/xterm": "^5.0.0" } }, "sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ=="],
-
-    "@xterm/addon-unicode11": ["@xterm/addon-unicode11@0.8.0", "", { "peerDependencies": { "@xterm/xterm": "^5.0.0" } }, "sha512-LxinXu8SC4OmVa6FhgwsVCBZbr8WoSGzBl2+vqe8WcQ6hb1r6Gj9P99qTNdPiFPh4Ceiu2pC8xukZ6+2nnh49Q=="],
-
-    "@xterm/xterm": ["@xterm/xterm@5.5.0", "", {}, "sha512-hqJHYaQb5OptNunnyAnkHyM8aCjZ1MEIDTQu1iIbbTD/xops91NB5yq1ZK/dC2JDbVWtF23zUtl9JE2NqwT87A=="],
-
     "abitype": ["abitype@1.2.3", "", { "peerDependencies": { "typescript": ">=5.0.4", "zod": "^3.22.0 || ^4.0.0" }, "optionalPeers": ["typescript", "zod"] }, "sha512-Ofer5QUnuUdTFsBRwARMoWKOH1ND5ehwYhJ3OJ/BQO+StkwQjHw0XyVh4vDttzHB7QOFhPHa/o413PJ82gU/Tg=="],
 
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng=="],
@@ -1591,6 +1583,8 @@
     "get-proto": ["get-proto@1.0.1", "", { "dependencies": { "dunder-proto": "^1.0.1", "es-object-atoms": "^1.0.0" } }, "sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g=="],
 
     "get-tsconfig": ["get-tsconfig@4.13.0", "", { "dependencies": { "resolve-pkg-maps": "^1.0.0" } }, "sha512-1VKTZJCwBrvbd+Wn3AOgQP/2Av+TfTCOlE4AcRJE72W1ksZXbAx8PPBR9RzgTeSPzlPMHrbANMH3LbltH73wxQ=="],
+
+    "ghostty-web": ["ghostty-web@0.4.0", "", {}, "sha512-0puDBik2qapbD/QQBW9o5ZHfXnZBqZWx/ctBiVtKZ6ZLds4NYb+wZuw1cRLXZk9zYovIQ908z3rvFhexAvc5Hg=="],
 
     "giget": ["giget@2.0.0", "", { "dependencies": { "citty": "^0.1.6", "consola": "^3.4.0", "defu": "^6.1.4", "node-fetch-native": "^1.6.6", "nypm": "^0.6.0", "pathe": "^2.0.3" }, "bin": { "giget": "dist/cli.mjs" } }, "sha512-L5bGsVkxJbJgdnwyuheIunkGatUF/zssUoxxjACCseZYAVbaqdh9Tsmmlkl8vYan09H7sbvKt4pS8GqKLBrEzA=="],
 

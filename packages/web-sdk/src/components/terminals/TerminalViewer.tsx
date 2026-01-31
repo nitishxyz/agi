@@ -1,34 +1,62 @@
-import { useEffect, useRef } from 'react';
-import { FitAddon } from '@xterm/addon-fit';
-import { Unicode11Addon } from '@xterm/addon-unicode11';
-import { Terminal } from '@xterm/xterm';
+import { useEffect, useRef, useState } from 'react';
+import { init, Terminal, FitAddon } from 'ghostty-web';
 import { ArrowLeft, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useTerminals } from '../../hooks/useTerminals';
 import { useTerminalStore } from '../../stores/terminalStore';
 import { getRuntimeApiBaseUrl } from '../../lib/config';
-import '@xterm/xterm/css/xterm.css';
 import { client } from '@agi-cli/api';
 
-const NERD_FONT_STACK = [
-	'"Symbols Nerd Font Mono"',
-	'"Symbols Nerd Font"',
-	'"JetBrainsMono Nerd Font Mono"',
-	'"JetBrainsMono Nerd Font"',
-	'"JetBrains Mono Nerd Font Mono"',
-	'"JetBrains Mono Nerd Font"',
-	'"FiraCode Nerd Font Mono"',
-	'"FiraCode Nerd Font"',
-	'"Fira Code Nerd Font Mono"',
-	'"Fira Code Nerd Font"',
-	'"CaskaydiaCove Nerd Font"',
-	'"Caskaydia Cove Nerd Font"',
-	'"Cascadia Code PL"',
-	'"Hack Nerd Font Mono"',
-	'"Hack Nerd Font"',
-	'"MesloLGS NF"',
-];
-const FALLBACK_FONT_STACK = ['Menlo', 'Monaco', '"Courier New"', 'monospace'];
+const FONT_FAMILY = '"JetBrainsMono NFM", monospace';
+
+function resolveBackgroundColor(): string {
+	if (typeof document === 'undefined') return '#121216';
+	const el = document.createElement('div');
+	el.style.display = 'none';
+	el.className = 'bg-background';
+	document.body.appendChild(el);
+	const computed = getComputedStyle(el).backgroundColor;
+	document.body.removeChild(el);
+	const match = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+	if (match) {
+		const r = Number(match[1]);
+		const g = Number(match[2]);
+		const b = Number(match[3]);
+		return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
+	}
+	return '#121216';
+}
+
+let fontsLoaded = false;
+
+async function loadEmbeddedFont(): Promise<void> {
+	if (fontsLoaded) return;
+	if (typeof document === 'undefined' || !('FontFace' in window)) return;
+
+	const variants = [
+		{ file: 'JetBrainsMonoNerdFontMono-Regular.woff2', weight: '400', style: 'normal' },
+		{ file: 'JetBrainsMonoNerdFontMono-Bold.woff2', weight: '700', style: 'normal' },
+		{ file: 'JetBrainsMonoNerdFontMono-Italic.woff2', weight: '400', style: 'italic' },
+		{ file: 'JetBrainsMonoNerdFontMono-BoldItalic.woff2', weight: '700', style: 'italic' },
+	];
+
+	const loads = variants.map(async (v) => {
+		try {
+			const url = new URL(`../../assets/fonts/${v.file}`, import.meta.url).href;
+			const face = new FontFace('JetBrainsMono NFM', `url("${url}") format("woff2")`, {
+				weight: v.weight,
+				style: v.style,
+			});
+			const loaded = await face.load();
+			document.fonts.add(loaded);
+		} catch {
+			// variant not available
+		}
+	});
+
+	await Promise.allSettled(loads);
+	fontsLoaded = true;
+}
 
 function resolveApiBaseUrl(): string {
 	const config = client.getConfig?.();
@@ -42,24 +70,6 @@ function resolveApiBaseUrl(): string {
 	return getRuntimeApiBaseUrl();
 }
 
-function resolveFontFamily(): string {
-	if (typeof document !== 'undefined' && 'fonts' in document) {
-		const available = NERD_FONT_STACK.filter((font) => {
-			try {
-				return document.fonts.check(`12px ${font}`);
-			} catch {
-				return false;
-			}
-		});
-
-		if (available.length > 0) {
-			return [...available, ...FALLBACK_FONT_STACK].join(', ');
-		}
-	}
-
-	return [...NERD_FONT_STACK, ...FALLBACK_FONT_STACK].join(', ');
-}
-
 interface TerminalViewerProps {
 	terminalId: string;
 }
@@ -69,6 +79,7 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 	const xtermRef = useRef<Terminal | null>(null);
 	const fitAddonRef = useRef<FitAddon | null>(null);
 	const eventSourceRef = useRef<EventSource | null>(null);
+	const [ready, setReady] = useState(false);
 	const { data: terminals } = useTerminals();
 	const { selectTerminal } = useTerminalStore();
 
@@ -89,161 +100,166 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 	useEffect(() => {
 		if (!termRef.current || !terminalId) return;
 
-		// Prevent duplicate connections - close existing EventSource
+		let disposed = false;
+		let xterm: Terminal | null = null;
+		let fitAddon: FitAddon | null = null;
+		let handleResize: (() => void) | null = null;
+
+		setReady(false);
+
 		if (eventSourceRef.current) {
-			console.log('[TerminalViewer] Closing existing EventSource');
 			eventSourceRef.current.close();
 			eventSourceRef.current = null;
 		}
 
-		console.log('[TerminalViewer] Setting up terminal:', terminalId);
+		const setup = async () => {
+			await init();
+			if (disposed || !termRef.current) return;
 
-		const resolvedFontFamily = resolveFontFamily();
+			await loadEmbeddedFont();
+			await document.fonts.ready;
 
-		const xterm = new Terminal({
-			theme: {
-				background: '#1e1e1e',
-				foreground: '#d4d4d4',
-				cursor: '#ffffff',
-				cursorAccent: '#000000',
-				selectionBackground: '#264f78',
-				black: '#000000',
-				red: '#cd3131',
-				green: '#0dbc79',
-				yellow: '#e5e510',
-				blue: '#2472c8',
-				magenta: '#bc3fbc',
-				cyan: '#11a8cd',
-				white: '#e5e5e5',
-				brightBlack: '#666666',
-				brightRed: '#f14c4c',
-				brightGreen: '#23d18b',
-				brightYellow: '#f5f543',
-				brightBlue: '#3b8eea',
-				brightMagenta: '#d670d6',
-				brightCyan: '#29b8db',
-				brightWhite: '#e5e5e5',
-			},
-			fontSize: 13,
-			fontFamily: resolvedFontFamily,
-			cursorBlink: true,
-			convertEol: true,
-			scrollback: 1000,
-			allowProposedApi: true,
-		});
+			const bg = resolveBackgroundColor();
 
-		const fitAddon = new FitAddon();
-		const unicodeAddon = new Unicode11Addon();
-		xterm.loadAddon(fitAddon);
-		xterm.loadAddon(unicodeAddon);
-		xterm.unicode.activeVersion = '11';
-		xterm.open(termRef.current);
-		// Force font family on rendered DOM nodes in case xterm doesn't pick up config immediately
-		const fontTargets = termRef.current.querySelectorAll<HTMLElement>(
-			'.xterm, .xterm-rows, .xterm-helper-textarea',
-		);
-		fontTargets.forEach((node) => {
-			node.style.fontFamily = resolvedFontFamily;
-		});
-
-		// Fit after a short delay to ensure DOM is ready
-		setTimeout(() => {
-			try {
-				fitAddon.fit();
-			} catch (error) {
-				console.error('Failed to fit terminal:', error);
-			}
-		}, 50);
-
-		const baseUrl = resolveApiBaseUrl();
-		const eventSource = new EventSource(
-			`${baseUrl}/v1/terminals/${terminalId}/output`,
-		);
-		eventSourceRef.current = eventSource;
-
-		eventSource.onopen = () => {
-			console.log('[TerminalViewer] SSE connection opened:', terminalId);
-		};
-
-		eventSource.onmessage = (event) => {
-			try {
-				const data = JSON.parse(event.data);
-				if (data.type === 'data') {
-					xterm.write(data.line);
-				} else if (data.type === 'exit') {
-					xterm.write(
-						`\r\n\x1b[33m[Process exited with code ${data.exitCode}]\x1b[0m\r\n`,
-					);
-				}
-			} catch (error) {
-				console.error('Failed to parse terminal output:', error);
-			}
-		};
-
-		eventSource.onerror = (error) => {
-			if (eventSource.readyState !== EventSource.CLOSED) {
-				console.error('[TerminalViewer] SSE connection error:', {
-					terminalId,
-					url: `${baseUrl}/v1/terminals/${terminalId}/output`,
-					readyState: eventSource.readyState,
-					readyStateText:
-						eventSource.readyState === 0
-							? 'CONNECTING'
-							: eventSource.readyState === 1
-								? 'OPEN'
-								: 'CLOSED',
-					error,
-				});
-			}
-
-			// Close the EventSource to prevent auto-reconnect loop
-			console.log('[TerminalViewer] Closing EventSource due to error');
-			eventSource.close();
-			if (eventSourceRef.current === eventSource) {
-				eventSourceRef.current = null;
-			}
-		};
-
-		xterm.onData((data) => {
-			fetch(`${baseUrl}/v1/terminals/${terminalId}/input`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ input: data }),
-			}).catch((error) => {
-				console.error('Failed to send terminal input:', error);
+			xterm = new Terminal({
+				theme: {
+					background: bg,
+					foreground: '#d4d4d4',
+					cursor: '#ffffff',
+					cursorAccent: '#000000',
+					selectionBackground: '#264f78',
+					black: '#000000',
+					red: '#cd3131',
+					green: '#0dbc79',
+					yellow: '#e5e510',
+					blue: '#2472c8',
+					magenta: '#bc3fbc',
+					cyan: '#11a8cd',
+					white: '#e5e5e5',
+					brightBlack: '#666666',
+					brightRed: '#f14c4c',
+					brightGreen: '#23d18b',
+					brightYellow: '#f5f543',
+					brightBlue: '#3b8eea',
+					brightMagenta: '#d670d6',
+					brightCyan: '#29b8db',
+					brightWhite: '#e5e5e5',
+				},
+				fontSize: 13,
+				fontFamily: FONT_FAMILY,
+				cursorBlink: true,
+				convertEol: true,
+				scrollback: 1000,
 			});
-		});
 
-		xtermRef.current = xterm;
-		fitAddonRef.current = fitAddon;
+			fitAddon = new FitAddon();
+			xterm.loadAddon(fitAddon);
+			xterm.open(termRef.current);
+			xterm.focus();
 
-		// Handle window resize
-		const handleResize = () => {
-			if (fitAddonRef.current) {
+			await new Promise<void>((resolve) => {
+				requestAnimationFrame(() => {
+					try {
+						fitAddon?.fit();
+					} catch (error) {
+						console.error('Failed to fit terminal:', error);
+					}
+					resolve();
+				});
+			});
+
+			if (disposed) return;
+
+			const baseUrl = resolveApiBaseUrl();
+			const eventSource = new EventSource(
+				`${baseUrl}/v1/terminals/${terminalId}/output`,
+			);
+			eventSourceRef.current = eventSource;
+
+			let gotFirstData = false;
+
+			eventSource.onmessage = (event) => {
 				try {
-					fitAddonRef.current.fit();
+					const data = JSON.parse(event.data);
+					if (data.type === 'data') {
+						xterm?.write(data.line);
+						if (!gotFirstData) {
+							gotFirstData = true;
+							setTimeout(() => {
+								if (!disposed) setReady(true);
+							}, 350);
+						}
+					} else if (data.type === 'exit') {
+						xterm?.write(
+							`\r\n\x1b[33m[Process exited with code ${data.exitCode}]\x1b[0m\r\n`,
+						);
+					}
 				} catch (error) {
-					console.error('Failed to fit terminal on resize:', error);
+					console.error('Failed to parse terminal output:', error);
 				}
-			}
+			};
+
+			eventSource.onerror = (error) => {
+				if (eventSource.readyState !== EventSource.CLOSED) {
+					console.error('[TerminalViewer] SSE error:', error);
+				}
+				eventSource.close();
+				if (eventSourceRef.current === eventSource) {
+					eventSourceRef.current = null;
+				}
+			};
+
+			xterm.onData((data) => {
+				fetch(`${baseUrl}/v1/terminals/${terminalId}/input`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ input: data }),
+				}).catch((error) => {
+					console.error('Failed to send terminal input:', error);
+				});
+			});
+
+			xtermRef.current = xterm;
+			fitAddonRef.current = fitAddon;
+
+			handleResize = () => {
+				if (fitAddonRef.current) {
+					try {
+						fitAddonRef.current.fit();
+					} catch (error) {
+						console.error('Failed to fit terminal on resize:', error);
+					}
+				}
+			};
+			window.addEventListener('resize', handleResize);
+
+			setTimeout(() => {
+				if (!disposed && !gotFirstData) setReady(true);
+			}, 2000);
 		};
-		window.addEventListener('resize', handleResize);
+
+		setup().catch((error) => {
+			console.error('[TerminalViewer] Failed to initialize:', error);
+		});
 
 		return () => {
-			console.log('[TerminalViewer] Cleanup:', terminalId);
+			disposed = true;
 			if (eventSourceRef.current) {
 				eventSourceRef.current.close();
 				eventSourceRef.current = null;
 			}
-			window.removeEventListener('resize', handleResize);
-			xterm.dispose();
+			if (handleResize) {
+				window.removeEventListener('resize', handleResize);
+			}
+			if (xterm) {
+				xterm.dispose();
+			}
 		};
 	}, [terminalId]);
 
 	return (
 		<div className="flex h-full flex-col overflow-hidden bg-background">
-			{/* Header */}
-			<div className="h-10 border-b border-border px-3 flex items-center justify-between shrink-0 bg-muted/40">
+			<div className="h-10 border-b border-border px-3 flex items-center justify-between shrink-0 bg-background">
 				<div className="flex items-center gap-2 flex-1 min-w-0">
 					<Button
 						variant="ghost"
@@ -269,8 +285,21 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 				</Button>
 			</div>
 
-			{/* Terminal */}
-			<div ref={termRef} className="h-full w-full bg-background" />
+			<div className="relative flex-1 min-h-0 overflow-hidden">
+				<div ref={termRef} className="absolute inset-0 bg-background" />
+				<div
+					className="absolute inset-0 bg-background flex items-center justify-center pointer-events-none transition-opacity duration-300"
+					style={{ opacity: ready ? 0 : 1 }}
+				>
+					<div className="flex items-center gap-2 text-muted-foreground">
+						<svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+							<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+							<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+						</svg>
+						<span className="text-xs">Loading terminal…</span>
+					</div>
+				</div>
+			</div>
 		</div>
 	);
 }

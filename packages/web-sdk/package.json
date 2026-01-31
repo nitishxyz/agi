@@ -36,7 +36,7 @@
 		"README.md"
 	],
 	"scripts": {
-		"build": "tsc || true",
+		"build": "(tsc || true) && mkdir -p dist/assets/fonts && cp src/assets/fonts/*.woff2 dist/assets/fonts/",
 		"typecheck": "tsc --noEmit",
 		"dev": "tsc --watch",
 		"prepublishOnly": "bun run build"
@@ -60,11 +60,9 @@
 	"dependencies": {
 		"@agi-cli/api": "workspace:*",
 		"@agi-cli/sdk": "workspace:*",
-		"@xterm/addon-fit": "^0.10.0",
-		"@xterm/addon-unicode11": "^0.8.0",
-		"@xterm/xterm": "^5.5.0",
 		"axios": "^1.7.9",
 		"fuse.js": "^7.1.0",
+		"ghostty-web": "^0.4.0",
 		"qrcode.react": "^4.2.0"
 	},
 	"peerDependencies": {

@@ -81,6 +81,10 @@ export class Terminal {
 		return this.buffer.read(lines);
 	}
 
+	clearBuffer(): void {
+		this.buffer.clear();
+	}
+
 	write(input: string): void {
 		this.pty.write(input);
 	}
