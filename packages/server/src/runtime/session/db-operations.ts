@@ -337,7 +337,7 @@ export async function cleanupEmptyTextParts(
 			try {
 				t = JSON.parse(p.content || '{}')?.text || '';
 			} catch {}
-			if (!t || t.length === 0) {
+			if (!t || !t.trim()) {
 				await db.delete(messageParts).where(eq(messageParts.id, p.id));
 			}
 		}

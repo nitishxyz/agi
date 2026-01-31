@@ -187,6 +187,13 @@ async function runAssistant(opts: RunOpts) {
 			if (part.type === 'text-delta') {
 				const delta = part.text;
 				if (!delta) continue;
+
+				accumulated += delta;
+
+				if (!currentPartId && !accumulated.trim()) {
+					continue;
+				}
+
 				if (!firstDeltaSeen) {
 					firstDeltaSeen = true;
 					streamStartTimer.end();
@@ -208,7 +215,7 @@ async function runAssistant(opts: RunOpts) {
 						index: await sharedCtx.nextIndex(),
 						stepIndex: null,
 						type: 'text',
-						content: JSON.stringify({ text: '' }),
+						content: JSON.stringify({ text: accumulated }),
 						agent: opts.agent,
 						provider: opts.provider,
 						model: opts.model,
@@ -216,7 +223,6 @@ async function runAssistant(opts: RunOpts) {
 					});
 				}
 
-				accumulated += delta;
 				publish({
 					type: 'message.part.delta',
 					sessionId: opts.sessionId,
