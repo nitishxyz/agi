@@ -69,8 +69,18 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	const usdcBalance = useSetuStore((s) => s.usdcBalance);
 	const apiKeyInputRef = useRef<HTMLInputElement>(null);
 	const oauthCodeInputRef = useRef<HTMLInputElement>(null);
+	const isTopupModalOpen = useSetuStore((s) => s.isTopupModalOpen);
+	const prevTopupModalOpen = useRef(false);
+	const { fetchBalance } = useSetuBalance('setu');
 
-	useSetuBalance('setu');
+	// Refetch balance when topup modal closes
+	useEffect(() => {
+		if (prevTopupModalOpen.current && !isTopupModalOpen) {
+			// Modal was closed, refresh balance
+			fetchBalance();
+		}
+		prevTopupModalOpen.current = isTopupModalOpen;
+	}, [isTopupModalOpen, fetchBalance]);
 
 	useEffect(() => {
 		if (!authStatus.setu.configured && !isSettingUp) {
