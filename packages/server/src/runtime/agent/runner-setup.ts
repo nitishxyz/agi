@@ -237,6 +237,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 			}
 		} else if (underlyingProvider === 'openai') {
 			providerOptions.openai = {
+				reasoningEffort: 'high',
 				reasoningSummary: 'auto',
 			};
 		} else if (underlyingProvider === 'google') {

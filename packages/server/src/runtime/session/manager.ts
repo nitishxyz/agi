@@ -55,6 +55,7 @@ export async function createSession({
 		totalReasoningTokens: null,
 		totalToolTimeMs: null,
 		toolCountsJson: null,
+		currentContextTokens: null,
 	};
 	await db.insert(sessions).values(row);
 	publish({ type: 'session.created', sessionId: id, payload: row });

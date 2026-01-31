@@ -1,3 +1,6 @@
+import { catalog, getModelInfo } from '@agi-cli/sdk';
+import type { ProviderId } from '@agi-cli/sdk';
+
 export const PRUNE_PROTECT = 40_000;
 
 export function estimateTokens(text: string): number {
@@ -34,27 +37,20 @@ export function isOverflow(
 }
 
 export function getModelLimits(
-	_provider: string,
+	provider: string,
 	model: string,
 ): ModelLimits | null {
-	const defaults: Record<string, ModelLimits> = {
-		'claude-sonnet-4-20250514': { context: 200000, output: 16000 },
-		'claude-3-5-sonnet-20241022': { context: 200000, output: 8192 },
-		'claude-3-5-haiku-20241022': { context: 200000, output: 8192 },
-		'gpt-4o': { context: 128000, output: 16384 },
-		'gpt-4o-mini': { context: 128000, output: 16384 },
-		o1: { context: 200000, output: 100000 },
-		'o3-mini': { context: 200000, output: 100000 },
-		'gemini-2.0-flash': { context: 1000000, output: 8192 },
-		'gemini-1.5-pro': { context: 2000000, output: 8192 },
-	};
-
-	if (defaults[model]) return defaults[model];
-
-	for (const [key, limits] of Object.entries(defaults)) {
-		if (model.includes(key) || key.includes(model)) return limits;
+	const info = getModelInfo(provider as ProviderId, model);
+	if (info?.limit?.context && info?.limit?.output) {
+		return { context: info.limit.context, output: info.limit.output };
 	}
-
+	for (const key of Object.keys(catalog) as ProviderId[]) {
+		const entry = catalog[key];
+		const m = entry?.models?.find((x) => x.id === model);
+		if (m?.limit?.context && m?.limit?.output) {
+			return { context: m.limit.context, output: m.limit.output };
+		}
+	}
 	return null;
 }
 

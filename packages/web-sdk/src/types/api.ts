@@ -12,6 +12,7 @@ export interface Session {
 	totalCachedTokens?: number | null;
 	totalCacheCreationTokens?: number | null;
 	totalToolTimeMs: number | null;
+	currentContextTokens?: number | null;
 	toolCounts?: Record<string, number>;
 	parentSessionId?: string | null;
 	branchPointMessageId?: string | null;

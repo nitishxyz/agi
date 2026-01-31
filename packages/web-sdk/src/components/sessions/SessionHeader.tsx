@@ -68,9 +68,8 @@ export function SessionHeader({
 		return num.toString();
 	};
 
-	const inputTokens = session.totalInputTokens || 0;
+	const contextTokens = session.currentContextTokens || 0;
 	const outputTokens = session.totalOutputTokens || 0;
-	const cachedTokens = session.totalCachedTokens || 0;
 
 	const isBranch = session.sessionType === 'branch';
 	const parentSession = parentData?.parent;
@@ -137,33 +136,22 @@ export function SessionHeader({
 					<div className="flex items-center gap-3">
 						<div
 							className="flex items-center gap-1.5"
-							title={`${formatNumber(inputTokens)} input tokens`}
+							title={`Current context window: ${formatNumber(contextTokens)} tokens`}
 						>
-							<span className="text-xs opacity-70">in</span>
+							<span className="text-xs opacity-70">ctx</span>
 							<span className="font-medium text-foreground">
-								{formatCompactNumber(inputTokens)}
+								{formatCompactNumber(contextTokens)}
 							</span>
 						</div>
 						<div
 							className="flex items-center gap-1.5"
-							title={`${formatNumber(outputTokens)} output tokens`}
+							title={`Total output: ${formatNumber(outputTokens)} tokens`}
 						>
 							<span className="text-xs opacity-70">out</span>
 							<span className="font-medium text-foreground">
 								{formatCompactNumber(outputTokens)}
 							</span>
 						</div>
-						{cachedTokens > 0 && (
-							<div
-								className="flex items-center gap-1.5"
-								title={`${formatNumber(cachedTokens)} cached tokens`}
-							>
-								<span className="text-xs opacity-70">cached</span>
-								<span className="font-medium text-foreground">
-									{formatCompactNumber(cachedTokens)}
-								</span>
-							</div>
-						)}
 					</div>
 
 					<div className="flex items-center gap-2">

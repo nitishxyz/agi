@@ -412,6 +412,7 @@ export function useSessionStream(sessionId: string | undefined) {
 					}
 					markMessageCompleted(payload);
 					clearEphemeralForMessage(id);
+					queryClient.invalidateQueries({ queryKey: ['sessions'] });
 					break;
 				}
 				case 'tool.delta': {

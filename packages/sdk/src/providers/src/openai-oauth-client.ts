@@ -155,37 +155,17 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 					parsed.include.push('reasoning.encrypted_content');
 				}
 
-				if (!parsed.reasoningText) {
-					const providerOpts = parsed.providerOptions?.openai || {};
-					parsed.reasoning = {
-						effort:
-							providerOpts.reasoningEffort ||
-							config.reasoningEffort ||
-							'medium',
-						summary:
-							providerOpts.reasoningSummary ||
-							config.reasoningSummary ||
-							'auto',
-					};
-				} else {
-					const providerOpts = parsed.providerOptions?.openai || {};
-					if (!parsed.reasoning) {
-						parsed.reasoning = parsed.reasoningText;
-					}
-					if (!parsed.reasoning.effort) {
-						parsed.reasoning.effort =
-							providerOpts.reasoningEffort ||
-							config.reasoningEffort ||
-							'medium';
-					}
-					if (!parsed.reasoning.summary) {
-						parsed.reasoning.summary =
-							providerOpts.reasoningSummary ||
-							config.reasoningSummary ||
-							'auto';
-					}
-					delete parsed.reasoningText;
-				}
+				const existingReasoning = parsed.reasoning || {};
+				parsed.reasoning = {
+					effort:
+						existingReasoning.effort ||
+						config.reasoningEffort ||
+						'medium',
+					summary:
+						existingReasoning.summary ||
+						config.reasoningSummary ||
+						'auto',
+				};
 
 				delete parsed.max_output_tokens;
 				delete parsed.max_completion_tokens;

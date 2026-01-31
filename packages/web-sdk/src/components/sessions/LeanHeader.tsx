@@ -61,8 +61,7 @@ export function LeanHeader({
 		return num.toString();
 	};
 
-	const inputTokens = session.totalInputTokens || 0;
-	const outputTokens = session.totalOutputTokens || 0;
+	const contextTokens = session.currentContextTokens || 0;
 
 	const isBranch = session.sessionType === 'branch';
 	const parentSession = parentData?.parent;
@@ -130,16 +129,13 @@ export function LeanHeader({
 					{isGenerating && <StopButton sessionId={session.id} />}
 
 					<div className="flex items-center gap-3">
-						<div className="flex items-center gap-1">
-							<span className="text-xs opacity-70">in</span>
+						<div
+							className="flex items-center gap-1"
+							title={`Current context window: ${contextTokens.toLocaleString()} tokens`}
+						>
+							<span className="text-xs opacity-70">ctx</span>
 							<span className="text-foreground font-medium">
-								{formatCompactNumber(inputTokens)}
-							</span>
-						</div>
-						<div className="flex items-center gap-1">
-							<span className="text-xs opacity-70">out</span>
-							<span className="text-foreground font-medium">
-								{formatCompactNumber(outputTokens)}
+								{formatCompactNumber(contextTokens)}
 							</span>
 						</div>
 					</div>

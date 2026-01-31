@@ -168,6 +168,7 @@ export async function createBranch({
 		totalReasoningTokens: null,
 		totalToolTimeMs: null,
 		toolCountsJson: null,
+		currentContextTokens: null,
 		contextSummary: null,
 		lastCompactedAt: null,
 	};
