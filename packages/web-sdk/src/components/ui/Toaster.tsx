@@ -11,6 +11,7 @@ import {
 	type Toast,
 	type ToastType,
 } from '../../stores/toastStore';
+import { openUrl } from '../../lib/open-url';
 
 const icons: Record<ToastType, React.ReactNode> = {
 	default: <CreditCard className="h-4 w-4" />,
@@ -47,18 +48,19 @@ function ToastItem({ toast }: { toast: Toast }) {
 		>
 			{icons[toast.type]}
 			<span className="text-sm text-foreground">{toast.message}</span>
-			{toast.action && (
-				<a
-					href={toast.action.href}
-					target="_blank"
-					rel="noopener noreferrer"
-					onClick={(e) => e.stopPropagation()}
-					className="ml-auto flex items-center gap-1 text-xs text-primary hover:underline"
-				>
-					{toast.action.label}
-					<ExternalLink className="h-3 w-3" />
-				</a>
-			)}
+		{toast.action && (
+			<button
+				type="button"
+				onClick={(e) => {
+					e.stopPropagation();
+					openUrl(toast.action!.href);
+				}}
+				className="ml-auto flex items-center gap-1 text-xs text-primary hover:underline"
+			>
+				{toast.action.label}
+				<ExternalLink className="h-3 w-3" />
+			</button>
+		)}
 		</div>
 	);
 }

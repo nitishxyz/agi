@@ -13,6 +13,7 @@ import {
 import { useParentSession } from '../../hooks/useBranch';
 import { useShareStatus } from '../../hooks/useShareStatus';
 import { ProviderLogo } from '../common/ProviderLogo';
+import { openUrl } from '../../lib/open-url';
 
 interface SessionHeaderProps {
 	session: Session;
@@ -110,26 +111,25 @@ export function SessionHeader({
 						{session.title || 'Untitled Session'}
 					</h1>
 
-					{shareStatus?.shared && (
-						<a
-							href={shareStatus.url}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors text-xs font-medium flex-shrink-0"
-						>
-							<Share2 className="h-3 w-3" />
-							<span>Shared</span>
-							{shareStatus.pendingMessages &&
-							shareStatus.pendingMessages > 0 ? (
-								<span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
-									<RefreshCw className="h-2.5 w-2.5" />
-									{shareStatus.pendingMessages}
-								</span>
-							) : (
-								<ExternalLink className="h-2.5 w-2.5 opacity-60" />
-							)}
-						</a>
-					)}
+				{shareStatus?.shared && (
+					<button
+						type="button"
+						onClick={() => openUrl(shareStatus.url)}
+						className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors text-xs font-medium flex-shrink-0"
+					>
+						<Share2 className="h-3 w-3" />
+						<span>Shared</span>
+						{shareStatus.pendingMessages &&
+						shareStatus.pendingMessages > 0 ? (
+							<span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+								<RefreshCw className="h-2.5 w-2.5" />
+								{shareStatus.pendingMessages}
+							</span>
+						) : (
+							<ExternalLink className="h-2.5 w-2.5 opacity-60" />
+						)}
+					</button>
+				)}
 				</div>
 
 				<div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-sm text-muted-foreground">
