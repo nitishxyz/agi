@@ -19,7 +19,7 @@ export function Workspace({
 	const { server, loading, error, startServer, stopServer } = useServer();
 	const startedRef = useRef(false);
 	const iframeRef = useRef<HTMLIFrameElement>(null);
-const [iframeLoaded, setIframeLoaded] = useState(false);
+	const [iframeLoaded, setIframeLoaded] = useState(false);
 	const isFullscreen = useFullscreen();
 
 	const iframeSrc = useMemo(() => {
@@ -156,11 +156,11 @@ const [iframeLoaded, setIframeLoaded] = useState(false);
 						</button>
 					</div>
 				)}
-			{server && (
-				<iframe
-					ref={iframeRef}
-					src={iframeSrc!}
-					className={`absolute inset-0 w-full h-full border-none transition-opacity duration-200 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
+				{server && (
+					<iframe
+						ref={iframeRef}
+						src={iframeSrc!}
+						className={`absolute inset-0 w-full h-full border-none transition-opacity duration-200 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
 						style={{ backgroundColor: DARK_BG }}
 						title="AGI Workspace"
 						allow="clipboard-write; clipboard-read"

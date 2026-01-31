@@ -43,7 +43,9 @@ export const DefaultsStep = memo(function DefaultsStep({
 
 	const [selectedProvider, setSelectedProvider] = useState('setu');
 	const [selectedModel, setSelectedModel] = useState('kimi-k2.5');
-	const [selectedAgent, setSelectedAgent] = useState(authStatus.defaults.agent || 'build');
+	const [selectedAgent, setSelectedAgent] = useState(
+		authStatus.defaults.agent || 'build',
+	);
 	const [selectedApproval, setSelectedApproval] = useState<
 		'auto' | 'dangerous' | 'all'
 	>(authStatus.defaults.toolApproval || 'auto');
