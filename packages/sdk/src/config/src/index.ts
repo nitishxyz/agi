@@ -14,7 +14,7 @@ const DEFAULTS: {
 	providers: AGIConfig['providers'];
 } = {
 	defaults: {
-		agent: 'general',
+		agent: 'build',
 		provider: 'openai',
 		model: 'gpt-4o-mini',
 		toolApproval: 'auto',

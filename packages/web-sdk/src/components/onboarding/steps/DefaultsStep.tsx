@@ -80,7 +80,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 				setSelectedAgent(agents.includes('build') ? 'build' : agents[0]);
 			}
 		}
-	}, [config]);
+	}, [config, selectedAgent]);
 
 	useEffect(() => {
 		if (allModels?.[selectedProvider] && hasUserChangedProvider.current) {

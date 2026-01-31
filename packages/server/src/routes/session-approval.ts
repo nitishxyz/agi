@@ -20,11 +20,6 @@ export function registerSessionApprovalRoute(app: Hono) {
 			return c.json({ ok: false, error: 'approved must be a boolean' }, 400);
 		}
 
-		console.log('[approval-route] Received approval request', {
-			sessionId,
-			callId: body.callId,
-			approved: body.approved,
-		});
 
 		const result = resolveApproval(body.callId, body.approved);
 

@@ -15,7 +15,7 @@ export function registerDefaultsRoute(app: Hono) {
 				scope?: 'global' | 'local';
 			}>();
 
-			const scope = body.scope || 'local';
+			const scope = body.scope || 'global';
 			const updates: Partial<{
 				agent: string;
 				provider: string;
