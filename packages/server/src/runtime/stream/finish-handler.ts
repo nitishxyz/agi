@@ -4,9 +4,7 @@ import { eq } from 'drizzle-orm';
 import { publish } from '../../events/bus.ts';
 import { estimateModelCostUsd } from '@agi-cli/sdk';
 import type { RunOpts } from '../session/queue.ts';
-import {
-	markSessionCompacted,
-} from '../message/compaction.ts';
+import { markSessionCompacted } from '../message/compaction.ts';
 import { debugLog } from '../debug/index.ts';
 import type { FinishEvent } from './types.ts';
 import {

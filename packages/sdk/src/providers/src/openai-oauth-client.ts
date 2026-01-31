@@ -158,13 +158,9 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 				const existingReasoning = parsed.reasoning || {};
 				parsed.reasoning = {
 					effort:
-						existingReasoning.effort ||
-						config.reasoningEffort ||
-						'medium',
+						existingReasoning.effort || config.reasoningEffort || 'medium',
 					summary:
-						existingReasoning.summary ||
-						config.reasoningSummary ||
-						'auto',
+						existingReasoning.summary || config.reasoningSummary || 'auto',
 				};
 
 				delete parsed.max_output_tokens;
