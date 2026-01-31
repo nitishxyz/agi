@@ -58,9 +58,8 @@ filename="$asset$ext"
 if [ "$VERSION" = "latest" ]; then
   info "Fetching latest CLI release..."
   VERSION=$(http_get "https://api.github.com/repos/$REPO/releases?per_page=20" \
-    | grep -o '"tag_name":"v[0-9][^"]*"' \
-    | head -1 \
-    | cut -d'"' -f4)
+    | sed -n 's/.*"tag_name" *: *"\(v[0-9][^"]*\)".*/\1/p' \
+    | head -1)
   if [ -z "$VERSION" ]; then
     err "Could not determine latest CLI release"
     exit 1

@@ -332,7 +332,8 @@ jobs:
             *) echo "Unknown target: ${{ matrix.target }}"; exit 1 ;;
           esac
           cd apps/cli
-          bun run prebuild
+          bun run ../../scripts/build-web.ts
+          bun run ../../scripts/prepare-embedded-bins.ts "${PLATFORM}"
           mkdir -p dist
           bun build --compile --minify --target="bun-${PLATFORM}" ./index.ts --outfile "dist/agi-${PLATFORM}"
           mkdir -p ../desktop/src-tauri/resources/binaries
