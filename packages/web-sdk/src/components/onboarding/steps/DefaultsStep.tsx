@@ -43,7 +43,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 
 	const [selectedProvider, setSelectedProvider] = useState('setu');
 	const [selectedModel, setSelectedModel] = useState('kimi-k2.5');
-	const [selectedAgent, setSelectedAgent] = useState(authStatus.defaults.agent);
+	const [selectedAgent, setSelectedAgent] = useState(authStatus.defaults.agent || 'build');
 	const [selectedApproval, setSelectedApproval] = useState<
 		'auto' | 'dangerous' | 'all'
 	>(authStatus.defaults.toolApproval || 'auto');
@@ -70,6 +70,15 @@ export const DefaultsStep = memo(function DefaultsStep({
 		};
 		loadConfig();
 	}, []);
+
+	useEffect(() => {
+		if (config?.agents?.length) {
+			const agents = config.agents;
+			if (!selectedAgent || !agents.includes(selectedAgent)) {
+				setSelectedAgent(agents.includes('build') ? 'build' : agents[0]);
+			}
+		}
+	}, [config]);
 
 	useEffect(() => {
 		if (allModels?.[selectedProvider] && hasUserChangedProvider.current) {
