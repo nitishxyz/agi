@@ -83,24 +83,24 @@ export function LeanHeader({
 					<span className="text-foreground font-medium truncate">
 						{session.title || 'Untitled Session'}
 					</span>
-				{shareStatus?.shared && (
-					<button
-						type="button"
-						onClick={() => openUrl(shareStatus.url)}
-						className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors text-xs font-medium flex-shrink-0"
-					>
-						<Share2 className="h-3 w-3" />
-						{shareStatus.pendingMessages &&
-						shareStatus.pendingMessages > 0 ? (
-							<span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
-								<RefreshCw className="h-2.5 w-2.5" />
-								{shareStatus.pendingMessages}
-							</span>
-						) : (
-							<ExternalLink className="h-2.5 w-2.5 opacity-60" />
-						)}
-					</button>
-				)}
+					{shareStatus?.shared && (
+						<button
+							type="button"
+							onClick={() => openUrl(shareStatus.url)}
+							className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors text-xs font-medium flex-shrink-0"
+						>
+							<Share2 className="h-3 w-3" />
+							{shareStatus.pendingMessages &&
+							shareStatus.pendingMessages > 0 ? (
+								<span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+									<RefreshCw className="h-2.5 w-2.5" />
+									{shareStatus.pendingMessages}
+								</span>
+							) : (
+								<ExternalLink className="h-2.5 w-2.5 opacity-60" />
+							)}
+						</button>
+					)}
 					{isBranch && parentSession && (
 						<>
 							<span className="text-muted-foreground hidden sm:inline">

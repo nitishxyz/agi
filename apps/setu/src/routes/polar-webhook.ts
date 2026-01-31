@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { db } from '../../db';
 import { paymentLogs } from '../../db/schema';
 import { verifyWebhook, WebhookVerificationError } from '../services/polar';
-import { creditBalancePolar } from '../services/balance';
+import { creditBalancePolar, getOrCreateUser } from '../services/balance';
 
 const polarWebhook = new Hono();
 
@@ -50,6 +50,9 @@ polarWebhook.post('/v1/webhooks/polar', async (c) => {
 
 		const walletAddress = metadata.walletAddress;
 		const creditAmountUsd = parseFloat(metadata.creditAmountUsd);
+
+		// Ensure user exists before inserting payment log (FK constraint)
+		await getOrCreateUser(walletAddress);
 
 		// Check for duplicate using checkoutId (primary) or orderId (fallback)
 		const existing = await db.query.paymentLogs.findFirst({

@@ -65,6 +65,7 @@ export * from './settings/SetuTopupModal';
 
 // Common Components
 export * from './common/ProviderLogo';
+export * from './common/StatusIndicator';
 
 // Onboarding Components
 export * from './onboarding';
