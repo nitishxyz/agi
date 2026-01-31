@@ -25,7 +25,6 @@ export type { ApiAuth, OAuth, AuthInfo, AuthFile } from './types/src/index.ts';
 
 // Config types
 export type {
-	ProviderConfig,
 	DefaultConfig,
 	PathConfig,
 	AGIConfig,

@@ -1,14 +1,7 @@
-import type { ProviderId } from './provider';
-
 /**
  * Configuration scope - where settings are stored
  */
 export type Scope = 'global' | 'local';
-
-/**
- * Provider-specific configuration
- */
-export type ProviderConfig = { enabled: boolean; apiKey?: string };
 
 /**
  * Default settings for the CLI
@@ -38,7 +31,6 @@ export type PathConfig = {
 export type AGIConfig = {
 	projectRoot: string;
 	defaults: DefaultConfig;
-	providers: Record<ProviderId, ProviderConfig>;
 	paths: PathConfig;
 	onboardingComplete?: boolean;
 };

@@ -50,7 +50,6 @@ export async function selectProviderAndModel(
 		: await pickAuthorizedProvider({
 				cfg,
 				candidate: explicitProvider ?? agentProviderDefault,
-				explicitProvider,
 			});
 
 	if (!provider) {
@@ -77,19 +76,14 @@ export async function selectProviderAndModel(
 async function pickAuthorizedProvider(args: {
 	cfg: AGIConfig;
 	candidate: ProviderId;
-	explicitProvider?: ProviderId;
 }): Promise<ProviderId | undefined> {
-	const { cfg, candidate, explicitProvider } = args;
+	const { cfg, candidate } = args;
 	const candidates = uniqueProviders([
 		candidate,
 		...FALLBACK_ORDER,
 		...providerIds,
 	]);
 	for (const provider of candidates) {
-		const enabled = cfg.providers[provider]?.enabled ?? true;
-		const explicitlyRequested =
-			explicitProvider != null && provider === explicitProvider;
-		if (!enabled && !explicitlyRequested) continue;
 		const ok = await isProviderAuthorized(cfg, provider);
 		if (ok) return provider;
 	}

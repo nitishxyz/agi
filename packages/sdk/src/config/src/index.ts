@@ -7,28 +7,14 @@ import {
 } from './paths.ts';
 import type { AGIConfig } from '../../types/src/index.ts';
 
-export type { ProviderConfig, AGIConfig } from '../../types/src/index.ts';
+export type { AGIConfig } from '../../types/src/index.ts';
 
-const DEFAULTS: {
-	defaults: AGIConfig['defaults'];
-	providers: AGIConfig['providers'];
-} = {
+const DEFAULTS: { defaults: AGIConfig['defaults'] } = {
 	defaults: {
 		agent: 'build',
-		provider: 'openai',
-		model: 'gpt-4o-mini',
+		provider: 'setu',
+		model: 'kimi-k2.5',
 		toolApproval: 'auto',
-	},
-	providers: {
-		openai: { enabled: true },
-		anthropic: { enabled: true },
-		google: { enabled: true },
-		openrouter: { enabled: false },
-		opencode: { enabled: false },
-		setu: { enabled: false },
-		zai: { enabled: false },
-		'zai-coding': { enabled: false },
-		moonshot: { enabled: false },
 	},
 };
 
@@ -54,7 +40,6 @@ export async function loadConfig(
 	return {
 		projectRoot,
 		defaults: merged.defaults as AGIConfig['defaults'],
-		providers: merged.providers as AGIConfig['providers'],
 		paths: {
 			dataDir,
 			dbPath,

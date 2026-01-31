@@ -222,15 +222,16 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 		updateDefaults.mutate({
 			provider,
 			model: firstModel || config?.defaults?.model,
+			scope: 'global',
 		});
 	};
 
 	const handleModelChange = (model: string) => {
-		updateDefaults.mutate({ model });
+		updateDefaults.mutate({ model, scope: 'global' });
 	};
 
 	const handleAgentChange = (agent: string) => {
-		updateDefaults.mutate({ agent });
+		updateDefaults.mutate({ agent, scope: 'global' });
 	};
 
 	const truncateWallet = (address: string | null) => {
@@ -315,6 +316,7 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 						onChange={(value) =>
 							updateDefaults.mutate({
 								toolApproval: value as 'auto' | 'dangerous' | 'all',
+								scope: 'global',
 							})
 						}
 						disabled={updateDefaults.isPending}

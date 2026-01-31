@@ -65,6 +65,25 @@ export const DefaultsStep = memo(function DefaultsStep({
 				]);
 				setConfig(configData);
 				setAllModels(modelsData);
+				const cfgProvider = configData?.defaults?.provider || 'setu';
+				const cfgModel = configData?.defaults?.model || 'kimi-k2.5';
+				const providerHasModels = modelsData?.[cfgProvider]?.models?.length > 0;
+				const resolvedProvider = providerHasModels ? cfgProvider : 'setu';
+				const resolvedModel =
+					providerHasModels &&
+					modelsData[cfgProvider].models.some(
+						(m: { id: string }) => m.id === cfgModel,
+					)
+						? cfgModel
+						: modelsData?.[resolvedProvider]?.models?.[0]?.id || 'kimi-k2.5';
+				setSelectedProvider(resolvedProvider);
+				setSelectedModel(resolvedModel);
+				if (configData?.defaults?.agent) {
+					setSelectedAgent(configData.defaults.agent);
+				}
+				if (configData?.defaults?.toolApproval) {
+					setSelectedApproval(configData.defaults.toolApproval);
+				}
 			} catch {
 			} finally {
 				setIsLoading(false);

@@ -6,7 +6,12 @@ import {
 	type ProviderId,
 	type AuthInfo,
 } from '../../auth/src/index.ts';
-import { getGlobalConfigDir, getGlobalConfigPath } from './paths.ts';
+import {
+	getGlobalConfigDir,
+	getGlobalConfigPath,
+	getLocalDataDir,
+	joinPath,
+} from './paths.ts';
 import {
 	providerIds,
 	readEnvKey,
@@ -62,35 +67,60 @@ export async function writeDefaults(
 	}>,
 	projectRoot?: string,
 ) {
-	const { cfg } = await read(projectRoot);
+	const root = projectRoot ? String(projectRoot) : process.cwd();
+
 	if (scope === 'local') {
+		const localDir = getLocalDataDir(root);
+		const localPath = joinPath(localDir, 'config.json');
+		const existing = await readJsonFile(localPath);
+		const prevDefaults =
+			existing && typeof existing.defaults === 'object'
+				? (existing.defaults as Record<string, unknown>)
+				: {};
 		const next = {
-			defaults: {
-				...cfg.defaults,
-				...updates,
-				provider: (updates.provider ?? cfg.defaults.provider) as ProviderId,
-			},
-			providers: cfg.providers,
+			...existing,
+			defaults: { ...prevDefaults, ...updates },
 		};
-		const path = `${cfg.paths.dataDir}/config.json`;
-		await Bun.write(path, JSON.stringify(next, null, 2));
+		try {
+			const { promises: fs } = await import('node:fs');
+			await fs.mkdir(localDir, { recursive: true }).catch(() => {});
+		} catch {}
+		await Bun.write(localPath, JSON.stringify(next, null, 2));
 		return;
 	}
-	const base = getGlobalConfigDir();
-	const path = getGlobalConfigPath();
+
+	const globalPath = getGlobalConfigPath();
+	const existing = await readJsonFile(globalPath);
+	const prevDefaults =
+		existing && typeof existing.defaults === 'object'
+			? (existing.defaults as Record<string, unknown>)
+			: {};
 	const next = {
-		defaults: {
-			...cfg.defaults,
-			...updates,
-			provider: (updates.provider ?? cfg.defaults.provider) as ProviderId,
-		},
-		providers: cfg.providers,
+		...existing,
+		defaults: { ...prevDefaults, ...updates },
 	};
+	const base = getGlobalConfigDir();
 	try {
 		const { promises: fs } = await import('node:fs');
 		await fs.mkdir(base, { recursive: true }).catch(() => {});
 	} catch {}
-	await Bun.write(path, JSON.stringify(next, null, 2));
+	await Bun.write(globalPath, JSON.stringify(next, null, 2));
+}
+
+async function readJsonFile(
+	filePath: string,
+): Promise<Record<string, unknown> | undefined> {
+	const f = Bun.file(filePath);
+	if (!(await f.exists())) return undefined;
+	try {
+		const parsed = await f.json();
+		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+			return parsed as Record<string, unknown>;
+		}
+		return undefined;
+	} catch {
+		return undefined;
+	}
 }
 
 export async function writeAuth(

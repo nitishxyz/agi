@@ -12,7 +12,6 @@ export type { ApiAuth, OAuth, AuthInfo, AuthFile } from './auth';
 // Config types
 export type {
 	Scope,
-	ProviderConfig,
 	DefaultConfig,
 	PathConfig,
 	AGIConfig,
