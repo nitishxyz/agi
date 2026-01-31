@@ -18,6 +18,7 @@ export function ReasoningRenderer({ part }: ReasoningRendererProps) {
 		content = data;
 	}
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: content dependency is intentional - triggers auto-scroll when new reasoning text streams in
 	useEffect(() => {
 		if (
 			scrollRef.current &&
@@ -56,6 +57,7 @@ export function ReasoningRenderer({ part }: ReasoningRendererProps) {
 				<div
 					ref={scrollRef}
 					className="mt-2 p-3 bg-muted/30 rounded-md border border-border max-h-48 overflow-y-auto"
+					role="log"
 					onMouseEnter={() => {
 						isHoveredRef.current = true;
 					}}

@@ -120,6 +120,7 @@ export function Workspace({
 						stroke="currentColor"
 						strokeWidth="1.5"
 						strokeLinecap="round"
+						aria-hidden="true"
 					>
 						<rect x="1" y="1" width="14" height="14" rx="2" />
 						<line x1="8" y1="4.5" x2="8" y2="11.5" />

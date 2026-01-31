@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { $ } from 'bun';
-import { Spinner, GREEN, DIM, BOLD, RED, CYAN, RESET } from './lib/spinner.ts';
+import { Spinner, GREEN, DIM, BOLD, CYAN, RESET } from './lib/spinner.ts';
 
 const verbose = process.argv.includes('--verbose');
 const args = process.argv.slice(2).filter((a) => a !== '--verbose');
