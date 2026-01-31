@@ -1,211 +1,59 @@
 # Getting Started
 
-[← Back to README](../README.md) • [Docs Index](./index.md)
+[← Back to README](../README.md) · [Docs Index](./index.md)
 
 ---
 
-## Installation
+## Install
 
-### 🎯 Recommended: One-Liner Install
-
-The fastest way to get started:
+### Recommended: One-Liner
 
 ```bash
 curl -fsSL https://install.agi.nitish.sh | sh
 ```
 
-**What this does:**
-- ✅ Detects your OS and architecture automatically
-- ✅ Downloads the correct prebuilt binary
-- ✅ Installs to `/usr/local/bin` (or `$HOME/.local/bin` as fallback)
-- ✅ Makes `agi` available globally
+This detects your OS and architecture, downloads the prebuilt binary, and installs to `~/.local/bin`.
 
-**Pin a specific version:**
+Pin a specific version:
 
 ```bash
-AGI_VERSION=v0.1.135 curl -fsSL https://install.agi.nitish.sh | sh
+AGI_VERSION=v0.1.161 curl -fsSL https://install.agi.nitish.sh | sh
 ```
 
-### 📦 Alternative: npm or Bun
-
-Install via package managers:
+### Alternative: npm or Bun
 
 ```bash
-# Using npm
-npm install -g @agi-cli/install
-
-# Using Bun
 bun install -g @agi-cli/install
 ```
 
-**Supported platforms:**
-- macOS (x64, ARM64/Apple Silicon)
-- Linux (x64, ARM64)
-- Windows (x64)
+The postinstall script downloads the correct binary for your platform.
 
----
+**Supported platforms:** macOS (x64, ARM64), Linux (x64, ARM64)
 
-### 🛠️ From Source (For Developers)
+### From Source
 
-> Note: This project uses Bun as its runtime. Install Bun first from https://bun.sh
+Requires [Bun](https://bun.sh) v1.0+.
 
 ```bash
-# Clone the repository
 git clone https://github.com/nitishxyz/agi.git
 cd agi
-
-# Install dependencies with Bun
 bun install
-
-# Build the CLI binary
-cd apps/cli
-bun run build
-
-# The binary will be at apps/cli/dist/agi
-# Optional: Add to PATH or link globally
+bun run compile    # builds to dist/agi
 ```
-
-Optional: Pretty-print markdown output when running from source
-
-```bash
-./agi-markdown "<prompt>"
-```
-
-## Quick Start
-
-### Initial Setup
-
-```bash
-# Configure your AI provider credentials interactively
-agi setup
-
-# Or manually configure authentication
-agi auth login
-```
-
-### Basic Usage
-
-```bash
-# Ask a one-shot question
-agi "explain this error: TypeError: Cannot read property 'map' of undefined"
-
-# Interactive mode - prompts for input
-agi
-
-# Use a specific agent for specialized tasks
-agi "help me write tests" --agent build
-
-# Continue your last conversation
-agi "what about edge cases?" --last
-
-# Use a specific provider and model
-agi "refactor this function" --provider anthropic --model claude-sonnet-4
-```
-
-## Output & Rendering
-
-AGI provides two output modes for assistant responses:
-
-### Streaming Mode (Default)
-- Real-time output as text is generated
-- See immediate feedback that the assistant is working
-- Plain text without markdown formatting
-- Best for interactive use and seeing progress
-
-### Markdown Mode
-- Enable with `AGI_RENDER_MARKDOWN=1` or use `./agi-markdown` wrapper
-- Buffered output appears all at once after completion
-- Rich formatting: headers, bold, italic, lists, code blocks
-- Best for documentation, final outputs, pretty results
-
-### Other Options
-- JSON output: `--json` for structured result, `--json-stream` for streaming
-- Bash output: Limited to 7 lines (use `--json` for full output)
-- Plans: Show `[ ]` pending, `[x]` complete, `...` in progress
-
-## Verifying Installation
-
-After installation, verify AGI is working:
-
-```bash
-# Check version
-agi --version
-
-# Test basic functionality
-agi "hello, can you hear me?"
-
-# Check available agents
-agi agents
-
-# View available models
-agi models
-```
-
-## Next Steps
-
-- **Configuration**: See [configuration.md](./configuration.md) for detailed config options
-- **Usage**: See [usage.md](./usage.md) for command examples
-- **Agents & Tools**: See [agents-tools.md](./agents-tools.md) for built-in capabilities
-- **Customization**: See [customization.md](./customization.md) for custom commands and tools
-- **SDK**: See [../packages/sdk/README.md](../packages/sdk/README.md) for embedding AGI in your projects
-
-## Troubleshooting
-
-### Command not found after installation
-
-If `agi` is not found after installation:
-
-1. **Check installation location** (curl method):
-   - Look for messages during installation about where the binary was placed
-   - Common locations: `/usr/local/bin/agi` or `~/.local/bin/agi`
-
-2. **Add to PATH** if needed:
-   ```bash
-   # For ~/.local/bin
-   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-   source ~/.bashrc
-   ```
-
-3. **For npm/bun install issues**:
-   ```bash
-   # Check if package was installed
-   npm list -g @agi-cli/install
-   
-   # Reinstall if needed
-   npm uninstall -g @agi-cli/install
-   npm install -g @agi-cli/install
-   ```
-
-### Binary not executable
-
-If you get a permission error:
-
-```bash
-chmod +x $(which agi)
-# or
-chmod +x /path/to/agi
-```
-
-### Other issues
-
-See [troubleshooting.md](./troubleshooting.md) for more help, or file an issue at:
-https://github.com/nitishxyz/agi/issues
-# Run from source
-bun run cli "hello"
-# Build binary for your platform
-bun run compile
-# Output: dist/agi
-
-# Or build for specific platforms
-bun run build:bin:darwin-arm64
-bun run build:bin:linux-x64
-**Pretty-print markdown output:**
 
 ---
-### 1️⃣ Configure Your AI Provider
 
-Set up authentication interactively:
-**Set API keys via environment variables:**
+## Setup
+
+### 1. Configure a Provider
+
+```bash
+agi setup
+```
+
+This walks you through provider selection and authentication interactively.
+
+Or set API keys via environment variables:
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
@@ -214,73 +62,97 @@ export GOOGLE_GENERATIVE_AI_API_KEY="..."
 export OPENROUTER_API_KEY="sk-or-..."
 ```
 
-### 2️⃣ Start Using AGI
-# 💬 Ask a question
-# 🔄 Interactive mode
-# 🔨 Use specialized agents
-agi "design a scalable API" --agent plan
-agi "review my changes" --agent git
-# 💾 Continue last conversation
-# 🎯 Choose provider and model
-agi "refactor this function" \\
-  --provider anthropic \\
-  --model claude-3-5-sonnet-20241022
+### 2. Start Using AGI
 
-# 🌐 Start web interface
-agi serve
-# Open http://127.0.0.1:3456
----
+```bash
+agi                           # start server + web UI (opens browser)
+agi "explain this error"      # one-shot question
+agi "write tests" --agent build
+agi "follow up" --last        # continue last session
+```
 
----
+### 3. Verify Installation
 
-# ✅ Check version
-# ✅ Test basic functionality
-# ✅ List available agents
-# ✅ View available models
-
-# ✅ Check current configuration
-agi doctor
----
-
-Ready to dive deeper? Check out these guides:
-
-- **Web UI**: See [mobile-support.md](./mobile-support.md) for web interface guide
+```bash
+agi --version                 # check version
+agi doctor                    # check configuration and diagnose issues
+agi agents                    # list available agents
+agi models                    # list available models
+```
 
 ---
-   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-   
-   # For macOS zsh
-   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
-   source ~/.zshrc
+
+## How It Works
+
+When you run `agi`, it:
+
+1. Checks if the desktop app is installed — if so, opens it
+2. Otherwise, starts a local HTTP server (API + web UI)
+3. Opens the web UI in your browser
+
+The web UI is a client for the local server. All AI interactions, session storage, and tool execution happen locally on your machine.
+
+For one-shot usage (`agi "question"`), it starts the server in the background, sends the prompt, streams the response, and exits.
+
+---
+
+## Server Mode
+
+```bash
+agi serve                     # start on a random port, open browser
+agi serve --port 3000         # specific port
+agi serve --network           # bind to 0.0.0.0 for LAN access
+agi serve --no-open           # don't open browser
+```
+
+The server exposes:
+- **API** on the specified port (e.g., `http://localhost:3000`)
+- **Web UI** on port + 1 (e.g., `http://localhost:3001`)
+
+---
+
+## Next Steps
+
+- [Usage Guide](usage.md) — All commands and workflows
+- [Configuration](configuration.md) — Project and global settings
+- [Agents & Tools](agents-tools.md) — Built-in agents and tools
+- [Troubleshooting](troubleshooting.md) — Common issues
+
+---
+
+## Troubleshooting
+
+### `agi` not found after installation
+
+Check if `~/.local/bin` is in your PATH:
+
+```bash
+echo $PATH | tr ':' '\n' | grep local
+
+# If not present, add it:
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
 ### Provider authentication issues
 
 ```bash
-# Check if API key is set
-echo $ANTHROPIC_API_KEY
-
-# Reconfigure authentication
-agi auth login
-
-# Or use the setup wizard
-agi setup
+agi auth login                # reconfigure credentials
+agi doctor                    # check what's configured
+echo $ANTHROPIC_API_KEY       # verify env var is set
 ```
 
 ### Web UI not loading
 
 ```bash
-# Check if server is running
-curl http://127.0.0.1:3456/health
-
-# Try different port
-agi serve --port 3000
-
-# Enable network access
-agi serve --network
+curl http://localhost:3000/health    # check if server is running
+agi serve --port 3000               # try a specific port
 ```
 
+### Binary not executable
 
----
+```bash
+chmod +x $(which agi)
+```
 
-<p align="center">
-  <strong>Ready to start? Run <code>agi setup</code> to begin! 🚀</strong>
-</p>
+For more help, see [troubleshooting.md](troubleshooting.md) or file an issue at [github.com/nitishxyz/agi/issues](https://github.com/nitishxyz/agi/issues).

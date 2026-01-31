@@ -1,90 +1,74 @@
 # Development
 
-[← Back to README](../README.md) • [Docs Index](./index.md)
+[← Back to README](../README.md) · [Docs Index](./index.md)
+
+For the full development guide covering all components, see [Development Guide](development-guide.md).
 
 ## Prerequisites
 
-- Bun runtime v1.0+
-- Node.js 18+ (for npm package compatibility)
-- SQLite3 (included with most systems)
+- [Bun](https://bun.sh) v1.0+
 
-## Project Structure
-
-```
-agi/
-├── apps/
-│   ├── cli/             # Main CLI application
-│   └── web/             # Web interface
-├── packages/
-│   ├── api/             # Type-safe API client
-│   ├── database/        # SQLite + Drizzle
-│   ├── install/         # npm installer
-│   ├── sdk/             # Core SDK
-│   ├── server/          # HTTP server
-│   ├── web-sdk/         # React hooks/components
-│   └── web-ui/          # Web UI components
-├── tests/               # Test suites
-├── scripts/             # Build and utility scripts
-├── docs/                # Additional documentation
-└── AGENTS.md            # Contributor conventions
-```
-
-## Development Workflow
+## Quick Start
 
 ```bash
-# Install dependencies
+git clone https://github.com/nitishxyz/agi.git
+cd agi
 bun install
+```
 
-# Run the CLI locally
-bun run cli "<prompt>"
+## Commands
 
-# Run linter (Biome)
-bun lint
+```bash
+bun run cli ask "hello"        # run CLI from source
+bun test                       # run all tests
+bun lint                       # lint (Biome)
+bun run typecheck              # type check all packages
+bun run compile                # build standalone binary
+```
 
-# Run tests
-bun test
+## Dev Servers
 
-# Generate database migrations
-bun run db:generate
-
-# Reset database (development)
-bun run db:reset
-
-# Update provider catalog
-bun run catalog:update
-
-# Build standalone binary
-bun run build
-
-# Cross-compile for other platforms
-bun run build:bin:linux-x64
-bun run build:bin:darwin-arm64
+```bash
+bun run dev:cli                # CLI dev mode
+bun run dev:web                # Web UI (Vite dev server on :5173)
+bun run dev:desktop            # Desktop app (Tauri)
+bun sst dev                    # SST dev (setu, preview-api, preview-web)
 ```
 
 ## Testing
 
 ```bash
-# Run all tests
-bun test
-
-# Run specific test file
-bun test agents.test.ts
-
-# Run tests matching pattern
-bun test --pattern "config"
+bun test                       # all tests
+bun test tests/agents.test.ts  # specific file
+bun test --pattern "config"    # pattern match
+bun test --watch               # watch mode
 ```
 
-## Database Management
+Tests use `bun:test` and live in `tests/`.
 
-The project uses SQLite with Drizzle ORM for data persistence:
-
-- Sessions: Conversation sessions with metadata
-- Messages: Individual messages in conversations
-- Message Parts: Structured content (text, tool calls, results)
-- Artifacts: Large outputs stored separately
-
-Migrations are automatically applied on startup. To reset:
+## Database
 
 ```bash
-bun run scripts/reset-db.ts
+bun run db:generate            # generate Drizzle migrations
+bun run db:reset               # reset local database
+```
+
+See [Development Guide](development-guide.md) for schema change workflow.
+
+## Build
+
+```bash
+bun run compile                        # build for current platform
+bun run build:bin:darwin-arm64         # macOS ARM64
+bun run build:bin:darwin-x64           # macOS x64
+bun run build:bin:linux-x64            # Linux x64
+bun run build:bin:linux-arm64          # Linux ARM64
+```
+
+## Other
+
+```bash
+bun run catalog:update         # update provider model catalog
+bun run version:bump           # bump version across all packages
+bun lint --write               # auto-fix lint issues
 ```

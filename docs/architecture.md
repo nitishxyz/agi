@@ -1,420 +1,368 @@
-# AGI CLI Architecture
+# Architecture
 
-This document describes the monorepo architecture of the AGI CLI project.
+[← Back to README](../README.md) · [Docs Index](./index.md)
+
+AGI is a **Bun workspace monorepo** with 6 apps, 7 packages, and SST infrastructure.
+
+---
+
+## How It Works
+
+AGI is a local-first AI coding assistant. The core flow:
+
+1. **CLI binary** starts a local HTTP server (Hono) with an embedded web UI
+2. **Server** manages sessions, persists messages to SQLite, and streams AI responses via SSE
+3. **SDK** handles provider resolution, tool execution, agent prompts, and authentication
+4. **Web UI** (or desktop app) is a client that talks to the local server API
+
+The CLI binary is self-contained — built with `bun build --compile`, it bundles the server, database, web UI assets, and all tools into a single executable.
+
+---
 
 ## Project Structure
-
-AGI CLI is organized as a **Bun workspace monorepo** with 7 packages and 2 applications:
 
 ```
 agi/
 ├── apps/
-│   ├── cli/                    # AGI CLI application (main binary)
-│   └── web/                    # Web application (standalone)
+│   ├── cli/              # CLI binary (Commander, bun build --compile)
+│   ├── web/              # Web UI client (React + Vite + TanStack)
+│   ├── desktop/          # Desktop app (Tauri v2, embeds CLI binary + web UI)
+│   ├── setu/             # AI provider proxy with Solana payments (Hono)
+│   ├── preview-api/      # Session sharing API (Hono + Cloudflare D1)
+│   └── preview-web/      # Public session viewer (Astro)
 ├── packages/
-│   ├── api/                    # Type-safe API client
-│   ├── database/               # SQLite database & Drizzle ORM
-│   ├── install/                # npm installer package
-│   ├── sdk/                    # Core SDK (tools, streaming, agents, auth, config, providers, prompts)
-│   ├── server/                 # HTTP server (Hono-based)
-│   ├── web-sdk/                # React components, hooks, and utilities
-│   └── web-ui/                 # Pre-built static web UI assets
-├── package.json                # Workspace root configuration
-└── bun.lock
+│   ├── sdk/              # Core SDK: tools, agents, auth, config, providers, prompts
+│   ├── server/           # HTTP API server (Hono): routes, SSE, agent runtime
+│   ├── database/         # SQLite + Drizzle ORM (local persistence)
+│   ├── api/              # Type-safe API client (generated from OpenAPI)
+│   ├── web-sdk/          # React components, hooks, stores
+│   ├── web-ui/           # Pre-built static web UI assets (embedded in binary)
+│   └── install/          # npm installer package
+├── infra/                # SST infrastructure (AWS + Cloudflare)
+├── tests/                # bun:test suites
+├── scripts/              # Build and utility scripts
+├── docs/                 # Documentation
+└── examples/             # Example integrations
 ```
-
-## Package Descriptions
-
-### `@agi-cli/install`
-
-**Purpose:** npm installer package that downloads and installs the AGI CLI binary.
-
-**Key Features:**
-
-- Lightweight installer (~560 bytes)
-- Downloads platform-specific binary from install script
-- Supports npm and bun global installation
-- Handles all supported platforms (macOS, Linux, Windows)
-
-**Installation:**
-
-```bash
-npm install -g @agi-cli/install
-# or
-bun install -g @agi-cli/install
-```
-
-**How it works:**
-1. User runs `npm install -g @agi-cli/install`
-2. Postinstall script (`install.js`) runs automatically
-3. Detects platform and architecture
-4. Downloads binary from `https://install.agi.nitish.sh`
-5. Installs to system PATH
-
-**Dependencies:** None (standalone installer)
 
 ---
 
-### `@agi-cli/database`
+## Apps
 
-**Purpose:** SQLite database with Drizzle ORM for session/message persistence.
+### `apps/cli`
 
-**Key Features:**
+Main CLI application. Compiles to a self-contained binary via `bun build --compile`.
 
-- Automatic migrations on startup
-- Schema: sessions, messages, messageParts, artifacts
-- Type-safe queries with Drizzle
-- Bundled migrations
+- **Framework:** Commander for argument parsing
+- **Dependencies:** `@agi-cli/sdk`, `@agi-cli/server`, `@agi-cli/database`
+- **Binary size:** ~61MB
+- **Distribution:** GitHub releases + install script (not published to npm as a package)
 
-**Exports:**
+When run with no arguments, it checks for the desktop app. If not found, it starts the local server and opens the web UI in the browser. With arguments, it runs the specified command or one-shot prompt.
 
-- `getDb`, `ensureDb`, `closeDb`, `resetDb`
-- Schema exports: `sessions`, `messages`, `messageParts`, `artifacts`
-- Types: `Session`, `Message`, `MessagePart`
+Key behaviors:
+- `agi` → open desktop app (if installed) or start server + web UI
+- `agi "prompt"` → one-shot question via local server
+- `agi serve` → start API server + web UI explicitly
+- `agi setup` → interactive provider configuration
 
-**Dependencies:** `@agi-cli/sdk`
+### `apps/web`
+
+Web UI that acts as a client to the AGI server. Not a standalone app — it needs the server running.
+
+- **Stack:** React 19, Vite, TanStack Router + Query, Tailwind CSS, Zustand
+- **Dependencies:** `@agi-cli/web-sdk`
+- **Features:** Real-time chat via SSE, session management, syntax highlighting, terminal rendering (Ghostty), dark theme
+
+During build, the web app is compiled to static assets and bundled into `@agi-cli/web-ui` for embedding in the CLI binary.
+
+### `apps/desktop`
+
+Desktop application that embeds the CLI binary and web UI via Tauri.
+
+- **Stack:** Tauri v2, React, Vite, Tailwind CSS
+- **Dependencies:** `@agi-cli/web-sdk`
+- **Platforms:** macOS (dmg, app), Linux (AppImage), Windows (msi)
+
+The CLI checks for the desktop app on startup. If found, `agi` opens it directly instead of the browser-based web UI.
+
+### `apps/setu`
+
+AI provider proxy service with Solana wallet authentication and USDC payments (x402 protocol).
+
+- **Stack:** Hono, AI SDK v6, Drizzle ORM + Neon Postgres
+- **Deployment:** Cloudflare Worker → `setu.agi.nitish.sh`
+- **Features:** Proxies OpenAI/Anthropic requests, wallet-based auth, balance tracking, Polar.sh top-ups
+
+### `apps/preview-api`
+
+API for sharing sessions publicly.
+
+- **Stack:** Hono, Drizzle ORM + Cloudflare D1
+- **Deployment:** Cloudflare Worker → `api.share.agi.nitish.sh`
+
+### `apps/preview-web`
+
+Public-facing site for viewing shared sessions.
+
+- **Stack:** Astro, React, TanStack Query, Tailwind CSS
+- **Deployment:** AWS (Astro SSR via Lambda + CloudFront) → `share.agi.nitish.sh`
 
 ---
+
+## Packages
 
 ### `@agi-cli/sdk`
 
-**Purpose:** Core SDK with tools, streaming, agent system, authentication, configuration, and providers.
+Core SDK containing all fundamental logic. Tree-shakable — bundlers only include what you use.
 
-**Key Features:**
+**Submodules:**
+- `agent/` — Agent type definitions
+- `auth/` — OAuth flows (Anthropic, OpenAI), wallet auth (Solana), API key management
+- `config/` — Configuration loading (global + project), path resolution
+- `core/` — Built-in tools (15+), streaming, terminal management (bun-pty), provider clients
+- `prompts/` — System prompts for agents and providers
+- `providers/` — Provider catalog, client factories, model resolution, pricing
+- `skills/` — Skill loader, parser, validator
+- `types/` — Shared TypeScript types
 
-- Built-in tools (bash, read, write, edit, glob, grep, etc.)
-- Tool loader (supports custom tools)
-- Streaming infrastructure (SSE, artifacts)
-- Agent registry
-- Provider resolution and catalog
-- OAuth flow support and API key management
-- Configuration system (global and project-local)
-- System prompts for agents
-
-**Exports:**
-
-- Tool system: `loadTools`, `tool` definitions
-- Streaming: artifact management, SSE utilities
-- Agent types and registry
-- Provider resolver and catalog
-- Auth utilities
-- Config loading and management
-- Prompt composition
-
-**Dependencies:** None (standalone - includes everything)
-
----
+**Subpath exports:** Individual tools (`@agi-cli/sdk/tools/builtin/bash`, etc.) and prompts.
 
 ### `@agi-cli/server`
 
-**Purpose:** HTTP server for API access (Hono-based).
+HTTP API server built on Hono.
 
-**Key Features:**
+- **Routes:** ask (SSE streaming), sessions, messages, files, auth, git, terminals, config, research, setu, branch, session-approval, session-files, session-stream, OpenAPI spec
+- **Runtime:** Agent registry, ask service, session/message management, prompt composition, provider resolution, tool adapter, stream management
+- **Events:** Event bus for real-time session updates
+- **Exports:** `createApp`, `createEmbeddedApp`, `createStandaloneApp`, `BUILTIN_AGENTS`, `BUILTIN_TOOLS`
 
-- REST API for ask/chat endpoints
-- SSE streaming support
-- OpenAPI spec generation
-- Event bus for session events
-- Session and message management
+### `@agi-cli/database`
 
-**Exports:**
+SQLite persistence with Drizzle ORM.
 
-- `createServer` - Server factory
-- Route handlers
-- Runtime services (askService, sessionManager, messageService)
-- Event system
-
-**Dependencies:** `@agi-cli/sdk`, `@agi-cli/database`
-
----
+- **Schema:** sessions, messages, messageParts, artifacts
+- **Features:** Auto-migrations on startup, bundled migration SQL files
+- **Exports:** `getDb`, `ensureDb`, `closeDb`, `resetDb`, schema types
 
 ### `@agi-cli/api`
 
-**Purpose:** Type-safe API client for AGI CLI server.
+Type-safe API client generated from the server's OpenAPI spec.
 
-**Key Features:**
-
-- Generated from OpenAPI spec
-- Axios-based HTTP client
-- SSE streaming support
-- Full TypeScript types
-
-**Exports:**
-
-- API client functions
-- Request/response types
-
-**Dependencies:** None (standalone client)
-
----
+- **Generated with:** `@hey-api/openapi-ts`
+- **HTTP client:** Axios
+- **SSE support:** `eventsource-parser`
+- Standalone — no workspace dependencies
 
 ### `@agi-cli/web-sdk`
 
-**Purpose:** Reusable React components, hooks, and utilities for building AGI CLI web interfaces.
+Reusable React components, hooks, and utilities for building AGI web interfaces.
 
-**Key Features:**
-
-- React hooks for API interactions
-- UI components for chat interfaces
-- State management utilities
-- Terminal rendering with xterm.js
-
-**Exports:**
-
-- React components
-- Custom hooks
-- State stores
-- Utility functions
-
-**Dependencies:** `@agi-cli/api`
-
----
+- **Components:** Chat UI, terminal rendering (Ghostty), code highlighting, QR codes
+- **Hooks:** API interactions, streaming, state management
+- **Stores:** Zustand-based state
+- **Peer deps:** React 18/19, TanStack Query, Zustand, lucide-react, react-markdown
 
 ### `@agi-cli/web-ui`
 
-**Purpose:** Pre-built static web UI assets for embedding in the CLI binary.
+Pre-built static web UI assets for embedding in the CLI binary.
 
-**Key Features:**
+- Compiles `apps/web` and bundles as static assets
+- Served by the CLI binary when you run `agi serve`
 
-- Pre-compiled static assets
-- Embeddable in CLI binary
-- Express middleware for serving
+### `@agi-cli/install`
 
-**Dependencies:** None (standalone assets)
+Lightweight npm installer package.
 
----
-
-### `@agi-cli/cli` (Application)
-
-**Purpose:** CLI application - the main user-facing interface.
-
-**Note:** This package is NOT published to npm. It's only used internally to build platform-specific binaries that are published to GitHub releases.
-
-**Key Features:**
-
-- Interactive commands (`auth`, `models`, `sessions`, `scaffold`)
-- One-shot ask mode
-- HTTP server mode
-- Doctor diagnostics
-- Agent/tool management
-
-**Scripts:**
-
-- `bun run dev` - Run in development mode
-- `bun run build` - Build standalone binary (61MB)
-
-**Dependencies:** `@agi-cli/sdk`, `@agi-cli/server`, `@agi-cli/database`
+- Postinstall script detects platform, downloads binary from GitHub releases
+- Falls back to `install.agi.nitish.sh` curl install
 
 ---
 
 ## Dependency Graph
 
 ```
-                 ┌─────────┐
-                 │ install │ (npm installer)
-                 └─────────┘
-                      │
-                      │ (downloads binary)
-                      ▼
-                 ┌─────────┐
-                 │   cli   │ (main app)
-                 └────┬────┘
-                      │
-      ┌───────────────┼───────────────┐
-      │               │               │
- ┌────▼────┐     ┌───▼────┐     ┌───▼─────┐
- │ server  │     │  sdk   │     │database │
- └────┬────┘     └────────┘     └─────────┘
-      │
-      └──────────────────────────────────┐
-                                         │
-                                    ┌────▼────┐
-                                    │   api   │
-                                    └────┬────┘
-                                         │
-                                    ┌────▼────┐
-                                    │ web-sdk │
-                                    └─────────┘
+Level 0 (no deps)    install, api, web-ui
+Level 1              sdk (auth, config, providers, prompts, tools)
+Level 2              database (depends on sdk for path resolution)
+Level 3              server (depends on sdk, database)
+Level 4              web-sdk (depends on api, sdk)
+Level 5              cli (depends on sdk, server, database)
 ```
 
-**Dependency Rules:**
+```
+                ┌──────────┐
+                │ install  │
+                └──────────┘
+                     │ (downloads binary)
+                     ▼
+                ┌──────────┐
+                │   cli    │
+                └────┬─────┘
+                     │
+     ┌───────────────┼──────────────┐
+     │               │              │
+┌────▼────┐    ┌────▼────┐   ┌────▼─────┐
+│ server  │    │   sdk   │   │ database │
+└────┬────┘    └─────────┘   └──────────┘
+     │
+┌────▼────┐
+│   api   │
+└────┬────┘
+     │
+┌────▼────┐
+│ web-sdk │
+└─────────┘
+```
 
-- **Level 0** (no deps): `install`, `api`, `web-ui`
-- **Level 1**: `sdk` (standalone - includes auth, config, providers, prompts)
-- **Level 2**: `database` (depends on sdk for paths)
-- **Level 3**: `server` (depends on sdk, database)
-- **Level 4**: `web-sdk` (depends on api)
-- **Level 5**: `cli` (depends on sdk, server, database)
+---
+
+## Infrastructure (SST)
+
+All infrastructure is defined as code using [SST](https://sst.dev) with AWS and Cloudflare providers.
+
+**Entry point:** `sst.config.ts` → imports from `infra/` modules.
+
+### Resources
+
+| Resource | SST Component | Platform | Domain |
+|---|---|---|---|
+| Setu | `sst.cloudflare.Worker` | Cloudflare Workers | `setu.agi.nitish.sh` |
+| Preview API | `sst.cloudflare.Worker` | Cloudflare Workers + D1 | `api.share.agi.nitish.sh` |
+| Preview Web | `sst.aws.Astro` | AWS (Lambda + CloudFront) | `share.agi.nitish.sh` |
+| Install Script | `sst.cloudflare.Worker` | Cloudflare Workers | `install.agi.nitish.sh` |
+| OG Image | `sst.aws.Function` | AWS Lambda (Node.js 20) | (function URL) |
+| Drizzle Studio | `sst.x.DevCommand` | Local (dev only) | — |
+
+### Secrets
+
+Managed via `sst secret set <name> <value>`:
+
+- `DatabaseUrl` — Neon Postgres connection string (for Setu)
+- `OpenAiApiKey`, `AnthropicApiKey`, `GoogleAiApiKey`, `MoonshotAiApiKey`
+- `PlatformWallet` — Solana wallet for x402 payments
+- `PolarAccessToken`, `PolarWebhookSecret`, `PolarProductId` — Polar.sh integration
+
+### Infra Modules
+
+```
+infra/
+├── secrets.ts        # SST secret declarations
+├── domains.ts        # Domain resolution (stage-aware: prod vs dev)
+├── setu.ts           # Setu Cloudflare Worker
+├── preview-api.ts    # Preview API Worker + D1
+├── preview-web.ts    # Preview Web (Astro on AWS)
+├── og.ts             # OG image Lambda function
+├── script.ts         # Install script Worker
+├── orm.ts            # Drizzle Studio dev command
+├── utils.ts          # Shared utilities
+└── handlers/
+    └── install-worker.ts
+```
+
+### Stage-Aware Domains
+
+- **prod:** `setu.agi.nitish.sh`, `share.agi.nitish.sh`
+- **dev:** `dev.setu.agi.nitish.sh`, `dev.share.agi.nitish.sh`
+
+```bash
+bun sst dev                    # local development with live infra
+bun sst deploy --stage prod    # deploy to production
+bun sst secret set <name> <value>
+```
+
+---
+
+## Agents
+
+Four built-in agents with embedded prompts:
+
+| Agent | Default Tools |
+|---|---|
+| `build` | read, write, ls, tree, bash, update_todos, glob, ripgrep, git_status, terminal, apply_patch, websearch |
+| `plan` | read, ls, tree, ripgrep, update_todos, websearch |
+| `general` | read, write, ls, tree, bash, ripgrep, glob, websearch, update_todos |
+| `research` | read, ls, tree, ripgrep, websearch, update_todos, query_sessions, query_messages, get_session_context, search_history, get_parent_session, present_action |
+
+All agents also get: `progress_update`, `finish`, `skill`.
+
+Agent config can be overridden via `.agi/agents.json` (project) or `~/.config/agi/agents.json` (global).
+
+---
+
+## Built-in Tools
+
+| Tool | Description |
+|---|---|
+| `read` | Read files |
+| `write` | Write files |
+| `ls` | List directory contents |
+| `tree` | Directory tree view |
+| `glob` | Find files by pattern |
+| `grep` | Search file contents |
+| `ripgrep` | Fast regex search (uses embedded or system rg binary) |
+| `bash` | Execute shell commands |
+| `terminal` | Persistent terminal sessions (via bun-pty) |
+| `edit` | Structured file editing (replace, insert, delete) |
+| `apply_patch` | Apply unified diff patches with fuzzy matching |
+| `git_status` | Git working tree status |
+| `git_diff` | Git diff |
+| `git_commit` | Create git commits |
+| `websearch` | Web search and URL fetching |
+| `progress_update` | Progress updates to user |
+| `finish` | Signal task completion |
+| `update_todos` | Task list management |
+| `skill` | Load skills for specialized instructions |
+
+---
+
+## Providers
+
+7+ providers via AI SDK v6:
+
+| Provider | Client | Auth |
+|---|---|---|
+| Anthropic | `@ai-sdk/anthropic` | API key / OAuth |
+| OpenAI | `@ai-sdk/openai` | API key |
+| Google | `@ai-sdk/google` | API key |
+| OpenRouter | `@openrouter/ai-sdk-provider` | API key |
+| OpenCode | `@ai-sdk/openai-compatible` | Anthropic OAuth |
+| Setu | Custom client | Solana wallet |
+| Moonshot | Custom client | API key |
+| Zai / Zai-Coding | Custom client | API key |
+
+Provider catalog is auto-generated: `bun run catalog:update`
 
 ---
 
 ## Key Conventions
 
-### Import Paths
+### Imports
 
 - **Workspace packages:** `@agi-cli/package-name`
-- **Local imports:** `./file.ts` or `../file.ts`
-- **Never use:** `@/` path aliases (removed during migration)
+- **Local:** `./file.ts` or `../file.ts`
+- **Never:** `@/` path aliases
 
-### Configuration Files
+### Config Files
 
 - **Global config:** `~/.config/agi/config.json`
 - **Global auth:** `~/Library/Application Support/agi/auth.json` (macOS)
 - **Project config:** `.agi/config.json`
+- **Project agents:** `.agi/agents.json`
 - **Project database:** `.agi/agi.sqlite`
 
 ### TypeScript
 
 - All packages extend `tsconfig.base.json`
-- **No `rootDir`** in package tsconfigs (enables workspace imports)
-- `"type": "module"` in all package.json files
+- `"type": "module"` everywhere
+- Strict mode enabled
 
 ### Bun Workspace
 
-- Defined in root `package.json`:
-  ```json
-  {
-    "workspaces": ["packages/*", "apps/*"]
-  }
-  ```
-- Packages linked via `workspace:*` protocol
-
----
-
-## Development Workflow
-
-### Running in Development
-
-```bash
-cd apps/cli
-bun run dev --help
+```json
+{
+  "workspaces": ["packages/*", "apps/*", "examples/*"]
+}
 ```
 
-### Building Binary
-
-```bash
-cd apps/cli
-bun run build
-# Output: apps/cli/dist/agi (61MB self-contained binary)
-```
-
-### Testing
-
-```bash
-bun test
-```
-
-### Linting
-
-```bash
-bun lint
-```
-
----
-
-## Adding a New Package
-
-1. **Create package directory:**
-
-   ```bash
-   mkdir packages/my-package
-   cd packages/my-package
-   ```
-
-2. **Initialize package.json:**
-
-   ```json
-   {
-     "name": "@agi-cli/my-package",
-     "version": "0.1.0",
-     "type": "module",
-     "main": "./src/index.ts",
-     "types": "./src/index.ts",
-     "exports": {
-       ".": {
-         "import": "./src/index.ts",
-         "types": "./src/index.ts"
-       }
-     }
-   }
-   ```
-
-3. **Create tsconfig.json:**
-
-   ```json
-   {
-     "extends": "../../tsconfig.base.json",
-     "compilerOptions": {
-       "outDir": "./dist"
-     },
-     "include": ["src/**/*"]
-   }
-   ```
-
-4. **Create src/index.ts:**
-
-   ```typescript
-   export function myFunction() {
-     return "Hello from my-package";
-   }
-   ```
-
-5. **Install workspace:**
-   ```bash
-   cd ../..
-   bun install
-   ```
-
----
-
-## Installation Methods
-
-AGI CLI supports multiple installation methods:
-
-### 1. npm/bun Installer (Recommended)
-
-```bash
-npm install -g @agi-cli/install
-```
-
-- Easiest for most users
-- Automatic platform detection
-- Handles PATH setup
-- Works with standard npm/bun workflows
-
-### 2. Direct Binary Download
-
-```bash
-curl -fsSL https://install.agi.nitish.sh | sh
-```
-
-- Direct install without npm
-- Good for CI/CD environments
-- Supports version pinning
-
-### 3. From Source
-
-```bash
-git clone https://github.com/nitishxyz/agi.git
-cd agi
-bun install
-cd apps/cli
-bun run build
-```
-
-- For contributors and developers
-- Latest development version
-- Full control over build process
-
----
-
-## Summary
-
-AGI CLI is a well-structured monorepo with clear boundaries, explicit dependencies, and a logical package hierarchy. The architecture supports:
-
-- **Multiple installation methods** (npm, curl, source)
-- **CLI and server modes** for different use cases
-- **Embeddable SDK** for integration into other projects
-- **Full testability** with isolated packages
-- **Single self-contained binary** for distribution
-- **Automated CI/CD** with version synchronization
+Packages linked via `workspace:*` protocol.

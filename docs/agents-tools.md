@@ -1,37 +1,193 @@
 # Agents & Tools
 
-[← Back to README](../README.md) • [Docs Index](./index.md)
+[← Back to README](../README.md) · [Docs Index](./index.md)
 
-## Built-in Agents
+---
 
-| Agent | Purpose | Default Tools |
-|-------|---------|---------------|
-| general | General-purpose assistant | Minimal tool access |
-| build | Code generation and build tasks | File system, bash, git |
-| plan | Strategic planning and architecture | Read-only tools |
-| git | Git operations and review | Git tools, file reading |
+## Agents
 
-## Built-in Tools
+AGI ships with four built-in agents. Each agent has a system prompt and a curated set of tools.
 
-### File System Operations
-- `read` - Read files from the filesystem
-- `write` - Write files to the filesystem
-- `ls` - List directory contents
-- `tree` - Display a directory tree
+### build
 
-### Git Operations
-- `git_status` - Show working tree status
-- `git_diff` - Show changes between commits
-- `git_commit` - Create a new commit
-- `git_log` - Show commit logs
+Code generation, bug fixes, feature implementation. The most capable agent with full filesystem and shell access.
 
-### Advanced Operations
-- `ripgrep` - Search file contents with regex
-- `edit` - Perform structured edits on files (replace, insert, delete)
-- `apply_patch` - Apply a unified diff patch to the project
-- `bash` - Execute shell commands safely
+**Tools:** read, write, ls, tree, bash, update_todos, glob, ripgrep, git_status, terminal, apply_patch, websearch
 
-### Agent Communication
-- `progress_update` - Provide status updates during long operations
-- `finish` - Mark task completion
-- `update_plan` - Publish or update the execution plan for the user
+```bash
+agi "create an auth component" --agent build
+agi "fix the failing test" --agent build
+```
+
+### plan
+
+Architecture planning and code analysis. Read-only — cannot modify files or run commands.
+
+**Tools:** read, ls, tree, ripgrep, update_todos, websearch
+
+```bash
+agi "design the API architecture" --agent plan
+agi "review the dependency graph" --agent plan
+```
+
+### general
+
+General-purpose assistant for mixed tasks.
+
+**Tools:** read, write, ls, tree, bash, ripgrep, glob, websearch, update_todos
+
+```bash
+agi "explain how this module works" --agent general
+```
+
+### research
+
+Deep research across sessions and the web. Can query past sessions for context.
+
+**Tools:** read, ls, tree, ripgrep, websearch, update_todos, query_sessions, query_messages, get_session_context, search_history, get_parent_session, present_action
+
+```bash
+agi "research how auth is implemented across the codebase" --agent research
+```
+
+All agents also receive: `progress_update`, `finish`, `skill`.
+
+---
+
+## Tools
+
+### File System
+
+| Tool | Description |
+|---|---|
+| `read` | Read file contents. Supports line ranges and multiple file types. |
+| `write` | Write content to a file. Creates the file if it doesn't exist. |
+| `ls` | List directory contents (non-recursive). |
+| `tree` | Render a directory tree with configurable depth. |
+| `glob` | Find files matching glob patterns (e.g., `**/*.ts`). |
+
+### Search
+
+| Tool | Description |
+|---|---|
+| `grep` | Search file contents with regex. Returns grouped results. |
+| `ripgrep` | Fast regex search using rg. Supports include globs and case-insensitive search. |
+| `websearch` | Search the web or fetch content from a URL. |
+
+### Editing
+
+| Tool | Description |
+|---|---|
+| `edit` | Structured file editing with operations: replace, insert-before, insert-after, delete. |
+| `apply_patch` | Apply unified diff patches with fuzzy matching. Supports enveloped patch format. |
+
+### Shell
+
+| Tool | Description |
+|---|---|
+| `bash` | Execute a shell command. Returns stdout, stderr, and exit code. |
+| `terminal` | Manage persistent terminal sessions. Start, read, write, interrupt, list, kill. Uses bun-pty for PTY support. |
+
+### Git
+
+| Tool | Description |
+|---|---|
+| `git_status` | Show git status in porcelain format. |
+| `git_diff` | Show git diff (staged or all changes). |
+| `git_commit` | Create a git commit with a message. |
+
+### Agent
+
+| Tool | Description |
+|---|---|
+| `progress_update` | Emit a progress update to the user (short status message with optional percentage). |
+| `finish` | Signal task completion. |
+| `update_todos` | Create and manage a task list displayed to the user. |
+| `skill` | Load a skill by name to get specialized instructions. |
+
+### Research (research agent only)
+
+| Tool | Description |
+|---|---|
+| `query_sessions` | Search past sessions by content. |
+| `query_messages` | Search messages across sessions. |
+| `get_session_context` | Get full context from a specific session. |
+| `search_history` | Search conversation history. |
+| `get_parent_session` | Get the parent session for context. |
+| `present_action` | Present research findings to the user. |
+
+---
+
+## Agent Configuration
+
+### Per-Project
+
+Create `.agi/agents.json` in your project root:
+
+```json
+{
+  "build": {
+    "tools": ["read", "write", "bash", "git_status", "git_diff", "ripgrep"],
+    "prompt": ".agi/agents/build/agent.md"
+  },
+  "custom-agent": {
+    "tools": ["read", "ls", "tree", "ripgrep"],
+    "prompt": ".agi/agents/custom-agent/agent.md"
+  }
+}
+```
+
+### Global
+
+Create `~/.config/agi/agents.json` for global agent overrides.
+
+### Options
+
+| Field | Description |
+|---|---|
+| `tools` | Override the default tool list for the agent. |
+| `appendTools` | Add tools to the default list (instead of replacing). |
+| `prompt` | Path to a custom system prompt file. |
+| `provider` | Override the provider for this agent. |
+| `model` | Override the model for this agent. |
+
+---
+
+## Custom Tools
+
+Add project-specific tools in `.agi/tools/`:
+
+```typescript
+// .agi/tools/deploy.ts
+import { tool } from "@agi-cli/sdk";
+import { z } from "zod";
+
+export default tool({
+  name: "deploy",
+  description: "Deploy the application",
+  parameters: z.object({
+    environment: z.enum(["staging", "production"]),
+  }),
+  execute: async ({ environment }) => {
+    // your deployment logic
+    return { success: true, environment };
+  },
+});
+```
+
+Custom tools are automatically discovered and made available to agents.
+
+---
+
+## Skills
+
+Skills are markdown files that provide specialized instructions to agents on demand, loaded via the `skill` tool.
+
+Skills can be defined at three levels:
+- **Project:** `.agi/skills/`
+- **Global:** `~/.config/agi/skills/`
+- **Built-in:** bundled with AGI
+
+```bash
+agi skills                    # list available skills
+```

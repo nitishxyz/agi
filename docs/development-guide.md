@@ -182,11 +182,11 @@ The CLI application (`@agi-cli/cli`) is the main user-facing interface.
 
 ```bash
 # From workspace root
-bun run cli "your prompt here"
+bun run cli ask "your prompt here"
 
 # Or from apps/cli
 cd apps/cli
-bun run dev "your prompt"
+bun run dev ask "your prompt"
 ```
 
 #### CLI Structure
@@ -246,7 +246,7 @@ if (args.includes('my-command')) {
 3. **Test the command:**
 
 ```bash
-bun run cli my-command
+bun run cli run my-command
 ```
 
 #### Building the Binary
