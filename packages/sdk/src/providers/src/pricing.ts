@@ -149,7 +149,8 @@ export function estimateModelCostUsd(
 			typeof m.cost?.cacheRead === 'number' ? m.cost.cacheRead : 0;
 		const cacheWritePerMillion =
 			typeof m.cost?.cacheWrite === 'number' ? m.cost.cacheWrite : 0;
-		const inputCost = (inputTokens * inputPerMillion) / 1_000_000;
+		const nonCachedInput = Math.max(0, inputTokens - cachedInputTokens - cacheCreationInputTokens);
+		const inputCost = (nonCachedInput * inputPerMillion) / 1_000_000;
 		const outputCost = (outputTokens * outputPerMillion) / 1_000_000;
 		const cacheReadCost = (cachedInputTokens * cacheReadPerMillion) / 1_000_000;
 		const cacheWriteCost =
@@ -161,7 +162,8 @@ export function estimateModelCostUsd(
 	// Fallback to legacy table if catalog lacks pricing
 	const entry = findPricing(provider, model.toLowerCase());
 	if (!entry) return undefined;
-	const inputCost = (inputTokens * entry.inputPerMillion) / 1_000_000;
+	const nonCachedInputFallback = Math.max(0, inputTokens - cachedInputTokens - cacheCreationInputTokens);
+	const inputCost = (nonCachedInputFallback * entry.inputPerMillion) / 1_000_000;
 	const outputCost = (outputTokens * entry.outputPerMillion) / 1_000_000;
 	const total = inputCost + outputCost;
 	return Number.isFinite(total) ? Number(total.toFixed(6)) : undefined;

@@ -104,6 +104,8 @@ export async function updateSessionTokensIncremental(
 ) {
 	if (!usage || !db) return;
 
+	const currentContextTokens = Number(usage.inputTokens ?? 0);
+
 	const usageProvider = resolveUsageProvider(opts.provider, opts.model);
 	const normalizedUsage = normalizeUsage(usage, providerOptions, usageProvider);
 
@@ -114,8 +116,6 @@ export async function updateSessionTokensIncremental(
 		normalizedUsage.cacheCreationInputTokens ?? 0,
 	);
 	const stepReasoning = Number(normalizedUsage.reasoningTokens ?? 0);
-
-	const currentContextTokens = stepInput;
 
 	const sessRows = await db
 		.select()
