@@ -1,6 +1,7 @@
 import type { Hono } from 'hono';
 import {
 	resolveApproval,
+	getPendingApproval,
 	getPendingApprovalsForSession,
 } from '../runtime/tools/approval.ts';
 
@@ -18,6 +19,21 @@ export function registerSessionApprovalRoute(app: Hono) {
 
 		if (typeof body.approved !== 'boolean') {
 			return c.json({ ok: false, error: 'approved must be a boolean' }, 400);
+		}
+
+		const pending = getPendingApproval(body.callId);
+		if (!pending) {
+			return c.json(
+				{ ok: false, error: 'No pending approval found for this callId' },
+				404,
+			);
+		}
+
+		if (pending.sessionId !== sessionId) {
+			return c.json(
+				{ ok: false, error: 'Approval does not belong to this session' },
+				403,
+			);
 		}
 
 		const result = resolveApproval(body.callId, body.approved);

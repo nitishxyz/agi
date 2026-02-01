@@ -2,7 +2,7 @@
 // Loads src/prompts/providers/<provider>.txt and returns its contents (trimmed).
 
 import { debugLog } from './debug.ts';
-import { getModelNpmBinding, isProviderId } from '../../providers/src/utils.ts';
+import { getModelFamily, isProviderId } from '../../providers/src/utils.ts';
 import type { ProviderId } from '../../types/src/index.ts';
 // Embed default provider prompts into the binary via text imports
 // Only user-defined overrides should be read from disk.
@@ -14,6 +14,8 @@ import PROVIDER_ANTHROPIC from './providers/anthropic.txt' with {
 };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import PROVIDER_GOOGLE from './providers/google.txt' with { type: 'text' };
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import PROVIDER_MOONSHOT from './providers/moonshot.txt' with { type: 'text' };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import PROVIDER_DEFAULT from './providers/default.txt' with { type: 'text' };
 
@@ -28,10 +30,16 @@ function inferFamilyFromModel(
 	provider: ProviderId,
 	modelId: string,
 ): string | undefined {
-	const npm = getModelNpmBinding(provider, modelId);
-	if (npm === '@ai-sdk/anthropic') return 'anthropic';
-	if (npm === '@ai-sdk/openai') return 'openai';
-	if (npm === '@ai-sdk/google') return 'google';
+	// Direct provider mapping for known families
+	if (provider === 'openai') return 'openai';
+	if (provider === 'anthropic') return 'anthropic';
+	if (provider === 'google') return 'google';
+	if (provider === 'moonshot') return 'moonshot';
+
+	// For aggregate providers, use the model's family field or npm binding
+	const family = getModelFamily(provider, modelId);
+	if (family) return family;
+
 	return undefined;
 }
 
@@ -88,7 +96,9 @@ export async function providerBasePrompt(
 						? PROVIDER_ANTHROPIC
 						: family === 'google'
 							? PROVIDER_GOOGLE
-							: PROVIDER_DEFAULT
+							: family === 'moonshot'
+								? PROVIDER_MOONSHOT
+								: PROVIDER_DEFAULT
 			).trim();
 			promptType = `family:${family} (via ${id}/${modelId})`;
 			debugLog(`[provider] prompt: ${promptType} (${result.length} chars)`);
@@ -111,6 +121,11 @@ export async function providerBasePrompt(
 		result = PROVIDER_GOOGLE.trim();
 		debugLog(`[provider] prompt: google (${result.length} chars)`);
 		return { prompt: result, resolvedType: 'google' };
+	}
+	if (id === 'moonshot') {
+		result = PROVIDER_MOONSHOT.trim();
+		debugLog(`[provider] prompt: moonshot (${result.length} chars)`);
+		return { prompt: result, resolvedType: 'moonshot' };
 	}
 
 	// If a project adds a custom provider file, allow reading it from disk (user-defined)

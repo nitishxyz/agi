@@ -12,11 +12,26 @@ export type ProviderId =
 	| 'zai-coding'
 	| 'moonshot';
 
+/**
+ * Provider family for prompt selection
+ */
+export type ProviderFamily =
+	| 'openai'
+	| 'anthropic'
+	| 'google'
+	| 'moonshot'
+	| 'openai-compatible';
+
 export type ModelProviderBinding = {
 	id?: string;
 	npm?: string;
 	api?: string;
 	baseURL?: string;
+	/**
+	 * The provider family for prompt selection.
+	 * Used to determine which base prompt to use for this model.
+	 */
+	family?: ProviderFamily;
 };
 
 /**

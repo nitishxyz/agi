@@ -44,6 +44,7 @@ export {
 	getModelNpmBinding,
 	isAnthropicBasedModel,
 	getUnderlyingProviderKey,
+	getModelFamily,
 	getModelInfo,
 	modelSupportsReasoning,
 } from './providers/src/index.ts';

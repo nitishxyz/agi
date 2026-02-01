@@ -16,6 +16,7 @@ export {
 	getModelNpmBinding,
 	isAnthropicBasedModel,
 	getUnderlyingProviderKey,
+	getModelFamily,
 	getModelInfo,
 	modelSupportsReasoning,
 } from './utils.ts';

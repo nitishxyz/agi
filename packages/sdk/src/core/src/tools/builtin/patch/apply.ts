@@ -364,28 +364,6 @@ function applyHunkToLines(
 					deletions: 0,
 				};
 			}
-
-			const anchorInOriginal =
-				anchorContext !== undefined
-					? findLineIndex(originalLines, anchorContext, 0, useFuzzy)
-					: -1;
-			const oldStart =
-				anchorInOriginal !== -1
-					? anchorInOriginal + 1
-					: Math.min(originalLines.length + 1, insertionIndex + 1);
-
-			lines.splice(insertionIndex, 0, ...additions);
-
-			return {
-				header: { ...hunk.header },
-				lines: hunk.lines.map((line) => ({ ...line })),
-				oldStart,
-				oldLines: 0,
-				newStart: insertionIndex + 1,
-				newLines: additions.length,
-				additions: additions.length,
-				deletions: 0,
-			};
 		}
 
 		let errorMsg = `Failed to apply patch hunk${contextInfo}.`;

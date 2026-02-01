@@ -1,5 +1,60 @@
 import { getHomeDir } from '@agi-cli/sdk';
 
+async function detectProjectTooling(
+	projectRoot: string,
+): Promise<{ packageManager?: string; runtime?: string; language?: string }> {
+	const { existsSync } = await import('node:fs');
+	const { join } = await import('node:path');
+	const result: {
+		packageManager?: string;
+		runtime?: string;
+		language?: string;
+	} = {};
+
+	try {
+		const pkgPath = join(projectRoot, 'package.json');
+		if (existsSync(pkgPath)) {
+			const pkg = await Bun.file(pkgPath).json();
+			if (pkg.packageManager) {
+				const match = String(pkg.packageManager).match(/^(bun|npm|yarn|pnpm)/);
+				if (match) result.packageManager = match[1];
+			}
+		}
+	} catch {}
+
+	if (!result.packageManager) {
+		if (
+			existsSync(join(projectRoot, 'bun.lockb')) ||
+			existsSync(join(projectRoot, 'bun.lock'))
+		) {
+			result.packageManager = 'bun';
+		} else if (existsSync(join(projectRoot, 'yarn.lock'))) {
+			result.packageManager = 'yarn';
+		} else if (existsSync(join(projectRoot, 'pnpm-lock.yaml'))) {
+			result.packageManager = 'pnpm';
+		} else if (existsSync(join(projectRoot, 'package-lock.json'))) {
+			result.packageManager = 'npm';
+		}
+	}
+
+	if (existsSync(join(projectRoot, 'package.json'))) {
+		result.runtime = result.packageManager === 'bun' ? 'bun' : 'node';
+	} else if (existsSync(join(projectRoot, 'Cargo.toml'))) {
+		result.language = 'rust';
+	} else if (existsSync(join(projectRoot, 'go.mod'))) {
+		result.language = 'go';
+	} else if (
+		existsSync(join(projectRoot, 'pyproject.toml')) ||
+		existsSync(join(projectRoot, 'requirements.txt'))
+	) {
+		result.language = 'python';
+	} else if (existsSync(join(projectRoot, 'Gemfile'))) {
+		result.language = 'ruby';
+	}
+
+	return result;
+}
+
 export async function getEnvironmentContext(
 	projectRoot: string,
 ): Promise<string> {
@@ -21,6 +76,22 @@ export async function getEnvironmentContext(
 
 	parts.push(`  Platform: ${process.platform}`);
 	parts.push(`  Today's date: ${new Date().toDateString()}`);
+
+	try {
+		const tooling = await detectProjectTooling(projectRoot);
+		if (tooling.packageManager) {
+			parts.push(
+				`  Package manager: ${tooling.packageManager} (ALWAYS use this for install/run/build commands)`,
+			);
+		}
+		if (tooling.runtime) {
+			parts.push(`  Runtime: ${tooling.runtime}`);
+		}
+		if (tooling.language) {
+			parts.push(`  Primary language: ${tooling.language}`);
+		}
+	} catch {}
+
 	parts.push('</env>');
 
 	return parts.join('\n');

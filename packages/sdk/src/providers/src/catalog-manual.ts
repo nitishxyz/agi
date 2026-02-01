@@ -2,6 +2,7 @@ import type {
 	ModelInfo,
 	ProviderCatalogEntry,
 	ProviderId,
+	ProviderFamily,
 } from '../../types/src/index.ts';
 
 type CatalogMap = Partial<Record<ProviderId, ProviderCatalogEntry>>;
@@ -23,18 +24,25 @@ const isAllowedAnthropicModel = (id: string): boolean => {
 	return false;
 };
 
-const SETU_SOURCES: Array<{ id: ProviderId; npm: string }> = [
+const SETU_SOURCES: Array<{
+	id: ProviderId;
+	npm: string;
+	family: ProviderFamily;
+}> = [
 	{
 		id: 'openai',
 		npm: '@ai-sdk/openai',
+		family: 'openai',
 	},
 	{
 		id: 'anthropic',
 		npm: '@ai-sdk/anthropic',
+		family: 'anthropic',
 	},
 	{
 		id: 'moonshot',
 		npm: '@ai-sdk/openai-compatible',
+		family: 'moonshot',
 	},
 ];
 
@@ -58,7 +66,7 @@ function cloneModel(model: ModelInfo): ModelInfo {
 }
 
 function buildSetuEntry(base: CatalogMap): ProviderCatalogEntry | null {
-	const setuModels = SETU_SOURCES.flatMap(({ id, npm }) => {
+	const setuModels = SETU_SOURCES.flatMap(({ id, npm, family }) => {
 		const allModels = base[id]?.models ?? [];
 		const sourceModels = allModels.filter((model) => {
 			if (id === 'openai') return isAllowedOpenAIModel(model.id);
@@ -67,7 +75,7 @@ function buildSetuEntry(base: CatalogMap): ProviderCatalogEntry | null {
 		});
 		return sourceModels.map((model) => {
 			const cloned = cloneModel(model);
-			cloned.provider = { ...(cloned.provider ?? {}), npm };
+			cloned.provider = { ...(cloned.provider ?? {}), npm, family };
 			return cloned;
 		});
 	});

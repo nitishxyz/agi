@@ -138,6 +138,7 @@ export type UnderlyingProviderKey =
 	| 'anthropic'
 	| 'openai'
 	| 'google'
+	| 'moonshot'
 	| 'openai-compatible'
 	| null;
 
@@ -148,6 +149,7 @@ export function getUnderlyingProviderKey(
 	if (provider === 'anthropic') return 'anthropic';
 	if (provider === 'openai') return 'openai';
 	if (provider === 'google') return 'google';
+	if (provider === 'moonshot') return 'moonshot';
 
 	const npm = getModelNpmBinding(provider, model);
 	if (npm === '@ai-sdk/anthropic') return 'anthropic';
@@ -156,6 +158,51 @@ export function getUnderlyingProviderKey(
 	if (npm === '@ai-sdk/openai-compatible') return 'openai-compatible';
 	if (npm === '@openrouter/ai-sdk-provider') return 'openai-compatible';
 	return null;
+}
+
+export function getModelFamily(
+	provider: ProviderId,
+	model: string,
+): UnderlyingProviderKey {
+	// 1) Direct provider mapping
+	if (provider === 'anthropic') return 'anthropic';
+	if (provider === 'openai') return 'openai';
+	if (provider === 'google') return 'google';
+	if (provider === 'moonshot') return 'moonshot';
+
+	// 2) For aggregate providers, infer from model ID patterns
+	if (provider === 'openrouter' || provider === 'opencode') {
+		const lowerModel = model.toLowerCase();
+		// Anthropic models
+		if (lowerModel.includes('claude') || lowerModel.startsWith('anthropic/')) {
+			return 'anthropic';
+		}
+		// OpenAI models
+		if (
+			lowerModel.includes('gpt') ||
+			lowerModel.startsWith('openai/') ||
+			lowerModel.includes('codex')
+		) {
+			return 'openai';
+		}
+		// Google models
+		if (lowerModel.includes('gemini') || lowerModel.startsWith('google/')) {
+			return 'google';
+		}
+		// Moonshot models
+		if (lowerModel.includes('kimi') || lowerModel.startsWith('moonshotai/')) {
+			return 'moonshot';
+		}
+	}
+
+	// 2) Check model's family field in catalog
+	const info = getModelInfo(provider, model);
+	if (info?.provider?.family) {
+		return info.provider.family as UnderlyingProviderKey;
+	}
+
+	// 3) Fall back to npm binding (for zai and other providers)
+	return getUnderlyingProviderKey(provider, model);
 }
 
 export function getModelInfo(
