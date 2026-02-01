@@ -4,13 +4,13 @@ import { eq } from 'drizzle-orm';
 import { streamText } from 'ai';
 import { resolveModel } from '../provider/index.ts';
 import { getAuth } from '@agi-cli/sdk';
-import { getProviderSpoofPrompt } from '../prompt/builder.ts';
 import { loadConfig } from '@agi-cli/sdk';
 import { debugLog } from '../debug/index.ts';
 import { getModelLimits } from './compaction-limits.ts';
 import { buildCompactionContext } from './compaction-context.ts';
 import { getCompactionSystemPrompt } from './compaction-detect.ts';
 import { markSessionCompacted } from './compaction-mark.ts';
+import { detectOAuth, adaptSimpleCall } from '../provider/oauth-adapter.ts';
 
 export async function performAutoCompaction(
 	db: Awaited<ReturnType<typeof getDb>>,
@@ -56,26 +56,13 @@ export async function performAutoCompaction(
 		);
 
 		const auth = await getAuth(
-			provider as
-				| 'anthropic'
-				| 'openai'
-				| 'google'
-				| 'openrouter'
-				| 'opencode'
-				| 'setu'
-				| 'zai'
-				| 'zai-coding',
+			provider as Parameters<typeof getAuth>[0],
 			cfg.projectRoot,
 		);
-	const isOAuth = auth?.type === 'oauth';
-	const needsSpoof = isOAuth && provider === 'anthropic';
-	const isOpenAIOAuth = isOAuth && provider === 'openai';
-	const spoofPrompt = needsSpoof
-			? getProviderSpoofPrompt(provider as 'anthropic' | 'openai')
-			: undefined;
+		const oauth = detectOAuth(provider, auth);
 
 		debugLog(
-			`[compaction] OAuth mode: ${needsSpoof}, spoof: ${spoofPrompt ? 'yes' : 'no'}`,
+			`[compaction] OAuth: needsSpoof=${oauth.needsSpoof}, isOpenAIOAuth=${oauth.isOpenAIOAuth}`,
 		);
 
 		const model = await resolveModel(
@@ -85,10 +72,13 @@ export async function performAutoCompaction(
 		);
 
 		const compactionPrompt = getCompactionSystemPrompt();
-		const systemPrompt = spoofPrompt ? spoofPrompt : compactionPrompt;
-		const userInstructions = spoofPrompt
-			? `${compactionPrompt}\n\nIMPORTANT: Generate a comprehensive summary. This will replace the detailed conversation history.`
-			: 'IMPORTANT: Generate a comprehensive summary. This will replace the detailed conversation history.';
+		const userContent = `IMPORTANT: Generate a comprehensive summary. This will replace the detailed conversation history.\n\nPlease summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`;
+
+		const adapted = adaptSimpleCall(oauth, {
+			instructions: compactionPrompt,
+			userContent,
+			maxOutputTokens: 2000,
+		});
 
 		const compactPartId = crypto.randomUUID();
 		const now = Date.now();
@@ -106,29 +96,13 @@ export async function performAutoCompaction(
 			startedAt: now,
 		});
 
-	const result = streamText({
-		model,
-		...(isOpenAIOAuth ? {} : { system: systemPrompt }),
-		messages: [
-			{
-				role: 'user',
-				content: isOpenAIOAuth
-					? `${compactionPrompt}\n\nIMPORTANT: Generate a comprehensive summary. This will replace the detailed conversation history.\n\nPlease summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`
-					: `${userInstructions}\n\nPlease summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`,
-			},
-		],
-		...(isOpenAIOAuth ? {} : { maxOutputTokens: 2000 }),
-		...(isOpenAIOAuth
-			? {
-					providerOptions: {
-						openai: {
-							store: false,
-							instructions: compactionPrompt,
-						},
-					},
-				}
-			: {}),
-	});
+		const result = streamText({
+			model,
+			system: adapted.system,
+			messages: adapted.messages,
+			maxOutputTokens: adapted.maxOutputTokens,
+			providerOptions: adapted.providerOptions,
+		});
 
 		let summary = '';
 		for await (const chunk of result.textStream) {

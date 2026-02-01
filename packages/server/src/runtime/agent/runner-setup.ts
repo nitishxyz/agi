@@ -4,10 +4,7 @@ import { sessions } from '@agi-cli/database/schema';
 import { eq } from 'drizzle-orm';
 import { resolveModel } from '../provider/index.ts';
 import { resolveAgentConfig } from './registry.ts';
-import {
-	composeSystemPrompt,
-	getProviderSpoofPrompt,
-} from '../prompt/builder.ts';
+import { composeSystemPrompt } from '../prompt/builder.ts';
 import { discoverProjectTools } from '@agi-cli/sdk';
 import { adaptTools } from '../../tools/adapter.ts';
 import { buildDatabaseTools } from '../../tools/database/index.ts';
@@ -16,6 +13,10 @@ import { buildHistoryMessages } from '../message/history-builder.ts';
 import { getMaxOutputTokens } from '../utils/token.ts';
 import { setupToolContext } from '../tools/setup.ts';
 import { getCompactionSystemPrompt } from '../message/compaction.ts';
+import {
+	detectOAuth,
+	adaptRunnerCall,
+} from '../provider/oauth-adapter.ts';
 import type { RunOpts } from '../session/queue.ts';
 import type { ToolAdapterContext } from '../../tools/adapter.ts';
 
@@ -87,85 +88,33 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const systemTimer = time('runner:composeSystemPrompt');
 	const { getAuth } = await import('@agi-cli/sdk');
 	const auth = await getAuth(opts.provider, cfg.projectRoot);
-	const isOAuth = auth?.type === 'oauth';
-	const needsSpoof = isOAuth && opts.provider === 'anthropic';
-	const isOpenAIOAuth = isOAuth && opts.provider === 'openai';
-	const spoofPrompt = needsSpoof
-		? getProviderSpoofPrompt(opts.provider)
-		: undefined;
+	const oauth = detectOAuth(opts.provider, auth);
 
-	debugLog(`[RUNNER] needsSpoof (OAuth): ${needsSpoof}, isOpenAIOAuth: ${isOpenAIOAuth}`);
+	debugLog(`[RUNNER] needsSpoof (OAuth): ${oauth.needsSpoof}, isOpenAIOAuth: ${oauth.isOpenAIOAuth}`);
 	debugLog(
-		`[RUNNER] spoofPrompt: ${spoofPrompt ? `present (${opts.provider})` : 'none'}`,
+		`[RUNNER] spoofPrompt: ${oauth.spoofPrompt ? `present (${opts.provider})` : 'none'}`,
 	);
 
-	let system: string;
-	let systemComponents: string[] = [];
-	let oauthFullPromptComponents: string[] | undefined;
-	let additionalSystemMessages: Array<{
-		role: 'system' | 'user';
-		content: string;
-	}> = [];
+	const composed = await composeSystemPrompt({
+		provider: opts.provider,
+		model: opts.model,
+		projectRoot: cfg.projectRoot,
+		agentPrompt,
+		oneShot: opts.oneShot,
+		spoofPrompt: undefined,
+		includeProjectTree: isFirstMessage,
+		userContext: opts.userContext,
+		contextSummary,
+	});
 
-	if (spoofPrompt) {
-		system = spoofPrompt;
-		systemComponents = [`spoof:${opts.provider || 'unknown'}`];
-		const fullPrompt = await composeSystemPrompt({
-			provider: opts.provider,
-			model: opts.model,
-			projectRoot: cfg.projectRoot,
-			agentPrompt,
-			oneShot: opts.oneShot,
-			spoofPrompt: undefined,
-			includeProjectTree: isFirstMessage,
-			userContext: opts.userContext,
-			contextSummary,
-		});
-		oauthFullPromptComponents = fullPrompt.components;
+	const rawMaxOutputTokens = getMaxOutputTokens(opts.provider, opts.model);
+	const adapted = adaptRunnerCall(oauth, composed, {
+		provider: opts.provider,
+		rawMaxOutputTokens,
+	});
 
-		additionalSystemMessages = [{ role: 'system', content: fullPrompt.prompt }];
-
-		debugLog('[RUNNER] OAuth mode: additionalSystemMessages created');
-		const includesUserContext =
-			!!opts.userContext && fullPrompt.prompt.includes(opts.userContext);
-		debugLog(
-			`[system] oauth-full summary: ${JSON.stringify({
-				components: oauthFullPromptComponents ?? [],
-				length: fullPrompt.prompt.length,
-				includesUserContext,
-		})}`,
-		);
-	} else if (isOpenAIOAuth) {
-		const composed = await composeSystemPrompt({
-			provider: opts.provider,
-			model: opts.model,
-			projectRoot: cfg.projectRoot,
-			agentPrompt,
-			oneShot: opts.oneShot,
-			spoofPrompt: undefined,
-			includeProjectTree: isFirstMessage,
-			userContext: opts.userContext,
-			contextSummary,
-		});
-		system = '';
-		systemComponents = composed.components;
-		additionalSystemMessages = [{ role: 'user', content: composed.prompt }];
-		debugLog('[RUNNER] OpenAI OAuth mode: system prompt sent as user message');
-	} else {
-		const composed = await composeSystemPrompt({
-			provider: opts.provider,
-			model: opts.model,
-			projectRoot: cfg.projectRoot,
-			agentPrompt,
-			oneShot: opts.oneShot,
-			spoofPrompt: undefined,
-			includeProjectTree: isFirstMessage,
-			userContext: opts.userContext,
-			contextSummary,
-		});
-		system = composed.prompt;
-		systemComponents = composed.components;
-	}
+	let { system } = adapted;
+	const { systemComponents, additionalSystemMessages } = adapted;
 	systemTimer.end();
 	debugLog(
 		`[system] summary: ${JSON.stringify({
@@ -191,7 +140,6 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const allTools = await discoverProjectTools(cfg.projectRoot);
 
 	if (opts.agent === 'research') {
-		// Get parent session ID for research sessions
 		const currentSession = sessionRows[0];
 		const parentSessionId = currentSession?.parentSessionId ?? null;
 
@@ -220,9 +168,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		`[RUNNER] Model created: ${JSON.stringify({ id: model.modelId, provider: model.provider })}`,
 	);
 
-	const maxOutputTokens = isOpenAIOAuth
-		? undefined
-		: getMaxOutputTokens(opts.provider, opts.model);
+	const maxOutputTokens = adapted.maxOutputTokens;
 	debugLog(`[RUNNER] maxOutputTokens for ${opts.model}: ${maxOutputTokens}`);
 
 	const { sharedCtx, firstToolTimer, firstToolSeen } = await setupToolContext(
@@ -234,18 +180,8 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const authType = providerAuth?.type;
 	const toolset = adaptTools(gated, sharedCtx, opts.provider, authType);
 
-	const providerOptions: Record<string, unknown> = {};
+	const providerOptions = { ...adapted.providerOptions };
 	let effectiveMaxOutputTokens = maxOutputTokens;
-
-	if (isOpenAIOAuth) {
-		const instructions = additionalSystemMessages[0]?.content || '';
-		debugLog(`[RUNNER] OpenAI OAuth: setting providerOptions.openai (store=false, instructions length=${instructions.length})`);
-		providerOptions.openai = {
-			...(providerOptions.openai as Record<string, unknown> || {}),
-			store: false,
-			instructions,
-		};
-	}
 
 	if (opts.reasoningText) {
 		const underlyingProvider = getUnderlyingProviderKey(
@@ -293,7 +229,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		firstToolTimer,
 		firstToolSeen,
 		providerOptions,
-		needsSpoof,
+		needsSpoof: oauth.needsSpoof,
 	};
 }
 

@@ -10,6 +10,7 @@ import { resolveModel } from '../provider/index.ts';
 import { getFastModelForAuth, type ProviderId } from '@agi-cli/sdk';
 import { debugLog } from '../debug/index.ts';
 import { isCompactCommand, buildCompactionContext } from './compaction.ts';
+import { detectOAuth, adaptSimpleCall } from '../provider/oauth-adapter.ts';
 
 type SessionRow = typeof sessions.$inferSelect;
 
@@ -52,7 +53,6 @@ export async function dispatchAssistantMessage(
 		files,
 	} = options;
 
-	// DEBUG: Log userContext in dispatch
 	debugLog(
 		`[MESSAGE_SERVICE] dispatchAssistantMessage called with userContext: ${userContext ? `${userContext.substring(0, 50)}...` : 'NONE'}`,
 	);
@@ -144,12 +144,10 @@ export async function dispatchAssistantMessage(
 		payload: { id: assistantMessageId, role: 'assistant' },
 	});
 
-	// DEBUG: Log before enqueue
 	debugLog(
 		`[MESSAGE_SERVICE] Enqueuing assistant run with userContext: ${userContext ? `${userContext.substring(0, 50)}...` : 'NONE'}`,
 	);
 
-	// Detect /compact command and build context with model-aware limits
 	const isCompact = isCompactCommand(content);
 	let compactionContext: string | undefined;
 
@@ -157,7 +155,6 @@ export async function dispatchAssistantMessage(
 		debugLog('[MESSAGE_SERVICE] Detected /compact command, building context');
 		const { getModelLimits } = await import('./compaction.ts');
 		const limits = getModelLimits(provider, model);
-		// Use 50% of context window for compaction, minimum 15k tokens
 		const contextTokenLimit = limits
 			? Math.max(Math.floor(limits.context * 0.5), 15000)
 			: 15000;
@@ -171,7 +168,6 @@ export async function dispatchAssistantMessage(
 		);
 	}
 
-	// Read tool approval mode from config
 	const toolApprovalMode = cfg.defaults.toolApproval ?? 'auto';
 
 	enqueueAssistantRun(
@@ -289,21 +285,15 @@ async function generateSessionTitle(args: {
 		debugLog(`[TITLE_GEN] Provider: ${provider}, Model: ${modelName}`);
 
 		const { getAuth } = await import('@agi-cli/sdk');
-		const { getProviderSpoofPrompt } = await import('../prompt/builder.ts');
 		const auth = await getAuth(provider, cfg.projectRoot);
-		const isOAuth = auth?.type === 'oauth';
-		const needsSpoof = isOAuth && provider === 'anthropic';
-		const isOpenAIOAuth = isOAuth && provider === 'openai';
-		const spoofPrompt = needsSpoof
-			? getProviderSpoofPrompt(provider)
-			: undefined;
+		const oauth = detectOAuth(provider, auth);
 
 		const titleModel = getFastModelForAuth(provider, auth?.type) ?? modelName;
 		debugLog(`[TITLE_GEN] Using title model: ${titleModel}`);
 		const model = await resolveModel(provider, titleModel, cfg);
 
 		debugLog(
-			`[TITLE_GEN] needsSpoof: ${needsSpoof}, isOpenAIOAuth: ${isOpenAIOAuth}, spoofPrompt: ${spoofPrompt || 'NONE'}`,
+			`[TITLE_GEN] oauth: needsSpoof=${oauth.needsSpoof}, isOpenAIOAuth=${oauth.isOpenAIOAuth}`,
 		);
 
 		const promptText = String(content ?? '').slice(0, 2000);
@@ -315,80 +305,23 @@ Examples: "Fix TypeScript build errors", "Add dark mode toggle", "Refactor auth 
 
 Output ONLY the title, nothing else.`;
 
-		const userMessageWithTags = `<task>
-${titleInstructions}
-</task>
+		const adapted = adaptSimpleCall(oauth, {
+			instructions: titleInstructions,
+			userContent: promptText,
+		});
 
-<user-message>
-${promptText}
-</user-message>`;
-
-		// Build system prompt and messages
-		// For OAuth: Keep spoof pure, add instructions to user message
-		// For API key: Use instructions as system
-		let system: string;
-		let messagesArray: Array<{ role: 'user'; content: string }>;
-
-		if (spoofPrompt) {
-			// OAuth mode: spoof stays pure, instructions go in user message
-			system = spoofPrompt;
-			messagesArray = [
-				{
-					role: 'user',
-					content: userMessageWithTags,
-				},
-			];
-
-			debugLog(
-				`[TITLE_GEN] Using OAuth mode (prompts: spoof:${provider}, title-generator, user-request)`,
-			);
-			debugLog(
-				`[TITLE_GEN] User content preview: ${promptText.substring(0, 100)}...`,
-			);
-		} else {
-			// API key mode: normal flow
-			system = titleInstructions;
-			messagesArray = [
-				{
-					role: 'user',
-					content: `<user-message>\n${promptText}\n</user-message>`,
-				},
-			];
-
-			debugLog(
-				`[TITLE_GEN] Using API key mode (prompts: title-generator, user-request)`,
-			);
-			debugLog(
-				`[TITLE_GEN] User content preview: ${promptText.substring(0, 100)}...`,
-			);
-		}
+		debugLog(
+			`[TITLE_GEN] mode=${adapted.forceStream ? 'openai-oauth' : oauth.needsSpoof ? 'spoof' : 'api-key'}`,
+		);
 
 		let modelTitle = '';
 		try {
-		if (isOpenAIOAuth) {
-			debugLog('[TITLE_GEN] Using streamText for OpenAI OAuth...');
-			debugLog(`[TITLE_GEN] providerOptions: ${JSON.stringify({ openai: { store: false, instructions: titleInstructions.slice(0, 50) + '...' } })}`);
-			const result = streamText({
-				model,
-				messages: [{ role: 'user' as const, content: `${titleInstructions}\n\n${promptText}` }],
-				providerOptions: {
-					openai: {
-						store: false,
-						instructions: titleInstructions,
-					},
-				},
-			});
-			for await (const chunk of result.textStream) {
-				modelTitle += chunk;
-			}
-			modelTitle = modelTitle.trim();
-			debugLog(`[TITLE_GEN] OpenAI OAuth result: "${modelTitle}"`);
-		} else if (needsSpoof) {
-				debugLog('[TITLE_GEN] Using streamText for Anthropic OAuth...');
+			if (adapted.forceStream || oauth.needsSpoof) {
 				const result = streamText({
 					model,
-					system,
-					messages: messagesArray,
+					system: adapted.system,
+					messages: adapted.messages,
+					providerOptions: adapted.providerOptions,
 				});
 				for await (const chunk of result.textStream) {
 					modelTitle += chunk;
@@ -398,8 +331,8 @@ ${promptText}
 				debugLog('[TITLE_GEN] Using generateText...');
 				const out = await generateText({
 					model,
-					system,
-					messages: messagesArray,
+					system: adapted.system,
+					messages: adapted.messages,
 				});
 				modelTitle = (out?.text || '').trim();
 			}

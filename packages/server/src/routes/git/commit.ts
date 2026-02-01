@@ -10,8 +10,11 @@ import { sessions } from '@agi-cli/database/schema';
 import { gitCommitSchema, gitGenerateCommitMessageSchema } from './schemas.ts';
 import { validateAndGetGitRoot, parseGitStatus } from './utils.ts';
 import { resolveModel } from '../../runtime/provider/index.ts';
-import { getProviderSpoofPrompt } from '../../runtime/prompt/builder.ts';
 import { debugLog } from '../../runtime/debug/index.ts';
+import {
+	detectOAuth,
+	adaptSimpleCall,
+} from '../../runtime/provider/oauth-adapter.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -112,12 +115,8 @@ export function registerCommitRoutes(app: Hono) {
 				}
 			}
 
-		const auth = await getAuth(provider, config.projectRoot);
-		const needsSpoof = auth?.type === 'oauth' && provider === 'anthropic';
-		const isOpenAIOAuth = auth?.type === 'oauth' && provider === 'openai';
-		const spoofPrompt = needsSpoof
-				? getProviderSpoofPrompt(provider)
-				: undefined;
+			const auth = await getAuth(provider, config.projectRoot);
+			const oauth = detectOAuth(provider, auth);
 
 			const modelId =
 				getFastModelForAuth(provider, auth?.type) ??
@@ -153,40 +152,38 @@ refactor(auth): return success status from login functions
 
 Commit message:`;
 
-		const commitInstructions = 'You are a helpful assistant that generates accurate git commit messages based on the actual diff content.';
+			const commitInstructions =
+				'You are a helpful assistant that generates accurate git commit messages based on the actual diff content.';
 
-		const systemPrompt = spoofPrompt
-			? spoofPrompt
-			: commitInstructions;
-
-		if (isOpenAIOAuth) {
-			debugLog('[COMMIT] Using streamText for OpenAI OAuth');
-			debugLog(`[COMMIT] providerOptions: ${JSON.stringify({ openai: { store: false, instructions: commitInstructions.slice(0, 50) + '...' } })}`);
-			const result = streamText({
-				model,
-				messages: [{ role: 'user', content: `${commitInstructions}\n\n${userPrompt}` }],
-				providerOptions: {
-					openai: {
-						store: false,
-						instructions: commitInstructions,
-					},
-				},
+			const adapted = adaptSimpleCall(oauth, {
+				instructions: commitInstructions,
+				userContent: userPrompt,
+				maxOutputTokens: 500,
 			});
-			let text = '';
-			for await (const chunk of result.textStream) {
-				text += chunk;
-			}
-			const message = text.trim();
-			debugLog(`[COMMIT] OpenAI OAuth result: "${message.slice(0, 80)}..."`);
-			return c.json({ status: 'ok', data: { message } });
-		}
 
-		const { text } = await generateText({
-			model,
-			system: systemPrompt,
-			prompt: userPrompt,
-			maxOutputTokens: 500,
-		});
+			if (adapted.forceStream) {
+				debugLog('[COMMIT] Using streamText for OpenAI OAuth');
+				const result = streamText({
+					model,
+					system: adapted.system,
+					messages: adapted.messages,
+					providerOptions: adapted.providerOptions,
+				});
+				let text = '';
+				for await (const chunk of result.textStream) {
+					text += chunk;
+				}
+				const message = text.trim();
+				debugLog(`[COMMIT] OAuth result: "${message.slice(0, 80)}..."`);
+				return c.json({ status: 'ok', data: { message } });
+			}
+
+			const { text } = await generateText({
+				model,
+				system: adapted.system,
+				messages: adapted.messages,
+				maxOutputTokens: adapted.maxOutputTokens,
+			});
 
 			const message = text.trim();
 
