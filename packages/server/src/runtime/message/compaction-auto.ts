@@ -67,8 +67,10 @@ export async function performAutoCompaction(
 				| 'zai-coding',
 			cfg.projectRoot,
 		);
-		const needsSpoof = auth?.type === 'oauth';
-		const spoofPrompt = needsSpoof
+	const isOAuth = auth?.type === 'oauth';
+	const needsSpoof = isOAuth && provider === 'anthropic';
+	const isOpenAIOAuth = isOAuth && provider === 'openai';
+	const spoofPrompt = needsSpoof
 			? getProviderSpoofPrompt(provider as 'anthropic' | 'openai')
 			: undefined;
 
@@ -104,17 +106,29 @@ export async function performAutoCompaction(
 			startedAt: now,
 		});
 
-		const result = streamText({
-			model,
-			system: systemPrompt,
-			messages: [
-				{
-					role: 'user',
-					content: `${userInstructions}\n\nPlease summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`,
-				},
-			],
-			maxOutputTokens: 2000,
-		});
+	const result = streamText({
+		model,
+		...(isOpenAIOAuth ? {} : { system: systemPrompt }),
+		messages: [
+			{
+				role: 'user',
+				content: isOpenAIOAuth
+					? `${compactionPrompt}\n\nIMPORTANT: Generate a comprehensive summary. This will replace the detailed conversation history.\n\nPlease summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`
+					: `${userInstructions}\n\nPlease summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`,
+			},
+		],
+		maxOutputTokens: 2000,
+		...(isOpenAIOAuth
+			? {
+					providerOptions: {
+						openai: {
+							store: false,
+							instructions: compactionPrompt,
+						},
+					},
+				}
+			: {}),
+	});
 
 		let summary = '';
 		for await (const chunk of result.textStream) {

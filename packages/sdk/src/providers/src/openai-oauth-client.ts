@@ -3,25 +3,18 @@ import type { OAuth } from '../../types/src/index.ts';
 import { refreshOpenAIToken } from '../../auth/src/openai-oauth.ts';
 import { setAuth, getAuth } from '../../auth/src/index.ts';
 
-const CHATGPT_BACKEND_URL = 'https://chatgpt.com/backend-api';
-const OPENAI_API_URL = 'https://api.openai.com/v1';
-
-const DEFAULT_INSTRUCTIONS = `You are a helpful coding assistant. Be concise and direct.`;
+const CODEX_API_ENDPOINT = 'https://chatgpt.com/backend-api/codex/responses';
 
 export type OpenAIOAuthConfig = {
 	oauth: OAuth;
 	projectRoot?: string;
-	instructions?: string;
-	reasoningEffort?: 'none' | 'low' | 'medium' | 'high' | 'xhigh';
-	reasoningSummary?: 'auto' | 'detailed';
 };
 
 async function ensureValidToken(
 	oauth: OAuth,
 	projectRoot?: string,
 ): Promise<{ access: string; accountId?: string }> {
-	const bufferMs = 5 * 60 * 1000;
-	if (oauth.expires > Date.now() + bufferMs) {
+	if (oauth.access && oauth.expires > Date.now()) {
 		return { access: oauth.access, accountId: oauth.accountId };
 	}
 
@@ -42,78 +35,19 @@ async function ensureValidToken(
 	}
 }
 
-function stripIdsFromInput(input: unknown): unknown {
-	if (Array.isArray(input)) {
-		const filtered = input.filter((item) => {
-			if (item && typeof item === 'object' && 'type' in item) {
-				if (item.type === 'item_reference') return false;
-			}
-			return true;
-		});
-
-		const validCallIds = new Set<string>();
-		for (const item of filtered) {
-			if (
-				item &&
-				typeof item === 'object' &&
-				'type' in item &&
-				item.type === 'function_call' &&
-				'call_id' in item &&
-				typeof item.call_id === 'string'
-			) {
-				validCallIds.add(item.call_id);
-			}
-		}
-
-		return filtered
-			.filter((item) => {
-				if (
-					item &&
-					typeof item === 'object' &&
-					'type' in item &&
-					item.type === 'function_call_output' &&
-					'call_id' in item &&
-					typeof item.call_id === 'string'
-				) {
-					return validCallIds.has(item.call_id);
-				}
-				return true;
-			})
-			.map((item) => {
-				if (item && typeof item === 'object') {
-					const result: Record<string, unknown> = {};
-					for (const [key, value] of Object.entries(item)) {
-						if (key === 'id') continue;
-						result[key] = stripIdsFromInput(value);
-					}
-					return result;
-				}
-				return item;
-			});
-	}
-	if (input && typeof input === 'object') {
-		const result: Record<string, unknown> = {};
-		for (const [key, value] of Object.entries(input)) {
-			if (key === 'id') continue;
-			result[key] = stripIdsFromInput(value);
-		}
-		return result;
-	}
-	return input;
-}
-
 function rewriteUrl(url: string): string {
-	if (url.includes('/responses')) {
-		return url
-			.replace(OPENAI_API_URL, CHATGPT_BACKEND_URL)
-			.replace('/responses', '/codex/responses');
+	const parsed = new URL(url);
+	if (
+		parsed.pathname.includes('/v1/responses') ||
+		parsed.pathname.includes('/chat/completions')
+	) {
+		return CODEX_API_ENDPOINT;
 	}
-	return url.replace(OPENAI_API_URL, CHATGPT_BACKEND_URL);
+	return url;
 }
 
 export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 	let currentOAuth = config.oauth;
-	const instructions = config.instructions || DEFAULT_INSTRUCTIONS;
 
 	const customFetch = async (
 		input: Parameters<typeof fetch>[0],
@@ -132,57 +66,17 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 					: input.url;
 		const targetUrl = rewriteUrl(originalUrl);
 
-		let body = init?.body;
-		if (body && typeof body === 'string') {
-			try {
-				const parsed = JSON.parse(body);
-
-				parsed.store = false;
-				// ChatGPT backend codex endpoint requires streaming
-				parsed.stream = true;
-				parsed.instructions = instructions;
-
-				if (parsed.input) {
-					parsed.input = stripIdsFromInput(parsed.input);
-				}
-
-				if (!parsed.include) {
-					parsed.include = ['reasoning.encrypted_content'];
-				} else if (
-					Array.isArray(parsed.include) &&
-					!parsed.include.includes('reasoning.encrypted_content')
-				) {
-					parsed.include.push('reasoning.encrypted_content');
-				}
-
-				const existingReasoning = parsed.reasoning || {};
-				parsed.reasoning = {
-					effort:
-						existingReasoning.effort || config.reasoningEffort || 'medium',
-					summary:
-						existingReasoning.summary || config.reasoningSummary || 'auto',
-				};
-
-				delete parsed.max_output_tokens;
-				delete parsed.max_completion_tokens;
-
-				body = JSON.stringify(parsed);
-			} catch {}
-		}
-
 		const headers = new Headers(init?.headers);
-		headers.delete('x-api-key');
-		headers.set('Authorization', `Bearer ${accessToken}`);
-		headers.set('OpenAI-Beta', 'responses=experimental');
-		headers.set('originator', 'codex_cli_rs');
-		headers.set('accept', 'text/event-stream');
+		headers.delete('Authorization');
+		headers.delete('authorization');
+		headers.set('authorization', `Bearer ${accessToken}`);
+		headers.set('originator', 'agi');
 		if (accountId) {
-			headers.set('chatgpt-account-id', accountId);
+			headers.set('ChatGPT-Account-Id', accountId);
 		}
 
 		const response = await fetch(targetUrl, {
 			...init,
-			body,
 			headers,
 		});
 
@@ -207,9 +101,8 @@ export function createOpenAIOAuthModel(
 
 	const provider = createOpenAI({
 		apiKey: 'chatgpt-oauth',
-		baseURL: CHATGPT_BACKEND_URL,
 		fetch: customFetch,
 	});
 
-	return provider(model);
+	return provider.responses(model);
 }

@@ -112,7 +112,7 @@ export function registerCommitRoutes(app: Hono) {
 			}
 
 			const auth = await getAuth(provider, config.projectRoot);
-			const needsSpoof = auth?.type === 'oauth';
+			const needsSpoof = auth?.type === 'oauth' && provider === 'anthropic';
 			const spoofPrompt = needsSpoof
 				? getProviderSpoofPrompt(provider)
 				: undefined;

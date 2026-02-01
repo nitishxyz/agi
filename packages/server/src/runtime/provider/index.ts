@@ -22,9 +22,7 @@ export async function resolveModel(
 	},
 ) {
 	if (provider === 'openai') {
-		return resolveOpenAIModel(model, cfg, {
-			systemPrompt: options?.systemPrompt,
-		});
+		return resolveOpenAIModel(model, cfg);
 	}
 	if (provider === 'anthropic') {
 		const instance = await getAnthropicInstance(cfg);

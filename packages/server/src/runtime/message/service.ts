@@ -291,7 +291,9 @@ async function generateSessionTitle(args: {
 		const { getAuth } = await import('@agi-cli/sdk');
 		const { getProviderSpoofPrompt } = await import('../prompt/builder.ts');
 		const auth = await getAuth(provider, cfg.projectRoot);
-		const needsSpoof = auth?.type === 'oauth';
+		const isOAuth = auth?.type === 'oauth';
+		const needsSpoof = isOAuth && provider === 'anthropic';
+		const isOpenAIOAuth = isOAuth && provider === 'openai';
 		const spoofPrompt = needsSpoof
 			? getProviderSpoofPrompt(provider)
 			: undefined;
@@ -301,7 +303,7 @@ async function generateSessionTitle(args: {
 		const model = await resolveModel(provider, titleModel, cfg);
 
 		debugLog(
-			`[TITLE_GEN] needsSpoof: ${needsSpoof}, spoofPrompt: ${spoofPrompt || 'NONE'}`,
+			`[TITLE_GEN] needsSpoof: ${needsSpoof}, isOpenAIOAuth: ${isOpenAIOAuth}, spoofPrompt: ${spoofPrompt || 'NONE'}`,
 		);
 
 		const promptText = String(content ?? '').slice(0, 2000);
@@ -364,7 +366,7 @@ ${promptText}
 		let modelTitle = '';
 		try {
 			// ChatGPT backend requires streaming - use streamText for OAuth
-			if (needsSpoof) {
+			if (needsSpoof || isOpenAIOAuth) {
 				debugLog('[TITLE_GEN] Using streamText for OAuth...');
 				const result = streamText({
 					model,
