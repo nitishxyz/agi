@@ -18,18 +18,24 @@ export function useSetuBalance(providerName: string | undefined) {
 
 		setLoading(true);
 		try {
-			const [setuData, usdcData] = await Promise.all([
+			const [setuData, usdcData, walletData] = await Promise.all([
 				apiClient.getSetuBalance(),
 				apiClient.getSetuUsdcBalance(network),
+				apiClient.getSetuWallet(),
 			]);
 
 			if (setuData) {
 				setBalance(setuData.balance);
 				setWalletAddress(setuData.walletAddress);
+			} else if (walletData?.configured && walletData.publicKey) {
+				setWalletAddress(walletData.publicKey);
 			}
 
 			if (usdcData) {
 				setUsdcBalance(usdcData.usdcBalance);
+				if (!setuData && usdcData.walletAddress) {
+					setWalletAddress(usdcData.walletAddress);
+				}
 			}
 		} catch {
 		} finally {
