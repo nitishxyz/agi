@@ -1,4 +1,4 @@
-import { memo, useState, useMemo } from 'react';
+import { memo, useState, useMemo, useCallback } from 'react';
 import {
 	Settings,
 	ChevronRight,
@@ -10,6 +10,8 @@ import {
 	RefreshCw,
 	Plus,
 	Pencil,
+	Copy,
+	Check,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '../ui/Button';
@@ -234,21 +236,6 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 		updateDefaults.mutate({ agent, scope: 'global' });
 	};
 
-	const truncateWallet = (address: string | null) => {
-		if (!address) return 'Not configured';
-		return `${address.slice(0, 4)}...${address.slice(-4)}`;
-	};
-
-	const formatBalance = (balance: number | null) => {
-		if (balance === null) return '—';
-		return `$${balance.toFixed(4)}`;
-	};
-
-	const formatUsdcBalance = (balance: number | null) => {
-		if (balance === null) return '—';
-		return `${balance.toFixed(2)} USDC`;
-	};
-
 	return (
 		<div className="w-80 border-l border-border bg-background flex flex-col h-full">
 			<div className="h-14 border-b border-border px-4 flex items-center justify-between shrink-0">
@@ -323,56 +310,6 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 					/>
 				</SettingsSection>
 
-				{config?.providers?.includes('setu') && (
-					<SettingsSection
-						title="Setu Wallet"
-						icon={<Wallet className="w-4 h-4 text-muted-foreground" />}
-						action={
-							<button
-								type="button"
-								onClick={refreshSetuBalance}
-								disabled={setuLoading}
-								className="p-1 hover:bg-muted rounded transition-colors disabled:opacity-50"
-								title="Refresh balances"
-							>
-								<RefreshCw
-									className={`w-3.5 h-3.5 text-muted-foreground ${setuLoading ? 'animate-spin' : ''}`}
-								/>
-							</button>
-						}
-					>
-						{setuWallet && (
-							<div className="flex justify-center pb-3">
-								<div className="p-2 bg-white rounded-lg">
-									<QRCodeSVG
-										value={setuWallet}
-										size={120}
-										level="M"
-										includeMargin={false}
-									/>
-								</div>
-							</div>
-						)}
-						<SettingRow label="Address" value={truncateWallet(setuWallet)} />
-						<SettingRow label="Balance" value={formatBalance(setuBalance)} />
-						<SettingRow
-							label="USDC"
-							value={formatUsdcBalance(setuUsdcBalance)}
-						/>
-						<Button
-							variant="secondary"
-							size="sm"
-							onClick={openTopupModal}
-							className="w-full mt-2 gap-2"
-						>
-							<Plus className="w-4 h-4" />
-							Top Up Balance
-						</Button>
-					</SettingsSection>
-				)}
-
-				<SetuTopupModal />
-
 				<SettingsSection
 					title="Providers"
 					icon={<Zap className="w-4 h-4 text-muted-foreground" />}
@@ -404,7 +341,147 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 						)) ?? <span className="text-muted-foreground text-sm">None</span>}
 					</div>
 				</SettingsSection>
+
+				{config?.providers?.includes('setu') && (
+					<SetuWalletSection
+						setuWallet={setuWallet}
+						setuBalance={setuBalance}
+						setuUsdcBalance={setuUsdcBalance}
+						setuLoading={setuLoading}
+						refreshSetuBalance={refreshSetuBalance}
+						openTopupModal={openTopupModal}
+					/>
+				)}
+
+				<SetuTopupModal />
 			</div>
 		</div>
+	);
+});
+
+interface SetuWalletSectionProps {
+	setuWallet: string | null;
+	setuBalance: number | null;
+	setuUsdcBalance: number | null;
+	setuLoading: boolean;
+	refreshSetuBalance: () => void;
+	openTopupModal: () => void;
+}
+
+const SetuWalletSection = memo(function SetuWalletSection({
+	setuWallet,
+	setuBalance,
+	setuUsdcBalance,
+	setuLoading,
+	refreshSetuBalance,
+	openTopupModal,
+}: SetuWalletSectionProps) {
+	const [copied, setCopied] = useState(false);
+
+	const handleCopy = useCallback(async () => {
+		if (!setuWallet) return;
+		await navigator.clipboard.writeText(setuWallet);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	}, [setuWallet]);
+
+	const truncateWallet = (address: string | null) => {
+		if (!address) return 'Not configured';
+		return `${address.slice(0, 4)}...${address.slice(-4)}`;
+	};
+
+	const formatBalance = (balance: number | null) => {
+		if (balance === null) return '—';
+		return `$${balance.toFixed(4)}`;
+	};
+
+	const formatUsdcBalance = (balance: number | null) => {
+		if (balance === null) return '—';
+		return `${balance.toFixed(2)} USDC`;
+	};
+
+	const isLoaded = setuWallet !== null;
+
+	return (
+		<SettingsSection
+			title="Setu Credits"
+			icon={<Wallet className="w-4 h-4 text-muted-foreground" />}
+			action={
+				<button
+					type="button"
+					onClick={refreshSetuBalance}
+					disabled={setuLoading}
+					className="p-1 hover:bg-muted rounded transition-colors disabled:opacity-50"
+					title="Refresh balances"
+				>
+					<RefreshCw
+						className={`w-3.5 h-3.5 text-muted-foreground ${setuLoading ? 'animate-spin' : ''}`}
+					/>
+				</button>
+			}
+		>
+			{isLoaded ? (
+				<>
+					<div className="flex justify-center pb-3">
+						<div className="p-2 bg-white rounded-lg">
+							<QRCodeSVG
+								value={setuWallet}
+								size={120}
+								level="M"
+								includeMargin={false}
+							/>
+						</div>
+					</div>
+					<div className="flex items-center justify-between text-sm">
+						<span className="text-muted-foreground">Address</span>
+						<button
+							type="button"
+							onClick={handleCopy}
+							className="flex items-center gap-1.5 font-mono text-foreground hover:text-muted-foreground transition-colors"
+							title="Copy address"
+						>
+							{truncateWallet(setuWallet)}
+							{copied ? (
+								<Check className="w-3 h-3 text-green-500" />
+							) : (
+								<Copy className="w-3 h-3 text-muted-foreground" />
+							)}
+						</button>
+					</div>
+					<SettingRow label="Balance" value={formatBalance(setuBalance)} />
+					<SettingRow
+						label="USDC"
+						value={formatUsdcBalance(setuUsdcBalance)}
+					/>
+				</>
+			) : (
+				<>
+					<div className="flex justify-center pb-3">
+						<div className="w-[136px] h-[136px] bg-muted rounded-lg animate-pulse" />
+					</div>
+					<div className="flex items-center justify-between text-sm">
+						<span className="text-muted-foreground">Address</span>
+						<div className="w-24 h-4 bg-muted rounded animate-pulse" />
+					</div>
+					<div className="flex items-center justify-between text-sm">
+						<span className="text-muted-foreground">Balance</span>
+						<div className="w-16 h-4 bg-muted rounded animate-pulse" />
+					</div>
+					<div className="flex items-center justify-between text-sm">
+						<span className="text-muted-foreground">USDC</span>
+						<div className="w-20 h-4 bg-muted rounded animate-pulse" />
+					</div>
+				</>
+			)}
+			<Button
+				variant="secondary"
+				size="sm"
+				onClick={openTopupModal}
+				className="w-full mt-2 gap-2"
+			>
+				<Plus className="w-4 h-4" />
+				Top Up Balance
+			</Button>
+		</SettingsSection>
 	);
 });
