@@ -282,6 +282,58 @@ export function useVimMode({
 				setTimeout(() => {
 					textarea.setSelectionRange(lineStart, lineStart);
 				}, 0);
+			return true;
+		}
+
+			if (key === 'h') {
+				e.preventDefault();
+				const pos = textarea.selectionStart;
+				if (pos > 0) {
+					textarea.setSelectionRange(pos - 1, pos - 1);
+				}
+				return true;
+			}
+
+			if (key === 'l') {
+				e.preventDefault();
+				const pos = textarea.selectionStart;
+				if (pos < textarea.value.length) {
+					textarea.setSelectionRange(pos + 1, pos + 1);
+				}
+				return true;
+			}
+
+			if (key === 'j') {
+				e.preventDefault();
+				const text = textarea.value;
+				const pos = textarea.selectionStart;
+				const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+				const col = pos - lineStart;
+				const lineEnd = text.indexOf('\n', pos);
+				if (lineEnd !== -1) {
+					const nextLineStart = lineEnd + 1;
+					let nextLineEnd = text.indexOf('\n', nextLineStart);
+					if (nextLineEnd === -1) nextLineEnd = text.length;
+					const nextLineLen = nextLineEnd - nextLineStart;
+					const newPos = nextLineStart + Math.min(col, nextLineLen);
+					textarea.setSelectionRange(newPos, newPos);
+				}
+				return true;
+			}
+
+			if (key === 'k') {
+				e.preventDefault();
+				const text = textarea.value;
+				const pos = textarea.selectionStart;
+				const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+				if (lineStart > 0) {
+					const col = pos - lineStart;
+					const prevLineEnd = lineStart - 1;
+					const prevLineStart = text.lastIndexOf('\n', prevLineEnd - 1) + 1;
+					const prevLineLen = prevLineEnd - prevLineStart;
+					const newPos = prevLineStart + Math.min(col, prevLineLen);
+					textarea.setSelectionRange(newPos, newPos);
+				}
 				return true;
 			}
 

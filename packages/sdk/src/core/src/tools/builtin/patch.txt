@@ -184,6 +184,12 @@ The tool will convert it automatically, but the enveloped format is still recomm
 
 ## Common Errors
 
+**"Missing *** End Patch marker"**: Every patch MUST end with `*** End Patch` on its own line.
+This is the most common error. Double-check your patch ends with:
+```
+*** End Patch
+```
+
 **"Failed to find expected lines"**: The file content doesn't match your patch. Common causes:
 - Missing context lines (lines with space prefix)
 - Using `@@` line as context instead of real context lines
