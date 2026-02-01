@@ -23,7 +23,10 @@ async function readTestFile(name: string) {
 	return readFile(join(projectRoot, name), 'utf-8');
 }
 
-async function applyPatch(patch: string, opts?: { useFuzzy?: boolean; allowRejects?: boolean }) {
+async function applyPatch(
+	patch: string,
+	opts?: { useFuzzy?: boolean; allowRejects?: boolean },
+) {
 	const operations = parseEnvelopedPatch(patch);
 	return applyPatchOperations(projectRoot, operations, {
 		useFuzzy: opts?.useFuzzy ?? true,
