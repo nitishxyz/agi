@@ -1,7 +1,7 @@
 import type { Hono } from 'hono';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { generateText } from 'ai';
+import { generateText, streamText } from 'ai';
 import { eq } from 'drizzle-orm';
 import type { ProviderId } from '@agi-cli/sdk';
 import { loadConfig, getAuth, getFastModelForAuth } from '@agi-cli/sdk';
@@ -11,6 +11,7 @@ import { gitCommitSchema, gitGenerateCommitMessageSchema } from './schemas.ts';
 import { validateAndGetGitRoot, parseGitStatus } from './utils.ts';
 import { resolveModel } from '../../runtime/provider/index.ts';
 import { getProviderSpoofPrompt } from '../../runtime/prompt/builder.ts';
+import { debugLog } from '../../runtime/debug/index.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -111,9 +112,10 @@ export function registerCommitRoutes(app: Hono) {
 				}
 			}
 
-			const auth = await getAuth(provider, config.projectRoot);
-			const needsSpoof = auth?.type === 'oauth' && provider === 'anthropic';
-			const spoofPrompt = needsSpoof
+		const auth = await getAuth(provider, config.projectRoot);
+		const needsSpoof = auth?.type === 'oauth' && provider === 'anthropic';
+		const isOpenAIOAuth = auth?.type === 'oauth' && provider === 'openai';
+		const spoofPrompt = needsSpoof
 				? getProviderSpoofPrompt(provider)
 				: undefined;
 
@@ -151,16 +153,40 @@ refactor(auth): return success status from login functions
 
 Commit message:`;
 
-			const systemPrompt = spoofPrompt
-				? spoofPrompt
-				: 'You are a helpful assistant that generates accurate git commit messages based on the actual diff content.';
+		const commitInstructions = 'You are a helpful assistant that generates accurate git commit messages based on the actual diff content.';
 
-			const { text } = await generateText({
+		const systemPrompt = spoofPrompt
+			? spoofPrompt
+			: commitInstructions;
+
+		if (isOpenAIOAuth) {
+			debugLog('[COMMIT] Using streamText for OpenAI OAuth');
+			debugLog(`[COMMIT] providerOptions: ${JSON.stringify({ openai: { store: false, instructions: commitInstructions.slice(0, 50) + '...' } })}`);
+			const result = streamText({
 				model,
-				system: systemPrompt,
-				prompt: userPrompt,
-				maxOutputTokens: 500,
+				messages: [{ role: 'user', content: `${commitInstructions}\n\n${userPrompt}` }],
+				providerOptions: {
+					openai: {
+						store: false,
+						instructions: commitInstructions,
+					},
+				},
 			});
+			let text = '';
+			for await (const chunk of result.textStream) {
+				text += chunk;
+			}
+			const message = text.trim();
+			debugLog(`[COMMIT] OpenAI OAuth result: "${message.slice(0, 80)}..."`);
+			return c.json({ status: 'ok', data: { message } });
+		}
+
+		const { text } = await generateText({
+			model,
+			system: systemPrompt,
+			prompt: userPrompt,
+			maxOutputTokens: 500,
+		});
 
 			const message = text.trim();
 

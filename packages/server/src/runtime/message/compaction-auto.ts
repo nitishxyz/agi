@@ -117,7 +117,7 @@ export async function performAutoCompaction(
 					: `${userInstructions}\n\nPlease summarize this conversation:\n\n<conversation-to-summarize>\n${context}\n</conversation-to-summarize>`,
 			},
 		],
-		maxOutputTokens: 2000,
+		...(isOpenAIOAuth ? {} : { maxOutputTokens: 2000 }),
 		...(isOpenAIOAuth
 			? {
 					providerOptions: {

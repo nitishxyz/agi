@@ -239,6 +239,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 
 	if (isOpenAIOAuth) {
 		const instructions = additionalSystemMessages[0]?.content || '';
+		debugLog(`[RUNNER] OpenAI OAuth: setting providerOptions.openai (store=false, instructions length=${instructions.length})`);
 		providerOptions.openai = {
 			...(providerOptions.openai as Record<string, unknown> || {}),
 			store: false,

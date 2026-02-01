@@ -365,9 +365,26 @@ ${promptText}
 
 		let modelTitle = '';
 		try {
-			// ChatGPT backend requires streaming - use streamText for OAuth
-			if (needsSpoof || isOpenAIOAuth) {
-				debugLog('[TITLE_GEN] Using streamText for OAuth...');
+		if (isOpenAIOAuth) {
+			debugLog('[TITLE_GEN] Using streamText for OpenAI OAuth...');
+			debugLog(`[TITLE_GEN] providerOptions: ${JSON.stringify({ openai: { store: false, instructions: titleInstructions.slice(0, 50) + '...' } })}`);
+			const result = streamText({
+				model,
+				messages: [{ role: 'user' as const, content: `${titleInstructions}\n\n${promptText}` }],
+				providerOptions: {
+					openai: {
+						store: false,
+						instructions: titleInstructions,
+					},
+				},
+			});
+			for await (const chunk of result.textStream) {
+				modelTitle += chunk;
+			}
+			modelTitle = modelTitle.trim();
+			debugLog(`[TITLE_GEN] OpenAI OAuth result: "${modelTitle}"`);
+		} else if (needsSpoof) {
+				debugLog('[TITLE_GEN] Using streamText for Anthropic OAuth...');
 				const result = streamText({
 					model,
 					system,
