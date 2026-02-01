@@ -39,6 +39,7 @@ export async function runSetup(projectRoot?: string) {
 		google: { enabled: false },
 		openrouter: { enabled: false },
 		opencode: { enabled: false },
+		copilot: { enabled: false },
 		setu: { enabled: false },
 		zai: { enabled: false },
 		'zai-coding': { enabled: false },

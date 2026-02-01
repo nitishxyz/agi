@@ -11,6 +11,7 @@ import {
 	zaiLogo,
 	setuLogo,
 	opencodeLogo,
+	copilotLogo,
 } from '../../assets/provider-logos';
 
 const providerLogos: Record<string, string> = {
@@ -25,6 +26,7 @@ const providerLogos: Record<string, string> = {
 	'zai-coding': zaiLogo,
 	setu: setuLogo,
 	opencode: opencodeLogo,
+	copilot: copilotLogo,
 };
 
 interface ProviderLogoProps {

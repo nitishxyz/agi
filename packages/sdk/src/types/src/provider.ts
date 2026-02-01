@@ -7,6 +7,7 @@ export type ProviderId =
 	| 'google'
 	| 'openrouter'
 	| 'opencode'
+	| 'copilot'
 	| 'setu'
 	| 'zai'
 	| 'zai-coding'

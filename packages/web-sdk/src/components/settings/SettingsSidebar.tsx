@@ -449,10 +449,7 @@ const SetuWalletSection = memo(function SetuWalletSection({
 						</button>
 					</div>
 					<SettingRow label="Balance" value={formatBalance(setuBalance)} />
-					<SettingRow
-						label="USDC"
-						value={formatUsdcBalance(setuUsdcBalance)}
-					/>
+					<SettingRow label="USDC" value={formatUsdcBalance(setuUsdcBalance)} />
 				</>
 			) : (
 				<>

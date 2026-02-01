@@ -74,7 +74,7 @@ export function ErrorRenderer({
 	}
 
 	// Try to extract and parse API error from responseBody if available
-	let apiError: { type?: string; message?: string } | undefined;
+	let apiError: { type?: string; message?: string; code?: string } | undefined;
 	if (
 		errorDetails?.responseBody &&
 		typeof errorDetails.responseBody === 'string'
@@ -91,11 +91,66 @@ export function ErrorRenderer({
 						typeof parsed.error.message === 'string'
 							? parsed.error.message
 							: undefined,
+					code:
+						typeof parsed.error.code === 'string'
+							? parsed.error.code
+							: undefined,
 				};
 			}
 		} catch {
 			// Ignore parse errors
 		}
+	}
+
+	const isCopilotModelError =
+		(apiError?.code === 'model_not_supported' ||
+			apiError?.message?.toLowerCase().includes('model is not supported')) &&
+		(String(errorDetails?.url ?? '').includes('githubcopilot.com') ||
+			contentJson.type === 'api_error');
+
+	if (isCopilotModelError) {
+		const model = (errorDetails?.requestBodyValues as Record<string, unknown>)
+			?.model;
+		return (
+			<div className="space-y-3">
+				<div className="space-y-1">
+					<div className="font-medium text-amber-600 dark:text-amber-400">
+						Model not available on your Copilot plan
+					</div>
+					<p className="text-sm text-foreground">
+						{model ? (
+							<>
+								<code className="px-1 py-0.5 bg-muted rounded text-xs">
+									{String(model)}
+								</code>{' '}
+								is not available on your current GitHub Copilot plan.
+							</>
+						) : (
+							<>
+								The requested model is not available on your current GitHub
+								Copilot plan.
+							</>
+						)}
+					</p>
+					<p className="text-xs text-muted-foreground">
+						Free plan models: GPT-5 mini, GPT-4.1, GPT-4o, Claude Haiku 4.5.
+						Upgrade to Copilot Pro/Pro+ for all models.
+					</p>
+				</div>
+				{onRetry && (
+					<div className="pt-1">
+						<button
+							type="button"
+							onClick={onRetry}
+							className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+						>
+							<RefreshCw className="w-3 h-3" />
+							Retry
+						</button>
+					</div>
+				)}
+			</div>
+		);
 	}
 
 	// Special UI for balance_low errors

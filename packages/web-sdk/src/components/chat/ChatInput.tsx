@@ -495,35 +495,33 @@ export const ChatInput = memo(
 									)}
 								</div>
 								<div className="justify-self-center">
-								{(providerName || modelName || authType) && (
-									<div
-										className="text-[10px] text-muted-foreground flex items-center gap-1 px-2 py-0.5"
-									>
-										<button
-											type="button"
-											onClick={onModelInfoClick}
-											className="flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer"
-										>
-											{providerName && (
+									{(providerName || modelName || authType) && (
+										<div className="text-[10px] text-muted-foreground flex items-center gap-1 px-2 py-0.5">
+											<button
+												type="button"
+												onClick={onModelInfoClick}
+												className="flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer"
+											>
+												{providerName && (
+													<>
+														<ProviderLogo
+															provider={providerName}
+															size={12}
+															className="opacity-70"
+														/>
+														<span className="opacity-40">/</span>
+													</>
+												)}
+												{modelName && <span>{modelName}</span>}
+												{authType && authType !== 'api' && (
+													<span className="opacity-50">
+														({authType === 'oauth' ? 'pro' : 'wallet'})
+													</span>
+												)}
+											</button>
+											{isSetu && setuBalance !== null && (
 												<>
-													<ProviderLogo
-														provider={providerName}
-														size={12}
-														className="opacity-70"
-													/>
-													<span className="opacity-40">/</span>
-												</>
-											)}
-											{modelName && <span>{modelName}</span>}
-											{authType && authType !== 'api' && (
-												<span className="opacity-50">
-													({authType === 'oauth' ? 'pro' : 'wallet'})
-												</span>
-											)}
-										</button>
-										{isSetu && setuBalance !== null && (
-											<>
-												<span className="text-emerald-600 dark:text-emerald-400">
+													<span className="text-emerald-600 dark:text-emerald-400">
 														${setuBalance.toFixed(2)}
 													</span>
 													{onRefreshBalance && (
@@ -541,10 +539,10 @@ export const ChatInput = memo(
 															/>
 														</button>
 													)}
-											</>
-										)}
-									</div>
-								)}
+												</>
+											)}
+										</div>
+									)}
 								</div>
 								<div className="justify-self-end">
 									{visionEnabled && (

@@ -27,15 +27,15 @@
  *
  * ```
  *   callsite (commit.ts, service.ts, compaction-auto.ts, runner-setup.ts)
-*       │
-*       ├─ detectOAuth(provider, auth)  →  OAuthContext
-*       │
-*       ├─ adaptSimpleCall(ctx, input)  →  AdaptedLLMCall  (title, commit, compaction)
-*       │
-*       └─ adaptRunnerCall(ctx, composed, opts)  →  AdaptedRunnerSetup  (main chat)
-*              │
-*              ├─ OpenAI OAuth (Codex):  no system, inline instructions,
-*              │     providerOptions.openai.store=false, forceStream=true
+ *       │
+ *       ├─ detectOAuth(provider, auth)  →  OAuthContext
+ *       │
+ *       ├─ adaptSimpleCall(ctx, input)  →  AdaptedLLMCall  (title, commit, compaction)
+ *       │
+ *       └─ adaptRunnerCall(ctx, composed, opts)  →  AdaptedRunnerSetup  (main chat)
+ *              │
+ *              ├─ OpenAI OAuth (Codex):  no system, inline instructions,
+ *              │     providerOptions.openai.store=false, forceStream=true
  *              │
  *              ├─ Anthropic OAuth:  spoofPrompt as system, instructions
  *              │     folded into user message, normal maxOutputTokens
@@ -69,10 +69,11 @@ export function detectOAuth(
 ): OAuthContext {
 	const isOAuth = auth?.type === 'oauth';
 	const needsSpoof = !!isOAuth && provider === 'anthropic';
+	const isCopilot = provider === 'copilot';
 	return {
-		isOAuth: !!isOAuth,
+		isOAuth: !!isOAuth || isCopilot,
 		needsSpoof,
-		isOpenAIOAuth: !!isOAuth && provider === 'openai',
+		isOpenAIOAuth: (!!isOAuth && provider === 'openai') || isCopilot,
 		spoofPrompt: needsSpoof ? getProviderSpoofPrompt(provider) : undefined,
 	};
 }
@@ -210,9 +211,7 @@ export function adaptRunnerCall(
 		return {
 			system: ctx.spoofPrompt,
 			systemComponents: [`spoof:${opts.provider || 'unknown'}`],
-			additionalSystemMessages: [
-				{ role: 'system', content: composed.prompt },
-			],
+			additionalSystemMessages: [{ role: 'system', content: composed.prompt }],
 			maxOutputTokens: opts.rawMaxOutputTokens,
 			providerOptions: {},
 		};
@@ -222,9 +221,7 @@ export function adaptRunnerCall(
 		return {
 			system: '',
 			systemComponents: composed.components,
-			additionalSystemMessages: [
-				{ role: 'user', content: composed.prompt },
-			],
+			additionalSystemMessages: [{ role: 'user', content: composed.prompt }],
 			maxOutputTokens: undefined,
 			providerOptions: buildCodexProviderOptions(composed.prompt),
 		};

@@ -89,3 +89,12 @@ export {
 	ensureSetuWallet,
 	type WalletInfo,
 } from './wallet.ts';
+
+export {
+	authorizeCopilot,
+	pollForToken as pollForCopilotToken,
+	pollForTokenOnce as pollForCopilotTokenOnce,
+	openCopilotAuthUrl,
+	type CopilotDeviceCodeResponse,
+	type CopilotPollResult,
+} from './copilot-oauth.ts';

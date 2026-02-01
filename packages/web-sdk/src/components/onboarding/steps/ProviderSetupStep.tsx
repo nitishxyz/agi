@@ -35,6 +35,14 @@ interface ProviderSetupStepProps {
 	manageMode?: boolean;
 	onClose?: () => void;
 	hideHeader?: boolean;
+	onStartCopilotDeviceFlow?: () => Promise<{
+		sessionId: string;
+		userCode: string;
+		verificationUri: string;
+	}>;
+	onPollCopilotDeviceFlow?: (
+		sessionId: string,
+	) => Promise<{ status: 'complete' | 'pending' | 'error'; error?: string }>;
 }
 
 export const ProviderSetupStep = memo(function ProviderSetupStep({
@@ -50,6 +58,8 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	manageMode = false,
 	onClose,
 	hideHeader = false,
+	onStartCopilotDeviceFlow,
+	onPollCopilotDeviceFlow,
 }: ProviderSetupStepProps) {
 	const [copied, setCopied] = useState(false);
 	const [isSettingUp, setIsSettingUp] = useState(false);
@@ -65,6 +75,17 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	const [oauthCodeInput, setOauthCodeInput] = useState('');
 	const [isExchangingCode, setIsExchangingCode] = useState(false);
 	const [isOpeningPopup, setIsOpeningPopup] = useState(false);
+	const [copilotDevice, setCopilotDevice] = useState<{
+		sessionId: string;
+		userCode: string;
+		verificationUri: string;
+	} | null>(null);
+	const [copilotPolling, setCopilotPolling] = useState(false);
+	const [copilotError, setCopilotError] = useState<string | null>(null);
+	const [copilotCodeCopied, setCopilotCodeCopied] = useState(false);
+	const [copilotModalOpen, setCopilotModalOpen] = useState(false);
+	const [copilotLoading, setCopilotLoading] = useState(false);
+	const copilotPollRef = useRef<ReturnType<typeof setInterval>>(undefined);
 	const balance = useSetuStore((s) => s.balance);
 	const usdcBalance = useSetuStore((s) => s.usdcBalance);
 	const apiKeyInputRef = useRef<HTMLInputElement>(null);
@@ -100,6 +121,45 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 			oauthCodeInputRef.current.focus();
 		}
 	}, [oauthSession]);
+
+	useEffect(() => {
+		if (!copilotPolling || !copilotDevice || !onPollCopilotDeviceFlow) return;
+		copilotPollRef.current = setInterval(async () => {
+			try {
+				const result = await onPollCopilotDeviceFlow(copilotDevice.sessionId);
+				if (result.status === 'complete') {
+					setCopilotDevice(null);
+					setCopilotPolling(false);
+					setCopilotError(null);
+					setCopilotModalOpen(false);
+					if (copilotPollRef.current) {
+						clearInterval(copilotPollRef.current);
+						copilotPollRef.current = undefined;
+					}
+					window.location.reload();
+				} else if (result.status === 'error') {
+					setCopilotError(result.error || 'Authorization failed');
+					setCopilotPolling(false);
+					if (copilotPollRef.current) {
+						clearInterval(copilotPollRef.current);
+						copilotPollRef.current = undefined;
+					}
+				}
+			} catch {}
+		}, 5000);
+		const timeout = setTimeout(() => {
+			setCopilotPolling(false);
+			setCopilotError('Authorization timed out. Please try again.');
+			if (copilotPollRef.current) {
+				clearInterval(copilotPollRef.current);
+				copilotPollRef.current = undefined;
+			}
+		}, 300000);
+		return () => {
+			if (copilotPollRef.current) clearInterval(copilotPollRef.current);
+			clearTimeout(timeout);
+		};
+	}, [copilotPolling, copilotDevice, onPollCopilotDeviceFlow]);
 
 	const handleCopy = async () => {
 		if (authStatus.setu.publicKey) {
@@ -142,6 +202,21 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	const handleStartOAuth = async (providerId: string, mode?: string) => {
 		if (providerId === 'anthropic') {
 			setOauthSession({ provider: providerId, sessionId: null, mode });
+		} else if (providerId === 'copilot' && onStartCopilotDeviceFlow) {
+			setCopilotError(null);
+			setCopilotModalOpen(true);
+			setCopilotLoading(true);
+			onStartCopilotDeviceFlow()
+				.then((data) => {
+					setCopilotDevice(data);
+					setCopilotLoading(false);
+				})
+				.catch((err) => {
+					setCopilotError(
+						err instanceof Error ? err.message : 'Failed to start device flow',
+					);
+					setCopilotLoading(false);
+				});
 		} else {
 			onStartOAuth(providerId, mode);
 		}
@@ -181,6 +256,32 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	const handleCancelOAuth = () => {
 		setOauthSession(null);
 		setOauthCodeInput('');
+	};
+
+	const handleCopilotOpenGithub = () => {
+		if (!copilotDevice) return;
+		window.open(copilotDevice.verificationUri, '_blank');
+		setCopilotPolling(true);
+	};
+
+	const handleCopilotCopyCode = async () => {
+		if (!copilotDevice) return;
+		await navigator.clipboard.writeText(copilotDevice.userCode);
+		setCopilotCodeCopied(true);
+		setTimeout(() => setCopilotCodeCopied(false), 2000);
+	};
+
+	const handleCancelCopilot = () => {
+		setCopilotDevice(null);
+		setCopilotPolling(false);
+		setCopilotError(null);
+		setCopilotCodeCopied(false);
+		setCopilotModalOpen(false);
+		setCopilotLoading(false);
+		if (copilotPollRef.current) {
+			clearInterval(copilotPollRef.current);
+			copilotPollRef.current = undefined;
+		}
 	};
 
 	const configuredProviders = Object.entries(authStatus.providers).filter(
@@ -449,14 +550,16 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 														</div>
 													</div>
 													<div className="flex items-center gap-1">
-														<button
-															type="button"
-															onClick={() => setAddingProvider(id)}
-															className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-														>
-															<Key className="w-3.5 h-3.5" />
-															API
-														</button>
+														{id !== 'copilot' && (
+															<button
+																type="button"
+																onClick={() => setAddingProvider(id)}
+																className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+															>
+																<Key className="w-3.5 h-3.5" />
+																API
+															</button>
+														)}
 														{info.supportsOAuth && (
 															<button
 																type="button"
@@ -469,7 +572,11 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 																className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
 															>
 																<ExternalLink className="w-3.5 h-3.5" />
-																{id === 'anthropic' ? 'Max' : 'OAuth'}
+																{id === 'anthropic'
+																	? 'Max'
+																	: id === 'copilot'
+																		? 'Login'
+																		: 'OAuth'}
 															</button>
 														)}
 													</div>
@@ -600,6 +707,82 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 								</div>
 							</div>
 						)}
+					</div>
+				</div>
+			)}
+
+			{/* Copilot Device Flow Modal */}
+			{copilotModalOpen && (
+				<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+					<div className="bg-background border border-border rounded-xl w-full max-w-lg mx-6 shadow-2xl">
+						<div className="flex items-center gap-3 p-6 border-b border-border">
+							<ProviderLogo provider="copilot" size={24} />
+							<h3 className="text-lg font-semibold">Connect GitHub Copilot</h3>
+						</div>
+						<div className="p-6">
+							<p className="text-sm text-muted-foreground mb-4">
+								Enter this code on GitHub to authorize:
+							</p>
+							<div className="flex items-center justify-center gap-3 mb-6">
+								{copilotLoading ? (
+									<div className="bg-muted px-6 py-3 rounded-lg animate-pulse">
+										<div className="h-9 w-48 bg-muted-foreground/20 rounded" />
+									</div>
+								) : copilotDevice ? (
+									<>
+										<code className="text-3xl font-mono font-bold tracking-widest text-foreground bg-muted px-6 py-3 rounded-lg select-all">
+											{copilotDevice.userCode}
+										</code>
+										<button
+											type="button"
+											onClick={handleCopilotCopyCode}
+											className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+										>
+											{copilotCodeCopied ? (
+												<Check className="w-5 h-5 text-green-500" />
+											) : (
+												<Copy className="w-5 h-5" />
+											)}
+										</button>
+									</>
+								) : null}
+							</div>
+							{copilotError && (
+								<p className="text-sm text-red-500 mb-4 text-center">
+									{copilotError}
+								</p>
+							)}
+							{copilotPolling && (
+								<div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-4">
+									<Loader2 className="w-4 h-4 animate-spin" />
+									Waiting for authorization...
+								</div>
+							)}
+							<div className="flex gap-3">
+								<button
+									type="button"
+									onClick={handleCancelCopilot}
+									className="flex-1 h-11 px-4 bg-transparent border border-border text-foreground rounded-lg font-medium hover:bg-muted/50 transition-colors"
+								>
+									Cancel
+								</button>
+								<button
+									type="button"
+									onClick={handleCopilotOpenGithub}
+									disabled={copilotPolling || copilotLoading}
+									className="flex-1 h-11 px-4 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+								>
+									{copilotPolling || copilotLoading ? (
+										<Loader2 className="w-4 h-4 animate-spin" />
+									) : (
+										<>
+											Open GitHub
+											<ExternalLink className="w-4 h-4" />
+										</>
+									)}
+								</button>
+							</div>
+						</div>
 					</div>
 				</div>
 			)}

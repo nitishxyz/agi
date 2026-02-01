@@ -48,6 +48,7 @@ const PREFERRED_FAST_MODELS: Partial<Record<ProviderId, string[]>> = {
 		'codex-mini-latest',
 	],
 	zai: ['glm-4.5-flash', 'glm-4.5-air'],
+	copilot: ['gpt-4o-mini', 'gpt-4.1-nano', 'gpt-4.1-mini'],
 };
 
 export function getFastModel(provider: ProviderId): string | undefined {
@@ -150,6 +151,7 @@ export function getUnderlyingProviderKey(
 	if (provider === 'openai') return 'openai';
 	if (provider === 'google') return 'google';
 	if (provider === 'moonshot') return 'moonshot';
+	if (provider === 'copilot') return 'openai';
 
 	const npm = getModelNpmBinding(provider, model);
 	if (npm === '@ai-sdk/anthropic') return 'anthropic';
@@ -169,6 +171,7 @@ export function getModelFamily(
 	if (provider === 'openai') return 'openai';
 	if (provider === 'google') return 'google';
 	if (provider === 'moonshot') return 'moonshot';
+	if (provider === 'copilot') return 'openai';
 
 	// 2) For aggregate providers, infer from model ID patterns
 	if (provider === 'openrouter' || provider === 'opencode') {

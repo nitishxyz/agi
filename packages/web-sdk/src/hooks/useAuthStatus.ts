@@ -273,5 +273,7 @@ export function useAuthStatus() {
 		startOAuth,
 		startOAuthManual,
 		exchangeOAuthCode,
+		startCopilotDeviceFlow: apiClient.startCopilotDeviceFlow.bind(apiClient),
+		pollCopilotDeviceFlow: apiClient.pollCopilotDeviceFlow.bind(apiClient),
 	};
 }

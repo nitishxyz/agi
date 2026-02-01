@@ -16,6 +16,8 @@ import {
 	exchangeWeb,
 	authorizeOpenAI,
 	exchangeOpenAI,
+	authorizeCopilot,
+	pollForCopilotTokenOnce,
 	type ProviderId,
 } from '@agi-cli/sdk';
 import { logger } from '@agi-cli/sdk';
@@ -26,11 +28,21 @@ const oauthVerifiers = new Map<
 	{ verifier: string; provider: string; createdAt: number; callbackUrl: string }
 >();
 
+const copilotDeviceSessions = new Map<
+	string,
+	{ deviceCode: string; interval: number; provider: string; createdAt: number }
+>();
+
 setInterval(() => {
 	const now = Date.now();
 	for (const [key, value] of oauthVerifiers.entries()) {
 		if (now - value.createdAt > 10 * 60 * 1000) {
 			oauthVerifiers.delete(key);
+		}
+	}
+	for (const [key, value] of copilotDeviceSessions.entries()) {
+		if (now - value.createdAt > 10 * 60 * 1000) {
+			copilotDeviceSessions.delete(key);
 		}
 	}
 }, 60 * 1000);
@@ -67,7 +79,8 @@ export function registerAuthRoutes(app: Hono) {
 					configured: !!providerAuth,
 					type: providerAuth?.type,
 					label: entry.label || id,
-					supportsOAuth: id === 'anthropic' || id === 'openai',
+					supportsOAuth:
+						id === 'anthropic' || id === 'openai' || id === 'copilot',
 					modelCount: models.length,
 					costRange:
 						costs.length > 0
@@ -199,7 +212,12 @@ export function registerAuthRoutes(app: Hono) {
 					400,
 				);
 			} else {
-				return c.json({ error: 'OAuth not supported for this provider' }, 400);
+				return c.json(
+					{
+						error: `OAuth not supported for provider: ${provider}. Copilot uses device flow — use /v1/auth/copilot/device/start instead.`,
+					},
+					400,
+				);
 			}
 
 			const sessionId = crypto.randomUUID();
@@ -476,6 +494,69 @@ export function registerAuthRoutes(app: Hono) {
 					</body>
 				</html>
 			`);
+		}
+	});
+
+	app.post('/v1/auth/copilot/device/start', async (c) => {
+		try {
+			const deviceData = await authorizeCopilot();
+			const sessionId = crypto.randomUUID();
+			copilotDeviceSessions.set(sessionId, {
+				deviceCode: deviceData.deviceCode,
+				interval: deviceData.interval,
+				provider: 'copilot',
+				createdAt: Date.now(),
+			});
+			return c.json({
+				sessionId,
+				userCode: deviceData.userCode,
+				verificationUri: deviceData.verificationUri,
+			});
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: 'Failed to start Copilot device flow';
+			logger.error('Copilot device flow start failed', error);
+			return c.json({ error: message }, 500);
+		}
+	});
+
+	app.post('/v1/auth/copilot/device/poll', async (c) => {
+		try {
+			const { sessionId } = await c.req.json<{ sessionId: string }>();
+			if (!sessionId || !copilotDeviceSessions.has(sessionId)) {
+				return c.json({ error: 'Session expired or invalid' }, 400);
+			}
+			const session = copilotDeviceSessions.get(sessionId)!;
+			const result = await pollForCopilotTokenOnce(session.deviceCode);
+			if (result.status === 'complete') {
+				copilotDeviceSessions.delete(sessionId);
+				await setAuth(
+					'copilot',
+					{
+						type: 'oauth',
+						refresh: result.accessToken,
+						access: result.accessToken,
+						expires: 0,
+					},
+					undefined,
+					'global',
+				);
+				return c.json({ status: 'complete' });
+			}
+			if (result.status === 'pending') {
+				return c.json({ status: 'pending' });
+			}
+			if (result.status === 'error') {
+				copilotDeviceSessions.delete(sessionId);
+				return c.json({ status: 'error', error: result.error });
+			}
+			return c.json({ status: 'pending' });
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Poll failed';
+			logger.error('Copilot device poll failed', error);
+			return c.json({ error: message }, 500);
 		}
 	});
 

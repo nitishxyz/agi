@@ -48,6 +48,9 @@ export function toErrorPayload(err: unknown): ErrorPayload {
 				if (parsed.error?.type) {
 					details.apiErrorType = parsed.error.type;
 				}
+				if (parsed.error?.code) {
+					details.apiErrorCode = parsed.error.code;
+				}
 			} catch {}
 		}
 

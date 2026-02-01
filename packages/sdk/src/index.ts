@@ -106,6 +106,11 @@ export { createOpencodeModel } from './providers/src/index.ts';
 export type { OpencodeProviderConfig } from './providers/src/index.ts';
 export { createMoonshotModel } from './providers/src/index.ts';
 export type { MoonshotProviderConfig } from './providers/src/index.ts';
+export {
+	createCopilotFetch,
+	createCopilotModel,
+} from './providers/src/index.ts';
+export type { CopilotOAuthConfig } from './providers/src/index.ts';
 
 // =======================
 // Authentication (from internal auth module)
@@ -140,6 +145,16 @@ export {
 	ensureSetuWallet,
 } from './auth/src/index.ts';
 export type { WalletInfo } from './auth/src/index.ts';
+export {
+	authorizeCopilot,
+	pollForCopilotToken,
+	pollForCopilotTokenOnce,
+	openCopilotAuthUrl,
+} from './auth/src/index.ts';
+export type {
+	CopilotDeviceCodeResponse,
+	CopilotPollResult,
+} from './auth/src/index.ts';
 
 // =======================
 // Configuration (from internal config module)

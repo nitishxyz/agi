@@ -282,8 +282,8 @@ export function useVimMode({
 				setTimeout(() => {
 					textarea.setSelectionRange(lineStart, lineStart);
 				}, 0);
-			return true;
-		}
+				return true;
+			}
 
 			if (key === 'h') {
 				e.preventDefault();

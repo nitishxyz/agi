@@ -82,7 +82,6 @@ function buildSetuEntry(base: CatalogMap): ProviderCatalogEntry | null {
 
 	if (!setuModels.length) return null;
 
-	// Prefer OpenAI-family models first so defaults are stable
 	setuModels.sort((a, b) => {
 		const providerA = a.provider?.npm ?? '';
 		const providerB = b.provider?.npm ?? '';

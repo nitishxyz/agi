@@ -1157,6 +1157,51 @@ class ApiClient {
 
 		return await response.json();
 	}
+
+	async startCopilotDeviceFlow(): Promise<{
+		sessionId: string;
+		userCode: string;
+		verificationUri: string;
+	}> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/auth/copilot/device/start`,
+			{
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to start Copilot device flow' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async pollCopilotDeviceFlow(
+		sessionId: string,
+	): Promise<{ status: 'complete' | 'pending' | 'error'; error?: string }> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/auth/copilot/device/poll`,
+			{
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ sessionId }),
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Poll failed' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
 }
 
 export const apiClient = new ApiClient();

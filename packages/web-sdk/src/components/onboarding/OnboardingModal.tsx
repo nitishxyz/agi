@@ -29,6 +29,8 @@ export const OnboardingModal = memo(function OnboardingModal({
 		startOAuth,
 		startOAuthManual,
 		exchangeOAuthCode,
+		startCopilotDeviceFlow,
+		pollCopilotDeviceFlow,
 	} = useAuthStatus();
 
 	if (!isOpen || !authStatus) return null;
@@ -49,6 +51,8 @@ export const OnboardingModal = memo(function OnboardingModal({
 					manageMode={manageMode}
 					onClose={reset}
 					hideHeader={hideHeader}
+					onStartCopilotDeviceFlow={startCopilotDeviceFlow}
+					onPollCopilotDeviceFlow={pollCopilotDeviceFlow}
 				/>
 			)}
 

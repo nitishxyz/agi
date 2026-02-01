@@ -7,6 +7,7 @@ import { resolveSetuModel, type ResolveSetuModelOptions } from './setu.ts';
 import { getZaiInstance, getZaiCodingInstance } from './zai.ts';
 import { resolveOpencodeModel } from './opencode.ts';
 import { getMoonshotInstance } from './moonshot.ts';
+import { resolveCopilotModel } from './copilot.ts';
 
 export type ProviderName = ProviderId;
 
@@ -36,6 +37,9 @@ export async function resolveModel(
 	}
 	if (provider === 'opencode') {
 		return resolveOpencodeModel(model, cfg);
+	}
+	if (provider === 'copilot') {
+		return resolveCopilotModel(model, cfg);
 	}
 	if (provider === 'setu') {
 		return await resolveSetuModel(model, options?.sessionId, {

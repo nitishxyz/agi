@@ -88,6 +88,7 @@ const pricingTable: Record<ProviderName, PricingEntry[]> = {
 	moonshot: [
 		// Pricing from catalog entries; leave empty here
 	],
+	copilot: [],
 };
 
 function findPricing(

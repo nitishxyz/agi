@@ -25,6 +25,9 @@ import {
 	obtainOpenAIApiKey,
 	generateWallet,
 	importWallet,
+	authorizeCopilot,
+	pollForCopilotToken,
+	openCopilotAuthUrl,
 } from '@agi-cli/sdk';
 import { loadConfig } from '@agi-cli/sdk';
 import { catalog } from '@agi-cli/sdk';
@@ -78,6 +81,11 @@ const PROVIDER_LINKS: Record<
 		name: 'Moonshot AI (Kimi)',
 		url: 'https://platform.moonshot.ai/console/api-keys',
 		env: 'MOONSHOT_API_KEY',
+	},
+	copilot: {
+		name: 'GitHub Copilot',
+		url: 'https://github.com/features/copilot',
+		env: 'GITHUB_TOKEN',
 	},
 };
 
@@ -140,6 +148,7 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 				{ value: 'google', label: PROVIDER_LINKS.google.name },
 				{ value: 'openrouter', label: PROVIDER_LINKS.openrouter.name },
 				{ value: 'opencode', label: PROVIDER_LINKS.opencode.name },
+				{ value: 'copilot', label: PROVIDER_LINKS.copilot.name },
 				{ value: 'setu', label: PROVIDER_LINKS.setu.name },
 				{ value: 'zai', label: PROVIDER_LINKS.zai.name },
 				{ value: 'zai-coding', label: PROVIDER_LINKS['zai-coding'].name },
@@ -163,6 +172,10 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 
 	if (provider === 'setu') {
 		return runAuthLoginSetu(cfg, wantLocal);
+	}
+
+	if (provider === 'copilot') {
+		return runAuthLoginCopilot(cfg, wantLocal);
 	}
 
 	const meta = PROVIDER_LINKS[provider];
@@ -546,6 +559,65 @@ async function runAuthLoginSetu(
 	return true;
 }
 
+async function runAuthLoginCopilot(
+	cfg: Awaited<ReturnType<typeof loadConfig>>,
+	wantLocal: boolean,
+): Promise<boolean> {
+	try {
+		log.info('Starting GitHub Copilot device flow...');
+
+		const deviceData = await authorizeCopilot();
+
+		log.info(`Opening browser: ${deviceData.verificationUri}`);
+		log.info(`Enter code: ${colors.cyan(deviceData.userCode)}\n`);
+
+		const opened = await openCopilotAuthUrl(deviceData.verificationUri);
+		if (!opened) {
+			log.warn(
+				'Could not open browser automatically. Please visit the URL above manually.\n',
+			);
+		}
+
+		log.info('Waiting for authorization...');
+		log.info('(Complete the login in your browser)\n');
+
+		const accessToken = await pollForCopilotToken(
+			deviceData.deviceCode,
+			deviceData.interval,
+		);
+
+		await setAuth(
+			'copilot',
+			{
+				type: 'oauth',
+				refresh: accessToken,
+				access: accessToken,
+				expires: 0,
+			},
+			cfg.projectRoot,
+			'global',
+		);
+
+		if (wantLocal)
+			log.warn(
+				'Local credential storage is disabled; saved to secure global location.',
+			);
+
+		await ensureGlobalConfigDefaults('copilot');
+		log.success('GitHub Copilot authorized!');
+		log.info(
+			'You can now use Copilot models (free with GitHub Copilot subscription).',
+		);
+		outro('Done');
+		return true;
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		log.error(`Authentication failed: ${message}`);
+		outro('Failed');
+		return false;
+	}
+}
+
 export async function runAuthLogout(_args: string[]) {
 	const cfg = await loadConfig(process.cwd());
 	const wantLocal = _args.includes('--local');
@@ -598,6 +670,7 @@ async function ensureGlobalConfigDefaults(provider: ProviderId) {
 			google: { enabled: provider === 'google' },
 			openrouter: { enabled: provider === 'openrouter' },
 			opencode: { enabled: provider === 'opencode' },
+			copilot: { enabled: provider === 'copilot' },
 			setu: { enabled: provider === 'setu' },
 		},
 	};

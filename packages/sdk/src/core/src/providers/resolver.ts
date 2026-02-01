@@ -8,6 +8,7 @@ import {
 	createSetuModel,
 	createOpenAIOAuthModel,
 } from '../../../providers/src/index.ts';
+import { createCopilotModel } from '../../../providers/src/copilot-client.ts';
 import type { OAuth } from '../../../types/src/index.ts';
 
 function needsResponsesApi(model: string): boolean {
@@ -33,6 +34,7 @@ export type ProviderName =
 	| 'google'
 	| 'openrouter'
 	| 'opencode'
+	| 'copilot'
 	| 'setu'
 	| 'zai'
 	| 'zai-coding'
@@ -150,6 +152,15 @@ export async function resolveModel(
 		)
 			return ocCompat(resolvedModelId);
 		return ocOpenAI(resolvedModelId);
+	}
+
+	if (provider === 'copilot') {
+		if (config.oauth) {
+			return createCopilotModel(model, { oauth: config.oauth });
+		}
+		throw new Error(
+			'Copilot provider requires OAuth. Run `agi auth login copilot`.',
+		);
 	}
 
 	if (provider === 'setu') {

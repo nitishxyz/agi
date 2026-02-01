@@ -13,10 +13,7 @@ import { buildHistoryMessages } from '../message/history-builder.ts';
 import { getMaxOutputTokens } from '../utils/token.ts';
 import { setupToolContext } from '../tools/setup.ts';
 import { getCompactionSystemPrompt } from '../message/compaction.ts';
-import {
-	detectOAuth,
-	adaptRunnerCall,
-} from '../provider/oauth-adapter.ts';
+import { detectOAuth, adaptRunnerCall } from '../provider/oauth-adapter.ts';
 import type { RunOpts } from '../session/queue.ts';
 import type { ToolAdapterContext } from '../../tools/adapter.ts';
 
@@ -90,7 +87,9 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const auth = await getAuth(opts.provider, cfg.projectRoot);
 	const oauth = detectOAuth(opts.provider, auth);
 
-	debugLog(`[RUNNER] needsSpoof (OAuth): ${oauth.needsSpoof}, isOpenAIOAuth: ${oauth.isOpenAIOAuth}`);
+	debugLog(
+		`[RUNNER] needsSpoof (OAuth): ${oauth.needsSpoof}, isOpenAIOAuth: ${oauth.isOpenAIOAuth}`,
+	);
 	debugLog(
 		`[RUNNER] spoofPrompt: ${oauth.spoofPrompt ? `present (${opts.provider})` : 'none'}`,
 	);
@@ -113,7 +112,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		rawMaxOutputTokens,
 	});
 
-	let { system } = adapted;
+	const { system } = adapted;
 	const { systemComponents, additionalSystemMessages } = adapted;
 	systemTimer.end();
 	debugLog(
@@ -198,7 +197,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 			}
 		} else if (underlyingProvider === 'openai') {
 			providerOptions.openai = {
-				...(providerOptions.openai as Record<string, unknown> || {}),
+				...((providerOptions.openai as Record<string, unknown>) || {}),
 				reasoningEffort: 'high',
 				reasoningSummary: 'auto',
 			};
