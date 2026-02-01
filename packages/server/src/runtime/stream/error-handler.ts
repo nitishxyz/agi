@@ -73,8 +73,7 @@ export function createErrorHandler(
 			(causeError?.message as string) ??
 			'';
 
-		const isFiatSelected =
-			errorCode === 'SETU_FIAT_SELECTED';
+		const isFiatSelected = errorCode === 'SETU_FIAT_SELECTED';
 
 		// Handle fiat payment selected - this is not an error, just a signal to pause
 		if (isFiatSelected) {
@@ -317,7 +316,9 @@ export function createErrorHandler(
 			isPromptTooLong && !opts.isCompactCommand
 				? `${errorPayload.message}. Context auto-compacted - please retry your message.`
 				: errorPayload.message;
-		const errorPartType = isPromptTooLong ? 'context_length_exceeded' : errorPayload.type;
+		const errorPartType = isPromptTooLong
+			? 'context_length_exceeded'
+			: errorPayload.type;
 		await db.insert(messageParts).values({
 			id: errorPartId,
 			messageId: opts.assistantMessageId,

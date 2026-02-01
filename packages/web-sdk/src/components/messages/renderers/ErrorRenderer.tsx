@@ -1,6 +1,12 @@
 import type React from 'react';
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, RefreshCw, CreditCard, Scissors } from 'lucide-react';
+import {
+	ChevronDown,
+	ChevronRight,
+	RefreshCw,
+	CreditCard,
+	Scissors,
+} from 'lucide-react';
 import type { ContentJson } from './types';
 
 interface ErrorRendererProps {
@@ -243,10 +249,13 @@ export function ErrorRenderer({
 			<div className="space-y-3">
 				<div className="flex items-center gap-2">
 					<Scissors className="h-4 w-4 text-amber-500" />
-					<span className="font-medium text-foreground">Context window exceeded</span>
+					<span className="font-medium text-foreground">
+						Context window exceeded
+					</span>
 				</div>
 				<p className="text-sm text-muted-foreground">
-					The conversation is too long for the model. Compact to reduce context size, then retry.
+					The conversation is too long for the model. Compact to reduce context
+					size, then retry.
 				</p>
 				<div className="flex items-center gap-2 pt-1">
 					{onCompact && (

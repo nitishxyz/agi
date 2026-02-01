@@ -292,9 +292,9 @@ export const AssistantMessageGroup = memo(
 								onApprove={handleApprove}
 								onReject={handleReject}
 								sessionId={sessionId}
-							onRetry={onRetry}
-							onCompact={onCompact}
-						/>
+								onRetry={onRetry}
+								onCompact={onCompact}
+							/>
 						);
 					})}
 
