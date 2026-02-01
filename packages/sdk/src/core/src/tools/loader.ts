@@ -10,7 +10,6 @@ import { buildGrepTool } from './builtin/grep.ts';
 import { buildGlobTool } from './builtin/glob.ts';
 import { buildApplyPatchTool } from './builtin/patch.ts';
 import { updateTodosTool } from './builtin/todos.ts';
-import { editTool } from './builtin/edit.ts';
 import { buildWebSearchTool } from './builtin/websearch.ts';
 import { buildTerminalTool } from './builtin/terminal.ts';
 import type { TerminalManager } from '../terminals/index.ts';
@@ -128,8 +127,6 @@ export async function discoverProjectTools(
 	tools.set(ap.name, ap.tool);
 	// Todo tracking
 	tools.set('update_todos', updateTodosTool);
-	// Edit
-	tools.set('edit', editTool);
 	// Web search
 	const ws = buildWebSearchTool();
 	tools.set(ws.name, ws.tool);

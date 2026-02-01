@@ -21,10 +21,9 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 - `read`: Read file contents (supports line ranges)
 - `write`: Write complete file contents
 - `apply_patch`: Apply unified diff patches (RECOMMENDED for targeted edits)
-- `edit`: Structured file editing with operations (alternative editing method)
 
 **Version Control**:
-- `git_status`, `git_diff`, `git_log`, `git_show`, `git_commit`
+- `git_status`, `git_diff`
 
 **Execution & Planning**:
 - `bash`: Execute shell commands
@@ -36,7 +35,7 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 
 1. **Batch Independent Operations**: Make all independent tool calls in one turn
 2. **File Editing**: Prefer `apply_patch` for targeted edits to avoid rewriting entire files
-3. **Combine Edits**: When editing the same file multiple times, use ONE `edit` call with multiple ops
+3. **Combine Edits**: When editing the same file multiple times, use multiple `@@` hunks in ONE `apply_patch` call
 4. **Search First**: Use `glob` to find files before reading them
 5. **Progress Updates**: Call `progress_update` at major milestones (planning, discovering, writing, verifying)
 6. **Plan Tracking**: Use `update_todos` to show task breakdown and progress
@@ -76,13 +75,6 @@ You have access to a rich set of specialized tools optimized for coding tasks:
  more context                 ← More context (space prefix)
 ```
 
-**Using the `edit` Tool** (Alternative):
-- Specify the file path and a list of operations
-- Operations are applied sequentially to the latest file state
-- Operation types: `replace`, `insert-before`, `insert-after`, `delete`
-- Each operation includes: `old` (text to match/find) and `new` (replacement/insertion)
-- When making multiple changes to a file, use ONE `edit` call with multiple ops
-
 **Using the `write` Tool** (Last Resort):
 - Use for creating NEW files
 - Use when replacing >70% of a file's content (almost complete rewrite)
@@ -90,10 +82,10 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 - Wastes output tokens and risks hallucinating unchanged parts
 
 **Never**:
-- Use `write` for partial file edits (use `apply_patch` or `edit` instead)
-- Make multiple separate `edit` or `apply_patch` calls for the same file (use multiple hunks with @@ headers or multiple ops instead)
+- Use `write` for partial file edits (use `apply_patch` instead)
+- Make multiple separate `apply_patch` calls for the same file (use multiple hunks with @@ headers instead)
 - Assume file content remains unchanged between operations
-- Use `bash` with `sed`/`awk` for programmatic file editing (use `edit` instead)
+- Use `bash` with `sed`/`awk` for programmatic file editing (use `apply_patch` instead)
 
 ## Search & Discovery Workflow
 
@@ -461,7 +453,7 @@ Before calling `apply_patch`, verify ALL of these:
 **If Patch Fails:**
 - Error = context didn't match OR file content changed
 - Solution: Read file AGAIN, verify context character-by-character
-- After 2+ failures: use `edit` tool instead (more forgiving)
+- After 2+ failures: use `write` tool to rewrite the entire file instead
 
 ## `update_todos`
 

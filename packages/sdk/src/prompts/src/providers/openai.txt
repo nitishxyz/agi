@@ -401,7 +401,7 @@ GPT-4 models (especially GPT-4o) often fail patches by:
 - You didn't read the file first, OR
 - Context lines don't match file character-for-character
 - Solution: Read file AGAIN, copy exact lines
-- After 2 failures: switch to `edit` tool instead
+- After 2 failures: use `write` tool to rewrite the entire file instead
 
 ## `update_todos`
 

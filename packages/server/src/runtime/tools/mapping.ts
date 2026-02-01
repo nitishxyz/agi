@@ -18,7 +18,6 @@ export const CANONICAL_TO_PASCAL: Record<string, string> = {
 	// File system operations
 	read: 'Read',
 	write: 'Write',
-	edit: 'Edit',
 	ls: 'Ls',
 	tree: 'Tree',
 	cd: 'Cd',
@@ -58,7 +57,6 @@ export const PASCAL_TO_CANONICAL: Record<string, string> = {
 	// File system operations
 	Read: 'read',
 	Write: 'write',
-	Edit: 'edit',
 	Ls: 'ls',
 	Tree: 'tree',
 	Cd: 'cd',

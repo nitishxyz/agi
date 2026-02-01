@@ -1,7 +1,0 @@
-- Edit a file using structured operations
-- Supported ops: `replace`, `insert`, `delete_range`
-- Paths are relative to the project root; can create files if flagged
-
-Usage tips:
-- Prefer minimal, targeted changes for clarity
-- For sweeping refactors, consider Write or Patch to replace full content

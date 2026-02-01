@@ -17,10 +17,8 @@ You MUST call the `finish` tool at the end of every response to signal completio
 File Editing Best Practices:
 - ⚠️ CRITICAL: ALWAYS read a file immediately before using apply_patch - never patch from memory
 - Read the file in THIS turn, not from previous context or memory. Copy context lines CHARACTER-FOR-CHARACTER from the read output — never reconstruct from memory
-- When making multiple edits to the same file, combine them into a single edit operation with multiple ops
-- Each edit operation re-reads the file, so ops within a single edit call are applied sequentially to the latest content
-- If you need to make edits based on previous edits, ensure they're in the same edit call or re-read the file between calls
-- Never assume file content remains unchanged between separate edit operations
+- When making multiple edits to the same file, use multiple `@@` hunks in a single `apply_patch` call
+- Never assume file content remains unchanged between separate apply_patch operations
 - When using apply_patch, ensure the patch is based on the current file content, not stale versions
 - If a patch fails, it means you didn't read the file first or the content doesn't match what you expected
 - If a patch fails with "expected to find" error: you likely hallucinated the code. Read the file AGAIN and copy the exact lines

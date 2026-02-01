@@ -235,7 +235,7 @@ You (Claude/Sonnet) generally excel at using patches, but even you can fail when
 - Don't retry with same context - read file AGAIN first
 - Check that context lines exist exactly as written
 - Verify indentation matches (spaces vs tabs)
-- If failing 2+ times, switch to `edit` tool instead
+- If failing 2+ times, use `write` tool to rewrite the entire file instead
 
 # Code References
 
