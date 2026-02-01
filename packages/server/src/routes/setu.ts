@@ -19,7 +19,7 @@ import {
 	type TopupMethod,
 } from '../runtime/topup/manager.ts';
 
-const SETU_BASE_URL = process.env.SETU_BASE_URL || 'https://setu.agi.nitish.sh';
+const SETU_BASE_URL = process.env.SETU_BASE_URL || 'https://api.setu.nitish.sh';
 
 function getSetuBaseUrl(): string {
 	return SETU_BASE_URL.endsWith('/')

@@ -478,7 +478,7 @@ Response:
 
 | Variable | Description |
 |----------|-------------|
-| `SETU_BASE_URL` | Router URL (default: `https://setu.agi.nitish.sh`) |
+| `SETU_BASE_URL` | Router URL (default: `https://api.setu.nitish.sh`) |
 | `SETU_SOLANA_RPC_URL` | Solana RPC (default: `https://api.mainnet-beta.solana.com`) |
 | `SETU_PRIVATE_KEY` | Base58-encoded Solana private key |
 
