@@ -495,11 +495,14 @@ export const ChatInput = memo(
 									)}
 								</div>
 								<div className="justify-self-center">
-									{(providerName || modelName || authType) && (
+								{(providerName || modelName || authType) && (
+									<div
+										className="text-[10px] text-muted-foreground flex items-center gap-1 px-2 py-0.5"
+									>
 										<button
 											type="button"
 											onClick={onModelInfoClick}
-											className="text-[10px] text-muted-foreground flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+											className="flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer"
 										>
 											{providerName && (
 												<>
@@ -517,9 +520,10 @@ export const ChatInput = memo(
 													({authType === 'oauth' ? 'pro' : 'wallet'})
 												</span>
 											)}
-											{isSetu && setuBalance !== null && (
-												<>
-													<span className="text-emerald-600 dark:text-emerald-400">
+										</button>
+										{isSetu && setuBalance !== null && (
+											<>
+												<span className="text-emerald-600 dark:text-emerald-400">
 														${setuBalance.toFixed(2)}
 													</span>
 													{onRefreshBalance && (
@@ -537,10 +541,10 @@ export const ChatInput = memo(
 															/>
 														</button>
 													)}
-												</>
-											)}
-										</button>
-									)}
+											</>
+										)}
+									</div>
+								)}
 								</div>
 								<div className="justify-self-end">
 									{visionEnabled && (
