@@ -321,16 +321,18 @@ export const MessageThread = memo(function MessageThread({
 									nextMessage && nextMessage.role === 'assistant';
 
 								return (
-								<AssistantMessageGroup
-									key={message.id}
-									sessionId={sessionId}
-									message={message}
-									showHeader={showHeader}
-									hasNextAssistantMessage={nextIsAssistant}
-									isLastMessage={isLastMessage}
-									onBranchCreated={onSelectSession}
-									onRetry={isLastMessage ? createRetryHandler(message.id) : undefined}
-								/>
+									<AssistantMessageGroup
+										key={message.id}
+										sessionId={sessionId}
+										message={message}
+										showHeader={showHeader}
+										hasNextAssistantMessage={nextIsAssistant}
+										isLastMessage={isLastMessage}
+										onBranchCreated={onSelectSession}
+										onRetry={
+											isLastMessage ? createRetryHandler(message.id) : undefined
+										}
+									/>
 								);
 							}
 
