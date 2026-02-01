@@ -57,6 +57,7 @@ interface ChatInputProps {
 	onResearchContextRemove?: (id: string) => void;
 	onRefreshBalance?: () => void;
 	isBalanceLoading?: boolean;
+	onModelInfoClick?: () => void;
 }
 
 export const ChatInput = memo(
@@ -86,6 +87,7 @@ export const ChatInput = memo(
 			onResearchContextRemove,
 			onRefreshBalance,
 			isBalanceLoading = false,
+			onModelInfoClick,
 		},
 		ref,
 	) {
@@ -494,7 +496,11 @@ export const ChatInput = memo(
 								</div>
 								<div className="justify-self-center">
 									{(providerName || modelName || authType) && (
-										<span className="text-[10px] text-muted-foreground flex items-center gap-1">
+										<button
+											type="button"
+											onClick={onModelInfoClick}
+											className="text-[10px] text-muted-foreground flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+										>
 											{providerName && (
 												<>
 													<ProviderLogo
@@ -533,7 +539,7 @@ export const ChatInput = memo(
 													)}
 												</>
 											)}
-										</span>
+										</button>
 									)}
 								</div>
 								<div className="justify-self-end">

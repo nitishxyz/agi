@@ -57,11 +57,29 @@ filename="$asset$ext"
 # Resolve CLI release tag
 if [ "$VERSION" = "latest" ]; then
   info "Fetching latest CLI release..."
-  VERSION=$(http_get "https://api.github.com/repos/$REPO/releases?per_page=20" \
-    | sed -n 's/.*"tag_name" *: *"\(v[0-9][^"]*\)".*/\1/p' \
-    | head -1)
+  
+  releases_json=$(http_get "https://api.github.com/repos/$REPO/releases?per_page=30")
+
+  download_urls=$(echo "$releases_json" \
+    | grep -o '"browser_download_url" *: *"[^"]*'"/${asset}"'"' \
+    | sed 's/.*"browser_download_url" *: *"//;s/"$//')
+
+  VERSION=""
+  for url in $download_urls; do
+    tag=$(echo "$url" | sed 's|.*/download/\([^/]*\)/.*|\1|')
+    if [ -z "$VERSION" ]; then
+      VERSION="$tag"
+    else
+      cur=$(echo "$VERSION" | sed 's/^v//' | awk -F. '{ printf "%04d%04d%04d", $1, $2, $3 }')
+      new=$(echo "$tag" | sed 's/^v//' | awk -F. '{ printf "%04d%04d%04d", $1, $2, $3 }')
+      if [ "$new" -gt "$cur" ]; then
+        VERSION="$tag"
+      fi
+    fi
+  done
+  
   if [ -z "$VERSION" ]; then
-    err "Could not determine latest CLI release"
+    err "Could not find a CLI release with binaries"
     exit 1
   fi
   info "Latest CLI version: $VERSION"

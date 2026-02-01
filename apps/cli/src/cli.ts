@@ -30,6 +30,7 @@ export function createCli(version: string): Command {
 		.version(version, '-v, --version', 'Print version and exit')
 		.option('--debug', 'Enable debug logging')
 		.option('--trace', 'Enable stack traces in error logs')
+		.option('--no-desktop', 'Skip desktop app and start server')
 		.hook('preAction', (thisCommand) => {
 			const opts = thisCommand.opts();
 			if (opts.debug) {

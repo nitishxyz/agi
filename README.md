@@ -45,6 +45,7 @@ This downloads the prebuilt binary for your platform (macOS arm64/x64, Linux arm
 
 ```bash
 agi                           # start server + web UI (opens browser)
+agi --no-desktop              # skip desktop app and serve
 agi "explain this error"      # one-shot question
 agi "write tests" --agent build
 agi "follow up" --last        # continue last session

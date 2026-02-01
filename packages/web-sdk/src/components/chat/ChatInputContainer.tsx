@@ -442,6 +442,10 @@ export const ChatInputContainer = memo(
 						onResearchContextRemove={handleResearchContextRemove}
 						onRefreshBalance={provider === 'setu' ? fetchBalance : undefined}
 						isBalanceLoading={isBalanceLoading}
+						onModelInfoClick={() => {
+							setConfigFocusTarget('model');
+							setIsConfigOpen(true);
+						}}
 					/>
 				</>
 			);

@@ -6,20 +6,41 @@ const GITHUB_REPO = 'nitishxyz/agi';
 
 async function fetchLatestVersion(): Promise<string | null> {
 	try {
+		// Fetch releases and find the highest version with CLI assets
 		const res = await fetch(
 			`https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=20`,
 		);
 		if (!res.ok) return null;
 		const releases = (await res.json()) as {
 			tag_name?: string;
+			assets?: { name: string }[];
 			draft?: boolean;
 			prerelease?: boolean;
 		}[];
-		const cliRelease = releases.find(
-			(r) => r.tag_name?.match(/^v\d/) && !r.draft && !r.prerelease,
-		);
-		if (!cliRelease?.tag_name) return null;
-		return cliRelease.tag_name.replace(/^v/, '');
+
+		// Filter to CLI releases only (have agi-* assets, not desktop)
+		const cliReleases = releases.filter((r) => {
+			if (r.draft || r.prerelease) return false;
+			if (!r.tag_name?.match(/^v\d/)) return false;
+			return r.assets?.some((a) => a.name.startsWith('agi-'));
+		});
+
+		if (cliReleases.length === 0) return null;
+
+		// Sort by semantic version (highest first)
+		cliReleases.sort((a, b) => {
+			const parse = (v: string) => v.replace(/^v/, '').split('.').map(Number);
+			// Tag name is guaranteed to exist from filter above
+			const va = parse(a.tag_name ?? '0.0.0');
+			const vb = parse(b.tag_name ?? '0.0.0');
+			for (let i = 0; i < Math.max(va.length, vb.length); i++) {
+				const diff = (vb[i] ?? 0) - (va[i] ?? 0);
+				if (diff !== 0) return diff;
+			}
+			return 0;
+		});
+
+		return cliReleases[0]?.tag_name?.replace(/^v/, '') ?? null;
 	} catch {
 		return null;
 	}
@@ -35,11 +56,12 @@ function compareVersions(current: string, latest: string): number {
 	return 0;
 }
 
-async function runUpgrade(): Promise<void> {
+async function runUpgrade(version: string): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const child = spawn(`curl -fsSL ${INSTALL_URL} | sh`, [], {
 			stdio: 'inherit',
 			shell: true,
+			env: { ...process.env, AGI_VERSION: `v${version}` },
 		});
 		child.on('close', (code) => {
 			if (code === 0) resolve();
@@ -79,7 +101,7 @@ export function registerUpgradeCommand(program: Command, version: string) {
 			}
 
 			console.log('\nUpgrading...\n');
-			await runUpgrade();
+			await runUpgrade(latest);
 			console.log('\n✓ Upgrade complete');
 		});
 }
