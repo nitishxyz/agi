@@ -29,6 +29,7 @@ interface ToolResultRendererProps {
 	compact?: boolean;
 	sessionId?: string;
 	onRetry?: () => void;
+	onCompact?: () => void;
 }
 
 /**
@@ -77,6 +78,7 @@ export function ToolResultRenderer({
 	compact,
 	sessionId,
 	onRetry,
+	onCompact,
 }: ToolResultRendererProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const normalizedName = normalizeToolName(toolName);
@@ -131,7 +133,7 @@ export function ToolResultRenderer({
 			return <ProgressUpdateRenderer {...props} />;
 		case 'error':
 			return (
-				<ErrorRenderer {...props} sessionId={sessionId} onRetry={onRetry} />
+				<ErrorRenderer {...props} sessionId={sessionId} onRetry={onRetry} onCompact={onCompact} />
 			);
 		case 'query_sessions':
 		case 'query_messages':

@@ -35,6 +35,5 @@ export function createCopilotModel(model: string, config: CopilotOAuthConfig) {
 		apiKey: 'copilot-oauth',
 		fetch: customFetch,
 	});
-
 	return provider.chatModel(model);
 }

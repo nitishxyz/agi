@@ -255,6 +255,17 @@ export const MessageThread = memo(function MessageThread({
 		[sessionId, queryClient],
 	);
 
+	const handleCompact = useCallback(async () => {
+		if (!sessionId) return;
+		try {
+			await apiClient.sendMessage(sessionId, { content: '/compact' });
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to compact',
+			);
+		}
+	}, [sessionId]);
+
 	if (messages.length === 0) {
 		return (
 			<div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
@@ -320,20 +331,21 @@ export const MessageThread = memo(function MessageThread({
 								const nextIsAssistant =
 									nextMessage && nextMessage.role === 'assistant';
 
-								return (
-									<AssistantMessageGroup
-										key={message.id}
-										sessionId={sessionId}
-										message={message}
-										showHeader={showHeader}
-										hasNextAssistantMessage={nextIsAssistant}
-										isLastMessage={isLastMessage}
-										onBranchCreated={onSelectSession}
-										onRetry={
-											isLastMessage ? createRetryHandler(message.id) : undefined
-										}
-									/>
-								);
+						return (
+								<AssistantMessageGroup
+									key={message.id}
+									sessionId={sessionId}
+									message={message}
+									showHeader={showHeader}
+									hasNextAssistantMessage={nextIsAssistant}
+									isLastMessage={isLastMessage}
+									onBranchCreated={onSelectSession}
+									onRetry={
+										isLastMessage ? createRetryHandler(message.id) : undefined
+									}
+									onCompact={isLastMessage ? handleCompact : undefined}
+								/>
+						);
 							}
 
 							return null;

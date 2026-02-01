@@ -26,6 +26,7 @@ interface AssistantMessageGroupProps {
 	showBranchButton?: boolean;
 	onNavigateToSession?: (sessionId: string) => void;
 	onRetry?: () => void;
+	onCompact?: () => void;
 }
 
 const loadingMessages = [
@@ -57,6 +58,7 @@ export const AssistantMessageGroup = memo(
 		showBranchButton = true,
 		onNavigateToSession,
 		onRetry,
+		onCompact,
 	}: AssistantMessageGroupProps) {
 		const { isQueued } = useMessageQueuePosition(sessionId, message.id);
 		const [isHovered, setIsHovered] = useState(false);
@@ -290,8 +292,9 @@ export const AssistantMessageGroup = memo(
 								onApprove={handleApprove}
 								onReject={handleReject}
 								sessionId={sessionId}
-								onRetry={onRetry}
-							/>
+							onRetry={onRetry}
+							onCompact={onCompact}
+						/>
 						);
 					})}
 

@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, RefreshCw, CreditCard } from 'lucide-react';
+import { ChevronDown, ChevronRight, RefreshCw, CreditCard, Scissors } from 'lucide-react';
 import type { ContentJson } from './types';
 
 interface ErrorRendererProps {
@@ -8,6 +8,7 @@ interface ErrorRendererProps {
 	debug?: boolean;
 	sessionId?: string;
 	onRetry?: () => void;
+	onCompact?: () => void;
 }
 
 export function ErrorRenderer({
@@ -15,6 +16,7 @@ export function ErrorRenderer({
 	debug: _debug,
 	sessionId: _sessionId,
 	onRetry,
+	onCompact,
 }: ErrorRendererProps) {
 	const [showRawDetails, setShowRawDetails] = useState(false);
 
@@ -22,6 +24,9 @@ export function ErrorRenderer({
 	const isBalanceLow =
 		contentJson.type === 'balance_low' ||
 		contentJson.errorType === 'balance_low';
+	const isContextExceeded =
+		contentJson.type === 'context_length_exceeded' ||
+		contentJson.errorType === 'context_length_exceeded';
 	const _isRetryable = contentJson.isRetryable === true || isBalanceLow;
 
 	// Handle different error structures:
@@ -108,6 +113,59 @@ export function ErrorRenderer({
 		(String(errorDetails?.url ?? '').includes('githubcopilot.com') ||
 			contentJson.type === 'api_error');
 
+	const isCopilotResponsesOnly =
+		apiError?.message
+			?.toLowerCase()
+			.includes('not accessible via the /chat/completions') &&
+		String(errorDetails?.url ?? '').includes('githubcopilot.com');
+
+	if (isCopilotResponsesOnly) {
+		const model = (errorDetails?.requestBodyValues as Record<string, unknown>)
+			?.model;
+		return (
+			<div className="space-y-3">
+				<div className="space-y-1">
+					<div className="font-medium text-amber-600 dark:text-amber-400">
+						Model requires Responses API
+					</div>
+					<p className="text-sm text-foreground">
+						{model ? (
+							<>
+								<code className="px-1 py-0.5 bg-muted rounded text-xs">
+									{String(model)}
+								</code>{' '}
+								is only available via the Responses API, which is not yet
+								supported.
+							</>
+						) : (
+							<>
+								This model is only available via the Responses API, which is not
+								yet supported.
+							</>
+						)}
+					</p>
+					<p className="text-xs text-muted-foreground">
+						Codex models (gpt-5.1-codex, gpt-5.2-codex, etc.) require the
+						Responses API. Try a chat-compatible model like gpt-5,
+						claude-sonnet-4, or gpt-4.1.
+					</p>
+				</div>
+				{onRetry && (
+					<div className="pt-1">
+						<button
+							type="button"
+							onClick={onRetry}
+							className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+						>
+							<RefreshCw className="w-3 h-3" />
+							Retry
+						</button>
+					</div>
+				)}
+			</div>
+		);
+	}
+
 	if (isCopilotModelError) {
 		const model = (errorDetails?.requestBodyValues as Record<string, unknown>)
 			?.model;
@@ -176,6 +234,42 @@ export function ErrorRenderer({
 						</button>
 					</div>
 				)}
+			</div>
+		);
+	}
+
+	if (isContextExceeded) {
+		return (
+			<div className="space-y-3">
+				<div className="flex items-center gap-2">
+					<Scissors className="h-4 w-4 text-amber-500" />
+					<span className="font-medium text-foreground">Context window exceeded</span>
+				</div>
+				<p className="text-sm text-muted-foreground">
+					The conversation is too long for the model. Compact to reduce context size, then retry.
+				</p>
+				<div className="flex items-center gap-2 pt-1">
+					{onCompact && (
+						<button
+							type="button"
+							onClick={onCompact}
+							className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+						>
+							<Scissors className="w-3 h-3" />
+							Compact
+						</button>
+					)}
+					{onRetry && (
+						<button
+							type="button"
+							onClick={onRetry}
+							className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border border-border text-foreground hover:bg-muted transition-colors"
+						>
+							<RefreshCw className="w-3 h-3" />
+							Retry
+						</button>
+					)}
+				</div>
 			</div>
 		);
 	}

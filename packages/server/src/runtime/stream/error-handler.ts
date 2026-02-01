@@ -73,17 +73,8 @@ export function createErrorHandler(
 			(causeError?.message as string) ??
 			'';
 
-		// Also do a JSON stringify check specifically for the code
-		const fullErrorStr = JSON.stringify(err);
-		const hasSetuFiatCode =
-			fullErrorStr.includes('"code":"SETU_FIAT_SELECTED"') ||
-			fullErrorStr.includes("'code':'SETU_FIAT_SELECTED'");
-
-		// Only match if the error code is SETU_FIAT_SELECTED OR the exact error message
 		const isFiatSelected =
-			errorCode === 'SETU_FIAT_SELECTED' ||
-			errorMessage === 'Setu: fiat payment selected' ||
-			hasSetuFiatCode;
+			errorCode === 'SETU_FIAT_SELECTED';
 
 		// Handle fiat payment selected - this is not an error, just a signal to pause
 		if (isFiatSelected) {
@@ -174,6 +165,8 @@ export function createErrorHandler(
 			fullErrorStrLower.includes('context_length_exceeded') ||
 			fullErrorStrLower.includes('request too large') ||
 			fullErrorStrLower.includes('exceeds the model') ||
+			fullErrorStrLower.includes('exceeds the limit') ||
+			fullErrorStrLower.includes('prompt token count') ||
 			fullErrorStrLower.includes('context window') ||
 			fullErrorStrLower.includes('input is too long') ||
 			errorCode === 'context_length_exceeded' ||
@@ -324,6 +317,7 @@ export function createErrorHandler(
 			isPromptTooLong && !opts.isCompactCommand
 				? `${errorPayload.message}. Context auto-compacted - please retry your message.`
 				: errorPayload.message;
+		const errorPartType = isPromptTooLong ? 'context_length_exceeded' : errorPayload.type;
 		await db.insert(messageParts).values({
 			id: errorPartId,
 			messageId: opts.assistantMessageId,
@@ -332,7 +326,8 @@ export function createErrorHandler(
 			type: 'error',
 			content: JSON.stringify({
 				message: displayMessage,
-				type: errorPayload.type,
+				type: errorPartType,
+				errorType: isPromptTooLong ? 'context_length_exceeded' : undefined,
 				details: errorPayload.details,
 				isAborted: false,
 			}),
@@ -348,7 +343,7 @@ export function createErrorHandler(
 			.set({
 				status: 'error',
 				error: displayMessage,
-				errorType: errorPayload.type,
+				errorType: errorPartType,
 				errorDetails: JSON.stringify({
 					...errorPayload.details,
 					isApiError,
@@ -365,7 +360,7 @@ export function createErrorHandler(
 				messageId: opts.assistantMessageId,
 				partId: errorPartId,
 				error: displayMessage,
-				errorType: errorPayload.type,
+				errorType: errorPartType,
 				details: errorPayload.details,
 				isAborted: false,
 				autoCompacted: isPromptTooLong && !opts.isCompactCommand,

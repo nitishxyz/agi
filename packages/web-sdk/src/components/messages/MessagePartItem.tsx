@@ -140,6 +140,7 @@ interface MessagePartItemProps {
 	onReject?: (callId: string) => void;
 	sessionId?: string;
 	onRetry?: () => void;
+	onCompact?: () => void;
 }
 
 export const MessagePartItem = memo(
@@ -155,6 +156,7 @@ export const MessagePartItem = memo(
 		onReject,
 		sessionId,
 		onRetry,
+		onCompact,
 	}: MessagePartItemProps) {
 		// Show tool_call if it's the last one OR if it has a pending approval
 		if (part.type === 'tool_call' && !isLastToolCall && !pendingApproval) {
@@ -466,6 +468,7 @@ export const MessagePartItem = memo(
 						compact={compact}
 						sessionId={sessionId}
 						onRetry={onRetry}
+						onCompact={onCompact}
 					/>
 				);
 			}
