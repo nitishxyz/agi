@@ -23,14 +23,12 @@ export default $config({
 		const { previewWeb } = await import('./infra/preview-web');
 		const { ogFunctionUrl } = await import('./infra/og');
 
-		const { routerUrl } = await import('./infra/setu');
 		await import('./infra/orm');
 
 		return {
 			script: script.url,
 			previewApi: previewApiUrl,
 			previewWeb: previewWeb.url,
-			setu: routerUrl,
 			ogFunction: ogFunctionUrl,
 		};
 	},
