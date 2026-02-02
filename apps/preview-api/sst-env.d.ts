@@ -61,6 +61,7 @@ declare module 'sst' {
 		OGCache: cloudflare.KVNamespace;
 		PreviewApi: cloudflare.Service;
 		PreviewDB: cloudflare.D1Database;
+		ShareStorage: cloudflare.R2Bucket;
 	}
 }
 

@@ -27,9 +27,41 @@ export default defineConfig({
 	build: {
 		rollupOptions: {
 			output: {
-				manualChunks: undefined,
+				manualChunks(id) {
+					if (
+						id.includes('react-syntax-highlighter') ||
+						id.includes('refractor') ||
+						id.includes('prismjs')
+					) {
+						return 'syntax';
+					}
+					if (
+						id.includes('react-markdown') ||
+						id.includes('remark') ||
+						id.includes('rehype') ||
+						id.includes('unified') ||
+						id.includes('mdast') ||
+						id.includes('hast') ||
+						id.includes('micromark')
+					) {
+						return 'markdown';
+					}
+					if (
+						id.includes('node_modules/react/') ||
+						id.includes('node_modules/react-dom/') ||
+						id.includes('scheduler')
+					) {
+						return 'react';
+					}
+					if (id.includes('@tanstack')) {
+						return 'router';
+					}
+					if (id.includes('lucide-react')) {
+						return 'icons';
+					}
+				},
 			},
 		},
-		chunkSizeWarningLimit: 1000,
+		chunkSizeWarningLimit: 500,
 	},
 });

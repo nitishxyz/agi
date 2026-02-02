@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { Resource } from 'sst';
 import { eq } from 'drizzle-orm';
 import { createDb } from '../db/client';
 import { sharedSessions } from '../db/schema';
@@ -18,7 +19,16 @@ ogRoutes.get('/:shareId', async (c) => {
 		return c.notFound();
 	}
 
-	const data: SharedSessionData = JSON.parse(session.sessionData);
+	let data: SharedSessionData;
+	if (session.sessionData === 'r2') {
+		const obj = await Resource.ShareStorage.get(`sessions/${shareId}.json`);
+		if (!obj) {
+			return c.notFound();
+		}
+		data = JSON.parse(await obj.text());
+	} else {
+		data = JSON.parse(session.sessionData);
+	}
 
 	const params = new URLSearchParams({
 		shareId,

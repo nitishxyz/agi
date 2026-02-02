@@ -8,6 +8,12 @@ import type { CreateShareRequest, UpdateShareRequest } from '../types';
 
 export const shareRoutes = new Hono();
 
+const R2_PREFIX = 'sessions/';
+
+function sessionKey(shareId: string) {
+	return `${R2_PREFIX}${shareId}.json`;
+}
+
 shareRoutes.post('/', async (c) => {
 	const db = createDb();
 	const body = await c.req.json<CreateShareRequest>();
@@ -17,12 +23,18 @@ shareRoutes.post('/', async (c) => {
 	const now = Date.now();
 	const expiresAt = now + (body.expiresInDays ?? 30) * 24 * 60 * 60 * 1000;
 
+	await Resource.ShareStorage.put(
+		sessionKey(shareId),
+		JSON.stringify(body.sessionData),
+		{ httpMetadata: { contentType: 'application/json' } },
+	);
+
 	await db.insert(sharedSessions).values({
 		shareId,
 		secret,
 		title: body.title ?? body.sessionData.title,
 		description: body.description ?? null,
-		sessionData: JSON.stringify(body.sessionData),
+		sessionData: 'r2',
 		createdAt: now,
 		updatedAt: now,
 		expiresAt,
@@ -62,13 +74,54 @@ shareRoutes.get('/:shareId', async (c) => {
 		.set({ viewCount: sql`${sharedSessions.viewCount} + 1` })
 		.where(eq(sharedSessions.shareId, shareId));
 
+	const viewCount = (session.viewCount ?? 0) + 1;
+
+	if (session.sessionData === 'r2') {
+		const obj = await Resource.ShareStorage.get(sessionKey(shareId));
+		if (!obj) {
+			return c.json({ error: 'Session data not found in R2' }, 404);
+		}
+
+		const prefix = JSON.stringify({
+			shareId: session.shareId,
+			title: session.title,
+			description: session.description,
+		});
+		const suffix = JSON.stringify({
+			createdAt: session.createdAt,
+			viewCount,
+			lastSyncedMessageId: session.lastSyncedMessageId,
+		});
+
+		const body = new ReadableStream({
+			async start(controller) {
+				const enc = new TextEncoder();
+				controller.enqueue(enc.encode(prefix.slice(0, -1) + ',"sessionData":'));
+
+				const reader = obj.body.getReader();
+				while (true) {
+					const { done, value } = await reader.read();
+					if (done) break;
+					controller.enqueue(value);
+				}
+
+				controller.enqueue(enc.encode(',' + suffix.slice(1)));
+				controller.close();
+			},
+		});
+
+		return new Response(body, {
+			headers: { 'Content-Type': 'application/json' },
+		});
+	}
+
 	return c.json({
 		shareId: session.shareId,
 		title: session.title,
 		description: session.description,
 		sessionData: JSON.parse(session.sessionData),
 		createdAt: session.createdAt,
-		viewCount: (session.viewCount ?? 0) + 1,
+		viewCount,
 		lastSyncedMessageId: session.lastSyncedMessageId,
 	});
 });
@@ -108,7 +161,12 @@ shareRoutes.put('/:shareId', async (c) => {
 		updates.description = body.description;
 	}
 	if (body.sessionData) {
-		updates.sessionData = JSON.stringify(body.sessionData);
+		await Resource.ShareStorage.put(
+			sessionKey(shareId),
+			JSON.stringify(body.sessionData),
+			{ httpMetadata: { contentType: 'application/json' } },
+		);
+		updates.sessionData = 'r2';
 	}
 	if (body.lastMessageId) {
 		updates.lastSyncedMessageId = body.lastMessageId;
@@ -149,6 +207,7 @@ shareRoutes.delete('/:shareId', async (c) => {
 		return c.json({ error: 'Invalid secret' }, 403);
 	}
 
+	await Resource.ShareStorage.delete(sessionKey(shareId));
 	await db.delete(sharedSessions).where(eq(sharedSessions.shareId, shareId));
 
 	await Resource.OGCache.delete(shareId);

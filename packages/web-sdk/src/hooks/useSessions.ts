@@ -7,6 +7,7 @@ export function useSessions() {
 		queryKey: ['sessions'],
 		queryFn: () => apiClient.getSessions(),
 		refetchInterval: 5000,
+		staleTime: 5000,
 	});
 }
 

@@ -14,10 +14,13 @@
         margin: 0;
         padding: 0;
       }
+      .app-loader{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px}
+      .app-loader-spinner{width:24px;height:24px;border:2px solid hsl(240,5%,25%);border-top-color:hsl(240,5%,65%);border-radius:50%;animation:spin .6s linear infinite}
+      @keyframes spin{to{transform:rotate(360deg)}}
     </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="app-loader"><div class="app-loader-spinner"></div></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

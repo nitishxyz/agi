@@ -42,8 +42,12 @@ export const SessionListContainer = memo(function SessionListContainer({
 
 	if (isLoading) {
 		return (
-			<div className="px-4 py-8 text-center text-sm text-muted-foreground/80">
-				Loading sessions...
+			<div className="flex flex-col gap-2 px-2 py-2">
+				<div className="h-12 rounded-md bg-muted/30 animate-pulse" />
+				<div className="h-12 rounded-md bg-muted/30 animate-pulse" />
+				<div className="h-12 rounded-md bg-muted/30 animate-pulse" />
+				<div className="h-12 rounded-md bg-muted/30 animate-pulse" />
+				<div className="h-12 rounded-md bg-muted/30 animate-pulse" />
 			</div>
 		);
 	}

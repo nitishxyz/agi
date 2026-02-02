@@ -1,5 +1,9 @@
 import { useMemo } from 'react';
-import { estimateModelCostUsd, type ProviderId, getModelInfo } from '@agi-cli/sdk/browser';
+import {
+	estimateModelCostUsd,
+	type ProviderId,
+	getModelInfo,
+} from '@agi-cli/sdk/browser';
 import type { Session } from '../../types/api';
 import {
 	Clock,
@@ -79,7 +83,7 @@ export function SessionHeader({
 	const contextLimit = useMemo(() => {
 		const info = getModelInfo(session.provider as ProviderId, session.model);
 		return info?.limit?.context;
-}, [session.provider, session.model]);
+	}, [session.provider, session.model]);
 
 	const contextUsagePercent = contextLimit
 		? (contextTokens / contextLimit) * 100

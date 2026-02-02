@@ -65,6 +65,10 @@ declare module 'sst' {
 			type: 'sst.aws.Astro';
 			url: string;
 		};
+		ShareStorage: {
+			name: string;
+			type: 'sst.cloudflare.Bucket';
+		};
 	}
 }
 /// <reference path="sst-env.d.ts" />
