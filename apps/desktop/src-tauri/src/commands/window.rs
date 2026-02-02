@@ -13,7 +13,8 @@ pub async fn create_new_window(app: AppHandle) -> Result<(), String> {
         .inner_size(1200.0, 800.0)
         .min_inner_size(800.0, 600.0)
         .resizable(true)
-        .decorations(true);
+        .decorations(true)
+        .drag_and_drop(false);
 
     #[cfg(target_os = "macos")]
     let builder = {

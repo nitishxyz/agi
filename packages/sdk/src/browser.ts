@@ -28,4 +28,5 @@ export {
 	providerIds,
 	defaultModelFor,
 	hasModel,
+	getModelInfo,
 } from './providers/src/utils.ts';

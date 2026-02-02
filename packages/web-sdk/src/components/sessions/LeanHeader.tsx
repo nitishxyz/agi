@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { estimateModelCostUsd, type ProviderId } from '@agi-cli/sdk/browser';
+import { estimateModelCostUsd, type ProviderId, getModelInfo } from '@agi-cli/sdk/browser';
 import type { Session } from '../../types/api';
 import {
 	DollarSign,
@@ -66,6 +66,22 @@ export function LeanHeader({
 
 	const isBranch = session.sessionType === 'branch';
 	const parentSession = parentData?.parent;
+
+	// Calculate context usage for color indication
+	const contextLimit = useMemo(() => {
+		const info = getModelInfo(session.provider as ProviderId, session.model);
+		return info?.limit?.context;
+}, [session.provider, session.model]);
+
+	const contextUsagePercent = contextLimit
+		? (contextTokens / contextLimit) * 100
+		: 0;
+
+	const getContextColorClass = () => {
+		if (contextUsagePercent >= 90) return 'text-red-600 dark:text-red-400';
+		if (contextUsagePercent >= 70) return 'text-amber-600 dark:text-amber-400';
+		return 'text-foreground';
+	};
 
 	return (
 		<div
@@ -134,7 +150,7 @@ export function LeanHeader({
 							title={`Current context window: ${contextTokens.toLocaleString()} tokens`}
 						>
 							<span className="text-xs opacity-70">ctx</span>
-							<span className="text-foreground font-medium">
+							<span className={`font-medium ${getContextColorClass()}`}>
 								{formatCompactNumber(contextTokens)}
 							</span>
 						</div>
