@@ -14,7 +14,7 @@ pub async fn create_new_window(app: AppHandle) -> Result<(), String> {
         .min_inner_size(800.0, 600.0)
         .resizable(true)
         .decorations(true)
-        .drag_and_drop(false);
+        .disable_drag_drop_handler();
 
     #[cfg(target_os = "macos")]
     let builder = {
