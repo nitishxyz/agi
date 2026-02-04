@@ -10,11 +10,12 @@ export function renderBashCall(ctx: RendererContext): string {
 export function renderBashResult(ctx: RendererContext): string {
 	const result = (ctx.result ?? {}) as Record<string, unknown>;
 	const args = (ctx.args ?? {}) as Record<string, unknown>;
-	const cmd = typeof args.cmd === 'string'
-		? truncate(args.cmd, 60)
-		: typeof args.command === 'string'
-			? truncate(args.command as string, 60)
-			: '';
+	const cmd =
+		typeof args.cmd === 'string'
+			? truncate(args.cmd, 60)
+			: typeof args.command === 'string'
+				? truncate(args.command as string, 60)
+				: '';
 	const stdout = typeof result.stdout === 'string' ? result.stdout : '';
 	const stderr = typeof result.stderr === 'string' ? result.stderr : '';
 	const exitCode = typeof result.exitCode === 'number' ? result.exitCode : 0;

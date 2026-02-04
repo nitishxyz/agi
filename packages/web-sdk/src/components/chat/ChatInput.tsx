@@ -485,15 +485,15 @@ export const ChatInput = memo(
 							modelName ||
 							providerName ||
 							authType) && (
-					<div className="grid grid-cols-[auto_1fr_auto] items-center mt-1 px-3">
-						<div className="justify-self-start flex-shrink-0">
-							{reasoningEnabled && (
-								<span className="text-[10px] text-indigo-600 dark:text-indigo-300 flex items-center gap-1">
-									<Brain className="h-3 w-3" />
-									thinking
-								</span>
-							)}
-						</div>
+							<div className="grid grid-cols-[auto_1fr_auto] items-center mt-1 px-3">
+								<div className="justify-self-start flex-shrink-0">
+									{reasoningEnabled && (
+										<span className="text-[10px] text-indigo-600 dark:text-indigo-300 flex items-center gap-1">
+											<Brain className="h-3 w-3" />
+											thinking
+										</span>
+									)}
+								</div>
 								<div className="justify-self-center">
 									{(providerName || modelName || authType) && (
 										<div className="text-[10px] text-muted-foreground flex items-center gap-1 px-2 py-0.5">
@@ -512,11 +512,11 @@ export const ChatInput = memo(
 														<span className="opacity-40">/</span>
 													</>
 												)}
-								{modelName && <span>{modelName}</span>}
-								{authType && authType === 'oauth' && (
-									<span className="opacity-50">(pro)</span>
-								)}
-								</button>
+												{modelName && <span>{modelName}</span>}
+												{authType && authType === 'oauth' && (
+													<span className="opacity-50">(pro)</span>
+												)}
+											</button>
 											{isSetu && setuBalance !== null && (
 												<>
 													<span className="text-emerald-600 dark:text-emerald-400">
@@ -542,14 +542,14 @@ export const ChatInput = memo(
 										</div>
 									)}
 								</div>
-						<div className="justify-self-end flex-shrink-0">
-							{visionEnabled && (
-								<span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-									<ImageIcon className="h-3 w-3" />
-									images
-								</span>
-							)}
-						</div>
+								<div className="justify-self-end flex-shrink-0">
+									{visionEnabled && (
+										<span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+											<ImageIcon className="h-3 w-3" />
+											images
+										</span>
+									)}
+								</div>
 							</div>
 						)}
 

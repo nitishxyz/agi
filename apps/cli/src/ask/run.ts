@@ -461,7 +461,11 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 
 		const output = renderToolResult({
 			toolName: name,
-			args: data?.args ?? (callId ? state.toolCalls[callById.get(callId) ?? -1]?.args : undefined),
+			args:
+				data?.args ??
+				(callId
+					? state.toolCalls[callById.get(callId) ?? -1]?.args
+					: undefined),
 			result: data?.result,
 			artifact: artifact as unknown as Artifact,
 			durationMs,
