@@ -183,7 +183,10 @@ Content.
 				tempDir,
 				'global/.config/otto/skills/shared-skill',
 			);
-			const projectSkillDir = join(tempDir, 'project/.otto/skills/shared-skill');
+			const projectSkillDir = join(
+				tempDir,
+				'project/.otto/skills/shared-skill',
+			);
 
 			await fs.mkdir(globalSkillDir, { recursive: true });
 			await fs.mkdir(projectSkillDir, { recursive: true });

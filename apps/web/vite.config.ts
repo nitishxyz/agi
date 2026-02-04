@@ -19,7 +19,10 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			// Resolve workspace packages to their source instead of dist
-			'@ottocode/web-sdk': path.resolve(__dirname, '../../packages/web-sdk/src'),
+			'@ottocode/web-sdk': path.resolve(
+				__dirname,
+				'../../packages/web-sdk/src',
+			),
 		},
 		// Deduplicate React and React-DOM to prevent multiple instances
 		dedupe: ['react', 'react-dom', 'react/jsx-runtime'],

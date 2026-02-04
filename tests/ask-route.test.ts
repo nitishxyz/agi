@@ -32,7 +32,9 @@ describe.skip('registerAskRoutes error handling', () => {
 		handleAskRequestMock.mockImplementationOnce(async () => {
 			throw new AskServiceError('Unauthorized provider', 401);
 		});
-		const { registerAskRoutes } = await import('@ottocode/server/routes/ask.ts');
+		const { registerAskRoutes } = await import(
+			'@ottocode/server/routes/ask.ts'
+		);
 		const app = new Hono();
 		registerAskRoutes(app);
 
@@ -54,7 +56,9 @@ describe.skip('registerAskRoutes error handling', () => {
 		handleAskRequestMock.mockImplementationOnce(async () => {
 			throw new Error('Boom');
 		});
-		const { registerAskRoutes } = await import('@ottocode/server/routes/ask.ts');
+		const { registerAskRoutes } = await import(
+			'@ottocode/server/routes/ask.ts'
+		);
 		const app = new Hono();
 		registerAskRoutes(app);
 

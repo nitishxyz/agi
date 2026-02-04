@@ -53,14 +53,17 @@ describe('User Context Feature', () => {
 
 	describe('API Layer', () => {
 		it('should accept userContext in SendMessageRequest', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Hello',
-					userContext: 'Test context',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Hello',
+						userContext: 'Test context',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 			const data = await response.json();
@@ -68,13 +71,16 @@ describe('User Context Feature', () => {
 		});
 
 		it('should work without userContext (backward compatibility)', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Hello',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Hello',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 			const data = await response.json();
@@ -82,27 +88,33 @@ describe('User Context Feature', () => {
 		});
 
 		it('should handle empty userContext', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Hello',
-					userContext: '',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Hello',
+						userContext: '',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
 
 		it('should handle whitespace-only userContext', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Hello',
-					userContext: '   ',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Hello',
+						userContext: '   ',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
@@ -112,40 +124,49 @@ describe('User Context Feature', () => {
 		it('should include userContext in system prompt when provided', async () => {
 			// We can't directly test system prompt without mocking LLM calls
 			// But we can verify the API accepts it without errors
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: 'Important context',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: 'Important context',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
 
 		it('should handle multi-line userContext', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: 'Line 1\nLine 2\nLine 3',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: 'Line 1\nLine 2\nLine 3',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
 
 		it('should handle userContext with special characters', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: 'Context with <special> & "chars" \'here\'',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: 'Context with <special> & "chars" \'here\'',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
@@ -153,61 +174,73 @@ describe('User Context Feature', () => {
 
 	describe('Integration with Other Parameters', () => {
 		it('should work with agent override', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: 'Context',
-					agent: 'general',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: 'Context',
+						agent: 'general',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
 
 		it('should work with provider and model overrides', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: 'Context',
-					provider: 'anthropic',
-					model: 'claude-3-5-sonnet-20241022',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: 'Context',
+						provider: 'anthropic',
+						model: 'claude-3-5-sonnet-20241022',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
 
 		it('should work with oneShot mode', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: 'Context',
-					oneShot: true,
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: 'Context',
+						oneShot: true,
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
 
 		it('should work with all parameters combined', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: 'Context',
-					agent: 'general',
-					provider: 'anthropic',
-					model: 'claude-3-5-sonnet-20241022',
-					oneShot: false,
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: 'Context',
+						agent: 'general',
+						provider: 'anthropic',
+						model: 'claude-3-5-sonnet-20241022',
+						oneShot: false,
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
@@ -216,53 +249,68 @@ describe('User Context Feature', () => {
 	describe('Edge Cases', () => {
 		it('should handle very long userContext', async () => {
 			const longContext = 'A'.repeat(10000);
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: longContext,
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: longContext,
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
 
 		it('should handle userContext with XML-like tags', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: '<tag>Content</tag>',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: '<tag>Content</tag>',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
 
 		it('should handle userContext with the wrapper tag itself', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: '<user_context>Tricky</user_context>',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: '<user_context>Tricky</user_context>',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
 
 		it('should handle userContext with JSON content', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: JSON.stringify({ key: 'value', nested: { data: 123 } }),
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: JSON.stringify({
+							key: 'value',
+							nested: { data: 123 },
+						}),
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
@@ -270,14 +318,17 @@ describe('User Context Feature', () => {
 
 	describe('Message Creation', () => {
 		it('should create user message even with userContext', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test message',
-					userContext: 'Test context',
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test message',
+						userContext: 'Test context',
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 
@@ -351,27 +402,33 @@ describe('User Context Feature', () => {
 
 	describe('Type Safety', () => {
 		it('should accept userContext as undefined', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: undefined,
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: undefined,
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
 
 		it('should accept userContext as null', async () => {
-			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: 'Test',
-					userContext: null,
-				}),
-			});
+			const response = await app.request(
+				req(`/v1/sessions/${sessionId}/messages`),
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						content: 'Test',
+						userContext: null,
+					}),
+				},
+			);
 
 			expect(response.status).toBe(202);
 		});
