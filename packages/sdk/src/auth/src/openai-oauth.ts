@@ -124,7 +124,7 @@ export async function authorizeOpenAI(): Promise<OpenAIOAuthResult> {
 				res.end(`
 					<html>
 					<head>
-						<title>AGI - Authentication Successful</title>
+						<title>otto - Authentication Successful</title>
 						<style>
 							body {
 								font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

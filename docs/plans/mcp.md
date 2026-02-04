@@ -8,7 +8,7 @@ MCP is an open standard from Anthropic for connecting AI agents to external tool
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        AGI Agent                             │
+│                        otto agent                             │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │                   MCP Client                          │  │
 │  │  • Discovers servers from config                      │  │
@@ -35,7 +35,7 @@ MCP is an open standard from Anthropic for connecting AI agents to external tool
 
 ## Configuration
 
-**`.agi/config.json`:**
+**`.otto/config.json`:**
 ```json
 {
   "mcp": {
@@ -66,7 +66,7 @@ MCP is an open standard from Anthropic for connecting AI agents to external tool
 }
 ```
 
-**Global config (`~/.config/agi/config.json`):**
+**Global config (`~/.config/otto/config.json`):**
 ```json
 {
   "mcp": {
@@ -255,7 +255,7 @@ export class MCPClient extends EventEmitter {
     const result = await this.request('initialize', {
       protocolVersion: '2024-11-05',
       capabilities: {},
-      clientInfo: { name: 'agi-cli', version: '1.0.0' },
+      clientInfo: { name: 'ottocode', version: '1.0.0' },
     });
     
     await this.notify('notifications/initialized', {});
@@ -486,13 +486,13 @@ export async function discoverProjectTools(
 
 ### Phase 6: CLI Commands
 
-**Add `agi mcp` command:**
+**Add `otto mcp` command:**
 ```
-agi mcp list                 # List configured servers
-agi mcp status               # Show running servers and tools
-agi mcp add <name>           # Interactive server setup
-agi mcp remove <name>        # Remove server from config
-agi mcp test <name>          # Test server connection
+otto mcp list                 # List configured servers
+otto mcp status               # Show running servers and tools
+otto mcp add <name>           # Interactive server setup
+otto mcp remove <name>        # Remove server from config
+otto mcp test <name>          # Test server connection
 ```
 
 ## File Structure After Implementation

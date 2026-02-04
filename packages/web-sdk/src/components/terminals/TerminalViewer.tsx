@@ -5,7 +5,7 @@ import { Button } from '../ui/Button';
 import { useTerminals } from '../../hooks/useTerminals';
 import { useTerminalStore } from '../../stores/terminalStore';
 import { getRuntimeApiBaseUrl } from '../../lib/config';
-import { client } from '@agi-cli/api';
+import { client } from '@ottocode/api';
 
 const FONT_FAMILY = '"JetBrainsMono NFM", monospace';
 

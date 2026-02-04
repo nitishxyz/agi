@@ -115,8 +115,8 @@ function buildSetuEntry(base: CatalogMap): ProviderCatalogEntry | null {
 		id: SETU_ID,
 		label: 'Setu',
 		env: ['SETU_PRIVATE_KEY'],
-		api: 'https://setu.agi.nitish.sh/v1',
-		doc: 'https://setu.agi.nitish.sh/docs',
+		api: 'https://setu.ottocode.io/v1',
+		doc: 'https://setu.ottocode.io/docs',
 		models: setuModels,
 	};
 }

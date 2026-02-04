@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../lib/config';
 
 interface WindowWithAgiServerUrl extends Window {
-	AGI_SERVER_URL?: string;
+	OTTO_SERVER_URL?: string;
 }
 
 interface WorkingDirectoryInfo {
@@ -17,7 +17,7 @@ export function useWorkingDirectory() {
 		const fetchWorkingDirectory = async () => {
 			try {
 				const win = window as WindowWithAgiServerUrl;
-				const baseUrl = win.AGI_SERVER_URL || API_BASE_URL;
+				const baseUrl = win.OTTO_SERVER_URL || API_BASE_URL;
 				const url = `${baseUrl}/v1/config/cwd`;
 
 				console.log('[useWorkingDirectory] Fetching from:', url);
@@ -44,7 +44,7 @@ export function useWorkingDirectory() {
 				}
 			} catch (error) {
 				console.error('[useWorkingDirectory] Error:', error);
-				document.title = 'AGI'; // Fallback title
+				document.title = 'otto'; // Fallback title
 			}
 		};
 

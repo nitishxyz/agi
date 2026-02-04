@@ -1,4 +1,4 @@
-import type { Artifact } from '@agi-cli/sdk';
+import type { Artifact } from '@ottocode/sdk';
 import {
 	renderToolCall as _renderToolCall,
 	renderToolResult as _renderToolResult,

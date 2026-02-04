@@ -2,7 +2,7 @@
 
 [← Back to README](../README.md) • [Docs Index](./index.md)
 
-This guide covers development workflows for all components of the AGI CLI project: **Server**, **CLI**, **Web SDK**, and **Web App**.
+This guide covers development workflows for all components of the ottocode project: **Server**, **CLI**, **Web SDK**, and **Web App**.
 
 ## Table of Contents
 
@@ -44,8 +44,8 @@ bun --version
 
 ```bash
 # Clone the repository
-git clone https://github.com/nitishxyz/agi.git
-cd agi
+git clone https://github.com/nitishxyz/otto.git
+cd otto
 
 # Install all dependencies (uses Bun workspaces)
 bun install
@@ -68,10 +68,10 @@ bun test
 
 ## Project Overview
 
-The AGI CLI is organized as a **Bun workspace monorepo**:
+The ottocode is organized as a **Bun workspace monorepo**:
 
 ```
-agi/
+otto/
 ├── apps/
 │   ├── cli/              # CLI application (main binary)
 │   └── web/              # Web interface (React + Vite)
@@ -97,7 +97,7 @@ agi/
 
 ### Server Development
 
-The server package (`@agi-cli/server`) provides an HTTP API for AGI CLI.
+The server package (`@ottocode/server`) provides an HTTP API for ottocode.
 
 #### Running the Server
 
@@ -176,7 +176,7 @@ The server uses `bun run dev` which automatically reloads on file changes.
 
 ### CLI Development
 
-The CLI application (`@agi-cli/cli`) is the main user-facing interface.
+The CLI application (`@ottocode/cli`) is the main user-facing interface.
 
 #### Running the CLI
 
@@ -208,11 +208,11 @@ apps/cli/
 
 #### Key Commands
 
-- **`agi setup`**: Configure providers and credentials
-- **`agi serve`**: Start HTTP server with web UI
-- **`agi agents`**: List available agents
-- **`agi models`**: List available models
-- **`agi sessions`**: Manage conversation sessions
+- **`otto setup`**: Configure providers and credentials
+- **`otto serve`**: Start HTTP server with web UI
+- **`otto agents`**: List available agents
+- **`otto models`**: List available models
+- **`otto sessions`**: Manage conversation sessions
 
 #### Making Changes
 
@@ -256,7 +256,7 @@ bun run cli run my-command
 cd apps/cli
 bun run build
 
-# Output: apps/cli/dist/agi (self-contained binary)
+# Output: apps/cli/dist/otto (self-contained binary)
 ```
 
 The binary includes:
@@ -268,7 +268,7 @@ The binary includes:
 
 ### Web SDK Development
 
-The web SDK (`@agi-cli/web-sdk`) provides React hooks and components for building web UIs.
+The web SDK (`@ottocode/web-sdk`) provides React hooks and components for building web UIs.
 
 #### Running Development
 
@@ -337,7 +337,7 @@ export { useMyFeature } from './hooks/useMyFeature';
 
 ```tsx
 // apps/web/src/App.tsx
-import { useMyFeature } from '@agi-cli/web-sdk';
+import { useMyFeature } from '@ottocode/web-sdk';
 
 function App() {
   const data = useMyFeature();
@@ -402,7 +402,7 @@ apps/web/
 - **Vite**: Build tool and dev server
 - **TailwindCSS**: Utility-first CSS
 - **TypeScript**: Type safety
-- **@agi-cli/web-sdk**: API integration
+- **@ottocode/web-sdk**: API integration
 
 #### Making Changes
 
@@ -451,7 +451,7 @@ The build is automatically copied to `packages/web-ui/dist/web-assets/` for embe
 
 #### Web UI Package
 
-The `@agi-cli/web-ui` package contains the **pre-built** web app for embedding:
+The `@ottocode/web-ui` package contains the **pre-built** web app for embedding:
 
 ```bash
 # Build web app and copy to web-ui package
@@ -651,8 +651,8 @@ bun run db:reset
 #### Module Not Found
 
 ```bash
-# Cannot find module '@agi-cli/sdk'
-Error: Cannot find module '@agi-cli/sdk'
+# Cannot find module '@ottocode/sdk'
+Error: Cannot find module '@ottocode/sdk'
 
 # Solution: Reinstall dependencies
 rm -rf node_modules
@@ -682,7 +682,7 @@ bun run build
 
 - **Documentation**: Check [docs/](./index.md) for guides
 - **Architecture**: See [architecture.md](./architecture.md) for system design
-- **Issues**: Search [GitHub issues](https://github.com/nitishxyz/agi/issues)
+- **Issues**: Search [GitHub issues](https://github.com/nitishxyz/otto/issues)
 - **Contributing**: Read [AGENTS.md](../AGENTS.md) for guidelines
 
 ---

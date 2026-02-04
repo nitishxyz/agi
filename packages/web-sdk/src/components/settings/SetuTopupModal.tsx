@@ -16,7 +16,7 @@ const PRESET_AMOUNTS = [10, 25, 50, 100];
 const MIN_AMOUNT = 5;
 const MAX_AMOUNT = 500;
 const POLL_INTERVAL = 5000;
-const SUCCESS_PAGE_URL = 'https://share.agi.nitish.sh/checkout/success';
+const SUCCESS_PAGE_URL = 'https://share.ottocode.io/checkout/success';
 
 type ModalView = 'amount' | 'checkout' | 'confirmed';
 
@@ -147,7 +147,7 @@ export const SetuTopupModal = memo(function SetuTopupModal() {
 
 	const openCheckoutUrl = useCallback((url: string) => {
 		if (window.self !== window.top) {
-			window.parent.postMessage({ type: 'agi-open-url', url }, '*');
+			window.parent.postMessage({ type: 'otto-open-url', url }, '*');
 		} else {
 			window.open(url, '_blank');
 		}

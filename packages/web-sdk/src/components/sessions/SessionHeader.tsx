@@ -3,7 +3,7 @@ import {
 	estimateModelCostUsd,
 	type ProviderId,
 	getModelInfo,
-} from '@agi-cli/sdk/browser';
+} from '@ottocode/sdk/browser';
 import type { Session } from '../../types/api';
 import {
 	Clock,

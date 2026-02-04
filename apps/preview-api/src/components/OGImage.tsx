@@ -60,7 +60,7 @@ export const OGImage: FC<OGImageProps> = ({
 						opacity: 0.9,
 					}}
 				>
-					AGI
+					utto
 				</div>
 				<div
 					style={{

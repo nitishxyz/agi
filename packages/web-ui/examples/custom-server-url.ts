@@ -7,8 +7,8 @@
  * to the current server instead of the default localhost:9100.
  */
 
-import { createApp } from '@agi-cli/server';
-import { serveWebUI } from '@agi-cli/web-ui';
+import { createApp } from '@ottocode/server';
+import { serveWebUI } from '@ottocode/web-ui';
 
 const port = parseInt(process.env.PORT || '3000', 10);
 const host = process.env.HOST || '127.0.0.1';

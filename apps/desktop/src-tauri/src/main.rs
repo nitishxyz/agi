@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    agi_desktop_lib::run()
+    otto_desktop_lib::run()
 }

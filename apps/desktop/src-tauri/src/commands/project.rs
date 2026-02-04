@@ -15,7 +15,7 @@ pub struct Project {
 fn get_projects_config_path() -> Result<PathBuf, String> {
     dirs::home_dir()
         .ok_or_else(|| "No home directory".to_string())
-        .map(|p| p.join(".agi").join("desktop-projects.json"))
+        .map(|p| p.join(".otto").join("desktop-projects.json"))
 }
 
 #[tauri::command]
@@ -50,7 +50,7 @@ pub async fn get_recent_projects() -> Result<Vec<Project>, String> {
 pub async fn save_recent_project(project: Project) -> Result<(), String> {
     let config_dir = dirs::home_dir()
         .ok_or_else(|| "No home directory".to_string())?
-        .join(".agi");
+        .join(".otto");
 
     std::fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
 

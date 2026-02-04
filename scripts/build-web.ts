@@ -50,10 +50,10 @@ async function run(label: string, cmd: string[], cwd: string) {
 	spinner.succeed();
 }
 
-console.log(`\n${BOLD}${CYAN}agi${RESET} ${DIM}build${RESET}\n`);
+console.log(`\n${BOLD}${CYAN}otto${RESET} ${DIM}build${RESET}\n`);
 
-await run('Building @agi-cli/api', ['bun', 'run', 'build'], API_DIR);
-await run('Building @agi-cli/web-sdk', ['bun', 'run', 'build'], WEB_SDK_DIR);
+await run('Building @ottocode/api', ['bun', 'run', 'build'], API_DIR);
+await run('Building @ottocode/web-sdk', ['bun', 'run', 'build'], WEB_SDK_DIR);
 await run('Building web UI', ['bun', 'run', 'build'], WEB_DIR);
 
 spinner.begin('Copying web assets to CLI');
@@ -170,7 +170,7 @@ const isCompiledBundle = (() => {
 
 const WEB_DIST_PREFIX = isCompiledBundle ? './src/web-dist/' : './web-dist/';
 
-if (process.env.DEBUG_AGI_WEB_ASSETS) {
+if (process.env.DEBUG_OTTO_WEB_ASSETS) {
 \tconsole.log('[web-assets] import.meta.url:', import.meta.url);
 \tconsole.log('[web-assets] isCompiledBundle:', isCompiledBundle);
 \tconsole.log('[web-assets] webDistPrefix:', WEB_DIST_PREFIX);
@@ -182,7 +182,7 @@ function resolveAsset(path: string) {
 \t\tconst resolved = import.meta.resolveSync(specifier);
 \t\treturn resolved;
 \t} catch {
-\t\tif (process.env.DEBUG_AGI_WEB_ASSETS) {
+\t\tif (process.env.DEBUG_OTTO_WEB_ASSETS) {
 \t\t\tconsole.warn('[web-assets] Falling back to specifier for', specifier);
 \t\t}
 \t\treturn specifier;

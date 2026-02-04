@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
-console.log('🏗️  Building @agi-cli/api package...\n');
+console.log('🏗️  Building @ottocode/api package...\n');
 
 const distDir = join(import.meta.dir, 'dist');
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { composeSystemPrompt } from '@agi-cli/server';
+import { composeSystemPrompt } from '@ottocode/server';
 
 describe('userContext with OAuth/spoof prompt handling', () => {
 	it('should include userContext when spoofPrompt is NOT passed', async () => {

@@ -1,7 +1,7 @@
-import type { getDb } from '@agi-cli/database';
-import { messages, messageParts, sessions } from '@agi-cli/database/schema';
+import type { getDb } from '@ottocode/database';
+import { messages, messageParts, sessions } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
-import { catalog, type ProviderId } from '@agi-cli/sdk';
+import { catalog, type ProviderId } from '@ottocode/sdk';
 import type { RunOpts } from './queue.ts';
 
 export type UsageData = {

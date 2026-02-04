@@ -1,4 +1,4 @@
-import type { getDb } from '@agi-cli/database';
+import type { getDb } from '@ottocode/database';
 import { time } from '../debug/index.ts';
 import type { ToolAdapterContext } from '../../tools/adapter.ts';
 import type { RunOpts } from '../session/queue.ts';

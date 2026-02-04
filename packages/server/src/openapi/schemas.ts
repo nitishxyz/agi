@@ -1,4 +1,4 @@
-import { providerIds } from '@agi-cli/sdk';
+import { providerIds } from '@ottocode/sdk';
 
 export const schemas = {
 	Provider: {

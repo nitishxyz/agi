@@ -149,7 +149,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 				<div className="flex items-center justify-between px-6 py-4 border-b border-border">
 					<div className="flex items-center gap-3">
 						<ProviderLogo provider="setu" size={24} />
-						<span className="font-semibold text-foreground">AGI</span>
+						<span className="font-semibold text-foreground">otto</span>
 					</div>
 					<div className="flex items-center gap-2 text-sm text-muted-foreground">
 						<span className="w-2 h-2 rounded-full bg-blue-500" />
@@ -312,7 +312,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 							</>
 						) : (
 							<>
-								Start Using AGI
+								Start Using otto
 								<Sparkles className="w-4 h-4" />
 							</>
 						)}

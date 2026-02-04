@@ -4,15 +4,15 @@
  * Claude Code OAuth requires PascalCase tool names but does NOT whitelist
  * specific tools. Any tool with a PascalCase name is accepted.
  *
- * This module provides bidirectional mapping between AGI's canonical
+ * This module provides bidirectional mapping between otto's canonical
  * snake_case names and the PascalCase format required for OAuth.
  */
 
 export type ToolNamingConvention = 'canonical' | 'claude-code';
 
 /**
- * Mapping from AGI canonical names to PascalCase names.
- * Includes ALL AGI tools for complete OAuth compatibility.
+ * Mapping from otto canonical names to PascalCase names.
+ * Includes ALL otto tools for complete OAuth compatibility.
  */
 export const CANONICAL_TO_PASCAL: Record<string, string> = {
 	// File system operations

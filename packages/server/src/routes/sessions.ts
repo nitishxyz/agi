@@ -1,20 +1,20 @@
 import type { Hono } from 'hono';
-import { loadConfig } from '@agi-cli/sdk';
+import { loadConfig } from '@ottocode/sdk';
 import { userInfo } from 'node:os';
-import { getDb } from '@agi-cli/database';
+import { getDb } from '@ottocode/database';
 import {
 	sessions,
 	messages,
 	messageParts,
 	shares,
-} from '@agi-cli/database/schema';
+} from '@ottocode/database/schema';
 import { desc, eq, and, ne, inArray, or } from 'drizzle-orm';
-import type { ProviderId } from '@agi-cli/sdk';
-import { isProviderId, catalog } from '@agi-cli/sdk';
+import type { ProviderId } from '@ottocode/sdk';
+import { isProviderId, catalog } from '@ottocode/sdk';
 import { resolveAgentConfig } from '../runtime/agent/registry.ts';
 import { createSession as createSessionRow } from '../runtime/session/manager.ts';
 import { serializeError } from '../runtime/errors/api-error.ts';
-import { logger } from '@agi-cli/sdk';
+import { logger } from '@ottocode/sdk';
 
 export function registerSessionsRoutes(app: Hono) {
 	// List sessions
@@ -429,7 +429,7 @@ export function registerSessionsRoutes(app: Hono) {
 	});
 
 	const SHARE_API_URL =
-		process.env.AGI_SHARE_API_URL || 'https://api.share.agi.nitish.sh';
+		process.env.OTTO_SHARE_API_URL || 'https://api.share.ottocode.io';
 
 	function getUsername(): string {
 		try {

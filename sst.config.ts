@@ -3,7 +3,7 @@
 export default $config({
 	app(input) {
 		return {
-			name: 'agi',
+			name: 'otto',
 			removal: input?.stage === 'prod' ? 'retain' : 'remove',
 			// protect: ["prod"].includes(input?.stage),
 			home: 'aws',
@@ -17,13 +17,10 @@ export default $config({
 		};
 	},
 	async run() {
-		await import('./infra/secrets');
 		const { script } = await import('./infra/script');
 		const { previewApiUrl } = await import('./infra/preview-api');
 		const { previewWeb } = await import('./infra/preview-web');
 		const { ogFunctionUrl } = await import('./infra/og');
-
-		await import('./infra/orm');
 
 		return {
 			script: script.url,

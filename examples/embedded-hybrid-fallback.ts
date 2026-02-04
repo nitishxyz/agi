@@ -1,5 +1,5 @@
-import { createEmbeddedApp, BUILTIN_AGENTS } from '@agi-cli/server';
-import { serveWebUI } from '@agi-cli/web-ui';
+import { createEmbeddedApp, BUILTIN_AGENTS } from '@ottocode/server';
+import { serveWebUI } from '@ottocode/web-ui';
 
 /**
  * Hybrid Fallback Architecture
@@ -12,7 +12,7 @@ import { serveWebUI } from '@agi-cli/web-ui';
 
 // Example 1: Empty config - Uses files/env completely
 console.log(
-	'\n📦 Example 1: No config (falls back to ~/.config/agi/auth.json)',
+	'\n📦 Example 1: No config (falls back to ~/.config/otto/auth.json)',
 );
 const _app1 = createEmbeddedApp();
 
@@ -61,7 +61,7 @@ const _app5 = createEmbeddedApp({
 });
 
 // Use any example
-const agiApp = app3; // Try different examples!
+const ottoApp = app3; // Try different examples!
 
 // Serve UI
 const uiHandler = serveWebUI({ prefix: '/ui' });
@@ -73,7 +73,7 @@ Bun.serve({
 	async fetch(req) {
 		const ui = await uiHandler(req);
 		if (ui) return ui;
-		return agiApp.fetch(req);
+		return ottoApp.fetch(req);
 	},
 });
 

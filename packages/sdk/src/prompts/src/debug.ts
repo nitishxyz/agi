@@ -33,7 +33,7 @@ function normalizeToken(token: string): string {
 
 function parseDebugConfig(): DebugConfig {
 	const flags = new Set<string>();
-	const sources = [process.env.AGI_DEBUG, process.env.DEBUG_AGI];
+	const sources = [process.env.OTTO_DEBUG, process.env.DEBUG_OTTO];
 	let sawValue = false;
 	for (const raw of sources) {
 		if (typeof raw !== 'string') continue;
@@ -50,7 +50,7 @@ function parseDebugConfig(): DebugConfig {
 		}
 		if (!matched && isTruthy(trimmed)) flags.add('all');
 	}
-	if (isTruthy(process.env.AGI_DEBUG_TIMING)) flags.add('timing');
+	if (isTruthy(process.env.OTTO_DEBUG_TIMING)) flags.add('timing');
 	if (!flags.size && sawValue) flags.add('all');
 	return { flags };
 }

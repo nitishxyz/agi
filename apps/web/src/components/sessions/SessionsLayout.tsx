@@ -7,15 +7,15 @@ import {
 	ChatInputContainer,
 	type ChatInputContainerRef,
 	Toaster,
-} from '@agi-cli/web-sdk/components';
+} from '@ottocode/web-sdk/components';
 import {
 	useCreateSession,
 	useConfig,
 	useTheme,
 	useWorkingDirectory,
 	useKeyboardShortcuts,
-} from '@agi-cli/web-sdk/hooks';
-import { useGitStore, useConfirmationStore } from '@agi-cli/web-sdk/stores';
+} from '@ottocode/web-sdk/hooks';
+import { useGitStore, useConfirmationStore } from '@ottocode/web-sdk/stores';
 import {
 	useGitStatus,
 	useStageFiles,
@@ -25,7 +25,7 @@ import {
 	useDeleteFiles,
 	useSessions,
 	useSetuBalance,
-} from '@agi-cli/web-sdk/hooks';
+} from '@ottocode/web-sdk/hooks';
 
 interface SessionsLayoutProps {
 	sessionId?: string;

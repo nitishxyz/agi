@@ -1,17 +1,17 @@
 {
-	"name": "@agi-cli/sdk",
+	"name": "@ottocode/sdk",
 	"version": "0.1.172",
 	"description": "AI agent SDK for building intelligent assistants - tree-shakable and comprehensive",
 	"author": "nitishxyz",
 	"license": "MIT",
-	"homepage": "https://github.com/nitishxyz/agi#readme",
+	"homepage": "https://github.com/nitishxyz/otto#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/nitishxyz/agi.git",
+		"url": "git+https://github.com/nitishxyz/otto.git",
 		"directory": "packages/sdk"
 	},
 	"bugs": {
-		"url": "https://github.com/nitishxyz/agi/issues"
+		"url": "https://github.com/nitishxyz/otto/issues"
 	},
 	"type": "module",
 	"main": "./src/index.ts",

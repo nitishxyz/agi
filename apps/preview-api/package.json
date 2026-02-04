@@ -1,5 +1,5 @@
 {
-	"name": "@agi-cli/preview-api",
+	"name": "@ottocode/preview-api",
 	"version": "0.1.142",
 	"private": true,
 	"type": "module",

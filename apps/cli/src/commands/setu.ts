@@ -2,7 +2,7 @@ import type { Command } from 'commander';
 import { log } from '@clack/prompts';
 import qrcode from 'qrcode-terminal';
 import { box, colors } from '../ui.ts';
-import { loadConfig, getAuth } from '@agi-cli/sdk';
+import { loadConfig, getAuth } from '@ottocode/sdk';
 import { Keypair, Connection, PublicKey } from '@solana/web3.js';
 import { getAssociatedTokenAddress } from '@solana/spl-token';
 import bs58 from 'bs58';
@@ -121,7 +121,7 @@ export function registerSetuCommand(program: Command) {
 			if (!auth || auth.type !== 'wallet') {
 				log.warn('No Setu wallet configured.');
 				console.log(
-					`  Run ${colors.cyan('agi setu --login')} to setup your wallet.`,
+					`  Run ${colors.cyan('otto setu --login')} to setup your wallet.`,
 				);
 				console.log(
 					`  Or set ${colors.cyan('SETU_PRIVATE_KEY')} environment variable.`,

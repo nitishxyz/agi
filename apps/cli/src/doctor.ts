@@ -1,18 +1,18 @@
 import { isAbsolute, join } from 'node:path';
-import { read as readMerged, isAuthorized } from '@agi-cli/sdk';
+import { read as readMerged, isAuthorized } from '@ottocode/sdk';
 import { discoverCommands } from './custom-commands.ts';
 import { box, colors } from './ui.ts';
-import type { ProviderId } from '@agi-cli/sdk';
-import type { AgentConfigEntry } from '@agi-cli/server/runtime/agent-registry';
-import { buildFsTools } from '@agi-cli/sdk';
-import { buildGitTools } from '@agi-cli/sdk';
+import type { ProviderId } from '@ottocode/sdk';
+import type { AgentConfigEntry } from '@ottocode/server/runtime/agent-registry';
+import { buildFsTools } from '@ottocode/sdk';
+import { buildGitTools } from '@ottocode/sdk';
 import type { CommandManifest } from './custom-commands.ts';
 import {
 	getSecureAuthPath,
 	getGlobalAgentsJsonPath,
 	getGlobalToolsDir,
 	getGlobalCommandsDir,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 
 type MergedConfig = Awaited<ReturnType<typeof readMerged>>;
 
@@ -160,7 +160,7 @@ export async function runDoctor(opts: { project?: string } = {}) {
 	const sugg: string[] = [];
 	if (!defAuth)
 		sugg.push(
-			`Run: agi auth login (${def.provider}) or switch defaults: agi models`,
+			`Run: otto auth login (${def.provider}) or switch defaults: otto models`,
 		);
 	if (agentIssues.length) sugg.push(`Review agents.json fields.`);
 	if (sugg.length) box('Suggestions', sugg);
@@ -231,7 +231,7 @@ async function collectAgents(projectRoot: string) {
 	}
 	if (!defaults.includes('build')) defaults.push('build');
 	const globalPath = getGlobalAgentsJsonPath();
-	const localPath = `${projectRoot}/.agi/agents.json`.replace(/\\/g, '/');
+	const localPath = `${projectRoot}/.otto/agents.json`.replace(/\\/g, '/');
 	const globalEntries = await readAgentsJson(globalPath);
 	const localEntries = await readAgentsJson(localPath);
 	return {
@@ -258,7 +258,7 @@ async function collectTools(projectRoot: string) {
 		]),
 	).sort();
 	const globalDir = getGlobalToolsDir();
-	const localDir = `${projectRoot}/.agi/tools`.replace(/\\/g, '/');
+	const localDir = `${projectRoot}/.otto/tools`.replace(/\\/g, '/');
 	const globalNames = await listToolDirectories(globalDir);
 	const localNames = await listToolDirectories(localDir);
 	const effective = Array.from(
@@ -292,7 +292,7 @@ type CommandScopeInfo = {
 
 async function collectCommands(projectRoot: string) {
 	const globalDir = getGlobalCommandsDir();
-	const localDir = `${projectRoot}/.agi/commands`.replace(/\\/g, '/');
+	const localDir = `${projectRoot}/.otto/commands`.replace(/\\/g, '/');
 	const [globalDirInfo, localDirInfo] = await Promise.all([
 		readCommandDirectory(globalDir, projectRoot),
 		readCommandDirectory(localDir, projectRoot),

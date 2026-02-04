@@ -1,10 +1,10 @@
-# @agi-cli/sdk
+# @ottocode/sdk
 
-> **The single source of truth for AGI CLI functionality** - Comprehensive, tree-shakable, and developer-friendly.
+> **The single source of truth for ottocode functionality** - Comprehensive, tree-shakable, and developer-friendly.
 
 ## Overview
 
-`@agi-cli/sdk` is the unified SDK for building AI agents with AGI CLI. All authentication, configuration, providers, prompts, tools, and core AI functionality are included in this single package.
+`@ottocode/sdk` is the unified SDK for building AI agents with ottocode. All authentication, configuration, providers, prompts, tools, and core AI functionality are included in this single package.
 
 **Why use the SDK?**
 - ✅ **Single import**: All functionality from one package
@@ -16,14 +16,14 @@
 ## Installation
 
 ```bash
-bun add @agi-cli/sdk
+bun add @ottocode/sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { generateText, resolveModel } from '@agi-cli/sdk';
-import type { ProviderId } from '@agi-cli/sdk';
+import { generateText, resolveModel } from '@ottocode/sdk';
+import type { ProviderId } from '@ottocode/sdk';
 
 const model = resolveModel('anthropic', 'claude-sonnet-4-20250514');
 
@@ -46,10 +46,10 @@ import type {
   ProviderId, 
   ModelInfo, 
   AuthInfo, 
-  AGIConfig,
+  OttoConfig,
   ProviderConfig,
   Scope
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 ```
 
 ### Providers
@@ -69,7 +69,7 @@ import {
   providerEnvVar,
   readEnvKey,
   setEnvKey
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 
 // Check available providers
 console.log(providerIds); // ['openai', 'anthropic', 'google', 'openrouter', 'opencode', 'setu']
@@ -93,7 +93,7 @@ import {
   getAllAuth,
   authorize,
   createApiKey 
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 
 // Set API key
 await setAuth('openai', { apiKey: 'sk-...' });
@@ -111,8 +111,8 @@ console.log(`Visit: ${url}`);
 Load and manage configuration:
 
 ```typescript
-import { loadConfig } from '@agi-cli/sdk';
-import type { AGIConfig } from '@agi-cli/sdk';
+import { loadConfig } from '@ottocode/sdk';
+import type { OttoConfig } from '@ottocode/sdk';
 
 const config = await loadConfig();
 console.log(config.provider); // 'anthropic'
@@ -124,7 +124,7 @@ console.log(config.model);    // 'claude-sonnet-4-20250514'
 Pre-built system prompts:
 
 ```typescript
-import { providerBasePrompt } from '@agi-cli/sdk';
+import { providerBasePrompt } from '@ottocode/sdk';
 
 const prompt = providerBasePrompt('anthropic');
 ```
@@ -146,8 +146,8 @@ import {
   buildGitTools,
   createFileDiffArtifact,
   z
-} from '@agi-cli/sdk';
-import type { CoreMessage, Tool, DiscoveredTool } from '@agi-cli/sdk';
+} from '@ottocode/sdk';
+import type { CoreMessage, Tool, DiscoveredTool } from '@ottocode/sdk';
 
 // Generate text
 const { text } = await generateText({
@@ -182,7 +182,7 @@ Typed error classes:
 
 ```typescript
 import { 
-  AGIError, 
+  OttoError, 
   AuthError, 
   ConfigError, 
   ToolError,
@@ -191,7 +191,7 @@ import {
   ValidationError,
   NotFoundError,
   ServiceError
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 
 try {
   // ... your code
@@ -208,7 +208,7 @@ The SDK is fully tree-shakable. Modern bundlers (Vite, Rollup, esbuild, webpack)
 
 ```typescript
 // Only includes generateText and resolveModel code
-import { generateText, resolveModel } from '@agi-cli/sdk';
+import { generateText, resolveModel } from '@ottocode/sdk';
 ```
 
 ## Architecture
@@ -216,7 +216,7 @@ import { generateText, resolveModel } from '@agi-cli/sdk';
 The SDK contains all functionality internally:
 
 ```
-@agi-cli/sdk/src/
+@ottocode/sdk/src/
 ├── auth/           ← Authentication (OAuth, API keys)
 ├── config/         ← Configuration (global + project)
 ├── core/           ← Core AI functionality
@@ -230,17 +230,17 @@ The SDK contains all functionality internally:
 ```
 
 Related packages:
-- `@agi-cli/database` - SQLite persistence (depends on sdk)
-- `@agi-cli/server` - HTTP API (depends on sdk, database)
-- `@agi-cli/api` - Type-safe API client (standalone)
-- `@agi-cli/web-sdk` - React hooks & components (depends on api)
+- `@ottocode/database` - SQLite persistence (depends on sdk)
+- `@ottocode/server` - HTTP API (depends on sdk, database)
+- `@ottocode/api` - Type-safe API client (standalone)
+- `@ottocode/web-sdk` - React hooks & components (depends on api)
 
 ## Examples
 
 ### Basic Agent
 
 ```typescript
-import { generateText, resolveModel } from '@agi-cli/sdk';
+import { generateText, resolveModel } from '@ottocode/sdk';
 
 const model = resolveModel('anthropic');
 
@@ -255,7 +255,7 @@ console.log(text);
 ### Agent with Tools
 
 ```typescript
-import { streamText, resolveModel, buildFsTools, buildGitTools } from '@agi-cli/sdk';
+import { streamText, resolveModel, buildFsTools, buildGitTools } from '@ottocode/sdk';
 
 const tools = {
   ...buildFsTools(),
@@ -276,7 +276,7 @@ for await (const chunk of textStream) {
 ### Structured Output
 
 ```typescript
-import { generateObject, resolveModel, z } from '@agi-cli/sdk';
+import { generateObject, resolveModel, z } from '@ottocode/sdk';
 
 const schema = z.object({
   sentiment: z.enum(['positive', 'negative', 'neutral']),
@@ -297,14 +297,14 @@ console.log(object);
 ### With Configuration
 
 ```typescript
-import { generateText, resolveModel, loadConfig } from '@agi-cli/sdk';
+import { generateText, resolveModel, loadConfig } from '@ottocode/sdk';
 
 const config = await loadConfig();
 const model = resolveModel(config.provider, config.model);
 
 const { text } = await generateText({
   model,
-  prompt: 'Hello from AGI CLI!',
+  prompt: 'Hello from ottocode!',
   temperature: config.temperature,
 });
 ```
@@ -317,16 +317,16 @@ Full TypeScript support with comprehensive types:
 import type { 
   ProviderId, 
   ModelInfo, 
-  AGIConfig,
+  OttoConfig,
   CoreMessage,
   Tool,
   DiscoveredTool,
   Artifact
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 
 // All types are fully documented and type-safe
 const providerId: ProviderId = 'anthropic';
-const config: AGIConfig = await loadConfig();
+const config: OttoConfig = await loadConfig();
 ```
 
 ## License

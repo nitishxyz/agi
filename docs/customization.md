@@ -8,7 +8,7 @@ Create reusable commands for common workflows in your project.
 
 ### Example: Commit Command
 
-Create `.agi/commands/commit.json`:
+Create `.otto/commands/commit.json`:
 
 ```json
 {
@@ -27,7 +27,7 @@ Create `.agi/commands/commit.json`:
 Usage:
 
 ```bash
-agi commit
+otto commit
 ```
 
 ## Custom Tools
@@ -36,7 +36,7 @@ Tools must implement the AITool interface and export as default.
 
 ### Example: Custom Tool Implementation
 
-Create `.agi/tools/file-size/tool.ts`:
+Create `.otto/tools/file-size/tool.ts`:
 
 ```typescript
 import { z } from 'zod';

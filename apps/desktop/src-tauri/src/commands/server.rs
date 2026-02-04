@@ -113,7 +113,7 @@ fn find_available_port(tracked_ports: &[u16]) -> u16 {
         
         // Skip ports we're already tracking
         if tracked_ports.contains(&port) {
-            eprintln!("[AGI] Port {} is tracked, skipping", port);
+            eprintln!("[otto] Port {} is tracked, skipping", port);
             continue;
         }
         
@@ -122,10 +122,10 @@ fn find_available_port(tracked_ports: &[u16]) -> u16 {
         let web_available = TcpListener::bind(("127.0.0.1", port + 1)).is_ok();
         
         if api_available && web_available {
-            eprintln!("[AGI] Found available port: {}", port);
+            eprintln!("[otto] Found available port: {}", port);
             return port;
         } else {
-            eprintln!("[AGI] Port {} not available (api={}, web={})", port, api_available, web_available);
+            eprintln!("[otto] Port {} not available (api={}, web={})", port, api_available, web_available);
         }
     }
     19100
@@ -143,9 +143,9 @@ pub async fn start_server(
     // Get tracked ports from existing servers
     let tracked_ports: Vec<u16> = {
         let servers = state.servers.lock().unwrap();
-        eprintln!("[AGI] Currently tracking {} servers", servers.len());
+        eprintln!("[otto] Currently tracking {} servers", servers.len());
         servers.values().map(|(_, info)| {
-            eprintln!("[AGI]   - pid={} port={} project={}", info.pid, info.port, info.project_path);
+            eprintln!("[otto]   - pid={} port={} project={}", info.pid, info.port, info.project_path);
             info.port
         }).collect()
     };
@@ -153,7 +153,7 @@ pub async fn start_server(
     let actual_port = port.unwrap_or_else(|| find_available_port(&tracked_ports));
     let port_arg = actual_port.to_string();
     
-    eprintln!("[AGI] Starting server for project: {} on port: {}", project_path, actual_port);
+    eprintln!("[otto] Starting server for project: {} on port: {}", project_path, actual_port);
 
     let log_path = format!("/tmp/agi-server-{}.log", actual_port);
     let log_file = OpenOptions::new()
@@ -168,7 +168,7 @@ pub async fn start_server(
 
     let agi_bin_dir = dirs::config_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
-        .join("agi")
+        .join("otto")
         .join("bin");
     let current_path = std::env::var("PATH").unwrap_or_default();
     let augmented_path = format!(
@@ -195,7 +195,7 @@ pub async fn start_server(
         project_path: project_path.clone(),
     };
     
-    eprintln!("[AGI] Server started with pid: {}, url: {}", info.pid, info.url);
+    eprintln!("[otto] Server started with pid: {}, url: {}", info.pid, info.url);
 
     state
         .servers
@@ -211,11 +211,11 @@ pub async fn stop_server(pid: u32, state: State<'_, ServerState>) -> Result<(), 
     let mut servers = state.servers.lock().unwrap();
 
     if let Some((mut child, info)) = servers.remove(&pid) {
-        eprintln!("[AGI] Stopping server pid={} port={} for project={}", pid, info.port, info.project_path);
+        eprintln!("[otto] Stopping server pid={} port={} for project={}", pid, info.port, info.project_path);
         let _ = child.kill();
         let _ = child.wait();
     } else {
-        eprintln!("[AGI] No server found with pid={}", pid);
+        eprintln!("[otto] No server found with pid={}", pid);
     }
 
     Ok(())
@@ -224,10 +224,10 @@ pub async fn stop_server(pid: u32, state: State<'_, ServerState>) -> Result<(), 
 #[tauri::command]
 pub async fn stop_all_servers(state: State<'_, ServerState>) -> Result<(), String> {
     let mut servers = state.servers.lock().unwrap();
-    eprintln!("[AGI] Stopping all {} servers", servers.len());
+    eprintln!("[otto] Stopping all {} servers", servers.len());
 
     for (pid, (mut child, info)) in servers.drain() {
-        eprintln!("[AGI] Stopping server pid={} for project={}", pid, info.project_path);
+        eprintln!("[otto] Stopping server pid={} for project={}", pid, info.project_path);
         let _ = child.kill();
         let _ = child.wait();
     }

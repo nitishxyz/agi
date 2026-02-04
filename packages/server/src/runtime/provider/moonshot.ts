@@ -1,7 +1,7 @@
-import type { AGIConfig } from '@agi-cli/sdk';
-import { getAuth, createMoonshotModel } from '@agi-cli/sdk';
+import type { OttoConfig } from '@ottocode/sdk';
+import { getAuth, createMoonshotModel } from '@ottocode/sdk';
 
-export async function getMoonshotInstance(cfg: AGIConfig, model: string) {
+export async function getMoonshotInstance(cfg: OttoConfig, model: string) {
 	const auth = await getAuth('moonshot', cfg.projectRoot);
 	const apiKey = auth?.type === 'api' ? auth.key : undefined;
 	return createMoonshotModel(model, { apiKey });

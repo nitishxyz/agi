@@ -1,5 +1,5 @@
-import type { getDb } from '@agi-cli/database';
-import { messageParts } from '@agi-cli/database/schema';
+import type { getDb } from '@ottocode/database';
+import { messageParts } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish } from '../../events/bus.ts';
 import type { RunOpts } from '../session/queue.ts';

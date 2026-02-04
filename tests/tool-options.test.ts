@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { listAvailableTools } from '@agi-cli/cli/src/scaffold.ts';
+import { listAvailableTools } from '@ottocode/cli/src/scaffold.ts';
 
 const pluginSource = `export default async () => ({
   name: 'custom_thing',
@@ -17,7 +17,7 @@ const pluginSource = `export default async () => ({
 
 describe('listAvailableTools', () => {
 	it('includes custom tools and curated built-ins only', async () => {
-		const root = await mkdtemp(join(tmpdir(), 'agi-tools-list-'));
+		const root = await mkdtemp(join(tmpdir(), 'otto-tools-list-'));
 		const projectRoot = join(root, 'project');
 		const home = join(root, 'home');
 		await mkdir(projectRoot, { recursive: true });
@@ -29,7 +29,7 @@ describe('listAvailableTools', () => {
 		process.env.XDG_CONFIG_HOME = join(home, '.config');
 
 		try {
-			const toolDir = join(home, '.config', 'agi', 'tools', 'custom_thing');
+			const toolDir = join(home, '.config', 'otto', 'tools', 'custom_thing');
 			await mkdir(toolDir, { recursive: true });
 			await writeFile(join(toolDir, 'tool.js'), pluginSource);
 

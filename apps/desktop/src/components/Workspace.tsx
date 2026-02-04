@@ -37,7 +37,7 @@ export function Workspace({
 		if (startedRef.current) return;
 		startedRef.current = true;
 		console.log(
-			'[AGI] Workspace mounting for project:',
+			'[otto] Workspace mounting for project:',
 			project.path,
 			project.name,
 		);
@@ -69,9 +69,9 @@ export function Workspace({
 
 	useEffect(() => {
 		const handler = (e: MessageEvent) => {
-			if (e.data?.type === 'agi-open-url' && typeof e.data.url === 'string') {
+			if (e.data?.type === 'otto-open-url' && typeof e.data.url === 'string') {
 				openUrl(e.data.url).catch((err: unknown) => {
-					console.error('[AGI] Failed to open URL:', err);
+					console.error('[otto] Failed to open URL:', err);
 				});
 			}
 		};
@@ -82,7 +82,7 @@ export function Workspace({
 	useEffect(() => {
 		if (!iframeLoaded || !iframeRef.current?.contentWindow) return;
 		iframeRef.current.contentWindow.postMessage(
-			{ type: 'agi-set-theme', theme },
+			{ type: 'otto-set-theme', theme },
 			'*',
 		);
 	}, [theme, iframeLoaded]);
@@ -176,13 +176,13 @@ export function Workspace({
 						src={iframeSrc ?? ''}
 						className={`absolute inset-0 w-full h-full border-none transition-opacity duration-200 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
 						style={{ backgroundColor: 'hsl(var(--background))' }}
-						title="AGI Workspace"
+						title="otto workspace"
 						allow="clipboard-write; clipboard-read"
 						onLoad={() => {
 							setIframeLoaded(true);
 							focusIframe();
 							iframeRef.current?.contentWindow?.postMessage(
-								{ type: 'agi-set-theme', theme },
+								{ type: 'otto-set-theme', theme },
 								'*',
 							);
 						}}

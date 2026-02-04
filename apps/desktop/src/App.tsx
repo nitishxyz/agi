@@ -5,8 +5,8 @@ import { ProjectPicker } from './components/ProjectPicker';
 import { Workspace } from './components/Workspace';
 import { NativeOnboarding } from './components/onboarding/NativeOnboarding';
 import { SetuLoader } from './components/SetuLoader';
-import { useTheme } from '@agi-cli/web-sdk/hooks';
-import type { Theme } from '@agi-cli/web-sdk/hooks';
+import { useTheme } from '@ottocode/web-sdk/hooks';
+import type { Theme } from '@ottocode/web-sdk/hooks';
 import './index.css';
 
 type View = 'loading' | 'onboarding' | 'picker' | 'workspace';

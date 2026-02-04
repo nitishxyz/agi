@@ -1,4 +1,4 @@
-import { catalog } from '@agi-cli/sdk';
+import { catalog } from '@ottocode/sdk';
 import { debugLog } from '../debug/index.ts';
 import type { ProviderName } from '../provider/index.ts';
 

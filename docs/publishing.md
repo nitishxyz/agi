@@ -1,24 +1,24 @@
 # Publishing Guide
 
-This document describes how to publish the AGI CLI and SDK packages.
+This document describes how to publish the ottocode and SDK packages.
 
 ## Packages
 
-### `@agi-cli/install`
+### `@ottocode/install`
 
-npm installer package that downloads the AGI CLI binary.
+npm installer package that downloads the ottocode binary.
 
 - **Location:** `packages/install/`
-- **Package name:** `@agi-cli/install`
+- **Package name:** `@ottocode/install`
 - **Purpose:** Simplify global installation via npm/bun
 - **Publishes:** npm only (no binaries)
 
-### `@agi-cli/sdk`
+### `@ottocode/sdk`
 
 The core SDK for building AI agents and tools.
 
 - **Location:** `packages/sdk/`
-- **Package name:** `@agi-cli/sdk`
+- **Package name:** `@ottocode/sdk`
 - **Purpose:** Library for developers building custom agents
 - **Publishes:** npm only
 
@@ -42,8 +42,8 @@ git push origin main
    - Linux (x64, ARM64)
    - Windows (x64)
 5. Creates GitHub release with binaries
-6. Publishes `@agi-cli/install` to npm
-7. Publishes `@agi-cli/sdk` to npm
+6. Publishes `@ottocode/install` to npm
+7. Publishes `@ottocode/sdk` to npm
 
 **Workflow:** `.github/workflows/release-binaries.yml`
 
@@ -70,7 +70,7 @@ git push origin v0.1.29
 1. Checks out the specific tag
 2. Builds binaries for all platforms
 3. Creates GitHub release with binaries
-4. Publishes `@agi-cli/install` and `@agi-cli/sdk` to npm
+4. Publishes `@ottocode/install` and `@ottocode/sdk` to npm
 
 **Workflow:** `.github/workflows/publish-from-tag.yml`
 
@@ -158,8 +158,8 @@ bun run build:windows-x64        # Windows x64
 ### Output Location
 
 - All binaries: `apps/cli/dist/`
-- Default: `dist/agi`
-- Platform-specific: `dist/agi-{os}-{arch}`
+- Default: `dist/otto`
+- Platform-specific: `dist/otto-{os}-{arch}`
 
 ---
 
@@ -213,7 +213,7 @@ After publishing, verify:
 
 ### 1. GitHub Release
 
-- Go to: https://github.com/nitishxyz/agi/releases
+- Go to: https://github.com/nitishxyz/otto/releases
 - Check: All platform binaries attached
 - Test: Download and run binary
 
@@ -222,16 +222,16 @@ After publishing, verify:
 **Installer:**
 
 ```bash
-npm view @agi-cli/install
-npm install -g @agi-cli/install
-agi --version
+npm view @ottocode/install
+npm install -g @ottocode/install
+otto --version
 ```
 
 **SDK:**
 
 ```bash
-npm view @agi-cli/sdk
-npm install @agi-cli/sdk
+npm view @ottocode/sdk
+npm install @ottocode/sdk
 ```
 
 ---
@@ -260,7 +260,7 @@ npm install @agi-cli/sdk
 **Check:**
 
 1. Build output includes all 684 modules
-2. Binary is executable: `chmod +x apps/cli/dist/agi`
+2. Binary is executable: `chmod +x apps/cli/dist/otto`
 3. Test locally first: `cd apps/cli && bun run build`
 
 ### Version Sync Issues
@@ -280,7 +280,7 @@ Before releasing:
 - [ ] Update CHANGELOG (if exists)
 - [ ] Test CLI locally: `cd apps/cli && bun run dev`
 - [ ] Test build: `cd apps/cli && bun run build`
-- [ ] Test binary: `./apps/cli/dist/agi --version`
+- [ ] Test binary: `./apps/cli/dist/otto --version`
 - [ ] Verify version sync across all packages
 - [ ] Run tests: `bun test`
 - [ ] Commit all changes
@@ -291,7 +291,7 @@ Before releasing:
 ## Package Structure
 
 ```
-agi/
+otto/
 ├── apps/
 │   ├── cli/
 │   │   ├── dist/              # Build output
@@ -320,25 +320,25 @@ agi/
 ### User installs via npm
 
 ```
-User: npm install -g @agi-cli/install
+User: npm install -g @ottocode/install
   ↓
-npm: Download @agi-cli/install package
+npm: Download @ottocode/install package
   ↓
 npm: Run postinstall (packages/install/start.js)
   ↓
 Script: Detect platform (darwin-arm64, linux-x64, etc.)
   ↓
-Script: Download binary from https://install.agi.nitish.sh
+Script: Download binary from https://install.ottocode.io
   ↓
 Script: Install to /usr/local/bin or ~/.local/bin
   ↓
-User: agi --version ✓
+User: otto --version ✓
 ```
 
 ### Installer Package Benefits
 
 1. **Standard npm workflow**: Familiar to developers
-2. **Automatic updates**: `npm update -g @agi-cli/install`
+2. **Automatic updates**: `npm update -g @ottocode/install`
 3. **Cross-platform**: Works on all platforms
 4. **Small package size**: ~560 bytes (downloads binary separately)
 5. **PATH management**: Handles installation directory automatically
@@ -355,12 +355,12 @@ After successful release:
 
    ```bash
    # Test npm install
-   npm install -g @agi-cli/install@latest
-   agi --version
+   npm install -g @ottocode/install@latest
+   otto --version
 
    # Test curl install
-   curl -fsSL https://install.agi.nitish.sh | sh
-   agi --version
+   curl -fsSL https://install.ottocode.io | sh
+   otto --version
    ```
 
 4. **Monitor for issues** in GitHub Issues
@@ -369,7 +369,7 @@ After successful release:
 
 ## Summary
 
-- **Two packages published to npm:** `@agi-cli/install` (installer), `@agi-cli/sdk` (library)
+- **Two packages published to npm:** `@ottocode/install` (installer), `@ottocode/sdk` (library)
 - **Binaries published to GitHub releases:** Platform-specific CLI binaries
 - **Push to main** → Auto-release all packages with version sync
 - **Manual tag** → Release specific version

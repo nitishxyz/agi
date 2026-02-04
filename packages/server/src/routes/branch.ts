@@ -1,7 +1,7 @@
 import type { Hono } from 'hono';
-import { loadConfig } from '@agi-cli/sdk';
-import { getDb } from '@agi-cli/database';
-import { isProviderId, logger } from '@agi-cli/sdk';
+import { loadConfig } from '@ottocode/sdk';
+import { getDb } from '@ottocode/database';
+import { isProviderId, logger } from '@ottocode/sdk';
 import {
 	createBranch,
 	listBranches,

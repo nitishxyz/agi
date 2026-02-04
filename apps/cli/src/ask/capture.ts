@@ -2,7 +2,7 @@ import type { AskHandshake, AskOptions } from './types.ts';
 import { getOrStartServerUrl } from './server.ts';
 import { httpJson, safeJson, connectSSE } from './http.ts';
 import { printToolCall, printToolResult, dim, logToolError } from './render.ts';
-import { extractToolError, isToolError } from '@agi-cli/sdk/tools/error';
+import { extractToolError, isToolError } from '@ottocode/sdk/tools/error';
 
 const READ_ONLY_TOOLS = new Set([
 	'read',

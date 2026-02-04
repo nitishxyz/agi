@@ -247,7 +247,7 @@ export const UserMessageGroup = memo(
 																e.preventDefault();
 																window.parent.postMessage(
 																	{
-																		type: 'agi-open-url',
+																		type: 'otto-open-url',
 																		url: href,
 																	},
 																	'*',

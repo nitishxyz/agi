@@ -2,13 +2,13 @@
 
 [← Back to README](../README.md) · [Docs Index](./index.md)
 
-AGI is a **Bun workspace monorepo** with 6 apps, 7 packages, and SST infrastructure.
+otto is a **Bun workspace monorepo** with 6 apps, 7 packages, and SST infrastructure.
 
 ---
 
 ## How It Works
 
-AGI is a local-first AI coding assistant. The core flow:
+otto is a local-first AI coding assistant. The core flow:
 
 1. **CLI binary** starts a local HTTP server (Hono) with an embedded web UI
 2. **Server** manages sessions, persists messages to SQLite, and streams AI responses via SSE
@@ -22,7 +22,7 @@ The CLI binary is self-contained — built with `bun build --compile`, it bundle
 ## Project Structure
 
 ```
-agi/
+otto/
 ├── apps/
 │   ├── cli/              # CLI binary (Commander, bun build --compile)
 │   ├── web/              # Web UI client (React + Vite + TanStack)
@@ -54,44 +54,44 @@ agi/
 Main CLI application. Compiles to a self-contained binary via `bun build --compile`.
 
 - **Framework:** Commander for argument parsing
-- **Dependencies:** `@agi-cli/sdk`, `@agi-cli/server`, `@agi-cli/database`
+- **Dependencies:** `@ottocode/sdk`, `@ottocode/server`, `@ottocode/database`
 - **Binary size:** ~61MB
 - **Distribution:** GitHub releases + install script (not published to npm as a package)
 
 When run with no arguments, it checks for the desktop app. If not found, it starts the local server and opens the web UI in the browser. With arguments, it runs the specified command or one-shot prompt.
 
 Key behaviors:
-- `agi` → open desktop app (if installed) or start server + web UI
-- `agi "prompt"` → one-shot question via local server
-- `agi serve` → start API server + web UI explicitly
-- `agi setup` → interactive provider configuration
+- `otto` → open desktop app (if installed) or start server + web UI
+- `otto "prompt"` → one-shot question via local server
+- `otto serve` → start API server + web UI explicitly
+- `otto setup` → interactive provider configuration
 
 ### `apps/web`
 
-Web UI that acts as a client to the AGI server. Not a standalone app — it needs the server running.
+Web UI that acts as a client to the otto server. Not a standalone app — it needs the server running.
 
 - **Stack:** React 19, Vite, TanStack Router + Query, Tailwind CSS, Zustand
-- **Dependencies:** `@agi-cli/web-sdk`
+- **Dependencies:** `@ottocode/web-sdk`
 - **Features:** Real-time chat via SSE, session management, syntax highlighting, terminal rendering (Ghostty), dark theme
 
-During build, the web app is compiled to static assets and bundled into `@agi-cli/web-ui` for embedding in the CLI binary.
+During build, the web app is compiled to static assets and bundled into `@ottocode/web-ui` for embedding in the CLI binary.
 
 ### `apps/desktop`
 
 Desktop application that embeds the CLI binary and web UI via Tauri.
 
 - **Stack:** Tauri v2, React, Vite, Tailwind CSS
-- **Dependencies:** `@agi-cli/web-sdk`
+- **Dependencies:** `@ottocode/web-sdk`
 - **Platforms:** macOS (dmg, app), Linux (AppImage), Windows (msi)
 
-The CLI checks for the desktop app on startup. If found, `agi` opens it directly instead of the browser-based web UI.
+The CLI checks for the desktop app on startup. If found, `otto` opens it directly instead of the browser-based web UI.
 
 ### `apps/setu`
 
 AI provider proxy service with Solana wallet authentication and USDC payments (x402 protocol).
 
 - **Stack:** Hono, AI SDK v6, Drizzle ORM + Neon Postgres
-- **Deployment:** Cloudflare Worker → `setu.agi.nitish.sh`
+- **Deployment:** Cloudflare Worker → `setu.ottocode.io`
 - **Features:** Proxies OpenAI/Anthropic requests, wallet-based auth, balance tracking, Polar.sh top-ups
 
 ### `apps/preview-api`
@@ -99,20 +99,20 @@ AI provider proxy service with Solana wallet authentication and USDC payments (x
 API for sharing sessions publicly.
 
 - **Stack:** Hono, Drizzle ORM + Cloudflare D1
-- **Deployment:** Cloudflare Worker → `api.share.agi.nitish.sh`
+- **Deployment:** Cloudflare Worker → `api.share.ottocode.io`
 
 ### `apps/preview-web`
 
 Public-facing site for viewing shared sessions.
 
 - **Stack:** Astro, React, TanStack Query, Tailwind CSS
-- **Deployment:** AWS (Astro SSR via Lambda + CloudFront) → `share.agi.nitish.sh`
+- **Deployment:** AWS (Astro SSR via Lambda + CloudFront) → `share.ottocode.io`
 
 ---
 
 ## Packages
 
-### `@agi-cli/sdk`
+### `@ottocode/sdk`
 
 Core SDK containing all fundamental logic. Tree-shakable — bundlers only include what you use.
 
@@ -126,9 +126,9 @@ Core SDK containing all fundamental logic. Tree-shakable — bundlers only inclu
 - `skills/` — Skill loader, parser, validator
 - `types/` — Shared TypeScript types
 
-**Subpath exports:** Individual tools (`@agi-cli/sdk/tools/builtin/bash`, etc.) and prompts.
+**Subpath exports:** Individual tools (`@ottocode/sdk/tools/builtin/bash`, etc.) and prompts.
 
-### `@agi-cli/server`
+### `@ottocode/server`
 
 HTTP API server built on Hono.
 
@@ -137,7 +137,7 @@ HTTP API server built on Hono.
 - **Events:** Event bus for real-time session updates
 - **Exports:** `createApp`, `createEmbeddedApp`, `createStandaloneApp`, `BUILTIN_AGENTS`, `BUILTIN_TOOLS`
 
-### `@agi-cli/database`
+### `@ottocode/database`
 
 SQLite persistence with Drizzle ORM.
 
@@ -145,7 +145,7 @@ SQLite persistence with Drizzle ORM.
 - **Features:** Auto-migrations on startup, bundled migration SQL files
 - **Exports:** `getDb`, `ensureDb`, `closeDb`, `resetDb`, schema types
 
-### `@agi-cli/api`
+### `@ottocode/api`
 
 Type-safe API client generated from the server's OpenAPI spec.
 
@@ -154,28 +154,28 @@ Type-safe API client generated from the server's OpenAPI spec.
 - **SSE support:** `eventsource-parser`
 - Standalone — no workspace dependencies
 
-### `@agi-cli/web-sdk`
+### `@ottocode/web-sdk`
 
-Reusable React components, hooks, and utilities for building AGI web interfaces.
+Reusable React components, hooks, and utilities for building otto web interfaces.
 
 - **Components:** Chat UI, terminal rendering (Ghostty), code highlighting, QR codes
 - **Hooks:** API interactions, streaming, state management
 - **Stores:** Zustand-based state
 - **Peer deps:** React 18/19, TanStack Query, Zustand, lucide-react, react-markdown
 
-### `@agi-cli/web-ui`
+### `@ottocode/web-ui`
 
 Pre-built static web UI assets for embedding in the CLI binary.
 
 - Compiles `apps/web` and bundles as static assets
-- Served by the CLI binary when you run `agi serve`
+- Served by the CLI binary when you run `otto serve`
 
-### `@agi-cli/install`
+### `@ottocode/install`
 
 Lightweight npm installer package.
 
 - Postinstall script detects platform, downloads binary from GitHub releases
-- Falls back to `install.agi.nitish.sh` curl install
+- Falls back to `install.ottocode.io` curl install
 
 ---
 
@@ -227,10 +227,10 @@ All infrastructure is defined as code using [SST](https://sst.dev) with AWS and 
 
 | Resource | SST Component | Platform | Domain |
 |---|---|---|---|
-| Setu | `sst.cloudflare.Worker` | Cloudflare Workers | `setu.agi.nitish.sh` |
-| Preview API | `sst.cloudflare.Worker` | Cloudflare Workers + D1 | `api.share.agi.nitish.sh` |
-| Preview Web | `sst.aws.Astro` | AWS (Lambda + CloudFront) | `share.agi.nitish.sh` |
-| Install Script | `sst.cloudflare.Worker` | Cloudflare Workers | `install.agi.nitish.sh` |
+| Setu | `sst.cloudflare.Worker` | Cloudflare Workers | `setu.ottocode.io` |
+| Preview API | `sst.cloudflare.Worker` | Cloudflare Workers + D1 | `api.share.ottocode.io` |
+| Preview Web | `sst.aws.Astro` | AWS (Lambda + CloudFront) | `share.ottocode.io` |
+| Install Script | `sst.cloudflare.Worker` | Cloudflare Workers | `install.ottocode.io` |
 | OG Image | `sst.aws.Function` | AWS Lambda (Node.js 20) | (function URL) |
 | Drizzle Studio | `sst.x.DevCommand` | Local (dev only) | — |
 
@@ -262,8 +262,8 @@ infra/
 
 ### Stage-Aware Domains
 
-- **prod:** `setu.agi.nitish.sh`, `share.agi.nitish.sh`
-- **dev:** `dev.setu.agi.nitish.sh`, `dev.share.agi.nitish.sh`
+- **prod:** `setu.ottocode.io`, `share.ottocode.io`
+- **dev:** `dev.setu.ottocode.io`, `dev.share.ottocode.io`
 
 ```bash
 bun sst dev                    # local development with live infra
@@ -286,7 +286,7 @@ Four built-in agents with embedded prompts:
 
 All agents also get: `progress_update`, `finish`, `skill`.
 
-Agent config can be overridden via `.agi/agents.json` (project) or `~/.config/agi/agents.json` (global).
+Agent config can be overridden via `.otto/agents.json` (project) or `~/.config/otto/agents.json` (global).
 
 ---
 
@@ -339,17 +339,17 @@ Provider catalog is auto-generated: `bun run catalog:update`
 
 ### Imports
 
-- **Workspace packages:** `@agi-cli/package-name`
+- **Workspace packages:** `@ottocode/package-name`
 - **Local:** `./file.ts` or `../file.ts`
 - **Never:** `@/` path aliases
 
 ### Config Files
 
-- **Global config:** `~/.config/agi/config.json`
-- **Global auth:** `~/Library/Application Support/agi/auth.json` (macOS)
-- **Project config:** `.agi/config.json`
-- **Project agents:** `.agi/agents.json`
-- **Project database:** `.agi/agi.sqlite`
+- **Global config:** `~/.config/otto/config.json`
+- **Global auth:** `~/Library/Application Support/otto/auth.json` (macOS)
+- **Project config:** `.otto/config.json`
+- **Project agents:** `.otto/agents.json`
+- **Project database:** `.otto/otto.sqlite`
 
 ### TypeScript
 

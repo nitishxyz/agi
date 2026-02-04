@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { discoverProjectTools } from '@agi-cli/sdk';
+import { discoverProjectTools } from '@ottocode/sdk';
 
 const pluginSource = `export default async ({ project }) => ({
   name: 'custom_echo',
@@ -19,7 +19,7 @@ const pluginSource = `export default async ({ project }) => ({
 
 describe('discoverProjectTools', () => {
 	it('includes built-in tools and custom JS plugins', async () => {
-		const workspaceRoot = await mkdtemp(join(tmpdir(), 'agi-tools-'));
+		const workspaceRoot = await mkdtemp(join(tmpdir(), 'otto-tools-'));
 		const projectRoot = join(workspaceRoot, 'project');
 		const homeDir = join(workspaceRoot, 'home');
 		await mkdir(projectRoot, { recursive: true });
@@ -32,11 +32,11 @@ describe('discoverProjectTools', () => {
 		process.env.XDG_CONFIG_HOME = join(homeDir, '.config');
 
 		try {
-			const globalToolDir = join(homeDir, '.config', 'agi', 'tools', 'custom');
+			const globalToolDir = join(homeDir, '.config', 'otto', 'tools', 'custom');
 			await mkdir(globalToolDir, { recursive: true });
 			await writeFile(join(globalToolDir, 'tool.js'), pluginSource);
 
-			const globalConfigDir = join(homeDir, '.config', 'agi');
+			const globalConfigDir = join(homeDir, '.config', 'otto');
 			const tools = await discoverProjectTools(projectRoot, globalConfigDir);
 			const names = tools.map((t) => t.name).sort();
 			expect(names).toContain('custom_echo');

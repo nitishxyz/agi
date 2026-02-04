@@ -159,7 +159,7 @@ export async function discoverProjectTools(
 					const plugin = await loadPlugin(absPath, folder, projectRoot);
 					if (plugin) tools.set(plugin.name, plugin.tool);
 				} catch (err) {
-					if (process.env.AGI_DEBUG_TOOLS === '1')
+					if (process.env.OTTO_DEBUG_TOOLS === '1')
 						console.error('Failed to load tool', absPath, err);
 				}
 			}
@@ -195,7 +195,7 @@ export async function discoverProjectTools(
 	}
 
 	await loadFromBase(globalConfigDir);
-	await loadFromBase(join(projectRoot, '.agi'));
+	await loadFromBase(join(projectRoot, '.otto'));
 	return Array.from(tools.entries()).map(([name, tool]) => ({ name, tool }));
 }
 

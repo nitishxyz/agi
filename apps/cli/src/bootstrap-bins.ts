@@ -12,7 +12,7 @@ function getAgiBinDir(): string {
 	const cfgHome = process.env.XDG_CONFIG_HOME;
 	const home = process.env.HOME || process.env.USERPROFILE || '';
 	const configBase = cfgHome?.trim() || join(home, '.config');
-	return join(configBase, 'agi', 'bin');
+	return join(configBase, 'otto', 'bin');
 }
 
 const MIN_BINARY_SIZE = 100_000;

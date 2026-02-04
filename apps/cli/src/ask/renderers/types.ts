@@ -1,4 +1,4 @@
-import type { Artifact } from '@agi-cli/sdk';
+import type { Artifact } from '@ottocode/sdk';
 
 export type ToolCallArgs = Record<string, unknown>;
 export type ToolResultData = Record<string, unknown>;

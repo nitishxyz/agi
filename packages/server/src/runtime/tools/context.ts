@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
-import type { DB } from '@agi-cli/database';
-import { messageParts } from '@agi-cli/database/schema';
+import type { DB } from '@ottocode/database';
+import { messageParts } from '@ottocode/database/schema';
 import type { ToolApprovalMode } from './approval.ts';
 import { publish } from '../../events/bus.ts';
 

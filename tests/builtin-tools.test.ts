@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll, afterAll } from 'bun:test';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { discoverProjectTools } from '@agi-cli/sdk';
+import { discoverProjectTools } from '@ottocode/sdk';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 
@@ -12,7 +12,7 @@ let testDir: string;
 let projectRoot: string;
 
 beforeAll(async () => {
-	testDir = await mkdtemp(join(tmpdir(), 'agi-tools-test-'));
+	testDir = await mkdtemp(join(tmpdir(), 'otto-tools-test-'));
 	projectRoot = join(testDir, 'project');
 	await mkdir(projectRoot, { recursive: true });
 
@@ -60,7 +60,6 @@ describe('Built-in Tools', () => {
 		expect(names).toContain('finish');
 		expect(names).toContain('progress_update');
 		expect(names).toContain('websearch');
-		expect(names).toContain('edit');
 		expect(names).toContain('update_todos');
 	});
 
@@ -433,27 +432,6 @@ describe('Built-in Tools', () => {
 			expect(result).toHaveProperty('ok', true);
 			const updated = await Bun.file(join(projectRoot, 'test.txt')).text();
 			expect(updated).toBe('Hello World\nLine 3\n');
-		});
-	});
-
-	describe('edit tool', () => {
-		it('should edit files', async () => {
-			const tools = await discoverProjectTools(projectRoot);
-			const editTool = tools.find((t) => t.name === 'edit');
-
-			const testFile = join(projectRoot, 'test.txt');
-			const result = await editTool?.tool.execute({
-				path: testFile,
-				ops: [
-					{
-						type: 'replace',
-						find: 'Hello World',
-						replace: 'Hello Universe',
-					},
-				],
-			});
-			expect(result).toHaveProperty('opsApplied');
-			expect((result as { opsApplied: number }).opsApplied).toBe(1);
 		});
 	});
 

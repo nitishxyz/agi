@@ -7,44 +7,44 @@
 ### Session Management
 
 ```bash
-agi sessions              # Interactive session picker (default)
-agi sessions --list       # List all sessions
-agi sessions --json       # Output sessions as JSON
-agi sessions --limit 10   # Limit number of sessions shown
+otto sessions              # Interactive session picker (default)
+otto sessions --list       # List all sessions
+otto sessions --json       # Output sessions as JSON
+otto sessions --limit 10   # Limit number of sessions shown
 ```
 
 ### Provider & Model Configuration
 
 ```bash
-agi models               # Interactive provider/model selection
-agi switch               # Alias for models command
-agi auth login           # Configure provider credentials
-agi auth list            # List configured providers
-agi auth logout          # Remove provider credentials
+otto models               # Interactive provider/model selection
+otto switch               # Alias for models command
+otto auth login           # Configure provider credentials
+otto auth list            # List configured providers
+otto auth logout          # Remove provider credentials
 ```
 
 ### Agent & Tool Management
 
 ```bash
-agi agents               # List and configure agents interactively
-agi agents --local       # Edit local project agents
-agi tools                # List available tools and agent access
-agi scaffold             # Generate new agents, tools, or commands
+otto agents               # List and configure agents interactively
+otto agents --local       # Edit local project agents
+otto tools                # List available tools and agent access
+otto scaffold             # Generate new agents, tools, or commands
 ```
 
 ### Diagnostics
 
 ```bash
-agi doctor               # Check configuration and diagnose issues
-agi --version            # Show version
-agi --help               # Show help with discovered commands
+otto doctor               # Check configuration and diagnose issues
+otto --version            # Show version
+otto --help               # Show help with discovered commands
 ```
 
 ## Server Mode
 
 ```bash
-agi serve                  # Start HTTP server on random port
-agi serve --port 3000      # Start on specific port
-agi serve --network        # Start with network access (0.0.0.0)
-agi serve --port 3000 --network  # Combine port and network flags
+otto serve                  # Start HTTP server on random port
+otto serve --port 3000      # Start on specific port
+otto serve --network        # Start with network access (0.0.0.0)
+otto serve --port 3000 --network  # Combine port and network flags
 ```

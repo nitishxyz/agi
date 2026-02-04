@@ -7,11 +7,11 @@ import {
 	log,
 	text,
 } from '@clack/prompts';
-import { loadConfig } from '@agi-cli/sdk';
-import { catalog, type ProviderId, type ModelInfo } from '@agi-cli/sdk';
-import { getGlobalConfigDir, getGlobalConfigPath } from '@agi-cli/sdk';
-import { isProviderAuthorized } from '@agi-cli/sdk';
-import { getAuth, filterModelsForAuthType } from '@agi-cli/sdk';
+import { loadConfig } from '@ottocode/sdk';
+import { catalog, type ProviderId, type ModelInfo } from '@ottocode/sdk';
+import { getGlobalConfigDir, getGlobalConfigPath } from '@ottocode/sdk';
+import { isProviderAuthorized } from '@ottocode/sdk';
+import { getAuth, filterModelsForAuthType } from '@ottocode/sdk';
 import { runAuth } from './auth.ts';
 
 export async function runModels(

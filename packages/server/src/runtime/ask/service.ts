@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
-import { loadConfig } from '@agi-cli/sdk';
-import { getDb } from '@agi-cli/database';
+import { loadConfig } from '@ottocode/sdk';
+import { getDb } from '@ottocode/database';
 import {
 	createSession,
 	getLastSession,
@@ -19,8 +19,8 @@ import {
 	isProviderId,
 	providerEnvVar,
 	type ProviderId,
-} from '@agi-cli/sdk';
-import { sessions } from '@agi-cli/database/schema';
+} from '@ottocode/sdk';
+import { sessions } from '@ottocode/database/schema';
 import { time } from '../debug/index.ts';
 
 export class AskServiceError extends Error {
@@ -86,7 +86,7 @@ export type AskServerResponse = {
 };
 
 type SessionRow =
-	typeof import('@agi-cli/database/schema').sessions.$inferSelect;
+	typeof import('@ottocode/database/schema').sessions.$inferSelect;
 
 export async function handleAskRequest(
 	request: AskServerRequest,
@@ -104,7 +104,7 @@ async function processAskRequest(
 	const projectRoot = request.projectRoot || process.cwd();
 	const configTimer = time('ask:loadConfig+db');
 
-	let cfg: import('@agi-cli/sdk').AGIConfig;
+	let cfg: import('@ottocode/sdk').OttoConfig;
 
 	if (request.skipFileConfig || request.config) {
 		const injectedProvider = (request.config?.provider ||
@@ -130,8 +130,8 @@ async function processAskRequest(
 				setu: { enabled: true },
 			},
 			paths: {
-				dataDir: `${projectRoot}/.agi`,
-				dbPath: `${projectRoot}/.agi/agi.sqlite`,
+				dataDir: `${projectRoot}/.otto`,
+				dbPath: `${projectRoot}/.otto/otto.sqlite`,
 				projectConfigPath: null,
 				globalConfigPath: null,
 			},

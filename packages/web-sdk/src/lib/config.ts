@@ -1,7 +1,7 @@
 // Extend Window interface to include custom properties
-interface AGIWindow extends Window {
-	__AGI_API_URL__?: string;
-	AGI_SERVER_URL?: string;
+interface OttoWindow extends Window {
+	__OTTO_API_URL__?: string;
+	OTTO_SERVER_URL?: string;
 }
 
 // This function will execute at runtime in the browser
@@ -14,12 +14,12 @@ function computeApiBaseUrl(): string {
 
 	// Check window object for injected values (for production)
 	if (typeof window !== 'undefined') {
-		const win = window as AGIWindow;
-		if (win.AGI_SERVER_URL) {
-			return win.AGI_SERVER_URL;
+		const win = window as OttoWindow;
+		if (win.OTTO_SERVER_URL) {
+			return win.OTTO_SERVER_URL;
 		}
-		if (win.__AGI_API_URL__) {
-			return win.__AGI_API_URL__;
+		if (win.__OTTO_API_URL__) {
+			return win.__OTTO_API_URL__;
 		}
 	}
 

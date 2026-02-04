@@ -6,7 +6,7 @@
  */
 
 import { isDebugEnabled as isDebugEnabledNew } from './state.ts';
-import { time as timeNew, debug as debugNew } from '@agi-cli/sdk';
+import { time as timeNew, debug as debugNew } from '@ottocode/sdk';
 
 const TRUTHY = new Set(['1', 'true', 'yes', 'on']);
 
@@ -43,7 +43,7 @@ function normalizeToken(token: string): string {
 
 function parseDebugConfig(): DebugConfig {
 	const flags = new Set<string>();
-	const sources = [process.env.AGI_DEBUG, process.env.DEBUG_AGI];
+	const sources = [process.env.OTTO_DEBUG, process.env.DEBUG_OTTO];
 	let sawValue = false;
 	for (const raw of sources) {
 		if (typeof raw !== 'string') continue;
@@ -60,7 +60,7 @@ function parseDebugConfig(): DebugConfig {
 		}
 		if (!matched && isTruthy(trimmed)) flags.add('all');
 	}
-	if (isTruthy(process.env.AGI_DEBUG_TIMING)) flags.add('timing');
+	if (isTruthy(process.env.OTTO_DEBUG_TIMING)) flags.add('timing');
 	if (!flags.size && sawValue) flags.add('all');
 	return { flags };
 }

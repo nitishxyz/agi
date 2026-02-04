@@ -1,13 +1,13 @@
 import { generateText, streamText } from 'ai';
 import { eq, asc } from 'drizzle-orm';
-import type { AGIConfig } from '@agi-cli/sdk';
-import type { DB } from '@agi-cli/database';
-import { messages, messageParts, sessions } from '@agi-cli/database/schema';
+import type { OttoConfig } from '@ottocode/sdk';
+import type { DB } from '@ottocode/database';
+import { messages, messageParts, sessions } from '@ottocode/database/schema';
 import { publish } from '../../events/bus.ts';
 import { enqueueAssistantRun } from '../session/queue.ts';
 import { runSessionLoop } from '../agent/runner.ts';
 import { resolveModel } from '../provider/index.ts';
-import { getFastModelForAuth, type ProviderId } from '@agi-cli/sdk';
+import { getFastModelForAuth, type ProviderId } from '@ottocode/sdk';
 import { debugLog } from '../debug/index.ts';
 import { isCompactCommand, buildCompactionContext } from './compaction.ts';
 import { detectOAuth, adaptSimpleCall } from '../provider/oauth-adapter.ts';
@@ -15,7 +15,7 @@ import { detectOAuth, adaptSimpleCall } from '../provider/oauth-adapter.ts';
 type SessionRow = typeof sessions.$inferSelect;
 
 type DispatchOptions = {
-	cfg: AGIConfig;
+	cfg: OttoConfig;
 	db: DB;
 	session: SessionRow;
 	agent: string;
@@ -200,7 +200,7 @@ const titleInFlight = new Set<string>();
 const titlePending = new Set<string>();
 
 function scheduleSessionTitle(args: {
-	cfg: AGIConfig;
+	cfg: OttoConfig;
 	db: DB;
 	sessionId: string;
 	content: unknown;
@@ -245,7 +245,7 @@ function scheduleSessionTitle(args: {
 }
 
 function enqueueSessionTitle(args: {
-	cfg: AGIConfig;
+	cfg: OttoConfig;
 	db: DB;
 	sessionId: string;
 	content: unknown;
@@ -254,7 +254,7 @@ function enqueueSessionTitle(args: {
 }
 
 async function generateSessionTitle(args: {
-	cfg: AGIConfig;
+	cfg: OttoConfig;
 	db: DB;
 	sessionId: string;
 	content: unknown;
@@ -284,7 +284,7 @@ async function generateSessionTitle(args: {
 		debugLog('[TITLE_GEN] Generating title for session');
 		debugLog(`[TITLE_GEN] Provider: ${provider}, Model: ${modelName}`);
 
-		const { getAuth } = await import('@agi-cli/sdk');
+		const { getAuth } = await import('@ottocode/sdk');
 		const auth = await getAuth(provider, cfg.projectRoot);
 		const oauth = detectOAuth(provider, auth);
 
@@ -410,7 +410,7 @@ async function touchSessionLastActive(args: {
 }
 
 export async function triggerDeferredTitleGeneration(args: {
-	cfg: AGIConfig;
+	cfg: OttoConfig;
 	db: DB;
 	sessionId: string;
 }): Promise<void> {

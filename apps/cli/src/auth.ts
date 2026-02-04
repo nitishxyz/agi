@@ -28,10 +28,10 @@ import {
 	authorizeCopilot,
 	pollForCopilotToken,
 	openCopilotAuthUrl,
-} from '@agi-cli/sdk';
-import { loadConfig } from '@agi-cli/sdk';
-import { catalog } from '@agi-cli/sdk';
-import { getGlobalConfigDir, getGlobalConfigPath } from '@agi-cli/sdk';
+} from '@ottocode/sdk';
+import { loadConfig } from '@ottocode/sdk';
+import { catalog } from '@ottocode/sdk';
+import { getGlobalConfigDir, getGlobalConfigPath } from '@ottocode/sdk';
 
 const PROVIDER_LINKS: Record<
 	ProviderId,
@@ -64,7 +64,7 @@ const PROVIDER_LINKS: Record<
 	},
 	setu: {
 		name: 'Setu',
-		url: 'https://setu.agi.nitish.sh',
+		url: 'https://setu.ottocode.io',
 		env: 'SETU_PRIVATE_KEY',
 	},
 	zai: {
@@ -95,8 +95,8 @@ export async function runAuth(args: string[]) {
 	if (sub === 'list' || sub === 'ls') return await runAuthList(args.slice(1));
 	if (sub === 'logout' || sub === 'rm' || sub === 'remove')
 		return await runAuthLogout(args.slice(1));
-	intro('agi auth');
-	log.info('usage: agi auth login|list|logout');
+	intro('otto auth');
+	log.info('usage: otto auth login|list|logout');
 	outro('');
 	return false;
 }

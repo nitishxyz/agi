@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs';
 import { spawn, execSync } from 'node:child_process';
 import { homedir } from 'node:os';
 
-const AGI_BIN_DIR_NAME = 'bin';
+const OTTO_BIN_DIR_NAME = 'bin';
 
 let cachedBinDir: string | null = null;
 const resolvedPaths = new Map<string, string>();
@@ -18,7 +18,7 @@ function getConfigHome(): string {
 
 export function getAgiBinDir(): string {
 	if (cachedBinDir) return cachedBinDir;
-	cachedBinDir = join(getConfigHome(), 'agi', AGI_BIN_DIR_NAME);
+	cachedBinDir = join(getConfigHome(), 'otto', OTTO_BIN_DIR_NAME);
 	return cachedBinDir;
 }
 

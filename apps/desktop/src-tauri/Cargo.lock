@@ -9,33 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 
 [[package]]
-name = "agi-desktop"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bs58",
- "chrono",
- "dirs 5.0.1",
- "ed25519-dalek",
- "git2",
- "keyring",
- "openssl",
- "rand 0.8.5",
- "reqwest",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-opener",
- "tauri-plugin-process",
- "tauri-plugin-shell",
- "tokio",
- "url",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2684,6 +2657,33 @@ checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "otto-desktop"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bs58",
+ "chrono",
+ "dirs 5.0.1",
+ "ed25519-dalek",
+ "git2",
+ "keyring",
+ "openssl",
+ "rand 0.8.5",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-opener",
+ "tauri-plugin-process",
+ "tauri-plugin-shell",
+ "tokio",
+ "url",
 ]
 
 [[package]]

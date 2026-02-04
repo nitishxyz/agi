@@ -14,12 +14,12 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		// EXCLUDE web-sdk from pre-bundling so changes are picked up immediately
-		exclude: ['@agi-cli/web-sdk'],
+		exclude: ['@ottocode/web-sdk'],
 	},
 	resolve: {
 		alias: {
 			// Resolve workspace packages to their source instead of dist
-			'@agi-cli/web-sdk': path.resolve(__dirname, '../../packages/web-sdk/src'),
+			'@ottocode/web-sdk': path.resolve(__dirname, '../../packages/web-sdk/src'),
 		},
 		// Deduplicate React and React-DOM to prevent multiple instances
 		dedupe: ['react', 'react-dom', 'react/jsx-runtime'],

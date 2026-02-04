@@ -8,7 +8,7 @@ const app = new Hono();
 app.use(
 	'*',
 	cors({
-		origin: ['https://share.agi.nitish.sh', 'http://localhost:4321'],
+		origin: ['https://share.ottocode.io', 'http://localhost:4321'],
 		allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 		allowHeaders: ['Content-Type', 'X-Share-Secret'],
 	}),
@@ -16,7 +16,7 @@ app.use(
 
 app.get('/', (c) => {
 	return c.json({
-		name: 'AGI Share API',
+		name: 'otto share API',
 		version: '1.0.0',
 		endpoints: {
 			'POST /share': 'Create a new share',

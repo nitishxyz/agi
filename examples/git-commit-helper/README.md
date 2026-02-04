@@ -66,7 +66,7 @@ Would you like to create this commit? (y/n)
 ### 1. Structured Output with Zod
 
 ```typescript
-import { generateObject } from '@agi-cli/sdk';
+import { generateObject } from '@ottocode/sdk';
 import { z } from 'zod';
 
 const CommitMessageSchema = z.object({

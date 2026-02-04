@@ -10,7 +10,7 @@ import {
 } from 'node:fs';
 import { join, extname } from 'node:path';
 
-console.log('🏗️  Building @agi-cli/web-ui package...\n');
+console.log('🏗️  Building @ottocode/web-ui package...\n');
 
 // Paths
 const webAppDir = join(import.meta.dir, '../../apps/web');
@@ -134,7 +134,7 @@ function normalizeBasePath(prefix) {
 }
 
 function injectRuntimeConfig(html, serverUrl, basePath) {
-  const runtimeScript = \`<!-- AGI Server URL: \${serverUrl} --><script>window.AGI_SERVER_URL = \${JSON.stringify(serverUrl)};window.AGI_ROUTER_BASEPATH = \${JSON.stringify(basePath)};</script>\`;
+  const runtimeScript = \`<!-- otto server URL: \${serverUrl} --><script>window.OTTO_SERVER_URL = \${JSON.stringify(serverUrl)};window.OTTO_ROUTER_BASEPATH = \${JSON.stringify(basePath)};</script>\`;
   return html.replace('</head>', \`\${runtimeScript}</head>\`);
 }
 

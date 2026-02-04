@@ -1,8 +1,8 @@
-import { createEmbeddedApp, BUILTIN_AGENTS } from '@agi-cli/server';
-import { serveWebUI } from '@agi-cli/web-ui';
+import { createEmbeddedApp, BUILTIN_AGENTS } from '@ottocode/server';
+import { serveWebUI } from '@ottocode/web-ui';
 
-// Create embedded AGI app
-const agiApp = createEmbeddedApp({
+// Create embedded otto app
+const ottoApp = createEmbeddedApp({
 	provider: 'openrouter',
 	model: 'z-ai/glm-4.6',
 	apiKey: process.env.OPENROUTER_API_KEY || '',
@@ -31,9 +31,9 @@ Bun.serve({
 		if (webUIResponse) return webUIResponse;
 
 		// Delegate to API server
-		return agiApp.fetch(req);
+		return ottoApp.fetch(req);
 	},
 });
 
-console.log('🚀 AGI Server running at http://localhost:3456');
+console.log('🚀 otto server running at http://localhost:3456');
 console.log('📱 Web UI available at http://localhost:3456/ui');

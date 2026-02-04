@@ -1,5 +1,5 @@
-import { catalog, getModelInfo } from '@agi-cli/sdk';
-import type { ProviderId } from '@agi-cli/sdk';
+import { catalog, getModelInfo } from '@ottocode/sdk';
+import type { ProviderId } from '@ottocode/sdk';
 
 export const PRUNE_PROTECT = 40_000;
 

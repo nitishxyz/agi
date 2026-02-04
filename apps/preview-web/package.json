@@ -1,5 +1,5 @@
 {
-	"name": "@agi-cli/preview-web",
+	"name": "@ottocode/preview-web",
 	"version": "0.1.142",
 	"private": true,
 	"type": "module",
@@ -9,7 +9,7 @@
 		"preview": "astro preview"
 	},
 	"dependencies": {
-		"@agi-cli/web-sdk": "workspace:*",
+		"@ottocode/web-sdk": "workspace:*",
 		"@astrojs/react": "^4.0.0",
 		"@astrojs/tailwind": "^6.0.0",
 		"@tanstack/react-query": "^5.62.0",

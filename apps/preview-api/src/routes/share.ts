@@ -46,7 +46,7 @@ shareRoutes.post('/', async (c) => {
 		{
 			shareId,
 			secret,
-			url: `https://share.agi.nitish.sh/s/${shareId}`,
+			url: `https://share.ottocode.io/s/${shareId}`,
 			expiresAt,
 		},
 		201,
@@ -181,7 +181,7 @@ shareRoutes.put('/:shareId', async (c) => {
 
 	return c.json({
 		shareId,
-		url: `https://share.agi.nitish.sh/s/${shareId}`,
+		url: `https://share.ottocode.io/s/${shareId}`,
 		updated: true,
 	});
 });

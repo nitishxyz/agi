@@ -4,7 +4,7 @@ import { join, relative } from 'node:path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { serializeError } from '../runtime/errors/api-error.ts';
-import { logger } from '@agi-cli/sdk';
+import { logger } from '@ottocode/sdk';
 
 const execAsync = promisify(exec);
 

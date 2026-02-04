@@ -1,4 +1,4 @@
-import { getHomeDir } from '@agi-cli/sdk';
+import { getHomeDir } from '@ottocode/sdk';
 
 async function detectProjectTooling(
 	projectRoot: string,
@@ -141,7 +141,7 @@ export async function findInstructionFiles(
 
 	const homeDir = getHomeDir();
 	const globalFiles = [
-		join(homeDir, '.config', 'agi', 'AGENTS.md'),
+		join(homeDir, '.config', 'otto', 'AGENTS.md'),
 		join(homeDir, '.claude', 'CLAUDE.md'),
 	];
 

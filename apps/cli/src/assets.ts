@@ -2,7 +2,7 @@
 // These imports are optional at runtime but included when compiling with assets.
 // Build step should include these files as additional entrypoints.
 // Example build: bun build --compile --asset-naming="[name].[ext]" \
-//   ./index.ts ./drizzle/**/*.sql ./drizzle/meta/**/*.json ./README.md ./AGENTS.md ./CLAUDE.md --outfile agi
+//   ./index.ts ./drizzle/**/*.sql ./drizzle/meta/**/*.json ./README.md ./AGENTS.md ./CLAUDE.md --outfile otto
 
 // Root-relative from apps/cli/src/assets.ts
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports

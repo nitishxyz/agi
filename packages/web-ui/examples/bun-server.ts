@@ -3,7 +3,7 @@
  * Ultra-simple example: Serve web UI with one line
  */
 
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 const port = 3000;
 const webUI = serveWebUI({

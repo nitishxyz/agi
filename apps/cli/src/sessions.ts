@@ -1,6 +1,6 @@
-import { createApp as createServer } from '@agi-cli/server';
-import { loadConfig } from '@agi-cli/sdk';
-import { getDb } from '@agi-cli/database';
+import { createApp as createServer } from '@ottocode/server';
+import { loadConfig } from '@ottocode/sdk';
+import { getDb } from '@ottocode/database';
 import { intro, outro, select, text, isCancel, cancel } from '@clack/prompts';
 import { box, table } from './ui.ts';
 import { runAsk } from './ask.ts';
@@ -28,7 +28,7 @@ export async function runSessions(opts: SessionsOptions = {}) {
 	const cfg = await loadConfig(projectRoot);
 	await getDb(cfg.projectRoot);
 
-	const baseUrl = process.env.AGI_SERVER_URL || (await startEphemeralServer());
+	const baseUrl = process.env.OTTO_SERVER_URL || (await startEphemeralServer());
 	const list = (await httpJson(
 		'GET',
 		`${baseUrl}/v1/sessions?project=${encodeURIComponent(projectRoot)}`,
@@ -55,7 +55,7 @@ export async function runSessions(opts: SessionsOptions = {}) {
 	if (!rows.length) {
 		Bun.write(
 			Bun.stdout,
-			'No sessions found. Start one with: agi ask "<prompt>"\n',
+			'No sessions found. Start one with: otto ask "<prompt>"\n',
 		);
 		return;
 	}
@@ -84,13 +84,13 @@ export async function runSessions(opts: SessionsOptions = {}) {
 			return;
 		}
 		// Reuse the ephemeral server for runAsk
-		const prev = process.env.AGI_SERVER_URL;
-		process.env.AGI_SERVER_URL = baseUrl;
+		const prev = process.env.OTTO_SERVER_URL;
+		process.env.OTTO_SERVER_URL = baseUrl;
 		try {
 			await runAsk(prompt, { project: projectRoot, sessionId: String(choice) });
 		} finally {
-			if (prev !== undefined) process.env.AGI_SERVER_URL = prev;
-			else delete process.env.AGI_SERVER_URL;
+			if (prev !== undefined) process.env.OTTO_SERVER_URL = prev;
+			else delete process.env.OTTO_SERVER_URL;
 			if (currentServer) {
 				try {
 					currentServer.stop();

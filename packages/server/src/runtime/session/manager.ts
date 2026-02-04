@@ -1,20 +1,20 @@
 import { desc, eq } from 'drizzle-orm';
-import type { AGIConfig } from '@agi-cli/sdk';
-import type { DB } from '@agi-cli/database';
-import { sessions } from '@agi-cli/database/schema';
+import type { OttoConfig } from '@ottocode/sdk';
+import type { DB } from '@ottocode/database';
+import { sessions } from '@ottocode/database/schema';
 import {
 	validateProviderModel,
 	isProviderAuthorized,
 	ensureProviderEnv,
 	type ProviderId,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 import { publish } from '../../events/bus.ts';
 
 type SessionRow = typeof sessions.$inferSelect;
 
 type CreateSessionInput = {
 	db: DB;
-	cfg: AGIConfig;
+	cfg: OttoConfig;
 	agent: string;
 	provider: ProviderId;
 	model: string;
@@ -33,7 +33,7 @@ export async function createSession({
 	const authorized = await isProviderAuthorized(cfg, provider);
 	if (!authorized) {
 		throw new Error(
-			`Provider ${provider} is not configured. Run \`agi auth login\` to add credentials.`,
+			`Provider ${provider} is not configured. Run \`otto auth login\` to add credentials.`,
 		);
 	}
 	await ensureProviderEnv(cfg, provider);

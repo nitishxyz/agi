@@ -1,13 +1,13 @@
-# @agi-cli/web-ui
+# @ottocode/web-ui
 
-Pre-built, embeddable web UI for AGI CLI. This package contains the fully-built static assets from the AGI CLI web interface, ready to be served by any web server or framework.
+Pre-built, embeddable web UI for ottocode. This package contains the fully-built static assets from the ottocode web interface, ready to be served by any web server or framework.
 
 ## Features
 
 - 🎯 **One-Line Integration** - Import and serve with a single function call
 - 📦 **Pre-built Assets** - No build step required in your project
 - 🚀 **Framework Agnostic** - Works with Bun, Express, Fastify, Hono, or any HTTP server
-- 🎨 **Full Featured** - Complete AGI CLI web interface with all functionality
+- 🎨 **Full Featured** - Complete ottocode web interface with all functionality
 - 📱 **Responsive** - Modern, mobile-friendly UI built with React and Tailwind CSS
 - ⚡ **Fast** - Optimized production build with code splitting
 - 🛣️ **Smart Routing** - Handles SPA routing and direct asset requests automatically
@@ -15,13 +15,13 @@ Pre-built, embeddable web UI for AGI CLI. This package contains the fully-built 
 ## Installation
 
 ```bash
-npm install @agi-cli/web-ui
+npm install @ottocode/web-ui
 # or
-yarn add @agi-cli/web-ui
+yarn add @ottocode/web-ui
 # or
-pnpm add @agi-cli/web-ui
+pnpm add @ottocode/web-ui
 # or
-bun add @agi-cli/web-ui
+bun add @ottocode/web-ui
 ```
 
 ## Quick Start
@@ -31,7 +31,7 @@ bun add @agi-cli/web-ui
 Just one line - everything is handled for you:
 
 ```typescript
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 Bun.serve({
   port: 3000,
@@ -56,7 +56,7 @@ That's it! The web UI will be available at `/ui` with:
 Combine the web UI with your own API routes:
 
 ```typescript
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 const webUI = serveWebUI({ prefix: '/ui' });
 
@@ -87,7 +87,7 @@ Bun.serve({
 Automatically redirect `/` to `/ui`:
 
 ```typescript
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 Bun.serve({
   port: 3000,
@@ -103,7 +103,7 @@ Bun.serve({
 Serve the UI at any path you want:
 
 ```typescript
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 Bun.serve({
   port: 3000,
@@ -118,8 +118,8 @@ console.log('Web UI: http://localhost:3000/admin');
 When serving both the API and web UI from the same server, you can configure the web UI to connect to your server instead of the default `localhost:9100`:
 
 ```typescript
-import { createApp } from '@agi-cli/server';
-import { serveWebUI } from '@agi-cli/web-ui';
+import { createApp } from '@ottocode/server';
+import { serveWebUI } from '@ottocode/web-ui';
 
 const port = parseInt(process.env.PORT || '3000', 10);
 const host = process.env.HOST || '127.0.0.1';
@@ -187,10 +187,10 @@ Bun.serve({ port: 3000, fetch: handler });
 Returns the absolute path to the directory containing all built web UI assets.
 
 ```typescript
-import { getWebUIPath } from '@agi-cli/web-ui';
+import { getWebUIPath } from '@ottocode/web-ui';
 
 const assetsPath = getWebUIPath();
-// => '/path/to/node_modules/@agi-cli/web-ui/dist/web-assets'
+// => '/path/to/node_modules/@ottocode/web-ui/dist/web-assets'
 ```
 
 ### `getIndexPath(): string`
@@ -198,10 +198,10 @@ const assetsPath = getWebUIPath();
 Returns the absolute path to the main `index.html` file.
 
 ```typescript
-import { getIndexPath } from '@agi-cli/web-ui';
+import { getIndexPath } from '@ottocode/web-ui';
 
 const indexPath = getIndexPath();
-// => '/path/to/node_modules/@agi-cli/web-ui/dist/web-assets/index.html'
+// => '/path/to/node_modules/@ottocode/web-ui/dist/web-assets/index.html'
 ```
 
 ### `isWebUIAvailable(): boolean`
@@ -209,7 +209,7 @@ const indexPath = getIndexPath();
 Checks if the web UI assets are properly built and available.
 
 ```typescript
-import { isWebUIAvailable } from '@agi-cli/web-ui';
+import { isWebUIAvailable } from '@ottocode/web-ui';
 
 if (!isWebUIAvailable()) {
   console.error('Web UI assets not found!');
@@ -222,7 +222,7 @@ if (!isWebUIAvailable()) {
 ### Bun (Recommended)
 
 ```typescript
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 Bun.serve({
   port: 3000,
@@ -234,7 +234,7 @@ Bun.serve({
 
 ```typescript
 import express from 'express';
-import { getWebUIPath, getIndexPath } from '@agi-cli/web-ui';
+import { getWebUIPath, getIndexPath } from '@ottocode/web-ui';
 
 const app = express();
 
@@ -254,7 +254,7 @@ app.listen(3000);
 ```typescript
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
-import { getWebUIPath } from '@agi-cli/web-ui';
+import { getWebUIPath } from '@ottocode/web-ui';
 
 const fastify = Fastify();
 
@@ -271,7 +271,7 @@ await fastify.listen({ port: 3000 });
 ```typescript
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
-import { getWebUIPath } from '@agi-cli/web-ui';
+import { getWebUIPath } from '@ottocode/web-ui';
 
 const app = new Hono();
 
@@ -284,7 +284,7 @@ export default app;
 
 ```typescript
 import { createServer } from 'http';
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 const handler = serveWebUI({ prefix: '/ui' });
 
@@ -330,7 +330,7 @@ The web UI expects an API to be available. By default, it will try to connect to
 - `http://localhost:3000/api` (in development)
 - Same origin `/api` (in production)
 
-You'll need to set up your API endpoints to handle AGI CLI requests. See the [AGI CLI documentation](https://github.com/yourusername/agi-cli) for API implementation details.
+You'll need to set up your API endpoints to handle ottocode requests. See the [ottocode documentation](https://github.com/yourusername/ottocode) for API implementation details.
 
 ### CORS
 
@@ -363,12 +363,12 @@ See the [examples](./examples) directory for complete working examples:
 
 ## Development
 
-This package is part of the AGI CLI monorepo. To build from source:
+This package is part of the ottocode monorepo. To build from source:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/agi-cli
-cd agi-cli
+git clone https://github.com/yourusername/ottocode
+cd ottocode
 
 # Install dependencies
 bun install
@@ -388,7 +388,7 @@ The build process:
 
 The package includes:
 
-- ✅ Complete AGI CLI web interface
+- ✅ Complete ottocode web interface
 - ✅ React 19 with optimized production build
 - ✅ TailwindCSS for styling
 - ✅ Code syntax highlighting
@@ -418,14 +418,14 @@ If you were using the old manual approach:
 
 **Before:**
 ```typescript
-import { getWebUIPath, getIndexPath } from '@agi-cli/web-ui';
+import { getWebUIPath, getIndexPath } from '@ottocode/web-ui';
 
 // 50 lines of routing logic...
 ```
 
 **After:**
 ```typescript
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 Bun.serve({
   port: 3000,
@@ -439,12 +439,12 @@ MIT
 
 ## Related
 
-- [AGI CLI](https://github.com/yourusername/agi-cli) - The main CLI tool
-- [AGI CLI API Documentation](https://github.com/yourusername/agi-cli/docs/api) - API implementation guide
+- [ottocode](https://github.com/yourusername/ottocode) - The main CLI tool
+- [ottocode API Documentation](https://github.com/yourusername/ottocode/docs/api) - API implementation guide
 
 ## Support
 
 For issues, questions, or contributions:
-- 🐛 [Report a bug](https://github.com/yourusername/agi-cli/issues)
-- 💡 [Request a feature](https://github.com/yourusername/agi-cli/issues)
-- 📖 [Read the docs](https://github.com/yourusername/agi-cli/docs)
+- 🐛 [Report a bug](https://github.com/yourusername/ottocode/issues)
+- 💡 [Request a feature](https://github.com/yourusername/ottocode/issues)
+- 📖 [Read the docs](https://github.com/yourusername/ottocode/docs)

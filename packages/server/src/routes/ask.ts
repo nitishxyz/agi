@@ -6,7 +6,7 @@ import type {
 } from '../runtime/ask/service.ts';
 import { handleAskRequest } from '../runtime/ask/service.ts';
 import { serializeError } from '../runtime/errors/api-error.ts';
-import { logger } from '@agi-cli/sdk';
+import { logger } from '@ottocode/sdk';
 import type { EmbeddedAppConfig } from '../index.ts';
 
 export function registerAskRoutes(app: Hono) {

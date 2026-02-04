@@ -1,11 +1,11 @@
-# AGI Examples
+# otto examples
 
-This directory contains real-world examples demonstrating how to use AGI CLI and the `@agi-cli/sdk` package.
+This directory contains real-world examples demonstrating how to use ottocode and the `@ottocode/sdk` package.
 
 ## Available Examples
 
 ### 1. [Basic CLI Bot](./basic-cli-bot/)
-A simple question-answering agent that uses AGI to answer questions via the command line.
+A simple question-answering agent that uses otto to answer questions via the command line.
 
 **Use case:** Quick AI interactions, one-off questions  
 **Difficulty:** Beginner  
@@ -77,13 +77,13 @@ export OPENAI_API_KEY=sk-...
 
 3. **Install the SDK:**
    ```bash
-   bun add @agi-cli/sdk
+   bun add @ottocode/sdk
    ```
 
 4. **Create your script:**
    ```typescript
    // index.ts
-   import { generateText, resolveModel } from '@agi-cli/sdk';
+   import { generateText, resolveModel } from '@ottocode/sdk';
    
    const model = await resolveModel('anthropic', 'claude-sonnet-4');
    const result = await generateText({
@@ -104,7 +104,7 @@ export OPENAI_API_KEY=sk-...
 ### Simple CLI Tool
 
 ```typescript
-import { generateText, resolveModel } from '@agi-cli/sdk';
+import { generateText, resolveModel } from '@ottocode/sdk';
 
 async function main() {
   const question = process.argv[2] || 'Hello!';
@@ -124,7 +124,7 @@ main();
 ### Agent with Tools
 
 ```typescript
-import { generateText, resolveModel, discoverProjectTools } from '@agi-cli/sdk';
+import { generateText, resolveModel, discoverProjectTools } from '@ottocode/sdk';
 
 async function main() {
   const model = await resolveModel('anthropic', 'claude-sonnet-4');
@@ -146,7 +146,7 @@ main();
 ### HTTP Server
 
 ```typescript
-import { createServer } from '@agi-cli/sdk';
+import { createServer } from '@ottocode/sdk';
 
 const app = createServer();
 

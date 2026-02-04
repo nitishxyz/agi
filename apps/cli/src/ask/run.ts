@@ -1,5 +1,5 @@
-import type { ProviderId } from '@agi-cli/sdk';
-import type { Artifact } from '@agi-cli/sdk';
+import type { ProviderId } from '@ottocode/sdk';
+import type { Artifact } from '@ottocode/sdk';
 import { renderMarkdown } from '../ui.ts';
 import {
 	renderToolCall,
@@ -36,15 +36,15 @@ import type {
 } from './types.ts';
 import { connectSSE, httpJson, safeJson } from './http.ts';
 import { startEphemeralServer, stopEphemeralServer } from './server.ts';
-import { extractToolError, isToolError } from '@agi-cli/sdk/tools/error';
+import { extractToolError, isToolError } from '@ottocode/sdk/tools/error';
 
 const SAFE_TOOLS = new Set(['finish', 'progress_update', 'update_todos']);
 
 export async function runAsk(prompt: string, opts: AskOptions = {}) {
 	const startedAt = Date.now();
 	const projectRoot = opts.project ?? process.cwd();
-	const baseUrl = process.env.AGI_SERVER_URL
-		? String(process.env.AGI_SERVER_URL)
+	const baseUrl = process.env.OTTO_SERVER_URL
+		? String(process.env.OTTO_SERVER_URL)
 		: await startEphemeralServer();
 
 	const flags = parseFlags(process.argv);
@@ -182,7 +182,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 }
 
 async function maybeStopEphemeral() {
-	if (!process.env.AGI_SERVER_URL) await stopEphemeralServer();
+	if (!process.env.OTTO_SERVER_URL) await stopEphemeralServer();
 }
 
 type StreamState = {
@@ -254,7 +254,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		await sse.close();
 	}
 
-	const useMarkdownBuffer = process.env.AGI_RENDER_MARKDOWN === '1';
+	const useMarkdownBuffer = process.env.OTTO_RENDER_MARKDOWN === '1';
 	if (
 		useMarkdownBuffer &&
 		state.output.length &&
@@ -292,7 +292,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 				})}\n`,
 			);
 		} else if (!flags.jsonEnabled) {
-			const useMarkdownBuffer = process.env.AGI_RENDER_MARKDOWN === '1';
+			const useMarkdownBuffer = process.env.OTTO_RENDER_MARKDOWN === '1';
 			if (!useMarkdownBuffer) {
 				if (isThinking()) {
 					renderThinkingEnd();

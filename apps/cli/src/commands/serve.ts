@@ -4,9 +4,9 @@ import {
 	getTerminalManager,
 	openAuthUrl,
 	logger,
-} from '@agi-cli/sdk';
-import { createApp as createServer } from '@agi-cli/server';
-import { getDb } from '@agi-cli/database';
+} from '@ottocode/sdk';
+import { createApp as createServer } from '@ottocode/server';
+import { getDb } from '@ottocode/database';
 import { createWebServer } from '../web-server.ts';
 import { colors } from '../ui.ts';
 
@@ -67,11 +67,11 @@ export async function handleServe(opts: ServeOptions, version: string) {
 		webUrl = `http://${displayHost}:${actualWebPort}`;
 	} catch (error) {
 		logger.error('Failed to start Web UI server', error);
-		console.log('   AGI server is still running without Web UI');
+		console.log('   otto server is still running without Web UI');
 	}
 
 	console.log('');
-	console.log(colors.bold('  ⚡ AGI') + colors.dim(` v${version}`));
+	console.log(colors.bold('  ⚡ otto') + colors.dim(` v${version}`));
 	console.log('');
 	console.log(`  ${colors.dim('API')}     ${colors.cyan(apiUrl)}`);
 	if (webUrl) {

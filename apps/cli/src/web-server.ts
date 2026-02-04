@@ -5,7 +5,7 @@
 
 import type { Server } from 'bun';
 import { webAssetPaths, assetPaths, getEmbeddedAsset } from './web-assets';
-import { logger } from '@agi-cli/sdk';
+import { logger } from '@ottocode/sdk';
 
 const decoder = new TextDecoder();
 
@@ -85,7 +85,7 @@ export function createWebServer(
 							let html = await indexFile.text();
 							html = html.replace(
 								'</head>',
-								`<script>window.AGI_SERVER_URL = '${serverUrl}';</script></head>`,
+								`<script>window.OTTO_SERVER_URL = '${serverUrl}';</script></head>`,
 							);
 							return new Response(html, {
 								headers: {
@@ -104,7 +104,7 @@ export function createWebServer(
 					let html = decoder.decode(embeddedIndex);
 					html = html.replace(
 						'</head>',
-						`<script>window.AGI_SERVER_URL = '${serverUrl}';</script></head>`,
+						`<script>window.OTTO_SERVER_URL = '${serverUrl}';</script></head>`,
 					);
 					return new Response(html, {
 						headers: {
@@ -137,7 +137,7 @@ export function createWebServer(
 						try {
 							let html = await file.text();
 							const serverUrl = getServerUrl(url.host);
-							const scriptTag = `<script>window.AGI_SERVER_URL = '${serverUrl}';</script>`;
+							const scriptTag = `<script>window.OTTO_SERVER_URL = '${serverUrl}';</script>`;
 							html = html.replace('</head>', `${scriptTag}</head>`);
 
 							return new Response(html, {
@@ -164,7 +164,7 @@ export function createWebServer(
 					if (pathname.endsWith('.html')) {
 						let html = decoder.decode(embeddedData);
 						const serverUrl = getServerUrl(url.host);
-						const scriptTag = `<script>window.AGI_SERVER_URL = '${serverUrl}';</script>`;
+						const scriptTag = `<script>window.OTTO_SERVER_URL = '${serverUrl}';</script>`;
 						html = html.replace('</head>', `${scriptTag}</head>`);
 
 						return new Response(html, {

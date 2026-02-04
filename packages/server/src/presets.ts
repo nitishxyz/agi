@@ -1,10 +1,10 @@
-import AGENT_BUILD from '@agi-cli/sdk/prompts/agents/build.txt' with {
+import AGENT_BUILD from '@ottocode/sdk/prompts/agents/build.txt' with {
 	type: 'text',
 };
-import AGENT_PLAN from '@agi-cli/sdk/prompts/agents/plan.txt' with {
+import AGENT_PLAN from '@ottocode/sdk/prompts/agents/plan.txt' with {
 	type: 'text',
 };
-import AGENT_GENERAL from '@agi-cli/sdk/prompts/agents/general.txt' with {
+import AGENT_GENERAL from '@ottocode/sdk/prompts/agents/general.txt' with {
 	type: 'text',
 };
 

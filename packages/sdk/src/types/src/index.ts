@@ -15,6 +15,6 @@ export type {
 	Scope,
 	DefaultConfig,
 	PathConfig,
-	AGIConfig,
+	OttoConfig,
 	ToolApprovalMode,
 } from './config';

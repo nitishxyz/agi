@@ -1,15 +1,15 @@
-import type { AGIConfig } from '@agi-cli/sdk';
+import type { OttoConfig } from '@ottocode/sdk';
 import {
 	getAuth,
 	refreshToken,
 	setAuth,
 	createAnthropicOAuthModel,
 	createAnthropicCachingFetch,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { toClaudeCodeName } from '../tools/mapping.ts';
 
-export async function getAnthropicInstance(cfg: AGIConfig) {
+export async function getAnthropicInstance(cfg: OttoConfig) {
 	const auth = await getAuth('anthropic', cfg.projectRoot);
 
 	if (auth?.type === 'oauth') {

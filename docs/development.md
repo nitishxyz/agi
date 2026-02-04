@@ -11,8 +11,8 @@ For the full development guide covering all components, see [Development Guide](
 ## Quick Start
 
 ```bash
-git clone https://github.com/nitishxyz/agi.git
-cd agi
+git clone https://github.com/nitishxyz/otto.git
+cd otto
 bun install
 ```
 

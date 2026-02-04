@@ -78,7 +78,7 @@ fn secure_auth_path() -> Result<PathBuf, String> {
         Ok(home
             .join("Library")
             .join("Application Support")
-            .join("agi")
+            .join("otto")
             .join("auth.json"))
     }
 
@@ -87,7 +87,7 @@ fn secure_auth_path() -> Result<PathBuf, String> {
         let appdata = std::env::var("APPDATA")
             .map(PathBuf::from)
             .unwrap_or_else(|_| home.join("AppData").join("Roaming"));
-        Ok(appdata.join("agi").join("auth.json"))
+        Ok(appdata.join("otto").join("auth.json"))
     }
 
     #[cfg(target_os = "linux")]
@@ -95,7 +95,7 @@ fn secure_auth_path() -> Result<PathBuf, String> {
         let state_home = std::env::var("XDG_STATE_HOME")
             .map(PathBuf::from)
             .unwrap_or_else(|_| home.join(".local").join("state"));
-        Ok(state_home.join("agi").join("auth.json"))
+        Ok(state_home.join("otto").join("auth.json"))
     }
 }
 
@@ -107,7 +107,7 @@ fn global_config_dir() -> Result<PathBuf, String> {
         let config_home = std::env::var("XDG_CONFIG_HOME")
             .map(PathBuf::from)
             .unwrap_or_else(|_| home.join(".config"));
-        Ok(config_home.join("agi"))
+        Ok(config_home.join("otto"))
     }
 
     #[cfg(target_os = "windows")]
@@ -115,7 +115,7 @@ fn global_config_dir() -> Result<PathBuf, String> {
         let config_home = std::env::var("XDG_CONFIG_HOME")
             .map(PathBuf::from)
             .unwrap_or_else(|_| home.join(".config"));
-        Ok(config_home.join("agi"))
+        Ok(config_home.join("otto"))
     }
 
     #[cfg(target_os = "linux")]
@@ -123,7 +123,7 @@ fn global_config_dir() -> Result<PathBuf, String> {
         let config_home = std::env::var("XDG_CONFIG_HOME")
             .map(PathBuf::from)
             .unwrap_or_else(|_| home.join(".config"));
-        Ok(config_home.join("agi"))
+        Ok(config_home.join("otto"))
     }
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*
-  AGI postinstall: fetch the platform-specific prebuilt binary from GitHub Releases.
-  - Skips if AGI_SKIP_DOWNLOAD=true
+  otto postinstall: fetch the platform-specific prebuilt binary from GitHub Releases.
+  - Skips if OTTO_SKIP_DOWNLOAD=true
   - Falls back silently on errors (CLI will still work via Bun if installed)
 */
 const fs = require('node:fs');
@@ -9,25 +9,25 @@ const path = require('node:path');
 const https = require('node:https');
 
 function log(msg) {
-	console.log(`[agi] ${msg}`);
+	console.log(`[otto] ${msg}`);
 }
 function warn(msg) {
-	console.warn(`[agi] ${msg}`);
+	console.warn(`[otto] ${msg}`);
 }
 
-if (String(process.env.AGI_SKIP_DOWNLOAD || '').toLowerCase() === 'true') {
-	log('Skipping binary download due to AGI_SKIP_DOWNLOAD=true');
+if (String(process.env.OTTO_SKIP_DOWNLOAD || '').toLowerCase() === 'true') {
+	log('Skipping binary download due to OTTO_SKIP_DOWNLOAD=true');
 	process.exit(0);
 }
 
 function assetName() {
 	const p = process.platform;
 	const a = process.arch;
-	if (p === 'darwin' && a === 'arm64') return 'agi-darwin-arm64';
-	if (p === 'darwin' && a === 'x64') return 'agi-darwin-x64';
-	if (p === 'linux' && a === 'x64') return 'agi-linux-x64';
-	if (p === 'linux' && a === 'arm64') return 'agi-linux-arm64';
-	if (p === 'win32' && a === 'x64') return 'agi-windows-x64.exe';
+	if (p === 'darwin' && a === 'arm64') return 'otto-darwin-arm64';
+	if (p === 'darwin' && a === 'x64') return 'otto-darwin-x64';
+	if (p === 'linux' && a === 'x64') return 'otto-linux-x64';
+	if (p === 'linux' && a === 'arm64') return 'otto-linux-arm64';
+	if (p === 'win32' && a === 'x64') return 'otto-windows-x64.exe';
 	return null;
 }
 
@@ -43,7 +43,7 @@ function getRepo() {
 			}
 		}
 	} catch {}
-	return process.env.AGI_REPO || 'nitishxyz/agi';
+	return process.env.OTTO_REPO || 'nitishxyz/otto';
 }
 
 function getVersion() {

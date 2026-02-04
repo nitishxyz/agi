@@ -19,8 +19,8 @@ import {
 	authorizeCopilot,
 	pollForCopilotTokenOnce,
 	type ProviderId,
-} from '@agi-cli/sdk';
-import { logger } from '@agi-cli/sdk';
+} from '@ottocode/sdk';
+import { logger } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
 
 const oauthVerifiers = new Map<

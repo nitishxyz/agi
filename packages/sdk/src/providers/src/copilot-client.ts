@@ -17,7 +17,7 @@ export function createCopilotFetch(config: CopilotOAuthConfig): typeof fetch {
 		headers.delete('authorization');
 		headers.set('Authorization', `Bearer ${config.oauth.refresh}`);
 		headers.set('Openai-Intent', 'conversation-edits');
-		headers.set('User-Agent', 'agi-cli');
+		headers.set('User-Agent', 'ottocode');
 
 		return fetch(input, {
 			...init,

@@ -1,6 +1,6 @@
 const SUB = $app.stage === 'prod' ? '' : `${$app.stage}.`;
 
-const HOST = 'agi.nitish.sh';
+const HOST = 'ottocode.io';
 
 export const domains = {
 	sh: `${SUB}install.${HOST}`,

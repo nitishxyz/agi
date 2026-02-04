@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
-	"description": "Smart git commit message generator using @agi-cli/sdk",
+	"description": "Smart git commit message generator using @ottocode/sdk",
 	"bin": {
 		"git-commit-helper": "./index.ts"
 	},
@@ -11,7 +11,7 @@
 		"start": "bun run index.ts"
 	},
 	"dependencies": {
-		"@agi-cli/sdk": "workspace:*"
+		"@ottocode/sdk": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/bun": "latest"

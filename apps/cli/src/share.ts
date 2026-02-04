@@ -1,5 +1,5 @@
-import { loadConfig } from '@agi-cli/sdk';
-import { getDb, dbSchema } from '@agi-cli/database';
+import { loadConfig } from '@ottocode/sdk';
+import { getDb, dbSchema } from '@ottocode/database';
 import { eq, desc } from 'drizzle-orm';
 import {
 	intro,
@@ -13,7 +13,7 @@ import { box } from './ui.ts';
 import { userInfo } from 'node:os';
 
 const API_URL =
-	process.env.AGI_SHARE_API_URL || 'https://api.share.agi.nitish.sh';
+	process.env.OTTO_SHARE_API_URL || 'https://api.share.ottocode.io';
 
 export interface ShareOptions {
 	project: string;
@@ -259,7 +259,7 @@ async function updateShare(
 	});
 
 	if (!share) {
-		console.error('Session is not shared. Use `agi share` to share it first.');
+		console.error('Session is not shared. Use `otto share` to share it first.');
 		return;
 	}
 
@@ -430,7 +430,7 @@ async function showStatus(
 		});
 		console.log(`\nSession ${sessionId.slice(0, 8)} is not shared.`);
 		console.log(`  Messages: ${messages.length}`);
-		console.log(`  Run \`agi share ${sessionId.slice(0, 8)}\` to share it.`);
+		console.log(`  Run \`otto share ${sessionId.slice(0, 8)}\` to share it.`);
 		return;
 	}
 

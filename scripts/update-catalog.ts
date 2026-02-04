@@ -6,7 +6,7 @@ import type {
 	ModelInfo,
 	ModelProviderBinding,
 	ProviderCatalogEntry,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 
 const SOURCE = 'https://models.dev/api.json';
 const TARGET = 'packages/sdk/src/providers/src/catalog.ts';

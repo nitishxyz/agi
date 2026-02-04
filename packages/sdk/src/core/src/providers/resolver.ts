@@ -159,7 +159,7 @@ export async function resolveModel(
 			return createCopilotModel(model, { oauth: config.oauth });
 		}
 		throw new Error(
-			'Copilot provider requires OAuth. Run `agi auth login copilot`.',
+			'Copilot provider requires OAuth. Run `otto auth login copilot`.',
 		);
 	}
 

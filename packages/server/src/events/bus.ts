@@ -1,6 +1,6 @@
-import type { AGIEvent } from './types.ts';
+import type { OttoEvent } from './types.ts';
 
-type Subscriber = (evt: AGIEvent) => void;
+type Subscriber = (evt: OttoEvent) => void;
 
 const subscribers = new Map<string, Set<Subscriber>>(); // sessionId -> subs
 
@@ -18,7 +18,7 @@ function sanitizeBigInt<T>(obj: T): T {
 	return obj;
 }
 
-export function publish(event: AGIEvent) {
+export function publish(event: OttoEvent) {
 	const sanitizedEvent = sanitizeBigInt(event);
 	const subs = subscribers.get(event.sessionId);
 	if (!subs) return;

@@ -1,6 +1,6 @@
 import { convertToModelMessages, type ModelMessage, type UIMessage } from 'ai';
-import type { getDb } from '@agi-cli/database';
-import { messages, messageParts } from '@agi-cli/database/schema';
+import type { getDb } from '@ottocode/database';
+import { messages, messageParts } from '@ottocode/database/schema';
 import { eq, asc } from 'drizzle-orm';
 import { debugLog } from '../debug/index.ts';
 import { ToolHistoryTracker } from './tool-history-tracker.ts';

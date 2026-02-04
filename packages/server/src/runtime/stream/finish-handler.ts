@@ -1,8 +1,8 @@
-import type { getDb } from '@agi-cli/database';
-import { messages, messageParts } from '@agi-cli/database/schema';
+import type { getDb } from '@ottocode/database';
+import { messages, messageParts } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish } from '../../events/bus.ts';
-import { estimateModelCostUsd } from '@agi-cli/sdk';
+import { estimateModelCostUsd } from '@ottocode/sdk';
 import type { RunOpts } from '../session/queue.ts';
 import { markSessionCompacted } from '../message/compaction.ts';
 import { debugLog } from '../debug/index.ts';

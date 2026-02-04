@@ -3,66 +3,31 @@
 /* eslint-disable */
 /* deno-fmt-ignore-file */
 
-import 'sst';
-declare module 'sst' {
-	export interface Resource {
-		AnthropicApiKey: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		DatabaseUrl: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		GoogleAiApiKey: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		MoonshotAiApiKey: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		OGFunction: {
-			name: string;
-			type: 'sst.aws.Function';
-			url: string;
-		};
-		OpenAiApiKey: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		PlatformWallet: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		PolarAccessToken: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		PolarProductId: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		PolarWebhookSecret: {
-			type: 'sst.sst.Secret';
-			value: string;
-		};
-		PreviewWeb: {
-			type: 'sst.aws.Astro';
-			url: string;
-		};
-	}
+import "sst"
+declare module "sst" {
+  export interface Resource {
+    "OGFunction": {
+      "name": string
+      "type": "sst.aws.Function"
+      "url": string
+    }
+    "PreviewWeb": {
+      "type": "sst.aws.Astro"
+      "url": string
+    }
+  }
 }
-// cloudflare
-import * as cloudflare from '@cloudflare/workers-types';
-declare module 'sst' {
-	export interface Resource {
-		AgiSh: cloudflare.Service;
-		OGCache: cloudflare.KVNamespace;
-		PreviewApi: cloudflare.Service;
-		PreviewDB: cloudflare.D1Database;
-		ShareStorage: cloudflare.R2Bucket;
-	}
+// cloudflare 
+import * as cloudflare from "@cloudflare/workers-types";
+declare module "sst" {
+  export interface Resource {
+    "OGCache": cloudflare.KVNamespace
+    "OttoIo": cloudflare.Service
+    "PreviewApi": cloudflare.Service
+    "PreviewDB": cloudflare.D1Database
+    "ShareStorage": cloudflare.R2Bucket
+  }
 }
 
-import 'sst';
+import "sst"
+export {}

@@ -1,7 +1,7 @@
 import type { FC } from 'react';
-import { AssistantMessageGroup, UserMessageGroup } from '@agi-cli/web-sdk';
-import type { Message } from '@agi-cli/web-sdk';
-import { estimateModelCostUsd, type ProviderId } from '@agi-cli/sdk/browser';
+import { AssistantMessageGroup, UserMessageGroup } from '@ottocode/web-sdk';
+import type { Message } from '@ottocode/web-sdk';
+import { estimateModelCostUsd, type ProviderId } from '@ottocode/sdk/browser';
 
 interface SessionStats {
 	inputTokens: number;
@@ -359,12 +359,12 @@ const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 						<span>{sessionData.messages.length} messages</span>
 					</div>
 					<a
-						href="https://github.com/nitishxyz/agi"
+						href="https://github.com/nitishxyz/otto"
 						className="text-primary hover:underline flex items-center gap-1"
 						target="_blank"
 						rel="noopener noreferrer"
 					>
-						Powered by AGI
+						Powered by otto
 					</a>
 				</div>
 			</footer>

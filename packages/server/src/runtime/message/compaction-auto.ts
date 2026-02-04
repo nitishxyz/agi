@@ -1,10 +1,10 @@
-import type { getDb } from '@agi-cli/database';
-import { messageParts } from '@agi-cli/database/schema';
+import type { getDb } from '@ottocode/database';
+import { messageParts } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { streamText } from 'ai';
 import { resolveModel } from '../provider/index.ts';
-import { getAuth } from '@agi-cli/sdk';
-import { loadConfig } from '@agi-cli/sdk';
+import { getAuth } from '@ottocode/sdk';
+import { loadConfig } from '@ottocode/sdk';
 import { debugLog } from '../debug/index.ts';
 import { getModelLimits } from './compaction-limits.ts';
 import { buildCompactionContext } from './compaction-context.ts';

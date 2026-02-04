@@ -1,5 +1,5 @@
-// Utilities for resolving AGI config/data paths consistently
-// Uses XDG base directory spec for global config: ~/.config/agi by default
+// Utilities for resolving otto config/data paths consistently
+// Uses XDG base directory spec for global config: ~/.config/otto by default
 
 // Minimal path join to avoid node:path; ensures forward slashes
 function joinPath(...parts: string[]) {
@@ -24,7 +24,7 @@ export function getConfigHomeDir(): string {
 }
 
 export function getGlobalConfigDir(): string {
-	return joinPath(getConfigHomeDir(), 'agi');
+	return joinPath(getConfigHomeDir(), 'otto');
 }
 
 export function getGlobalConfigPath(): string {
@@ -36,9 +36,9 @@ export function getGlobalAuthPath(): string {
 }
 
 // Secure location for auth secrets (not in config dir or project)
-// - Linux: $XDG_STATE_HOME/agi/auth.json or ~/.local/state/agi/auth.json
-// - macOS: ~/Library/Application Support/agi/auth.json
-// - Windows: %APPDATA%\agi\auth.json
+// - Linux: $XDG_STATE_HOME/otto/auth.json or ~/.local/state/otto/auth.json
+// - macOS: ~/Library/Application Support/otto/auth.json
+// - Windows: %APPDATA%\otto\auth.json
 export function getSecureAuthPath(): string {
 	const platform = process.platform;
 	if (platform === 'darwin') {
@@ -46,18 +46,18 @@ export function getSecureAuthPath(): string {
 			getHomeDir(),
 			'Library',
 			'Application Support',
-			'agi',
+			'otto',
 			'auth.json',
 		);
 	}
 	if (platform === 'win32') {
 		const appData = (process.env.APPDATA || '').replace(/\\/g, '/');
 		const base = appData || joinPath(getHomeDir(), 'AppData', 'Roaming');
-		return joinPath(base, 'agi', 'auth.json');
+		return joinPath(base, 'otto', 'auth.json');
 	}
 	const stateHome = (process.env.XDG_STATE_HOME || '').replace(/\\/g, '/');
 	const base = stateHome || joinPath(getHomeDir(), '.local', 'state');
-	return joinPath(base, 'agi', 'auth.json');
+	return joinPath(base, 'otto', 'auth.json');
 }
 
 // Global content under config dir
@@ -78,7 +78,7 @@ export function getGlobalCommandsDir(): string {
 }
 
 export function getLocalDataDir(projectRoot: string): string {
-	return joinPath(projectRoot, '.agi');
+	return joinPath(projectRoot, '.otto');
 }
 
 export async function ensureDir(dir: string) {

@@ -5,10 +5,10 @@ import { useFullscreen } from '../../hooks/useFullscreen';
 import { handleTitleBarDrag } from '../../utils/title-bar';
 import { tauriOnboarding } from '../../lib/tauri-onboarding';
 import { SetuLoader } from '../SetuLoader';
-import { OnboardingModal, SetuTopupModal, Toaster } from '@agi-cli/web-sdk';
-import { configureApiClient } from '@agi-cli/web-sdk/lib';
-import { useOnboardingStore } from '@agi-cli/web-sdk/stores';
-import { useAuthStatus } from '@agi-cli/web-sdk/hooks';
+import { OnboardingModal, SetuTopupModal, Toaster } from '@ottocode/web-sdk';
+import { configureApiClient } from '@ottocode/web-sdk/lib';
+import { useOnboardingStore } from '@ottocode/web-sdk/stores';
+import { useAuthStatus } from '@ottocode/web-sdk/hooks';
 
 interface NativeOnboardingProps {
 	onComplete: () => void;
@@ -88,7 +88,7 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 			if (url) {
 				const urlStr = typeof url === 'string' ? url : url.toString();
 				openUrl(urlStr).catch((err: unknown) => {
-					console.error('[AGI] Failed to open URL:', err);
+					console.error('[otto] Failed to open URL:', err);
 				});
 				if (urlStr.includes('/oauth/') || urlStr.includes('/auth/')) {
 					startOAuthPolling();
@@ -116,8 +116,8 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 
 	useEffect(() => {
 		if (!server) return;
-		const win = window as Window & { AGI_SERVER_URL?: string };
-		win.AGI_SERVER_URL = `http://localhost:${server.port}`;
+		const win = window as Window & { OTTO_SERVER_URL?: string };
+		win.OTTO_SERVER_URL = `http://localhost:${server.port}`;
 		configureApiClient();
 		setServerReady(true);
 	}, [server]);
@@ -137,9 +137,9 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 
 	useEffect(() => {
 		const handler = (e: MessageEvent) => {
-			if (e.data?.type === 'agi-open-url' && typeof e.data.url === 'string') {
+			if (e.data?.type === 'otto-open-url' && typeof e.data.url === 'string') {
 				openUrl(e.data.url).catch((err: unknown) => {
-					console.error('[AGI] Failed to open URL:', err);
+					console.error('[otto] Failed to open URL:', err);
 				});
 				if (e.data.url.includes('/oauth/') || e.data.url.includes('/auth/')) {
 					startOAuthPolling();
@@ -189,7 +189,7 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 				<div
 					className={`flex items-center gap-2 ${isFullscreen ? '' : 'ml-16'}`}
 				>
-					<span className="font-semibold text-foreground">AGI</span>
+					<span className="font-semibold text-foreground">otto</span>
 				</div>
 				<div className="flex items-center gap-2 text-sm text-muted-foreground">
 					<span

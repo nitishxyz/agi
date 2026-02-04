@@ -1,25 +1,42 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach, afterAll } from 'bun:test';
 import { createEmbeddedApp } from '../packages/server/src/index.js';
 import type { Hono } from 'hono';
 import type {
 	Message,
 	MessagePart,
 } from '../packages/database/src/types/index.js';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+let tempDir: string;
+
+function req(path: string) {
+	const sep = path.includes('?') ? '&' : '?';
+	return `${path}${sep}project=${encodeURIComponent(tempDir)}`;
+}
 
 describe('User Context Feature', () => {
 	let app: Hono;
 	let sessionId: string;
 
+	afterAll(async () => {
+		if (tempDir) await rm(tempDir, { recursive: true, force: true });
+	});
+
 	beforeEach(async () => {
+		tempDir = await mkdtemp(join(tmpdir(), 'otto-user-ctx-'));
+		if (!process.env.ANTHROPIC_API_KEY) {
+			process.env.ANTHROPIC_API_KEY = 'test-key';
+		}
 		// Create test app
 		app = createEmbeddedApp({
 			provider: 'anthropic',
 			apiKey: process.env.ANTHROPIC_API_KEY || 'test-key',
-			dbPath: ':memory:',
 		});
 
 		// Create a test session
-		const sessionRes = await app.request('/v1/sessions', {
+		const sessionRes = await app.request(req('/v1/sessions'), {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
@@ -36,7 +53,7 @@ describe('User Context Feature', () => {
 
 	describe('API Layer', () => {
 		it('should accept userContext in SendMessageRequest', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -51,7 +68,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should work without userContext (backward compatibility)', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -65,7 +82,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should handle empty userContext', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -78,7 +95,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should handle whitespace-only userContext', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -95,7 +112,7 @@ describe('User Context Feature', () => {
 		it('should include userContext in system prompt when provided', async () => {
 			// We can't directly test system prompt without mocking LLM calls
 			// But we can verify the API accepts it without errors
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -108,7 +125,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should handle multi-line userContext', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -121,7 +138,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should handle userContext with special characters', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -136,7 +153,7 @@ describe('User Context Feature', () => {
 
 	describe('Integration with Other Parameters', () => {
 		it('should work with agent override', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -150,7 +167,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should work with provider and model overrides', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -165,7 +182,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should work with oneShot mode', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -179,7 +196,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should work with all parameters combined', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -199,7 +216,7 @@ describe('User Context Feature', () => {
 	describe('Edge Cases', () => {
 		it('should handle very long userContext', async () => {
 			const longContext = 'A'.repeat(10000);
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -212,7 +229,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should handle userContext with XML-like tags', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -225,7 +242,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should handle userContext with the wrapper tag itself', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -238,7 +255,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should handle userContext with JSON content', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -253,7 +270,7 @@ describe('User Context Feature', () => {
 
 	describe('Message Creation', () => {
 		it('should create user message even with userContext', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -269,7 +286,7 @@ describe('User Context Feature', () => {
 
 			// Fetch messages with parsed=true to get parsed JSON content
 			const messagesRes = await app.request(
-				`/v1/sessions/${sessionId}/messages?parsed=true`,
+				req(`/v1/sessions/${sessionId}/messages?parsed=true`),
 			);
 			expect(messagesRes.status).toBe(200);
 
@@ -300,7 +317,7 @@ describe('User Context Feature', () => {
 			const content = 'Hello world';
 			const userContext = 'Secret context that should not be in message';
 
-			await app.request(`/v1/sessions/${sessionId}/messages`, {
+			await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ content, userContext }),
@@ -310,7 +327,7 @@ describe('User Context Feature', () => {
 
 			// Fetch messages with parsed=true to get parsed JSON content
 			const messagesRes = await app.request(
-				`/v1/sessions/${sessionId}/messages?parsed=true`,
+				req(`/v1/sessions/${sessionId}/messages?parsed=true`),
 			);
 			const messages = await messagesRes.json();
 
@@ -334,7 +351,7 @@ describe('User Context Feature', () => {
 
 	describe('Type Safety', () => {
 		it('should accept userContext as undefined', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -347,7 +364,7 @@ describe('User Context Feature', () => {
 		});
 
 		it('should accept userContext as null', async () => {
-			const response = await app.request(`/v1/sessions/${sessionId}/messages`, {
+			const response = await app.request(req(`/v1/sessions/${sessionId}/messages`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

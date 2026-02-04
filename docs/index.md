@@ -1,10 +1,10 @@
-# AGI Documentation
+# otto documentation
 
 [← Back to README](../README.md)
 
 ## Getting Started
 
-- **[Installation & Quick Start](getting-started.md)** — Install AGI and get running
+- **[Installation & Quick Start](getting-started.md)** — Install otto and get running
 - **[Usage Guide](usage.md)** — Core commands and workflows
 - **[Configuration](configuration.md)** — Settings and project configuration
 
@@ -24,7 +24,7 @@
 
 ## Advanced
 
-- **[Embedding Guide](embedding-guide.md)** — Embed AGI in your own applications
+- **[Embedding Guide](embedding-guide.md)** — Embed otto in your own applications
 
 ## Reference
 
@@ -39,35 +39,35 @@
 ### Install
 
 ```bash
-curl -fsSL https://install.agi.nitish.sh | sh
+curl -fsSL https://install.ottocode.io | sh
 
 # Or via npm/bun
-bun install -g @agi-cli/install
+bun install -g @ottocode/install
 
 # From source
-git clone https://github.com/nitishxyz/agi.git
-cd agi && bun install && bun run compile
+git clone https://github.com/nitishxyz/otto.git
+cd otto && bun install && bun run compile
 ```
 
 ### Key Commands
 
 ```bash
-agi                          # start server + web UI
-agi "your question"          # one-shot question
-agi --agent build "task"     # use specific agent
-agi --last "follow up"       # continue last session
-agi serve                    # start HTTP server + web UI
-agi setup                    # configure providers
-agi agents                   # list agents
-agi models                   # list models
-agi sessions                 # list sessions
-agi doctor                   # diagnostics
+otto                          # start server + web UI
+otto "your question"          # one-shot question
+otto --agent build "task"     # use specific agent
+otto --last "follow up"       # continue last session
+otto serve                    # start HTTP server + web UI
+otto setup                    # configure providers
+otto agents                   # list agents
+otto models                   # list models
+otto sessions                 # list sessions
+otto doctor                   # diagnostics
 ```
 
 ### Project Layout
 
 ```
-agi/
+otto/
 ├── apps/
 │   ├── cli/          # CLI binary (Commander, bun build --compile)
 │   ├── web/          # Web UI (React + Vite + TanStack)
@@ -92,7 +92,7 @@ agi/
 ### SDK Usage
 
 ```typescript
-import { generateText, resolveModel, discoverProjectTools } from '@agi-cli/sdk';
+import { generateText, resolveModel, discoverProjectTools } from '@ottocode/sdk';
 
 const model = await resolveModel('anthropic', 'claude-sonnet-4');
 const tools = await discoverProjectTools(process.cwd());
@@ -117,7 +117,7 @@ const result = await generateText({
 4. [Agents & Tools](agents-tools.md)
 5. [Troubleshooting](troubleshooting.md)
 
-### For Developers (building with AGI SDK)
+### For Developers (building with otto SDK)
 
 1. [SDK README](../packages/sdk/README.md)
 2. [Embedding Guide](embedding-guide.md)
@@ -133,4 +133,4 @@ const result = await generateText({
 
 ---
 
-[GitHub](https://github.com/nitishxyz/agi) · [Issues](https://github.com/nitishxyz/agi/issues) · [npm](https://www.npmjs.com/package/@agi-cli/install)
+[GitHub](https://github.com/nitishxyz/otto) · [Issues](https://github.com/nitishxyz/otto/issues) · [npm](https://www.npmjs.com/package/@ottocode/install)

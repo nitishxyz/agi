@@ -1,6 +1,6 @@
 # Keyboard Shortcuts
 
-AGI web interface supports vim-style keyboard shortcuts for efficient navigation and git operations.
+otto web interface supports vim-style keyboard shortcuts for efficient navigation and git operations.
 
 ## Navigation Shortcuts
 

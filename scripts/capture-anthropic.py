@@ -6,11 +6,11 @@ Usage:
 
 Output files:
   - capture/claude-requests.json   (real Claude Code)
-  - capture/agi-requests.json      (AGI spoofed)
+  - capture/otto-requests.json      (otto spoofed)
 
 Set which one to capture:
-  AGI_CAPTURE=claude mitmdump -s scripts/capture-anthropic.py -p 8080
-  AGI_CAPTURE=agi mitmdump -s scripts/capture-anthropic.py -p 8080
+  OTTO_CAPTURE=claude mitmdump -s scripts/capture-anthropic.py -p 8080
+  OTTO_CAPTURE=otto mitmdump -s scripts/capture-anthropic.py -p 8080
 """
 
 import json
@@ -20,7 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Determine output file based on env var
-capture_type = os.environ.get('AGI_CAPTURE', 'requests')
+capture_type = os.environ.get('OTTO_CAPTURE', 'requests')
 capture_dir = Path(__file__).parent.parent / 'capture'
 capture_dir.mkdir(exist_ok=True)
 output_file = capture_dir / f'{capture_type}-requests.json'

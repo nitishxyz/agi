@@ -1,7 +1,7 @@
 /**
  * Server-Sent Events (SSE) streaming utilities
  *
- * Provides helpers for connecting to and consuming SSE streams from the AGI server.
+ * Provides helpers for connecting to and consuming SSE streams from the otto server.
  */
 
 import { createParser } from 'eventsource-parser';
@@ -55,7 +55,7 @@ export interface SSEStreamOptions {
  *
  * @example
  * ```typescript
- * import { createSSEStream } from '@agi-cli/api';
+ * import { createSSEStream } from '@ottocode/api';
  *
  * const controller = new AbortController();
  *
@@ -182,7 +182,7 @@ export function parseSSEEvent(eventString: string): SSEEvent | null {
 }
 
 /**
- * Event type definitions for AGI server SSE events
+ * Event type definitions for otto server SSE events
  */
 export type ServerEvent =
 	| SessionCreatedEvent

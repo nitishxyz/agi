@@ -1,4 +1,4 @@
-import type { AGIConfig, ProviderId } from '@agi-cli/sdk';
+import type { OttoConfig, ProviderId } from '@ottocode/sdk';
 import { getAnthropicInstance } from './anthropic.ts';
 import { resolveOpenAIModel } from './openai.ts';
 import { resolveGoogleModel } from './google.ts';
@@ -14,7 +14,7 @@ export type ProviderName = ProviderId;
 export async function resolveModel(
 	provider: ProviderName,
 	model: string,
-	cfg: AGIConfig,
+	cfg: OttoConfig,
 	options?: {
 		systemPrompt?: string;
 		sessionId?: string;

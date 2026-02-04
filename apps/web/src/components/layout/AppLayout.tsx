@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import type { ReactNode } from 'react';
-import type { Theme } from '@agi-cli/web-sdk/hooks';
+import type { Theme } from '@ottocode/web-sdk/hooks';
 import {
 	GitSidebarToggle,
 	GitSidebar,
@@ -17,7 +17,7 @@ import {
 	ResearchSidebarToggle,
 	SettingsSidebar,
 	SettingsSidebarToggle,
-} from '@agi-cli/web-sdk/components';
+} from '@ottocode/web-sdk/components';
 import { Sidebar } from './Sidebar';
 import { Moon, Sun } from 'lucide-react';
 

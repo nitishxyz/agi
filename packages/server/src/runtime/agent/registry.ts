@@ -1,21 +1,21 @@
-import { getGlobalAgentsJsonPath, getGlobalAgentsDir } from '@agi-cli/sdk';
+import { getGlobalAgentsJsonPath, getGlobalAgentsDir } from '@ottocode/sdk';
 import { debugLog } from '../debug/index.ts';
-import type { ProviderName } from '@agi-cli/sdk';
-import { catalog } from '@agi-cli/sdk';
+import type { ProviderName } from '@ottocode/sdk';
+import { catalog } from '@ottocode/sdk';
 // Embed default agent prompts; only user overrides read from disk.
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import AGENT_BUILD from '@agi-cli/sdk/prompts/agents/build.txt' with {
+import AGENT_BUILD from '@ottocode/sdk/prompts/agents/build.txt' with {
 	type: 'text',
 };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import AGENT_PLAN from '@agi-cli/sdk/prompts/agents/plan.txt' with {
+import AGENT_PLAN from '@ottocode/sdk/prompts/agents/plan.txt' with {
 	type: 'text',
 };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import AGENT_GENERAL from '@agi-cli/sdk/prompts/agents/general.txt' with {
+import AGENT_GENERAL from '@ottocode/sdk/prompts/agents/general.txt' with {
 	type: 'text',
 };
-import AGENT_RESEARCH from '@agi-cli/sdk/prompts/agents/research.txt' with {
+import AGENT_RESEARCH from '@ottocode/sdk/prompts/agents/research.txt' with {
 	type: 'text',
 };
 
@@ -167,7 +167,7 @@ export function defaultToolsForAgent(name: string): string[] {
 export async function loadAgentsConfig(
 	projectRoot: string,
 ): Promise<AgentsJson> {
-	const localPath = `${projectRoot}/.agi/agents.json`.replace(/\\/g, '/');
+	const localPath = `${projectRoot}/.otto/agents.json`.replace(/\\/g, '/');
 	const globalPath = getGlobalAgentsJsonPath();
 	let globalCfg: AgentsJson = {};
 	let localCfg: AgentsJson = {};
@@ -220,19 +220,19 @@ export async function resolveAgentConfig(
 
 	// Override files: project first, then global
 	const globalAgentsDir = getGlobalAgentsDir();
-	const localDirTxt = `${projectRoot}/.agi/agents/${name}/agent.txt`.replace(
+	const localDirTxt = `${projectRoot}/.otto/agents/${name}/agent.txt`.replace(
 		/\\/g,
 		'/',
 	);
-	const localDirMd = `${projectRoot}/.agi/agents/${name}/agent.md`.replace(
+	const localDirMd = `${projectRoot}/.otto/agents/${name}/agent.md`.replace(
 		/\\/g,
 		'/',
 	);
-	const localFlatTxt = `${projectRoot}/.agi/agents/${name}.txt`.replace(
+	const localFlatTxt = `${projectRoot}/.otto/agents/${name}.txt`.replace(
 		/\\/g,
 		'/',
 	);
-	const localFlatMd = `${projectRoot}/.agi/agents/${name}.md`.replace(
+	const localFlatMd = `${projectRoot}/.otto/agents/${name}.md`.replace(
 		/\\/g,
 		'/',
 	);

@@ -72,7 +72,7 @@ export const handler = async (event: {
 	const params = event.queryStringParameters || {};
 
 	const data: OGRequest = {
-		title: params.title || 'AGI Session',
+		title: params.title || 'otto session',
 		username: params.username || 'anonymous',
 		model: params.model || 'unknown',
 		provider: params.provider || 'unknown',
@@ -133,7 +133,7 @@ export const handler = async (event: {
 						letterSpacing: '-0.02em',
 					}}
 				>
-					AGI
+					utto
 				</div>
 				<div
 					style={{

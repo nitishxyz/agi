@@ -1,5 +1,5 @@
 {
-	"name": "@agi-cli/desktop",
+	"name": "@ottocode/desktop",
 	"private": true,
 	"version": "0.1.19",
 	"type": "module",
@@ -10,7 +10,7 @@
 		"tauri": "tauri"
 	},
 	"dependencies": {
-		"@agi-cli/web-sdk": "workspace:*",
+		"@ottocode/web-sdk": "workspace:*",
 		"@tauri-apps/api": "^2.9.1",
 		"@tauri-apps/plugin-dialog": "^2",
 		"@tauri-apps/plugin-fs": "^2",

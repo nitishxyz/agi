@@ -1,6 +1,6 @@
-# @agi-cli/web-ui Examples
+# @ottocode/web-ui Examples
 
-Examples showing different ways to use the `@agi-cli/web-ui` package.
+Examples showing different ways to use the `@ottocode/web-ui` package.
 
 ## Quick Start
 
@@ -16,7 +16,7 @@ bun run bun-server.ts
 
 **Code:**
 ```typescript
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 Bun.serve({
   port: 3000,
@@ -36,7 +36,7 @@ bun run with-api-routes.ts
 
 **Code:**
 ```typescript
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 const webUI = serveWebUI({ prefix: '/ui' });
 
@@ -76,7 +76,7 @@ bun run express-server.ts
 **Code:**
 ```typescript
 import express from 'express';
-import { getWebUIPath, getIndexPath } from '@agi-cli/web-ui';
+import { getWebUIPath, getIndexPath } from '@ottocode/web-ui';
 
 const app = express();
 

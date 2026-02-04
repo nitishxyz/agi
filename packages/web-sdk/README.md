@@ -1,13 +1,13 @@
-# @agi-cli/web-sdk
+# @ottocode/web-sdk
 
-Reusable React components, hooks, and utilities for building AGI CLI web interfaces.
+Reusable React components, hooks, and utilities for building ottocode web interfaces.
 
 ## Installation
 
 ```bash
-npm install @agi-cli/web-sdk
+npm install @ottocode/web-sdk
 # or
-bun add @agi-cli/web-sdk
+bun add @ottocode/web-sdk
 ```
 
 ## Setup
@@ -24,7 +24,7 @@ export default {
     './index.html',
     './src/**/*.{js,ts,jsx,tsx}',
     // ⚠️ IMPORTANT: Include web-sdk package
-    './node_modules/@agi-cli/web-sdk/dist/**/*.{js,jsx}',
+    './node_modules/@ottocode/web-sdk/dist/**/*.{js,jsx}',
     // Or if using a monorepo with workspace:*
     '../../packages/web-sdk/src/**/*.{js,ts,jsx,tsx}',
   ],
@@ -71,7 +71,7 @@ import {
   ChatInputContainer,
   MessageThread,
   SessionListContainer 
-} from '@agi-cli/web-sdk/components';
+} from '@ottocode/web-sdk/components';
 
 function MyApp() {
   return (
@@ -95,7 +95,7 @@ import {
   useMessages, 
   useSessionStream,
   useTheme 
-} from '@agi-cli/web-sdk/hooks';
+} from '@ottocode/web-sdk/hooks';
 
 function MyComponent() {
   const { data: sessions } = useSessions();
@@ -109,7 +109,7 @@ function MyComponent() {
 ### Stores
 
 ```tsx
-import { useGitStore, useSidebarStore } from '@agi-cli/web-sdk/stores';
+import { useGitStore, useSidebarStore } from '@ottocode/web-sdk/stores';
 
 function MyComponent() {
   const gitFiles = useGitStore((state) => state.files);
@@ -122,7 +122,7 @@ function MyComponent() {
 ### Utilities
 
 ```tsx
-import { apiClient, SSEClient } from '@agi-cli/web-sdk/lib';
+import { apiClient, SSEClient } from '@ottocode/web-sdk/lib';
 
 // Use the API client
 const sessions = await apiClient.getSessions();
@@ -144,7 +144,7 @@ sseClient.onMessage((data) => console.log(data));
 ## Package Structure
 
 ```
-@agi-cli/web-sdk/
+@ottocode/web-sdk/
 ├── components/     # React components
 ├── hooks/          # React hooks
 ├── lib/            # Utilities (API client, SSE client, config)
@@ -169,18 +169,18 @@ Make sure you're importing from the correct path:
 
 ```tsx
 // ✅ Correct
-import { Button } from '@agi-cli/web-sdk/components';
+import { Button } from '@ottocode/web-sdk/components';
 
 // ❌ Wrong
-import { Button } from '@agi-cli/web-sdk';
+import { Button } from '@ottocode/web-sdk';
 ```
 
 ## Related Packages
 
-- `@agi-cli/web-ui` - Pre-built static web app
-- `@agi-cli/sdk` - Node.js SDK for AGI CLI
-- `@agi-cli/api` - API client types
-- `@agi-cli/server` - Backend server
+- `@ottocode/web-ui` - Pre-built static web app
+- `@ottocode/sdk` - Node.js SDK for ottocode
+- `@ottocode/api` - API client types
+- `@ottocode/server` - Backend server
 
 ## License
 

@@ -4,7 +4,7 @@ import {
 	getModelFamily,
 	getUnderlyingProviderKey,
 	catalog,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 
 describe('provider base prompts', () => {
 	it('falls back to default when provider file missing', async () => {
@@ -245,7 +245,7 @@ describe('provider base prompts', () => {
 			// Every setu model should have a family field
 			for (const model of setuEntry?.models || []) {
 				expect(model.provider?.family).toBeDefined();
-				expect(['openai', 'anthropic', 'moonshot']).toContain(
+				expect(['openai', 'anthropic', 'moonshot', 'google']).toContain(
 					model.provider?.family,
 				);
 			}

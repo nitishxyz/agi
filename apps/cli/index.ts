@@ -9,7 +9,7 @@ bootstrapBinaries();
 
 let argv = process.argv.slice(2);
 
-if (argv[0] === 'agi' || argv[0]?.endsWith('/agi')) {
+if (argv[0] === 'otto' || argv[0]?.endsWith('/otto')) {
 	argv = argv.slice(1);
 }
 

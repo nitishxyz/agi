@@ -1,11 +1,11 @@
-import { loadConfig, getUnderlyingProviderKey } from '@agi-cli/sdk';
-import { getDb } from '@agi-cli/database';
-import { sessions } from '@agi-cli/database/schema';
+import { loadConfig, getUnderlyingProviderKey } from '@ottocode/sdk';
+import { getDb } from '@ottocode/database';
+import { sessions } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { resolveModel } from '../provider/index.ts';
 import { resolveAgentConfig } from './registry.ts';
 import { composeSystemPrompt } from '../prompt/builder.ts';
-import { discoverProjectTools } from '@agi-cli/sdk';
+import { discoverProjectTools } from '@ottocode/sdk';
 import { adaptTools } from '../../tools/adapter.ts';
 import { buildDatabaseTools } from '../../tools/database/index.ts';
 import { debugLog, time } from '../debug/index.ts';
@@ -83,7 +83,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	}
 
 	const systemTimer = time('runner:composeSystemPrompt');
-	const { getAuth } = await import('@agi-cli/sdk');
+	const { getAuth } = await import('@ottocode/sdk');
 	const auth = await getAuth(opts.provider, cfg.projectRoot);
 	const oauth = detectOAuth(opts.provider, auth);
 

@@ -43,9 +43,9 @@ export interface ExportToSessionResponse {
 class ResearchApiClient {
 	private get baseUrl(): string {
 		// Check for runtime injected URL first
-		const win = window as Window & { AGI_SERVER_URL?: string };
-		if (win.AGI_SERVER_URL) {
-			return win.AGI_SERVER_URL;
+		const win = window as Window & { OTTO_SERVER_URL?: string };
+		if (win.OTTO_SERVER_URL) {
+			return win.OTTO_SERVER_URL;
 		}
 		// Check for Vite env var
 		if (import.meta.env?.VITE_API_BASE_URL) {

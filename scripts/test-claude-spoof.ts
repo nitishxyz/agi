@@ -10,13 +10,13 @@
  *
  * Tool modes:
  *   claude-code - Only tools that Claude Code has (should always pass)
- *   agi-mixed   - Mix of Claude Code + AGI-only tools [default]
- *   agi-only    - Only AGI-specific tools (tests if whitelist)
+ *   otto-mixed   - Mix of Claude Code + otto-only tools [default]
+ *   otto-only    - Only otto-specific tools (tests if whitelist)
  *
  * Examples:
  *   bun run scripts/test-claude-spoof.ts tool claude-code  # Should pass
- *   bun run scripts/test-claude-spoof.ts tool agi-mixed    # Tests if custom tools allowed
- *   bun run scripts/test-claude-spoof.ts tool agi-only     # Tests naming convention only
+ *   bun run scripts/test-claude-spoof.ts tool otto-mixed    # Tests if custom tools allowed
+ *   bun run scripts/test-claude-spoof.ts tool otto-only     # Tests naming convention only
  *
  * This helps determine if Claude Code OAuth validates:
  *   A) A whitelist of specific tool names (would reject unknown tools)
@@ -64,12 +64,12 @@ async function refreshToken(
 	};
 }
 
-// Read OAuth token from AGI's auth storage
+// Read OAuth token from otto's auth storage
 async function getOAuthToken(): Promise<string | null> {
 	const authPaths = [
-		join(homedir(), 'Library', 'Application Support', 'agi', 'auth.json'),
-		join(process.cwd(), '.agi', 'auth.json'),
-		join(homedir(), '.config', 'agi', 'auth.json'),
+		join(homedir(), 'Library', 'Application Support', 'otto', 'auth.json'),
+		join(process.cwd(), '.otto', 'auth.json'),
+		join(homedir(), '.config', 'otto', 'auth.json'),
 	];
 
 	for (const authPath of authPaths) {
@@ -112,9 +112,9 @@ async function getOAuthToken(): Promise<string | null> {
 
 // Test mode for tool validation:
 // 'claude-code' = Only tools that Claude Code has (should pass)
-// 'agi-mixed' = Mix of Claude Code tools + AGI-only tools (tests if whitelist)
-// 'agi-only' = Only AGI-specific tools with PascalCase (tests naming convention)
-const TOOL_TEST_MODE = process.argv[3] || 'agi-mixed';
+// 'otto-mixed' = Mix of Claude Code tools + otto-only tools (tests if whitelist)
+// 'otto-only' = Only otto-specific tools with PascalCase (tests naming convention)
+const TOOL_TEST_MODE = process.argv[3] || 'otto-mixed';
 
 // Claude Code standard tools (these should always pass)
 const CLAUDE_CODE_STANDARD_TOOLS = [
@@ -180,11 +180,11 @@ const CLAUDE_CODE_STANDARD_TOOLS = [
 	},
 ];
 
-// AGI-specific tools that Claude Code DOESN'T have
+// otto-specific tools that Claude Code DOESN'T have
 // These test whether it's a whitelist or just naming convention
-const AGI_ONLY_TOOLS = [
+const OTTO_ONLY_TOOLS = [
 	{
-		// AGI's apply_patch tool - Claude Code doesn't have this
+		// otto's apply_patch tool - Claude Code doesn't have this
 		name: 'ApplyPatch',
 		description: 'Apply a unified diff patch to files in the project.',
 		input_schema: {
@@ -203,7 +203,7 @@ const AGI_ONLY_TOOLS = [
 		},
 	},
 	{
-		// AGI's progress_update tool - Claude Code doesn't have this
+		// otto's progress_update tool - Claude Code doesn't have this
 		name: 'ProgressUpdate',
 		description: 'Report progress on the current task.',
 		input_schema: {
@@ -218,7 +218,7 @@ const AGI_ONLY_TOOLS = [
 		},
 	},
 	{
-		// AGI's git_status tool - Claude Code uses Bash for git
+		// otto's git_status tool - Claude Code uses Bash for git
 		name: 'GitStatus',
 		description: 'Get the current git status of the repository.',
 		input_schema: {
@@ -234,7 +234,7 @@ const AGI_ONLY_TOOLS = [
 		// Completely made up tool to test naming convention
 		name: 'CustomAgiTool',
 		description:
-			'A custom AGI-only tool that definitely does not exist in Claude Code.',
+			'A custom otto-only tool that definitely does not exist in Claude Code.',
 		input_schema: {
 			$schema: 'https://json-schema.org/draft/2020-12/schema',
 			type: 'object',
@@ -253,12 +253,12 @@ function getToolsForMode(mode: string) {
 		case 'claude-code':
 			console.log('Testing with Claude Code standard tools only');
 			return CLAUDE_CODE_STANDARD_TOOLS;
-		case 'agi-only':
-			console.log('Testing with AGI-only tools (should fail if whitelist)');
-			return AGI_ONLY_TOOLS;
+		case 'otto-only':
+			console.log('Testing with otto-only tools (should fail if whitelist)');
+			return OTTO_ONLY_TOOLS;
 		default:
-			console.log('Testing with mixed tools (Claude Code + AGI-only)');
-			return [...CLAUDE_CODE_STANDARD_TOOLS, ...AGI_ONLY_TOOLS];
+			console.log('Testing with mixed tools (Claude Code + otto-only)');
+			return [...CLAUDE_CODE_STANDARD_TOOLS, ...OTTO_ONLY_TOOLS];
 	}
 }
 
@@ -290,7 +290,7 @@ async function main() {
 	console.log('=== Claude Code OAuth Tool Validation Test ===\n');
 	console.log(`Message mode: ${TEST_MODE} (simple/tool)`);
 	console.log(
-		`Tool set mode: ${TOOL_TEST_MODE} (claude-code/agi-mixed/agi-only)\n`,
+		`Tool set mode: ${TOOL_TEST_MODE} (claude-code/otto-mixed/otto-only)\n`,
 	);
 	console.log('This test determines if Claude Code OAuth validates:');
 	console.log('  A) Whitelist of specific tool names');
@@ -301,7 +301,7 @@ async function main() {
 
 	if (!accessToken) {
 		console.error(
-			'No OAuth token found. Run: agi auth login anthropic --oauth',
+			'No OAuth token found. Run: otto auth login anthropic --oauth',
 		);
 		process.exit(1);
 	}
@@ -316,7 +316,7 @@ async function main() {
 	// Choose message based on test mode
 	const userMessage =
 		TEST_MODE === 'tool'
-			? 'Read the file /Users/bat/dev/slashforge/agi/package.json and tell me the project name.'
+			? 'Read the file /Users/bat/dev/slashforge/otto/package.json and tell me the project name.'
 			: 'Say hello';
 
 	// Build exact Claude Code request
@@ -331,7 +331,7 @@ async function main() {
 			},
 			{
 				type: 'text',
-				text: "You are an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.\n\nHere is useful information about the environment you are running in:\n<env>\nWorking directory: /Users/bat/dev/slashforge/agi\nIs directory a git repo: Yes\nPlatform: darwin\nToday's date: 2026-01-11\n</env>",
+				text: "You are an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.\n\nHere is useful information about the environment you are running in:\n<env>\nWorking directory: /Users/bat/dev/slashforge/otto\nIs directory a git repo: Yes\nPlatform: darwin\nToday's date: 2026-01-11\n</env>",
 				cache_control: { type: 'ephemeral' },
 			},
 		],
@@ -384,7 +384,7 @@ async function main() {
 			(t) => t.name === tool.name,
 		);
 		console.log(
-			`  ${tool.name} ${isClaudeCode ? '(Claude Code)' : '(AGI-only)'}`,
+			`  ${tool.name} ${isClaudeCode ? '(Claude Code)' : '(otto-only)'}`,
 		);
 	}
 	console.log('\nBody preview:');
@@ -564,38 +564,38 @@ async function main() {
 						console.log(`Input: ${tc.input}`);
 					}
 
-					// Simulate tool result with AGI's response format
+					// Simulate tool result with otto's response format
 					// This is the key test - does Claude accept our ToolResponse<T> format?
 					const toolResults = toolCalls.map((tc) => {
 						const input = JSON.parse(tc.input || '{}');
 
 						if (tc.name === 'Read') {
-							// Simulate AGI's read tool response format
+							// Simulate otto's read tool response format
 							const simulatedContent = JSON.stringify(
 								{
-									name: 'agi-monorepo',
+									name: 'otto-monorepo',
 									version: '0.1.104',
-									description: 'AGI CLI monorepo',
+									description: 'ottocode monorepo',
 								},
 								null,
 								2,
 							);
 
-							// AGI's ToolResponse format - using input.path (AGI schema)
-							const agiResponse = {
+							// otto's ToolResponse format - using input.path (otto schema)
+							const ottoResponse = {
 								ok: true,
-								path: input.path, // AGI uses 'path' not 'file_path'
+								path: input.path, // otto uses 'path' not 'file_path'
 								content: simulatedContent,
 								size: simulatedContent.length,
 							};
 
-							console.log('\n--- Sending Tool Result (AGI Format) ---');
-							console.log(JSON.stringify(agiResponse, null, 2));
+							console.log('\n--- Sending Tool Result (otto format) ---');
+							console.log(JSON.stringify(ottoResponse, null, 2));
 
 							return {
 								type: 'tool_result',
 								tool_use_id: tc.id,
-								content: JSON.stringify(agiResponse),
+								content: JSON.stringify(ottoResponse),
 							};
 						}
 
@@ -700,7 +700,7 @@ async function main() {
 							console.log(followUpText);
 							console.log('\n✓ TOOL ROUND-TRIP COMPLETE!');
 							console.log(
-								'✓ AGI ToolResponse format is COMPATIBLE with Claude Code!',
+								'✓ otto ToolResponse format is COMPATIBLE with Claude Code!',
 							);
 						}
 					} else {

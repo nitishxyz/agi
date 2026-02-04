@@ -1,10 +1,10 @@
 import type { Hono } from 'hono';
-import { loadConfig } from '@agi-cli/sdk';
-import { getDb } from '@agi-cli/database';
-import { messages, messageParts, sessions } from '@agi-cli/database/schema';
+import { loadConfig } from '@ottocode/sdk';
+import { getDb } from '@ottocode/database';
+import { messages, messageParts, sessions } from '@ottocode/database/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { serializeError } from '../runtime/errors/api-error.ts';
-import { logger } from '@agi-cli/sdk';
+import { logger } from '@ottocode/sdk';
 
 const FILE_EDIT_TOOLS = [
 	'Write',

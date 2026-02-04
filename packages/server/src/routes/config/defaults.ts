@@ -1,6 +1,6 @@
 import type { Hono } from 'hono';
-import { setConfig, loadConfig } from '@agi-cli/sdk';
-import { logger } from '@agi-cli/sdk';
+import { setConfig, loadConfig } from '@ottocode/sdk';
+import { logger } from '@ottocode/sdk';
 import { serializeError } from '../../runtime/errors/api-error.ts';
 
 export function registerDefaultsRoute(app: Hono) {

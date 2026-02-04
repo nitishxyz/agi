@@ -3,7 +3,7 @@ import { homedir, platform } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 
-const APP_NAME = 'AGI';
+const APP_NAME = 'otto';
 
 function getDesktopAppPath(): string | null {
 	const os = platform();
@@ -20,10 +20,10 @@ function getDesktopAppPath(): string | null {
 
 	if (os === 'linux') {
 		const candidates = [
-			'/usr/bin/agi-desktop',
-			'/usr/local/bin/agi-desktop',
-			join(homedir(), '.local', 'bin', 'agi-desktop'),
-			'/opt/agi-desktop/agi-desktop',
+			'/usr/bin/otto-desktop',
+			'/usr/local/bin/otto-desktop',
+			join(homedir(), '.local', 'bin', 'otto-desktop'),
+			'/opt/otto-desktop/otto-desktop',
 		];
 		for (const p of candidates) {
 			if (existsSync(p)) return p;

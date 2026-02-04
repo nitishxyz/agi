@@ -1,4 +1,4 @@
-# AGI Project - AI Agent & Contributor Guidelines
+# otto Project - AI Agent & Contributor Guidelines
 
 This file defines conventions for AI agents and human contributors working in this repository.
 
@@ -21,17 +21,17 @@ This file defines conventions for AI agents and human contributors working in th
 
 Use workspace package imports for cross-package dependencies:
 
-- `@agi-cli/api` - Type-safe API client
-- `@agi-cli/database` - SQLite + Drizzle ORM
-- `@agi-cli/install` - npm installer package
-- `@agi-cli/sdk` - Core SDK (tools, streaming, agents, auth, config, providers, prompts)
-- `@agi-cli/server` - HTTP server
-- `@agi-cli/web-sdk` - React components, hooks, and utilities
-- `@agi-cli/web-ui` - Pre-built static web UI assets
+- `@ottocode/api` - Type-safe API client
+- `@ottocode/database` - SQLite + Drizzle ORM
+- `@ottocode/install` - npm installer package
+- `@ottocode/sdk` - Core SDK (tools, streaming, agents, auth, config, providers, prompts)
+- `@ottocode/server` - HTTP server
+- `@ottocode/web-sdk` - React components, hooks, and utilities
+- `@ottocode/web-ui` - Pre-built static web UI assets
 
 **Import Rules:**
 
-- Use workspace imports (`@agi-cli/...`) for cross-package dependencies
+- Use workspace imports (`@ottocode/...`) for cross-package dependencies
 - Use relative imports (`./`, `../`) within the same package only
 - **Never use `@/` path aliases** (removed during monorepo migration)
 
@@ -70,10 +70,10 @@ When you need schema/database changes:
 
 - Use AI SDK v5 APIs (`generateText`, `streamText`, `generateObject`, `streamObject`, `tool`, `embed`, `rerank`)
 - Support provider switching via SDK (OpenAI, Anthropic, Google, OpenRouter, OpenCode, Setu)
-- Setu uses Solana wallet auth — store the base58 private key with `agi auth login setu` or via `SETU_PRIVATE_KEY`
+- Setu uses Solana wallet auth — store the base58 private key with `otto auth login setu` or via `SETU_PRIVATE_KEY`
 - Agents and tools are modular
 - Load defaults from `packages/sdk/src/tools/`
-- Allow project overrides under `.agi/`
+- Allow project overrides under `.otto/`
 
 ## Commits and Changes
 
@@ -160,7 +160,7 @@ If you're an AI agent (like Claude) contributing to this project:
 
 ## Summary
 
-The key principles for contributing to AGI:
+The key principles for contributing to otto:
 
 1. **Modular** - Small, focused files and packages
 2. **Type-safe** - TypeScript strict mode everywhere

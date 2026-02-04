@@ -1,15 +1,15 @@
 import type { Hono } from 'hono';
-import { loadConfig } from '@agi-cli/sdk';
-import { getDb } from '@agi-cli/database';
-import { messages, messageParts, sessions } from '@agi-cli/database/schema';
+import { loadConfig } from '@ottocode/sdk';
+import { getDb } from '@ottocode/database';
+import { messages, messageParts, sessions } from '@ottocode/database/schema';
 import { eq, inArray } from 'drizzle-orm';
 import {
 	validateProviderModel,
 	isProviderAuthorized,
 	ensureProviderEnv,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 import { dispatchAssistantMessage } from '../runtime/message/service.ts';
-import { logger } from '@agi-cli/sdk';
+import { logger } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
 
 type MessagePartRow = typeof messageParts.$inferSelect;
@@ -139,7 +139,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				logger.warn('Provider not authorized', { provider });
 				return c.json(
 					{
-						error: `Provider ${provider} is not configured. Run \`agi auth login\` to add credentials.`,
+						error: `Provider ${provider} is not configured. Run \`otto auth login\` to add credentials.`,
 					},
 					400,
 				);

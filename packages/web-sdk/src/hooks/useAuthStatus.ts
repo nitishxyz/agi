@@ -162,7 +162,7 @@ export function useAuthStatus() {
 			const url = apiClient.getOAuthStartUrl(provider, mode);
 			if (isInIframe) {
 				snapshotConfiguredProviders();
-				window.parent.postMessage({ type: 'agi-open-url', url }, '*');
+				window.parent.postMessage({ type: 'otto-open-url', url }, '*');
 				setOauthPolling(true);
 				return null;
 			}
@@ -186,7 +186,7 @@ export function useAuthStatus() {
 
 			if (isInIframe) {
 				snapshotConfiguredProviders();
-				window.parent.postMessage({ type: 'agi-open-url', url }, '*');
+				window.parent.postMessage({ type: 'otto-open-url', url }, '*');
 				setOauthPolling(true);
 				return { popup: null, sessionId };
 			}

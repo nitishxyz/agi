@@ -89,7 +89,7 @@ async function buildCliBinary(platform: keyof typeof PLATFORMS) {
 	console.log(`\n📦 Building CLI binary for ${platform}...`);
 
 	const target = PLATFORMS[platform];
-	const outfile = join(CLI_DIR, 'dist', `agi-${platform}`);
+	const outfile = join(CLI_DIR, 'dist', `otto-${platform}`);
 
 	await $`cd ${CLI_DIR} && bun run prebuild`;
 	await $`cd ${CLI_DIR} && bun build --compile --minify --target=${target} ./index.ts --outfile ${outfile}`;
@@ -104,7 +104,7 @@ async function copyBinaryToDesktop(binaryPath: string, platform: string) {
 		mkdirSync(BINARIES_DIR, { recursive: true });
 	}
 
-	const destPath = join(BINARIES_DIR, `agi-${platform}`);
+	const destPath = join(BINARIES_DIR, `otto-${platform}`);
 	copyFileSync(binaryPath, destPath);
 
 	await $`chmod +x ${destPath}`;
@@ -131,7 +131,7 @@ async function main() {
 	const signBin = args.includes('--sign');
 	const allPlatforms = args.includes('--all-platforms');
 
-	console.log('🚀 AGI Desktop Build Script');
+	console.log('🚀 otto desktop Build Script');
 	console.log('===========================');
 	if (signBin) {
 		console.log('🔏 Code signing enabled');

@@ -1,7 +1,7 @@
 /**
- * Base error class for all AGI errors
+ * Base error class for all otto errors
  */
-export class AGIError extends Error {
+export class OttoError extends Error {
 	constructor(
 		message: string,
 		public readonly code: string,
@@ -27,7 +27,7 @@ export class AGIError extends Error {
 /**
  * Authentication and authorization errors
  */
-export class AuthError extends AGIError {
+export class AuthError extends OttoError {
 	constructor(message: string, details?: Record<string, unknown>) {
 		super(message, 'AUTH_ERROR', 401, details);
 	}
@@ -36,7 +36,7 @@ export class AuthError extends AGIError {
 /**
  * Configuration errors
  */
-export class ConfigError extends AGIError {
+export class ConfigError extends OttoError {
 	constructor(message: string, details?: Record<string, unknown>) {
 		super(message, 'CONFIG_ERROR', 500, details);
 	}
@@ -45,7 +45,7 @@ export class ConfigError extends AGIError {
 /**
  * Tool execution errors
  */
-export class ToolError extends AGIError {
+export class ToolError extends OttoError {
 	constructor(message: string, details?: Record<string, unknown>) {
 		super(message, 'TOOL_ERROR', 500, details);
 	}
@@ -54,7 +54,7 @@ export class ToolError extends AGIError {
 /**
  * Provider errors (API, model not found, etc.)
  */
-export class ProviderError extends AGIError {
+export class ProviderError extends OttoError {
 	constructor(message: string, details?: Record<string, unknown>) {
 		super(message, 'PROVIDER_ERROR', 500, details);
 	}
@@ -63,7 +63,7 @@ export class ProviderError extends AGIError {
 /**
  * Database errors
  */
-export class DatabaseError extends AGIError {
+export class DatabaseError extends OttoError {
 	constructor(message: string, details?: Record<string, unknown>) {
 		super(message, 'DATABASE_ERROR', 500, details);
 	}
@@ -72,7 +72,7 @@ export class DatabaseError extends AGIError {
 /**
  * Validation errors (bad input, schema mismatch, etc.)
  */
-export class ValidationError extends AGIError {
+export class ValidationError extends OttoError {
 	constructor(message: string, details?: Record<string, unknown>) {
 		super(message, 'VALIDATION_ERROR', 400, details);
 	}
@@ -81,7 +81,7 @@ export class ValidationError extends AGIError {
 /**
  * Not found errors (session, agent, tool, etc.)
  */
-export class NotFoundError extends AGIError {
+export class NotFoundError extends OttoError {
 	constructor(message: string, details?: Record<string, unknown>) {
 		super(message, 'NOT_FOUND', 404, details);
 	}
@@ -90,7 +90,7 @@ export class NotFoundError extends AGIError {
 /**
  * Service errors from ask-service, session-manager, etc.
  */
-export class ServiceError extends AGIError {
+export class ServiceError extends OttoError {
 	constructor(
 		message: string,
 		code = 'SERVICE_ERROR',

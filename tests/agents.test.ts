@@ -2,11 +2,11 @@ import { describe, expect, it } from 'bun:test';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { resolveAgentConfig } from '@agi-cli/server';
+import { resolveAgentConfig } from '@ottocode/server';
 
 describe('agent config merging', () => {
 	it('combines default and appended tools from global and local configs', async () => {
-		const workspaceRoot = await mkdtemp(join(tmpdir(), 'agi-agents-'));
+		const workspaceRoot = await mkdtemp(join(tmpdir(), 'otto-agents-'));
 		const projectRoot = join(workspaceRoot, 'project');
 		const homeDir = join(workspaceRoot, 'home');
 		await mkdir(projectRoot, { recursive: true });
@@ -18,18 +18,18 @@ describe('agent config merging', () => {
 		process.env.XDG_CONFIG_HOME = join(homeDir, '.config');
 
 		try {
-			await mkdir(join(homeDir, '.config', 'agi'), { recursive: true });
+			await mkdir(join(homeDir, '.config', 'otto'), { recursive: true });
 			await writeFile(
-				join(homeDir, '.config', 'agi', 'agents.json'),
+				join(homeDir, '.config', 'otto', 'agents.json'),
 				JSON.stringify({
 					build: { appendTools: ['ripgrep'] },
 				}),
 			);
-			await mkdir(join(projectRoot, '.agi'), { recursive: true });
+			await mkdir(join(projectRoot, '.otto'), { recursive: true });
 			await writeFile(
-				join(projectRoot, '.agi', 'agents.json'),
+				join(projectRoot, '.otto', 'agents.json'),
 				JSON.stringify({
-					build: { prompt: '.agi/agents/build.md' },
+					build: { prompt: '.otto/agents/build.md' },
 				}),
 			);
 
@@ -46,7 +46,7 @@ describe('agent config merging', () => {
 	});
 
 	it('resolves provider and model from configuration layers', async () => {
-		const workspaceRoot = await mkdtemp(join(tmpdir(), 'agi-agents-'));
+		const workspaceRoot = await mkdtemp(join(tmpdir(), 'otto-agents-'));
 		const projectRoot = join(workspaceRoot, 'project');
 		const homeDir = join(workspaceRoot, 'home');
 		await mkdir(projectRoot, { recursive: true });
@@ -58,10 +58,10 @@ describe('agent config merging', () => {
 		process.env.USERPROFILE = homeDir;
 		process.env.XDG_CONFIG_HOME = join(homeDir, '.config');
 		try {
-			const globalAgiDir = join(homeDir, '.config', 'agi');
-			await mkdir(globalAgiDir, { recursive: true });
+			const globalOttoDir = join(homeDir, '.config', 'otto');
+			await mkdir(globalOttoDir, { recursive: true });
 			await writeFile(
-				join(globalAgiDir, 'agents.json'),
+				join(globalOttoDir, 'agents.json'),
 				JSON.stringify({
 					coder: {
 						provider: 'anthropic',
@@ -69,9 +69,9 @@ describe('agent config merging', () => {
 					},
 				}),
 			);
-			await mkdir(join(projectRoot, '.agi'), { recursive: true });
+			await mkdir(join(projectRoot, '.otto'), { recursive: true });
 			await writeFile(
-				join(projectRoot, '.agi', 'agents.json'),
+				join(projectRoot, '.otto', 'agents.json'),
 				JSON.stringify({
 					coder: {
 						model: 'claude-3-5-sonnet-20241022',

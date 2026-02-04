@@ -5,7 +5,7 @@ interface Preferences {
 	reasoningEnabled: boolean;
 }
 
-const STORAGE_KEY = 'agi-preferences';
+const STORAGE_KEY = 'otto-preferences';
 const DEFAULT_PREFERENCES: Preferences = {
 	vimMode: false,
 	reasoningEnabled: true,

@@ -4,9 +4,9 @@ import {
 	catalog,
 	type ProviderId,
 	filterModelsForAuthType,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 import type { EmbeddedAppConfig } from '../../index.ts';
-import { logger } from '@agi-cli/sdk';
+import { logger } from '@ottocode/sdk';
 import { serializeError } from '../../runtime/errors/api-error.ts';
 import {
 	isProviderAuthorizedHybrid,

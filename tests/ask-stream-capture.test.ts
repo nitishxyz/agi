@@ -1,5 +1,5 @@
 import { describe, expect, test, mock } from 'bun:test';
-import { runAskStreamCapture } from '@agi-cli/cli/src/ask/capture.ts';
+import { runAskStreamCapture } from '@ottocode/cli/src/ask/capture.ts';
 
 const encoder = new TextEncoder();
 
@@ -21,8 +21,8 @@ describe('runAskStreamCapture', () => {
 	test('sends prompt payload and streams output', async () => {
 		const originalFetch = globalThis.fetch;
 		const originalWrite = Bun.write;
-		const prevServerUrl = process.env.AGI_SERVER_URL;
-		process.env.AGI_SERVER_URL = 'http://example.com';
+		const prevServerUrl = process.env.OTTO_SERVER_URL;
+		process.env.OTTO_SERVER_URL = 'http://example.com';
 
 		let requestBody: string | undefined;
 		const handshake = {
@@ -79,8 +79,8 @@ describe('runAskStreamCapture', () => {
 			globalThis.fetch = originalFetch;
 			// @ts-expect-error restore implementation
 			Bun.write = originalWrite;
-			if (prevServerUrl === undefined) delete process.env.AGI_SERVER_URL;
-			else process.env.AGI_SERVER_URL = prevServerUrl;
+			if (prevServerUrl === undefined) delete process.env.OTTO_SERVER_URL;
+			else process.env.OTTO_SERVER_URL = prevServerUrl;
 		}
 	});
 });

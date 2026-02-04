@@ -2,7 +2,7 @@
 
 [← Back to README](../README.md) • [Docs Index](./index.md)
 
-When running in server mode (`agi serve`), a REST API is available.
+When running in server mode (`otto serve`), a REST API is available.
 
 ## REST Endpoints
 

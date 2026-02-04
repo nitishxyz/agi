@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod/v3';
-import { getDb } from '@agi-cli/database';
-import { sessions, messages, messageParts } from '@agi-cli/database/schema';
+import { getDb } from '@ottocode/database';
+import { sessions, messages, messageParts } from '@ottocode/database/schema';
 import { eq, asc, count } from 'drizzle-orm';
 
 const inputSchema = z.object({

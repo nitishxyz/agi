@@ -1,4 +1,4 @@
-import { getOpenRouterInstance, createOpenRouterModel } from '@agi-cli/sdk';
+import { getOpenRouterInstance, createOpenRouterModel } from '@ottocode/sdk';
 
 export { getOpenRouterInstance };
 

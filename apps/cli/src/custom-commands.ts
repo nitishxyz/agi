@@ -1,7 +1,7 @@
 import { intro, outro, text, isCancel, cancel } from '@clack/prompts';
 import { isAbsolute, join } from 'node:path';
 import { runAsk } from './ask.ts';
-import { getGlobalCommandsDir } from '@agi-cli/sdk';
+import { getGlobalCommandsDir } from '@ottocode/sdk';
 
 export type CommandManifest = {
 	name: string;
@@ -32,7 +32,7 @@ export async function discoverCommands(
 	const commands: Record<string, CommandManifest> = {};
 	// Helper to read per-file manifests from a directory
 	await scanDirInto(getGlobalCommandsDir(), commands);
-	await scanDirInto(`${projectRoot}/.agi/commands`, commands);
+	await scanDirInto(`${projectRoot}/.otto/commands`, commands);
 	return commands;
 }
 

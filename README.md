@@ -1,8 +1,8 @@
-# AGI
+# otto
 
 AI-powered coding assistant. CLI, desktop app, embeddable server — one tool, multiple interfaces.
 
-[![Version](https://img.shields.io/badge/version-0.1.161-blue)](https://github.com/nitishxyz/agi)
+[![Version](https://img.shields.io/badge/version-0.1.161-blue)](https://github.com/nitishxyz/otto)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![AI SDK](https://img.shields.io/badge/AI%20SDK-v6-purple)](https://sdk.vercel.ai)
 [![Bun](https://img.shields.io/badge/runtime-Bun-orange)](https://bun.sh)
@@ -10,16 +10,16 @@ AI-powered coding assistant. CLI, desktop app, embeddable server — one tool, m
 
 ---
 
-## What is AGI?
+## What is otto?
 
-AGI is an AI coding assistant that runs locally. It connects to AI providers (Anthropic, OpenAI, Google, etc.), gives the model access to your filesystem via built-in tools (read, write, bash, git, ripgrep, etc.), and streams responses back to you.
+otto is an AI coding assistant that runs locally. It connects to AI providers (Anthropic, OpenAI, Google, etc.), gives the model access to your filesystem via built-in tools (read, write, bash, git, ripgrep, etc.), and streams responses back to you.
 
 It ships as:
 
-- **CLI** — run `agi` in your terminal for interactive or one-shot usage
-- **Server + Web UI** — run `agi serve` to get a local HTTP API and browser interface
+- **CLI** — run `otto` in your terminal for interactive or one-shot usage
+- **Server + Web UI** — run `otto serve` to get a local HTTP API and browser interface
 - **Desktop App** — Tauri app that embeds the CLI binary and web UI
-- **Embeddable SDK** — use `@agi-cli/server` and `@agi-cli/sdk` in your own apps
+- **Embeddable SDK** — use `@ottocode/server` and `@ottocode/sdk` in your own apps
 
 The CLI binary is self-contained — it bundles the server, database, web UI, and tools into a single executable built with `bun build --compile`.
 
@@ -28,13 +28,13 @@ The CLI binary is self-contained — it bundles the server, database, web UI, an
 ## Install
 
 ```bash
-curl -fsSL https://install.agi.nitish.sh | sh
+curl -fsSL https://install.ottocode.io | sh
 ```
 
 Or via npm/bun:
 
 ```bash
-bun install -g @agi-cli/install
+bun install -g @ottocode/install
 ```
 
 This downloads the prebuilt binary for your platform (macOS arm64/x64, Linux arm64/x64) and puts it in `~/.local/bin`.
@@ -44,39 +44,39 @@ This downloads the prebuilt binary for your platform (macOS arm64/x64, Linux arm
 ## Usage
 
 ```bash
-agi                           # start server + web UI (opens browser)
-agi --no-desktop              # skip desktop app and serve
-agi "explain this error"      # one-shot question
-agi "write tests" --agent build
-agi "follow up" --last        # continue last session
-agi serve                     # start server without desktop check
-agi serve --port 3000         # custom port
-agi serve --network           # bind to 0.0.0.0 for LAN access
+otto                           # start server + web UI (opens browser)
+otto --no-desktop              # skip desktop app and serve
+otto "explain this error"      # one-shot question
+otto "write tests" --agent build
+otto "follow up" --last        # continue last session
+otto serve                     # start server without desktop check
+otto serve --port 3000         # custom port
+otto serve --network           # bind to 0.0.0.0 for LAN access
 ```
 
-When you run `agi` with no arguments, it checks for the desktop app first. If installed, it opens it. Otherwise it starts the local server and opens the web UI in your browser.
+When you run `otto` with no arguments, it checks for the desktop app first. If installed, it opens it. Otherwise it starts the local server and opens the web UI in your browser.
 
 ### Other Commands
 
 ```bash
-agi setup                     # interactive provider setup
-agi auth login                # configure provider credentials
-agi auth list                 # list configured providers
-agi sessions                  # browse session history
-agi models                    # list available models
-agi agents                    # list/configure agents
-agi tools                     # list available tools
-agi doctor                    # check configuration
-agi share <session-id>        # share a session publicly
-agi upgrade                   # upgrade to latest version
-agi scaffold                  # generate agents, tools, or commands
+otto setup                     # interactive provider setup
+otto auth login                # configure provider credentials
+otto auth list                 # list configured providers
+otto sessions                  # browse session history
+otto models                    # list available models
+otto agents                    # list/configure agents
+otto tools                     # list available tools
+otto doctor                    # check configuration
+otto share <session-id>        # share a session publicly
+otto upgrade                   # upgrade to latest version
+otto scaffold                  # generate agents, tools, or commands
 ```
 
 ---
 
 ## Providers
 
-AGI supports multiple AI providers via [AI SDK v6](https://sdk.vercel.ai):
+otto supports multiple AI providers via [AI SDK v6](https://sdk.vercel.ai):
 
 | Provider | Models | Auth |
 |---|---|---|
@@ -89,8 +89,8 @@ AGI supports multiple AI providers via [AI SDK v6](https://sdk.vercel.ai):
 | **Moonshot** | Moonshot AI models | API key |
 
 ```bash
-agi "refactor this" --provider anthropic --model claude-sonnet-4
-agi "explain generics" --provider openai --model gpt-4o
+otto "refactor this" --provider anthropic --model claude-sonnet-4
+otto "explain generics" --provider openai --model gpt-4o
 ```
 
 ### Environment Variables
@@ -119,12 +119,12 @@ Four built-in agents, each with a curated toolset:
 All agents also get: `progress_update`, `finish`, `skill`.
 
 ```bash
-agi "create auth component" --agent build
-agi "design API architecture" --agent plan
-agi "research how this works" --agent research
+otto "create auth component" --agent build
+otto "design API architecture" --agent plan
+otto "research how this works" --agent research
 ```
 
-Agents are configurable per-project (`.agi/agents.json`) or globally (`~/.config/agi/agents.json`).
+Agents are configurable per-project (`.otto/agents.json`) or globally (`~/.config/otto/agents.json`).
 
 ---
 
@@ -143,11 +143,11 @@ Agents are configurable per-project (`.agi/agents.json`) or globally (`~/.config
 
 ### Custom Tools
 
-Add project-specific tools in `.agi/tools/`:
+Add project-specific tools in `.otto/tools/`:
 
 ```typescript
-// .agi/tools/deploy.ts
-import { tool } from "@agi-cli/sdk";
+// .otto/tools/deploy.ts
+import { tool } from "@ottocode/sdk";
 import { z } from "zod";
 
 export default tool({
@@ -169,17 +169,17 @@ export default tool({
 ### File Locations
 
 ```
-~/.config/agi/
+~/.config/otto/
 ├── auth.json            # API keys (0600 permissions)
 └── config.json          # Global defaults
 
-.agi/                    # Project-specific
+.otto/                    # Project-specific
 ├── config.json          # Project config
 ├── agents.json          # Agent overrides
 ├── agents/              # Custom agent prompts
 ├── commands/            # Custom CLI commands
 ├── tools/               # Custom tools
-└── agi.sqlite           # Local session database
+└── otto.sqlite           # Local session database
 ```
 
 ### Project Config
@@ -194,7 +194,7 @@ export default tool({
 }
 ```
 
-**Priority:** CLI flags > Environment variables > Project `.agi/` > Global `~/.config/agi/` > Defaults
+**Priority:** CLI flags > Environment variables > Project `.otto/` > Global `~/.config/otto/` > Defaults
 
 ---
 
@@ -217,13 +217,13 @@ Bun workspace monorepo. Infrastructure managed with [SST](https://sst.dev).
 
 | Package | Description |
 |---|---|
-| `@agi-cli/sdk` | Core SDK: tools, agents, auth, config, providers, prompts. Tree-shakable. |
-| `@agi-cli/server` | HTTP API server (Hono): routes, SSE streaming, agent runtime |
-| `@agi-cli/database` | SQLite + Drizzle ORM for local persistence |
-| `@agi-cli/api` | Type-safe API client (generated from OpenAPI spec) |
-| `@agi-cli/web-sdk` | React components, hooks, stores for building web UIs |
-| `@agi-cli/web-ui` | Pre-built static web UI assets (embedded in CLI binary) |
-| `@agi-cli/install` | npm installer package (downloads binary on postinstall) |
+| `@ottocode/sdk` | Core SDK: tools, agents, auth, config, providers, prompts. Tree-shakable. |
+| `@ottocode/server` | HTTP API server (Hono): routes, SSE streaming, agent runtime |
+| `@ottocode/database` | SQLite + Drizzle ORM for local persistence |
+| `@ottocode/api` | Type-safe API client (generated from OpenAPI spec) |
+| `@ottocode/web-sdk` | React components, hooks, stores for building web UIs |
+| `@ottocode/web-ui` | Pre-built static web UI assets (embedded in CLI binary) |
+| `@ottocode/install` | npm installer package (downloads binary on postinstall) |
 
 ### Dependency Graph
 
@@ -242,10 +242,10 @@ All infra is defined as code with [SST](https://sst.dev), deploying to AWS and C
 
 | Resource | Platform | Domain |
 |---|---|---|
-| Setu proxy | Cloudflare Worker | `setu.agi.nitish.sh` |
-| Preview API | Cloudflare Worker + D1 | `api.share.agi.nitish.sh` |
-| Preview Web | AWS (Astro SSR) | `share.agi.nitish.sh` |
-| Install Script | Cloudflare Worker | `install.agi.nitish.sh` |
+| Setu proxy | Cloudflare Worker | `setu.ottocode.io` |
+| Preview API | Cloudflare Worker + D1 | `api.share.ottocode.io` |
+| Preview Web | AWS (Astro SSR) | `share.ottocode.io` |
+| Install Script | Cloudflare Worker | `install.ottocode.io` |
 | OG Image | AWS Lambda | (function URL) |
 
 ```bash
@@ -257,10 +257,10 @@ bun sst deploy --stage prod    # deploy to production
 
 ## Embedding
 
-Use AGI as a library in your own applications:
+Use otto as a library in your own applications:
 
 ```typescript
-import { createEmbeddedApp } from "@agi-cli/server";
+import { createEmbeddedApp } from "@ottocode/server";
 
 const app = createEmbeddedApp({
   provider: "anthropic",
@@ -279,7 +279,7 @@ Bun.serve({
 Or use the SDK directly:
 
 ```typescript
-import { generateText, resolveModel, discoverProjectTools } from "@agi-cli/sdk";
+import { generateText, resolveModel, discoverProjectTools } from "@ottocode/sdk";
 
 const model = await resolveModel("anthropic", "claude-sonnet-4");
 const tools = await discoverProjectTools(process.cwd());
@@ -305,8 +305,8 @@ See [Embedding Guide](docs/embedding-guide.md) for full details including custom
 ### Setup
 
 ```bash
-git clone https://github.com/nitishxyz/agi.git
-cd agi
+git clone https://github.com/nitishxyz/otto.git
+cd otto
 bun install
 ```
 
@@ -373,7 +373,7 @@ bun run db:reset               # reset local database
 | [Agents & Tools](docs/agents-tools.md) | Built-in agents and tools |
 | [Architecture](docs/architecture.md) | Monorepo structure, packages, infra |
 | [Development Guide](docs/development-guide.md) | Dev workflows for all components |
-| [Embedding Guide](docs/embedding-guide.md) | Embed AGI in your apps |
+| [Embedding Guide](docs/embedding-guide.md) | Embed otto in your apps |
 | [API Reference](docs/api.md) | REST endpoints and SSE |
 | [Troubleshooting](docs/troubleshooting.md) | Common issues |
 | [All Docs](docs/index.md) | Full documentation index |
@@ -398,4 +398,4 @@ See [AGENTS.md](AGENTS.md) for conventions.
 
 ---
 
-[GitHub](https://github.com/nitishxyz/agi) · [Issues](https://github.com/nitishxyz/agi/issues) · [npm](https://www.npmjs.com/package/@agi-cli/install)
+[GitHub](https://github.com/nitishxyz/otto) · [Issues](https://github.com/nitishxyz/otto/issues) · [npm](https://www.npmjs.com/package/@ottocode/install)

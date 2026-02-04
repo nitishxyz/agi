@@ -10,7 +10,7 @@ const startTime = performance.now();
 const spinner = new Spinner();
 const ROOT = import.meta.dir.replace('/scripts', '');
 
-console.log(`\n${BOLD}${CYAN}agi${RESET} ${DIM}compile${RESET}\n`);
+console.log(`\n${BOLD}${CYAN}otto${RESET} ${DIM}compile${RESET}\n`);
 
 spinner.begin('Building web UI');
 const webArgs = verbose ? ['--verbose'] : [];
@@ -74,8 +74,8 @@ await $`mkdir -p dist`.quiet();
 const buildCmd = ['bun', 'build', '--compile', '--minify'];
 if (target) buildCmd.push(target);
 const outfile = target
-	? `dist/agi-${target.replace('--target=bun-', '')}`
-	: 'dist/agi';
+	? `dist/otto-${target.replace('--target=bun-', '')}`
+	: 'dist/otto';
 buildCmd.push('./apps/cli/index.ts', '--outfile', outfile);
 
 if (verbose) {

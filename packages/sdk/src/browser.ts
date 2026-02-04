@@ -1,11 +1,11 @@
 // ============================================================================
-// @agi-cli/sdk/browser - Browser-safe exports
+// @ottocode/sdk/browser - Browser-safe exports
 // ============================================================================
 // This module exports only browser-compatible code (no Bun, no Node.js APIs).
 // Use this entry point for web applications like web-sdk.
 //
 // Usage:
-//   import { estimateModelCostUsd, type ProviderId } from '@agi-cli/sdk/browser';
+//   import { estimateModelCostUsd, type ProviderId } from '@ottocode/sdk/browser';
 // ============================================================================
 
 // Types (pure TypeScript, no runtime dependencies)

@@ -9,7 +9,7 @@
 ### Recommended: One-Liner
 
 ```bash
-curl -fsSL https://install.agi.nitish.sh | sh
+curl -fsSL https://install.ottocode.io | sh
 ```
 
 This detects your OS and architecture, downloads the prebuilt binary, and installs to `~/.local/bin`.
@@ -17,13 +17,13 @@ This detects your OS and architecture, downloads the prebuilt binary, and instal
 Pin a specific version:
 
 ```bash
-AGI_VERSION=v0.1.161 curl -fsSL https://install.agi.nitish.sh | sh
+OTTO_VERSION=v0.1.161 curl -fsSL https://install.ottocode.io | sh
 ```
 
 ### Alternative: npm or Bun
 
 ```bash
-bun install -g @agi-cli/install
+bun install -g @ottocode/install
 ```
 
 The postinstall script downloads the correct binary for your platform.
@@ -35,10 +35,10 @@ The postinstall script downloads the correct binary for your platform.
 Requires [Bun](https://bun.sh) v1.0+.
 
 ```bash
-git clone https://github.com/nitishxyz/agi.git
-cd agi
+git clone https://github.com/nitishxyz/otto.git
+cd otto
 bun install
-bun run compile    # builds to dist/agi
+bun run compile    # builds to dist/otto
 ```
 
 ---
@@ -48,7 +48,7 @@ bun run compile    # builds to dist/agi
 ### 1. Configure a Provider
 
 ```bash
-agi setup
+otto setup
 ```
 
 This walks you through provider selection and authentication interactively.
@@ -62,29 +62,29 @@ export GOOGLE_GENERATIVE_AI_API_KEY="..."
 export OPENROUTER_API_KEY="sk-or-..."
 ```
 
-### 2. Start Using AGI
+### 2. Start Using otto
 
 ```bash
-agi                           # start server + web UI (opens browser)
-agi "explain this error"      # one-shot question
-agi "write tests" --agent build
-agi "follow up" --last        # continue last session
+otto                           # start server + web UI (opens browser)
+otto "explain this error"      # one-shot question
+otto "write tests" --agent build
+otto "follow up" --last        # continue last session
 ```
 
 ### 3. Verify Installation
 
 ```bash
-agi --version                 # check version
-agi doctor                    # check configuration and diagnose issues
-agi agents                    # list available agents
-agi models                    # list available models
+otto --version                 # check version
+otto doctor                    # check configuration and diagnose issues
+otto agents                    # list available agents
+otto models                    # list available models
 ```
 
 ---
 
 ## How It Works
 
-When you run `agi`, it:
+When you run `otto`, it:
 
 1. Checks if the desktop app is installed — if so, opens it
 2. Otherwise, starts a local HTTP server (API + web UI)
@@ -92,17 +92,17 @@ When you run `agi`, it:
 
 The web UI is a client for the local server. All AI interactions, session storage, and tool execution happen locally on your machine.
 
-For one-shot usage (`agi "question"`), it starts the server in the background, sends the prompt, streams the response, and exits.
+For one-shot usage (`otto "question"`), it starts the server in the background, sends the prompt, streams the response, and exits.
 
 ---
 
 ## Server Mode
 
 ```bash
-agi serve                     # start on a random port, open browser
-agi serve --port 3000         # specific port
-agi serve --network           # bind to 0.0.0.0 for LAN access
-agi serve --no-open           # don't open browser
+otto serve                     # start on a random port, open browser
+otto serve --port 3000         # specific port
+otto serve --network           # bind to 0.0.0.0 for LAN access
+otto serve --no-open           # don't open browser
 ```
 
 The server exposes:
@@ -122,7 +122,7 @@ The server exposes:
 
 ## Troubleshooting
 
-### `agi` not found after installation
+### `otto` not found after installation
 
 Check if `~/.local/bin` is in your PATH:
 
@@ -137,8 +137,8 @@ source ~/.zshrc
 ### Provider authentication issues
 
 ```bash
-agi auth login                # reconfigure credentials
-agi doctor                    # check what's configured
+otto auth login                # reconfigure credentials
+otto doctor                    # check what's configured
 echo $ANTHROPIC_API_KEY       # verify env var is set
 ```
 
@@ -146,13 +146,13 @@ echo $ANTHROPIC_API_KEY       # verify env var is set
 
 ```bash
 curl http://localhost:3000/health    # check if server is running
-agi serve --port 3000               # try a specific port
+otto serve --port 3000               # try a specific port
 ```
 
 ### Binary not executable
 
 ```bash
-chmod +x $(which agi)
+chmod +x $(which otto)
 ```
 
-For more help, see [troubleshooting.md](troubleshooting.md) or file an issue at [github.com/nitishxyz/agi/issues](https://github.com/nitishxyz/agi/issues).
+For more help, see [troubleshooting.md](troubleshooting.md) or file an issue at [github.com/nitishxyz/otto/issues](https://github.com/nitishxyz/otto/issues).

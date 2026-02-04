@@ -74,7 +74,7 @@ export interface ServeWebUIOptions {
  *
  * @example
  * ```typescript
- * import { serveWebUI } from '@agi-cli/web-ui';
+ * import { serveWebUI } from '@ottocode/web-ui';
  *
  * Bun.serve({
  *   port: 3000,
@@ -97,7 +97,7 @@ function injectRuntimeConfig(
 	serverUrl: string,
 	basePath: string,
 ): string {
-	const runtimeScript = `<!-- AGI Server URL: ${serverUrl} --><script>window.AGI_SERVER_URL = ${JSON.stringify(serverUrl)};window.AGI_ROUTER_BASEPATH = ${JSON.stringify(basePath)};</script>`;
+	const runtimeScript = `<!-- otto server URL: ${serverUrl} --><script>window.OTTO_SERVER_URL = ${JSON.stringify(serverUrl)};window.OTTO_ROUTER_BASEPATH = ${JSON.stringify(basePath)};</script>`;
 	return html.replace('</head>', `${runtimeScript}</head>`);
 }
 

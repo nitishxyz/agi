@@ -2,7 +2,7 @@
  * Runtime debug state management
  *
  * Centralizes debug flag state that can be set either via:
- * - Environment variables (AGI_DEBUG, DEBUG_AGI)
+ * - Environment variables (OTTO_DEBUG, DEBUG_OTTO)
  * - Runtime configuration (CLI --debug flag)
  */
 
@@ -24,22 +24,22 @@ const state: DebugState = {
 };
 
 type GlobalDebugFlags = {
-	__AGI_DEBUG_ENABLED__?: boolean;
-	__AGI_TRACE_ENABLED__?: boolean;
+	__OTTO_DEBUG_ENABLED__?: boolean;
+	__OTTO_TRACE_ENABLED__?: boolean;
 };
 
 const globalFlags = globalThis as GlobalDebugFlags;
 
 function syncGlobalFlags() {
-	globalFlags.__AGI_DEBUG_ENABLED__ = state.enabled;
-	globalFlags.__AGI_TRACE_ENABLED__ = state.traceEnabled;
+	globalFlags.__OTTO_DEBUG_ENABLED__ = state.enabled;
+	globalFlags.__OTTO_TRACE_ENABLED__ = state.traceEnabled;
 }
 
 /**
  * Check if environment variables indicate debug mode
  */
 function checkEnvDebug(): boolean {
-	const sources = [process.env.AGI_DEBUG, process.env.DEBUG_AGI];
+	const sources = [process.env.OTTO_DEBUG, process.env.DEBUG_OTTO];
 	for (const value of sources) {
 		if (!value) continue;
 		const trimmed = value.trim().toLowerCase();
@@ -54,7 +54,7 @@ function checkEnvDebug(): boolean {
  * Check if environment variables indicate trace mode
  */
 function checkEnvTrace(): boolean {
-	const sources = [process.env.AGI_TRACE, process.env.TRACE_AGI];
+	const sources = [process.env.OTTO_TRACE, process.env.TRACE_OTTO];
 	for (const value of sources) {
 		if (!value) continue;
 		const trimmed = value.trim().toLowerCase();

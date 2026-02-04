@@ -1,5 +1,5 @@
 import { hasToolCall, streamText } from 'ai';
-import { messageParts } from '@agi-cli/database/schema';
+import { messageParts } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish, subscribe } from '../../events/bus.ts';
 import { debugLog, time } from '../debug/index.ts';

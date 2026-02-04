@@ -90,7 +90,7 @@ export { z } from 'zod';
 // Error Handling
 // =======================
 export {
-	AGIError,
+	OttoError,
 	AuthError,
 	ConfigError,
 	ToolError,

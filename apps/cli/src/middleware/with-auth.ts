@@ -2,7 +2,7 @@ import {
 	loadConfig,
 	isProviderAuthorized,
 	type ProviderId,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 import { runAuth } from '../auth.ts';
 
 export type WithAuthOptions = {

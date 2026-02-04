@@ -17,7 +17,7 @@ fn kill_orphan_servers() {
             let pids = String::from_utf8_lossy(&output.stdout);
             for pid in pids.lines() {
                 if let Ok(pid_num) = pid.trim().parse::<i32>() {
-                    eprintln!("[AGI] Killing orphan process {} on port {}", pid_num, port);
+                    eprintln!("[otto] Killing orphan process {} on port {}", pid_num, port);
                     let _ = Command::new("kill").arg("-9").arg(pid.trim()).output();
                 }
             }
@@ -54,12 +54,12 @@ fn get_initial_project(state: tauri::State<'_, InitialProjectState>) -> Option<S
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    eprintln!("[AGI] Cleaning up orphan servers on startup...");
+    eprintln!("[otto] Cleaning up orphan servers on startup...");
     kill_orphan_servers();
 
     let initial_project = parse_project_arg();
     if let Some(ref p) = initial_project {
-        eprintln!("[AGI] CLI requested project: {}", p);
+        eprintln!("[otto] CLI requested project: {}", p);
     }
 
     tauri::Builder::default()

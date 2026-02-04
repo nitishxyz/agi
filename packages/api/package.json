@@ -1,7 +1,7 @@
 {
-	"name": "@agi-cli/api",
+	"name": "@ottocode/api",
 	"version": "0.1.172",
-	"description": "Type-safe API client for AGI CLI server",
+	"description": "Type-safe API client for ottocode server",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -16,7 +16,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"keywords": [
-		"agi",
+		"otto",
 		"cli",
 		"api",
 		"client",
@@ -27,7 +27,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/nitishxyz/agi.git",
+		"url": "https://github.com/nitishxyz/otto.git",
 		"directory": "packages/api"
 	},
 	"dependencies": {

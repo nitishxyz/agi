@@ -1,8 +1,8 @@
 import type { Hono } from 'hono';
-import { loadConfig } from '@agi-cli/sdk';
-import type { ProviderId } from '@agi-cli/sdk';
+import { loadConfig } from '@ottocode/sdk';
+import type { ProviderId } from '@ottocode/sdk';
 import type { EmbeddedAppConfig } from '../../index.ts';
-import { logger } from '@agi-cli/sdk';
+import { logger } from '@ottocode/sdk';
 import { serializeError } from '../../runtime/errors/api-error.ts';
 import { getAuthorizedProviders, getDefault } from './utils.ts';
 

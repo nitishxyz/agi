@@ -1,5 +1,5 @@
-import type { Artifact } from '@agi-cli/sdk';
-import type { ProviderId } from '@agi-cli/sdk';
+import type { Artifact } from '@ottocode/sdk';
+import type { ProviderId } from '@ottocode/sdk';
 
 export type AskOptions = {
 	agent?: string;

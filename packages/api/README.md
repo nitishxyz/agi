@@ -1,6 +1,6 @@
-# @agi-cli/api
+# @ottocode/api
 
-Type-safe API client for AGI CLI server, generated from OpenAPI specification using [@hey-api/openapi-ts](https://heyapi.dev/openapi-ts/).
+Type-safe API client for ottocode server, generated from OpenAPI specification using [@hey-api/openapi-ts](https://heyapi.dev/openapi-ts/).
 
 ## Features
 
@@ -14,17 +14,17 @@ Type-safe API client for AGI CLI server, generated from OpenAPI specification us
 ## Installation
 
 ```bash
-npm install @agi-cli/api axios
+npm install @ottocode/api axios
 # or
-bun add @agi-cli/api axios
+bun add @ottocode/api axios
 # or
-pnpm add @agi-cli/api axios
+pnpm add @ottocode/api axios
 ```
 
 ## Quick Start
 
 ```typescript
-import { client, ask, listSessions } from '@agi-cli/api';
+import { client, ask, listSessions } from '@ottocode/api';
 
 // Configure the client once at app startup
 client.setConfig({
@@ -55,7 +55,7 @@ console.log('Sessions:', sessions.data);
 ### Basic Configuration
 
 ```typescript
-import { client } from '@agi-cli/api';
+import { client } from '@ottocode/api';
 
 client.setConfig({
   baseURL: 'http://localhost:3000',
@@ -67,7 +67,7 @@ client.setConfig({
 ### Advanced Configuration with Interceptors
 
 ```typescript
-import { client } from '@agi-cli/api';
+import { client } from '@ottocode/api';
 
 // Access the underlying Axios instance
 client.instance.interceptors.request.use((config) => {
@@ -88,7 +88,7 @@ client.instance.interceptors.response.use(
 ### Authentication
 
 ```typescript
-import { client } from '@agi-cli/api';
+import { client } from '@ottocode/api';
 
 // Configure auth token (will be added to requests that require auth)
 client.setConfig({
@@ -114,7 +114,7 @@ import {
   
   // Ask endpoint
   ask,
-} from '@agi-cli/api';
+} from '@ottocode/api';
 ```
 
 ## SSE Streaming
@@ -122,7 +122,7 @@ import {
 For endpoints that support Server-Sent Events:
 
 ```typescript
-import { createSSEStream } from '@agi-cli/api';
+import { createSSEStream } from '@ottocode/api';
 
 const stream = createSSEStream({
   url: 'http://localhost:3000/v1/sessions/session-123/stream',
@@ -141,7 +141,7 @@ stream.close();
 ## Error Handling
 
 ```typescript
-import { ask, isApiError, handleApiError } from '@agi-cli/api';
+import { ask, isApiError, handleApiError } from '@ottocode/api';
 
 const response = await ask({
   body: { prompt: 'Hello' },
@@ -197,7 +197,7 @@ export default defineConfig({
 ## Architecture
 
 ```
-@agi-cli/api/
+@ottocode/api/
 ├── src/
 │   ├── generated/          # Auto-generated files (don't edit!)
 │   │   ├── client.gen.ts   # Axios client instance
@@ -219,7 +219,7 @@ If you're migrating from the old Fetch-based client:
 
 ### Before (Legacy)
 ```typescript
-import { createApiClient } from '@agi-cli/api';
+import { createApiClient } from '@ottocode/api';
 
 const client = createApiClient({
   baseUrl: 'http://localhost:3000',
@@ -232,7 +232,7 @@ const response = await client.ask({
 
 ### After (New Axios Client)
 ```typescript
-import { client, ask } from '@agi-cli/api';
+import { client, ask } from '@ottocode/api';
 
 // Configure once at startup
 client.setConfig({

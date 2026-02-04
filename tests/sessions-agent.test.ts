@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { Hono } from 'hono';
-import { registerSessionsRoutes } from '@agi-cli/server';
+import { registerSessionsRoutes } from '@ottocode/server';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -15,7 +15,7 @@ async function createRequest(url: string, body: unknown) {
 
 describe('session creation respects agent provider/model', () => {
 	it('uses agent provider/model when request omits them', async () => {
-		const root = await mkdtemp(join(tmpdir(), 'agi-session-'));
+		const root = await mkdtemp(join(tmpdir(), 'otto-session-'));
 		const projectRoot = join(root, 'project');
 		const homeDir = join(root, 'home');
 		await mkdir(projectRoot, { recursive: true });
@@ -29,10 +29,10 @@ describe('session creation respects agent provider/model', () => {
 		process.env.XDG_CONFIG_HOME = join(homeDir, '.config');
 		process.env.ANTHROPIC_API_KEY = 'test-key';
 		try {
-			const projectAgi = join(projectRoot, '.agi');
-			await mkdir(projectAgi, { recursive: true });
+			const projectOtto = join(projectRoot, '.otto');
+			await mkdir(projectOtto, { recursive: true });
 			await writeFile(
-				join(projectAgi, 'agents.json'),
+				join(projectOtto, 'agents.json'),
 				JSON.stringify({
 					coder: {
 						provider: 'anthropic',

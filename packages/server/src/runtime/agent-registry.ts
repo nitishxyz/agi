@@ -1,4 +1,4 @@
-// Barrel export for backwards compatibility with @agi-cli/server/runtime/agent-registry
+// Barrel export for backwards compatibility with @ottocode/server/runtime/agent-registry
 export {
 	resolveAgentConfig,
 	defaultToolsForAgent,

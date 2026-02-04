@@ -5,7 +5,7 @@ import {
 	inferStatus as _inferStatus,
 	// @ts-expect-error internal testing
 	deriveStatusFromMessage as _derive,
-} from '@agi-cli/server';
+} from '@ottocode/server';
 
 describe('normalizeAskServiceError helpers', () => {
 	test('respects explicit status on error object', () => {

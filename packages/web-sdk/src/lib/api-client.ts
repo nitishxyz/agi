@@ -22,7 +22,7 @@ import {
 	type Message as ApiMessage,
 	type CreateSessionData,
 	type CreateMessageData,
-} from '@agi-cli/api';
+} from '@ottocode/api';
 import type {
 	Session,
 	Message,
@@ -51,7 +51,7 @@ import type {
 import { API_BASE_URL } from './config';
 
 interface WindowWithAgiServerUrl extends Window {
-	AGI_SERVER_URL?: string;
+	OTTO_SERVER_URL?: string;
 }
 
 /**
@@ -107,7 +107,7 @@ function extractErrorMessage(error: unknown): string {
  */
 export function configureApiClient() {
 	const win = window as WindowWithAgiServerUrl;
-	const baseURL = win.AGI_SERVER_URL || API_BASE_URL;
+	const baseURL = win.OTTO_SERVER_URL || API_BASE_URL;
 
 	client.setConfig({
 		baseURL,
@@ -152,8 +152,8 @@ class ApiClient {
 	private get baseUrl(): string {
 		// Always check for injected URL at runtime
 		const win = window as WindowWithAgiServerUrl;
-		if (win.AGI_SERVER_URL) {
-			return win.AGI_SERVER_URL;
+		if (win.OTTO_SERVER_URL) {
+			return win.OTTO_SERVER_URL;
 		}
 		return API_BASE_URL;
 	}

@@ -4,7 +4,7 @@ import { routeTree } from './routeTree.gen';
 const getBasePath = () => {
 	const injectedBasePath =
 		typeof globalThis !== 'undefined'
-			? (globalThis as { AGI_ROUTER_BASEPATH?: string }).AGI_ROUTER_BASEPATH
+			? (globalThis as { OTTO_ROUTER_BASEPATH?: string }).OTTO_ROUTER_BASEPATH
 			: undefined;
 	const fallback =
 		typeof import.meta !== 'undefined' ? import.meta.env.BASE_URL : '/';

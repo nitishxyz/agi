@@ -1,12 +1,12 @@
 [package]
-name = "agi-desktop"
+name = "otto-desktop"
 version = "0.1.0"
-description = "AGI Desktop - AI-powered development assistant"
+description = "otto desktop - AI-powered development assistant"
 authors = ["nitishxyz"]
 edition = "2021"
 
 [lib]
-name = "agi_desktop_lib"
+name = "otto_desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

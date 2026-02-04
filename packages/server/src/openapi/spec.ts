@@ -14,10 +14,10 @@ export function getOpenAPISpec() {
 	const spec = {
 		openapi: '3.0.3',
 		info: {
-			title: 'AGI Server API',
+			title: 'otto server API',
 			version: '0.1.0',
 			description:
-				'Server-side API for AGI sessions, messages, and streaming events. All AI work runs on the server. Streaming uses SSE.',
+				'Server-side API for otto sessions, messages, and streaming events. All AI work runs on the server. Streaming uses SSE.',
 		},
 		tags: [
 			{ name: 'sessions' },

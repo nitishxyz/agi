@@ -1,11 +1,11 @@
-# AGI CLI - API & Web UI Integration Example
+# ottocode - API & Web UI Integration Example
 
-This example demonstrates how to build a custom chat UI using both `@agi-cli/api` and `@agi-cli/web-ui` packages.
+This example demonstrates how to build a custom chat UI using both `@ottocode/api` and `@ottocode/web-ui` packages.
 
 ## What This Example Shows
 
-- ✅ Type-safe API calls with `@agi-cli/api`
-- ✅ Reusable UI components from `@agi-cli/web-ui`
+- ✅ Type-safe API calls with `@ottocode/api`
+- ✅ Reusable UI components from `@ottocode/web-ui`
 - ✅ React hooks for state management
 - ✅ Real-time SSE streaming
 - ✅ Session management
@@ -13,7 +13,7 @@ This example demonstrates how to build a custom chat UI using both `@agi-cli/api
 
 ## Prerequisites
 
-1. **AGI Server Running**: The AGI server must be running on port 9100
+1. **otto server Running**: The otto server must be running on port 9100
 2. **Bun or Node.js**: This example requires a JavaScript runtime
 
 ## Setup
@@ -22,9 +22,9 @@ This example demonstrates how to build a custom chat UI using both `@agi-cli/api
 # Install dependencies
 bun install
 
-# Make sure the AGI server is running
+# Make sure the otto server is running
 # In another terminal:
-bun run --filter @agi-cli/server dev
+bun run --filter @ottocode/server dev
 
 # Run the example (requires a bundler like Vite)
 bun run dev
@@ -35,7 +35,7 @@ bun run dev
 ### 1. API Client Setup
 
 ```typescript
-import { createApiClient } from '@agi-cli/api';
+import { createApiClient } from '@ottocode/api';
 
 const api = createApiClient({
   baseUrl: 'http://localhost:9100'
@@ -49,7 +49,7 @@ const session = await api.sessions.create({ agent: 'code' });
 ### 2. Using React Hooks
 
 ```typescript
-import { useSessions, useMessages, useSessionStream } from '@agi-cli/web-ui/hooks';
+import { useSessions, useMessages, useSessionStream } from '@ottocode/web-ui/hooks';
 
 function MyComponent() {
   const { sessions, loading, error } = useSessions('http://localhost:9100');
@@ -68,7 +68,7 @@ import {
   Card,
   ChatInput,
   SessionListContainer
-} from '@agi-cli/web-ui/components';
+} from '@ottocode/web-ui/components';
 
 function ChatUI() {
   return (
@@ -91,7 +91,7 @@ function ChatUI() {
 All API calls and components are fully typed:
 
 ```typescript
-import type { Session, Message } from '@agi-cli/api';
+import type { Session, Message } from '@ottocode/api';
 
 const session: Session = await api.sessions.create({
   agent: 'code',
@@ -139,16 +139,16 @@ For a production setup, you'd typically:
 4. Add loading states
 5. Handle edge cases
 
-See the main AGI CLI documentation for more details.
+See the main ottocode documentation for more details.
 
 ## Related Examples
 
-- [Basic CLI Bot](../basic-cli-bot) - Simple CLI bot using `@agi-cli/sdk`
+- [Basic CLI Bot](../basic-cli-bot) - Simple CLI bot using `@ottocode/sdk`
 - [Git Commit Helper](../git-commit-helper) - AI-powered commit message generator
 - [Embedded Web UI](../simple-embedded.ts) - Serving the full web UI
 
 ## Learn More
 
-- [@agi-cli/api Documentation](../../packages/api/README.md)
-- [@agi-cli/web-ui Documentation](../../packages/web-ui/README.md)
-- [AGI CLI Docs](../../docs/README.md)
+- [@ottocode/api Documentation](../../packages/api/README.md)
+- [@ottocode/web-ui Documentation](../../packages/web-ui/README.md)
+- [ottocode Docs](../../docs/README.md)

@@ -6,7 +6,7 @@
 
 ## Agents
 
-AGI ships with four built-in agents. Each agent has a system prompt and a curated set of tools.
+otto ships with four built-in agents. Each agent has a system prompt and a curated set of tools.
 
 ### build
 
@@ -15,8 +15,8 @@ Code generation, bug fixes, feature implementation. The most capable agent with 
 **Tools:** read, write, ls, tree, bash, update_todos, glob, ripgrep, git_status, terminal, apply_patch, websearch
 
 ```bash
-agi "create an auth component" --agent build
-agi "fix the failing test" --agent build
+otto "create an auth component" --agent build
+otto "fix the failing test" --agent build
 ```
 
 ### plan
@@ -26,8 +26,8 @@ Architecture planning and code analysis. Read-only — cannot modify files or ru
 **Tools:** read, ls, tree, ripgrep, update_todos, websearch
 
 ```bash
-agi "design the API architecture" --agent plan
-agi "review the dependency graph" --agent plan
+otto "design the API architecture" --agent plan
+otto "review the dependency graph" --agent plan
 ```
 
 ### general
@@ -37,7 +37,7 @@ General-purpose assistant for mixed tasks.
 **Tools:** read, write, ls, tree, bash, ripgrep, glob, websearch, update_todos
 
 ```bash
-agi "explain how this module works" --agent general
+otto "explain how this module works" --agent general
 ```
 
 ### research
@@ -47,7 +47,7 @@ Deep research across sessions and the web. Can query past sessions for context.
 **Tools:** read, ls, tree, ripgrep, websearch, update_todos, query_sessions, query_messages, get_session_context, search_history, get_parent_session, present_action
 
 ```bash
-agi "research how auth is implemented across the codebase" --agent research
+otto "research how auth is implemented across the codebase" --agent research
 ```
 
 All agents also receive: `progress_update`, `finish`, `skill`.
@@ -122,24 +122,24 @@ All agents also receive: `progress_update`, `finish`, `skill`.
 
 ### Per-Project
 
-Create `.agi/agents.json` in your project root:
+Create `.otto/agents.json` in your project root:
 
 ```json
 {
   "build": {
     "tools": ["read", "write", "bash", "git_status", "git_diff", "ripgrep"],
-    "prompt": ".agi/agents/build/agent.md"
+    "prompt": ".otto/agents/build/agent.md"
   },
   "custom-agent": {
     "tools": ["read", "ls", "tree", "ripgrep"],
-    "prompt": ".agi/agents/custom-agent/agent.md"
+    "prompt": ".otto/agents/custom-agent/agent.md"
   }
 }
 ```
 
 ### Global
 
-Create `~/.config/agi/agents.json` for global agent overrides.
+Create `~/.config/otto/agents.json` for global agent overrides.
 
 ### Options
 
@@ -155,11 +155,11 @@ Create `~/.config/agi/agents.json` for global agent overrides.
 
 ## Custom Tools
 
-Add project-specific tools in `.agi/tools/`:
+Add project-specific tools in `.otto/tools/`:
 
 ```typescript
-// .agi/tools/deploy.ts
-import { tool } from "@agi-cli/sdk";
+// .otto/tools/deploy.ts
+import { tool } from "@ottocode/sdk";
 import { z } from "zod";
 
 export default tool({
@@ -184,10 +184,10 @@ Custom tools are automatically discovered and made available to agents.
 Skills are markdown files that provide specialized instructions to agents on demand, loaded via the `skill` tool.
 
 Skills can be defined at three levels:
-- **Project:** `.agi/skills/`
-- **Global:** `~/.config/agi/skills/`
-- **Built-in:** bundled with AGI
+- **Project:** `.otto/skills/`
+- **Global:** `~/.config/otto/skills/`
+- **Built-in:** bundled with otto
 
 ```bash
-agi skills                    # list available skills
+otto skills                    # list available skills
 ```

@@ -1,5 +1,5 @@
-import type { getDb } from '@agi-cli/database';
-import { messages, messageParts } from '@agi-cli/database/schema';
+import type { getDb } from '@ottocode/database';
+import { messages, messageParts } from '@ottocode/database/schema';
 import { eq, asc, desc } from 'drizzle-orm';
 
 export async function buildCompactionContext(

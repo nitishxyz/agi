@@ -2,24 +2,24 @@
 
 [← Back to README](../README.md) • [Docs Index](./index.md)
 
-AGI uses a flexible configuration system with three priority levels:
+otto uses a flexible configuration system with three priority levels:
 
 1. **Injected config** (for embedded mode) - Highest priority
 2. **Environment variables** - Middle priority  
-3. **Config files** (`.agi/` directory) - Fallback
+3. **Config files** (`.otto/` directory) - Fallback
 
-This allows AGI to work in CLI mode, embedded applications, CI/CD, and hybrid environments.
+This allows otto to work in CLI mode, embedded applications, CI/CD, and hybrid environments.
 
 ## Configuration Priority
 
-When AGI needs a configuration value, it checks in this order:
+When otto needs a configuration value, it checks in this order:
 
 ```
 1. Injected config (createEmbeddedApp({ ... }))
    ↓ if not found
-2. Environment variables (OPENAI_API_KEY, AGI_PROVIDER, etc.)
+2. Environment variables (OPENAI_API_KEY, OTTO_PROVIDER, etc.)
    ↓ if not found  
-3. Config files (~/.config/agi/auth.json, .agi/config.json)
+3. Config files (~/.config/otto/auth.json, .otto/config.json)
    ↓ if not found
 4. Built-in defaults
 ```
@@ -27,12 +27,12 @@ When AGI needs a configuration value, it checks in this order:
 ## Directory Structure
 
 ```
-~/.config/agi/           # Global configuration
+~/.config/otto/           # Global configuration
 ├── auth.json            # API keys (secure, 0600 permissions)
 └── config.json          # Global defaults
 
-.agi/                    # Project-specific configuration
-├── agi.sqlite           # Local conversation history database
+.otto/                    # Project-specific configuration
+├── otto.sqlite           # Local conversation history database
 ├── config.json          # Project configuration
 ├── agents.json          # Agent customizations
 ├── agents/              # Custom agent prompts
@@ -51,7 +51,7 @@ When AGI needs a configuration value, it checks in this order:
 
 ## Configuration Files
 
-### Global Auth: `~/.config/agi/auth.json`
+### Global Auth: `~/.config/otto/auth.json`
 
 API keys stored securely (file permissions: 0600):
 
@@ -68,7 +68,7 @@ API keys stored securely (file permissions: 0600):
 }
 ```
 
-### Global Config: `~/.config/agi/config.json`
+### Global Config: `~/.config/otto/config.json`
 
 User-wide defaults:
 
@@ -82,7 +82,7 @@ User-wide defaults:
 }
 ```
 
-### Project Config: `.agi/config.json`
+### Project Config: `.otto/config.json`
 
 Project-specific overrides:
 
@@ -101,13 +101,13 @@ Project-specific overrides:
 }
 ```
 
-### Agent Customization: `.agi/agents.json`
+### Agent Customization: `.otto/agents.json`
 
 ```json
 {
   "build": {
     "tools": ["read", "write", "bash", "git_*"],
-    "prompt": ".agi/agents/build/agent.md"
+    "prompt": ".otto/agents/build/agent.md"
   },
   "test": {
     "tools": ["read", "bash"],
@@ -118,7 +118,7 @@ Project-specific overrides:
 
 ## Environment Variables
 
-AGI reads these environment variables (falls back to files if not set):
+otto reads these environment variables (falls back to files if not set):
 
 ```bash
 # Provider API keys
@@ -129,17 +129,17 @@ OPENROUTER_API_KEY=...
 OPENCODE_API_KEY=...
 
 # Optional: Default provider/model/agent
-AGI_PROVIDER=openai
-AGI_MODEL=gpt-4
-AGI_AGENT=build
+OTTO_PROVIDER=openai
+OTTO_MODEL=gpt-4
+OTTO_AGENT=build
 ```
 
 ## Embedded Mode
 
-When embedding AGI in your application, inject config directly:
+When embedding otto in your application, inject config directly:
 
 ```typescript
-import { createEmbeddedApp } from '@agi-cli/server';
+import { createEmbeddedApp } from '@ottocode/server';
 
 const app = createEmbeddedApp({
   provider: 'openai',

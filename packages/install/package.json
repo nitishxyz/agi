@@ -1,17 +1,17 @@
 {
-	"name": "@agi-cli/install",
+	"name": "@ottocode/install",
 	"version": "0.1.172",
 	"description": "AI-powered development assistant CLI - npm installer",
 	"author": "nitishxyz",
 	"license": "MIT",
-	"homepage": "https://github.com/nitishxyz/agi#readme",
+	"homepage": "https://github.com/nitishxyz/otto#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/nitishxyz/agi.git",
+		"url": "git+https://github.com/nitishxyz/otto.git",
 		"directory": "packages/install"
 	},
 	"bugs": {
-		"url": "https://github.com/nitishxyz/agi/issues"
+		"url": "https://github.com/nitishxyz/otto/issues"
 	},
 	"keywords": [
 		"ai",
@@ -25,7 +25,7 @@
 	],
 	"type": "module",
 	"bin": {
-		"agi": "./start.js"
+		"otto": "./start.js"
 	},
 	"files": [
 		"start.js",

@@ -1,5 +1,5 @@
 /**
- * @agi-cli/api - Type-safe API client for AGI CLI server
+ * @ottocode/api - Type-safe API client for ottocode server
  *
  * This package provides a fully typed API client generated from the OpenAPI spec
  * using @hey-api/openapi-ts with Axios client support.
@@ -37,7 +37,7 @@ export type { ApiError } from './utils';
  * Quick Start Example:
  *
  * ```typescript
- * import { client, getSessions } from '@agi-cli/api';
+ * import { client, getSessions } from '@ottocode/api';
  *
  * // Configure the client
  * client.setConfig({

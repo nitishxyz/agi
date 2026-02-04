@@ -1,7 +1,7 @@
 {
-	"name": "@agi-cli/database",
+	"name": "@ottocode/database",
 	"version": "0.1.172",
-	"description": "Database and persistence layer for AGI CLI",
+	"description": "Database and persistence layer for ottocode",
 	"type": "module",
 	"main": "./src/index.ts",
 	"types": "./src/index.ts",
@@ -22,7 +22,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@agi-cli/sdk": "workspace:*",
+		"@ottocode/sdk": "workspace:*",
 		"drizzle-orm": "^0.44.5"
 	},
 	"devDependencies": {

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { router } from './router';
-import { apiClient } from '@agi-cli/web-sdk/lib';
+import { apiClient } from '@ottocode/web-sdk/lib';
 
 const queryClient = new QueryClient({
 	defaultOptions: {

@@ -1,8 +1,8 @@
 import { memo, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronRight, Plus, X } from 'lucide-react';
-import { useGitStore, useSidebarStore } from '@agi-cli/web-sdk/stores';
-import { Button } from '@agi-cli/web-sdk/components';
+import { useGitStore, useSidebarStore } from '@ottocode/web-sdk/stores';
+import { Button } from '@ottocode/web-sdk/components';
 
 interface SidebarProps {
 	children: ReactNode;
@@ -89,7 +89,7 @@ export const Sidebar = memo(function Sidebar({
 					>
 						<X className="w-5 h-5" />
 					</Button>
-					<h1 className="text-lg font-semibold text-foreground flex-1">AGI</h1>
+					<h1 className="text-lg font-semibold text-foreground flex-1">otto</h1>
 				</div>
 
 				{/* Desktop/Mobile "New Session" button area */}

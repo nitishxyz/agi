@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import { setDebugEnabled, setTraceEnabled } from '@agi-cli/server';
-import { logger } from '@agi-cli/sdk';
+import { setDebugEnabled, setTraceEnabled } from '@ottocode/server';
+import { logger } from '@ottocode/sdk';
 import {
 	registerServeCommand,
 	registerAskCommand,
@@ -25,7 +25,7 @@ export function createCli(version: string): Command {
 	const program = new Command();
 
 	program
-		.name('agi')
+		.name('otto')
 		.description('AI-powered development assistant CLI')
 		.version(version, '-v, --version', 'Print version and exit')
 		.option('--debug', 'Enable debug logging')
@@ -106,7 +106,7 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 		if (!noDesktop && isDesktopInstalled()) {
 			console.log('');
 			console.log(
-				colors.bold('  ⚡ AGI') + colors.dim(' — Opening desktop app...'),
+				colors.bold('  ⚡ otto') + colors.dim(' — Opening desktop app...'),
 			);
 			console.log('');
 			const opened = openDesktop(projectRoot);

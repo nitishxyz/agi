@@ -1,7 +1,7 @@
 use keyring::Entry;
 use serde::{Deserialize, Serialize};
 
-const KEYRING_SERVICE: &str = "agi-desktop";
+const KEYRING_SERVICE: &str = "otto-desktop";
 const KEYRING_GITHUB_USER: &str = "github-token";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -59,7 +59,7 @@ pub async fn github_get_user(token: String) -> Result<GitHubUser, String> {
     let response = client
         .get("https://api.github.com/user")
         .header("Authorization", format!("Bearer {}", token))
-        .header("User-Agent", "agi-desktop")
+        .header("User-Agent", "otto-desktop")
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -78,7 +78,7 @@ pub async fn github_list_repos(token: String) -> Result<Vec<GitHubRepo>, String>
     let response = client
         .get("https://api.github.com/user/repos?sort=updated&per_page=50")
         .header("Authorization", format!("Bearer {}", token))
-        .header("User-Agent", "agi-desktop")
+        .header("User-Agent", "otto-desktop")
         .send()
         .await
         .map_err(|e| e.to_string())?;

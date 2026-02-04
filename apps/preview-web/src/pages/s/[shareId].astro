@@ -4,7 +4,7 @@ import ChatPreviewWrapper from '../../components/ChatPreviewWrapper';
 
 const { shareId } = Astro.params;
 const API_URL =
-	import.meta.env.PUBLIC_API_URL || 'https://api.share.agi.nitish.sh';
+	import.meta.env.PUBLIC_API_URL || 'https://api.share.ottocode.io';
 
 let data: {
 	shareId: string;
@@ -33,7 +33,7 @@ try {
 	error = 'Failed to connect to API';
 }
 
-const pageTitle = data?.title || 'AGI Session';
+const pageTitle = data?.title || 'otto session';
 const pageDescription =
 	data?.description ||
 	(data
@@ -42,7 +42,7 @@ const pageDescription =
 const ogImageUrl = `${API_URL}/og/${shareId}`;
 ---
 
-<Layout title={`${pageTitle} | AGI Share`}>
+<Layout title={`${pageTitle} | otto share`}>
 	<Fragment slot="head">
 		<meta property="og:title" content={pageTitle} />
 		<meta property="og:description" content={pageDescription} />

@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
-import { loadConfig, type ProviderId } from '@agi-cli/sdk';
-import { getDb } from '@agi-cli/database';
+import { loadConfig, type ProviderId } from '@ottocode/sdk';
+import { getDb } from '@ottocode/database';
 import { intro, outro, text, isCancel, cancel } from '@clack/prompts';
 import { runAsk } from '../ask.ts';
 import { ensureAuth } from '../middleware/with-auth.ts';
@@ -34,7 +34,7 @@ export async function handleAsk(prompt: string | undefined, opts: AskOptions) {
 	const cfg = await loadConfig(projectRoot);
 	await getDb(cfg.projectRoot);
 
-	intro('agi ask');
+	intro('otto ask');
 	const input = await text({ message: 'What would you like to ask?' });
 	if (isCancel(input)) return cancel('Cancelled');
 	const userPrompt = String(input ?? '').trim();

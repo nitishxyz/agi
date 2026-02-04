@@ -5,8 +5,8 @@ import {
 	getAuth,
 	loadConfig,
 	fetchSolanaUsdcBalance,
-} from '@agi-cli/sdk';
-import { logger } from '@agi-cli/sdk';
+} from '@ottocode/sdk';
+import { logger } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
 import { Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';

@@ -9,7 +9,7 @@ pub async fn create_new_window(app: AppHandle) -> Result<(), String> {
     let label = format!("main-{}", count);
 
     let builder = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App("index.html".into()))
-        .title("AGI")
+        .title("otto")
         .inner_size(1200.0, 800.0)
         .min_inner_size(800.0, 600.0)
         .resizable(true)

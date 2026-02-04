@@ -4,17 +4,17 @@ import {
 	isProviderAuthorized,
 	getGlobalAgentsDir,
 	getAuth,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { EmbeddedAppConfig } from '../../index.ts';
-import type { AGIConfig } from '@agi-cli/sdk';
-import { logger } from '@agi-cli/sdk';
+import type { OttoConfig } from '@ottocode/sdk';
+import { logger } from '@ottocode/sdk';
 import { loadAgentsConfig } from '../../runtime/agent/registry.ts';
 
 export async function isProviderAuthorizedHybrid(
 	embeddedConfig: EmbeddedAppConfig | undefined,
-	fileConfig: AGIConfig,
+	fileConfig: OttoConfig,
 	provider: ProviderId,
 ): Promise<boolean> {
 	const hasEmbeddedAuth =
@@ -30,7 +30,7 @@ export async function isProviderAuthorizedHybrid(
 
 export async function getAuthorizedProviders(
 	embeddedConfig: EmbeddedAppConfig | undefined,
-	fileConfig: AGIConfig,
+	fileConfig: OttoConfig,
 ): Promise<ProviderId[]> {
 	const allProviders = Object.keys(catalog) as ProviderId[];
 	const authorizedProviders: ProviderId[] = [];
@@ -87,7 +87,7 @@ export async function discoverAllAgents(
 	}
 
 	try {
-		const localAgentsPath = join(projectRoot, '.agi', 'agents');
+		const localAgentsPath = join(projectRoot, '.otto', 'agents');
 		const localFiles = await readdir(localAgentsPath).catch(() => []);
 		for (const file of localFiles) {
 			if (file.endsWith('.txt') || file.endsWith('.md')) {

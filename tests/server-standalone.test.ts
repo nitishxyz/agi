@@ -3,7 +3,7 @@ import {
 	createApp,
 	createStandaloneApp,
 	createEmbeddedApp,
-} from '@agi-cli/server';
+} from '@ottocode/server';
 
 describe('Server Factory Functions', () => {
 	describe('createApp', () => {
@@ -32,31 +32,31 @@ describe('Server Factory Functions', () => {
 		});
 
 		test('creates standalone app with env var defaults', () => {
-			const originalProvider = process.env.AGI_PROVIDER;
-			const originalModel = process.env.AGI_MODEL;
-			const originalAgent = process.env.AGI_AGENT;
+			const originalProvider = process.env.OTTO_PROVIDER;
+			const originalModel = process.env.OTTO_MODEL;
+			const originalAgent = process.env.OTTO_AGENT;
 
-			process.env.AGI_PROVIDER = 'anthropic';
-			process.env.AGI_MODEL = 'claude-sonnet-4';
-			process.env.AGI_AGENT = 'build';
+			process.env.OTTO_PROVIDER = 'anthropic';
+			process.env.OTTO_MODEL = 'claude-sonnet-4';
+			process.env.OTTO_AGENT = 'build';
 
 			const app = createStandaloneApp();
 			expect(app).toBeDefined();
 
 			if (originalProvider !== undefined) {
-				process.env.AGI_PROVIDER = originalProvider;
+				process.env.OTTO_PROVIDER = originalProvider;
 			} else {
-				delete process.env.AGI_PROVIDER;
+				delete process.env.OTTO_PROVIDER;
 			}
 			if (originalModel !== undefined) {
-				process.env.AGI_MODEL = originalModel;
+				process.env.OTTO_MODEL = originalModel;
 			} else {
-				delete process.env.AGI_MODEL;
+				delete process.env.OTTO_MODEL;
 			}
 			if (originalAgent !== undefined) {
-				process.env.AGI_AGENT = originalAgent;
+				process.env.OTTO_AGENT = originalAgent;
 			} else {
-				delete process.env.AGI_AGENT;
+				delete process.env.OTTO_AGENT;
 			}
 		});
 	});
@@ -106,7 +106,7 @@ describe('AskService with Config Injection', () => {
 	});
 
 	test('accepts skipFileConfig flag', async () => {
-		const { handleAskRequest } = await import('@agi-cli/server');
+		const { handleAskRequest } = await import('@ottocode/server');
 
 		process.env.OPENAI_API_KEY = 'sk-test-mock-key';
 
@@ -125,7 +125,7 @@ describe('AskService with Config Injection', () => {
 	});
 
 	test('accepts injected config with apiKey', async () => {
-		const { handleAskRequest } = await import('@agi-cli/server');
+		const { handleAskRequest } = await import('@ottocode/server');
 
 		try {
 			await handleAskRequest({
@@ -143,7 +143,7 @@ describe('AskService with Config Injection', () => {
 	});
 
 	test('accepts credentials object', async () => {
-		const { handleAskRequest } = await import('@agi-cli/server');
+		const { handleAskRequest } = await import('@ottocode/server');
 
 		try {
 			await handleAskRequest({
@@ -161,7 +161,7 @@ describe('AskService with Config Injection', () => {
 	});
 
 	test('accepts inline agent prompt', async () => {
-		const { handleAskRequest } = await import('@agi-cli/server');
+		const { handleAskRequest } = await import('@ottocode/server');
 
 		process.env.OPENAI_API_KEY = 'sk-test-agent-key';
 
@@ -182,7 +182,7 @@ describe('AskService with Config Injection', () => {
 	});
 
 	test('accepts custom tools array', async () => {
-		const { handleAskRequest } = await import('@agi-cli/server');
+		const { handleAskRequest } = await import('@ottocode/server');
 
 		process.env.OPENAI_API_KEY = 'sk-test-tools-key';
 
@@ -205,7 +205,7 @@ describe('AskService with Config Injection', () => {
 
 describe('Agent Config Injection', () => {
 	test('resolveAgentConfig accepts inline config', async () => {
-		const { resolveAgentConfig } = await import('@agi-cli/server');
+		const { resolveAgentConfig } = await import('@ottocode/server');
 
 		const config = await resolveAgentConfig(process.cwd(), 'test-agent', {
 			prompt: 'Inline test prompt',
@@ -223,7 +223,7 @@ describe('Agent Config Injection', () => {
 	});
 
 	test('resolveAgentConfig falls back to files when no inline config', async () => {
-		const { resolveAgentConfig } = await import('@agi-cli/server');
+		const { resolveAgentConfig } = await import('@ottocode/server');
 
 		const config = await resolveAgentConfig(process.cwd(), 'general');
 

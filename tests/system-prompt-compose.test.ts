@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { composeSystemPrompt } from '@agi-cli/server';
+import { composeSystemPrompt } from '@ottocode/server';
 
 describe('system prompt composition', () => {
 	it('injects one-shot override when enabled', async () => {

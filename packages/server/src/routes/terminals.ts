@@ -1,7 +1,7 @@
 import type { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import type { TerminalManager } from '@agi-cli/sdk';
-import { logger } from '@agi-cli/sdk';
+import type { TerminalManager } from '@ottocode/sdk';
+import { logger } from '@ottocode/sdk';
 
 export function registerTerminalsRoutes(
 	app: Hono,

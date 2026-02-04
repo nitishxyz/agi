@@ -308,7 +308,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 				<div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border">
 					<div className="flex items-center gap-3">
 						<ProviderLogo provider="setu" size={24} />
-						<span className="font-semibold text-foreground">AGI</span>
+						<span className="font-semibold text-foreground">otto</span>
 					</div>
 					{!manageMode && (
 						<div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -327,7 +327,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 					{/* Header */}
 					<div className="mb-10">
 						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-foreground mb-3">
-							{manageMode ? 'Manage Providers' : 'Welcome to AGI'}
+							{manageMode ? 'Manage Providers' : 'Welcome to otto'}
 						</h1>
 						<p className="text-lg text-muted-foreground max-w-2xl">
 							{manageMode

@@ -1,14 +1,14 @@
 import type { Tool } from 'ai';
-import { messageParts, sessions } from '@agi-cli/database/schema';
+import { messageParts, sessions } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish } from '../events/bus.ts';
-import type { DiscoveredTool } from '@agi-cli/sdk';
+import type { DiscoveredTool } from '@ottocode/sdk';
 import { getCwd, setCwd, joinRelative } from '../runtime/utils/cwd.ts';
 import type {
 	ToolAdapterContext,
 	StepExecutionState,
 } from '../runtime/tools/context.ts';
-import { isToolError } from '@agi-cli/sdk/tools/error';
+import { isToolError } from '@ottocode/sdk/tools/error';
 import {
 	toClaudeCodeName,
 	requiresClaudeCodeNaming,

@@ -1,6 +1,6 @@
-import { loadConfig } from '@agi-cli/sdk';
-import { resolveAgentConfig } from '@agi-cli/server/runtime/agent-registry';
-import { discoverProjectTools } from '@agi-cli/sdk';
+import { loadConfig } from '@ottocode/sdk';
+import { resolveAgentConfig } from '@ottocode/server/runtime/agent-registry';
+import { discoverProjectTools } from '@ottocode/sdk';
 import { box, table } from './ui.ts';
 
 export async function runToolsList(opts: { project?: string } = {}) {
@@ -28,7 +28,7 @@ async function collectAgents(projectRoot: string): Promise<string[]> {
 	// Known defaults plus project-defined ones (from agents.json keys)
 	const defaults = ['general', 'build', 'plan', 'git'];
 	try {
-		const f = Bun.file(`${projectRoot}/.agi/agents.json`);
+		const f = Bun.file(`${projectRoot}/.otto/agents.json`);
 		const json = (await f.json().catch(() => ({}))) as Record<string, unknown>;
 		const keys = Object.keys(json);
 		return Array.from(new Set([...defaults, ...keys]));

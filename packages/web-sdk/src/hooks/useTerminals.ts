@@ -4,7 +4,7 @@ import {
 	postTerminals,
 	deleteTerminalsById,
 	getTerminalsById,
-} from '@agi-cli/api';
+} from '@ottocode/api';
 
 export interface Terminal {
 	id: string;

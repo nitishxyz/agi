@@ -3,7 +3,7 @@
 /**
  * Basic CLI Bot Example
  *
- * Demonstrates the simplest possible use of the AGI SDK:
+ * Demonstrates the simplest possible use of the otto SDK:
  * - Model resolution
  * - Text generation
  * - Command-line interface
@@ -13,7 +13,7 @@
  *   PROVIDER=openai MODEL=gpt-4o bun run index.ts "Your question"
  */
 
-import { generateText, resolveModel, type ProviderId } from '@agi-cli/sdk';
+import { generateText, resolveModel, type ProviderId } from '@ottocode/sdk';
 
 async function main() {
 	// Get question from command line arguments

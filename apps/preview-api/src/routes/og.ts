@@ -32,7 +32,7 @@ ogRoutes.get('/:shareId', async (c) => {
 
 	const params = new URLSearchParams({
 		shareId,
-		title: session.title || 'AGI Session',
+		title: session.title || 'otto session',
 		username: data.username || 'anonymous',
 		model: data.model,
 		provider: data.provider,

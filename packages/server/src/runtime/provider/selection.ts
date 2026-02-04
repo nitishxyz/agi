@@ -1,4 +1,4 @@
-import type { AGIConfig } from '@agi-cli/sdk';
+import type { OttoConfig } from '@ottocode/sdk';
 import {
 	catalog,
 	type ProviderId,
@@ -6,7 +6,7 @@ import {
 	providerIds,
 	defaultModelFor,
 	hasModel,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 
 const FALLBACK_ORDER: ProviderId[] = [
 	'anthropic',
@@ -18,7 +18,7 @@ const FALLBACK_ORDER: ProviderId[] = [
 ];
 
 type SelectionInput = {
-	cfg: AGIConfig;
+	cfg: OttoConfig;
 	agentProviderDefault: ProviderId;
 	agentModelDefault: string;
 	explicitProvider?: ProviderId;
@@ -54,7 +54,7 @@ export async function selectProviderAndModel(
 
 	if (!provider) {
 		throw new Error(
-			'No authorized providers found. Run `agi auth login` to configure at least one provider.',
+			'No authorized providers found. Run `otto auth login` to configure at least one provider.',
 		);
 	}
 
@@ -74,7 +74,7 @@ export async function selectProviderAndModel(
 }
 
 async function pickAuthorizedProvider(args: {
-	cfg: AGIConfig;
+	cfg: OttoConfig;
 	candidate: ProviderId;
 }): Promise<ProviderId | undefined> {
 	const { cfg, candidate } = args;

@@ -19,10 +19,10 @@ echo ""
 echo "3️⃣ Testing CLI build..."
 cd apps/cli
 mkdir -p dist
-bun build --compile ./index.ts --outfile dist/agi 2>&1 | tail -5 || echo "Build attempted"
-if [ -f dist/agi ]; then
+bun build --compile ./index.ts --outfile dist/otto 2>&1 | tail -5 || echo "Build attempted"
+if [ -f dist/otto ]; then
   echo "✅ CLI binary built successfully!"
-  ls -lh dist/agi
+  ls -lh dist/otto
 else
   echo "⚠️ CLI binary not created (may have errors to fix)"
 fi
@@ -51,4 +51,4 @@ echo ""
 echo "Next steps:"
 echo "  1. Run: cd apps/cli && bun run dev --help"
 echo "  2. Build: cd apps/cli && bun run build"
-echo "  3. Test binary: ./apps/cli/dist/agi --version"
+echo "  3. Test binary: ./apps/cli/dist/otto --version"

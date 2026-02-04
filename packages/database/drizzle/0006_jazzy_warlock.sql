@@ -1,1 +1,0 @@
-ALTER TABLE `message_parts` ADD `compacted_at` integer;

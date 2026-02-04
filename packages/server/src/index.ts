@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import type { ProviderId, AuthInfo } from '@agi-cli/sdk';
-import { TerminalManager } from '@agi-cli/sdk';
-import { setTerminalManager } from '@agi-cli/sdk';
+import type { ProviderId, AuthInfo } from '@ottocode/sdk';
+import { TerminalManager } from '@ottocode/sdk';
+import { setTerminalManager } from '@ottocode/sdk';
 import { registerRootRoutes } from './routes/root.ts';
 import { registerOpenApiRoute } from './routes/openapi.ts';
 import { registerSessionsRoutes } from './routes/sessions.ts';
@@ -168,7 +168,7 @@ export type EmbeddedAppConfig = {
 	agent?: string;
 	/** Multi-provider auth (optional - falls back to auth.json) */
 	auth?: Record<string, { apiKey: string } | AuthInfo>;
-	/** Custom agents (optional - falls back to .agi/agents/) */
+	/** Custom agents (optional - falls back to .otto/agents/) */
 	agents?: Record<
 		string,
 		Omit<AgentConfigEntry, 'tools'> & { tools?: readonly string[] | string[] }
@@ -278,4 +278,4 @@ export {
 	setTraceEnabled,
 	isTraceEnabled,
 } from './runtime/debug/state.ts';
-export { logger } from '@agi-cli/sdk';
+export { logger } from '@ottocode/sdk';

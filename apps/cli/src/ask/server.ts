@@ -1,4 +1,4 @@
-import { createApp } from '@agi-cli/server';
+import { createApp } from '@ottocode/server';
 
 let currentServer: ReturnType<typeof Bun.serve> | null = null;
 
@@ -10,7 +10,7 @@ export async function startEphemeralServer(): Promise<string> {
 }
 
 export async function getOrStartServerUrl(): Promise<string> {
-	if (process.env.AGI_SERVER_URL) return String(process.env.AGI_SERVER_URL);
+	if (process.env.OTTO_SERVER_URL) return String(process.env.OTTO_SERVER_URL);
 	return await startEphemeralServer();
 }
 

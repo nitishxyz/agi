@@ -26,9 +26,9 @@ export type PathConfig = {
 };
 
 /**
- * Complete AGI configuration object
+ * Complete otto configuration object
  */
-export type AGIConfig = {
+export type OttoConfig = {
 	projectRoot: string;
 	defaults: DefaultConfig;
 	paths: PathConfig;

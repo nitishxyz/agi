@@ -1,23 +1,23 @@
-# @agi-cli/install
+# @ottocode/install
 
-This is a thin installer package for the agi CLI tool.
+This is a thin installer package for the otto CLI tool.
 
 ## Installation
 
 ```bash
-npm install -g @agi-cli/install
+npm install -g @ottocode/install
 # or
-bun install -g @agi-cli/install
+bun install -g @ottocode/install
 ```
 
-This will automatically download and install the agi CLI binary via the official install script.
+This will automatically download and install the otto CLI binary via the official install script.
 
 ## Usage
 
-After installation, you can use the `agi` command:
+After installation, you can use the `otto` command:
 
 ```bash
-agi --help
+otto --help
 ```
 
 ## Manual Installation
@@ -25,9 +25,9 @@ agi --help
 If you prefer to install manually:
 
 ```bash
-curl -fsSL https://install.agi.nitish.sh | sh
+curl -fsSL https://install.ottocode.io | sh
 ```
 
 ## More Information
 
-For more information, visit: https://github.com/nitishxyz/agi
+For more information, visit: https://github.com/nitishxyz/otto

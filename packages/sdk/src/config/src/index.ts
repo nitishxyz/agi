@@ -5,11 +5,11 @@ import {
 	fileExists,
 	joinPath,
 } from './paths.ts';
-import type { AGIConfig } from '../../types/src/index.ts';
+import type { OttoConfig } from '../../types/src/index.ts';
 
-export type { AGIConfig } from '../../types/src/index.ts';
+export type { OttoConfig } from '../../types/src/index.ts';
 
-const DEFAULTS: { defaults: AGIConfig['defaults'] } = {
+const DEFAULTS: { defaults: OttoConfig['defaults'] } = {
 	defaults: {
 		agent: 'build',
 		provider: 'setu',
@@ -20,13 +20,13 @@ const DEFAULTS: { defaults: AGIConfig['defaults'] } = {
 
 export async function loadConfig(
 	projectRootInput?: string,
-): Promise<AGIConfig> {
+): Promise<OttoConfig> {
 	const projectRoot = projectRootInput
 		? String(projectRootInput)
 		: process.cwd();
 
 	const dataDir = getLocalDataDir(projectRoot);
-	const dbPath = joinPath(dataDir, 'agi.sqlite');
+	const dbPath = joinPath(dataDir, 'otto.sqlite');
 	const projectConfigPath = joinPath(dataDir, 'config.json');
 	const globalConfigPath = getGlobalConfigPath();
 
@@ -39,7 +39,7 @@ export async function loadConfig(
 
 	return {
 		projectRoot,
-		defaults: merged.defaults as AGIConfig['defaults'],
+		defaults: merged.defaults as OttoConfig['defaults'],
 		paths: {
 			dataDir,
 			dbPath,
@@ -50,7 +50,7 @@ export async function loadConfig(
 				? globalConfigPath
 				: null,
 		},
-	} satisfies AGIConfig;
+	} satisfies OttoConfig;
 }
 
 type JsonObject = Record<string, unknown>;

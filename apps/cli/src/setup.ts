@@ -7,12 +7,12 @@ import {
 	isCancel,
 	cancel,
 } from '@clack/prompts';
-import { loadConfig } from '@agi-cli/sdk';
-import { catalog, type ProviderId } from '@agi-cli/sdk';
+import { loadConfig } from '@ottocode/sdk';
+import { catalog, type ProviderId } from '@ottocode/sdk';
 
 export async function runSetup(projectRoot?: string) {
 	const cfg = await loadConfig(projectRoot);
-	intro('AGI setup');
+	intro('otto setup');
 
 	const providersPicked = (await multiselect({
 		message: 'Enable providers:',

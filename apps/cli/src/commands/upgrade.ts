@@ -1,8 +1,8 @@
 import type { Command } from 'commander';
 import { spawn } from 'node:child_process';
 
-const INSTALL_URL = 'https://install.agi.nitish.sh';
-const GITHUB_REPO = 'nitishxyz/agi';
+const INSTALL_URL = 'https://install.ottocode.io';
+const GITHUB_REPO = 'nitishxyz/otto';
 
 async function fetchLatestVersion(): Promise<string | null> {
 	try {
@@ -18,11 +18,11 @@ async function fetchLatestVersion(): Promise<string | null> {
 			prerelease?: boolean;
 		}[];
 
-		// Filter to CLI releases only (have agi-* assets, not desktop)
+		// Filter to CLI releases only (have otto-* assets, not desktop)
 		const cliReleases = releases.filter((r) => {
 			if (r.draft || r.prerelease) return false;
 			if (!r.tag_name?.match(/^v\d/)) return false;
-			return r.assets?.some((a) => a.name.startsWith('agi-'));
+			return r.assets?.some((a) => a.name.startsWith('otto-'));
 		});
 
 		if (cliReleases.length === 0) return null;
@@ -61,7 +61,7 @@ async function runUpgrade(version: string): Promise<void> {
 		const child = spawn(`curl -fsSL ${INSTALL_URL} | sh`, [], {
 			stdio: 'inherit',
 			shell: true,
-			env: { ...process.env, AGI_VERSION: `v${version}` },
+			env: { ...process.env, OTTO_VERSION: `v${version}` },
 		});
 		child.on('close', (code) => {
 			if (code === 0) resolve();
@@ -74,7 +74,7 @@ async function runUpgrade(version: string): Promise<void> {
 export function registerUpgradeCommand(program: Command, version: string) {
 	program
 		.command('upgrade')
-		.description('Check for updates and upgrade agi')
+		.description('Check for updates and upgrade otto')
 		.option('-c, --check', 'Only check for updates, do not install')
 		.action(async (opts) => {
 			console.log(`Current version: ${version}`);
@@ -96,7 +96,7 @@ export function registerUpgradeCommand(program: Command, version: string) {
 			console.log(`\nUpdate available: ${version} → ${latest}`);
 
 			if (opts.check) {
-				console.log(`\nRun 'agi upgrade' to install`);
+				console.log(`\nRun 'otto upgrade' to install`);
 				return;
 			}
 

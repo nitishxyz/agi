@@ -15,8 +15,8 @@ import { get } from 'node:https';
 import { homedir, platform, arch } from 'node:os';
 import { spawnSync, spawn } from 'node:child_process';
 
-const REPO = 'nitishxyz/agi';
-const BIN_NAME = 'agi';
+const REPO = 'nitishxyz/otto';
+const BIN_NAME = 'otto';
 
 function isInWorkspace() {
 	const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -53,7 +53,7 @@ function getVersion(binaryPath) {
 	try {
 		const result = spawnSync(binaryPath, ['--version'], { encoding: 'utf8' });
 		if (result.status === 0 && result.stdout) {
-			// Extract version number from output (e.g., "agi 1.2.3" -> "1.2.3")
+			// Extract version number from output (e.g., "otto 1.2.3" -> "1.2.3")
 			const match = result.stdout.trim().match(/[\d.]+/);
 			return match ? match[0] : null;
 		}
@@ -251,9 +251,9 @@ async function install() {
 		console.log(`\nRun: ${BIN_NAME} --help`);
 		return binPath;
 	} catch (error) {
-		console.error('Failed to install agi CLI:', error.message);
+		console.error('Failed to install otto CLI:', error.message);
 		console.error('\nPlease try installing manually:');
-		console.error('  curl -fsSL https://install.agi.nitish.sh | sh');
+		console.error('  curl -fsSL https://install.ottocode.io | sh');
 		process.exit(1);
 	}
 }

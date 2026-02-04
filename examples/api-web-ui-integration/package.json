@@ -3,13 +3,13 @@
 	"version": "1.0.0",
 	"private": true,
 	"type": "module",
-	"description": "Example showing @agi-cli/api and @agi-cli/web-ui integration",
+	"description": "Example showing @ottocode/api and @ottocode/web-ui integration",
 	"scripts": {
 		"dev": "bun run index.tsx"
 	},
 	"dependencies": {
-		"@agi-cli/api": "workspace:*",
-		"@agi-cli/web-ui": "workspace:*",
+		"@ottocode/api": "workspace:*",
+		"@ottocode/web-ui": "workspace:*",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1"
 	},

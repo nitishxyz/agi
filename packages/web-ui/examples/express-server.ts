@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Example: Serving the AGI CLI Web UI with Express
+ * Example: Serving the ottocode Web UI with Express
  *
  * First install express: bun add express @types/express
  * Run with: bun run examples/express-server.ts

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { catalog, providerIds } from '@agi-cli/sdk';
+import { catalog, providerIds } from '@ottocode/sdk';
 
 describe('setu catalog entry', () => {
 	it('adds setu to providerIds', () => {
@@ -20,6 +20,7 @@ describe('setu catalog entry', () => {
 			new Set([
 				'@ai-sdk/openai',
 				'@ai-sdk/anthropic',
+				'@ai-sdk/google',
 				'@ai-sdk/openai-compatible',
 			]),
 		);

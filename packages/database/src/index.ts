@@ -1,6 +1,6 @@
 import { Database } from 'bun:sqlite';
 import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import { loadConfig, logger } from '@agi-cli/sdk';
+import { loadConfig, logger } from '@ottocode/sdk';
 import * as schema from './schema/index.ts';
 import { bundledMigrations } from './runtime/migrations-bundled.ts';
 
@@ -29,12 +29,12 @@ export async function getDb(projectRootInput?: string) {
 		try {
 			// Ensure migrations tracking table exists
 			sqlite.exec(
-				'CREATE TABLE IF NOT EXISTS agi_migrations (name TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)',
+				'CREATE TABLE IF NOT EXISTS otto_migrations (name TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)',
 			);
 
 			// Read applied migrations
 			const appliedRows = sqlite
-				.query('SELECT name FROM agi_migrations')
+				.query('SELECT name FROM otto_migrations')
 				.all() as Array<{ name: string }>;
 			const applied = new Set(appliedRows.map((r) => r.name));
 
@@ -46,7 +46,7 @@ export async function getDb(projectRootInput?: string) {
 					sqlite.exec('COMMIT');
 					sqlite
 						.query(
-							'INSERT INTO agi_migrations (name, applied_at) VALUES (?, ?)',
+							'INSERT INTO otto_migrations (name, applied_at) VALUES (?, ?)',
 						)
 						.run(m.name, Date.now());
 				} catch (err) {
@@ -58,7 +58,7 @@ export async function getDb(projectRootInput?: string) {
 					if (benign) {
 						sqlite
 							.query(
-								'INSERT OR IGNORE INTO agi_migrations (name, applied_at) VALUES (?, ?)',
+								'INSERT OR IGNORE INTO otto_migrations (name, applied_at) VALUES (?, ?)',
 							)
 							.run(m.name, Date.now());
 						continue;

@@ -1,4 +1,4 @@
-export type AGIEventType =
+export type OttoEventType =
 	| 'tool.approval.required'
 	| 'tool.approval.resolved'
 	| 'setu.payment.required'
@@ -25,8 +25,8 @@ export type AGIEventType =
 	| 'error'
 	| 'heartbeat';
 
-export interface AGIEvent<T = unknown> {
-	type: AGIEventType;
+export interface OttoEvent<T = unknown> {
+	type: OttoEventType;
 	sessionId: string;
 	payload?: T;
 }

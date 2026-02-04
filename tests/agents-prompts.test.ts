@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { resolveAgentConfig } from '@agi-cli/server';
+import { resolveAgentConfig } from '@ottocode/server';
 
 async function read(path: string) {
 	const f = Bun.file(path);
@@ -20,7 +20,7 @@ describe('agent prompt resolution', () => {
 	});
 
 	it('prefers local project override if present', async () => {
-		const tmp = `${process.cwd()}/.agi/agents/testagent`;
+		const tmp = `${process.cwd()}/.otto/agents/testagent`;
 		await Bun.write(`${tmp}/agent.md`, 'PROJECT OVERRIDE TEST');
 		const cfg = await resolveAgentConfig(process.cwd(), 'testagent');
 		expect(cfg.prompt.trim()).toBe('PROJECT OVERRIDE TEST');

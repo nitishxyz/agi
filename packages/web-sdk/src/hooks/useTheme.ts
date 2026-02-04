@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 
 type Theme = 'light' | 'dark';
 
-const STORAGE_KEY = 'agi-theme';
+const STORAGE_KEY = 'otto-theme';
 
 function resolveInitialTheme(): Theme {
 	if (typeof window === 'undefined') {
@@ -38,7 +38,7 @@ export function useTheme() {
 		}
 
 		if (window.parent && window.parent !== window) {
-			window.parent.postMessage({ type: 'agi-set-theme', theme }, '*');
+			window.parent.postMessage({ type: 'otto-set-theme', theme }, '*');
 		}
 	}, [theme]);
 
@@ -46,7 +46,7 @@ export function useTheme() {
 		if (typeof window === 'undefined') return;
 		const handler = (e: MessageEvent) => {
 			if (
-				e.data?.type === 'agi-set-theme' &&
+				e.data?.type === 'otto-set-theme' &&
 				(e.data.theme === 'light' || e.data.theme === 'dark')
 			) {
 				setTheme(e.data.theme);

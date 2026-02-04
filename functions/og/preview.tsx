@@ -110,7 +110,7 @@ async function generateOGImage(data: OGRequest): Promise<Buffer> {
 						letterSpacing: '-0.02em',
 					}}
 				>
-					AGI
+					utto
 				</div>
 				<div
 					style={{

@@ -85,7 +85,7 @@ export function ProjectPicker({
 					className={`flex items-center gap-2 ${isFullscreen ? '' : 'ml-16'}`}
 				>
 					<SetuLogo size={20} />
-					<span className="font-semibold text-foreground">AGI Desktop</span>
+					<span className="font-semibold text-foreground">otto desktop</span>
 				</div>
 				<div className="flex items-center gap-2">
 					{isAuthenticated && (
@@ -149,7 +149,7 @@ export function ProjectPicker({
 				<div className="max-w-4xl mx-auto">
 					<div className="mb-10">
 						<h1 className="text-3xl lg:text-4xl font-semibold text-foreground mb-3">
-							Welcome to AGI
+							Welcome to otto
 						</h1>
 						<p className="text-lg text-muted-foreground max-w-2xl">
 							AI-powered development assistant. Open a project or clone a

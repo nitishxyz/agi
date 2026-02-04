@@ -1,6 +1,6 @@
 import type { Hono } from 'hono';
 import { subscribe } from '../events/bus.ts';
-import type { AGIEvent } from '../events/types.ts';
+import type { OttoEvent } from '../events/types.ts';
 
 function safeStringify(obj: unknown): string {
 	return JSON.stringify(obj, (_key, value) =>
@@ -21,7 +21,7 @@ export function registerSessionStreamRoute(app: Hono) {
 
 		const stream = new ReadableStream<Uint8Array>({
 			start(controller) {
-				const write = (evt: AGIEvent) => {
+				const write = (evt: OttoEvent) => {
 					let line: string;
 					try {
 						line =

@@ -226,7 +226,7 @@ jobs:
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
-          BINARY="apps/cli/dist/agi-${{ matrix.os }}-${{ matrix.arch }}"
+          BINARY="apps/cli/dist/otto-${{ matrix.os }}-${{ matrix.arch }}"
           echo "Signing $BINARY with hardened runtime..."
           codesign --force --options runtime --timestamp \
             --sign "$APPLE_SIGNING_IDENTITY" \
@@ -236,8 +236,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: agi-${{ matrix.os }}-${{ matrix.arch }}
-          path: apps/cli/dist/agi-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}
+          name: otto-${{ matrix.os }}-${{ matrix.arch }}
+          path: apps/cli/dist/otto-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}
 
   build-desktop:
     needs: [check-flags, bump-version]
@@ -335,10 +335,10 @@ jobs:
           bun run ../../scripts/build-web.ts
           bun run ../../scripts/prepare-embedded-bins.ts "${PLATFORM}"
           mkdir -p dist
-          bun build --compile --minify --target="bun-${PLATFORM}" ./index.ts --outfile "dist/agi-${PLATFORM}"
+          bun build --compile --minify --target="bun-${PLATFORM}" ./index.ts --outfile "dist/otto-${PLATFORM}"
           mkdir -p ../desktop/src-tauri/resources/binaries
-          cp "dist/agi-${PLATFORM}" "../desktop/src-tauri/resources/binaries/agi-${PLATFORM}"
-          chmod +x "../desktop/src-tauri/resources/binaries/agi-${PLATFORM}"
+          cp "dist/otto-${PLATFORM}" "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}"
+          chmod +x "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}"
           echo "Built CLI with embedded rg and copied to desktop resources"
 
       - name: Import Apple Certificate
@@ -420,7 +420,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
-          pattern: agi-*
+          pattern: otto-*
 
       - name: Flatten artifacts
         run: |
@@ -444,16 +444,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.bump-version.outputs.cli_version }}
-          name: "AGI v${{ needs.bump-version.outputs.cli_version }}"
+          name: "otto v${{ needs.bump-version.outputs.cli_version }}"
           body: |
-            ## AGI v${{ needs.bump-version.outputs.cli_version }}
+            ## otto v${{ needs.bump-version.outputs.cli_version }}
 
             Platform binaries are attached below.
 
-            - macOS (Intel): agi-darwin-x64
-            - macOS (Apple Silicon): agi-darwin-arm64
-            - Linux (x64): agi-linux-x64
-            - Linux (ARM64): agi-linux-arm64
+            - macOS (Intel): otto-darwin-x64
+            - macOS (Apple Silicon): otto-darwin-arm64
+            - Linux (x64): otto-linux-x64
+            - Linux (ARM64): otto-linux-arm64
           files: ./release/*
           draft: false
           prerelease: false
@@ -573,19 +573,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: desktop-v${{ needs.bump-version.outputs.desktop_version }}
-          name: "AGI Desktop v${{ needs.bump-version.outputs.desktop_version }}"
+          name: "otto desktop v${{ needs.bump-version.outputs.desktop_version }}"
           body: |
-            ## AGI Desktop v${{ needs.bump-version.outputs.desktop_version }}
+            ## otto desktop v${{ needs.bump-version.outputs.desktop_version }}
 
             ### Downloads
 
-            - **macOS (Apple Silicon)**: AGI_${{ needs.bump-version.outputs.desktop_version }}_aarch64.dmg
-            - **macOS (Intel)**: AGI_${{ needs.bump-version.outputs.desktop_version }}_x64.dmg
-            - **Linux**: AGI_${{ needs.bump-version.outputs.desktop_version }}_amd64.AppImage
+            - **macOS (Apple Silicon)**: OTTO_${{ needs.bump-version.outputs.desktop_version }}_aarch64.dmg
+            - **macOS (Intel)**: OTTO_${{ needs.bump-version.outputs.desktop_version }}_x64.dmg
+            - **Linux**: OTTO_${{ needs.bump-version.outputs.desktop_version }}_amd64.AppImage
 
             ### Installation
 
-            **macOS**: Download the .dmg, open it, and drag AGI to Applications.
+            **macOS**: Download the .dmg, open it, and drag otto to Applications.
 
 
             **Linux**: Download the AppImage, make it executable (`chmod +x`), and run it.

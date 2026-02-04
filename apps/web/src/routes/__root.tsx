@@ -5,7 +5,7 @@ import {
 	OnboardingModal,
 	SetuTopupModal,
 	useAuthStatus,
-} from '@agi-cli/web-sdk';
+} from '@ottocode/web-sdk';
 
 export const Route = createRootRoute({
 	component: RootComponent,

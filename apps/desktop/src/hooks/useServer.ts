@@ -41,9 +41,9 @@ export function useServer() {
 				setError(null);
 
 				// Always start a fresh server for this project
-				console.log('[AGI] Starting server for project:', projectPath);
+				console.log('[otto] Starting server for project:', projectPath);
 				const info = await tauriBridge.startServer(projectPath, port);
-				console.log('[AGI] Server info returned:', info);
+				console.log('[otto] Server info returned:', info);
 
 				const ready = await waitForServer(info.port);
 				if (ready) {
@@ -70,7 +70,7 @@ export function useServer() {
 		const currentServer = serverRef.current;
 		if (!currentServer) return;
 		console.log(
-			'[AGI] Stopping server:',
+			'[otto] Stopping server:',
 			currentServer.pid,
 			currentServer.projectPath,
 		);

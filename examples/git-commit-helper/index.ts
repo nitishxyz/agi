@@ -10,7 +10,7 @@
  *   bun run index.ts --dry-run    # Just show suggestion, don't prompt
  */
 
-import { generateObject, resolveModel, type ProviderId } from '@agi-cli/sdk';
+import { generateObject, resolveModel, type ProviderId } from '@ottocode/sdk';
 import { z } from 'zod/v3';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';

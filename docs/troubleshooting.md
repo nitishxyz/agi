@@ -7,7 +7,7 @@
 ### Provider not authorized
 ```bash
 # Re-run authentication setup
-agi auth login
+otto auth login
 ```
 
 ### Database errors
@@ -19,11 +19,11 @@ bun run db:reset
 ### Configuration issues
 ```bash
 # Run diagnostics
-agi doctor
+otto doctor
 ```
 
 ### Debug mode
 ```bash
 # Enable debug output
-DEBUG_AGI=1 agi "<your prompt>"
+DEBUG_OTTO=1 otto "<your prompt>"
 ```

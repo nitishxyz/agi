@@ -1,8 +1,8 @@
 import { eq, asc } from 'drizzle-orm';
-import type { DB } from '@agi-cli/database';
-import { sessions, messages, messageParts } from '@agi-cli/database/schema';
+import type { DB } from '@ottocode/database';
+import { sessions, messages, messageParts } from '@ottocode/database/schema';
 import { publish } from '../../events/bus.ts';
-import type { ProviderId } from '@agi-cli/sdk';
+import type { ProviderId } from '@ottocode/sdk';
 
 type SessionRow = typeof sessions.$inferSelect;
 

@@ -1,12 +1,12 @@
 import type { Hono } from 'hono';
-import { loadConfig } from '@agi-cli/sdk';
-import { getDb } from '@agi-cli/database';
-import { sessions, messages, messageParts } from '@agi-cli/database/schema';
+import { loadConfig } from '@ottocode/sdk';
+import { getDb } from '@ottocode/database';
+import { sessions, messages, messageParts } from '@ottocode/database/schema';
 import { desc, eq, and, asc, count } from 'drizzle-orm';
-import type { ProviderId } from '@agi-cli/sdk';
-import { isProviderId } from '@agi-cli/sdk';
+import type { ProviderId } from '@ottocode/sdk';
+import { isProviderId } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
-import { logger } from '@agi-cli/sdk';
+import { logger } from '@ottocode/sdk';
 import { publish } from '../events/bus.ts';
 
 export function registerResearchRoutes(app: Hono) {

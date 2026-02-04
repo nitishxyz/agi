@@ -3,18 +3,18 @@ import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-type CommandsModule = typeof import('@agi-cli/cli/src/custom-commands.ts');
+type CommandsModule = typeof import('@ottocode/cli/src/custom-commands.ts');
 
 const runAskMock = mock(async () => {});
-mock.module('@agi-cli/cli/src/ask.ts', () => ({ runAsk: runAskMock }));
+mock.module('@ottocode/cli/src/ask.ts', () => ({ runAsk: runAskMock }));
 
 const commandsModulePromise: Promise<CommandsModule> = import(
-	'@agi-cli/cli/src/custom-commands.ts'
+	'@ottocode/cli/src/custom-commands.ts'
 );
 
 describe('command discovery', () => {
 	async function setupWorkspace() {
-		const workspaceRoot = await mkdtemp(join(tmpdir(), 'agi-commands-'));
+		const workspaceRoot = await mkdtemp(join(tmpdir(), 'otto-commands-'));
 		const projectRoot = join(workspaceRoot, 'project');
 		const homeDir = join(workspaceRoot, 'home');
 		await mkdir(projectRoot, { recursive: true });
@@ -40,7 +40,7 @@ describe('command discovery', () => {
 	it('detects sibling markdown prompt automatically', async () => {
 		const { projectRoot, cleanup } = await setupWorkspace();
 		try {
-			const commandsDir = join(projectRoot, '.agi', 'commands');
+			const commandsDir = join(projectRoot, '.otto', 'commands');
 			await mkdir(commandsDir, { recursive: true });
 			await writeFile(
 				join(commandsDir, 'review.json'),
@@ -62,7 +62,7 @@ describe('command discovery', () => {
 	it('renders markdown prompt with placeholder substitution once', async () => {
 		const { projectRoot, cleanup } = await setupWorkspace();
 		try {
-			const commandsDir = join(projectRoot, '.agi', 'commands');
+			const commandsDir = join(projectRoot, '.otto', 'commands');
 			await mkdir(commandsDir, { recursive: true });
 			await writeFile(
 				join(commandsDir, 'summarize.json'),

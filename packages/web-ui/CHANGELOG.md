@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `@agi-cli/web-ui` will be documented in this file.
+All notable changes to `@ottocode/web-ui` will be documented in this file.
 
 ## [0.2.0] - 2025-01-XX (Upcoming)
 
@@ -32,7 +32,7 @@ All notable changes to `@agi-cli/web-ui` will be documented in this file.
 - `getWebUIPath()` - Get path to web assets directory
 - `getIndexPath()` - Get path to index.html
 - `isWebUIAvailable()` - Check if assets are built
-- Pre-built web UI assets from AGI CLI
+- Pre-built web UI assets from ottocode
 - TypeScript definitions
 - Examples for Bun and Express
 - Comprehensive README and documentation
@@ -52,7 +52,7 @@ All notable changes to `@agi-cli/web-ui` will be documented in this file.
 
 **Old way:**
 ```typescript
-import { getWebUIPath, getIndexPath } from '@agi-cli/web-ui';
+import { getWebUIPath, getIndexPath } from '@ottocode/web-ui';
 
 const webUIPath = getWebUIPath();
 
@@ -83,7 +83,7 @@ Bun.serve({
 
 **New way:**
 ```typescript
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 Bun.serve({
   port: 3000,

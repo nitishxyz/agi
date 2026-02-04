@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build, sign, and notarize the AGI desktop app locally.
+# Build, sign, and notarize the otto desktop app locally.
 #
 # Prerequisites (macOS):
 #   1. Apple Developer Certificate installed in Keychain
@@ -55,7 +55,7 @@ fi
 : "${APPLE_PASSWORD:?Set APPLE_PASSWORD (app-specific password) in $ENV_FILE or env}"
 : "${APPLE_TEAM_ID:?Set APPLE_TEAM_ID in $ENV_FILE or env}"
 
-echo "=== AGI Desktop Release Build ==="
+echo "=== otto desktop Release Build ==="
 echo "Signing identity: $APPLE_SIGNING_IDENTITY"
 echo "Team ID:          $APPLE_TEAM_ID"
 echo "Universal:        $UNIVERSAL"
@@ -76,16 +76,16 @@ if [[ "$SKIP_CLI" == false ]]; then
   mkdir -p "$BINARIES_DIR"
   cd "$CLI_DIR"
   bun run prebuild
-  bun build --compile --minify --target="bun-$CURRENT_PLATFORM" ./index.ts --outfile "dist/agi-$CURRENT_PLATFORM"
- cp "dist/agi-$CURRENT_PLATFORM" "$BINARIES_DIR/agi-$CURRENT_PLATFORM"
-  chmod +x "$BINARIES_DIR/agi-$CURRENT_PLATFORM"
+  bun build --compile --minify --target="bun-$CURRENT_PLATFORM" ./index.ts --outfile "dist/otto-$CURRENT_PLATFORM"
+ cp "dist/otto-$CURRENT_PLATFORM" "$BINARIES_DIR/otto-$CURRENT_PLATFORM"
+  chmod +x "$BINARIES_DIR/otto-$CURRENT_PLATFORM"
 
  echo "--- Signing CLI binary with hardened runtime ---"
   ENTITLEMENTS="$DESKTOP_DIR/src-tauri/resources/entitlements.plist"
   codesign --force --options runtime --timestamp \
     --sign "$APPLE_SIGNING_IDENTITY" \
     --entitlements "$ENTITLEMENTS" \
-    "$BINARIES_DIR/agi-$CURRENT_PLATFORM"
+    "$BINARIES_DIR/otto-$CURRENT_PLATFORM"
  echo "CLI binary signed and ready."
 fi
 

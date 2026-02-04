@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { loadConfig } from '@agi-cli/sdk';
+import { loadConfig } from '@ottocode/sdk';
 
 describe('config loader', () => {
 	it('loads defaults when no config files present', async () => {
@@ -9,6 +9,6 @@ describe('config loader', () => {
 		expect(cfg.defaults.agent).toBeDefined();
 		expect(cfg.defaults.provider).toBeDefined();
 		expect(cfg.defaults.model).toBeDefined();
-		expect(cfg.paths.dbPath.endsWith('.agi/agi.sqlite')).toBe(true);
+		expect(cfg.paths.dbPath.endsWith('.otto/otto.sqlite')).toBe(true);
 	});
 });

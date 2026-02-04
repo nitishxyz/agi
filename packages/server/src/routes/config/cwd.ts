@@ -1,6 +1,6 @@
 import type { Hono } from 'hono';
 import { basename } from 'node:path';
-import { logger } from '@agi-cli/sdk';
+import { logger } from '@ottocode/sdk';
 import { serializeError } from '../../runtime/errors/api-error.ts';
 
 export function registerCwdRoute(app: Hono) {

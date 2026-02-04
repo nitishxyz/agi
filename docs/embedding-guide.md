@@ -1,25 +1,25 @@
-# Embedding AGI - Complete Guide
+# Embedding otto - Complete Guide
 
 [← Back to README](../README.md) • [Docs Index](./index.md)
 
-This guide shows how to embed AGI into your own applications with full TypeScript autocomplete support.
+This guide shows how to embed otto into your own applications with full TypeScript autocomplete support.
 
 ## Overview
 
-AGI can be embedded in any Node.js/Bun application without requiring users to:
-- Install AGI CLI separately
+otto can be embedded in any Node.js/Bun application without requiring users to:
+- Install ottocode separately
 - Create auth.json or config files
-- Set up `.agi/` directory structure
+- Set up `.otto/` directory structure
 
 The parent application controls everything: authentication, configuration, and agent setup.
 
 ## Quick Start
 
 ```typescript
-import { createEmbeddedApp, BUILTIN_AGENTS } from '@agi-cli/server';
-import { serveWebUI } from '@agi-cli/web-ui';
+import { createEmbeddedApp, BUILTIN_AGENTS } from '@ottocode/server';
+import { serveWebUI } from '@ottocode/web-ui';
 
-const agiApp = createEmbeddedApp({
+const ottoApp = createEmbeddedApp({
   provider: 'openai',
   model: 'gpt-4',
   apiKey: process.env.OPENAI_API_KEY || '',
@@ -29,17 +29,17 @@ const agiApp = createEmbeddedApp({
 // Serve the web UI
 Bun.serve({
   port: 3456,
-  fetch: agiApp.fetch,
+  fetch: ottoApp.fetch,
   idleTimeout: 240, // Prevent SSE timeout
 });
 ```
 
 ## Built-in Agents
 
-AGI ships with 3 built-in agents with full TypeScript autocomplete:
+otto ships with 3 built-in agents with full TypeScript autocomplete:
 
 ```typescript
-import { BUILTIN_AGENTS, type BuiltinAgent } from '@agi-cli/server';
+import { BUILTIN_AGENTS, type BuiltinAgent } from '@ottocode/server';
 
 // Available agents: 'build' | 'plan' | 'general'
 const agentName: BuiltinAgent = 'build';
@@ -68,7 +68,7 @@ console.log(BUILTIN_AGENTS.build.tools);
 All available tools with autocomplete:
 
 ```typescript
-import { BUILTIN_TOOLS, type BuiltinTool } from '@agi-cli/server';
+import { BUILTIN_TOOLS, type BuiltinTool } from '@ottocode/server';
 
 // BUILTIN_TOOLS = [
 //   'read', 'write', 'ls', 'tree', 'bash', 'grep', 'ripgrep',
@@ -86,13 +86,13 @@ const safeTools = BUILTIN_TOOLS.filter(
 
 ### Hybrid Fallback Architecture
 
-AGI uses a **three-tier fallback system** for configuration and authentication:
+otto uses a **three-tier fallback system** for configuration and authentication:
 
 1. **Injected config** (highest priority) - Passed to `createEmbeddedApp()`
 2. **Environment variables** - `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.
-3. **Config files** (fallback) - `~/.config/agi/auth.json`, `.agi/config.json`
+3. **Config files** (fallback) - `~/.config/otto/auth.json`, `.otto/config.json`
 
-This allows AGI to work in **any environment**:
+This allows otto to work in **any environment**:
 - Fully embedded (no files needed)
 - CI/CD (env vars only)
 - Traditional CLI (config files)
@@ -136,12 +136,12 @@ The server supports access from:
 ### Tailscale / Proxy Configuration
 
 ```typescript
-import { createEmbeddedApp } from '@agi-cli/server';
+import { createEmbeddedApp } from '@ottocode/server';
 
 const app = createEmbeddedApp({
   corsOrigins: [
     'https://myapp.ts.net',           // Tailscale domain
-    'https://agi.example.com',        // Custom domain
+    'https://otto.example.com',        // Custom domain
     'https://subdomain.ngrok.io'      // ngrok tunnel
   ]
 });
@@ -182,7 +182,7 @@ const app = createEmbeddedApp({
 ### 3. Fallback to Config Files
 
 ```typescript
-// Uses ~/.config/agi/auth.json and .agi/config.json
+// Uses ~/.config/otto/auth.json and .otto/config.json
 const app = createEmbeddedApp({
   // All fields omitted - uses file config
 });
@@ -202,7 +202,7 @@ const app = createEmbeddedApp({
 ### 5. Customize Built-in Agent
 
 ```typescript
-import { BUILTIN_AGENTS } from '@agi-cli/server';
+import { BUILTIN_AGENTS } from '@ottocode/server';
 
 const app = createEmbeddedApp({
   provider: 'openai',
@@ -284,24 +284,24 @@ const app = createEmbeddedApp({
 
 ```typescript
 import { Hono } from 'hono';
-import { createEmbeddedApp } from '@agi-cli/server';
-import { serveWebUI } from '@agi-cli/web-ui';
+import { createEmbeddedApp } from '@ottocode/server';
+import { serveWebUI } from '@ottocode/web-ui';
 
 const parentApp = new Hono();
 
 // Your existing routes
 parentApp.get('/', (c) => c.text('My App'));
 
-// Embed AGI
-const agiApp = createEmbeddedApp({
+// Embed otto
+const ottoApp = createEmbeddedApp({
   provider: 'openai',
   model: 'gpt-4-turbo',
   apiKey: process.env.OPENAI_API_KEY || '',
   agent: 'build',
 });
 
-// Mount AGI routes under /ai
-parentApp.route('/ai', agiApp);
+// Mount otto routes under /ai
+parentApp.route('/ai', ottoApp);
 
 // Serve Web UI
 const uiHandler = serveWebUI({ 
@@ -349,7 +349,7 @@ type AgentConfigEntry = {
 ### Serving the Web UI
 
 ```typescript
-import { serveWebUI } from '@agi-cli/web-ui';
+import { serveWebUI } from '@ottocode/web-ui';
 
 // Option 1: Standalone
 const uiHandler = serveWebUI({ 
@@ -365,7 +365,7 @@ Bun.serve({
       const response = await uiHandler(req);
       if (response) return response;
     }
-    return agiApp.fetch(req);
+    return ottoApp.fetch(req);
   }
 });
 
@@ -404,7 +404,7 @@ import {
   BUILTIN_TOOLS,
   type BuiltinAgent,
   type BuiltinTool 
-} from '@agi-cli/server';
+} from '@ottocode/server';
 
 // Autocomplete for agent names
 const agent: BuiltinAgent = 'build'; // ← Suggests: 'build' | 'plan' | 'general'
@@ -426,7 +426,7 @@ const customAgent = {
 // Use VSCode's API key storage
 const apiKey = await vscode.workspace.getConfiguration('ai').get('apiKey');
 
-const agiApp = createEmbeddedApp({
+const ottoApp = createEmbeddedApp({
   provider: 'openai',
   model: 'gpt-4',
   apiKey,
@@ -438,7 +438,7 @@ const agiApp = createEmbeddedApp({
 ```typescript
 import { app } from 'electron';
 
-const agiApp = createEmbeddedApp({
+const ottoApp = createEmbeddedApp({
   provider: 'anthropic',
   model: 'claude-3-5-sonnet-20241022',
   apiKey: await keytar.getPassword('myapp', 'anthropic'),
@@ -451,7 +451,7 @@ const agiApp = createEmbeddedApp({
 // Per-user API keys from database
 const user = await db.users.findOne(userId);
 
-const agiApp = createEmbeddedApp({
+const ottoApp = createEmbeddedApp({
   provider: user.aiProvider,
   model: user.aiModel,
   apiKey: decrypt(user.encryptedApiKey),
@@ -461,14 +461,14 @@ const agiApp = createEmbeddedApp({
 
 ## Fallback Priority
 
-When AGI needs a configuration value, it checks in this order:
+When otto needs a configuration value, it checks in this order:
 
 ```
 1. Injected config (createEmbeddedApp({ ... }))
    ↓ if not found
 2. Environment variables (OPENAI_API_KEY, etc.)
    ↓ if not found
-3. Config files (~/.config/agi/auth.json, .agi/config.json)
+3. Config files (~/.config/otto/auth.json, .otto/config.json)
    ↓ if not found
 4. Built-in defaults
 ```
@@ -512,7 +512,7 @@ const app = createEmbeddedApp({
 Best for: Desktop development, local usage
 
 ```typescript
-// Uses ~/.config/agi/auth.json
+// Uses ~/.config/otto/auth.json
 const app = createEmbeddedApp({});
 ```
 

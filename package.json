@@ -1,17 +1,17 @@
 {
-	"name": "agi-monorepo",
+	"name": "otto-monorepo",
 	"version": "0.1.172",
 	"private": true,
 	"description": "AI-powered development assistant CLI - monorepo",
 	"author": "nitishxyz",
 	"license": "MIT",
-	"homepage": "https://github.com/nitishxyz/agi#readme",
+	"homepage": "https://github.com/nitishxyz/otto#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/nitishxyz/agi.git"
+		"url": "git+https://github.com/nitishxyz/otto.git"
 	},
 	"bugs": {
-		"url": "https://github.com/nitishxyz/agi/issues"
+		"url": "https://github.com/nitishxyz/otto/issues"
 	},
 	"keywords": [
 		"ai",
@@ -41,17 +41,17 @@
 		"catalog:update": "bun run scripts/update-catalog.ts",
 		"compile": "bun run scripts/compile.ts",
 		"compile:verbose": "bun run scripts/compile.ts --verbose",
-		"build:bin:darwin-arm64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-darwin-arm64 ./apps/cli/index.ts --outfile dist/agi-darwin-arm64",
-		"build:bin:darwin-x64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-darwin-x64 ./apps/cli/index.ts --outfile dist/agi-darwin-x64",
-		"build:bin:linux-x64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-linux-x64 ./apps/cli/index.ts --outfile dist/agi-linux-x64",
-		"build:bin:linux-arm64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-linux-arm64 ./apps/cli/index.ts --outfile dist/agi-linux-arm64",
+		"build:bin:darwin-arm64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-darwin-arm64 ./apps/cli/index.ts --outfile dist/otto-darwin-arm64",
+		"build:bin:darwin-x64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-darwin-x64 ./apps/cli/index.ts --outfile dist/otto-darwin-x64",
+		"build:bin:linux-x64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-linux-x64 ./apps/cli/index.ts --outfile dist/otto-linux-x64",
+		"build:bin:linux-arm64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-linux-arm64 ./apps/cli/index.ts --outfile dist/otto-linux-arm64",
 		"build": "bun run compile",
 		"build:packages": "bun run --filter './packages/*' build",
 		"build:apps": "bun run --filter './apps/*' build",
 		"build:all": "bun run build:packages && bun run build:apps",
-		"dev:sdk": "bun run --filter @agi-cli/sdk dev",
-		"dev:cli": "bun run --filter @agi-cli/cli dev",
-		"dev:server": "bun run --filter @agi-cli/server dev",
+		"dev:sdk": "bun run --filter @ottocode/sdk dev",
+		"dev:cli": "bun run --filter @ottocode/cli dev",
+		"dev:server": "bun run --filter @ottocode/server dev",
 		"dev:web": "bun run --filter web dev",
 		"dev:desktop": "bun run scripts/build-desktop.ts --dev",
 		"dev:desktop:signed": "bun run scripts/build-desktop.ts --dev --sign",

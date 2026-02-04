@@ -1,12 +1,12 @@
 // ============================================================================
-// @agi-cli/sdk - Tree-shakable AI Agent SDK
+// @ottocode/sdk - Tree-shakable AI Agent SDK
 // ============================================================================
-// This is the SINGLE source of truth for all AGI CLI functionality.
+// This is the SINGLE source of truth for all ottocode functionality.
 // All exports are tree-shakable - bundlers will only include what you use.
 //
 // Usage:
-//   import { generateText, resolveModel } from '@agi-cli/sdk';
-//   import type { ProviderId, AGIConfig } from '@agi-cli/sdk';
+//   import { generateText, resolveModel } from '@ottocode/sdk';
+//   import type { ProviderId, OttoConfig } from '@ottocode/sdk';
 // ============================================================================
 
 // =======================
@@ -27,7 +27,7 @@ export type { ApiAuth, OAuth, AuthInfo, AuthFile } from './types/src/index.ts';
 export type {
 	DefaultConfig,
 	PathConfig,
-	AGIConfig,
+	OttoConfig,
 } from './types/src/index.ts';
 
 // =======================
@@ -243,7 +243,7 @@ export type { ExecutionContext, ToolResult } from './core/src/index.ts';
 
 // Error Handling
 export {
-	AGIError,
+	OttoError,
 	AuthError,
 	ConfigError,
 	ToolError,

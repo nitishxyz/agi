@@ -4,7 +4,7 @@ import {
 	type SetuPaymentCallbacks,
 	getAuth,
 	loadConfig,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 import { publish } from '../../events/bus.ts';
 import {
 	waitForTopupMethodSelection,

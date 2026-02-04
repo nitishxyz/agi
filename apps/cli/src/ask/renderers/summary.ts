@@ -61,7 +61,7 @@ export function renderContextHeader(opts: {
 	provider: string;
 	model: string;
 }): string {
-	return `${c.bold('agi')} ${c.dim(ICONS.dot)} ${c.dim(opts.agent)} ${c.dim(ICONS.dot)} ${opts.provider}${c.dim('/')}${opts.model}`;
+	return `${c.bold('otto')} ${c.dim(ICONS.dot)} ${c.dim(opts.agent)} ${c.dim(ICONS.dot)} ${opts.provider}${c.dim('/')}${opts.model}`;
 }
 
 export function renderSessionInfo(

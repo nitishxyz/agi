@@ -8,7 +8,7 @@ import {
 	validateSkillName,
 	getGlobalConfigDir,
 	type DiscoveredSkill,
-} from '@agi-cli/sdk';
+} from '@ottocode/sdk';
 import { colors } from './ui.ts';
 
 export interface SkillsOptions {
@@ -30,7 +30,7 @@ export async function runSkillsList(opts: SkillsOptions): Promise<void> {
 		console.log('');
 		console.log(
 			colors.dim(
-				'Create skills in .agi/skills/<name>/SKILL.md or ~/.config/agi/skills/<name>/SKILL.md',
+				'Create skills in .otto/skills/<name>/SKILL.md or ~/.config/otto/skills/<name>/SKILL.md',
 			),
 		);
 		return;
@@ -156,8 +156,8 @@ export async function runSkillsCreate(opts: SkillsOptions): Promise<void> {
 	const locationChoice = await select({
 		message: 'Where to create the skill?',
 		options: [
-			{ value: 'project', label: 'Project (.agi/skills/)' },
-			{ value: 'global', label: 'Global (~/.config/agi/skills/)' },
+			{ value: 'project', label: 'Project (.otto/skills/)' },
+			{ value: 'global', label: 'Global (~/.config/otto/skills/)' },
 		],
 	});
 
@@ -169,7 +169,7 @@ export async function runSkillsCreate(opts: SkillsOptions): Promise<void> {
 	const baseDir =
 		locationChoice === 'global'
 			? join(getGlobalConfigDir(), 'skills')
-			: join(opts.project, '.agi/skills');
+			: join(opts.project, '.otto/skills');
 
 	const skillDir = join(baseDir, name);
 	const skillPath = join(skillDir, 'SKILL.md');
@@ -225,7 +225,7 @@ export async function runSkillsValidate(
 
 	const content = await fs.readFile(skillPath, 'utf-8');
 
-	const { parseSkillFile } = await import('@agi-cli/sdk');
+	const { parseSkillFile } = await import('@ottocode/sdk');
 	try {
 		const skill = parseSkillFile(content, skillPath, 'cwd');
 		console.log(colors.green('✓ Valid skill'));
@@ -264,7 +264,7 @@ export async function runSkills(
 		case 'show': {
 			const name = args.find((a) => !a.startsWith('-'));
 			if (!name) {
-				console.error(colors.red('Usage: agi skills show <name>'));
+				console.error(colors.red('Usage: otto skills show <name>'));
 				return true;
 			}
 			await runSkillsShow(name, opts);
@@ -286,12 +286,12 @@ export async function runSkills(
 			console.error(colors.red(`Unknown skills subcommand: ${subcommand}`));
 			console.log('');
 			console.log('Available commands:');
-			console.log('  agi skills list          List all discovered skills');
-			console.log('  agi skills show <name>   Show skill content');
+			console.log('  otto skills list          List all discovered skills');
+			console.log('  otto skills show <name>   Show skill content');
 			console.log(
-				'  agi skills create        Create a new skill (interactive)',
+				'  otto skills create        Create a new skill (interactive)',
 			);
-			console.log('  agi skills validate [path]  Validate a SKILL.md file');
+			console.log('  otto skills validate [path]  Validate a SKILL.md file');
 			return true;
 	}
 }

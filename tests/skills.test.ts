@@ -13,7 +13,7 @@ describe('Skills', () => {
 	let tempDir: string;
 
 	beforeEach(async () => {
-		tempDir = join(tmpdir(), `agi-skills-test-${Date.now()}`);
+		tempDir = join(tmpdir(), `otto-skills-test-${Date.now()}`);
 		await fs.mkdir(tempDir, { recursive: true });
 		clearSkillCache();
 	});
@@ -135,8 +135,8 @@ Content.
 	});
 
 	describe('discoverSkills', () => {
-		test('discovers skills from .agi/skills/', async () => {
-			const skillDir = join(tempDir, '.agi/skills/test-skill');
+		test('discovers skills from .otto/skills/', async () => {
+			const skillDir = join(tempDir, '.otto/skills/test-skill');
 			await fs.mkdir(skillDir, { recursive: true });
 			await fs.writeFile(
 				join(skillDir, 'SKILL.md'),
@@ -181,9 +181,9 @@ Content.
 		test('later paths override earlier (scope precedence)', async () => {
 			const globalSkillDir = join(
 				tempDir,
-				'global/.config/agi/skills/shared-skill',
+				'global/.config/otto/skills/shared-skill',
 			);
-			const projectSkillDir = join(tempDir, 'project/.agi/skills/shared-skill');
+			const projectSkillDir = join(tempDir, 'project/.otto/skills/shared-skill');
 
 			await fs.mkdir(globalSkillDir, { recursive: true });
 			await fs.mkdir(projectSkillDir, { recursive: true });
@@ -227,8 +227,8 @@ Project content.
 		});
 
 		test('ignores invalid SKILL.md files', async () => {
-			const validDir = join(tempDir, '.agi/skills/valid-skill');
-			const invalidDir = join(tempDir, '.agi/skills/invalid-skill');
+			const validDir = join(tempDir, '.otto/skills/valid-skill');
+			const invalidDir = join(tempDir, '.otto/skills/invalid-skill');
 
 			await fs.mkdir(validDir, { recursive: true });
 			await fs.mkdir(invalidDir, { recursive: true });

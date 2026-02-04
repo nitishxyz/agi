@@ -11,20 +11,20 @@ import {
 } from '@clack/prompts';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline';
-import { defaultToolsForAgent } from '@agi-cli/server/runtime/agent-registry';
-import { discoverProjectTools } from '@agi-cli/sdk';
-import { getGlobalConfigDir, getHomeDir } from '@agi-cli/sdk';
+import { defaultToolsForAgent } from '@ottocode/server/runtime/agent-registry';
+import { discoverProjectTools } from '@ottocode/sdk';
+import { getGlobalConfigDir, getHomeDir } from '@ottocode/sdk';
 
 type ScaffoldOptions = { project?: string; local?: boolean };
 
 export async function runScaffold(opts: ScaffoldOptions = {}) {
 	const projectRoot = (opts.project ?? process.cwd()).replace(/\\/g, '/');
-	const baseDir = opts.local ? `${projectRoot}/.agi` : getGlobalConfigDir();
+	const baseDir = opts.local ? `${projectRoot}/.otto` : getGlobalConfigDir();
 	const scopeLabel = opts.local ? 'local' : 'global';
 	intro(`Scaffold (${scopeLabel})`);
 	const homeForLabel = getHomeDir();
 	const baseLabel = opts.local
-		? '.agi'
+		? '.otto'
 		: baseDir.startsWith(homeForLabel)
 			? baseDir.replace(homeForLabel, '~')
 			: baseDir;
@@ -66,7 +66,7 @@ async function scaffoldAgent(
 	}
 	const tools = await multiselect({
 		message: 'Select tools to allow for this agent (finish is always included)',
-		// built-ins (excluding finish) + discovered custom ids under .agi/tools/
+		// built-ins (excluding finish) + discovered custom ids under .otto/tools/
 		options: (await listAvailableTools(projectRoot, scope, false)).map((t) => ({
 			value: t,
 			label: t,
@@ -99,7 +99,7 @@ async function scaffoldAgent(
 	let promptRel: string | undefined;
 	if (createPrompt) {
 		const rel = `agents/${String(name)}.md`;
-		promptRel = baseDir.endsWith('/.agi') ? `.agi/${rel}` : rel; // if global, store just relative path preferred? we'll write absolute
+		promptRel = baseDir.endsWith('/.otto') ? `.otto/${rel}` : rel; // if global, store just relative path preferred? we'll write absolute
 		const promptAbs = `${baseDir}/${rel}`;
 		await ensureDir(promptAbs.substring(0, promptAbs.lastIndexOf('/')));
 		const template = defaultAgentPromptTemplate(String(name));
@@ -285,11 +285,11 @@ export async function editAgentsConfig(
 	if (ensurePrompt) {
 		const location =
 			pth ??
-			(isGlobalBase(baseDir, projectRoot) ? `.agi/${relPrompt}` : relPrompt);
+			(isGlobalBase(baseDir, projectRoot) ? `.otto/${relPrompt}` : relPrompt);
 		let abs: string;
-		if (location.startsWith('.agi/')) {
+		if (location.startsWith('.otto/')) {
 			if (isGlobalBase(baseDir, projectRoot)) {
-				const relFromAgi = location.slice('.agi/'.length);
+				const relFromAgi = location.slice('.otto/'.length);
 				abs = `${baseDir}/${relFromAgi}`;
 			} else {
 				abs = `${projectRoot}/${location}`;
@@ -316,7 +316,7 @@ export async function editAgentsConfig(
 	if (ensurePrompt)
 		nextEntry.prompt =
 			pth ??
-			(isGlobalBase(baseDir, projectRoot) ? `.agi/${relPrompt}` : relPrompt);
+			(isGlobalBase(baseDir, projectRoot) ? `.otto/${relPrompt}` : relPrompt);
 	else delete nextEntry.prompt;
 	if (mode === 'append') {
 		const extras = selection.filter((t) => t !== 'finish');
@@ -481,7 +481,7 @@ async function listAgents(
 	const names = new Set(defaults);
 	const _home = process.env.HOME || process.env.USERPROFILE || '';
 	try {
-		const { getGlobalAgentsJsonPath } = await import('@agi-cli/sdk');
+		const { getGlobalAgentsJsonPath } = await import('@ottocode/sdk');
 		const globalAgents = (await Bun.file(getGlobalAgentsJsonPath())
 			.json()
 			.catch(() => ({}))) as Record<string, unknown>;
@@ -490,7 +490,7 @@ async function listAgents(
 	} catch {}
 	if (scope === 'local') {
 		try {
-			const localAgents = (await Bun.file(`${projectRoot}/.agi/agents.json`)
+			const localAgents = (await Bun.file(`${projectRoot}/.otto/agents.json`)
 				.json()
 				.catch(() => ({}))) as Record<string, unknown>;
 			for (const key of Object.keys(localAgents)) names.add(key);
@@ -591,7 +591,7 @@ function defaultCommandPromptTemplate(name: string): string {
 function toolTemplate(id: string, description: string): string {
 	const nameLiteral = JSON.stringify(id);
 	const descLiteral = JSON.stringify(description);
-	return `// Example AGI tool plugin. Adjust parameters and execute() as needed.
+	return `// Example otto tool plugin. Adjust parameters and execute() as needed.
 // export default async ({ project, exec, fs }) => ({
 //   name: ${nameLiteral},
 //   description: ${descLiteral},
@@ -622,6 +622,6 @@ export default async ({ project }) => ({
 
 function isGlobalBase(baseDir: string, projectRoot: string): boolean {
 	const normalized = baseDir.replace(/\\/g, '/');
-	const localBase = `${projectRoot.replace(/\\/g, '/')}/.agi`;
+	const localBase = `${projectRoot.replace(/\\/g, '/')}/.otto`;
 	return normalized !== localBase;
 }

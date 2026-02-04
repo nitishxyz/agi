@@ -193,8 +193,8 @@ function updateGettingStartedPin(
 ): void {
 	const content = readFileSync(gettingStartedPath, 'utf8');
 	const updated = content.replace(
-		/AGI_VERSION=v([0-9A-Za-z.-]+)\s+curl/,
-		`AGI_VERSION=v${nextVersion} curl`,
+		/OTTO_VERSION=v([0-9A-Za-z.-]+)\s+curl/,
+		`OTTO_VERSION=v${nextVersion} curl`,
 	);
 
 	if (updated === content) {

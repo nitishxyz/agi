@@ -70,7 +70,7 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 		headers.delete('Authorization');
 		headers.delete('authorization');
 		headers.set('authorization', `Bearer ${accessToken}`);
-		headers.set('originator', 'agi');
+		headers.set('originator', 'otto');
 		if (accountId) {
 			headers.set('ChatGPT-Account-Id', accountId);
 		}

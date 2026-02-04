@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import type { AskOptions } from '@agi-cli/cli/src/ask.ts';
-import { computeEffectiveContext } from '@agi-cli/cli/src/context.ts';
-import type { ProviderId } from '@agi-cli/sdk';
+import type { AskOptions } from '@ottocode/cli/src/ask.ts';
+import { computeEffectiveContext } from '@ottocode/cli/src/context.ts';
+import type { ProviderId } from '@ottocode/sdk';
 
 describe('computeEffectiveContext', () => {
 	test('prefers CLI opts over session header and defaults', () => {

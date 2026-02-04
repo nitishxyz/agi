@@ -1,12 +1,12 @@
 # Basic CLI Bot Example
 
-A simple question-answering agent that demonstrates the core AGI SDK functionality.
+A simple question-answering agent that demonstrates the core otto SDK functionality.
 
 ## What It Does
 
 This example creates a minimal CLI bot that:
 - Accepts a question as a command-line argument
-- Uses the AGI SDK to process it with an AI model
+- Uses the otto SDK to process it with an AI model
 - Returns the answer to stdout
 
 ## Prerequisites
@@ -43,7 +43,7 @@ PROVIDER=openai MODEL=gpt-4o bun run index.ts "Explain async/await"
 ## Code Walkthrough
 
 ```typescript
-import { generateText, resolveModel } from '@agi-cli/sdk';
+import { generateText, resolveModel } from '@ottocode/sdk';
 
 // Get question from command line (default to "Hello!")
 const question = process.argv[2] || 'Hello!';
@@ -93,7 +93,7 @@ The SDK automatically reads API keys from standard environment variables:
 ### Add Streaming
 
 ```typescript
-import { streamText, resolveModel } from '@agi-cli/sdk';
+import { streamText, resolveModel } from '@ottocode/sdk';
 
 const model = await resolveModel('anthropic', 'claude-sonnet-4');
 const stream = streamText({
@@ -110,7 +110,7 @@ for await (const chunk of stream.textStream) {
 ### Add Tools
 
 ```typescript
-import { generateText, resolveModel, discoverProjectTools } from '@agi-cli/sdk';
+import { generateText, resolveModel, discoverProjectTools } from '@ottocode/sdk';
 
 const model = await resolveModel('anthropic', 'claude-sonnet-4');
 const tools = await discoverProjectTools(process.cwd());

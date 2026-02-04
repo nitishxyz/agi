@@ -1,28 +1,28 @@
 /**
- * Example: Building a custom AGI chat UI
+ * Example: Building a custom otto chat UI
  *
  * This example demonstrates:
- * - Using @agi-cli/api for type-safe API calls
- * - Using @agi-cli/web-ui components for UI
- * - Using @agi-cli/web-ui hooks for state management
+ * - Using @ottocode/api for type-safe API calls
+ * - Using @ottocode/web-ui components for UI
+ * - Using @ottocode/web-ui hooks for state management
  * - Real-time SSE streaming
  */
 
 import { useState, useEffect } from 'react';
-import { createApiClient } from '@agi-cli/api';
+import { createApiClient } from '@ottocode/api';
 import {
 	Button,
 	Card,
 	ChatInput,
 	SessionListContainer,
 	SessionHeader,
-} from '@agi-cli/web-ui/components';
+} from '@ottocode/web-ui/components';
 import {
 	useSessions,
 	useMessages,
 	useSessionStream,
-} from '@agi-cli/web-ui/hooks';
-import type { Message, MessagePart } from '@agi-cli/web-ui/types';
+} from '@ottocode/web-ui/hooks';
+import type { Message, MessagePart } from '@ottocode/web-ui/types';
 
 const API_BASE_URL = 'http://localhost:9100';
 
@@ -53,7 +53,7 @@ export function ChatApp() {
 					<h2 className="mb-4 text-xl font-bold text-red-600">Error</h2>
 					<p>{error.message}</p>
 					<p className="mt-4 text-sm text-gray-500">
-						Make sure the AGI server is running on {API_BASE_URL}
+						Make sure the otto server is running on {API_BASE_URL}
 					</p>
 				</Card>
 			</div>
@@ -228,19 +228,19 @@ function MessageBubble({ message }: { message: Message }) {
 if (import.meta.main) {
 	console.log(`
 ╭─────────────────────────────────────────────╮
-│  AGI CLI - Custom Chat UI Example          │
+│  ottocode - Custom Chat UI Example          │
 │                                             │
 │  This example demonstrates how to build a   │
-│  custom chat UI using @agi-cli/api and      │
-│  @agi-cli/web-ui packages.                  │
+│  custom chat UI using @ottocode/api and      │
+│  @ottocode/web-ui packages.                  │
 │                                             │
 │  Components used:                           │
-│  ✓ @agi-cli/api - Type-safe API client     │
-│  ✓ @agi-cli/web-ui/components              │
-│  ✓ @agi-cli/web-ui/hooks                   │
+│  ✓ @ottocode/api - Type-safe API client     │
+│  ✓ @ottocode/web-ui/components              │
+│  ✓ @ottocode/web-ui/hooks                   │
 │                                             │
 │  To run this example:                       │
-│  1. Start the AGI server (port 9100)       │
+│  1. Start the otto server (port 9100)       │
 │  2. Run: bun run dev                        │
 │  3. Open: http://localhost:3001             │
 ╰─────────────────────────────────────────────╯

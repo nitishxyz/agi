@@ -1,7 +1,7 @@
 {
-	"name": "@agi-cli/web-sdk",
+	"name": "@ottocode/web-sdk",
 	"version": "0.1.172",
-	"description": "Reusable React components, hooks, and utilities for building AGI CLI web interfaces",
+	"description": "Reusable React components, hooks, and utilities for building ottocode web interfaces",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -42,7 +42,7 @@
 		"prepublishOnly": "bun run build"
 	},
 	"keywords": [
-		"agi",
+		"otto",
 		"cli",
 		"react",
 		"components",
@@ -54,12 +54,12 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/nitishxyz/agi.git",
+		"url": "git+https://github.com/nitishxyz/otto.git",
 		"directory": "packages/web-sdk"
 	},
 	"dependencies": {
-		"@agi-cli/api": "workspace:*",
-		"@agi-cli/sdk": "workspace:*",
+		"@ottocode/api": "workspace:*",
+		"@ottocode/sdk": "workspace:*",
 		"axios": "^1.7.9",
 		"fuse.js": "^7.1.0",
 		"ghostty-web": "^0.4.0",

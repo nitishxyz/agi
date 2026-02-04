@@ -1,4 +1,4 @@
-import { logger } from '@agi-cli/sdk';
+import { logger } from '@ottocode/sdk';
 
 export type TopupMethod = 'crypto' | 'fiat';
 
