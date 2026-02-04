@@ -1,5 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
+import { openUrl } from '../../../lib/open-url';
 import {
 	ChevronDown,
 	ChevronRight,
@@ -179,7 +180,7 @@ export function ErrorRenderer({
 			<div className="space-y-3">
 				<div className="space-y-1">
 					<div className="font-medium text-amber-600 dark:text-amber-400">
-						Model not available on your Copilot plan
+						Model not available
 					</div>
 					<p className="text-sm text-foreground">
 						{model ? (
@@ -187,18 +188,31 @@ export function ErrorRenderer({
 								<code className="px-1 py-0.5 bg-muted rounded text-xs">
 									{String(model)}
 								</code>{' '}
-								is not available on your current GitHub Copilot plan.
+								is not available. You need a Copilot Pro (or higher) plan and
+								the model must be enabled in your settings.
 							</>
 						) : (
 							<>
-								The requested model is not available on your current GitHub
-								Copilot plan.
+								The requested model is not available. You need a Copilot Pro
+								(or higher) plan and the model must be enabled in your
+								settings.
 							</>
 						)}
 					</p>
 					<p className="text-xs text-muted-foreground">
-						Free plan models: GPT-5 mini, GPT-4.1, GPT-4o, Claude Haiku 4.5.
-						Upgrade to Copilot Pro/Pro+ for all models.
+						Enable models at{' '}
+					<a
+						href="https://github.com/settings/copilot"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="underline hover:text-foreground transition-colors"
+						onClick={(e) => {
+							e.preventDefault();
+							openUrl('https://github.com/settings/copilot');
+						}}
+					>
+							github.com/settings/copilot
+						</a>
 					</p>
 				</div>
 				{onRetry && (
