@@ -79,7 +79,7 @@ function buildSetuEntry(base: CatalogMap): ProviderCatalogEntry | null {
 	const setuModels = SETU_SOURCES.flatMap(({ id, npm, family }) => {
 		const allModels = base[id]?.models ?? [];
 		const sourceModels = allModels.filter((model) => {
-		if (id === 'openai') return isAllowedOpenAIModel(model.id);
+			if (id === 'openai') return isAllowedOpenAIModel(model.id);
 			if (id === 'anthropic') return isAllowedAnthropicModel(model.id);
 			if (id === 'google') return isAllowedGoogleModel(model.id);
 			return true;

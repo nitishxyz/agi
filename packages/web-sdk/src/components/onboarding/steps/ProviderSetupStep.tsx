@@ -131,7 +131,10 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	useEffect(() => {
 		if (!copilotPolling || !copilotDevice || !copilotPollFnRef.current) return;
 		copilotCancelledRef.current = false;
-		const pollIntervalMs = Math.max((copilotDevice.interval || 5) * 1000 + 2000, 7000);
+		const pollIntervalMs = Math.max(
+			(copilotDevice.interval || 5) * 1000 + 2000,
+			7000,
+		);
 		const schedulePoll = () => {
 			copilotPollRef.current = setTimeout(async () => {
 				if (copilotCancelledRef.current) return;

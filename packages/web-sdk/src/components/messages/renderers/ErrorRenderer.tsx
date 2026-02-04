@@ -193,24 +193,23 @@ export function ErrorRenderer({
 							</>
 						) : (
 							<>
-								The requested model is not available. You need a Copilot Pro
-								(or higher) plan and the model must be enabled in your
-								settings.
+								The requested model is not available. You need a Copilot Pro (or
+								higher) plan and the model must be enabled in your settings.
 							</>
 						)}
 					</p>
 					<p className="text-xs text-muted-foreground">
 						Enable models at{' '}
-					<a
-						href="https://github.com/settings/copilot"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="underline hover:text-foreground transition-colors"
-						onClick={(e) => {
-							e.preventDefault();
-							openUrl('https://github.com/settings/copilot');
-						}}
-					>
+						<a
+							href="https://github.com/settings/copilot"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="underline hover:text-foreground transition-colors"
+							onClick={(e) => {
+								e.preventDefault();
+								openUrl('https://github.com/settings/copilot');
+							}}
+						>
 							github.com/settings/copilot
 						</a>
 					</p>
