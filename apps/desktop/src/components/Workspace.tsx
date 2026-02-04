@@ -98,7 +98,7 @@ export function Workspace({
 				<button
 					type="button"
 					onClick={handleBack}
-					className={`w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ${isFullscreen ? '' : 'ml-16'}`}
+					className={`w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ${isFullscreen ? '' : 'ml-[60px]'}`}
 				>
 					←
 				</button>

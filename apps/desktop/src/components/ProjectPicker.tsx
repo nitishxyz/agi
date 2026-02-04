@@ -4,7 +4,7 @@ import { useGitHub } from '../hooks/useGitHub';
 import { useFullscreen } from '../hooks/useFullscreen';
 import { handleTitleBarDrag } from '../utils/title-bar';
 import { tauriBridge, type Project } from '../lib/tauri-bridge';
-import { SetuLogo, GitHubLogo } from './Icons';
+import { OttoWordmark, GitHubLogo } from './Icons';
 import { ProjectCard } from './ProjectCard';
 import { TokenInputModal } from './TokenInputModal';
 import { CloneModal } from './CloneModal';
@@ -82,10 +82,9 @@ export function ProjectPicker({
 				role="toolbar"
 			>
 				<div
-					className={`flex items-center gap-2 ${isFullscreen ? '' : 'ml-16'}`}
+					className={`flex items-center gap-2 ${isFullscreen ? '' : 'ml-[68px]'}`}
 				>
-					<SetuLogo size={20} />
-					<span className="font-semibold text-foreground">otto desktop</span>
+					<OttoWordmark height={13} className="text-foreground" />
 				</div>
 				<div className="flex items-center gap-2">
 					{isAuthenticated && (
