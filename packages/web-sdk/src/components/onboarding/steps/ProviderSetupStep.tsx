@@ -14,6 +14,7 @@ import { ProviderLogo } from '../../common/ProviderLogo';
 import type { AuthStatus } from '../../../stores/onboardingStore';
 import { useSetuStore } from '../../../stores/setuStore';
 import { useSetuBalance } from '../../../hooks/useSetuBalance';
+import { openUrl } from '../../../lib/open-url';
 
 interface ProviderSetupStepProps {
 	authStatus: AuthStatus;
@@ -39,6 +40,7 @@ interface ProviderSetupStepProps {
 		sessionId: string;
 		userCode: string;
 		verificationUri: string;
+		interval: number;
 	}>;
 	onPollCopilotDeviceFlow?: (
 		sessionId: string,
@@ -79,13 +81,17 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 		sessionId: string;
 		userCode: string;
 		verificationUri: string;
+		interval: number;
 	} | null>(null);
 	const [copilotPolling, setCopilotPolling] = useState(false);
 	const [copilotError, setCopilotError] = useState<string | null>(null);
 	const [copilotCodeCopied, setCopilotCodeCopied] = useState(false);
 	const [copilotModalOpen, setCopilotModalOpen] = useState(false);
 	const [copilotLoading, setCopilotLoading] = useState(false);
-	const copilotPollRef = useRef<ReturnType<typeof setInterval>>(undefined);
+	const copilotPollRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+	const copilotCancelledRef = useRef(false);
+	const copilotPollFnRef = useRef(onPollCopilotDeviceFlow);
+	copilotPollFnRef.current = onPollCopilotDeviceFlow;
 	const balance = useSetuStore((s) => s.balance);
 	const usdcBalance = useSetuStore((s) => s.usdcBalance);
 	const apiKeyInputRef = useRef<HTMLInputElement>(null);
@@ -123,43 +129,44 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	}, [oauthSession]);
 
 	useEffect(() => {
-		if (!copilotPolling || !copilotDevice || !onPollCopilotDeviceFlow) return;
-		copilotPollRef.current = setInterval(async () => {
-			try {
-				const result = await onPollCopilotDeviceFlow(copilotDevice.sessionId);
-				if (result.status === 'complete') {
-					setCopilotDevice(null);
-					setCopilotPolling(false);
-					setCopilotError(null);
-					setCopilotModalOpen(false);
-					if (copilotPollRef.current) {
-						clearInterval(copilotPollRef.current);
-						copilotPollRef.current = undefined;
+		if (!copilotPolling || !copilotDevice || !copilotPollFnRef.current) return;
+		copilotCancelledRef.current = false;
+		const pollIntervalMs = Math.max((copilotDevice.interval || 5) * 1000 + 2000, 7000);
+		const schedulePoll = () => {
+			copilotPollRef.current = setTimeout(async () => {
+				if (copilotCancelledRef.current) return;
+				try {
+					const pollFn = copilotPollFnRef.current;
+					if (!pollFn) return;
+					const result = await pollFn(copilotDevice.sessionId);
+					if (copilotCancelledRef.current) return;
+					if (result.status === 'complete') {
+						setCopilotDevice(null);
+						setCopilotPolling(false);
+						setCopilotError(null);
+						setCopilotModalOpen(false);
+					} else if (result.status === 'error') {
+						setCopilotError(result.error || 'Authorization failed');
+						setCopilotPolling(false);
+					} else {
+						schedulePoll();
 					}
-					window.location.reload();
-				} else if (result.status === 'error') {
-					setCopilotError(result.error || 'Authorization failed');
-					setCopilotPolling(false);
-					if (copilotPollRef.current) {
-						clearInterval(copilotPollRef.current);
-						copilotPollRef.current = undefined;
-					}
+				} catch {
+					if (!copilotCancelledRef.current) schedulePoll();
 				}
-			} catch {}
-		}, 5000);
+			}, pollIntervalMs);
+		};
+		schedulePoll();
 		const timeout = setTimeout(() => {
 			setCopilotPolling(false);
 			setCopilotError('Authorization timed out. Please try again.');
-			if (copilotPollRef.current) {
-				clearInterval(copilotPollRef.current);
-				copilotPollRef.current = undefined;
-			}
 		}, 300000);
 		return () => {
-			if (copilotPollRef.current) clearInterval(copilotPollRef.current);
+			copilotCancelledRef.current = true;
+			if (copilotPollRef.current) clearTimeout(copilotPollRef.current);
 			clearTimeout(timeout);
 		};
-	}, [copilotPolling, copilotDevice, onPollCopilotDeviceFlow]);
+	}, [copilotPolling, copilotDevice]);
 
 	const handleCopy = async () => {
 		if (authStatus.setu.publicKey) {
@@ -260,7 +267,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 
 	const handleCopilotOpenGithub = () => {
 		if (!copilotDevice) return;
-		window.open(copilotDevice.verificationUri, '_blank');
+		openUrl(copilotDevice.verificationUri);
 		setCopilotPolling(true);
 	};
 
@@ -278,8 +285,9 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 		setCopilotCodeCopied(false);
 		setCopilotModalOpen(false);
 		setCopilotLoading(false);
+		copilotCancelledRef.current = true;
 		if (copilotPollRef.current) {
-			clearInterval(copilotPollRef.current);
+			clearTimeout(copilotPollRef.current);
 			copilotPollRef.current = undefined;
 		}
 	};

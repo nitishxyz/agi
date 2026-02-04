@@ -511,6 +511,7 @@ export function registerAuthRoutes(app: Hono) {
 				sessionId,
 				userCode: deviceData.userCode,
 				verificationUri: deviceData.verificationUri,
+				interval: deviceData.interval,
 			});
 		} catch (error) {
 			const message =

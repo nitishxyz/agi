@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 
-const CLIENT_ID = 'Ov23li8tweQw6odWQebz';
+const CLIENT_ID = 'Ov23lip6QjVYxHUAeW4d';
 const POLLING_SAFETY_MARGIN_MS = 3000;
 
 const DEVICE_CODE_URL = 'https://github.com/login/device/code';

@@ -1162,6 +1162,7 @@ class ApiClient {
 		sessionId: string;
 		userCode: string;
 		verificationUri: string;
+		interval: number;
 	}> {
 		const response = await fetch(
 			`${this.baseUrl}/v1/auth/copilot/device/start`,

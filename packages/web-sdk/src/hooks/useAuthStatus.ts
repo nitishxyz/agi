@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 import { useOnboardingStore } from '../stores/onboardingStore';
 
@@ -11,6 +12,7 @@ export function useAuthStatus() {
 	const setError = useOnboardingStore((s) => s.setError);
 	const authStatus = useOnboardingStore((s) => s.authStatus);
 	const isOpen = useOnboardingStore((s) => s.isOpen);
+	const queryClient = useQueryClient();
 
 	const [initialized, setInitialized] = useState(false);
 	const [oauthPolling, setOauthPolling] = useState(false);
@@ -23,6 +25,8 @@ export function useAuthStatus() {
 		try {
 			const status = await apiClient.getAuthStatus();
 			setAuthStatus(status);
+			queryClient.invalidateQueries({ queryKey: ['config'] });
+			queryClient.invalidateQueries({ queryKey: ['models'] });
 			return status;
 		} catch (err) {
 			const message = err instanceof Error ? err.message : 'Failed to load';
@@ -31,7 +35,7 @@ export function useAuthStatus() {
 		} finally {
 			setLoading(false);
 		}
-	}, [setAuthStatus, setLoading, setError]);
+	}, [setAuthStatus, setLoading, setError, queryClient]);
 
 	const checkOnboarding = useCallback(async () => {
 		const status = await fetchAuthStatus();
@@ -259,6 +263,17 @@ export function useAuthStatus() {
 		return () => window.removeEventListener('message', handleOAuthMessage);
 	}, [fetchAuthStatus]);
 
+	const pollCopilotDeviceFlow = useCallback(
+		async (sessionId: string) => {
+			const result = await apiClient.pollCopilotDeviceFlow(sessionId);
+			if (result.status === 'complete') {
+				await fetchAuthStatus();
+			}
+			return result;
+		},
+		[fetchAuthStatus],
+	);
+
 	return {
 		authStatus,
 		isOpen,
@@ -274,6 +289,6 @@ export function useAuthStatus() {
 		startOAuthManual,
 		exchangeOAuthCode,
 		startCopilotDeviceFlow: apiClient.startCopilotDeviceFlow.bind(apiClient),
-		pollCopilotDeviceFlow: apiClient.pollCopilotDeviceFlow.bind(apiClient),
+		pollCopilotDeviceFlow,
 	};
 }
