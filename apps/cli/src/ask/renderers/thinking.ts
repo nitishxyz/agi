@@ -1,18 +1,19 @@
-import { c, ICONS, truncate } from './theme.ts';
+import { c, ICONS } from './theme.ts';
 
 let thinkingActive = false;
 
 export function renderThinkingDelta(delta: string): string {
 	if (!thinkingActive) {
 		thinkingActive = true;
-		return `  ${c.dim(ICONS.spinner)} ${c.dim('thinking')} ${c.dim(ICONS.arrow)} ${c.dim(truncate(delta.trim(), 60))}`;
+		return `\n  ${c.dim.italic('thinking ···')}\n${c.dim(delta)}`;
 	}
-	return '';
+	return c.dim(delta);
 }
 
 export function renderThinkingEnd(): string {
 	if (thinkingActive) {
 		thinkingActive = false;
+		return '\n';
 	}
 	return '';
 }

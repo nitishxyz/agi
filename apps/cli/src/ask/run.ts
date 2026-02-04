@@ -295,8 +295,8 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 			const useMarkdownBuffer = process.env.OTTO_RENDER_MARKDOWN === '1';
 			if (!useMarkdownBuffer) {
 				if (isThinking()) {
-					renderThinkingEnd();
-					Bun.write(Bun.stderr, `\x1b[A\x1b[2K\r`);
+					const endOut = renderThinkingEnd();
+					if (endOut) Bun.write(Bun.stderr, endOut);
 				}
 				if (!hasStartedText && hadToolOutput) {
 					Bun.write(Bun.stdout, '\n');
@@ -330,8 +330,9 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 			const output = renderToolCall({ toolName: name, args: data?.args });
 			if (output) {
 				if (isThinking()) {
-					renderThinkingEnd();
-					Bun.write(Bun.stderr, `\x1b[A\x1b[2K\r\n${output}\n`);
+					const endOut = renderThinkingEnd();
+					if (endOut) Bun.write(Bun.stderr, endOut);
+					Bun.write(Bun.stderr, `\n${output}\n`);
 				} else {
 					Bun.write(Bun.stderr, `\n${output}\n`);
 				}
@@ -349,7 +350,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		if (!delta) return;
 		const output = renderThinkingDelta(delta);
 		if (output) {
-			Bun.write(Bun.stderr, `${output}\n`);
+			Bun.write(Bun.stderr, output);
 		}
 	}
 
@@ -460,7 +461,7 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 
 		const output = renderToolResult({
 			toolName: name,
-			args: data?.args,
+			args: data?.args ?? (callId ? state.toolCalls[callById.get(callId) ?? -1]?.args : undefined),
 			result: data?.result,
 			artifact: artifact as unknown as Artifact,
 			durationMs,
