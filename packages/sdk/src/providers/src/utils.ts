@@ -25,30 +25,16 @@ export function hasModel(
 }
 
 const PREFERRED_FAST_MODELS: Partial<Record<ProviderId, string[]>> = {
-	openai: ['gpt-4o-mini', 'gpt-4.1-nano', 'gpt-4.1-mini'],
-	anthropic: [
-		'claude-3-5-haiku-latest',
-		'claude-3-5-haiku-20241022',
-		'claude-haiku-4-5',
-	],
-	google: [
-		'gemini-2.0-flash-lite',
-		'gemini-2.0-flash',
-		'gemini-2.5-flash-lite',
-	],
-	openrouter: [
-		'anthropic/claude-3.5-haiku',
-		'openai/gpt-4o-mini',
-		'google/gemini-2.0-flash-001',
-	],
-	opencode: ['claude-3-5-haiku', 'gpt-5-nano', 'gemini-3-flash'],
+	openai: ['gpt-4.1-mini'],
+	anthropic: ['claude-3-5-haiku-latest'],
+	google: ['gemini-2.0-flash-lite'],
+	openrouter: ['anthropic/claude-3.5-haiku'],
+	opencode: ['claude-3-5-haiku'],
 	setu: [
 		'claude-3-5-haiku-latest',
-		'claude-3-5-haiku-20241022',
-		'codex-mini-latest',
 	],
-	zai: ['glm-4.5-flash', 'glm-4.5-air'],
-	copilot: ['gpt-4o-mini', 'gpt-4.1-nano', 'gpt-4.1-mini'],
+	zai: ['glm-4.5-flash'],
+	copilot: ['gpt-4.1-mini'],
 };
 
 export function getFastModel(provider: ProviderId): string | undefined {

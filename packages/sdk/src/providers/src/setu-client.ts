@@ -8,6 +8,7 @@ import nacl from 'tweetnacl';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { addAnthropicCacheControl } from './anthropic-caching.ts';
 
 function simplifyPaymentError(errMsg: string): string {
@@ -305,6 +306,15 @@ export function createSetuModel(
 			fetch: customFetch,
 		});
 		return compatible(model);
+	}
+
+	if (providerNpm === '@ai-sdk/google') {
+		const google = createGoogleGenerativeAI({
+			baseURL,
+			apiKey: 'setu-wallet-auth',
+			fetch: customFetch,
+		});
+		return google(model);
 	}
 
 	// Default to OpenAI

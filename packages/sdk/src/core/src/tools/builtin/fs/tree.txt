@@ -1,8 +1,11 @@
-- Render a shallow directory tree from a starting path
+- Render a directory tree from a starting path with line counts for each file
 - Accepts absolute, home, or project-relative paths
 - Skips common build/cache folders (node_modules, dist, .git, etc.) by default
 - Depth is capped to avoid excessive output (1–5)
+- Each file shows its line count (e.g. "index.ts (42 lines)")
 
 Usage tips:
 - Use the LS tool for a flat listing of one directory
 - Use the Glob and Grep tools for file pattern and content searches respectively
+- Pay attention to line counts: files over 500 lines are large — prefer reading specific line ranges (startLine/endLine) or use Grep to find relevant sections instead of reading the entire file
+- Files over 2000 lines can consume significant context — always use targeted reads or search tools for these

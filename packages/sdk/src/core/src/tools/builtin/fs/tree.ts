@@ -58,7 +58,13 @@ async function walkTree(
 				files += sub.files;
 			} else {
 				files++;
-				lines.push(`${prefix}${connector}${entry.name}`);
+				let lineCount = '';
+				try {
+					const content = await fs.readFile(join(dir, entry.name), 'utf-8');
+					const count = content.split('\n').length;
+					lineCount = ` (${count} lines)`;
+				} catch {}
+				lines.push(`${prefix}${connector}${entry.name}${lineCount}`);
 			}
 		}
 	} catch {

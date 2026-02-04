@@ -202,8 +202,11 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 				reasoningSummary: 'auto',
 			};
 		} else if (underlyingProvider === 'google') {
+			const isGemini3 = opts.model.includes('gemini-3');
 			providerOptions.google = {
-				thinkingConfig: { thinkingBudget: THINKING_BUDGET },
+				thinkingConfig: isGemini3
+					? { thinkingLevel: 'high', includeThoughts: true }
+					: { thinkingBudget: THINKING_BUDGET },
 			};
 		} else if (underlyingProvider === 'openai-compatible') {
 			providerOptions.openaiCompatible = {

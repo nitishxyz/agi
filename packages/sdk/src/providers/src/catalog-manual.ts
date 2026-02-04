@@ -24,6 +24,11 @@ const isAllowedAnthropicModel = (id: string): boolean => {
 	return false;
 };
 
+const isAllowedGoogleModel = (id: string): boolean => {
+	if (id.startsWith('gemini-3')) return true;
+	return false;
+};
+
 const SETU_SOURCES: Array<{
 	id: ProviderId;
 	npm: string;
@@ -43,6 +48,11 @@ const SETU_SOURCES: Array<{
 		id: 'moonshot',
 		npm: '@ai-sdk/openai-compatible',
 		family: 'moonshot',
+	},
+	{
+		id: 'google',
+		npm: '@ai-sdk/google',
+		family: 'google',
 	},
 ];
 
@@ -69,8 +79,9 @@ function buildSetuEntry(base: CatalogMap): ProviderCatalogEntry | null {
 	const setuModels = SETU_SOURCES.flatMap(({ id, npm, family }) => {
 		const allModels = base[id]?.models ?? [];
 		const sourceModels = allModels.filter((model) => {
-			if (id === 'openai') return isAllowedOpenAIModel(model.id);
+		if (id === 'openai') return isAllowedOpenAIModel(model.id);
 			if (id === 'anthropic') return isAllowedAnthropicModel(model.id);
+			if (id === 'google') return isAllowedGoogleModel(model.id);
 			return true;
 		});
 		return sourceModels.map((model) => {
