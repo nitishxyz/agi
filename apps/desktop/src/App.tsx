@@ -1,21 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { tauriBridge, type Project } from './lib/tauri-bridge';
 import { tauriOnboarding } from './lib/tauri-onboarding';
 import { ProjectPicker } from './components/ProjectPicker';
 import { Workspace } from './components/Workspace';
 import { NativeOnboarding } from './components/onboarding/NativeOnboarding';
 import { SetuLoader } from './components/SetuLoader';
+import { useTheme } from '@agi-cli/web-sdk/hooks';
+import type { Theme } from '@agi-cli/web-sdk/hooks';
 import './index.css';
 
 type View = 'loading' | 'onboarding' | 'picker' | 'workspace';
 
+interface ThemeContextValue {
+	theme: Theme;
+	setTheme: (theme: Theme) => void;
+	toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextValue>({
+	theme: 'dark',
+	setTheme: () => {},
+	toggleTheme: () => {},
+});
+
+export const useDesktopTheme = () => useContext(ThemeContext);
+
 function App() {
 	const [view, setView] = useState<View>('loading');
 	const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+	const { theme, setTheme, toggleTheme } = useTheme();
 
 	useEffect(() => {
-		document.documentElement.classList.add('dark');
-
 		const init = async () => {
 			const initialPath = await tauriBridge.getInitialProject();
 
@@ -73,7 +88,7 @@ function App() {
 	}
 
 	return (
-		<>
+		<ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
 			{view === 'onboarding' && (
 				<NativeOnboarding onComplete={handleOnboardingComplete} />
 			)}
@@ -87,7 +102,7 @@ function App() {
 					onBack={handleBack}
 				/>
 			)}
-		</>
+		</ThemeContext.Provider>
 	);
 }
 

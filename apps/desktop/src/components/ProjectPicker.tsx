@@ -8,6 +8,8 @@ import { SetuLogo, GitHubLogo } from './Icons';
 import { ProjectCard } from './ProjectCard';
 import { TokenInputModal } from './TokenInputModal';
 import { CloneModal } from './CloneModal';
+import { Sun, Moon } from 'lucide-react';
+import { useDesktopTheme } from '../App';
 
 export function ProjectPicker({
 	onSelectProject,
@@ -29,6 +31,7 @@ export function ProjectPicker({
 	const [showTokenInput, setShowTokenInput] = useState(false);
 	const [cloning, setCloning] = useState(false);
 	const isFullscreen = useFullscreen();
+	const { theme, toggleTheme } = useDesktopTheme();
 
 	const handleOpenFolder = async () => {
 		const project = await openProjectDialog();
@@ -78,14 +81,15 @@ export function ProjectPicker({
 				data-tauri-drag-region
 				role="toolbar"
 			>
-				<div
-					className={`flex items-center gap-2 ${isFullscreen ? '' : 'ml-16'}`}
-				>
-					<SetuLogo size={20} />
-					<span className="font-semibold text-foreground">AGI Desktop</span>
-				</div>
+			<div
+				className={`flex items-center gap-2 ${isFullscreen ? '' : 'ml-16'}`}
+			>
+				<SetuLogo size={20} />
+				<span className="font-semibold text-foreground">AGI Desktop</span>
+			</div>
+			<div className="flex items-center gap-2">
 				{isAuthenticated && (
-					<div className="flex items-center gap-3">
+					<div className="flex items-center gap-3 mr-2">
 						{user?.avatarUrl && (
 							<img
 								src={user.avatarUrl}
@@ -103,6 +107,18 @@ export function ProjectPicker({
 						</button>
 					</div>
 				)}
+				<button
+					type="button"
+					onClick={toggleTheme}
+					className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+					title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+				>
+					{theme === 'dark' ? (
+						<Sun className="w-3.5 h-3.5" />
+					) : (
+						<Moon className="w-3.5 h-3.5" />
+					)}
+				</button>
 				<button
 					type="button"
 					onClick={() => tauriBridge.createNewWindow()}
@@ -125,6 +141,7 @@ export function ProjectPicker({
 					</svg>
 				</button>
 			</div>
+		</div>
 
 			<div className="flex-1 overflow-y-auto px-6 py-8 lg:px-12 lg:py-12">
 				<div className="max-w-4xl mx-auto">

@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { Sun, Moon } from 'lucide-react';
 import { useServer } from '../hooks/useServer';
 import { useFullscreen } from '../hooks/useFullscreen';
 import { handleTitleBarDrag } from '../utils/title-bar';
 import type { Project } from '../lib/tauri-bridge';
 import { tauriBridge } from '../lib/tauri-bridge';
 import { SetuLoader } from './SetuLoader';
-
-const DARK_BG = 'hsl(240, 10%, 8%)';
+import { useDesktopTheme } from '../App';
 
 export function Workspace({
 	project,
@@ -21,6 +21,7 @@ export function Workspace({
 	const iframeRef = useRef<HTMLIFrameElement>(null);
 	const [iframeLoaded, setIframeLoaded] = useState(false);
 	const isFullscreen = useFullscreen();
+	const { theme, toggleTheme } = useDesktopTheme();
 
 	const iframeSrc = useMemo(() => {
 		if (!server) return null;
@@ -78,14 +79,18 @@ export function Workspace({
 		return () => window.removeEventListener('message', handler);
 	}, []);
 
+	useEffect(() => {
+		if (!iframeLoaded || !iframeRef.current?.contentWindow) return;
+		iframeRef.current.contentWindow.postMessage(
+			{ type: 'agi-set-theme', theme },
+			'*',
+		);
+	}, [theme, iframeLoaded]);
+
 	return (
-		<div
-			className="h-screen flex flex-col"
-			style={{ backgroundColor: DARK_BG }}
-		>
+		<div className="h-screen flex flex-col bg-background">
 			<div
-				className="flex items-center gap-2 px-4 h-10 border-b border-border cursor-default select-none"
-				style={{ backgroundColor: DARK_BG }}
+				className="flex items-center gap-2 px-4 h-10 border-b border-border cursor-default select-none bg-background"
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
 				role="toolbar"
@@ -113,6 +118,18 @@ export function Workspace({
 				)}
 				<button
 					type="button"
+					onClick={toggleTheme}
+					className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+					title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+				>
+					{theme === 'dark' ? (
+						<Sun className="w-3.5 h-3.5" />
+					) : (
+						<Moon className="w-3.5 h-3.5" />
+					)}
+				</button>
+				<button
+					type="button"
 					onClick={() => tauriBridge.createNewWindow()}
 					className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
 					title="New Window"
@@ -134,10 +151,7 @@ export function Workspace({
 				</button>
 			</div>
 
-			<div
-				className="flex-1 relative flex items-center justify-center"
-				style={{ backgroundColor: DARK_BG }}
-			>
+			<div className="flex-1 relative flex items-center justify-center bg-background">
 				{(loading || (server && !iframeLoaded)) && (
 					<SetuLoader label={loading ? 'Starting server...' : 'Loading...'} />
 				)}
@@ -161,12 +175,16 @@ export function Workspace({
 						ref={iframeRef}
 						src={iframeSrc ?? ''}
 						className={`absolute inset-0 w-full h-full border-none transition-opacity duration-200 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
-						style={{ backgroundColor: DARK_BG }}
+						style={{ backgroundColor: 'hsl(var(--background))' }}
 						title="AGI Workspace"
 						allow="clipboard-write; clipboard-read"
 						onLoad={() => {
 							setIframeLoaded(true);
 							focusIframe();
+							iframeRef.current?.contentWindow?.postMessage(
+								{ type: 'agi-set-theme', theme },
+								'*',
+							);
 						}}
 					/>
 				)}
