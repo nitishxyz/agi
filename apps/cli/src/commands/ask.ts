@@ -69,6 +69,7 @@ export function registerAskCommand(program: Command) {
 		.option('--project <path>', 'Use project at <path>', process.cwd())
 		.option('--last', 'Continue most recent session', false)
 		.option('--session <id>', 'Continue specific session')
+		.option('-y, --yes', 'Auto-approve all tool executions')
 		.action(async (prompt, opts) => {
 			await handleAsk(prompt, {
 				agent: opts.agent,

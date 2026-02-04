@@ -2,14 +2,21 @@ import type { ProviderId } from '@agi-cli/sdk';
 import type { Artifact } from '@agi-cli/sdk';
 import { renderMarkdown } from '../ui.ts';
 import {
-	bold,
-	dim,
-	printPlan,
-	printSummary,
-	printToolCall,
-	printToolResult,
-	logToolError,
-} from './render.ts';
+	renderToolCall,
+	renderToolResult,
+	renderSummary,
+	renderContextHeader,
+	renderSessionInfo,
+	renderDoneMessage,
+	renderApprovalPrompt,
+	promptApproval,
+	c,
+	ICONS,
+	truncate as truncateStr,
+	renderThinkingDelta,
+	renderThinkingEnd,
+	isThinking,
+} from './renderers/index.ts';
 import {
 	computeAssistantLines,
 	computeAssistantSegments,
@@ -29,19 +36,9 @@ import type {
 } from './types.ts';
 import { connectSSE, httpJson, safeJson } from './http.ts';
 import { startEphemeralServer, stopEphemeralServer } from './server.ts';
-
-const READ_ONLY_TOOLS = new Set([
-	'read',
-	'ls',
-	'tree',
-	'ripgrep',
-	'git_diff',
-	'git_status',
-]);
-
-const MUTATING_TOOLS = new Set(['write', 'apply_patch', 'edit']);
-
 import { extractToolError, isToolError } from '@agi-cli/sdk/tools/error';
+
+const SAFE_TOOLS = new Set(['finish', 'progress_update', 'update_todos']);
 
 export async function runAsk(prompt: string, opts: AskOptions = {}) {
 	const startedAt = Date.now();
@@ -66,26 +63,25 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 				sessionId: opts.sessionId,
 				last: opts.last,
 				jsonMode,
+				toolApproval: flags.autoApprove ? 'auto' : undefined,
 			},
 		);
 
-		announceContext({
-			opts,
-			header: handshake.header,
-			defaults: {
-				agent: handshake.agent,
-				provider: handshake.provider,
-				model: handshake.model,
-			},
-			jsonMode,
-		});
+		if (!jsonMode) {
+			const agent = opts.agent ?? handshake.agent;
+			const provider = (opts.provider ?? handshake.provider) as string;
+			const model = opts.model ?? handshake.model;
+			Bun.write(
+				Bun.stderr,
+				`${renderContextHeader({ agent, provider, model })}\n`,
+			);
+		}
 
 		if (handshake.message && !jsonMode) {
-			const label =
-				handshake.message.kind === 'created'
-					? 'Created new session'
-					: 'Using last session';
-			Bun.write(Bun.stderr, `${dim(label)} ${handshake.message.sessionId}\n\n`);
+			Bun.write(
+				Bun.stderr,
+				`${renderSessionInfo(handshake.message.kind, handshake.message.sessionId)}\n\n`,
+			);
 		}
 
 		const sseUrl = `${baseUrl}/v1/sessions/${encodeURIComponent(handshake.sessionId)}/stream?project=${encodeURIComponent(projectRoot)}`;
@@ -94,10 +90,13 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 		const streamResult = await consumeAskStream({
 			sse,
 			assistantMessageId: handshake.assistantMessageId,
+			sessionId: handshake.sessionId,
+			baseUrl,
 			jsonEnabled: flags.jsonEnabled,
 			jsonStreamEnabled: flags.jsonStreamEnabled,
 			verbose: flags.verbose,
 			readVerbose: flags.readVerbose,
+			autoApprove: flags.autoApprove,
 		});
 		sse = null;
 
@@ -164,15 +163,16 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			streamResult.finishSeen ||
 			streamResult.toolCalls.length
 		) {
-			printSummary(
+			const summaryStr = renderSummary(
 				streamResult.toolCalls,
 				streamResult.toolResults,
 				streamResult.filesTouched,
 				streamResult.tokenUsage,
 			);
+			if (summaryStr) Bun.write(Bun.stderr, `${summaryStr}\n`);
 		}
 
-		Bun.write(Bun.stderr, `${dim(`Done in ${Date.now() - startedAt}ms`)}\n`);
+		Bun.write(Bun.stderr, `${renderDoneMessage(Date.now() - startedAt)}\n`);
 	} finally {
 		try {
 			await sse?.close();
@@ -201,14 +201,18 @@ type SSEConnection = Awaited<ReturnType<typeof connectSSE>>;
 type StreamFlags = {
 	sse: SSEConnection;
 	assistantMessageId: string;
+	sessionId: string;
+	baseUrl: string;
 	jsonEnabled: boolean;
 	jsonStreamEnabled: boolean;
 	verbose: boolean;
 	readVerbose: boolean;
+	autoApprove: boolean;
 };
 
 async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 	const sse = flags.sse;
+	let autoApproveAll = flags.autoApprove;
 	const state: StreamState = {
 		output: '',
 		assistantChunks: [],
@@ -219,6 +223,9 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		finishSeen: false,
 	};
 	const callById = new Map<string, number>();
+	let lastPrintedCallId: string | null = null;
+	let hasStartedText = false;
+	let hadToolOutput = false;
 
 	try {
 		for await (const ev of sse) {
@@ -227,12 +234,16 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 				handleAssistantDelta(ev.data);
 			} else if (event === 'tool.call') {
 				handleToolCall(ev.data);
+			} else if (event === 'reasoning.delta') {
+				handleReasoningDelta(ev.data);
 			} else if (event === 'tool.delta') {
 				handleToolDelta(ev.data);
 			} else if (event === 'tool.result') {
 				handleToolResult(ev.data);
 			} else if (event === 'plan.updated') {
 				handlePlan(ev.data);
+			} else if (event === 'tool.approval.required') {
+				await handleApproval(ev.data);
 			} else if (event === 'message.completed') {
 				if (handleCompleted(ev.data)) break;
 			} else if (event === 'error') {
@@ -243,8 +254,6 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		await sse.close();
 	}
 
-	// Render markdown if we buffered the output
-	// Default to streaming for real-time feedback
 	const useMarkdownBuffer = process.env.AGI_RENDER_MARKDOWN === '1';
 	if (
 		useMarkdownBuffer &&
@@ -258,7 +267,6 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		!flags.jsonEnabled &&
 		!flags.jsonStreamEnabled
 	) {
-		// Just add newline if we streamed the output
 		Bun.write(Bun.stdout, '\n');
 	}
 
@@ -284,14 +292,19 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 				})}\n`,
 			);
 		} else if (!flags.jsonEnabled) {
-			// Check if we should buffer for markdown rendering
-			// Default to streaming for real-time feedback
 			const useMarkdownBuffer = process.env.AGI_RENDER_MARKDOWN === '1';
 			if (!useMarkdownBuffer) {
-				// Stream raw output for real-time display (default)
+				if (isThinking()) {
+					renderThinkingEnd();
+					Bun.write(Bun.stderr, `\x1b[A\x1b[2K\r`);
+				}
+				if (!hasStartedText && hadToolOutput) {
+					Bun.write(Bun.stdout, '\n');
+				}
+				hasStartedText = true;
 				Bun.write(Bun.stdout, delta);
+				lastPrintedCallId = null;
 			}
-			// If buffering, output will be rendered after completion
 		}
 	}
 
@@ -314,7 +327,29 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 				})}\n`,
 			);
 		} else if (!flags.jsonEnabled) {
-			printToolCall(name, data?.args, { verbose: flags.verbose });
+			const output = renderToolCall({ toolName: name, args: data?.args });
+			if (output) {
+				if (isThinking()) {
+					renderThinkingEnd();
+					Bun.write(Bun.stderr, `\x1b[A\x1b[2K\r\n${output}\n`);
+				} else {
+					Bun.write(Bun.stderr, `\n${output}\n`);
+				}
+				lastPrintedCallId = callId ?? null;
+				hadToolOutput = true;
+				hasStartedText = false;
+			}
+		}
+	}
+
+	function handleReasoningDelta(raw: string) {
+		if (flags.jsonEnabled || flags.jsonStreamEnabled) return;
+		const data = safeJson(raw);
+		const delta = typeof data?.delta === 'string' ? data.delta : '';
+		if (!delta) return;
+		const output = renderThinkingDelta(delta);
+		if (output) {
+			Bun.write(Bun.stderr, `${output}\n`);
 		}
 	}
 
@@ -323,12 +358,11 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		const name = typeof data?.name === 'string' ? data.name : 'tool';
 		const channel = typeof data?.channel === 'string' ? data.channel : 'output';
 		if (flags.jsonStreamEnabled) {
-			const ts = Date.now();
 			Bun.write(
 				Bun.stdout,
 				`${JSON.stringify({
 					event: 'tool.delta',
-					ts,
+					ts: Date.now(),
 					name,
 					channel,
 					delta: data?.delta,
@@ -337,17 +371,25 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 			return;
 		}
 		if (flags.jsonEnabled) return;
-		const isReadOnly = READ_ONLY_TOOLS.has(name);
 		if (channel === 'input' && !flags.verbose) return;
+		const isReadOnly = [
+			'read',
+			'ls',
+			'tree',
+			'ripgrep',
+			'git_diff',
+			'git_status',
+		].includes(name);
 		if (isReadOnly && !flags.verbose && !flags.readVerbose) return;
 		const delta =
 			typeof data?.delta === 'string'
 				? data.delta
 				: JSON.stringify(data?.delta);
 		if (!delta) return;
+		lastPrintedCallId = null;
 		Bun.write(
 			Bun.stderr,
-			`${dim(`[${channel}]`)} ${name} ${dim('›')} ${truncate(delta, 160)}\n`,
+			`${c.dim(`[${channel}]`)} ${name} ${c.dim(ICONS.arrow)} ${truncateStr(delta, 160)}\n`,
 		);
 	}
 
@@ -410,69 +452,79 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 			return;
 		}
 		if (flags.jsonEnabled) return;
-		const isReadOnly = READ_ONLY_TOOLS.has(name);
-		const hasDiffArtifact = artifact?.kind === 'file_diff';
-
-		// Determine if we should show detailed result output
-		// Show detailed output for: websearch, bash, tree, mutating tools with diffs, errors, or with verbose flags
-		const shouldRenderResult =
-			name === 'progress_update'
-				? false
-				: name === 'websearch' ||
-					name === 'bash' ||
-					name === 'tree' ||
-					(MUTATING_TOOLS.has(name) && hasDiffArtifact) ||
-					hasErrorResult ||
-					((flags.readVerbose || flags.verbose) && isReadOnly);
 
 		const errorMessage = hasErrorResult
 			? (extractToolError(resultObject, topLevelError) ??
 				'Tool reported an error')
 			: undefined;
-		const resultPayload =
-			hasErrorResult && !data?.result
-				? { error: errorMessage ?? 'Tool reported an error' }
-				: data?.result;
 
-		if (shouldRenderResult) {
-			printToolResult(name, resultPayload, artifact, {
-				verbose: flags.verbose,
-				durationMs,
-				error: errorMessage,
-				args: data?.args,
-			});
-		} else if (
-			name !== 'progress_update' &&
-			data?.error &&
-			typeof data.error === 'string' &&
-			data.error.trim().length
-		) {
-			const msg = errorMessage ?? data.error.trim();
-			logToolError(name, msg, { durationMs });
-		} else if (
-			!shouldRenderResult &&
-			name !== 'progress_update' &&
-			errorMessage &&
-			!data?.error
-		) {
-			logToolError(name, errorMessage, { durationMs });
-		} else if (
-			name !== 'progress_update' &&
-			name !== 'finish' &&
-			(!isReadOnly || flags.readVerbose || flags.verbose)
-		) {
-			// Show condensed "done" message for tools that don't render detailed results
-			const timeStr =
-				typeof durationMs === 'number' ? ` ${dim(`(${durationMs}ms)`)} ` : ' ';
-			Bun.write(Bun.stderr, `${bold('›')} ${name}${dim('›')} done${timeStr}\n`);
+		const output = renderToolResult({
+			toolName: name,
+			args: data?.args,
+			result: data?.result,
+			artifact: artifact as unknown as Artifact,
+			durationMs,
+			error: errorMessage,
+			verbose: flags.verbose,
+		});
+
+		if (output) {
+			if (callId && callId === lastPrintedCallId) {
+				Bun.write(Bun.stderr, `\x1b[A\x1b[2K\r${output}\n`);
+			} else {
+				Bun.write(Bun.stderr, `${output}\n`);
+			}
 		}
+
+		lastPrintedCallId = null;
 		if (name === 'finish') state.finishSeen = true;
+	}
+
+	async function handleApproval(raw: string) {
+		if (flags.jsonEnabled || flags.jsonStreamEnabled) return;
+		lastPrintedCallId = null;
+		const data = safeJson(raw);
+		if (!data) return;
+
+		const callId = typeof data.callId === 'string' ? data.callId : '';
+		const toolName = typeof data.toolName === 'string' ? data.toolName : '';
+
+		if (autoApproveAll || SAFE_TOOLS.has(toolName)) {
+			await resolveApprovalHttp(flags.baseUrl, flags.sessionId, callId, true);
+			return;
+		}
+
+		const prompt = renderApprovalPrompt({
+			callId,
+			toolName,
+			args: data.args,
+			messageId: typeof data.messageId === 'string' ? data.messageId : '',
+		});
+		Bun.write(Bun.stderr, prompt);
+
+		const answer = await promptApproval();
+		if (answer === 'always') {
+			autoApproveAll = true;
+			await resolveApprovalHttp(flags.baseUrl, flags.sessionId, callId, true);
+		} else {
+			await resolveApprovalHttp(
+				flags.baseUrl,
+				flags.sessionId,
+				callId,
+				answer === 'yes',
+			);
+		}
 	}
 
 	function handlePlan(raw: string) {
 		if (flags.jsonEnabled || flags.jsonStreamEnabled) return;
+		lastPrintedCallId = null;
 		const data = safeJson(raw);
-		printPlan(data?.items, data?.note);
+		const output = renderToolResult({
+			toolName: 'update_todos',
+			result: { items: data?.items, note: data?.note },
+		});
+		if (output) Bun.write(Bun.stderr, `${output}\n`);
 	}
 
 	function handleCompleted(raw: string) {
@@ -526,9 +578,24 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 				})}\n`,
 			);
 		} else {
-			Bun.write(Bun.stderr, `\n[error] ${errorMessage}\n`);
+			Bun.write(Bun.stderr, `\n${c.red('error')} ${errorMessage}\n`);
 		}
 	}
+}
+
+async function resolveApprovalHttp(
+	baseUrl: string,
+	sessionId: string,
+	callId: string,
+	approved: boolean,
+): Promise<void> {
+	try {
+		await httpJson(
+			'POST',
+			`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/approval`,
+			{ callId, approved },
+		);
+	} catch {}
 }
 
 function parseFlags(argv: string[]) {
@@ -539,30 +606,8 @@ function parseFlags(argv: string[]) {
 		jsonEnabled: argv.includes('--json'),
 		jsonVerbose: argv.includes('--json-verbose'),
 		jsonStreamEnabled: argv.includes('--json-stream'),
+		autoApprove: argv.includes('--yes') || argv.includes('-y'),
 	};
-}
-
-function announceContext(args: {
-	opts: AskOptions;
-	header: { agent?: string; provider?: string; model?: string };
-	defaults: { agent: string; provider: ProviderId; model: string };
-	jsonMode: boolean;
-}) {
-	if (args.jsonMode) return;
-	const agent = args.opts.agent ?? args.header.agent ?? args.defaults.agent;
-	const provider = (args.opts.provider ??
-		args.header.provider ??
-		args.defaults.provider) as ProviderId;
-	const model = args.opts.model ?? args.header.model ?? args.defaults.model;
-	Bun.write(
-		Bun.stderr,
-		`${bold('Context')} ${dim('•')} agent=${agent} ${dim('•')} provider=${provider} ${dim('•')} model=${model}\n`,
-	);
-}
-
-function truncate(value: string, max: number) {
-	if (value.length <= max) return value;
-	return `${value.slice(0, max - 1)}…`;
 }
 
 function mergeTokenUsage(
