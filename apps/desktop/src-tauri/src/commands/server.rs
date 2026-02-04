@@ -41,11 +41,11 @@ fn get_binary_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String>
         _ => return Err(format!("Unsupported platform: {}-{}", os, arch)),
     };
 
-    let binary_name = if os == "windows" {
-        format!("agi-{}-{}.exe", os_name, arch_name)
-    } else {
-        format!("agi-{}-{}", os_name, arch_name)
-    };
+   let binary_name = if os == "windows" {
+        format!("otto-{}-{}.exe", os_name, arch_name)
+   } else {
+        format!("otto-{}-{}", os_name, arch_name)
+   };
 
     let mut candidates: Vec<std::path::PathBuf> = Vec::new();
 
@@ -153,10 +153,10 @@ pub async fn start_server(
     let actual_port = port.unwrap_or_else(|| find_available_port(&tracked_ports));
     let port_arg = actual_port.to_string();
     
-    eprintln!("[otto] Starting server for project: {} on port: {}", project_path, actual_port);
+   eprintln!("[otto] Starting server for project: {} on port: {}", project_path, actual_port);
 
-    let log_path = format!("/tmp/agi-server-{}.log", actual_port);
-    let log_file = OpenOptions::new()
+   let log_path = format!("/tmp/otto-server-{}.log", actual_port);
+   let log_file = OpenOptions::new()
         .create(true)
         .write(true)
         .truncate(true)
@@ -164,18 +164,18 @@ pub async fn start_server(
         .ok();
     
    let stdout = log_file.as_ref().map(|f| Stdio::from(f.try_clone().unwrap())).unwrap_or(Stdio::null());
-   let stderr = log_file.map(|f| Stdio::from(f)).unwrap_or(Stdio::null());
+  let stderr = log_file.map(|f| Stdio::from(f)).unwrap_or(Stdio::null());
 
-    let agi_bin_dir = dirs::config_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
-        .join("otto")
-        .join("bin");
-    let current_path = std::env::var("PATH").unwrap_or_default();
-    let augmented_path = format!(
-        "{}:/opt/homebrew/bin:/usr/local/bin:{}",
-        agi_bin_dir.display(),
-        current_path
-    );
+    let otto_bin_dir = dirs::config_dir()
+       .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
+       .join("otto")
+       .join("bin");
+   let current_path = std::env::var("PATH").unwrap_or_default();
+   let augmented_path = format!(
+       "{}:/opt/homebrew/bin:/usr/local/bin:{}",
+        otto_bin_dir.display(),
+       current_path
+   );
 
    let child = Command::new(&binary)
        .current_dir(&project_path)
