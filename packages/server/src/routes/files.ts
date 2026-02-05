@@ -1,14 +1,25 @@
 import type { Hono } from 'hono';
 import { readdir, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
+import { spawn } from 'node:child_process';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { serializeError } from '../runtime/errors/api-error.ts';
 import { logger } from '@ottocode/sdk';
+import { resolveBinary } from '@ottocode/sdk/tools/bin-manager';
 
 const execAsync = promisify(exec);
 
-const EXCLUDED_PATTERNS = [
+const EXCLUDED_FILES = new Set([
+	'.DS_Store',
+	'bun.lockb',
+	'.env',
+	'.env.local',
+	'.env.production',
+	'.env.development',
+]);
+
+const EXCLUDED_DIRS = new Set([
 	'node_modules',
 	'.git',
 	'dist',
@@ -16,26 +27,72 @@ const EXCLUDED_PATTERNS = [
 	'.next',
 	'.nuxt',
 	'.turbo',
+	'.astro',
+	'.svelte-kit',
+	'.vercel',
+	'.output',
 	'coverage',
 	'.cache',
-	'.DS_Store',
-	'bun.lockb',
-	'.env',
-	'.env.local',
-	'.env.production',
-	'.env.development',
-];
+	'__pycache__',
+	'.tsbuildinfo',
+]);
 
-function shouldExclude(name: string): boolean {
-	for (const pattern of EXCLUDED_PATTERNS) {
-		if (pattern.includes('*')) {
-			const regex = new RegExp(`^${pattern.replace(/\*/g, '.*')}$`);
-			if (regex.test(name)) return true;
-		} else if (name === pattern || name.endsWith(pattern)) {
-			return true;
-		}
-	}
-	return false;
+function shouldExcludeFile(name: string): boolean {
+	return EXCLUDED_FILES.has(name);
+}
+
+function shouldExcludeDir(name: string): boolean {
+	return EXCLUDED_DIRS.has(name);
+}
+
+async function listFilesWithRg(
+	projectRoot: string,
+	limit: number,
+): Promise<{ files: string[]; truncated: boolean }> {
+	const rgBin = await resolveBinary('rg');
+
+	return new Promise((resolve) => {
+		const args = [
+			'--files',
+			'--hidden',
+			'--glob', '!.git/',
+			'--sort', 'path',
+		];
+
+		const proc = spawn(rgBin, args, { cwd: projectRoot });
+		let stdout = '';
+		let stderr = '';
+
+		proc.stdout.on('data', (data) => {
+			stdout += data.toString();
+		});
+
+		proc.stderr.on('data', (data) => {
+			stderr += data.toString();
+		});
+
+		proc.on('close', (code) => {
+			if (code !== 0 && code !== 1) {
+				logger.warn('rg --files failed, falling back', { stderr } as Record<string, unknown>);
+				resolve({ files: [], truncated: false });
+				return;
+			}
+
+			const allFiles = stdout.split('\n').filter(Boolean);
+
+			const filtered = allFiles.filter((f) => {
+				const filename = f.split('/').pop() || f;
+				return !shouldExcludeFile(filename);
+			});
+
+			const truncated = filtered.length > limit;
+			resolve({ files: filtered.slice(0, limit), truncated });
+		});
+
+		proc.on('error', () => {
+			resolve({ files: [], truncated: false });
+		});
+	});
 }
 
 async function parseGitignore(projectRoot: string): Promise<Set<string>> {
@@ -104,21 +161,17 @@ async function traverseDirectory(
 				return { files: collected, truncated: true };
 			}
 
-			if (shouldExclude(entry.name)) {
-				continue;
-			}
-
 			const fullPath = join(dir, entry.name);
 			const relativePath = relative(projectRoot, fullPath);
 
-			if (
-				gitignorePatterns &&
-				matchesGitignorePattern(relativePath, gitignorePatterns)
-			) {
-				continue;
-			}
-
 			if (entry.isDirectory()) {
+				if (shouldExcludeDir(entry.name)) continue;
+				if (
+					gitignorePatterns &&
+					matchesGitignorePattern(relativePath, gitignorePatterns)
+				) {
+					continue;
+				}
 				const result = await traverseDirectory(
 					fullPath,
 					projectRoot,
@@ -132,11 +185,18 @@ async function traverseDirectory(
 					return result;
 				}
 			} else if (entry.isFile()) {
+				if (shouldExcludeFile(entry.name)) continue;
+				if (
+					gitignorePatterns &&
+					matchesGitignorePattern(relativePath, gitignorePatterns)
+				) {
+					continue;
+				}
 				collected.push(relativePath);
 			}
 		}
 	} catch (err) {
-		logger.warn(`Failed to read directory ${dir}:`, err);
+		logger.warn(`Failed to read directory ${dir}:`, err as Record<string, unknown>);
 	}
 
 	return { files: collected, truncated: false };
@@ -167,7 +227,7 @@ async function getChangedFiles(
 		}
 		return changedFiles;
 	} catch (_err) {
-		return new Set();
+		return new Map();
 	}
 }
 
@@ -178,17 +238,20 @@ export function registerFilesRoutes(app: Hono) {
 			const maxDepth = Number.parseInt(c.req.query('maxDepth') || '10', 10);
 			const limit = Number.parseInt(c.req.query('limit') || '1000', 10);
 
-			const gitignorePatterns = await parseGitignore(projectRoot);
+			let result = await listFilesWithRg(projectRoot, limit);
 
-			const result = await traverseDirectory(
-				projectRoot,
-				projectRoot,
-				maxDepth,
-				0,
-				limit,
-				[],
-				gitignorePatterns,
-			);
+			if (result.files.length === 0) {
+				const gitignorePatterns = await parseGitignore(projectRoot);
+				result = await traverseDirectory(
+					projectRoot,
+					projectRoot,
+					maxDepth,
+					0,
+					limit,
+					[],
+					gitignorePatterns,
+				);
+			}
 
 			const changedFiles = await getChangedFiles(projectRoot);
 

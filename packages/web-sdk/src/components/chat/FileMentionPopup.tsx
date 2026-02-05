@@ -118,12 +118,24 @@ export function FileMentionPopup({
 
 	const fuse = useMemo(
 		() =>
-			new Fuse(files, {
-				threshold: 0.4,
-				distance: 100,
+			new Fuse(
+				files.map((f) => ({
+					path: f,
+					filename: f.split('/').pop() || f,
+					normalized: f.replace(/[.\-_/]/g, ''),
+				})),
+				{
+				keys: [
+					{ name: 'filename', weight: 2 },
+					{ name: 'normalized', weight: 1.5 },
+					{ name: 'path', weight: 1 },
+				],
+				threshold: 0.3,
+				distance: 200,
 				ignoreLocation: true,
-				includeMatches: true,
-			}),
+				includeScore: true,
+			},
+			),
 		[files],
 	);
 
@@ -131,17 +143,23 @@ export function FileMentionPopup({
 		if (!query) {
 			return files.slice(0, 20);
 		}
-		const searchResults = fuse.search(query).map((r) => r.item);
+		const normalizedQuery = query.replace(/[.\-_/]/g, '');
+		const searchResults = fuse.search(normalizedQuery);
 
 		searchResults.sort((a, b) => {
-			const aChanged = changedFilesMap.has(a);
-			const bChanged = changedFilesMap.has(b);
-			if (aChanged && !bChanged) return -1;
-			if (!aChanged && bChanged) return 1;
-			return 0;
+			const scoreA = a.score ?? 1;
+			const scoreB = b.score ?? 1;
+			const scoreDiff = Math.abs(scoreA - scoreB);
+			if (scoreDiff < 0.05) {
+				const aChanged = changedFilesMap.has(a.item.path);
+				const bChanged = changedFilesMap.has(b.item.path);
+				if (aChanged && !bChanged) return -1;
+				if (!aChanged && bChanged) return 1;
+			}
+			return scoreA - scoreB;
 		});
 
-		return searchResults.slice(0, 20);
+		return searchResults.slice(0, 20).map((r) => r.item.path);
 	}, [fuse, query, files, changedFilesMap]);
 
 	useEffect(() => {

@@ -72,16 +72,15 @@ export const UnifiedModelSelector = forwardRef<
 	const fuse = useMemo(() => {
 		return new Fuse(flattenedModels, {
 			keys: [
-				{ name: 'modelLabel', weight: 1 },
-				{ name: 'modelId', weight: 0.5 },
-				{ name: 'providerLabel', weight: 0.3 },
+				{ name: 'modelLabel', weight: 2 },
+				{ name: 'modelId', weight: 1 },
+				{ name: 'providerLabel', weight: 0.5 },
 			],
-			threshold: 0.5,
+			threshold: 0.3,
 			ignoreLocation: true,
 			includeScore: true,
 			distance: 100,
 			minMatchCharLength: 1,
-			findAllMatches: true,
 		});
 	}, [flattenedModels]);
 

@@ -77,6 +77,10 @@
       "import": "./src/core/src/tools/error.ts",
       "types": "./src/core/src/tools/error.ts"
     },
+    "./tools/bin-manager": {
+      "import": "./src/core/src/tools/bin-manager.ts",
+      "types": "./src/core/src/tools/bin-manager.ts"
+    },
     "./prompts/*": "./src/prompts/src/*"
   },
   "files": [
