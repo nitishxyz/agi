@@ -6,6 +6,7 @@ import { AgentsTools } from "./docs/AgentsTools";
 import { Architecture } from "./docs/Architecture";
 import { Embedding } from "./docs/Embedding";
 import { ApiReference } from "./docs/ApiReference";
+import { Sharing } from "./docs/Sharing";
 
 const NAV_SECTIONS = [
 	{
@@ -20,6 +21,7 @@ const NAV_SECTIONS = [
 		title: "Features",
 		items: [
 			{ to: "/docs/agents-tools", label: "Agents & Tools" },
+			{ to: "/docs/sharing", label: "Session Sharing" },
 		],
 	},
 	{
@@ -109,8 +111,9 @@ export function Docs() {
 							<Route path="agents-tools" element={<AgentsTools />} />
 							<Route path="architecture" element={<Architecture />} />
 							<Route path="embedding" element={<Embedding />} />
-							<Route path="api" element={<ApiReference />} />
-							<Route path="*" element={<Navigate to="/docs" replace />} />
+						<Route path="api" element={<ApiReference />} />
+						<Route path="sharing" element={<Sharing />} />
+						<Route path="*" element={<Navigate to="/docs" replace />} />
 						</Routes>
 					</div>
 				</main>

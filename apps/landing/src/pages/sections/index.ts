@@ -7,4 +7,5 @@ export { ToolsSection } from "./ToolsSection";
 export { ArchitectureSection } from "./ArchitectureSection";
 export { StackSection } from "./StackSection";
 export { DesktopSection } from "./DesktopSection";
+export { ShareSection } from "./ShareSection";
 export { InstallSection } from "./InstallSection";

@@ -5,22 +5,21 @@ import { join } from 'node:path';
 
 const MIGRATIONS_DIR = join(import.meta.dir, '../drizzle');
 
-// Set your Cloudflare account ID here or via CLOUDFLARE_ACCOUNT_ID env var
-const ACCOUNT_ID =
-	process.env.CLOUDFLARE_ACCOUNT_ID || '861f82c965197980de430263380bad71';
+const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
+if (!ACCOUNT_ID) {
+	console.error('CLOUDFLARE_ACCOUNT_ID env var is required');
+	process.exit(1);
+}
 
 async function migrate() {
 	console.log('Running D1 migrations...\n');
 
-	// SST names databases as: {app}-{stage}-{resourceName}
-	// We can get the database ID and use wrangler API, or construct the name
 	const dbId = Resource.PreviewDB.databaseId;
 
-	// First, let's list databases to find the name
 	console.log('Finding database name...\n');
 	process.env.CLOUDFLARE_ACCOUNT_ID = ACCOUNT_ID;
 
-	const result = await $`wrangler d1 list --json`.text();
+	const result = await $`bunx wrangler d1 list --json`.text();
 	const databases = JSON.parse(result);
 
 	const db = databases.find(
@@ -41,7 +40,6 @@ async function migrate() {
 	console.log(`Database Name: ${dbName}`);
 	console.log(`Database ID: ${dbId}\n`);
 
-	// Get all SQL migration files sorted by name
 	const files = readdirSync(MIGRATIONS_DIR)
 		.filter((f) => f.endsWith('.sql'))
 		.sort();
@@ -56,8 +54,7 @@ async function migrate() {
 
 		console.log(`Applying: ${file}`);
 
-		// Use wrangler with database name as positional arg
-		await $`wrangler d1 execute ${dbName} --file=${filePath} --remote -y`.quiet();
+		await $`bunx wrangler d1 execute ${dbName} --file=${filePath} --remote -y`.quiet();
 
 		console.log(`✓ Applied: ${file}\n`);
 	}

@@ -8,6 +8,7 @@ import {
 	ArchitectureSection,
 	StackSection,
 	DesktopSection,
+	ShareSection,
 	InstallSection,
 } from "./sections";
 
@@ -23,6 +24,7 @@ export function Landing() {
 			<ArchitectureSection />
 			<StackSection />
 			<DesktopSection />
+			<ShareSection />
 			<InstallSection />
 		</main>
 	);
