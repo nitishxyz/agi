@@ -56,13 +56,23 @@ export function useLatestRelease() {
 
 	useEffect(() => {
 		let cancelled = false;
-		fetch("https://api.github.com/repos/nitishxyz/otto/releases/latest")
+		fetch("https://api.github.com/repos/nitishxyz/otto/releases?per_page=50")
 			.then((r) => r.json())
 			.then((data) => {
 				if (cancelled) return;
-				if (data.tag_name && data.assets) {
-					setRelease(parseAssets(data.tag_name, data.assets));
-				}
+				if (!Array.isArray(data)) return;
+				const desktopReleases = data
+					.filter((rel: { tag_name?: string }) => rel.tag_name?.startsWith("desktop-v"))
+					.sort((a: { published_at: string }, b: { published_at: string }) =>
+						new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+					);
+				for (const rel of desktopReleases) {
+					const parsed = parseAssets(rel.tag_name, rel.assets ?? []);
+					if (parsed.macosArm || parsed.linuxAppImage) {
+						setRelease(parsed);
+						break;
+					}
+ 				}
 			})
 			.catch(() => {})
 			.finally(() => { if (!cancelled) setLoading(false); });
