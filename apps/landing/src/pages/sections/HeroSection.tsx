@@ -18,16 +18,16 @@ function ProductMockup() {
 			<div className="h-14 border-b border-otto-border bg-otto-surface/95 flex items-center justify-between px-6">
 				<div className="flex items-center gap-2 text-sm text-otto-muted">
 					<svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-					<span className="text-otto-text font-medium truncate">Fix null check in login.ts</span>
+					<span className="text-otto-text font-medium truncate">Build waitlist page</span>
 				</div>
 				<div className="flex-shrink-0 flex items-center gap-5 text-sm text-otto-muted">
 					<div className="flex items-center gap-1">
 						<span className="text-xs opacity-70">ctx</span>
-						<span className="font-medium text-otto-text">12.4K</span>
+						<span className="font-medium text-otto-text">8.2K</span>
 					</div>
 					<div className="flex items-center gap-1.5">
 						<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-						<span className="font-medium text-otto-text">0.0032</span>
+						<span className="font-medium text-otto-text">0.0041</span>
 					</div>
 					<div className="hidden sm:flex items-center gap-2">
 						<ProviderLogo provider="anthropic" size={16} className="text-[#cc785c]" />
@@ -46,7 +46,7 @@ function ProductMockup() {
 								<span>12:34</span>
 							</div>
 							<div className="inline-block text-sm text-otto-text leading-relaxed bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/30 dark:border-emerald-500/20 rounded-xl px-4 py-3">
-								fix the null check in login.ts
+								build me a waitlist page with a gradient bg and confetti on signup
 							</div>
 						</div>
 					</div>
@@ -68,88 +68,90 @@ function ProductMockup() {
 						</div>
 
 						<div className="relative ml-1">
-							{step >= 3 && (
-								<div className="flex gap-3 pb-2 relative animate-fade-in">
-									<div className="flex-shrink-0 w-6 flex flex-col items-center relative pt-0.5">
-										<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-otto-surface">
-											<svg className="h-4 w-4 text-blue-600 dark:text-blue-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></svg>
-										</div>
-										<div className="w-px flex-1 bg-otto-border" />
-									</div>
-									<div className="flex-1 min-w-0 pt-1">
-										<div className="flex items-center gap-2 text-xs">
-											<span className="text-blue-600 dark:text-blue-300 font-medium">read</span>
-											<span className="text-otto-dim">login.ts</span>
-										</div>
-									</div>
+					{step >= 3 && (
+						<div className="flex gap-3 pb-2 relative animate-fade-in">
+							<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
+								<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative bg-otto-surface">
+									<svg className="h-4 w-4 text-amber-600 dark:text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
 								</div>
-							)}
+								<div className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-otto-border" style={{ top: '1.25rem', bottom: '-0.5rem' }} />
+							</div>
+							<div className="flex-1 min-w-0 pt-1">
+								<div className="flex items-center gap-2 text-xs">
+									<span className="text-amber-600 dark:text-amber-300 font-medium">glob</span>
+									<span className="text-otto-dim">src/**/*.tsx — 8 files</span>
+								</div>
+							</div>
+						</div>
+					)}
 
-							{step >= 4 && (
-								<div className="flex gap-3 pb-2 relative animate-fade-in">
-									<div className="flex-shrink-0 w-6 flex flex-col items-center relative pt-0.5">
-										<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-otto-surface">
-											<svg className="h-4 w-4 text-amber-600 dark:text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-										</div>
-										<div className="w-px flex-1 bg-otto-border" />
-									</div>
-									<div className="flex-1 min-w-0 pt-1">
-										<div className="flex items-center gap-2 text-xs">
-											<span className="text-amber-600 dark:text-amber-300 font-medium">ripgrep</span>
-											<span className="text-otto-dim">session?.token — 3 results</span>
-										</div>
-									</div>
+					{step >= 4 && (
+						<div className="flex gap-3 pb-2 relative animate-fade-in">
+							<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
+								<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative bg-otto-surface">
+									<svg className="h-4 w-4 text-emerald-600 dark:text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M3 15h6" /><path d="M6 12v6" /></svg>
 								</div>
-							)}
+								<div className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-otto-border" style={{ top: '1.25rem', bottom: '-0.5rem' }} />
+							</div>
+							<div className="flex-1 min-w-0 pt-1">
+								<div className="flex items-center gap-2 text-xs">
+									<span className="text-emerald-600 dark:text-emerald-300 font-medium">write</span>
+									<span className="text-otto-dim">src/pages/Waitlist.tsx — 64 lines</span>
+								</div>
+							</div>
+						</div>
+					)}
 
-							{step >= 5 && (
-								<div className="flex gap-3 pb-2 relative animate-fade-in">
-									<div className="flex-shrink-0 w-6 flex flex-col items-center relative pt-0.5">
-										<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-otto-surface">
-											<svg className="h-4 w-4 text-purple-600 dark:text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v14" /><path d="M5 10h14" /><path d="M5 21h14" /></svg>
-										</div>
-										<div className="w-px flex-1 bg-otto-border" />
-									</div>
-									<div className="flex-1 min-w-0 pt-1">
-										<div className="flex items-center gap-2 text-xs">
-											<span className="text-purple-600 dark:text-purple-300 font-medium">apply_patch</span>
-											<span className="text-otto-dim">login.ts — 3 lines changed</span>
-										</div>
-									</div>
+					{step >= 5 && (
+						<div className="flex gap-3 pb-2 relative animate-fade-in">
+							<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
+								<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative bg-otto-surface">
+									<svg className="h-4 w-4 text-purple-600 dark:text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v14" /><path d="M5 10h14" /><path d="M5 21h14" /></svg>
 								</div>
-							)}
+								<div className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-otto-border" style={{ top: '1.25rem', bottom: '-0.5rem' }} />
+							</div>
+							<div className="flex-1 min-w-0 pt-1">
+								<div className="flex items-center gap-2 text-xs">
+									<span className="text-purple-600 dark:text-purple-300 font-medium">apply_patch</span>
+									<span className="text-otto-dim">App.tsx — 4 lines changed</span>
+								</div>
+							</div>
+						</div>
+					)}
 
-							{step >= 6 && (
-								<div className="flex gap-3 pb-2 relative animate-fade-in">
-									<div className="flex-shrink-0 w-6 flex flex-col items-center relative pt-0.5">
-										<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-otto-surface">
-											<svg className="h-4 w-4 text-otto-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>
-										</div>
-										<div className="w-px flex-1 bg-otto-border" />
-									</div>
-									<div className="flex-1 min-w-0 pt-1">
-										<div className="flex items-center gap-2 text-xs">
-											<span className="text-otto-muted font-medium">bash</span>
-											<span className="text-otto-dim">bun test — 14 passed</span>
-										</div>
-									</div>
+					{step >= 6 && (
+						<div className="flex gap-3 pb-2 relative animate-fade-in">
+							<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
+								<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative bg-otto-surface">
+									<svg className="h-4 w-4 text-otto-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>
 								</div>
-							)}
+								<div className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-otto-border" style={{ top: '1.25rem', bottom: '-0.5rem' }} />
+							</div>
+							<div className="flex-1 min-w-0 pt-1">
+								<div className="flex items-center gap-2 text-xs">
+								<span className="text-otto-muted font-medium">bash</span>
+								<span className="text-otto-dim">terminal</span>
+								<span className="text-otto-dim/60">·</span>
+								<span className="text-otto-dim">bun dev — ready on :3000</span>
+								</div>
+							</div>
+						</div>
+					)}
 
-							{step >= 7 && (
-								<div className="flex gap-3 relative animate-fade-in">
-									<div className="flex-shrink-0 w-6 flex flex-col items-center relative pt-0.5">
-										<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-otto-surface">
-											<svg className="h-4 w-4 text-emerald-600 dark:text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-										</div>
-									</div>
-									<div className="flex-1 min-w-0 pt-0 -mt-0.5">
-										<div className="text-sm text-otto-text leading-relaxed markdown-content">
-											Added optional chaining on <code className="text-xs bg-otto-card border border-otto-border rounded px-1.5 py-0.5 text-otto-text">session?.token</code> at line 42. The null check was missing — accessing <code className="text-xs bg-otto-card border border-otto-border rounded px-1.5 py-0.5 text-otto-text">token</code> on a possibly undefined session caused runtime crashes during OAuth redirect.
-										</div>
-									</div>
+					{step >= 7 && (
+						<div className="flex gap-3 relative animate-fade-in">
+							<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
+								<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative bg-otto-surface">
+									<svg className="h-4 w-4 text-emerald-600 dark:text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
 								</div>
-							)}
+							</div>
+							<div className="flex-1 min-w-0 pt-0 -mt-0.5">
+								<div className="text-sm text-otto-text leading-relaxed markdown-content">
+									Created <code className="text-xs bg-otto-card border border-otto-border rounded px-1.5 py-0.5 text-otto-text">Waitlist.tsx</code> with an animated mesh gradient background and email capture form. On submit, <code className="text-xs bg-otto-card border border-otto-border rounded px-1.5 py-0.5 text-otto-text">canvas-confetti</code> fires 150 particles with a wide spread. Route wired up at <code className="text-xs bg-otto-card border border-otto-border rounded px-1.5 py-0.5 text-otto-text">/waitlist</code>.
+								</div>
+							</div>
+						</div>
+					)}
 						</div>
 					</div>
 				)}
