@@ -37,6 +37,8 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 	const terminalsList = terminals?.terminals ?? [];
 
 	const autoCreatingRef = useRef(false);
+	const terminalsListRef = useRef(terminalsList);
+	terminalsListRef.current = terminalsList;
 
 	useEffect(() => {
 		if (
@@ -79,7 +81,7 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 			try {
 				await killTerminal.mutateAsync(id);
 				if (activeTabId === id) {
-					const remaining = terminalsList.filter((t) => t.id !== id);
+					const remaining = terminalsListRef.current.filter((t) => t.id !== id);
 					if (remaining.length > 0) {
 						selectTab(remaining[0].id);
 					} else {
@@ -91,7 +93,7 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 				// ignore
 			}
 		},
-		[killTerminal, activeTabId, terminalsList, selectTab, closePanel],
+		[killTerminal, activeTabId, selectTab, closePanel],
 	);
 
 	useEffect(() => {
