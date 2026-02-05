@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+	--otto-bg: 255 255 255;
+	--otto-surface: 244 244 245;
+	--otto-card: 228 228 231;
+	--otto-border: 212 212 216;
+	--otto-border-light: 161 161 170;
+	--otto-text: 9 9 11;
+	--otto-muted: 82 82 91;
+	--otto-dim: 161 161 170;
+	--otto-accent: 59 130 246;
+	--otto-accent-light: 37 99 235;
+	--otto-glow: rgba(59, 130, 246, 0.08);
+	--otto-code-bg: 244 244 245;
+	--otto-pre-bg: 250 250 250;
+	--otto-scrollbar-track: 255 255 255;
+	--otto-scrollbar-thumb: 212 212 216;
+}
+
+.dark {
+	--otto-bg: 9 9 11;
+	--otto-surface: 17 17 22;
+	--otto-card: 24 24 27;
+	--otto-border: 39 39 42;
+	--otto-border-light: 63 63 70;
+	--otto-text: 250 250 250;
+	--otto-muted: 161 161 170;
+	--otto-dim: 82 82 91;
+	--otto-accent: 59 130 246;
+	--otto-accent-light: 96 165 250;
+	--otto-glow: rgba(59, 130, 246, 0.125);
+	--otto-code-bg: 24 24 27;
+	--otto-pre-bg: 10 10 15;
+	--otto-scrollbar-track: 9 9 11;
+	--otto-scrollbar-thumb: 39 39 42;
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html {
+	scroll-behavior: smooth;
+	scrollbar-width: thin;
+	scrollbar-color: rgb(var(--otto-scrollbar-thumb)) rgb(var(--otto-scrollbar-track));
+}
+
+body {
+	font-family: "IBM Plex Mono", monospace;
+	background-color: rgb(var(--otto-bg));
+	color: rgb(var(--otto-text));
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+	width: 6px;
+}
+::-webkit-scrollbar-track {
+	background: rgb(var(--otto-scrollbar-track));
+}
+::-webkit-scrollbar-thumb {
+	background: rgb(var(--otto-scrollbar-thumb));
+	border-radius: 3px;
+}
+
+.prose-otto a {
+	color: rgb(var(--otto-accent-light));
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+.prose-otto a:hover {
+	color: rgb(var(--otto-accent));
+}
+.prose-otto code {
+	background: rgb(var(--otto-code-bg));
+	border: 1px solid rgb(var(--otto-border));
+	border-radius: 4px;
+	padding: 2px 6px;
+	font-size: 0.875em;
+}
+.prose-otto pre {
+	background: rgb(var(--otto-pre-bg));
+	border: 1px solid rgb(var(--otto-border));
+	border-radius: 8px;
+	padding: 16px;
+	overflow-x: auto;
+}
+.prose-otto pre code {
+	background: none;
+	border: none;
+	padding: 0;
+}
+.prose-otto h2 {
+	font-size: 1.5rem;
+	font-weight: 600;
+	margin-top: 2.5rem;
+	margin-bottom: 1rem;
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid rgb(var(--otto-border));
+}
+.prose-otto h3 {
+	font-size: 1.125rem;
+	font-weight: 600;
+	margin-top: 2rem;
+	margin-bottom: 0.75rem;
+}
+.prose-otto p {
+	margin-top: 0.75rem;
+	margin-bottom: 0.75rem;
+	line-height: 1.75;
+	color: rgb(var(--otto-muted));
+}
+.prose-otto ul, .prose-otto ol {
+	margin-top: 0.75rem;
+	margin-bottom: 0.75rem;
+	padding-left: 1.5rem;
+	color: rgb(var(--otto-muted));
+}
+.prose-otto li {
+	margin-top: 0.25rem;
+	margin-bottom: 0.25rem;
+	line-height: 1.75;
+}
+.prose-otto table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+	font-size: 0.875rem;
+}
+.prose-otto th {
+	text-align: left;
+	padding: 8px 12px;
+	border-bottom: 1px solid rgb(var(--otto-border));
+	color: rgb(var(--otto-text));
+	font-weight: 600;
+}
+.prose-otto td {
+	padding: 8px 12px;
+	border-bottom: 1px solid rgb(var(--otto-border));
+	color: rgb(var(--otto-muted));
+}
+.prose-otto blockquote {
+	border-left: 3px solid rgb(var(--otto-accent));
+	padding-left: 1rem;
+	margin: 1rem 0;
+	color: rgb(var(--otto-dim));
+	font-style: italic;
+}
+
+.scrollbar-hide {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}
+
+@keyframes fadeIn {
+	from { opacity: 0; transform: translateY(8px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+	animation: fadeIn 0.4s ease-out both;
+}

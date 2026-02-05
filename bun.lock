@@ -38,7 +38,7 @@
     },
     "apps/cli": {
       "name": "@ottocode/cli",
-      "version": "0.1.174",
+      "version": "0.1.175",
       "bin": {
         "otto": "./dist/otto",
       },
@@ -63,7 +63,7 @@
     },
     "apps/desktop": {
       "name": "@ottocode/desktop",
-      "version": "0.1.21",
+      "version": "0.1.22",
       "dependencies": {
         "@ottocode/web-sdk": "workspace:*",
         "@tanstack/react-query": "^5.90.2",
@@ -89,6 +89,25 @@
         "tailwindcss": "3",
         "typescript": "~5.8.3",
         "vite": "^7.0.4",
+      },
+    },
+    "apps/landing": {
+      "name": "landing",
+      "version": "0.0.1",
+      "dependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "react-router-dom": "^7.6.1",
+      },
+      "devDependencies": {
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "@vitejs/plugin-react": "^4.3.4",
+        "autoprefixer": "^10.4.20",
+        "postcss": "^8.5.3",
+        "tailwindcss": "^3.4.17",
+        "typescript": "^5.7.0",
+        "vite": "^6.3.5",
       },
     },
     "apps/preview-api": {
@@ -204,7 +223,7 @@
     },
     "packages/api": {
       "name": "@ottocode/api",
-      "version": "0.1.174",
+      "version": "0.1.175",
       "dependencies": {
         "axios": "^1.7.9",
         "eventsource-parser": "^2.0.1",
@@ -217,7 +236,7 @@
     },
     "packages/database": {
       "name": "@ottocode/database",
-      "version": "0.1.174",
+      "version": "0.1.175",
       "dependencies": {
         "@ottocode/sdk": "workspace:*",
         "drizzle-orm": "^0.44.5",
@@ -230,14 +249,14 @@
     },
     "packages/install": {
       "name": "@ottocode/install",
-      "version": "0.1.174",
+      "version": "0.1.175",
       "bin": {
         "otto": "./start.js",
       },
     },
     "packages/sdk": {
       "name": "@ottocode/sdk",
-      "version": "0.1.174",
+      "version": "0.1.175",
       "dependencies": {
         "@ai-sdk/anthropic": "^3.0.0",
         "@ai-sdk/google": "^3.0.0",
@@ -264,7 +283,7 @@
     },
     "packages/server": {
       "name": "@ottocode/server",
-      "version": "0.1.174",
+      "version": "0.1.175",
       "dependencies": {
         "@ottocode/database": "workspace:*",
         "@ottocode/sdk": "workspace:*",
@@ -279,7 +298,7 @@
     },
     "packages/web-sdk": {
       "name": "@ottocode/web-sdk",
-      "version": "0.1.174",
+      "version": "0.1.175",
       "dependencies": {
         "@ottocode/api": "workspace:*",
         "@ottocode/sdk": "workspace:*",
@@ -317,7 +336,7 @@
     },
     "packages/web-ui": {
       "name": "@ottocode/web-ui",
-      "version": "0.1.174",
+      "version": "0.1.175",
       "dependencies": {
         "express": "^5.1.0",
       },
@@ -1723,6 +1742,8 @@
 
     "kleur": ["kleur@3.0.3", "", {}, "sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w=="],
 
+    "landing": ["landing@workspace:apps/landing"],
+
     "lightningcss": ["lightningcss@1.30.2", "", { "dependencies": { "detect-libc": "^2.0.3" }, "optionalDependencies": { "lightningcss-android-arm64": "1.30.2", "lightningcss-darwin-arm64": "1.30.2", "lightningcss-darwin-x64": "1.30.2", "lightningcss-freebsd-x64": "1.30.2", "lightningcss-linux-arm-gnueabihf": "1.30.2", "lightningcss-linux-arm64-gnu": "1.30.2", "lightningcss-linux-arm64-musl": "1.30.2", "lightningcss-linux-x64-gnu": "1.30.2", "lightningcss-linux-x64-musl": "1.30.2", "lightningcss-win32-arm64-msvc": "1.30.2", "lightningcss-win32-x64-msvc": "1.30.2" } }, "sha512-utfs7Pr5uJyyvDETitgsaqSyjCb2qNRAtuqUeWIAKztsOYdcACf2KtARYXg2pSvhkt+9NfoaNY7fxjl6nuMjIQ=="],
 
     "lightningcss-android-arm64": ["lightningcss-android-arm64@1.30.2", "", { "os": "android", "cpu": "arm64" }, "sha512-BH9sEdOCahSgmkVhBLeU7Hc9DWeZ1Eb6wNS6Da8igvUwAe0sqROHddIlvU06q3WyXVEOYDZ6ykBZQnjTbmo4+A=="],
@@ -2098,6 +2119,10 @@
     "react-markdown": ["react-markdown@10.1.0", "", { "dependencies": { "@types/hast": "^3.0.0", "@types/mdast": "^4.0.0", "devlop": "^1.0.0", "hast-util-to-jsx-runtime": "^2.0.0", "html-url-attributes": "^3.0.0", "mdast-util-to-hast": "^13.0.0", "remark-parse": "^11.0.0", "remark-rehype": "^11.0.0", "unified": "^11.0.0", "unist-util-visit": "^5.0.0", "vfile": "^6.0.0" }, "peerDependencies": { "@types/react": ">=18", "react": ">=18" } }, "sha512-qKxVopLT/TyA6BX3Ue5NwabOsAzm0Q7kAPwq6L+wWDwisYs7R8vZ0nRXqq6rkueboxpkjvLGU9fWifiX/ZZFxQ=="],
 
     "react-refresh": ["react-refresh@0.17.0", "", {}, "sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ=="],
+
+    "react-router": ["react-router@7.13.0", "", { "dependencies": { "cookie": "^1.0.1", "set-cookie-parser": "^2.6.0" }, "peerDependencies": { "react": ">=18", "react-dom": ">=18" }, "optionalPeers": ["react-dom"] }, "sha512-PZgus8ETambRT17BUm/LL8lX3Of+oiLaPuVTRH3l1eLvSPpKO3AvhAEb5N7ihAFZQrYDqkvvWfFh9p0z9VsjLw=="],
+
+    "react-router-dom": ["react-router-dom@7.13.0", "", { "dependencies": { "react-router": "7.13.0" }, "peerDependencies": { "react": ">=18", "react-dom": ">=18" } }, "sha512-5CO/l5Yahi2SKC6rGZ+HDEjpjkGaG/ncEP7eWFTvFxbHP8yeeI0PxTDjimtpXYlR3b3i9/WIL4VJttPrESIf2g=="],
 
     "react-syntax-highlighter": ["react-syntax-highlighter@15.6.6", "", { "dependencies": { "@babel/runtime": "^7.3.1", "highlight.js": "^10.4.1", "highlightjs-vue": "^1.0.0", "lowlight": "^1.17.0", "prismjs": "^1.30.0", "refractor": "^3.6.0" }, "peerDependencies": { "react": ">= 0.14.0" } }, "sha512-DgXrc+AZF47+HvAPEmn7Ua/1p10jNoVZVI/LoPiYdtY+OM+/nG5yefLHKJwdKqY1adMuHFbeyBaG9j64ML7vTw=="],
 
@@ -2844,6 +2869,8 @@
     "jayson/commander": ["commander@2.20.3", "", {}, "sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ=="],
 
     "json-rpc-engine/@metamask/safe-event-emitter": ["@metamask/safe-event-emitter@2.0.0", "", {}, "sha512-/kSXhY692qiV1MXu6EeOZvg5nECLclxNXcKCxJ3cXQgYuRymRHpdx/t7JXfsK+JLjwA1e1c1/SBrlQYpusC29Q=="],
+
+    "landing/vite": ["vite@6.4.1", "", { "dependencies": { "esbuild": "^0.25.0", "fdir": "^6.4.4", "picomatch": "^4.0.2", "postcss": "^8.5.3", "rollup": "^4.34.9", "tinyglobby": "^0.2.13" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^18.0.0 || ^20.0.0 || >=22.0.0", "jiti": ">=1.21.0", "less": "*", "lightningcss": "^1.21.0", "sass": "*", "sass-embedded": "*", "stylus": "*", "sugarss": "*", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "jiti", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-+Oxm7q9hDoLMyJOYfUYBuHQo+dkAloi33apOPP56pzj+vsdJDzr+j1NISE5pyaAuKL4A3UD34qd0lx5+kfKp2g=="],
 
     "mdast-util-mdx-jsx/parse-entities": ["parse-entities@4.0.2", "", { "dependencies": { "@types/unist": "^2.0.0", "character-entities-legacy": "^3.0.0", "character-reference-invalid": "^2.0.0", "decode-named-character-reference": "^1.0.0", "is-alphanumerical": "^2.0.0", "is-decimal": "^2.0.0", "is-hexadecimal": "^2.0.0" } }, "sha512-GG2AQYWoLgL877gQIKeRPGO1xF9+eG1ujIb5soS5gPvLQ1y2o8FL90w2QWNdf9I361Mpp7726c+lj3U0qK1uGw=="],
 
