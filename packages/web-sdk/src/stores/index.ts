@@ -12,3 +12,4 @@ export * from './settingsStore';
 export * from './toolApprovalStore';
 export * from './topupApprovalStore';
 export * from './onboardingStore';
+export * from './panelWidthStore';

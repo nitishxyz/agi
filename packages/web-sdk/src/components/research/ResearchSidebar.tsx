@@ -13,6 +13,7 @@ import {
 	X,
 } from 'lucide-react';
 import { useResearchStore } from '../../stores/researchStore';
+import { usePanelWidthStore } from '../../stores/panelWidthStore';
 import {
 	useResearchSessions,
 	useCreateResearchSession,
@@ -32,6 +33,12 @@ import { Modal } from '../ui/Modal';
 import { UnifiedModelSelector } from '../chat/UnifiedModelSelector';
 import { AssistantMessageGroup } from '../messages/AssistantMessageGroup';
 import { UserMessageGroup } from '../messages/UserMessageGroup';
+import { ResizeHandle } from '../ui/ResizeHandle';
+
+const PANEL_KEY = 'research';
+const DEFAULT_WIDTH = 384;
+const MIN_WIDTH = 384;
+const MAX_WIDTH = 640;
 
 interface ResearchSidebarProps {
 	parentSessionId: string | null;
@@ -44,6 +51,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 }: ResearchSidebarProps) {
 	const isExpanded = useResearchStore((state) => state.isExpanded);
 	const collapseSidebar = useResearchStore((state) => state.collapseSidebar);
+	const panelWidth = usePanelWidthStore((s) => s.widths[PANEL_KEY] ?? DEFAULT_WIDTH);
 	const activeResearchSessionId = useResearchStore(
 		(state) => state.activeResearchSessionId,
 	);
@@ -317,7 +325,9 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 		)?.label ?? activeSession?.model;
 
 	return (
-		<div className="w-96 border-l border-border bg-background flex flex-col h-full">
+		<div className="border-l border-border bg-background flex h-full" style={{ width: panelWidth }}>
+			<ResizeHandle panelKey={PANEL_KEY} side="right" minWidth={MIN_WIDTH} maxWidth={MAX_WIDTH} defaultWidth={DEFAULT_WIDTH} />
+			<div className="flex-1 flex flex-col h-full min-w-0">
 			{/* Header */}
 			<div className="h-14 border-b border-border px-3 flex items-center justify-between">
 				<div className="flex items-center gap-2 flex-1">
@@ -616,7 +626,8 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 						onChange={handleModelChange}
 					/>
 				)}
-			</Modal>
+		</Modal>
+		</div>
 		</div>
 	);
 });

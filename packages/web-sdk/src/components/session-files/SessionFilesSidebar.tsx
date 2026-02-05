@@ -8,9 +8,16 @@ import {
 	RefreshCw,
 } from 'lucide-react';
 import { useSessionFilesStore } from '../../stores/sessionFilesStore';
+import { usePanelWidthStore } from '../../stores/panelWidthStore';
 import { useSessionFiles } from '../../hooks/useSessionFiles';
 import { Button } from '../ui/Button';
+import { ResizeHandle } from '../ui/ResizeHandle';
 import type { SessionFile, SessionFileOperation } from '../../types/api';
+
+const PANEL_KEY = 'session-files';
+const DEFAULT_WIDTH = 320;
+const MIN_WIDTH = 320;
+const MAX_WIDTH = 600;
 
 interface SessionFilesSidebarProps {
 	sessionId?: string;
@@ -127,12 +134,15 @@ export const SessionFilesSidebar = memo(function SessionFilesSidebar({
 	const collapseSidebar = useSessionFilesStore(
 		(state) => state.collapseSidebar,
 	);
+	const panelWidth = usePanelWidthStore((s) => s.widths[PANEL_KEY] ?? DEFAULT_WIDTH);
 	const { data, isLoading, error, refetch } = useSessionFiles(sessionId);
 
 	if (!isExpanded) return null;
 
 	return (
-		<div className="w-80 border-l border-border bg-background flex flex-col h-full">
+		<div className="border-l border-border bg-background flex h-full" style={{ width: panelWidth }}>
+			<ResizeHandle panelKey={PANEL_KEY} side="right" minWidth={MIN_WIDTH} maxWidth={MAX_WIDTH} defaultWidth={DEFAULT_WIDTH} />
+			<div className="flex-1 flex flex-col h-full min-w-0">
 			<div className="h-14 border-b border-border px-4 flex items-center justify-between shrink-0">
 				<div className="flex items-center gap-2">
 					<FilePen className="w-4 h-4 text-muted-foreground" />
@@ -197,6 +207,7 @@ export const SessionFilesSidebar = memo(function SessionFilesSidebar({
 					</Button>
 				</div>
 			</div>
+		</div>
 		</div>
 	);
 });

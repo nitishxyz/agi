@@ -2,14 +2,21 @@ import { memo, useEffect, useState } from 'react';
 import { ChevronRight, GitBranch, RefreshCw, Upload } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGitStore } from '../../stores/gitStore';
+import { usePanelWidthStore } from '../../stores/panelWidthStore';
 import { useGitStatus, usePushCommits } from '../../hooks/useGit';
 import { Button } from '../ui/Button';
 import { GitFileList } from './GitFileList';
+import { ResizeHandle } from '../ui/ResizeHandle';
+
+const PANEL_KEY = 'git';
+const DEFAULT_WIDTH = 320;
+const MIN_WIDTH = 320;
+const MAX_WIDTH = 600;
 
 export const GitSidebar = memo(function GitSidebar() {
-	// Use selectors to only subscribe to needed state
 	const isExpanded = useGitStore((state) => state.isExpanded);
 	const collapseSidebar = useGitStore((state) => state.collapseSidebar);
+	const panelWidth = usePanelWidthStore((s) => s.widths[PANEL_KEY] ?? DEFAULT_WIDTH);
 	const { data: status, isLoading, error, refetch } = useGitStatus();
 	const queryClient = useQueryClient();
 	const pushMutation = usePushCommits();
@@ -51,7 +58,9 @@ export const GitSidebar = memo(function GitSidebar() {
 	const canPush = status && status.ahead > 0;
 
 	return (
-		<div className="w-80 border-l border-border bg-background flex flex-col h-full">
+		<div className="border-l border-border bg-background flex h-full" style={{ width: panelWidth }}>
+			<ResizeHandle panelKey={PANEL_KEY} side="right" minWidth={MIN_WIDTH} maxWidth={MAX_WIDTH} defaultWidth={DEFAULT_WIDTH} />
+			<div className="flex-1 flex flex-col h-full min-w-0">
 			{/* Header */}
 			<div className="h-14 border-b border-border px-4 flex items-center justify-between">
 				<div className="flex items-center gap-2 flex-1">
@@ -162,6 +171,7 @@ export const GitSidebar = memo(function GitSidebar() {
 						/>
 					</Button>
 				</div>
+			</div>
 			</div>
 		</div>
 	);

@@ -28,6 +28,13 @@ import { useSetuStore } from '../../stores/setuStore';
 import { SetuTopupModal } from './SetuTopupModal';
 import { useSetuBalance } from '../../hooks/useSetuBalance';
 import { useTopupCallback } from '../../hooks/useTopupCallback';
+import { usePanelWidthStore } from '../../stores/panelWidthStore';
+import { ResizeHandle } from '../ui/ResizeHandle';
+
+const SETTINGS_PANEL_KEY = 'settings';
+const SETTINGS_DEFAULT_WIDTH = 320;
+const SETTINGS_MIN_WIDTH = 320;
+const SETTINGS_MAX_WIDTH = 500;
 
 interface SettingsSectionProps {
 	title: string;
@@ -169,6 +176,7 @@ const SelectRow = memo(function SelectRow({
 export const SettingsSidebar = memo(function SettingsSidebar() {
 	const isExpanded = useSettingsStore((state) => state.isExpanded);
 	const collapseSidebar = useSettingsStore((state) => state.collapseSidebar);
+	const panelWidth = usePanelWidthStore((s) => s.widths[SETTINGS_PANEL_KEY] ?? SETTINGS_DEFAULT_WIDTH);
 
 	const { data: config } = useConfig();
 	const { data: allModels } = useAllModels();
@@ -237,7 +245,9 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 	};
 
 	return (
-		<div className="w-80 border-l border-border bg-background flex flex-col h-full">
+		<div className="border-l border-border bg-background flex h-full" style={{ width: panelWidth }}>
+			<ResizeHandle panelKey={SETTINGS_PANEL_KEY} side="right" minWidth={SETTINGS_MIN_WIDTH} maxWidth={SETTINGS_MAX_WIDTH} defaultWidth={SETTINGS_DEFAULT_WIDTH} />
+			<div className="flex-1 flex flex-col h-full min-w-0">
 			<div className="h-14 border-b border-border px-4 flex items-center justify-between shrink-0">
 				<div className="flex items-center gap-2">
 					<Settings className="w-4 h-4" />
@@ -353,7 +363,8 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 					/>
 				)}
 
-				<SetuTopupModal />
+			<SetuTopupModal />
+			</div>
 			</div>
 		</div>
 	);

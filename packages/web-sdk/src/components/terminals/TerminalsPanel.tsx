@@ -23,6 +23,7 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 	const closePanel = useTerminalStore((s) => s.closePanel);
 	const isMaximized = useTerminalStore((s) => s.isMaximized);
 	const toggleMaximize = useTerminalStore((s) => s.toggleMaximize);
+	const togglePanel = useTerminalStore((s) => s.togglePanel);
 
 	const { data: terminals } = useTerminals();
 	const createTerminal = useCreateTerminal();
@@ -79,14 +80,30 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 				await killTerminal.mutateAsync(id);
 				if (activeTabId === id) {
 					const remaining = terminalsList.filter((t) => t.id !== id);
-					selectTab(remaining.length > 0 ? remaining[0].id : null);
+					if (remaining.length > 0) {
+						selectTab(remaining[0].id);
+					} else {
+						selectTab(null);
+						closePanel();
+					}
 				}
 			} catch {
 				// ignore
 			}
 		},
-		[killTerminal, activeTabId, terminalsList, selectTab],
+		[killTerminal, activeTabId, terminalsList, selectTab, closePanel],
 	);
+
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === '`' && e.ctrlKey) {
+				e.preventDefault();
+				togglePanel();
+			}
+		};
+		window.addEventListener('keydown', handleKeyDown);
+		return () => window.removeEventListener('keydown', handleKeyDown);
+	}, [togglePanel]);
 
 	const handleResizeStart = useCallback(
 		(e: React.MouseEvent) => {
