@@ -6,6 +6,10 @@
 import "sst"
 declare module "sst" {
   export interface Resource {
+    "Landing": {
+      "type": "sst.aws.StaticSite"
+      "url": string
+    }
     "OGFunction": {
       "name": string
       "type": "sst.aws.Function"

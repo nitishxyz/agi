@@ -5,6 +5,10 @@
 
 declare module "sst" {
   export interface Resource {
+    "Landing": {
+      "type": "sst.aws.StaticSite"
+      "url": string
+    }
     "OGCache": {
       "type": "sst.cloudflare.Kv"
     }

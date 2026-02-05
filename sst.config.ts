@@ -18,12 +18,14 @@ export default $config({
 	},
 	async run() {
 		const { script } = await import('./infra/script');
+		const { landing } = await import('./infra/landing');
 		const { previewApiUrl } = await import('./infra/preview-api');
 		const { previewWeb } = await import('./infra/preview-web');
 		const { ogFunctionUrl } = await import('./infra/og');
 
 		return {
 			script: script.url,
+			landing: landing.url,
 			previewApi: previewApiUrl,
 			previewWeb: previewWeb.url,
 			ogFunction: ogFunctionUrl,
