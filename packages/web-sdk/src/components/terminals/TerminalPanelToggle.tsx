@@ -3,26 +3,26 @@ import { Terminal } from 'lucide-react';
 import { useTerminalStore } from '../../stores/terminalStore';
 import { useTerminals } from '../../hooks/useTerminals';
 
-export const TerminalsSidebarToggle = memo(function TerminalsSidebarToggle() {
-	const isExpanded = useTerminalStore((state) => state.isExpanded);
-	const toggleSidebar = useTerminalStore((state) => state.toggleSidebar);
+export const TerminalPanelToggle = memo(function TerminalPanelToggle() {
+	const isOpen = useTerminalStore((s) => s.isOpen);
+	const togglePanel = useTerminalStore((s) => s.togglePanel);
 	const { data } = useTerminals();
 
-	const terminalCount = data?.count ?? 0;
+	const count = data?.count ?? 0;
 
 	return (
 		<button
 			type="button"
-			onClick={toggleSidebar}
+			onClick={togglePanel}
 			className={`relative h-14 w-full transition-colors touch-manipulation flex items-center justify-center ${
-				isExpanded ? 'bg-muted border-r-2 border-primary' : 'hover:bg-muted/50'
+				isOpen ? 'bg-muted border-r-2 border-primary' : 'hover:bg-muted/50'
 			}`}
 			title="Terminals"
 		>
 			<Terminal className="w-5 h-5 text-muted-foreground mx-auto" />
-			{terminalCount > 0 && (
+			{count > 0 && (
 				<span className="absolute top-1 right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-semibold">
-					{terminalCount > 9 ? '9+' : terminalCount}
+					{count > 9 ? '9+' : count}
 				</span>
 			)}
 		</button>

@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { init, Terminal, FitAddon } from 'ghostty-web';
-import { ArrowLeft, X } from 'lucide-react';
-import { Button } from '../ui/Button';
 import { useTerminals } from '../../hooks/useTerminals';
-import { useTerminalStore } from '../../stores/terminalStore';
 import { getRuntimeApiBaseUrl } from '../../lib/config';
 import { client } from '@ottocode/api';
 
 const FONT_FAMILY = '"JetBrainsMono NFM", monospace';
+const SSE_RECONNECT_DELAY = 1500;
+const SSE_MAX_RETRIES = 5;
 
 function resolveBackgroundColor(): string {
 	if (typeof document === 'undefined') return '#121216';
@@ -92,49 +91,113 @@ function resolveApiBaseUrl(): string {
 
 interface TerminalViewerProps {
 	terminalId: string;
+	onExit?: (terminalId: string) => void;
 }
 
-export function TerminalViewer({ terminalId }: TerminalViewerProps) {
-	const termRef = useRef<HTMLDivElement>(null);
+export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
+	const containerRef = useRef<HTMLDivElement>(null);
 	const xtermRef = useRef<Terminal | null>(null);
 	const fitAddonRef = useRef<FitAddon | null>(null);
 	const eventSourceRef = useRef<EventSource | null>(null);
+	const retryCountRef = useRef(0);
+	const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [ready, setReady] = useState(false);
 	const { data: terminals } = useTerminals();
-	const { selectTerminal } = useTerminalStore();
 
 	const terminal = terminals?.terminals.find((t) => t.id === terminalId);
 
-	const handleKill = async () => {
-		try {
-			const baseUrl = resolveApiBaseUrl();
-			await fetch(`${baseUrl}/v1/terminals/${terminalId}`, {
-				method: 'DELETE',
-			});
-			selectTerminal(null);
-		} catch (error) {
-			console.error('Failed to kill terminal:', error);
+	const fitTerminal = useCallback(() => {
+		if (fitAddonRef.current) {
+			try {
+				fitAddonRef.current.fit();
+			} catch {
+				// container might not be visible yet
+			}
 		}
-	};
+	}, []);
+
+	const connectSSE = useCallback(
+		(xterm: Terminal, baseUrl: string) => {
+			if (eventSourceRef.current) {
+				eventSourceRef.current.close();
+				eventSourceRef.current = null;
+			}
+
+			const eventSource = new EventSource(
+				`${baseUrl}/v1/terminals/${terminalId}/output`,
+			);
+			eventSourceRef.current = eventSource;
+
+			let gotFirstData = false;
+
+			eventSource.onmessage = (event) => {
+				try {
+					const data = JSON.parse(event.data);
+					if (data.type === 'data') {
+						xterm.write(data.line);
+						if (!gotFirstData) {
+							gotFirstData = true;
+							setTimeout(() => setReady(true), 200);
+						}
+				} else if (data.type === 'exit') {
+					xterm.write(
+						`\r\n\x1b[33m[Process exited with code ${data.exitCode}]\x1b[0m\r\n`,
+					);
+					if (onExit) {
+						setTimeout(() => onExit(terminalId), 1500);
+					}
+				}
+				} catch {
+					// ignore parse errors
+				}
+			};
+
+			eventSource.onerror = () => {
+				eventSource.close();
+				if (eventSourceRef.current === eventSource) {
+					eventSourceRef.current = null;
+				}
+
+				if (retryCountRef.current < SSE_MAX_RETRIES) {
+					retryCountRef.current++;
+					retryTimerRef.current = setTimeout(() => {
+						if (xtermRef.current) {
+							connectSSE(xtermRef.current, baseUrl);
+						}
+					}, SSE_RECONNECT_DELAY);
+				}
+			};
+
+			eventSource.onopen = () => {
+				retryCountRef.current = 0;
+			};
+		},
+		[terminalId],
+	);
 
 	useEffect(() => {
-		if (!termRef.current || !terminalId) return;
+		if (!containerRef.current || !terminalId) return;
 
 		let disposed = false;
 		let xterm: Terminal | null = null;
 		let fitAddon: FitAddon | null = null;
-		let handleResize: (() => void) | null = null;
+		let resizeObserver: ResizeObserver | null = null;
 
 		setReady(false);
+		retryCountRef.current = 0;
 
 		if (eventSourceRef.current) {
 			eventSourceRef.current.close();
 			eventSourceRef.current = null;
 		}
+		if (retryTimerRef.current) {
+			clearTimeout(retryTimerRef.current);
+			retryTimerRef.current = null;
+		}
 
 		const setup = async () => {
 			await init();
-			if (disposed || !termRef.current) return;
+			if (disposed || !containerRef.current) return;
 
 			await loadEmbeddedFont();
 			await document.fonts.ready;
@@ -169,20 +232,20 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 				fontFamily: FONT_FAMILY,
 				cursorBlink: true,
 				convertEol: true,
-				scrollback: 1000,
+				scrollback: 5000,
 			});
 
 			fitAddon = new FitAddon();
 			xterm.loadAddon(fitAddon);
-			xterm.open(termRef.current);
+			xterm.open(containerRef.current);
 			xterm.focus();
 
 			await new Promise<void>((resolve) => {
 				requestAnimationFrame(() => {
 					try {
 						fitAddon?.fit();
-					} catch (error) {
-						console.error('Failed to fit terminal:', error);
+					} catch {
+						// container might not be visible
 					}
 					resolve();
 				});
@@ -204,52 +267,14 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 				sendResize(xterm.cols, xterm.rows);
 			}
 
-			const eventSource = new EventSource(
-				`${baseUrl}/v1/terminals/${terminalId}/output`,
-			);
-			eventSourceRef.current = eventSource;
-
-			let gotFirstData = false;
-
-			eventSource.onmessage = (event) => {
-				try {
-					const data = JSON.parse(event.data);
-					if (data.type === 'data') {
-						xterm?.write(data.line);
-						if (!gotFirstData) {
-							gotFirstData = true;
-							setTimeout(() => {
-								if (!disposed) setReady(true);
-							}, 350);
-						}
-					} else if (data.type === 'exit') {
-						xterm?.write(
-							`\r\n\x1b[33m[Process exited with code ${data.exitCode}]\x1b[0m\r\n`,
-						);
-					}
-				} catch (error) {
-					console.error('Failed to parse terminal output:', error);
-				}
-			};
-
-			eventSource.onerror = (error) => {
-				if (eventSource.readyState !== EventSource.CLOSED) {
-					console.error('[TerminalViewer] SSE error:', error);
-				}
-				eventSource.close();
-				if (eventSourceRef.current === eventSource) {
-					eventSourceRef.current = null;
-				}
-			};
+			connectSSE(xterm, baseUrl);
 
 			xterm.onData((data) => {
 				fetch(`${baseUrl}/v1/terminals/${terminalId}/input`, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ input: data }),
-				}).catch((error) => {
-					console.error('Failed to send terminal input:', error);
-				});
+				}).catch(() => {});
 			});
 
 			xterm.onResize(({ cols, rows }) => {
@@ -259,19 +284,21 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 			xtermRef.current = xterm;
 			fitAddonRef.current = fitAddon;
 
-			handleResize = () => {
-				if (fitAddonRef.current) {
-					try {
-						fitAddonRef.current.fit();
-					} catch (error) {
-						console.error('Failed to fit terminal on resize:', error);
+			resizeObserver = new ResizeObserver(() => {
+				requestAnimationFrame(() => {
+					if (fitAddonRef.current && !disposed) {
+						try {
+							fitAddonRef.current.fit();
+						} catch {
+							// ignore
+						}
 					}
-				}
-			};
-			window.addEventListener('resize', handleResize);
+				});
+			});
+			resizeObserver.observe(containerRef.current);
 
 			setTimeout(() => {
-				if (!disposed && !gotFirstData) setReady(true);
+				if (!disposed) setReady(true);
 			}, 2000);
 		};
 
@@ -281,49 +308,33 @@ export function TerminalViewer({ terminalId }: TerminalViewerProps) {
 
 		return () => {
 			disposed = true;
+			if (retryTimerRef.current) {
+				clearTimeout(retryTimerRef.current);
+				retryTimerRef.current = null;
+			}
 			if (eventSourceRef.current) {
 				eventSourceRef.current.close();
 				eventSourceRef.current = null;
 			}
-			if (handleResize) {
-				window.removeEventListener('resize', handleResize);
+			if (resizeObserver) {
+				resizeObserver.disconnect();
 			}
 			if (xterm) {
 				xterm.dispose();
 			}
+			xtermRef.current = null;
+			fitAddonRef.current = null;
 		};
-	}, [terminalId]);
+	}, [terminalId, connectSSE]);
+
+	useEffect(() => {
+		fitTerminal();
+	}, [fitTerminal]);
 
 	return (
 		<div className="flex h-full flex-col overflow-hidden bg-background">
-			<div className="h-10 border-b border-border px-3 flex items-center justify-between shrink-0 bg-background">
-				<div className="flex items-center gap-2 flex-1 min-w-0">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => selectTerminal(null)}
-						title="Back to terminal list"
-						className="h-6 w-6 shrink-0"
-					>
-						<ArrowLeft className="w-3.5 h-3.5" />
-					</Button>
-					<span className="text-xs font-medium text-muted-foreground truncate">
-						{terminal?.title || terminal?.purpose || terminalId}
-					</span>
-				</div>
-				<Button
-					variant="ghost"
-					size="icon"
-					onClick={handleKill}
-					title="Kill terminal"
-					className="h-6 w-6 shrink-0 text-destructive hover:text-destructive"
-				>
-					<X className="w-3.5 h-3.5" />
-				</Button>
-			</div>
-
 			<div className="relative flex-1 min-h-0 overflow-hidden">
-				<div ref={termRef} className="absolute inset-0 bg-background" />
+				<div ref={containerRef} className="absolute inset-0 bg-background" />
 				<div
 					className="absolute inset-0 bg-background flex items-center justify-center pointer-events-none transition-opacity duration-300"
 					style={{ opacity: ready ? 0 : 1 }}
