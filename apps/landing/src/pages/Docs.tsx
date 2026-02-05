@@ -1,4 +1,5 @@
-import { NavLink, Route, Routes, Navigate } from "react-router-dom";
+import { NavLink, Route, Routes, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { GettingStarted } from "./docs/GettingStarted";
 import { Usage } from "./docs/Usage";
 import { Configuration } from "./docs/Configuration";
@@ -7,6 +8,9 @@ import { Architecture } from "./docs/Architecture";
 import { Embedding } from "./docs/Embedding";
 import { ApiReference } from "./docs/ApiReference";
 import { Sharing } from "./docs/Sharing";
+import { SetuOverview } from "./docs/SetuOverview";
+import { SetuPayments } from "./docs/SetuPayments";
+import { SetuIntegration } from "./docs/SetuIntegration";
 
 const NAV_SECTIONS = [
 	{
@@ -30,6 +34,14 @@ const NAV_SECTIONS = [
 			{ to: "/docs/architecture", label: "System Architecture" },
 			{ to: "/docs/embedding", label: "Embedding Guide" },
 			{ to: "/docs/api", label: "API Reference" },
+		],
+	},
+	{
+		title: "Setu",
+		items: [
+			{ to: "/docs/setu", label: "Overview", end: true },
+			{ to: "/docs/setu/payments", label: "Payments" },
+			{ to: "/docs/setu/integration", label: "Integration Guide" },
 		],
 	},
 ];
@@ -97,6 +109,11 @@ function MobileNav() {
 }
 
 export function Docs() {
+	const { pathname } = useLocation();
+	useEffect(() => {
+		window.scrollTo(0, 0);
+	}, [pathname]);
+
 	return (
 		<div className="pt-14 min-h-screen">
 			<Sidebar />
@@ -113,6 +130,9 @@ export function Docs() {
 							<Route path="embedding" element={<Embedding />} />
 						<Route path="api" element={<ApiReference />} />
 						<Route path="sharing" element={<Sharing />} />
+						<Route path="setu" element={<SetuOverview />} />
+						<Route path="setu/payments" element={<SetuPayments />} />
+						<Route path="setu/integration" element={<SetuIntegration />} />
 						<Route path="*" element={<Navigate to="/docs" replace />} />
 						</Routes>
 					</div>
