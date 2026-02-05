@@ -39,7 +39,7 @@ function simplifyPaymentError(errMsg: string): string {
 	return short.length < errMsg.length ? `${short}...` : errMsg;
 }
 
-const DEFAULT_BASE_URL = 'https://api.setu.nitish.sh';
+const DEFAULT_BASE_URL = 'https://api.setu.ottocode.io';
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_MAX_PAYMENT_ATTEMPTS = 20;
