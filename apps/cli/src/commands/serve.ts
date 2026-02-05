@@ -4,6 +4,9 @@ import {
 	getTerminalManager,
 	openAuthUrl,
 	logger,
+	createTunnel,
+	printQRCode,
+	type OttoTunnel,
 } from '@ottocode/sdk';
 import { createApp as createServer } from '@ottocode/server';
 import { getDb } from '@ottocode/database';
@@ -30,6 +33,7 @@ export interface ServeOptions {
 	port?: number;
 	network: boolean;
 	noOpen: boolean;
+	tunnel: boolean;
 }
 
 export async function handleServe(opts: ServeOptions, version: string) {
@@ -70,12 +74,32 @@ export async function handleServe(opts: ServeOptions, version: string) {
 		console.log('   otto server is still running without Web UI');
 	}
 
+	let tunnel: OttoTunnel | null = null;
+	let tunnelUrl: string | null = null;
+
+	if (opts.tunnel) {
+		try {
+			console.log(colors.dim('  Starting tunnel...'));
+			const result = await createTunnel(serverPort, (msg) => {
+				console.log(colors.dim(`  ${msg}`));
+			});
+			tunnel = result.tunnel;
+			tunnelUrl = result.url;
+		} catch (error) {
+			logger.error('Failed to start tunnel', error);
+			console.log(colors.dim('  Tunnel failed, continuing without remote access'));
+		}
+	}
+
 	console.log('');
 	console.log(colors.bold('  ⚡ otto') + colors.dim(` v${version}`));
 	console.log('');
 	console.log(`  ${colors.dim('API')}     ${colors.cyan(apiUrl)}`);
 	if (webUrl) {
 		console.log(`  ${colors.dim('Web UI')}  ${colors.cyan(webUrl)}`);
+	}
+	if (tunnelUrl) {
+		console.log(`  ${colors.dim('Tunnel')}  ${colors.green(tunnelUrl)}`);
 	}
 	if (opts.network) {
 		console.log('');
@@ -86,6 +110,10 @@ export async function handleServe(opts: ServeOptions, version: string) {
 	console.log('');
 	console.log(colors.dim('  Press Ctrl+C to stop'));
 	console.log('');
+
+	if (tunnelUrl) {
+		await printQRCode(tunnelUrl, 'Scan to connect from mobile:');
+	}
 
 	if (webUrl && !opts.noOpen) {
 		const opened = await openAuthUrl(webUrl);
@@ -99,6 +127,15 @@ export async function handleServe(opts: ServeOptions, version: string) {
 		if (shuttingDown) return;
 		shuttingDown = true;
 		console.log(`\nReceived ${signal}, shutting down...`);
+
+		if (tunnel) {
+			try {
+				tunnel.stop();
+			} catch (error) {
+				logger.error('Error stopping tunnel', error);
+			}
+		}
+
 		try {
 			const terminalManager = getTerminalManager();
 			if (terminalManager) {
@@ -137,6 +174,7 @@ export function registerServeCommand(program: Command, version: string) {
 			Number.parseInt(v, 10),
 		)
 		.option('--network', 'Bind to 0.0.0.0 for network access', false)
+		.option('--tunnel', 'Enable Cloudflare tunnel for remote access', false)
 		.option('--no-open', 'Do not open browser automatically')
 		.option('--project <path>', 'Use project at <path>', process.cwd())
 		.action(async (opts) => {
@@ -145,6 +183,7 @@ export function registerServeCommand(program: Command, version: string) {
 					project: opts.project,
 					port: opts.port,
 					network: opts.network,
+					tunnel: opts.tunnel,
 					noOpen: !opts.open,
 				},
 				version,

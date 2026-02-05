@@ -108,6 +108,8 @@
     "fast-glob": "^3.3.2",
     "hono": "^4.9.9",
     "opencode-anthropic-auth": "^0.0.2",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
     "tweetnacl": "^1.0.3",
     "x402": "^1.1.0",
     "zod": "^4.1.8"

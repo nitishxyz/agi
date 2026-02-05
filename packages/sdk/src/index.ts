@@ -311,3 +311,20 @@ export {
 	buildSkillTool,
 	rebuildSkillDescription,
 } from './skills/index.ts';
+
+// =======================
+// Tunnel (Cloudflare Tunnels for remote access)
+// =======================
+export {
+	getTunnelBinaryPath,
+	isTunnelBinaryInstalled,
+	downloadTunnelBinary,
+	ensureTunnelBinary,
+	removeTunnelBinary,
+	OttoTunnel,
+	createTunnel,
+	generateQRCode,
+	printQRCode,
+} from './tunnel/index.ts';
+
+export type { TunnelConnection, TunnelEvents } from './tunnel/index.ts';
