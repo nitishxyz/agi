@@ -15,16 +15,16 @@ function ProductMockup() {
 
 	return (
 		<div className="bg-otto-surface border border-otto-border rounded-lg overflow-hidden shadow-2xl shadow-black/10 dark:shadow-black/50">
-			<div className="h-14 border-b border-otto-border bg-otto-surface/95 flex items-center justify-between px-6">
-				<div className="flex items-center gap-2 text-sm text-otto-muted">
-					<svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-					<span className="text-otto-text font-medium truncate">Build waitlist page</span>
+		<div className="h-14 border-b border-otto-border bg-otto-surface/95 flex items-center justify-between px-6">
+			<div className="flex items-center gap-2 text-sm text-otto-muted min-w-0 flex-1 mr-4">
+				<svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+				<span className="text-otto-text font-medium truncate">Build waitlist page</span>
+			</div>
+			<div className="flex-shrink-0 flex items-center gap-3 sm:gap-5 text-xs sm:text-sm text-otto-muted">
+				<div className="hidden sm:flex items-center gap-1">
+					<span className="text-xs opacity-70">ctx</span>
+					<span className="font-medium text-otto-text">8.2K</span>
 				</div>
-				<div className="flex-shrink-0 flex items-center gap-5 text-sm text-otto-muted">
-					<div className="flex items-center gap-1">
-						<span className="text-xs opacity-70">ctx</span>
-						<span className="font-medium text-otto-text">8.2K</span>
-					</div>
 					<div className="flex items-center gap-1.5">
 						<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
 						<span className="font-medium text-otto-text">0.0041</span>
@@ -76,11 +76,11 @@ function ProductMockup() {
 								</div>
 								<div className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-otto-border" style={{ top: '1.25rem', bottom: '-0.5rem' }} />
 							</div>
-							<div className="flex-1 min-w-0 pt-1">
-								<div className="flex items-center gap-2 text-xs">
-									<span className="text-amber-600 dark:text-amber-300 font-medium">glob</span>
-									<span className="text-otto-dim">src/**/*.tsx — 8 files</span>
-								</div>
+						<div className="flex-1 min-w-0 pt-1">
+							<div className="flex items-center gap-2 text-xs whitespace-nowrap overflow-hidden">
+								<span className="text-amber-600 dark:text-amber-300 font-medium">glob</span>
+								<span className="text-otto-dim truncate">src/**/*.tsx — 8 files</span>
+							</div>
 							</div>
 						</div>
 					)}
@@ -93,11 +93,11 @@ function ProductMockup() {
 								</div>
 								<div className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-otto-border" style={{ top: '1.25rem', bottom: '-0.5rem' }} />
 							</div>
-							<div className="flex-1 min-w-0 pt-1">
-								<div className="flex items-center gap-2 text-xs">
-									<span className="text-emerald-600 dark:text-emerald-300 font-medium">write</span>
-									<span className="text-otto-dim">src/pages/Waitlist.tsx — 64 lines</span>
-								</div>
+						<div className="flex-1 min-w-0 pt-1">
+							<div className="flex items-center gap-2 text-xs whitespace-nowrap overflow-hidden">
+								<span className="text-emerald-600 dark:text-emerald-300 font-medium">write</span>
+								<span className="text-otto-dim truncate">src/pages/Waitlist.tsx — 64 lines</span>
+							</div>
 							</div>
 						</div>
 					)}
@@ -110,11 +110,11 @@ function ProductMockup() {
 								</div>
 								<div className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-otto-border" style={{ top: '1.25rem', bottom: '-0.5rem' }} />
 							</div>
-							<div className="flex-1 min-w-0 pt-1">
-								<div className="flex items-center gap-2 text-xs">
-									<span className="text-purple-600 dark:text-purple-300 font-medium">apply_patch</span>
-									<span className="text-otto-dim">App.tsx — 4 lines changed</span>
-								</div>
+						<div className="flex-1 min-w-0 pt-1">
+							<div className="flex items-center gap-2 text-xs whitespace-nowrap overflow-hidden">
+								<span className="text-purple-600 dark:text-purple-300 font-medium">apply_patch</span>
+								<span className="text-otto-dim truncate">App.tsx — 4 lines changed</span>
+							</div>
 							</div>
 						</div>
 					)}
@@ -127,11 +127,11 @@ function ProductMockup() {
 								</div>
 								<div className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-otto-border" style={{ top: '1.25rem', bottom: '-0.5rem' }} />
 							</div>
-							<div className="flex-1 min-w-0 pt-1">
-							<div className="flex items-center gap-2 text-xs">
-							<span className="text-otto-muted font-medium">terminal</span>
-							<span className="text-otto-dim">bun dev — ready on :3000</span>
-							</div>
+						<div className="flex-1 min-w-0 pt-1">
+						<div className="flex items-center gap-2 text-xs whitespace-nowrap overflow-hidden">
+						<span className="text-otto-muted font-medium">terminal</span>
+						<span className="text-otto-dim truncate">bun dev — ready on :3000</span>
+						</div>
 							</div>
 						</div>
 					)}
