@@ -1,0 +1,10 @@
+export { HeroSection } from "./HeroSection";
+export { InterfacesSection } from "./InterfacesSection";
+export { EmbeddingSection } from "./EmbeddingSection";
+export { AgentsSection } from "./AgentsSection";
+export { ProvidersSection } from "./ProvidersSection";
+export { ToolsSection } from "./ToolsSection";
+export { ArchitectureSection } from "./ArchitectureSection";
+export { StackSection } from "./StackSection";
+export { DesktopSection } from "./DesktopSection";
+export { InstallSection } from "./InstallSection";
