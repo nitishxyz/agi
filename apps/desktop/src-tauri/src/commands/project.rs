@@ -43,7 +43,12 @@ pub async fn get_recent_projects() -> Result<Vec<Project>, String> {
 
     let content = std::fs::read_to_string(&config_path).map_err(|e| e.to_string())?;
 
-    serde_json::from_str(&content).map_err(|e| e.to_string())
+    let mut projects: Vec<Project> =
+        serde_json::from_str(&content).map_err(|e| e.to_string())?;
+
+    projects.sort_by(|a, b| b.last_opened.cmp(&a.last_opened));
+
+    Ok(projects)
 }
 
 #[tauri::command]

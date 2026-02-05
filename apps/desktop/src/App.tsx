@@ -66,7 +66,12 @@ function App() {
 	}, []);
 
 	const handleSelectProject = (project: Project) => {
-		setSelectedProject(project);
+		const updatedProject = {
+			...project,
+			lastOpened: new Date().toISOString(),
+		};
+		tauriBridge.saveRecentProject(updatedProject).catch(() => {});
+		setSelectedProject(updatedProject);
 		setView('workspace');
 	};
 
