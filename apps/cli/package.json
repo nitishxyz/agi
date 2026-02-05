@@ -1,65 +1,65 @@
 {
-	"name": "@ottocode/cli",
-	"version": "0.1.175",
-	"description": "AI-powered development assistant CLI",
-	"author": "nitishxyz",
-	"license": "MIT",
-	"homepage": "https://github.com/nitishxyz/otto#readme",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/nitishxyz/otto.git",
-		"directory": "apps/cli"
-	},
-	"bugs": {
-		"url": "https://github.com/nitishxyz/otto/issues"
-	},
-	"keywords": [
-		"ai",
-		"cli",
-		"development",
-		"assistant",
-		"code-review",
-		"anthropic",
-		"openai",
-		"gemini"
-	],
-	"type": "module",
-	"bin": {
-		"otto": "./dist/otto"
-	},
-	"files": [
-		"dist/otto*",
-		"README.md",
-		"LICENSE"
-	],
-	"scripts": {
-		"dev": "bun run index.ts",
-		"postinstall": "mkdir -p src/generated && test -f src/generated/embedded-rg.ts || echo 'export const embeddedRg: string | null = null;' > src/generated/embedded-rg.ts",
-		"prebuild": "bun run ../../scripts/build-web.ts && bun run ../../scripts/prepare-embedded-bins.ts",
-		"build": "bun run prebuild && bun build --compile --minify ./index.ts --outfile dist/otto",
-		"build:darwin-arm64": "bun run ../../scripts/build-web.ts && bun run ../../scripts/prepare-embedded-bins.ts darwin-arm64 && mkdir -p dist && bun build --compile --minify --target=bun-darwin-arm64 ./index.ts --outfile dist/otto-darwin-arm64",
-		"build:darwin-x64": "bun run ../../scripts/build-web.ts && bun run ../../scripts/prepare-embedded-bins.ts darwin-x64 && mkdir -p dist && bun build --compile --minify --target=bun-darwin-x64 ./index.ts --outfile dist/otto-darwin-x64",
-		"build:linux-x64": "bun run ../../scripts/build-web.ts && bun run ../../scripts/prepare-embedded-bins.ts linux-x64 && mkdir -p dist && bun build --compile --minify --target=bun-linux-x64 ./index.ts --outfile dist/otto-linux-x64",
-		"build:linux-arm64": "bun run ../../scripts/build-web.ts && bun run ../../scripts/prepare-embedded-bins.ts linux-arm64 && mkdir -p dist && bun build --compile --minify --target=bun-linux-arm64 ./index.ts --outfile dist/otto-linux-arm64",
-		"prepublishOnly": "bun run build",
-		"typecheck": "tsc --noEmit"
-	},
-	"dependencies": {
-		"@ottocode/database": "workspace:*",
-		"@ottocode/sdk": "workspace:*",
-		"@ottocode/server": "workspace:*",
-		"@clack/prompts": "^0.11.0",
-		"@solana/spl-token": "^0.4.14",
-		"chalk": "^5.6.2",
-		"commander": "^14.0.2",
-		"diff": "^8.0.2",
-		"marked": "^16.3.0",
-		"marked-terminal": "^7.3.0",
-		"qrcode-terminal": "^0.12.0"
-	},
-	"devDependencies": {
-		"@types/bun": "latest",
-		"@types/marked-terminal": "^6.1.1",
-		"typescript": "^5"
-	}
+  "name": "@ottocode/cli",
+  "version": "0.1.176",
+  "description": "AI-powered development assistant CLI",
+  "author": "nitishxyz",
+  "license": "MIT",
+  "homepage": "https://github.com/nitishxyz/otto#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nitishxyz/otto.git",
+    "directory": "apps/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/nitishxyz/otto/issues"
+  },
+  "keywords": [
+    "ai",
+    "cli",
+    "development",
+    "assistant",
+    "code-review",
+    "anthropic",
+    "openai",
+    "gemini"
+  ],
+  "type": "module",
+  "bin": {
+    "otto": "./dist/otto"
+  },
+  "files": [
+    "dist/otto*",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "bun run index.ts",
+    "postinstall": "mkdir -p src/generated && test -f src/generated/embedded-rg.ts || echo 'export const embeddedRg: string | null = null;' > src/generated/embedded-rg.ts",
+    "prebuild": "bun run ../../scripts/build-web.ts && bun run ../../scripts/prepare-embedded-bins.ts",
+    "build": "bun run prebuild && bun build --compile --minify ./index.ts --outfile dist/otto",
+    "build:darwin-arm64": "bun run ../../scripts/build-web.ts && bun run ../../scripts/prepare-embedded-bins.ts darwin-arm64 && mkdir -p dist && bun build --compile --minify --target=bun-darwin-arm64 ./index.ts --outfile dist/otto-darwin-arm64",
+    "build:darwin-x64": "bun run ../../scripts/build-web.ts && bun run ../../scripts/prepare-embedded-bins.ts darwin-x64 && mkdir -p dist && bun build --compile --minify --target=bun-darwin-x64 ./index.ts --outfile dist/otto-darwin-x64",
+    "build:linux-x64": "bun run ../../scripts/build-web.ts && bun run ../../scripts/prepare-embedded-bins.ts linux-x64 && mkdir -p dist && bun build --compile --minify --target=bun-linux-x64 ./index.ts --outfile dist/otto-linux-x64",
+    "build:linux-arm64": "bun run ../../scripts/build-web.ts && bun run ../../scripts/prepare-embedded-bins.ts linux-arm64 && mkdir -p dist && bun build --compile --minify --target=bun-linux-arm64 ./index.ts --outfile dist/otto-linux-arm64",
+    "prepublishOnly": "bun run build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ottocode/database": "workspace:*",
+    "@ottocode/sdk": "workspace:*",
+    "@ottocode/server": "workspace:*",
+    "@clack/prompts": "^0.11.0",
+    "@solana/spl-token": "^0.4.14",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "diff": "^8.0.2",
+    "marked": "^16.3.0",
+    "marked-terminal": "^7.3.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/marked-terminal": "^6.1.1",
+    "typescript": "^5"
+  }
 }

@@ -1,37 +1,37 @@
 {
-	"name": "@ottocode/install",
-	"version": "0.1.175",
-	"description": "AI-powered development assistant CLI - npm installer",
-	"author": "nitishxyz",
-	"license": "MIT",
-	"homepage": "https://github.com/nitishxyz/otto#readme",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/nitishxyz/otto.git",
-		"directory": "packages/install"
-	},
-	"bugs": {
-		"url": "https://github.com/nitishxyz/otto/issues"
-	},
-	"keywords": [
-		"ai",
-		"cli",
-		"development",
-		"assistant",
-		"code-review",
-		"anthropic",
-		"openai",
-		"gemini"
-	],
-	"type": "module",
-	"bin": {
-		"otto": "./start.js"
-	},
-	"files": [
-		"start.js",
-		"README.md"
-	],
-	"scripts": {
-		"postinstall": "node start.js"
-	}
+  "name": "@ottocode/install",
+  "version": "0.1.176",
+  "description": "AI-powered development assistant CLI - npm installer",
+  "author": "nitishxyz",
+  "license": "MIT",
+  "homepage": "https://github.com/nitishxyz/otto#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nitishxyz/otto.git",
+    "directory": "packages/install"
+  },
+  "bugs": {
+    "url": "https://github.com/nitishxyz/otto/issues"
+  },
+  "keywords": [
+    "ai",
+    "cli",
+    "development",
+    "assistant",
+    "code-review",
+    "anthropic",
+    "openai",
+    "gemini"
+  ],
+  "type": "module",
+  "bin": {
+    "otto": "./start.js"
+  },
+  "files": [
+    "start.js",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "node start.js"
+  }
 }
