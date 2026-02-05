@@ -322,8 +322,9 @@ export function serveWebUI(options = {}) {
 
     // Handle direct asset requests (for cases where HTML references /assets/*)
     if (url.pathname.startsWith('/assets/') || 
-        url.pathname === '/vite.svg' || 
-        url.pathname === '/favicon.ico') {
+        url.pathname === '/favicon.svg' || 
+        url.pathname === '/favicon.ico' ||
+        url.pathname === '/vite.svg') {
       const directAsset = await serveAsset(url.pathname);
       if (directAsset) {
         return directAsset;
