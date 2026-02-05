@@ -128,12 +128,10 @@ function ProductMockup() {
 								<div className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-otto-border" style={{ top: '1.25rem', bottom: '-0.5rem' }} />
 							</div>
 							<div className="flex-1 min-w-0 pt-1">
-								<div className="flex items-center gap-2 text-xs">
-								<span className="text-otto-muted font-medium">bash</span>
-								<span className="text-otto-dim">terminal</span>
-								<span className="text-otto-dim/60">·</span>
-								<span className="text-otto-dim">bun dev — ready on :3000</span>
-								</div>
+							<div className="flex items-center gap-2 text-xs">
+							<span className="text-otto-muted font-medium">terminal</span>
+							<span className="text-otto-dim">bun dev — ready on :3000</span>
+							</div>
 							</div>
 						</div>
 					)}
