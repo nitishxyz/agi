@@ -323,6 +323,7 @@ export {
 	removeTunnelBinary,
 	OttoTunnel,
 	createTunnel,
+	killStaleTunnels,
 	generateQRCode,
 	printQRCode,
 } from './tunnel/index.ts';

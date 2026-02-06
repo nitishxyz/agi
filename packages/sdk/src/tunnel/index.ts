@@ -9,6 +9,7 @@ export {
 export {
 	OttoTunnel,
 	createTunnel,
+	killStaleTunnels,
 	type TunnelConnection,
 	type TunnelEvents,
 } from './tunnel.ts';

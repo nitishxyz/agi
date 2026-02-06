@@ -4,11 +4,9 @@ import {
 	getTerminalManager,
 	openAuthUrl,
 	logger,
-	createTunnel,
 	printQRCode,
-	type OttoTunnel,
 } from '@ottocode/sdk';
-import { createApp as createServer } from '@ottocode/server';
+import { createApp as createServer, setServerPort } from '@ottocode/server';
 import { getDb } from '@ottocode/database';
 import { createWebServer } from '../web-server.ts';
 import { colors } from '../ui.ts';
@@ -57,6 +55,9 @@ export async function handleServe(opts: ServeOptions, version: string) {
 	const displayHost = opts.network ? getLocalIP() : 'localhost';
 	const serverPort = agiServer.port ?? requestedPort;
 	const apiUrl = `http://${displayHost}:${serverPort}`;
+	
+	// Register server port so tunnel routes can use it
+	setServerPort(serverPort);
 
 	const webPort = serverPort + 1;
 	let webServer: ReturnType<typeof createWebServer>['server'] | null = null;
@@ -74,38 +75,36 @@ export async function handleServe(opts: ServeOptions, version: string) {
 		console.log('   otto server is still running without Web UI');
 	}
 
-	let tunnel: OttoTunnel | null = null;
 	let tunnelUrl: string | null = null;
 
 	if (opts.tunnel) {
 		try {
 			console.log(colors.dim('  Starting tunnel...'));
-			const result = await createTunnel(serverPort, (msg) => {
-				console.log(colors.dim(`  ${msg}`));
+			
+			// Call server's tunnel endpoint - server handles everything
+			const response = await fetch(`http://localhost:${serverPort}/v1/tunnel/start`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({}),
 			});
-			tunnel = result.tunnel;
-			tunnelUrl = result.url;
-
-			// Register tunnel with server via API so Web UI knows about it
-			try {
-				await fetch(`http://localhost:${serverPort}/v1/tunnel/register`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ url: tunnelUrl }),
-				});
-			} catch (regError) {
-				logger.debug('Failed to register tunnel with server:', regError);
+			
+			const result = await response.json() as { ok: boolean; url?: string; error?: string };
+			
+			if (result.ok && result.url) {
+				tunnelUrl = result.url;
+			} else {
+				const errorMsg = result.error || 'Unknown error';
+				if (errorMsg.includes('Rate limited')) {
+					console.log(colors.yellow('  ⚠ Rate limited by Cloudflare'));
+					console.log(colors.dim('    Please wait 5-10 minutes before trying again'));
+				} else {
+					console.log(colors.dim(`  Tunnel failed: ${errorMsg}`));
+				}
 			}
-
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
-			if (errorMsg.includes('Rate limited')) {
-				console.log(colors.yellow('  ⚠ Rate limited by Cloudflare'));
-				console.log(colors.dim('    Please wait 5-10 minutes before trying again'));
-			} else {
-				logger.error('Failed to start tunnel', error);
-				console.log(colors.dim('  Tunnel failed, continuing without remote access'));
-			}
+			logger.error('Failed to start tunnel', error);
+			console.log(colors.dim('  Tunnel failed, continuing without remote access'));
 		}
 	}
 
@@ -146,12 +145,13 @@ export async function handleServe(opts: ServeOptions, version: string) {
 		shuttingDown = true;
 		console.log(`\nReceived ${signal}, shutting down...`);
 
-		if (tunnel) {
-			try {
-				tunnel.stop();
-			} catch (error) {
-				logger.error('Error stopping tunnel', error);
-			}
+		// Stop tunnel via server endpoint
+		try {
+			await fetch(`http://localhost:${serverPort}/v1/tunnel/stop`, {
+				method: 'POST',
+			});
+		} catch {
+			// Ignore - server may already be stopping
 		}
 
 		try {

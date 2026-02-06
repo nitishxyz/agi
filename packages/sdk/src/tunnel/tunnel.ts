@@ -186,10 +186,32 @@ export class OttoTunnel extends EventEmitter {
 	}
 }
 
+/**
+ * Kill any existing tunnel processes to prevent stale tunnels
+ * from interfering with new ones
+ */
+export async function killStaleTunnels(): Promise<void> {
+	try {
+		const { exec } = await import('node:child_process');
+		const { promisify } = await import('node:util');
+		const execAsync = promisify(exec);
+		
+		// Kill any existing tunnel processes (but not the parent otto process)
+		await execAsync('pkill -f "tunnel tunnel --url" 2>/dev/null || true');
+		// Give processes time to die
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	} catch {
+		// Ignore errors - pkill might not find any processes
+	}
+}
+
 export async function createTunnel(
 	port: number,
 	onProgress?: (message: string) => void,
 ): Promise<{ url: string; tunnel: OttoTunnel }> {
+	// Kill any stale tunnel processes first
+	await killStaleTunnels();
+	
 	const tunnel = new OttoTunnel();
 	const url = await tunnel.start(port, onProgress);
 	return { url, tunnel };

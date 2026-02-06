@@ -4,8 +4,10 @@ import {
 	OttoTunnel,
 	isTunnelBinaryInstalled,
 	generateQRCode,
+	killStaleTunnels,
 	logger,
 } from '@ottocode/sdk';
+import { getServerPort } from '../state.ts';
 
 let activeTunnel: OttoTunnel | null = null;
 let tunnelUrl: string | null = null;
@@ -35,11 +37,21 @@ export function registerTunnelRoutes(app: Hono) {
 			});
 		}
 
-		try {
-			const body = await c.req.json().catch(() => ({}));
-			const port = body.port || 9100;
+	try {
+		const body = await c.req.json().catch(() => ({}));
+		let port = body.port;
+		
+		// Use server's known port if not explicitly provided
+		if (!port) {
+			port = getServerPort() || 9100;
+		}
+		
+		logger.debug('Starting tunnel on port:', port);
 
-			tunnelStatus = 'starting';
+		// Kill any stale tunnel processes first
+		await killStaleTunnels();
+
+		tunnelStatus = 'starting';
 			tunnelError = null;
 			progressMessage = 'Initializing...';
 

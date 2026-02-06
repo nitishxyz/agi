@@ -3,15 +3,6 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useTunnelStore } from '../stores/tunnelStore';
 import { API_BASE_URL } from '../lib/config';
 
-function getApiPort(): number {
-	try {
-		const url = new URL(API_BASE_URL);
-		return parseInt(url.port, 10) || 80;
-	} catch {
-		return 9100;
-	}
-}
-
 interface TunnelStatusResponse {
 	status: 'idle' | 'starting' | 'connected' | 'error';
 	url: string | null;
@@ -42,11 +33,12 @@ async function fetchTunnelStatus(): Promise<TunnelStatusResponse> {
 	return response.json();
 }
 
-async function startTunnel(port?: number): Promise<TunnelStartResponse> {
+async function startTunnel(): Promise<TunnelStartResponse> {
+	// Server uses its own port automatically - no need to pass it
 	const response = await fetch(`${API_BASE_URL}/v1/tunnel/start`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ port }),
+		body: JSON.stringify({}),
 	});
 	return response.json();
 }
@@ -92,8 +84,8 @@ export function useStartTunnel() {
 	const setError = useTunnelStore((s) => s.setError);
 	const setProgress = useTunnelStore((s) => s.setProgress);
 
-	return useMutation<TunnelStartResponse, Error, number | undefined>({
-		mutationFn: (port) => startTunnel(port ?? getApiPort()),
+	return useMutation<TunnelStartResponse, Error, void>({
+		mutationFn: () => startTunnel(),
 		onMutate: () => {
 			setStatus('starting');
 			setProgress('Connecting...');

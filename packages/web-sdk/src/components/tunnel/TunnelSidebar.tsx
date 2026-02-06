@@ -46,7 +46,7 @@ export const TunnelSidebar = memo(function TunnelSidebar() {
 	};
 
 	const handleStart = () => {
-		startTunnel.mutate(undefined);
+		startTunnel.mutate();
 	};
 
 	const handleStop = () => {

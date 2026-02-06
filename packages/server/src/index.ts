@@ -283,3 +283,6 @@ export {
 	isTraceEnabled,
 } from './runtime/debug/state.ts';
 export { logger } from '@ottocode/sdk';
+
+// Export server state management
+export { setServerPort, getServerPort, getServerInfo } from './state.ts';
