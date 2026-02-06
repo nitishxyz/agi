@@ -3,25 +3,36 @@ import { useGitStore } from './gitStore';
 import { useTerminalStore } from './terminalStore';
 import { useSessionFilesStore } from './sessionFilesStore';
 import { useSettingsStore } from './settingsStore';
-import { useTunnelStore } from './tunnelStore';
+import { useResearchStore } from './researchStore';
 
-interface ResearchState {
+export type TunnelStatus = 'idle' | 'starting' | 'connected' | 'error';
+
+interface TunnelState {
 	isExpanded: boolean;
-	activeResearchSessionId: string | null;
-	parentSessionId: string | null;
+	status: TunnelStatus;
+	url: string | null;
+	qrCode: string | null;
+	error: string | null;
+	progress: string | null;
 
 	toggleSidebar: () => void;
 	expandSidebar: () => void;
 	collapseSidebar: () => void;
-	selectResearchSession: (id: string | null) => void;
-	setParentSessionId: (id: string | null) => void;
+	setStatus: (status: TunnelStatus) => void;
+	setUrl: (url: string | null) => void;
+	setQrCode: (qrCode: string | null) => void;
+	setError: (error: string | null) => void;
+	setProgress: (progress: string | null) => void;
 	reset: () => void;
 }
 
-export const useResearchStore = create<ResearchState>((set, get) => ({
+export const useTunnelStore = create<TunnelState>((set) => ({
 	isExpanded: false,
-	activeResearchSessionId: null,
-	parentSessionId: null,
+	status: 'idle',
+	url: null,
+	qrCode: null,
+	error: null,
+	progress: null,
 
 	toggleSidebar: () => {
 		set((state) => {
@@ -31,7 +42,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
 				useTerminalStore.getState().collapseSidebar();
 				useSessionFilesStore.getState().collapseSidebar();
 				useSettingsStore.getState().collapseSidebar();
-				useTunnelStore.getState().collapseSidebar();
+				useResearchStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
@@ -42,27 +53,24 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
 		useTerminalStore.getState().collapseSidebar();
 		useSessionFilesStore.getState().collapseSidebar();
 		useSettingsStore.getState().collapseSidebar();
-		useTunnelStore.getState().collapseSidebar();
+		useResearchStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
 
 	collapseSidebar: () => set({ isExpanded: false }),
 
-	selectResearchSession: (id) => set({ activeResearchSessionId: id }),
-
-	setParentSessionId: (id) => {
-		const currentParentId = get().parentSessionId;
-		if (currentParentId !== id) {
-			set({
-				parentSessionId: id,
-				activeResearchSessionId: null,
-			});
-		}
-	},
+	setStatus: (status) => set({ status }),
+	setUrl: (url) => set({ url }),
+	setQrCode: (qrCode) => set({ qrCode }),
+	setError: (error) => set({ error }),
+	setProgress: (progress) => set({ progress }),
 
 	reset: () =>
 		set({
-			activeResearchSessionId: null,
-			parentSessionId: null,
+			status: 'idle',
+			url: null,
+			qrCode: null,
+			error: null,
+			progress: null,
 		}),
 }));

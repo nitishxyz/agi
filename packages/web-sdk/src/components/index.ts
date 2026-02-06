@@ -65,6 +65,10 @@ export * from './settings/SettingsSidebar';
 export * from './settings/SettingsSidebarToggle';
 export * from './settings/SetuTopupModal';
 
+// Tunnel Components
+export * from './tunnel/TunnelSidebar';
+export * from './tunnel/TunnelSidebarToggle';
+
 // Common Components
 export * from './common/ProviderLogo';
 export * from './common/StatusIndicator';

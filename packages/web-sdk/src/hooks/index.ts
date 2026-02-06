@@ -21,3 +21,4 @@ export * from './useShareStatus';
 export * from './useToolApprovalShortcuts';
 export * from './useTopupCallback';
 export * from './useAuthStatus';
+export * from './useTunnel';

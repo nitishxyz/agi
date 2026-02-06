@@ -85,9 +85,27 @@ export async function handleServe(opts: ServeOptions, version: string) {
 			});
 			tunnel = result.tunnel;
 			tunnelUrl = result.url;
+
+			// Register tunnel with server via API so Web UI knows about it
+			try {
+				await fetch(`http://localhost:${serverPort}/v1/tunnel/register`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ url: tunnelUrl }),
+				});
+			} catch (regError) {
+				logger.debug('Failed to register tunnel with server:', regError);
+			}
+
 		} catch (error) {
-			logger.error('Failed to start tunnel', error);
-			console.log(colors.dim('  Tunnel failed, continuing without remote access'));
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			if (errorMsg.includes('Rate limited')) {
+				console.log(colors.yellow('  ⚠ Rate limited by Cloudflare'));
+				console.log(colors.dim('    Please wait 5-10 minutes before trying again'));
+			} else {
+				logger.error('Failed to start tunnel', error);
+				console.log(colors.dim('  Tunnel failed, continuing without remote access'));
+			}
 		}
 	}
 

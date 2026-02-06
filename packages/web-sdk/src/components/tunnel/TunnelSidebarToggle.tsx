@@ -1,0 +1,27 @@
+import { memo } from 'react';
+import { Globe } from 'lucide-react';
+import { useTunnelStore } from '../../stores/tunnelStore';
+
+export const TunnelSidebarToggle = memo(function TunnelSidebarToggle() {
+	const isExpanded = useTunnelStore((state) => state.isExpanded);
+	const toggleSidebar = useTunnelStore((state) => state.toggleSidebar);
+	const status = useTunnelStore((state) => state.status);
+
+	const isConnected = status === 'connected';
+
+	return (
+		<button
+			type="button"
+			onClick={toggleSidebar}
+			className={`relative h-14 w-full transition-colors touch-manipulation flex items-center justify-center ${
+				isExpanded ? 'bg-muted border-r-2 border-primary' : 'hover:bg-muted/50'
+			}`}
+			title="Remote Access"
+		>
+			<Globe className="w-5 h-5 text-muted-foreground mx-auto" />
+			{isConnected && (
+				<span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+			)}
+		</button>
+	);
+});

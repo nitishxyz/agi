@@ -13,3 +13,4 @@ export * from './toolApprovalStore';
 export * from './topupApprovalStore';
 export * from './onboardingStore';
 export * from './panelWidthStore';
+export * from './tunnelStore';

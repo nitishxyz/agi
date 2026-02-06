@@ -19,6 +19,7 @@ import { registerResearchRoutes } from './routes/research.ts';
 import { registerSessionApprovalRoute } from './routes/session-approval.ts';
 import { registerSetuRoutes } from './routes/setu.ts';
 import { registerAuthRoutes } from './routes/auth.ts';
+import { registerTunnelRoutes } from './routes/tunnel.ts';
 import type { AgentConfigEntry } from './runtime/agent/registry.ts';
 
 const globalTerminalManager = new TerminalManager();
@@ -74,6 +75,7 @@ function initApp() {
 	registerResearchRoutes(app);
 	registerSetuRoutes(app);
 	registerAuthRoutes(app);
+	registerTunnelRoutes(app);
 
 	return app;
 }
@@ -145,6 +147,7 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	registerResearchRoutes(honoApp);
 	registerSetuRoutes(honoApp);
 	registerAuthRoutes(honoApp);
+	registerTunnelRoutes(honoApp);
 
 	return honoApp;
 }
@@ -244,6 +247,7 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 	registerResearchRoutes(honoApp);
 	registerSetuRoutes(honoApp);
 	registerAuthRoutes(honoApp);
+	registerTunnelRoutes(honoApp);
 
 	return honoApp;
 }

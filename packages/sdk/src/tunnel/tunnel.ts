@@ -24,6 +24,9 @@ const IP_REGEX = /(\d+\.\d+\.\d+\.\d+)/;
 const LOCATION_REGEX = /location=([a-z0-9]+)/i;
 const INDEX_REGEX = /connIndex=(\d+)/;
 
+const RATE_LIMIT_REGEX = /429 Too Many Requests|error code: 1015/i;
+const FAILED_UNMARSHAL_REGEX = /failed to unmarshal quick Tunnel/i;
+
 export class OttoTunnel extends EventEmitter {
 	private process: ChildProcess | null = null;
 	private connections: (TunnelConnection | undefined)[] = [];
@@ -71,6 +74,16 @@ export class OttoTunnel extends EventEmitter {
 		}
 	}
 
+	private checkForRateLimit(output: string): boolean {
+		if (RATE_LIMIT_REGEX.test(output) || FAILED_UNMARSHAL_REGEX.test(output)) {
+			const error = new Error('Rate limited by Cloudflare. Please wait 5-10 minutes before trying again.');
+			(error as any).code = 'RATE_LIMITED';
+			this.emit('error', error);
+			return true;
+		}
+		return false;
+	}
+
 	async start(
 		port: number,
 		onProgress?: (message: string) => void,
@@ -102,12 +115,22 @@ export class OttoTunnel extends EventEmitter {
 			this.process.stdout?.on('data', (data: Buffer) => {
 				const output = data.toString();
 				this.emit('stdout', output);
+				if (this.checkForRateLimit(output)) {
+					this.stop();
+					reject(new Error('Rate limited by Cloudflare. Please wait 5-10 minutes before trying again.'));
+					return;
+				}
 				this.handleOutput(output);
 			});
 
 			this.process.stderr?.on('data', (data: Buffer) => {
 				const output = data.toString();
 				this.emit('stderr', output);
+				if (this.checkForRateLimit(output)) {
+					this.stop();
+					reject(new Error('Rate limited by Cloudflare. Please wait 5-10 minutes before trying again.'));
+					return;
+				}
 				this.handleOutput(output);
 			});
 
