@@ -679,6 +679,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'gpt-5.3-codex',
+				label: 'GPT-5.3 Codex',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-08-31',
+				releaseDate: '2026-02-05',
+				lastUpdated: '2026-02-05',
+				openWeights: false,
+				cost: {
+					input: 1.75,
+					output: 14,
+					cacheRead: 0.175,
+				},
+				limit: {
+					context: 400000,
+					output: 128000,
+				},
+			},
+			{
 				id: 'o1',
 				label: 'o1',
 				modalities: {
@@ -1447,6 +1472,32 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 200000,
 					output: 64000,
+				},
+			},
+			{
+				id: 'claude-opus-4-6',
+				label: 'Claude Opus 4.6',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-05',
+				releaseDate: '2026-02-05',
+				lastUpdated: '2026-02-05',
+				openWeights: false,
+				cost: {
+					input: 5,
+					output: 25,
+					cacheRead: 0.5,
+					cacheWrite: 6.25,
+				},
+				limit: {
+					context: 1000000,
+					output: 128000,
 				},
 			},
 			{
@@ -2222,7 +2273,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: ['text', 'image', 'video'],
 					output: ['text'],
 				},
-				toolCall: true,
+				toolCall: false,
 				reasoningText: true,
 				attachment: false,
 				temperature: true,
@@ -2622,7 +2673,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: ['text'],
 					output: ['text'],
 				},
-				toolCall: true,
+				toolCall: false,
 				reasoningText: false,
 				attachment: false,
 				temperature: true,
@@ -2950,9 +3001,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					context: 163840,
 					output: 65536,
 				},
-				provider: {
-					npm: '@openrouter/ai-sdk-provider',
-				},
 			},
 			{
 				id: 'deepseek/deepseek-v3.2-speciale',
@@ -2976,9 +3024,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 163840,
 					output: 65536,
-				},
-				provider: {
-					npm: '@openrouter/ai-sdk-provider',
 				},
 			},
 			{
@@ -3253,9 +3298,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					context: 1048576,
 					output: 65536,
 				},
-				provider: {
-					npm: '@openrouter/ai-sdk-provider',
-				},
 			},
 			{
 				id: 'google/gemini-3-pro-preview',
@@ -3279,9 +3321,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 1050000,
 					output: 66000,
-				},
-				provider: {
-					npm: '@openrouter/ai-sdk-provider',
 				},
 			},
 			{
@@ -3555,7 +3594,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: ['text'],
 					output: ['text'],
 				},
-				toolCall: true,
+				toolCall: false,
 				reasoningText: false,
 				attachment: false,
 				temperature: true,
@@ -3579,7 +3618,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: ['text'],
 					output: ['text'],
 				},
-				toolCall: true,
+				toolCall: false,
 				reasoningText: true,
 				attachment: false,
 				temperature: true,
@@ -3603,7 +3642,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: ['text'],
 					output: ['text'],
 				},
-				toolCall: true,
+				toolCall: false,
 				reasoningText: false,
 				attachment: true,
 				temperature: true,
@@ -3651,7 +3690,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: ['text', 'image'],
 					output: ['text'],
 				},
-				toolCall: true,
+				toolCall: false,
 				reasoningText: false,
 				attachment: true,
 				temperature: true,
@@ -3810,9 +3849,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					context: 196600,
 					output: 118000,
 				},
-				provider: {
-					npm: '@openrouter/ai-sdk-provider',
-				},
 			},
 			{
 				id: 'minimax/minimax-m2.1',
@@ -3835,9 +3871,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 204800,
 					output: 131072,
-				},
-				provider: {
-					npm: '@openrouter/ai-sdk-provider',
 				},
 			},
 			{
@@ -4296,9 +4329,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					context: 262144,
 					output: 262144,
 				},
-				provider: {
-					npm: '@openrouter/ai-sdk-provider',
-				},
 			},
 			{
 				id: 'moonshotai/kimi-k2:free',
@@ -4348,9 +4378,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					context: 262144,
 					output: 262144,
 				},
-				provider: {
-					npm: '@openrouter/ai-sdk-provider',
-				},
 			},
 			{
 				id: 'nousresearch/deephermes-3-llama-3-8b-preview',
@@ -4383,7 +4410,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: ['text'],
 					output: ['text'],
 				},
-				toolCall: true,
+				toolCall: false,
 				reasoningText: true,
 				attachment: false,
 				temperature: true,
@@ -6022,7 +6049,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: ['text'],
 					output: ['text'],
 				},
-				toolCall: false,
+				toolCall: true,
 				reasoningText: true,
 				attachment: false,
 				temperature: true,
@@ -6416,9 +6443,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					context: 204800,
 					output: 131072,
 				},
-				provider: {
-					npm: '@openrouter/ai-sdk-provider',
-				},
 			},
 			{
 				id: 'z-ai/glm-4.7-flash',
@@ -6442,14 +6466,11 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					context: 200000,
 					output: 65535,
 				},
-				provider: {
-					npm: '@openrouter/ai-sdk-provider',
-				},
 			},
 		],
 		label: 'OpenRouter',
 		env: ['OPENROUTER_API_KEY'],
-		npm: '@ai-sdk/openai-compatible',
+		npm: '@openrouter/ai-sdk-provider',
 		api: 'https://openrouter.ai/api/v1',
 		doc: 'https://openrouter.ai/models',
 	},
@@ -6593,6 +6614,35 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 200000,
 					output: 64000,
+				},
+				provider: {
+					npm: '@ai-sdk/anthropic',
+				},
+			},
+			{
+				id: 'claude-opus-4-6',
+				label: 'Claude Opus 4.6',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-08-31',
+				releaseDate: '2026-02-05',
+				lastUpdated: '2026-02-05',
+				openWeights: false,
+				cost: {
+					input: 5,
+					output: 25,
+					cacheRead: 0.5,
+					cacheWrite: 6.25,
+				},
+				limit: {
+					context: 1000000,
+					output: 128000,
 				},
 				provider: {
 					npm: '@ai-sdk/anthropic',
@@ -7912,6 +7962,30 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'claude-opus-4.6',
+				label: 'Claude Opus 4.6',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-03-31',
+				releaseDate: '2026-02-05',
+				lastUpdated: '2026-02-05',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 128000,
+					output: 64000,
+				},
+			},
+			{
 				id: 'claude-opus-41',
 				label: 'Claude Opus 4.1',
 				modalities: {
@@ -8075,7 +8149,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					output: 0,
 				},
 				limit: {
-					context: 64000,
+					context: 128000,
 					output: 16384,
 				},
 			},
