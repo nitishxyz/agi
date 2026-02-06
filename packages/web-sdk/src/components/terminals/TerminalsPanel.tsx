@@ -4,7 +4,6 @@ import {
 	Maximize2,
 	Minimize2,
 	ChevronDown,
-	X,
 } from 'lucide-react';
 import { useTerminalStore } from '../../stores/terminalStore';
 import {
@@ -163,6 +162,7 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 			style={{ height, minHeight: MIN_HEIGHT }}
 		>
 			{!isMaximized && (
+				// biome-ignore lint/a11y/noStaticElementInteractions: mouse-only resize handle
 				<div
 					className="h-1 cursor-row-resize hover:bg-primary/30 active:bg-primary/50 transition-colors shrink-0"
 					onMouseDown={handleResizeStart}

@@ -6,6 +6,7 @@ import { useTheme } from '../hooks/useTheme';
 function SunIcon() {
 	return (
 		<svg
+			aria-hidden="true"
 			className="w-4 h-4"
 			viewBox="0 0 24 24"
 			fill="none"
@@ -30,6 +31,7 @@ function SunIcon() {
 function MoonIcon() {
 	return (
 		<svg
+			aria-hidden="true"
 			className="w-4 h-4"
 			viewBox="0 0 24 24"
 			fill="none"
@@ -69,6 +71,7 @@ export function Nav() {
 		return () => window.removeEventListener('scroll', onScroll);
 	}, []);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally trigger on route change
 	useEffect(() => {
 		setMobileOpen(false);
 	}, [location]);
@@ -121,19 +124,20 @@ export function Nav() {
 						>
 							{theme === 'dark' ? <SunIcon /> : <MoonIcon />}
 						</button>
-						<a
-							href="#install"
+						<button
+							type="button"
 							onClick={handleSectionLink('install')}
 							className="px-3.5 py-1.5 border border-otto-border text-otto-muted text-xs rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
 						>
 							Install
-						</a>
-						<a
-							href="#desktop"
+						</button>
+						<button
+							type="button"
 							onClick={handleSectionLink('desktop')}
 							className="px-3.5 py-1.5 bg-otto-text text-otto-bg text-xs font-medium rounded-sm hover:opacity-80 transition-colors flex items-center gap-1.5"
 						>
 							<svg
+								aria-hidden="true"
 								className="w-3.5 h-3.5"
 								viewBox="0 0 24 24"
 								fill="none"
@@ -147,7 +151,7 @@ export function Nav() {
 								<line x1="12" x2="12" y1="15" y2="3" />
 							</svg>
 							Desktop
-						</a>
+						</button>
 					</div>
 
 					<div className="flex items-center gap-3 md:hidden">
@@ -168,7 +172,13 @@ export function Nav() {
 							onClick={() => setMobileOpen(!mobileOpen)}
 							className="text-otto-muted hover:text-otto-text"
 						>
-							<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+							<svg
+								aria-hidden="true"
+								width="20"
+								height="20"
+								viewBox="0 0 20 20"
+								fill="none"
+							>
 								{mobileOpen ? (
 									<path
 										d="M5 5L15 15M15 5L5 15"
@@ -204,20 +214,20 @@ export function Nav() {
 					>
 						GitHub
 					</a>
-					<a
-						href="#install"
+					<button
+						type="button"
 						onClick={handleSectionLink('install')}
 						className="block text-otto-muted hover:text-otto-text"
 					>
 						Install
-					</a>
-					<a
-						href="#desktop"
+					</button>
+					<button
+						type="button"
 						onClick={handleSectionLink('desktop')}
 						className="block text-otto-muted hover:text-otto-text"
 					>
 						Desktop App
-					</a>
+					</button>
 				</div>
 			)}
 		</nav>

@@ -63,7 +63,7 @@ export function renderTodosResult(ctx: RendererContext): string {
 	return lines.join('\n');
 }
 
-export function renderFinishCall(ctx: RendererContext): string {
+export function renderFinishCall(_ctx: RendererContext): string {
 	return '';
 }
 

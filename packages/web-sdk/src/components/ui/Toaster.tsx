@@ -53,7 +53,7 @@ function ToastItem({ toast }: { toast: Toast }) {
 					type="button"
 					onClick={(e) => {
 						e.stopPropagation();
-						openUrl(toast.action!.href);
+						openUrl(toast.action?.href);
 					}}
 					className="ml-auto flex items-center gap-1 text-xs text-primary hover:underline"
 				>

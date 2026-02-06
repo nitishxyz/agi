@@ -80,14 +80,16 @@ describe('patch apply — stale context rejection', () => {
 			'*** Update File: app.ts',
 			' function greet(name: string) {',
 			'-  return "Hello, " + name;',
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: intentional template literal in patch content
 			'+  return `Hello, ${name}!`;',
 			'-}',
 			'+}',
 			'*** End Patch',
 		].join('\n');
 
-		const result = await applyPatch(patch);
+		const _result = await applyPatch(patch);
 		const content = await readTestFile('app.ts');
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: checking template literal in file content
 		expect(content).toContain('`Hello, ${name}!`');
 	});
 
@@ -223,7 +225,7 @@ describe('patch apply — stale context rejection', () => {
 			'*** End Patch',
 		].join('\n');
 
-		const result = await applyPatch(patch);
+		const _result = await applyPatch(patch);
 		const content = await readTestFile('test.ts');
 		expect(content).toContain('existsSync("c.txt")');
 	});

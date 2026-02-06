@@ -23,11 +23,11 @@ function truncateUrl(url: string): string {
 		const parsed = new URL(url);
 		const host = parsed.hostname;
 		if (host.length > 24) {
-			return host.slice(0, 12) + '...' + host.slice(-8);
+			return `${host.slice(0, 12)}...${host.slice(-8)}`;
 		}
 		return host;
 	} catch {
-		return url.length > 24 ? url.slice(0, 12) + '...' + url.slice(-8) : url;
+		return url.length > 24 ? `${url.slice(0, 12)}...${url.slice(-8)}` : url;
 	}
 }
 

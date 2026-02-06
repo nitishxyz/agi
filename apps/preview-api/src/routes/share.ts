@@ -96,7 +96,7 @@ shareRoutes.get('/:shareId', async (c) => {
 		const body = new ReadableStream({
 			async start(controller) {
 				const enc = new TextEncoder();
-				controller.enqueue(enc.encode(prefix.slice(0, -1) + ',"sessionData":'));
+				controller.enqueue(enc.encode(`${prefix.slice(0, -1)},"sessionData":`));
 
 				const reader = obj.body.getReader();
 				while (true) {
@@ -105,7 +105,7 @@ shareRoutes.get('/:shareId', async (c) => {
 					controller.enqueue(value);
 				}
 
-				controller.enqueue(enc.encode(',' + suffix.slice(1)));
+				controller.enqueue(enc.encode(`,${suffix.slice(1)}`));
 				controller.close();
 			},
 		});

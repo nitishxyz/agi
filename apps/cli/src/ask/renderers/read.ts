@@ -1,4 +1,4 @@
-import { c, toolColor, ICONS, formatMs } from './theme.ts';
+import { c, ICONS, formatMs } from './theme.ts';
 import type { RendererContext } from './types.ts';
 
 export function renderReadCall(ctx: RendererContext): string {

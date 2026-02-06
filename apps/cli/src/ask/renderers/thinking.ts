@@ -1,4 +1,4 @@
-import { c, ICONS } from './theme.ts';
+import { c } from './theme.ts';
 
 let thinkingActive = false;
 

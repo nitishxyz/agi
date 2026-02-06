@@ -76,10 +76,10 @@ export class OttoTunnel extends EventEmitter {
 
 	private checkForRateLimit(output: string): boolean {
 		if (RATE_LIMIT_REGEX.test(output) || FAILED_UNMARSHAL_REGEX.test(output)) {
-			const error = new Error(
+			const error: Error & { code?: string } = new Error(
 				'Rate limited by Cloudflare. Please wait 5-10 minutes before trying again.',
 			);
-			(error as any).code = 'RATE_LIMITED';
+			error.code = 'RATE_LIMITED';
 			this.emit('error', error);
 			return true;
 		}

@@ -1,15 +1,5 @@
 import { c, ICONS, toolColor, truncate } from './theme.ts';
 
-const DANGEROUS_TOOLS = new Set([
-	'bash',
-	'write',
-	'apply_patch',
-	'terminal',
-	'edit',
-	'git_commit',
-	'git_push',
-]);
-
 export interface ApprovalRequest {
 	callId: string;
 	toolName: string;

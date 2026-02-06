@@ -145,10 +145,7 @@ export function ErrorRenderer({
 								supported.
 							</>
 						) : (
-							<>
-								This model is only available via the Responses API, which is not
-								yet supported.
-							</>
+							'This model is only available via the Responses API, which is not yet supported.'
 						)}
 					</p>
 					<p className="text-xs text-muted-foreground">
@@ -192,10 +189,7 @@ export function ErrorRenderer({
 								the model must be enabled in your settings.
 							</>
 						) : (
-							<>
-								The requested model is not available. You need a Copilot Pro (or
-								higher) plan and the model must be enabled in your settings.
-							</>
+							'The requested model is not available. You need a Copilot Pro (or higher) plan and the model must be enabled in your settings.'
 						)}
 					</p>
 					<p className="text-xs text-muted-foreground">

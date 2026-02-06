@@ -37,6 +37,31 @@
 	},
 	"overrides": [
 		{
+			"includes": ["**/sst-env.d.ts"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			}
+		},
+		{
+			"includes": ["apps/landing/**/*.tsx"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"noSvgWithoutTitle": "off"
+					},
+					"correctness": {
+						"useUniqueElementIds": "off"
+					},
+					"suspicious": {
+						"noCommentText": "off"
+					}
+				}
+			}
+		},
+		{
 			"includes": ["**/*.astro"],
 			"linter": {
 				"rules": {

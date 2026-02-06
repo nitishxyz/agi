@@ -529,7 +529,10 @@ export function registerAuthRoutes(app: Hono) {
 			if (!sessionId || !copilotDeviceSessions.has(sessionId)) {
 				return c.json({ error: 'Session expired or invalid' }, 400);
 			}
-			const session = copilotDeviceSessions.get(sessionId)!;
+			const session = copilotDeviceSessions.get(sessionId);
+			if (!session) {
+				return c.json({ error: 'Session expired or invalid' }, 400);
+			}
 			const result = await pollForCopilotTokenOnce(session.deviceCode);
 			if (result.status === 'complete') {
 				copilotDeviceSessions.delete(sessionId);

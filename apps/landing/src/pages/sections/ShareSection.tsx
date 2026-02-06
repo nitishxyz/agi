@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Reveal } from '../../components/Reveal';
 import { ProviderLogo } from '../../components/ProviderLogo';
 
@@ -30,6 +30,7 @@ function ShareMockup() {
 		return () => obs.disconnect();
 	}, []);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: start is a local function that depends on state
 	useEffect(() => {
 		if (!inView) return;
 		if (phase !== 'idle') return;

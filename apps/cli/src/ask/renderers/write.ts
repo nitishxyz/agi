@@ -1,6 +1,6 @@
-import { c, ICONS, formatMs, truncate } from './theme.ts';
+import { c, ICONS, formatMs } from './theme.ts';
 import type { RendererContext } from './types.ts';
-import { colorizeDiffLine, renderDiffPreview } from './diff.ts';
+import { renderDiffPreview } from './diff.ts';
 
 export function renderWriteCall(ctx: RendererContext): string {
 	const args = (ctx.args ?? {}) as Record<string, unknown>;

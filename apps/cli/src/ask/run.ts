@@ -1,4 +1,3 @@
-import type { ProviderId } from '@ottocode/sdk';
 import type { Artifact } from '@ottocode/sdk';
 import { renderMarkdown } from '../ui.ts';
 import {

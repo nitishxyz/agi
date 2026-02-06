@@ -115,6 +115,7 @@ function MobileNav() {
 
 export function Docs() {
 	const { pathname } = useLocation();
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally trigger on route change
 	useEffect(() => {
 		window.scrollTo(0, 0);
 	}, [pathname]);

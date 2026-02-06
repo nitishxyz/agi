@@ -52,7 +52,7 @@ export function createErrorHandler(
 			'';
 
 		// Also check error message for the exact fiat selection message
-		const errorMessage =
+		const _errorMessage =
 			(errObj?.message as string) ??
 			((errObj?.error as Record<string, unknown>)?.message as string) ??
 			((

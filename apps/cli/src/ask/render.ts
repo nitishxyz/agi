@@ -4,7 +4,6 @@ import {
 	renderToolResult as _renderToolResult,
 	renderSummary as _renderSummary,
 	c,
-	ICONS,
 } from './renderers/index.ts';
 import type {
 	ToolResultRecord,

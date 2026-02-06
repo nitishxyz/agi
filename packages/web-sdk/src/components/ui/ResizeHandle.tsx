@@ -57,6 +57,7 @@ export const ResizeHandle = memo(function ResizeHandle({
 	);
 
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: mouse-only resize handle
 		<div
 			className={`w-1 h-full cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors shrink-0 ${
 				side === 'right' ? 'order-first' : 'order-last'

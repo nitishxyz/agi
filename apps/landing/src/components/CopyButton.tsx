@@ -25,6 +25,7 @@ export function CopyButton({
 		>
 			{copied ? (
 				<svg
+					aria-hidden="true"
 					className="w-3.5 h-3.5 text-emerald-500"
 					viewBox="0 0 24 24"
 					fill="none"
@@ -37,6 +38,7 @@ export function CopyButton({
 				</svg>
 			) : (
 				<svg
+					aria-hidden="true"
 					className="w-3.5 h-3.5"
 					viewBox="0 0 24 24"
 					fill="none"

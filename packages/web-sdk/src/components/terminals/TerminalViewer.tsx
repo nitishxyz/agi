@@ -104,7 +104,7 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 	const [ready, setReady] = useState(false);
 	const { data: terminals } = useTerminals();
 
-	const terminal = terminals?.terminals.find((t) => t.id === terminalId);
+	const _terminal = terminals?.terminals.find((t) => t.id === terminalId);
 
 	const fitTerminal = useCallback(() => {
 		if (fitAddonRef.current) {
@@ -172,7 +172,7 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 				retryCountRef.current = 0;
 			};
 		},
-		[terminalId],
+		[terminalId, onExit],
 	);
 
 	useEffect(() => {
