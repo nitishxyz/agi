@@ -76,7 +76,9 @@ export class OttoTunnel extends EventEmitter {
 
 	private checkForRateLimit(output: string): boolean {
 		if (RATE_LIMIT_REGEX.test(output) || FAILED_UNMARSHAL_REGEX.test(output)) {
-			const error = new Error('Rate limited by Cloudflare. Please wait 5-10 minutes before trying again.');
+			const error = new Error(
+				'Rate limited by Cloudflare. Please wait 5-10 minutes before trying again.',
+			);
 			(error as any).code = 'RATE_LIMITED';
 			this.emit('error', error);
 			return true;
@@ -117,7 +119,11 @@ export class OttoTunnel extends EventEmitter {
 				this.emit('stdout', output);
 				if (this.checkForRateLimit(output)) {
 					this.stop();
-					reject(new Error('Rate limited by Cloudflare. Please wait 5-10 minutes before trying again.'));
+					reject(
+						new Error(
+							'Rate limited by Cloudflare. Please wait 5-10 minutes before trying again.',
+						),
+					);
 					return;
 				}
 				this.handleOutput(output);
@@ -128,7 +134,11 @@ export class OttoTunnel extends EventEmitter {
 				this.emit('stderr', output);
 				if (this.checkForRateLimit(output)) {
 					this.stop();
-					reject(new Error('Rate limited by Cloudflare. Please wait 5-10 minutes before trying again.'));
+					reject(
+						new Error(
+							'Rate limited by Cloudflare. Please wait 5-10 minutes before trying again.',
+						),
+					);
 					return;
 				}
 				this.handleOutput(output);
@@ -174,7 +184,10 @@ export class OttoTunnel extends EventEmitter {
 		return super.on(event, listener);
 	}
 
-	once<K extends keyof TunnelEvents>(event: K, listener: TunnelEvents[K]): this {
+	once<K extends keyof TunnelEvents>(
+		event: K,
+		listener: TunnelEvents[K],
+	): this {
 		return super.once(event, listener);
 	}
 
@@ -195,7 +208,7 @@ export async function killStaleTunnels(): Promise<void> {
 		const { exec } = await import('node:child_process');
 		const { promisify } = await import('node:util');
 		const execAsync = promisify(exec);
-		
+
 		// Kill any existing tunnel processes (but not the parent otto process)
 		await execAsync('pkill -f "tunnel tunnel --url" 2>/dev/null || true');
 		// Give processes time to die
@@ -211,7 +224,7 @@ export async function createTunnel(
 ): Promise<{ url: string; tunnel: OttoTunnel }> {
 	// Kill any stale tunnel processes first
 	await killStaleTunnels();
-	
+
 	const tunnel = new OttoTunnel();
 	const url = await tunnel.start(port, onProgress);
 	return { url, tunnel };

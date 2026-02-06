@@ -1,47 +1,53 @@
-import { NavLink, Route, Routes, Navigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
-import { GettingStarted } from "./docs/GettingStarted";
-import { Usage } from "./docs/Usage";
-import { Configuration } from "./docs/Configuration";
-import { AgentsTools } from "./docs/AgentsTools";
-import { Architecture } from "./docs/Architecture";
-import { Embedding } from "./docs/Embedding";
-import { ApiReference } from "./docs/ApiReference";
-import { Sharing } from "./docs/Sharing";
-import { SetuOverview } from "./docs/SetuOverview";
-import { SetuPayments } from "./docs/SetuPayments";
-import { SetuIntegration } from "./docs/SetuIntegration";
+import {
+	NavLink,
+	Route,
+	Routes,
+	Navigate,
+	useLocation,
+} from 'react-router-dom';
+import { useEffect } from 'react';
+import { GettingStarted } from './docs/GettingStarted';
+import { Usage } from './docs/Usage';
+import { Configuration } from './docs/Configuration';
+import { AgentsTools } from './docs/AgentsTools';
+import { Architecture } from './docs/Architecture';
+import { Embedding } from './docs/Embedding';
+import { ApiReference } from './docs/ApiReference';
+import { Sharing } from './docs/Sharing';
+import { SetuOverview } from './docs/SetuOverview';
+import { SetuPayments } from './docs/SetuPayments';
+import { SetuIntegration } from './docs/SetuIntegration';
 
 const NAV_SECTIONS = [
 	{
-		title: "Getting Started",
+		title: 'Getting Started',
 		items: [
-			{ to: "/docs", label: "Installation & Setup", end: true },
-			{ to: "/docs/usage", label: "Usage Guide" },
-			{ to: "/docs/configuration", label: "Configuration" },
+			{ to: '/docs', label: 'Installation & Setup', end: true },
+			{ to: '/docs/usage', label: 'Usage Guide' },
+			{ to: '/docs/configuration', label: 'Configuration' },
 		],
 	},
 	{
-		title: "Features",
+		title: 'Features',
 		items: [
-			{ to: "/docs/agents-tools", label: "Agents & Tools" },
-			{ to: "/docs/sharing", label: "Session Sharing" },
+			{ to: '/docs/agents-tools', label: 'Agents & Tools' },
+			{ to: '/docs/sharing', label: 'Session Sharing' },
 		],
 	},
 	{
-		title: "Architecture",
+		title: 'Architecture',
 		items: [
-			{ to: "/docs/architecture", label: "System Architecture" },
-			{ to: "/docs/embedding", label: "Embedding Guide" },
-			{ to: "/docs/api", label: "API Reference" },
+			{ to: '/docs/architecture', label: 'System Architecture' },
+			{ to: '/docs/embedding', label: 'Embedding Guide' },
+			{ to: '/docs/api', label: 'API Reference' },
 		],
 	},
 	{
-		title: "Setu",
+		title: 'Setu',
 		items: [
-			{ to: "/docs/setu", label: "Overview", end: true },
-			{ to: "/docs/setu/payments", label: "Payments" },
-			{ to: "/docs/setu/integration", label: "Integration Guide" },
+			{ to: '/docs/setu', label: 'Overview', end: true },
+			{ to: '/docs/setu/payments', label: 'Payments' },
+			{ to: '/docs/setu/integration', label: 'Integration Guide' },
 		],
 	},
 ];
@@ -49,26 +55,26 @@ const NAV_SECTIONS = [
 function navLinkClass(isActive: boolean) {
 	return `block py-2 text-sm transition-colors truncate ${
 		isActive
-			? "bg-otto-card text-otto-text px-4"
-			: "text-otto-muted hover:text-otto-text px-4"
+			? 'bg-otto-card text-otto-text px-4'
+			: 'text-otto-muted hover:text-otto-text px-4'
 	}`;
 }
 
 function Sidebar() {
 	return (
-	<aside className="w-64 shrink-0 hidden lg:flex flex-col border-r border-otto-border fixed top-14 bottom-0 left-0 overflow-y-auto">
-		<div className="flex-1 py-6 space-y-6">
-			{NAV_SECTIONS.map((section) => (
-				<div key={section.title}>
-					<h4 className="text-[10px] font-semibold text-otto-dim uppercase tracking-[0.15em] mb-2 px-4">
-						{section.title}
+		<aside className="w-64 shrink-0 hidden lg:flex flex-col border-r border-otto-border fixed top-14 bottom-0 left-0 overflow-y-auto">
+			<div className="flex-1 py-6 space-y-6">
+				{NAV_SECTIONS.map((section) => (
+					<div key={section.title}>
+						<h4 className="text-[10px] font-semibold text-otto-dim uppercase tracking-[0.15em] mb-2 px-4">
+							{section.title}
 						</h4>
 						<div className="space-y-0.5">
 							{section.items.map((item) => (
 								<NavLink
 									key={item.to}
 									to={item.to}
-									end={"end" in item ? item.end : false}
+									end={'end' in item ? item.end : false}
 									className={({ isActive }) => navLinkClass(isActive)}
 								>
 									{item.label}
@@ -78,7 +84,6 @@ function Sidebar() {
 					</div>
 				))}
 			</div>
-
 		</aside>
 	);
 }
@@ -91,12 +96,12 @@ function MobileNav() {
 					<NavLink
 						key={item.to}
 						to={item.to}
-						end={"end" in item ? item.end : false}
+						end={'end' in item ? item.end : false}
 						className={({ isActive }) =>
 							`px-3 py-1.5 text-xs rounded-sm whitespace-nowrap transition-colors ${
 								isActive
-									? "bg-otto-card text-otto-text border border-otto-border"
-									: "text-otto-muted hover:text-otto-text"
+									? 'bg-otto-card text-otto-text border border-otto-border'
+									: 'text-otto-muted hover:text-otto-text'
 							}`
 						}
 					>
@@ -128,12 +133,12 @@ export function Docs() {
 							<Route path="agents-tools" element={<AgentsTools />} />
 							<Route path="architecture" element={<Architecture />} />
 							<Route path="embedding" element={<Embedding />} />
-						<Route path="api" element={<ApiReference />} />
-						<Route path="sharing" element={<Sharing />} />
-						<Route path="setu" element={<SetuOverview />} />
-						<Route path="setu/payments" element={<SetuPayments />} />
-						<Route path="setu/integration" element={<SetuIntegration />} />
-						<Route path="*" element={<Navigate to="/docs" replace />} />
+							<Route path="api" element={<ApiReference />} />
+							<Route path="sharing" element={<Sharing />} />
+							<Route path="setu" element={<SetuOverview />} />
+							<Route path="setu/payments" element={<SetuPayments />} />
+							<Route path="setu/integration" element={<SetuIntegration />} />
+							<Route path="*" element={<Navigate to="/docs" replace />} />
 						</Routes>
 					</div>
 				</main>

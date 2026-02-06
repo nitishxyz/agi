@@ -1,134 +1,134 @@
 {
-  "name": "@ottocode/sdk",
-  "version": "0.1.178",
-  "description": "AI agent SDK for building intelligent assistants - tree-shakable and comprehensive",
-  "author": "nitishxyz",
-  "license": "MIT",
-  "homepage": "https://github.com/nitishxyz/otto#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nitishxyz/otto.git",
-    "directory": "packages/sdk"
-  },
-  "bugs": {
-    "url": "https://github.com/nitishxyz/otto/issues"
-  },
-  "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "exports": {
-    ".": {
-      "import": "./src/index.ts",
-      "types": "./src/index.ts"
-    },
-    "./browser": {
-      "import": "./src/browser.ts",
-      "types": "./src/browser.ts"
-    },
-    "./tools/builtin/fs": {
-      "import": "./src/core/src/tools/builtin/fs/index.ts",
-      "types": "./src/core/src/tools/builtin/fs/index.ts"
-    },
-    "./tools/builtin/git": {
-      "import": "./src/core/src/tools/builtin/git.ts",
-      "types": "./src/core/src/tools/builtin/git.ts"
-    },
-    "./tools/builtin/bash": {
-      "import": "./src/core/src/tools/builtin/bash.ts",
-      "types": "./src/core/src/tools/builtin/bash.ts"
-    },
-    "./tools/builtin/edit": {
-      "import": "./src/core/src/tools/builtin/edit.ts",
-      "types": "./src/core/src/tools/builtin/edit.ts"
-    },
-    "./tools/builtin/finish": {
-      "import": "./src/core/src/tools/builtin/finish.ts",
-      "types": "./src/core/src/tools/builtin/finish.ts"
-    },
-    "./tools/builtin/grep": {
-      "import": "./src/core/src/tools/builtin/grep.ts",
-      "types": "./src/core/src/tools/builtin/grep.ts"
-    },
-    "./tools/builtin/patch": {
-      "import": "./src/core/src/tools/builtin/patch.ts",
-      "types": "./src/core/src/tools/builtin/patch.ts"
-    },
-    "./tools/builtin/plan": {
-      "import": "./src/core/src/tools/builtin/plan.ts",
-      "types": "./src/core/src/tools/builtin/plan.ts"
-    },
-    "./tools/builtin/progress": {
-      "import": "./src/core/src/tools/builtin/progress.ts",
-      "types": "./src/core/src/tools/builtin/progress.ts"
-    },
-    "./tools/builtin/ripgrep": {
-      "import": "./src/core/src/tools/builtin/ripgrep.ts",
-      "types": "./src/core/src/tools/builtin/ripgrep.ts"
-    },
-    "./tools/builtin/websearch": {
-      "import": "./src/core/src/tools/builtin/websearch.ts",
-      "types": "./src/core/src/tools/builtin/websearch.ts"
-    },
-    "./tools/builtin/terminal": {
-      "import": "./src/core/src/tools/builtin/terminal.ts",
-      "types": "./src/core/src/tools/builtin/terminal.ts"
-    },
-    "./tools/error": {
-      "import": "./src/core/src/tools/error.ts",
-      "types": "./src/core/src/tools/error.ts"
-    },
-    "./tools/bin-manager": {
-      "import": "./src/core/src/tools/bin-manager.ts",
-      "types": "./src/core/src/tools/bin-manager.ts"
-    },
-    "./prompts/*": "./src/prompts/src/*"
-  },
-  "files": [
-    "src",
-    "README.md",
-    "LICENSE"
-  ],
-  "scripts": {
-    "dev": "bun run src/index.ts",
-    "test": "bun test",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.0",
-    "@ai-sdk/google": "^3.0.0",
-    "@ai-sdk/openai": "^3.0.0",
-    "@ai-sdk/openai-compatible": "^2.0.0",
-    "@openauthjs/openauth": "^0.4.3",
-    "@openrouter/ai-sdk-provider": "^1.2.0",
-    "@solana/web3.js": "^1.95.2",
-    "ai": "^6.0.0",
-    "bs58": "^6.0.0",
-    "bun-pty": "^0.3.2",
-    "diff": "^8.0.2",
-    "fast-glob": "^3.3.2",
-    "hono": "^4.9.9",
-    "opencode-anthropic-auth": "^0.0.2",
-    "qrcode": "^1.5.4",
-    "qrcode-terminal": "^0.12.0",
-    "tweetnacl": "^1.0.3",
-    "x402": "^1.1.0",
-    "zod": "^4.1.8"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
-  },
-  "keywords": [
-    "ai",
-    "sdk",
-    "agents",
-    "tools",
-    "llm",
-    "anthropic",
-    "openai",
-    "development",
-    "assistant",
-    "tree-shakable",
-    "typescript"
-  ]
+	"name": "@ottocode/sdk",
+	"version": "0.1.178",
+	"description": "AI agent SDK for building intelligent assistants - tree-shakable and comprehensive",
+	"author": "nitishxyz",
+	"license": "MIT",
+	"homepage": "https://github.com/nitishxyz/otto#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/nitishxyz/otto.git",
+		"directory": "packages/sdk"
+	},
+	"bugs": {
+		"url": "https://github.com/nitishxyz/otto/issues"
+	},
+	"type": "module",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"exports": {
+		".": {
+			"import": "./src/index.ts",
+			"types": "./src/index.ts"
+		},
+		"./browser": {
+			"import": "./src/browser.ts",
+			"types": "./src/browser.ts"
+		},
+		"./tools/builtin/fs": {
+			"import": "./src/core/src/tools/builtin/fs/index.ts",
+			"types": "./src/core/src/tools/builtin/fs/index.ts"
+		},
+		"./tools/builtin/git": {
+			"import": "./src/core/src/tools/builtin/git.ts",
+			"types": "./src/core/src/tools/builtin/git.ts"
+		},
+		"./tools/builtin/bash": {
+			"import": "./src/core/src/tools/builtin/bash.ts",
+			"types": "./src/core/src/tools/builtin/bash.ts"
+		},
+		"./tools/builtin/edit": {
+			"import": "./src/core/src/tools/builtin/edit.ts",
+			"types": "./src/core/src/tools/builtin/edit.ts"
+		},
+		"./tools/builtin/finish": {
+			"import": "./src/core/src/tools/builtin/finish.ts",
+			"types": "./src/core/src/tools/builtin/finish.ts"
+		},
+		"./tools/builtin/grep": {
+			"import": "./src/core/src/tools/builtin/grep.ts",
+			"types": "./src/core/src/tools/builtin/grep.ts"
+		},
+		"./tools/builtin/patch": {
+			"import": "./src/core/src/tools/builtin/patch.ts",
+			"types": "./src/core/src/tools/builtin/patch.ts"
+		},
+		"./tools/builtin/plan": {
+			"import": "./src/core/src/tools/builtin/plan.ts",
+			"types": "./src/core/src/tools/builtin/plan.ts"
+		},
+		"./tools/builtin/progress": {
+			"import": "./src/core/src/tools/builtin/progress.ts",
+			"types": "./src/core/src/tools/builtin/progress.ts"
+		},
+		"./tools/builtin/ripgrep": {
+			"import": "./src/core/src/tools/builtin/ripgrep.ts",
+			"types": "./src/core/src/tools/builtin/ripgrep.ts"
+		},
+		"./tools/builtin/websearch": {
+			"import": "./src/core/src/tools/builtin/websearch.ts",
+			"types": "./src/core/src/tools/builtin/websearch.ts"
+		},
+		"./tools/builtin/terminal": {
+			"import": "./src/core/src/tools/builtin/terminal.ts",
+			"types": "./src/core/src/tools/builtin/terminal.ts"
+		},
+		"./tools/error": {
+			"import": "./src/core/src/tools/error.ts",
+			"types": "./src/core/src/tools/error.ts"
+		},
+		"./tools/bin-manager": {
+			"import": "./src/core/src/tools/bin-manager.ts",
+			"types": "./src/core/src/tools/bin-manager.ts"
+		},
+		"./prompts/*": "./src/prompts/src/*"
+	},
+	"files": [
+		"src",
+		"README.md",
+		"LICENSE"
+	],
+	"scripts": {
+		"dev": "bun run src/index.ts",
+		"test": "bun test",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@ai-sdk/anthropic": "^3.0.0",
+		"@ai-sdk/google": "^3.0.0",
+		"@ai-sdk/openai": "^3.0.0",
+		"@ai-sdk/openai-compatible": "^2.0.0",
+		"@openauthjs/openauth": "^0.4.3",
+		"@openrouter/ai-sdk-provider": "^1.2.0",
+		"@solana/web3.js": "^1.95.2",
+		"ai": "^6.0.0",
+		"bs58": "^6.0.0",
+		"bun-pty": "^0.3.2",
+		"diff": "^8.0.2",
+		"fast-glob": "^3.3.2",
+		"hono": "^4.9.9",
+		"opencode-anthropic-auth": "^0.0.2",
+		"qrcode": "^1.5.4",
+		"qrcode-terminal": "^0.12.0",
+		"tweetnacl": "^1.0.3",
+		"x402": "^1.1.0",
+		"zod": "^4.1.8"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5"
+	},
+	"keywords": [
+		"ai",
+		"sdk",
+		"agents",
+		"tools",
+		"llm",
+		"anthropic",
+		"openai",
+		"development",
+		"assistant",
+		"tree-shakable",
+		"typescript"
+	]
 }

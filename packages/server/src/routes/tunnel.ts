@@ -37,21 +37,21 @@ export function registerTunnelRoutes(app: Hono) {
 			});
 		}
 
-	try {
-		const body = await c.req.json().catch(() => ({}));
-		let port = body.port;
-		
-		// Use server's known port if not explicitly provided
-		if (!port) {
-			port = getServerPort() || 9100;
-		}
-		
-		logger.debug('Starting tunnel on port:', port);
+		try {
+			const body = await c.req.json().catch(() => ({}));
+			let port = body.port;
 
-		// Kill any stale tunnel processes first
-		await killStaleTunnels();
+			// Use server's known port if not explicitly provided
+			if (!port) {
+				port = getServerPort() || 9100;
+			}
 
-		tunnelStatus = 'starting';
+			logger.debug('Starting tunnel on port:', port);
+
+			// Kill any stale tunnel processes first
+			await killStaleTunnels();
+
+			tunnelStatus = 'starting';
 			tunnelError = null;
 			progressMessage = 'Initializing...';
 

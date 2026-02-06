@@ -1,9 +1,11 @@
-import { CodeBlock } from "../../components/CodeBlock";
+import { CodeBlock } from '../../components/CodeBlock';
 export function Usage() {
 	return (
 		<div>
 			<h1 className="text-3xl font-bold mb-2">Usage Guide</h1>
-			<p className="text-otto-dim text-sm mb-8">Commands and workflows for daily use.</p>
+			<p className="text-otto-dim text-sm mb-8">
+				Commands and workflows for daily use.
+			</p>
 
 			<h2>Core Commands</h2>
 
@@ -56,17 +58,43 @@ otto ask "explain generics" --provider openai --model gpt-4o`}</CodeBlock>
 					</tr>
 				</thead>
 				<tbody>
-					<tr><td>Anthropic</td><td>Claude 4.5 Sonnet, Opus</td><td>API key</td></tr>
-					<tr><td>OpenAI</td><td>GPT-4o, o1, Codex Mini</td><td>API key</td></tr>
-					<tr><td>Google</td><td>Gemini 2.5 Pro, Flash</td><td>API key</td></tr>
-					<tr><td>OpenRouter</td><td>100+ models</td><td>API key</td></tr>
-					<tr><td>OpenCode</td><td>Free Anthropic access</td><td>OAuth</td></tr>
-					<tr><td>Setu</td><td>Proxy with USDC payments</td><td>Solana wallet</td></tr>
+					<tr>
+						<td>Anthropic</td>
+						<td>Claude 4.5 Sonnet, Opus</td>
+						<td>API key</td>
+					</tr>
+					<tr>
+						<td>OpenAI</td>
+						<td>GPT-4o, o1, Codex Mini</td>
+						<td>API key</td>
+					</tr>
+					<tr>
+						<td>Google</td>
+						<td>Gemini 2.5 Pro, Flash</td>
+						<td>API key</td>
+					</tr>
+					<tr>
+						<td>OpenRouter</td>
+						<td>100+ models</td>
+						<td>API key</td>
+					</tr>
+					<tr>
+						<td>OpenCode</td>
+						<td>Free Anthropic access</td>
+						<td>OAuth</td>
+					</tr>
+					<tr>
+						<td>Setu</td>
+						<td>Proxy with USDC payments</td>
+						<td>Solana wallet</td>
+					</tr>
 				</tbody>
 			</table>
 
 			<h2>Agents</h2>
-			<p>Use the <code>--agent</code> flag to select a purpose-built agent:</p>
+			<p>
+				Use the <code>--agent</code> flag to select a purpose-built agent:
+			</p>
 			<CodeBlock>{`otto ask "create auth component" --agent build
 otto ask "design API architecture" --agent plan
 otto ask "research how this works" --agent research`}</CodeBlock>

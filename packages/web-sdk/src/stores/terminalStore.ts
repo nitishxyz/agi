@@ -57,7 +57,8 @@ export const useTerminalStore = create<TerminalState>((set) => ({
 	toggleMaximize: () => set((s) => ({ isMaximized: !s.isMaximized })),
 
 	expandSidebar: () => set({ isOpen: true }),
-	collapseSidebar: () => set({ isOpen: false, activeTabId: null, isMaximized: false }),
+	collapseSidebar: () =>
+		set({ isOpen: false, activeTabId: null, isMaximized: false }),
 	toggleSidebar: () =>
 		set((s) => ({
 			isOpen: !s.isOpen,

@@ -1,11 +1,19 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { OttoWordmark } from "./OttoWordmark";
-import { useTheme } from "../hooks/useTheme";
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { OttoWordmark } from './OttoWordmark';
+import { useTheme } from '../hooks/useTheme';
 
 function SunIcon() {
 	return (
-		<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+		<svg
+			className="w-4 h-4"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="2"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+		>
 			<circle cx="12" cy="12" r="5" />
 			<line x1="12" y1="1" x2="12" y2="3" />
 			<line x1="12" y1="21" x2="12" y2="23" />
@@ -21,7 +29,15 @@ function SunIcon() {
 
 function MoonIcon() {
 	return (
-		<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+		<svg
+			className="w-4 h-4"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="2"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+		>
 			<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
 		</svg>
 	);
@@ -31,26 +47,26 @@ export function Nav() {
 	const [scrolled, setScrolled] = useState(false);
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const location = useLocation();
-	const isDocs = location.pathname.startsWith("/docs");
+	const isDocs = location.pathname.startsWith('/docs');
 	const { theme, toggle } = useTheme();
 	const navigate = useNavigate();
 
 	const handleSectionLink = (hash: string) => (e: React.MouseEvent) => {
 		e.preventDefault();
-		if (location.pathname !== "/") {
-			navigate("/");
+		if (location.pathname !== '/') {
+			navigate('/');
 			setTimeout(() => {
-				document.getElementById(hash)?.scrollIntoView({ behavior: "smooth" });
+				document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
 			}, 100);
 		} else {
-			document.getElementById(hash)?.scrollIntoView({ behavior: "smooth" });
+			document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
 		}
 	};
 
 	useEffect(() => {
 		const onScroll = () => setScrolled(window.scrollY > 20);
-		window.addEventListener("scroll", onScroll);
-		return () => window.removeEventListener("scroll", onScroll);
+		window.addEventListener('scroll', onScroll);
+		return () => window.removeEventListener('scroll', onScroll);
 	}, []);
 
 	useEffect(() => {
@@ -61,10 +77,10 @@ export function Nav() {
 		<nav
 			className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
 				scrolled
-					? "bg-otto-bg/90 backdrop-blur-md border-b border-otto-border"
+					? 'bg-otto-bg/90 backdrop-blur-md border-b border-otto-border'
 					: isDocs
-						? "bg-otto-bg border-b border-otto-border"
-						: "bg-transparent"
+						? 'bg-otto-bg border-b border-otto-border'
+						: 'bg-transparent'
 			}`}
 		>
 			<div className="h-14 flex items-center">
@@ -79,7 +95,10 @@ export function Nav() {
 					</Link>
 
 					<div className="hidden md:flex items-center gap-5 text-[13px] ml-auto">
-						<Link to="/docs" className="text-otto-muted hover:text-otto-text transition-colors">
+						<Link
+							to="/docs"
+							className="text-otto-muted hover:text-otto-text transition-colors"
+						>
 							Docs
 						</Link>
 						<a
@@ -94,23 +113,39 @@ export function Nav() {
 							type="button"
 							onClick={toggle}
 							className="p-1.5 rounded-sm text-otto-muted hover:text-otto-text hover:bg-otto-card transition-colors"
-							title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+							title={
+								theme === 'dark'
+									? 'Switch to light mode'
+									: 'Switch to dark mode'
+							}
 						>
-							{theme === "dark" ? <SunIcon /> : <MoonIcon />}
+							{theme === 'dark' ? <SunIcon /> : <MoonIcon />}
 						</button>
-					<a
-						href="#install"
-						onClick={handleSectionLink("install")}
-						className="px-3.5 py-1.5 border border-otto-border text-otto-muted text-xs rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
+						<a
+							href="#install"
+							onClick={handleSectionLink('install')}
+							className="px-3.5 py-1.5 border border-otto-border text-otto-muted text-xs rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
 						>
 							Install
 						</a>
-					<a
-						href="#desktop"
-						onClick={handleSectionLink("desktop")}
-						className="px-3.5 py-1.5 bg-otto-text text-otto-bg text-xs font-medium rounded-sm hover:opacity-80 transition-colors flex items-center gap-1.5"
+						<a
+							href="#desktop"
+							onClick={handleSectionLink('desktop')}
+							className="px-3.5 py-1.5 bg-otto-text text-otto-bg text-xs font-medium rounded-sm hover:opacity-80 transition-colors flex items-center gap-1.5"
 						>
-							<svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
+							<svg
+								className="w-3.5 h-3.5"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							>
+								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+								<polyline points="7 10 12 15 17 10" />
+								<line x1="12" x2="12" y1="15" y2="3" />
+							</svg>
 							Desktop
 						</a>
 					</div>
@@ -120,9 +155,13 @@ export function Nav() {
 							type="button"
 							onClick={toggle}
 							className="p-1.5 rounded-sm text-otto-muted hover:text-otto-text transition-colors"
-							title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+							title={
+								theme === 'dark'
+									? 'Switch to light mode'
+									: 'Switch to dark mode'
+							}
 						>
-							{theme === "dark" ? <SunIcon /> : <MoonIcon />}
+							{theme === 'dark' ? <SunIcon /> : <MoonIcon />}
 						</button>
 						<button
 							type="button"
@@ -131,9 +170,17 @@ export function Nav() {
 						>
 							<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
 								{mobileOpen ? (
-									<path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.5" />
+									<path
+										d="M5 5L15 15M15 5L5 15"
+										stroke="currentColor"
+										strokeWidth="1.5"
+									/>
 								) : (
-									<path d="M3 6H17M3 10H17M3 14H17" stroke="currentColor" strokeWidth="1.5" />
+									<path
+										d="M3 6H17M3 10H17M3 14H17"
+										stroke="currentColor"
+										strokeWidth="1.5"
+									/>
 								)}
 							</svg>
 						</button>
@@ -143,10 +190,34 @@ export function Nav() {
 
 			{mobileOpen && (
 				<div className="md:hidden bg-otto-bg/95 backdrop-blur-md border-b border-otto-border px-6 py-4 space-y-3 text-sm">
-					<Link to="/docs" className="block text-otto-muted hover:text-otto-text">Docs</Link>
-				<a href="https://github.com/nitishxyz/otto" target="_blank" rel="noopener noreferrer" className="block text-otto-muted hover:text-otto-text">GitHub</a>
-				<a href="#install" onClick={handleSectionLink("install")} className="block text-otto-muted hover:text-otto-text">Install</a>
-				<a href="#desktop" onClick={handleSectionLink("desktop")} className="block text-otto-muted hover:text-otto-text">Desktop App</a>
+					<Link
+						to="/docs"
+						className="block text-otto-muted hover:text-otto-text"
+					>
+						Docs
+					</Link>
+					<a
+						href="https://github.com/nitishxyz/otto"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="block text-otto-muted hover:text-otto-text"
+					>
+						GitHub
+					</a>
+					<a
+						href="#install"
+						onClick={handleSectionLink('install')}
+						className="block text-otto-muted hover:text-otto-text"
+					>
+						Install
+					</a>
+					<a
+						href="#desktop"
+						onClick={handleSectionLink('desktop')}
+						className="block text-otto-muted hover:text-otto-text"
+					>
+						Desktop App
+					</a>
 				</div>
 			)}
 		</nav>

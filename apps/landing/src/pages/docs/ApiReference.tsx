@@ -1,13 +1,20 @@
-import { CodeBlock } from "../../components/CodeBlock";
+import { CodeBlock } from '../../components/CodeBlock';
 export function ApiReference() {
 	return (
 		<div>
 			<h1 className="text-3xl font-bold mb-2">API Reference</h1>
-			<p className="text-otto-dim text-sm mb-8">REST endpoints and SSE streaming.</p>
+			<p className="text-otto-dim text-sm mb-8">
+				REST endpoints and SSE streaming.
+			</p>
 
 			<h2>Overview</h2>
-			<p>otto exposes a local HTTP API via Hono. The server supports both REST endpoints and Server-Sent Events (SSE) for streaming.</p>
-			<p>Base URL: <code>http://localhost:{"<port>"}</code></p>
+			<p>
+				otto exposes a local HTTP API via Hono. The server supports both REST
+				endpoints and Server-Sent Events (SSE) for streaming.
+			</p>
+			<p>
+				Base URL: <code>http://localhost:{'<port>'}</code>
+			</p>
 
 			<h2>Ask (Streaming)</h2>
 			<h3>POST /api/ask</h3>
@@ -24,11 +31,21 @@ Content-Type: application/json
 }`}</CodeBlock>
 			<p>Returns an SSE stream with events:</p>
 			<ul>
-				<li><code>text-delta</code> — text chunk</li>
-				<li><code>tool-call</code> — tool invocation</li>
-				<li><code>tool-result</code> — tool execution result</li>
-				<li><code>finish</code> — stream complete</li>
-				<li><code>error</code> — error occurred</li>
+				<li>
+					<code>text-delta</code> — text chunk
+				</li>
+				<li>
+					<code>tool-call</code> — tool invocation
+				</li>
+				<li>
+					<code>tool-result</code> — tool execution result
+				</li>
+				<li>
+					<code>finish</code> — stream complete
+				</li>
+				<li>
+					<code>error</code> — error occurred
+				</li>
 			</ul>
 
 			<h2>Sessions</h2>
@@ -83,10 +100,14 @@ Content-Type: application/json
 			<h2>Health</h2>
 
 			<h3>GET /health</h3>
-			<p>Health check endpoint. Returns <code>200 OK</code>.</p>
+			<p>
+				Health check endpoint. Returns <code>200 OK</code>.
+			</p>
 
 			<h2>OpenAPI</h2>
-			<p>Full OpenAPI spec available at <code>/openapi.json</code>.</p>
+			<p>
+				Full OpenAPI spec available at <code>/openapi.json</code>.
+			</p>
 
 			<h2>TypeScript Client</h2>
 			<p>Use the generated type-safe client:</p>

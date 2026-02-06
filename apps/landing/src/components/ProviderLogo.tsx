@@ -1,4 +1,4 @@
-import { providerLogos } from "../assets/provider-logos";
+import { providerLogos } from '../assets/provider-logos';
 
 interface ProviderLogoProps {
 	provider: string;
@@ -6,7 +6,11 @@ interface ProviderLogoProps {
 	className?: string;
 }
 
-export function ProviderLogo({ provider, size = 16, className = "" }: ProviderLogoProps) {
+export function ProviderLogo({
+	provider,
+	size = 16,
+	className = '',
+}: ProviderLogoProps) {
 	const logoSvg = providerLogos[provider.toLowerCase()];
 
 	if (!logoSvg) {

@@ -1,7 +1,11 @@
 import { memo, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronRight, Plus, X } from 'lucide-react';
-import { useGitStore, useSidebarStore, usePanelWidthStore } from '@ottocode/web-sdk/stores';
+import {
+	useGitStore,
+	useSidebarStore,
+	usePanelWidthStore,
+} from '@ottocode/web-sdk/stores';
 import { Button, ResizeHandle } from '@ottocode/web-sdk/components';
 
 const PANEL_KEY = 'left-sidebar';
@@ -21,7 +25,9 @@ export const Sidebar = memo(function Sidebar({
 	const isDiffOpen = useGitStore((state) => state.isDiffOpen);
 	const isCollapsed = useSidebarStore((state) => state.isCollapsed);
 	const toggleCollapse = useSidebarStore((state) => state.toggleCollapse);
-	const panelWidth = usePanelWidthStore((s) => s.widths[PANEL_KEY] ?? DEFAULT_WIDTH);
+	const panelWidth = usePanelWidthStore(
+		(s) => s.widths[PANEL_KEY] ?? DEFAULT_WIDTH,
+	);
 
 	useEffect(() => {
 		if (!isCollapsed) {
@@ -86,7 +92,10 @@ export const Sidebar = memo(function Sidebar({
 				className="border-r border-border bg-background flex transition-all duration-300 ease-in-out fixed md:relative top-0 left-0 z-50 h-screen md:h-auto w-full md:w-auto"
 				style={{ maxWidth: '100%' }}
 			>
-				<div className="flex-1 flex flex-col min-w-0" style={{ width: panelWidth }}>
+				<div
+					className="flex-1 flex flex-col min-w-0"
+					style={{ width: panelWidth }}
+				>
 					<div className="h-14 border-b border-border px-4 flex items-center gap-2 md:hidden bg-background">
 						<Button
 							variant="ghost"
@@ -98,7 +107,9 @@ export const Sidebar = memo(function Sidebar({
 						>
 							<X className="w-5 h-5" />
 						</Button>
-						<h1 className="text-lg font-semibold text-foreground flex-1">otto</h1>
+						<h1 className="text-lg font-semibold text-foreground flex-1">
+							otto
+						</h1>
 					</div>
 
 					<div className="h-14 border-b border-border px-4 flex items-center gap-2">
@@ -113,7 +124,9 @@ export const Sidebar = memo(function Sidebar({
 						</Button>
 					</div>
 
-					<div className="flex-1 overflow-y-auto scrollbar-hide">{children}</div>
+					<div className="flex-1 overflow-y-auto scrollbar-hide">
+						{children}
+					</div>
 
 					<div className="h-12 border-t border-border px-2 flex items-center justify-end">
 						<Button
@@ -145,7 +158,13 @@ export const Sidebar = memo(function Sidebar({
 					</div>
 				</div>
 				<div className="hidden md:block">
-					<ResizeHandle panelKey={PANEL_KEY} side="left" minWidth={MIN_WIDTH} maxWidth={MAX_WIDTH} defaultWidth={DEFAULT_WIDTH} />
+					<ResizeHandle
+						panelKey={PANEL_KEY}
+						side="left"
+						minWidth={MIN_WIDTH}
+						maxWidth={MAX_WIDTH}
+						defaultWidth={DEFAULT_WIDTH}
+					/>
 				</div>
 			</aside>
 		</>

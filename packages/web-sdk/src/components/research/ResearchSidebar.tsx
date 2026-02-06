@@ -51,7 +51,9 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 }: ResearchSidebarProps) {
 	const isExpanded = useResearchStore((state) => state.isExpanded);
 	const collapseSidebar = useResearchStore((state) => state.collapseSidebar);
-	const panelWidth = usePanelWidthStore((s) => s.widths[PANEL_KEY] ?? DEFAULT_WIDTH);
+	const panelWidth = usePanelWidthStore(
+		(s) => s.widths[PANEL_KEY] ?? DEFAULT_WIDTH,
+	);
 	const activeResearchSessionId = useResearchStore(
 		(state) => state.activeResearchSessionId,
 	);
@@ -325,309 +327,324 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 		)?.label ?? activeSession?.model;
 
 	return (
-		<div className="border-l border-border bg-background flex h-full" style={{ width: panelWidth }}>
-			<ResizeHandle panelKey={PANEL_KEY} side="right" minWidth={MIN_WIDTH} maxWidth={MAX_WIDTH} defaultWidth={DEFAULT_WIDTH} />
+		<div
+			className="border-l border-border bg-background flex h-full"
+			style={{ width: panelWidth }}
+		>
+			<ResizeHandle
+				panelKey={PANEL_KEY}
+				side="right"
+				minWidth={MIN_WIDTH}
+				maxWidth={MAX_WIDTH}
+				defaultWidth={DEFAULT_WIDTH}
+			/>
 			<div className="flex-1 flex flex-col h-full min-w-0">
-			{/* Header */}
-			<div className="h-14 border-b border-border px-3 flex items-center justify-between">
-				<div className="flex items-center gap-2 flex-1">
-					<FlaskConical className="w-4 h-4 text-teal-500" />
-					<span className="font-medium text-foreground text-sm">Research</span>
-				</div>
-				<div className="flex items-center gap-0.5">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => setShowHistory(!showHistory)}
-						title="Research history"
-						className="h-8 w-8"
-					>
-						<History className="w-4 h-4" />
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={handleCreateNew}
-						disabled={!parentSessionId || createMutation.isPending}
-						title="New research session"
-						className="h-8 w-8"
-					>
-						{createMutation.isPending ? (
-							<Loader2 className="w-4 h-4 animate-spin" />
-						) : (
-							<Plus className="w-4 h-4" />
-						)}
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={collapseSidebar}
-						title="Close sidebar"
-						className="h-8 w-8"
-					>
-						<ChevronRight className="w-4 h-4" />
-					</Button>
-				</div>
-			</div>
-
-			{showHistory ? (
-				<div className="flex-1 overflow-y-auto">
-					<div className="p-2 border-b border-border">
-						<div className="text-xs font-medium text-muted-foreground px-2 py-1">
-							Research Sessions
-						</div>
+				{/* Header */}
+				<div className="h-14 border-b border-border px-3 flex items-center justify-between">
+					<div className="flex items-center gap-2 flex-1">
+						<FlaskConical className="w-4 h-4 text-teal-500" />
+						<span className="font-medium text-foreground text-sm">
+							Research
+						</span>
 					</div>
-					{isLoading ? (
-						<div className="p-4 text-sm text-muted-foreground">Loading...</div>
-					) : sessions.length === 0 ? (
-						<div className="p-4 text-sm text-muted-foreground">
-							No research sessions yet
+					<div className="flex items-center gap-0.5">
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={() => setShowHistory(!showHistory)}
+							title="Research history"
+							className="h-8 w-8"
+						>
+							<History className="w-4 h-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={handleCreateNew}
+							disabled={!parentSessionId || createMutation.isPending}
+							title="New research session"
+							className="h-8 w-8"
+						>
+							{createMutation.isPending ? (
+								<Loader2 className="w-4 h-4 animate-spin" />
+							) : (
+								<Plus className="w-4 h-4" />
+							)}
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={collapseSidebar}
+							title="Close sidebar"
+							className="h-8 w-8"
+						>
+							<ChevronRight className="w-4 h-4" />
+						</Button>
+					</div>
+				</div>
+
+				{showHistory ? (
+					<div className="flex-1 overflow-y-auto">
+						<div className="p-2 border-b border-border">
+							<div className="text-xs font-medium text-muted-foreground px-2 py-1">
+								Research Sessions
+							</div>
 						</div>
-					) : (
-						<div className="p-2 space-y-1">
-							{sessions.map((session) => (
-								<button
-									type="button"
-									key={session.id}
-									onClick={() => handleSelectSession(session)}
-									className={`w-full text-left p-2 rounded-md text-sm transition-colors ${
-										session.id === activeResearchSessionId
-											? 'bg-teal-500/10 border border-teal-500/30 text-foreground'
-											: 'hover:bg-muted'
-									}`}
-								>
-									<div className="font-medium truncate">
-										{session.title || 'Untitled'}
-									</div>
-									<div className="text-xs text-muted-foreground">
-										{session.messageCount} messages •{' '}
-										{formatRelativeTime(
-											session.lastActiveAt ?? session.createdAt,
+						{isLoading ? (
+							<div className="p-4 text-sm text-muted-foreground">
+								Loading...
+							</div>
+						) : sessions.length === 0 ? (
+							<div className="p-4 text-sm text-muted-foreground">
+								No research sessions yet
+							</div>
+						) : (
+							<div className="p-2 space-y-1">
+								{sessions.map((session) => (
+									<button
+										type="button"
+										key={session.id}
+										onClick={() => handleSelectSession(session)}
+										className={`w-full text-left p-2 rounded-md text-sm transition-colors ${
+											session.id === activeResearchSessionId
+												? 'bg-teal-500/10 border border-teal-500/30 text-foreground'
+												: 'hover:bg-muted'
+										}`}
+									>
+										<div className="font-medium truncate">
+											{session.title || 'Untitled'}
+										</div>
+										<div className="text-xs text-muted-foreground">
+											{session.messageCount} messages •{' '}
+											{formatRelativeTime(
+												session.lastActiveAt ?? session.createdAt,
+											)}
+										</div>
+									</button>
+								))}
+							</div>
+						)}
+					</div>
+				) : (
+					<>
+						{/* Messages area - using the same components as main chat, but smaller */}
+						<div className="flex-1 overflow-y-auto px-3 py-3 research-messages text-[13px]">
+							{!activeResearchSessionId ? (
+								<div className="text-xs text-muted-foreground text-center py-8">
+									<FlaskConical className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+									<p>Start researching by asking a question below.</p>
+								</div>
+							) : messages.length === 0 ? (
+								<div className="text-xs text-muted-foreground text-center py-8">
+									<p>Ask a question to start researching.</p>
+								</div>
+							) : (
+								<div className="space-y-1.5">
+									{messages.map((msg, index) => {
+										if (msg.role === 'user') {
+											const nextMsg = messages[index + 1];
+											return (
+												<UserMessageGroup
+													key={msg.id}
+													sessionId={activeResearchSessionId}
+													message={msg}
+													isFirst={index === 0}
+													nextAssistantMessageId={
+														nextMsg?.role === 'assistant'
+															? nextMsg.id
+															: undefined
+													}
+												/>
+											);
+										}
+										if (msg.role === 'assistant') {
+											const prevMsg = index > 0 ? messages[index - 1] : null;
+											const nextMsg = messages[index + 1];
+											const showHeader = prevMsg?.role !== 'assistant';
+											const hasNextAssistant = nextMsg?.role === 'assistant';
+											return (
+												<AssistantMessageGroup
+													key={msg.id}
+													sessionId={activeResearchSessionId}
+													message={msg}
+													showHeader={showHeader}
+													hasNextAssistantMessage={hasNextAssistant}
+													isLastMessage={index === messages.length - 1}
+													compact
+													onNavigateToSession={onNavigateToSession}
+												/>
+											);
+										}
+										return null;
+									})}
+									<div ref={messagesEndRef} />
+								</div>
+							)}
+						</div>
+
+						{/* Input area */}
+						<div className="p-3 border-t border-border">
+							<div className="relative flex flex-col rounded-3xl bg-card border border-border focus-within:border-teal-500/60 focus-within:ring-1 focus-within:ring-teal-500/40 p-1">
+								<div className="flex items-end gap-1">
+									<Textarea
+										ref={textareaRef}
+										value={inputValue}
+										onChange={(e) => setInputValue(e.target.value)}
+										onKeyDown={handleKeyDown}
+										placeholder="Ask anything..."
+										disabled={
+											!parentSessionId ||
+											sendMessage.isPending ||
+											createMutation.isPending
+										}
+										rows={1}
+										className="flex-1 border-0 bg-transparent pl-2 pr-1 py-2 max-h-[120px] overflow-y-auto leading-normal resize-none scrollbar-hide text-sm focus:ring-0 focus:outline-none"
+										style={{ height: '2.25rem' }}
+									/>
+									<button
+										type="button"
+										onClick={handleSendMessage}
+										disabled={
+											!inputValue.trim() ||
+											!parentSessionId ||
+											sendMessage.isPending ||
+											createMutation.isPending ||
+											isGenerating
+										}
+										className={`flex items-center justify-center w-9 h-9 rounded-full transition-colors flex-shrink-0 ${
+											inputValue.trim() && parentSessionId && !isGenerating
+												? 'bg-teal-500 hover:bg-teal-600 text-white'
+												: 'bg-transparent text-muted-foreground'
+										}`}
+									>
+										{sendMessage.isPending || createMutation.isPending ? (
+											<Loader2 className="w-4 h-4 animate-spin" />
+										) : (
+											<ArrowUp className="w-4 h-4" />
 										)}
-									</div>
-								</button>
-							))}
-						</div>
-					)}
-				</div>
-			) : (
-				<>
-					{/* Messages area - using the same components as main chat, but smaller */}
-					<div className="flex-1 overflow-y-auto px-3 py-3 research-messages text-[13px]">
-						{!activeResearchSessionId ? (
-							<div className="text-xs text-muted-foreground text-center py-8">
-								<FlaskConical className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
-								<p>Start researching by asking a question below.</p>
+									</button>
+								</div>
 							</div>
-						) : messages.length === 0 ? (
-							<div className="text-xs text-muted-foreground text-center py-8">
-								<p>Ask a question to start researching.</p>
-							</div>
-						) : (
-							<div className="space-y-1.5">
-								{messages.map((msg, index) => {
-									if (msg.role === 'user') {
-										const nextMsg = messages[index + 1];
-										return (
-											<UserMessageGroup
-												key={msg.id}
-												sessionId={activeResearchSessionId}
-												message={msg}
-												isFirst={index === 0}
-												nextAssistantMessageId={
-													nextMsg?.role === 'assistant' ? nextMsg.id : undefined
-												}
-											/>
-										);
-									}
-									if (msg.role === 'assistant') {
-										const prevMsg = index > 0 ? messages[index - 1] : null;
-										const nextMsg = messages[index + 1];
-										const showHeader = prevMsg?.role !== 'assistant';
-										const hasNextAssistant = nextMsg?.role === 'assistant';
-										return (
-											<AssistantMessageGroup
-												key={msg.id}
-												sessionId={activeResearchSessionId}
-												message={msg}
-												showHeader={showHeader}
-												hasNextAssistantMessage={hasNextAssistant}
-												isLastMessage={index === messages.length - 1}
-												compact
-												onNavigateToSession={onNavigateToSession}
-											/>
-										);
-									}
-									return null;
-								})}
-								<div ref={messagesEndRef} />
-							</div>
-						)}
-					</div>
 
-					{/* Input area */}
-					<div className="p-3 border-t border-border">
-						<div className="relative flex flex-col rounded-3xl bg-card border border-border focus-within:border-teal-500/60 focus-within:ring-1 focus-within:ring-teal-500/40 p-1">
-							<div className="flex items-end gap-1">
-								<Textarea
-									ref={textareaRef}
-									value={inputValue}
-									onChange={(e) => setInputValue(e.target.value)}
-									onKeyDown={handleKeyDown}
-									placeholder="Ask anything..."
-									disabled={
-										!parentSessionId ||
-										sendMessage.isPending ||
-										createMutation.isPending
-									}
-									rows={1}
-									className="flex-1 border-0 bg-transparent pl-2 pr-1 py-2 max-h-[120px] overflow-y-auto leading-normal resize-none scrollbar-hide text-sm focus:ring-0 focus:outline-none"
-									style={{ height: '2.25rem' }}
-								/>
+							{/* Injection status banner */}
+							{injectionStatus === 'success' && (
+								<div className="flex items-center gap-2 mt-2 px-2 py-1.5 text-xs rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-600 dark:text-teal-400">
+									<Check className="w-3 h-3 flex-shrink-0" />
+									<span className="flex-1">
+										Context injected — will be used on next request
+									</span>
+									<button
+										type="button"
+										onClick={() => setInjectionStatus('idle')}
+										className="hover:text-teal-500"
+									>
+										<X className="w-3 h-3" />
+									</button>
+								</div>
+							)}
+							{injectionStatus === 'error' && (
+								<div className="flex items-center gap-2 mt-2 px-2 py-1.5 text-xs rounded-lg bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400">
+									<X className="w-3 h-3 flex-shrink-0" />
+									<span className="flex-1">Failed to inject context</span>
+									<button
+										type="button"
+										onClick={() => setInjectionStatus('idle')}
+										className="hover:text-red-500"
+									>
+										<X className="w-3 h-3" />
+									</button>
+								</div>
+							)}
+
+							{/* Action buttons */}
+							<div className="flex gap-2 mt-2">
 								<button
 									type="button"
-									onClick={handleSendMessage}
+									onClick={handleInject}
 									disabled={
-										!inputValue.trim() ||
-										!parentSessionId ||
-										sendMessage.isPending ||
-										createMutation.isPending ||
+										!activeResearchSessionId ||
+										injectMutation.isPending ||
+										isGenerating ||
+										isAlreadyInjected
+									}
+									className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+										isAlreadyInjected
+											? 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/30'
+											: 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+									}`}
+									title={
+										isAlreadyInjected
+											? 'Already injected into main session'
+											: 'Inject findings into main session'
+									}
+								>
+									{injectMutation.isPending ? (
+										<Loader2 className="w-3 h-3 animate-spin" />
+									) : isAlreadyInjected ? (
+										<Check className="w-3 h-3" />
+									) : (
+										<ArrowDownToLine className="w-3 h-3" />
+									)}
+									{isAlreadyInjected ? 'Injected' : 'Inject'}
+								</button>
+								<button
+									type="button"
+									onClick={handleExport}
+									disabled={
+										!activeResearchSessionId ||
+										exportMutation.isPending ||
 										isGenerating
 									}
-									className={`flex items-center justify-center w-9 h-9 rounded-full transition-colors flex-shrink-0 ${
-										inputValue.trim() && parentSessionId && !isGenerating
-											? 'bg-teal-500 hover:bg-teal-600 text-white'
-											: 'bg-transparent text-muted-foreground'
-									}`}
+									className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+									title="Export to new main session"
 								>
-									{sendMessage.isPending || createMutation.isPending ? (
-										<Loader2 className="w-4 h-4 animate-spin" />
+									{exportMutation.isPending ? (
+										<Loader2 className="w-3 h-3 animate-spin" />
 									) : (
-										<ArrowUp className="w-4 h-4" />
+										<ExternalLink className="w-3 h-3" />
 									)}
+									Export
 								</button>
 							</div>
 						</div>
-
-						{/* Injection status banner */}
-						{injectionStatus === 'success' && (
-							<div className="flex items-center gap-2 mt-2 px-2 py-1.5 text-xs rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-600 dark:text-teal-400">
-								<Check className="w-3 h-3 flex-shrink-0" />
-								<span className="flex-1">
-									Context injected — will be used on next request
-								</span>
-								<button
-									type="button"
-									onClick={() => setInjectionStatus('idle')}
-									className="hover:text-teal-500"
-								>
-									<X className="w-3 h-3" />
-								</button>
-							</div>
-						)}
-						{injectionStatus === 'error' && (
-							<div className="flex items-center gap-2 mt-2 px-2 py-1.5 text-xs rounded-lg bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400">
-								<X className="w-3 h-3 flex-shrink-0" />
-								<span className="flex-1">Failed to inject context</span>
-								<button
-									type="button"
-									onClick={() => setInjectionStatus('idle')}
-									className="hover:text-red-500"
-								>
-									<X className="w-3 h-3" />
-								</button>
-							</div>
-						)}
-
-						{/* Action buttons */}
-						<div className="flex gap-2 mt-2">
-							<button
-								type="button"
-								onClick={handleInject}
-								disabled={
-									!activeResearchSessionId ||
-									injectMutation.isPending ||
-									isGenerating ||
-									isAlreadyInjected
-								}
-								className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-									isAlreadyInjected
-										? 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/30'
-										: 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
-								}`}
-								title={
-									isAlreadyInjected
-										? 'Already injected into main session'
-										: 'Inject findings into main session'
-								}
-							>
-								{injectMutation.isPending ? (
-									<Loader2 className="w-3 h-3 animate-spin" />
-								) : isAlreadyInjected ? (
-									<Check className="w-3 h-3" />
-								) : (
-									<ArrowDownToLine className="w-3 h-3" />
-								)}
-								{isAlreadyInjected ? 'Injected' : 'Inject'}
-							</button>
-							<button
-								type="button"
-								onClick={handleExport}
-								disabled={
-									!activeResearchSessionId ||
-									exportMutation.isPending ||
-									isGenerating
-								}
-								className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-								title="Export to new main session"
-							>
-								{exportMutation.isPending ? (
-									<Loader2 className="w-3 h-3 animate-spin" />
-								) : (
-									<ExternalLink className="w-3 h-3" />
-								)}
-								Export
-							</button>
-						</div>
-					</div>
-				</>
-			)}
-
-			{/* Footer */}
-			<div className="h-12 px-3 border-t border-border text-xs text-muted-foreground flex items-center justify-between">
-				<span className="text-[10px]">
-					{sessions.length} research session{sessions.length !== 1 ? 's' : ''}
-				</span>
-				{activeSession && (
-					<button
-						type="button"
-						onClick={() => setShowModelSelector(true)}
-						className="flex items-center gap-1 text-[10px] hover:text-foreground transition-colors"
-					>
-						<span className="opacity-60">{currentProviderLabel}</span>
-						<span className="opacity-40">/</span>
-						<span>{currentModelLabel}</span>
-						<ChevronDown className="w-3 h-3 opacity-40" />
-					</button>
+					</>
 				)}
+
+				{/* Footer */}
+				<div className="h-12 px-3 border-t border-border text-xs text-muted-foreground flex items-center justify-between">
+					<span className="text-[10px]">
+						{sessions.length} research session{sessions.length !== 1 ? 's' : ''}
+					</span>
+					{activeSession && (
+						<button
+							type="button"
+							onClick={() => setShowModelSelector(true)}
+							className="flex items-center gap-1 text-[10px] hover:text-foreground transition-colors"
+						>
+							<span className="opacity-60">{currentProviderLabel}</span>
+							<span className="opacity-40">/</span>
+							<span>{currentModelLabel}</span>
+							<ChevronDown className="w-3 h-3 opacity-40" />
+						</button>
+					)}
+				</div>
+
+				{/* Model Selector Modal */}
+				<Modal
+					isOpen={showModelSelector}
+					onClose={() => setShowModelSelector(false)}
+					title="Select Model for Research"
+					maxWidth="md"
+				>
+					{activeSession && (
+						<UnifiedModelSelector
+							provider={activeSession.provider}
+							model={activeSession.model}
+							onChange={handleModelChange}
+						/>
+					)}
+				</Modal>
 			</div>
-
-			{/* Model Selector Modal */}
-			<Modal
-				isOpen={showModelSelector}
-				onClose={() => setShowModelSelector(false)}
-				title="Select Model for Research"
-				maxWidth="md"
-			>
-				{activeSession && (
-					<UnifiedModelSelector
-						provider={activeSession.provider}
-						model={activeSession.model}
-						onChange={handleModelChange}
-					/>
-				)}
-		</Modal>
-		</div>
 		</div>
 	);
 });

@@ -134,80 +134,91 @@ export const SessionFilesSidebar = memo(function SessionFilesSidebar({
 	const collapseSidebar = useSessionFilesStore(
 		(state) => state.collapseSidebar,
 	);
-	const panelWidth = usePanelWidthStore((s) => s.widths[PANEL_KEY] ?? DEFAULT_WIDTH);
+	const panelWidth = usePanelWidthStore(
+		(s) => s.widths[PANEL_KEY] ?? DEFAULT_WIDTH,
+	);
 	const { data, isLoading, error, refetch } = useSessionFiles(sessionId);
 
 	if (!isExpanded) return null;
 
 	return (
-		<div className="border-l border-border bg-background flex h-full" style={{ width: panelWidth }}>
-			<ResizeHandle panelKey={PANEL_KEY} side="right" minWidth={MIN_WIDTH} maxWidth={MAX_WIDTH} defaultWidth={DEFAULT_WIDTH} />
+		<div
+			className="border-l border-border bg-background flex h-full"
+			style={{ width: panelWidth }}
+		>
+			<ResizeHandle
+				panelKey={PANEL_KEY}
+				side="right"
+				minWidth={MIN_WIDTH}
+				maxWidth={MAX_WIDTH}
+				defaultWidth={DEFAULT_WIDTH}
+			/>
 			<div className="flex-1 flex flex-col h-full min-w-0">
-			<div className="h-14 border-b border-border px-4 flex items-center justify-between shrink-0">
-				<div className="flex items-center gap-2">
-					<FilePen className="w-4 h-4 text-muted-foreground" />
-					<span className="font-medium">Session Files</span>
-					{data && data.totalFiles > 0 && (
-						<span className="text-xs text-muted-foreground">
-							({data.totalFiles})
-						</span>
-					)}
-				</div>
-				<Button variant="ghost" size="icon" onClick={collapseSidebar}>
-					<ChevronRight className="w-4 h-4" />
-				</Button>
-			</div>
-
-			<div className="flex-1 overflow-y-auto">
-				{isLoading ? (
-					<div className="p-4 text-sm text-muted-foreground">
-						Loading session files...
+				<div className="h-14 border-b border-border px-4 flex items-center justify-between shrink-0">
+					<div className="flex items-center gap-2">
+						<FilePen className="w-4 h-4 text-muted-foreground" />
+						<span className="font-medium">Session Files</span>
+						{data && data.totalFiles > 0 && (
+							<span className="text-xs text-muted-foreground">
+								({data.totalFiles})
+							</span>
+						)}
 					</div>
-				) : error ? (
-					<div className="p-4 text-sm text-orange-500">
-						{error instanceof Error ? error.message : 'Failed to load files'}
-					</div>
-				) : !data || data.totalFiles === 0 ? (
-					<div className="p-4 text-sm text-muted-foreground">
-						No files modified in this session
-					</div>
-				) : (
-					<div className="divide-y divide-border">
-						{data.files.map((file) => (
-							<SessionFileItem key={file.path} file={file} />
-						))}
-					</div>
-				)}
-			</div>
-
-			<div className="h-12 px-4 border-t border-border text-xs text-muted-foreground flex items-center justify-between gap-2">
-				<div className="flex items-center gap-2 min-w-0 flex-1">
-					<FilePen className="w-3 h-3 flex-shrink-0" />
-					{data && data.totalOperations > 0 ? (
-						<span className="truncate">
-							{data.totalFiles} file{data.totalFiles !== 1 ? 's' : ''} •{' '}
-							{data.totalOperations} op{data.totalOperations !== 1 ? 's' : ''}
-						</span>
-					) : (
-						<span className="truncate">No changes</span>
-					)}
-				</div>
-				<div className="flex items-center gap-1 flex-shrink-0">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => refetch()}
-						title="Refresh session files"
-						className="h-6 w-6 transition-transform duration-200 hover:scale-110"
-						disabled={isLoading}
-					>
-						<RefreshCw
-							className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`}
-						/>
+					<Button variant="ghost" size="icon" onClick={collapseSidebar}>
+						<ChevronRight className="w-4 h-4" />
 					</Button>
 				</div>
+
+				<div className="flex-1 overflow-y-auto">
+					{isLoading ? (
+						<div className="p-4 text-sm text-muted-foreground">
+							Loading session files...
+						</div>
+					) : error ? (
+						<div className="p-4 text-sm text-orange-500">
+							{error instanceof Error ? error.message : 'Failed to load files'}
+						</div>
+					) : !data || data.totalFiles === 0 ? (
+						<div className="p-4 text-sm text-muted-foreground">
+							No files modified in this session
+						</div>
+					) : (
+						<div className="divide-y divide-border">
+							{data.files.map((file) => (
+								<SessionFileItem key={file.path} file={file} />
+							))}
+						</div>
+					)}
+				</div>
+
+				<div className="h-12 px-4 border-t border-border text-xs text-muted-foreground flex items-center justify-between gap-2">
+					<div className="flex items-center gap-2 min-w-0 flex-1">
+						<FilePen className="w-3 h-3 flex-shrink-0" />
+						{data && data.totalOperations > 0 ? (
+							<span className="truncate">
+								{data.totalFiles} file{data.totalFiles !== 1 ? 's' : ''} •{' '}
+								{data.totalOperations} op{data.totalOperations !== 1 ? 's' : ''}
+							</span>
+						) : (
+							<span className="truncate">No changes</span>
+						)}
+					</div>
+					<div className="flex items-center gap-1 flex-shrink-0">
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={() => refetch()}
+							title="Refresh session files"
+							className="h-6 w-6 transition-transform duration-200 hover:scale-110"
+							disabled={isLoading}
+						>
+							<RefreshCw
+								className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`}
+							/>
+						</Button>
+					</div>
+				</div>
 			</div>
-		</div>
 		</div>
 	);
 });

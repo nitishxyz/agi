@@ -10,7 +10,7 @@ import {
 	DesktopSection,
 	ShareSection,
 	InstallSection,
-} from "./sections";
+} from './sections';
 
 export function Landing() {
 	return (

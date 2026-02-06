@@ -95,7 +95,9 @@ async function downloadFile(
 	const response = await fetch(url, { redirect: 'follow' });
 
 	if (!response.ok) {
-		throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+		throw new Error(
+			`Download failed: ${response.status} ${response.statusText}`,
+		);
 	}
 
 	if (!response.body) {
@@ -125,7 +127,9 @@ async function downloadFile(
 				const now = Date.now();
 				if (now - lastProgressUpdate > 200) {
 					const percent = Math.round((downloadedBytes / totalBytes) * 100);
-					onProgress(`Downloading... ${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)} (${percent}%)`);
+					onProgress(
+						`Downloading... ${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)} (${percent}%)`,
+					);
 					lastProgressUpdate = now;
 				}
 			}

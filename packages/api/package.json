@@ -1,42 +1,42 @@
 {
-  "name": "@ottocode/api",
-  "version": "0.1.178",
-  "description": "Type-safe API client for ottocode server",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist",
-    "README.md"
-  ],
-  "scripts": {
-    "build": "bun run build.ts",
-    "generate": "bun run generate.ts",
-    "prepublishOnly": "bun run build",
-    "typecheck": "tsc --noEmit"
-  },
-  "keywords": [
-    "otto",
-    "cli",
-    "api",
-    "client",
-    "typescript",
-    "openapi"
-  ],
-  "author": "nitishxyz",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nitishxyz/otto.git",
-    "directory": "packages/api"
-  },
-  "dependencies": {
-    "axios": "^1.7.9",
-    "eventsource-parser": "^2.0.1"
-  },
-  "devDependencies": {
-    "@hey-api/openapi-ts": "^0.85.1",
-    "@types/node": "^24.6.0",
-    "typescript": "~5.9.3"
-  }
+	"name": "@ottocode/api",
+	"version": "0.1.178",
+	"description": "Type-safe API client for ottocode server",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"scripts": {
+		"build": "bun run build.ts",
+		"generate": "bun run generate.ts",
+		"prepublishOnly": "bun run build",
+		"typecheck": "tsc --noEmit"
+	},
+	"keywords": [
+		"otto",
+		"cli",
+		"api",
+		"client",
+		"typescript",
+		"openapi"
+	],
+	"author": "nitishxyz",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/nitishxyz/otto.git",
+		"directory": "packages/api"
+	},
+	"dependencies": {
+		"axios": "^1.7.9",
+		"eventsource-parser": "^2.0.1"
+	},
+	"devDependencies": {
+		"@hey-api/openapi-ts": "^0.85.1",
+		"@types/node": "^24.6.0",
+		"typescript": "~5.9.3"
+	}
 }

@@ -43,7 +43,11 @@ async function startTunnel(): Promise<TunnelStartResponse> {
 	return response.json();
 }
 
-async function stopTunnel(): Promise<{ ok: boolean; message?: string; error?: string }> {
+async function stopTunnel(): Promise<{
+	ok: boolean;
+	message?: string;
+	error?: string;
+}> {
 	const response = await fetch(`${API_BASE_URL}/v1/tunnel/stop`, {
 		method: 'POST',
 	});

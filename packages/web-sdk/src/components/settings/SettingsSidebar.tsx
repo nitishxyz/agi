@@ -176,7 +176,9 @@ const SelectRow = memo(function SelectRow({
 export const SettingsSidebar = memo(function SettingsSidebar() {
 	const isExpanded = useSettingsStore((state) => state.isExpanded);
 	const collapseSidebar = useSettingsStore((state) => state.collapseSidebar);
-	const panelWidth = usePanelWidthStore((s) => s.widths[SETTINGS_PANEL_KEY] ?? SETTINGS_DEFAULT_WIDTH);
+	const panelWidth = usePanelWidthStore(
+		(s) => s.widths[SETTINGS_PANEL_KEY] ?? SETTINGS_DEFAULT_WIDTH,
+	);
 
 	const { data: config } = useConfig();
 	const { data: allModels } = useAllModels();
@@ -245,126 +247,135 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 	};
 
 	return (
-		<div className="border-l border-border bg-background flex h-full" style={{ width: panelWidth }}>
-			<ResizeHandle panelKey={SETTINGS_PANEL_KEY} side="right" minWidth={SETTINGS_MIN_WIDTH} maxWidth={SETTINGS_MAX_WIDTH} defaultWidth={SETTINGS_DEFAULT_WIDTH} />
+		<div
+			className="border-l border-border bg-background flex h-full"
+			style={{ width: panelWidth }}
+		>
+			<ResizeHandle
+				panelKey={SETTINGS_PANEL_KEY}
+				side="right"
+				minWidth={SETTINGS_MIN_WIDTH}
+				maxWidth={SETTINGS_MAX_WIDTH}
+				defaultWidth={SETTINGS_DEFAULT_WIDTH}
+			/>
 			<div className="flex-1 flex flex-col h-full min-w-0">
-			<div className="h-14 border-b border-border px-4 flex items-center justify-between shrink-0">
-				<div className="flex items-center gap-2">
-					<Settings className="w-4 h-4" />
-					<span className="font-medium">Settings</span>
-				</div>
-				<Button variant="ghost" size="icon" onClick={collapseSidebar}>
-					<ChevronRight className="w-4 h-4" />
-				</Button>
-			</div>
-
-			<div className="flex-1 overflow-y-auto">
-				<SettingsSection
-					title="Default Model"
-					icon={<Cpu className="w-4 h-4 text-muted-foreground" />}
-				>
-					<SelectRow
-						label="Provider"
-						value={config?.defaults?.provider ?? ''}
-						options={providerOptions}
-						onChange={handleProviderChange}
-						disabled={updateDefaults.isPending}
-					/>
-					<SelectRow
-						label="Model"
-						value={config?.defaults?.model ?? ''}
-						options={modelOptions}
-						onChange={handleModelChange}
-						disabled={updateDefaults.isPending}
-					/>
-					<SelectRow
-						label="Agent"
-						value={config?.defaults?.agent ?? ''}
-						options={agentOptions}
-						onChange={handleAgentChange}
-						disabled={updateDefaults.isPending}
-					/>
-				</SettingsSection>
-
-				<SettingsSection
-					title="Preferences"
-					icon={<User className="w-4 h-4 text-muted-foreground" />}
-				>
-					<ToggleRow
-						label="Vim Mode"
-						checked={preferences.vimMode}
-						onChange={(checked) => updatePreferences({ vimMode: checked })}
-					/>
-					<ToggleRow
-						label="Show Reasoning"
-						checked={preferences.reasoningEnabled}
-						onChange={(checked) =>
-							updatePreferences({ reasoningEnabled: checked })
-						}
-					/>
-					<SelectRow
-						label="Tool Approval"
-						value={config?.defaults?.toolApproval ?? 'auto'}
-						options={[
-							{ id: 'auto', label: 'Auto (no approval)' },
-							{ id: 'dangerous', label: 'Dangerous only' },
-							{ id: 'all', label: 'All tools' },
-						]}
-						onChange={(value) =>
-							updateDefaults.mutate({
-								toolApproval: value as 'auto' | 'dangerous' | 'all',
-								scope: 'global',
-							})
-						}
-						disabled={updateDefaults.isPending}
-					/>
-				</SettingsSection>
-
-				<SettingsSection
-					title="Providers"
-					icon={<Zap className="w-4 h-4 text-muted-foreground" />}
-					action={
-						<button
-							type="button"
-							onClick={() => {
-								fetchAuthStatus().then(() => {
-									setStep('wallet');
-									setManageMode(true);
-									setOnboardingOpen(true);
-								});
-							}}
-							className="p-1 hover:bg-muted rounded transition-colors"
-							title="Manage providers"
-						>
-							<Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-						</button>
-					}
-				>
-					<div className="flex flex-wrap gap-2">
-						{config?.providers?.map((provider) => (
-							<span
-								key={provider}
-								className="px-2 py-1 text-xs bg-muted rounded-md font-mono"
-							>
-								{provider}
-							</span>
-						)) ?? <span className="text-muted-foreground text-sm">None</span>}
+				<div className="h-14 border-b border-border px-4 flex items-center justify-between shrink-0">
+					<div className="flex items-center gap-2">
+						<Settings className="w-4 h-4" />
+						<span className="font-medium">Settings</span>
 					</div>
-				</SettingsSection>
+					<Button variant="ghost" size="icon" onClick={collapseSidebar}>
+						<ChevronRight className="w-4 h-4" />
+					</Button>
+				</div>
 
-				{config?.providers?.includes('setu') && (
-					<SetuWalletSection
-						setuWallet={setuWallet}
-						setuBalance={setuBalance}
-						setuUsdcBalance={setuUsdcBalance}
-						setuLoading={setuLoading}
-						refreshSetuBalance={refreshSetuBalance}
-						openTopupModal={openTopupModal}
-					/>
-				)}
+				<div className="flex-1 overflow-y-auto">
+					<SettingsSection
+						title="Default Model"
+						icon={<Cpu className="w-4 h-4 text-muted-foreground" />}
+					>
+						<SelectRow
+							label="Provider"
+							value={config?.defaults?.provider ?? ''}
+							options={providerOptions}
+							onChange={handleProviderChange}
+							disabled={updateDefaults.isPending}
+						/>
+						<SelectRow
+							label="Model"
+							value={config?.defaults?.model ?? ''}
+							options={modelOptions}
+							onChange={handleModelChange}
+							disabled={updateDefaults.isPending}
+						/>
+						<SelectRow
+							label="Agent"
+							value={config?.defaults?.agent ?? ''}
+							options={agentOptions}
+							onChange={handleAgentChange}
+							disabled={updateDefaults.isPending}
+						/>
+					</SettingsSection>
 
-			<SetuTopupModal />
-			</div>
+					<SettingsSection
+						title="Preferences"
+						icon={<User className="w-4 h-4 text-muted-foreground" />}
+					>
+						<ToggleRow
+							label="Vim Mode"
+							checked={preferences.vimMode}
+							onChange={(checked) => updatePreferences({ vimMode: checked })}
+						/>
+						<ToggleRow
+							label="Show Reasoning"
+							checked={preferences.reasoningEnabled}
+							onChange={(checked) =>
+								updatePreferences({ reasoningEnabled: checked })
+							}
+						/>
+						<SelectRow
+							label="Tool Approval"
+							value={config?.defaults?.toolApproval ?? 'auto'}
+							options={[
+								{ id: 'auto', label: 'Auto (no approval)' },
+								{ id: 'dangerous', label: 'Dangerous only' },
+								{ id: 'all', label: 'All tools' },
+							]}
+							onChange={(value) =>
+								updateDefaults.mutate({
+									toolApproval: value as 'auto' | 'dangerous' | 'all',
+									scope: 'global',
+								})
+							}
+							disabled={updateDefaults.isPending}
+						/>
+					</SettingsSection>
+
+					<SettingsSection
+						title="Providers"
+						icon={<Zap className="w-4 h-4 text-muted-foreground" />}
+						action={
+							<button
+								type="button"
+								onClick={() => {
+									fetchAuthStatus().then(() => {
+										setStep('wallet');
+										setManageMode(true);
+										setOnboardingOpen(true);
+									});
+								}}
+								className="p-1 hover:bg-muted rounded transition-colors"
+								title="Manage providers"
+							>
+								<Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+							</button>
+						}
+					>
+						<div className="flex flex-wrap gap-2">
+							{config?.providers?.map((provider) => (
+								<span
+									key={provider}
+									className="px-2 py-1 text-xs bg-muted rounded-md font-mono"
+								>
+									{provider}
+								</span>
+							)) ?? <span className="text-muted-foreground text-sm">None</span>}
+						</div>
+					</SettingsSection>
+
+					{config?.providers?.includes('setu') && (
+						<SetuWalletSection
+							setuWallet={setuWallet}
+							setuBalance={setuBalance}
+							setuUsdcBalance={setuUsdcBalance}
+							setuLoading={setuLoading}
+							refreshSetuBalance={refreshSetuBalance}
+							openTopupModal={openTopupModal}
+						/>
+					)}
+
+					<SetuTopupModal />
+				</div>
 			</div>
 		</div>
 	);

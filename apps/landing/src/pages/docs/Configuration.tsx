@@ -1,17 +1,30 @@
-import { CodeBlock } from "../../components/CodeBlock";
+import { CodeBlock } from '../../components/CodeBlock';
 export function Configuration() {
 	return (
 		<div>
 			<h1 className="text-3xl font-bold mb-2">Configuration</h1>
-			<p className="text-otto-dim text-sm mb-8">Settings, config files, and environment variables.</p>
+			<p className="text-otto-dim text-sm mb-8">
+				Settings, config files, and environment variables.
+			</p>
 
 			<h2>Configuration Priority</h2>
 			<p>otto checks in this order:</p>
 			<ol>
-				<li><strong>Injected config</strong> — <code>createEmbeddedApp({"{...}"})</code> (highest)</li>
-				<li><strong>Environment variables</strong> — <code>OPENAI_API_KEY</code>, etc.</li>
-				<li><strong>Config files</strong> — <code>~/.config/otto/</code>, <code>.otto/</code></li>
-				<li><strong>Built-in defaults</strong></li>
+				<li>
+					<strong>Injected config</strong> —{' '}
+					<code>createEmbeddedApp({'{...}'})</code> (highest)
+				</li>
+				<li>
+					<strong>Environment variables</strong> — <code>OPENAI_API_KEY</code>,
+					etc.
+				</li>
+				<li>
+					<strong>Config files</strong> — <code>~/.config/otto/</code>,{' '}
+					<code>.otto/</code>
+				</li>
+				<li>
+					<strong>Built-in defaults</strong>
+				</li>
 			</ol>
 
 			<h2>Directory Structure</h2>
@@ -33,7 +46,10 @@ export function Configuration() {
 			<h2>Configuration Files</h2>
 
 			<h3>Global Auth</h3>
-			<p><code>~/.config/otto/auth.json</code> — API keys stored securely (file permissions: 0600):</p>
+			<p>
+				<code>~/.config/otto/auth.json</code> — API keys stored securely (file
+				permissions: 0600):
+			</p>
 			<CodeBlock>{`{
   "openai": {
     "type": "api",
@@ -46,7 +62,9 @@ export function Configuration() {
 }`}</CodeBlock>
 
 			<h3>Global Config</h3>
-			<p><code>~/.config/otto/config.json</code> — User-wide defaults:</p>
+			<p>
+				<code>~/.config/otto/config.json</code> — User-wide defaults:
+			</p>
 			<CodeBlock>{`{
   "defaults": {
     "provider": "anthropic",
@@ -56,7 +74,9 @@ export function Configuration() {
 }`}</CodeBlock>
 
 			<h3>Project Config</h3>
-			<p><code>.otto/config.json</code> — Project-specific overrides:</p>
+			<p>
+				<code>.otto/config.json</code> — Project-specific overrides:
+			</p>
 			<CodeBlock>{`{
   "defaults": {
     "provider": "openai",
@@ -66,7 +86,9 @@ export function Configuration() {
 }`}</CodeBlock>
 
 			<h3>Agent Customization</h3>
-			<p><code>.otto/agents.json</code>:</p>
+			<p>
+				<code>.otto/agents.json</code>:
+			</p>
 			<CodeBlock>{`{
   "build": {
     "tools": ["read", "write", "bash", "git_*"],
@@ -102,10 +124,34 @@ OTTO_AGENT=build`}</CodeBlock>
 					</tr>
 				</thead>
 				<tbody>
-					<tr><td>CLI</td><td>-</td><td>-</td><td>Yes</td><td>Desktop development</td></tr>
-					<tr><td>CI/CD</td><td>-</td><td>Yes</td><td>-</td><td>GitHub Actions, Docker</td></tr>
-					<tr><td>Embedded</td><td>Yes</td><td>-</td><td>-</td><td>VSCode extension, SaaS</td></tr>
-					<tr><td>Hybrid</td><td>Partial</td><td>API keys</td><td>Defaults</td><td>Mix of all</td></tr>
+					<tr>
+						<td>CLI</td>
+						<td>-</td>
+						<td>-</td>
+						<td>Yes</td>
+						<td>Desktop development</td>
+					</tr>
+					<tr>
+						<td>CI/CD</td>
+						<td>-</td>
+						<td>Yes</td>
+						<td>-</td>
+						<td>GitHub Actions, Docker</td>
+					</tr>
+					<tr>
+						<td>Embedded</td>
+						<td>Yes</td>
+						<td>-</td>
+						<td>-</td>
+						<td>VSCode extension, SaaS</td>
+					</tr>
+					<tr>
+						<td>Hybrid</td>
+						<td>Partial</td>
+						<td>API keys</td>
+						<td>Defaults</td>
+						<td>Mix of all</td>
+					</tr>
 				</tbody>
 			</table>
 		</div>

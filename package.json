@@ -1,94 +1,94 @@
 {
-  "name": "otto-monorepo",
-  "version": "0.1.178",
-  "private": true,
-  "description": "AI-powered development assistant CLI - monorepo",
-  "author": "nitishxyz",
-  "license": "MIT",
-  "homepage": "https://github.com/nitishxyz/otto#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nitishxyz/otto.git"
-  },
-  "bugs": {
-    "url": "https://github.com/nitishxyz/otto/issues"
-  },
-  "keywords": [
-    "ai",
-    "cli",
-    "development",
-    "assistant",
-    "commit",
-    "code-review",
-    "gemini",
-    "anthropic",
-    "gpt"
-  ],
-  "type": "module",
-  "workspaces": [
-    "packages/*",
-    "apps/*",
-    "examples/*"
-  ],
-  "scripts": {
-    "lint": "biome check",
-    "typecheck": "bun run --filter './apps/*' --filter './packages/*' typecheck",
-    "check": "bun run lint && bun run typecheck",
-    "cli": "bun run apps/cli/index.ts",
-    "test": "bun test --recursive",
-    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
-    "db:reset": "bun run scripts/reset-db.ts",
-    "catalog:update": "bun run scripts/update-catalog.ts",
-    "compile": "bun run scripts/compile.ts",
-    "compile:verbose": "bun run scripts/compile.ts --verbose",
-    "build:bin:darwin-arm64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-darwin-arm64 ./apps/cli/index.ts --outfile dist/otto-darwin-arm64",
-    "build:bin:darwin-x64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-darwin-x64 ./apps/cli/index.ts --outfile dist/otto-darwin-x64",
-    "build:bin:linux-x64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-linux-x64 ./apps/cli/index.ts --outfile dist/otto-linux-x64",
-    "build:bin:linux-arm64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-linux-arm64 ./apps/cli/index.ts --outfile dist/otto-linux-arm64",
-    "build": "bun run compile",
-    "build:packages": "bun run --filter './packages/*' build",
-    "build:apps": "bun run --filter './apps/*' build",
-    "build:all": "bun run build:packages && bun run build:apps",
-    "dev:sdk": "bun run --filter @ottocode/sdk dev",
-    "dev:cli": "bun run --filter @ottocode/cli dev",
-    "dev:server": "bun run --filter @ottocode/server dev",
-    "dev:web": "bun run --filter web dev",
-    "dev:desktop": "bun run scripts/build-desktop.ts --dev",
-    "dev:desktop:signed": "bun run scripts/build-desktop.ts --dev --sign",
-    "build:desktop": "bun run scripts/build-desktop.ts",
-    "build:desktop:all": "bun run scripts/build-desktop.ts --all-platforms",
-    "prepublishOnly": "bun run compile",
-    "version:bump": "bun run scripts/bump-version.ts"
-  },
-  "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.0",
-    "@ai-sdk/google": "^3.0.0",
-    "@ai-sdk/openai": "^3.0.0",
-    "@ai-sdk/openai-compatible": "^2.0.0",
-    "@clack/prompts": "^0.11.0",
-    "@noble/hashes": "^1.3.0",
-    "@openauthjs/openauth": "^0.4.3",
-    "@openrouter/ai-sdk-provider": "^1.2.0",
-    "@solana/web3.js": "^1.95.2",
-    "ai": "^6.0.0",
-    "bs58": "^6.0.0",
-    "sst": "3.17.13",
-    "diff": "^8.0.2",
-    "hono": "^4.9.9",
-    "marked": "^16.3.0",
-    "marked-terminal": "^7.3.0",
-    "opencode-anthropic-auth": "^0.0.2",
-    "tweetnacl": "^1.0.3",
-    "x402": "^1.1.0",
-    "zod": "^4.3.6"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.2.4",
-    "@types/bun": "latest",
-    "@types/marked-terminal": "^6.1.1",
-    "drizzle-kit": "^0.31.4"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  }
+	"name": "otto-monorepo",
+	"version": "0.1.178",
+	"private": true,
+	"description": "AI-powered development assistant CLI - monorepo",
+	"author": "nitishxyz",
+	"license": "MIT",
+	"homepage": "https://github.com/nitishxyz/otto#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/nitishxyz/otto.git"
+	},
+	"bugs": {
+		"url": "https://github.com/nitishxyz/otto/issues"
+	},
+	"keywords": [
+		"ai",
+		"cli",
+		"development",
+		"assistant",
+		"commit",
+		"code-review",
+		"gemini",
+		"anthropic",
+		"gpt"
+	],
+	"type": "module",
+	"workspaces": [
+		"packages/*",
+		"apps/*",
+		"examples/*"
+	],
+	"scripts": {
+		"lint": "biome check",
+		"typecheck": "bun run --filter './apps/*' --filter './packages/*' typecheck",
+		"check": "bun run lint && bun run typecheck",
+		"cli": "bun run apps/cli/index.ts",
+		"test": "bun test --recursive",
+		"db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+		"db:reset": "bun run scripts/reset-db.ts",
+		"catalog:update": "bun run scripts/update-catalog.ts",
+		"compile": "bun run scripts/compile.ts",
+		"compile:verbose": "bun run scripts/compile.ts --verbose",
+		"build:bin:darwin-arm64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-darwin-arm64 ./apps/cli/index.ts --outfile dist/otto-darwin-arm64",
+		"build:bin:darwin-x64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-darwin-x64 ./apps/cli/index.ts --outfile dist/otto-darwin-x64",
+		"build:bin:linux-x64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-linux-x64 ./apps/cli/index.ts --outfile dist/otto-linux-x64",
+		"build:bin:linux-arm64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-linux-arm64 ./apps/cli/index.ts --outfile dist/otto-linux-arm64",
+		"build": "bun run compile",
+		"build:packages": "bun run --filter './packages/*' build",
+		"build:apps": "bun run --filter './apps/*' build",
+		"build:all": "bun run build:packages && bun run build:apps",
+		"dev:sdk": "bun run --filter @ottocode/sdk dev",
+		"dev:cli": "bun run --filter @ottocode/cli dev",
+		"dev:server": "bun run --filter @ottocode/server dev",
+		"dev:web": "bun run --filter web dev",
+		"dev:desktop": "bun run scripts/build-desktop.ts --dev",
+		"dev:desktop:signed": "bun run scripts/build-desktop.ts --dev --sign",
+		"build:desktop": "bun run scripts/build-desktop.ts",
+		"build:desktop:all": "bun run scripts/build-desktop.ts --all-platforms",
+		"prepublishOnly": "bun run compile",
+		"version:bump": "bun run scripts/bump-version.ts"
+	},
+	"dependencies": {
+		"@ai-sdk/anthropic": "^3.0.0",
+		"@ai-sdk/google": "^3.0.0",
+		"@ai-sdk/openai": "^3.0.0",
+		"@ai-sdk/openai-compatible": "^2.0.0",
+		"@clack/prompts": "^0.11.0",
+		"@noble/hashes": "^1.3.0",
+		"@openauthjs/openauth": "^0.4.3",
+		"@openrouter/ai-sdk-provider": "^1.2.0",
+		"@solana/web3.js": "^1.95.2",
+		"ai": "^6.0.0",
+		"bs58": "^6.0.0",
+		"sst": "3.17.13",
+		"diff": "^8.0.2",
+		"hono": "^4.9.9",
+		"marked": "^16.3.0",
+		"marked-terminal": "^7.3.0",
+		"opencode-anthropic-auth": "^0.0.2",
+		"tweetnacl": "^1.0.3",
+		"x402": "^1.1.0",
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.2.4",
+		"@types/bun": "latest",
+		"@types/marked-terminal": "^6.1.1",
+		"drizzle-kit": "^0.31.4"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	}
 }

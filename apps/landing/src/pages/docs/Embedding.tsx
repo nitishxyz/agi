@@ -1,12 +1,16 @@
-import { CodeBlock } from "../../components/CodeBlock";
+import { CodeBlock } from '../../components/CodeBlock';
 export function Embedding() {
 	return (
 		<div>
 			<h1 className="text-3xl font-bold mb-2">Embedding Guide</h1>
-			<p className="text-otto-dim text-sm mb-8">Use otto as a library in your own applications.</p>
+			<p className="text-otto-dim text-sm mb-8">
+				Use otto as a library in your own applications.
+			</p>
 
 			<h2>Quick Start</h2>
-			<p>The simplest way to embed otto is with <code>createEmbeddedApp</code>:</p>
+			<p>
+				The simplest way to embed otto is with <code>createEmbeddedApp</code>:
+			</p>
 			<CodeBlock>{`import { createEmbeddedApp } from "@ottocode/server";
 
 const app = createEmbeddedApp({
@@ -43,12 +47,42 @@ const result = await generateText({
 
 			<h2>Embedded App Options</h2>
 			<table>
-				<thead><tr><th>Option</th><th>Type</th><th>Description</th></tr></thead>
+				<thead>
+					<tr>
+						<th>Option</th>
+						<th>Type</th>
+						<th>Description</th>
+					</tr>
+				</thead>
 				<tbody>
-					<tr><td><code>provider</code></td><td>string</td><td>AI provider name</td></tr>
-					<tr><td><code>model</code></td><td>string</td><td>Model identifier</td></tr>
-					<tr><td><code>apiKey</code></td><td>string</td><td>Provider API key</td></tr>
-					<tr><td><code>agent</code></td><td>string</td><td>Agent to use (build, plan, general, research)</td></tr>
+					<tr>
+						<td>
+							<code>provider</code>
+						</td>
+						<td>string</td>
+						<td>AI provider name</td>
+					</tr>
+					<tr>
+						<td>
+							<code>model</code>
+						</td>
+						<td>string</td>
+						<td>Model identifier</td>
+					</tr>
+					<tr>
+						<td>
+							<code>apiKey</code>
+						</td>
+						<td>string</td>
+						<td>Provider API key</td>
+					</tr>
+					<tr>
+						<td>
+							<code>agent</code>
+						</td>
+						<td>string</td>
+						<td>Agent to use (build, plan, general, research)</td>
+					</tr>
 				</tbody>
 			</table>
 
@@ -104,12 +138,37 @@ const app = createStandaloneApp({
 
 			<h2>Packages</h2>
 			<table>
-				<thead><tr><th>Package</th><th>Use Case</th></tr></thead>
+				<thead>
+					<tr>
+						<th>Package</th>
+						<th>Use Case</th>
+					</tr>
+				</thead>
 				<tbody>
-					<tr><td><code>@ottocode/server</code></td><td>Full HTTP server with routes, SSE streaming, agent runtime</td></tr>
-					<tr><td><code>@ottocode/sdk</code></td><td>Core SDK: tools, agents, auth, config, providers</td></tr>
-					<tr><td><code>@ottocode/api</code></td><td>Type-safe API client for consuming otto server</td></tr>
-					<tr><td><code>@ottocode/web-sdk</code></td><td>React components and hooks for building UIs</td></tr>
+					<tr>
+						<td>
+							<code>@ottocode/server</code>
+						</td>
+						<td>Full HTTP server with routes, SSE streaming, agent runtime</td>
+					</tr>
+					<tr>
+						<td>
+							<code>@ottocode/sdk</code>
+						</td>
+						<td>Core SDK: tools, agents, auth, config, providers</td>
+					</tr>
+					<tr>
+						<td>
+							<code>@ottocode/api</code>
+						</td>
+						<td>Type-safe API client for consuming otto server</td>
+					</tr>
+					<tr>
+						<td>
+							<code>@ottocode/web-sdk</code>
+						</td>
+						<td>React components and hooks for building UIs</td>
+					</tr>
 				</tbody>
 			</table>
 		</div>

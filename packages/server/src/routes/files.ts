@@ -52,12 +52,7 @@ async function listFilesWithRg(
 	const rgBin = await resolveBinary('rg');
 
 	return new Promise((resolve) => {
-		const args = [
-			'--files',
-			'--hidden',
-			'--glob', '!.git/',
-			'--sort', 'path',
-		];
+		const args = ['--files', '--hidden', '--glob', '!.git/', '--sort', 'path'];
 
 		const proc = spawn(rgBin, args, { cwd: projectRoot });
 		let stdout = '';
@@ -73,7 +68,10 @@ async function listFilesWithRg(
 
 		proc.on('close', (code) => {
 			if (code !== 0 && code !== 1) {
-				logger.warn('rg --files failed, falling back', { stderr } as Record<string, unknown>);
+				logger.warn('rg --files failed, falling back', { stderr } as Record<
+					string,
+					unknown
+				>);
 				resolve({ files: [], truncated: false });
 				return;
 			}
@@ -196,7 +194,10 @@ async function traverseDirectory(
 			}
 		}
 	} catch (err) {
-		logger.warn(`Failed to read directory ${dir}:`, err as Record<string, unknown>);
+		logger.warn(
+			`Failed to read directory ${dir}:`,
+			err as Record<string, unknown>,
+		);
 	}
 
 	return { files: collected, truncated: false };

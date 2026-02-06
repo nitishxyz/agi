@@ -1,33 +1,75 @@
-import { CodeBlock } from "../../components/CodeBlock";
+import { CodeBlock } from '../../components/CodeBlock';
 export function SetuIntegration() {
 	return (
 		<div>
 			<h1 className="text-3xl font-bold mb-2">Integration Guide</h1>
-			<p className="text-otto-dim text-sm mb-8">Integrate Setu into your application using the AI SDK or raw HTTP.</p>
+			<p className="text-otto-dim text-sm mb-8">
+				Integrate Setu into your application using the AI SDK or raw HTTP.
+			</p>
 
 			<h2>Using the Vercel AI SDK</h2>
-			<p>The recommended way to integrate Setu. The SDK client handles wallet authentication, automatic 402 payment handling, and provider routing.</p>
+			<p>
+				The recommended way to integrate Setu. The SDK client handles wallet
+				authentication, automatic 402 payment handling, and provider routing.
+			</p>
 
 			<h3>Install Dependencies</h3>
 			<CodeBlock>{`bun add ai @ai-sdk/openai @ai-sdk/anthropic @ai-sdk/google @ai-sdk/openai-compatible
 bun add @solana/web3.js tweetnacl bs58 x402`}</CodeBlock>
 
 			<h3>createSetuModel</h3>
-			<p>Creates an AI SDK-compatible model that routes through Setu. Provider is determined by <code>providerNpm</code>:</p>
+			<p>
+				Creates an AI SDK-compatible model that routes through Setu. Provider is
+				determined by <code>providerNpm</code>:
+			</p>
 			<div className="overflow-x-auto">
 				<table>
 					<thead>
 						<tr>
-							<th><code>providerNpm</code></th>
+							<th>
+								<code>providerNpm</code>
+							</th>
 							<th>Models</th>
 							<th>Setu Endpoint</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr><td><code>@ai-sdk/openai</code> (default)</td><td>GPT-5, Codex, etc.</td><td><code>/v1/responses</code></td></tr>
-						<tr><td><code>@ai-sdk/anthropic</code></td><td>Claude Sonnet, Opus, Haiku</td><td><code>/v1/messages</code></td></tr>
-						<tr><td><code>@ai-sdk/google</code></td><td>Gemini 3 Flash, Pro</td><td><code>/v1/chat/completions</code></td></tr>
-						<tr><td><code>@ai-sdk/openai-compatible</code></td><td>Kimi K2, K2.5</td><td><code>/v1/chat/completions</code></td></tr>
+						<tr>
+							<td>
+								<code>@ai-sdk/openai</code> (default)
+							</td>
+							<td>GPT-5, Codex, etc.</td>
+							<td>
+								<code>/v1/responses</code>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<code>@ai-sdk/anthropic</code>
+							</td>
+							<td>Claude Sonnet, Opus, Haiku</td>
+							<td>
+								<code>/v1/messages</code>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<code>@ai-sdk/google</code>
+							</td>
+							<td>Gemini 3 Flash, Pro</td>
+							<td>
+								<code>/v1/chat/completions</code>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<code>@ai-sdk/openai-compatible</code>
+							</td>
+							<td>Kimi K2, K2.5</td>
+							<td>
+								<code>/v1/chat/completions</code>
+							</td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
@@ -116,7 +158,10 @@ const { text } = await generateText({
 });`}</CodeBlock>
 
 			<h3>Anthropic Prompt Caching</h3>
-			<p>Setu passes request bodies unchanged, so Anthropic's <code>cache_control</code> works natively:</p>
+			<p>
+				Setu passes request bodies unchanged, so Anthropic's{' '}
+				<code>cache_control</code> works natively:
+			</p>
 			<CodeBlock>{`const { text } = await generateText({
   model, // anthropic model via Setu
   messages: [{
@@ -143,7 +188,11 @@ const { text } = await generateText({
 });`}</CodeBlock>
 
 			<h3>createSetuFetch</h3>
-			<p>For lower-level control, <code>createSetuFetch</code> returns a drop-in <code>fetch</code> replacement that adds wallet auth and handles 402 payments automatically:</p>
+			<p>
+				For lower-level control, <code>createSetuFetch</code> returns a drop-in{' '}
+				<code>fetch</code> replacement that adds wallet auth and handles 402
+				payments automatically:
+			</p>
 			<CodeBlock>{`import { createSetuFetch } from "./setu-client";
 
 const setuFetch = createSetuFetch(
@@ -190,11 +239,41 @@ const response = await setuFetch(
 						</tr>
 					</thead>
 					<tbody>
-						<tr><td><code>onPaymentRequired(amountUsd, currentBalance)</code></td><td>402 received, payment about to start</td></tr>
-						<tr><td><code>onPaymentSigning()</code></td><td>Building and signing the USDC transaction</td></tr>
-						<tr><td><code>onPaymentComplete({"{ amountUsd, newBalance, transactionId }"})</code></td><td>Payment settled successfully</td></tr>
-						<tr><td><code>onPaymentError(error)</code></td><td>Payment failed</td></tr>
-						<tr><td><code>onPaymentApproval({"{ amountUsd, currentBalance }"})</code></td><td>Approval mode: asks user to approve/cancel/choose fiat</td></tr>
+						<tr>
+							<td>
+								<code>onPaymentRequired(amountUsd, currentBalance)</code>
+							</td>
+							<td>402 received, payment about to start</td>
+						</tr>
+						<tr>
+							<td>
+								<code>onPaymentSigning()</code>
+							</td>
+							<td>Building and signing the USDC transaction</td>
+						</tr>
+						<tr>
+							<td>
+								<code>
+									onPaymentComplete({'{ amountUsd, newBalance, transactionId }'}
+									)
+								</code>
+							</td>
+							<td>Payment settled successfully</td>
+						</tr>
+						<tr>
+							<td>
+								<code>onPaymentError(error)</code>
+							</td>
+							<td>Payment failed</td>
+						</tr>
+						<tr>
+							<td>
+								<code>
+									onPaymentApproval({'{ amountUsd, currentBalance }'})
+								</code>
+							</td>
+							<td>Approval mode: asks user to approve/cancel/choose fiat</td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
@@ -210,12 +289,63 @@ const response = await setuFetch(
 						</tr>
 					</thead>
 					<tbody>
-						<tr><td><code>baseURL</code></td><td><code>https://api.setu.ottocode.io</code></td><td>Setu API base URL</td></tr>
-						<tr><td><code>rpcURL</code></td><td><code>https://api.mainnet-beta.solana.com</code></td><td>Solana RPC for payment transactions</td></tr>
-						<tr><td><code>maxRequestAttempts</code></td><td><code>3</code></td><td>Max retries per API request (including payment cycles)</td></tr>
-						<tr><td><code>maxPaymentAttempts</code></td><td><code>20</code></td><td>Max total payment attempts across the session</td></tr>
-						<tr><td><code>topupApprovalMode</code></td><td><code>auto</code></td><td><code>auto</code> pays immediately, <code>approval</code> calls <code>onPaymentApproval</code></td></tr>
-						<tr><td><code>providerNpm</code></td><td><code>@ai-sdk/openai</code></td><td>AI SDK provider package to use</td></tr>
+						<tr>
+							<td>
+								<code>baseURL</code>
+							</td>
+							<td>
+								<code>https://api.setu.ottocode.io</code>
+							</td>
+							<td>Setu API base URL</td>
+						</tr>
+						<tr>
+							<td>
+								<code>rpcURL</code>
+							</td>
+							<td>
+								<code>https://api.mainnet-beta.solana.com</code>
+							</td>
+							<td>Solana RPC for payment transactions</td>
+						</tr>
+						<tr>
+							<td>
+								<code>maxRequestAttempts</code>
+							</td>
+							<td>
+								<code>3</code>
+							</td>
+							<td>Max retries per API request (including payment cycles)</td>
+						</tr>
+						<tr>
+							<td>
+								<code>maxPaymentAttempts</code>
+							</td>
+							<td>
+								<code>20</code>
+							</td>
+							<td>Max total payment attempts across the session</td>
+						</tr>
+						<tr>
+							<td>
+								<code>topupApprovalMode</code>
+							</td>
+							<td>
+								<code>auto</code>
+							</td>
+							<td>
+								<code>auto</code> pays immediately, <code>approval</code> calls{' '}
+								<code>onPaymentApproval</code>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<code>providerNpm</code>
+							</td>
+							<td>
+								<code>@ai-sdk/openai</code>
+							</td>
+							<td>AI SDK provider package to use</td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
@@ -223,7 +353,10 @@ const response = await setuFetch(
 			<hr />
 
 			<h2>Raw HTTP Integration</h2>
-			<p>You can integrate Setu without the AI SDK by making direct HTTP requests.</p>
+			<p>
+				You can integrate Setu without the AI SDK by making direct HTTP
+				requests.
+			</p>
 
 			<h3>Endpoint Reference</h3>
 			<div className="overflow-x-auto">
@@ -237,19 +370,110 @@ const response = await setuFetch(
 						</tr>
 					</thead>
 					<tbody>
-						<tr><td><code>/</code></td><td>GET</td><td>No</td><td>Service info and available endpoints</td></tr>
-						<tr><td><code>/health</code></td><td>GET</td><td>No</td><td>Health check</td></tr>
-						<tr><td><code>/v1/models</code></td><td>GET</td><td>No</td><td>List all models with pricing</td></tr>
-						<tr><td><code>/v1/balance</code></td><td>GET</td><td>Yes</td><td>Check wallet balance</td></tr>
-						<tr><td><code>/v1/topup</code></td><td>POST</td><td>Yes</td><td>Top up via x402 USDC payment</td></tr>
-						<tr><td><code>/v1/topup/polar</code></td><td>POST</td><td>Yes</td><td>Create Polar credit card checkout</td></tr>
-						<tr><td><code>/v1/topup/polar/estimate</code></td><td>GET</td><td>No</td><td>Estimate Polar fees</td></tr>
-						<tr><td><code>/v1/topup/polar/status</code></td><td>GET</td><td>No</td><td>Check Polar checkout status</td></tr>
-						<tr><td><code>/v1/responses</code></td><td>POST</td><td>Yes</td><td>OpenAI Responses API (passthrough)</td></tr>
-						<tr><td><code>/v1/messages</code></td><td>POST</td><td>Yes</td><td>Anthropic Messages API (passthrough)</td></tr>
-						<tr><td><code>/v1/chat/completions</code></td><td>POST</td><td>Yes</td><td>OpenAI-compatible (Moonshot, Google)</td></tr>
-						<tr><td><code>/v1/models/{"{model}"}:generateContent</code></td><td>POST</td><td>Yes</td><td>Google native Generative AI</td></tr>
-						<tr><td><code>/v1/models/{"{model}"}:streamGenerateContent</code></td><td>POST</td><td>Yes</td><td>Google native streaming</td></tr>
+						<tr>
+							<td>
+								<code>/</code>
+							</td>
+							<td>GET</td>
+							<td>No</td>
+							<td>Service info and available endpoints</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/health</code>
+							</td>
+							<td>GET</td>
+							<td>No</td>
+							<td>Health check</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/v1/models</code>
+							</td>
+							<td>GET</td>
+							<td>No</td>
+							<td>List all models with pricing</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/v1/balance</code>
+							</td>
+							<td>GET</td>
+							<td>Yes</td>
+							<td>Check wallet balance</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/v1/topup</code>
+							</td>
+							<td>POST</td>
+							<td>Yes</td>
+							<td>Top up via x402 USDC payment</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/v1/topup/polar</code>
+							</td>
+							<td>POST</td>
+							<td>Yes</td>
+							<td>Create Polar credit card checkout</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/v1/topup/polar/estimate</code>
+							</td>
+							<td>GET</td>
+							<td>No</td>
+							<td>Estimate Polar fees</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/v1/topup/polar/status</code>
+							</td>
+							<td>GET</td>
+							<td>No</td>
+							<td>Check Polar checkout status</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/v1/responses</code>
+							</td>
+							<td>POST</td>
+							<td>Yes</td>
+							<td>OpenAI Responses API (passthrough)</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/v1/messages</code>
+							</td>
+							<td>POST</td>
+							<td>Yes</td>
+							<td>Anthropic Messages API (passthrough)</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/v1/chat/completions</code>
+							</td>
+							<td>POST</td>
+							<td>Yes</td>
+							<td>OpenAI-compatible (Moonshot, Google)</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/v1/models/{'{model}'}:generateContent</code>
+							</td>
+							<td>POST</td>
+							<td>Yes</td>
+							<td>Google native Generative AI</td>
+						</tr>
+						<tr>
+							<td>
+								<code>/v1/models/{'{model}'}:streamGenerateContent</code>
+							</td>
+							<td>POST</td>
+							<td>Yes</td>
+							<td>Google native streaming</td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
@@ -394,12 +618,48 @@ async function handlePaymentRequired(
 						</tr>
 					</thead>
 					<tbody>
-						<tr><td><code>400</code></td><td>Invalid model, missing fields, unsupported amount</td><td>Fix request</td></tr>
-						<tr><td><code>401</code></td><td>Missing auth headers, invalid signature, expired nonce</td><td>Re-sign with fresh nonce</td></tr>
-						<tr><td><code>402</code></td><td>Balance below $0.05</td><td>Handle payment via x402 or Polar</td></tr>
-						<tr><td><code>429</code></td><td>Upstream provider rate limited</td><td>Retry with backoff</td></tr>
-						<tr><td><code>503</code></td><td>Upstream provider overloaded or quota issue</td><td>Retry later</td></tr>
-						<tr><td><code>500</code></td><td>Server error</td><td>Report issue</td></tr>
+						<tr>
+							<td>
+								<code>400</code>
+							</td>
+							<td>Invalid model, missing fields, unsupported amount</td>
+							<td>Fix request</td>
+						</tr>
+						<tr>
+							<td>
+								<code>401</code>
+							</td>
+							<td>Missing auth headers, invalid signature, expired nonce</td>
+							<td>Re-sign with fresh nonce</td>
+						</tr>
+						<tr>
+							<td>
+								<code>402</code>
+							</td>
+							<td>Balance below $0.05</td>
+							<td>Handle payment via x402 or Polar</td>
+						</tr>
+						<tr>
+							<td>
+								<code>429</code>
+							</td>
+							<td>Upstream provider rate limited</td>
+							<td>Retry with backoff</td>
+						</tr>
+						<tr>
+							<td>
+								<code>503</code>
+							</td>
+							<td>Upstream provider overloaded or quota issue</td>
+							<td>Retry later</td>
+						</tr>
+						<tr>
+							<td>
+								<code>500</code>
+							</td>
+							<td>Server error</td>
+							<td>Report issue</td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
@@ -410,7 +670,10 @@ async function handlePaymentRequired(
   "code": "provider_rate_limited",
   "details": "Optional additional information"
 }`}</CodeBlock>
-			<p>Upstream provider errors are sanitized — Setu never exposes internal API keys or billing details in error responses.</p>
+			<p>
+				Upstream provider errors are sanitized — Setu never exposes internal API
+				keys or billing details in error responses.
+			</p>
 
 			<hr />
 
@@ -427,9 +690,33 @@ async function handlePaymentRequired(
 						</tr>
 					</thead>
 					<tbody>
-						<tr><td><code>SETU_PRIVATE_KEY</code></td><td>Yes</td><td>Base58-encoded Solana private key</td></tr>
-						<tr><td><code>SETU_BASE_URL</code></td><td>No</td><td>Override API URL (default: <code>https://api.setu.ottocode.io</code>)</td></tr>
-						<tr><td><code>SETU_SOLANA_RPC_URL</code></td><td>No</td><td>Custom Solana RPC (default: <code>https://api.mainnet-beta.solana.com</code>)</td></tr>
+						<tr>
+							<td>
+								<code>SETU_PRIVATE_KEY</code>
+							</td>
+							<td>Yes</td>
+							<td>Base58-encoded Solana private key</td>
+						</tr>
+						<tr>
+							<td>
+								<code>SETU_BASE_URL</code>
+							</td>
+							<td>No</td>
+							<td>
+								Override API URL (default:{' '}
+								<code>https://api.setu.ottocode.io</code>)
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<code>SETU_SOLANA_RPC_URL</code>
+							</td>
+							<td>No</td>
+							<td>
+								Custom Solana RPC (default:{' '}
+								<code>https://api.mainnet-beta.solana.com</code>)
+							</td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
@@ -444,16 +731,68 @@ async function handlePaymentRequired(
 						</tr>
 					</thead>
 					<tbody>
-						<tr><td><code>OPENAI_API_KEY</code></td><td>OpenAI API key</td></tr>
-						<tr><td><code>ANTHROPIC_API_KEY</code></td><td>Anthropic API key</td></tr>
-						<tr><td><code>GOOGLE_AI_API_KEY</code></td><td>Google Generative AI API key</td></tr>
-						<tr><td><code>MOONSHOT_AI_API_KEY</code></td><td>Moonshot API key</td></tr>
-						<tr><td><code>PLATFORM_WALLET</code></td><td>Solana wallet to receive USDC payments</td></tr>
-						<tr><td><code>DATABASE_URL</code></td><td>Neon Postgres connection string</td></tr>
-						<tr><td><code>STAGE</code></td><td><code>prod</code> for mainnet, anything else for devnet</td></tr>
-						<tr><td><code>POLAR_ACCESS_TOKEN</code></td><td>Polar API token (for credit card top-ups)</td></tr>
-						<tr><td><code>POLAR_WEBHOOK_SECRET</code></td><td>Polar webhook verification secret</td></tr>
-						<tr><td><code>POLAR_PRODUCT_ID</code></td><td>Polar product ID for checkout sessions</td></tr>
+						<tr>
+							<td>
+								<code>OPENAI_API_KEY</code>
+							</td>
+							<td>OpenAI API key</td>
+						</tr>
+						<tr>
+							<td>
+								<code>ANTHROPIC_API_KEY</code>
+							</td>
+							<td>Anthropic API key</td>
+						</tr>
+						<tr>
+							<td>
+								<code>GOOGLE_AI_API_KEY</code>
+							</td>
+							<td>Google Generative AI API key</td>
+						</tr>
+						<tr>
+							<td>
+								<code>MOONSHOT_AI_API_KEY</code>
+							</td>
+							<td>Moonshot API key</td>
+						</tr>
+						<tr>
+							<td>
+								<code>PLATFORM_WALLET</code>
+							</td>
+							<td>Solana wallet to receive USDC payments</td>
+						</tr>
+						<tr>
+							<td>
+								<code>DATABASE_URL</code>
+							</td>
+							<td>Neon Postgres connection string</td>
+						</tr>
+						<tr>
+							<td>
+								<code>STAGE</code>
+							</td>
+							<td>
+								<code>prod</code> for mainnet, anything else for devnet
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<code>POLAR_ACCESS_TOKEN</code>
+							</td>
+							<td>Polar API token (for credit card top-ups)</td>
+						</tr>
+						<tr>
+							<td>
+								<code>POLAR_WEBHOOK_SECRET</code>
+							</td>
+							<td>Polar webhook verification secret</td>
+						</tr>
+						<tr>
+							<td>
+								<code>POLAR_PRODUCT_ID</code>
+							</td>
+							<td>Polar product ID for checkout sessions</td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
@@ -473,7 +812,10 @@ otto setup  # select "setu"
 
 # Or per-request
 otto ask "hello" --provider setu --model claude-sonnet-4-5`}</CodeBlock>
-			<p>otto's SDK automatically uses <code>createSetuModel</code> under the hood, handling all wallet auth and payment flows transparently.</p>
+			<p>
+				otto's SDK automatically uses <code>createSetuModel</code> under the
+				hood, handling all wallet auth and payment flows transparently.
+			</p>
 		</div>
 	);
 }

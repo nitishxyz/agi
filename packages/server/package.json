@@ -1,42 +1,42 @@
 {
-  "name": "@ottocode/server",
-  "version": "0.1.178",
-  "description": "HTTP API server for ottocode",
-  "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "exports": {
-    ".": {
-      "import": "./src/index.ts",
-      "types": "./src/index.ts"
-    },
-    "./runtime/agent-registry": {
-      "import": "./src/runtime/agent-registry.ts",
-      "types": "./src/runtime/agent-registry.ts"
-    },
-    "./runtime/ask-service.ts": {
-      "import": "./src/runtime/ask-service.ts",
-      "types": "./src/runtime/ask-service.ts"
-    },
-    "./routes/ask.ts": {
-      "import": "./src/routes/ask.ts",
-      "types": "./src/routes/ask.ts"
-    }
-  },
-  "scripts": {
-    "dev": "bun run src/index.ts",
-    "test": "bun test",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@ottocode/sdk": "workspace:*",
-    "@ottocode/database": "workspace:*",
-    "drizzle-orm": "^0.44.5",
-    "hono": "^4.9.9",
-    "zod": "^4.1.8"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
-  }
+	"name": "@ottocode/server",
+	"version": "0.1.178",
+	"description": "HTTP API server for ottocode",
+	"type": "module",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"exports": {
+		".": {
+			"import": "./src/index.ts",
+			"types": "./src/index.ts"
+		},
+		"./runtime/agent-registry": {
+			"import": "./src/runtime/agent-registry.ts",
+			"types": "./src/runtime/agent-registry.ts"
+		},
+		"./runtime/ask-service.ts": {
+			"import": "./src/runtime/ask-service.ts",
+			"types": "./src/runtime/ask-service.ts"
+		},
+		"./routes/ask.ts": {
+			"import": "./src/routes/ask.ts",
+			"types": "./src/routes/ask.ts"
+		}
+	},
+	"scripts": {
+		"dev": "bun run src/index.ts",
+		"test": "bun test",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@ottocode/sdk": "workspace:*",
+		"@ottocode/database": "workspace:*",
+		"drizzle-orm": "^0.44.5",
+		"hono": "^4.9.9",
+		"zod": "^4.1.8"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5"
+	}
 }

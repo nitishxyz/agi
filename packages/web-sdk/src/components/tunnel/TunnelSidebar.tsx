@@ -1,5 +1,14 @@
 import { memo, useState } from 'react';
-import { Globe, X, Loader2, AlertCircle, Copy, Check, ExternalLink, Clock } from 'lucide-react';
+import {
+	Globe,
+	X,
+	Loader2,
+	AlertCircle,
+	Copy,
+	Check,
+	ExternalLink,
+	Clock,
+} from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTunnelStore } from '../../stores/tunnelStore';
 import {
@@ -78,7 +87,8 @@ export const TunnelSidebar = memo(function TunnelSidebar() {
 						<Globe className="w-12 h-12 text-muted-foreground/30 mb-4" />
 						<h3 className="text-sm font-medium mb-2">Access from anywhere</h3>
 						<p className="text-xs text-muted-foreground mb-6 max-w-[200px]">
-							Start a secure tunnel to access otto from your phone or another device.
+							Start a secure tunnel to access otto from your phone or another
+							device.
 						</p>
 						<button
 							type="button"
@@ -107,7 +117,9 @@ export const TunnelSidebar = memo(function TunnelSidebar() {
 					<div className="flex flex-col">
 						<div className="flex items-center gap-2 mb-4">
 							<div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-							<span className="text-xs font-medium text-green-600">Connected</span>
+							<span className="text-xs font-medium text-green-600">
+								Connected
+							</span>
 						</div>
 
 						<div className="flex justify-center pb-4">
@@ -170,7 +182,8 @@ export const TunnelSidebar = memo(function TunnelSidebar() {
 								<Clock className="w-8 h-8 text-yellow-500 mb-4" />
 								<h3 className="text-sm font-medium mb-2">Rate Limited</h3>
 								<p className="text-xs text-muted-foreground mb-6 max-w-[220px]">
-									Cloudflare limits anonymous tunnel requests. Please wait 5-10 minutes before trying again.
+									Cloudflare limits anonymous tunnel requests. Please wait 5-10
+									minutes before trying again.
 								</p>
 							</>
 						) : (
@@ -185,11 +198,19 @@ export const TunnelSidebar = memo(function TunnelSidebar() {
 						<button
 							type="button"
 							onClick={handleStart}
-							disabled={startTunnel.isPending || error?.includes('Rate limited')}
+							disabled={
+								startTunnel.isPending || error?.includes('Rate limited')
+							}
 							className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-							title={error?.includes('Rate limited') ? 'Wait 5-10 minutes' : undefined}
+							title={
+								error?.includes('Rate limited')
+									? 'Wait 5-10 minutes'
+									: undefined
+							}
 						>
-							{error?.includes('Rate limited') ? 'Wait & Try Again' : 'Try Again'}
+							{error?.includes('Rate limited')
+								? 'Wait & Try Again'
+								: 'Try Again'}
 						</button>
 					</div>
 				)}

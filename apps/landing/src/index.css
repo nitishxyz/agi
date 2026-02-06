@@ -47,7 +47,8 @@
 html {
 	scroll-behavior: smooth;
 	scrollbar-width: thin;
-	scrollbar-color: rgb(var(--otto-scrollbar-thumb)) rgb(var(--otto-scrollbar-track));
+	scrollbar-color: rgb(var(--otto-scrollbar-thumb))
+		rgb(var(--otto-scrollbar-track));
 }
 
 body {
@@ -116,7 +117,8 @@ body {
 	line-height: 1.75;
 	color: rgb(var(--otto-muted));
 }
-.prose-otto ul, .prose-otto ol {
+.prose-otto ul,
+.prose-otto ol {
 	margin-top: 0.75rem;
 	margin-bottom: 0.75rem;
 	padding-left: 1.5rem;
@@ -163,8 +165,14 @@ body {
 }
 
 @keyframes fadeIn {
-	from { opacity: 0; transform: translateY(8px); }
-	to { opacity: 1; transform: translateY(0); }
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 .animate-fade-in {
 	animation: fadeIn 0.4s ease-out both;

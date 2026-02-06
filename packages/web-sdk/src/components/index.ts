@@ -49,7 +49,11 @@ export * from './terminals/TerminalsPanel';
 export * from './terminals/TerminalPanelToggle';
 export * from './terminals/TerminalTabBar';
 export * from './terminals/TerminalViewer';
-export { TerminalsSidebar, TerminalsSidebarToggle, TerminalList } from './terminals';
+export {
+	TerminalsSidebar,
+	TerminalsSidebarToggle,
+	TerminalList,
+} from './terminals';
 
 // Session Files Components
 export * from './session-files/SessionFilesSidebar';

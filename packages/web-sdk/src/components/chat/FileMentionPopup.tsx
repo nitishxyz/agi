@@ -125,16 +125,16 @@ export function FileMentionPopup({
 					normalized: f.replace(/[.\-_/]/g, ''),
 				})),
 				{
-				keys: [
-					{ name: 'filename', weight: 2 },
-					{ name: 'normalized', weight: 1.5 },
-					{ name: 'path', weight: 1 },
-				],
-				threshold: 0.3,
-				distance: 200,
-				ignoreLocation: true,
-				includeScore: true,
-			},
+					keys: [
+						{ name: 'filename', weight: 2 },
+						{ name: 'normalized', weight: 1.5 },
+						{ name: 'path', weight: 1 },
+					],
+					threshold: 0.3,
+					distance: 200,
+					ignoreLocation: true,
+					includeScore: true,
+				},
 			),
 		[files],
 	);

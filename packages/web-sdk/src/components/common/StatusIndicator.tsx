@@ -102,7 +102,9 @@ export const StatusIndicator = memo(function StatusIndicator({
 					/>
 				)}
 				<div style={{ position: 'relative', zIndex: 1 }}>
-				{status === 'loading' && <OttoWordmarkLogo height={Math.round(icon * 0.65)} />}
+					{status === 'loading' && (
+						<OttoWordmarkLogo height={Math.round(icon * 0.65)} />
+					)}
 					{status === 'success' && (
 						<CheckCircle
 							className="text-green-500"

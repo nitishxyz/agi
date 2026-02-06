@@ -19,7 +19,8 @@ import {
 	type TopupMethod,
 } from '../runtime/topup/manager.ts';
 
-const SETU_BASE_URL = process.env.SETU_BASE_URL || 'https://api.setu.ottocode.io';
+const SETU_BASE_URL =
+	process.env.SETU_BASE_URL || 'https://api.setu.ottocode.io';
 
 function getSetuBaseUrl(): string {
 	return SETU_BASE_URL.endsWith('/')

@@ -64,16 +64,16 @@ export const AppLayout = memo(function AppLayout({
 							parentSessionId={sessionId ?? null}
 							onNavigateToSession={onNavigateToSession}
 						/>
-					<SettingsSidebar />
-					<TunnelSidebar />
+						<SettingsSidebar />
+						<TunnelSidebar />
 
-					<div className="flex flex-col w-12 border-l border-border bg-background">
+						<div className="flex flex-col w-12 border-l border-border bg-background">
 							<GitSidebarToggle />
 							<SessionFilesSidebarToggle sessionId={sessionId} />
 							<ResearchSidebarToggle parentSessionId={sessionId} />
-					<SettingsSidebarToggle />
-					<TunnelSidebarToggle />
-					<div className="flex-1" />
+							<SettingsSidebarToggle />
+							<TunnelSidebarToggle />
+							<div className="flex-1" />
 							<TerminalPanelToggle />
 							<div className="h-12 border-t border-border flex items-center justify-center">
 								<Button

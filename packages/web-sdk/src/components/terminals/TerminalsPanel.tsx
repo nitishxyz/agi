@@ -7,7 +7,11 @@ import {
 	X,
 } from 'lucide-react';
 import { useTerminalStore } from '../../stores/terminalStore';
-import { useTerminals, useCreateTerminal, useKillTerminal } from '../../hooks/useTerminals';
+import {
+	useTerminals,
+	useCreateTerminal,
+	useKillTerminal,
+} from '../../hooks/useTerminals';
 import { TerminalTabBar } from './TerminalTabBar';
 import { TerminalViewer } from './TerminalViewer';
 
@@ -51,16 +55,26 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 	}, [isOpen, terminalsList, activeTabId, selectTab]);
 
 	useEffect(() => {
-		if (isOpen && terminals && terminalsList.length === 0 && !autoCreatingRef.current && !createTerminal.isPending) {
+		if (
+			isOpen &&
+			terminals &&
+			terminalsList.length === 0 &&
+			!autoCreatingRef.current &&
+			!createTerminal.isPending
+		) {
 			autoCreatingRef.current = true;
-			createTerminal.mutateAsync({
-				command: 'bash',
-				purpose: 'Manual shell',
-			}).then((result) => {
-				selectTab(result.terminalId);
-			}).catch(() => {}).finally(() => {
-				autoCreatingRef.current = false;
-			});
+			createTerminal
+				.mutateAsync({
+					command: 'bash',
+					purpose: 'Manual shell',
+				})
+				.then((result) => {
+					selectTab(result.terminalId);
+				})
+				.catch(() => {})
+				.finally(() => {
+					autoCreatingRef.current = false;
+				});
 		}
 	}, [isOpen, terminals, terminalsList.length, createTerminal, selectTab]);
 
@@ -201,7 +215,10 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 
 			<div className="flex-1 min-h-0 overflow-hidden">
 				{activeTabId ? (
-					<TerminalViewer terminalId={activeTabId} onExit={handleKillTerminal} />
+					<TerminalViewer
+						terminalId={activeTabId}
+						onExit={handleKillTerminal}
+					/>
 				) : (
 					<div className="flex flex-col items-center justify-center h-full text-muted-foreground">
 						<TerminalIcon className="w-8 h-8 mb-2 opacity-40" />

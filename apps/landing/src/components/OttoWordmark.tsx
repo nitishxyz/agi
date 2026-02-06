@@ -1,6 +1,6 @@
 export function OttoWordmark({
 	height = 16,
-	className = "",
+	className = '',
 }: {
 	height?: number;
 	className?: string;

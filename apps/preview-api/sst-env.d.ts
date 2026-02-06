@@ -3,35 +3,34 @@
 /* eslint-disable */
 /* deno-fmt-ignore-file */
 
-import "sst"
-declare module "sst" {
-  export interface Resource {
-    "Landing": {
-      "type": "sst.aws.StaticSite"
-      "url": string
-    }
-    "OGFunction": {
-      "name": string
-      "type": "sst.aws.Function"
-      "url": string
-    }
-    "PreviewWeb": {
-      "type": "sst.aws.Astro"
-      "url": string
-    }
-  }
+import 'sst';
+declare module 'sst' {
+	export interface Resource {
+		Landing: {
+			type: 'sst.aws.StaticSite';
+			url: string;
+		};
+		OGFunction: {
+			name: string;
+			type: 'sst.aws.Function';
+			url: string;
+		};
+		PreviewWeb: {
+			type: 'sst.aws.Astro';
+			url: string;
+		};
+	}
 }
-// cloudflare 
-import * as cloudflare from "@cloudflare/workers-types";
-declare module "sst" {
-  export interface Resource {
-    "OGCache": cloudflare.KVNamespace
-    "OttoIo": cloudflare.Service
-    "PreviewApi": cloudflare.Service
-    "PreviewDB": cloudflare.D1Database
-    "ShareStorage": cloudflare.R2Bucket
-  }
+// cloudflare
+import * as cloudflare from '@cloudflare/workers-types';
+declare module 'sst' {
+	export interface Resource {
+		OGCache: cloudflare.KVNamespace;
+		OttoIo: cloudflare.Service;
+		PreviewApi: cloudflare.Service;
+		PreviewDB: cloudflare.D1Database;
+		ShareStorage: cloudflare.R2Bucket;
+	}
 }
 
-import "sst"
-export {}
+import 'sst';

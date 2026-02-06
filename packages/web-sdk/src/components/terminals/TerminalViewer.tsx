@@ -139,14 +139,14 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 							gotFirstData = true;
 							setTimeout(() => setReady(true), 200);
 						}
-				} else if (data.type === 'exit') {
-					xterm.write(
-						`\r\n\x1b[33m[Process exited with code ${data.exitCode}]\x1b[0m\r\n`,
-					);
-					if (onExit) {
-						onExit(terminalId);
+					} else if (data.type === 'exit') {
+						xterm.write(
+							`\r\n\x1b[33m[Process exited with code ${data.exitCode}]\x1b[0m\r\n`,
+						);
+						if (onExit) {
+							onExit(terminalId);
+						}
 					}
-				}
 				} catch {
 					// ignore parse errors
 				}
