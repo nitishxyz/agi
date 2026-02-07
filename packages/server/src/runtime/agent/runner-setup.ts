@@ -1,4 +1,6 @@
 import { loadConfig, getUnderlyingProviderKey } from '@ottocode/sdk';
+import { wrapLanguageModel } from 'ai';
+import { devToolsMiddleware } from '@ai-sdk/devtools';
 import { getDb } from '@ottocode/database';
 import { sessions } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
@@ -8,7 +10,7 @@ import { composeSystemPrompt } from '../prompt/builder.ts';
 import { discoverProjectTools } from '@ottocode/sdk';
 import { adaptTools } from '../../tools/adapter.ts';
 import { buildDatabaseTools } from '../../tools/database/index.ts';
-import { debugLog, time } from '../debug/index.ts';
+import { debugLog, time, isDebugEnabled } from '../debug/index.ts';
 import { buildHistoryMessages } from '../message/history-builder.ts';
 import { getMaxOutputTokens } from '../utils/token.ts';
 import { setupToolContext } from '../tools/setup.ts';
@@ -25,7 +27,7 @@ export interface SetupResult {
 	system: string;
 	systemComponents: string[];
 	additionalSystemMessages: Array<{ role: 'system' | 'user'; content: string }>;
-	model: Awaited<ReturnType<typeof resolveModel>>;
+	model: Awaited<ReturnType<typeof resolveModel>> | ReturnType<typeof wrapLanguageModel>;
 	maxOutputTokens: number | undefined;
 	effectiveMaxOutputTokens: number | undefined;
 	toolset: ReturnType<typeof adaptTools>;
@@ -164,6 +166,10 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		sessionId: opts.sessionId,
 		messageId: opts.assistantMessageId,
 	});
+	const wrappedModel = isDebugEnabled()
+		// biome-ignore lint/suspicious/noExplicitAny: OpenRouter provider uses v2 spec
+		? wrapLanguageModel({ model: model as any, middleware: devToolsMiddleware() })
+		: model;
 	debugLog(
 		`[RUNNER] Model created: ${JSON.stringify({ id: model.modelId, provider: model.provider })}`,
 	);
@@ -224,7 +230,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		system,
 		systemComponents,
 		additionalSystemMessages,
-		model,
+		model: wrappedModel,
 		maxOutputTokens,
 		effectiveMaxOutputTokens,
 		toolset,

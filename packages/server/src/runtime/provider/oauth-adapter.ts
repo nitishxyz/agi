@@ -91,7 +91,11 @@ const CODEX_INSTRUCTIONS =
 
 export function buildCodexProviderOptions() {
 	return {
-		openai: { store: false as const, instructions: CODEX_INSTRUCTIONS },
+		openai: {
+			store: false as const,
+			instructions: CODEX_INSTRUCTIONS,
+			parallelToolCalls: false,
+		},
 	};
 }
 

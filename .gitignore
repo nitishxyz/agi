@@ -42,6 +42,7 @@ reference
 .sst
 .otto
 .agi
+.devtools
 
 # astro generated
 .astro
