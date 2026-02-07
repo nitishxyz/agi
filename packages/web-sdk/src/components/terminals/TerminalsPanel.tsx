@@ -46,12 +46,13 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 	useEffect(() => {
 		if (
 			isOpen &&
-			terminalsList.length > 0 &&
-			(!activeTabId || !terminalsList.find((t) => t.id === activeTabId))
+			terminalsListRef.current.length > 0 &&
+			(!activeTabId || !terminalsListRef.current.find((t) => t.id === activeTabId))
 		) {
-			selectTab(terminalsList[0].id);
+			selectTab(terminalsListRef.current[0].id);
 		}
-	}, [isOpen, terminalsList, activeTabId, selectTab]);
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isOpen, terminalsList.length, activeTabId, selectTab]);
 
 	useEffect(() => {
 		if (
@@ -62,8 +63,7 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 			!createTerminal.isPending
 		) {
 			autoCreatingRef.current = true;
-			createTerminal
-				.mutateAsync({
+			createTerminal.mutateAsync({
 					command: 'bash',
 					purpose: 'Manual shell',
 				})
@@ -75,7 +75,8 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 					autoCreatingRef.current = false;
 				});
 		}
-	}, [isOpen, terminals, terminalsList.length, createTerminal, selectTab]);
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isOpen, terminals, terminalsList.length, selectTab]);
 
 	const handleNewTerminal = useCallback(async () => {
 		try {

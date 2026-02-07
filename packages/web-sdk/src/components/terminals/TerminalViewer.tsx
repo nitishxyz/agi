@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { init, Terminal, FitAddon } from 'ghostty-web';
-import { useTerminals } from '../../hooks/useTerminals';
 import { getRuntimeApiBaseUrl } from '../../lib/config';
 import { client } from '@ottocode/api';
 
@@ -102,9 +101,8 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 	const retryCountRef = useRef(0);
 	const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [ready, setReady] = useState(false);
-	const { data: terminals } = useTerminals();
-
-	const _terminal = terminals?.terminals.find((t) => t.id === terminalId);
+	const onExitRef = useRef(onExit);
+	onExitRef.current = onExit;
 
 	const fitTerminal = useCallback(() => {
 		if (fitAddonRef.current) {
@@ -143,8 +141,8 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 						xterm.write(
 							`\r\n\x1b[33m[Process exited with code ${data.exitCode}]\x1b[0m\r\n`,
 						);
-						if (onExit) {
-							onExit(terminalId);
+						if (onExitRef.current) {
+							onExitRef.current(terminalId);
 						}
 					}
 				} catch {
@@ -172,7 +170,7 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 				retryCountRef.current = 0;
 			};
 		},
-		[terminalId, onExit],
+		[terminalId],
 	);
 
 	useEffect(() => {
