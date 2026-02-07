@@ -17,6 +17,7 @@ import {
 	useTunnelStream,
 	useTunnelStatus,
 } from '../../hooks/useTunnel';
+import { openUrl } from '../../lib/open-url';
 
 function truncateUrl(url: string): string {
 	try {
@@ -154,15 +155,14 @@ export const TunnelSidebar = memo(function TunnelSidebar() {
 							</button>
 						</div>
 
-						<a
-							href={url}
-							target="_blank"
-							rel="noopener noreferrer"
+						<button
+							type="button"
+							onClick={() => openUrl(url)}
 							className="flex items-center justify-center gap-2 px-4 py-2 border border-border rounded-md text-sm hover:bg-muted transition-colors mb-3"
 						>
 							<ExternalLink className="w-3.5 h-3.5" />
 							Open in browser
-						</a>
+						</button>
 
 						<button
 							type="button"
