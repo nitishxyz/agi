@@ -254,7 +254,7 @@ jobs:
           - platform: macos-latest
             target: x86_64-apple-darwin
             name: macOS-x64
-          - platform: ubuntu-latest
+          - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             name: Linux-x64
     steps:
