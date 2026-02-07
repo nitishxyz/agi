@@ -15,7 +15,7 @@ import {
 	useUpdateSession,
 	useDeleteSession,
 } from '../../hooks/useSessions';
-import { useAllModels } from '../../hooks/useConfig';
+import { useAllModels, useConfig } from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useGitStatus, useStageFiles } from '../../hooks/useGit';
 import { useGitStore } from '../../stores/gitStore';
@@ -67,8 +67,9 @@ export const ChatInputContainer = memo(
 			useMessages(sessionId);
 			const updateSession = useUpdateSession(sessionId);
 			const deleteSession = useDeleteSession();
-			const { data: allModels } = useAllModels();
-			const { preferences } = usePreferences();
+		const { data: allModels } = useAllModels();
+		const { data: config } = useConfig();
+		const { preferences } = usePreferences();
 			const { data: gitStatus } = useGitStatus();
 			const stageFiles = useStageFiles();
 			const openCommitModalForSession = useGitStore(
@@ -442,11 +443,14 @@ export const ChatInputContainer = memo(
 						onResearchContextRemove={handleResearchContextRemove}
 						onRefreshBalance={provider === 'setu' ? fetchBalance : undefined}
 						isBalanceLoading={isBalanceLoading}
-						onModelInfoClick={() => {
-							setConfigFocusTarget('model');
-							setIsConfigOpen(true);
-						}}
-					/>
+				onModelInfoClick={() => {
+					setConfigFocusTarget('model');
+					setIsConfigOpen(true);
+				}}
+				agent={agent}
+				agents={config?.agents}
+				onAgentChange={handleAgentChange}
+			/>
 				</>
 			);
 		},
