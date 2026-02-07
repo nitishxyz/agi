@@ -77,6 +77,9 @@ function describeToolResult(info: ToolResultInfo): TargetDescriptor | null {
 			return describeWrite(info);
 		case 'apply_patch':
 			return describePatch(info);
+		case 'edit':
+		case 'multiedit':
+			return describeEdit(info);
 		default:
 			return null;
 	}
@@ -201,4 +204,15 @@ function getNumber(value: unknown): number | undefined {
 
 function normalizePath(path: string): string {
 	return path.replace(/\\/g, '/');
+}
+
+function describeEdit(info: ToolResultInfo): TargetDescriptor | null {
+	const args = getRecord(info.args);
+	if (!args) return null;
+	const filePath = getString(args.filePath);
+	if (!filePath) return null;
+	const normalized = normalizePath(filePath);
+	const key = `edit:${normalized}`;
+	const summary = `[previous edit] ${normalized}`;
+	return { keys: [key], summary };
 }

@@ -51,7 +51,9 @@ export async function runSessionLoop(sessionId: string) {
 		try {
 			await runAssistant(job);
 		} catch (_err) {
-			// Swallow to keep the loop alive; event published by runner
+			debugLog(
+				`[RUNNER] runAssistant threw (swallowed to keep loop alive): ${_err instanceof Error ? _err.message : String(_err)}`,
+			);
 		}
 	}
 
@@ -80,6 +82,7 @@ async function runAssistant(opts: RunOpts) {
 		firstToolTimer,
 		firstToolSeen,
 		providerOptions,
+		isOpenAIOAuth,
 	} = setup;
 
 	const isFirstMessage = !history.some((m) => m.role === 'assistant');
@@ -91,7 +94,7 @@ async function runAssistant(opts: RunOpts) {
 
 	if (!isFirstMessage) {
 		messagesWithSystemInstructions.push({
-			role: 'user',
+			role: isOpenAIOAuth ? 'system' : 'user',
 			content:
 				'SYSTEM REMINDER: You are continuing an existing session. When you have completed the task, you MUST stream a text summary of what you did to the user, and THEN call the `finish` tool. Do not call `finish` without a summary.',
 		});
@@ -107,7 +110,11 @@ async function runAssistant(opts: RunOpts) {
 		try {
 			const name = (evt.payload as { name?: string } | undefined)?.name;
 			if (name === 'finish') _finishObserved = true;
-		} catch {}
+		} catch (err) {
+			debugLog(
+				`[RUNNER] finish observer error: ${err instanceof Error ? err.message : String(err)}`,
+			);
+		}
 	});
 
 	const streamStartTimer = time('runner:first-delta');
@@ -289,6 +296,12 @@ async function runAssistant(opts: RunOpts) {
 		debugLog(
 			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}`,
 		);
+
+		if (!_finishObserved && fs) {
+			debugLog(
+				`[RUNNER] WARNING: Stream ended without finish tool being called. Model was mid-execution (tools were used). This is likely an unclean stream termination from the provider.`,
+			);
+		}
 	} catch (err) {
 		unsubscribeFinish();
 		const payload = toErrorPayload(err);
@@ -334,7 +347,11 @@ async function runAssistant(opts: RunOpts) {
 
 				try {
 					await completeAssistantMessage({}, opts, db);
-				} catch {}
+				} catch (err2) {
+					debugLog(
+						`[RUNNER] completeAssistantMessage failed after prune: ${err2 instanceof Error ? err2.message : String(err2)}`,
+					);
+				}
 				return;
 			} catch (pruneErr) {
 				debugLog(
@@ -364,7 +381,11 @@ async function runAssistant(opts: RunOpts) {
 				db,
 			);
 			await completeAssistantMessage({}, opts, db);
-		} catch {}
+		} catch (err2) {
+			debugLog(
+				`[RUNNER] Failed to complete message after error: ${err2 instanceof Error ? err2.message : String(err2)}`,
+			);
+		}
 		throw err;
 	} finally {
 		debugLog(

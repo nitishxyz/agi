@@ -34,6 +34,7 @@ export interface SetupResult {
 	firstToolSeen: () => boolean;
 	providerOptions: Record<string, unknown>;
 	needsSpoof: boolean;
+	isOpenAIOAuth: boolean;
 }
 
 const THINKING_BUDGET = 16000;
@@ -232,6 +233,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		firstToolSeen,
 		providerOptions,
 		needsSpoof: oauth.needsSpoof,
+		isOpenAIOAuth: oauth.isOpenAIOAuth,
 	};
 }
 

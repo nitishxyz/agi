@@ -39,6 +39,8 @@ export const CANONICAL_TO_PASCAL: Record<string, string> = {
 
 	// Patch/edit
 	apply_patch: 'ApplyPatch',
+	edit: 'Edit',
+	multiedit: 'MultiEdit',
 
 	// Task management
 	update_todos: 'UpdateTodos',
@@ -77,6 +79,8 @@ export const PASCAL_TO_CANONICAL: Record<string, string> = {
 
 	// Patch/edit
 	ApplyPatch: 'apply_patch',
+	Edit: 'edit',
+	MultiEdit: 'multiedit',
 
 	// Task management
 	UpdateTodos: 'update_todos',

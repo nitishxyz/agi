@@ -24,7 +24,11 @@ export function createFinishHandler(
 	return async (fin: FinishEvent) => {
 		try {
 			await completeAssistantMessageFn(fin, opts, db);
-		} catch {}
+		} catch (err) {
+			debugLog(
+				`[finish-handler] completeAssistantMessage failed: ${err instanceof Error ? err.message : String(err)}`,
+			);
+		}
 
 		if (opts.isCompactCommand && fin.finishReason !== 'error') {
 			const assistantParts = await db

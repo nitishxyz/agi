@@ -884,7 +884,7 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 		const patch = [
 			'*** Begin Patch',
 			'*** Update File: capture2.ts',
-			" const READ_ONLY = new Set([",
+			' const READ_ONLY = new Set([',
 			"   'read',",
 			"-  'ls',",
 			"+  'ls',",
@@ -1145,13 +1145,9 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 	it('Edge 3: Added lines deeper than context', async () => {
 		await writeTestFile(
 			'deep-add.ts',
-			[
-				'function run() {',
-				'\tif (ready) {',
-				'\t\texecute();',
-				'\t}',
-				'}',
-			].join('\n'),
+			['function run() {', '\tif (ready) {', '\t\texecute();', '\t}', '}'].join(
+				'\n',
+			),
 		);
 
 		const patch = [
@@ -1176,12 +1172,7 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 	it('Edge 4: Blank lines in additions are not indented', async () => {
 		await writeTestFile(
 			'blanks.ts',
-			[
-				'function setup() {',
-				'\tconst a = 1;',
-				'\treturn a;',
-				'}',
-			].join('\n'),
+			['function setup() {', '\tconst a = 1;', '\treturn a;', '}'].join('\n'),
 		);
 
 		const patch = [
@@ -1200,7 +1191,10 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 		const lines = content.split('\n');
 		expect(content).toContain('\tconst b = 2;');
 		expect(content).toContain('\tconst c = 3;');
-		const blankIdx = lines.findIndex((l: string, i: number) => l === '' && i > 0 && lines[i - 1].includes('const b'));
+		const blankIdx = lines.findIndex(
+			(l: string, i: number) =>
+				l === '' && i > 0 && lines[i - 1].includes('const b'),
+		);
 		expect(blankIdx).toBeGreaterThan(-1);
 		expect(lines[blankIdx]).toBe('');
 	});
@@ -1208,10 +1202,7 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 	it('Edge 5: Pure addition with no context lines', async () => {
 		await writeTestFile(
 			'nocontext.ts',
-			[
-				'const x = 1;',
-				'const y = 2;',
-			].join('\n'),
+			['const x = 1;', 'const y = 2;'].join('\n'),
 		);
 
 		const patch = [
@@ -1292,12 +1283,9 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 	it('TabSize inference: tabSize=8, file has tabs, LLM sends 8-space-per-tab', async () => {
 		await writeTestFile(
 			'makefile-like.txt',
-			[
-				'all:',
-				'\techo "building"',
-				'\techo "testing"',
-				'\techo "done"',
-			].join('\n'),
+			['all:', '\techo "building"', '\techo "testing"', '\techo "done"'].join(
+				'\n',
+			),
 		);
 
 		const patch = [
@@ -1378,5 +1366,629 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 		const content = await readTestFile('java-style.ts');
 		expect(content).toContain('        this.port = 8080;');
 		expect(content).toContain('        this.host = "0.0.0.0";');
+	});
+});
+
+describe('patch apply — markdown horizontal rules (---)', () => {
+	it('treats bare --- as context line, not a remove of --', async () => {
+		await writeTestFile(
+			'doc.md',
+			[
+				'# Section 1',
+				'',
+				'Content here.',
+				'',
+				'---',
+				'',
+				'# Section 2',
+				'',
+				'More content.',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: doc.md',
+			' Content here.',
+			' ',
+			' ---',
+			' ',
+			'-# Section 2',
+			'+# Section 2 (Updated)',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('doc.md');
+		expect(content).toContain('---');
+		expect(content).toContain('# Section 2 (Updated)');
+		expect(content).not.toContain('# Section 2\n');
+	});
+
+	it('preserves --- horizontal rules when used as context without space prefix', async () => {
+		await writeTestFile(
+			'readme.md',
+			['# Title', '', '---', '', '## Subtitle'].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: readme.md',
+			' # Title',
+			' ',
+			'---',
+			' ',
+			'-## Subtitle',
+			'+## New Subtitle',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('readme.md');
+		expect(content).toContain('---');
+		expect(content).toContain('## New Subtitle');
+	});
+});
+
+describe('patch apply — deeply nested YAML +1 space bug', () => {
+	it('does not add +1 space when inserting new YAML entries in deep nesting', async () => {
+		await writeTestFile(
+			'release.yml',
+			[
+				'jobs:',
+				'  build-desktop:',
+				'    strategy:',
+				'      matrix:',
+				'        include:',
+				'          - platform: macos-latest',
+				'            target: aarch64-apple-darwin',
+				'            name: macOS-arm64',
+				'          - platform: ubuntu-22.04',
+				'            target: x86_64-unknown-linux-gnu',
+				'            name: Linux-x64',
+				'    steps:',
+				'      - uses: actions/checkout@v4',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: release.yml',
+			'@@ matrix - add windows',
+			'           - platform: ubuntu-22.04',
+			'             target: x86_64-unknown-linux-gnu',
+			'             name: Linux-x64',
+			'+          - platform: windows-latest',
+			'+            target: x86_64-pc-windows-msvc',
+			'+            name: Windows-x64',
+			'     steps:',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('release.yml');
+		const lines = content.split('\n');
+
+		const winLine = lines.find((l: string) => l.includes('windows-latest'));
+		expect(winLine).toBe('          - platform: windows-latest');
+
+		const targetLine = lines.find((l: string) => l.includes('windows-msvc'));
+		expect(targetLine).toBe('            target: x86_64-pc-windows-msvc');
+
+		const nameLine = lines.find((l: string) => l.includes('Windows-x64'));
+		expect(nameLine).toBe('            name: Windows-x64');
+	});
+});
+
+describe('patch apply — markdown bullet removal (-- collision)', () => {
+	it('correctly removes and replaces bullet lines', async () => {
+		await writeTestFile(
+			'README.md',
+			[
+				'# Tech Stack',
+				'',
+				'- [Tauri v2](https://tauri.app) (Rust backend)',
+				'- React 19, Vite, Tailwind CSS (frontend)',
+				'- `@ottocode/web-sdk` for UI components',
+				'',
+				'## Development',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: README.md',
+			' # Tech Stack',
+			' ',
+			'-- [Tauri v2](https://tauri.app) (Rust backend)',
+			'-- React 19, Vite, Tailwind CSS (frontend)',
+			'+- [Tauri v2](https://tauri.app) (Rust backend + IPC)',
+			'+- React 19, Vite, Tailwind CSS (frontend UI)',
+			' - `@ottocode/web-sdk` for UI components',
+			'+- Native platform APIs via Tauri plugins',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('README.md');
+		expect(content).toContain(
+			'- [Tauri v2](https://tauri.app) (Rust backend + IPC)',
+		);
+		expect(content).toContain('- React 19, Vite, Tailwind CSS (frontend UI)');
+		expect(content).toContain('- `@ottocode/web-sdk` for UI components');
+		expect(content).toContain('- Native platform APIs via Tauri plugins');
+		expect(content).not.toContain('(Rust backend)\n');
+		expect(content).not.toContain('CSS (frontend)\n');
+
+		const bulletLines = content
+			.split('\n')
+			.filter((l: string) => l.startsWith('- '));
+		expect(bulletLines.length).toBe(4);
+	});
+});
+
+describe('patch apply — allowRejects hunk-level safety', () => {
+	it('applies valid hunks and skips invalid ones without corruption', async () => {
+		await writeTestFile(
+			'test.ts',
+			[
+				'function test() {',
+				'  const a = 1;',
+				'  const b = 2;',
+				'  const c = 3;',
+				'}',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: test.ts',
+			'@@ first hunk - valid',
+			' function test() {',
+			'-  const a = 1;',
+			'+  const a = 100;',
+			'   const b = 2;',
+			'@@ second hunk - invalid context',
+			' function nonexistent() {',
+			'-  const x = 1;',
+			'+  const x = 999;',
+			' }',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch, { allowRejects: true });
+		const content = await readTestFile('test.ts');
+		expect(content).toContain('const a = 100;');
+		expect(content).toContain('const b = 2;');
+		expect(content).toContain('const c = 3;');
+		expect(content).not.toContain('const x = 999;');
+		expect(content).not.toContain('nonexistent');
+	});
+
+	it('rejects entire operation when all hunks fail', async () => {
+		await writeTestFile(
+			'test.ts',
+			['function test() {', '  const a = 1;', '}'].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: test.ts',
+			' function wrong() {',
+			'-  const z = 99;',
+			'+  const z = 100;',
+			'*** End Patch',
+		].join('\n');
+
+		const result = await applyPatch(patch, { allowRejects: true });
+		expect(result.rejected.length).toBe(1);
+		const content = await readTestFile('test.ts');
+		expect(content).toContain('const a = 1;');
+		expect(content).not.toContain('const z');
+	});
+});
+
+describe('patch apply — pure addition indentation correction', () => {
+	it('converts pure addition from spaces to tabs when file uses tabs', async () => {
+		await writeTestFile(
+			'capture.ts',
+			[
+				'const READ_ONLY_TOOLS = new Set([',
+				"\t'read',",
+				"\t'ls',",
+				"\t'tree',",
+				"\t'git_status',",
+				']);',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: capture.ts',
+			" \t'git_status',",
+			"+  'websearch',",
+			' ]);',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('capture.ts');
+		const wsLine = content
+			.split('\n')
+			.find((l: string) => l.includes('websearch'));
+		expect(wsLine).toStartWith('\t');
+		expect(wsLine).not.toMatch(/^  /);
+	});
+});
+
+describe('patch apply — fuzzy match false positive prevention', () => {
+	it('rejects patch when context line content is completely different', async () => {
+		await writeTestFile(
+			'error-test.ts',
+			['function correctName() {', '  const a = 1;', '  return a;', '}'].join(
+				'\n',
+			),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: error-test.ts',
+			' function wrongName() {',
+			'-  const a = 1;',
+			'+  const a = 999;',
+			'   return a;',
+			'*** End Patch',
+		].join('\n');
+
+		expect(() => applyPatch(patch)).toThrow('Failed to apply patch hunk');
+	});
+
+	it('still applies when removal lines are missing but context matches', async () => {
+		await writeTestFile(
+			'partial.ts',
+			['function process() {', '  const b = 2;', '  return b;', '}'].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: partial.ts',
+			' function process() {',
+			'-  const a = 1;',
+			'-  const b = 2;',
+			'+  const b = 20;',
+			'   return b;',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('partial.ts');
+		expect(content).toContain('const b = 20;');
+	});
+
+	it('rejects when context line has wrong identifier despite same structure', async () => {
+		await writeTestFile(
+			'ident.ts',
+			[
+				'class UserService {',
+				'  async getUser(id: string) {',
+				'    return db.find(id);',
+				'  }',
+				'}',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: ident.ts',
+			' class OrderService {',
+			'   async getUser(id: string) {',
+			'-    return db.find(id);',
+			'+    return db.findOne(id);',
+			'   }',
+			'*** End Patch',
+		].join('\n');
+
+		expect(() => applyPatch(patch)).toThrow('Failed to apply patch hunk');
+	});
+});
+
+describe('patch apply — deeply nested YAML with Update File format', () => {
+	it('handles 12-space nested YAML insertion without +1 bug', async () => {
+		await writeTestFile(
+			'deep-workflow.yml',
+			[
+				'jobs:',
+				'  build:',
+				'    strategy:',
+				'      matrix:',
+				'        include:',
+				'          - os: ubuntu-22.04',
+				'            arch: x64',
+				'            runner: ubuntu-latest',
+				'          - os: macos-14',
+				'            arch: arm64',
+				'            runner: macos-latest',
+				'    steps:',
+				'      - uses: actions/checkout@v4',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: deep-workflow.yml',
+			'@@ add windows to matrix',
+			'           - os: macos-14',
+			'             arch: arm64',
+			'             runner: macos-latest',
+			'+          - os: windows-latest',
+			'+            arch: x64',
+			'+            runner: windows-latest',
+			'     steps:',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('deep-workflow.yml');
+		const lines = content.split('\n');
+
+		const winLine = lines.find(
+			(l: string) => l.includes('windows-latest') && l.includes('os:'),
+		);
+		expect(winLine).toBe('          - os: windows-latest');
+
+		const winIdx = lines.indexOf(winLine as string);
+		const archLine = lines[winIdx + 1];
+		expect(archLine).toBe('            arch: x64');
+
+		const runnerLine = lines[winIdx + 2];
+		expect(runnerLine).toBe('            runner: windows-latest');
+	});
+
+	it('handles deeply nested YAML replacement without extra space', async () => {
+		await writeTestFile(
+			'deep-ci.yml',
+			[
+				'on:',
+				'  workflow_dispatch:',
+				'    inputs:',
+				'      environment:',
+				'        type: choice',
+				'        options:',
+				'          - staging',
+				'          - production',
+				'        default: staging',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: deep-ci.yml',
+			'           - staging',
+			'-          - production',
+			'+          - production',
+			'+          - canary',
+			'         default: staging',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('deep-ci.yml');
+		const canaryLine = content
+			.split('\n')
+			.find((l: string) => l.includes('canary'));
+		expect(canaryLine).toBe('          - canary');
+	});
+});
+
+describe('patch apply — markdown bullets with - prefix in remove lines', () => {
+	it('handles removing bullet starting with link syntax', async () => {
+		await writeTestFile(
+			'features.md',
+			[
+				'## Features',
+				'',
+				'- [React](https://react.dev) for UI',
+				'- [Vite](https://vitejs.dev) for bundling',
+				'- [Tailwind](https://tailwindcss.com) for styling',
+				'',
+				'## Setup',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: features.md',
+			' ## Features',
+			' ',
+			'-- [React](https://react.dev) for UI',
+			'+- [React 19](https://react.dev) for UI',
+			' - [Vite](https://vitejs.dev) for bundling',
+			'-- [Tailwind](https://tailwindcss.com) for styling',
+			'+- [Tailwind v4](https://tailwindcss.com) for styling',
+			'+- [Biome](https://biomejs.dev) for linting',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('features.md');
+		expect(content).toContain('- [React 19](https://react.dev) for UI');
+		expect(content).toContain('- [Vite](https://vitejs.dev) for bundling');
+		expect(content).toContain(
+			'- [Tailwind v4](https://tailwindcss.com) for styling',
+		);
+		expect(content).toContain('- [Biome](https://biomejs.dev) for linting');
+		expect(content).not.toContain('- [React](https://react.dev) for UI');
+		expect(content).not.toContain(
+			'- [Tailwind](https://tailwindcss.com) for styling',
+		);
+
+		const bullets = content
+			.split('\n')
+			.filter((l: string) => l.startsWith('- '));
+		expect(bullets.length).toBe(4);
+	});
+
+	it('handles nested bullet list removal and addition', async () => {
+		await writeTestFile(
+			'nested-bullets.md',
+			[
+				'# Guide',
+				'',
+				'- Step 1: Install',
+				'  - Run `npm install`',
+				'  - Run `npm build`',
+				'- Step 2: Configure',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: nested-bullets.md',
+			' - Step 1: Install',
+			'-  - Run `npm install`',
+			'-  - Run `npm build`',
+			'+  - Run `bun install`',
+			'+  - Run `bun build`',
+			' - Step 2: Configure',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('nested-bullets.md');
+		expect(content).toContain('  - Run `bun install`');
+		expect(content).toContain('  - Run `bun build`');
+		expect(content).not.toContain('npm install');
+	});
+});
+
+describe('patch apply — allowRejects content leakage prevention', () => {
+	it('does not leak rejected hunk content into applied file', async () => {
+		await writeTestFile(
+			'multi-hunk.ts',
+			[
+				'function alpha() {',
+				'  const x = 1;',
+				'  return x;',
+				'}',
+				'',
+				'function beta() {',
+				'  const y = 2;',
+				'  return y;',
+				'}',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: multi-hunk.ts',
+			'@@ hunk 1 - valid change to alpha',
+			' function alpha() {',
+			'-  const x = 1;',
+			'+  const x = 100;',
+			'   return x;',
+			'@@ hunk 2 - invalid context (gamma doesnt exist)',
+			' function gamma() {',
+			'-  const z = 3;',
+			'+  const z = 300;',
+			'   return z;',
+			' }',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch, { allowRejects: true });
+		const content = await readTestFile('multi-hunk.ts');
+
+		expect(content).toContain('const x = 100;');
+		expect(content).toContain('const y = 2;');
+		expect(content).not.toContain('const z = 300;');
+		expect(content).not.toContain('gamma');
+		expect(content).not.toContain('const z');
+
+		const lines = content.split('\n');
+		expect(lines.length).toBe(10);
+	});
+
+	it('preserves original file when all hunks rejected', async () => {
+		await writeTestFile(
+			'pristine.ts',
+			['const version = 1;', 'const name = "otto";'].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: pristine.ts',
+			' const nonexistent = true;',
+			'-const also_nonexistent = false;',
+			'+const replaced = true;',
+			'*** End Patch',
+		].join('\n');
+
+		const result = await applyPatch(patch, { allowRejects: true });
+		expect(result.rejected.length).toBe(1);
+		const content = await readTestFile('pristine.ts');
+		expect(content).toContain('const version = 1;');
+		expect(content).toContain('const name = "otto";');
+		expect(content).not.toContain('replaced');
+	});
+});
+
+describe('patch apply — already-applied detection with content at different positions', () => {
+	it('does not duplicate content when same addition applied twice', async () => {
+		await writeTestFile(
+			'dedup.ts',
+			[
+				'import { foo } from "./foo";',
+				'import { bar } from "./bar";',
+				'import { baz } from "./baz";',
+				'',
+				'export const config = {};',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: dedup.ts',
+			' import { bar } from "./bar";',
+			'+import { qux } from "./qux";',
+			' import { baz } from "./baz";',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		let content = await readTestFile('dedup.ts');
+		expect(content).toContain('import { qux } from "./qux";');
+
+		await applyPatch(patch);
+		content = await readTestFile('dedup.ts');
+		const quxCount = content
+			.split('\n')
+			.filter((l: string) => l.includes('qux')).length;
+		expect(quxCount).toBe(1);
+	});
+
+	it('does not duplicate YAML entries when applied twice', async () => {
+		await writeTestFile(
+			'dedup.yml',
+			['items:', '  - item1', '  - item2'].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: dedup.yml',
+			'   - item2',
+			'+  - item3',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		let content = await readTestFile('dedup.yml');
+		expect(content).toContain('  - item3');
+
+		await applyPatch(patch);
+		content = await readTestFile('dedup.yml');
+		const item3Count = content
+			.split('\n')
+			.filter((l: string) => l.trim() === '- item3').length;
+		expect(item3Count).toBe(1);
 	});
 });

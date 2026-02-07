@@ -261,9 +261,12 @@ function adjustReplacementIndentation(
 	let expectedIdx = 0;
 	let lastDelta = 0;
 	let lastFileIndentExpanded = 0;
+	let lastPatchIndentExpanded = 0;
 	let hasDelta = false;
 	let hasStyleMismatch = false;
 	let fileIndentChar: 'tab' | 'space' = 'space';
+	const deltas: number[] = [];
+	let hasAddStyleMismatch = false;
 
 	for (const fl of matchedFileLines) {
 		const ws = getLeadingWhitespace(fl);
@@ -278,6 +281,33 @@ function adjustReplacementIndentation(
 		.map((l) => l.content);
 	const tabSize = inferTabSizeFromPairs(patchContextLines, matchedFileLines);
 
+	let tempIdx = 0;
+	for (const line of hunk.lines) {
+		if (line.kind === 'context' || line.kind === 'remove') {
+			const fileLine = matchedFileLines[tempIdx];
+			if (fileLine !== undefined) {
+				const d = computeIndentDelta(line.content, fileLine, tabSize);
+				if (d !== 0) deltas.push(d);
+			}
+			tempIdx++;
+		}
+	}
+	const sortedDeltas = [...deltas].sort((a, b) => a - b);
+	const medianDelta =
+		sortedDeltas.length > 0
+			? sortedDeltas[Math.floor(sortedDeltas.length / 2)]
+			: 0;
+
+	for (const line of hunk.lines) {
+		if (line.kind === 'add' && line.content.trim() !== '') {
+			const ws = getLeadingWhitespace(line.content);
+			if (ws.length > 0 && detectIndentStyle(ws) !== fileIndentChar) {
+				hasAddStyleMismatch = true;
+				break;
+			}
+		}
+	}
+
 	for (const line of hunk.lines) {
 		if (line.kind === 'context') {
 			const fileLine = matchedFileLines[expectedIdx];
@@ -285,6 +315,10 @@ function adjustReplacementIndentation(
 				lastDelta = computeIndentDelta(line.content, fileLine, tabSize);
 				lastFileIndentExpanded = expandWhitespace(
 					getLeadingWhitespace(fileLine),
+					tabSize,
+				);
+				lastPatchIndentExpanded = expandWhitespace(
+					getLeadingWhitespace(line.content),
 					tabSize,
 				);
 				if (lastDelta !== 0) hasDelta = true;
@@ -308,6 +342,10 @@ function adjustReplacementIndentation(
 					getLeadingWhitespace(fileLine),
 					tabSize,
 				);
+				lastPatchIndentExpanded = expandWhitespace(
+					getLeadingWhitespace(line.content),
+					tabSize,
+				);
 				if (lastDelta !== 0) hasDelta = true;
 				if (
 					detectIndentStyle(getLeadingWhitespace(fileLine)) !==
@@ -323,29 +361,29 @@ function adjustReplacementIndentation(
 				getLeadingWhitespace(line.content),
 				tabSize,
 			);
-			const adjustedIndent = addIndent + lastDelta;
-			const unadjustedDist = Math.abs(addIndent - lastFileIndentExpanded);
-			const adjustedDist = Math.abs(adjustedIndent - lastFileIndentExpanded);
-			if (lastDelta !== 0 && adjustedDist < unadjustedDist) {
+			const addWs = getLeadingWhitespace(line.content);
+			const addStyle =
+				addWs.length > 0 ? detectIndentStyle(addWs) : fileIndentChar;
+			const styleMismatch =
+				addStyle !== fileIndentChar && line.content.trim() !== '';
+			if (styleMismatch) {
+				const relativeOffset = addIndent - lastPatchIndentExpanded;
+				const targetIndent = lastFileIndentExpanded + relativeOffset;
+				const actualDelta = targetIndent - addIndent;
 				result.push(
-					applyIndentDelta(line.content, lastDelta, fileIndentChar, tabSize),
+					applyIndentDelta(line.content, actualDelta, fileIndentChar, tabSize),
+				);
+			} else if (Math.abs(medianDelta) > tabSize) {
+				result.push(
+					applyIndentDelta(line.content, medianDelta, fileIndentChar, tabSize),
 				);
 			} else {
-				const addWs = getLeadingWhitespace(line.content);
-				const addStyle =
-					addWs.length > 0 ? detectIndentStyle(addWs) : fileIndentChar;
-				if (addStyle !== fileIndentChar && line.content.trim() !== '') {
-					result.push(
-						applyIndentDelta(line.content, 0, fileIndentChar, tabSize),
-					);
-				} else {
-					result.push(line.content);
-				}
+				result.push(line.content);
 			}
 		}
 	}
 
-	if (!hasDelta && !hasStyleMismatch) {
+	if (!hasDelta && !hasStyleMismatch && !hasAddStyleMismatch) {
 		return hunk.lines.filter((l) => l.kind !== 'remove').map((l) => l.content);
 	}
 
@@ -389,23 +427,31 @@ function applyHunkToLines(
 	}
 
 	if (matchIndex === -1 && removals.length > 0) {
-		const expectedWithoutMissingRemovals = expected.filter((line) =>
+		const allContextPresent = contextLines.every((line) =>
 			lineExists(lines, line, useFuzzy),
 		);
-		if (expectedWithoutMissingRemovals.length > 0) {
-			matchIndex = findSubsequence(
-				lines,
-				expectedWithoutMissingRemovals,
-				Math.max(0, initialHint - 3),
-				useFuzzy,
+		if (!allContextPresent) {
+			matchIndex = -1;
+		} else {
+			const expectedWithoutMissingRemovals = expected.filter((line) =>
+				lineExists(lines, line, useFuzzy),
 			);
-			if (matchIndex === -1) {
+			const minRequired = Math.max(2, Math.ceil(expected.length / 2));
+			if (expectedWithoutMissingRemovals.length >= minRequired) {
 				matchIndex = findSubsequence(
 					lines,
 					expectedWithoutMissingRemovals,
-					0,
+					Math.max(0, initialHint - 3),
 					useFuzzy,
 				);
+				if (matchIndex === -1) {
+					matchIndex = findSubsequence(
+						lines,
+						expectedWithoutMissingRemovals,
+						0,
+						useFuzzy,
+					);
+				}
 			}
 		}
 	}
@@ -435,14 +481,14 @@ function applyHunkToLines(
 			: '';
 
 		if (additions.length > 0) {
-			const anchorContext =
-				contextLines.length > 0
-					? contextLines[contextLines.length - 1]
-					: undefined;
-			const anchorIndex =
-				anchorContext !== undefined
-					? findLineIndex(lines, anchorContext, 0, useFuzzy)
-					: -1;
+			const hasRemovals = removals.length > 0;
+			let anchorIndex = -1;
+			if (!hasRemovals && contextLines.length > 0) {
+				const anchorContext = contextLines[contextLines.length - 1];
+				anchorIndex = findLineIndex(lines, anchorContext, 0, useFuzzy);
+			} else if (!hasRemovals) {
+				anchorIndex = -1;
+			}
 
 			const insertionIndex =
 				anchorIndex !== -1
@@ -507,6 +553,40 @@ function applyHunkToLines(
 					lines.slice(matchIndex, matchIndex + expected.length),
 				)
 			: replacement;
+
+	const targetSlice = lines.slice(
+		matchIndex,
+		matchIndex + adjustedReplacement.length,
+	);
+	if (
+		adjustedReplacement.length > 0 &&
+		adjustedReplacement.length === targetSlice.length &&
+		adjustedReplacement.every((line, i) => {
+			if (line === targetSlice[i]) return true;
+			if (!useFuzzy) return false;
+			for (const level of NORMALIZATION_LEVELS.slice(1)) {
+				if (
+					normalizeWhitespace(line, level) ===
+					normalizeWhitespace(targetSlice[i], level)
+				) {
+					return true;
+				}
+			}
+			return false;
+		})
+	) {
+		const skipStart = matchIndex + 1;
+		return {
+			header: { ...hunk.header },
+			lines: hunk.lines.map((line) => ({ ...line })),
+			oldStart: skipStart,
+			oldLines: 0,
+			newStart: skipStart,
+			newLines: adjustedReplacement.length,
+			additions: 0,
+			deletions: 0,
+		};
+	}
 
 	lines.splice(matchIndex, deleteCount, ...adjustedReplacement);
 
@@ -582,6 +662,7 @@ async function applyUpdateOperation(
 	projectRoot: string,
 	operation: PatchUpdateOperation,
 	useFuzzy: boolean,
+	allowRejects: boolean = false,
 ): Promise<AppliedPatchOperation> {
 	const target = resolveProjectPath(projectRoot, operation.filePath);
 	let original: string;
@@ -597,19 +678,52 @@ async function applyUpdateOperation(
 	const { lines: originalLines, newline } = splitLines(original);
 	const workingLines = [...originalLines];
 	const appliedHunks: AppliedPatchHunk[] = [];
+	let failedHunkCount = 0;
 	let hint = 0;
 
 	for (const hunk of operation.hunks) {
-		const applied = applyHunkToLines(
-			workingLines,
-			originalLines,
-			hunk,
-			hint,
-			useFuzzy,
+		try {
+			const applied = applyHunkToLines(
+				workingLines,
+				originalLines,
+				hunk,
+				hint,
+				useFuzzy,
+			);
+			if (!applied) continue;
+			appliedHunks.push(applied);
+			hint = applied.newStart + applied.newLines - 1;
+		} catch (error) {
+			if (!allowRejects) throw error;
+			failedHunkCount++;
+		}
+	}
+
+	if (failedHunkCount > 0 && appliedHunks.length === 0) {
+		throw new Error(
+			`All ${failedHunkCount} hunk(s) failed for ${operation.filePath}`,
 		);
-		if (!applied) continue;
-		appliedHunks.push(applied);
-		hint = applied.newStart + applied.newLines - 1;
+	}
+
+	if (failedHunkCount > 0) {
+		workingLines.length = 0;
+		workingLines.push(...originalLines);
+		appliedHunks.length = 0;
+		hint = 0;
+		for (const hunk of operation.hunks) {
+			try {
+				const applied = applyHunkToLines(
+					workingLines,
+					originalLines,
+					hunk,
+					hint,
+					useFuzzy,
+				);
+				if (!applied) continue;
+				appliedHunks.push(applied);
+				hint = applied.newStart + applied.newLines - 1;
+			} catch {}
+		}
 	}
 
 	ensureTrailingNewline(workingLines);
@@ -634,7 +748,12 @@ export async function applyPatchOperations(
 				applied.push(await applyDeleteOperation(projectRoot, operation));
 			} else {
 				applied.push(
-					await applyUpdateOperation(projectRoot, operation, options.useFuzzy),
+					await applyUpdateOperation(
+						projectRoot,
+						operation,
+						options.useFuzzy,
+						options.allowRejects,
+					),
 				);
 			}
 		} catch (error) {

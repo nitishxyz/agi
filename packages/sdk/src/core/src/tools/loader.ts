@@ -9,6 +9,8 @@ import { buildRipgrepTool } from './builtin/ripgrep.ts';
 import { buildGrepTool } from './builtin/grep.ts';
 import { buildGlobTool } from './builtin/glob.ts';
 import { buildApplyPatchTool } from './builtin/patch.ts';
+import { buildEditTool } from './builtin/edit.ts';
+import { buildMultiEditTool } from './builtin/multiedit.ts';
 import { updateTodosTool } from './builtin/todos.ts';
 import { buildWebSearchTool } from './builtin/websearch.ts';
 import { buildTerminalTool } from './builtin/terminal.ts';
@@ -125,6 +127,11 @@ export async function discoverProjectTools(
 	// Patch/apply
 	const ap = buildApplyPatchTool(projectRoot);
 	tools.set(ap.name, ap.tool);
+	// Edit (fuzzy string replacement)
+	const ed = buildEditTool(projectRoot);
+	tools.set(ed.name, ed.tool);
+	const med = buildMultiEditTool(projectRoot);
+	tools.set(med.name, med.tool);
 	// Todo tracking
 	tools.set('update_todos', updateTodosTool);
 	// Web search

@@ -1,0 +1,15 @@
+Makes multiple edits to a single file in one operation. Built on top of the Edit tool.
+
+Prefer this tool over Edit when you need to make multiple changes to the same file.
+
+Parameters:
+1. filePath: The path to the file to modify (relative or absolute)
+2. edits: An array of edit operations, each with:
+   - oldString: The text to replace (must match file contents)
+   - newString: The replacement text
+   - replaceAll: Optional, replace all occurrences (default false)
+
+IMPORTANT:
+- Edits are applied in sequence, each operating on the result of the previous
+- All edits must succeed or none are applied
+- Plan edits carefully to avoid conflicts between sequential operations

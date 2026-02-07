@@ -284,7 +284,9 @@ export function parseEnvelopedPatch(patch: string): PatchOperation[] {
 			content,
 		});
 
-		if (prefix === '+') {
+		if (/^-{3,}\s*$/.test(line)) {
+			hunk.lines.push(createLine('context', line));
+		} else if (prefix === '+') {
 			hunk.lines.push(createLine('add', line.slice(1)));
 		} else if (prefix === '-') {
 			hunk.lines.push(createLine('remove', line.slice(1)));

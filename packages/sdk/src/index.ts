@@ -216,6 +216,8 @@ export type { DiscoveredTool } from './core/src/index.ts';
 export { setTerminalManager, getTerminalManager } from './core/src/index.ts';
 export { buildFsTools } from './core/src/index.ts';
 export { buildGitTools } from './core/src/index.ts';
+export { buildEditTool } from './core/src/index.ts';
+export { buildMultiEditTool } from './core/src/index.ts';
 
 // Terminals
 export { TerminalManager } from './core/src/index.ts';

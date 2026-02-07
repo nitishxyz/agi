@@ -25,7 +25,12 @@ export function publish(event: OttoEvent) {
 	for (const sub of subs) {
 		try {
 			sub(sanitizedEvent);
-		} catch {}
+		} catch (err) {
+			console.error(
+				`[bus] Subscriber threw on event ${event.type}:`,
+				err instanceof Error ? err.message : String(err),
+			);
+		}
 	}
 }
 

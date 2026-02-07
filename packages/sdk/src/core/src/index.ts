@@ -50,6 +50,8 @@ export type {
 export { buildFsTools } from './tools/builtin/fs/index';
 export { buildGitTools } from './tools/builtin/git';
 export { buildTerminalTool } from './tools/builtin/terminal';
+export { buildEditTool } from './tools/builtin/edit';
+export { buildMultiEditTool } from './tools/builtin/multiedit';
 
 // =======================
 // Terminals

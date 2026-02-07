@@ -21,6 +21,8 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 - `read`: Read file contents (supports line ranges)
 - `write`: Write complete file contents
 - `apply_patch`: Apply unified diff patches (RECOMMENDED for targeted edits)
+- `edit`: Fuzzy string replacement (oldString → newString) — use when `apply_patch` fails
+- `multiedit`: Batch multiple `edit` operations on a single file
 
 **Version Control**:
 - `git_status`, `git_diff`
@@ -74,6 +76,13 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 +line to add                  ← Add this line
  more context                 ← More context (space prefix)
 ```
+
+**Using the `edit` Tool** (Recommended Fallback When Patch Fails):
+- Parameters: `filePath`, `oldString`, `newString`, `replaceAll` (optional)
+- Uses 9 fuzzy matching strategies: trims whitespace, normalizes indentation, anchors on first/last lines
+- Much more forgiving than `apply_patch` — handles trailing commas, whitespace differences, indentation mismatches
+- For multiple edits to the same file, use `multiedit` with an array of `{oldString, newString}` pairs
+- To create a new file: use empty `oldString` with `newString` as the file contents
 
 **Using the `write` Tool** (Last Resort):
 - Use for creating NEW files
@@ -427,33 +436,35 @@ When using the shell, you must adhere to the following guidelines:
 
 **⚠️ Common Patch Failures Across All Models:**
 
-Most patch failures happen because:
-- Patches created from memory instead of reading file first
-- Context lines guessed or invented rather than copied exactly
-- Indentation mismatches (tabs vs spaces)
-- Missing or malformed markers (`*** Begin Patch` / `*** End Patch`)
-- Hallucinated code in context lines
-
-**Universal Pre-Flight Checklist:**
+**Pre-Flight Checklist (EVERY call):**
 Before calling `apply_patch`, verify ALL of these:
 - [ ] File was read with `read` tool in THIS turn (not from memory)
-- [ ] Context lines (space prefix) copied EXACTLY character-for-character
-- [ ] Indentation verified (if file uses spaces, patch uses spaces)
+- [ ] Context lines (space prefix) copied EXACTLY character-for-character from the read output
+- [ ] Indentation verified (if file uses tabs, patch uses tabs; if spaces, same count of spaces)
 - [ ] Wrapped in `*** Begin Patch` and `*** End Patch` markers
 - [ ] Used correct directive: `*** Add/Update/Delete File: path`
+- [ ] `-` removal lines match the file EXACTLY
 
-**Success Formula:**
-1. Use `read` tool on target file
-2. Identify exact location to edit
-3. Extract 2-3 lines before/after as context (space prefix)
-4. Add `-old` lines to remove, `+new` lines to add
-5. Wrap in `*** Begin Patch` ... `*** End Patch`
-6. Verify all context matches file exactly
+**Concrete WRONG vs RIGHT — Indentation:**
+```
+File uses TABS:   →const port = 3000;
+❌ WRONG patch:    const port = 3000;     ← spaces, not tabs!
+✅ RIGHT patch:   →const port = 3000;     ← tabs, matching file
+```
+
+**YAML — space count matters:**
+```
+File (10 spaces):           - os: linux
+❌ WRONG (8 spaces):        - os: linux
+✅ RIGHT (10 spaces):           - os: linux
+```
+- YAML uses spaces ONLY — count the exact spaces from `read` output
+- Include 3+ context lines for YAML patches
 
 **If Patch Fails:**
-- Error = context didn't match OR file content changed
-- Solution: Read file AGAIN, verify context character-by-character
-- After 2+ failures: use `write` tool to rewrite the entire file instead
+- Read file AGAIN, copy context character-by-character
+- After 2 failures: switch to `edit` tool — it uses fuzzy matching and tolerates whitespace/indentation mismatches
+- If `edit` also fails: use `write` tool to rewrite the entire file instead
 
 ## `update_todos`
 

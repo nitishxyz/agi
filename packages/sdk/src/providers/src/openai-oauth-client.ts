@@ -3,35 +3,50 @@ import type { OAuth } from '../../types/src/index.ts';
 import { refreshOpenAIToken } from '../../auth/src/openai-oauth.ts';
 import { setAuth, getAuth } from '../../auth/src/index.ts';
 
-const CODEX_API_ENDPOINT = 'https://chatgpt.com/backend-api/codex/responses';
+const CODEX_BASE_URL = 'https://chatgpt.com/backend-api/codex';
 
 export type OpenAIOAuthConfig = {
 	oauth: OAuth;
 	projectRoot?: string;
 };
 
+async function refreshAndPersist(
+	oauth: OAuth,
+	projectRoot?: string,
+): Promise<OAuth> {
+	const newTokens = await refreshOpenAIToken(oauth.refresh);
+	const updated: OAuth = {
+		type: 'oauth',
+		access: newTokens.access,
+		refresh: newTokens.refresh,
+		expires: newTokens.expires,
+		accountId: oauth.accountId,
+		idToken: newTokens.idToken,
+	};
+	await setAuth('openai', updated, projectRoot, 'global');
+	return updated;
+}
+
 async function ensureValidToken(
 	oauth: OAuth,
 	projectRoot?: string,
-): Promise<{ access: string; accountId?: string }> {
+): Promise<{ oauth: OAuth; access: string; accountId?: string }> {
 	if (oauth.access && oauth.expires > Date.now()) {
-		return { access: oauth.access, accountId: oauth.accountId };
+		return { oauth, access: oauth.access, accountId: oauth.accountId };
 	}
 
 	try {
-		const newTokens = await refreshOpenAIToken(oauth.refresh);
-		const updatedOAuth: OAuth = {
-			type: 'oauth',
-			access: newTokens.access,
-			refresh: newTokens.refresh,
-			expires: newTokens.expires,
-			accountId: oauth.accountId,
-			idToken: newTokens.idToken,
+		const updated = await refreshAndPersist(oauth, projectRoot);
+		return {
+			oauth: updated,
+			access: updated.access,
+			accountId: updated.accountId,
 		};
-		await setAuth('openai', updatedOAuth, projectRoot, 'global');
-		return { access: newTokens.access, accountId: oauth.accountId };
 	} catch {
-		return { access: oauth.access, accountId: oauth.accountId };
+		console.error(
+			'[openai-oauth] Token refresh failed, falling back to expired token',
+		);
+		return { oauth, access: oauth.access, accountId: oauth.accountId };
 	}
 }
 
@@ -41,9 +56,25 @@ function rewriteUrl(url: string): string {
 		parsed.pathname.includes('/v1/responses') ||
 		parsed.pathname.includes('/chat/completions')
 	) {
-		return CODEX_API_ENDPOINT;
+		return `${CODEX_BASE_URL}${parsed.pathname.replace(/^.*\/v1/, '/v1')}`;
 	}
 	return url;
+}
+
+function buildHeaders(
+	init: RequestInit | undefined,
+	accessToken: string,
+	accountId?: string,
+): Headers {
+	const headers = new Headers(init?.headers);
+	headers.delete('Authorization');
+	headers.delete('authorization');
+	headers.set('authorization', `Bearer ${accessToken}`);
+	headers.set('originator', 'otto');
+	if (accountId) {
+		headers.set('ChatGPT-Account-Id', accountId);
+	}
+	return headers;
 }
 
 export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
@@ -53,10 +84,8 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 		input: Parameters<typeof fetch>[0],
 		init?: Parameters<typeof fetch>[1],
 	): Promise<Response> => {
-		const { access: accessToken, accountId } = await ensureValidToken(
-			currentOAuth,
-			config.projectRoot,
-		);
+		const validated = await ensureValidToken(currentOAuth, config.projectRoot);
+		currentOAuth = validated.oauth;
 
 		const originalUrl =
 			typeof input === 'string'
@@ -66,24 +95,49 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 					: input.url;
 		const targetUrl = rewriteUrl(originalUrl);
 
-		const headers = new Headers(init?.headers);
-		headers.delete('Authorization');
-		headers.delete('authorization');
-		headers.set('authorization', `Bearer ${accessToken}`);
-		headers.set('originator', 'otto');
-		if (accountId) {
-			headers.set('ChatGPT-Account-Id', accountId);
-		}
+		const headers = buildHeaders(init, validated.access, validated.accountId);
 
 		const response = await fetch(targetUrl, {
 			...init,
 			headers,
+			// biome-ignore lint/suspicious/noTsIgnore: Bun-specific fetch option
+			// @ts-ignore
+			timeout: false,
 		});
 
 		if (response.status === 401) {
-			const refreshed = await getAuth('openai', config.projectRoot);
-			if (refreshed?.type === 'oauth') {
-				currentOAuth = refreshed;
+			try {
+				const refreshedFromDisk = await getAuth('openai', config.projectRoot);
+				if (
+					refreshedFromDisk?.type === 'oauth' &&
+					refreshedFromDisk.access !== validated.access
+				) {
+					currentOAuth = refreshedFromDisk;
+				} else {
+					currentOAuth = await refreshAndPersist(
+						currentOAuth,
+						config.projectRoot,
+					);
+				}
+
+				const retryHeaders = buildHeaders(
+					init,
+					currentOAuth.access,
+					currentOAuth.accountId,
+				);
+
+				return fetch(targetUrl, {
+					...init,
+					headers: retryHeaders,
+					// biome-ignore lint/suspicious/noTsIgnore: Bun-specific fetch option
+					// @ts-ignore
+					timeout: false,
+				});
+			} catch {
+				console.error(
+					'[openai-oauth] 401 retry failed, returning original 401 response',
+				);
+				return response;
 			}
 		}
 
@@ -101,6 +155,7 @@ export function createOpenAIOAuthModel(
 
 	const provider = createOpenAI({
 		apiKey: 'chatgpt-oauth',
+		baseURL: CODEX_BASE_URL,
 		fetch: customFetch,
 	});
 

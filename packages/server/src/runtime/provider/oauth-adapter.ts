@@ -86,9 +86,12 @@ export function detectOAuth(
  * Used directly by runner-setup.ts (complex flow) and indirectly
  * by adaptSimpleCall (simple flows).
  */
-export function buildCodexProviderOptions(instructions: string) {
+const CODEX_INSTRUCTIONS =
+	'You are a coding agent. Follow all developer messages. Use tools to complete tasks.';
+
+export function buildCodexProviderOptions() {
 	return {
-		openai: { store: false as const, instructions },
+		openai: { store: false as const, instructions: CODEX_INSTRUCTIONS },
 	};
 }
 
@@ -132,13 +135,14 @@ export function adaptSimpleCall(
 ): AdaptedLLMCall {
 	if (ctx.isOpenAIOAuth) {
 		return {
+			system: input.instructions,
 			messages: [
 				{
 					role: 'user',
-					content: `${input.instructions}\n\n${input.userContent}`,
+					content: input.userContent,
 				},
 			],
-			providerOptions: buildCodexProviderOptions(input.instructions),
+			providerOptions: buildCodexProviderOptions(),
 			forceStream: true,
 		};
 	}
@@ -184,7 +188,8 @@ export type AdaptedRunnerSetup = {
  * decides WHERE the already-composed system prompt goes:
  *
  * - **OpenAI OAuth (Codex)**: system='', composed prompt sent as a user
- *   message in additionalSystemMessages, providerOptions with store=false
+ *   system message in additionalSystemMessages (becomes developer role in
+ *   Responses API), providerOptions with store=false
  *   + instructions, maxOutputTokens stripped.
  *
  * - **Anthropic OAuth**: spoof prompt as system, composed prompt sent as
@@ -221,9 +226,9 @@ export function adaptRunnerCall(
 		return {
 			system: '',
 			systemComponents: composed.components,
-			additionalSystemMessages: [{ role: 'user', content: composed.prompt }],
+			additionalSystemMessages: [{ role: 'system', content: composed.prompt }],
 			maxOutputTokens: undefined,
-			providerOptions: buildCodexProviderOptions(composed.prompt),
+			providerOptions: buildCodexProviderOptions(),
 		};
 	}
 

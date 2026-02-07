@@ -231,11 +231,29 @@ You (Claude/Sonnet) generally excel at using patches, but even you can fail when
 4. Use multiple `@@` hunks for multiple edits in same file
 5. Wrap in `*** Begin Patch` and `*** End Patch`
 
+**Concrete WRONG vs RIGHT — Indentation:**
+```
+File uses TABS:   →const port = 3000;
+❌ WRONG patch:    const port = 3000;     ← spaces, not tabs!
+✅ RIGHT patch:   →const port = 3000;     ← tabs, matching file
+```
+
+**YAML — space count matters:**
+```
+File (10 spaces):           - os: linux
+❌ WRONG (8 spaces):        - os: linux
+✅ RIGHT (10 spaces):           - os: linux
+```
+- YAML uses spaces ONLY — count the exact spaces from `read` output
+- Include 3+ context lines for YAML patches
+
 **If Patch Fails:**
 - Don't retry with same context - read file AGAIN first
 - Check that context lines exist exactly as written
 - Verify indentation matches (spaces vs tabs)
-- If failing 2+ times, use `write` tool to rewrite the entire file instead
+- If failing 2+ times, switch to the `edit` tool — it uses fuzzy matching (oldString/newString) and tolerates whitespace/indentation mismatches
+- For multiple edits to the same file, use `multiedit` with an array of `{oldString, newString}` pairs
+- If `edit` also fails, use `write` tool to rewrite the entire file instead
 
 # Code References
 
