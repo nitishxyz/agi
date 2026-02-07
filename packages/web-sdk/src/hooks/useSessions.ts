@@ -1,14 +1,45 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+	useInfiniteQuery,
+	useMutation,
+	useQueryClient,
+} from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { apiClient } from '../lib/api-client';
-import type { CreateSessionRequest, UpdateSessionRequest } from '../types/api';
+import type { CreateSessionRequest, UpdateSessionRequest, Session } from '../types/api';
+
+const SESSIONS_PAGE_SIZE = 50;
+
+export const sessionsQueryKey = ['sessions', 'list'] as const;
+
+export function useSessionsInfinite() {
+	return useInfiniteQuery({
+		queryKey: sessionsQueryKey,
+		queryFn: ({ pageParam = 0 }) =>
+			apiClient.getSessionsPage({ limit: SESSIONS_PAGE_SIZE, offset: pageParam }),
+		getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
+		initialPageParam: 0,
+		staleTime: 30_000,
+		refetchInterval: 30_000,
+		refetchOnWindowFocus: false,
+	});
+}
 
 export function useSessions() {
-	return useQuery({
-		queryKey: ['sessions'],
-		queryFn: () => apiClient.getSessions(),
-		refetchInterval: 5000,
-		staleTime: 5000,
-	});
+	const query = useSessionsInfinite();
+	const data = useMemo<Session[]>(() => {
+		if (!query.data?.pages) return [];
+		return query.data.pages.flatMap((p) => p.items ?? []);
+	}, [query.data]);
+
+	return {
+		data,
+		isLoading: query.isLoading,
+		isError: query.isError,
+		error: query.error,
+		hasNextPage: query.hasNextPage,
+		fetchNextPage: query.fetchNextPage,
+		isFetchingNextPage: query.isFetchingNextPage,
+	};
 }
 
 export function useSession(sessionId: string) {
@@ -22,7 +53,7 @@ export function useCreateSession() {
 	return useMutation({
 		mutationFn: (data: CreateSessionRequest) => apiClient.createSession(data),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['sessions'] });
+			queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
 		},
 	});
 }
@@ -34,7 +65,7 @@ export function useUpdateSession(sessionId: string) {
 		mutationFn: (data: UpdateSessionRequest) =>
 			apiClient.updateSession(sessionId, data),
 		onSuccess: async () => {
-			await queryClient.invalidateQueries({ queryKey: ['sessions'] });
+			await queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
 			await queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
 		},
 	});
@@ -46,7 +77,7 @@ export function useDeleteSession() {
 	return useMutation({
 		mutationFn: (sessionId: string) => apiClient.deleteSession(sessionId),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['sessions'] });
+			queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
 		},
 	});
 }

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '../lib/config';
 import { usePendingResearchStore } from '../stores/pendingResearchStore';
+import { sessionsQueryKey } from './useSessions';
 
 export interface ResearchSession {
 	id: string;
@@ -242,7 +243,7 @@ export function useExportToSession() {
 			data?: { provider?: string; model?: string; agent?: string };
 		}) => researchApi.exportToNewSession(researchId, data),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['sessions'] });
+			queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
 		},
 	});
 }

@@ -2,6 +2,7 @@ import { memo, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSessions } from '../../hooks/useSessions';
 import { SessionItem } from './SessionItem';
 import { useFocusStore } from '../../stores/focusStore';
+import { Loader2 } from 'lucide-react';
 
 interface SessionListContainerProps {
 	activeSessionId?: string;
@@ -12,9 +13,11 @@ export const SessionListContainer = memo(function SessionListContainer({
 	activeSessionId,
 	onSelectSession,
 }: SessionListContainerProps) {
-	const { data: sessions = [], isLoading } = useSessions();
+	const { data: sessions = [], isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useSessions();
 	const { currentFocus, sessionIndex } = useFocusStore();
-	const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+	const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const hasScrolledToActive = useRef(false);
 
 	const handleSessionClick = useCallback(
 		(sessionId: string) => {
@@ -23,7 +26,6 @@ export const SessionListContainer = memo(function SessionListContainer({
 		[onSelectSession],
 	);
 
-	// Create a stable reference that only changes when session count, titles, or agents change
 	const sessionSnapshot = useMemo(() => {
 		return sessions.map((s) => ({
 			id: s.id,
@@ -35,10 +37,50 @@ export const SessionListContainer = memo(function SessionListContainer({
 
 	useEffect(() => {
 		if (currentFocus === 'sessions') {
-			const element = itemRefs.current.get(sessionIndex);
-			element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+			const session = sessionSnapshot[sessionIndex];
+			if (session) {
+				const element = itemRefs.current.get(session.id);
+				element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+			}
 		}
-	}, [currentFocus, sessionIndex]);
+	}, [currentFocus, sessionIndex, sessionSnapshot]);
+
+	useEffect(() => {
+		if (!activeSessionId || hasScrolledToActive.current || sessions.length === 0) return;
+
+		const activeIndex = sessions.findIndex((s) => s.id === activeSessionId);
+		if (activeIndex === -1 && hasNextPage) {
+			fetchNextPage();
+			return;
+		}
+
+		if (activeIndex !== -1) {
+			hasScrolledToActive.current = true;
+			requestAnimationFrame(() => {
+				const element = itemRefs.current.get(activeSessionId);
+				element?.scrollIntoView({ block: 'center', behavior: 'instant' });
+			});
+		}
+	}, [activeSessionId, sessions, hasNextPage, fetchNextPage]);
+
+	useEffect(() => {
+		hasScrolledToActive.current = false;
+	}, [activeSessionId]);
+
+	useEffect(() => {
+		const container = scrollContainerRef.current;
+		if (!container) return;
+
+		const handleScroll = () => {
+			const { scrollTop, scrollHeight, clientHeight } = container;
+			if (scrollHeight - scrollTop - clientHeight < 100 && hasNextPage && !isFetchingNextPage) {
+				fetchNextPage();
+			}
+		};
+
+		container.addEventListener('scroll', handleScroll, { passive: true });
+		return () => container.removeEventListener('scroll', handleScroll);
+	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 	if (isLoading) {
 		return (
@@ -61,7 +103,10 @@ export const SessionListContainer = memo(function SessionListContainer({
 	}
 
 	return (
-		<div className="flex flex-col gap-1 px-2 py-2 overflow-y-auto scrollbar-hide">
+		<div
+			ref={scrollContainerRef}
+			className="flex flex-col gap-1 px-2 py-2 overflow-y-auto scrollbar-hide"
+		>
 			{sessionSnapshot.map((session, index) => {
 				const fullSession = sessions.find((s) => s.id === session.id);
 				if (!fullSession) return null;
@@ -71,8 +116,8 @@ export const SessionListContainer = memo(function SessionListContainer({
 					<div
 						key={session.id}
 						ref={(el) => {
-							if (el) itemRefs.current.set(index, el);
-							else itemRefs.current.delete(index);
+							if (el) itemRefs.current.set(session.id, el);
+							else itemRefs.current.delete(session.id);
 						}}
 						className={isFocused ? 'ring-1 ring-primary/40 rounded-md' : ''}
 					>
@@ -84,6 +129,11 @@ export const SessionListContainer = memo(function SessionListContainer({
 					</div>
 				);
 			})}
+			{isFetchingNextPage && (
+				<div className="flex justify-center py-3">
+					<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+				</div>
+			)}
 		</div>
 	);
 });

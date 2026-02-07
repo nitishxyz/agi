@@ -20,6 +20,8 @@ export function registerSessionsRoutes(app: Hono) {
 	// List sessions
 	app.get('/v1/sessions', async (c) => {
 		const projectRoot = c.req.query('project') || process.cwd();
+		const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '50', 10) || 50, 1), 200);
+		const offset = Math.max(parseInt(c.req.query('offset') || '0', 10) || 0, 0);
 		const cfg = await loadConfig(projectRoot);
 		const db = await getDb(cfg.projectRoot);
 		// Only return sessions for this project, excluding research sessions
@@ -32,8 +34,12 @@ export function registerSessionsRoutes(app: Hono) {
 					ne(sessions.sessionType, 'research'),
 				),
 			)
-			.orderBy(desc(sessions.lastActiveAt), desc(sessions.createdAt));
-		const normalized = rows.map((r) => {
+			.orderBy(desc(sessions.lastActiveAt), desc(sessions.createdAt))
+			.limit(limit + 1)
+			.offset(offset);
+		const hasMore = rows.length > limit;
+		const page = hasMore ? rows.slice(0, limit) : rows;
+		const normalized = page.map((r) => {
 			let counts: Record<string, unknown> | undefined;
 			if (r.toolCountsJson) {
 				try {
@@ -46,7 +52,7 @@ export function registerSessionsRoutes(app: Hono) {
 			const { toolCountsJson: _toolCountsJson, ...rest } = r;
 			return counts ? { ...rest, toolCounts: counts } : rest;
 		});
-		return c.json(normalized);
+		return c.json({ items: normalized, hasMore, nextOffset: hasMore ? offset + limit : null });
 	});
 
 	// Create session

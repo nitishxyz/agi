@@ -314,3 +314,9 @@ export interface SyncSessionResponse {
 	message?: string;
 	error?: string;
 }
+
+export interface SessionsPage {
+	items: Session[];
+	hasMore: boolean;
+	nextOffset: number | null;
+}

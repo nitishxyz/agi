@@ -47,6 +47,7 @@ import type {
 	ShareStatus,
 	ShareSessionResponse,
 	SyncSessionResponse,
+	SessionsPage,
 } from '../types/api';
 import { API_BASE_URL } from './config';
 
@@ -160,11 +161,23 @@ class ApiClient {
 
 	// Session methods using new API
 	async getSessions(): Promise<Session[]> {
-		const response = await apiListSessions();
-		if (response.error) {
-			throw new Error(extractErrorMessage(response.error));
+		const page = await this.getSessionsPage({ limit: 200 });
+		return page.items;
+	}
+
+	async getSessionsPage(params: { limit?: number; offset?: number } = {}): Promise<SessionsPage> {
+		const { limit = 50, offset = 0 } = params;
+		const url = `${this.baseUrl}/v1/sessions?limit=${limit}&offset=${offset}`;
+		const res = await fetch(url);
+		if (!res.ok) {
+			throw new Error(`Failed to fetch sessions: ${res.statusText}`);
 		}
-		return (response.data || []).map(convertSession);
+		const data = await res.json() as { items: unknown[]; hasMore: boolean; nextOffset: number | null };
+		return {
+			items: (data.items || []).map((s: unknown) => convertSession(s as ApiSession)),
+			hasMore: data.hasMore,
+			nextOffset: data.nextOffset,
+		};
 	}
 
 	async createSession(data: CreateSessionRequest): Promise<Session> {

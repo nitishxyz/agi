@@ -4,6 +4,7 @@ import { SSEClient } from '../lib/sse-client';
 import { apiClient } from '../lib/api-client';
 import type { Message, MessagePart } from '../types/api';
 import { useToolApprovalStore } from '../stores/toolApprovalStore';
+import { sessionsQueryKey } from './useSessions';
 
 export function useSessionStream(sessionId: string | undefined) {
 	const queryClient = useQueryClient();
@@ -410,10 +411,10 @@ export function useSessionStream(sessionId: string | undefined) {
 					if (id && assistantMessageIdRef.current === id) {
 						assistantMessageIdRef.current = null;
 					}
-					markMessageCompleted(payload);
-					clearEphemeralForMessage(id);
-					queryClient.invalidateQueries({ queryKey: ['sessions'] });
-					break;
+				markMessageCompleted(payload);
+				clearEphemeralForMessage(id);
+				queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
+				break;
 				}
 				case 'tool.delta': {
 					const channel =

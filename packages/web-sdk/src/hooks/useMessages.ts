@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 import type { SendMessageRequest } from '../types/api';
+import { sessionsQueryKey } from './useSessions';
 
 export function useMessages(sessionId: string | undefined) {
 	return useQuery({
@@ -23,7 +24,7 @@ export function useSendMessage(sessionId: string) {
 			apiClient.sendMessage(sessionId, data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
-			queryClient.invalidateQueries({ queryKey: ['sessions'] });
+			queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
 		},
 	});
 }

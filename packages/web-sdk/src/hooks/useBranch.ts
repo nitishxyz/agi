@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 import type { CreateBranchRequest } from '../types/api';
+import { sessionsQueryKey } from './useSessions';
 
 export function useCreateBranch(sessionId: string | undefined) {
 	const queryClient = useQueryClient();
@@ -11,7 +12,7 @@ export function useCreateBranch(sessionId: string | undefined) {
 			return apiClient.createBranch(sessionId, data);
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['sessions'] });
+			queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
 			if (sessionId) {
 				queryClient.invalidateQueries({
 					queryKey: ['branches', sessionId],
