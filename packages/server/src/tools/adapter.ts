@@ -52,6 +52,30 @@ function getPendingQueue(
 	return queue;
 }
 
+function unwrapDoubleWrappedArgs(
+	input: unknown,
+	expectedName: string,
+): typeof input {
+	if (
+		input &&
+		typeof input === 'object' &&
+		'name' in input &&
+		'args' in input &&
+		typeof (input as Record<string, unknown>).name === 'string' &&
+		typeof (input as Record<string, unknown>).args === 'object' &&
+		(input as Record<string, unknown>).args !== null
+	) {
+		const wrapped = input as { name: string; args: Record<string, unknown> };
+		if (
+			wrapped.name === expectedName ||
+			wrapped.name.replace(/[_-]/g, '') === expectedName.replace(/[_-]/g, '')
+		) {
+			return wrapped.args as typeof input;
+		}
+	}
+	return input;
+}
+
 export function adaptTools(
 	tools: DiscoveredTool[],
 	ctx: ToolAdapterContext,
@@ -318,6 +342,7 @@ export function adaptTools(
 				}
 			},
 			async execute(input: ToolExecuteInput, options: ToolExecuteOptions) {
+				input = unwrapDoubleWrappedArgs(input, name);
 				const queue = pendingCalls.get(name);
 				const meta = queue?.shift();
 				if (queue && queue.length === 0) pendingCalls.delete(name);

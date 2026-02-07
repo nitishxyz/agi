@@ -7,6 +7,9 @@ import {
 	computeIndentDelta,
 	applyIndentDelta,
 	getLeadingWhitespace,
+	detectIndentStyle,
+	expandWhitespace,
+	inferTabSizeFromPairs,
 } from './normalize.ts';
 import {
 	PATCH_ADD_PREFIX,
@@ -257,16 +260,41 @@ function adjustReplacementIndentation(
 	const result: string[] = [];
 	let expectedIdx = 0;
 	let lastDelta = 0;
-	let lastFileIndent = 0;
+	let lastFileIndentExpanded = 0;
 	let hasDelta = false;
+	let hasStyleMismatch = false;
+	let fileIndentChar: 'tab' | 'space' = 'space';
+
+	for (const fl of matchedFileLines) {
+		const ws = getLeadingWhitespace(fl);
+		if (ws.length > 0) {
+			fileIndentChar = detectIndentStyle(ws);
+			break;
+		}
+	}
+
+	const patchContextLines = hunk.lines
+		.filter((l) => l.kind === 'context' || l.kind === 'remove')
+		.map((l) => l.content);
+	const tabSize = inferTabSizeFromPairs(patchContextLines, matchedFileLines);
 
 	for (const line of hunk.lines) {
 		if (line.kind === 'context') {
 			const fileLine = matchedFileLines[expectedIdx];
 			if (fileLine !== undefined) {
-				lastDelta = computeIndentDelta(line.content, fileLine);
-				lastFileIndent = getLeadingWhitespace(fileLine).length;
+				lastDelta = computeIndentDelta(line.content, fileLine, tabSize);
+				lastFileIndentExpanded = expandWhitespace(
+					getLeadingWhitespace(fileLine),
+					tabSize,
+				);
 				if (lastDelta !== 0) hasDelta = true;
+				if (
+					detectIndentStyle(getLeadingWhitespace(fileLine)) !==
+						detectIndentStyle(getLeadingWhitespace(line.content)) &&
+					getLeadingWhitespace(fileLine).length > 0
+				) {
+					hasStyleMismatch = true;
+				}
 				result.push(fileLine);
 			} else {
 				result.push(line.content);
@@ -275,25 +303,49 @@ function adjustReplacementIndentation(
 		} else if (line.kind === 'remove') {
 			const fileLine = matchedFileLines[expectedIdx];
 			if (fileLine !== undefined) {
-				lastDelta = computeIndentDelta(line.content, fileLine);
-				lastFileIndent = getLeadingWhitespace(fileLine).length;
+				lastDelta = computeIndentDelta(line.content, fileLine, tabSize);
+				lastFileIndentExpanded = expandWhitespace(
+					getLeadingWhitespace(fileLine),
+					tabSize,
+				);
 				if (lastDelta !== 0) hasDelta = true;
+				if (
+					detectIndentStyle(getLeadingWhitespace(fileLine)) !==
+						detectIndentStyle(getLeadingWhitespace(line.content)) &&
+					getLeadingWhitespace(fileLine).length > 0
+				) {
+					hasStyleMismatch = true;
+				}
 			}
 			expectedIdx++;
 		} else if (line.kind === 'add') {
-			const addIndent = getLeadingWhitespace(line.content).length;
+			const addIndent = expandWhitespace(
+				getLeadingWhitespace(line.content),
+				tabSize,
+			);
 			const adjustedIndent = addIndent + lastDelta;
-			const unadjustedDist = Math.abs(addIndent - lastFileIndent);
-			const adjustedDist = Math.abs(adjustedIndent - lastFileIndent);
+			const unadjustedDist = Math.abs(addIndent - lastFileIndentExpanded);
+			const adjustedDist = Math.abs(adjustedIndent - lastFileIndentExpanded);
 			if (lastDelta !== 0 && adjustedDist < unadjustedDist) {
-				result.push(applyIndentDelta(line.content, lastDelta));
+				result.push(
+					applyIndentDelta(line.content, lastDelta, fileIndentChar, tabSize),
+				);
 			} else {
-				result.push(line.content);
+				const addWs = getLeadingWhitespace(line.content);
+				const addStyle =
+					addWs.length > 0 ? detectIndentStyle(addWs) : fileIndentChar;
+				if (addStyle !== fileIndentChar && line.content.trim() !== '') {
+					result.push(
+						applyIndentDelta(line.content, 0, fileIndentChar, tabSize),
+					);
+				} else {
+					result.push(line.content);
+				}
 			}
 		}
 	}
 
-	if (!hasDelta) {
+	if (!hasDelta && !hasStyleMismatch) {
 		return hunk.lines.filter((l) => l.kind !== 'remove').map((l) => l.content);
 	}
 

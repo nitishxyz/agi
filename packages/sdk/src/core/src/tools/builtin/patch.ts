@@ -4,6 +4,7 @@ import DESCRIPTION from './patch.txt' with { type: 'text' };
 import { createToolError, type ToolResponse } from '../error.ts';
 import { applyPatchOperations } from './patch/apply.ts';
 import { parsePatchInput } from './patch/parse.ts';
+import { repairPatchContent } from './patch/repair.ts';
 import type {
 	AppliedPatchOperation,
 	PatchOperation,
@@ -99,6 +100,8 @@ export function buildApplyPatchTool(projectRoot: string): {
 					},
 				);
 			}
+
+			patch = repairPatchContent(patch);
 
 			let operations: PatchOperation[];
 			try {
