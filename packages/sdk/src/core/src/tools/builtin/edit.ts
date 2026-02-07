@@ -16,7 +16,9 @@ export function buildEditTool(projectRoot: string): {
 		inputSchema: z.object({
 			filePath: z
 				.string()
-				.describe('The path to the file to modify (relative to project root or absolute)'),
+				.describe(
+					'The path to the file to modify (relative to project root or absolute)',
+				),
 			oldString: z.string().describe('The text to replace'),
 			newString: z
 				.string()
@@ -27,9 +29,7 @@ export function buildEditTool(projectRoot: string): {
 				.boolean()
 				.optional()
 				.default(false)
-				.describe(
-					'Replace all occurrences of oldString (default false)',
-				),
+				.describe('Replace all occurrences of oldString (default false)'),
 		}),
 		async execute({
 			filePath,
@@ -66,8 +66,7 @@ export function buildEditTool(projectRoot: string): {
 					'validation',
 					{
 						parameter: 'oldString',
-						suggestion:
-							'Provide different values for oldString and newString',
+						suggestion: 'Provide different values for oldString and newString',
 					},
 				);
 			}
@@ -97,15 +96,11 @@ export function buildEditTool(projectRoot: string): {
 
 				const fileStat = await stat(absPath).catch(() => null);
 				if (!fileStat) {
-					return createToolError(
-						`File ${relPath} not found`,
-						'not_found',
-						{
-							parameter: 'filePath',
-							value: relPath,
-							suggestion: 'Check the file path exists',
-						},
-					);
+					return createToolError(`File ${relPath} not found`, 'not_found', {
+						parameter: 'filePath',
+						value: relPath,
+						suggestion: 'Check the file path exists',
+					});
 				}
 				if (fileStat.isDirectory()) {
 					return createToolError(
@@ -133,10 +128,9 @@ export function buildEditTool(projectRoot: string): {
 					const message =
 						error instanceof Error ? error.message : String(error);
 					return createToolError(message, 'execution', {
-						suggestion:
-							message.includes('multiple matches')
-								? 'Provide more surrounding context in oldString to uniquely identify the match, or use replaceAll: true'
-								: 'Verify the oldString matches the file content exactly',
+						suggestion: message.includes('multiple matches')
+							? 'Provide more surrounding context in oldString to uniquely identify the match, or use replaceAll: true'
+							: 'Verify the oldString matches the file content exactly',
 					});
 				}
 

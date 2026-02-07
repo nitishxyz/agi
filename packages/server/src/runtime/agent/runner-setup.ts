@@ -27,7 +27,9 @@ export interface SetupResult {
 	system: string;
 	systemComponents: string[];
 	additionalSystemMessages: Array<{ role: 'system' | 'user'; content: string }>;
-	model: Awaited<ReturnType<typeof resolveModel>> | ReturnType<typeof wrapLanguageModel>;
+	model:
+		| Awaited<ReturnType<typeof resolveModel>>
+		| ReturnType<typeof wrapLanguageModel>;
 	maxOutputTokens: number | undefined;
 	effectiveMaxOutputTokens: number | undefined;
 	toolset: ReturnType<typeof adaptTools>;
@@ -167,8 +169,11 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		messageId: opts.assistantMessageId,
 	});
 	const wrappedModel = isDebugEnabled()
-		// biome-ignore lint/suspicious/noExplicitAny: OpenRouter provider uses v2 spec
-		? wrapLanguageModel({ model: model as any, middleware: devToolsMiddleware() })
+		? // biome-ignore lint/suspicious/noExplicitAny: OpenRouter provider uses v2 spec
+			wrapLanguageModel({
+				model: model as any,
+				middleware: devToolsMiddleware(),
+			})
 		: model;
 	debugLog(
 		`[RUNNER] Model created: ${JSON.stringify({ id: model.modelId, provider: model.provider })}`,

@@ -897,7 +897,7 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 		const content = await readTestFile('capture2.ts');
 		expect(content).toContain("\t'ls',");
 		expect(content).toContain("\t'glob',");
-		expect(content).not.toMatch(/  'glob'/);
+		expect(content).not.toMatch(/ {2}'glob'/);
 	});
 
 	it('Scenario 1: File has spaces, LLM brings tabs', async () => {
@@ -1019,7 +1019,7 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 		expect(content).toContain('        doStuff();');
 		expect(content).toContain('        doMore();');
 		expect(content).toContain('        cleanup();');
-		expect(content).not.toMatch(/^    doMore/m);
+		expect(content).not.toMatch(/^ {4}doMore/m);
 	});
 
 	it('Scenario 5: File uses tab-size-2 (1 tab per level), LLM uses 4-space tabs', async () => {
@@ -1617,7 +1617,7 @@ describe('patch apply — pure addition indentation correction', () => {
 			.split('\n')
 			.find((l: string) => l.includes('websearch'));
 		expect(wsLine).toStartWith('\t');
-		expect(wsLine).not.toMatch(/^  /);
+		expect(wsLine).not.toMatch(/^ {2}/);
 	});
 });
 

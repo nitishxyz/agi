@@ -38,10 +38,8 @@ describe('edit replacers', () => {
 
 	describe('BlockAnchorReplacer', () => {
 		test('matches block by first and last line anchors', () => {
-			const content =
-				'function foo() {\n  const x = 1;\n  return x;\n}';
-			const find =
-				'function foo() {\n  const y = 999;\n  return y;\n}';
+			const content = 'function foo() {\n  const x = 1;\n  return x;\n}';
+			const find = 'function foo() {\n  const y = 999;\n  return y;\n}';
 			const results = [...BlockAnchorReplacer(content, find)];
 			expect(results.length).toBe(1);
 			expect(results[0]).toContain('function foo()');
@@ -60,9 +58,7 @@ describe('edit replacers', () => {
 		test('matches with different internal whitespace', () => {
 			const content = 'const   x   =   1;';
 			const find = 'const x = 1;';
-			const results = [
-				...WhitespaceNormalizedReplacer(content, find),
-			];
+			const results = [...WhitespaceNormalizedReplacer(content, find)];
 			expect(results.length).toBeGreaterThan(0);
 		});
 	});
@@ -71,13 +67,9 @@ describe('edit replacers', () => {
 		test('matches blocks with different indentation levels', () => {
 			const content = '    if (true) {\n        return 1;\n    }';
 			const find = 'if (true) {\n    return 1;\n}';
-			const results = [
-				...IndentationFlexibleReplacer(content, find),
-			];
+			const results = [...IndentationFlexibleReplacer(content, find)];
 			expect(results.length).toBe(1);
-			expect(results[0]).toBe(
-				'    if (true) {\n        return 1;\n    }',
-			);
+			expect(results[0]).toBe('    if (true) {\n        return 1;\n    }');
 		});
 	});
 
@@ -162,9 +154,9 @@ describe('edit replacers', () => {
 		});
 
 		test('throws on multiple exact matches without replaceAll', () => {
-			expect(() =>
-				replace('foo foo', 'foo', 'bar'),
-			).toThrow('multiple matches');
+			expect(() => replace('foo foo', 'foo', 'bar')).toThrow(
+				'multiple matches',
+			);
 		});
 
 		test('handles trailing comma mismatch via fuzzy', () => {

@@ -112,17 +112,10 @@ export const BlockAnchorReplacer: Replacer = function* (content, find) {
 		const searchBlockSize = searchLines.length;
 
 		let similarity = 0;
-		const linesToCheck = Math.min(
-			searchBlockSize - 2,
-			actualBlockSize - 2,
-		);
+		const linesToCheck = Math.min(searchBlockSize - 2, actualBlockSize - 2);
 
 		if (linesToCheck > 0) {
-			for (
-				let j = 1;
-				j < searchBlockSize - 1 && j < actualBlockSize - 1;
-				j++
-			) {
+			for (let j = 1; j < searchBlockSize - 1 && j < actualBlockSize - 1; j++) {
 				const originalLine = originalLines[startLine + j].trim();
 				const searchLine = searchLines[j].trim();
 				const maxLen = Math.max(originalLine.length, searchLine.length);
@@ -166,17 +159,10 @@ export const BlockAnchorReplacer: Replacer = function* (content, find) {
 		const searchBlockSize = searchLines.length;
 
 		let similarity = 0;
-		const linesToCheck = Math.min(
-			searchBlockSize - 2,
-			actualBlockSize - 2,
-		);
+		const linesToCheck = Math.min(searchBlockSize - 2, actualBlockSize - 2);
 
 		if (linesToCheck > 0) {
-			for (
-				let j = 1;
-				j < searchBlockSize - 1 && j < actualBlockSize - 1;
-				j++
-			) {
+			for (let j = 1; j < searchBlockSize - 1 && j < actualBlockSize - 1; j++) {
 				const originalLine = originalLines[startLine + j].trim();
 				const searchLine = searchLines[j].trim();
 				const maxLen = Math.max(originalLine.length, searchLine.length);
@@ -197,10 +183,7 @@ export const BlockAnchorReplacer: Replacer = function* (content, find) {
 		}
 	}
 
-	if (
-		maxSimilarity >= MULTIPLE_CANDIDATES_SIMILARITY_THRESHOLD &&
-		bestMatch
-	) {
+	if (maxSimilarity >= MULTIPLE_CANDIDATES_SIMILARITY_THRESHOLD && bestMatch) {
 		const { startLine, endLine } = bestMatch;
 		let matchStartIndex = 0;
 		for (let k = 0; k < startLine; k++) {
@@ -236,9 +219,7 @@ export const WhitespaceNormalizedReplacer: Replacer = function* (
 				const words = find.trim().split(/\s+/);
 				if (words.length > 0) {
 					const pattern = words
-						.map((word) =>
-							word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-						)
+						.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
 						.join('\\s+');
 					try {
 						const regex = new RegExp(pattern);
@@ -265,10 +246,7 @@ export const WhitespaceNormalizedReplacer: Replacer = function* (
 	}
 };
 
-export const IndentationFlexibleReplacer: Replacer = function* (
-	content,
-	find,
-) {
+export const IndentationFlexibleReplacer: Replacer = function* (content, find) {
 	const removeIndentation = (text: string) => {
 		const lines = text.split('\n');
 		const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
@@ -282,9 +260,7 @@ export const IndentationFlexibleReplacer: Replacer = function* (
 		);
 
 		return lines
-			.map((line) =>
-				line.trim().length === 0 ? line : line.slice(minIndent),
-			)
+			.map((line) => (line.trim().length === 0 ? line : line.slice(minIndent)))
 			.join('\n');
 	};
 
@@ -302,33 +278,30 @@ export const IndentationFlexibleReplacer: Replacer = function* (
 
 export const EscapeNormalizedReplacer: Replacer = function* (content, find) {
 	const unescapeString = (str: string): string => {
-		return str.replace(
-			/\\(n|t|r|'|"|`|\\|\n|\$)/g,
-			(match, capturedChar) => {
-				switch (capturedChar) {
-					case 'n':
-						return '\n';
-					case 't':
-						return '\t';
-					case 'r':
-						return '\r';
-					case "'":
-						return "'";
-					case '"':
-						return '"';
-					case '`':
-						return '`';
-					case '\\':
-						return '\\';
-					case '\n':
-						return '\n';
-					case '$':
-						return '$';
-					default:
-						return match;
-				}
-			},
-		);
+		return str.replace(/\\(n|t|r|'|"|`|\\|\n|\$)/g, (match, capturedChar) => {
+			switch (capturedChar) {
+				case 'n':
+					return '\n';
+				case 't':
+					return '\t';
+				case 'r':
+					return '\r';
+				case "'":
+					return "'";
+				case '"':
+					return '"';
+				case '`':
+					return '`';
+				case '\\':
+					return '\\';
+				case '\n':
+					return '\n';
+				case '$':
+					return '$';
+				default:
+					return match;
+			}
+		});
 	};
 
 	const unescapedFind = unescapeString(find);

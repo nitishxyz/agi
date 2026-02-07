@@ -23,16 +23,12 @@ export function buildMultiEditTool(projectRoot: string): {
 				.array(
 					z.object({
 						oldString: z.string().describe('The text to replace'),
-						newString: z
-							.string()
-							.describe('The text to replace it with'),
+						newString: z.string().describe('The text to replace it with'),
 						replaceAll: z
 							.boolean()
 							.optional()
 							.default(false)
-							.describe(
-								'Replace all occurrences of oldString (default false)',
-							),
+							.describe('Replace all occurrences of oldString (default false)'),
 					}),
 				)
 				.describe(
@@ -96,15 +92,11 @@ export function buildMultiEditTool(projectRoot: string): {
 				} else {
 					const fileStat = await stat(absPath).catch(() => null);
 					if (!fileStat) {
-						return createToolError(
-							`File ${relPath} not found`,
-							'not_found',
-							{
-								parameter: 'filePath',
-								value: relPath,
-								suggestion: 'Check the file path exists',
-							},
-						);
+						return createToolError(`File ${relPath} not found`, 'not_found', {
+							parameter: 'filePath',
+							value: relPath,
+							suggestion: 'Check the file path exists',
+						});
 					}
 					if (fileStat.isDirectory()) {
 						return createToolError(
@@ -113,8 +105,7 @@ export function buildMultiEditTool(projectRoot: string): {
 							{
 								parameter: 'filePath',
 								value: relPath,
-								suggestion:
-									'Provide a path to a file, not a directory',
+								suggestion: 'Provide a path to a file, not a directory',
 							},
 						);
 					}
@@ -153,9 +144,7 @@ export function buildMultiEditTool(projectRoot: string): {
 						);
 					} catch (error) {
 						const message =
-							error instanceof Error
-								? error.message
-								: String(error);
+							error instanceof Error ? error.message : String(error);
 						return createToolError(
 							`Edit ${i + 1} failed: ${message}`,
 							'execution',
