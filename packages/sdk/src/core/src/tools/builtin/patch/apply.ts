@@ -1,7 +1,13 @@
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 
-import { NORMALIZATION_LEVELS, normalizeWhitespace } from './normalize.ts';
+import {
+	NORMALIZATION_LEVELS,
+	normalizeWhitespace,
+	computeIndentDelta,
+	applyIndentDelta,
+	getLeadingWhitespace,
+} from './normalize.ts';
 import {
 	PATCH_ADD_PREFIX,
 	PATCH_DELETE_PREFIX,
@@ -244,6 +250,56 @@ function isHunkAlreadyApplied(
 	return removals.every((line) => !lineExists(lines, line.content, useFuzzy));
 }
 
+function adjustReplacementIndentation(
+	hunk: PatchHunk,
+	matchedFileLines: string[],
+): string[] {
+	const result: string[] = [];
+	let expectedIdx = 0;
+	let lastDelta = 0;
+	let lastFileIndent = 0;
+	let hasDelta = false;
+
+	for (const line of hunk.lines) {
+		if (line.kind === 'context') {
+			const fileLine = matchedFileLines[expectedIdx];
+			if (fileLine !== undefined) {
+				lastDelta = computeIndentDelta(line.content, fileLine);
+				lastFileIndent = getLeadingWhitespace(fileLine).length;
+				if (lastDelta !== 0) hasDelta = true;
+				result.push(fileLine);
+			} else {
+				result.push(line.content);
+			}
+			expectedIdx++;
+		} else if (line.kind === 'remove') {
+			const fileLine = matchedFileLines[expectedIdx];
+			if (fileLine !== undefined) {
+				lastDelta = computeIndentDelta(line.content, fileLine);
+				lastFileIndent = getLeadingWhitespace(fileLine).length;
+				if (lastDelta !== 0) hasDelta = true;
+			}
+			expectedIdx++;
+		} else if (line.kind === 'add') {
+			const addIndent = getLeadingWhitespace(line.content).length;
+			const adjustedIndent = addIndent + lastDelta;
+			const unadjustedDist = Math.abs(addIndent - lastFileIndent);
+			const adjustedDist = Math.abs(adjustedIndent - lastFileIndent);
+			if (lastDelta !== 0 && adjustedDist < unadjustedDist) {
+				result.push(applyIndentDelta(line.content, lastDelta));
+			} else {
+				result.push(line.content);
+			}
+		}
+	}
+
+	if (!hasDelta) {
+		return hunk.lines.filter((l) => l.kind !== 'remove').map((l) => l.content);
+	}
+
+	return result;
+}
+
 function applyHunkToLines(
 	lines: string[],
 	originalLines: string[],
@@ -392,7 +448,15 @@ function applyHunkToLines(
 	);
 	const newStart = matchIndex + 1;
 
-	lines.splice(matchIndex, deleteCount, ...replacement);
+	const adjustedReplacement =
+		useFuzzy && hasExpected
+			? adjustReplacementIndentation(
+					hunk,
+					lines.slice(matchIndex, matchIndex + expected.length),
+				)
+			: replacement;
+
+	lines.splice(matchIndex, deleteCount, ...adjustedReplacement);
 
 	return {
 		header: { ...hunk.header },
@@ -400,7 +464,7 @@ function applyHunkToLines(
 		oldStart,
 		oldLines: deleteCount,
 		newStart,
-		newLines: replacement.length,
+		newLines: adjustedReplacement.length,
 		additions: hunk.lines.filter((l) => l.kind === 'add').length,
 		deletions: hunk.lines.filter((l) => l.kind === 'remove').length,
 	};

@@ -411,10 +411,10 @@ export function useSessionStream(sessionId: string | undefined) {
 					if (id && assistantMessageIdRef.current === id) {
 						assistantMessageIdRef.current = null;
 					}
-				markMessageCompleted(payload);
-				clearEphemeralForMessage(id);
-				queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
-				break;
+					markMessageCompleted(payload);
+					clearEphemeralForMessage(id);
+					queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
+					break;
 				}
 				case 'tool.delta': {
 					const channel =

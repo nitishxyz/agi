@@ -165,16 +165,24 @@ class ApiClient {
 		return page.items;
 	}
 
-	async getSessionsPage(params: { limit?: number; offset?: number } = {}): Promise<SessionsPage> {
+	async getSessionsPage(
+		params: { limit?: number; offset?: number } = {},
+	): Promise<SessionsPage> {
 		const { limit = 50, offset = 0 } = params;
 		const url = `${this.baseUrl}/v1/sessions?limit=${limit}&offset=${offset}`;
 		const res = await fetch(url);
 		if (!res.ok) {
 			throw new Error(`Failed to fetch sessions: ${res.statusText}`);
 		}
-		const data = await res.json() as { items: unknown[]; hasMore: boolean; nextOffset: number | null };
+		const data = (await res.json()) as {
+			items: unknown[];
+			hasMore: boolean;
+			nextOffset: number | null;
+		};
 		return {
-			items: (data.items || []).map((s: unknown) => convertSession(s as ApiSession)),
+			items: (data.items || []).map((s: unknown) =>
+				convertSession(s as ApiSession),
+			),
 			hasMore: data.hasMore,
 			nextOffset: data.nextOffset,
 		};

@@ -3,7 +3,10 @@ import {
 	PATCH_BEGIN_MARKER,
 	PATCH_DELETE_PREFIX,
 	PATCH_END_MARKER,
+	PATCH_FIND_MARKER,
+	PATCH_REPLACE_PREFIX,
 	PATCH_UPDATE_PREFIX,
+	PATCH_WITH_MARKER,
 } from './constants.ts';
 import type {
 	PatchAddOperation,
@@ -43,6 +46,52 @@ function parseHunkHeader(raw: string) {
 	return context ? { context } : {};
 }
 
+interface ReplaceBuilder {
+	kind: 'replace';
+	filePath: string;
+	hunks: PatchHunk[];
+	phase: 'idle' | 'find' | 'with';
+	findLines: string[];
+	withLines: string[];
+}
+
+function flushReplacePair(builder: ReplaceBuilder) {
+	if (builder.findLines.length === 0 && builder.withLines.length === 0) return;
+	if (builder.findLines.length === 0) {
+		throw new Error(
+			`Replace in ${builder.filePath}: *** Find: block is empty.`,
+		);
+	}
+	const lines: PatchHunkLine[] = [];
+	for (const line of builder.findLines) {
+		lines.push({ kind: 'remove', content: line });
+	}
+	for (const line of builder.withLines) {
+		lines.push({ kind: 'add', content: line });
+	}
+	builder.hunks.push({ header: {}, lines });
+	builder.findLines = [];
+	builder.withLines = [];
+	builder.phase = 'idle';
+}
+
+function flushReplaceBuilder(builder: ReplaceBuilder): PatchUpdateOperation {
+	flushReplacePair(builder);
+	if (builder.hunks.length === 0) {
+		throw new Error(
+			`Replace in ${builder.filePath} does not contain any *** Find:/*** With: pairs.`,
+		);
+	}
+	return {
+		kind: 'update',
+		filePath: builder.filePath,
+		hunks: builder.hunks.map((hunk) => ({
+			header: { ...hunk.header },
+			lines: hunk.lines.map((line) => ({ ...line })),
+		})),
+	};
+}
+
 export function parseEnvelopedPatch(patch: string): PatchOperation[] {
 	const normalized = patch.replace(/\r\n/g, '\n');
 	const lines = normalized.split('\n');
@@ -54,7 +103,8 @@ export function parseEnvelopedPatch(patch: string): PatchOperation[] {
 		| (PatchUpdateOperation & {
 				kind: 'update';
 				currentHunk: PatchHunk | null;
-		  });
+		  })
+		| ReplaceBuilder;
 
 	let builder: Builder | null = null;
 	let inside = false;
@@ -62,7 +112,9 @@ export function parseEnvelopedPatch(patch: string): PatchOperation[] {
 
 	const flushBuilder = () => {
 		if (!builder) return;
-		if (builder.kind === 'update') {
+		if (builder.kind === 'replace') {
+			operations.push(flushReplaceBuilder(builder));
+		} else if (builder.kind === 'update') {
 			if (builder.currentHunk && builder.currentHunk.lines.length === 0) {
 				builder.hunks.pop();
 			}
@@ -149,6 +201,48 @@ export function parseEnvelopedPatch(patch: string): PatchOperation[] {
 				filePath: parseDirectivePath(line, PATCH_DELETE_PREFIX),
 			};
 			continue;
+		}
+
+		if (line.startsWith(PATCH_REPLACE_PREFIX)) {
+			flushBuilder();
+			builder = {
+				kind: 'replace',
+				filePath: parseDirectivePath(line, PATCH_REPLACE_PREFIX),
+				hunks: [],
+				phase: 'idle',
+				findLines: [],
+				withLines: [],
+			};
+			continue;
+		}
+
+		if (builder && builder.kind === 'replace') {
+			if (line.startsWith(PATCH_FIND_MARKER)) {
+				flushReplacePair(builder);
+				builder.phase = 'find';
+				continue;
+			}
+			if (line.startsWith(PATCH_WITH_MARKER)) {
+				if (builder.phase !== 'find' || builder.findLines.length === 0) {
+					throw new Error(
+						`Replace in ${builder.filePath}: *** With: must follow a non-empty *** Find: block.`,
+					);
+				}
+				builder.phase = 'with';
+				continue;
+			}
+			if (builder.phase === 'find') {
+				builder.findLines.push(line);
+				continue;
+			}
+			if (builder.phase === 'with') {
+				builder.withLines.push(line);
+				continue;
+			}
+			if (line.trim() === '') continue;
+			throw new Error(
+				`Replace in ${builder.filePath}: expected *** Find: or *** With: directive, got "${line}"`,
+			);
 		}
 
 		if (!builder) {

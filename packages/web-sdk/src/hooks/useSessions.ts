@@ -5,7 +5,11 @@ import {
 } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { apiClient } from '../lib/api-client';
-import type { CreateSessionRequest, UpdateSessionRequest, Session } from '../types/api';
+import type {
+	CreateSessionRequest,
+	UpdateSessionRequest,
+	Session,
+} from '../types/api';
 
 const SESSIONS_PAGE_SIZE = 50;
 
@@ -15,7 +19,10 @@ export function useSessionsInfinite() {
 	return useInfiniteQuery({
 		queryKey: sessionsQueryKey,
 		queryFn: ({ pageParam = 0 }) =>
-			apiClient.getSessionsPage({ limit: SESSIONS_PAGE_SIZE, offset: pageParam }),
+			apiClient.getSessionsPage({
+				limit: SESSIONS_PAGE_SIZE,
+				offset: pageParam,
+			}),
 		getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
 		initialPageParam: 0,
 		staleTime: 30_000,

@@ -13,7 +13,13 @@ export const SessionListContainer = memo(function SessionListContainer({
 	activeSessionId,
 	onSelectSession,
 }: SessionListContainerProps) {
-	const { data: sessions = [], isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useSessions();
+	const {
+		data: sessions = [],
+		isLoading,
+		hasNextPage,
+		fetchNextPage,
+		isFetchingNextPage,
+	} = useSessions();
 	const { currentFocus, sessionIndex } = useFocusStore();
 	const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -46,7 +52,12 @@ export const SessionListContainer = memo(function SessionListContainer({
 	}, [currentFocus, sessionIndex, sessionSnapshot]);
 
 	useEffect(() => {
-		if (!activeSessionId || hasScrolledToActive.current || sessions.length === 0) return;
+		if (
+			!activeSessionId ||
+			hasScrolledToActive.current ||
+			sessions.length === 0
+		)
+			return;
 
 		const activeIndex = sessions.findIndex((s) => s.id === activeSessionId);
 		if (activeIndex === -1 && hasNextPage) {
@@ -73,7 +84,11 @@ export const SessionListContainer = memo(function SessionListContainer({
 
 		const handleScroll = () => {
 			const { scrollTop, scrollHeight, clientHeight } = container;
-			if (scrollHeight - scrollTop - clientHeight < 100 && hasNextPage && !isFetchingNextPage) {
+			if (
+				scrollHeight - scrollTop - clientHeight < 100 &&
+				hasNextPage &&
+				!isFetchingNextPage
+			) {
 				fetchNextPage();
 			}
 		};
