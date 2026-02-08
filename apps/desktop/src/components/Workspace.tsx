@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, ArrowDownToLine } from 'lucide-react';
 import { useServer } from '../hooks/useServer';
+import { useUpdate } from '../hooks/useUpdate';
 import { useFullscreen } from '../hooks/useFullscreen';
 import { handleTitleBarDrag } from '../utils/title-bar';
 import type { Project } from '../lib/tauri-bridge';
@@ -22,6 +23,7 @@ export function Workspace({
 	const [iframeLoaded, setIframeLoaded] = useState(false);
 	const isFullscreen = useFullscreen();
 	const { theme, toggleTheme } = useDesktopTheme();
+	const { available, version, downloading, installing, progress, installUpdate } = useUpdate();
 
 	const iframeSrc = useMemo(() => {
 		if (!server) return null;
@@ -110,15 +112,31 @@ export function Workspace({
 						{project.path}
 					</span>
 				</div>
-				{server && (
-					<div className="flex items-center gap-1.5 text-xs">
-						<span className="w-2 h-2 rounded-full bg-green-500" />
-						<span className="text-muted-foreground">Port {server.webPort}</span>
-					</div>
-				)}
+			{server && (
+				<div className="flex items-center gap-1.5 text-xs">
+					<span className="w-2 h-2 rounded-full bg-green-500" />
+					<span className="text-muted-foreground">Port {server.webPort}</span>
+				</div>
+			)}
+			{available && (
 				<button
 					type="button"
-					onClick={toggleTheme}
+					onClick={installUpdate}
+					disabled={downloading || installing}
+					className="h-6 px-2 flex items-center gap-1.5 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors disabled:opacity-60"
+					title={`Update to v${version}`}
+				>
+					<ArrowDownToLine className="w-3 h-3" />
+					{downloading
+						? `${progress}%`
+						: installing
+							? 'Restarting…'
+							: 'Update'}
+				</button>
+			)}
+			<button
+				type="button"
+				onClick={toggleTheme}
 					className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
 					title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
 				>

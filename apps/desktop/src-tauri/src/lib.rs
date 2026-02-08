@@ -68,6 +68,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(ServerState::default())
         .manage(InitialProjectState {
             path: Mutex::new(initial_project),

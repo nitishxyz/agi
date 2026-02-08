@@ -403,7 +403,9 @@ jobs:
           path: |
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz.sig
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage.sig
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
           if-no-files-found: ignore
 
@@ -557,6 +559,96 @@ jobs:
           find ./artifacts -type f -exec cp {} ./release/ \;
           ls -la ./release/
 
+      - name: Generate updater latest.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.bump-version.outputs.desktop_version }}"
+          TAG="desktop-v${VERSION}"
+          REPO="${{ github.repository }}"
+          BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          read_sig() {
+            local f="./release/$1"
+            if [ -f "$f" ]; then cat "$f"; else echo ""; fi
+          }
+
+          DARWIN_AARCH64_SIG=$(read_sig "otto.app.tar.gz.sig" || read_sig "otto_aarch64.app.tar.gz.sig" || echo "")
+          DARWIN_X64_SIG=""
+          LINUX_X64_SIG=""
+
+          for f in ./release/*.app.tar.gz.sig; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            sig=$(cat "$f")
+            case "$name" in
+              *aarch64*|*arm64*) DARWIN_AARCH64_SIG="$sig" ;;
+              *x64*|*x86_64*) DARWIN_X64_SIG="$sig" ;;
+              *)
+                if [ -z "$DARWIN_AARCH64_SIG" ]; then
+                  DARWIN_AARCH64_SIG="$sig"
+                elif [ -z "$DARWIN_X64_SIG" ]; then
+                  DARWIN_X64_SIG="$sig"
+                fi
+                ;;
+            esac
+          done
+
+          for f in ./release/*.AppImage.sig; do
+            [ -f "$f" ] || continue
+            LINUX_X64_SIG=$(cat "$f")
+          done
+
+          DARWIN_AARCH64_URL=""
+          DARWIN_X64_URL=""
+          LINUX_X64_URL=""
+          for f in ./release/*.app.tar.gz; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            [[ "$name" == *.sig ]] && continue
+            url="${BASE_URL}/${name}"
+            case "$name" in
+              *aarch64*|*arm64*) DARWIN_AARCH64_URL="$url" ;;
+              *x64*|*x86_64*) DARWIN_X64_URL="$url" ;;
+              *)
+                if [ -z "$DARWIN_AARCH64_URL" ]; then
+                  DARWIN_AARCH64_URL="$url"
+                elif [ -z "$DARWIN_X64_URL" ]; then
+                  DARWIN_X64_URL="$url"
+                fi
+                ;;
+            esac
+          done
+          for f in ./release/*.AppImage; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            LINUX_X64_URL="${BASE_URL}/${name}"
+          done
+
+          cat > ./release/latest.json <<EOF
+          {
+            "version": "${VERSION}",
+            "notes": "otto desktop v${VERSION}",
+            "pub_date": "${NOW}",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "${DARWIN_AARCH64_SIG}",
+                "url": "${DARWIN_AARCH64_URL}"
+              },
+              "darwin-x86_64": {
+                "signature": "${DARWIN_X64_SIG}",
+                "url": "${DARWIN_X64_URL}"
+              },
+              "linux-x86_64": {
+                "signature": "${LINUX_X64_SIG}",
+                "url": "${LINUX_X64_URL}"
+              }
+            }
+          }
+          EOF
+          cat ./release/latest.json
+
       - name: Create and push desktop tag
         shell: bash
         run: |
@@ -594,6 +686,22 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update desktop-latest release with latest.json
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! gh release view desktop-latest >/dev/null 2>&1; then
+            git tag -f desktop-latest
+            git push -f origin desktop-latest
+            gh release create desktop-latest \
+              --title "Desktop Latest (auto-updater)" \
+              --notes "This release is used by the auto-updater. Do not delete." \
+              --prerelease
+          fi
+          gh release upload desktop-latest ./release/latest.json --clobber
 
   reset-flags:
     needs: [check-flags, publish-npm, publish-desktop]

@@ -45,5 +45,13 @@
 			"icons/icon.ico"
 		],
 		"resources": ["resources/binaries/*"]
+	},
+	"plugins": {
+		"updater": {
+			"endpoints": [
+				"https://github.com/nitishxyz/otto/releases/download/desktop-latest/latest.json"
+			],
+			"pubkey": ""
+		}
 	}
 }
