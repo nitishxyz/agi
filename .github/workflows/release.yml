@@ -257,6 +257,9 @@ jobs:
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             name: Linux-x64
+          - platform: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+            name: Linux-arm64
     steps:
       - uses: actions/checkout@v4
 
@@ -311,6 +314,10 @@ jobs:
               PLATFORM="linux-x64"
               RG_TARGET="x86_64-unknown-linux-musl"
               ;;
+            aarch64-unknown-linux-gnu)
+              PLATFORM="linux-arm64"
+              RG_TARGET="aarch64-unknown-linux-gnu"
+              ;;
             *) echo "Unknown target: ${{ matrix.target }}"; exit 1 ;;
           esac
           VENDOR_DST="vendor/bin/${PLATFORM}"
@@ -330,6 +337,7 @@ jobs:
             aarch64-apple-darwin) PLATFORM="darwin-arm64" ;;
             x86_64-apple-darwin)  PLATFORM="darwin-x64" ;;
             x86_64-unknown-linux-gnu) PLATFORM="linux-x64" ;;
+            aarch64-unknown-linux-gnu) PLATFORM="linux-arm64" ;;
             *) echo "Unknown target: ${{ matrix.target }}"; exit 1 ;;
           esac
           cd apps/cli
@@ -583,6 +591,7 @@ jobs:
           DARWIN_AARCH64_SIG=$(read_sig "otto.app.tar.gz.sig" || read_sig "otto_aarch64.app.tar.gz.sig" || echo "")
           DARWIN_X64_SIG=""
           LINUX_X64_SIG=""
+          LINUX_ARM64_SIG=""
 
           for f in ./release/*.app.tar.gz.sig; do
             [ -f "$f" ] || continue
@@ -603,12 +612,18 @@ jobs:
 
           for f in ./release/*.deb.sig; do
             [ -f "$f" ] || continue
-            LINUX_X64_SIG=$(cat "$f")
+            name=$(basename "$f")
+            sig=$(cat "$f")
+            case "$name" in
+              *arm64*|*aarch64*) LINUX_ARM64_SIG="$sig" ;;
+              *) LINUX_X64_SIG="$sig" ;;
+            esac
           done
 
           DARWIN_AARCH64_URL=""
           DARWIN_X64_URL=""
           LINUX_X64_URL=""
+          LINUX_ARM64_URL=""
           for f in ./release/*.app.tar.gz; do
             [ -f "$f" ] || continue
             name=$(basename "$f")
@@ -629,7 +644,11 @@ jobs:
           for f in ./release/*.deb; do
             [ -f "$f" ] || continue
             name=$(basename "$f")
-            LINUX_X64_URL="${BASE_URL}/${name}"
+            url="${BASE_URL}/${name}"
+            case "$name" in
+              *arm64*|*aarch64*) LINUX_ARM64_URL="$url" ;;
+              *) LINUX_X64_URL="$url" ;;
+            esac
           done
 
           cat > ./release/latest.json <<EOF
@@ -649,6 +668,10 @@ jobs:
               "linux-x86_64": {
                 "signature": "${LINUX_X64_SIG}",
                 "url": "${LINUX_X64_URL}"
+              },
+              "linux-aarch64": {
+                "signature": "${LINUX_ARM64_SIG}",
+                "url": "${LINUX_ARM64_URL}"
               }
             }
           }
@@ -679,7 +702,8 @@ jobs:
 
             - **macOS (Apple Silicon)**: OTTO_${{ needs.bump-version.outputs.desktop_version }}_aarch64.dmg
             - **macOS (Intel)**: OTTO_${{ needs.bump-version.outputs.desktop_version }}_x64.dmg
-            - **Linux**: otto_${{ needs.bump-version.outputs.desktop_version }}_amd64.deb
+            - **Linux (x64)**: otto_${{ needs.bump-version.outputs.desktop_version }}_amd64.deb
+            - **Linux (ARM64)**: otto_${{ needs.bump-version.outputs.desktop_version }}_arm64.deb
 
             ### Installation
 

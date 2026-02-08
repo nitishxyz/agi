@@ -143,6 +143,39 @@ function DesktopDownloads() {
 								</span>
 							</a>
 						)}
+						{release.linuxDebArm && (
+							<a
+								href={release.linuxDebArm.url}
+								className="flex items-center justify-between px-4 py-3 bg-otto-surface border border-otto-border rounded-sm hover:bg-otto-text hover:text-otto-bg hover:border-otto-text transition-all group"
+							>
+								<div className="flex items-center gap-3">
+									<svg
+										className="w-4 h-4 text-otto-dim group-hover:text-otto-bg transition-colors"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									>
+										<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+										<polyline points="7 10 12 15 17 10" />
+										<line x1="12" x2="12" y1="15" y2="3" />
+									</svg>
+									<div>
+										<span className="text-sm text-otto-text group-hover:text-otto-bg font-medium">
+											ARM64
+										</span>
+										<span className="text-xs text-otto-dim group-hover:text-otto-bg ml-2">
+											.deb
+										</span>
+									</div>
+								</div>
+								<span className="text-xs text-otto-dim group-hover:text-otto-bg">
+									{formatSize(release.linuxDebArm.size)}
+								</span>
+							</a>
+						)}
 					</div>
 					<p className="text-[10px] text-otto-dim mt-3">
 					Install with sudo dpkg -i otto_*.deb

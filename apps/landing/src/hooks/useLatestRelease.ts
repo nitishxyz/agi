@@ -12,6 +12,7 @@ interface ReleaseInfo {
 	macosArm: ReleaseAsset | null;
 	macosIntel: ReleaseAsset | null;
 	linuxDeb: ReleaseAsset | null;
+	linuxDebArm: ReleaseAsset | null;
 }
 
 const FALLBACK: ReleaseInfo = {
@@ -32,6 +33,11 @@ const FALLBACK: ReleaseInfo = {
 		size: 125000000,
 		url: 'https://github.com/nitishxyz/otto/releases/download/desktop-v0.1.22/otto_0.1.22_amd64.deb',
 	},
+	linuxDebArm: {
+		name: 'otto_0.1.22_arm64.deb',
+		size: 125000000,
+		url: 'https://github.com/nitishxyz/otto/releases/download/desktop-v0.1.22/otto_0.1.22_arm64.deb',
+	},
 };
 
 function parseAssets(
@@ -42,6 +48,7 @@ function parseAssets(
 	let macosArm: ReleaseAsset | null = null;
 	let macosIntel: ReleaseAsset | null = null;
 	let linuxDeb: ReleaseAsset | null = null;
+	let linuxDebArm: ReleaseAsset | null = null;
 
 	for (const a of assets) {
 		const asset: ReleaseAsset = {
@@ -52,10 +59,14 @@ function parseAssets(
 		if (a.name.endsWith('_aarch64.dmg')) macosArm = asset;
 		else if (a.name.endsWith('_x64.dmg') || a.name.endsWith('_x86_64.dmg'))
 			macosIntel = asset;
-		else if (a.name.endsWith('.deb')) linuxDeb = asset;
+		else if (a.name.endsWith('.deb')) {
+			if (a.name.includes('arm64') || a.name.includes('aarch64'))
+				linuxDebArm = asset;
+			else linuxDeb = asset;
+		}
 	}
 
-	return { version, tag, macosArm, macosIntel, linuxDeb };
+	return { version, tag, macosArm, macosIntel, linuxDeb, linuxDebArm };
 }
 
 export function useLatestRelease() {
