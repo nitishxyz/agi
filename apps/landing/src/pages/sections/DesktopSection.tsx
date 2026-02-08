@@ -110,9 +110,9 @@ function DesktopDownloads() {
 						</div>
 					</div>
 					<div className="space-y-2">
-						{release.linuxAppImage && (
+						{release.linuxDeb && (
 							<a
-								href={release.linuxAppImage.url}
+								href={release.linuxDeb.url}
 								className="flex items-center justify-between px-4 py-3 bg-otto-surface border border-otto-border rounded-sm hover:bg-otto-text hover:text-otto-bg hover:border-otto-text transition-all group"
 							>
 								<div className="flex items-center gap-3">
@@ -134,18 +134,18 @@ function DesktopDownloads() {
 											x86_64
 										</span>
 										<span className="text-xs text-otto-dim group-hover:text-otto-bg ml-2">
-											.AppImage
+											.deb
 										</span>
 									</div>
 								</div>
 								<span className="text-xs text-otto-dim group-hover:text-otto-bg">
-									{formatSize(release.linuxAppImage.size)}
+								{formatSize(release.linuxDeb.size)}
 								</span>
 							</a>
 						)}
 					</div>
 					<p className="text-[10px] text-otto-dim mt-3">
-						chmod +x and run. No installation required.
+					Install with sudo dpkg -i otto_*.deb
 					</p>
 				</div>
 			</div>

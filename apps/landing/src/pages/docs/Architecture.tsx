@@ -91,7 +91,7 @@ export function Architecture() {
 			<p>Desktop application via Tauri v2. Embeds CLI binary and web UI.</p>
 			<ul>
 				<li>
-					<strong>Platforms:</strong> macOS (dmg), Linux (AppImage), Windows
+					<strong>Platforms:</strong> macOS (dmg), Linux (deb), Windows
 					(msi)
 				</li>
 			</ul>

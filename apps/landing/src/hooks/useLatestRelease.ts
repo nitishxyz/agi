@@ -11,7 +11,7 @@ interface ReleaseInfo {
 	tag: string;
 	macosArm: ReleaseAsset | null;
 	macosIntel: ReleaseAsset | null;
-	linuxAppImage: ReleaseAsset | null;
+	linuxDeb: ReleaseAsset | null;
 }
 
 const FALLBACK: ReleaseInfo = {
@@ -27,10 +27,10 @@ const FALLBACK: ReleaseInfo = {
 		size: 44000000,
 		url: 'https://github.com/nitishxyz/otto/releases/download/desktop-v0.1.22/otto_0.1.22_x64.dmg',
 	},
-	linuxAppImage: {
-		name: 'otto_0.1.22_amd64.AppImage',
+	linuxDeb: {
+		name: 'otto_0.1.22_amd64.deb',
 		size: 125000000,
-		url: 'https://github.com/nitishxyz/otto/releases/download/desktop-v0.1.22/otto_0.1.22_amd64.AppImage',
+		url: 'https://github.com/nitishxyz/otto/releases/download/desktop-v0.1.22/otto_0.1.22_amd64.deb',
 	},
 };
 
@@ -41,7 +41,7 @@ function parseAssets(
 	const version = tag.replace('desktop-v', '');
 	let macosArm: ReleaseAsset | null = null;
 	let macosIntel: ReleaseAsset | null = null;
-	let linuxAppImage: ReleaseAsset | null = null;
+	let linuxDeb: ReleaseAsset | null = null;
 
 	for (const a of assets) {
 		const asset: ReleaseAsset = {
@@ -52,10 +52,10 @@ function parseAssets(
 		if (a.name.endsWith('_aarch64.dmg')) macosArm = asset;
 		else if (a.name.endsWith('_x64.dmg') || a.name.endsWith('_x86_64.dmg'))
 			macosIntel = asset;
-		else if (a.name.endsWith('.AppImage')) linuxAppImage = asset;
+		else if (a.name.endsWith('.deb')) linuxDeb = asset;
 	}
 
-	return { version, tag, macosArm, macosIntel, linuxAppImage };
+	return { version, tag, macosArm, macosIntel, linuxDeb };
 }
 
 export function useLatestRelease() {
@@ -80,7 +80,7 @@ export function useLatestRelease() {
 					);
 				for (const rel of desktopReleases) {
 					const parsed = parseAssets(rel.tag_name, rel.assets ?? []);
-					if (parsed.macosArm || parsed.linuxAppImage) {
+				if (parsed.macosArm || parsed.linuxDeb) {
 						setRelease(parsed);
 						break;
 					}
