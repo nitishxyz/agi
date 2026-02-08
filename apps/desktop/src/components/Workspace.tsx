@@ -110,7 +110,7 @@ export function Workspace({
 				<button
 					type="button"
 					onClick={handleBack}
-				className={`w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ${isFullscreen || platform === 'linux' ? '' : 'ml-[60px]'}`}
+					className={`w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ${isFullscreen || platform === 'linux' ? '' : 'ml-[60px]'}`}
 				>
 					←
 				</button>
@@ -177,7 +177,7 @@ export function Workspace({
 						<line x1="4.5" y1="8" x2="11.5" y2="8" />
 					</svg>
 				</button>
-			{platform === 'linux' && <WindowControls />}
+				{platform === 'linux' && <WindowControls />}
 			</div>
 
 			<div className="flex-1 relative flex items-center justify-center bg-background">

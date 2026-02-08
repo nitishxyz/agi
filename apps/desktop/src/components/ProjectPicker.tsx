@@ -85,7 +85,7 @@ export function ProjectPicker({
 				role="toolbar"
 			>
 				<div
-				className={`flex items-center gap-2 ${isFullscreen || platform === 'linux' ? '' : 'ml-[68px]'}`}
+					className={`flex items-center gap-2 ${isFullscreen || platform === 'linux' ? '' : 'ml-[68px]'}`}
 				>
 					<OttoWordmark height={13} className="text-foreground" />
 				</div>
@@ -144,7 +144,7 @@ export function ProjectPicker({
 							<line x1="4.5" y1="8" x2="11.5" y2="8" />
 						</svg>
 					</button>
-				{platform === 'linux' && <WindowControls />}
+					{platform === 'linux' && <WindowControls />}
 				</div>
 			</div>
 

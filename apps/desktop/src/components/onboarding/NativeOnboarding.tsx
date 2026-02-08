@@ -190,7 +190,7 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 				role="toolbar"
 			>
 				<div
-				className={`flex items-center gap-2 ${isFullscreen || platform === 'linux' ? '' : 'ml-16'}`}
+					className={`flex items-center gap-2 ${isFullscreen || platform === 'linux' ? '' : 'ml-16'}`}
 				>
 					<span className="font-semibold text-foreground">otto</span>
 				</div>
@@ -199,7 +199,7 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 						className={`w-2 h-2 rounded-full ${currentStep === 'wallet' ? 'bg-green-500' : 'bg-blue-500'}`}
 					/>
 					{currentStep === 'wallet' ? 'Step 1 of 2' : 'Step 2 of 2'}
-				{platform === 'linux' && <WindowControls />}
+					{platform === 'linux' && <WindowControls />}
 				</div>
 			</div>
 			<div className="pt-10">
