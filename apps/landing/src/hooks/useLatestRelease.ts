@@ -91,7 +91,7 @@ export function useLatestRelease() {
 					);
 				for (const rel of desktopReleases) {
 					const parsed = parseAssets(rel.tag_name, rel.assets ?? []);
-				if (parsed.macosArm || parsed.linuxDeb) {
+					if (parsed.macosArm || parsed.linuxDeb) {
 						setRelease(parsed);
 						break;
 					}

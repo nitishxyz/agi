@@ -139,7 +139,7 @@ function DesktopDownloads() {
 									</div>
 								</div>
 								<span className="text-xs text-otto-dim group-hover:text-otto-bg">
-								{formatSize(release.linuxDeb.size)}
+									{formatSize(release.linuxDeb.size)}
 								</span>
 							</a>
 						)}
@@ -178,7 +178,7 @@ function DesktopDownloads() {
 						)}
 					</div>
 					<p className="text-[10px] text-otto-dim mt-3">
-					Install with sudo dpkg -i otto_*.deb
+						Install with sudo dpkg -i otto_*.deb
 					</p>
 				</div>
 			</div>
