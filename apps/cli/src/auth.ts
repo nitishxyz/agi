@@ -75,7 +75,7 @@ const PROVIDER_LINKS: Record<
 	'zai-coding': {
 		name: 'Z.AI Coding Plan',
 		url: 'https://z.ai/manage-apikey/apikey-list',
-		env: 'ZAI_API_KEY',
+		env: 'ZAI_CODING_API_KEY',
 	},
 	moonshot: {
 		name: 'Moonshot AI (Kimi)',

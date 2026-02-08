@@ -204,7 +204,7 @@ export async function resolveModel(
 		const entry = catalog[provider];
 		const apiKey =
 			config.apiKey ||
-			process.env.ZAI_API_KEY ||
+			process.env.ZAI_CODING_API_KEY ||
 			process.env.ZHIPU_API_KEY ||
 			'';
 		const baseURL =

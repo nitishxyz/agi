@@ -9,7 +9,7 @@ const ENV_VARS: Record<ProviderId, string> = {
 	copilot: 'GITHUB_TOKEN',
 	setu: 'SETU_PRIVATE_KEY',
 	zai: 'ZAI_API_KEY',
-	'zai-coding': 'ZAI_API_KEY',
+	'zai-coding': 'ZAI_CODING_API_KEY',
 	moonshot: 'MOONSHOT_API_KEY',
 };
 

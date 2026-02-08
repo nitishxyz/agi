@@ -18,6 +18,8 @@ import PROVIDER_GOOGLE from './providers/google.txt' with { type: 'text' };
 import PROVIDER_MOONSHOT from './providers/moonshot.txt' with { type: 'text' };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import PROVIDER_DEFAULT from './providers/default.txt' with { type: 'text' };
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import PROVIDER_GLM from './providers/glm.txt' with { type: 'text' };
 
 function sanitizeModelId(modelId: string): string {
 	return modelId
@@ -98,6 +100,8 @@ export async function providerBasePrompt(
 							? PROVIDER_GOOGLE
 							: family === 'moonshot'
 								? PROVIDER_MOONSHOT
+							: family === 'glm'
+								? PROVIDER_GLM
 								: PROVIDER_DEFAULT
 			).trim();
 			promptType = `family:${family} (via ${id}/${modelId})`;
@@ -126,6 +130,11 @@ export async function providerBasePrompt(
 		result = PROVIDER_MOONSHOT.trim();
 		debugLog(`[provider] prompt: moonshot (${result.length} chars)`);
 		return { prompt: result, resolvedType: 'moonshot' };
+	}
+	if (id === 'zai' || id === 'zai-coding') {
+		result = PROVIDER_GLM.trim();
+		debugLog(`[provider] prompt: glm (${result.length} chars)`);
+		return { prompt: result, resolvedType: 'glm' };
 	}
 
 	// If a project adds a custom provider file, allow reading it from disk (user-defined)

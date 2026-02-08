@@ -124,6 +124,7 @@ export type UnderlyingProviderKey =
 	| 'openai'
 	| 'google'
 	| 'moonshot'
+	| 'glm'
 	| 'openai-compatible'
 	| null;
 
@@ -136,6 +137,8 @@ export function getUnderlyingProviderKey(
 	if (provider === 'google') return 'google';
 	if (provider === 'moonshot') return 'moonshot';
 	if (provider === 'copilot') return 'openai';
+
+	if (provider === 'zai' || provider === 'zai-coding') return 'glm';
 
 	const npm = getModelNpmBinding(provider, model);
 	if (npm === '@ai-sdk/anthropic') return 'anthropic';
@@ -156,6 +159,7 @@ export function getModelFamily(
 	if (provider === 'google') return 'google';
 	if (provider === 'moonshot') return 'moonshot';
 	if (provider === 'copilot') return 'openai';
+	if (provider === 'zai' || provider === 'zai-coding') return 'glm';
 
 	// 2) For aggregate providers, infer from model ID patterns
 	if (provider === 'openrouter' || provider === 'opencode') {
@@ -179,6 +183,9 @@ export function getModelFamily(
 		// Moonshot models
 		if (lowerModel.includes('kimi') || lowerModel.startsWith('moonshotai/')) {
 			return 'moonshot';
+		}
+		if (lowerModel.includes('glm') || lowerModel.startsWith('z-ai/') || lowerModel.startsWith('thudm/')) {
+			return 'glm';
 		}
 	}
 

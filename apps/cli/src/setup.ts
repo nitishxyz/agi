@@ -63,9 +63,11 @@ export async function runSetup(projectRoot?: string) {
 								? 'OPENCODE_API_KEY'
 								: p === 'setu'
 									? 'SETU_PRIVATE_KEY'
-									: p === 'zai' || p === 'zai-coding'
+									: p === 'zai'
 										? 'ZAI_API_KEY'
-										: 'MOONSHOT_API_KEY';
+										: p === 'zai-coding'
+											? 'ZAI_CODING_API_KEY'
+											: 'MOONSHOT_API_KEY';
 		const key = await text({
 			message: `Enter ${keyLabel} (leave empty to skip)`,
 			initialValue: '',

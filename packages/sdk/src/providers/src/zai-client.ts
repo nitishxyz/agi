@@ -32,7 +32,7 @@ export function createZaiCodingModel(
 	const baseURL = entry?.api || 'https://api.z.ai/api/coding/paas/v4';
 	const apiKey =
 		config?.apiKey ||
-		process.env.ZAI_API_KEY ||
+		process.env.ZAI_CODING_API_KEY ||
 		process.env.ZHIPU_API_KEY ||
 		'';
 	const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
