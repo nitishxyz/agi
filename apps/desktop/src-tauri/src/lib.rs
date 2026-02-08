@@ -3,6 +3,8 @@ mod commands;
 use commands::server::ServerState;
 use std::sync::Mutex;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+#[cfg(target_os = "linux")]
+use tauri::Manager;
 
 #[cfg(unix)]
 use std::process::Command;
@@ -50,6 +52,11 @@ fn parse_project_arg() -> Option<String> {
 #[tauri::command]
 fn get_initial_project(state: tauri::State<'_, InitialProjectState>) -> Option<String> {
     state.path.lock().unwrap().take()
+}
+
+#[tauri::command]
+fn get_platform() -> String {
+    std::env::consts::OS.to_string()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -113,6 +120,13 @@ pub fn run() {
 
             app.set_menu(menu)?;
 
+            #[cfg(target_os = "linux")]
+            {
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.set_decorations(false);
+                }
+            }
+
             Ok(())
         })
         .on_menu_event(|app, event| {
@@ -146,6 +160,7 @@ pub fn run() {
             commands::git::git_is_repo,
             commands::window::create_new_window,
             get_initial_project,
+            get_platform,
             commands::onboarding::get_onboarding_status,
             commands::onboarding::generate_wallet,
             commands::onboarding::add_provider,

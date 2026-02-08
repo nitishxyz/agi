@@ -25,6 +25,9 @@ pub async fn create_new_window(app: AppHandle) -> Result<(), String> {
             .traffic_light_position(LogicalPosition::new(10.0, 20.0))
     };
 
+    #[cfg(target_os = "linux")]
+    let builder = builder.decorations(false);
+
     builder.build().map_err(|e: tauri::Error| e.to_string())?;
 
     Ok(())

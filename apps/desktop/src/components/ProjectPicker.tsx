@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useProjects } from '../hooks/useProjects';
 import { useGitHub } from '../hooks/useGitHub';
 import { useFullscreen } from '../hooks/useFullscreen';
+import { usePlatform } from '../hooks/usePlatform';
 import { handleTitleBarDrag } from '../utils/title-bar';
 import { tauriBridge, type Project } from '../lib/tauri-bridge';
 import { OttoWordmark, GitHubLogo } from './Icons';
@@ -10,6 +11,7 @@ import { TokenInputModal } from './TokenInputModal';
 import { CloneModal } from './CloneModal';
 import { Sun, Moon } from 'lucide-react';
 import { useDesktopTheme } from '../App';
+import { WindowControls } from './WindowControls';
 
 export function ProjectPicker({
 	onSelectProject,
@@ -31,6 +33,7 @@ export function ProjectPicker({
 	const [showTokenInput, setShowTokenInput] = useState(false);
 	const [cloning, setCloning] = useState(false);
 	const isFullscreen = useFullscreen();
+	const platform = usePlatform();
 	const { theme, toggleTheme } = useDesktopTheme();
 
 	const handleOpenFolder = async () => {
@@ -82,7 +85,7 @@ export function ProjectPicker({
 				role="toolbar"
 			>
 				<div
-					className={`flex items-center gap-2 ${isFullscreen ? '' : 'ml-[68px]'}`}
+				className={`flex items-center gap-2 ${isFullscreen || platform === 'linux' ? '' : 'ml-[68px]'}`}
 				>
 					<OttoWordmark height={13} className="text-foreground" />
 				</div>
@@ -141,6 +144,7 @@ export function ProjectPicker({
 							<line x1="4.5" y1="8" x2="11.5" y2="8" />
 						</svg>
 					</button>
+				{platform === 'linux' && <WindowControls />}
 				</div>
 			</div>
 

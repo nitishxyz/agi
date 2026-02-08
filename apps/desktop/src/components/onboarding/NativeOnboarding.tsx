@@ -2,9 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useServer } from '../../hooks/useServer';
 import { useFullscreen } from '../../hooks/useFullscreen';
+import { usePlatform } from '../../hooks/usePlatform';
 import { handleTitleBarDrag } from '../../utils/title-bar';
 import { tauriOnboarding } from '../../lib/tauri-onboarding';
 import { SetuLoader } from '../SetuLoader';
+import { WindowControls } from '../WindowControls';
 import { OnboardingModal, SetuTopupModal, Toaster } from '@ottocode/web-sdk';
 import { configureApiClient } from '@ottocode/web-sdk/lib';
 import { useOnboardingStore } from '@ottocode/web-sdk/stores';
@@ -18,6 +20,7 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 	const [serverReady, setServerReady] = useState(false);
 	const [homePath, setHomePath] = useState<string | null>(null);
 	const isFullscreen = useFullscreen();
+	const platform = usePlatform();
 	const currentStep = useOnboardingStore((s) => s.currentStep);
 	const {
 		server,
@@ -187,7 +190,7 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 				role="toolbar"
 			>
 				<div
-					className={`flex items-center gap-2 ${isFullscreen ? '' : 'ml-16'}`}
+				className={`flex items-center gap-2 ${isFullscreen || platform === 'linux' ? '' : 'ml-16'}`}
 				>
 					<span className="font-semibold text-foreground">otto</span>
 				</div>
@@ -196,6 +199,7 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 						className={`w-2 h-2 rounded-full ${currentStep === 'wallet' ? 'bg-green-500' : 'bg-blue-500'}`}
 					/>
 					{currentStep === 'wallet' ? 'Step 1 of 2' : 'Step 2 of 2'}
+				{platform === 'linux' && <WindowControls />}
 				</div>
 			</div>
 			<div className="pt-10">

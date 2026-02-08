@@ -4,11 +4,13 @@ import { Sun, Moon, ArrowDownToLine } from 'lucide-react';
 import { useServer } from '../hooks/useServer';
 import { useUpdate } from '../hooks/useUpdate';
 import { useFullscreen } from '../hooks/useFullscreen';
+import { usePlatform } from '../hooks/usePlatform';
 import { handleTitleBarDrag } from '../utils/title-bar';
 import type { Project } from '../lib/tauri-bridge';
 import { tauriBridge } from '../lib/tauri-bridge';
 import { SetuLoader } from './SetuLoader';
 import { useDesktopTheme } from '../App';
+import { WindowControls } from './WindowControls';
 
 export function Workspace({
 	project,
@@ -22,6 +24,7 @@ export function Workspace({
 	const iframeRef = useRef<HTMLIFrameElement>(null);
 	const [iframeLoaded, setIframeLoaded] = useState(false);
 	const isFullscreen = useFullscreen();
+	const platform = usePlatform();
 	const { theme, toggleTheme } = useDesktopTheme();
 	const {
 		available,
@@ -107,7 +110,7 @@ export function Workspace({
 				<button
 					type="button"
 					onClick={handleBack}
-					className={`w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ${isFullscreen ? '' : 'ml-[60px]'}`}
+				className={`w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ${isFullscreen || platform === 'linux' ? '' : 'ml-[60px]'}`}
 				>
 					←
 				</button>
@@ -174,6 +177,7 @@ export function Workspace({
 						<line x1="4.5" y1="8" x2="11.5" y2="8" />
 					</svg>
 				</button>
+			{platform === 'linux' && <WindowControls />}
 			</div>
 
 			<div className="flex-1 relative flex items-center justify-center bg-background">
