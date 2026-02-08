@@ -503,6 +503,7 @@ describe('patch apply — real LLM regression tests', () => {
 			[
 				'jobs:',
 				'  build-desktop:',
+				// biome-ignore lint/suspicious/noTemplateCurlyInString: test data - GitHub Actions syntax
 				'    runs-on: ${{ matrix.platform }}',
 				'    strategy:',
 				'      fail-fast: false',
@@ -917,6 +918,7 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 			'*** Update File: spaces-file.ts',
 			'\tconsole.log(name);',
 			'-\treturn name;',
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: test data - template literal in patch
 			'+\treturn `Hello ${name}`;',
 			'+\treturn name.toUpperCase();',
 			'*** End Patch',
@@ -924,6 +926,7 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 
 		await applyPatch(patch);
 		const content = await readTestFile('spaces-file.ts');
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: test assertion - template literal content
 		expect(content).toContain('  return `Hello ${name}`;');
 		expect(content).toContain('  return name.toUpperCase();');
 		expect(content).not.toContain('\treturn');
@@ -946,6 +949,7 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 			'*** Update File: tabs-file.ts',
 			'  console.log(name);',
 			'-  return name;',
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: test data - template literal in patch
 			'+  return `Hello ${name}`;',
 			'+  return name.toUpperCase();',
 			'*** End Patch',
@@ -953,6 +957,7 @@ describe('patch apply — +1 extra space regression (research bug)', () => {
 
 		await applyPatch(patch);
 		const content = await readTestFile('tabs-file.ts');
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: test assertion - template literal content
 		expect(content).toContain('\treturn `Hello ${name}`;');
 		expect(content).toContain('\treturn name.toUpperCase();');
 		expect(content).not.toContain('  return');
@@ -1996,36 +2001,38 @@ describe('patch apply — already-applied detection with content at different po
 describe('patch apply — tab file with zero-indent context lines', () => {
 	it('converts space-indented additions to tabs when context lines have no indentation', async () => {
 		const file = [
-			"const READ_ONLY = new Set([",
+			'const READ_ONLY = new Set([',
 			"\t'read',",
 			"\t'ls',",
-			"]);",
-			"",
+			']);',
+			'',
 			"const MUTATING = new Set(['write', 'edit']);",
-			"",
-			"export function run() {",
+			'',
+			'export function run() {',
 			"\tconsole.log('hello');",
-			"}",
+			'}',
 		].join('\n');
 		await writeTestFile('capture.ts', file);
 
 		const patch = [
 			'*** Begin Patch',
 			'*** Update File: capture.ts',
-			"@@ after MUTATING",
+			'@@ after MUTATING',
 			" const MUTATING = new Set(['write', 'edit']);",
-			" ",
-			"+const MONITORING = new Set([",
+			' ',
+			'+const MONITORING = new Set([',
 			"+  'bash',",
 			"+  'http',",
-			"+]);",
+			'+]);',
 			'*** End Patch',
 		].join('\n');
 
 		await applyPatch(patch);
 		const content = await readTestFile('capture.ts');
 		const lines = content.split('\n');
-		const monitoringIdx = lines.findIndex((l: string) => l.includes('MONITORING'));
+		const monitoringIdx = lines.findIndex((l: string) =>
+			l.includes('MONITORING'),
+		);
 		expect(monitoringIdx).toBeGreaterThan(-1);
 		expect(lines[monitoringIdx + 1]).toBe("\t'bash',");
 		expect(lines[monitoringIdx + 2]).toBe("\t'http',");
@@ -2033,36 +2040,38 @@ describe('patch apply — tab file with zero-indent context lines', () => {
 
 	it('preserves space indentation when file uses spaces', async () => {
 		const file = [
-			"const READ_ONLY = new Set([",
+			'const READ_ONLY = new Set([',
 			"  'read',",
 			"  'ls',",
-			"]);",
-			"",
+			']);',
+			'',
 			"const MUTATING = new Set(['write', 'edit']);",
-			"",
-			"export function run() {",
+			'',
+			'export function run() {',
 			"  console.log('hello');",
-			"}",
+			'}',
 		].join('\n');
 		await writeTestFile('capture-spaces.ts', file);
 
 		const patch = [
 			'*** Begin Patch',
 			'*** Update File: capture-spaces.ts',
-			"@@ after MUTATING",
+			'@@ after MUTATING',
 			" const MUTATING = new Set(['write', 'edit']);",
-			" ",
-			"+const MONITORING = new Set([",
+			' ',
+			'+const MONITORING = new Set([',
 			"+  'bash',",
 			"+  'http',",
-			"+]);",
+			'+]);',
 			'*** End Patch',
 		].join('\n');
 
 		await applyPatch(patch);
 		const content = await readTestFile('capture-spaces.ts');
 		const lines = content.split('\n');
-		const monitoringIdx = lines.findIndex((l: string) => l.includes('MONITORING'));
+		const monitoringIdx = lines.findIndex((l: string) =>
+			l.includes('MONITORING'),
+		);
 		expect(monitoringIdx).toBeGreaterThan(-1);
 		expect(lines[monitoringIdx + 1]).toBe("  'bash',");
 		expect(lines[monitoringIdx + 2]).toBe("  'http',");

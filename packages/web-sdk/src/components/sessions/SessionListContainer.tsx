@@ -74,6 +74,7 @@ export const SessionListContainer = memo(function SessionListContainer({
 		}
 	}, [activeSessionId, sessions, hasNextPage, fetchNextPage]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional - reset scroll flag when active session changes
 	useEffect(() => {
 		hasScrolledToActive.current = false;
 	}, [activeSessionId]);

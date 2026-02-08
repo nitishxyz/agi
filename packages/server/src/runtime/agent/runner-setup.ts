@@ -169,8 +169,8 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		messageId: opts.assistantMessageId,
 	});
 	const wrappedModel = isDebugEnabled()
-		? // biome-ignore lint/suspicious/noExplicitAny: OpenRouter provider uses v2 spec
-			wrapLanguageModel({
+		? wrapLanguageModel({
+				// biome-ignore lint/suspicious/noExplicitAny: OpenRouter provider uses v2 spec
 				model: model as any,
 				middleware: devToolsMiddleware(),
 			})

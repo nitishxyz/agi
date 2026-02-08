@@ -100,9 +100,9 @@ export async function providerBasePrompt(
 							? PROVIDER_GOOGLE
 							: family === 'moonshot'
 								? PROVIDER_MOONSHOT
-							: family === 'glm'
-								? PROVIDER_GLM
-								: PROVIDER_DEFAULT
+								: family === 'glm'
+									? PROVIDER_GLM
+									: PROVIDER_DEFAULT
 			).trim();
 			promptType = `family:${family} (via ${id}/${modelId})`;
 			debugLog(`[provider] prompt: ${promptType} (${result.length} chars)`);

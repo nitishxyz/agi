@@ -1,6 +1,5 @@
 import {
 	client,
-	listSessions as apiListSessions,
 	createSession as apiCreateSession,
 	listMessages as apiListMessages,
 	createMessage as apiCreateMessage,

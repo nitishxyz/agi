@@ -184,7 +184,11 @@ export function getModelFamily(
 		if (lowerModel.includes('kimi') || lowerModel.startsWith('moonshotai/')) {
 			return 'moonshot';
 		}
-		if (lowerModel.includes('glm') || lowerModel.startsWith('z-ai/') || lowerModel.startsWith('thudm/')) {
+		if (
+			lowerModel.includes('glm') ||
+			lowerModel.startsWith('z-ai/') ||
+			lowerModel.startsWith('thudm/')
+		) {
 			return 'glm';
 		}
 	}

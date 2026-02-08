@@ -43,6 +43,7 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 	const terminalsListRef = useRef(terminalsList);
 	terminalsListRef.current = terminalsList;
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional - use ref to avoid re-renders, length triggers recheck
 	useEffect(() => {
 		if (
 			isOpen &&
@@ -55,6 +56,7 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [isOpen, terminalsList.length, activeTabId, selectTab]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional - avoid re-triggering auto-create on mutation object changes
 	useEffect(() => {
 		if (
 			isOpen &&
