@@ -256,6 +256,7 @@ function isHunkAlreadyApplied(
 function adjustReplacementIndentation(
 	hunk: PatchHunk,
 	matchedFileLines: string[],
+	allFileLines?: string[],
 ): string[] {
 	const result: string[] = [];
 	let expectedIdx = 0;
@@ -267,12 +268,25 @@ function adjustReplacementIndentation(
 	let fileIndentChar: 'tab' | 'space' = 'space';
 	const deltas: number[] = [];
 	let hasAddStyleMismatch = false;
+	let fileIndentDetected = false;
 
 	for (const fl of matchedFileLines) {
 		const ws = getLeadingWhitespace(fl);
 		if (ws.length > 0) {
 			fileIndentChar = detectIndentStyle(ws);
+			fileIndentDetected = true;
 			break;
+		}
+	}
+
+	if (!fileIndentDetected && allFileLines) {
+		for (const fl of allFileLines) {
+			const ws = getLeadingWhitespace(fl);
+			if (ws.length > 0) {
+				fileIndentChar = detectIndentStyle(ws);
+				fileIndentDetected = true;
+				break;
+			}
 		}
 	}
 
@@ -551,6 +565,7 @@ function applyHunkToLines(
 			? adjustReplacementIndentation(
 					hunk,
 					lines.slice(matchIndex, matchIndex + expected.length),
+					originalLines,
 				)
 			: replacement;
 

@@ -69,6 +69,7 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 
 **Using the `apply_patch` Tool** (Recommended):
 - **CRITICAL**: ALWAYS read the target file immediately before creating a patch - never patch from memory
+- The `read` tool returns an `indentation` field (e.g., "tabs", "2 spaces") — use it to match the file's indent style in your patch
 - Primary choice for targeted file edits - avoids rewriting entire files
 - Preferred format is the enveloped patch (`*** Begin Patch` ...); standard unified diffs (`---/+++`) are also accepted and auto-converted if provided
 - Only requires the specific lines you want to change

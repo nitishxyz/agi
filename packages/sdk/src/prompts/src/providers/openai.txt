@@ -384,6 +384,7 @@ GPT-4 models (especially GPT-4o) often fail patches by:
 
 **Pre-Flight Checklist (EVERY call):**
 - [ ] Read the target file with `read` tool in THIS turn
+- [ ] Check the `indentation` field in the read response (e.g., "tabs", "2 spaces") to know the file's indent style
 - [ ] Copy context lines EXACTLY from what you just read
 - [ ] Verify indentation (spaces vs tabs) matches the file
 - [ ] Include `*** Begin Patch` and `*** End Patch` markers

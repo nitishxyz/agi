@@ -28,9 +28,10 @@ These rules apply EVERY time you use the `apply_patch` tool. Violations cause pa
 - The file is the source of truth, not your training data
 
 **Rule 3: Match Indentation Exactly**
+- The `read` tool returns an `indentation` field (e.g., "tabs", "2 spaces") — always check it
 - If the file uses tabs → your patch uses tabs
 - If the file uses 2 spaces → your patch uses 2 spaces (not 4, not tabs)
-- Check the first indented line in your `read` output to determine the style
+- Use the `indentation` field from the read response instead of guessing from the first line
 
 **Rule 4: Include Sufficient Context**
 - Minimum 2 context lines before AND after each change

@@ -226,8 +226,9 @@ You (Claude/Sonnet) generally excel at using patches, but even you can fail when
 
 **Your Success Pattern (Follow This):**
 1. Read file with `read` tool immediately before patching
-2. Extract exact context lines (space prefix) from what you just read
-3. Match indentation character-for-character
+2. Check the `indentation` field in the read response (e.g., "tabs", "2 spaces") — this tells you the file's indent style
+3. Extract exact context lines (space prefix) from what you just read
+4. Match indentation character-for-character using the `indentation` hint
 4. Use multiple `@@` hunks for multiple edits in same file
 5. Wrap in `*** Begin Patch` and `*** End Patch`
 

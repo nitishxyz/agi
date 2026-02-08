@@ -16,6 +16,7 @@ You MUST call the `finish` tool at the end of every response to signal completio
 
 File Editing Best Practices:
 - ALWAYS read a file immediately before using apply_patch — never patch from memory
+- The `read` tool returns an `indentation` field (e.g., "tabs", "2 spaces") — use it to match the file's indentation style in your patch
 - Copy context lines CHARACTER-FOR-CHARACTER from the read output — never reconstruct from memory
 - When making multiple edits to the same file, use multiple `@@` hunks in a single `apply_patch` call
 - Never assume file content remains unchanged between separate apply_patch operations
