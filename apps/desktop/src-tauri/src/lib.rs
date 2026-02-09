@@ -75,12 +75,17 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(ServerState::default())
+        .manage(commands::updater::PendingUpdate(Mutex::new(None)))
+        .manage(commands::updater::ReadyUpdate(Mutex::new(None)))
         .manage(InitialProjectState {
             path: Mutex::new(initial_project),
         })
         .setup(|app| {
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
+
             let new_window = MenuItemBuilder::new("New Window")
                 .id("new_window")
                 .accelerator("CmdOrCtrl+Shift+N")
@@ -168,6 +173,9 @@ pub fn run() {
             commands::onboarding::set_defaults,
             commands::onboarding::complete_onboarding,
             commands::onboarding::get_home_directory,
+            commands::updater::check_for_update,
+            commands::updater::download_update,
+            commands::updater::apply_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

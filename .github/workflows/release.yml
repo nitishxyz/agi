@@ -651,29 +651,24 @@ jobs:
             esac
           done
 
+          PLATFORMS=""
+          add_platform() {
+            local key="$1" sig="$2" url="$3"
+            [ -z "$url" ] && return
+            [ -n "$PLATFORMS" ] && PLATFORMS="${PLATFORMS},"
+            PLATFORMS="${PLATFORMS}\"${key}\":{\"signature\":\"${sig}\",\"url\":\"${url}\"}"
+          }
+          add_platform "darwin-aarch64" "$DARWIN_AARCH64_SIG" "$DARWIN_AARCH64_URL"
+          add_platform "darwin-x86_64" "$DARWIN_X64_SIG" "$DARWIN_X64_URL"
+          add_platform "linux-x86_64" "$LINUX_X64_SIG" "$LINUX_X64_URL"
+          add_platform "linux-aarch64" "$LINUX_ARM64_SIG" "$LINUX_ARM64_URL"
+
           cat > ./release/latest.json <<EOF
           {
             "version": "${VERSION}",
             "notes": "otto desktop v${VERSION}",
             "pub_date": "${NOW}",
-            "platforms": {
-              "darwin-aarch64": {
-                "signature": "${DARWIN_AARCH64_SIG}",
-                "url": "${DARWIN_AARCH64_URL}"
-              },
-              "darwin-x86_64": {
-                "signature": "${DARWIN_X64_SIG}",
-                "url": "${DARWIN_X64_URL}"
-              },
-              "linux-x86_64": {
-                "signature": "${LINUX_X64_SIG}",
-                "url": "${LINUX_X64_URL}"
-              },
-              "linux-aarch64": {
-                "signature": "${LINUX_ARM64_SIG}",
-                "url": "${LINUX_ARM64_URL}"
-              }
-            }
+            "platforms": {${PLATFORMS}}
           }
           EOF
           cat ./release/latest.json

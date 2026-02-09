@@ -1,13 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
-import { check, type Update } from '@tauri-apps/plugin-updater';
+import { invoke, Channel } from '@tauri-apps/api/core';
 import { relaunch } from '@tauri-apps/plugin-process';
+
+interface UpdateInfo {
+	version: string;
+	currentVersion: string;
+}
+
+type DownloadEvent =
+	| { event: 'started'; data: { contentLength: number | null } }
+	| { event: 'progress'; data: { chunkLength: number; downloaded: number } }
+	| { event: 'finished' };
 
 interface UpdateState {
 	available: boolean;
 	version: string | null;
 	downloading: boolean;
-	installing: boolean;
+	downloaded: boolean;
 	progress: number;
+	totalBytes: number;
 	error: string | null;
 }
 
@@ -18,17 +29,18 @@ export function useUpdate() {
 		available: false,
 		version: null,
 		downloading: false,
-		installing: false,
+		downloaded: false,
 		progress: 0,
+		totalBytes: 0,
 		error: null,
 	});
-	const [update, setUpdate] = useState<Update | null>(null);
 
 	const checkForUpdate = useCallback(async () => {
 		try {
-			const result = await check();
+			console.log('[otto] Checking for updates...');
+			const result = await invoke<UpdateInfo | null>('check_for_update');
+			console.log('[otto] Update check result:', result);
 			if (result) {
-				setUpdate(result);
 				setState((s) => ({
 					...s,
 					available: true,
@@ -38,6 +50,7 @@ export function useUpdate() {
 			}
 		} catch (e) {
 			console.error('[otto] Update check failed:', e);
+			setState((s) => ({ ...s, error: String(e) }));
 		}
 	}, []);
 
@@ -47,38 +60,44 @@ export function useUpdate() {
 		return () => clearInterval(interval);
 	}, [checkForUpdate]);
 
-	const installUpdate = useCallback(async () => {
-		if (!update) return;
+	const downloadUpdate = useCallback(async () => {
 		try {
-			setState((s) => ({ ...s, downloading: true, error: null }));
-			let totalBytes = 0;
-			let downloadedBytes = 0;
-			await update.downloadAndInstall((event) => {
-				if (event.event === 'Started' && event.data.contentLength) {
-					totalBytes = event.data.contentLength;
-				} else if (event.event === 'Progress') {
-					downloadedBytes += event.data.chunkLength;
-					if (totalBytes > 0) {
-						setState((s) => ({
-							...s,
-							progress: Math.round((downloadedBytes / totalBytes) * 100),
-						}));
-					}
-				} else if (event.event === 'Finished') {
-					setState((s) => ({ ...s, downloading: false, installing: true }));
+			setState((s) => ({ ...s, downloading: true, progress: 0, error: null }));
+
+			const onEvent = new Channel<DownloadEvent>();
+			onEvent.onmessage = (event) => {
+				if (event.event === 'started' && event.data.contentLength) {
+					setState((s) => ({ ...s, totalBytes: event.data.contentLength! }));
+				} else if (event.event === 'progress') {
+					setState((s) => {
+						const pct =
+							s.totalBytes > 0
+								? Math.round((event.data.downloaded / s.totalBytes) * 100)
+								: 0;
+						return { ...s, progress: pct };
+					});
+				} else if (event.event === 'finished') {
+					setState((s) => ({ ...s, downloading: false, downloaded: true, progress: 100 }));
 				}
-			});
+			};
+
+			await invoke('download_update', { onEvent });
+			setState((s) => ({ ...s, downloading: false, downloaded: true, progress: 100 }));
+		} catch (e) {
+			const msg = e instanceof Error ? e.message : String(e);
+			setState((s) => ({ ...s, downloading: false, error: msg }));
+		}
+	}, []);
+
+	const applyUpdate = useCallback(async () => {
+		try {
+			await invoke('apply_update');
 			await relaunch();
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : String(e);
-			setState((s) => ({
-				...s,
-				downloading: false,
-				installing: false,
-				error: msg,
-			}));
+			setState((s) => ({ ...s, error: msg }));
 		}
-	}, [update]);
+	}, []);
 
-	return { ...state, installUpdate, checkForUpdate };
+	return { ...state, downloadUpdate, applyUpdate, checkForUpdate };
 }

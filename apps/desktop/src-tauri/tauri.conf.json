@@ -49,6 +49,7 @@
 	},
 	"plugins": {
 		"updater": {
+			"dangerousInsecureTransportProtocol": true,
 			"endpoints": [
 				"https://github.com/nitishxyz/otto/releases/download/desktop-latest/latest.json"
 			],
