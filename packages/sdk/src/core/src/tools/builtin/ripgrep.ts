@@ -96,11 +96,11 @@ export function buildRipgrepTool(projectRoot: string): {
 							.filter(Boolean)
 							.slice(0, maxResults);
 						const matches = lines.map((l) => {
-							const parts = l.split(':');
-							if (parts.length < 3) return { file: '', line: 0, text: l };
-							const file = parts[0];
-							const line = Number.parseInt(parts[1], 10);
-							const text = parts.slice(2).join(':');
+							const m = l.match(/^(.+?):(\d+):(.*)$/s);
+							if (!m) return { file: '', line: 0, text: l };
+							const file = m[1];
+							const line = Number.parseInt(m[2], 10);
+							const text = m[3];
 							return { file, line, text };
 						});
 						resolve({ ok: true, count: matches.length, matches });

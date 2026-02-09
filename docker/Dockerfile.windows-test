@@ -1,0 +1,17 @@
+FROM --platform=linux/amd64 ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV WINEDEBUG=-all
+
+RUN dpkg --add-architecture i386 && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        wine64 \
+        wine32 \
+        xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY dist/otto-windows-x64.exe /app/otto.exe
+
+ENTRYPOINT ["wine64-stable", "/app/otto.exe"]

@@ -18,13 +18,18 @@ function formatShellCommand(parts: string[]): string {
 }
 
 function normalizePath(p: string) {
-	const parts = p.replace(/\\/g, '/').split('/');
+	const normalized = p.replace(/\\/g, '/');
+	const driveMatch = normalized.match(/^([A-Za-z]):\//);
+	const drivePrefix = driveMatch ? `${driveMatch[1]}:` : '';
+	const rest = driveMatch ? normalized.slice(2) : normalized;
+	const parts = rest.split('/');
 	const stack: string[] = [];
 	for (const part of parts) {
 		if (!part || part === '.') continue;
 		if (part === '..') stack.pop();
 		else stack.push(part);
 	}
+	if (drivePrefix) return `${drivePrefix}/${stack.join('/')}`;
 	return `/${stack.join('/')}`;
 }
 
@@ -116,7 +121,10 @@ export function buildTerminalTool(
 
 						const cwd = resolveSafePath(projectRoot, params.cwd);
 
-						const shellPath = process.env.SHELL || '/bin/sh';
+						const shellPath =
+							process.platform === 'win32'
+								? process.env.COMSPEC || 'cmd.exe'
+								: process.env.SHELL || '/bin/sh';
 
 						let command = params.command ?? shellPath;
 						let args = params.args ?? [];
@@ -124,7 +132,7 @@ export function buildTerminalTool(
 
 						if (runInShell) {
 							command = shellPath;
-							args = ['-i'];
+							args = process.platform === 'win32' ? [] : ['-i'];
 							const providedCommand = params.command;
 							const providedArgs = params.args ?? [];
 

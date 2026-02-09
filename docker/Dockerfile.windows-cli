@@ -1,0 +1,20 @@
+FROM oven/bun:latest
+
+WORKDIR /app
+
+COPY package.json bun.lock bunfig.toml tsconfig.base.json tsconfig.json biome.json ./
+COPY apps/ apps/
+COPY packages/ packages/
+COPY scripts/ scripts/
+COPY vendor/ vendor/
+
+RUN bun install --frozen-lockfile
+
+RUN bun run scripts/build-web.ts
+RUN bun run scripts/prepare-embedded-bins.ts windows-x64
+
+RUN mkdir -p dist && \
+    bun build --compile --minify \
+    --target=bun-windows-x64 \
+    ./apps/cli/index.ts \
+    --outfile dist/otto-windows-x64.exe

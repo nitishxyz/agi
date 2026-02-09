@@ -15,15 +15,18 @@ function getPlatformKey(target?: string): string {
 			'bun-darwin-x64': 'darwin-x64',
 			'bun-linux-x64': 'linux-x64',
 			'bun-linux-arm64': 'linux-arm64',
+			'bun-windows-x64': 'windows-x64',
 			'darwin-arm64': 'darwin-arm64',
 			'darwin-x64': 'darwin-x64',
 			'linux-x64': 'linux-x64',
 			'linux-arm64': 'linux-arm64',
+			'windows-x64': 'windows-x64',
 			'aarch64-apple-darwin': 'darwin-arm64',
 			'x86_64-apple-darwin': 'darwin-x64',
 			'x86_64-unknown-linux-gnu': 'linux-x64',
 			'x86_64-unknown-linux-musl': 'linux-x64',
 			'aarch64-unknown-linux-gnu': 'linux-arm64',
+			'x86_64-pc-windows-msvc': 'windows-x64',
 		};
 		if (map[target]) return map[target];
 	}

@@ -32,6 +32,7 @@ const PLATFORMS = {
 	'darwin-x64': 'bun-darwin-x64',
 	'linux-x64': 'bun-linux-x64',
 	'linux-arm64': 'bun-linux-arm64',
+	'windows-x64': 'bun-windows-x64',
 } as const;
 
 function detectPlatform(): keyof typeof PLATFORMS {
@@ -42,6 +43,7 @@ function detectPlatform(): keyof typeof PLATFORMS {
 	if (os === 'darwin' && arch === 'x64') return 'darwin-x64';
 	if (os === 'linux' && arch === 'x64') return 'linux-x64';
 	if (os === 'linux' && arch === 'arm64') return 'linux-arm64';
+	if (os === 'win32' && arch === 'x64') return 'windows-x64';
 
 	throw new Error(`Unsupported platform: ${os}-${arch}`);
 }
@@ -104,10 +106,13 @@ async function copyBinaryToDesktop(binaryPath: string, platform: string) {
 		mkdirSync(BINARIES_DIR, { recursive: true });
 	}
 
-	const destPath = join(BINARIES_DIR, `otto-${platform}`);
+	const isWin = platform.startsWith('windows');
+	const destPath = join(BINARIES_DIR, `otto-${platform}${isWin ? '.exe' : ''}`);
 	copyFileSync(binaryPath, destPath);
 
-	await $`chmod +x ${destPath}`;
+	if (process.platform !== 'win32') {
+		await $`chmod +x ${destPath}`;
+	}
 
 	console.log(`   ✅ Copied to ${destPath}`);
 	return destPath;

@@ -28,7 +28,8 @@ function isInWorkspace() {
 }
 
 function findBinaryInPath() {
-	const pathDirs = (process.env.PATH || '').split(':');
+	const sep = platform() === 'win32' ? ';' : ':';
+	const pathDirs = (process.env.PATH || '').split(sep);
 	const ext = platform() === 'win32' ? '.exe' : '';
 	const currentScript = fileURLToPath(import.meta.url);
 
@@ -231,7 +232,8 @@ async function install() {
 			console.log(`Version: ${result.stdout.trim()}`);
 			console.log(`Location: ${binPath}`);
 
-			const pathDirs = (process.env.PATH || '').split(':');
+			const pathSep = platform() === 'win32' ? ';' : ':';
+			const pathDirs = (process.env.PATH || '').split(pathSep);
 			if (!pathDirs.includes(userBin)) {
 				updateShellProfile(userBin);
 				console.log(`\n⚠️  Add ${userBin} to your PATH:`);

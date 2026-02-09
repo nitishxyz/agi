@@ -6,13 +6,18 @@ import { createToolError, type ToolResponse } from '../error.ts';
 import { getAugmentedPath } from '../bin-manager.ts';
 
 function normalizePath(p: string) {
-	const parts = p.replace(/\\/g, '/').split('/');
+	const normalized = p.replace(/\\/g, '/');
+	const driveMatch = normalized.match(/^([A-Za-z]):\//);
+	const drivePrefix = driveMatch ? `${driveMatch[1]}:` : '';
+	const rest = driveMatch ? normalized.slice(2) : normalized;
+	const parts = rest.split('/');
 	const stack: string[] = [];
 	for (const part of parts) {
 		if (!part || part === '.') continue;
 		if (part === '..') stack.pop();
 		else stack.push(part);
 	}
+	if (drivePrefix) return `${drivePrefix}/${stack.join('/')}`;
 	return `/${stack.join('/')}`;
 }
 

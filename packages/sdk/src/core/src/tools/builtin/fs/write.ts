@@ -1,6 +1,7 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod/v3';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import {
 	buildWriteArtifact,
 	resolveSafePath,
@@ -68,7 +69,7 @@ export function buildWriteTool(projectRoot: string): {
 
 			try {
 				if (createDirs) {
-					const dirPath = abs.slice(0, abs.lastIndexOf('/'));
+					const dirPath = dirname(abs);
 					await mkdir(dirPath, { recursive: true });
 				}
 				let existed = false;

@@ -79,7 +79,7 @@ async function listFilesWithRg(
 			const allFiles = stdout.split('\n').filter(Boolean);
 
 			const filtered = allFiles.filter((f) => {
-				const filename = f.split('/').pop() || f;
+				const filename = f.split(/[\\/]/).pop() || f;
 				return !shouldExcludeFile(filename);
 			});
 
@@ -114,7 +114,7 @@ function matchesGitignorePattern(
 ): boolean {
 	for (const pattern of patterns) {
 		const cleanPattern = pattern.replace(/^\//, '').replace(/\/$/, '');
-		const pathParts = relativePath.split('/');
+		const pathParts = relativePath.split(/[\\/]/);
 
 		if (pattern.endsWith('/')) {
 			if (pathParts[0] === cleanPattern) return true;

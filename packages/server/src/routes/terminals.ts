@@ -28,7 +28,10 @@ export function registerTerminalsRoutes(
 
 			let resolvedCommand = command;
 			if (command === 'bash' || command === 'sh' || command === 'shell') {
-				resolvedCommand = process.env.SHELL || '/bin/bash';
+				resolvedCommand =
+					process.platform === 'win32'
+						? process.env.COMSPEC || 'cmd.exe'
+						: process.env.SHELL || '/bin/bash';
 			}
 			const resolvedCwd = cwd || process.cwd();
 

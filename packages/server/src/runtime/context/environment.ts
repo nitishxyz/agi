@@ -104,7 +104,9 @@ export async function getProjectTree(projectRoot: string): Promise<string> {
 		const execAsync = promisify(exec);
 
 		const { stdout } = await execAsync(
-			'git ls-files 2>/dev/null || find . -type f -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*" 2>/dev/null | head -100',
+			process.platform === 'win32'
+				? 'git ls-files 2>NUL || dir /s /b /a:-d 2>NUL'
+				: 'git ls-files 2>/dev/null || find . -type f -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*" 2>/dev/null | head -100',
 			{ cwd: projectRoot, maxBuffer: 1024 * 1024 },
 		);
 

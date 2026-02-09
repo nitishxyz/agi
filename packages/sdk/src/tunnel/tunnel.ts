@@ -210,7 +210,11 @@ export async function killStaleTunnels(): Promise<void> {
 		const execAsync = promisify(exec);
 
 		// Kill any existing tunnel processes (but not the parent otto process)
-		await execAsync('pkill -f "tunnel tunnel --url" 2>/dev/null || true');
+		const killCmd =
+			process.platform === 'win32'
+				? 'taskkill /F /IM tunnel.exe 2>NUL || exit /b 0'
+				: 'pkill -f "tunnel tunnel --url" 2>/dev/null || true';
+		await execAsync(killCmd);
 		// Give processes time to die
 		await new Promise((resolve) => setTimeout(resolve, 500));
 	} catch {

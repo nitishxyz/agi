@@ -110,13 +110,11 @@ export function buildGrepTool(projectRoot: string): {
 
 			for (const line of lines) {
 				if (!line) continue;
-				const idx1 = line.indexOf(':');
-				const idx2 = idx1 === -1 ? -1 : line.indexOf(':', idx1 + 1);
-				if (idx1 === -1 || idx2 === -1) continue;
-				const filePath = line.slice(0, idx1);
-				const lineNumStr = line.slice(idx1 + 1, idx2);
-				const lineText = line.slice(idx2 + 1);
-				const lineNum = parseInt(lineNumStr, 10);
+				const m = line.match(/^(.+?):(\d+):(.*)$/s);
+				if (!m) continue;
+				const filePath = m[1];
+				const lineNum = parseInt(m[2], 10);
+				const lineText = m[3];
 				if (!filePath || !Number.isFinite(lineNum)) continue;
 				matches.push({ file: filePath, line: lineNum, text: lineText });
 			}

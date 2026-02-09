@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { $ } from 'bun';
+import { mkdirSync } from 'node:fs';
 import { Spinner, GREEN, DIM, BOLD, CYAN, RESET } from './lib/spinner.ts';
 
 const verbose = process.argv.includes('--verbose');
@@ -8,7 +8,7 @@ const target = args.find((a) => a.startsWith('--target='));
 
 const startTime = performance.now();
 const spinner = new Spinner();
-const ROOT = import.meta.dir.replace('/scripts', '');
+const ROOT = import.meta.dir.replace(/[\\/]scripts$/, '');
 
 console.log(`\n${BOLD}${CYAN}otto${RESET} ${DIM}compile${RESET}\n`);
 
@@ -69,13 +69,16 @@ if (prepareTarget) prepareArgs.push(prepareTarget);
 spinner.succeed();
 
 spinner.begin('Compiling binary');
-await $`mkdir -p dist`.quiet();
+mkdirSync('dist', { recursive: true });
 
 const buildCmd = ['bun', 'build', '--compile', '--minify'];
 if (target) buildCmd.push(target);
-const outfile = target
-	? `dist/otto-${target.replace('--target=bun-', '')}`
-	: 'dist/otto';
+const targetKey = target ? target.replace('--target=bun-', '') : null;
+const isWindowsTarget =
+	targetKey?.startsWith('windows-') ?? process.platform === 'win32';
+const outfile = targetKey
+	? `dist/otto-${targetKey}${isWindowsTarget ? '.exe' : ''}`
+	: `dist/otto${process.platform === 'win32' ? '.exe' : ''}`;
 buildCmd.push('./apps/cli/index.ts', '--outfile', outfile);
 
 if (verbose) {

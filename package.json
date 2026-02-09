@@ -45,6 +45,7 @@
 		"build:bin:darwin-x64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-darwin-x64 ./apps/cli/index.ts --outfile dist/otto-darwin-x64",
 		"build:bin:linux-x64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-linux-x64 ./apps/cli/index.ts --outfile dist/otto-linux-x64",
 		"build:bin:linux-arm64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-linux-arm64 ./apps/cli/index.ts --outfile dist/otto-linux-arm64",
+		"build:bin:windows-x64": "bun run scripts/build-web.ts && mkdir -p dist && bun build --compile --minify --target=bun-windows-x64 ./apps/cli/index.ts --outfile dist/otto-windows-x64.exe",
 		"build": "bun run compile",
 		"build:packages": "bun run --filter './packages/*' build",
 		"build:apps": "bun run --filter './apps/*' build",
@@ -57,6 +58,10 @@
 		"dev:desktop:signed": "bun run scripts/build-desktop.ts --dev --sign",
 		"build:desktop": "bun run scripts/build-desktop.ts",
 		"build:desktop:all": "bun run scripts/build-desktop.ts --all-platforms",
+		"build:windows-cli": "bun run scripts/build-windows-cli.ts",
+		"build:windows-cli:docker": "bun run scripts/build-windows-cli.ts --docker",
+		"build:windows-desktop": "bun run scripts/build-windows-desktop.ts",
+		"build:windows-desktop:cli-only": "bun run scripts/build-windows-desktop.ts --cli-only",
 		"prepublishOnly": "bun run compile",
 		"version:bump": "bun run scripts/bump-version.ts"
 	},

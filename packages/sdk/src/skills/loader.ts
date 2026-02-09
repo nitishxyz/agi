@@ -101,7 +101,7 @@ async function loadSkillsFromDir(
 			const content = await fs.readFile(filePath, 'utf-8');
 			const skill = parseSkillFile(content, filePath, scope);
 
-			const dirName = dirname(filePath).split('/').pop();
+			const dirName = dirname(filePath).split(/[\\/]/).pop();
 			if (dirName !== skill.metadata.name) {
 				if (process.env.OTTO_DEBUG === '1') {
 					console.warn(
