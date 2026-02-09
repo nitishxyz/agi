@@ -77,12 +77,22 @@ export function useUpdate() {
 						return { ...s, progress: pct };
 					});
 				} else if (event.event === 'finished') {
-					setState((s) => ({ ...s, downloading: false, downloaded: true, progress: 100 }));
+					setState((s) => ({
+						...s,
+						downloading: false,
+						downloaded: true,
+						progress: 100,
+					}));
 				}
 			};
 
 			await invoke('download_update', { onEvent });
-			setState((s) => ({ ...s, downloading: false, downloaded: true, progress: 100 }));
+			setState((s) => ({
+				...s,
+				downloading: false,
+				downloaded: true,
+				progress: 100,
+			}));
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : String(e);
 			setState((s) => ({ ...s, downloading: false, error: msg }));

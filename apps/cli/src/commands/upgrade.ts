@@ -164,7 +164,9 @@ async function runUpgrade(version: string): Promise<void> {
 	const userBin = resolve(homedir(), '.local', 'bin');
 	const binPath = resolve(userBin, `${BIN_NAME}${ext}`);
 
-	console.log(`\n  Downloading ${colors.bold(`v${version}`)} for ${platform()}/${arch()}\n`);
+	console.log(
+		`\n  Downloading ${colors.bold(`v${version}`)} for ${platform()}/${arch()}\n`,
+	);
 
 	await downloadBinary(url, binPath);
 

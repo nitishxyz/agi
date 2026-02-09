@@ -124,35 +124,37 @@ export function Workspace({
 						{project.path}
 					</span>
 				</div>
-			{available && (
-			downloaded ? (
-				<button
-					type="button"
-					onClick={applyUpdate}
-					className="h-6 px-2.5 flex items-center gap-1.5 text-xs font-medium bg-green-600 text-white rounded-full hover:bg-green-500 transition-colors"
-					title={`Restart to update to v${version}`}
-				>
-					<RotateCw className="w-3 h-3" />
-					Restart
-				</button>
-			) : (
-				<button
-					type="button"
-					onClick={downloadUpdate}
-					disabled={downloading}
-					className="h-6 px-2.5 flex items-center gap-1.5 text-xs font-medium bg-blue-600 text-white rounded-full hover:bg-blue-500 transition-colors disabled:opacity-60"
-					title={`Update to v${version}`}
-				>
-					<ArrowDownToLine className="w-3 h-3" />
-					{downloading ? `${progress}%` : 'Update'}
-				</button>
-			)
-			)}
-			{updateError && (
-				<span className="text-xs text-red-400 max-w-[200px] truncate" title={updateError}>
-					⚠ {updateError}
-				</span>
-			)}
+				{available &&
+					(downloaded ? (
+						<button
+							type="button"
+							onClick={applyUpdate}
+							className="h-6 px-2.5 flex items-center gap-1.5 text-xs font-medium bg-green-600 text-white rounded-full hover:bg-green-500 transition-colors"
+							title={`Restart to update to v${version}`}
+						>
+							<RotateCw className="w-3 h-3" />
+							Restart
+						</button>
+					) : (
+						<button
+							type="button"
+							onClick={downloadUpdate}
+							disabled={downloading}
+							className="h-6 px-2.5 flex items-center gap-1.5 text-xs font-medium bg-blue-600 text-white rounded-full hover:bg-blue-500 transition-colors disabled:opacity-60"
+							title={`Update to v${version}`}
+						>
+							<ArrowDownToLine className="w-3 h-3" />
+							{downloading ? `${progress}%` : 'Update'}
+						</button>
+					))}
+				{updateError && (
+					<span
+						className="text-xs text-red-400 max-w-[200px] truncate"
+						title={updateError}
+					>
+						⚠ {updateError}
+					</span>
+				)}
 				{server && (
 					<div className="flex items-center gap-1.5 text-xs">
 						<span className="w-2 h-2 rounded-full bg-green-500" />
