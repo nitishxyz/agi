@@ -393,6 +393,7 @@ jobs:
           timeout_minutes: 30
           max_attempts: 3
           retry_wait_seconds: 30
+          shell: bash
           command: |
             if [[ "${{ matrix.target }}" == *"linux"* ]]; then
               cd apps/desktop && npm run tauri build -- --target ${{ matrix.target }} --bundles deb
