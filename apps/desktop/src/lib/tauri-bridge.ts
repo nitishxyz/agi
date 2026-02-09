@@ -18,8 +18,8 @@ export interface ServerInfo {
 export interface GitHubRepo {
 	id: number;
 	name: string;
-	fullName: string;
-	cloneUrl: string;
+	full_name: string;
+	clone_url: string;
 	private: boolean;
 	description: string | null;
 }
@@ -27,7 +27,7 @@ export interface GitHubRepo {
 export interface GitHubUser {
 	login: string;
 	name: string | null;
-	avatarUrl: string;
+	avatar_url: string;
 }
 
 export interface GitStatus {
@@ -36,6 +36,20 @@ export interface GitStatus {
 	behind: number;
 	changedFiles: Array<{ path: string; status: string }>;
 	hasChanges: boolean;
+}
+
+export interface DeviceCodeResponse {
+	deviceCode: string;
+	userCode: string;
+	verificationUri: string;
+	interval: number;
+	expiresIn: number;
+}
+
+export interface DevicePollResult {
+	status: 'complete' | 'pending' | 'error';
+	accessToken: string | null;
+	error: string | null;
 }
 
 export const isDesktopApp = (): boolean => {
@@ -66,16 +80,20 @@ export const tauriBridge = {
 
 	getInitialProject: () => invoke<string | null>('get_initial_project'),
 
+	githubDeviceCodeRequest: () =>
+		invoke<DeviceCodeResponse>('github_device_code_request'),
+	githubDeviceCodePoll: (deviceCode: string) =>
+		invoke<DevicePollResult>('github_device_code_poll', { deviceCode }),
 	githubSaveToken: (token: string) => invoke('github_save_token', { token }),
 	githubGetToken: () => invoke<string | null>('github_get_token'),
 	githubLogout: () => invoke('github_logout'),
 	githubGetUser: (token: string) =>
 		invoke<GitHubUser>('github_get_user', { token }),
-	githubListRepos: (token: string) =>
-		invoke<GitHubRepo[]>('github_list_repos', { token }),
+	githubListRepos: (token: string, page?: number, search?: string) =>
+		invoke<GitHubRepo[]>('github_list_repos', { token, page, search }),
 
 	gitClone: (url: string, path: string, token: string) =>
-		invoke('git_clone', { url, path, token }),
+		invoke<string>('git_clone', { url, path, token }),
 	gitStatus: (path: string) => invoke<GitStatus>('git_status', { path }),
 	gitCommit: (path: string, message: string) =>
 		invoke<string>('git_commit', { path, message }),

@@ -157,6 +157,8 @@ pub fn run() {
             commands::github::github_logout,
             commands::github::github_get_user,
             commands::github::github_list_repos,
+            commands::github::github_device_code_request,
+            commands::github::github_device_code_poll,
             commands::git::git_clone,
             commands::git::git_status,
             commands::git::git_commit,

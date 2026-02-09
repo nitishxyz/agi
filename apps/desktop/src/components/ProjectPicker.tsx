@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useProjects } from '../hooks/useProjects';
 import { useGitHub } from '../hooks/useGitHub';
 import { useFullscreen } from '../hooks/useFullscreen';
@@ -7,11 +7,13 @@ import { handleTitleBarDrag } from '../utils/title-bar';
 import { tauriBridge, type Project } from '../lib/tauri-bridge';
 import { OttoWordmark, GitHubLogo } from './Icons';
 import { ProjectCard } from './ProjectCard';
-import { TokenInputModal } from './TokenInputModal';
+import { DeviceCodeModal } from './DeviceCodeModal';
 import { CloneModal } from './CloneModal';
 import { Sun, Moon } from 'lucide-react';
+import { ArrowDownToLine, RotateCw } from 'lucide-react';
 import { useDesktopTheme } from '../App';
 import { WindowControls } from './WindowControls';
+import { useUpdate } from '../hooks/useUpdate';
 
 export function ProjectPicker({
 	onSelectProject,
@@ -22,19 +24,34 @@ export function ProjectPicker({
 		useProjects();
 	const {
 		user,
+		loading: githubLoading,
 		isAuthenticated,
-		saveToken,
+		oauthState,
+		startOAuth,
+		startPolling,
+		cancelOAuth,
 		logout,
 		loadRepos,
 		repos,
 		cloneRepo,
 	} = useGitHub();
 	const [showCloneModal, setShowCloneModal] = useState(false);
-	const [showTokenInput, setShowTokenInput] = useState(false);
+	const [showOAuthModal, setShowOAuthModal] = useState(false);
 	const [cloning, setCloning] = useState(false);
+	const [cloningRepo, setCloningRepo] = useState<string | null>(null);
 	const isFullscreen = useFullscreen();
 	const platform = usePlatform();
 	const { theme, toggleTheme } = useDesktopTheme();
+	const pageRef = useRef(1);
+	const {
+		available: updateAvailable,
+		version: updateVersion,
+		downloading,
+		downloaded,
+		progress: updateProgress,
+		downloadUpdate,
+		applyUpdate,
+	} = useUpdate();
 
 	const handleOpenFolder = async () => {
 		const project = await openProjectDialog();
@@ -44,23 +61,50 @@ export function ProjectPicker({
 	};
 
 	const handleCloneClick = async () => {
+		if (githubLoading) return;
 		if (!isAuthenticated) {
-			setShowTokenInput(true);
+			setShowOAuthModal(true);
+			await startOAuth();
 		} else {
 			setShowCloneModal(true);
-			await loadRepos();
+			pageRef.current = 1;
+			await loadRepos(1);
 		}
 	};
+
+	const handleOAuthCancel = () => {
+		cancelOAuth();
+		setShowOAuthModal(false);
+	};
+
+	const handleStartPolling = (deviceCode: string, interval: number) => {
+		startPolling(deviceCode, interval);
+	};
+
+	const handleSearch = useCallback(
+		async (query: string) => {
+			pageRef.current = 1;
+			await loadRepos(1, query || undefined);
+		},
+		[loadRepos],
+	);
+
+	const handleLoadMore = useCallback(async () => {
+		pageRef.current += 1;
+		await loadRepos(pageRef.current);
+	}, [loadRepos]);
 
 	const handleCloneRepo = async (url: string, name: string) => {
 		const homeDir = '~/Projects';
 		const targetPath = `${homeDir}/${name}`;
 		try {
 			setCloning(true);
-			await cloneRepo(url, targetPath);
+			const repoFullName = repos.find((r) => r.clone_url === url)?.full_name || name;
+			setCloningRepo(repoFullName);
+			const resolvedPath = await cloneRepo(url, targetPath);
 			setShowCloneModal(false);
 			const project: Project = {
-				path: targetPath,
+				path: resolvedPath,
 				name,
 				lastOpened: new Date().toISOString(),
 				pinned: false,
@@ -70,8 +114,22 @@ export function ProjectPicker({
 			alert(`Clone failed: ${err}`);
 		} finally {
 			setCloning(false);
+			setCloningRepo(null);
 		}
 	};
+
+	useEffect(() => {
+		if (
+			showOAuthModal &&
+			oauthState.step === 'complete' &&
+			isAuthenticated
+		) {
+			setShowOAuthModal(false);
+			setShowCloneModal(true);
+			pageRef.current = 1;
+			loadRepos(1);
+		}
+	}, [showOAuthModal, oauthState.step, isAuthenticated, loadRepos]);
 
 	const pinnedProjects = projects.filter((p) => p.pinned);
 	const recentProjects = projects.filter((p) => !p.pinned);
@@ -92,11 +150,11 @@ export function ProjectPicker({
 				<div className="flex items-center gap-2">
 					{isAuthenticated && (
 						<div className="flex items-center gap-3 mr-2">
-							{user?.avatarUrl && (
+							{user?.avatar_url && (
 								<img
-									src={user.avatarUrl}
+									src={user.avatar_url}
 									alt=""
-									className="w-6 h-6 rounded-full"
+								className="w-5 h-5 rounded-full"
 								/>
 							)}
 							<span className="text-sm text-muted-foreground">
@@ -111,6 +169,30 @@ export function ProjectPicker({
 							</button>
 						</div>
 					)}
+				{updateAvailable && (
+					downloaded ? (
+						<button
+							type="button"
+							onClick={applyUpdate}
+							className="h-6 px-2.5 flex items-center gap-1.5 text-xs font-medium bg-green-600 text-white rounded-full hover:bg-green-500 transition-colors"
+							title={`Restart to update to v${updateVersion}`}
+						>
+							<RotateCw className="w-3 h-3" />
+							Restart
+						</button>
+					) : (
+						<button
+							type="button"
+							onClick={downloadUpdate}
+							disabled={downloading}
+							className="h-6 px-2.5 flex items-center gap-1.5 text-xs font-medium bg-blue-600 text-white rounded-full hover:bg-blue-500 transition-colors disabled:opacity-60"
+							title={`Update to v${updateVersion}`}
+						>
+							<ArrowDownToLine className="w-3 h-3" />
+							{downloading ? `${updateProgress}%` : 'Update'}
+						</button>
+					)
+				)}
 					<button
 						type="button"
 						onClick={toggleTheme}
@@ -187,10 +269,12 @@ export function ProjectPicker({
 							</div>
 							<div>
 								<div className="font-medium text-foreground">
-									{isAuthenticated ? 'Clone from GitHub' : 'Connect GitHub'}
+									{githubLoading ? 'GitHub' : isAuthenticated ? 'Clone from GitHub' : 'Connect GitHub'}
 								</div>
 								<div className="text-sm text-muted-foreground">
-									{isAuthenticated
+									{githubLoading
+										? 'Checking connection...'
+										: isAuthenticated
 										? 'Clone a repository'
 										: 'Sign in to clone repositories'}
 								</div>
@@ -252,10 +336,11 @@ export function ProjectPicker({
 				</div>
 			</div>
 
-			{showTokenInput && (
-				<TokenInputModal
-					onSave={saveToken}
-					onClose={() => setShowTokenInput(false)}
+			{showOAuthModal && oauthState.step !== 'complete' && (
+				<DeviceCodeModal
+					oauthState={oauthState}
+					onStartPolling={handleStartPolling}
+					onCancel={handleOAuthCancel}
 				/>
 			)}
 
@@ -263,8 +348,11 @@ export function ProjectPicker({
 				<CloneModal
 					repos={repos}
 					cloning={cloning}
+				cloningRepo={cloningRepo}
 					onClone={handleCloneRepo}
 					onClose={() => setShowCloneModal(false)}
+					onSearch={handleSearch}
+					onLoadMore={handleLoadMore}
 				/>
 			)}
 		</div>

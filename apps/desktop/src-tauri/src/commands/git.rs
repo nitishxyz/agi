@@ -1,5 +1,17 @@
 use git2::{Cred, FetchOptions, PushOptions, RemoteCallbacks, Repository};
 use serde::{Deserialize, Serialize};
+use std::sync::{Arc, Mutex};
+use tauri::Emitter;
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct CloneProgress {
+    received_objects: usize,
+    total_objects: usize,
+    received_bytes: u64,
+    percent: u8,
+    phase: String,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -19,12 +31,47 @@ pub struct ChangedFile {
 }
 
 #[tauri::command]
-pub async fn git_clone(url: String, path: String, token: String) -> Result<(), String> {
+pub async fn git_clone(app: tauri::AppHandle, url: String, path: String, token: String) -> Result<String, String> {
+    let path = if path.starts_with("~/") {
+        let home = dirs::home_dir().ok_or_else(|| "No home directory".to_string())?;
+        home.join(&path[2..]).to_string_lossy().to_string()
+    } else {
+        path
+    };
     let token_clone = token.clone();
+    let app_clone = app.clone();
+    let last_pct = Arc::new(Mutex::new(0u8));
 
     let mut callbacks = RemoteCallbacks::new();
     callbacks.credentials(move |_url, _username, _allowed| {
         Cred::userpass_plaintext("x-access-token", &token_clone)
+    });
+
+    callbacks.transfer_progress(move |stats| {
+        let total = stats.total_objects();
+        let received = stats.received_objects();
+        let pct = if total > 0 {
+            ((received as f64 / total as f64) * 100.0) as u8
+        } else {
+            0
+        };
+        let mut last = last_pct.lock().unwrap();
+        if pct != *last {
+            *last = pct;
+            let phase = if stats.indexed_deltas() > 0 {
+                "Resolving deltas".to_string()
+            } else {
+                "Receiving objects".to_string()
+            };
+            let _ = app_clone.emit("clone-progress", CloneProgress {
+                received_objects: received,
+                total_objects: total,
+                received_bytes: stats.received_bytes() as u64,
+                percent: pct,
+                phase,
+            });
+        }
+        true
     });
 
     let mut fetch_options = FetchOptions::new();
@@ -37,7 +84,7 @@ pub async fn git_clone(url: String, path: String, token: String) -> Result<(), S
         .clone(&url, std::path::Path::new(&path))
         .map_err(|e| format!("Clone failed: {}", e))?;
 
-    Ok(())
+    Ok(path)
 }
 
 #[tauri::command]

@@ -15,10 +15,14 @@ export function ProjectCard({
 	onRemove: () => void;
 }) {
 	return (
-		<button
-			type="button"
+		<div
 			className="group flex items-center gap-3 p-3 bg-card border border-border hover:border-ring rounded-xl transition-colors cursor-pointer w-full text-left"
+			role="button"
+			tabIndex={0}
 			onClick={onSelect}
+			onKeyDown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') onSelect();
+			}}
 		>
 			<div className="flex-1 flex items-center gap-3 text-left">
 				<div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
@@ -60,6 +64,6 @@ export function ProjectCard({
 					✕
 				</button>
 			</div>
-		</button>
+		</div>
 	);
 }
