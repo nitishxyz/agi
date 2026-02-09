@@ -39,7 +39,10 @@ export function useGitHub() {
 					const userData = await tauriBridge.githubGetUser(savedToken);
 					setUser(userData);
 				} catch (userErr) {
-					console.error('Failed to fetch GitHub user, token may be expired:', userErr);
+					console.error(
+						'Failed to fetch GitHub user, token may be expired:',
+						userErr,
+					);
 					setToken(null);
 					await tauriBridge.githubLogout().catch(() => {});
 				}
@@ -74,36 +77,37 @@ export function useGitHub() {
 			stopPolling();
 			setOAuthState({ step: 'polling' });
 
-			pollingRef.current = setInterval(async () => {
-				try {
-					const result =
-						await tauriBridge.githubDeviceCodePoll(deviceCode);
+			pollingRef.current = setInterval(
+				async () => {
+					try {
+						const result = await tauriBridge.githubDeviceCodePoll(deviceCode);
 
-					if (result.status === 'complete' && result.accessToken) {
-						stopPolling();
-						setToken(result.accessToken);
-						const userData = await tauriBridge.githubGetUser(
-							result.accessToken,
-						);
-						setUser(userData);
-						setOAuthState({ step: 'complete' });
-						setError(null);
-					} else if (result.status === 'error') {
+						if (result.status === 'complete' && result.accessToken) {
+							stopPolling();
+							setToken(result.accessToken);
+							const userData = await tauriBridge.githubGetUser(
+								result.accessToken,
+							);
+							setUser(userData);
+							setOAuthState({ step: 'complete' });
+							setError(null);
+						} else if (result.status === 'error') {
+							stopPolling();
+							setOAuthState({
+								step: 'error',
+								message: result.error || 'OAuth failed',
+							});
+						}
+					} catch (err) {
 						stopPolling();
 						setOAuthState({
 							step: 'error',
-							message: result.error || 'OAuth failed',
+							message: err instanceof Error ? err.message : 'Polling failed',
 						});
 					}
-				} catch (err) {
-					stopPolling();
-					setOAuthState({
-						step: 'error',
-						message:
-							err instanceof Error ? err.message : 'Polling failed',
-					});
-				}
-			}, (interval + 1) * 1000);
+				},
+				(interval + 1) * 1000,
+			);
 		},
 		[stopPolling],
 	);
@@ -130,11 +134,7 @@ export function useGitHub() {
 			if (!token) return;
 			try {
 				setLoading(true);
-				const repoList = await tauriBridge.githubListRepos(
-					token,
-					page,
-					search,
-				);
+				const repoList = await tauriBridge.githubListRepos(token, page, search);
 				if (page && page > 1) {
 					setRepos((prev) => [...prev, ...repoList]);
 				} else {
@@ -142,9 +142,7 @@ export function useGitHub() {
 				}
 				return repoList;
 			} catch (err) {
-				setError(
-					err instanceof Error ? err.message : 'Failed to load repos',
-				);
+				setError(err instanceof Error ? err.message : 'Failed to load repos');
 				return [];
 			} finally {
 				setLoading(false);

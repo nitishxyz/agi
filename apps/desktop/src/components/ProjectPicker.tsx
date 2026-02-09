@@ -99,7 +99,8 @@ export function ProjectPicker({
 		const targetPath = `${homeDir}/${name}`;
 		try {
 			setCloning(true);
-			const repoFullName = repos.find((r) => r.clone_url === url)?.full_name || name;
+			const repoFullName =
+				repos.find((r) => r.clone_url === url)?.full_name || name;
 			setCloningRepo(repoFullName);
 			const resolvedPath = await cloneRepo(url, targetPath);
 			setShowCloneModal(false);
@@ -119,11 +120,7 @@ export function ProjectPicker({
 	};
 
 	useEffect(() => {
-		if (
-			showOAuthModal &&
-			oauthState.step === 'complete' &&
-			isAuthenticated
-		) {
+		if (showOAuthModal && oauthState.step === 'complete' && isAuthenticated) {
 			setShowOAuthModal(false);
 			setShowCloneModal(true);
 			pageRef.current = 1;
@@ -154,7 +151,7 @@ export function ProjectPicker({
 								<img
 									src={user.avatar_url}
 									alt=""
-								className="w-5 h-5 rounded-full"
+									className="w-5 h-5 rounded-full"
 								/>
 							)}
 							<span className="text-sm text-muted-foreground">
@@ -169,30 +166,29 @@ export function ProjectPicker({
 							</button>
 						</div>
 					)}
-				{updateAvailable && (
-					downloaded ? (
-						<button
-							type="button"
-							onClick={applyUpdate}
-							className="h-6 px-2.5 flex items-center gap-1.5 text-xs font-medium bg-green-600 text-white rounded-full hover:bg-green-500 transition-colors"
-							title={`Restart to update to v${updateVersion}`}
-						>
-							<RotateCw className="w-3 h-3" />
-							Restart
-						</button>
-					) : (
-						<button
-							type="button"
-							onClick={downloadUpdate}
-							disabled={downloading}
-							className="h-6 px-2.5 flex items-center gap-1.5 text-xs font-medium bg-blue-600 text-white rounded-full hover:bg-blue-500 transition-colors disabled:opacity-60"
-							title={`Update to v${updateVersion}`}
-						>
-							<ArrowDownToLine className="w-3 h-3" />
-							{downloading ? `${updateProgress}%` : 'Update'}
-						</button>
-					)
-				)}
+					{updateAvailable &&
+						(downloaded ? (
+							<button
+								type="button"
+								onClick={applyUpdate}
+								className="h-6 px-2.5 flex items-center gap-1.5 text-xs font-medium bg-green-600 text-white rounded-full hover:bg-green-500 transition-colors"
+								title={`Restart to update to v${updateVersion}`}
+							>
+								<RotateCw className="w-3 h-3" />
+								Restart
+							</button>
+						) : (
+							<button
+								type="button"
+								onClick={downloadUpdate}
+								disabled={downloading}
+								className="h-6 px-2.5 flex items-center gap-1.5 text-xs font-medium bg-blue-600 text-white rounded-full hover:bg-blue-500 transition-colors disabled:opacity-60"
+								title={`Update to v${updateVersion}`}
+							>
+								<ArrowDownToLine className="w-3 h-3" />
+								{downloading ? `${updateProgress}%` : 'Update'}
+							</button>
+						))}
 					<button
 						type="button"
 						onClick={toggleTheme}
@@ -269,14 +265,18 @@ export function ProjectPicker({
 							</div>
 							<div>
 								<div className="font-medium text-foreground">
-									{githubLoading ? 'GitHub' : isAuthenticated ? 'Clone from GitHub' : 'Connect GitHub'}
+									{githubLoading
+										? 'GitHub'
+										: isAuthenticated
+											? 'Clone from GitHub'
+											: 'Connect GitHub'}
 								</div>
 								<div className="text-sm text-muted-foreground">
 									{githubLoading
 										? 'Checking connection...'
 										: isAuthenticated
-										? 'Clone a repository'
-										: 'Sign in to clone repositories'}
+											? 'Clone a repository'
+											: 'Sign in to clone repositories'}
 								</div>
 							</div>
 						</button>
@@ -348,7 +348,7 @@ export function ProjectPicker({
 				<CloneModal
 					repos={repos}
 					cloning={cloning}
-				cloningRepo={cloningRepo}
+					cloningRepo={cloningRepo}
 					onClone={handleCloneRepo}
 					onClose={() => setShowCloneModal(false)}
 					onSearch={handleSearch}

@@ -14,7 +14,6 @@ export function DeviceCodeModal({
 	const deviceCode =
 		oauthState.step === 'awaiting_user' ? oauthState.deviceCode : null;
 
-
 	const handleCopyAndOpen = async (dc: DeviceCodeResponse) => {
 		await navigator.clipboard.writeText(dc.userCode);
 		await openUrl(dc.verificationUri).catch(() => {});
@@ -55,8 +54,7 @@ export function DeviceCodeModal({
 					{oauthState.step === 'awaiting_user' && deviceCode && (
 						<div className="space-y-5">
 							<p className="text-sm text-muted-foreground">
-								Copy the code below and enter it on GitHub to authorize
-								otto.
+								Copy the code below and enter it on GitHub to authorize otto.
 							</p>
 							<div className="flex items-center justify-center">
 								<code className="px-6 py-3 bg-muted rounded-lg text-2xl font-mono font-bold tracking-widest text-foreground select-all">
@@ -71,8 +69,8 @@ export function DeviceCodeModal({
 								Copy Code & Open GitHub
 							</button>
 							<p className="text-xs text-muted-foreground text-center">
-								The code will be copied to your clipboard and GitHub will
-								open in your browser.
+								The code will be copied to your clipboard and GitHub will open
+								in your browser.
 							</p>
 						</div>
 					)}
@@ -84,8 +82,8 @@ export function DeviceCodeModal({
 								Waiting for authorization...
 							</p>
 							<p className="text-xs text-muted-foreground">
-								Complete the authorization in your browser, then this
-								will update automatically.
+								Complete the authorization in your browser, then this will
+								update automatically.
 							</p>
 						</div>
 					)}
@@ -93,9 +91,7 @@ export function DeviceCodeModal({
 					{oauthState.step === 'error' && (
 						<div className="space-y-4">
 							<div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-								<p className="text-sm text-destructive">
-									{oauthState.message}
-								</p>
+								<p className="text-sm text-destructive">{oauthState.message}</p>
 							</div>
 						</div>
 					)}
