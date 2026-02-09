@@ -14,7 +14,7 @@ mkdirSync(distDir, { recursive: true });
 
 // Step 2: Generate OpenAPI client
 console.log('📝 Generating API client from OpenAPI spec...');
-const generate = Bun.spawnSync(['bun', 'run', 'generate.ts'], {
+const generate = Bun.spawnSync([process.execPath, 'run', 'generate.ts'], {
 	cwd: import.meta.dir,
 	stdout: 'inherit',
 	stderr: 'inherit',
@@ -27,11 +27,14 @@ if (!generate.success) {
 
 // Step 3: Build TypeScript
 console.log('\n📦 Building TypeScript...');
-const build = Bun.spawnSync(['bunx', 'tsc', '--project', 'tsconfig.json'], {
-	cwd: import.meta.dir,
-	stdout: 'inherit',
-	stderr: 'inherit',
-});
+const build = Bun.spawnSync(
+	[process.execPath, 'x', 'tsc', '--project', 'tsconfig.json'],
+	{
+		cwd: import.meta.dir,
+		stdout: 'inherit',
+		stderr: 'inherit',
+	},
+);
 
 if (!build.success) {
 	console.error('❌ Failed to build TypeScript');

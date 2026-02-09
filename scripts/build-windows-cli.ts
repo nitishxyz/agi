@@ -89,11 +89,14 @@ if (useDocker) {
 } else {
 	spinner.begin('Building web UI');
 	{
-		const proc = Bun.spawnSync(['bun', 'run', 'scripts/build-web.ts'], {
-			cwd: ROOT,
-			stdout: verbose ? 'inherit' : 'pipe',
-			stderr: verbose ? 'inherit' : 'pipe',
-		});
+		const proc = Bun.spawnSync(
+			[process.execPath, 'run', 'scripts/build-web.ts'],
+			{
+				cwd: ROOT,
+				stdout: verbose ? 'inherit' : 'pipe',
+				stderr: verbose ? 'inherit' : 'pipe',
+			},
+		);
 		if (!proc.success) {
 			spinner.fail();
 			if (!verbose) console.error(proc.stderr.toString());

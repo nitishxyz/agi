@@ -1,12 +1,11 @@
 #!/usr/bin/env bun
-import { $ } from 'bun';
-import { join, relative } from 'node:path';
-import { readdirSync, statSync } from 'node:fs';
+import { join, relative, dirname } from 'node:path';
+import { readdirSync, statSync, rmSync, cpSync } from 'node:fs';
 import { Spinner, GREEN, DIM, BOLD, RED, CYAN, RESET } from './lib/spinner.ts';
 
 const verbose = process.argv.includes('--verbose');
 
-const ROOT = import.meta.dir.replace('/scripts', '');
+const ROOT = dirname(import.meta.dir);
 const API_DIR = join(ROOT, 'packages/api');
 const WEB_SDK_DIR = join(ROOT, 'packages/web-sdk');
 const WEB_DIR = join(ROOT, 'apps/web');
@@ -16,6 +15,8 @@ const CLI_WEB_DIST = join(CLI_DIR, 'src/web-dist');
 
 const startTime = performance.now();
 const spinner = new Spinner();
+
+const bunExe = process.execPath;
 
 async function run(label: string, cmd: string[], cwd: string) {
 	spinner.begin(label);
@@ -52,13 +53,13 @@ async function run(label: string, cmd: string[], cwd: string) {
 
 console.log(`\n${BOLD}${CYAN}otto${RESET} ${DIM}build${RESET}\n`);
 
-await run('Building @ottocode/api', ['bun', 'run', 'build'], API_DIR);
-await run('Building @ottocode/web-sdk', ['bun', 'run', 'build'], WEB_SDK_DIR);
-await run('Building web UI', ['bun', 'run', 'build'], WEB_DIR);
+await run('Building @ottocode/api', [bunExe, 'run', 'build'], API_DIR);
+await run('Building @ottocode/web-sdk', [bunExe, 'run', 'build'], WEB_SDK_DIR);
+await run('Building web UI', [bunExe, 'run', 'build'], WEB_DIR);
 
 spinner.begin('Copying web assets to CLI');
-await $`rm -rf ${CLI_WEB_DIST}`.quiet();
-await $`cp -r ${WEB_DIST} ${CLI_WEB_DIST}`.quiet();
+rmSync(CLI_WEB_DIST, { recursive: true, force: true });
+cpSync(WEB_DIST, CLI_WEB_DIST, { recursive: true });
 spinner.succeed();
 
 spinner.begin('Generating asset manifest');

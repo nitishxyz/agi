@@ -20,7 +20,7 @@ const webAssetsDir = join(packageDistDir, 'web-assets');
 
 // Step 1: Build the web app
 console.log('📦 Building web app...');
-const buildWeb = Bun.spawnSync(['bun', 'run', 'build'], {
+const buildWeb = Bun.spawnSync([process.execPath, 'run', 'build'], {
 	cwd: webAppDir,
 	stdout: 'inherit',
 	stderr: 'inherit',
@@ -371,11 +371,14 @@ writeFileSync(join(packageDistDir, 'index.js'), indexJsTemplate);
 
 // Step 6: Generate type declarations
 console.log('📝 Generating type declarations...');
-const buildTypes = Bun.spawnSync(['bunx', 'tsc', '--emitDeclarationOnly'], {
-	cwd: import.meta.dir,
-	stdout: 'inherit',
-	stderr: 'inherit',
-});
+const buildTypes = Bun.spawnSync(
+	[process.execPath, 'x', 'tsc', '--emitDeclarationOnly'],
+	{
+		cwd: import.meta.dir,
+		stdout: 'inherit',
+		stderr: 'inherit',
+	},
+);
 
 if (!buildTypes.success) {
 	console.error('❌ Failed to generate type declarations');

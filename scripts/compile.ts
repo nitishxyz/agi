@@ -18,7 +18,7 @@ const webArgs = verbose ? ['--verbose'] : [];
 if (verbose) {
 	spinner.succeed();
 	const result = Bun.spawnSync(
-		['bun', 'run', 'scripts/build-web.ts', ...webArgs],
+		[process.execPath, 'run', 'scripts/build-web.ts', ...webArgs],
 		{
 			cwd: ROOT,
 			stdout: 'inherit',
@@ -27,11 +27,14 @@ if (verbose) {
 	);
 	if (!result.success) process.exit(1);
 } else {
-	const proc = Bun.spawn(['bun', 'run', 'scripts/build-web.ts', ...webArgs], {
-		cwd: ROOT,
-		stdout: 'pipe',
-		stderr: 'pipe',
-	});
+	const proc = Bun.spawn(
+		[process.execPath, 'run', 'scripts/build-web.ts', ...webArgs],
+		{
+			cwd: ROOT,
+			stdout: 'pipe',
+			stderr: 'pipe',
+		},
+	);
 	const exitCode = await proc.exited;
 	if (exitCode !== 0) {
 		spinner.fail();
