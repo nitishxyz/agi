@@ -11,6 +11,10 @@ on:
         description: "Build Desktop app"
         type: boolean
         default: false
+      build_launcher:
+        description: "Build Launcher app"
+        type: boolean
+        default: false
       platform_macos:
         description: "macOS"
         type: boolean
@@ -275,4 +279,104 @@ jobs:
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
+          if-no-files-found: ignore
+
+  test-build-launcher:
+    if: inputs.build_launcher
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            name: macOS-arm64
+            enabled: ${{ inputs.platform_macos }}
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            name: macOS-x64
+            enabled: ${{ inputs.platform_macos }}
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            name: Linux-x64
+            enabled: ${{ inputs.platform_linux }}
+          - platform: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+            name: Linux-arm64
+            enabled: ${{ inputs.platform_linux }}
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: Windows-x64
+            enabled: ${{ inputs.platform_windows }}
+    steps:
+      - name: Skip if platform disabled
+        if: matrix.enabled != true
+        run: echo "Skipping ${{ matrix.name }}"
+
+      - uses: actions/checkout@v4
+        if: matrix.enabled
+
+      - uses: oven-sh/setup-bun@v1
+        if: matrix.enabled
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        if: matrix.enabled
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: matrix.enabled && startsWith(matrix.platform, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libgtk-3-dev \
+            libfuse2
+
+      - name: Install dependencies
+        if: matrix.enabled
+        run: bun install
+
+      - name: Build Tauri Launcher App
+        if: matrix.enabled
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 30
+          max_attempts: 2
+          retry_wait_seconds: 30
+          shell: bash
+          command: |
+            if [[ "${{ matrix.target }}" == *"linux"* ]]; then
+              cd apps/launcher && npm run tauri build -- --target ${{ matrix.target }} --bundles deb
+            elif [[ "${{ matrix.target }}" == *"windows"* ]]; then
+              cd apps/launcher && npm run tauri build -- --target ${{ matrix.target }} --bundles msi,nsis
+            else
+              cd apps/launcher && npm run tauri build -- --target ${{ matrix.target }}
+            fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPIMAGE_EXTRACT_AND_RUN: 1
+          NO_STRIP: true
+
+      - name: Upload artifacts
+        if: matrix.enabled
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-launcher-${{ matrix.name }}
+          path: |
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
           if-no-files-found: ignore

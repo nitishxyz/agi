@@ -16,6 +16,7 @@ jobs:
     outputs:
       publish_cli: ${{ steps.check.outputs.publish_cli }}
       publish_desktop: ${{ steps.check.outputs.publish_desktop }}
+      publish_launcher: ${{ steps.check.outputs.publish_launcher }}
     steps:
       - uses: actions/checkout@v4
 
@@ -27,21 +28,25 @@ jobs:
             source publish.env
             echo "publish_cli=${PUBLISH_CLI:-false}" >> "$GITHUB_OUTPUT"
             echo "publish_desktop=${PUBLISH_DESKTOP:-false}" >> "$GITHUB_OUTPUT"
+            echo "publish_launcher=${PUBLISH_LAUNCHER:-false}" >> "$GITHUB_OUTPUT"
             echo "PUBLISH_CLI=${PUBLISH_CLI:-false}"
             echo "PUBLISH_DESKTOP=${PUBLISH_DESKTOP:-false}"
+            echo "PUBLISH_LAUNCHER=${PUBLISH_LAUNCHER:-false}"
           else
             echo "publish_cli=false" >> "$GITHUB_OUTPUT"
             echo "publish_desktop=false" >> "$GITHUB_OUTPUT"
+            echo "publish_launcher=false" >> "$GITHUB_OUTPUT"
             echo "publish.env not found"
           fi
 
   bump-version:
     needs: check-flags
-    if: needs.check-flags.outputs.publish_cli == 'true' || needs.check-flags.outputs.publish_desktop == 'true'
+    if: needs.check-flags.outputs.publish_cli == 'true' || needs.check-flags.outputs.publish_desktop == 'true' || needs.check-flags.outputs.publish_launcher == 'true'
     runs-on: ubuntu-latest
     outputs:
       cli_version: ${{ steps.bump.outputs.cli_version }}
       desktop_version: ${{ steps.bump.outputs.desktop_version }}
+      launcher_version: ${{ steps.bump.outputs.launcher_version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -101,6 +106,26 @@ jobs:
               DESKTOP_VERSION="$CURRENT"
             fi
             echo "desktop_version=${DESKTOP_VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ "$PUBLISH_LAUNCHER" = "true" ]; then
+            CURRENT=$(jq -r .version apps/launcher/package.json)
+            if git rev-parse "launcher-v${CURRENT}" >/dev/null 2>&1; then
+              echo "Tag launcher-v${CURRENT} exists; bumping patch"
+              MAJOR=$(echo "$CURRENT" | awk -F. '{print $1}')
+              MINOR=$(echo "$CURRENT" | awk -F. '{print $2}')
+              PATCH=$(echo "$CURRENT" | awk -F. '{print $3}')
+              LAUNCHER_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+              for f in apps/launcher/package.json apps/launcher/src-tauri/tauri.conf.json; do
+                tmpfile=$(mktemp)
+                jq ".version = \"${LAUNCHER_VERSION}\"" "$f" > "$tmpfile"
+                mv "$tmpfile" "$f"
+              done
+              CHANGED=true
+            else
+              LAUNCHER_VERSION="$CURRENT"
+            fi
+            echo "launcher_version=${LAUNCHER_VERSION}" >> "$GITHUB_OUTPUT"
           fi
 
           if [ "$CHANGED" = "true" ]; then
@@ -260,6 +285,9 @@ jobs:
           - platform: ubuntu-22.04-arm
             target: aarch64-unknown-linux-gnu
             name: Linux-arm64
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: Windows-x64
     steps:
       - uses: actions/checkout@v4
 
@@ -318,15 +346,26 @@ jobs:
               PLATFORM="linux-arm64"
               RG_TARGET="aarch64-unknown-linux-gnu"
               ;;
+            x86_64-pc-windows-msvc)
+              PLATFORM="windows-x64"
+              RG_TARGET="x86_64-pc-windows-msvc"
+              ;;
             *) echo "Unknown target: ${{ matrix.target }}"; exit 1 ;;
           esac
           VENDOR_DST="vendor/bin/${PLATFORM}"
           mkdir -p "$VENDOR_DST"
           ARCHIVE="ripgrep-${RIPGREP_VERSION}-${RG_TARGET}"
-          URL="https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/${ARCHIVE}.tar.gz"
-          curl -fsSL "$URL" | tar -xz -C /tmp
-          cp "/tmp/${ARCHIVE}/rg" "$VENDOR_DST/rg"
-          chmod +x "$VENDOR_DST/rg"
+          if [[ "$PLATFORM" == windows-* ]]; then
+            URL="https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/${ARCHIVE}.zip"
+            curl -fsSL "$URL" -o /tmp/rg.zip
+            unzip -q /tmp/rg.zip -d /tmp
+            cp "/tmp/${ARCHIVE}/rg.exe" "$VENDOR_DST/rg.exe"
+          else
+            URL="https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/${ARCHIVE}.tar.gz"
+            curl -fsSL "$URL" | tar -xz -C /tmp
+            cp "/tmp/${ARCHIVE}/rg" "$VENDOR_DST/rg"
+            chmod +x "$VENDOR_DST/rg"
+          fi
           echo "Downloaded rg to ${VENDOR_DST}"
 
       - name: Build CLI binary for desktop
@@ -338,16 +377,21 @@ jobs:
             x86_64-apple-darwin)  PLATFORM="darwin-x64" ;;
             x86_64-unknown-linux-gnu) PLATFORM="linux-x64" ;;
             aarch64-unknown-linux-gnu) PLATFORM="linux-arm64" ;;
+            x86_64-pc-windows-msvc) PLATFORM="windows-x64" ;;
             *) echo "Unknown target: ${{ matrix.target }}"; exit 1 ;;
           esac
           cd apps/cli
           bun run ../../scripts/build-web.ts
           bun run ../../scripts/prepare-embedded-bins.ts "${PLATFORM}"
           mkdir -p dist
-          bun build --compile --minify --target="bun-${PLATFORM}" ./index.ts --outfile "dist/otto-${PLATFORM}"
+          EXT=""
+          if [[ "$PLATFORM" == windows-* ]]; then EXT=".exe"; fi
+          bun build --compile --minify --target="bun-${PLATFORM}" ./index.ts --outfile "dist/otto-${PLATFORM}${EXT}"
           mkdir -p ../desktop/src-tauri/resources/binaries
-          cp "dist/otto-${PLATFORM}" "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}"
-          chmod +x "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}"
+          cp "dist/otto-${PLATFORM}${EXT}" "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}${EXT}"
+          if [[ "$PLATFORM" != windows-* ]]; then
+            chmod +x "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}"
+          fi
           echo "Built CLI with embedded rg and copied to desktop resources"
 
       - name: Import Apple Certificate
@@ -397,6 +441,8 @@ jobs:
           command: |
             if [[ "${{ matrix.target }}" == *"linux"* ]]; then
               cd apps/desktop && npm run tauri build -- --target ${{ matrix.target }} --bundles deb
+            elif [[ "${{ matrix.target }}" == *"windows"* ]]; then
+              cd apps/desktop && npm run tauri build -- --target ${{ matrix.target }} --bundles msi,nsis
             else
               cd apps/desktop && npm run tauri build -- --target ${{ matrix.target }}
             fi
@@ -422,6 +468,114 @@ jobs:
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz.sig
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi.sig
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe.sig
+          if-no-files-found: ignore
+
+  build-launcher:
+    needs: [check-flags, bump-version]
+    if: needs.check-flags.outputs.publish_launcher == 'true'
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            name: macOS-arm64
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            name: macOS-x64
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            name: Linux-x64
+          - platform: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+            name: Linux-arm64
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: Windows-x64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync to latest branch tip
+        shell: bash
+        run: |
+          git fetch origin
+          git checkout "${{ github.ref_name }}"
+          git pull --ff-only origin "${{ github.ref_name }}"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: startsWith(matrix.platform, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libgtk-3-dev \
+            libfuse2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build Tauri Launcher App
+        id: tauri-build
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 30
+          max_attempts: 3
+          retry_wait_seconds: 30
+          shell: bash
+          command: |
+            if [[ "${{ matrix.target }}" == *"linux"* ]]; then
+              cd apps/launcher && npm run tauri build -- --target ${{ matrix.target }} --bundles deb
+            elif [[ "${{ matrix.target }}" == *"windows"* ]]; then
+              cd apps/launcher && npm run tauri build -- --target ${{ matrix.target }} --bundles msi,nsis
+            else
+              cd apps/launcher && npm run tauri build -- --target ${{ matrix.target }}
+            fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPIMAGE_EXTRACT_AND_RUN: 1
+          NO_STRIP: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: launcher-${{ matrix.name }}
+          path: |
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz.sig
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi.sig
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
+            apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe.sig
           if-no-files-found: ignore
 
   publish-cli:
@@ -593,6 +747,7 @@ jobs:
           DARWIN_X64_SIG=""
           LINUX_X64_SIG=""
           LINUX_ARM64_SIG=""
+          WINDOWS_X64_SIG=""
 
           for f in ./release/*.app.tar.gz.sig; do
             [ -f "$f" ] || continue
@@ -621,10 +776,25 @@ jobs:
             esac
           done
 
+          for f in ./release/*.msi.sig; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            sig=$(cat "$f")
+            WINDOWS_X64_SIG="$sig"
+          done
+
+          for f in ./release/*.nsis*.exe.sig ./release/*-setup*.exe.sig; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            sig=$(cat "$f")
+            [ -z "$WINDOWS_X64_SIG" ] && WINDOWS_X64_SIG="$sig"
+          done
+
           DARWIN_AARCH64_URL=""
           DARWIN_X64_URL=""
           LINUX_X64_URL=""
           LINUX_ARM64_URL=""
+          WINDOWS_X64_URL=""
           for f in ./release/*.app.tar.gz; do
             [ -f "$f" ] || continue
             name=$(basename "$f")
@@ -652,6 +822,14 @@ jobs:
             esac
           done
 
+          for f in ./release/*.msi; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            [[ "$name" == *.sig ]] && continue
+            url="${BASE_URL}/${name}"
+            WINDOWS_X64_URL="$url"
+          done
+
           PLATFORMS=""
           add_platform() {
             local key="$1" sig="$2" url="$3"
@@ -663,6 +841,7 @@ jobs:
           add_platform "darwin-x86_64" "$DARWIN_X64_SIG" "$DARWIN_X64_URL"
           add_platform "linux-x86_64" "$LINUX_X64_SIG" "$LINUX_X64_URL"
           add_platform "linux-aarch64" "$LINUX_ARM64_SIG" "$LINUX_ARM64_URL"
+          add_platform "windows-x86_64" "$WINDOWS_X64_SIG" "$WINDOWS_X64_URL"
 
           cat > ./release/latest.json <<EOF
           {
@@ -700,6 +879,7 @@ jobs:
             - **macOS (Intel)**: OTTO_${{ needs.bump-version.outputs.desktop_version }}_x64.dmg
             - **Linux (x64)**: otto_${{ needs.bump-version.outputs.desktop_version }}_amd64.deb
             - **Linux (ARM64)**: otto_${{ needs.bump-version.outputs.desktop_version }}_arm64.deb
+            - **Windows (x64)**: otto_${{ needs.bump-version.outputs.desktop_version }}_x64-setup.msi
 
             ### Installation
 
@@ -707,6 +887,8 @@ jobs:
 
 
             **Linux**: Download the .deb and install with `sudo dpkg -i otto_*.deb`.
+
+            **Windows**: Download the .msi installer and run it, or use the .exe NSIS installer.
           files: ./release/*
           draft: false
           prerelease: false
@@ -729,8 +911,70 @@ jobs:
           fi
           gh release upload desktop-latest ./release/latest.json --clobber
 
+  publish-launcher:
+    needs: [check-flags, bump-version, build-launcher]
+    if: needs.check-flags.outputs.publish_launcher == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download launcher artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          pattern: launcher-*
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p ./release
+          find ./artifacts -type f -exec cp {} ./release/ \;
+          ls -la ./release/
+
+      - name: Create and push launcher tag
+        shell: bash
+        run: |
+          VERSION="${{ needs.bump-version.outputs.launcher_version }}"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git fetch origin
+          git checkout "${{ github.ref_name }}"
+          git pull --ff-only origin "${{ github.ref_name }}"
+          git tag "launcher-v${VERSION}"
+          git push origin "launcher-v${VERSION}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: launcher-v${{ needs.bump-version.outputs.launcher_version }}
+          name: "otto launcher v${{ needs.bump-version.outputs.launcher_version }}"
+          body: |
+            ## otto launcher v${{ needs.bump-version.outputs.launcher_version }}
+
+            ### Downloads
+
+            - **macOS (Apple Silicon)**: otto-launcher_${{ needs.bump-version.outputs.launcher_version }}_aarch64.dmg
+            - **macOS (Intel)**: otto-launcher_${{ needs.bump-version.outputs.launcher_version }}_x64.dmg
+            - **Linux (x64)**: otto-launcher_${{ needs.bump-version.outputs.launcher_version }}_amd64.deb
+            - **Linux (ARM64)**: otto-launcher_${{ needs.bump-version.outputs.launcher_version }}_arm64.deb
+            - **Windows (x64)**: otto-launcher_${{ needs.bump-version.outputs.launcher_version }}_x64-setup.msi
+
+            ### Installation
+
+            **macOS**: Download the .dmg, open it, and drag otto launcher to Applications.
+
+            **Linux**: Download the .deb and install with `sudo dpkg -i otto-launcher_*.deb`.
+
+            **Windows**: Download the .msi installer and run it, or use the .exe NSIS installer.
+          files: ./release/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   reset-flags:
-    needs: [check-flags, publish-npm, publish-desktop]
+    needs: [check-flags, publish-npm, publish-desktop, publish-launcher]
     if: always() && needs.check-flags.result == 'success'
     runs-on: ubuntu-latest
     steps:
@@ -757,6 +1001,11 @@ jobs:
 
           if [ "${{ needs.check-flags.outputs.publish_desktop }}" = "true" ] && [ "${{ needs.publish-desktop.result }}" = "success" ]; then
             sed -i 's/^PUBLISH_DESKTOP=true$/PUBLISH_DESKTOP=false/' publish.env
+            CHANGED=true
+          fi
+
+          if [ "${{ needs.check-flags.outputs.publish_launcher }}" = "true" ] && [ "${{ needs.publish-launcher.result }}" = "success" ]; then
+            sed -i 's/^PUBLISH_LAUNCHER=true$/PUBLISH_LAUNCHER=false/' publish.env
             CHANGED=true
           fi
 
