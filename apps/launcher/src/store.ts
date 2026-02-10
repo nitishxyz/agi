@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import {
 	tauri,
+	openUrl,
 	type TeamState,
 	type ProjectState,
 	type OttoTeamConfig,
@@ -231,8 +232,18 @@ export const useStore = create<LauncherStore>((set, get) => ({
 
 		switch (action) {
 			case 'start':
-				await get().startSetup(project);
+			{
+				const exists = await tauri.containerExists(project.containerName);
+				if (exists) {
+					try {
+						await tauri.containerStart(project.containerName);
+					} catch {}
+					set({ setupProject: project, setupPassword: '', view: 'setup' });
+				} else {
+					await get().startSetup(project);
+				}
 				return;
+			}
 			case 'stop':
 				try {
 					await tauri.containerStop(project.containerName);
@@ -249,12 +260,14 @@ export const useStore = create<LauncherStore>((set, get) => ({
 				await tauri.containerUpdateOtto(project.containerName);
 				break;
 			case 'open':
+				openUrl(`http://localhost:${project.webPort}`);
+				return;
 			case 'manage':
 				set({ setupProject: project, view: 'setup' });
 				return;
 			case 'nuke':
 				await get().removeProject(projectId);
-				return;
+				break;
 			case 'export': {
 				if (!team) return;
 				const config = {

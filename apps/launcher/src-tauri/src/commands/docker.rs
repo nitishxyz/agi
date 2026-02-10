@@ -202,19 +202,169 @@ mod unix_impl {
 use unix_impl::{docker_get, docker_post, docker_delete};
 
 #[cfg(windows)]
-async fn docker_get(_path: &str) -> Result<String, String> {
-    Err("Docker via Unix socket is not supported on Windows".to_string())
+mod windows_impl {
+    use http_body_util::{BodyExt, Full};
+    use hyper::body::Bytes;
+    use hyper::Request;
+    use hyper_util::client::legacy::Client;
+    use hyper_util::rt::TokioExecutor;
+
+    use std::sync::OnceLock;
+
+    static DOCKER_HOST: OnceLock<String> = OnceLock::new();
+
+    async fn probe_host(host: &str) -> bool {
+        let client = Client::builder(TokioExecutor::new()).build_http::<Full<Bytes>>();
+        let uri = format!("{}/_ping", host);
+        let Ok(uri) = uri.parse::<hyper::Uri>() else { return false };
+        let Ok(req) = Request::builder()
+            .method("GET")
+            .uri(uri)
+            .body(Full::new(Bytes::new())) else { return false };
+        client.request(req).await.is_ok()
+    }
+
+    pub async fn resolve_docker_host() -> String {
+        if let Some(h) = DOCKER_HOST.get() {
+            return h.clone();
+        }
+
+        if let Ok(env_host) = std::env::var("DOCKER_HOST") {
+            let h = if env_host.starts_with("tcp://") {
+                env_host.replace("tcp://", "http://")
+            } else {
+                env_host
+            };
+            let _ = DOCKER_HOST.set(h.clone());
+            return h;
+        }
+
+        let candidates = [
+            "http://localhost:2375",
+            "http://127.0.0.1:2375",
+            "http://localhost:2376",
+        ];
+
+        for c in &candidates {
+            if probe_host(c).await {
+                let _ = DOCKER_HOST.set(c.to_string());
+                return c.to_string();
+            }
+        }
+
+        let fallback = candidates[0].to_string();
+        let _ = DOCKER_HOST.set(fallback.clone());
+        fallback
+    }
+
+    fn docker_uri_with_host(host: &str, path: &str) -> String {
+        let base = host.trim_end_matches('/');
+        let encoded = path
+            .replace('{', "%7B")
+            .replace('}', "%7D")
+            .replace('[', "%5B")
+            .replace(']', "%5D")
+            .replace('"', "%22");
+        format!("{}{}", base, encoded)
+    }
+
+    fn make_client() -> Client<
+        hyper_util::client::legacy::connect::HttpConnector,
+        Full<Bytes>,
+    > {
+        Client::builder(TokioExecutor::new()).build_http()
+    }
+
+    pub async fn docker_get(path: &str) -> Result<String, String> {
+        let host = resolve_docker_host().await;
+        let client = make_client();
+        let uri: hyper::Uri = docker_uri_with_host(&host, path)
+            .parse()
+            .map_err(|e| format!("Invalid URI: {}", e))?;
+        let req = Request::builder()
+            .method("GET")
+            .uri(uri)
+            .body(Full::new(Bytes::new()))
+            .map_err(|e| format!("Build request failed: {}", e))?;
+        let response = client
+            .request(req)
+            .await
+            .map_err(|e| format!("Docker request failed (is Docker Desktop running with TCP enabled?): {}", e))?;
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .map_err(|e| format!("Read body failed: {}", e))?
+            .to_bytes();
+        Ok(String::from_utf8_lossy(&body).into_owned())
+    }
+
+    pub async fn docker_post(path: &str, json_body: Option<serde_json::Value>) -> Result<String, String> {
+        let host = resolve_docker_host().await;
+        let client = make_client();
+        let uri: hyper::Uri = docker_uri_with_host(&host, path)
+            .parse()
+            .map_err(|e| format!("Invalid URI: {}", e))?;
+        let body = match json_body {
+            Some(val) => Full::new(Bytes::from(serde_json::to_vec(&val).unwrap())),
+            None => Full::new(Bytes::new()),
+        };
+        let req = Request::builder()
+            .method("POST")
+            .uri(uri)
+            .header("Content-Type", "application/json")
+            .body(body)
+            .map_err(|e| format!("Build request failed: {}", e))?;
+        let response = client
+            .request(req)
+            .await
+            .map_err(|e| format!("Docker request failed (is Docker Desktop running with TCP enabled?): {}", e))?;
+        let status = response.status();
+        let body_bytes = response
+            .into_body()
+            .collect()
+            .await
+            .map_err(|e| format!("Read body failed: {}", e))?
+            .to_bytes();
+        let body_str = String::from_utf8_lossy(&body_bytes).to_string();
+        if !status.is_success() && !status.is_redirection() {
+            return Err(format!("Docker API error ({}): {}", status, body_str));
+        }
+        Ok(body_str)
+    }
+
+    pub async fn docker_delete(path: &str) -> Result<String, String> {
+        let host = resolve_docker_host().await;
+        let client = make_client();
+        let uri: hyper::Uri = docker_uri_with_host(&host, path)
+            .parse()
+            .map_err(|e| format!("Invalid URI: {}", e))?;
+        let req = Request::builder()
+            .method("DELETE")
+            .uri(uri)
+            .body(Full::new(Bytes::new()))
+            .map_err(|e| format!("Build request failed: {}", e))?;
+        let response = client
+            .request(req)
+            .await
+            .map_err(|e| format!("Docker request failed (is Docker Desktop running with TCP enabled?): {}", e))?;
+        let status = response.status();
+        let body_bytes = response
+            .into_body()
+            .collect()
+            .await
+            .map_err(|e| format!("Read body failed: {}", e))?
+            .to_bytes();
+        let body_str = String::from_utf8_lossy(&body_bytes).to_string();
+        if !status.is_success() && !status.is_redirection() {
+            return Err(format!("Docker API error ({}): {}", status, body_str));
+        }
+        Ok(body_str)
+    }
 }
 
 #[cfg(windows)]
-async fn docker_post(_path: &str, _json_body: Option<serde_json::Value>) -> Result<String, String> {
-    Err("Docker via Unix socket is not supported on Windows".to_string())
-}
-
-#[cfg(windows)]
-async fn docker_delete(_path: &str) -> Result<String, String> {
-    Err("Docker via Unix socket is not supported on Windows".to_string())
-}
+use windows_impl::{docker_get, docker_post, docker_delete};
 
 #[tauri::command]
 pub async fn docker_available() -> bool {
@@ -271,7 +421,15 @@ pub async fn container_inspect(name: String) -> Result<ContainerInfo, String> {
 
 #[tauri::command]
 pub async fn container_create(opts: ContainerCreateOpts) -> Result<String, String> {
+    let _ = docker_post(&format!("/containers/{}/stop?t=2", opts.name), None).await;
     let _ = docker_delete(&format!("/containers/{}?force=true", opts.name)).await;
+    for _ in 0..5 {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        let port = opts.dev_port_start;
+        if std::net::TcpListener::bind(("127.0.0.1", port)).is_ok() {
+            break;
+        }
+    }
 
     let web_port = opts.api_port + 1;
 
@@ -279,8 +437,16 @@ pub async fn container_create(opts: ContainerCreateOpts) -> Result<String, Strin
         r#"set -e
 export PATH="$HOME/.local/bin:$PATH"
 
+echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+
 echo "[1/6] Installing system packages..."
-apt-get update -qq && apt-get install -y -qq git openssh-client curl openssl >/dev/null 2>&1
+for i in 1 2 3; do
+  apt-get update -qq && break
+  echo "  Retry $i..."
+  sleep 2
+done
+apt-get install -y -qq git openssh-client curl openssl >/dev/null 2>&1
 echo "[1/6] ✓ Done"
 
 echo "[2/6] Setting up SSH..."
@@ -371,10 +537,6 @@ otto serve --network --port {api_port} --no-open"#,
             serde_json::json!([{"HostPort": p.to_string()}]),
         );
     }
-    port_bindings.insert(
-        "1455/tcp".to_string(),
-        serde_json::json!([{"HostPort": "1455"}]),
-    );
 
     let mut exposed_ports = serde_json::Map::new();
     exposed_ports.insert(format!("{}/tcp", opts.api_port), serde_json::json!({}));
@@ -382,7 +544,6 @@ otto serve --network --port {api_port} --no-open"#,
     for p in opts.dev_port_start..=opts.dev_port_end {
         exposed_ports.insert(format!("{}/tcp", p), serde_json::json!({}));
     }
-    exposed_ports.insert("1455/tcp".to_string(), serde_json::json!({}));
 
     let create_body = serde_json::json!({
         "Image": opts.image,
@@ -399,6 +560,7 @@ otto serve --network --port {api_port} --no-open"#,
         "ExposedPorts": exposed_ports,
         "HostConfig": {
             "PortBindings": port_bindings,
+            "Dns": ["8.8.8.8", "8.8.4.4", "1.1.1.1"],
             "Binds": if opts.use_personal_ssh {
                 let home = dirs::home_dir().unwrap_or_default();
                 let ssh_path = home.join(".ssh").to_string_lossy().to_string();
@@ -418,7 +580,10 @@ otto serve --network --port {api_port} --no-open"#,
     let json: serde_json::Value = serde_json::from_str(&body).map_err(|e| e.to_string())?;
     let id = json["Id"].as_str().unwrap_or("").to_string();
 
-    docker_post(&format!("/containers/{}/start", id), None).await?;
+    if let Err(e) = docker_post(&format!("/containers/{}/start", id), None).await {
+        let _ = docker_delete(&format!("/containers/{}?force=true", id)).await;
+        return Err(e);
+    }
 
     Ok(id)
 }

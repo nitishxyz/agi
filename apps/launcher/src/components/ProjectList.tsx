@@ -6,7 +6,10 @@ import { Plus, Upload, KeyRound } from 'lucide-react';
 
 export function ProjectList() {
 	const selectedTeam = useStore((s) => s.selectedTeam);
-	const teamProjects = useStore((s) => s.teamProjects)();
+	const projects = useStore((s) => s.projects);
+	const teamProjects = selectedTeam
+		? projects.filter((p) => p.teamId === selectedTeam.id)
+		: [];
 	const handleAction = useStore((s) => s.handleAction);
 	const selectTeam = useStore((s) => s.selectTeam);
 	const setView = useStore((s) => s.setView);
