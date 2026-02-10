@@ -79,6 +79,7 @@ export async function authorizeOpenAI(): Promise<OpenAIOAuthResult> {
 		id_token_add_organizations: 'true',
 		codex_cli_simplified_flow: 'true',
 		state: state,
+		originator: 'codex_cli_rs',
 	});
 
 	const authUrl = `${OPENAI_ISSUER}/oauth/authorize?${params.toString()}`;
@@ -335,6 +336,7 @@ export function authorizeOpenAIWeb(redirectUri: string): {
 		id_token_add_organizations: 'true',
 		codex_cli_simplified_flow: 'true',
 		state: state,
+		originator: 'codex_cli_rs',
 	});
 
 	return {

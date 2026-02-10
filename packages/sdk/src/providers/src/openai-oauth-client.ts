@@ -72,10 +72,13 @@ function buildHeaders(
 	headers.delete('Authorization');
 	headers.delete('authorization');
 	headers.set('authorization', `Bearer ${accessToken}`);
-	headers.set('originator', 'otto');
+	headers.set('originator', 'codex_cli_rs');
+	headers.set('version', '0.98.0');
+	headers.set('x-oai-web-search-eligible', 'true');
+	headers.set('accept', 'text/event-stream');
 	headers.set(
 		'User-Agent',
-		`otto/1.0 (${os.platform()} ${os.release()}; ${os.arch()})`,
+		`codex_cli_rs/0.98.0 (${os.platform()} ${os.release()}; ${os.arch()})`,
 	);
 	if (accountId) {
 		headers.set('ChatGPT-Account-Id', accountId);
