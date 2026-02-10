@@ -11,6 +11,7 @@ const SETU_ID: ProviderId = 'setu';
 
 const isAllowedOpenAIModel = (id: string): boolean => {
 	if (id === 'codex-mini-latest') return true;
+	if (id === 'gpt-5.3' || id.startsWith('gpt-5.3-')) return false;
 	if (id.startsWith('gpt-5')) return true;
 	if (id.includes('codex')) return true;
 	return false;
