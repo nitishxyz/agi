@@ -27,20 +27,22 @@ export function SetupProgress({ project, password, encryptedKey, onDone, onBack 
 	const [error, setError] = useState('');
 	const [done, setDone] = useState(false);
 	const [consoleOpen, setConsoleOpen] = useState(true);
+	const [hovered, setHovered] = useState(false);
 	const pollRef = useRef<ReturnType<typeof setInterval>>();
 	const consoleRef = useRef<HTMLPreElement>(null);
 	const startedRef = useRef(false);
 	const repoName = project.repo.split('/').pop()?.replace('.git', '') || 'project';
+	const isPersonal = project.sshMode === 'personal';
 
 	const log = (msg: string) => {
 		setConsoleLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
 	};
 
 	useEffect(() => {
-		if (consoleRef.current) {
+		if (!hovered && consoleRef.current) {
 			consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
 		}
-	}, [consoleLogs]);
+	}, [consoleLogs, logs, hovered]);
 
 	useEffect(() => {
 		if (startedRef.current) return;
@@ -50,6 +52,7 @@ export function SetupProgress({ project, password, encryptedKey, onDone, onBack 
 			log(`Starting setup for ${repoName}...`);
 			log(`Container: ${project.containerName}`);
 			log(`Ports: API=${project.apiPort} Web=${project.webPort}`);
+			log(`SSH mode: ${isPersonal ? 'personal (~/.ssh mounted)' : 'team deploy key'}`);
 
 			try {
 				const exists = await tauri.containerExists(project.containerName);
@@ -65,14 +68,17 @@ export function SetupProgress({ project, password, encryptedKey, onDone, onBack 
 						name: project.containerName,
 						repoUrl: project.repo,
 						repoDir: `/workspace/${repoName}`,
-						encryptedKey,
-						password,
+						encryptedKey: isPersonal ? '' : encryptedKey,
+						password: isPersonal ? '' : password,
 						gitName: project.gitName || 'Team',
 						gitEmail: project.gitEmail || 'team@otto.dev',
 						apiPort: project.apiPort,
-					devPortStart: project.apiPort + 10,
-					devPortEnd: project.apiPort + 19,
+						devPortStart: project.apiPort + 10,
+						devPortEnd: project.apiPort + 19,
 						image: project.image || 'oven/bun:1-debian',
+						usePersonalSsh: isPersonal,
+					sshKeyName: project.sshKeyName || '',
+				sshPassphrase: project.sshPassphrase || '',
 					});
 					log(`Container created: ${id.slice(0, 12)}`);
 				}
@@ -83,10 +89,30 @@ export function SetupProgress({ project, password, encryptedKey, onDone, onBack 
 						const logText = await tauri.containerLogs(project.containerName, 50);
 						setLogs(logText);
 
-						for (let i = STEPS.length - 1; i >= 0; i--) {
-							if (logText.includes(`[${i + 1}/6] ✓ Done`) || logText.includes(`Starting otto`)) {
+					const running = await tauri.containerRunning(project.containerName);
+					if (!running) {
+						const failMsg = logText.includes('Permission denied')
+							? 'SSH authentication failed — key may be passphrase-protected'
+							: logText.includes('fatal:')
+								? 'Git clone failed — check SSH key and repo access'
+								: 'Container exited unexpectedly';
+						setError(failMsg);
+						log(`FATAL: ${failMsg}`);
+						if (pollRef.current) clearInterval(pollRef.current);
+						return;
+					}
+
+					for (let i = STEPS.length - 1; i >= 0; i--) {
+						const stepTag = `[${i + 1}/6]`;
+						const idx = logText.lastIndexOf(stepTag);
+						if (idx !== -1) {
+							const afterTag = logText.slice(idx, idx + 50);
+							if (afterTag.includes('Done') || afterTag.includes('Starting')) {
 								setCurrentStep(Math.min(i + 1, STEPS.length - 1));
-								break;
+							} else {
+								setCurrentStep(i);
+							}
+							break;
 							}
 						}
 
@@ -111,7 +137,7 @@ export function SetupProgress({ project, password, encryptedKey, onDone, onBack 
 		return () => {
 			if (pollRef.current) clearInterval(pollRef.current);
 		};
-	}, [project, password, encryptedKey, repoName]);
+	}, [project, password, encryptedKey, repoName, isPersonal]);
 
 	const status = error ? 'error' : done ? 'done' : 'running';
 
@@ -191,6 +217,8 @@ export function SetupProgress({ project, password, encryptedKey, onDone, onBack 
 				{consoleOpen && (
 					<pre
 						ref={consoleRef}
+						onMouseEnter={() => setHovered(true)}
+						onMouseLeave={() => setHovered(false)}
 						className="px-4 pb-3 text-[10px] leading-4 font-mono text-muted-foreground overflow-auto max-h-36 whitespace-pre-wrap"
 					>
 						{consoleLogs.map((line, i) => (

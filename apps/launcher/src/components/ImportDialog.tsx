@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
-import { tauri, type ProjectState, type OttoTeamConfig } from '../lib/tauri';
-import { Upload, ArrowLeft } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { tauri, type ProjectState, type OttoTeamConfig, type SshKeyInfo } from '../lib/tauri';
+import { Upload, ArrowLeft, KeyRound, User, Check } from 'lucide-react';
 
 interface Props {
 	existingProjects: ProjectState[];
@@ -13,6 +13,27 @@ export function ImportDialog({ existingProjects, onImport, onCancel }: Props) {
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
 	const [verifying, setVerifying] = useState(false);
+	const [sshMode, setSshMode] = useState<'team' | 'personal'>('team');
+	const [sshKeys, setSshKeys] = useState<SshKeyInfo[]>([]);
+	const [selectedKey, setSelectedKey] = useState('');
+	const [hostGitName, setHostGitName] = useState('');
+	const [hostGitEmail, setHostGitEmail] = useState('');
+	const [sshPassphrase, setSshPassphrase] = useState('');
+
+	useEffect(() => {
+		if (sshMode === 'personal') {
+			tauri.listSshKeys().then((keys) => {
+				setSshKeys(keys);
+				if (keys.length > 0 && !selectedKey) {
+					setSelectedKey(keys[0].name);
+				}
+			});
+		tauri.getHostGitConfig().then(([name, email]) => {
+			if (name) setHostGitName(name);
+			if (email) setHostGitEmail(email);
+		});
+		}
+	}, [sshMode, selectedKey]);
 
 	const handleFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -44,16 +65,18 @@ export function ImportDialog({ existingProjects, onImport, onCancel }: Props) {
 	}, []);
 
 	const handleSubmit = async () => {
-		if (!config || !password) return;
+	if (!config || (sshMode === 'team' && !password)) return;
 		setVerifying(true);
 		setError('');
 
 		try {
+		if (sshMode === 'team') {
 			const valid = await tauri.verifyPassword(config.key, password);
 			if (!valid) {
 				setError('Wrong password');
 				setVerifying(false);
 				return;
+			}
 			}
 
 			const trackedPorts = existingProjects.map((p) => p.apiPort);
@@ -67,11 +90,13 @@ export function ImportDialog({ existingProjects, onImport, onCancel }: Props) {
 				apiPort,
 				webPort: apiPort + 1,
 				status: 'creating',
-				gitName: config.gitName,
-				gitEmail: config.gitEmail,
+			gitName: sshMode === 'personal' ? (hostGitName || config.gitName) : config.gitName,
+			gitEmail: sshMode === 'personal' ? (hostGitEmail || config.gitEmail) : config.gitEmail,
+			sshMode,
+			sshKeyName: sshMode === 'personal' ? selectedKey : undefined,
+		sshPassphrase: sshMode === 'personal' ? sshPassphrase : undefined,
 			};
-
-			onImport(project, password);
+		onImport(project, sshMode === 'personal' ? '' : password);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Verification failed');
 		}
@@ -120,6 +145,85 @@ export function ImportDialog({ existingProjects, onImport, onCancel }: Props) {
 						</div>
 					</div>
 
+				<div className="space-y-1.5">
+					<label className="text-xs text-muted-foreground">SSH keys</label>
+					<div className="flex gap-2">
+						<button
+							onClick={() => setSshMode('team')}
+							className={`flex-1 flex items-center gap-1.5 p-2 rounded-md border text-xs transition-colors ${
+								sshMode === 'team'
+									? 'border-primary bg-primary/5 text-foreground'
+									: 'border-border text-muted-foreground hover:bg-accent/50'
+							}`}
+						>
+							<KeyRound size={12} />
+							<span className="font-medium">Team key</span>
+						</button>
+						<button
+							onClick={() => setSshMode('personal')}
+							className={`flex-1 flex items-center gap-1.5 p-2 rounded-md border text-xs transition-colors ${
+								sshMode === 'personal'
+									? 'border-primary bg-primary/5 text-foreground'
+									: 'border-border text-muted-foreground hover:bg-accent/50'
+							}`}
+						>
+							<User size={12} />
+							<span className="font-medium">My keys</span>
+						</button>
+					</div>
+				</div>
+
+			{sshMode === 'personal' && (
+				<div className="space-y-1.5">
+					<label className="text-xs text-muted-foreground">Select key</label>
+					{sshKeys.length === 0 ? (
+						<div className="text-xs text-muted-foreground p-2 rounded bg-secondary">
+							No SSH keys found in ~/.ssh/
+						</div>
+					) : (
+						<div className="space-y-1">
+							{sshKeys.map((key) => (
+								<button
+									key={key.name}
+									onClick={() => setSelectedKey(key.name)}
+									className={`w-full flex items-center gap-2 p-2 rounded-md border text-xs text-left transition-colors ${
+										selectedKey === key.name
+											? 'border-primary bg-primary/5'
+											: 'border-border hover:bg-accent/50'
+									}`}
+								>
+									<div className="flex-1 min-w-0">
+										<div className="flex items-center gap-2">
+											<span className="font-mono font-medium">{key.name}</span>
+											<span className="text-[10px] text-muted-foreground px-1 py-0.5 rounded bg-secondary">
+												{key.keyType}
+											</span>
+										</div>
+									</div>
+									{selectedKey === key.name && (
+										<Check size={14} className="text-primary shrink-0" />
+									)}
+								</button>
+							))}
+						</div>
+					)}
+				</div>
+			)}
+
+			{sshMode === 'personal' && selectedKey && sshKeys.find((k) => k.name === selectedKey)?.hasPassphrase && (
+				<div className="space-y-1.5">
+					<label className="text-xs text-muted-foreground">Key passphrase</label>
+					<input
+						type="password"
+						value={sshPassphrase}
+						onChange={(e) => setSshPassphrase(e.target.value)}
+						placeholder="Enter passphrase for this key"
+						className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+					/>
+				</div>
+			)}
+
+				{sshMode === 'team' && (
 					<div className="space-y-1.5">
 						<label className="text-xs text-muted-foreground">
 							Team password
@@ -134,6 +238,7 @@ export function ImportDialog({ existingProjects, onImport, onCancel }: Props) {
 							autoFocus
 						/>
 					</div>
+				)}
 
 					{error && (
 						<div className="text-xs text-destructive">{error}</div>
@@ -141,7 +246,7 @@ export function ImportDialog({ existingProjects, onImport, onCancel }: Props) {
 
 					<button
 						onClick={handleSubmit}
-						disabled={!password || verifying}
+					disabled={(sshMode === 'team' && !password) || verifying}
 						className="w-full py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
 					>
 						{verifying ? 'Verifying...' : 'Start Setup'}

@@ -9,7 +9,7 @@ interface Props {
 	projects: ProjectState[];
 	onAdd: () => void;
 	onImport: () => void;
-	onAction: (projectId: string, action: string) => void;
+	onAction: (projectId: string, action: string) => Promise<void> | void;
 	onBack: () => void;
 }
 

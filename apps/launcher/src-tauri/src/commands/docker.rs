@@ -185,6 +185,12 @@ pub struct ContainerCreateOpts {
     pub dev_port_start: u16,
     pub dev_port_end: u16,
     pub image: String,
+    #[serde(default)]
+    pub use_personal_ssh: bool,
+    #[serde(default)]
+    pub ssh_key_name: String,
+    #[serde(default)]
+    pub ssh_passphrase: String,
 }
 
 #[tauri::command]
@@ -253,11 +259,34 @@ apt-get update -qq && apt-get install -y -qq git openssh-client curl openssl >/d
 echo "[1/6] ✓ Done"
 
 echo "[2/6] Setting up SSH..."
-mkdir -p /root/.ssh && chmod 700 /root/.ssh
-printf "%s" "$ENCRYPTED_KEY" | base64 -d | openssl aes-256-cbc -d -pbkdf2 -pass pass:"$TEAM_PASS" > /root/.ssh/id_ed25519
-chmod 600 /root/.ssh/id_ed25519
-ssh-keyscan github.com >> /root/.ssh/known_hosts 2>/dev/null
-unset ENCRYPTED_KEY TEAM_PASS
+if ls /root/.ssh/id_* >/dev/null 2>&1; then
+  echo "  Using mounted SSH keys"
+  mkdir -p /tmp/ssh && cp /root/.ssh/id_* /tmp/ssh/ 2>/dev/null
+  chmod 700 /tmp/ssh && chmod 600 /tmp/ssh/id_*
+  ssh-keyscan github.com >> /tmp/ssh/known_hosts 2>/dev/null
+  SSH_KEY=$(ls /tmp/ssh/id_* | grep -v '\.pub$' | head -1)
+  if [ -n "$SSH_KEY_NAME" ] && [ -f "/tmp/ssh/$SSH_KEY_NAME" ]; then
+    SSH_KEY="/tmp/ssh/$SSH_KEY_NAME"
+  fi
+  echo "  Using key: $(basename $SSH_KEY)"
+  if [ -n "$SSH_PASSPHRASE" ]; then
+    echo "  Removing passphrase from key copy..."
+    ssh-keygen -p -P "$SSH_PASSPHRASE" -N "" -f "$SSH_KEY" >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      echo "  ✗ Failed to remove passphrase — wrong passphrase?"
+    else
+      echo "  ✓ Passphrase removed from copy"
+    fi
+    unset SSH_PASSPHRASE
+  fi
+  export GIT_SSH_COMMAND="ssh -i $SSH_KEY -F /dev/null -o UserKnownHostsFile=/tmp/ssh/known_hosts -o StrictHostKeyChecking=no"
+else
+  mkdir -p /root/.ssh && chmod 700 /root/.ssh
+  printf "%s" "$ENCRYPTED_KEY" | base64 -d | openssl aes-256-cbc -d -pbkdf2 -pass pass:"$TEAM_PASS" > /root/.ssh/id_ed25519
+  chmod 600 /root/.ssh/id_ed25519
+  ssh-keyscan github.com >> /root/.ssh/known_hosts 2>/dev/null
+  unset ENCRYPTED_KEY TEAM_PASS
+fi
 echo "[2/6] ✓ Done"
 
 echo "[3/6] Configuring git..."
@@ -330,10 +359,19 @@ otto serve --network --port {api_port} --no-open"#,
             format!("REPO_URL={}", opts.repo_url),
             format!("REPO_DIR={}", opts.repo_dir),
             format!("OTTO_PORT={}", opts.api_port),
+            format!("SSH_KEY_NAME={}", opts.ssh_key_name),
+            format!("SSH_PASSPHRASE={}", opts.ssh_passphrase),
         ],
         "ExposedPorts": exposed_ports,
         "HostConfig": {
             "PortBindings": port_bindings,
+            "Binds": if opts.use_personal_ssh {
+                let home = dirs::home_dir().unwrap_or_default();
+                let ssh_path = home.join(".ssh").to_string_lossy().to_string();
+                serde_json::json!([format!("{}:/root/.ssh:ro", ssh_path)])
+            } else {
+                serde_json::json!([])
+            },
         },
     });
 

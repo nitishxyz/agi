@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { tauri, type TeamState, type ProjectState, type OttoTeamConfig } from '../lib/tauri';
-import { ArrowLeft, Download, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { tauri, type TeamState, type ProjectState, type OttoTeamConfig, type SshKeyInfo } from '../lib/tauri';
+import { ArrowLeft, Download, Plus, KeyRound, User, Check } from 'lucide-react';
 
 interface Props {
 	team: TeamState;
@@ -12,10 +12,31 @@ interface Props {
 export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 	const [repoUrl, setRepoUrl] = useState('');
 	const [exportAfter, setExportAfter] = useState(true);
+	const [sshMode, setSshMode] = useState<'team' | 'personal'>('team');
+	const [sshKeys, setSshKeys] = useState<SshKeyInfo[]>([]);
+	const [selectedKey, setSelectedKey] = useState('');
+	const [hostGitName, setHostGitName] = useState('');
+	const [hostGitEmail, setHostGitEmail] = useState('');
+	const [sshPassphrase, setSshPassphrase] = useState('');
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
 
 	const repoName = repoUrl.split('/').pop()?.replace('.git', '') || '';
+
+	useEffect(() => {
+		if (sshMode === 'personal') {
+			tauri.listSshKeys().then((keys) => {
+				setSshKeys(keys);
+				if (keys.length > 0 && !selectedKey) {
+					setSelectedKey(keys[0].name);
+				}
+			});
+			tauri.getHostGitConfig().then(([name, email]) => {
+				if (name) setHostGitName(name);
+				if (email) setHostGitEmail(email);
+			});
+		}
+	}, [sshMode, selectedKey]);
 
 	const handleAdd = async () => {
 		if (!repoUrl) {
@@ -24,6 +45,10 @@ export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 		}
 		if (!repoUrl.startsWith('git@')) {
 			setError('Use SSH URL format: git@github.com:org/repo.git');
+			return;
+		}
+		if (sshMode === 'personal' && !selectedKey) {
+			setError('Select an SSH key');
 			return;
 		}
 
@@ -45,11 +70,14 @@ export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 				image: 'oven/bun:1-debian',
 				devPorts: 'auto',
 				postClone: 'bun install',
-				gitName: team.gitName,
-				gitEmail: team.gitEmail,
+			gitName: sshMode === 'personal' ? (hostGitName || team.gitName) : team.gitName,
+			gitEmail: sshMode === 'personal' ? (hostGitEmail || team.gitEmail) : team.gitEmail,
+				sshMode,
+				sshKeyName: sshMode === 'personal' ? selectedKey : undefined,
+			sshPassphrase: sshMode === 'personal' ? sshPassphrase : undefined,
 			};
 
-			if (exportAfter) {
+			if (exportAfter && sshMode === 'team') {
 				const config: OttoTeamConfig = {
 					version: 1,
 					repo: repoUrl,
@@ -84,8 +112,8 @@ export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 			<div className="space-y-3">
 				<div className="text-sm font-medium">Add Repository</div>
 				<div className="text-xs text-muted-foreground">
-					Add a repo for {team.name}. Make sure you've added the
-					deploy key to this repo on GitHub.
+					Add a repo for {team.name}. Make sure the SSH key has
+					access to this repo on GitHub.
 				</div>
 
 				<div className="space-y-1.5">
@@ -102,36 +130,139 @@ export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 					/>
 				</div>
 
+				<div className="space-y-1.5">
+					<label className="text-xs text-muted-foreground">SSH keys</label>
+					<div className="flex gap-2">
+						<button
+							onClick={() => setSshMode('team')}
+							className={`flex-1 flex items-center gap-2 p-2.5 rounded-md border text-xs transition-colors ${
+								sshMode === 'team'
+									? 'border-primary bg-primary/5 text-foreground'
+									: 'border-border text-muted-foreground hover:bg-accent/50'
+							}`}
+						>
+							<KeyRound size={14} />
+							<div className="text-left">
+								<div className="font-medium">Team key</div>
+								<div className="text-[10px] text-muted-foreground">Encrypted deploy key</div>
+							</div>
+						</button>
+						<button
+							onClick={() => setSshMode('personal')}
+							className={`flex-1 flex items-center gap-2 p-2.5 rounded-md border text-xs transition-colors ${
+								sshMode === 'personal'
+									? 'border-primary bg-primary/5 text-foreground'
+									: 'border-border text-muted-foreground hover:bg-accent/50'
+							}`}
+						>
+							<User size={14} />
+							<div className="text-left">
+								<div className="font-medium">My keys</div>
+								<div className="text-[10px] text-muted-foreground">Mount ~/.ssh</div>
+							</div>
+						</button>
+					</div>
+				</div>
+
+				{sshMode === 'personal' && (
+					<div className="space-y-1.5">
+						<label className="text-xs text-muted-foreground">Select key</label>
+						{sshKeys.length === 0 ? (
+							<div className="text-xs text-muted-foreground p-2 rounded bg-secondary">
+								No SSH keys found in ~/.ssh/
+							</div>
+						) : (
+							<div className="space-y-1">
+								{sshKeys.map((key) => (
+									<button
+										key={key.name}
+										onClick={() => setSelectedKey(key.name)}
+										className={`w-full flex items-center gap-2 p-2 rounded-md border text-xs text-left transition-colors ${
+											selectedKey === key.name
+												? 'border-primary bg-primary/5'
+												: 'border-border hover:bg-accent/50'
+										}`}
+									>
+										<div className="flex-1 min-w-0">
+											<div className="flex items-center gap-2">
+												<span className="font-mono font-medium">{key.name}</span>
+												<span className="text-[10px] text-muted-foreground px-1 py-0.5 rounded bg-secondary">
+													{key.keyType}
+												</span>
+												{key.hasPassphrase && (
+													<span className="text-[10px] text-yellow-500 px-1 py-0.5 rounded bg-yellow-500/10">
+														passphrase
+													</span>
+												)}
+											</div>
+											{key.publicKey && (
+												<div className="text-[10px] text-muted-foreground truncate mt-0.5">
+													{key.publicKey}
+												</div>
+											)}
+										</div>
+										{selectedKey === key.name && (
+											<Check size={14} className="text-primary shrink-0" />
+										)}
+									</button>
+								))}
+							</div>
+						)}
+					</div>
+				)}
+
+			{sshMode === 'personal' && selectedKey && sshKeys.find((k) => k.name === selectedKey)?.hasPassphrase && (
+			<div className="space-y-1.5">
+				<label className="text-xs text-muted-foreground">Key passphrase</label>
+				<input
+					type="password"
+					value={sshPassphrase}
+					onChange={(e) => setSshPassphrase(e.target.value)}
+					placeholder="Enter passphrase for this key"
+					className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+				/>
+				<div className="text-[10px] text-muted-foreground">
+					Passphrase will be used once to unlock the key inside the container.
+				</div>
+			</div>
+			)}
+
 				{repoName && (
 					<div className="rounded-md border border-border bg-card p-3 space-y-1">
 						<div className="text-xs text-muted-foreground">Container</div>
 						<div className="text-sm font-mono">otto-{repoName}</div>
-						<div className="text-xs text-muted-foreground mt-1">Git identity</div>
-						<div className="text-sm">{team.gitName} &lt;{team.gitEmail}&gt;</div>
+						<div className="text-xs text-muted-foreground mt-1">SSH</div>
+						<div className="text-sm">
+							{sshMode === 'personal'
+								? selectedKey ? `~/.ssh/${selectedKey}` : 'No key selected'
+								: 'Team deploy key'}
+						</div>
 					</div>
 				)}
 
-				<label className="flex items-center gap-2 text-sm cursor-pointer">
-					<input
-						type="checkbox"
-						checked={exportAfter}
-						onChange={(e) => setExportAfter(e.target.checked)}
-						className="rounded border-border"
-					/>
-					<span className="text-xs text-muted-foreground">
-						Export .otto file for team sharing
-					</span>
-				</label>
+				{sshMode === 'team' && (
+					<label className="flex items-center gap-2 text-sm cursor-pointer">
+						<input
+							type="checkbox"
+							checked={exportAfter}
+							onChange={(e) => setExportAfter(e.target.checked)}
+							className="rounded border-border"
+						/>
+						<span className="text-xs text-muted-foreground">
+							Export .otto file for team sharing
+						</span>
+					</label>
+				)}
 
 				{error && <div className="text-xs text-destructive">{error}</div>}
 
 				<button
 					onClick={handleAdd}
-					disabled={loading || !repoUrl}
+					disabled={loading || !repoUrl || (sshMode === 'personal' && !selectedKey)}
 					className="w-full py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
 				>
-					{exportAfter ? <Download size={14} /> : <Plus size={14} />}
-					{loading ? 'Adding...' : exportAfter ? 'Add & Export .otto' : 'Add Project'}
+					{exportAfter && sshMode === 'team' ? <Download size={14} /> : <Plus size={14} />}
+					{loading ? 'Adding...' : exportAfter && sshMode === 'team' ? 'Add & Export .otto' : 'Add Project'}
 				</button>
 			</div>
 		</div>

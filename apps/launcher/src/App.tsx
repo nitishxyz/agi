@@ -97,13 +97,16 @@ function App() {
 				if (exists) {
 					setSetupPassword('');
 					setView('setup');
+			} else if (project.sshMode === 'personal') {
+				setSetupPassword('');
+				setView('setup');
 				} else {
 					setView('password-prompt');
 				}
 				return;
 			}
 			case 'stop':
-				await tauri.containerStop(project.containerName);
+			try { await tauri.containerStop(project.containerName); } catch {}
 				break;
 			case 'restart':
 				await tauri.containerRestartOtto(
@@ -119,7 +122,7 @@ function App() {
 				openUrl(`http://localhost:${project.webPort}`);
 				break;
 			case 'nuke': {
-				await tauri.containerRemove(project.containerName);
+			try { await tauri.containerRemove(project.containerName); } catch {}
 				const remaining = projects.filter((p) => p.id !== projectId);
 				await saveAndUpdate(team, remaining);
 				return;

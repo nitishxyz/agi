@@ -25,7 +25,7 @@ export function ProjectCard({ project, onAction }: Props) {
 	const repoName = project.repo.split('/').pop()?.replace('.git', '') || project.repo;
 
 	const handleAction = async (action: string) => {
-		if (action === 'start' || action === 'export' || action === 'nuke') {
+		if (action === 'start' || action === 'export') {
 			onAction(action);
 			return;
 		}

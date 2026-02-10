@@ -19,6 +19,9 @@ export interface ContainerCreateOpts {
 	devPortStart: number;
 	devPortEnd: number;
 	image: string;
+	usePersonalSsh?: boolean;
+	sshKeyName?: string;
+	sshPassphrase?: string;
 }
 
 export interface TeamState {
@@ -41,6 +44,9 @@ export interface ProjectState {
 	postClone?: string;
 	gitName?: string;
 	gitEmail?: string;
+	sshMode?: 'team' | 'personal';
+	sshKeyName?: string;
+	sshPassphrase?: string;
 }
 
 export interface LauncherState {
@@ -65,6 +71,14 @@ export interface KeyPair {
 	encryptedPrivateKey: string;
 }
 
+export interface SshKeyInfo {
+	name: string;
+	path: string;
+	keyType: string;
+	publicKey: string;
+	hasPassphrase: boolean;
+}
+
 export const tauri = {
 	dockerAvailable: () => invoke<boolean>('docker_available'),
 	containerExists: (name: string) => invoke<boolean>('container_exists', { name }),
@@ -87,6 +101,8 @@ export const tauri = {
 		invoke<string>('decrypt_key', { encrypted, password }),
 	verifyPassword: (encrypted: string, password: string) =>
 		invoke<boolean>('verify_password', { encrypted, password }),
+	listSshKeys: () => invoke<SshKeyInfo[]>('list_ssh_keys'),
+	getHostGitConfig: () => invoke<[string, string]>('get_host_git_config'),
 
 	loadState: () => invoke<LauncherState>('load_state'),
 	saveState: (state: LauncherState) => invoke<void>('save_state', { state }),

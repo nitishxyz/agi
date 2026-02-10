@@ -32,6 +32,10 @@ pub struct ProjectState {
     pub git_name: String,
     #[serde(default)]
     pub git_email: String,
+    #[serde(default)]
+    pub ssh_mode: String,
+    #[serde(default)]
+    pub ssh_key_name: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]

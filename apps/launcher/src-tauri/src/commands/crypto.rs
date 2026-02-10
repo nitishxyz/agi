@@ -99,3 +99,88 @@ pub fn decrypt_key(encrypted: String, password: String) -> Result<String, String
 pub fn verify_password(encrypted: String, password: String) -> bool {
     decrypt_key(encrypted, password).is_ok()
 }
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SshKeyInfo {
+    pub name: String,
+    pub path: String,
+    pub key_type: String,
+    pub public_key: String,
+    pub has_passphrase: bool,
+}
+
+#[tauri::command]
+pub fn list_ssh_keys() -> Vec<SshKeyInfo> {
+    let home = dirs::home_dir().unwrap_or_default();
+    let ssh_dir = home.join(".ssh");
+    let mut keys = Vec::new();
+
+    if let Ok(entries) = std::fs::read_dir(&ssh_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+
+            if !name.starts_with("id_") || name.ends_with(".pub") {
+                continue;
+            }
+
+            let key_type = if name.contains("ed25519") {
+                "ed25519"
+            } else if name.contains("rsa") {
+                "rsa"
+            } else if name.contains("ecdsa") {
+                "ecdsa"
+            } else {
+                "unknown"
+            }.to_string();
+
+            let pub_path = path.with_extension("pub");
+            let public_key = std::fs::read_to_string(&pub_path)
+                .unwrap_or_default()
+                .trim()
+                .to_string();
+
+            let has_passphrase = std::process::Command::new("ssh-keygen")
+                .args(["-y", "-P", "", "-f"])
+                .arg(&path)
+                .output()
+                .map(|o| !o.status.success())
+                .unwrap_or(true);
+
+            keys.push(SshKeyInfo {
+                name: name.clone(),
+                path: path.to_string_lossy().to_string(),
+                key_type,
+                public_key,
+                has_passphrase,
+            });
+        }
+    }
+
+    keys.sort_by(|a, b| a.name.cmp(&b.name));
+    keys
+}
+
+#[tauri::command]
+pub fn get_host_git_config() -> (String, String) {
+    let name = std::process::Command::new("git")
+        .args(["config", "--global", "user.name"])
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+
+    let email = std::process::Command::new("git")
+        .args(["config", "--global", "user.email"])
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+
+    (name, email)
+}
