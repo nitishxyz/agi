@@ -23,6 +23,7 @@ export const OnboardingModal = memo(function OnboardingModal({
 
 	const {
 		setupWallet,
+		importWallet,
 		addProvider,
 		removeProvider,
 		completeOnboarding,
@@ -41,6 +42,7 @@ export const OnboardingModal = memo(function OnboardingModal({
 				<ProviderSetupStep
 					authStatus={authStatus}
 					onSetupWallet={setupWallet}
+					onImportWallet={importWallet}
 					onAddProvider={addProvider}
 					onRemoveProvider={removeProvider}
 					onStartOAuth={startOAuth}

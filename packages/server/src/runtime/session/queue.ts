@@ -17,6 +17,7 @@ export type RunOpts = {
 	compactionContext?: string;
 	toolApprovalMode?: ToolApprovalMode;
 	compactionRetries?: number;
+	continuationCount?: number;
 };
 
 export type QueuedMessage = {

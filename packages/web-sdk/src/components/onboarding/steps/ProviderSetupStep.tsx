@@ -19,6 +19,7 @@ import { openUrl } from '../../../lib/open-url';
 interface ProviderSetupStepProps {
 	authStatus: AuthStatus;
 	onSetupWallet: () => Promise<unknown>;
+	onImportWallet: (privateKey: string) => Promise<unknown>;
 	onAddProvider: (provider: string, apiKey: string) => Promise<unknown>;
 	onRemoveProvider: (provider: string) => Promise<unknown>;
 	onStartOAuth: (provider: string, mode?: string) => Window | null;
@@ -50,6 +51,7 @@ interface ProviderSetupStepProps {
 export const ProviderSetupStep = memo(function ProviderSetupStep({
 	authStatus,
 	onSetupWallet,
+	onImportWallet,
 	onAddProvider,
 	onRemoveProvider,
 	onStartOAuth,
@@ -65,6 +67,12 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 }: ProviderSetupStepProps) {
 	const [copied, setCopied] = useState(false);
 	const [isSettingUp, setIsSettingUp] = useState(false);
+	const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+	const [importPrivateKey, setImportPrivateKey] = useState('');
+	const [isImportingWallet, setIsImportingWallet] = useState(false);
+	const [importWalletError, setImportWalletError] = useState<string | null>(
+		null,
+	);
 	const [addingProvider, setAddingProvider] = useState<string | null>(null);
 	const [apiKeyInput, setApiKeyInput] = useState('');
 	const [removingProvider, setRemovingProvider] = useState<string | null>(null);
@@ -96,6 +104,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	const usdcBalance = useSetuStore((s) => s.usdcBalance);
 	const apiKeyInputRef = useRef<HTMLInputElement>(null);
 	const oauthCodeInputRef = useRef<HTMLInputElement>(null);
+	const importPrivateKeyRef = useRef<HTMLTextAreaElement>(null);
 	const isTopupModalOpen = useSetuStore((s) => s.isTopupModalOpen);
 	const prevTopupModalOpen = useRef(false);
 	const { fetchBalance } = useSetuBalance('setu');
@@ -127,6 +136,12 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 			oauthCodeInputRef.current.focus();
 		}
 	}, [oauthSession]);
+
+	useEffect(() => {
+		if (isImportModalOpen && importPrivateKeyRef.current) {
+			importPrivateKeyRef.current.focus();
+		}
+	}, [isImportModalOpen]);
 
 	useEffect(() => {
 		if (!copilotPolling || !copilotDevice || !copilotPollFnRef.current) return;
@@ -295,6 +310,36 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 		}
 	};
 
+	const handleOpenImportWallet = () => {
+		setImportWalletError(null);
+		setImportPrivateKey('');
+		setIsImportModalOpen(true);
+	};
+
+	const handleCloseImportWallet = () => {
+		if (isImportingWallet) return;
+		setIsImportModalOpen(false);
+		setImportWalletError(null);
+		setImportPrivateKey('');
+	};
+
+	const handleImportWallet = async () => {
+		if (!importPrivateKey.trim() || isImportingWallet) return;
+		setIsImportingWallet(true);
+		setImportWalletError(null);
+		try {
+			await onImportWallet(importPrivateKey.trim());
+			setIsImportModalOpen(false);
+			setImportPrivateKey('');
+		} catch (err) {
+			setImportWalletError(
+				err instanceof Error ? err.message : 'Failed to import wallet',
+			);
+		} finally {
+			setIsImportingWallet(false);
+		}
+	};
+
 	const configuredProviders = Object.entries(authStatus.providers).filter(
 		([id, info]) => info.configured && id !== 'setu',
 	);
@@ -403,6 +448,15 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 										>
 											<CreditCard className="w-4 h-4" />
 											Pay via Card
+										</button>
+
+										<button
+											type="button"
+											onClick={handleOpenImportWallet}
+											className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2.5 border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted/50 transition-colors"
+										>
+											<Key className="w-4 h-4" />
+											Import Wallet
 										</button>
 									</div>
 								) : (
@@ -630,6 +684,61 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 					)}
 				</div>
 			</div>
+
+			{isImportModalOpen && (
+				<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+					<div className="bg-background border border-border rounded-xl w-full max-w-lg mx-6 shadow-2xl">
+						<div className="flex items-center gap-3 p-6 border-b border-border">
+							<ProviderLogo provider="setu" size={24} />
+							<h3 className="text-lg font-semibold">Import Setu Wallet</h3>
+						</div>
+						<div className="p-6">
+							<p className="text-sm text-muted-foreground mb-4">
+								Paste your base58 private key to replace the current wallet.
+							</p>
+							<textarea
+								ref={importPrivateKeyRef}
+								value={importPrivateKey}
+								onChange={(e) => setImportPrivateKey(e.target.value)}
+								placeholder="Enter private key"
+								className="w-full min-h-[110px] px-4 py-3 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 transition-colors font-mono text-xs resize-y"
+								onKeyDown={(e) => {
+									if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+										e.preventDefault();
+										handleImportWallet();
+									}
+									if (e.key === 'Escape') handleCloseImportWallet();
+								}}
+							/>
+							{importWalletError && (
+								<p className="text-sm text-red-500 mt-3">{importWalletError}</p>
+							)}
+							<div className="flex gap-3 mt-5">
+								<button
+									type="button"
+									onClick={handleCloseImportWallet}
+									disabled={isImportingWallet}
+									className="flex-1 h-11 px-4 bg-transparent border border-border text-foreground rounded-lg font-medium hover:bg-muted/50 transition-colors disabled:opacity-50"
+								>
+									Cancel
+								</button>
+								<button
+									type="button"
+									onClick={handleImportWallet}
+									disabled={!importPrivateKey.trim() || isImportingWallet}
+									className="flex-1 h-11 px-4 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+								>
+									{isImportingWallet ? (
+										<Loader2 className="w-4 h-4 animate-spin" />
+									) : (
+										'Import Wallet'
+									)}
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* OAuth Code Modal */}
 			{oauthSession && (

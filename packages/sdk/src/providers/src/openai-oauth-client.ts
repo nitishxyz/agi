@@ -105,6 +105,7 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 		const targetUrl = rewriteUrl(originalUrl);
 
 		const headers = buildHeaders(init, validated.access, validated.accountId);
+		headers.set('accept-encoding', 'identity');
 
 		const response = await fetch(targetUrl, {
 			...init,
@@ -112,6 +113,7 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 			// biome-ignore lint/suspicious/noTsIgnore: Bun-specific fetch option
 			// @ts-ignore
 			timeout: false,
+			decompress: false,
 		});
 
 		if (response.status === 401) {
@@ -134,6 +136,7 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 					currentOAuth.access,
 					currentOAuth.accountId,
 				);
+				retryHeaders.set('accept-encoding', 'identity');
 
 				return fetch(targetUrl, {
 					...init,
@@ -141,6 +144,7 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 					// biome-ignore lint/suspicious/noTsIgnore: Bun-specific fetch option
 					// @ts-ignore
 					timeout: false,
+					decompress: false,
 				});
 			} catch {
 				console.error(

@@ -1070,6 +1070,26 @@ class ApiClient {
 		return await response.json();
 	}
 
+	async exportSetuWallet(): Promise<{
+		success: boolean;
+		publicKey: string;
+		privateKey: string;
+	}> {
+		const response = await fetch(`${this.baseUrl}/v1/auth/setu/export`, {
+			method: 'GET',
+			headers: { 'Content-Type': 'application/json' },
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to export wallet' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
 	async addProvider(
 		provider: string,
 		apiKey: string,

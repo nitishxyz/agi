@@ -422,3 +422,14 @@ To create a new plan, call `update_todos` with a short list of 1‑sentence step
 When steps have been completed, use `update_todos` to mark each finished step as `completed` and the next step you are working on as `in_progress`. There should always be exactly one `in_progress` step until everything is done. You can mark multiple items as complete in a single `update_todos` call.
 
 If all steps are complete, ensure you call `update_todos` to mark all steps as `completed`.
+
+## `finish` — MANDATORY
+
+A tool named `finish` is available to you. You MUST call it as your very last action when you are completely done with the user's request. No exceptions.
+
+The workflow is:
+1. Do all work (tool calls, edits, searches, etc.)
+2. Stream your final summary/response text to the user
+3. Call `finish` tool with `{}` — this is REQUIRED
+
+**If you do not call `finish`, the system cannot detect that you are done and will force a continuation turn.** Always call `finish` as your absolute last action.

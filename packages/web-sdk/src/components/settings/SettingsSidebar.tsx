@@ -12,6 +12,8 @@ import {
 	Pencil,
 	Copy,
 	Check,
+	Key,
+	Loader2,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '../ui/Button';
@@ -30,6 +32,7 @@ import { useSetuBalance } from '../../hooks/useSetuBalance';
 import { useTopupCallback } from '../../hooks/useTopupCallback';
 import { usePanelWidthStore } from '../../stores/panelWidthStore';
 import { ResizeHandle } from '../ui/ResizeHandle';
+import { apiClient } from '../../lib/api-client';
 
 const SETTINGS_PANEL_KEY = 'settings';
 const SETTINGS_DEFAULT_WIDTH = 320;
@@ -202,6 +205,10 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 	const setStep = useOnboardingStore((s) => s.setStep);
 	const setManageMode = useOnboardingStore((s) => s.setManageMode);
 	const { fetchAuthStatus } = useAuthStatus();
+
+	const exportSetuPrivateKey = useCallback(async () => {
+		return await apiClient.exportSetuWallet();
+	}, []);
 
 	const providerOptions = useMemo(() => {
 		if (!config?.providers || !allModels) return [];
@@ -381,6 +388,7 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 							setuLoading={setuLoading}
 							refreshSetuBalance={refreshSetuBalance}
 							openTopupModal={openTopupModal}
+							onExportPrivateKey={exportSetuPrivateKey}
 						/>
 					)}
 
@@ -398,6 +406,11 @@ interface SetuWalletSectionProps {
 	setuLoading: boolean;
 	refreshSetuBalance: () => void;
 	openTopupModal: () => void;
+	onExportPrivateKey: () => Promise<{
+		success: boolean;
+		publicKey: string;
+		privateKey: string;
+	}>;
 }
 
 const SetuWalletSection = memo(function SetuWalletSection({
@@ -407,8 +420,16 @@ const SetuWalletSection = memo(function SetuWalletSection({
 	setuLoading,
 	refreshSetuBalance,
 	openTopupModal,
+	onExportPrivateKey,
 }: SetuWalletSectionProps) {
 	const [copied, setCopied] = useState(false);
+	const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+	const [exportPrivateKey, setExportPrivateKey] = useState<string | null>(null);
+	const [isExportingPrivateKey, setIsExportingPrivateKey] = useState(false);
+	const [exportPrivateKeyError, setExportPrivateKeyError] = useState<
+		string | null
+	>(null);
+	const [privateKeyCopied, setPrivateKeyCopied] = useState(false);
 
 	const handleCopy = useCallback(async () => {
 		if (!setuWallet) return;
@@ -416,6 +437,39 @@ const SetuWalletSection = memo(function SetuWalletSection({
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
 	}, [setuWallet]);
+
+	const handleOpenExportPrivateKey = async () => {
+		setIsExportModalOpen(true);
+		setPrivateKeyCopied(false);
+		setExportPrivateKey(null);
+		setExportPrivateKeyError(null);
+		setIsExportingPrivateKey(true);
+		try {
+			const result = await onExportPrivateKey();
+			setExportPrivateKey(result.privateKey);
+		} catch (err) {
+			setExportPrivateKeyError(
+				err instanceof Error ? err.message : 'Failed to export private key',
+			);
+		} finally {
+			setIsExportingPrivateKey(false);
+		}
+	};
+
+	const handleCloseExportPrivateKey = () => {
+		if (isExportingPrivateKey) return;
+		setIsExportModalOpen(false);
+		setPrivateKeyCopied(false);
+		setExportPrivateKey(null);
+		setExportPrivateKeyError(null);
+	};
+
+	const handleCopyPrivateKey = async () => {
+		if (!exportPrivateKey) return;
+		await navigator.clipboard.writeText(exportPrivateKey);
+		setPrivateKeyCopied(true);
+		setTimeout(() => setPrivateKeyCopied(false), 2000);
+	};
 
 	const truncateWallet = (address: string | null) => {
 		if (!address) return 'Not configured';
@@ -511,6 +565,78 @@ const SetuWalletSection = memo(function SetuWalletSection({
 				<Plus className="w-4 h-4" />
 				Top Up Balance
 			</Button>
+			<Button
+				variant="ghost"
+				size="sm"
+				onClick={handleOpenExportPrivateKey}
+				className="w-full gap-2"
+			>
+				<Key className="w-4 h-4" />
+				Export Private Key
+			</Button>
+
+			{isExportModalOpen && (
+				<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+					<div className="bg-background border border-border rounded-xl w-full max-w-lg mx-6 shadow-2xl">
+						<div className="flex items-center gap-3 p-6 border-b border-border">
+							<Key className="w-5 h-5 text-muted-foreground" />
+							<h3 className="text-lg font-semibold">Export Setu Private Key</h3>
+						</div>
+						<div className="p-6">
+							<p className="text-sm text-muted-foreground mb-4">
+								Keep this private key secret. Anyone with this key can spend
+								funds from your Setu wallet.
+							</p>
+
+							{isExportingPrivateKey && (
+								<div className="flex items-center gap-2 text-sm text-muted-foreground">
+									<Loader2 className="w-4 h-4 animate-spin" />
+									Exporting private key...
+								</div>
+							)}
+
+							{!isExportingPrivateKey && exportPrivateKey && (
+								<div className="space-y-3">
+									<textarea
+										readOnly
+										value={exportPrivateKey}
+										className="w-full min-h-[110px] px-4 py-3 bg-muted/50 border border-border rounded-lg text-foreground outline-none font-mono text-xs resize-y"
+									/>
+									<Button
+										variant="secondary"
+										size="sm"
+										onClick={handleCopyPrivateKey}
+										className="w-full gap-2"
+									>
+										{privateKeyCopied ? (
+											<Check className="w-4 h-4 text-green-500" />
+										) : (
+											<Copy className="w-4 h-4" />
+										)}
+										{privateKeyCopied ? 'Copied' : 'Copy Private Key'}
+									</Button>
+								</div>
+							)}
+
+							{!isExportingPrivateKey && exportPrivateKeyError && (
+								<p className="text-sm text-red-500 mt-3">
+									{exportPrivateKeyError}
+								</p>
+							)}
+							<div className="flex gap-3 mt-5">
+								<button
+									type="button"
+									onClick={handleCloseExportPrivateKey}
+									disabled={isExportingPrivateKey}
+									className="flex-1 h-11 px-4 bg-transparent border border-border text-foreground rounded-lg font-medium hover:bg-muted/50 transition-colors disabled:opacity-50"
+								>
+									Close
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 		</SettingsSection>
 	);
 });

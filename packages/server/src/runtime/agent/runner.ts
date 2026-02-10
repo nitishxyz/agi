@@ -1,11 +1,12 @@
 import { hasToolCall, streamText } from 'ai';
-import { messageParts } from '@ottocode/database/schema';
+import { messages, messageParts } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish, subscribe } from '../../events/bus.ts';
 import { debugLog, time } from '../debug/index.ts';
 import { toErrorPayload } from '../errors/handling.ts';
 import {
 	type RunOpts,
+	enqueueAssistantRun,
 	setRunning,
 	dequeueJob,
 	cleanupSession,
@@ -293,13 +294,72 @@ async function runAssistant(opts: RunOpts) {
 		await cleanupEmptyTextParts(opts, db);
 		firstToolTimer.end({ seen: firstToolSeen() });
 
+		let streamFinishReason: string | undefined;
+		try {
+			streamFinishReason = await result.finishReason;
+		} catch {
+			streamFinishReason = undefined;
+		}
+
 		debugLog(
-			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}`,
+			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}, finishReason=${streamFinishReason}`,
 		);
 
-		if (!_finishObserved && fs) {
+		const wasTruncated = streamFinishReason === 'length';
+
+		const shouldContinue =
+			!_finishObserved && (wasTruncated || fs);
+
+		if (shouldContinue) {
 			debugLog(
-				`[RUNNER] WARNING: Stream ended without finish tool being called. Model was mid-execution (tools were used). This is likely an unclean stream termination from the provider.`,
+				`[RUNNER] WARNING: Stream ended without finish. finishReason=${streamFinishReason}, firstToolSeen=${fs}. Auto-continuing.`,
+			);
+
+			const MAX_CONTINUATIONS = 10;
+			const count = opts.continuationCount ?? 0;
+			if (count < MAX_CONTINUATIONS) {
+				debugLog(
+					`[RUNNER] Auto-continuing (${count + 1}/${MAX_CONTINUATIONS})...`,
+				);
+
+				try {
+					await completeAssistantMessage({}, opts, db);
+				} catch (err) {
+					debugLog(
+						`[RUNNER] completeAssistantMessage failed before continuation: ${err instanceof Error ? err.message : String(err)}`,
+					);
+				}
+
+				const continuationMessageId = crypto.randomUUID();
+				await db.insert(messages).values({
+					id: continuationMessageId,
+					sessionId: opts.sessionId,
+					role: 'assistant',
+					status: 'pending',
+					agent: opts.agent,
+					provider: opts.provider,
+					model: opts.model,
+					createdAt: Date.now(),
+				});
+
+				publish({
+					type: 'message.created',
+					sessionId: opts.sessionId,
+					payload: { id: continuationMessageId, role: 'assistant' },
+				});
+
+				enqueueAssistantRun(
+					{
+						...opts,
+						assistantMessageId: continuationMessageId,
+						continuationCount: count + 1,
+					},
+					runSessionLoop,
+				);
+				return;
+			}
+			debugLog(
+				`[RUNNER] Max continuations (${MAX_CONTINUATIONS}) reached, stopping.`,
 			);
 		}
 	} catch (err) {

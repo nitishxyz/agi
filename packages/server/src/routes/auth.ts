@@ -161,6 +161,27 @@ export function registerAuthRoutes(app: Hono) {
 		}
 	});
 
+	app.get('/v1/auth/setu/export', async (c) => {
+		try {
+			const projectRoot = process.cwd();
+			const wallet = await getSetuWallet(projectRoot);
+
+			if (!wallet) {
+				return c.json({ error: 'Setu wallet not configured' }, 404);
+			}
+
+			return c.json({
+				success: true,
+				publicKey: wallet.publicKey,
+				privateKey: wallet.privateKey,
+			});
+		} catch (error) {
+			logger.error('Failed to export Setu wallet', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
 	app.post('/v1/auth/:provider', async (c) => {
 		try {
 			const provider = c.req.param('provider') as ProviderId;
