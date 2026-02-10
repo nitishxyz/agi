@@ -1496,7 +1496,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					cacheWrite: 6.25,
 				},
 				limit: {
-					context: 1000000,
+					context: 200000,
 					output: 128000,
 				},
 			},
@@ -2444,6 +2444,32 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 200000,
 					output: 32000,
+				},
+			},
+			{
+				id: 'anthropic/claude-opus-4.6',
+				label: 'Claude Opus 4.6',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-05-30',
+				releaseDate: '2026-02-05',
+				lastUpdated: '2026-02-05',
+				openWeights: false,
+				cost: {
+					input: 5,
+					output: 25,
+					cacheRead: 0.5,
+					cacheWrite: 6.25,
+				},
+				limit: {
+					context: 1000000,
+					output: 128000,
 				},
 			},
 			{
@@ -5204,6 +5230,29 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'openrouter/pony-alpha',
+				label: 'Pony Alpha',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2026-02-06',
+				lastUpdated: '2026-02-06',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 200000,
+					output: 131000,
+				},
+			},
+			{
 				id: 'openrouter/sherlock-dash-alpha',
 				label: 'Sherlock Dash Alpha',
 				modalities: {
@@ -6271,6 +6320,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 256000,
 					output: 10000,
+				},
+			},
+			{
+				id: 'xiaomi/mimo-v2-flash',
+				label: 'MiMo-V2-Flash',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-12',
+				releaseDate: '2025-12-14',
+				lastUpdated: '2025-12-14',
+				openWeights: true,
+				cost: {
+					input: 0.1,
+					output: 0.3,
+					cacheRead: 0.01,
+				},
+				limit: {
+					context: 262144,
+					output: 65536,
 				},
 			},
 			{
