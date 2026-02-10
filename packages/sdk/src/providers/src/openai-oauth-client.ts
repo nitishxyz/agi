@@ -2,8 +2,10 @@ import { createOpenAI } from '@ai-sdk/openai';
 import type { OAuth } from '../../types/src/index.ts';
 import { refreshOpenAIToken } from '../../auth/src/openai-oauth.ts';
 import { setAuth, getAuth } from '../../auth/src/index.ts';
+import os from 'node:os';
 
 const CODEX_BASE_URL = 'https://chatgpt.com/backend-api/codex';
+const CODEX_RESPONSES_URL = 'https://chatgpt.com/backend-api/codex/responses';
 
 export type OpenAIOAuthConfig = {
 	oauth: OAuth;
@@ -56,7 +58,7 @@ function rewriteUrl(url: string): string {
 		parsed.pathname.includes('/v1/responses') ||
 		parsed.pathname.includes('/chat/completions')
 	) {
-		return `${CODEX_BASE_URL}${parsed.pathname.replace(/^.*\/v1/, '/v1')}`;
+		return CODEX_RESPONSES_URL;
 	}
 	return url;
 }
@@ -71,6 +73,10 @@ function buildHeaders(
 	headers.delete('authorization');
 	headers.set('authorization', `Bearer ${accessToken}`);
 	headers.set('originator', 'otto');
+	headers.set(
+		'User-Agent',
+		`otto/1.0 (${os.platform()} ${os.release()}; ${os.arch()})`,
+	);
 	if (accountId) {
 		headers.set('ChatGPT-Account-Id', accountId);
 	}

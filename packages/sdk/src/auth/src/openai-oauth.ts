@@ -253,14 +253,13 @@ export async function refreshOpenAIToken(refreshToken: string) {
 	const response = await fetch(`${OPENAI_ISSUER}/oauth/token`, {
 		method: 'POST',
 		headers: {
-			'Content-Type': 'application/json',
+			'Content-Type': 'application/x-www-form-urlencoded',
 		},
-		body: JSON.stringify({
-			client_id: OPENAI_CLIENT_ID,
+		body: new URLSearchParams({
 			grant_type: 'refresh_token',
 			refresh_token: refreshToken,
-			scope: 'openid profile email',
-		}),
+			client_id: OPENAI_CLIENT_ID,
+		}).toString(),
 	});
 
 	if (!response.ok) {
