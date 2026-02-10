@@ -66,6 +66,7 @@ jobs:
           set -euo pipefail
           PUBLISH_CLI="${{ needs.check-flags.outputs.publish_cli }}"
           PUBLISH_DESKTOP="${{ needs.check-flags.outputs.publish_desktop }}"
+          PUBLISH_LAUNCHER="${{ needs.check-flags.outputs.publish_launcher }}"
           CHANGED=false
 
           if [ "$PUBLISH_CLI" = "true" ]; then

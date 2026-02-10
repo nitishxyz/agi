@@ -1,167 +1,4 @@
-use http_body_util::{BodyExt, Full};
-use hyper::body::Bytes;
-use hyper::Request;
-use hyper_util::client::legacy::Client;
-use hyper_util::rt::{TokioExecutor, TokioIo};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-
-fn find_socket() -> PathBuf {
-    let candidates: Vec<PathBuf> = vec![
-        dirs::home_dir()
-            .map(|h| h.join(".docker/run/docker.sock"))
-            .unwrap_or_default(),
-        PathBuf::from("/var/run/docker.sock"),
-        dirs::home_dir()
-            .map(|h| {
-                h.join("Library/Containers/com.docker.docker/Data/docker.raw.sock")
-            })
-            .unwrap_or_default(),
-    ];
-    for p in &candidates {
-        if p.exists() {
-            return p.clone();
-        }
-    }
-    PathBuf::from("/var/run/docker.sock")
-}
-
-#[derive(Clone)]
-struct UnixConnector {
-    socket_path: PathBuf,
-}
-
-impl tower::Service<hyper::Uri> for UnixConnector {
-    type Response = TokioIo<tokio::net::UnixStream>;
-    type Error = std::io::Error;
-    type Future = std::pin::Pin<
-        Box<dyn std::future::Future<Output = Result<Self::Response, Self::Error>> + Send>,
-    >;
-
-    fn poll_ready(
-        &mut self,
-        _cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
-        std::task::Poll::Ready(Ok(()))
-    }
-
-    fn call(&mut self, _uri: hyper::Uri) -> Self::Future {
-        let path = self.socket_path.clone();
-        Box::pin(async move {
-            let stream = tokio::net::UnixStream::connect(&path).await?;
-            Ok(TokioIo::new(stream))
-        })
-    }
-}
-
-fn make_client() -> Client<UnixConnector, Full<Bytes>> {
-    let connector = UnixConnector {
-        socket_path: find_socket(),
-    };
-    Client::builder(TokioExecutor::new()).build(connector)
-}
-
-fn docker_uri(path: &str) -> hyper::Uri {
-    let encoded = path
-        .replace('{', "%7B")
-        .replace('}', "%7D")
-        .replace('[', "%5B")
-        .replace(']', "%5D")
-        .replace('"', "%22");
-    hyper::Uri::builder()
-        .scheme("http")
-        .authority("localhost")
-        .path_and_query(encoded)
-        .build()
-        .expect("valid docker URI")
-}
-
-async fn docker_get(path: &str) -> Result<String, String> {
-    let client = make_client();
-    let uri = docker_uri(path);
-    let req = Request::builder()
-        .method("GET")
-        .uri(uri)
-        .body(Full::new(Bytes::new()))
-        .map_err(|e| format!("Build request failed: {}", e))?;
-    let response = client
-        .request(req)
-        .await
-        .map_err(|e| format!("Docker request failed: {}", e))?;
-    let body = response
-        .into_body()
-        .collect()
-        .await
-        .map_err(|e| format!("Read body failed: {}", e))?
-        .to_bytes();
-    Ok(String::from_utf8_lossy(&body).into_owned())
-}
-
-async fn docker_post(path: &str, json_body: Option<serde_json::Value>) -> Result<String, String> {
-    let client = make_client();
-    let uri = docker_uri(path);
-
-    let body = match json_body {
-        Some(val) => Full::new(Bytes::from(serde_json::to_vec(&val).unwrap())),
-        None => Full::new(Bytes::new()),
-    };
-
-    let req = Request::builder()
-        .method("POST")
-        .uri(uri)
-        .header("Content-Type", "application/json")
-        .body(body)
-        .map_err(|e| format!("Build request failed: {}", e))?;
-
-    let response = client
-        .request(req)
-        .await
-        .map_err(|e| format!("Docker request failed: {}", e))?;
-
-    let status = response.status();
-    let body_bytes = response
-        .into_body()
-        .collect()
-        .await
-        .map_err(|e| format!("Read body failed: {}", e))?
-        .to_bytes();
-    let body_str = String::from_utf8_lossy(&body_bytes).to_string();
-
-    if !status.is_success() && !status.is_redirection() {
-        return Err(format!("Docker API error ({}): {}", status, body_str));
-    }
-    Ok(body_str)
-}
-
-async fn docker_delete(path: &str) -> Result<String, String> {
-    let client = make_client();
-    let uri = docker_uri(path);
-
-    let req = Request::builder()
-        .method("DELETE")
-        .uri(uri)
-        .body(Full::new(Bytes::new()))
-        .map_err(|e| format!("Build request failed: {}", e))?;
-
-    let response = client
-        .request(req)
-        .await
-        .map_err(|e| format!("Docker request failed: {}", e))?;
-
-    let status = response.status();
-    let body_bytes = response
-        .into_body()
-        .collect()
-        .await
-        .map_err(|e| format!("Read body failed: {}", e))?
-        .to_bytes();
-    let body_str = String::from_utf8_lossy(&body_bytes).to_string();
-
-    if !status.is_success() && !status.is_redirection() {
-        return Err(format!("Docker API error ({}): {}", status, body_str));
-    }
-    Ok(body_str)
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -191,6 +28,192 @@ pub struct ContainerCreateOpts {
     pub ssh_key_name: String,
     #[serde(default)]
     pub ssh_passphrase: String,
+}
+
+#[cfg(unix)]
+mod unix_impl {
+    use super::*;
+    use http_body_util::{BodyExt, Full};
+    use hyper::body::Bytes;
+    use hyper::Request;
+    use hyper_util::client::legacy::Client;
+    use hyper_util::rt::{TokioExecutor, TokioIo};
+    use std::path::PathBuf;
+
+    fn find_socket() -> PathBuf {
+        let candidates: Vec<PathBuf> = vec![
+            dirs::home_dir()
+                .map(|h| h.join(".docker/run/docker.sock"))
+                .unwrap_or_default(),
+            PathBuf::from("/var/run/docker.sock"),
+            dirs::home_dir()
+                .map(|h| {
+                    h.join("Library/Containers/com.docker.docker/Data/docker.raw.sock")
+                })
+                .unwrap_or_default(),
+        ];
+        for p in &candidates {
+            if p.exists() {
+                return p.clone();
+            }
+        }
+        PathBuf::from("/var/run/docker.sock")
+    }
+
+    #[derive(Clone)]
+    struct UnixConnector {
+        socket_path: PathBuf,
+    }
+
+    impl tower::Service<hyper::Uri> for UnixConnector {
+        type Response = TokioIo<tokio::net::UnixStream>;
+        type Error = std::io::Error;
+        type Future = std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<Self::Response, Self::Error>> + Send>,
+        >;
+
+        fn poll_ready(
+            &mut self,
+            _cx: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<Result<(), Self::Error>> {
+            std::task::Poll::Ready(Ok(()))
+        }
+
+        fn call(&mut self, _uri: hyper::Uri) -> Self::Future {
+            let path = self.socket_path.clone();
+            Box::pin(async move {
+                let stream = tokio::net::UnixStream::connect(&path).await?;
+                Ok(TokioIo::new(stream))
+            })
+        }
+    }
+
+    fn make_client() -> Client<UnixConnector, Full<Bytes>> {
+        let connector = UnixConnector {
+            socket_path: find_socket(),
+        };
+        Client::builder(TokioExecutor::new()).build(connector)
+    }
+
+    fn docker_uri(path: &str) -> hyper::Uri {
+        let encoded = path
+            .replace('{', "%7B")
+            .replace('}', "%7D")
+            .replace('[', "%5B")
+            .replace(']', "%5D")
+            .replace('"', "%22");
+        hyper::Uri::builder()
+            .scheme("http")
+            .authority("localhost")
+            .path_and_query(encoded)
+            .build()
+            .expect("valid docker URI")
+    }
+
+    pub async fn docker_get(path: &str) -> Result<String, String> {
+        let client = make_client();
+        let uri = docker_uri(path);
+        let req = Request::builder()
+            .method("GET")
+            .uri(uri)
+            .body(Full::new(Bytes::new()))
+            .map_err(|e| format!("Build request failed: {}", e))?;
+        let response = client
+            .request(req)
+            .await
+            .map_err(|e| format!("Docker request failed: {}", e))?;
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .map_err(|e| format!("Read body failed: {}", e))?
+            .to_bytes();
+        Ok(String::from_utf8_lossy(&body).into_owned())
+    }
+
+    pub async fn docker_post(path: &str, json_body: Option<serde_json::Value>) -> Result<String, String> {
+        let client = make_client();
+        let uri = docker_uri(path);
+
+        let body = match json_body {
+            Some(val) => Full::new(Bytes::from(serde_json::to_vec(&val).unwrap())),
+            None => Full::new(Bytes::new()),
+        };
+
+        let req = Request::builder()
+            .method("POST")
+            .uri(uri)
+            .header("Content-Type", "application/json")
+            .body(body)
+            .map_err(|e| format!("Build request failed: {}", e))?;
+
+        let response = client
+            .request(req)
+            .await
+            .map_err(|e| format!("Docker request failed: {}", e))?;
+
+        let status = response.status();
+        let body_bytes = response
+            .into_body()
+            .collect()
+            .await
+            .map_err(|e| format!("Read body failed: {}", e))?
+            .to_bytes();
+        let body_str = String::from_utf8_lossy(&body_bytes).to_string();
+
+        if !status.is_success() && !status.is_redirection() {
+            return Err(format!("Docker API error ({}): {}", status, body_str));
+        }
+        Ok(body_str)
+    }
+
+    pub async fn docker_delete(path: &str) -> Result<String, String> {
+        let client = make_client();
+        let uri = docker_uri(path);
+
+        let req = Request::builder()
+            .method("DELETE")
+            .uri(uri)
+            .body(Full::new(Bytes::new()))
+            .map_err(|e| format!("Build request failed: {}", e))?;
+
+        let response = client
+            .request(req)
+            .await
+            .map_err(|e| format!("Docker request failed: {}", e))?;
+
+        let status = response.status();
+        let body_bytes = response
+            .into_body()
+            .collect()
+            .await
+            .map_err(|e| format!("Read body failed: {}", e))?
+            .to_bytes();
+        let body_str = String::from_utf8_lossy(&body_bytes).to_string();
+
+        if !status.is_success() && !status.is_redirection() {
+            return Err(format!("Docker API error ({}): {}", status, body_str));
+        }
+        Ok(body_str)
+    }
+}
+
+#[cfg(unix)]
+use unix_impl::{docker_get, docker_post, docker_delete};
+
+#[cfg(windows)]
+async fn docker_get(_path: &str) -> Result<String, String> {
+    Err("Docker via Unix socket is not supported on Windows".to_string())
+}
+
+#[cfg(windows)]
+async fn docker_post(_path: &str, _json_body: Option<serde_json::Value>) -> Result<String, String> {
+    Err("Docker via Unix socket is not supported on Windows".to_string())
+}
+
+#[cfg(windows)]
+async fn docker_delete(_path: &str) -> Result<String, String> {
+    Err("Docker via Unix socket is not supported on Windows".to_string())
 }
 
 #[tauri::command]
