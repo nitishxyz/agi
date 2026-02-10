@@ -307,8 +307,7 @@ async function runAssistant(opts: RunOpts) {
 
 		const wasTruncated = streamFinishReason === 'length';
 
-		const shouldContinue =
-			!_finishObserved && (wasTruncated || fs);
+		const shouldContinue = !_finishObserved && (wasTruncated || fs);
 
 		if (shouldContinue) {
 			debugLog(
