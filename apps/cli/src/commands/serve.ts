@@ -55,22 +55,20 @@ export async function handleServe(opts: ServeOptions, version: string) {
 	const displayHost = opts.network ? getLocalIP() : 'localhost';
 	const serverPort = agiServer.port ?? requestedPort;
 	const apiUrl = `http://${displayHost}:${serverPort}`;
-
+	
 	// Register server port so tunnel routes can use it
 	setServerPort(serverPort);
 
 	const webPort = serverPort + 1;
 	let webServer: ReturnType<typeof createWebServer>['server'] | null = null;
 	let webUrl: string | null = null;
-	let actualWebPort: number | null = null;
 	try {
-		const { port: resolvedWebPort, server } = createWebServer(
+		const { port: actualWebPort, server } = createWebServer(
 			webPort,
 			serverPort,
 			opts.network,
 		);
 		webServer = server;
-		actualWebPort = resolvedWebPort;
 		webUrl = `http://${displayHost}:${actualWebPort}`;
 	} catch (error) {
 		logger.error('Failed to start Web UI server', error);
@@ -82,41 +80,31 @@ export async function handleServe(opts: ServeOptions, version: string) {
 	if (opts.tunnel) {
 		try {
 			console.log(colors.dim('  Starting tunnel...'));
-
+			
 			// Call server's tunnel endpoint - server handles everything
-			const response = await fetch(
-				`http://localhost:${serverPort}/v1/tunnel/start`,
-				{
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ port: actualWebPort ?? serverPort }),
-				},
-			);
-
-			const result = (await response.json()) as {
-				ok: boolean;
-				url?: string;
-				error?: string;
-			};
-
+			const response = await fetch(`http://localhost:${serverPort}/v1/tunnel/start`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({}),
+			});
+			
+			const result = await response.json() as { ok: boolean; url?: string; error?: string };
+			
 			if (result.ok && result.url) {
 				tunnelUrl = result.url;
 			} else {
 				const errorMsg = result.error || 'Unknown error';
 				if (errorMsg.includes('Rate limited')) {
 					console.log(colors.yellow('  ⚠ Rate limited by Cloudflare'));
-					console.log(
-						colors.dim('    Please wait 5-10 minutes before trying again'),
-					);
+					console.log(colors.dim('    Please wait 5-10 minutes before trying again'));
 				} else {
 					console.log(colors.dim(`  Tunnel failed: ${errorMsg}`));
 				}
 			}
 		} catch (error) {
+			const errorMsg = error instanceof Error ? error.message : String(error);
 			logger.error('Failed to start tunnel', error);
-			console.log(
-				colors.dim('  Tunnel failed, continuing without remote access'),
-			);
+			console.log(colors.dim('  Tunnel failed, continuing without remote access'));
 		}
 	}
 
