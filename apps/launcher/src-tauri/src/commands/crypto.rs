@@ -100,6 +100,17 @@ pub fn verify_password(encrypted: String, password: String) -> bool {
     decrypt_key(encrypted, password).is_ok()
 }
 
+#[tauri::command]
+pub fn public_key_from_encrypted(encrypted: String, password: String) -> Result<String, String> {
+    let pem = decrypt_key(encrypted, password)?;
+    let private_key = PrivateKey::from_openssh(&pem)
+        .map_err(|e| format!("Parse private key failed: {}", e))?;
+    private_key
+        .public_key()
+        .to_openssh()
+        .map_err(|e| format!("Public key export failed: {}", e))
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SshKeyInfo {

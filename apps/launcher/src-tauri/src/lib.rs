@@ -35,6 +35,7 @@ pub fn run() {
             commands::crypto::encrypt_key,
             commands::crypto::decrypt_key,
             commands::crypto::verify_password,
+            commands::crypto::public_key_from_encrypted,
             commands::crypto::list_ssh_keys,
             commands::crypto::get_host_git_config,
             commands::config::load_state,

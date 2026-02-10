@@ -13,6 +13,10 @@ info() { printf "\033[1;34m[i]\033[0m %s\n" "$*"; }
 warn() { printf "\033[1;33m[!]\033[0m %s\n" "$*"; }
 err()  { printf "\033[1;31m[x]\033[0m %s\n" "$*" 1>&2; }
 
+version_to_num() {
+  echo "$1" | sed 's/^v//' | awk -F. '{ printf "%04d%04d%04d", $1, $2, $3 }'
+}
+
 # Detect downloader
 http_get() {
   if command -v curl >/dev/null 2>&1; then
@@ -70,8 +74,8 @@ if [ "$VERSION" = "latest" ]; then
     if [ -z "$VERSION" ]; then
       VERSION="$tag"
     else
-      cur=$(echo "$VERSION" | sed 's/^v//' | awk -F. '{ printf "%04d%04d%04d", $1, $2, $3 }')
-      new=$(echo "$tag" | sed 's/^v//' | awk -F. '{ printf "%04d%04d%04d", $1, $2, $3 }')
+      cur=$(version_to_num "$VERSION")
+      new=$(version_to_num "$tag")
       if [ "$new" -gt "$cur" ]; then
         VERSION="$tag"
       fi
@@ -86,6 +90,25 @@ if [ "$VERSION" = "latest" ]; then
   base="https://github.com/$REPO/releases/download/$VERSION"
 else
   base="https://github.com/$REPO/releases/download/$VERSION"
+fi
+
+if [ "${OTTO_FORCE:-}" != "1" ]; then
+  local_bin=$(command -v "$BIN_NAME" 2>/dev/null || true)
+  if [ -n "$local_bin" ]; then
+    local_ver=$("$local_bin" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+    if [ -n "$local_ver" ]; then
+      remote_ver=$(echo "$VERSION" | sed 's/^v//')
+      local_num=$(version_to_num "$local_ver")
+      remote_num=$(version_to_num "$remote_ver")
+      if [ "$local_num" -ge "$remote_num" ]; then
+        info "✓ $BIN_NAME v$local_ver is already installed and up to date (remote: $VERSION)"
+        info "Location: $local_bin"
+        info "To force reinstall: OTTO_FORCE=1 curl -fsSL https://install.ottocode.io | sh"
+        exit 0
+      fi
+      info "Upgrading $BIN_NAME from v$local_ver to $VERSION"
+    fi
+  fi
 fi
 
 url="$base/$filename"

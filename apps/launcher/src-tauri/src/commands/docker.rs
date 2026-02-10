@@ -94,7 +94,7 @@ async fn docker_get(path: &str) -> Result<String, String> {
         .await
         .map_err(|e| format!("Read body failed: {}", e))?
         .to_bytes();
-    String::from_utf8(body.to_vec()).map_err(|e| e.to_string())
+    Ok(String::from_utf8_lossy(&body).into_owned())
 }
 
 async fn docker_post(path: &str, json_body: Option<serde_json::Value>) -> Result<String, String> {
@@ -254,6 +254,8 @@ pub async fn container_create(opts: ContainerCreateOpts) -> Result<String, Strin
 
     let entrypoint = format!(
         r#"set -e
+export PATH="$HOME/.local/bin:$PATH"
+
 echo "[1/6] Installing system packages..."
 apt-get update -qq && apt-get install -y -qq git openssh-client curl openssl >/dev/null 2>&1
 echo "[1/6] ✓ Done"
@@ -306,7 +308,11 @@ echo "[4/6] ✓ Done"
 
 echo "[5/6] Installing dependencies..."
 cd "$REPO_DIR"
-curl -fsSL https://install.ottocode.io | sh
+if command -v otto >/dev/null 2>&1; then
+  echo "  otto already installed: $(otto --version 2>&1 | head -1)"
+else
+  curl -fsSL https://install.ottocode.io | sh
+fi
 bun install
 echo "[5/6] ✓ Done"
 
@@ -342,6 +348,10 @@ otto serve --network --port {api_port} --no-open"#,
             serde_json::json!([{"HostPort": p.to_string()}]),
         );
     }
+    port_bindings.insert(
+        "1455/tcp".to_string(),
+        serde_json::json!([{"HostPort": "1455"}]),
+    );
 
     let mut exposed_ports = serde_json::Map::new();
     exposed_ports.insert(format!("{}/tcp", opts.api_port), serde_json::json!({}));
@@ -349,6 +359,7 @@ otto serve --network --port {api_port} --no-open"#,
     for p in opts.dev_port_start..=opts.dev_port_end {
         exposed_ports.insert(format!("{}/tcp", p), serde_json::json!({}));
     }
+    exposed_ports.insert("1455/tcp".to_string(), serde_json::json!({}));
 
     let create_body = serde_json::json!({
         "Image": opts.image,
@@ -451,19 +462,15 @@ pub async fn container_exec(name: String, cmd: String) -> Result<String, String>
 #[tauri::command]
 pub async fn container_restart_otto(
     name: String,
-    repo_dir: String,
-    api_port: u16,
+    _repo_dir: String,
+    _api_port: u16,
 ) -> Result<(), String> {
-    let cmd = format!(
-        r#"pkill -f "otto serve" 2>/dev/null; sleep 1; export PATH="$HOME/.local/bin:$PATH"; cd {} && nohup otto serve --network --port {} --no-open > /tmp/otto.log 2>&1 &"#,
-        repo_dir, api_port
-    );
-    container_exec(name, cmd).await?;
+    docker_post(&format!("/containers/{}/restart?t=2", name), None).await?;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn container_update_otto(name: String) -> Result<String, String> {
-    let cmd = r#"export PATH="$HOME/.local/bin:$PATH"; BEFORE=$(otto --version 2>/dev/null || echo "unknown"); curl -fsSL https://install.ottocode.io | sh; export PATH="$HOME/.local/bin:$PATH"; AFTER=$(otto --version 2>/dev/null || echo "unknown"); echo "$BEFORE → $AFTER""#;
-    container_exec(name, cmd.to_string()).await
+    let cmd = r#"export PATH="$HOME/.local/bin:$PATH"; BEFORE=$(otto --version 2>&1 | head -1 || echo "unknown"); curl -fsSL https://install.ottocode.io | sh 2>&1; export PATH="$HOME/.local/bin:$PATH"; AFTER=$(otto --version 2>&1 | head -1 || echo "unknown"); echo "$BEFORE -> $AFTER""#;
+    container_exec(name.clone(), cmd.to_string()).await
 }

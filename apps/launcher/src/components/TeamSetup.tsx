@@ -1,19 +1,18 @@
 import { useState } from 'react';
-import { tauri, type TeamState } from '../lib/tauri';
+import { tauri } from '../lib/tauri';
+import { useStore } from '../store';
 import { StepIndicator, BackButton } from './shared';
 import { TeamInfoStep } from './team/TeamInfoStep';
 import { DeployKeyStep } from './team/DeployKeyStep';
 import { PasswordStep } from './team/PasswordStep';
 
-interface Props {
-	onDone: (team: TeamState) => void;
-	onCancel: () => void;
-}
-
 type Step = 'info' | 'key' | 'password';
 const STEPS = ['info', 'key', 'password'];
 
-export function TeamSetup({ onDone, onCancel }: Props) {
+export function TeamSetup() {
+	const addTeam = useStore((s) => s.addTeam);
+	const setView = useStore((s) => s.setView);
+
 	const [step, setStep] = useState<Step>('info');
 	const [teamName, setTeamName] = useState('');
 	const [gitName, setGitName] = useState('');
@@ -51,7 +50,8 @@ export function TeamSetup({ onDone, onCancel }: Props) {
 		setError('');
 		try {
 			const encryptedKey = await tauri.encryptKey(privateKey, password);
-			onDone({ name: teamName, publicKey, encryptedKey, gitName, gitEmail });
+			const id = `team-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+			await addTeam({ id, name: teamName, publicKey, encryptedKey, gitName, gitEmail });
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Encryption failed');
 		}
@@ -60,7 +60,7 @@ export function TeamSetup({ onDone, onCancel }: Props) {
 
 	return (
 		<div className="px-4 pb-4 space-y-4">
-			<BackButton onClick={onCancel} />
+			<BackButton onClick={() => setView('welcome')} />
 			<StepIndicator steps={STEPS} current={STEPS.indexOf(step)} />
 
 			{step === 'info' && (

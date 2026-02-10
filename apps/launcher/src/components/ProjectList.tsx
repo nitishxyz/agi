@@ -1,30 +1,31 @@
-import { type TeamState, type ProjectState } from '../lib/tauri';
+import { useState, useEffect } from 'react';
+import { useStore } from '../store';
 import { ProjectCard } from './ProjectCard';
 import { CopyBlock, BackButton } from './shared';
 import { Plus, Upload, KeyRound } from 'lucide-react';
-import { useState } from 'react';
 
-interface Props {
-	team: TeamState;
-	projects: ProjectState[];
-	onAdd: () => void;
-	onImport: () => void;
-	onAction: (projectId: string, action: string) => Promise<void> | void;
-	onBack: () => void;
-}
-
-export function ProjectList({ team, projects, onAdd, onImport, onAction, onBack }: Props) {
+export function ProjectList() {
+	const selectedTeam = useStore((s) => s.selectedTeam);
+	const teamProjects = useStore((s) => s.teamProjects)();
+	const handleAction = useStore((s) => s.handleAction);
+	const selectTeam = useStore((s) => s.selectTeam);
+	const setView = useStore((s) => s.setView);
+	const refreshStatuses = useStore((s) => s.refreshStatuses);
 	const [showKey, setShowKey] = useState(false);
+
+	useEffect(() => { refreshStatuses(); }, [refreshStatuses]);
+
+	if (!selectedTeam) return null;
 
 	return (
 		<div className="px-4 pb-4 space-y-3">
-			<BackButton onClick={onBack} label="Home" />
+			<BackButton onClick={() => selectTeam(null)} label="Home" />
 
 			<div className="flex items-center justify-between mb-1">
 				<div className="flex items-center gap-2">
-					<span className="text-sm font-medium">{team.name}</span>
+					<span className="text-sm font-medium">{selectedTeam.name}</span>
 					<span className="text-xs text-muted-foreground">
-						{projects.length} {projects.length === 1 ? 'project' : 'projects'}
+						{teamProjects.length} {teamProjects.length === 1 ? 'project' : 'projects'}
 					</span>
 				</div>
 				<div className="flex items-center gap-1.5">
@@ -36,14 +37,14 @@ export function ProjectList({ team, projects, onAdd, onImport, onAction, onBack 
 						<KeyRound size={11} />
 					</button>
 					<button
-						onClick={onImport}
+						onClick={() => setView('import')}
 						className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-secondary hover:bg-accent transition-colors"
 					>
 						<Upload size={12} />
 						Import
 					</button>
 					<button
-						onClick={onAdd}
+						onClick={() => setView('add-project')}
 						className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
 					>
 						<Plus size={12} />
@@ -54,18 +55,18 @@ export function ProjectList({ team, projects, onAdd, onImport, onAction, onBack 
 
 			{showKey && (
 				<CopyBlock
-					text={team.publicKey}
+					text={selectedTeam.publicKey}
 					label="Deploy key — add to each repo's GitHub settings"
 				/>
 			)}
 
-			{projects.length === 0 ? (
+			{teamProjects.length === 0 ? (
 				<div className="space-y-3 py-6">
 					<div className="text-center text-sm text-muted-foreground">
 						No projects yet. Add a repo to get started.
 					</div>
 					<button
-						onClick={onAdd}
+						onClick={() => setView('add-project')}
 						className="w-full p-4 border border-dashed border-border rounded-lg flex items-center justify-center gap-2 text-sm text-muted-foreground hover:border-muted-foreground/40 hover:bg-accent/50 transition-colors"
 					>
 						<Plus size={16} />
@@ -73,11 +74,11 @@ export function ProjectList({ team, projects, onAdd, onImport, onAction, onBack 
 					</button>
 				</div>
 			) : (
-				projects.map((project) => (
+				teamProjects.map((project) => (
 					<ProjectCard
 						key={project.id}
 						project={project}
-						onAction={(action) => onAction(project.id, action)}
+						onAction={(action) => handleAction(project.id, action)}
 					/>
 				))
 			)}

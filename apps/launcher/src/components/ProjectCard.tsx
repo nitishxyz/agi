@@ -11,6 +11,7 @@ import {
 	MoreHorizontal,
 	Download,
 	Loader2,
+	Terminal,
 } from 'lucide-react';
 
 interface Props {
@@ -73,6 +74,13 @@ export function ProjectCard({ project, onAction }: Props) {
 							<ExternalLink size={11} />
 							Open
 						</button>
+					<button
+						onClick={() => handleAction('manage')}
+						className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-secondary hover:bg-accent transition-colors"
+					>
+						<Terminal size={11} />
+						Manage
+					</button>
 						<button
 							onClick={() => handleAction('stop')}
 							disabled={!!loading}
@@ -83,6 +91,7 @@ export function ProjectCard({ project, onAction }: Props) {
 						</button>
 					</>
 				) : (
+				<>
 					<button
 						onClick={() => handleAction('start')}
 						disabled={!!loading}
@@ -91,6 +100,14 @@ export function ProjectCard({ project, onAction }: Props) {
 						{loading === 'start' ? <Loader2 size={11} className="animate-spin" /> : <Play size={11} />}
 						Start
 					</button>
+					<button
+						onClick={() => handleAction('manage')}
+						className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-secondary hover:bg-accent transition-colors"
+					>
+						<Terminal size={11} />
+						Manage
+					</button>
+				</>
 				)}
 
 				<div className="relative ml-auto">

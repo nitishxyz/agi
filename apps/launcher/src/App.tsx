@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { tauri, openUrl, type TeamState, type ProjectState, type LauncherState } from './lib/tauri';
+import { useEffect } from 'react';
+import { useStore } from './store';
 import { Welcome } from './components/Welcome';
 import { TeamSetup } from './components/TeamSetup';
 import { ProjectList } from './components/ProjectList';
@@ -9,143 +9,14 @@ import { PasswordPrompt } from './components/PasswordPrompt';
 import { SetupProgress } from './components/SetupProgress';
 import { handleTitleBarDrag } from './utils/title-bar';
 
-type View = 'loading' | 'welcome' | 'team-setup' | 'projects' | 'add-project' | 'import' | 'password-prompt' | 'setup';
-
 function App() {
-	const [view, setView] = useState<View>('loading');
-	const [team, setTeam] = useState<TeamState | null>(null);
-	const [projects, setProjects] = useState<ProjectState[]>([]);
-	const [dockerOk, setDockerOk] = useState(true);
-	const [setupProject, setSetupProject] = useState<ProjectState | null>(null);
-	const [setupPassword, setSetupPassword] = useState('');
-
-	const saveAndUpdate = useCallback(async (t: TeamState | null, p: ProjectState[]) => {
-		const state: LauncherState = { team: t, projects: p };
-		await tauri.saveState(state);
-		setTeam(t);
-		setProjects(p);
-	}, []);
-
-	const refreshStatuses = useCallback(async (projectList: ProjectState[]) => {
-		for (const project of projectList) {
-			const running = await tauri.containerRunning(project.containerName);
-			project.status = running ? 'running' : 'stopped';
-		}
-		setProjects([...projectList]);
-	}, []);
+	const view = useStore((s) => s.view);
+	const dockerOk = useStore((s) => s.dockerOk);
+	const init = useStore((s) => s.init);
 
 	useEffect(() => {
-		const init = async () => {
-			const available = await tauri.dockerAvailable();
-			setDockerOk(available);
-
-			try {
-				const state = await tauri.loadState();
-				setTeam(state.team ?? null);
-				setProjects(state.projects);
-
-				if (state.projects.length > 0) {
-					await refreshStatuses(state.projects);
-				}
-			} catch {
-				// fresh state
-			}
-			setView('welcome');
-		};
 		init();
-	}, [refreshStatuses]);
-
-	const handleTeamCreated = async (newTeam: TeamState) => {
-		await saveAndUpdate(newTeam, projects);
-		setView('welcome');
-	};
-
-	const handleAddProject = async (project: ProjectState) => {
-		const updated = [...projects, project];
-		await saveAndUpdate(team, updated);
-		setView('projects');
-	};
-
-	const handleImport = async (project: ProjectState, password: string) => {
-		const updated = [...projects, project];
-		await saveAndUpdate(team, updated);
-		setSetupProject(project);
-		setSetupPassword(password);
-		setView('setup');
-	};
-
-	const handleSetupDone = async () => {
-		await refreshStatuses(projects);
-		setSetupProject(null);
-		setSetupPassword('');
-		setView('projects');
-	};
-
-	const handlePasswordSubmit = (password: string) => {
-		setSetupPassword(password);
-		setView('setup');
-	};
-
-	const handleAction = async (projectId: string, action: string) => {
-		const project = projects.find((p) => p.id === projectId);
-		if (!project || !team) return;
-
-		switch (action) {
-			case 'start': {
-				setSetupProject(project);
-				const exists = await tauri.containerExists(project.containerName);
-				if (exists) {
-					setSetupPassword('');
-					setView('setup');
-			} else if (project.sshMode === 'personal') {
-				setSetupPassword('');
-				setView('setup');
-				} else {
-					setView('password-prompt');
-				}
-				return;
-			}
-			case 'stop':
-			try { await tauri.containerStop(project.containerName); } catch {}
-				break;
-			case 'restart':
-				await tauri.containerRestartOtto(
-					project.containerName,
-					`/workspace/${project.repo.split('/').pop()?.replace('.git', '')}`,
-					project.apiPort,
-				);
-				break;
-			case 'update':
-				await tauri.containerUpdateOtto(project.containerName);
-				break;
-			case 'open':
-				openUrl(`http://localhost:${project.webPort}`);
-				break;
-			case 'nuke': {
-			try { await tauri.containerRemove(project.containerName); } catch {}
-				const remaining = projects.filter((p) => p.id !== projectId);
-				await saveAndUpdate(team, remaining);
-				return;
-			}
-			case 'export': {
-				const config = {
-					version: 1,
-					repo: project.repo,
-					key: team.encryptedKey,
-					cipher: 'aes-256-cbc-pbkdf2',
-					gitName: team.gitName,
-					gitEmail: team.gitEmail,
-					image: project.image || 'oven/bun:1-debian',
-					devPorts: project.devPorts || 'auto',
-					postClone: project.postClone || 'bun install',
-				};
-				const name = project.repo.split('/').pop()?.replace('.git', '') || 'project';
-				await tauri.saveOttoFile(config, `${name}.otto`);
-				return;
-			}
-		}
-		await refreshStatuses(projects);
-	};
+	}, [init]);
 
 	if (view === 'loading') {
 		return (
@@ -154,8 +25,6 @@ function App() {
 			</div>
 		);
 	}
-
-	const setupRepoName = setupProject?.repo.split('/').pop()?.replace('.git', '') || '';
 
 	return (
 		<div className="min-h-screen bg-background text-foreground">
@@ -177,68 +46,13 @@ function App() {
 				</div>
 			)}
 
-			{view === 'welcome' && (
-				<Welcome
-					team={team}
-					projects={projects}
-					onCreateTeam={() => setView('team-setup')}
-					onImport={() => setView('import')}
-					onViewTeam={() => setView('projects')}
-				/>
-			)}
-
-			{view === 'team-setup' && (
-				<TeamSetup
-					onDone={handleTeamCreated}
-					onCancel={() => setView('welcome')}
-				/>
-			)}
-
-			{view === 'projects' && team && (
-				<ProjectList
-					team={team}
-					projects={projects}
-					onAdd={() => setView('add-project')}
-					onImport={() => setView('import')}
-					onAction={handleAction}
-					onBack={() => setView('welcome')}
-				/>
-			)}
-
-			{view === 'add-project' && team && (
-				<AddProject
-					team={team}
-					existingProjects={projects}
-					onAdd={handleAddProject}
-					onCancel={() => setView('projects')}
-				/>
-			)}
-
-			{view === 'import' && (
-				<ImportDialog
-					existingProjects={projects}
-					onImport={handleImport}
-					onCancel={() => setView('welcome')}
-				/>
-			)}
-
-			{view === 'password-prompt' && setupProject && (
-				<PasswordPrompt
-					repoName={setupRepoName}
-					onSubmit={handlePasswordSubmit}
-					onCancel={() => { setSetupProject(null); setView('projects'); }}
-				/>
-			)}
-
-			{view === 'setup' && setupProject && team && (
-				<SetupProgress
-					project={setupProject}
-					password={setupPassword}
-					encryptedKey={team.encryptedKey}
-					onDone={handleSetupDone}
-					onBack={() => { setSetupProject(null); setSetupPassword(''); setView('projects'); }}
-				/>
-			)}
+			{view === 'welcome' && <Welcome />}
+			{view === 'team-setup' && <TeamSetup />}
+			{view === 'projects' && <ProjectList />}
+			{view === 'add-project' && <AddProject />}
+			{view === 'import' && <ImportDialog />}
+			{view === 'password-prompt' && <PasswordPrompt />}
+			{view === 'setup' && <SetupProgress />}
 		</div>
 	);
 }

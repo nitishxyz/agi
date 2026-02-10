@@ -25,6 +25,7 @@ export interface ContainerCreateOpts {
 }
 
 export interface TeamState {
+	id: string;
 	name: string;
 	publicKey: string;
 	encryptedKey: string;
@@ -47,10 +48,11 @@ export interface ProjectState {
 	sshMode?: 'team' | 'personal';
 	sshKeyName?: string;
 	sshPassphrase?: string;
+	teamId?: string;
 }
 
 export interface LauncherState {
-	team: TeamState | null;
+	teams: TeamState[];
 	projects: ProjectState[];
 }
 
@@ -101,6 +103,8 @@ export const tauri = {
 		invoke<string>('decrypt_key', { encrypted, password }),
 	verifyPassword: (encrypted: string, password: string) =>
 		invoke<boolean>('verify_password', { encrypted, password }),
+	publicKeyFromEncrypted: (encrypted: string, password: string) =>
+		invoke<string>('public_key_from_encrypted', { encrypted, password }),
 	listSshKeys: () => invoke<SshKeyInfo[]>('list_ssh_keys'),
 	getHostGitConfig: () => invoke<[string, string]>('get_host_git_config'),
 

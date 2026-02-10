@@ -1,27 +1,29 @@
 import { useState } from 'react';
+import { useStore } from '../store';
 import { BackButton, FormField } from './shared';
 
-interface Props {
-	repoName: string;
-	onSubmit: (password: string) => void;
-	onCancel: () => void;
-}
+export function PasswordPrompt() {
+	const setupProject = useStore((s) => s.setupProject);
+	const setSetupPassword = useStore((s) => s.setSetupPassword);
+	const setView = useStore((s) => s.setView);
 
-export function PasswordPrompt({ repoName, onSubmit, onCancel }: Props) {
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
+
+	const repoName = setupProject?.repo.split('/').pop()?.replace('.git', '') || '';
 
 	const handleSubmit = () => {
 		if (!password) {
 			setError('Password is required');
 			return;
 		}
-		onSubmit(password);
+		setSetupPassword(password);
+		setView('setup');
 	};
 
 	return (
 		<div className="px-4 pb-4 space-y-4">
-			<BackButton onClick={onCancel} />
+			<BackButton onClick={() => setView('projects')} />
 
 			<div className="space-y-3">
 				<div className="text-sm font-medium">Start {repoName}</div>

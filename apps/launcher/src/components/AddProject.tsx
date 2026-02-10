@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
-import { tauri, type TeamState, type ProjectState, type OttoTeamConfig, type SshKeyInfo } from '../lib/tauri';
+import { tauri, type ProjectState, type OttoTeamConfig, type SshKeyInfo } from '../lib/tauri';
+import { useStore } from '../store';
 import { ArrowLeft, Download, Plus, KeyRound, User, Check } from 'lucide-react';
 
-interface Props {
-	team: TeamState;
-	existingProjects: ProjectState[];
-	onAdd: (project: ProjectState) => void;
-	onCancel: () => void;
-}
+export function AddProject() {
+	const selectedTeam = useStore((s) => s.selectedTeam);
+	const projects = useStore((s) => s.projects);
+	const addProject = useStore((s) => s.addProject);
+	const setView = useStore((s) => s.setView);
 
-export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 	const [repoUrl, setRepoUrl] = useState('');
 	const [exportAfter, setExportAfter] = useState(true);
 	const [sshMode, setSshMode] = useState<'team' | 'personal'>('team');
@@ -21,6 +20,7 @@ export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
 
+	const team = selectedTeam;
 	const repoName = repoUrl.split('/').pop()?.replace('.git', '') || '';
 
 	useEffect(() => {
@@ -37,6 +37,8 @@ export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 			});
 		}
 	}, [sshMode, selectedKey]);
+
+	if (!team) return null;
 
 	const handleAdd = async () => {
 		if (!repoUrl) {
@@ -56,7 +58,7 @@ export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 		setError('');
 
 		try {
-			const trackedPorts = existingProjects.map((p) => p.apiPort);
+			const trackedPorts = projects.map((p) => p.apiPort);
 			const apiPort = await tauri.findAvailablePort(trackedPorts);
 			const name = repoUrl.split('/').pop()?.replace('.git', '') || 'project';
 
@@ -70,11 +72,11 @@ export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 				image: 'oven/bun:1-debian',
 				devPorts: 'auto',
 				postClone: 'bun install',
-			gitName: sshMode === 'personal' ? (hostGitName || team.gitName) : team.gitName,
-			gitEmail: sshMode === 'personal' ? (hostGitEmail || team.gitEmail) : team.gitEmail,
+				gitName: sshMode === 'personal' ? (hostGitName || team.gitName) : team.gitName,
+				gitEmail: sshMode === 'personal' ? (hostGitEmail || team.gitEmail) : team.gitEmail,
 				sshMode,
 				sshKeyName: sshMode === 'personal' ? selectedKey : undefined,
-			sshPassphrase: sshMode === 'personal' ? sshPassphrase : undefined,
+				sshPassphrase: sshMode === 'personal' ? sshPassphrase : undefined,
 			};
 
 			if (exportAfter && sshMode === 'team') {
@@ -85,14 +87,14 @@ export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 					cipher: 'aes-256-cbc-pbkdf2',
 					gitName: team.gitName,
 					gitEmail: team.gitEmail,
-					image: project.image,
-					devPorts: project.devPorts,
-					postClone: project.postClone,
+					image: project.image!,
+					devPorts: project.devPorts!,
+					postClone: project.postClone!,
 				};
 				await tauri.saveOttoFile(config, `${name}.otto`);
 			}
 
-			onAdd(project);
+			await addProject(project);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to add project');
 		}
@@ -102,7 +104,7 @@ export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 	return (
 		<div className="px-4 pb-4 space-y-4">
 			<button
-				onClick={onCancel}
+				onClick={() => setView('projects')}
 				className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 			>
 				<ArrowLeft size={12} />
@@ -211,21 +213,21 @@ export function AddProject({ team, existingProjects, onAdd, onCancel }: Props) {
 					</div>
 				)}
 
-			{sshMode === 'personal' && selectedKey && sshKeys.find((k) => k.name === selectedKey)?.hasPassphrase && (
-			<div className="space-y-1.5">
-				<label className="text-xs text-muted-foreground">Key passphrase</label>
-				<input
-					type="password"
-					value={sshPassphrase}
-					onChange={(e) => setSshPassphrase(e.target.value)}
-					placeholder="Enter passphrase for this key"
-					className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-				/>
-				<div className="text-[10px] text-muted-foreground">
-					Passphrase will be used once to unlock the key inside the container.
-				</div>
-			</div>
-			)}
+				{sshMode === 'personal' && selectedKey && sshKeys.find((k) => k.name === selectedKey)?.hasPassphrase && (
+					<div className="space-y-1.5">
+						<label className="text-xs text-muted-foreground">Key passphrase</label>
+						<input
+							type="password"
+							value={sshPassphrase}
+							onChange={(e) => setSshPassphrase(e.target.value)}
+							placeholder="Enter passphrase for this key"
+							className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+						/>
+						<div className="text-[10px] text-muted-foreground">
+							Passphrase will be used once to unlock the key inside the container.
+						</div>
+					</div>
+				)}
 
 				{repoName && (
 					<div className="rounded-md border border-border bg-card p-3 space-y-1">
