@@ -1,7 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { tauri, openUrl } from '../lib/tauri';
 import { useStore } from '../store';
-import { Check, Circle, Loader2, ChevronDown, ChevronUp, ExternalLink, Square, RotateCcw, ArrowUpCircle, Play } from 'lucide-react';
+import {
+	Check,
+	Circle,
+	Loader2,
+	ChevronDown,
+	ChevronUp,
+	ExternalLink,
+	Square,
+	RotateCcw,
+	ArrowUpCircle,
+	Play,
+} from 'lucide-react';
 import { BackButton } from './shared';
 
 const STEPS = [
@@ -34,9 +45,11 @@ function parseStep(runLogs: string): number {
 }
 
 function isOttoReady(runLogs: string): boolean {
-	return runLogs.includes('Otto is ready!')
-		|| runLogs.includes('Press Ctrl+C to stop')
-		|| runLogs.includes('Also accessible at');
+	return (
+		runLogs.includes('Otto is ready!') ||
+		runLogs.includes('Press Ctrl+C to stop') ||
+		runLogs.includes('Also accessible at')
+	);
 }
 
 export function SetupProgress() {
@@ -62,7 +75,8 @@ export function SetupProgress() {
 	const stoppingRef = useRef(false);
 	const graceRef = useRef(false);
 	const prevLogsRef = useRef('');
-	const repoName = project?.repo.split('/').pop()?.replace('.git', '') || 'project';
+	const repoName =
+		project?.repo.split('/').pop()?.replace('.git', '') || 'project';
 	const isPersonal = project?.sshMode === 'personal';
 
 	const handleBack = () => {
@@ -70,7 +84,10 @@ export function SetupProgress() {
 	};
 
 	const log = useCallback((msg: string) => {
-		setConsoleLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+		setConsoleLogs((prev) => [
+			...prev,
+			`[${new Date().toLocaleTimeString()}] ${msg}`,
+		]);
 	}, []);
 
 	const startPolling = useCallback(() => {
@@ -143,7 +160,10 @@ export function SetupProgress() {
 				setContainerRunning(running);
 
 				if (running) {
-					const logText = await tauri.containerLogs(project!.containerName, 100);
+					const logText = await tauri.containerLogs(
+						project!.containerName,
+						100,
+					);
 					const runLogs = currentRunLogs(logText);
 					const ready = isOttoReady(runLogs);
 					setDone(ready);
@@ -159,7 +179,9 @@ export function SetupProgress() {
 			log(`Starting setup for ${repoName}...`);
 			log(`Container: ${project!.containerName}`);
 			log(`Ports: API=${project!.apiPort} Web=${project!.webPort}`);
-			log(`SSH mode: ${isPersonal ? 'personal (~/.ssh mounted)' : 'team deploy key'}`);
+			log(
+				`SSH mode: ${isPersonal ? 'personal (~/.ssh mounted)' : 'team deploy key'}`,
+			);
 
 			try {
 				log('Creating new container...');
@@ -195,7 +217,15 @@ export function SetupProgress() {
 		return () => {
 			if (pollRef.current) clearInterval(pollRef.current);
 		};
-	}, [project, password, encryptedKey, repoName, isPersonal, log, startPolling]);
+	}, [
+		project,
+		password,
+		encryptedKey,
+		repoName,
+		isPersonal,
+		log,
+		startPolling,
+	]);
 
 	const handleAction = async (action: string) => {
 		setActionLoading(action);
@@ -236,11 +266,14 @@ export function SetupProgress() {
 					log('Container restarted, waiting for otto...');
 					startPolling();
 					break;
-				case 'update':
+				case 'update': {
 					log('Updating otto CLI...');
-					const result = await tauri.containerUpdateOtto(project!.containerName);
+					const result = await tauri.containerUpdateOtto(
+						project!.containerName,
+					);
 					log(`Update: ${result}`);
 					break;
+				}
 			}
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
@@ -250,7 +283,13 @@ export function SetupProgress() {
 		setActionLoading(null);
 	};
 
-	const status = error ? 'error' : done ? 'running' : containerRunning ? 'starting' : 'stopped';
+	const status = error
+		? 'error'
+		: done
+			? 'running'
+			: containerRunning
+				? 'starting'
+				: 'stopped';
 	const showSteps = !done && containerRunning;
 
 	if (!project) return null;
@@ -262,7 +301,9 @@ export function SetupProgress() {
 
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2">
-						<div className={`w-2 h-2 rounded-full ${containerRunning ? 'bg-green-500' : 'bg-muted-foreground/40'}`} />
+						<div
+							className={`w-2 h-2 rounded-full ${containerRunning ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
+						/>
 						<span className="text-sm font-medium">{repoName}</span>
 					</div>
 					<span className="text-xs text-muted-foreground">
@@ -277,13 +318,18 @@ export function SetupProgress() {
 								{i < currentStep ? (
 									<Check size={14} className="text-green-500" />
 								) : i === currentStep && status !== 'error' ? (
-									<Loader2 size={14} className="text-muted-foreground animate-spin" />
+									<Loader2
+										size={14}
+										className="text-muted-foreground animate-spin"
+									/>
 								) : (
 									<Circle size={14} className="text-muted-foreground/30" />
 								)}
 								<span
 									className={`text-xs ${
-										i <= currentStep ? 'text-foreground' : 'text-muted-foreground/50'
+										i <= currentStep
+											? 'text-foreground'
+											: 'text-muted-foreground/50'
 									}`}
 								>
 									{step}
@@ -315,7 +361,9 @@ export function SetupProgress() {
 						{containerRunning ? (
 							<>
 								<button
-									onClick={() => openUrl(`http://localhost:${project!.webPort}`)}
+									onClick={() =>
+										openUrl(`http://localhost:${project!.webPort}`)
+									}
 									disabled={!done}
 									className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
 								>
@@ -327,7 +375,11 @@ export function SetupProgress() {
 									disabled={!!actionLoading}
 									className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-secondary hover:bg-accent transition-colors disabled:opacity-50"
 								>
-									{actionLoading === 'stop' ? <Loader2 size={12} className="animate-spin" /> : <Square size={12} />}
+									{actionLoading === 'stop' ? (
+										<Loader2 size={12} className="animate-spin" />
+									) : (
+										<Square size={12} />
+									)}
 									Stop
 								</button>
 								<button
@@ -335,7 +387,11 @@ export function SetupProgress() {
 									disabled={!!actionLoading}
 									className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-secondary hover:bg-accent transition-colors disabled:opacity-50"
 								>
-									{actionLoading === 'restart' ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+									{actionLoading === 'restart' ? (
+										<Loader2 size={12} className="animate-spin" />
+									) : (
+										<RotateCcw size={12} />
+									)}
 									Restart
 								</button>
 								<button
@@ -343,7 +399,11 @@ export function SetupProgress() {
 									disabled={!!actionLoading}
 									className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-secondary hover:bg-accent transition-colors disabled:opacity-50"
 								>
-									{actionLoading === 'update' ? <Loader2 size={12} className="animate-spin" /> : <ArrowUpCircle size={12} />}
+									{actionLoading === 'update' ? (
+										<Loader2 size={12} className="animate-spin" />
+									) : (
+										<ArrowUpCircle size={12} />
+									)}
 									Update
 								</button>
 							</>
@@ -353,7 +413,11 @@ export function SetupProgress() {
 								disabled={!!actionLoading}
 								className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
 							>
-								{actionLoading === 'start' ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+								{actionLoading === 'start' ? (
+									<Loader2 size={12} className="animate-spin" />
+								) : (
+									<Play size={12} />
+								)}
 								Start
 							</button>
 						)}
@@ -375,12 +439,19 @@ export function SetupProgress() {
 				>
 					<span className="font-mono">Console</span>
 					<div className="flex items-center gap-2">
-						<span className={
-							status === 'error' ? 'text-destructive'
-								: status === 'running' ? 'text-green-500'
-									: status === 'starting' ? 'text-yellow-500'
-										: 'text-muted-foreground'
-						}>{status}</span>
+						<span
+							className={
+								status === 'error'
+									? 'text-destructive'
+									: status === 'running'
+										? 'text-green-500'
+										: status === 'starting'
+											? 'text-yellow-500'
+											: 'text-muted-foreground'
+							}
+						>
+							{status}
+						</span>
 						{consoleOpen ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
 					</div>
 				</button>
@@ -395,7 +466,9 @@ export function SetupProgress() {
 							<div
 								key={i}
 								className={
-									line.includes('FATAL:') || line.includes('ERROR:') || line.includes('Error:')
+									line.includes('FATAL:') ||
+									line.includes('ERROR:') ||
+									line.includes('Error:')
 										? 'text-destructive'
 										: line.includes('ready') || line.includes('running')
 											? 'text-green-500'
@@ -408,7 +481,9 @@ export function SetupProgress() {
 						{logs && (
 							<>
 								<div className="border-t border-border/30 my-1" />
-								<div className="text-muted-foreground/60">--- container logs ---</div>
+								<div className="text-muted-foreground/60">
+									--- container logs ---
+								</div>
 								{logs}
 							</>
 						)}

@@ -40,9 +40,8 @@ function App() {
 
 			{!dockerOk && (
 				<div className="mx-4 mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm">
-					Docker Engine is not running. Open Docker Desktop and make
-					sure the engine is started (whale icon should be steady, not
-					animating).
+					Docker Engine is not running. Open Docker Desktop and make sure the
+					engine is started (whale icon should be steady, not animating).
 				</div>
 			)}
 

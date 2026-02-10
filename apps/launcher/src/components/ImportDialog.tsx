@@ -1,5 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
-import { tauri, type ProjectState, type OttoTeamConfig, type SshKeyInfo } from '../lib/tauri';
+import {
+	tauri,
+	type ProjectState,
+	type OttoTeamConfig,
+	type SshKeyInfo,
+} from '../lib/tauri';
 import { useStore } from '../store';
 import { Upload, ArrowLeft, KeyRound, User, Check } from 'lucide-react';
 
@@ -11,7 +16,9 @@ export function ImportDialog() {
 	const selectedTeam = useStore((s) => s.selectedTeam);
 	const setView = useStore((s) => s.setView);
 
-	const [config, setConfig] = useState<OttoTeamConfig | null>(importConfig ?? null);
+	const [config, setConfig] = useState<OttoTeamConfig | null>(
+		importConfig ?? null,
+	);
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
 	const [verifying, setVerifying] = useState(false);
@@ -42,18 +49,21 @@ export function ImportDialog() {
 		setView(selectedTeam ? 'projects' : 'welcome');
 	};
 
-	const handleFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-		try {
-			const content = await file.text();
-			const parsed = await tauri.parseTeamConfig(content);
-			setConfig(parsed);
-			setError('');
-		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Invalid config file');
-		}
-	}, []);
+	const handleFile = useCallback(
+		async (e: React.ChangeEvent<HTMLInputElement>) => {
+			const file = e.target.files?.[0];
+			if (!file) return;
+			try {
+				const content = await file.text();
+				const parsed = await tauri.parseTeamConfig(content);
+				setConfig(parsed);
+				setError('');
+			} catch (err) {
+				setError(err instanceof Error ? err.message : 'Invalid config file');
+			}
+		},
+		[],
+	);
 
 	const handleDrop = useCallback(async (e: React.DragEvent) => {
 		e.preventDefault();
@@ -86,7 +96,8 @@ export function ImportDialog() {
 
 			const trackedPorts = projects.map((p) => p.apiPort);
 			const apiPort = await tauri.findAvailablePort(trackedPorts);
-			const repoName = config.repo.split('/').pop()?.replace('.git', '') || 'project';
+			const repoName =
+				config.repo.split('/').pop()?.replace('.git', '') || 'project';
 
 			const project: ProjectState = {
 				id: `${repoName}-${apiPort}`,
@@ -95,13 +106,23 @@ export function ImportDialog() {
 				apiPort,
 				webPort: apiPort + 1,
 				status: 'creating',
-				gitName: sshMode === 'personal' ? (hostGitName || config.gitName) : config.gitName,
-				gitEmail: sshMode === 'personal' ? (hostGitEmail || config.gitEmail) : config.gitEmail,
+				gitName:
+					sshMode === 'personal'
+						? hostGitName || config.gitName
+						: config.gitName,
+				gitEmail:
+					sshMode === 'personal'
+						? hostGitEmail || config.gitEmail
+						: config.gitEmail,
 				sshMode,
 				sshKeyName: sshMode === 'personal' ? selectedKey : undefined,
 				sshPassphrase: sshMode === 'personal' ? sshPassphrase : undefined,
 			};
-			await importProject(project, sshMode === 'personal' ? '' : password, config);
+			await importProject(
+				project,
+				sshMode === 'personal' ? '' : password,
+				config,
+			);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Verification failed');
 		}
@@ -180,7 +201,9 @@ export function ImportDialog() {
 
 					{sshMode === 'personal' && (
 						<div className="space-y-1.5">
-							<label className="text-xs text-muted-foreground">Select key</label>
+							<label className="text-xs text-muted-foreground">
+								Select key
+							</label>
 							{sshKeys.length === 0 ? (
 								<div className="text-xs text-muted-foreground p-2 rounded bg-secondary">
 									No SSH keys found in ~/.ssh/
@@ -199,7 +222,9 @@ export function ImportDialog() {
 										>
 											<div className="flex-1 min-w-0">
 												<div className="flex items-center gap-2">
-													<span className="font-mono font-medium">{key.name}</span>
+													<span className="font-mono font-medium">
+														{key.name}
+													</span>
 													<span className="text-[10px] text-muted-foreground px-1 py-0.5 rounded bg-secondary">
 														{key.keyType}
 													</span>
@@ -215,18 +240,22 @@ export function ImportDialog() {
 						</div>
 					)}
 
-					{sshMode === 'personal' && selectedKey && sshKeys.find((k) => k.name === selectedKey)?.hasPassphrase && (
-						<div className="space-y-1.5">
-							<label className="text-xs text-muted-foreground">Key passphrase</label>
-							<input
-								type="password"
-								value={sshPassphrase}
-								onChange={(e) => setSshPassphrase(e.target.value)}
-								placeholder="Enter passphrase for this key"
-								className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-							/>
-						</div>
-					)}
+					{sshMode === 'personal' &&
+						selectedKey &&
+						sshKeys.find((k) => k.name === selectedKey)?.hasPassphrase && (
+							<div className="space-y-1.5">
+								<label className="text-xs text-muted-foreground">
+									Key passphrase
+								</label>
+								<input
+									type="password"
+									value={sshPassphrase}
+									onChange={(e) => setSshPassphrase(e.target.value)}
+									placeholder="Enter passphrase for this key"
+									className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+								/>
+							</div>
+						)}
 
 					{sshMode === 'team' && (
 						<div className="space-y-1.5">
@@ -245,9 +274,7 @@ export function ImportDialog() {
 						</div>
 					)}
 
-					{error && (
-						<div className="text-xs text-destructive">{error}</div>
-					)}
+					{error && <div className="text-xs text-destructive">{error}</div>}
 
 					<button
 						onClick={handleSubmit}

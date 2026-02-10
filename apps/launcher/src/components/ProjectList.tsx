@@ -13,7 +13,9 @@ export function ProjectList() {
 	const refreshStatuses = useStore((s) => s.refreshStatuses);
 	const [showKey, setShowKey] = useState(false);
 
-	useEffect(() => { refreshStatuses(); }, [refreshStatuses]);
+	useEffect(() => {
+		refreshStatuses();
+	}, [refreshStatuses]);
 
 	if (!selectedTeam) return null;
 
@@ -25,7 +27,8 @@ export function ProjectList() {
 				<div className="flex items-center gap-2">
 					<span className="text-sm font-medium">{selectedTeam.name}</span>
 					<span className="text-xs text-muted-foreground">
-						{teamProjects.length} {teamProjects.length === 1 ? 'project' : 'projects'}
+						{teamProjects.length}{' '}
+						{teamProjects.length === 1 ? 'project' : 'projects'}
 					</span>
 				</div>
 				<div className="flex items-center gap-1.5">

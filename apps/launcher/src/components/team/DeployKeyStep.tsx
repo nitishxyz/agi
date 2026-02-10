@@ -10,8 +10,9 @@ export function DeployKeyStep({ publicKey, onNext }: Props) {
 		<div className="space-y-3">
 			<div className="text-sm font-medium">Your Deploy Key</div>
 			<div className="text-xs text-muted-foreground">
-				Copy this public key. You'll add it to each repo you
-				want your team to work on:<br />
+				Copy this public key. You'll add it to each repo you want your team to
+				work on:
+				<br />
 				<span className="text-foreground">
 					GitHub → Repo → Settings → Deploy Keys → Add
 				</span>

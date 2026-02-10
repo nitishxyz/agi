@@ -14,36 +14,49 @@ export function Welcome() {
 
 	const [dragging, setDragging] = useState(false);
 
-	useEffect(() => { refreshStatuses(); }, [refreshStatuses]);
+	useEffect(() => {
+		refreshStatuses();
+	}, [refreshStatuses]);
 
 	const [error, setError] = useState('');
 
-	const handleImportFile = useCallback(async (content: string) => {
-		try {
-			const parsed = await tauri.parseTeamConfig(content);
-			setError('');
-			setImportConfig(parsed);
-			setView('import');
-		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Invalid .otto file');
-		}
-	}, [setImportConfig, setView]);
+	const handleImportFile = useCallback(
+		async (content: string) => {
+			try {
+				const parsed = await tauri.parseTeamConfig(content);
+				setError('');
+				setImportConfig(parsed);
+				setView('import');
+			} catch (err) {
+				setError(err instanceof Error ? err.message : 'Invalid .otto file');
+			}
+		},
+		[setImportConfig, setView],
+	);
 
-	const handleDrop = useCallback(async (e: React.DragEvent) => {
-		e.preventDefault();
-		setDragging(false);
-		const file = e.dataTransfer.files[0];
-		if (!file) return;
-		handleImportFile(await file.text());
-	}, [handleImportFile]);
+	const handleDrop = useCallback(
+		async (e: React.DragEvent) => {
+			e.preventDefault();
+			setDragging(false);
+			const file = e.dataTransfer.files[0];
+			if (!file) return;
+			handleImportFile(await file.text());
+		},
+		[handleImportFile],
+	);
 
-	const teamProjects = (teamId: string) => projects.filter((p) => p.teamId === teamId);
-	const runningCount = (teamId: string) => teamProjects(teamId).filter((p) => p.status === 'running').length;
+	const teamProjects = (teamId: string) =>
+		projects.filter((p) => p.teamId === teamId);
+	const runningCount = (teamId: string) =>
+		teamProjects(teamId).filter((p) => p.status === 'running').length;
 
 	return (
 		<div
 			className="px-4 pb-4 space-y-4 min-h-[calc(100vh-40px)]"
-			onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+			onDragOver={(e) => {
+				e.preventDefault();
+				setDragging(true);
+			}}
 			onDragLeave={() => setDragging(false)}
 			onDrop={handleDrop}
 		>
@@ -88,7 +101,10 @@ export function Welcome() {
 											</div>
 										</div>
 										<button
-											onClick={(e) => { e.stopPropagation(); deleteTeam(team); }}
+											onClick={(e) => {
+												e.stopPropagation();
+												deleteTeam(team);
+											}}
 											className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
 											title="Delete team"
 										>
@@ -156,9 +172,7 @@ export function Welcome() {
 					</div>
 				</div>
 
-				{error && (
-					<div className="text-xs text-destructive">{error}</div>
-				)}
+				{error && <div className="text-xs text-destructive">{error}</div>}
 			</div>
 		</div>
 	);

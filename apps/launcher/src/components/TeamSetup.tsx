@@ -43,15 +43,31 @@ export function TeamSetup() {
 	};
 
 	const handleEncrypt = async () => {
-		if (!password) { setError('Password is required'); return; }
-		if (password !== passwordConfirm) { setError('Passwords do not match'); return; }
-		if (password.length < 4) { setError('Password too short (min 4 chars)'); return; }
+		if (!password) {
+			setError('Password is required');
+			return;
+		}
+		if (password !== passwordConfirm) {
+			setError('Passwords do not match');
+			return;
+		}
+		if (password.length < 4) {
+			setError('Password too short (min 4 chars)');
+			return;
+		}
 		setLoading(true);
 		setError('');
 		try {
 			const encryptedKey = await tauri.encryptKey(privateKey, password);
 			const id = `team-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-			await addTeam({ id, name: teamName, publicKey, encryptedKey, gitName, gitEmail });
+			await addTeam({
+				id,
+				name: teamName,
+				publicKey,
+				encryptedKey,
+				gitName,
+				gitEmail,
+			});
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Encryption failed');
 		}
@@ -80,7 +96,10 @@ export function TeamSetup() {
 			{step === 'key' && (
 				<DeployKeyStep
 					publicKey={publicKey}
-					onNext={() => { setError(''); setStep('password'); }}
+					onNext={() => {
+						setError('');
+						setStep('password');
+					}}
 				/>
 			)}
 

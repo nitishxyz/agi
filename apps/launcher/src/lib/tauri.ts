@@ -83,18 +83,25 @@ export interface SshKeyInfo {
 
 export const tauri = {
 	dockerAvailable: () => invoke<boolean>('docker_available'),
-	containerExists: (name: string) => invoke<boolean>('container_exists', { name }),
-	containerRunning: (name: string) => invoke<boolean>('container_running', { name }),
-	containerInspect: (name: string) => invoke<ContainerInfo>('container_inspect', { name }),
-	containerCreate: (opts: ContainerCreateOpts) => invoke<string>('container_create', { opts }),
+	containerExists: (name: string) =>
+		invoke<boolean>('container_exists', { name }),
+	containerRunning: (name: string) =>
+		invoke<boolean>('container_running', { name }),
+	containerInspect: (name: string) =>
+		invoke<ContainerInfo>('container_inspect', { name }),
+	containerCreate: (opts: ContainerCreateOpts) =>
+		invoke<string>('container_create', { opts }),
 	containerStart: (name: string) => invoke<void>('container_start', { name }),
 	containerStop: (name: string) => invoke<void>('container_stop', { name }),
 	containerRemove: (name: string) => invoke<void>('container_remove', { name }),
-	containerLogs: (name: string, lines: number) => invoke<string>('container_logs', { name, lines }),
-	containerExec: (name: string, cmd: string) => invoke<string>('container_exec', { name, cmd }),
+	containerLogs: (name: string, lines: number) =>
+		invoke<string>('container_logs', { name, lines }),
+	containerExec: (name: string, cmd: string) =>
+		invoke<string>('container_exec', { name, cmd }),
 	containerRestartOtto: (name: string, repoDir: string, apiPort: number) =>
 		invoke<void>('container_restart_otto', { name, repoDir, apiPort }),
-	containerUpdateOtto: (name: string) => invoke<string>('container_update_otto', { name }),
+	containerUpdateOtto: (name: string) =>
+		invoke<string>('container_update_otto', { name }),
 
 	generateDeployKey: () => invoke<KeyPair>('generate_deploy_key'),
 	encryptKey: (privateKey: string, password: string) =>
@@ -110,12 +117,15 @@ export const tauri = {
 
 	loadState: () => invoke<LauncherState>('load_state'),
 	saveState: (state: LauncherState) => invoke<void>('save_state', { state }),
-	parseTeamConfig: (content: string) => invoke<OttoTeamConfig>('parse_team_config', { content }),
-	exportTeamConfig: (config: OttoTeamConfig) => invoke<string>('export_team_config', { config }),
+	parseTeamConfig: (content: string) =>
+		invoke<OttoTeamConfig>('parse_team_config', { content }),
+	exportTeamConfig: (config: OttoTeamConfig) =>
+		invoke<string>('export_team_config', { config }),
 	saveOttoFile: (config: OttoTeamConfig, defaultName: string) =>
 		invoke<boolean>('save_otto_file', { config, defaultName }),
 
-	findAvailablePort: (trackedPorts: number[]) => invoke<number>('find_available_port', { trackedPorts }),
+	findAvailablePort: (trackedPorts: number[]) =>
+		invoke<number>('find_available_port', { trackedPorts }),
 };
 
 export const openUrl = (url: string) => tauriOpenUrl(url);

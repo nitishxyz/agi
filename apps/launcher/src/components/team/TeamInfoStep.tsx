@@ -28,8 +28,8 @@ export function TeamInfoStep({
 		<div className="space-y-3">
 			<div className="text-sm font-medium">Create Your Team</div>
 			<div className="text-xs text-muted-foreground">
-				Set up your team identity. This generates a deploy key
-				you'll add to your repos.
+				Set up your team identity. This generates a deploy key you'll add to
+				your repos.
 			</div>
 
 			<FormField

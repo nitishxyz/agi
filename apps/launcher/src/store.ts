@@ -1,5 +1,10 @@
 import { create } from 'zustand';
-import { tauri, type TeamState, type ProjectState, type OttoTeamConfig } from './lib/tauri';
+import {
+	tauri,
+	type TeamState,
+	type ProjectState,
+	type OttoTeamConfig,
+} from './lib/tauri';
 
 export type View =
 	| 'loading'
@@ -34,7 +39,11 @@ interface LauncherStore {
 	removeProject: (projectId: string) => Promise<void>;
 	updateProjectStatus: (projectId: string, status: string) => void;
 
-	importProject: (project: ProjectState, password: string, config: OttoTeamConfig) => Promise<void>;
+	importProject: (
+		project: ProjectState,
+		password: string,
+		config: OttoTeamConfig,
+	) => Promise<void>;
 
 	startSetup: (project: ProjectState) => Promise<void>;
 	finishSetup: () => Promise<void>;
@@ -107,13 +116,20 @@ export const useStore = create<LauncherStore>((set, get) => ({
 		const { teams, projects } = get();
 		const tp = projects.filter((p) => p.teamId === team.id);
 		for (const p of tp) {
-			try { await tauri.containerStop(p.containerName); } catch {}
-			try { await tauri.containerRemove(p.containerName); } catch {}
+			try {
+				await tauri.containerStop(p.containerName);
+			} catch {}
+			try {
+				await tauri.containerRemove(p.containerName);
+			} catch {}
 		}
 		const remainingTeams = teams.filter((t) => t.id !== team.id);
 		const remainingProjects = projects.filter((p) => p.teamId !== team.id);
 		set({ teams: remainingTeams, projects: remainingProjects });
-		await tauri.saveState({ teams: remainingTeams, projects: remainingProjects });
+		await tauri.saveState({
+			teams: remainingTeams,
+			projects: remainingProjects,
+		});
 	},
 
 	selectTeam: (team) => {
@@ -135,7 +151,9 @@ export const useStore = create<LauncherStore>((set, get) => ({
 		const { teams, projects } = get();
 		const project = projects.find((p) => p.id === projectId);
 		if (project) {
-			try { await tauri.containerRemove(project.containerName); } catch {}
+			try {
+				await tauri.containerRemove(project.containerName);
+			} catch {}
 		}
 		const remaining = projects.filter((p) => p.id !== projectId);
 		set({ projects: remaining });
@@ -144,7 +162,11 @@ export const useStore = create<LauncherStore>((set, get) => ({
 
 	updateProjectStatus: (projectId, status) => {
 		const { projects } = get();
-		set({ projects: projects.map((p) => (p.id === projectId ? { ...p, status } : p)) });
+		set({
+			projects: projects.map((p) =>
+				p.id === projectId ? { ...p, status } : p,
+			),
+		});
 	},
 
 	importProject: async (project, password, config) => {
@@ -152,7 +174,8 @@ export const useStore = create<LauncherStore>((set, get) => ({
 		let updatedTeams = [...teams];
 		let team = teams.find((t) => t.encryptedKey === config.key);
 		if (!team) {
-			const repoName = config.repo.split('/').pop()?.replace('.git', '') || 'imported';
+			const repoName =
+				config.repo.split('/').pop()?.replace('.git', '') || 'imported';
 			let publicKey = '';
 			try {
 				publicKey = await tauri.publicKeyFromEncrypted(config.key, password);
@@ -211,7 +234,9 @@ export const useStore = create<LauncherStore>((set, get) => ({
 				await get().startSetup(project);
 				return;
 			case 'stop':
-				try { await tauri.containerStop(project.containerName); } catch {}
+				try {
+					await tauri.containerStop(project.containerName);
+				} catch {}
 				break;
 			case 'restart':
 				await tauri.containerRestartOtto(
@@ -243,7 +268,8 @@ export const useStore = create<LauncherStore>((set, get) => ({
 					devPorts: project.devPorts || 'auto',
 					postClone: project.postClone || 'bun install',
 				};
-				const name = project.repo.split('/').pop()?.replace('.git', '') || 'project';
+				const name =
+					project.repo.split('/').pop()?.replace('.git', '') || 'project';
 				await tauri.saveOttoFile(config, `${name}.otto`);
 				return;
 			}
@@ -253,13 +279,17 @@ export const useStore = create<LauncherStore>((set, get) => ({
 
 	teamProjects: () => {
 		const { projects, selectedTeam } = get();
-		return selectedTeam ? projects.filter((p) => p.teamId === selectedTeam.id) : [];
+		return selectedTeam
+			? projects.filter((p) => p.teamId === selectedTeam.id)
+			: [];
 	},
 
 	encryptedKeyForSetup: () => {
 		const { setupProject, teams, selectedTeam } = get();
 		if (setupProject?.teamId) {
-			return teams.find((t) => t.id === setupProject.teamId)?.encryptedKey || '';
+			return (
+				teams.find((t) => t.id === setupProject.teamId)?.encryptedKey || ''
+			);
 		}
 		return selectedTeam?.encryptedKey || '';
 	},

@@ -27,7 +27,11 @@ export function CopyBlock({ text, label }: Props) {
 				onClick={handleCopy}
 				className="absolute top-2 right-2 p-1.5 rounded bg-background/80 hover:bg-background transition-colors"
 			>
-				{copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+				{copied ? (
+					<Check size={12} className="text-green-500" />
+				) : (
+					<Copy size={12} />
+				)}
 			</button>
 		</div>
 	);

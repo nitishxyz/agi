@@ -25,8 +25,8 @@ export function PasswordStep({
 		<div className="space-y-3">
 			<div className="text-sm font-medium">Set Team Password</div>
 			<div className="text-xs text-muted-foreground">
-				This encrypts the deploy key. Your team members will
-				need this password when importing projects.
+				This encrypts the deploy key. Your team members will need this password
+				when importing projects.
 			</div>
 
 			<FormField

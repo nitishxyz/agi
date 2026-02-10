@@ -10,7 +10,8 @@ export function PasswordPrompt() {
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
 
-	const repoName = setupProject?.repo.split('/').pop()?.replace('.git', '') || '';
+	const repoName =
+		setupProject?.repo.split('/').pop()?.replace('.git', '') || '';
 
 	const handleSubmit = () => {
 		if (!password) {
@@ -28,8 +29,8 @@ export function PasswordPrompt() {
 			<div className="space-y-3">
 				<div className="text-sm font-medium">Start {repoName}</div>
 				<div className="text-xs text-muted-foreground">
-					Enter the team password to decrypt the deploy key
-					and set up the container.
+					Enter the team password to decrypt the deploy key and set up the
+					container.
 				</div>
 
 				<FormField
