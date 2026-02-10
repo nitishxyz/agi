@@ -231,8 +231,7 @@ export const useStore = create<LauncherStore>((set, get) => ({
 		const team = teams.find((t) => t.id === project.teamId) || selectedTeam;
 
 		switch (action) {
-			case 'start':
-			{
+			case 'start': {
 				const exists = await tauri.containerExists(project.containerName);
 				if (exists) {
 					try {

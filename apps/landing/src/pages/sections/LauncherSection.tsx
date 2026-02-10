@@ -37,21 +37,15 @@ function DownloadButton({
 					<line x1="12" x2="12" y1="15" y2="3" />
 				</svg>
 				<div>
-					<span
-						className="text-sm text-otto-text group-hover:text-otto-bg font-medium"
-					>
+					<span className="text-sm text-otto-text group-hover:text-otto-bg font-medium">
 						{label}
 					</span>
-					<span
-						className="text-xs text-otto-dim group-hover:text-otto-bg ml-2"
-					>
+					<span className="text-xs text-otto-dim group-hover:text-otto-bg ml-2">
 						{ext}
 					</span>
 				</div>
 			</div>
-			<span
-				className="text-xs text-otto-dim group-hover:text-otto-bg"
-			>
+			<span className="text-xs text-otto-dim group-hover:text-otto-bg">
 				{formatSize(size)}
 			</span>
 		</a>
@@ -442,8 +436,8 @@ export function LauncherSection() {
 									</h3>
 									<p className="text-xs text-otto-muted leading-relaxed">
 										Add a project, enter the repo URL, and watch the automated
-										pipeline. System packages, SSH, git, clone, deps, and otto
-										— all handled.
+										pipeline. System packages, SSH, git, clone, deps, and otto —
+										all handled.
 									</p>
 								</div>
 							</div>
