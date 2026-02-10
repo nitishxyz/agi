@@ -62,13 +62,15 @@ export async function handleServe(opts: ServeOptions, version: string) {
 	const webPort = serverPort + 1;
 	let webServer: ReturnType<typeof createWebServer>['server'] | null = null;
 	let webUrl: string | null = null;
+	let actualWebPort: number | null = null;
 	try {
-		const { port: actualWebPort, server } = createWebServer(
+		const { port: resolvedWebPort, server } = createWebServer(
 			webPort,
 			serverPort,
 			opts.network,
 		);
 		webServer = server;
+		actualWebPort = resolvedWebPort;
 		webUrl = `http://${displayHost}:${actualWebPort}`;
 	} catch (error) {
 		logger.error('Failed to start Web UI server', error);
@@ -87,7 +89,7 @@ export async function handleServe(opts: ServeOptions, version: string) {
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({}),
+					body: JSON.stringify({ port: actualWebPort ?? serverPort }),
 				},
 			);
 
