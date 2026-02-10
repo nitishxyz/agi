@@ -105,6 +105,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		projectRoot: cfg.projectRoot,
 		agentPrompt,
 		oneShot: opts.oneShot,
+		guidedMode: cfg.defaults.guidedMode,
 		spoofPrompt: undefined,
 		includeProjectTree: isFirstMessage,
 		userContext: opts.userContext,

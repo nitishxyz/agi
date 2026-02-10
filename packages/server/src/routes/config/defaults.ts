@@ -12,6 +12,7 @@ export function registerDefaultsRoute(app: Hono) {
 				provider?: string;
 				model?: string;
 				toolApproval?: 'auto' | 'dangerous' | 'all';
+				guidedMode?: boolean;
 				scope?: 'global' | 'local';
 			}>();
 
@@ -21,12 +22,14 @@ export function registerDefaultsRoute(app: Hono) {
 				provider: string;
 				model: string;
 				toolApproval: 'auto' | 'dangerous' | 'all';
+				guidedMode: boolean;
 			}> = {};
 
 			if (body.agent) updates.agent = body.agent;
 			if (body.provider) updates.provider = body.provider;
 			if (body.model) updates.model = body.model;
 			if (body.toolApproval) updates.toolApproval = body.toolApproval;
+			if (body.guidedMode !== undefined) updates.guidedMode = body.guidedMode;
 
 			await setConfig(scope, updates, projectRoot);
 

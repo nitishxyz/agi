@@ -15,6 +15,7 @@ const DEFAULTS: { defaults: OttoConfig['defaults'] } = {
 		provider: 'setu',
 		model: 'kimi-k2.5',
 		toolApproval: 'auto',
+		guidedMode: false,
 	},
 };
 

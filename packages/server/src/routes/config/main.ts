@@ -57,6 +57,7 @@ export function registerMainConfigRoute(app: Hono) {
 					embeddedConfig?.defaults?.toolApproval,
 					cfg.defaults.toolApproval,
 				) as 'auto' | 'dangerous' | 'all',
+				guidedMode: cfg.defaults.guidedMode ?? false,
 			};
 
 			return c.json({

@@ -1,10 +1,16 @@
 import { providerBasePrompt } from '@ottocode/sdk';
 import { debugLog } from '../debug/index.ts';
-import { composeEnvironmentAndInstructions } from '../context/environment.ts';
+import {
+	composeEnvironmentAndInstructions,
+} from '../context/environment.ts';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import BASE_PROMPT from '@ottocode/sdk/prompts/base.txt' with { type: 'text' };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import ONESHOT_PROMPT from '@ottocode/sdk/prompts/modes/oneshot.txt' with {
+	type: 'text',
+};
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import GUIDED_PROMPT from '@ottocode/sdk/prompts/modes/guided.txt' with {
 	type: 'text',
 };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
@@ -25,6 +31,7 @@ export async function composeSystemPrompt(options: {
 	projectRoot: string;
 	agentPrompt: string;
 	oneShot?: boolean;
+	guidedMode?: boolean;
 	spoofPrompt?: string;
 	includeEnvironment?: boolean;
 	includeProjectTree?: boolean;
@@ -79,10 +86,21 @@ export async function composeSystemPrompt(options: {
 		components.push('mode:oneshot');
 	}
 
+	if (options.guidedMode) {
+		const guidedBlock = (GUIDED_PROMPT || '').trim();
+		if (guidedBlock) {
+			parts.push(guidedBlock);
+			components.push('mode:guided');
+		}
+	}
+
 	if (options.includeEnvironment !== false) {
 		const envAndInstructions = await composeEnvironmentAndInstructions(
 			options.projectRoot,
-			{ includeProjectTree: options.includeProjectTree },
+			{
+				includeProjectTree: options.includeProjectTree,
+				guidedMode: options.guidedMode,
+			},
 		);
 		if (envAndInstructions) {
 			parts.push(envAndInstructions);

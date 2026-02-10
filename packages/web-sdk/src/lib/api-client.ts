@@ -337,6 +337,7 @@ class ApiClient {
 			provider: string;
 			model: string;
 			toolApproval?: 'auto' | 'dangerous' | 'all';
+			guidedMode?: boolean;
 		};
 	}> {
 		const response = await apiGetConfig();
@@ -351,6 +352,7 @@ class ApiClient {
 				provider: string;
 				model: string;
 				toolApproval?: 'auto' | 'dangerous' | 'all';
+				guidedMode?: boolean;
 			};
 		};
 	}
@@ -395,6 +397,7 @@ class ApiClient {
 		provider?: string;
 		model?: string;
 		toolApproval?: 'auto' | 'dangerous' | 'all';
+		guidedMode?: boolean;
 		scope?: 'global' | 'local';
 	}): Promise<{
 		success: boolean;
@@ -403,6 +406,7 @@ class ApiClient {
 			provider: string;
 			model: string;
 			toolApproval?: 'auto' | 'dangerous' | 'all';
+			guidedMode?: boolean;
 		};
 	}> {
 		const response = await fetch(`${this.baseUrl}/v1/config/defaults`, {

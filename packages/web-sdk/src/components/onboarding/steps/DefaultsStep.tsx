@@ -49,6 +49,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 	const [selectedApproval, setSelectedApproval] = useState<
 		'auto' | 'dangerous' | 'all'
 	>(authStatus.defaults.toolApproval || 'auto');
+	const [guidedMode, setGuidedMode] = useState(false);
 	const hasUserChangedProvider = useRef(false);
 
 	const providerId = useId();
@@ -84,6 +85,9 @@ export const DefaultsStep = memo(function DefaultsStep({
 				if (configData?.defaults?.toolApproval) {
 					setSelectedApproval(configData.defaults.toolApproval);
 				}
+				if (configData?.defaults?.guidedMode) {
+					setGuidedMode(configData.defaults.guidedMode);
+				}
 			} catch {
 			} finally {
 				setIsLoading(false);
@@ -118,6 +122,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 				model: selectedModel,
 				agent: selectedAgent,
 				toolApproval: selectedApproval,
+				guidedMode,
 				scope: 'global',
 			});
 			await onComplete();
@@ -284,6 +289,35 @@ export const DefaultsStep = memo(function DefaultsStep({
 								Controls when tool executions need approval
 							</p>
 						</div>
+
+					{/* Guided Mode */}
+					<div className="md:col-span-2">
+						<div className="flex items-center justify-between px-4 py-3 bg-card border border-border rounded-xl">
+							<div>
+								<span className="text-sm font-medium text-foreground">
+									Guided Mode
+								</span>
+								<p className="text-sm text-muted-foreground mt-0.5">
+									AI will run commands and manage services for you instead of giving instructions
+								</p>
+							</div>
+							<button
+								type="button"
+								role="switch"
+								aria-checked={guidedMode}
+								onClick={() => setGuidedMode(!guidedMode)}
+								className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+									guidedMode ? 'bg-primary' : 'bg-muted'
+								}`}
+							>
+								<span
+									className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
+										guidedMode ? 'translate-x-6' : 'translate-x-1'
+									} ${guidedMode ? 'bg-primary-foreground' : 'bg-foreground'}`}
+								/>
+							</button>
+						</div>
+					</div>
 					</div>
 				</div>
 			</div>

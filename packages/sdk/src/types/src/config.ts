@@ -13,6 +13,7 @@ export type DefaultConfig = {
 	provider: ProviderId;
 	model: string;
 	toolApproval?: ToolApprovalMode;
+	guidedMode?: boolean;
 };
 
 /**

@@ -64,6 +64,7 @@ export async function writeDefaults(
 		provider: ProviderId;
 		model: string;
 		toolApproval: 'auto' | 'dangerous' | 'all';
+		guidedMode: boolean;
 	}>,
 	projectRoot?: string,
 ) {

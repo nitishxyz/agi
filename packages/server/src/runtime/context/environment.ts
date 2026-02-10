@@ -121,12 +121,16 @@ export async function getProjectTree(projectRoot: string): Promise<string> {
 
 export async function findInstructionFiles(
 	projectRoot: string,
+	options?: { guidedMode?: boolean },
 ): Promise<string[]> {
 	const { existsSync } = await import('node:fs');
 	const { join } = await import('node:path');
 	const foundPaths: string[] = [];
 
 	const localFiles = ['AGENTS.md', 'CLAUDE.md', 'CONTEXT.md'];
+	if (options?.guidedMode) {
+		localFiles.push('GUIDED.md');
+	}
 	for (const filename of localFiles) {
 		let currentDir = projectRoot;
 		for (let i = 0; i < 5; i++) {
@@ -158,8 +162,9 @@ export async function findInstructionFiles(
 
 export async function loadInstructionFiles(
 	projectRoot: string,
+	options?: { guidedMode?: boolean },
 ): Promise<string> {
-	const paths = await findInstructionFiles(projectRoot);
+	const paths = await findInstructionFiles(projectRoot, options);
 	if (paths.length === 0) return '';
 
 	const contents: string[] = [];
@@ -181,7 +186,7 @@ export async function loadInstructionFiles(
 
 export async function composeEnvironmentAndInstructions(
 	projectRoot: string,
-	options?: { includeProjectTree?: boolean },
+	options?: { includeProjectTree?: boolean; guidedMode?: boolean },
 ): Promise<string> {
 	const parts: string[] = [];
 
@@ -195,7 +200,9 @@ export async function composeEnvironmentAndInstructions(
 		}
 	}
 
-	const customInstructions = await loadInstructionFiles(projectRoot);
+	const customInstructions = await loadInstructionFiles(projectRoot, {
+		guidedMode: options?.guidedMode,
+	});
 	if (customInstructions) {
 		parts.push(customInstructions);
 	}

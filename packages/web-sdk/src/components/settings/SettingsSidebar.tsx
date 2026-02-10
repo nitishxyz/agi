@@ -329,6 +329,16 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 							}
 							disabled={updateDefaults.isPending}
 						/>
+						<ToggleRow
+							label="Guided Mode"
+							checked={config?.defaults?.guidedMode ?? false}
+							onChange={(checked) =>
+								updateDefaults.mutate({
+									guidedMode: checked,
+									scope: 'global',
+								})
+							}
+						/>
 					</SettingsSection>
 
 					<SettingsSection
