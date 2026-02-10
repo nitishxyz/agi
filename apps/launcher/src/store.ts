@@ -278,7 +278,6 @@ export const useStore = create<LauncherStore>((set, get) => ({
 					gitEmail: team.gitEmail,
 					image: project.image || 'oven/bun:1-debian',
 					devPorts: project.devPorts || 'auto',
-					postClone: project.postClone || 'bun install',
 				};
 				const name =
 					project.repo.split('/').pop()?.replace('.git', '') || 'project';

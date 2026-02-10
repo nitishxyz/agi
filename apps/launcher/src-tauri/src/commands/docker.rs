@@ -440,16 +440,16 @@ export PATH="$HOME/.local/bin:$PATH"
 echo "nameserver 8.8.8.8" >> /etc/resolv.conf
 echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
-echo "[1/6] Installing system packages..."
+echo "[1/5] Installing system packages..."
 for i in 1 2 3; do
   apt-get update -qq && break
   echo "  Retry $i..."
   sleep 2
 done
 apt-get install -y -qq git openssh-client curl openssl >/dev/null 2>&1
-echo "[1/6] ✓ Done"
+echo "[1/5] ✓ Done"
 
-echo "[2/6] Setting up SSH..."
+echo "[2/5] Setting up SSH..."
 if ls /root/.ssh/id_* >/dev/null 2>&1; then
   echo "  Using mounted SSH keys"
   mkdir -p /tmp/ssh && cp /root/.ssh/id_* /tmp/ssh/ 2>/dev/null
@@ -478,14 +478,14 @@ else
   ssh-keyscan github.com >> /root/.ssh/known_hosts 2>/dev/null
   unset ENCRYPTED_KEY TEAM_PASS
 fi
-echo "[2/6] ✓ Done"
+echo "[2/5] ✓ Done"
 
-echo "[3/6] Configuring git..."
+echo "[3/5] Configuring git..."
 git config --global user.name "{git_name}"
 git config --global user.email "{git_email}"
-echo "[3/6] ✓ Done"
+echo "[3/5] ✓ Done"
 
-echo "[4/6] Cloning repo..."
+echo "[4/5] Cloning repo..."
 mkdir -p /workspace
 if [ ! -d "$REPO_DIR/.git" ]; then
   git clone "$REPO_URL" "$REPO_DIR"
@@ -493,17 +493,13 @@ else
   echo "  Repo already cloned, pulling latest..."
   cd "$REPO_DIR" && git pull
 fi
-echo "[4/6] ✓ Done"
-
-echo "[5/6] Installing dependencies..."
 cd "$REPO_DIR"
 if command -v otto >/dev/null 2>&1; then
   echo "  otto already installed: $(otto --version 2>&1 | head -1)"
 else
   curl -fsSL https://install.ottocode.io | sh
 fi
-bun install
-echo "[5/6] ✓ Done"
+echo "[4/5] ✓ Done"
 
 echo ""
 echo "════════════════════════════════════════"
@@ -512,7 +508,7 @@ echo "  Open http://localhost:{web_port} in your browser"
 echo "════════════════════════════════════════"
 echo ""
 
-echo "[6/6] Starting otto..."
+echo "[5/5] Starting otto..."
 export PATH="$HOME/.local/bin:$PATH"
 cd "$REPO_DIR"
 otto serve --network --port {api_port} --no-open"#,

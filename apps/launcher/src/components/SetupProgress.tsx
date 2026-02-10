@@ -20,18 +20,17 @@ const STEPS = [
 	'Setting up SSH',
 	'Configuring git',
 	'Cloning repo',
-	'Installing dependencies',
 	'Starting otto',
 ];
 
 function currentRunLogs(logText: string): string {
-	const lastEntrypoint = logText.lastIndexOf('[1/6]');
+	const lastEntrypoint = logText.lastIndexOf('[1/5]');
 	return lastEntrypoint >= 0 ? logText.slice(lastEntrypoint) : logText;
 }
 
 function parseStep(runLogs: string): number {
 	for (let i = STEPS.length - 1; i >= 0; i--) {
-		const stepTag = `[${i + 1}/6]`;
+		const stepTag = `[${i + 1}/5]`;
 		const idx = runLogs.lastIndexOf(stepTag);
 		if (idx !== -1) {
 			const afterTag = runLogs.slice(idx, idx + 50);

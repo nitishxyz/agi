@@ -76,7 +76,6 @@ export function AddProject() {
 				status: 'stopped',
 				image: 'oven/bun:1-debian',
 				devPorts: 'auto',
-				postClone: 'bun install',
 				gitName:
 					sshMode === 'personal' ? hostGitName || team.gitName : team.gitName,
 				gitEmail:
@@ -98,7 +97,6 @@ export function AddProject() {
 					gitEmail: team.gitEmail,
 					image: project.image!,
 					devPorts: project.devPorts!,
-					postClone: project.postClone!,
 				};
 				await tauri.saveOttoFile(config, `${name}.otto`);
 			}

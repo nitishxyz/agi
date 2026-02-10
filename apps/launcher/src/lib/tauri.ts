@@ -42,7 +42,6 @@ export interface ProjectState {
 	status: string;
 	image?: string;
 	devPorts?: string;
-	postClone?: string;
 	gitName?: string;
 	gitEmail?: string;
 	sshMode?: 'team' | 'personal';
@@ -65,7 +64,6 @@ export interface OttoTeamConfig {
 	gitEmail: string;
 	image: string;
 	devPorts: string;
-	postClone: string;
 }
 
 export interface KeyPair {

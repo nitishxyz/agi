@@ -29,8 +29,6 @@ pub struct ProjectState {
     #[serde(default)]
     pub dev_ports: String,
     #[serde(default)]
-    pub post_clone: String,
-    #[serde(default)]
     pub git_name: String,
     #[serde(default)]
     pub git_email: String,
@@ -61,7 +59,6 @@ pub struct OttoTeamConfig {
     pub git_email: String,
     pub image: String,
     pub dev_ports: String,
-    pub post_clone: String,
 }
 
 fn config_dir() -> PathBuf {
