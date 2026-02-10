@@ -1,8 +1,6 @@
 import { providerBasePrompt } from '@ottocode/sdk';
 import { debugLog } from '../debug/index.ts';
-import {
-	composeEnvironmentAndInstructions,
-} from '../context/environment.ts';
+import { composeEnvironmentAndInstructions } from '../context/environment.ts';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import BASE_PROMPT from '@ottocode/sdk/prompts/base.txt' with { type: 'text' };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
