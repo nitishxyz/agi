@@ -14,6 +14,22 @@
 			"import": "./src/runtime/agent-registry.ts",
 			"types": "./src/runtime/agent-registry.ts"
 		},
+		"./runtime/ask/service": {
+			"import": "./src/runtime/ask/service.ts",
+			"types": "./src/runtime/ask/service.ts"
+		},
+		"./runtime/agent/runner": {
+			"import": "./src/runtime/agent/runner.ts",
+			"types": "./src/runtime/agent/runner.ts"
+		},
+		"./events/bus": {
+			"import": "./src/events/bus.ts",
+			"types": "./src/events/bus.ts"
+		},
+		"./events/types": {
+			"import": "./src/events/types.ts",
+			"types": "./src/events/types.ts"
+		},
 		"./runtime/ask-service.ts": {
 			"import": "./src/runtime/ask-service.ts",
 			"types": "./src/runtime/ask-service.ts"

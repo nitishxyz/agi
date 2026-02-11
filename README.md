@@ -1,6 +1,6 @@
 # otto
 
-AI-powered coding assistant. CLI, desktop app, embeddable server — one tool, multiple interfaces.
+AI-powered coding assistant. CLI, desktop app, embeddable server, ACP agent — one tool, multiple interfaces.
 
 [![Version](https://img.shields.io/badge/version-0.1.161-blue)](https://github.com/nitishxyz/otto)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
