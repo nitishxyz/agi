@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useServer } from '../../hooks/useServer';
-import { useFullscreen } from '../../hooks/useFullscreen';
 import { usePlatform } from '../../hooks/usePlatform';
 import { handleTitleBarDrag } from '../../utils/title-bar';
 import { tauriOnboarding } from '../../lib/tauri-onboarding';
@@ -19,7 +18,6 @@ interface NativeOnboardingProps {
 export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 	const [serverReady, setServerReady] = useState(false);
 	const [homePath, setHomePath] = useState<string | null>(null);
-	const isFullscreen = useFullscreen();
 	const platform = usePlatform();
 	const currentStep = useOnboardingStore((s) => s.currentStep);
 	const {
@@ -184,17 +182,15 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 	return (
 		<>
 			<div
-				className="shrink-0 flex items-center justify-between px-4 h-10 border-b border-border cursor-default select-none fixed top-0 left-0 right-0 z-[10000] bg-background"
+				className="shrink-0 flex items-center px-4 h-10 border-b border-border cursor-default select-none fixed top-0 left-0 right-0 z-[10000] bg-background relative"
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
 				role="toolbar"
 			>
-				<div
-					className={`flex items-center gap-2 ${isFullscreen || platform === 'linux' ? '' : 'ml-16'}`}
-				>
+				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
 					<span className="font-semibold text-foreground">otto</span>
 				</div>
-				<div className="flex items-center gap-2 text-sm text-muted-foreground">
+				<div className="flex items-center gap-2 text-sm text-muted-foreground ml-auto">
 					<span
 						className={`w-2 h-2 rounded-full ${currentStep === 'wallet' ? 'bg-green-500' : 'bg-blue-500'}`}
 					/>

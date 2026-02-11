@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useProjects } from '../hooks/useProjects';
 import { useGitHub } from '../hooks/useGitHub';
-import { useFullscreen } from '../hooks/useFullscreen';
 import { usePlatform } from '../hooks/usePlatform';
 import { handleTitleBarDrag } from '../utils/title-bar';
 import { tauriBridge, type Project } from '../lib/tauri-bridge';
@@ -39,7 +38,6 @@ export function ProjectPicker({
 	const [showOAuthModal, setShowOAuthModal] = useState(false);
 	const [cloning, setCloning] = useState(false);
 	const [cloningRepo, setCloningRepo] = useState<string | null>(null);
-	const isFullscreen = useFullscreen();
 	const platform = usePlatform();
 	const { theme, toggleTheme } = useDesktopTheme();
 	const pageRef = useRef(1);
@@ -134,17 +132,15 @@ export function ProjectPicker({
 	return (
 		<div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
 			<div
-				className="shrink-0 flex items-center justify-between px-4 h-10 border-b border-border cursor-default select-none"
+				className="shrink-0 flex items-center px-4 h-10 border-b border-border cursor-default select-none relative"
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
 				role="toolbar"
 			>
-				<div
-					className={`flex items-center gap-2 ${isFullscreen || platform === 'linux' ? '' : 'ml-[68px]'}`}
-				>
+				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
 					<OttoWordmark height={13} className="text-foreground" />
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-2 ml-auto">
 					{isAuthenticated && (
 						<div className="flex items-center gap-3 mr-2">
 							{user?.avatar_url && (

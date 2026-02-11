@@ -3,7 +3,6 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { Sun, Moon, ArrowDownToLine, RotateCw } from 'lucide-react';
 import { useServer } from '../hooks/useServer';
 import { useUpdate } from '../hooks/useUpdate';
-import { useFullscreen } from '../hooks/useFullscreen';
 import { usePlatform } from '../hooks/usePlatform';
 import { handleTitleBarDrag } from '../utils/title-bar';
 import type { Project } from '../lib/tauri-bridge';
@@ -23,7 +22,6 @@ export function Workspace({
 	const startedRef = useRef(false);
 	const iframeRef = useRef<HTMLIFrameElement>(null);
 	const [iframeLoaded, setIframeLoaded] = useState(false);
-	const isFullscreen = useFullscreen();
 	const platform = usePlatform();
 	const { theme, toggleTheme } = useDesktopTheme();
 	const {
@@ -104,7 +102,7 @@ export function Workspace({
 	return (
 		<div className="h-screen flex flex-col bg-background">
 			<div
-				className="flex items-center gap-2 px-4 h-10 border-b border-border cursor-default select-none bg-background"
+				className="flex items-center gap-2 px-4 h-10 border-b border-border cursor-default select-none bg-background relative"
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
 				role="toolbar"
@@ -112,18 +110,16 @@ export function Workspace({
 				<button
 					type="button"
 					onClick={handleBack}
-					className={`w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ${isFullscreen || platform === 'linux' ? '' : 'ml-[60px]'}`}
+					className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
 				>
 					←
 				</button>
-				<div className="flex-1 min-w-0 flex items-center gap-2">
+				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
 					<span className="font-medium text-foreground truncate">
 						{project.name}
 					</span>
-					<span className="text-xs text-muted-foreground truncate">
-						{project.path}
-					</span>
 				</div>
+				<div className="flex-1" />
 				{available &&
 					(downloaded ? (
 						<button

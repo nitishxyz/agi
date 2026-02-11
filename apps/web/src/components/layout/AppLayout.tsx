@@ -31,6 +31,7 @@ interface AppLayoutProps {
 	onToggleTheme: () => void;
 	sessionId?: string;
 	onNavigateToSession?: (sessionId: string) => void;
+	onFixWithAI?: (errorMessage: string) => void;
 }
 
 export const AppLayout = memo(function AppLayout({
@@ -41,6 +42,7 @@ export const AppLayout = memo(function AppLayout({
 	onToggleTheme,
 	sessionId,
 	onNavigateToSession,
+	onFixWithAI,
 }: AppLayoutProps) {
 	return (
 		<div className="h-screen flex bg-background touch-manipulation border-t border-border/50">
@@ -58,7 +60,7 @@ export const AppLayout = memo(function AppLayout({
 
 					{/* Right sidebar - Git (hidden on mobile) */}
 					<div className="hidden md:flex">
-						<GitSidebar />
+					<GitSidebar onFixWithAI={onFixWithAI} />
 						<SessionFilesSidebar sessionId={sessionId} />
 						<ResearchSidebar
 							parentSessionId={sessionId ?? null}

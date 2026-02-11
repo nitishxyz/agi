@@ -114,3 +114,15 @@ export function usePushCommits() {
 		},
 	});
 }
+
+export function usePullChanges() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: () => apiClient.pullChanges(),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['git', 'status'] });
+			queryClient.invalidateQueries({ queryKey: ['git', 'branch'] });
+		},
+	});
+}

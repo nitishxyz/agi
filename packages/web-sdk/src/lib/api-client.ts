@@ -17,6 +17,7 @@ import {
 	commitChanges as apiCommitChanges,
 	generateCommitMessage as apiGenerateCommitMessage,
 	pushCommits as apiPushCommits,
+	pullChanges as apiPullChanges,
 	type Session as ApiSession,
 	type Message as ApiMessage,
 	type CreateSessionData,
@@ -36,6 +37,7 @@ import type {
 	GitGenerateCommitMessageResponse,
 	GitBranchInfo,
 	GitPushResponse,
+	GitPullResponse,
 	UpdateSessionRequest,
 	AllModelsResponse,
 	SessionFilesResponse,
@@ -546,6 +548,18 @@ class ApiClient {
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitPushResponse;
+	}
+
+	async pullChanges(): Promise<GitPullResponse> {
+		const response = await apiPullChanges({
+			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch between client and server
+			body: {} as any,
+		});
+		if (response.error) {
+			throw new Error(extractErrorMessage(response.error));
+		}
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
+		return (response.data as any)?.data as GitPullResponse;
 	}
 
 	async listFiles() {

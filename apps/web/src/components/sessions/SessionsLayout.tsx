@@ -16,6 +16,7 @@ import {
 	useKeyboardShortcuts,
 } from '@ottocode/web-sdk/hooks';
 import { useGitStore, useConfirmationStore } from '@ottocode/web-sdk/stores';
+import { apiClient } from '@ottocode/web-sdk/lib';
 import {
 	useGitStatus,
 	useStageFiles,
@@ -89,6 +90,30 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 			focusInput();
 		},
 		[navigate, focusInput],
+	);
+
+	const handleFixWithAI = useCallback(
+		async (errorMessage: string) => {
+			try {
+				const session = await createSession.mutateAsync({
+					agent: config?.defaults.agent || 'general',
+					provider: config?.defaults.provider,
+					model: config?.defaults.model,
+					title: 'Fix Git Error',
+				});
+				navigate({
+					to: '/sessions/$sessionId',
+					params: { sessionId: session.id },
+					replace: false,
+				});
+				await apiClient.sendMessage(session.id, {
+					content: errorMessage,
+				});
+			} catch (error) {
+				console.error('Failed to create fix session:', error);
+			}
+		},
+		[createSession, config, navigate],
 	);
 
 	const gitFiles = useMemo(() => {
@@ -191,6 +216,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 				onToggleTheme={toggleTheme}
 				sessionId={sessionId}
 				onNavigateToSession={handleSelectSession}
+				onFixWithAI={handleFixWithAI}
 				sidebar={
 					<SessionListContainer
 						activeSessionId={sessionId}

@@ -216,6 +216,12 @@ export interface GitPushResponse {
 	output: string;
 }
 
+export interface GitPullResponse {
+	output: string;
+	branch: string;
+	rebase: boolean;
+}
+
 export interface SessionFileOperation {
 	path: string;
 	operation: 'write' | 'patch' | 'edit' | 'create';
