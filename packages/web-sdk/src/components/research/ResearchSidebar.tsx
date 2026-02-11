@@ -21,7 +21,7 @@ import {
 	useExportToSession,
 	type ResearchSession,
 } from '../../hooks/useResearch';
-import { useUpdateSession } from '../../hooks/useSessions';
+import { useSession, useUpdateSession } from '../../hooks/useSessions';
 import { useAllModels } from '../../hooks/useConfig';
 import { useMessages } from '../../hooks/useMessages';
 import { useSessionStream } from '../../hooks/useSessionStream';
@@ -139,7 +139,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 
 	useEffect(() => {
 		adjustTextareaHeight();
-	}, [adjustTextareaHeight]);
+	}, [adjustTextareaHeight, inputValue]);
 
 	const handleCreateNew = useCallback(async () => {
 		if (!parentSessionId) return;
@@ -298,7 +298,10 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 
 	const handleModelChange = useCallback(
 		async (newProvider: string, newModel: string) => {
-			if (!activeResearchSessionId) return;
+			if (!activeResearchSessionId) {
+				setShowModelSelector(false);
+				return;
+			}
 			try {
 				await updateSession.mutateAsync({
 					provider: newProvider,
@@ -312,19 +315,23 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 		[activeResearchSessionId, updateSession],
 	);
 
+	const parentSession = useSession(parentSessionId ?? '');
+
 	if (!isExpanded) return null;
 
 	const sessions = researchData?.sessions ?? [];
 	const activeSession = sessions.find((s) => s.id === activeResearchSessionId);
 	const messages = messagesData ?? [];
 
+	const effectiveProvider = activeSession?.provider ?? parentSession?.provider ?? '';
+	const effectiveModel = activeSession?.model ?? parentSession?.model ?? '';
+
 	const currentProviderLabel =
-		allModels?.[activeSession?.provider ?? '']?.label ??
-		activeSession?.provider;
+		allModels?.[effectiveProvider]?.label ?? effectiveProvider;
 	const currentModelLabel =
-		allModels?.[activeSession?.provider ?? '']?.models.find(
-			(m) => m.id === activeSession?.model,
-		)?.label ?? activeSession?.model;
+		allModels?.[effectiveProvider]?.models.find(
+			(m) => m.id === effectiveModel,
+		)?.label ?? effectiveModel;
 
 	return (
 		<div
@@ -615,7 +622,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 					<span className="text-[10px]">
 						{sessions.length} research session{sessions.length !== 1 ? 's' : ''}
 					</span>
-					{activeSession && (
+				{(currentProviderLabel || currentModelLabel) && (
 						<button
 							type="button"
 							onClick={() => setShowModelSelector(true)}
@@ -636,10 +643,10 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 					title="Select Model for Research"
 					maxWidth="md"
 				>
-					{activeSession && (
+				{(effectiveProvider || effectiveModel) && (
 						<UnifiedModelSelector
-							provider={activeSession.provider}
-							model={activeSession.model}
+						provider={effectiveProvider}
+						model={effectiveModel}
 							onChange={handleModelChange}
 						/>
 					)}
