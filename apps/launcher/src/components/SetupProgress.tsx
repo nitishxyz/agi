@@ -368,14 +368,14 @@ export function SetupProgress() {
 							Otto is running at http://localhost:{project!.webPort}
 						</div>
 					)}
-				{(containerRunning || settingUp) && !done && (
+					{(containerRunning || settingUp) && !done && (
 						<div className="text-xs text-yellow-500">
 							Container is starting up...
 						</div>
 					)}
 
 					<div className="flex flex-wrap gap-2">
-					{containerRunning || settingUp ? (
+						{containerRunning || settingUp ? (
 							<>
 								<button
 									onClick={() =>
