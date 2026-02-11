@@ -73,7 +73,10 @@ export class SSEClient {
 			}
 		} catch (error) {
 			if (error instanceof Error && error.name === 'AbortError') {
-				// Connection was intentionally aborted, don't log
+			} else if (
+				error instanceof TypeError &&
+				error.message === 'Load failed'
+			) {
 			} else {
 				console.error('[SSE] Connection error:', error);
 			}
