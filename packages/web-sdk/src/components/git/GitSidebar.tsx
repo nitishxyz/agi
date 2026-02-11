@@ -61,7 +61,7 @@ export const GitSidebar = memo(function GitSidebar() {
 
 	return (
 		<div
-			className="border-l border-border bg-background flex h-full"
+			className="border-l border-border bg-background flex h-full relative"
 			style={{ width: panelWidth }}
 		>
 			<ResizeHandle
@@ -71,9 +71,9 @@ export const GitSidebar = memo(function GitSidebar() {
 				maxWidth={MAX_WIDTH}
 				defaultWidth={DEFAULT_WIDTH}
 			/>
-			<div className="flex-1 flex flex-col h-full min-w-0">
+			<div className="flex-1 flex flex-col h-full min-w-0 w-full">
 				{/* Header */}
-				<div className="h-14 border-b border-border px-4 flex items-center justify-between">
+		<div className="h-14 border-b border-border px-3 flex items-center justify-between">
 					<div className="flex items-center gap-2 flex-1">
 						<GitBranch className="w-4 h-4 text-muted-foreground" />
 						<span className="font-medium text-foreground">
@@ -102,7 +102,7 @@ export const GitSidebar = memo(function GitSidebar() {
 							Loading git status...
 						</div>
 					) : error ? (
-						<div className="p-4 text-sm text-muted-foreground">
+					<div className="p-3 text-sm text-muted-foreground">
 							<div className="flex flex-col gap-2">
 								<span className="text-orange-500">
 									{error instanceof Error
@@ -115,7 +115,7 @@ export const GitSidebar = memo(function GitSidebar() {
 							</div>
 						</div>
 					) : !status || totalChanges === 0 ? (
-						<div className="p-4 text-sm text-muted-foreground">
+					<div className="p-3 text-sm text-muted-foreground">
 							No changes detected
 						</div>
 					) : (
@@ -125,13 +125,13 @@ export const GitSidebar = memo(function GitSidebar() {
 
 				{/* Push error message */}
 				{pushError && (
-					<div className="px-4 py-2 text-xs text-orange-500 border-t border-border bg-orange-50 dark:bg-orange-950/20">
+		<div className="px-3 py-2 text-xs text-orange-500 border-t border-border bg-orange-50 dark:bg-orange-950/20">
 						{pushError}
 					</div>
 				)}
 
 				{/* Footer with branch info and buttons */}
-				<div className="h-12 px-4 border-t border-border text-xs text-muted-foreground flex items-center justify-between gap-2">
+	<div className="h-12 px-3 border-t border-border text-xs text-muted-foreground flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2 min-w-0 flex-1">
 						<GitBranch className="w-3 h-3 flex-shrink-0" />
 						{status?.branch && (

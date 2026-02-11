@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { useGitStore } from './gitStore';
 import { useSessionFilesStore } from './sessionFilesStore';
 import { useResearchStore } from './researchStore';
-import { useTerminalStore } from './terminalStore';
 import { useTunnelStore } from './tunnelStore';
 
 interface SettingsState {
@@ -22,7 +21,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 				useGitStore.getState().collapseSidebar();
 				useSessionFilesStore.getState().collapseSidebar();
 				useResearchStore.getState().collapseSidebar();
-				useTerminalStore.getState().collapseSidebar();
 				useTunnelStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };

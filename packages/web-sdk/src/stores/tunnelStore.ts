@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { useGitStore } from './gitStore';
-import { useTerminalStore } from './terminalStore';
 import { useSessionFilesStore } from './sessionFilesStore';
 import { useSettingsStore } from './settingsStore';
 import { useResearchStore } from './researchStore';
@@ -39,7 +38,6 @@ export const useTunnelStore = create<TunnelState>((set) => ({
 			const newExpanded = !state.isExpanded;
 			if (newExpanded) {
 				useGitStore.getState().collapseSidebar();
-				useTerminalStore.getState().collapseSidebar();
 				useSessionFilesStore.getState().collapseSidebar();
 				useSettingsStore.getState().collapseSidebar();
 				useResearchStore.getState().collapseSidebar();
@@ -50,7 +48,6 @@ export const useTunnelStore = create<TunnelState>((set) => ({
 
 	expandSidebar: () => {
 		useGitStore.getState().collapseSidebar();
-		useTerminalStore.getState().collapseSidebar();
 		useSessionFilesStore.getState().collapseSidebar();
 		useSettingsStore.getState().collapseSidebar();
 		useResearchStore.getState().collapseSidebar();

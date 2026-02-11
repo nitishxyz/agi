@@ -255,7 +255,7 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 
 	return (
 		<div
-			className="border-l border-border bg-background flex h-full"
+			className="border-l border-border bg-background flex h-full relative"
 			style={{ width: panelWidth }}
 		>
 			<ResizeHandle
@@ -266,7 +266,7 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 				defaultWidth={SETTINGS_DEFAULT_WIDTH}
 			/>
 			<div className="flex-1 flex flex-col h-full min-w-0">
-				<div className="h-14 border-b border-border px-4 flex items-center justify-between shrink-0">
+			<div className="h-14 border-b border-border px-3 flex items-center justify-between shrink-0">
 					<div className="flex items-center gap-2">
 						<Settings className="w-4 h-4" />
 						<span className="font-medium">Settings</span>

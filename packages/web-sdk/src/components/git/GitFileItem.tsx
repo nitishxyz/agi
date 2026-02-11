@@ -178,7 +178,7 @@ export function GitFileItem({
 	return (
 		<button
 			type="button"
-			className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 cursor-pointer group transition-colors w-full text-left"
+	className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/50 cursor-pointer group transition-colors w-full text-left h-9"
 			onClick={handleClick}
 		>
 			<input
@@ -227,35 +227,33 @@ export function GitFileItem({
 			) : null}
 
 			{/* Delete button for untracked files */}
+		<div className="w-7 flex items-center justify-center flex-shrink-0">
 			{!staged && file.status === 'untracked' && (
 				<button
 					type="button"
 					onClick={handleDelete}
-					className="p-1.5 hover:bg-destructive/10 rounded opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+					className="p-1 hover:bg-destructive/10 rounded opacity-0 group-hover:opacity-100 transition-opacity"
 					title="Delete untracked file"
 					aria-label={`Delete ${file.path}`}
 				>
-					<Trash2 className="w-3.5 h-3.5 text-destructive" />
+					<Trash2 className="w-4 h-4 text-destructive" />
 				</button>
 			)}
-
-			{/* Restore button for modified/deleted files */}
 			{!staged && file.status !== 'untracked' && file.status !== 'added' && (
 				<button
 					type="button"
 					onClick={handleRestore}
-					className="p-1.5 hover:bg-destructive/10 rounded opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+					className="p-1 hover:bg-destructive/10 rounded opacity-0 group-hover:opacity-100 transition-opacity"
 					title="Restore file to HEAD (Shift+R)"
 					aria-label={`Restore ${file.path}`}
 				>
-					<RotateCcw className="w-3.5 h-3.5 text-destructive" />
+					<RotateCcw className="w-4 h-4 text-destructive" />
 				</button>
 			)}
-
-			{/* Staged indicator */}
 			{staged && !showModifiedIndicator && (
-				<Check className="w-4 h-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+				<Check className="w-4 h-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
 			)}
+		</div>
 		</button>
 	);
 }
