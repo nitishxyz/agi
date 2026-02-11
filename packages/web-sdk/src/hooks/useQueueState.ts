@@ -15,6 +15,7 @@ const defaultQueueState: QueueState = {
 export function useQueueState(sessionId: string | undefined): QueueState {
 	const { data } = useQuery<QueueState>({
 		queryKey: ['queueState', sessionId],
+		queryFn: () => defaultQueueState,
 		enabled: !!sessionId,
 		initialData: defaultQueueState,
 		staleTime: Infinity,
