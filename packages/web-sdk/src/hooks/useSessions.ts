@@ -9,6 +9,7 @@ import type {
 	CreateSessionRequest,
 	UpdateSessionRequest,
 	Session,
+	SessionsPage,
 } from '../types/api';
 
 const SESSIONS_PAGE_SIZE = 50;
@@ -59,7 +60,22 @@ export function useCreateSession() {
 
 	return useMutation({
 		mutationFn: (data: CreateSessionRequest) => apiClient.createSession(data),
-		onSuccess: () => {
+		onSuccess: (newSession) => {
+			queryClient.setQueryData<{ pages: SessionsPage[]; pageParams: number[] }>(
+				sessionsQueryKey,
+				(old) => {
+					if (!old) return old;
+					const firstPage = old.pages[0];
+					if (!firstPage) return old;
+					return {
+						...old,
+						pages: [
+							{ ...firstPage, items: [newSession, ...firstPage.items] },
+							...old.pages.slice(1),
+						],
+					};
+				},
+			);
 			queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
 		},
 	});
