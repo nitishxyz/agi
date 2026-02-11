@@ -33,7 +33,7 @@ function App() {
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
 			>
-				<span className="text-xs font-semibold tracking-wider text-muted-foreground ml-16">
+			<span className="text-xs font-semibold tracking-wider text-muted-foreground w-full text-center">
 					otto launcher
 				</span>
 			</div>
