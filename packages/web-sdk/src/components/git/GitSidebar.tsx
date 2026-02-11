@@ -219,7 +219,11 @@ export const GitSidebar = memo(function GitSidebar({
 						size="sm"
 						onClick={handlePull}
 						disabled={!canPull || isActing}
-						title={canPull ? `Pull ${status?.behind} commit(s) from remote` : 'Nothing to pull'}
+						title={
+							canPull
+								? `Pull ${status?.behind} commit(s) from remote`
+								: 'Nothing to pull'
+						}
 						className="flex-1 h-8 text-xs gap-1.5"
 					>
 						<Download
@@ -235,7 +239,11 @@ export const GitSidebar = memo(function GitSidebar({
 						size="sm"
 						onClick={handlePush}
 						disabled={!canPush || isActing}
-						title={canPush ? `Push ${status?.ahead} commit(s) to remote` : 'Nothing to push'}
+						title={
+							canPush
+								? `Push ${status?.ahead} commit(s) to remote`
+								: 'Nothing to push'
+						}
 						className="flex-1 h-8 text-xs gap-1.5"
 					>
 						<Upload

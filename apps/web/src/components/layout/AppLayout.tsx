@@ -60,7 +60,7 @@ export const AppLayout = memo(function AppLayout({
 
 					{/* Right sidebar - Git (hidden on mobile) */}
 					<div className="hidden md:flex">
-					<GitSidebar onFixWithAI={onFixWithAI} />
+						<GitSidebar onFixWithAI={onFixWithAI} />
 						<SessionFilesSidebar sessionId={sessionId} />
 						<ResearchSidebar
 							parentSessionId={sessionId ?? null}

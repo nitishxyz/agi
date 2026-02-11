@@ -323,15 +323,15 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 	const activeSession = sessions.find((s) => s.id === activeResearchSessionId);
 	const messages = messagesData ?? [];
 
-	const effectiveProvider = activeSession?.provider ?? parentSession?.provider ?? '';
+	const effectiveProvider =
+		activeSession?.provider ?? parentSession?.provider ?? '';
 	const effectiveModel = activeSession?.model ?? parentSession?.model ?? '';
 
 	const currentProviderLabel =
 		allModels?.[effectiveProvider]?.label ?? effectiveProvider;
 	const currentModelLabel =
-		allModels?.[effectiveProvider]?.models.find(
-			(m) => m.id === effectiveModel,
-		)?.label ?? effectiveModel;
+		allModels?.[effectiveProvider]?.models.find((m) => m.id === effectiveModel)
+			?.label ?? effectiveModel;
 
 	return (
 		<div
@@ -622,7 +622,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 					<span className="text-[10px]">
 						{sessions.length} research session{sessions.length !== 1 ? 's' : ''}
 					</span>
-				{(currentProviderLabel || currentModelLabel) && (
+					{(currentProviderLabel || currentModelLabel) && (
 						<button
 							type="button"
 							onClick={() => setShowModelSelector(true)}
@@ -643,10 +643,10 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 					title="Select Model for Research"
 					maxWidth="md"
 				>
-				{(effectiveProvider || effectiveModel) && (
+					{(effectiveProvider || effectiveModel) && (
 						<UnifiedModelSelector
-						provider={effectiveProvider}
-						model={effectiveModel}
+							provider={effectiveProvider}
+							model={effectiveModel}
 							onChange={handleModelChange}
 						/>
 					)}

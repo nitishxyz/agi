@@ -229,7 +229,7 @@ export const UserMessageGroup = memo(
 									</div>
 								)}
 								{hasContent && (
-								<div className="prose prose-invert prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_*]:[word-break:break-word] [&_*]:overflow-wrap-anywhere whitespace-pre-wrap">
+									<div className="prose prose-invert prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_*]:[word-break:break-word] [&_*]:overflow-wrap-anywhere whitespace-pre-wrap">
 										<ReactMarkdown
 											remarkPlugins={[remarkGfm]}
 											components={{
@@ -261,7 +261,7 @@ export const UserMessageGroup = memo(
 												),
 											}}
 										>
-										{content.replace(/\n/g, '  \n')}
+											{content.replace(/\n/g, '  \n')}
 										</ReactMarkdown>
 									</div>
 								)}

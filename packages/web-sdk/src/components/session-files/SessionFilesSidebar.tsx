@@ -154,7 +154,7 @@ export const SessionFilesSidebar = memo(function SessionFilesSidebar({
 				defaultWidth={DEFAULT_WIDTH}
 			/>
 			<div className="flex-1 flex flex-col h-full min-w-0">
-			<div className="h-14 border-b border-border px-3 flex items-center justify-between shrink-0">
+				<div className="h-14 border-b border-border px-3 flex items-center justify-between shrink-0">
 					<div className="flex items-center gap-2">
 						<FilePen className="w-4 h-4 text-muted-foreground" />
 						<span className="font-medium">Session Files</span>

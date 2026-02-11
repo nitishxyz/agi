@@ -115,7 +115,7 @@ export function GitFileList({ status }: GitFileListProps) {
 
 			{hasStaged && (
 				<div className="border-b border-border">
-						<div className="px-3 py-2 bg-muted/50 flex items-center justify-between">
+					<div className="px-3 py-2 bg-muted/50 flex items-center justify-between">
 						<span className="text-xs font-semibold text-foreground uppercase">
 							Staged Changes ({status.staged.length})
 						</span>
@@ -168,7 +168,7 @@ export function GitFileList({ status }: GitFileListProps) {
 
 			{hasUnstaged && (
 				<div>
-						<div className="px-3 py-2 bg-muted/50 flex items-center justify-between">
+					<div className="px-3 py-2 bg-muted/50 flex items-center justify-between">
 						<span className="text-xs font-semibold text-foreground uppercase">
 							Changes ({status.unstaged.length + status.untracked.length})
 						</span>
