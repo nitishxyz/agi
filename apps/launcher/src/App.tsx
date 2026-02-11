@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { useState } from 'react';
+import { getVersion } from '@tauri-apps/api/app';
 import { useStore } from './store';
 import { Welcome } from './components/Welcome';
 import { TeamSetup } from './components/TeamSetup';
@@ -18,6 +20,11 @@ function App() {
 		init();
 	}, [init]);
 
+	const [appVersion, setAppVersion] = useState<string | null>(null);
+	useEffect(() => {
+		getVersion().then(setAppVersion).catch(() => {});
+	}, []);
+
 	if (view === 'loading') {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
@@ -33,9 +40,12 @@ function App() {
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
 			>
-				<span className="text-xs font-semibold tracking-wider text-muted-foreground w-full text-center">
+			<span className="text-xs font-semibold tracking-wider text-muted-foreground flex-1 text-center">
 					otto launcher
 				</span>
+			{appVersion && (
+				<span className="text-[10px] text-muted-foreground/50">v{appVersion}</span>
+			)}
 			</div>
 
 			{!dockerOk && (
