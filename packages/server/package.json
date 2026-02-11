@@ -30,6 +30,10 @@
 			"import": "./src/events/types.ts",
 			"types": "./src/events/types.ts"
 		},
+		"./runtime/tools/approval": {
+			"import": "./src/runtime/tools/approval.ts",
+			"types": "./src/runtime/tools/approval.ts"
+		},
 		"./runtime/ask-service.ts": {
 			"import": "./src/runtime/ask-service.ts",
 			"types": "./src/runtime/ask-service.ts"

@@ -19,12 +19,12 @@ import type {
 	ToolCallContent,
 } from "@agentclientprotocol/sdk/schema/types.gen";
 import { handleAskRequest } from "@ottocode/server/runtime/ask/service";
-import { subscribe, publish } from "@ottocode/server/events/bus";
+import { subscribe } from "@ottocode/server/events/bus";
 import {
 	abortMessage,
 	getRunnerState,
 } from "@ottocode/server/runtime/agent/runner";
-import { loadConfig } from "@ottocode/sdk";
+import { resolveApproval } from "@ottocode/server/runtime/tools/approval";
 import { getDb } from "@ottocode/database";
 import { randomUUID } from "node:crypto";
 import type { OttoEvent } from "@ottocode/server/events/types";
@@ -314,11 +314,7 @@ export class OttoAcpAgent implements Agent {
 						response.outcome?.outcome === "selected" &&
 						response.outcome.optionId === "allow";
 
-					publish({
-						type: "tool.approval.resolved",
-						sessionId: session.ottoSessionId,
-						payload: { callId, approved },
-					});
+				resolveApproval(callId, approved);
 					return;
 				}
 
