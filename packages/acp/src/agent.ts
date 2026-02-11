@@ -29,6 +29,7 @@ import { getDb } from "@ottocode/database";
 import { randomUUID } from "node:crypto";
 import type { OttoEvent } from "@ottocode/server/events/types";
 import * as path from "node:path";
+import * as fs from "node:fs";
 
 type AcpSession = {
 	sessionId: string;
@@ -455,6 +456,10 @@ export class OttoAcpAgent implements Agent {
 				...(locations.length > 0 ? { locations } : {}),
 			} as SessionNotification["update"],
 		});
+
+		if (!hasError) {
+			await this.notifyEditorOfFileChanges(name, args, result, acpSessionId, session);
+		}
 	}
 
 	private buildToolResultContent(
@@ -612,6 +617,71 @@ export class OttoAcpAgent implements Agent {
 		}
 
 		return [];
+	}
+
+	private async notifyEditorOfFileChanges(
+		name: string,
+		args: Record<string, unknown> | undefined,
+		result: Record<string, unknown> | string | undefined,
+		acpSessionId: string,
+		session: AcpSession,
+	): Promise<void> {
+		if (!this.clientCapabilities?.fs?.writeTextFile) return;
+
+		const isWriteTool = ["write", "edit", "multiedit", "apply_patch"].includes(name);
+		if (!isWriteTool) return;
+
+		const filePaths = this.getWrittenFilePaths(name, args, result);
+
+		for (const filePath of filePaths) {
+			try {
+				const absPath = path.isAbsolute(filePath)
+					? filePath
+					: path.join(session.cwd, filePath);
+				const fileContent = fs.readFileSync(absPath, "utf-8");
+				await this.client.writeTextFile({
+					sessionId: acpSessionId,
+					path: absPath,
+					content: fileContent,
+				});
+			} catch (err) {
+				console.error("[acp] Failed to notify editor of file write:", filePath, err);
+			}
+		}
+	}
+
+	private getWrittenFilePaths(
+		name: string,
+		args: Record<string, unknown> | undefined,
+		result: Record<string, unknown> | string | undefined,
+	): string[] {
+		const paths: string[] = [];
+
+		if (args?.path && typeof args.path === "string") {
+			paths.push(args.path);
+		} else if (args?.filePath && typeof args.filePath === "string") {
+			paths.push(args.filePath);
+		}
+
+		if (name === "apply_patch" && typeof args?.patch === "string") {
+			paths.push(...extractPathsFromPatch(args.patch));
+		}
+
+		if (typeof result === "object" && result !== null) {
+			const artifact = result.artifact as Record<string, unknown> | undefined;
+			const patchStr = artifact?.patch as string | undefined;
+			if (patchStr) {
+				paths.push(...extractPathsFromPatch(patchStr));
+			}
+			const changes = result.changes as Array<Record<string, unknown>> | undefined;
+			if (Array.isArray(changes)) {
+				for (const c of changes) {
+					if (typeof c.filePath === "string") paths.push(c.filePath);
+				}
+			}
+		}
+
+		return [...new Set(paths)];
 	}
 }
 

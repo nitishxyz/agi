@@ -35,6 +35,7 @@ When the CLI detects the desktop app is installed, running `otto` with no argume
    - Format: PNG with transparency
 
 2. Run the icon generator:
+
    ```bash
    bun run icon
    ```
@@ -60,12 +61,12 @@ For theme-aware tray icons on macOS:
 To dynamically change the tray icon based on theme or state:
 
 ```typescript
-import { TrayIcon } from '@tauri-apps/api/tray';
+import { TrayIcon } from "@tauri-apps/api/tray";
 
 // Get tray instance and update icon
-const tray = await TrayIcon.getById('main');
-await tray?.setIcon('icons/tray-dark.png');  // or tray-light.png
-await tray?.setIconAsTemplate(true);  // Enable template mode
+const tray = await TrayIcon.getById("main");
+await tray?.setIcon("icons/tray-dark.png"); // or tray-light.png
+await tray?.setIconAsTemplate(true); // Enable template mode
 ```
 
 > **Note:** The source `icon.png` is gitignored. Only the generated icons in `src-tauri/icons/` should be committed.

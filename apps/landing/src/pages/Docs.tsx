@@ -17,6 +17,7 @@ import { Sharing } from './docs/Sharing';
 import { SetuOverview } from './docs/SetuOverview';
 import { SetuPayments } from './docs/SetuPayments';
 import { SetuIntegration } from './docs/SetuIntegration';
+import { AcpIntegration } from './docs/AcpIntegration';
 
 const NAV_SECTIONS = [
 	{
@@ -32,6 +33,7 @@ const NAV_SECTIONS = [
 		items: [
 			{ to: '/docs/agents-tools', label: 'Agents & Tools' },
 			{ to: '/docs/sharing', label: 'Session Sharing' },
+			{ to: '/docs/acp', label: 'ACP Integration' },
 		],
 	},
 	{
@@ -136,6 +138,7 @@ export function Docs() {
 							<Route path="embedding" element={<Embedding />} />
 							<Route path="api" element={<ApiReference />} />
 							<Route path="sharing" element={<Sharing />} />
+							<Route path="acp" element={<AcpIntegration />} />
 							<Route path="setu" element={<SetuOverview />} />
 							<Route path="setu/payments" element={<SetuPayments />} />
 							<Route path="setu/integration" element={<SetuIntegration />} />
