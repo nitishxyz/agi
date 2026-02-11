@@ -107,13 +107,15 @@ export function Workspace({
 				data-tauri-drag-region
 				role="toolbar"
 			>
-				<button
+			<div className={`flex items-center gap-2 ${platform === 'macos' ? 'ml-14' : ''}`}>
+			<button
 					type="button"
 					onClick={handleBack}
 					className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
 				>
 					←
 				</button>
+			</div>
 				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
 					<span className="font-medium text-foreground truncate">
 						{project.name}
