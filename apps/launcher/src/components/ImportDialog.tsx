@@ -158,9 +158,7 @@ export function ImportDialog() {
 			</button>
 
 			{!config ? (
-				<div
-					className="border-2 border-dashed border-border rounded-lg p-8 flex flex-col items-center gap-3 hover:border-muted-foreground/40 transition-colors"
-				>
+				<div className="border-2 border-dashed border-border rounded-lg p-8 flex flex-col items-center gap-3 hover:border-muted-foreground/40 transition-colors">
 					<Upload size={24} className="text-muted-foreground" />
 					<span className="text-sm text-muted-foreground">
 						Drop .otto file here
