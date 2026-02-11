@@ -17,6 +17,7 @@ import {
 import { BackButton } from './shared';
 
 const STEPS = [
+	'Pulling image',
 	'Installing system packages',
 	'Setting up SSH',
 	'Configuring git',
@@ -30,18 +31,19 @@ function currentRunLogs(logText: string): string {
 }
 
 function parseStep(runLogs: string): number {
-	for (let i = STEPS.length - 1; i >= 0; i--) {
-		const stepTag = `[${i + 1}/5]`;
+	const CONTAINER_STEPS = 5;
+	for (let i = CONTAINER_STEPS - 1; i >= 0; i--) {
+		const stepTag = `[${i + 1}/${CONTAINER_STEPS}]`;
 		const idx = runLogs.lastIndexOf(stepTag);
 		if (idx !== -1) {
 			const afterTag = runLogs.slice(idx, idx + 50);
 			if (afterTag.includes('Done') || afterTag.includes('Starting')) {
-				return Math.min(i + 1, STEPS.length - 1);
+				return Math.min(i + 2, STEPS.length - 1);
 			}
-			return i;
+			return i + 1;
 		}
 	}
-	return 0;
+	return 1;
 }
 
 function isOttoReady(runLogs: string): boolean {
@@ -66,6 +68,7 @@ export function SetupProgress() {
 	const [error, setError] = useState('');
 	const [done, setDone] = useState(false);
 	const [containerRunning, setContainerRunning] = useState(false);
+	const [settingUp, setSettingUp] = useState(false);
 	const [consoleOpen, setConsoleOpen] = useState(true);
 	const [hovered, setHovered] = useState(false);
 	const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -184,9 +187,21 @@ export function SetupProgress() {
 			);
 
 			try {
-				log('Creating new container...');
 				log(`Image: ${project!.image || 'oven/bun:1-debian'}`);
 				log(`Repo: ${project!.repo}`);
+				const imageName = project!.image || 'oven/bun:1-debian';
+				setSettingUp(true);
+				const hasImage = await tauri.imageExists(imageName);
+				if (!hasImage) {
+					setCurrentStep(0);
+					log(`Pulling ${imageName}...`);
+					await tauri.imagePull(imageName);
+					log('Image pulled');
+				} else {
+					log('Image already available');
+				}
+				setCurrentStep(1);
+				log('Creating container...');
 				const id = await tauri.containerCreate({
 					name: project!.containerName,
 					repoUrl: project!.repo,
@@ -204,9 +219,12 @@ export function SetupProgress() {
 				});
 				log(`Container created: ${id.slice(0, 12)}`);
 				log('Polling container logs...');
+				setContainerRunning(true);
+				setSettingUp(false);
 				startPolling();
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : String(err);
+				setSettingUp(false);
 				setError(msg);
 				log(`FATAL: ${msg}`);
 			}
@@ -286,10 +304,10 @@ export function SetupProgress() {
 		? 'error'
 		: done
 			? 'running'
-			: containerRunning
+			: containerRunning || settingUp
 				? 'starting'
 				: 'stopped';
-	const showSteps = !done && containerRunning;
+	const showSteps = !done && (containerRunning || settingUp);
 
 	if (!project) return null;
 
@@ -350,14 +368,14 @@ export function SetupProgress() {
 							Otto is running at http://localhost:{project!.webPort}
 						</div>
 					)}
-					{containerRunning && !done && (
+				{(containerRunning || settingUp) && !done && (
 						<div className="text-xs text-yellow-500">
 							Container is starting up...
 						</div>
 					)}
 
 					<div className="flex flex-wrap gap-2">
-						{containerRunning ? (
+					{containerRunning || settingUp ? (
 							<>
 								<button
 									onClick={() =>

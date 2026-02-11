@@ -20,6 +20,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::docker::docker_available,
+            commands::docker::image_exists,
+            commands::docker::image_pull,
             commands::docker::container_exists,
             commands::docker::container_running,
             commands::docker::container_inspect,

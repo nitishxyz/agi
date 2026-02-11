@@ -112,7 +112,8 @@ export const GitSidebar = memo(function GitSidebar({
 
 	const totalChanges = allFiles.length;
 	const canPush = status && status.ahead > 0;
-	const canPull = status && status.behind > 0;
+	const canPull = !!status;
+	const hasPendingPulls = status && status.behind > 0;
 	const isActing = pushMutation.isPending || pullMutation.isPending;
 
 	return (
@@ -218,11 +219,11 @@ export const GitSidebar = memo(function GitSidebar({
 						variant="secondary"
 						size="sm"
 						onClick={handlePull}
-						disabled={!canPull || isActing}
+						disabled={isActing}
 						title={
-							canPull
+							hasPendingPulls
 								? `Pull ${status?.behind} commit(s) from remote`
-								: 'Nothing to pull'
+								: 'Pull from remote'
 						}
 						className="flex-1 h-8 text-xs gap-1.5"
 					>
@@ -230,7 +231,7 @@ export const GitSidebar = memo(function GitSidebar({
 							className={`w-3.5 h-3.5 ${pullMutation.isPending ? 'animate-pulse' : ''}`}
 						/>
 						Pull
-						{canPull && (
+						{hasPendingPulls && (
 							<span className="text-orange-500">↓{status?.behind}</span>
 						)}
 					</Button>

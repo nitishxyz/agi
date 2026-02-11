@@ -80,6 +80,8 @@ export interface SshKeyInfo {
 
 export const tauri = {
 	dockerAvailable: () => invoke<boolean>('docker_available'),
+	imageExists: (image: string) => invoke<boolean>('image_exists', { image }),
+	imagePull: (image: string) => invoke<string>('image_pull', { image }),
 	containerExists: (name: string) =>
 		invoke<boolean>('container_exists', { name }),
 	containerRunning: (name: string) =>

@@ -330,7 +330,7 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 	}, [fitTerminal]);
 
 	return (
-		<div className="flex h-full flex-col overflow-hidden bg-background">
+		<div className="flex h-full flex-col overflow-hidden bg-background" data-terminal-viewer>
 			<div className="relative flex-1 min-h-0 overflow-hidden">
 				<div ref={containerRef} className="absolute inset-0 bg-background" />
 				<div

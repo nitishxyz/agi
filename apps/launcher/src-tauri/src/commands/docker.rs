@@ -121,13 +121,18 @@ mod unix_impl {
             .request(req)
             .await
             .map_err(|e| format!("Docker request failed: {}", e))?;
+        let status = response.status();
         let body = response
             .into_body()
             .collect()
             .await
             .map_err(|e| format!("Read body failed: {}", e))?
             .to_bytes();
-        Ok(String::from_utf8_lossy(&body).into_owned())
+        let body_str = String::from_utf8_lossy(&body).to_string();
+        if !status.is_success() {
+            return Err(format!("Docker API error ({}): {}", status, body_str));
+        }
+        Ok(body_str)
     }
 
     pub async fn docker_post(path: &str, json_body: Option<serde_json::Value>) -> Result<String, String> {
@@ -289,13 +294,18 @@ mod windows_impl {
             .request(req)
             .await
             .map_err(|e| format!("Docker request failed (is Docker Desktop running with TCP enabled?): {}", e))?;
+        let status = response.status();
         let body = response
             .into_body()
             .collect()
             .await
             .map_err(|e| format!("Read body failed: {}", e))?
             .to_bytes();
-        Ok(String::from_utf8_lossy(&body).into_owned())
+        let body_str = String::from_utf8_lossy(&body).to_string();
+        if !status.is_success() {
+            return Err(format!("Docker API error ({}): {}", status, body_str));
+        }
+        Ok(body_str)
     }
 
     pub async fn docker_post(path: &str, json_body: Option<serde_json::Value>) -> Result<String, String> {
@@ -419,21 +429,31 @@ pub async fn container_inspect(name: String) -> Result<ContainerInfo, String> {
 }
 
 #[tauri::command]
-pub async fn container_create(opts: ContainerCreateOpts) -> Result<String, String> {
-    let _ = docker_post(&format!("/containers/{}/stop?t=2", opts.name), None).await;
-    let _ = docker_delete(&format!("/containers/{}?force=true", opts.name)).await;
+pub async fn image_exists(image: String) -> bool {
+    let encoded = image.replace('/', "%2F").replace(':', "%3A");
+    docker_get(&format!("/images/{}/json", encoded))
+        .await
+        .is_ok()
+}
 
-    let (from_image, tag) = if let Some(pos) = opts.image.rfind(':') {
-        (&opts.image[..pos], &opts.image[pos + 1..])
+#[tauri::command]
+pub async fn image_pull(image: String) -> Result<String, String> {
+    let (from_image, tag) = if let Some(pos) = image.rfind(':') {
+        (&image[..pos], &image[pos + 1..])
     } else {
-        (opts.image.as_str(), "latest")
+        (image.as_str(), "latest")
     };
     let pull_path = format!(
         "/images/create?fromImage={}&tag={}",
         from_image, tag
     );
-    let _ = docker_post(&pull_path, None).await;
+    docker_post(&pull_path, None).await
+}
 
+#[tauri::command]
+pub async fn container_create(opts: ContainerCreateOpts) -> Result<String, String> {
+    let _ = docker_post(&format!("/containers/{}/stop?t=2", opts.name), None).await;
+    let _ = docker_delete(&format!("/containers/{}?force=true", opts.name)).await;
     if let Some(&first_port) = opts.dev_ports.first() {
         for _ in 0..5 {
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;

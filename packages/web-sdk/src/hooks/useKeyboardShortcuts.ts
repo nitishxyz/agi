@@ -63,6 +63,7 @@ export function useKeyboardShortcuts({
 				target.tagName === 'INPUT' ||
 				target.tagName === 'TEXTAREA' ||
 				target.isContentEditable;
+			const isInTerminal = !!target.closest('[data-terminal-viewer]');
 
 			if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
 				e.preventDefault();
@@ -150,7 +151,7 @@ export function useKeyboardShortcuts({
 
 			// Only handle q when not in input and a sidebar is focused
 			if (
-				e.key === 'Escape' ||
+				(e.key === 'Escape' && !isInTerminal) ||
 				(e.key === 'q' &&
 					!isInInput &&
 					(currentFocus === 'sessions' || currentFocus === 'git'))
