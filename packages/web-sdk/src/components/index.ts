@@ -76,6 +76,8 @@ export * from './tunnel/TunnelSidebarToggle';
 // Common Components
 export * from './common/ProviderLogo';
 export * from './common/StatusIndicator';
+export * from './common/UsageRing';
+export * from './common/UsageModal';
 
 // Onboarding Components
 export * from './onboarding';

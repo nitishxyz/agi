@@ -1,0 +1,67 @@
+import { memo } from 'react';
+import type { ProviderUsageResponse } from '../../types/api';
+import { useUsageStore } from '../../stores/usageStore';
+
+interface UsageRingProps {
+	usage: ProviderUsageResponse;
+	provider: string;
+}
+
+const SIZE = 22;
+const STROKE = 2.5;
+const RADIUS = (SIZE - STROKE) / 2;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+function getColor(percent: number): string {
+	if (percent >= 90) return '#ef4444';
+	if (percent >= 70) return '#f59e0b';
+	return '#3b82f6';
+}
+
+export const UsageRing = memo(function UsageRing({
+	usage,
+	provider,
+}: UsageRingProps) {
+	const openModal = useUsageStore((s) => s.openModal);
+	const percent = usage.primaryWindow?.usedPercent ?? 0;
+	const dashOffset = CIRCUMFERENCE - (percent / 100) * CIRCUMFERENCE;
+	const color = getColor(percent);
+
+	return (
+		<button
+			type="button"
+			onClick={() => openModal(provider)}
+			className="relative flex items-center hover:opacity-80 transition-opacity cursor-pointer"
+			title={`Usage: ${Math.round(percent)}% (5h window) — Click for details`}
+		>
+			<svg width={SIZE} height={SIZE} className="-rotate-90">
+				<circle
+					cx={SIZE / 2}
+					cy={SIZE / 2}
+					r={RADIUS}
+					fill="none"
+					stroke="hsl(var(--muted))"
+					strokeWidth={STROKE}
+				/>
+				<circle
+					cx={SIZE / 2}
+					cy={SIZE / 2}
+					r={RADIUS}
+					fill="none"
+					stroke={color}
+					strokeWidth={STROKE}
+					strokeDasharray={CIRCUMFERENCE}
+					strokeDashoffset={dashOffset}
+					strokeLinecap="round"
+					className="transition-all duration-500"
+				/>
+			</svg>
+			<span
+				className="absolute inset-0 flex items-center justify-center rotate-0 font-medium text-muted-foreground"
+				style={{ fontSize: 7 }}
+			>
+				5h
+			</span>
+		</button>
+	);
+});

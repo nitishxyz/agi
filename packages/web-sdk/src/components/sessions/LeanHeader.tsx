@@ -19,6 +19,10 @@ import { useParentSession } from '../../hooks/useBranch';
 import { useShareStatus } from '../../hooks/useShareStatus';
 import { ProviderLogo } from '../common/ProviderLogo';
 import { openUrl } from '../../lib/open-url';
+import { UsageRing } from '../common/UsageRing';
+import { UsageModal } from '../common/UsageModal';
+import { useProviderUsage } from '../../hooks/useProviderUsage';
+import { useAllModels } from '../../hooks/useConfig';
 
 interface LeanHeaderProps {
 	session: Session;
@@ -87,7 +91,15 @@ export function LeanHeader({
 		return 'text-foreground';
 	};
 
+	const { data: allModels } = useAllModels();
+	const providerAuthType = allModels?.[session.provider]?.authType;
+	const { usage, isOAuthProvider } = useProviderUsage(
+		session.provider,
+		providerAuthType,
+	);
+
 	return (
+		<>
 		<div
 			className={`absolute top-0 left-0 right-0 h-14 border-b border-border bg-background/95 backdrop-blur-sm z-10 transition-transform duration-200 ${
 				isVisible ? 'translate-y-0' : '-translate-y-full'
@@ -148,6 +160,10 @@ export function LeanHeader({
 				<div className="flex-shrink-0 flex items-center gap-5 text-muted-foreground">
 					{isGenerating && <StopButton sessionId={session.id} />}
 
+					{isOAuthProvider && usage && (
+						<UsageRing usage={usage} provider={session.provider} />
+					)}
+
 					<div className="flex items-center gap-3">
 						<div
 							className="flex items-center gap-1"
@@ -178,5 +194,7 @@ export function LeanHeader({
 				</div>
 			</div>
 		</div>
+		<UsageModal />
+		</>
 	);
 }

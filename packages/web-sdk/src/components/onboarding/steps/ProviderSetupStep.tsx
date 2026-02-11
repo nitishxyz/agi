@@ -638,7 +638,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 															>
 																<ExternalLink className="w-3.5 h-3.5" />
 																{id === 'anthropic'
-																	? 'Max'
+																	? 'Pro'
 																	: id === 'copilot'
 																		? 'Login'
 																		: 'OAuth'}

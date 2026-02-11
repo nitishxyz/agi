@@ -49,6 +49,7 @@ import type {
 	ShareSessionResponse,
 	SyncSessionResponse,
 	SessionsPage,
+	ProviderUsageResponse,
 } from '../types/api';
 import { API_BASE_URL } from './config';
 
@@ -1234,6 +1235,25 @@ class ApiClient {
 			const errorData = await response
 				.json()
 				.catch(() => ({ error: 'Failed to start Copilot device flow' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async getProviderUsage(provider: string): Promise<ProviderUsageResponse> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/provider-usage/${provider}`,
+			{
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to fetch usage' }));
 			throw new Error(extractErrorMessage(errorData));
 		}
 

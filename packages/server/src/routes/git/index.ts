@@ -5,6 +5,7 @@ import { registerDiffRoute } from './diff.ts';
 import { registerStagingRoutes } from './staging.ts';
 import { registerCommitRoutes } from './commit.ts';
 import { registerPushRoute } from './push.ts';
+import { registerPullRoute } from './pull.ts';
 
 export type { GitFile } from './types.ts';
 
@@ -15,4 +16,5 @@ export function registerGitRoutes(app: Hono) {
 	registerStagingRoutes(app);
 	registerCommitRoutes(app);
 	registerPushRoute(app);
+	registerPullRoute(app);
 }

@@ -46,3 +46,7 @@ export const gitGenerateCommitMessageSchema = z.object({
 export const gitPushSchema = z.object({
 	project: z.string().optional(),
 });
+
+export const gitPullSchema = z.object({
+	project: z.string().optional(),
+});

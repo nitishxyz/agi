@@ -326,3 +326,29 @@ export interface SessionsPage {
 	hasMore: boolean;
 	nextOffset: number | null;
 }
+
+export interface UsageWindow {
+	usedPercent: number;
+	windowSeconds: number;
+	resetsAt: string | null;
+	resetAfterSeconds?: number;
+}
+
+export interface ProviderUsageResponse {
+	provider: 'anthropic' | 'openai';
+	primaryWindow: UsageWindow | null;
+	secondaryWindow: UsageWindow | null;
+	limitReached: boolean;
+	planType?: string | null;
+	sonnetWindow?: { usedPercent: number; resetsAt: string | null } | null;
+	extraUsage?: {
+		is_enabled: boolean;
+		monthly_limit: number;
+		used_credits: number;
+		utilization: number | null;
+	} | null;
+	credits?: {
+		has_credits: boolean;
+		balance: number | null;
+	} | null;
+}
