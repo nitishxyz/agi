@@ -196,7 +196,7 @@ export function SetupProgress() {
 					gitName: project!.gitName || 'Team',
 					gitEmail: project!.gitEmail || 'team@otto.dev',
 					apiPort: project!.apiPort,
-				devPorts: parseDevPorts(project!.devPorts, project!.apiPort),
+					devPorts: parseDevPorts(project!.devPorts, project!.apiPort),
 					image: project!.image || 'oven/bun:1-debian',
 					usePersonalSsh: isPersonal,
 					sshKeyName: project!.sshKeyName || '',

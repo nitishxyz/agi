@@ -77,7 +77,7 @@ export function AddProject() {
 				webPort: apiPort + 1,
 				status: 'stopped',
 				image: 'oven/bun:1-debian',
-			devPorts,
+				devPorts,
 				gitName:
 					sshMode === 'personal' ? hostGitName || team.gitName : team.gitName,
 				gitEmail:
@@ -249,69 +249,70 @@ export function AddProject() {
 						</div>
 					)}
 
-			<div className="space-y-1.5">
-				<button
-					type="button"
-					onClick={() => setShowPortConfig(!showPortConfig)}
-					className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<span>{showPortConfig ? '▾' : '▸'}</span>
-					<span>Port forwarding</span>
-					<span className="text-[10px] px-1 py-0.5 rounded bg-secondary">
-						{devPorts === 'auto' ? 'auto' : 'custom'}
-					</span>
-				</button>
-				{showPortConfig && (
-					<div className="space-y-2 pl-3 border-l-2 border-border">
-						<div className="flex gap-2">
-							<button
-								type="button"
-								onClick={() => setDevPorts('auto')}
-								className={`px-2 py-1 text-xs rounded-md border transition-colors ${
-									devPorts === 'auto'
-										? 'border-primary bg-primary/5 text-foreground'
-										: 'border-border text-muted-foreground hover:bg-accent/50'
-								}`}
-							>
-								Auto
-							</button>
-							<button
-								type="button"
-								onClick={() => {
-									if (devPorts === 'auto') {
-										setDevPorts('3000, 5173, 8080');
-									}
-								}}
-								className={`px-2 py-1 text-xs rounded-md border transition-colors ${
-									devPorts !== 'auto'
-										? 'border-primary bg-primary/5 text-foreground'
-										: 'border-border text-muted-foreground hover:bg-accent/50'
-								}`}
-							>
-								Custom
-							</button>
-						</div>
-						{devPorts === 'auto' ? (
-							<div className="text-[10px] text-muted-foreground">
-								10-port dynamic range (apiPort + 10–19). Add specific ports via Custom.
+				<div className="space-y-1.5">
+					<button
+						type="button"
+						onClick={() => setShowPortConfig(!showPortConfig)}
+						className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+					>
+						<span>{showPortConfig ? '▾' : '▸'}</span>
+						<span>Port forwarding</span>
+						<span className="text-[10px] px-1 py-0.5 rounded bg-secondary">
+							{devPorts === 'auto' ? 'auto' : 'custom'}
+						</span>
+					</button>
+					{showPortConfig && (
+						<div className="space-y-2 pl-3 border-l-2 border-border">
+							<div className="flex gap-2">
+								<button
+									type="button"
+									onClick={() => setDevPorts('auto')}
+									className={`px-2 py-1 text-xs rounded-md border transition-colors ${
+										devPorts === 'auto'
+											? 'border-primary bg-primary/5 text-foreground'
+											: 'border-border text-muted-foreground hover:bg-accent/50'
+									}`}
+								>
+									Auto
+								</button>
+								<button
+									type="button"
+									onClick={() => {
+										if (devPorts === 'auto') {
+											setDevPorts('3000, 5173, 8080');
+										}
+									}}
+									className={`px-2 py-1 text-xs rounded-md border transition-colors ${
+										devPorts !== 'auto'
+											? 'border-primary bg-primary/5 text-foreground'
+											: 'border-border text-muted-foreground hover:bg-accent/50'
+									}`}
+								>
+									Custom
+								</button>
 							</div>
-						) : (
-							<>
-								<input
-									type="text"
-									value={devPorts}
-									onChange={(e) => setDevPorts(e.target.value)}
-									placeholder="3000, 5173, 8080-8090"
-									className="w-full px-2 py-1.5 text-xs font-mono rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-								/>
+							{devPorts === 'auto' ? (
 								<div className="text-[10px] text-muted-foreground">
-									Comma-separated ports or ranges (e.g. 3000, 5173, 8080-8090)
+									10-port dynamic range (apiPort + 10–19). Add specific ports
+									via Custom.
 								</div>
-							</>
-						)}
-					</div>
-				)}
-			</div>
+							) : (
+								<>
+									<input
+										type="text"
+										value={devPorts}
+										onChange={(e) => setDevPorts(e.target.value)}
+										placeholder="3000, 5173, 8080-8090"
+										className="w-full px-2 py-1.5 text-xs font-mono rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+									/>
+									<div className="text-[10px] text-muted-foreground">
+										Comma-separated ports or ranges (e.g. 3000, 5173, 8080-8090)
+									</div>
+								</>
+							)}
+						</div>
+					)}
+				</div>
 
 				{repoName && (
 					<div className="rounded-md border border-border bg-card p-3 space-y-1">

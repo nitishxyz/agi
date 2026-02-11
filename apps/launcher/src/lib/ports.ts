@@ -1,6 +1,9 @@
 const COMMON_DEV_PORTS = [3000, 3001, 4000, 4200, 5173, 5174, 8000, 8080, 8081];
 
-export function parseDevPorts(devPorts: string | undefined, apiPort: number): number[] {
+export function parseDevPorts(
+	devPorts: string | undefined,
+	apiPort: number,
+): number[] {
 	if (!devPorts || devPorts === 'auto') {
 		const rangePorts: number[] = [];
 		for (let p = apiPort + 10; p <= apiPort + 19; p++) {
@@ -10,14 +13,22 @@ export function parseDevPorts(devPorts: string | undefined, apiPort: number): nu
 	}
 
 	const ports = new Set<number>();
-	const parts = devPorts.split(',').map((s) => s.trim()).filter(Boolean);
+	const parts = devPorts
+		.split(',')
+		.map((s) => s.trim())
+		.filter(Boolean);
 
 	for (const part of parts) {
 		if (part.includes('-')) {
 			const [startStr, endStr] = part.split('-');
 			const start = Number.parseInt(startStr.trim(), 10);
 			const end = Number.parseInt(endStr.trim(), 10);
-			if (!Number.isNaN(start) && !Number.isNaN(end) && start <= end && end - start <= 1000) {
+			if (
+				!Number.isNaN(start) &&
+				!Number.isNaN(end) &&
+				start <= end &&
+				end - start <= 1000
+			) {
 				for (let p = start; p <= end; p++) {
 					ports.add(p);
 				}
