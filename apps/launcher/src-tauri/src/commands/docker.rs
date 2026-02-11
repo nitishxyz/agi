@@ -422,6 +422,18 @@ pub async fn container_inspect(name: String) -> Result<ContainerInfo, String> {
 pub async fn container_create(opts: ContainerCreateOpts) -> Result<String, String> {
     let _ = docker_post(&format!("/containers/{}/stop?t=2", opts.name), None).await;
     let _ = docker_delete(&format!("/containers/{}?force=true", opts.name)).await;
+
+    let (from_image, tag) = if let Some(pos) = opts.image.rfind(':') {
+        (&opts.image[..pos], &opts.image[pos + 1..])
+    } else {
+        (opts.image.as_str(), "latest")
+    };
+    let pull_path = format!(
+        "/images/create?fromImage={}&tag={}",
+        from_image, tag
+    );
+    let _ = docker_post(&pull_path, None).await;
+
     if let Some(&first_port) = opts.dev_ports.first() {
         for _ in 0..5 {
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;
