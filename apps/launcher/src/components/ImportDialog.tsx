@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
+import { getCurrentWebview } from '@tauri-apps/api/webview';
+import { readTextFile } from '@tauri-apps/plugin-fs';
 import {
 	tauri,
 	type ProjectState,
@@ -65,18 +67,32 @@ export function ImportDialog() {
 		[],
 	);
 
-	const handleDrop = useCallback(async (e: React.DragEvent) => {
-		e.preventDefault();
-		const file = e.dataTransfer.files[0];
-		if (!file) return;
-		try {
-			const content = await file.text();
-			const parsed = await tauri.parseTeamConfig(content);
-			setConfig(parsed);
-			setError('');
-		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Invalid config file');
-		}
+	useEffect(() => {
+		let unlisten: (() => void) | undefined;
+		getCurrentWebview()
+			.onDragDropEvent(async (event) => {
+				if (event.payload.type === 'drop') {
+					const paths = event.payload.paths;
+					const ottoFile = paths.find((p) => p.endsWith('.otto'));
+					if (!ottoFile) return;
+					try {
+						const content = await readTextFile(ottoFile);
+						const parsed = await tauri.parseTeamConfig(content);
+						setConfig(parsed);
+						setError('');
+					} catch (err) {
+						setError(
+							err instanceof Error ? err.message : 'Invalid config file',
+						);
+					}
+				}
+			})
+			.then((fn) => {
+				unlisten = fn;
+			});
+		return () => {
+			unlisten?.();
+		};
 	}, []);
 
 	const handleSubmit = async () => {
@@ -106,6 +122,8 @@ export function ImportDialog() {
 				apiPort,
 				webPort: apiPort + 1,
 				status: 'creating',
+				image: config.image || 'oven/bun:1-debian',
+				devPorts: config.devPorts || 'auto',
 				gitName:
 					sshMode === 'personal'
 						? hostGitName || config.gitName
@@ -141,8 +159,6 @@ export function ImportDialog() {
 
 			{!config ? (
 				<div
-					onDragOver={(e) => e.preventDefault()}
-					onDrop={handleDrop}
 					className="border-2 border-dashed border-border rounded-lg p-8 flex flex-col items-center gap-3 hover:border-muted-foreground/40 transition-colors"
 				>
 					<Upload size={24} className="text-muted-foreground" />

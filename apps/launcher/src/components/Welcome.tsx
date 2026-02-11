@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
+import { getCurrentWebview } from '@tauri-apps/api/webview';
+import { readTextFile } from '@tauri-apps/plugin-fs';
 import { tauri } from '../lib/tauri';
 import { useStore } from '../store';
 import { KeyRound, Upload, Plus, Trash2 } from 'lucide-react';
@@ -34,16 +36,36 @@ export function Welcome() {
 		[setImportConfig, setView],
 	);
 
-	const handleDrop = useCallback(
-		async (e: React.DragEvent) => {
-			e.preventDefault();
-			setDragging(false);
-			const file = e.dataTransfer.files[0];
-			if (!file) return;
-			handleImportFile(await file.text());
-		},
-		[handleImportFile],
-	);
+	useEffect(() => {
+		let unlisten: (() => void) | undefined;
+		getCurrentWebview()
+			.onDragDropEvent(async (event) => {
+				if (event.payload.type === 'enter' || event.payload.type === 'over') {
+					setDragging(true);
+				} else if (event.payload.type === 'leave') {
+					setDragging(false);
+				} else if (event.payload.type === 'drop') {
+					setDragging(false);
+					const paths = event.payload.paths;
+					const ottoFile = paths.find((p) => p.endsWith('.otto'));
+					if (!ottoFile) return;
+					try {
+						const content = await readTextFile(ottoFile);
+						await handleImportFile(content);
+					} catch (err) {
+						setError(
+							err instanceof Error ? err.message : 'Failed to read file',
+						);
+					}
+				}
+			})
+			.then((fn) => {
+				unlisten = fn;
+			});
+		return () => {
+			unlisten?.();
+		};
+	}, [handleImportFile]);
 
 	const teamProjects = (teamId: string) =>
 		projects.filter((p) => p.teamId === teamId);
@@ -51,15 +73,7 @@ export function Welcome() {
 		teamProjects(teamId).filter((p) => p.status === 'running').length;
 
 	return (
-		<div
-			className="px-4 pb-4 space-y-4 min-h-[calc(100vh-40px)]"
-			onDragOver={(e) => {
-				e.preventDefault();
-				setDragging(true);
-			}}
-			onDragLeave={() => setDragging(false)}
-			onDrop={handleDrop}
-		>
+		<div className="px-4 pb-4 space-y-4 min-h-[calc(100vh-40px)]">
 			<div className="pt-4 text-center space-y-2">
 				<div className="text-2xl font-bold tracking-tight">otto</div>
 				<div className="text-xs text-muted-foreground">
