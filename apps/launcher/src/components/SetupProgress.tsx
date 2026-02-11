@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { tauri, openUrl } from '../lib/tauri';
+import { parseDevPorts } from '../lib/ports';
 import { useStore } from '../store';
 import {
 	Check,
@@ -195,8 +196,7 @@ export function SetupProgress() {
 					gitName: project!.gitName || 'Team',
 					gitEmail: project!.gitEmail || 'team@otto.dev',
 					apiPort: project!.apiPort,
-					devPortStart: project!.apiPort + 10,
-					devPortEnd: project!.apiPort + 19,
+				devPorts: parseDevPorts(project!.devPorts, project!.apiPort),
 					image: project!.image || 'oven/bun:1-debian',
 					usePersonalSsh: isPersonal,
 					sshKeyName: project!.sshKeyName || '',

@@ -16,8 +16,7 @@ export interface ContainerCreateOpts {
 	gitName: string;
 	gitEmail: string;
 	apiPort: number;
-	devPortStart: number;
-	devPortEnd: number;
+	devPorts: number[];
 	image: string;
 	usePersonalSsh?: boolean;
 	sshKeyName?: string;

@@ -19,8 +19,7 @@ pub struct ContainerCreateOpts {
     pub git_name: String,
     pub git_email: String,
     pub api_port: u16,
-    pub dev_port_start: u16,
-    pub dev_port_end: u16,
+    pub dev_ports: Vec<u16>,
     pub image: String,
     #[serde(default)]
     pub use_personal_ssh: bool,
@@ -423,11 +422,12 @@ pub async fn container_inspect(name: String) -> Result<ContainerInfo, String> {
 pub async fn container_create(opts: ContainerCreateOpts) -> Result<String, String> {
     let _ = docker_post(&format!("/containers/{}/stop?t=2", opts.name), None).await;
     let _ = docker_delete(&format!("/containers/{}?force=true", opts.name)).await;
-    for _ in 0..5 {
-        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-        let port = opts.dev_port_start;
-        if std::net::TcpListener::bind(("127.0.0.1", port)).is_ok() {
-            break;
+    if let Some(&first_port) = opts.dev_ports.first() {
+        for _ in 0..5 {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            if std::net::TcpListener::bind(("127.0.0.1", first_port)).is_ok() {
+                break;
+            }
         }
     }
 
@@ -527,7 +527,7 @@ otto serve --network --port {api_port} --no-open"#,
         format!("{}/tcp", web_port),
         serde_json::json!([{"HostPort": web_port.to_string()}]),
     );
-    for p in opts.dev_port_start..=opts.dev_port_end {
+    for &p in &opts.dev_ports {
         port_bindings.insert(
             format!("{}/tcp", p),
             serde_json::json!([{"HostPort": p.to_string()}]),
@@ -537,7 +537,7 @@ otto serve --network --port {api_port} --no-open"#,
     let mut exposed_ports = serde_json::Map::new();
     exposed_ports.insert(format!("{}/tcp", opts.api_port), serde_json::json!({}));
     exposed_ports.insert(format!("{}/tcp", web_port), serde_json::json!({}));
-    for p in opts.dev_port_start..=opts.dev_port_end {
+    for &p in &opts.dev_ports {
         exposed_ports.insert(format!("{}/tcp", p), serde_json::json!({}));
     }
 
