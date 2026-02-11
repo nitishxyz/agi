@@ -22,8 +22,7 @@ async function ensureValidOAuth(
 	}
 
 	try {
-		const refreshFn =
-			provider === 'openai' ? refreshOpenAIToken : refreshToken;
+		const refreshFn = provider === 'openai' ? refreshOpenAIToken : refreshToken;
 		const newTokens = await refreshFn(auth.refresh);
 		const updated: OAuth = {
 			...auth,
@@ -99,10 +98,9 @@ async function fetchOpenAIUsage(access: string, accountId?: string) {
 	if (accountId) {
 		headers['ChatGPT-Account-Id'] = accountId;
 	}
-	const response = await fetch(
-		'https://chatgpt.com/backend-api/wham/usage',
-		{ headers },
-	);
+	const response = await fetch('https://chatgpt.com/backend-api/wham/usage', {
+		headers,
+	});
 
 	if (!response.ok) {
 		throw new Error(`OpenAI usage API returned ${response.status}`);
@@ -140,9 +138,7 @@ async function fetchOpenAIUsage(access: string, accountId?: string) {
 			? {
 					usedPercent: rl.primary_window.used_percent,
 					windowSeconds: rl.primary_window.limit_window_seconds,
-					resetsAt: new Date(
-						rl.primary_window.reset_at * 1000,
-					).toISOString(),
+					resetsAt: new Date(rl.primary_window.reset_at * 1000).toISOString(),
 					resetAfterSeconds: rl.primary_window.reset_after_seconds,
 				}
 			: null,
@@ -150,9 +146,7 @@ async function fetchOpenAIUsage(access: string, accountId?: string) {
 			? {
 					usedPercent: rl.secondary_window.used_percent,
 					windowSeconds: rl.secondary_window.limit_window_seconds,
-					resetsAt: new Date(
-						rl.secondary_window.reset_at * 1000,
-					).toISOString(),
+					resetsAt: new Date(rl.secondary_window.reset_at * 1000).toISOString(),
 					resetAfterSeconds: rl.secondary_window.reset_after_seconds,
 				}
 			: null,
@@ -189,7 +183,10 @@ export function registerProviderUsageRoutes(app: Hono) {
 			const usage =
 				provider === 'anthropic'
 					? await fetchAnthropicUsage(tokenResult.access)
-					: await fetchOpenAIUsage(tokenResult.access, tokenResult.oauth.accountId);
+					: await fetchOpenAIUsage(
+							tokenResult.access,
+							tokenResult.oauth.accountId,
+						);
 
 			return c.json(usage);
 		} catch (error) {

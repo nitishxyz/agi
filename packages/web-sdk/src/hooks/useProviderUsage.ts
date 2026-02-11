@@ -12,14 +12,15 @@ export function useProviderUsage(
 	const setUsage = useUsageStore((s) => s.setUsage);
 	const setLoading = useUsageStore((s) => s.setLoading);
 	const setLastFetched = useUsageStore((s) => s.setLastFetched);
-	const usage = useUsageStore((s) => (provider ? s.usage[provider] : undefined));
+	const usage = useUsageStore((s) =>
+		provider ? s.usage[provider] : undefined,
+	);
 	const lastFetched = useUsageStore((s) =>
 		provider ? s.lastFetched[provider] : 0,
 	);
 
 	const isOAuthProvider =
-		authType === 'oauth' &&
-		(provider === 'anthropic' || provider === 'openai');
+		authType === 'oauth' && (provider === 'anthropic' || provider === 'openai');
 
 	const fetchUsage = useCallback(async () => {
 		if (!provider || !isOAuthProvider) return;

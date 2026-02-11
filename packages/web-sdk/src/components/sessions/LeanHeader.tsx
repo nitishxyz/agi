@@ -100,101 +100,101 @@ export function LeanHeader({
 
 	return (
 		<>
-		<div
-			className={`absolute top-0 left-0 right-0 h-14 border-b border-border bg-background/95 backdrop-blur-sm z-10 transition-transform duration-200 ${
-				isVisible ? 'translate-y-0' : '-translate-y-full'
-			}`}
-		>
-			<div className="h-full px-6 flex items-center justify-between gap-4 text-sm">
-				<div className="flex-1 min-w-0 flex items-center gap-2 text-muted-foreground">
-					{isBranch ? (
-						<GitBranch className="w-4 h-4 flex-shrink-0 text-violet-500" />
-					) : (
-						<MessageSquare className="w-4 h-4 flex-shrink-0" />
-					)}
-					<span className="text-foreground font-medium truncate">
-						{session.title || 'Untitled Session'}
-					</span>
-					{shareStatus?.shared && (
-						<button
-							type="button"
-							onClick={() => openUrl(shareStatus.url)}
-							className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors text-xs font-medium flex-shrink-0"
-						>
-							<Share2 className="h-3 w-3" />
-							{shareStatus.pendingMessages &&
-							shareStatus.pendingMessages > 0 ? (
-								<span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
-									<RefreshCw className="h-2.5 w-2.5" />
-									{shareStatus.pendingMessages}
-								</span>
-							) : (
-								<ExternalLink className="h-2.5 w-2.5 opacity-60" />
-							)}
-						</button>
-					)}
-					{isBranch && parentSession && (
-						<>
-							<span className="text-muted-foreground hidden sm:inline">
-								from
-							</span>
+			<div
+				className={`absolute top-0 left-0 right-0 h-14 border-b border-border bg-background/95 backdrop-blur-sm z-10 transition-transform duration-200 ${
+					isVisible ? 'translate-y-0' : '-translate-y-full'
+				}`}
+			>
+				<div className="h-full px-6 flex items-center justify-between gap-4 text-sm">
+					<div className="flex-1 min-w-0 flex items-center gap-2 text-muted-foreground">
+						{isBranch ? (
+							<GitBranch className="w-4 h-4 flex-shrink-0 text-violet-500" />
+						) : (
+							<MessageSquare className="w-4 h-4 flex-shrink-0" />
+						)}
+						<span className="text-foreground font-medium truncate">
+							{session.title || 'Untitled Session'}
+						</span>
+						{shareStatus?.shared && (
 							<button
 								type="button"
-								onClick={() => onNavigateToSession?.(parentSession.id)}
-								className="text-primary hover:underline flex items-center gap-0.5 truncate max-w-32"
-								title={
-									parentSession.title ||
-									`Session ${parentSession.id.slice(0, 8)}`
-								}
+								onClick={() => openUrl(shareStatus.url)}
+								className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors text-xs font-medium flex-shrink-0"
 							>
-								<span className="truncate">
-									{parentSession.title ||
-										`Session ${parentSession.id.slice(0, 8)}`}
-								</span>
-								<ArrowUpRight className="h-3 w-3 flex-shrink-0" />
+								<Share2 className="h-3 w-3" />
+								{shareStatus.pendingMessages &&
+								shareStatus.pendingMessages > 0 ? (
+									<span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+										<RefreshCw className="h-2.5 w-2.5" />
+										{shareStatus.pendingMessages}
+									</span>
+								) : (
+									<ExternalLink className="h-2.5 w-2.5 opacity-60" />
+								)}
 							</button>
-						</>
-					)}
-				</div>
-
-				<div className="flex-shrink-0 flex items-center gap-5 text-muted-foreground">
-					{isGenerating && <StopButton sessionId={session.id} />}
-
-					{isOAuthProvider && usage && (
-						<UsageRing usage={usage} provider={session.provider} />
-					)}
-
-					<div className="flex items-center gap-3">
-						<div
-							className="flex items-center gap-1"
-							title={`Current context window: ${contextTokens.toLocaleString()} tokens`}
-						>
-							<span className="text-xs opacity-70">ctx</span>
-							<span className={`font-medium ${getContextColorClass()}`}>
-								{formatCompactNumber(contextTokens)}
-							</span>
-						</div>
+						)}
+						{isBranch && parentSession && (
+							<>
+								<span className="text-muted-foreground hidden sm:inline">
+									from
+								</span>
+								<button
+									type="button"
+									onClick={() => onNavigateToSession?.(parentSession.id)}
+									className="text-primary hover:underline flex items-center gap-0.5 truncate max-w-32"
+									title={
+										parentSession.title ||
+										`Session ${parentSession.id.slice(0, 8)}`
+									}
+								>
+									<span className="truncate">
+										{parentSession.title ||
+											`Session ${parentSession.id.slice(0, 8)}`}
+									</span>
+									<ArrowUpRight className="h-3 w-3 flex-shrink-0" />
+								</button>
+							</>
+						)}
 					</div>
 
-					{estimatedCost > 0 && (
-						<div className="flex items-center gap-1.5">
-							<DollarSign className="w-4 h-4" />
-							<span className="text-foreground font-medium">
-								{estimatedCost.toFixed(4)}
+					<div className="flex-shrink-0 flex items-center gap-5 text-muted-foreground">
+						{isGenerating && <StopButton sessionId={session.id} />}
+
+						{isOAuthProvider && usage && (
+							<UsageRing usage={usage} provider={session.provider} />
+						)}
+
+						<div className="flex items-center gap-3">
+							<div
+								className="flex items-center gap-1"
+								title={`Current context window: ${contextTokens.toLocaleString()} tokens`}
+							>
+								<span className="text-xs opacity-70">ctx</span>
+								<span className={`font-medium ${getContextColorClass()}`}>
+									{formatCompactNumber(contextTokens)}
+								</span>
+							</div>
+						</div>
+
+						{estimatedCost > 0 && (
+							<div className="flex items-center gap-1.5">
+								<DollarSign className="w-4 h-4" />
+								<span className="text-foreground font-medium">
+									{estimatedCost.toFixed(4)}
+								</span>
+							</div>
+						)}
+
+						<div className="hidden sm:flex items-center gap-2">
+							<ProviderLogo provider={session.provider} size={16} />
+							<span className="font-medium text-foreground truncate max-w-40">
+								{session.model}
 							</span>
 						</div>
-					)}
-
-					<div className="hidden sm:flex items-center gap-2">
-						<ProviderLogo provider={session.provider} size={16} />
-						<span className="font-medium text-foreground truncate max-w-40">
-							{session.model}
-						</span>
 					</div>
 				</div>
 			</div>
-		</div>
-		<UsageModal />
+			<UsageModal />
 		</>
 	);
 }

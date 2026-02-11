@@ -26,7 +26,6 @@ export const useUsageStore = create<UsageState>((set) => ({
 		set((s) => ({ isLoading: { ...s.isLoading, [provider]: loading } })),
 	setLastFetched: (provider, time) =>
 		set((s) => ({ lastFetched: { ...s.lastFetched, [provider]: time } })),
-	openModal: (provider) =>
-		set({ isModalOpen: true, modalProvider: provider }),
+	openModal: (provider) => set({ isModalOpen: true, modalProvider: provider }),
 	closeModal: () => set({ isModalOpen: false, modalProvider: null }),
 }));

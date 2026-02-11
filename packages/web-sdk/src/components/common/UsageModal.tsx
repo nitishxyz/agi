@@ -27,7 +27,10 @@ function windowLabel(seconds: number): string {
 function UsageBar({
 	label,
 	window: w,
-}: { label: string; window: UsageWindow }) {
+}: {
+	label: string;
+	window: UsageWindow;
+}) {
 	const percent = Math.min(w.usedPercent, 100);
 	const barColor =
 		percent >= 90
@@ -107,24 +110,24 @@ export const UsageModal = memo(function UsageModal() {
 					/>
 				)}
 
-				{usage.sonnetWindow &&
-					usage.sonnetWindow.usedPercent > 0 && (
-						<UsageBar
-							label="Sonnet (7 Day)"
-							window={{
-								usedPercent: usage.sonnetWindow.usedPercent,
-								windowSeconds: 604800,
-								resetsAt: usage.sonnetWindow.resetsAt,
-							}}
-						/>
-					)}
+				{usage.sonnetWindow && usage.sonnetWindow.usedPercent > 0 && (
+					<UsageBar
+						label="Sonnet (7 Day)"
+						window={{
+							usedPercent: usage.sonnetWindow.usedPercent,
+							windowSeconds: 604800,
+							resetsAt: usage.sonnetWindow.resetsAt,
+						}}
+					/>
+				)}
 
 				{usage.extraUsage && usage.extraUsage.is_enabled && (
 					<div className="pt-2 border-t border-border space-y-1">
 						<div className="flex items-center justify-between text-sm">
 							<span className="text-muted-foreground">Extra Credits</span>
 							<span className="font-medium text-foreground">
-								${usage.extraUsage.used_credits.toFixed(2)} / ${usage.extraUsage.monthly_limit}
+								${usage.extraUsage.used_credits.toFixed(2)} / $
+								{usage.extraUsage.monthly_limit}
 							</span>
 						</div>
 					</div>
