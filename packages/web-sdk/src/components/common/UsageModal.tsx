@@ -121,7 +121,7 @@ export const UsageModal = memo(function UsageModal() {
 					/>
 				)}
 
-				{usage.extraUsage && usage.extraUsage.is_enabled && (
+				{usage.extraUsage?.is_enabled && (
 					<div className="pt-2 border-t border-border space-y-1">
 						<div className="flex items-center justify-between text-sm">
 							<span className="text-muted-foreground">Extra Credits</span>
@@ -133,7 +133,7 @@ export const UsageModal = memo(function UsageModal() {
 					</div>
 				)}
 
-				{usage.credits && usage.credits.has_credits && (
+				{usage.credits?.has_credits && (
 					<div className="pt-2 border-t border-border space-y-1">
 						<div className="flex items-center justify-between text-sm">
 							<span className="text-muted-foreground">Credits</span>

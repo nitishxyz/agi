@@ -23,6 +23,7 @@ export function DeployKeyStep({ publicKey, onNext }: Props) {
 			<CopyBlock text={publicKey} />
 
 			<button
+				type="button"
 				onClick={onNext}
 				className="w-full py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
 			>

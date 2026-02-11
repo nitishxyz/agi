@@ -24,6 +24,7 @@ export function CopyBlock({ text, label }: Props) {
 				{text}
 			</pre>
 			<button
+				type="button"
 				onClick={handleCopy}
 				className="absolute top-2 right-2 p-1.5 rounded bg-background/80 hover:bg-background transition-colors"
 			>

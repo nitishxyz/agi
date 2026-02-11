@@ -36,6 +36,7 @@ export function ProjectList() {
 				</div>
 				<div className="flex items-center gap-1.5">
 					<button
+						type="button"
 						onClick={() => setShowKey(!showKey)}
 						className="flex items-center gap-1 px-2 py-1 text-xs rounded-md text-muted-foreground hover:bg-accent transition-colors"
 						title="Show deploy key"
@@ -43,6 +44,7 @@ export function ProjectList() {
 						<KeyRound size={11} />
 					</button>
 					<button
+						type="button"
 						onClick={() => setView('import')}
 						className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-secondary hover:bg-accent transition-colors"
 					>
@@ -50,6 +52,7 @@ export function ProjectList() {
 						Import
 					</button>
 					<button
+						type="button"
 						onClick={() => setView('add-project')}
 						className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
 					>
@@ -72,6 +75,7 @@ export function ProjectList() {
 						No projects yet. Add a repo to get started.
 					</div>
 					<button
+						type="button"
 						onClick={() => setView('add-project')}
 						className="w-full p-4 border border-dashed border-border rounded-lg flex items-center justify-center gap-2 text-sm text-muted-foreground hover:border-muted-foreground/40 hover:bg-accent/50 transition-colors"
 					>

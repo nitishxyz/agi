@@ -1,4 +1,4 @@
-import type { Writable, Readable } from "node:stream";
+import type { Writable, Readable } from 'node:stream';
 
 export function nodeToWebWritable(
 	nodeWritable: Writable | typeof process.stdout,
@@ -12,7 +12,7 @@ export function nodeToWebWritable(
 				if (ok) {
 					resolve();
 				} else {
-					(nodeWritable as Writable).once("drain", resolve);
+					(nodeWritable as Writable).once('drain', resolve);
 				}
 			});
 		},
@@ -29,13 +29,13 @@ export function nodeToWebReadable(
 ): ReadableStream<Uint8Array> {
 	return new ReadableStream({
 		start(controller) {
-			(nodeReadable as Readable).on("data", (chunk: Buffer) => {
+			(nodeReadable as Readable).on('data', (chunk: Buffer) => {
 				controller.enqueue(new Uint8Array(chunk));
 			});
-			(nodeReadable as Readable).on("end", () => {
+			(nodeReadable as Readable).on('end', () => {
 				controller.close();
 			});
-			(nodeReadable as Readable).on("error", (err) => {
+			(nodeReadable as Readable).on('error', (err) => {
 				controller.error(err);
 			});
 		},

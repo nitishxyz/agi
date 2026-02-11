@@ -1,7 +1,7 @@
-import { TerminalManager, setTerminalManager } from "@ottocode/sdk";
-import { AgentSideConnection, ndJsonStream } from "@agentclientprotocol/sdk";
-import { OttoAcpAgent } from "./agent.ts";
-import { nodeToWebWritable, nodeToWebReadable } from "./utils.ts";
+import { TerminalManager, setTerminalManager } from '@ottocode/sdk';
+import { AgentSideConnection, ndJsonStream } from '@agentclientprotocol/sdk';
+import { OttoAcpAgent } from './agent.ts';
+import { nodeToWebWritable, nodeToWebReadable } from './utils.ts';
 
 export function runAcp() {
 	console.log = console.error;
@@ -9,12 +9,12 @@ export function runAcp() {
 	console.warn = console.error;
 	console.debug = console.error;
 
-	process.on("unhandledRejection", (reason, promise) => {
-		console.error("Unhandled Rejection at:", promise, "reason:", reason);
+	process.on('unhandledRejection', (reason, promise) => {
+		console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 	});
 
-	process.on("uncaughtException", (err) => {
-		console.error("Uncaught Exception:", err);
+	process.on('uncaughtException', (err) => {
+		console.error('Uncaught Exception:', err);
 	});
 
 	const terminalManager = new TerminalManager();
@@ -24,10 +24,7 @@ export function runAcp() {
 	const input = nodeToWebReadable(process.stdin);
 	const stream = ndJsonStream(output, input);
 
-	new AgentSideConnection(
-		(client) => new OttoAcpAgent(client),
-		stream,
-	);
+	new AgentSideConnection((client) => new OttoAcpAgent(client), stream);
 
 	process.stdin.resume();
 }

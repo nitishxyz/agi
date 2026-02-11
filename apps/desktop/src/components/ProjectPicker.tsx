@@ -140,7 +140,7 @@ export function ProjectPicker({
 				role="toolbar"
 			>
 				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-				<OttoWordmark height={13} className="text-foreground" />
+					<OttoWordmark height={13} className="text-foreground" />
 				</div>
 				<div className="flex items-center gap-2 ml-auto">
 					{isAuthenticated && (
@@ -230,13 +230,15 @@ export function ProjectPicker({
 						<h1 className="text-3xl lg:text-4xl font-semibold text-foreground mb-3">
 							Welcome to otto
 						</h1>
-					<p className="text-lg text-muted-foreground max-w-2xl mb-2">
+						<p className="text-lg text-muted-foreground max-w-2xl mb-2">
 							AI-powered development assistant. Open a project or clone a
 							repository to get started.
 						</p>
-					{appVersion && (
-						<span className="text-xs text-muted-foreground/60">v{appVersion}</span>
-					)}
+						{appVersion && (
+							<span className="text-xs text-muted-foreground/60">
+								v{appVersion}
+							</span>
+						)}
 					</div>
 
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">

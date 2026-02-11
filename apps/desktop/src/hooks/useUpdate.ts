@@ -67,7 +67,10 @@ export function useUpdate() {
 			const onEvent = new Channel<DownloadEvent>();
 			onEvent.onmessage = (event) => {
 				if (event.event === 'started' && event.data.contentLength) {
-					setState((s) => ({ ...s, totalBytes: event.data.contentLength! }));
+					setState((s) => ({
+						...s,
+						totalBytes: event.data.contentLength ?? 0,
+					}));
 				} else if (event.event === 'progress') {
 					setState((s) => {
 						const pct =

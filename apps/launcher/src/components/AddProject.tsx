@@ -97,8 +97,8 @@ export function AddProject() {
 					cipher: 'aes-256-cbc-pbkdf2',
 					gitName: team.gitName,
 					gitEmail: team.gitEmail,
-					image: project.image!,
-					devPorts: project.devPorts!,
+					image: project.image ?? '',
+					devPorts: project.devPorts ?? [],
 				};
 				await tauri.saveOttoFile(config, `${name}.otto`);
 			}
@@ -113,6 +113,7 @@ export function AddProject() {
 	return (
 		<div className="px-4 pb-4 space-y-4">
 			<button
+				type="button"
 				onClick={() => setView('projects')}
 				className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 			>
@@ -128,23 +129,23 @@ export function AddProject() {
 				</div>
 
 				<div className="space-y-1.5">
-					<label className="text-xs text-muted-foreground">
+					<label className="text-xs text-muted-foreground block">
 						Repository URL (SSH)
+						<input
+							type="text"
+							value={repoUrl}
+							onChange={(e) => setRepoUrl(e.target.value)}
+							placeholder="git@github.com:org/repo.git"
+							className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring mt-1.5"
+						/>
 					</label>
-					<input
-						type="text"
-						value={repoUrl}
-						onChange={(e) => setRepoUrl(e.target.value)}
-						placeholder="git@github.com:org/repo.git"
-						className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-						autoFocus
-					/>
 				</div>
 
 				<div className="space-y-1.5">
-					<label className="text-xs text-muted-foreground">SSH keys</label>
+					<span className="text-xs text-muted-foreground">SSH keys</span>
 					<div className="flex gap-2">
 						<button
+							type="button"
 							onClick={() => setSshMode('team')}
 							className={`flex-1 flex items-center gap-2 p-2.5 rounded-md border text-xs transition-colors ${
 								sshMode === 'team'
@@ -161,6 +162,7 @@ export function AddProject() {
 							</div>
 						</button>
 						<button
+							type="button"
 							onClick={() => setSshMode('personal')}
 							className={`flex-1 flex items-center gap-2 p-2.5 rounded-md border text-xs transition-colors ${
 								sshMode === 'personal'
@@ -181,7 +183,7 @@ export function AddProject() {
 
 				{sshMode === 'personal' && (
 					<div className="space-y-1.5">
-						<label className="text-xs text-muted-foreground">Select key</label>
+						<span className="text-xs text-muted-foreground">Select key</span>
 						{sshKeys.length === 0 ? (
 							<div className="text-xs text-muted-foreground p-2 rounded bg-secondary">
 								No SSH keys found in ~/.ssh/
@@ -190,6 +192,7 @@ export function AddProject() {
 							<div className="space-y-1">
 								{sshKeys.map((key) => (
 									<button
+										type="button"
 										key={key.name}
 										onClick={() => setSelectedKey(key.name)}
 										className={`w-full flex items-center gap-2 p-2 rounded-md border text-xs text-left transition-colors ${
@@ -232,16 +235,16 @@ export function AddProject() {
 					selectedKey &&
 					sshKeys.find((k) => k.name === selectedKey)?.hasPassphrase && (
 						<div className="space-y-1.5">
-							<label className="text-xs text-muted-foreground">
+							<label className="text-xs text-muted-foreground block">
 								Key passphrase
+								<input
+									type="password"
+									value={sshPassphrase}
+									onChange={(e) => setSshPassphrase(e.target.value)}
+									placeholder="Enter passphrase for this key"
+									className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring mt-1.5"
+								/>
 							</label>
-							<input
-								type="password"
-								value={sshPassphrase}
-								onChange={(e) => setSshPassphrase(e.target.value)}
-								placeholder="Enter passphrase for this key"
-								className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-							/>
 							<div className="text-[10px] text-muted-foreground">
 								Passphrase will be used once to unlock the key inside the
 								container.
@@ -346,6 +349,7 @@ export function AddProject() {
 				{error && <div className="text-xs text-destructive">{error}</div>}
 
 				<button
+					type="button"
 					onClick={handleAdd}
 					disabled={
 						loading || !repoUrl || (sshMode === 'personal' && !selectedKey)

@@ -12,24 +12,24 @@ import type {
 	AuthenticateResponse,
 	ClientCapabilities,
 	SessionNotification,
-} from "@agentclientprotocol/sdk";
+} from '@agentclientprotocol/sdk';
 import type {
 	ToolKind,
 	ToolCallLocation,
 	ToolCallContent,
-} from "@agentclientprotocol/sdk/schema/types.gen";
-import { handleAskRequest } from "@ottocode/server/runtime/ask/service";
-import { subscribe } from "@ottocode/server/events/bus";
+} from '@agentclientprotocol/sdk/schema/types.gen';
+import { handleAskRequest } from '@ottocode/server/runtime/ask/service';
+import { subscribe } from '@ottocode/server/events/bus';
 import {
 	abortMessage,
 	getRunnerState,
-} from "@ottocode/server/runtime/agent/runner";
-import { resolveApproval } from "@ottocode/server/runtime/tools/approval";
-import { getDb } from "@ottocode/database";
-import { randomUUID } from "node:crypto";
-import type { OttoEvent } from "@ottocode/server/events/types";
-import * as path from "node:path";
-import * as fs from "node:fs";
+} from '@ottocode/server/runtime/agent/runner';
+import { resolveApproval } from '@ottocode/server/runtime/tools/approval';
+import { getDb } from '@ottocode/database';
+import { randomUUID } from 'node:crypto';
+import type { OttoEvent } from '@ottocode/server/events/types';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
 
 type AcpSession = {
 	sessionId: string;
@@ -39,7 +39,10 @@ type AcpSession = {
 	assistantMessageId: string | null;
 	resolvePrompt: ((response: PromptResponse) => void) | null;
 	unsubscribe: (() => void) | null;
-	activeTerminals: Map<string, { terminalId: string; release: () => Promise<void> }>;
+	activeTerminals: Map<
+		string,
+		{ terminalId: string; release: () => Promise<void> }
+	>;
 };
 
 export class OttoAcpAgent implements Agent {
@@ -51,9 +54,7 @@ export class OttoAcpAgent implements Agent {
 		this.client = client;
 	}
 
-	async initialize(
-		request: InitializeRequest,
-	): Promise<InitializeResponse> {
+	async initialize(request: InitializeRequest): Promise<InitializeResponse> {
 		this.clientCapabilities = request.clientCapabilities;
 
 		return {
@@ -65,9 +66,9 @@ export class OttoAcpAgent implements Agent {
 				},
 			},
 			agentInfo: {
-				name: "otto",
-				title: "Otto",
-				version: "0.1.196",
+				name: 'otto',
+				title: 'Otto',
+				version: '0.1.196',
 			},
 			authMethods: [],
 		};
@@ -75,23 +76,21 @@ export class OttoAcpAgent implements Agent {
 
 	async authenticate(
 		_params: AuthenticateRequest,
-	): Promise<AuthenticateResponse | void> {}
+	): Promise<AuthenticateResponse | undefined> {}
 
-	async newSession(
-		params: NewSessionRequest,
-	): Promise<NewSessionResponse> {
+	async newSession(params: NewSessionRequest): Promise<NewSessionResponse> {
 		const cwd = params.cwd || process.cwd();
 
 		try {
 			await getDb(cwd);
 		} catch (err) {
-			console.error("[acp] Failed to initialize database:", err);
+			console.error('[acp] Failed to initialize database:', err);
 		}
 
 		const sessionId = randomUUID();
 		const session: AcpSession = {
 			sessionId,
-			ottoSessionId: "",
+			ottoSessionId: '',
 			cwd,
 			cancelled: false,
 			assistantMessageId: null,
@@ -110,24 +109,24 @@ export class OttoAcpAgent implements Agent {
 	async prompt(params: PromptRequest): Promise<PromptResponse> {
 		const session = this.sessions.get(params.sessionId);
 		if (!session) {
-			throw new Error("Session not found");
+			throw new Error('Session not found');
 		}
 
 		session.cancelled = false;
 
 		const textParts: string[] = [];
 		for (const chunk of params.prompt) {
-			if (chunk.type === "text") {
+			if (chunk.type === 'text') {
 				textParts.push(chunk.text);
-			} else if (chunk.type === "resource" && "text" in chunk.resource) {
+			} else if (chunk.type === 'resource' && 'text' in chunk.resource) {
 				textParts.push(
 					`<context uri="${chunk.resource.uri}">\n${chunk.resource.text}\n</context>`,
 				);
-			} else if (chunk.type === "resource_link") {
+			} else if (chunk.type === 'resource_link') {
 				textParts.push(`@${chunk.uri}`);
 			}
 		}
-		const prompt = textParts.join("\n");
+		const prompt = textParts.join('\n');
 
 		let response: Awaited<ReturnType<typeof handleAskRequest>>;
 		try {
@@ -138,26 +137,26 @@ export class OttoAcpAgent implements Agent {
 			});
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
-			console.error("[acp] handleAskRequest failed:", msg);
+			console.error('[acp] handleAskRequest failed:', msg);
 			await this.client.sessionUpdate({
 				sessionId: params.sessionId,
 				update: {
-					sessionUpdate: "agent_message_chunk",
-					content: { type: "text", text: `Error: ${msg}\n\nMake sure you have a provider configured. Run \`otto auth\` to set up API keys.` },
+					sessionUpdate: 'agent_message_chunk',
+					content: {
+						type: 'text',
+						text: `Error: ${msg}\n\nMake sure you have a provider configured. Run \`otto auth\` to set up API keys.`,
+					},
 				},
 			});
-			return { stopReason: "end_turn" };
+			return { stopReason: 'end_turn' };
 		}
 
 		session.ottoSessionId = response.sessionId;
 		session.assistantMessageId = response.assistantMessageId;
 
-		const unsub = subscribe(
-			response.sessionId,
-			(event: OttoEvent) => {
-				void this.handleOttoEvent(event, params.sessionId);
-			},
-		);
+		const unsub = subscribe(response.sessionId, (event: OttoEvent) => {
+			void this.handleOttoEvent(event, params.sessionId);
+		});
 		session.unsubscribe = unsub;
 
 		return new Promise<PromptResponse>((resolve) => {
@@ -168,7 +167,7 @@ export class OttoAcpAgent implements Agent {
 					clearInterval(checkInterval);
 					unsub();
 					session.unsubscribe = null;
-					resolve({ stopReason: "cancelled" });
+					resolve({ stopReason: 'cancelled' });
 					return;
 				}
 
@@ -182,7 +181,7 @@ export class OttoAcpAgent implements Agent {
 					clearInterval(checkInterval);
 					unsub();
 					session.unsubscribe = null;
-					resolve({ stopReason: "end_turn" });
+					resolve({ stopReason: 'end_turn' });
 				}
 			}, 200);
 		});
@@ -210,55 +209,50 @@ export class OttoAcpAgent implements Agent {
 
 		try {
 			switch (event.type) {
-				case "message.part.delta": {
-					const delta =
-						typeof payload?.delta === "string" ? payload.delta : "";
-					if (
-						delta &&
-						payload?.messageId === session.assistantMessageId
-					) {
+				case 'message.part.delta': {
+					const delta = typeof payload?.delta === 'string' ? payload.delta : '';
+					if (delta && payload?.messageId === session.assistantMessageId) {
 						await this.client.sessionUpdate({
 							sessionId: acpSessionId,
 							update: {
-								sessionUpdate: "agent_message_chunk",
-								content: { type: "text", text: delta },
+								sessionUpdate: 'agent_message_chunk',
+								content: { type: 'text', text: delta },
 							},
 						});
 					}
 					break;
 				}
 
-				case "reasoning.delta": {
-					const delta =
-						typeof payload?.delta === "string" ? payload.delta : "";
+				case 'reasoning.delta': {
+					const delta = typeof payload?.delta === 'string' ? payload.delta : '';
 					if (delta) {
 						await this.client.sessionUpdate({
 							sessionId: acpSessionId,
 							update: {
-								sessionUpdate: "agent_thought_chunk",
-								content: { type: "text", text: delta },
+								sessionUpdate: 'agent_thought_chunk',
+								content: { type: 'text', text: delta },
 							},
 						});
 					}
 					break;
 				}
 
-				case "tool.call": {
+				case 'tool.call': {
 					await this.handleToolCall(payload, acpSessionId, session);
 					break;
 				}
 
-				case "tool.delta": {
+				case 'tool.delta': {
 					await this.handleToolDelta(payload, acpSessionId, session);
 					break;
 				}
 
-				case "tool.result": {
+				case 'tool.result': {
 					await this.handleToolResult(payload, acpSessionId, session);
 					break;
 				}
 
-				case "plan.updated": {
+				case 'plan.updated': {
 					const items = payload?.items as
 						| Array<{ step: string; status?: string }>
 						| undefined;
@@ -266,7 +260,7 @@ export class OttoAcpAgent implements Agent {
 						await this.client.sessionUpdate({
 							sessionId: acpSessionId,
 							update: {
-								sessionUpdate: "plan",
+								sessionUpdate: 'plan',
 								entries: items.map((item) => ({
 									content: item.step,
 									status: mapPlanStatus(item.status),
@@ -277,29 +271,25 @@ export class OttoAcpAgent implements Agent {
 					break;
 				}
 
-				case "tool.approval.required": {
+				case 'tool.approval.required': {
 					const callId =
-						typeof payload?.callId === "string"
-							? payload.callId
-							: undefined;
+						typeof payload?.callId === 'string' ? payload.callId : undefined;
 					const toolName =
-						typeof payload?.toolName === "string"
-							? payload.toolName
-							: "tool";
+						typeof payload?.toolName === 'string' ? payload.toolName : 'tool';
 
 					if (!callId) break;
 
 					const response = await this.client.requestPermission({
 						options: [
 							{
-								kind: "allow_once",
-								name: "Allow",
-								optionId: "allow",
+								kind: 'allow_once',
+								name: 'Allow',
+								optionId: 'allow',
 							},
 							{
-								kind: "reject_once",
-								name: "Reject",
-								optionId: "reject",
+								kind: 'reject_once',
+								name: 'Reject',
+								optionId: 'reject',
 							},
 						],
 						sessionId: acpSessionId,
@@ -311,14 +301,14 @@ export class OttoAcpAgent implements Agent {
 					});
 
 					const approved =
-						response.outcome?.outcome === "selected" &&
-						response.outcome.optionId === "allow";
+						response.outcome?.outcome === 'selected' &&
+						response.outcome.optionId === 'allow';
 
-				resolveApproval(callId, approved);
+					resolveApproval(callId, approved);
 					return;
 				}
 
-				case "message.completed": {
+				case 'message.completed': {
 					if (
 						payload?.id === session.assistantMessageId &&
 						session.resolvePrompt
@@ -327,24 +317,24 @@ export class OttoAcpAgent implements Agent {
 						session.resolvePrompt = null;
 						session.unsubscribe?.();
 						session.unsubscribe = null;
-						resolve({ stopReason: "end_turn" });
+						resolve({ stopReason: 'end_turn' });
 					}
 					return;
 				}
 
-				case "error": {
+				case 'error': {
 					const errorText =
-						typeof payload?.error === "string"
+						typeof payload?.error === 'string'
 							? payload.error
-							: typeof payload?.message === "string"
+							: typeof payload?.message === 'string'
 								? payload.message
-								: "Unknown error";
+								: 'Unknown error';
 
 					await this.client.sessionUpdate({
 						sessionId: acpSessionId,
 						update: {
-							sessionUpdate: "agent_message_chunk",
-							content: { type: "text", text: `\n\nError: ${errorText}\n` },
+							sessionUpdate: 'agent_message_chunk',
+							content: { type: 'text', text: `\n\nError: ${errorText}\n` },
 						},
 					});
 					break;
@@ -354,7 +344,7 @@ export class OttoAcpAgent implements Agent {
 					return;
 			}
 		} catch (err) {
-			console.error("[acp] Error handling event:", event.type, err);
+			console.error('[acp] Error handling event:', event.type, err);
 		}
 	}
 
@@ -363,12 +353,9 @@ export class OttoAcpAgent implements Agent {
 		acpSessionId: string,
 		session: AcpSession,
 	): Promise<void> {
-		const name =
-			typeof payload?.name === "string" ? payload.name : "tool";
+		const name = typeof payload?.name === 'string' ? payload.name : 'tool';
 		const callId =
-			typeof payload?.callId === "string"
-				? payload.callId
-				: randomUUID();
+			typeof payload?.callId === 'string' ? payload.callId : randomUUID();
 		const args = payload?.args as Record<string, unknown> | undefined;
 
 		const kind = getToolKind(name);
@@ -378,40 +365,41 @@ export class OttoAcpAgent implements Agent {
 			sessionId: acpSessionId,
 			update: {
 				toolCallId: callId,
-				sessionUpdate: "tool_call",
+				sessionUpdate: 'tool_call',
 				title: formatToolTitle(name, args),
 				kind,
-				status: "in_progress",
+				status: 'in_progress',
 				rawInput: args,
 				locations,
-			} as SessionNotification["update"],
+			} as SessionNotification['update'],
 		});
 	}
 
 	private async handleToolDelta(
 		payload: Record<string, unknown> | undefined,
 		acpSessionId: string,
-		session: AcpSession,
+		_session: AcpSession,
 	): Promise<void> {
-		const callId = typeof payload?.callId === "string" ? payload.callId : undefined;
+		const callId =
+			typeof payload?.callId === 'string' ? payload.callId : undefined;
 		if (!callId) return;
 
-		const name = typeof payload?.name === "string" ? payload.name : "";
+		const name = typeof payload?.name === 'string' ? payload.name : '';
 		const delta = payload?.delta;
 
-		if (name === "bash" && typeof delta === "string" && delta) {
+		if (name === 'bash' && typeof delta === 'string' && delta) {
 			await this.client.sessionUpdate({
 				sessionId: acpSessionId,
 				update: {
 					toolCallId: callId,
-					sessionUpdate: "tool_call_update",
+					sessionUpdate: 'tool_call_update',
 					content: [
 						{
-							type: "content",
-							content: { type: "text", text: delta },
+							type: 'content',
+							content: { type: 'text', text: delta },
 						},
 					],
-				} as SessionNotification["update"],
+				} as SessionNotification['update'],
 			});
 		}
 	}
@@ -422,21 +410,21 @@ export class OttoAcpAgent implements Agent {
 		session: AcpSession,
 	): Promise<void> {
 		const callId =
-			typeof payload?.callId === "string"
-				? payload.callId
-				: undefined;
+			typeof payload?.callId === 'string' ? payload.callId : undefined;
 		if (!callId) return;
 
-		const name =
-			typeof payload?.name === "string" ? payload.name : "";
-		const result = payload?.result as Record<string, unknown> | string | undefined;
+		const name = typeof payload?.name === 'string' ? payload.name : '';
+		const result = payload?.result as
+			| Record<string, unknown>
+			| string
+			| undefined;
 		const args = payload?.args as Record<string, unknown> | undefined;
 
 		const hasError =
 			payload?.error ||
-			(typeof result === "object" &&
+			(typeof result === 'object' &&
 				result !== null &&
-				"ok" in result &&
+				'ok' in result &&
 				result.ok === false);
 
 		const content = this.buildToolResultContent(name, args, result, session);
@@ -446,15 +434,21 @@ export class OttoAcpAgent implements Agent {
 			sessionId: acpSessionId,
 			update: {
 				toolCallId: callId,
-				sessionUpdate: "tool_call_update",
-				status: hasError ? "failed" : "completed",
+				sessionUpdate: 'tool_call_update',
+				status: hasError ? 'failed' : 'completed',
 				...(content.length > 0 ? { content } : {}),
 				...(locations.length > 0 ? { locations } : {}),
-			} as SessionNotification["update"],
+			} as SessionNotification['update'],
 		});
 
 		if (!hasError) {
-			await this.notifyEditorOfFileChanges(name, args, result, acpSessionId, session);
+			await this.notifyEditorOfFileChanges(
+				name,
+				args,
+				result,
+				acpSessionId,
+				session,
+			);
 		}
 	}
 
@@ -466,21 +460,23 @@ export class OttoAcpAgent implements Agent {
 	): ToolCallContent[] {
 		if (result === undefined || result === null) return [];
 
-		const isWriteTool = ["write", "edit", "multiedit", "apply_patch"].includes(name);
+		const isWriteTool = ['write', 'edit', 'multiedit', 'apply_patch'].includes(
+			name,
+		);
 		if (isWriteTool) {
 			return this.buildDiffContent(name, args, result, session);
 		}
 
-		if (name === "bash") {
+		if (name === 'bash') {
 			return this.buildBashContent(result);
 		}
 
-		if (name === "read") {
+		if (name === 'read') {
 			return this.buildReadContent(args, result, session);
 		}
 
 		let text: string;
-		if (typeof result === "string") {
+		if (typeof result === 'string') {
 			text = result;
 		} else {
 			try {
@@ -494,8 +490,8 @@ export class OttoAcpAgent implements Agent {
 
 		return [
 			{
-				type: "content",
-				content: { type: "text", text: truncate(text, 5000) },
+				type: 'content',
+				content: { type: 'text', text: truncate(text, 5000) },
 			},
 		];
 	}
@@ -504,22 +500,24 @@ export class OttoAcpAgent implements Agent {
 		name: string,
 		args: Record<string, unknown> | undefined,
 		result: Record<string, unknown> | string | undefined,
-		session: AcpSession,
+		_session: AcpSession,
 	): ToolCallContent[] {
 		const content: ToolCallContent[] = [];
 
-		if (typeof result === "object" && result !== null) {
+		if (typeof result === 'object' && result !== null) {
 			const artifact = result.artifact as Record<string, unknown> | undefined;
 			const patch = artifact?.patch as string | undefined;
 
-			if (artifact?.kind === "file_diff" && patch) {
+			if (artifact?.kind === 'file_diff' && patch) {
 				const filePath = extractFilePath(name, args, patch);
 				if (filePath) {
-					const summary = artifact.summary as Record<string, unknown> | undefined;
-					const additions = summary?.additions ?? 0;
-					const deletions = summary?.deletions ?? 0;
+					const summary = artifact.summary as
+						| Record<string, unknown>
+						| undefined;
+					const _additions = summary?.additions ?? 0;
+					const _deletions = summary?.deletions ?? 0;
 					content.push({
-						type: "diff",
+						type: 'diff',
 						path: filePath,
 						newText: patch,
 						oldText: null,
@@ -532,15 +530,15 @@ export class OttoAcpAgent implements Agent {
 			const output = result.output as string | undefined;
 			if (ok !== undefined && output) {
 				content.push({
-					type: "content",
-					content: { type: "text", text: truncate(output, 3000) },
+					type: 'content',
+					content: { type: 'text', text: truncate(output, 3000) },
 				});
 				return content;
 			}
 		}
 
 		let text: string;
-		if (typeof result === "string") {
+		if (typeof result === 'string') {
 			text = result;
 		} else {
 			try {
@@ -551,8 +549,8 @@ export class OttoAcpAgent implements Agent {
 		}
 		if (text) {
 			content.push({
-				type: "content",
-				content: { type: "text", text: truncate(text, 3000) },
+				type: 'content',
+				content: { type: 'text', text: truncate(text, 3000) },
 			});
 		}
 
@@ -562,7 +560,7 @@ export class OttoAcpAgent implements Agent {
 	private buildBashContent(
 		result: Record<string, unknown> | string | undefined,
 	): ToolCallContent[] {
-		if (typeof result === "object" && result !== null) {
+		if (typeof result === 'object' && result !== null) {
 			const stdout = result.stdout as string | undefined;
 			const stderr = result.stderr as string | undefined;
 			const exitCode = result.exitCode as number | undefined;
@@ -574,12 +572,12 @@ export class OttoAcpAgent implements Agent {
 				parts.push(`exit code: ${exitCode}`);
 			}
 
-			const text = parts.join("\n");
+			const text = parts.join('\n');
 			if (text) {
 				return [
 					{
-						type: "content",
-						content: { type: "text", text: truncate(text, 5000) },
+						type: 'content',
+						content: { type: 'text', text: truncate(text, 5000) },
 					},
 				];
 			}
@@ -591,20 +589,26 @@ export class OttoAcpAgent implements Agent {
 	private buildReadContent(
 		args: Record<string, unknown> | undefined,
 		result: Record<string, unknown> | string | undefined,
-		session: AcpSession,
+		_session: AcpSession,
 	): ToolCallContent[] {
-		if (typeof result === "object" && result !== null) {
-			const fileContent = (result as Record<string, unknown>).content as string | undefined;
-			const filePath = (result as Record<string, unknown>).path as string | undefined;
-			const totalLines = (result as Record<string, unknown>).totalLines as number | undefined;
+		if (typeof result === 'object' && result !== null) {
+			const fileContent = (result as Record<string, unknown>).content as
+				| string
+				| undefined;
+			const filePath = (result as Record<string, unknown>).path as
+				| string
+				| undefined;
+			const _totalLines = (result as Record<string, unknown>).totalLines as
+				| number
+				| undefined;
 
 			if (fileContent) {
-				const displayPath = filePath || (args?.path as string) || "file";
+				const _displayPath = filePath || (args?.path as string) || 'file';
 				return [
 					{
-						type: "content",
+						type: 'content',
 						content: {
-							type: "text",
+							type: 'text',
 							text: truncate(fileContent, 5000),
 						},
 					},
@@ -624,7 +628,9 @@ export class OttoAcpAgent implements Agent {
 	): Promise<void> {
 		if (!this.clientCapabilities?.fs?.writeTextFile) return;
 
-		const isWriteTool = ["write", "edit", "multiedit", "apply_patch"].includes(name);
+		const isWriteTool = ['write', 'edit', 'multiedit', 'apply_patch'].includes(
+			name,
+		);
 		if (!isWriteTool) return;
 
 		const filePaths = this.getWrittenFilePaths(name, args, result);
@@ -634,14 +640,18 @@ export class OttoAcpAgent implements Agent {
 				const absPath = path.isAbsolute(filePath)
 					? filePath
 					: path.join(session.cwd, filePath);
-				const fileContent = fs.readFileSync(absPath, "utf-8");
+				const fileContent = fs.readFileSync(absPath, 'utf-8');
 				await this.client.writeTextFile({
 					sessionId: acpSessionId,
 					path: absPath,
 					content: fileContent,
 				});
 			} catch (err) {
-				console.error("[acp] Failed to notify editor of file write:", filePath, err);
+				console.error(
+					'[acp] Failed to notify editor of file write:',
+					filePath,
+					err,
+				);
 			}
 		}
 	}
@@ -653,26 +663,28 @@ export class OttoAcpAgent implements Agent {
 	): string[] {
 		const paths: string[] = [];
 
-		if (args?.path && typeof args.path === "string") {
+		if (args?.path && typeof args.path === 'string') {
 			paths.push(args.path);
-		} else if (args?.filePath && typeof args.filePath === "string") {
+		} else if (args?.filePath && typeof args.filePath === 'string') {
 			paths.push(args.filePath);
 		}
 
-		if (name === "apply_patch" && typeof args?.patch === "string") {
+		if (name === 'apply_patch' && typeof args?.patch === 'string') {
 			paths.push(...extractPathsFromPatch(args.patch));
 		}
 
-		if (typeof result === "object" && result !== null) {
+		if (typeof result === 'object' && result !== null) {
 			const artifact = result.artifact as Record<string, unknown> | undefined;
 			const patchStr = artifact?.patch as string | undefined;
 			if (patchStr) {
 				paths.push(...extractPathsFromPatch(patchStr));
 			}
-			const changes = result.changes as Array<Record<string, unknown>> | undefined;
+			const changes = result.changes as
+				| Array<Record<string, unknown>>
+				| undefined;
 			if (Array.isArray(changes)) {
 				for (const c of changes) {
-					if (typeof c.filePath === "string") paths.push(c.filePath);
+					if (typeof c.filePath === 'string') paths.push(c.filePath);
 				}
 			}
 		}
@@ -686,45 +698,45 @@ function formatToolTitle(
 	args: Record<string, unknown> | undefined,
 ): string {
 	switch (name) {
-		case "read":
-			return `Read ${args?.path || "file"}`;
-		case "write":
-			return `Write ${args?.path || "file"}`;
-		case "edit":
-			return `Edit ${args?.filePath || "file"}`;
-		case "multiedit":
-			return `Multi-edit ${args?.filePath || "file"}`;
-		case "apply_patch":
-			return "Apply patch";
-		case "bash":
-			return `Run: ${truncate(String(args?.cmd || "command"), 60)}`;
-		case "ripgrep":
-			return `Search: ${args?.query || ""}`;
-		case "glob":
-			return `Find files: ${args?.pattern || ""}`;
-		case "grep":
-			return `Grep: ${args?.query || ""}`;
-		case "ls":
-			return `List ${args?.path || "."}`;
-		case "tree":
-			return `Tree ${args?.path || "."}`;
-		case "git_status":
-			return "Git status";
-		case "git_diff":
-			return "Git diff";
-		case "web_search":
-		case "websearch":
-			return `Search web: ${args?.query || ""}`;
-		case "web_fetch":
-			return `Fetch: ${truncate(String(args?.url || ""), 60)}`;
-		case "terminal":
-			return `Terminal: ${args?.operation || ""}`;
-		case "update_todos":
-			return "Update plan";
-		case "progress_update":
-			return `Progress: ${args?.message || ""}`;
-		case "finish":
-			return "Done";
+		case 'read':
+			return `Read ${args?.path || 'file'}`;
+		case 'write':
+			return `Write ${args?.path || 'file'}`;
+		case 'edit':
+			return `Edit ${args?.filePath || 'file'}`;
+		case 'multiedit':
+			return `Multi-edit ${args?.filePath || 'file'}`;
+		case 'apply_patch':
+			return 'Apply patch';
+		case 'bash':
+			return `Run: ${truncate(String(args?.cmd || 'command'), 60)}`;
+		case 'ripgrep':
+			return `Search: ${args?.query || ''}`;
+		case 'glob':
+			return `Find files: ${args?.pattern || ''}`;
+		case 'grep':
+			return `Grep: ${args?.query || ''}`;
+		case 'ls':
+			return `List ${args?.path || '.'}`;
+		case 'tree':
+			return `Tree ${args?.path || '.'}`;
+		case 'git_status':
+			return 'Git status';
+		case 'git_diff':
+			return 'Git diff';
+		case 'web_search':
+		case 'websearch':
+			return `Search web: ${args?.query || ''}`;
+		case 'web_fetch':
+			return `Fetch: ${truncate(String(args?.url || ''), 60)}`;
+		case 'terminal':
+			return `Terminal: ${args?.operation || ''}`;
+		case 'update_todos':
+			return 'Update plan';
+		case 'progress_update':
+			return `Progress: ${args?.message || ''}`;
+		case 'finish':
+			return 'Done';
 		default:
 			return name;
 	}
@@ -732,31 +744,31 @@ function formatToolTitle(
 
 function getToolKind(name: string): ToolKind {
 	switch (name) {
-		case "read":
-		case "ls":
-		case "tree":
-			return "read";
-		case "write":
-		case "edit":
-		case "multiedit":
-		case "apply_patch":
-			return "edit";
-		case "bash":
-		case "terminal":
-			return "execute";
-		case "ripgrep":
-		case "grep":
-		case "glob":
-		case "web_search":
-		case "websearch":
-			return "search";
-		case "web_fetch":
-			return "fetch";
-		case "progress_update":
-		case "update_todos":
-			return "think";
+		case 'read':
+		case 'ls':
+		case 'tree':
+			return 'read';
+		case 'write':
+		case 'edit':
+		case 'multiedit':
+		case 'apply_patch':
+			return 'edit';
+		case 'bash':
+		case 'terminal':
+			return 'execute';
+		case 'ripgrep':
+		case 'grep':
+		case 'glob':
+		case 'web_search':
+		case 'websearch':
+			return 'search';
+		case 'web_fetch':
+			return 'fetch';
+		case 'progress_update':
+		case 'update_todos':
+			return 'think';
 		default:
-			return "other";
+			return 'other';
 	}
 }
 
@@ -770,9 +782,7 @@ function getToolLocations(
 	const locations: ToolCallLocation[] = [];
 
 	const filePath =
-		(args.path as string) ||
-		(args.filePath as string) ||
-		(args.file as string);
+		(args.path as string) || (args.filePath as string) || (args.file as string);
 
 	if (filePath && isFileTool(name)) {
 		const absPath = path.isAbsolute(filePath)
@@ -789,7 +799,7 @@ function getToolLocations(
 		locations.push(location);
 	}
 
-	if (name === "apply_patch" && typeof args.patch === "string") {
+	if (name === 'apply_patch' && typeof args.patch === 'string') {
 		const patchPaths = extractPathsFromPatch(args.patch as string);
 		for (const p of patchPaths) {
 			const absPath = path.isAbsolute(p) ? p : path.join(cwd, p);
@@ -801,24 +811,22 @@ function getToolLocations(
 }
 
 function isFileTool(name: string): boolean {
-	return [
-		"read", "write", "edit", "multiedit",
-		"ls", "tree",
-	].includes(name);
+	return ['read', 'write', 'edit', 'multiedit', 'ls', 'tree'].includes(name);
 }
 
 function extractPathsFromPatch(patch: string): string[] {
 	const paths: string[] = [];
 	const regex = /\*\*\* (?:Update|Add|Delete) File: (.+)/g;
-	let match: RegExpExecArray | null;
-	while ((match = regex.exec(patch)) !== null) {
+	let match: RegExpExecArray | null = regex.exec(patch);
+	while (match !== null) {
 		paths.push(match[1].trim());
+		match = regex.exec(patch);
 	}
 	return paths;
 }
 
 function extractFilePath(
-	name: string,
+	_name: string,
 	args: Record<string, unknown> | undefined,
 	patch?: string,
 ): string | null {
@@ -838,16 +846,16 @@ function extractFilePath(
 
 function mapPlanStatus(
 	status?: string,
-): "pending" | "in_progress" | "completed" | "cancelled" {
+): 'pending' | 'in_progress' | 'completed' | 'cancelled' {
 	switch (status) {
-		case "in_progress":
-			return "in_progress";
-		case "completed":
-			return "completed";
-		case "cancelled":
-			return "cancelled";
+		case 'in_progress':
+			return 'in_progress';
+		case 'completed':
+			return 'completed';
+		case 'cancelled':
+			return 'cancelled';
 		default:
-			return "pending";
+			return 'pending';
 	}
 }
 

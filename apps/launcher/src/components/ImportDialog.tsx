@@ -150,6 +150,7 @@ export function ImportDialog() {
 	return (
 		<div className="px-4 pb-4 space-y-4">
 			<button
+				type="button"
 				onClick={handleCancel}
 				className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 			>
@@ -186,9 +187,10 @@ export function ImportDialog() {
 					</div>
 
 					<div className="space-y-1.5">
-						<label className="text-xs text-muted-foreground">SSH keys</label>
+						<span className="text-xs text-muted-foreground">SSH keys</span>
 						<div className="flex gap-2">
 							<button
+								type="button"
 								onClick={() => setSshMode('team')}
 								className={`flex-1 flex items-center gap-1.5 p-2 rounded-md border text-xs transition-colors ${
 									sshMode === 'team'
@@ -200,6 +202,7 @@ export function ImportDialog() {
 								<span className="font-medium">Team key</span>
 							</button>
 							<button
+								type="button"
 								onClick={() => setSshMode('personal')}
 								className={`flex-1 flex items-center gap-1.5 p-2 rounded-md border text-xs transition-colors ${
 									sshMode === 'personal'
@@ -215,9 +218,7 @@ export function ImportDialog() {
 
 					{sshMode === 'personal' && (
 						<div className="space-y-1.5">
-							<label className="text-xs text-muted-foreground">
-								Select key
-							</label>
+							<span className="text-xs text-muted-foreground">Select key</span>
 							{sshKeys.length === 0 ? (
 								<div className="text-xs text-muted-foreground p-2 rounded bg-secondary">
 									No SSH keys found in ~/.ssh/
@@ -226,6 +227,7 @@ export function ImportDialog() {
 								<div className="space-y-1">
 									{sshKeys.map((key) => (
 										<button
+											type="button"
 											key={key.name}
 											onClick={() => setSelectedKey(key.name)}
 											className={`w-full flex items-center gap-2 p-2 rounded-md border text-xs text-left transition-colors ${
@@ -258,39 +260,39 @@ export function ImportDialog() {
 						selectedKey &&
 						sshKeys.find((k) => k.name === selectedKey)?.hasPassphrase && (
 							<div className="space-y-1.5">
-								<label className="text-xs text-muted-foreground">
+								<label className="text-xs text-muted-foreground block">
 									Key passphrase
+									<input
+										type="password"
+										value={sshPassphrase}
+										onChange={(e) => setSshPassphrase(e.target.value)}
+										placeholder="Enter passphrase for this key"
+										className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring mt-1.5"
+									/>
 								</label>
-								<input
-									type="password"
-									value={sshPassphrase}
-									onChange={(e) => setSshPassphrase(e.target.value)}
-									placeholder="Enter passphrase for this key"
-									className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-								/>
 							</div>
 						)}
 
 					{sshMode === 'team' && (
 						<div className="space-y-1.5">
-							<label className="text-xs text-muted-foreground">
+							<label className="text-xs text-muted-foreground block">
 								Team password
+								<input
+									type="password"
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
+									onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+									placeholder="Enter team password"
+									className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring mt-1.5"
+								/>
 							</label>
-							<input
-								type="password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-								placeholder="Enter team password"
-								className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-								autoFocus
-							/>
 						</div>
 					)}
 
 					{error && <div className="text-xs text-destructive">{error}</div>}
 
 					<button
+						type="button"
 						onClick={handleSubmit}
 						disabled={(sshMode === 'team' && !password) || verifying}
 						className="w-full py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"

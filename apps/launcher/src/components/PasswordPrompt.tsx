@@ -46,6 +46,7 @@ export function PasswordPrompt() {
 				{error && <div className="text-xs text-destructive">{error}</div>}
 
 				<button
+					type="button"
 					onClick={handleSubmit}
 					disabled={!password}
 					className="w-full py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"

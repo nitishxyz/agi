@@ -91,6 +91,7 @@ export function Welcome() {
 						const running = runningCount(team.id);
 						return (
 							<button
+								type="button"
 								key={team.id}
 								onClick={() => selectTeam(team)}
 								className="w-full p-4 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors text-left space-y-2"
@@ -115,6 +116,7 @@ export function Welcome() {
 											</div>
 										</div>
 										<button
+											type="button"
 											onClick={(e) => {
 												e.stopPropagation();
 												deleteTeam(team);
@@ -140,6 +142,7 @@ export function Welcome() {
 
 			<div className="space-y-2">
 				<button
+					type="button"
 					onClick={() => setView('team-setup')}
 					className="w-full p-4 border border-border rounded-lg flex items-center gap-3 hover:bg-accent/50 transition-colors text-left"
 				>

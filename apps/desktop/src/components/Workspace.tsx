@@ -121,9 +121,9 @@ export function Workspace({
 					</button>
 				</div>
 				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-				<span className="font-medium text-foreground truncate">
-					{project.name}
-				</span>
+					<span className="font-medium text-foreground truncate">
+						{project.name}
+					</span>
 				</div>
 				<div className="flex-1" />
 				{available &&
@@ -161,9 +161,9 @@ export function Workspace({
 					<div className="flex items-center gap-1.5 text-xs">
 						<span className="w-2 h-2 rounded-full bg-green-500" />
 						<span className="text-muted-foreground">Port {server.webPort}</span>
-					{appVersion && (
-						<span className="text-muted-foreground/50">· v{appVersion}</span>
-					)}
+						{appVersion && (
+							<span className="text-muted-foreground/50">· v{appVersion}</span>
+						)}
 					</div>
 				)}
 				<button

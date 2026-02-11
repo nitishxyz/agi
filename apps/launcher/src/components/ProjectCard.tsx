@@ -69,6 +69,7 @@ export function ProjectCard({ project, onAction }: Props) {
 				{running ? (
 					<>
 						<button
+							type="button"
 							onClick={() => handleAction('open')}
 							className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
 						>
@@ -76,6 +77,7 @@ export function ProjectCard({ project, onAction }: Props) {
 							Open
 						</button>
 						<button
+							type="button"
 							onClick={() => handleAction('manage')}
 							className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-secondary hover:bg-accent transition-colors"
 						>
@@ -83,6 +85,7 @@ export function ProjectCard({ project, onAction }: Props) {
 							Manage
 						</button>
 						<button
+							type="button"
 							onClick={() => handleAction('stop')}
 							disabled={!!loading}
 							className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-secondary hover:bg-accent transition-colors disabled:opacity-50"
@@ -98,6 +101,7 @@ export function ProjectCard({ project, onAction }: Props) {
 				) : (
 					<>
 						<button
+							type="button"
 							onClick={() => handleAction('start')}
 							disabled={!!loading}
 							className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
@@ -110,6 +114,7 @@ export function ProjectCard({ project, onAction }: Props) {
 							Start
 						</button>
 						<button
+							type="button"
 							onClick={() => handleAction('manage')}
 							className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-secondary hover:bg-accent transition-colors"
 						>
@@ -121,6 +126,7 @@ export function ProjectCard({ project, onAction }: Props) {
 
 				<div className="relative ml-auto">
 					<button
+						type="button"
 						onClick={() => setMenuOpen(!menuOpen)}
 						className="p-1 rounded hover:bg-secondary transition-colors"
 					>
@@ -129,9 +135,14 @@ export function ProjectCard({ project, onAction }: Props) {
 
 					{menuOpen && (
 						<>
-							<div
+							<button
+								type="button"
 								className="fixed inset-0 z-10"
 								onClick={() => setMenuOpen(false)}
+								onKeyDown={(e) => {
+									if (e.key === 'Escape') setMenuOpen(false);
+								}}
+								tabIndex={-1}
 							/>
 							<div className="absolute right-0 top-8 z-20 w-40 rounded-md border border-border bg-popover shadow-lg py-1">
 								<MenuItem

@@ -111,7 +111,7 @@ export async function handleServe(opts: ServeOptions, version: string) {
 				}
 			}
 		} catch (error) {
-			const errorMsg = error instanceof Error ? error.message : String(error);
+			const _errorMsg = error instanceof Error ? error.message : String(error);
 			logger.error('Failed to start tunnel', error);
 			console.log(
 				colors.dim('  Tunnel failed, continuing without remote access'),

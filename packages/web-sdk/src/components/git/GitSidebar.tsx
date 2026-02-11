@@ -112,7 +112,7 @@ export const GitSidebar = memo(function GitSidebar({
 
 	const totalChanges = allFiles.length;
 	const canPush = status && status.ahead > 0;
-	const canPull = !!status;
+	const _canPull = !!status;
 	const hasPendingPulls = status && status.behind > 0;
 	const isActing = pushMutation.isPending || pullMutation.isPending;
 

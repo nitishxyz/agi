@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 interface Props {
 	label: string;
 	value: string;
@@ -17,16 +19,20 @@ export function FormField({
 	autoFocus,
 	onKeyDown,
 }: Props) {
+	const id = useId();
 	return (
 		<div className="space-y-1.5">
-			<label className="text-xs text-muted-foreground">{label}</label>
+			<label htmlFor={id} className="text-xs text-muted-foreground">
+				{label}
+			</label>
 			<input
+				id={id}
 				type={type}
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={placeholder}
 				className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-				autoFocus={autoFocus}
+			autoFocus={autoFocus}
 				onKeyDown={onKeyDown}
 			/>
 		</div>

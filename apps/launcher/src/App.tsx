@@ -22,7 +22,9 @@ function App() {
 
 	const [appVersion, setAppVersion] = useState<string | null>(null);
 	useEffect(() => {
-		getVersion().then(setAppVersion).catch(() => {});
+		getVersion()
+			.then(setAppVersion)
+			.catch(() => {});
 	}, []);
 
 	if (view === 'loading') {
@@ -39,13 +41,16 @@ function App() {
 				className="h-10 flex items-center px-4 select-none cursor-default"
 				onMouseDown={handleTitleBarDrag}
 				data-tauri-drag-region
+				role="toolbar"
 			>
-			<span className="text-xs font-semibold tracking-wider text-muted-foreground flex-1 text-center">
+				<span className="text-xs font-semibold tracking-wider text-muted-foreground flex-1 text-center">
 					otto launcher
 				</span>
-			{appVersion && (
-				<span className="text-[10px] text-muted-foreground/50">v{appVersion}</span>
-			)}
+				{appVersion && (
+					<span className="text-[10px] text-muted-foreground/50">
+						v{appVersion}
+					</span>
+				)}
 			</div>
 
 			{!dockerOk && (

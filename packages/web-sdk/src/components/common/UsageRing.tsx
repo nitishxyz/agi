@@ -34,7 +34,13 @@ export const UsageRing = memo(function UsageRing({
 			className="relative flex items-center hover:opacity-80 transition-opacity cursor-pointer"
 			title={`Usage: ${Math.round(percent)}% (5h window) — Click for details`}
 		>
-			<svg width={SIZE} height={SIZE} className="-rotate-90">
+			<svg
+				width={SIZE}
+				height={SIZE}
+				className="-rotate-90"
+				role="img"
+				aria-label="Usage ring"
+			>
 				<circle
 					cx={SIZE / 2}
 					cy={SIZE / 2}
