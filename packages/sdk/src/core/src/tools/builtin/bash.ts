@@ -30,6 +30,16 @@ function resolveSafePath(projectRoot: string, p: string) {
 	return abs;
 }
 
+function killProcessTree(pid: number) {
+	try {
+		process.kill(-pid, 'SIGTERM');
+	} catch {
+		try {
+			process.kill(pid, 'SIGTERM');
+		} catch {}
+	}
+}
+
 export function buildBashTool(projectRoot: string): {
 	name: string;
 	tool: Tool;
@@ -55,23 +65,34 @@ export function buildBashTool(projectRoot: string): {
 					.describe('Timeout in milliseconds (default: 300000 = 5 minutes)'),
 			})
 			.strict(),
-		async execute({
-			cmd,
-			cwd,
-			allowNonZeroExit,
-			timeout = 300000,
-		}: {
-			cmd: string;
-			cwd?: string;
-			allowNonZeroExit?: boolean;
-			timeout?: number;
-		}): Promise<
+		async execute(
+			{
+				cmd,
+				cwd,
+				allowNonZeroExit,
+				timeout = 300000,
+			}: {
+				cmd: string;
+				cwd?: string;
+				allowNonZeroExit?: boolean;
+				timeout?: number;
+			},
+			options?: { abortSignal?: AbortSignal },
+		): Promise<
 			ToolResponse<{
 				exitCode: number;
 				stdout: string;
 				stderr: string;
 			}>
 		> {
+			const abortSignal = options?.abortSignal;
+
+			if (abortSignal?.aborted) {
+				return createToolError('Command aborted before execution', 'abort', {
+					cmd,
+				});
+			}
+
 			const absCwd = resolveSafePath(projectRoot, cwd || '.');
 
 			return new Promise((resolve) => {
@@ -80,17 +101,48 @@ export function buildBashTool(projectRoot: string): {
 					shell: true,
 					stdio: ['ignore', 'pipe', 'pipe'],
 					env: { ...process.env, PATH: getAugmentedPath() },
+					detached: true,
 				});
 
 				let stdout = '';
 				let stderr = '';
 				let didTimeout = false;
+				let didAbort = false;
+				let settled = false;
 				let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+				const settle = (
+					result: ToolResponse<{
+						exitCode: number;
+						stdout: string;
+						stderr: string;
+					}>,
+				) => {
+					if (settled) return;
+					settled = true;
+					if (timeoutId) clearTimeout(timeoutId);
+					if (abortSignal) {
+						abortSignal.removeEventListener('abort', onAbort);
+					}
+					resolve(result);
+				};
+
+				const onAbort = () => {
+					if (settled) return;
+					didAbort = true;
+					if (proc.pid) killProcessTree(proc.pid);
+					else proc.kill('SIGTERM');
+				};
+
+				if (abortSignal) {
+					abortSignal.addEventListener('abort', onAbort, { once: true });
+				}
 
 				if (timeout > 0) {
 					timeoutId = setTimeout(() => {
 						didTimeout = true;
-						proc.kill();
+						if (proc.pid) killProcessTree(proc.pid);
+						else proc.kill();
 					}, timeout);
 				}
 
@@ -103,10 +155,16 @@ export function buildBashTool(projectRoot: string): {
 				});
 
 				proc.on('close', (exitCode) => {
-					if (timeoutId) clearTimeout(timeoutId);
-
-					if (didTimeout) {
-						resolve(
+					if (didAbort) {
+						settle(
+							createToolError(`Command aborted by user: ${cmd}`, 'abort', {
+								cmd,
+								stdout,
+								stderr,
+							}),
+						);
+					} else if (didTimeout) {
+						settle(
 							createToolError(
 								`Command timed out after ${timeout}ms: ${cmd}`,
 								'timeout',
@@ -120,7 +178,7 @@ export function buildBashTool(projectRoot: string): {
 					} else if (exitCode !== 0 && !allowNonZeroExit) {
 						const errorDetail = stderr.trim() || stdout.trim() || '';
 						const errorMsg = `Command failed with exit code ${exitCode}${errorDetail ? `\n\n${errorDetail}` : ''}`;
-						resolve(
+						settle(
 							createToolError(errorMsg, 'execution', {
 								exitCode,
 								stdout,
@@ -131,7 +189,7 @@ export function buildBashTool(projectRoot: string): {
 							}),
 						);
 					} else {
-						resolve({
+						settle({
 							ok: true,
 							exitCode: exitCode ?? 0,
 							stdout,
@@ -141,8 +199,7 @@ export function buildBashTool(projectRoot: string): {
 				});
 
 				proc.on('error', (err) => {
-					if (timeoutId) clearTimeout(timeoutId);
-					resolve(
+					settle(
 						createToolError(
 							`Command execution failed: ${err.message}`,
 							'execution',

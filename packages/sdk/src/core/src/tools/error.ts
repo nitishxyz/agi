@@ -4,7 +4,8 @@ export type ToolErrorType =
 	| 'permission'
 	| 'execution'
 	| 'timeout'
-	| 'unsupported';
+	| 'unsupported'
+	| 'abort';
 
 export type ToolErrorResponse = {
 	ok: false;
