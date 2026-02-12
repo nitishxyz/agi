@@ -4,6 +4,7 @@ import { Sun, Moon, ArrowDownToLine, RotateCw } from 'lucide-react';
 import { useServer } from '../hooks/useServer';
 import { useUpdate } from '../hooks/useUpdate';
 import { usePlatform } from '../hooks/usePlatform';
+import { useFullscreen } from '../hooks/useFullscreen';
 import { handleTitleBarDrag } from '../utils/title-bar';
 import type { Project } from '../lib/tauri-bridge';
 import { tauriBridge } from '../lib/tauri-bridge';
@@ -24,6 +25,7 @@ export function Workspace({
 	const iframeRef = useRef<HTMLIFrameElement>(null);
 	const [iframeLoaded, setIframeLoaded] = useState(false);
 	const platform = usePlatform();
+	const isFullscreen = useFullscreen();
 	const { theme, toggleTheme } = useDesktopTheme();
 	const {
 		available,
@@ -110,7 +112,7 @@ export function Workspace({
 				role="toolbar"
 			>
 				<div
-					className={`flex items-center gap-2 ${platform === 'macos' ? 'ml-14' : ''}`}
+				className={`flex items-center gap-2 ${platform === 'macos' && !isFullscreen ? 'ml-14' : ''}`}
 				>
 					<button
 						type="button"
