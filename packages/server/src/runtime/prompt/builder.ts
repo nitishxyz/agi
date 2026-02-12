@@ -12,6 +12,10 @@ import GUIDED_PROMPT from '@ottocode/sdk/prompts/modes/guided.txt' with {
 	type: 'text',
 };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import OPENAI_OAUTH_PROMPT from '@ottocode/sdk/prompts/providers/openai-oauth.txt' with {
+	type: 'text',
+};
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import ANTHROPIC_SPOOF_PROMPT from '@ottocode/sdk/prompts/providers/anthropicSpoof.txt' with {
 	type: 'text',
 };
@@ -35,6 +39,7 @@ export async function composeSystemPrompt(options: {
 	includeProjectTree?: boolean;
 	userContext?: string;
 	contextSummary?: string;
+	isOpenAIOAuth?: boolean;
 }): Promise<ComposedSystemPrompt> {
 	const components: string[] = [];
 	if (options.spoofPrompt) {
@@ -49,27 +54,38 @@ export async function composeSystemPrompt(options: {
 	}
 
 	const parts: string[] = [];
+	if (options.isOpenAIOAuth) {
+		const oauthInstructions = (OPENAI_OAUTH_PROMPT || '').trim();
+		if (oauthInstructions) {
+			parts.push(oauthInstructions);
+			components.push('provider:openai-oauth');
+		}
+		if (options.agentPrompt.trim()) {
+			parts.push(options.agentPrompt.trim());
+			components.push('agent');
+		}
+	} else {
+		const providerResult = await providerBasePrompt(
+			options.provider,
+			options.model,
+			options.projectRoot,
+		);
+		const baseInstructions = (BASE_PROMPT || '').trim();
 
-	const providerResult = await providerBasePrompt(
-		options.provider,
-		options.model,
-		options.projectRoot,
-	);
-	const baseInstructions = (BASE_PROMPT || '').trim();
-
-	parts.push(
-		providerResult.prompt.trim(),
-		baseInstructions.trim(),
-		options.agentPrompt.trim(),
-	);
-	if (providerResult.prompt.trim()) {
-		components.push(`provider:${providerResult.resolvedType}`);
-	}
-	if (baseInstructions.trim()) {
-		components.push('base');
-	}
-	if (options.agentPrompt.trim()) {
-		components.push('agent');
+		parts.push(
+			providerResult.prompt.trim(),
+			baseInstructions.trim(),
+			options.agentPrompt.trim(),
+		);
+		if (providerResult.prompt.trim()) {
+			components.push(`provider:${providerResult.resolvedType}`);
+		}
+		if (baseInstructions.trim()) {
+			components.push('base');
+		}
+		if (options.agentPrompt.trim()) {
+			components.push('agent');
+		}
 	}
 
 	if (options.oneShot) {

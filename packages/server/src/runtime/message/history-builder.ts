@@ -23,7 +23,11 @@ export async function buildHistoryMessages(
 	const toolHistory = new ToolHistoryTracker();
 
 	for (const m of rows) {
-		if (m.role === 'assistant' && m.status !== 'complete') {
+		if (
+			m.role === 'assistant' &&
+			m.status !== 'complete' &&
+			m.status !== 'completed'
+		) {
 			debugLog(
 				`[buildHistoryMessages] Skipping assistant message ${m.id} with status ${m.status} (current turn still in progress)`,
 			);

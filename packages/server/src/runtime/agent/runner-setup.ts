@@ -110,6 +110,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		includeProjectTree: isFirstMessage,
 		userContext: opts.userContext,
 		contextSummary,
+		isOpenAIOAuth: oauth.isOpenAIOAuth,
 	});
 
 	const rawMaxOutputTokens = getMaxOutputTokens(opts.provider, opts.model);

@@ -72,13 +72,10 @@ function buildHeaders(
 	headers.delete('Authorization');
 	headers.delete('authorization');
 	headers.set('authorization', `Bearer ${accessToken}`);
-	headers.set('originator', 'codex_cli_rs');
-	headers.set('version', '0.98.0');
-	headers.set('x-oai-web-search-eligible', 'true');
-	headers.set('accept', 'text/event-stream');
+	headers.set('originator', 'otto');
 	headers.set(
 		'User-Agent',
-		`codex_cli_rs/0.98.0 (${os.platform()} ${os.release()}; ${os.arch()})`,
+		`otto/1.0 (${os.platform()} ${os.release()}; ${os.arch()})`,
 	);
 	if (accountId) {
 		headers.set('ChatGPT-Account-Id', accountId);
@@ -105,7 +102,6 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 		const targetUrl = rewriteUrl(originalUrl);
 
 		const headers = buildHeaders(init, validated.access, validated.accountId);
-		headers.set('accept-encoding', 'identity');
 
 		const response = await fetch(targetUrl, {
 			...init,
@@ -113,7 +109,6 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 			// biome-ignore lint/suspicious/noTsIgnore: Bun-specific fetch option
 			// @ts-ignore
 			timeout: false,
-			decompress: false,
 		});
 
 		if (response.status === 401) {
@@ -136,7 +131,6 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 					currentOAuth.access,
 					currentOAuth.accountId,
 				);
-				retryHeaders.set('accept-encoding', 'identity');
 
 				return fetch(targetUrl, {
 					...init,
@@ -144,7 +138,6 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 					// biome-ignore lint/suspicious/noTsIgnore: Bun-specific fetch option
 					// @ts-ignore
 					timeout: false,
-					decompress: false,
 				});
 			} catch {
 				console.error(

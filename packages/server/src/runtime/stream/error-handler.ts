@@ -188,7 +188,7 @@ export function createErrorHandler(
 			} else {
 				await db
 					.update(messages)
-					.set({ status: 'completed', completedAt: Date.now() })
+					.set({ status: 'complete', completedAt: Date.now() })
 					.where(eq(messages.id, opts.assistantMessageId));
 
 				publish({
@@ -260,7 +260,7 @@ export function createErrorHandler(
 				await db
 					.update(messages)
 					.set({
-						status: compactionSucceeded ? 'completed' : 'error',
+						status: compactionSucceeded ? 'complete' : 'error',
 						completedAt: Date.now(),
 					})
 					.where(eq(messages.id, compactMessageId));

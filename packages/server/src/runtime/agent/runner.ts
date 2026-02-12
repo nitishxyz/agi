@@ -1,4 +1,4 @@
-import { hasToolCall, streamText } from 'ai';
+import { hasToolCall, stepCountIs, streamText } from 'ai';
 import { messages, messageParts } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish, subscribe } from '../../events/bus.ts';
@@ -32,6 +32,11 @@ import {
 	handleReasoningDelta,
 	handleReasoningEnd,
 } from './runner-reasoning.ts';
+import {
+	createOauthCodexTextGuardState,
+	consumeOauthCodexTextDelta,
+} from '../stream/text-guard.ts';
+import { decideOauthCodexContinuation } from './oauth-codex-continuation.ts';
 
 export {
 	enqueueAssistantRun,
@@ -94,11 +99,34 @@ async function runAssistant(opts: RunOpts) {
 	}> = [...additionalSystemMessages, ...history];
 
 	if (!isFirstMessage) {
-		messagesWithSystemInstructions.push({
-			role: isOpenAIOAuth ? 'system' : 'user',
-			content:
-				'SYSTEM REMINDER: You are continuing an existing session. When you have completed the task, you MUST stream a text summary of what you did to the user, and THEN call the `finish` tool. Do not call `finish` without a summary.',
-		});
+		if (isOpenAIOAuth) {
+			messagesWithSystemInstructions.push({
+				role: 'system',
+				content:
+					'SYSTEM REMINDER: You are continuing an existing session. Continue executing directly, use tools as needed, and provide a concise final summary when complete.',
+			});
+		} else {
+			messagesWithSystemInstructions.push({
+				role: 'user',
+				content:
+					'SYSTEM REMINDER: You are continuing an existing session. When you have completed the task, you MUST stream a text summary of what you did to the user, and THEN call the `finish` tool. Do not call `finish` without a summary.',
+			});
+		}
+	}
+	if ((opts.continuationCount ?? 0) > 0) {
+		if (isOpenAIOAuth) {
+			messagesWithSystemInstructions.push({
+				role: 'system',
+				content:
+					'SYSTEM REMINDER: Your previous response stopped mid-task. Continue immediately from where you left off and finish the actual implementation, not just a plan update.',
+			});
+		} else {
+			messagesWithSystemInstructions.push({
+				role: 'user',
+				content:
+					'SYSTEM REMINDER: Your previous response stopped before calling `finish`. Continue executing immediately from where you left off, avoid plan-only updates, and call `finish` only after streaming the final user summary.',
+			});
+		}
 	}
 
 	debugLog(
@@ -123,7 +151,11 @@ async function runAssistant(opts: RunOpts) {
 
 	let currentPartId: string | null = null;
 	let accumulated = '';
+	let latestAssistantText = '';
 	let stepIndex = 0;
+	const oauthTextGuard = isOpenAIOAuth
+		? createOauthCodexTextGuardState()
+		: null;
 
 	const getCurrentPartId = () => currentPartId;
 	const getStepIndex = () => stepIndex;
@@ -164,6 +196,9 @@ async function runAssistant(opts: RunOpts) {
 	const onAbort = createAbortHandler(opts, db, getStepIndex, sharedCtx);
 
 	const onFinish = createFinishHandler(opts, db, completeAssistantMessage);
+	const stopWhenCondition = isOpenAIOAuth
+		? stepCountIs(48)
+		: hasToolCall('finish');
 
 	try {
 		const result = streamText({
@@ -177,7 +212,7 @@ async function runAssistant(opts: RunOpts) {
 				: {}),
 			...(Object.keys(providerOptions).length > 0 ? { providerOptions } : {}),
 			abortSignal: opts.abortSignal,
-			stopWhen: hasToolCall('finish'),
+			stopWhen: stopWhenCondition,
 			// biome-ignore lint/suspicious/noExplicitAny: AI SDK callback types mismatch
 			onStepFinish: onStepFinish as any,
 			// biome-ignore lint/suspicious/noExplicitAny: AI SDK callback types mismatch
@@ -193,10 +228,18 @@ async function runAssistant(opts: RunOpts) {
 			if (!part) continue;
 
 			if (part.type === 'text-delta') {
-				const delta = part.text;
+				const rawDelta = part.text;
+				if (!rawDelta) continue;
+
+				const delta = oauthTextGuard
+					? consumeOauthCodexTextDelta(oauthTextGuard, rawDelta)
+					: rawDelta;
 				if (!delta) continue;
 
 				accumulated += delta;
+				if (accumulated.trim()) {
+					latestAssistantText = accumulated;
+				}
 
 				if (!currentPartId && !accumulated.trim()) {
 					continue;
@@ -282,6 +325,11 @@ async function runAssistant(opts: RunOpts) {
 		}
 
 		const fs = firstToolSeen();
+		if (oauthTextGuard?.dropped) {
+			debugLog(
+				'[RUNNER] Dropped pseudo tool-call text leaked by OpenAI OAuth stream',
+			);
+		}
 		if (!fs && !_finishObserved) {
 			publish({
 				type: 'finish-step',
@@ -301,66 +349,81 @@ async function runAssistant(opts: RunOpts) {
 			streamFinishReason = undefined;
 		}
 
+		let streamRawFinishReason: string | undefined;
+		try {
+			streamRawFinishReason = await result.rawFinishReason;
+		} catch {
+			streamRawFinishReason = undefined;
+		}
+
 		debugLog(
-			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}, finishReason=${streamFinishReason}`,
+			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}`,
 		);
 
-		const wasTruncated = streamFinishReason === 'length';
+		const MAX_CONTINUATIONS = 6;
+		const continuationCount = opts.continuationCount ?? 0;
+		const continuationDecision = decideOauthCodexContinuation({
+			provider: opts.provider,
+			isOpenAIOAuth,
+			finishObserved: _finishObserved,
+			continuationCount,
+			maxContinuations: MAX_CONTINUATIONS,
+			finishReason: streamFinishReason,
+			rawFinishReason: streamRawFinishReason,
+			firstToolSeen: fs,
+			droppedPseudoToolText: oauthTextGuard?.dropped ?? false,
+			lastAssistantText: latestAssistantText,
+		});
 
-		const shouldContinue =
-			opts.provider === 'openai' &&
-			isOpenAIOAuth &&
-			!_finishObserved &&
-			(wasTruncated || fs);
-
-		if (shouldContinue) {
+		if (continuationDecision.shouldContinue) {
 			debugLog(
-				`[RUNNER] WARNING: Stream ended without finish. finishReason=${streamFinishReason}, firstToolSeen=${fs}. Auto-continuing.`,
+				`[RUNNER] WARNING: Stream ended without finish. reason=${continuationDecision.reason ?? 'unknown'}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}, firstToolSeen=${fs}. Auto-continuing.`,
 			);
 
-			const MAX_CONTINUATIONS = 10;
-			const count = opts.continuationCount ?? 0;
-			if (count < MAX_CONTINUATIONS) {
+			debugLog(
+				`[RUNNER] Auto-continuing (${continuationCount + 1}/${MAX_CONTINUATIONS})...`,
+			);
+
+			try {
+				await completeAssistantMessage({}, opts, db);
+			} catch (err) {
 				debugLog(
-					`[RUNNER] Auto-continuing (${count + 1}/${MAX_CONTINUATIONS})...`,
+					`[RUNNER] completeAssistantMessage failed before continuation: ${err instanceof Error ? err.message : String(err)}`,
 				);
-
-				try {
-					await completeAssistantMessage({}, opts, db);
-				} catch (err) {
-					debugLog(
-						`[RUNNER] completeAssistantMessage failed before continuation: ${err instanceof Error ? err.message : String(err)}`,
-					);
-				}
-
-				const continuationMessageId = crypto.randomUUID();
-				await db.insert(messages).values({
-					id: continuationMessageId,
-					sessionId: opts.sessionId,
-					role: 'assistant',
-					status: 'pending',
-					agent: opts.agent,
-					provider: opts.provider,
-					model: opts.model,
-					createdAt: Date.now(),
-				});
-
-				publish({
-					type: 'message.created',
-					sessionId: opts.sessionId,
-					payload: { id: continuationMessageId, role: 'assistant' },
-				});
-
-				enqueueAssistantRun(
-					{
-						...opts,
-						assistantMessageId: continuationMessageId,
-						continuationCount: count + 1,
-					},
-					runSessionLoop,
-				);
-				return;
 			}
+
+			const continuationMessageId = crypto.randomUUID();
+			await db.insert(messages).values({
+				id: continuationMessageId,
+				sessionId: opts.sessionId,
+				role: 'assistant',
+				status: 'pending',
+				agent: opts.agent,
+				provider: opts.provider,
+				model: opts.model,
+				createdAt: Date.now(),
+			});
+
+			publish({
+				type: 'message.created',
+				sessionId: opts.sessionId,
+				payload: { id: continuationMessageId, role: 'assistant' },
+			});
+
+			enqueueAssistantRun(
+				{
+					...opts,
+					assistantMessageId: continuationMessageId,
+					continuationCount: continuationCount + 1,
+				},
+				runSessionLoop,
+			);
+			return;
+		}
+		if (
+			continuationDecision.reason === 'max-continuations-reached' &&
+			!_finishObserved
+		) {
 			debugLog(
 				`[RUNNER] Max continuations (${MAX_CONTINUATIONS}) reached, stopping.`,
 			);
