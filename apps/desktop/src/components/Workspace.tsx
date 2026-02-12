@@ -112,7 +112,7 @@ export function Workspace({
 				role="toolbar"
 			>
 				<div
-				className={`flex items-center gap-2 ${platform === 'macos' && !isFullscreen ? 'ml-14' : ''}`}
+					className={`flex items-center gap-2 ${platform === 'macos' && !isFullscreen ? 'ml-14' : ''}`}
 				>
 					<button
 						type="button"
