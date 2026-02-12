@@ -5230,29 +5230,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
-				id: 'openrouter/pony-alpha',
-				label: 'Pony Alpha',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoningText: true,
-				attachment: false,
-				temperature: true,
-				releaseDate: '2026-02-06',
-				lastUpdated: '2026-02-06',
-				openWeights: false,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 200000,
-					output: 131000,
-				},
-			},
-			{
 				id: 'openrouter/sherlock-dash-alpha',
 				label: 'Sherlock Dash Alpha',
 				modalities: {
@@ -6044,6 +6021,55 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'stepfun/step-3.5-flash',
+				label: 'Step 3.5 Flash',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2026-01-29',
+				lastUpdated: '2026-01-29',
+				openWeights: true,
+				cost: {
+					input: 0.1,
+					output: 0.3,
+					cacheRead: 0.02,
+				},
+				limit: {
+					context: 256000,
+					output: 256000,
+				},
+			},
+			{
+				id: 'stepfun/step-3.5-flash:free',
+				label: 'Step 3.5 Flash (free)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2026-01-29',
+				lastUpdated: '2026-01-29',
+				openWeights: true,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 256000,
+					output: 256000,
+				},
+			},
+			{
 				id: 'thudm/glm-z1-32b:free',
 				label: 'GLM Z1 32B (free)',
 				modalities: {
@@ -6539,6 +6565,30 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 200000,
 					output: 65535,
+				},
+			},
+			{
+				id: 'z-ai/glm-5',
+				label: 'GLM-5',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2026-02-12',
+				lastUpdated: '2026-02-12',
+				openWeights: true,
+				cost: {
+					input: 1,
+					output: 3.2,
+					cacheRead: 0.2,
+				},
+				limit: {
+					context: 202752,
+					output: 131000,
 				},
 			},
 		],
@@ -7342,6 +7392,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'minimax-m2.5-free',
+				label: 'MiniMax M2.5 Free',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2026-02-12',
+				lastUpdated: '2026-02-12',
+				openWeights: true,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+			},
+			{
 				id: 'qwen3-coder',
 				label: 'Qwen3 Coder',
 				modalities: {
@@ -7603,6 +7678,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					output: 131072,
 				},
 			},
+			{
+				id: 'glm-5',
+				label: 'GLM-5',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2026-02-11',
+				lastUpdated: '2026-02-11',
+				openWeights: false,
+				cost: {
+					input: 1,
+					output: 3.2,
+					cacheRead: 0.2,
+					cacheWrite: 0,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+			},
 		],
 		label: 'Z.AI',
 		env: ['ZHIPU_API_KEY'],
@@ -7817,6 +7917,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					output: 131072,
 				},
 			},
+			{
+				id: 'glm-5',
+				label: 'GLM-5',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2026-02-11',
+				lastUpdated: '2026-02-11',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
+					cacheWrite: 0,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+			},
 		],
 		label: 'Z.AI Coding Plan',
 		env: ['ZHIPU_API_KEY'],
@@ -8008,7 +8133,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 				limit: {
 					context: 128000,
-					output: 16000,
+					output: 32000,
 				},
 			},
 			{
@@ -8032,7 +8157,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 				limit: {
 					context: 128000,
-					output: 16000,
+					output: 32000,
 				},
 			},
 			{
@@ -8128,7 +8253,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 				limit: {
 					context: 128000,
-					output: 16000,
+					output: 32000,
 				},
 			},
 			{
@@ -8223,7 +8348,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					output: 0,
 				},
 				limit: {
-					context: 128000,
+					context: 64000,
 					output: 16384,
 				},
 			},
@@ -8320,7 +8445,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 				limit: {
 					context: 128000,
-					output: 128000,
+					output: 64000,
 				},
 			},
 			{
@@ -8392,7 +8517,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 				limit: {
 					context: 128000,
-					output: 100000,
+					output: 128000,
 				},
 			},
 			{
