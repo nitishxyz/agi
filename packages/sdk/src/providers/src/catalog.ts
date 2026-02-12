@@ -704,6 +704,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'gpt-5.3-codex-spark',
+				label: 'GPT-5.3 Codex Spark',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: false,
+				knowledge: '2025-08-31',
+				releaseDate: '2026-02-05',
+				lastUpdated: '2026-02-05',
+				openWeights: false,
+				cost: {
+					input: 1.75,
+					output: 14,
+					cacheRead: 0.175,
+				},
+				limit: {
+					context: 128000,
+					output: 32000,
+				},
+			},
+			{
 				id: 'o1',
 				label: 'o1',
 				modalities: {
