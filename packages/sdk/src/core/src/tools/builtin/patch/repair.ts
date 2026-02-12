@@ -37,7 +37,8 @@ function appendMissingEndMarker(patch: string): string {
 	const hasContent =
 		trimmed.includes('*** Update File:') ||
 		trimmed.includes('*** Add File:') ||
-		trimmed.includes('*** Delete File:');
+		trimmed.includes('*** Delete File:') ||
+		trimmed.includes('*** Replace in:');
 
 	if (hasContent) {
 		return `${trimmed}\n${PATCH_END_MARKER}`;

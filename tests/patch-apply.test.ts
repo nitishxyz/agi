@@ -2121,3 +2121,236 @@ describe('patch apply — tab file with zero-indent context lines', () => {
 		expect(lines[monitoringIdx + 2]).toBe("  'http',");
 	});
 });
+
+describe('patch apply — Replace mode robustness', () => {
+	it('applies Replace when Find has tab/space mismatch with file', async () => {
+		await writeTestFile(
+			'tabs.ts',
+			[
+				'function main() {',
+				'\tconst port = 3000;',
+				'\tconst host = "localhost";',
+				'\treturn port;',
+				'}',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Replace in: tabs.ts',
+			'*** Find:',
+			'  const port = 3000;',
+			'  const host = "localhost";',
+			'*** With:',
+			'  const port = 8080;',
+			'  const host = "0.0.0.0";',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('tabs.ts');
+		expect(content).toContain('\tconst port = 8080;');
+		expect(content).toContain('\tconst host = "0.0.0.0";');
+		expect(content).not.toContain('  const port');
+	});
+
+	it('applies Replace when Find has stale middle line (anchored range fallback)', async () => {
+		await writeTestFile(
+			'stale.ts',
+			[
+				'const port = 3000;',
+				'const host = "0.0.0.0";',
+				'const debug = false;',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Replace in: stale.ts',
+			'*** Find:',
+			'const port = 3000;',
+			'const host = "localhost";',
+			'const debug = false;',
+			'*** With:',
+			'const port = 8080;',
+			'const host = "0.0.0.0";',
+			'const debug = true;',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('stale.ts');
+		expect(content).toContain('const port = 8080;');
+		expect(content).toContain('const debug = true;');
+	});
+
+	it('rejects Replace when too few Find lines match (<50%)', async () => {
+		await writeTestFile(
+			'reject.ts',
+			['const alpha = 1;', 'const beta = 2;', 'const gamma = 3;'].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Replace in: reject.ts',
+			'*** Find:',
+			'const alpha = 1;',
+			'const x = 2;',
+			'const y = 3;',
+			'*** With:',
+			'const a = 10;',
+			'const b = 20;',
+			'const c = 30;',
+			'*** End Patch',
+		].join('\n');
+
+		expect(() => applyPatch(patch)).toThrow('Failed to apply patch hunk');
+	});
+
+	it('handles Replace idempotency (applying same patch twice)', async () => {
+		await writeTestFile('idem.ts', ['const x = 1;', 'const y = 2;'].join('\n'));
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Replace in: idem.ts',
+			'*** Find:',
+			'const x = 1;',
+			'*** With:',
+			'const x = 99;',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		let content = await readTestFile('idem.ts');
+		expect(content).toContain('const x = 99;');
+
+		await applyPatch(patch);
+		content = await readTestFile('idem.ts');
+		expect(content).toContain('const x = 99;');
+		expect(content).not.toContain('const x = 1;');
+	});
+
+	it('handles Replace with trailing whitespace mismatch', async () => {
+		await writeTestFile('ws.ts', 'const x = 1;  \nconst y = 2;\n');
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Replace in: ws.ts',
+			'*** Find:',
+			'const x = 1;',
+			'*** With:',
+			'const x = 99;',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('ws.ts');
+		expect(content).toContain('const x = 99;');
+	});
+
+	it('handles Replace with blank lines in Find/With blocks', async () => {
+		await writeTestFile(
+			'blank.ts',
+			[
+				'function a() {',
+				'  return 1;',
+				'}',
+				'',
+				'function b() {',
+				'  return 2;',
+				'}',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Replace in: blank.ts',
+			'*** Find:',
+			'function a() {',
+			'  return 1;',
+			'}',
+			'',
+			'function b() {',
+			'*** With:',
+			'function a() {',
+			'  return 10;',
+			'}',
+			'',
+			'function b() {',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('blank.ts');
+		expect(content).toContain('return 10');
+	});
+
+	it('handles Replace YAML with deep indentation correction', async () => {
+		await writeTestFile(
+			'deep.yml',
+			[
+				'jobs:',
+				'  build:',
+				'    strategy:',
+				'      matrix:',
+				'        include:',
+				'          - platform: ubuntu-latest',
+				'            target: x64',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Replace in: deep.yml',
+			'*** Find:',
+			'  - platform: ubuntu-latest',
+			'    target: x64',
+			'*** With:',
+			'  - platform: ubuntu-22.04',
+			'    target: x64',
+			'    runner: ubuntu-latest',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('deep.yml');
+		expect(content).toContain('          - platform: ubuntu-22.04');
+		expect(content).toContain('            runner: ubuntu-latest');
+	});
+
+	it('handles Replace with ambiguous match (picks first occurrence)', async () => {
+		await writeTestFile(
+			'ambig.ts',
+			[
+				'function a() {',
+				'  return 1;',
+				'}',
+				'',
+				'function b() {',
+				'  return 1;',
+				'}',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Replace in: ambig.ts',
+			'*** Find:',
+			'function b() {',
+			'  return 1;',
+			'}',
+			'*** With:',
+			'function b() {',
+			'  return 2;',
+			'}',
+			'*** End Patch',
+		].join('\n');
+
+		await applyPatch(patch);
+		const content = await readTestFile('ambig.ts');
+		const returnLines = content
+			.split('\n')
+			.filter((l: string) => l.includes('return'));
+		expect(returnLines).toEqual(['  return 1;', '  return 2;']);
+	});
+});

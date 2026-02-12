@@ -487,6 +487,60 @@ function applyHunkToLines(
 		}
 	}
 
+	if (
+		matchIndex === -1 &&
+		useFuzzy &&
+		removals.length >= 2 &&
+		contextLines.length === 0
+	) {
+		const firstRemoval = removals[0].content;
+		const lastRemoval = removals[removals.length - 1].content;
+		const firstIdx = findLineIndex(lines, firstRemoval, 0, true);
+		if (firstIdx !== -1) {
+			const rangeEnd = firstIdx + expected.length - 1;
+			if (rangeEnd < lines.length) {
+				const lastInRange = lines[rangeEnd];
+				let lastMatches = lastInRange === lastRemoval;
+				if (!lastMatches) {
+					for (const level of NORMALIZATION_LEVELS.slice(1)) {
+						if (
+							normalizeWhitespace(lastInRange, level) ===
+							normalizeWhitespace(lastRemoval, level)
+						) {
+							lastMatches = true;
+							break;
+						}
+					}
+				}
+				if (lastMatches) {
+					let matchCount = 0;
+					for (let k = 0; k < expected.length; k++) {
+						const fileLine = lines[firstIdx + k];
+						const expLine = expected[k];
+						if (fileLine === expLine) {
+							matchCount++;
+							continue;
+						}
+						for (const level of NORMALIZATION_LEVELS.slice(1)) {
+							if (
+								normalizeWhitespace(fileLine, level) ===
+								normalizeWhitespace(expLine, level)
+							) {
+								matchCount++;
+								break;
+							}
+						}
+					}
+					const matchRatio = matchCount / expected.length;
+					if (matchRatio >= 0.5) {
+						matchIndex = firstIdx;
+						matchedExpected = lines.slice(firstIdx, firstIdx + expected.length);
+					}
+				}
+			}
+		}
+	}
+
 	if (matchIndex === -1 && isHunkAlreadyApplied(lines, hunk, useFuzzy)) {
 		const skipStart =
 			initialHint >= 0 && initialHint < lines.length ? initialHint + 1 : 1;
