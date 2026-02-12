@@ -1,126 +1,76 @@
-Apply a patch to modify one or more files. The tool accepts the **enveloped patch format** (preferred) and will also auto-convert standard unified diffs (`--- / +++`) if you provide one.
+Apply a patch to modify one or more files.
 
-**Quick checklist before you call the tool:**
-- Finished patch must include both `*** Begin Patch` and `*** End Patch`
-- Each change needs a directive (`*** Add File`, `*** Update File`, `*** Delete File`)
-- Include real context lines (prefixed with space) around your changes
-- Keep paths relative to the project root
-- **Use multiple `@@` hunks for multiple edits to the same file - do NOT make separate tool calls**
+Use the **enveloped format** by default. Standard unified diffs (`---` / `+++`) are also accepted.
 
-**RECOMMENDED: Use apply_patch for targeted file edits to avoid rewriting entire files and wasting tokens.**
+## Fastest / safest mode (recommended): Replace
 
-**FUZZY MATCHING**: By default, fuzzy matching is enabled to handle whitespace differences (tabs vs spaces).
-Exact matching is tried first, then normalized matching if exact fails. Disable with `fuzzyMatch: false` if needed.
+Use this when exact `+/-/context` hunks are hard to build.
 
-Use `apply_patch` only when:
-- You want to make targeted edits to specific lines (primary use case)
-- You want to make multiple related changes across different files in a single operation
-- You need to add/delete entire files along with modifications
-- You have JUST read the file immediately before (within the same response) and are confident the content hasn't changed
-
-**CRITICAL - ALWAYS READ BEFORE PATCHING**: You MUST read the file content immediately before creating a patch.
-Never rely on memory or previous reads. Even with fuzzy matching enabled (tolerates tabs vs spaces),
-If the file content has changed significantly since you last read it, the patch may still fail.
-
-**ALLOW REJECTS**: If you are applying a patch that might include stale hunks, set `allowRejects: true`.
-The tool will apply the hunks it can and skip the rest, returning the skipped hunks with reasons.
-
-**ALREADY APPLIED?**: If the removal lines are already gone or the additions are already present, the tool will treat the hunk as applied and move on—no need to resend the same change.
-
-**Alternative: Use the `edit` tool if you need fuzzy matching or structured operations.**
-
-## ⚠️ CRITICAL: Multiple Edits to Same File
-
-**DO NOT make separate `apply_patch` calls for the same file!**
-
-Instead, use multiple `@@` hunks in a single patch:
-
-```
+```text
 *** Begin Patch
-*** Update File: src/app.ts
-@@ first change - line 10
- function init() {
--  const port = 3000;
-+  const port = 8080;
-   return port;
- }
-@@ second change - line 25
- function start() {
--  console.log("Starting...");
-+  console.log("Server starting...");
-   init();
- }
-@@ third change - line 40
- function cleanup() {
--  // TODO
-+  console.log("Cleaning up...");
- }
+*** Replace in: path/to/file.ts
+*** Find:
+old text block
+*** With:
+new text block
 *** End Patch
 ```
 
-**This makes ONE tool call instead of three, saving tokens and reducing latency.**
+You can include multiple `*** Find:` / `*** With:` pairs under one `*** Replace in:` block.
 
-## Patch Formats
+---
 
-### Preferred: Enveloped Patch
+## Standard mode: Add / Update / Delete
 
-All patches must be wrapped in markers and use explicit file directives:
-
-```
+```text
 *** Begin Patch
-*** Add File: path/to/file.txt
-+line 1
-+line 2
-*** Update File: path/to/other.txt
+*** Add File: path/to/new.txt
++new content
+*** Update File: path/to/existing.ts
+ context line
 -old line
 +new line
-*** Delete File: path/to/delete.txt
+*** Delete File: path/to/old.txt
 *** End Patch
 ```
 
-### Also Supported: Standard Unified Diff
+For multiple edits in the same file, use **one** `*** Update File:` block with multiple `@@` hunks.
 
-You can paste a regular `git diff` style patch:
+---
 
-```
-diff --git a/src/app.ts b/src/app.ts
---- a/src/app.ts
-+++ b/src/app.ts
-@@
--const PORT = 3000;
-+const PORT = 8080;
-```
+## Rules that prevent failures
 
-The tool will convert it automatically, but the enveloped format is still recommended because it is more explicit and easier to control.
+1. Patch must start with `*** Begin Patch` and end with `*** End Patch`.
+2. Paths must be relative to project root.
+3. In `Update File`, `-` lines must match file content exactly.
+4. Include real context lines (prefix with a single space ` `).
+5. `@@` lines are only hints; they do not replace real context.
+6. Do not make separate `apply_patch` calls for the same file in one task.
 
-## File Operations
+---
 
-### Add a new file:
-```
-*** Begin Patch
-*** Add File: src/hello.ts
-+export function hello() {
-+  console.log("Hello!");
-+}
-*** End Patch
-```
+## Matching behavior
 
-### Update an existing file (simple replacement):
-```
-*** Begin Patch
-*** Update File: src/config.ts
--const PORT = 3000;
-+const PORT = 8080;
-*** End Patch
-```
+- `fuzzyMatch` defaults to `true` (helps with small whitespace differences).
+- Set `fuzzyMatch: false` for strict matching.
+- If a hunk may be stale, set `allowRejects: true` to apply valid parts and skip invalid ones.
 
-**CRITICAL**: The `-` lines must match EXACTLY what's in the file, character-for-character. If you're not 100% certain, use the `edit` tool instead.
+---
 
-### Update with context (recommended for precision):
-```
+## Common errors
+
+- **Missing end marker** → add `*** End Patch`.
+- **Failed to find expected lines** → re-read the file and rebuild patch with exact context.
+- **Ambiguous update** → provide longer context or use `*** Replace in:` mode.
+
+---
+
+## Minimal templates
+
+### Update one line
+```text
 *** Begin Patch
 *** Update File: src/app.ts
-@@ function main()
  function main() {
 -  console.log("old");
 +  console.log("new");
@@ -128,80 +78,17 @@ The tool will convert it automatically, but the enveloped format is still recomm
 *** End Patch
 ```
 
-**IMPORTANT**: 
-- The `@@` line is an OPTIONAL hint to help locate the change - it's a comment, not parsed as context
-- REQUIRED: Actual context lines (starting with space ` `) that match the file exactly
-- The context lines with space prefix are what the tool uses to find the location
-- The `@@` line just helps humans/AI understand what section you're editing
-
-
-### Update multiple locations in the same file:
-```
+### Add file
+```text
 *** Begin Patch
-*** Update File: src/app.ts
-@@ first section - near line 10
- function init() {
--  const port = 3000;
-+  const port = 8080;
-   return port;
- }
-@@ second section - near line 25
- function start() {
--  console.log("Starting...");
-+  console.log("Server starting...");
-   init();
- }
+*** Add File: src/new.ts
++export const ok = true;
 *** End Patch
 ```
 
-**IMPORTANT**: Use separate `@@` headers for each non-consecutive change location. This allows multiple edits to the same file in one patch, saving tokens and reducing tool calls.
-
-### Delete a file:
-```
+### Delete file
+```text
 *** Begin Patch
-*** Delete File: old/unused.ts
+*** Delete File: src/obsolete.ts
 *** End Patch
 ```
-
-### Multiple operations in one patch:
-```
-*** Begin Patch
-*** Add File: new.txt
-+New content
-*** Update File: existing.txt
--old
-+new
-*** Delete File: obsolete.txt
-*** End Patch
-```
-
-## Line Prefixes
-
-- Lines starting with `+` are added
-- Lines starting with `-` are removed  
-- Lines starting with ` ` (space) are context (kept unchanged)
-- Lines starting with `@@` are optional hints/comments (not parsed as context)
-
-## Common Errors
-
-**"Missing *** End Patch marker"**: Every patch MUST end with `*** End Patch` on its own line.
-This is the most common error. Double-check your patch ends with:
-```
-*** End Patch
-```
-
-**"Failed to find expected lines"**: The file content doesn't match your patch. Common causes:
-- Missing context lines (lines with space prefix)
-- Using `@@` line as context instead of real context lines
-- The file content has changed since you read it
-- Whitespace/indentation mismatch
-
-**Solution**: Always read the file immediately before patching and include actual context lines with space prefix.
-
-## Important Notes
-
-- **Patches are fragile**: Any mismatch in whitespace, indentation, or content will cause failure
-- **Use `edit` for reliability**: The `edit` tool can make targeted changes without requiring exact matches
-- All file paths are relative to the project root
-- The enveloped format is the most reliable; unified diffs are converted automatically if provided
-- Always wrap patches with `*** Begin Patch` and `*** End Patch` when you write them manually

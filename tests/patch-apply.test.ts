@@ -1667,7 +1667,51 @@ describe('patch apply — fuzzy match false positive prevention', () => {
 
 		await applyPatch(patch);
 		const content = await readTestFile('partial.ts');
-		expect(content).toContain('const b = 20;');
+		expect(content.trim()).toBe(
+			['function process() {', '  const b = 20;', '  return b;', '}'].join(
+				'\n',
+			),
+		);
+	});
+
+	it('rejects ambiguous fallback when all removal lines are already absent', async () => {
+		await writeTestFile(
+			'ambiguous.txt',
+			[
+				'start',
+				'foo',
+				'bar',
+				'keep1',
+				'middle',
+				'foo',
+				'bar',
+				'keep2',
+				'end',
+			].join('\n'),
+		);
+
+		const patch = [
+			'*** Begin Patch',
+			'*** Update File: ambiguous.txt',
+			' foo',
+			'-old-value',
+			'+new-value',
+			' bar',
+			'*** End Patch',
+		].join('\n');
+
+		let errorMessage = '';
+		try {
+			await applyPatch(patch);
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : String(error);
+		}
+
+		expect(errorMessage).toContain('All removal lines already absent');
+
+		const content = await readTestFile('ambiguous.txt');
+		expect(content).not.toContain('new-value');
+		expect(content).toContain('keep1');
 	});
 
 	it('rejects when context line has wrong identifier despite same structure', async () => {

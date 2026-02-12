@@ -435,6 +435,7 @@ function applyHunkToLines(
 	let matchIndex = hasExpected
 		? findSubsequence(lines, expected, Math.max(0, initialHint - 3), useFuzzy)
 		: -1;
+	let matchedExpected = expected;
 
 	if (hasExpected && matchIndex === -1) {
 		matchIndex = findSubsequence(lines, expected, 0, useFuzzy);
@@ -447,11 +448,24 @@ function applyHunkToLines(
 		if (!allContextPresent) {
 			matchIndex = -1;
 		} else {
-			const expectedWithoutMissingRemovals = expected.filter((line) =>
-				lineExists(lines, line, useFuzzy),
-			);
-			const minRequired = Math.max(2, Math.ceil(expected.length / 2));
-			if (expectedWithoutMissingRemovals.length >= minRequired) {
+			const expectedWithoutMissingRemovals = hunk.lines
+				.filter((line) => {
+					if (line.kind === 'add') return false;
+					if (line.kind === 'remove') {
+						return lineExists(lines, line.content, useFuzzy);
+					}
+					return true;
+				})
+				.map((line) => line.content);
+			const includedRemovalCount = hunk.lines.filter(
+				(line) =>
+					line.kind === 'remove' && lineExists(lines, line.content, useFuzzy),
+			).length;
+			const minRequired = Math.max(contextLines.length, 2);
+			if (
+				includedRemovalCount > 0 &&
+				expectedWithoutMissingRemovals.length >= minRequired
+			) {
 				matchIndex = findSubsequence(
 					lines,
 					expectedWithoutMissingRemovals,
@@ -465,6 +479,9 @@ function applyHunkToLines(
 						0,
 						useFuzzy,
 					);
+				}
+				if (matchIndex !== -1) {
+					matchedExpected = expectedWithoutMissingRemovals;
 				}
 			}
 		}
@@ -552,7 +569,7 @@ function applyHunkToLines(
 		throw new Error(errorMsg);
 	}
 
-	const deleteCount = hasExpected ? expected.length : 0;
+	const deleteCount = hasExpected ? matchedExpected.length : 0;
 	const originalIndex = matchIndex;
 	const oldStart = Math.min(
 		originalLines.length,
@@ -561,10 +578,10 @@ function applyHunkToLines(
 	const newStart = matchIndex + 1;
 
 	const adjustedReplacement =
-		useFuzzy && hasExpected
+		useFuzzy && hasExpected && matchedExpected.length === expected.length
 			? adjustReplacementIndentation(
 					hunk,
-					lines.slice(matchIndex, matchIndex + expected.length),
+					lines.slice(matchIndex, matchIndex + matchedExpected.length),
 					originalLines,
 				)
 			: replacement;
