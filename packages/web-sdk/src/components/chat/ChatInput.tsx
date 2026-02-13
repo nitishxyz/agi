@@ -389,8 +389,8 @@ export const ChatInput = memo(
 							</div>
 						);
 					})()}
-				<div className="absolute bottom-0 left-0 right-0 pt-16 pb-6 md:pb-8 px-2 md:px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20 safe-area-inset-bottom">
-					<div className="max-w-3xl mx-auto pointer-events-auto mb-2 md:mb-0 relative">
+			<div className="absolute bottom-0 left-0 right-0 pt-16 pb-5 md:pb-6 px-2 md:px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20 safe-area-inset-bottom">
+				<div className="max-w-3xl mx-auto pointer-events-auto relative">
 						{preferences.vimMode && vimMode === 'normal' && (
 							<div className="absolute -top-6 right-0 px-2 py-0.5 text-xs font-mono font-semibold bg-amber-500/90 text-white rounded shadow-sm">
 								NORMAL

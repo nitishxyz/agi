@@ -3,6 +3,7 @@ mod commands;
 use commands::server::ServerState;
 use std::sync::Mutex;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+use tauri::Emitter;
 #[cfg(target_os = "linux")]
 use tauri::Manager;
 
@@ -91,8 +92,14 @@ pub fn run() {
                 .accelerator("CmdOrCtrl+Shift+N")
                 .build(app)?;
 
+            let check_updates = MenuItemBuilder::new("Check for Updates...")
+                .id("check_for_updates")
+                .build(app)?;
+
             let file_menu = SubmenuBuilder::new(app, "File")
                 .item(&new_window)
+                .separator()
+                .item(&check_updates)
                 .separator()
                 .close_window()
                 .quit()
@@ -140,6 +147,8 @@ pub fn run() {
                 tauri::async_runtime::spawn(async move {
                     let _ = commands::window::create_new_window(handle).await;
                 });
+            } else if event.id().as_ref() == "check_for_updates" {
+                let _ = app.emit("menu-check-for-updates", ());
             }
         })
         .invoke_handler(tauri::generate_handler![

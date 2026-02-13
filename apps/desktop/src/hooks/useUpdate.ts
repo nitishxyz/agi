@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoke, Channel } from '@tauri-apps/api/core';
 import { relaunch } from '@tauri-apps/plugin-process';
+import { listen } from '@tauri-apps/api/event';
 
 interface UpdateInfo {
 	version: string;
@@ -57,7 +58,18 @@ export function useUpdate() {
 	useEffect(() => {
 		checkForUpdate();
 		const interval = setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL);
-		return () => clearInterval(interval);
+		return () => {
+			clearInterval(interval);
+		};
+	}, [checkForUpdate]);
+
+	useEffect(() => {
+		const unlisten = listen('menu-check-for-updates', () => {
+			checkForUpdate();
+		});
+		return () => {
+			unlisten.then((fn) => fn());
+		};
 	}, [checkForUpdate]);
 
 	const downloadUpdate = useCallback(async () => {
