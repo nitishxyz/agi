@@ -954,6 +954,131 @@ jobs:
           find ./artifacts -type f -exec cp {} ./release/ \;
           ls -la ./release/
 
+      - name: Generate updater latest.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.bump-version.outputs.launcher_version }}"
+          TAG="launcher-v${VERSION}"
+          REPO="${{ github.repository }}"
+          BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          read_sig() {
+            local f="./release/$1"
+            if [ -f "$f" ]; then cat "$f"; else echo ""; fi
+          }
+
+          DARWIN_AARCH64_SIG=""
+          DARWIN_X64_SIG=""
+          LINUX_X64_SIG=""
+          LINUX_ARM64_SIG=""
+          WINDOWS_X64_SIG=""
+
+          for f in ./release/*.app.tar.gz.sig; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            sig=$(cat "$f")
+            case "$name" in
+              *aarch64*|*arm64*) DARWIN_AARCH64_SIG="$sig" ;;
+              *x64*|*x86_64*) DARWIN_X64_SIG="$sig" ;;
+              *)
+                if [ -z "$DARWIN_AARCH64_SIG" ]; then
+                  DARWIN_AARCH64_SIG="$sig"
+                elif [ -z "$DARWIN_X64_SIG" ]; then
+                  DARWIN_X64_SIG="$sig"
+                fi
+                ;;
+            esac
+          done
+
+          for f in ./release/*.deb.sig; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            sig=$(cat "$f")
+            case "$name" in
+              *arm64*|*aarch64*) LINUX_ARM64_SIG="$sig" ;;
+              *) LINUX_X64_SIG="$sig" ;;
+            esac
+          done
+
+          for f in ./release/*.msi.sig; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            sig=$(cat "$f")
+            WINDOWS_X64_SIG="$sig"
+          done
+
+          for f in ./release/*.nsis*.exe.sig ./release/*-setup*.exe.sig; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            sig=$(cat "$f")
+            [ -z "$WINDOWS_X64_SIG" ] && WINDOWS_X64_SIG="$sig"
+          done
+
+          DARWIN_AARCH64_URL=""
+          DARWIN_X64_URL=""
+          LINUX_X64_URL=""
+          LINUX_ARM64_URL=""
+          WINDOWS_X64_URL=""
+          for f in ./release/*.app.tar.gz; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            [[ "$name" == *.sig ]] && continue
+            url="${BASE_URL}/${name}"
+            case "$name" in
+              *aarch64*|*arm64*) DARWIN_AARCH64_URL="$url" ;;
+              *x64*|*x86_64*) DARWIN_X64_URL="$url" ;;
+              *)
+                if [ -z "$DARWIN_AARCH64_URL" ]; then
+                  DARWIN_AARCH64_URL="$url"
+                elif [ -z "$DARWIN_X64_URL" ]; then
+                  DARWIN_X64_URL="$url"
+                fi
+                ;;
+            esac
+          done
+          for f in ./release/*.deb; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            url="${BASE_URL}/${name}"
+            case "$name" in
+              *arm64*|*aarch64*) LINUX_ARM64_URL="$url" ;;
+              *) LINUX_X64_URL="$url" ;;
+            esac
+          done
+
+          for f in ./release/*.msi; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f")
+            [[ "$name" == *.sig ]] && continue
+            url="${BASE_URL}/${name}"
+            WINDOWS_X64_URL="$url"
+          done
+
+          PLATFORMS=""
+          add_platform() {
+            local key="$1" sig="$2" url="$3"
+            [ -z "$url" ] && return
+            [ -n "$PLATFORMS" ] && PLATFORMS="${PLATFORMS},"
+            PLATFORMS="${PLATFORMS}\"${key}\":{\"signature\":\"${sig}\",\"url\":\"${url}\"}"
+          }
+          add_platform "darwin-aarch64" "$DARWIN_AARCH64_SIG" "$DARWIN_AARCH64_URL"
+          add_platform "darwin-x86_64" "$DARWIN_X64_SIG" "$DARWIN_X64_URL"
+          add_platform "linux-x86_64" "$LINUX_X64_SIG" "$LINUX_X64_URL"
+          add_platform "linux-aarch64" "$LINUX_ARM64_SIG" "$LINUX_ARM64_URL"
+          add_platform "windows-x86_64" "$WINDOWS_X64_SIG" "$WINDOWS_X64_URL"
+
+          cat > ./release/latest.json <<EOF
+          {
+            "version": "${VERSION}",
+            "notes": "otto launcher v${VERSION}",
+            "pub_date": "${NOW}",
+            "platforms": {${PLATFORMS}}
+          }
+          EOF
+          cat ./release/latest.json
+
       - name: Create and push launcher tag
         shell: bash
         run: |
@@ -994,6 +1119,22 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update launcher-latest release with latest.json
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! gh release view launcher-latest >/dev/null 2>&1; then
+            git tag -f launcher-latest
+            git push -f origin launcher-latest
+            gh release create launcher-latest \
+              --title "Launcher Latest (auto-updater)" \
+              --notes "This release is used by the auto-updater. Do not delete." \
+              --prerelease
+          fi
+          gh release upload launcher-latest ./release/latest.json --clobber
 
   reset-flags:
     needs: [check-flags, publish-npm, publish-desktop, publish-launcher]

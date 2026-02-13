@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useState } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
 import { useStore } from './store';
+import { useUpdate } from './hooks/useUpdate';
 import { Welcome } from './components/Welcome';
 import { TeamSetup } from './components/TeamSetup';
 import { ProjectList } from './components/ProjectList';
@@ -20,6 +21,7 @@ function App() {
 		init();
 	}, [init]);
 
+	const update = useUpdate();
 	const [appVersion, setAppVersion] = useState<string | null>(null);
 	useEffect(() => {
 		getVersion()
@@ -53,7 +55,36 @@ function App() {
 				)}
 			</div>
 
-			{!dockerOk && (
+		{update.available && (
+			<div className="mx-4 mb-2 p-3 rounded-md bg-primary/10 border border-primary/20 text-sm flex items-center justify-between">
+				<span>
+					{update.downloaded
+						? `Update v${update.version} ready to install`
+						: update.downloading
+							? `Downloading update v${update.version}... ${update.progress}%`
+							: `Update v${update.version} available`}
+				</span>
+				{update.downloaded ? (
+					<button
+						type="button"
+						className="px-3 py-1 rounded bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90"
+						onClick={update.applyUpdate}
+					>
+						Restart
+					</button>
+				) : !update.downloading ? (
+					<button
+						type="button"
+						className="px-3 py-1 rounded bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90"
+						onClick={update.downloadUpdate}
+					>
+						Update
+					</button>
+				) : null}
+			</div>
+		)}
+
+		{!dockerOk && (
 				<div className="mx-4 mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm">
 					Docker Engine is not reachable. Make sure Docker Desktop is running
 					(or on Windows, enable "Expose daemon on tcp://localhost:2375" in

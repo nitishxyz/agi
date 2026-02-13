@@ -1,5 +1,7 @@
 mod commands;
 
+use std::sync::Mutex;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -8,7 +10,13 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
+        .manage(commands::updater::PendingUpdate(Mutex::new(None)))
+        .manage(commands::updater::ReadyUpdate(Mutex::new(None)))
         .setup(|app| {
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
+
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
@@ -46,6 +54,9 @@ pub fn run() {
             commands::config::export_team_config,
             commands::config::save_otto_file,
             commands::ports::find_available_port,
+            commands::updater::check_for_update,
+            commands::updater::download_update,
+            commands::updater::apply_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
