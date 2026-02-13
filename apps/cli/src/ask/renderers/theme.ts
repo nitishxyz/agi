@@ -36,7 +36,6 @@ export const TOOL_COLORS: Record<string, (s: string) => string> = {
 	ls: c.blue,
 	tree: c.cyan,
 	ripgrep: c.blue,
-	grep: c.blue,
 	glob: c.cyan,
 	git_status: c.blue,
 	git_diff: c.blue,

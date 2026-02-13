@@ -25,8 +25,7 @@ export const CANONICAL_TO_PASCAL: Record<string, string> = {
 
 	// Search operations
 	glob: 'Glob',
-	ripgrep: 'Grep', // Maps to Grep for Claude Code compatibility
-	grep: 'Grep',
+	ripgrep: 'Grep',
 
 	// Execution
 	bash: 'Bash',

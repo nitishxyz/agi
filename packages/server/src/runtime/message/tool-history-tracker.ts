@@ -71,7 +71,6 @@ function describeToolResult(info: ToolResultInfo): TargetDescriptor | null {
 		case 'read':
 			return describeRead(info);
 		case 'glob':
-		case 'grep':
 			return describePatternTool(info, toolName);
 		case 'write':
 			return describeWrite(info);

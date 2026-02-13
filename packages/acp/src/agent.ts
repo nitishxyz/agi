@@ -714,8 +714,6 @@ function formatToolTitle(
 			return `Search: ${args?.query || ''}`;
 		case 'glob':
 			return `Find files: ${args?.pattern || ''}`;
-		case 'grep':
-			return `Grep: ${args?.query || ''}`;
 		case 'ls':
 			return `List ${args?.path || '.'}`;
 		case 'tree':
@@ -757,7 +755,6 @@ function getToolKind(name: string): ToolKind {
 		case 'terminal':
 			return 'execute';
 		case 'ripgrep':
-		case 'grep':
 		case 'glob':
 		case 'web_search':
 		case 'websearch':

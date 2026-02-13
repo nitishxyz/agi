@@ -6,12 +6,7 @@ export function renderSearchCall(ctx: RendererContext): string {
 	const query = typeof args.query === 'string' ? args.query : '';
 	const pattern = typeof args.pattern === 'string' ? args.pattern : '';
 	const term = query || pattern;
-	const name =
-		ctx.toolName === 'glob'
-			? 'glob'
-			: ctx.toolName === 'grep'
-				? 'grep'
-				: 'search';
+	const name = ctx.toolName === 'glob' ? 'glob' : 'search';
 	const color = ctx.toolName === 'glob' ? c.cyan : c.blue;
 	return `  ${c.dim(ICONS.spinner)} ${color(name)} ${c.dim(ICONS.arrow)} ${c.dim(`"${truncate(term, 40)}"`)}`;
 }
@@ -21,12 +16,7 @@ export function renderSearchResult(ctx: RendererContext): string {
 	const matches = Array.isArray(result.matches) ? result.matches : [];
 	const files = Array.isArray(result.files) ? result.files : [];
 	const time = formatMs(ctx.durationMs);
-	const name =
-		ctx.toolName === 'glob'
-			? 'glob'
-			: ctx.toolName === 'grep'
-				? 'grep'
-				: 'search';
+	const name = ctx.toolName === 'glob' ? 'glob' : 'search';
 	const color = ctx.toolName === 'glob' ? c.cyan : c.blue;
 
 	if (ctx.error) {
