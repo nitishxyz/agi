@@ -12,11 +12,9 @@ import {
 	ToolContentBox,
 } from './shared';
 
-const ANSI_RE = new RegExp(
-	'[\x1B\x9B][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nq-uy=><~]',
-	'g',
-);
-const CONTROL_RE = new RegExp('[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', 'g');
+const ANSI_RE =
+	/[\x1B\x9B][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nq-uy=><~]/g;
+const CONTROL_RE = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g;
 
 function cleanTerminalOutput(raw: string): string {
 	return raw

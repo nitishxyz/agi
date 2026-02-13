@@ -24,15 +24,15 @@ export function buildRipgrepTool(projectRoot: string): {
 				.array(z.string())
 				.optional()
 				.describe('One or more glob patterns to include'),
-		maxResults: z.number().int().min(1).max(5000).optional().default(100),
+			maxResults: z.number().int().min(1).max(5000).optional().default(100),
 		}),
 		async execute({
 			query,
 			path = '.',
 			ignoreCase,
 			glob,
-		maxResults = 100,
-	}: {
+			maxResults = 100,
+		}: {
 			query: string;
 			path?: string;
 			ignoreCase?: boolean;
@@ -95,16 +95,22 @@ export function buildRipgrepTool(projectRoot: string): {
 							.split('\n')
 							.filter(Boolean)
 							.slice(0, maxResults);
-					const TEXT_MAX = 200;
-					const matches = lines.map((l) => {
-						const m = l.match(/^(.+?):(\d+):(.*)$/s);
-						if (!m) return { file: '', line: 0, text: l.length > TEXT_MAX ? l.slice(0, TEXT_MAX) + '…' : l };
-						const file = m[1];
-						const line = Number.parseInt(m[2], 10);
-						const raw = m[3];
-						const text = raw.length > TEXT_MAX ? raw.slice(0, TEXT_MAX) + '…' : raw;
-						return { file, line, text };
-					});
+						const TEXT_MAX = 200;
+						const matches = lines.map((l) => {
+							const m = l.match(/^(.+?):(\d+):(.*)$/s);
+							if (!m)
+								return {
+									file: '',
+									line: 0,
+									text: l.length > TEXT_MAX ? l.slice(0, TEXT_MAX) + '…' : l,
+								};
+							const file = m[1];
+							const line = Number.parseInt(m[2], 10);
+							const raw = m[3];
+							const text =
+								raw.length > TEXT_MAX ? raw.slice(0, TEXT_MAX) + '…' : raw;
+							return { file, line, text };
+						});
 						resolve({ ok: true, count: matches.length, matches });
 					});
 

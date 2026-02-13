@@ -4,9 +4,12 @@ import type { RendererContext } from './types.ts';
 export function renderTerminalCall(ctx: RendererContext): string {
 	const args = (ctx.args ?? {}) as Record<string, unknown>;
 	const op = typeof args.operation === 'string' ? args.operation : '';
-	const id = typeof args.terminalId === 'string' ? truncate(args.terminalId, 12) : '';
-	const cmd = typeof args.command === 'string' ? truncate(args.command, 40) : '';
-	const purpose = typeof args.purpose === 'string' ? truncate(args.purpose, 40) : '';
+	const id =
+		typeof args.terminalId === 'string' ? truncate(args.terminalId, 12) : '';
+	const cmd =
+		typeof args.command === 'string' ? truncate(args.command, 40) : '';
+	const purpose =
+		typeof args.purpose === 'string' ? truncate(args.purpose, 40) : '';
 	const input = typeof args.input === 'string' ? truncate(args.input, 40) : '';
 
 	switch (op) {
@@ -41,17 +44,25 @@ export function renderTerminalResult(ctx: RendererContext): string {
 
 	switch (op) {
 		case 'start': {
-			const id = typeof result.terminalId === 'string' ? truncate(result.terminalId, 12) : '';
+			const id =
+				typeof result.terminalId === 'string'
+					? truncate(result.terminalId, 12)
+					: '';
 			const purpose = typeof result.purpose === 'string' ? result.purpose : '';
-			const cmd = typeof result.command === 'string' ? truncate(result.command, 40) : '';
+			const cmd =
+				typeof result.command === 'string' ? truncate(result.command, 40) : '';
 			const label = cmd || purpose || 'shell';
 			return `  ${c.dim(ICONS.arrow)} ${c.yellow('terminal')} ${c.dim('start')} ${c.green(ICONS.check)} ${c.dim(label)} ${c.dim(ICONS.dot)} ${c.dim(id)} ${c.dim(time)}`;
 		}
 		case 'read': {
 			const lines = typeof result.lines === 'number' ? result.lines : 0;
 			const status = typeof result.status === 'string' ? result.status : '';
-			const exitCode = typeof result.exitCode === 'number' ? result.exitCode : undefined;
-			const id = typeof result.terminalId === 'string' ? truncate(result.terminalId, 12) : '';
+			const exitCode =
+				typeof result.exitCode === 'number' ? result.exitCode : undefined;
+			const id =
+				typeof result.terminalId === 'string'
+					? truncate(result.terminalId, 12)
+					: '';
 			const statusLabel =
 				status === 'running'
 					? c.green('running')
@@ -80,7 +91,10 @@ export function renderTerminalResult(ctx: RendererContext): string {
 			return outputLines.join('\n');
 		}
 		case 'write': {
-			const written = typeof args.input === 'string' ? truncate(args.input.replace(/\n/g, '↵'), 60) : '';
+			const written =
+				typeof args.input === 'string'
+					? truncate(args.input.replace(/\n/g, '↵'), 60)
+					: '';
 			return `  ${c.dim(ICONS.arrow)} ${c.yellow('terminal')} ${c.dim('write')} ${c.green(ICONS.check)} ${c.dim(written || 'ok')} ${c.dim(time)}`;
 		}
 		case 'interrupt': {
@@ -95,9 +109,11 @@ export function renderTerminalResult(ctx: RendererContext): string {
 			);
 			for (const t of terminals.slice(0, 5) as Array<Record<string, unknown>>) {
 				const tid = typeof t.id === 'string' ? truncate(t.id, 12) : '';
-				const tpurpose = typeof t.purpose === 'string' ? truncate(t.purpose, 40) : '';
+				const tpurpose =
+					typeof t.purpose === 'string' ? truncate(t.purpose, 40) : '';
 				const tstatus = typeof t.status === 'string' ? t.status : '';
-				const statusIcon = tstatus === 'running' ? c.green(ICONS.check) : c.dim(ICONS.pending);
+				const statusIcon =
+					tstatus === 'running' ? c.green(ICONS.check) : c.dim(ICONS.pending);
 				lines.push(`      ${statusIcon} ${c.dim(tid)} ${tpurpose}`);
 			}
 			if (count > 5) {
@@ -106,7 +122,10 @@ export function renderTerminalResult(ctx: RendererContext): string {
 			return lines.join('\n');
 		}
 		case 'kill': {
-			const id = typeof result.terminalId === 'string' ? truncate(result.terminalId, 12) : '';
+			const id =
+				typeof result.terminalId === 'string'
+					? truncate(result.terminalId, 12)
+					: '';
 			return `  ${c.dim(ICONS.arrow)} ${c.yellow('terminal')} ${c.dim('kill')} ${c.green(ICONS.check)} ${c.dim(id)} ${c.dim(time)}`;
 		}
 		default:

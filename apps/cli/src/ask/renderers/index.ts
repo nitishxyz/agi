@@ -71,12 +71,16 @@ const resultRenderers: Record<string, ResultRenderer> = {
 };
 
 export function renderToolCall(ctx: RendererContext): string {
-	const renderer = callRenderers[ctx.toolName] ?? (isMcpTool(ctx.toolName) ? renderMcpCall : renderGenericCall);
+	const renderer =
+		callRenderers[ctx.toolName] ??
+		(isMcpTool(ctx.toolName) ? renderMcpCall : renderGenericCall);
 	return renderer(ctx);
 }
 
 export function renderToolResult(ctx: RendererContext): string {
-	const renderer = resultRenderers[ctx.toolName] ?? (isMcpTool(ctx.toolName) ? renderMcpResult : renderGenericResult);
+	const renderer =
+		resultRenderers[ctx.toolName] ??
+		(isMcpTool(ctx.toolName) ? renderMcpResult : renderGenericResult);
 	return renderer(ctx);
 }
 

@@ -17,7 +17,7 @@ export const BUILTIN_AGENTS = {
 			'ls',
 			'tree',
 			'bash',
-		'update_todos',
+			'update_todos',
 			'terminal',
 			'git_status',
 			'git_diff',

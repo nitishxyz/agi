@@ -22,7 +22,8 @@ export function renderMcpCall(ctx: RendererContext): string {
 						.slice(0, 3)
 						.map((k) => {
 							const v = args[k];
-							const val = typeof v === 'string' ? truncate(v, 20) : JSON.stringify(v);
+							const val =
+								typeof v === 'string' ? truncate(v, 20) : JSON.stringify(v);
 							return `${k}=${val}`;
 						})
 						.join(' '),

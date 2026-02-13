@@ -141,7 +141,6 @@ export function McpToolRenderer({
 								lineHeight: '1.5',
 								background: 'transparent',
 								maxWidth: '100%',
-
 							}}
 							wrapLines
 							wrapLongLines

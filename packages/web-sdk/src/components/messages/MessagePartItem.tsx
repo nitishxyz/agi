@@ -299,14 +299,14 @@ export const MessagePartItem = memo(
 					return (
 						<Database className="h-4 w-4 text-teal-600 dark:text-teal-300" />
 					);
-			if (toolName === 'terminal')
-				return (
-					<Terminal className="h-4 w-4 text-amber-600 dark:text-amber-300" />
-				);
-			if (toolName.includes('__'))
-				return (
-					<Plug className="h-4 w-4 text-purple-600 dark:text-purple-300" />
-				);
+				if (toolName === 'terminal')
+					return (
+						<Terminal className="h-4 w-4 text-amber-600 dark:text-amber-300" />
+					);
+				if (toolName.includes('__'))
+					return (
+						<Plug className="h-4 w-4 text-purple-600 dark:text-purple-300" />
+					);
 				return <Terminal className="h-4 w-4 text-muted-foreground" />;
 			}
 
@@ -497,9 +497,9 @@ export const MessagePartItem = memo(
 					(typeof (payload as { name?: unknown })?.name === 'string'
 						? ((payload as { name?: unknown }).name as string)
 						: 'tool');
-			const toolLabel = rawToolName.includes('__')
-				? rawToolName.replace('__', ' › ')
-				: rawToolName.replace(/_/g, ' ');
+				const toolLabel = rawToolName.includes('__')
+					? rawToolName.replace('__', ' › ')
+					: rawToolName.replace(/_/g, ' ');
 				// Use args from pending approval if available (for early approval display)
 				// Fall back to part args for normal tool calls
 				const partArgs = getToolCallArgs(part);
