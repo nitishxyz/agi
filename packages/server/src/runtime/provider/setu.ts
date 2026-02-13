@@ -82,6 +82,13 @@ export async function resolveSetuModel(
 						payload: { error },
 					});
 				},
+				onBalanceUpdate: (update) => {
+					publish({
+						type: 'setu.balance.updated',
+						sessionId,
+						payload: update,
+					});
+				},
 				onPaymentApproval: async (info): Promise<TopupMethod | 'cancel'> => {
 					const suggestedTopupUsd = Math.max(
 						MIN_TOPUP_USD,

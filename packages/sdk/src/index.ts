@@ -70,6 +70,8 @@ export {
 export type {
 	SetuAuth,
 	SetuProviderOptions,
+	SetuPaymentCallbacks,
+	SetuBalanceUpdate,
 	SetuBalanceResponse,
 	SolanaUsdcBalanceResponse,
 } from './providers/src/index.ts';

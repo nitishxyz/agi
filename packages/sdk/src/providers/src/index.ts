@@ -35,6 +35,7 @@ export type {
 	SetuAuth,
 	SetuProviderOptions,
 	SetuPaymentCallbacks,
+	SetuBalanceUpdate,
 	SetuBalanceResponse,
 	SolanaUsdcBalanceResponse,
 } from './setu-client.ts';

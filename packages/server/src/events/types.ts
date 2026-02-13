@@ -9,6 +9,7 @@ export type OttoEventType =
 	| 'setu.topup.method_selected'
 	| 'setu.topup.cancelled'
 	| 'setu.fiat.checkout_created'
+	| 'setu.balance.updated'
 	| 'session.created'
 	| 'session.updated'
 	| 'message.created'

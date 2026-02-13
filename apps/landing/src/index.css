@@ -177,3 +177,23 @@ body {
 .animate-fade-in {
 	animation: fadeIn 0.4s ease-out both;
 }
+
+.term-line-enter {
+	display: grid;
+	grid-template-rows: 0fr;
+	opacity: 0;
+	animation: termLineGrow 0.4s ease-out forwards;
+}
+.term-line-enter > * {
+	overflow: hidden;
+}
+@keyframes termLineGrow {
+	from {
+		grid-template-rows: 0fr;
+		opacity: 0;
+	}
+	to {
+		grid-template-rows: 1fr;
+		opacity: 1;
+	}
+}

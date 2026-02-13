@@ -44,6 +44,13 @@ const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_MAX_PAYMENT_ATTEMPTS = 20;
 
+export type SetuBalanceUpdate = {
+	costUsd: number;
+	balanceRemaining: number;
+	inputTokens?: number;
+	outputTokens?: number;
+};
+
 export type SetuPaymentCallbacks = {
 	onPaymentRequired?: (amountUsd: number, currentBalance?: number) => void;
 	onPaymentSigning?: () => void;
@@ -57,6 +64,7 @@ export type SetuPaymentCallbacks = {
 		amountUsd: number;
 		currentBalance: number;
 	}) => Promise<'crypto' | 'fiat' | 'cancel'>;
+	onBalanceUpdate?: (update: SetuBalanceUpdate) => void;
 };
 
 export type SetuProviderOptions = {
@@ -197,7 +205,7 @@ export function createSetuFetch(
 			const response = await baseFetch(input, { ...init, body, headers });
 
 			if (response.status !== 402) {
-				return response;
+				return wrapResponseWithBalanceSniffing(response, callbacks);
 			}
 
 			const payload = await response.json().catch(() => ({}));
@@ -264,6 +272,70 @@ export function createSetuFetch(
 
 		throw new Error('Setu: max attempts exceeded');
 	};
+}
+
+function tryParseSetuComment(
+	line: string,
+	onBalanceUpdate: (update: SetuBalanceUpdate) => void,
+) {
+	const trimmed = line.replace(/\r$/, '');
+	if (!trimmed.startsWith(': setu ')) return;
+	try {
+		const data = JSON.parse(trimmed.slice(7));
+		onBalanceUpdate({
+			costUsd: parseFloat(data.cost_usd ?? '0'),
+			balanceRemaining: parseFloat(data.balance_remaining ?? '0'),
+			inputTokens: data.input_tokens ? Number(data.input_tokens) : undefined,
+			outputTokens: data.output_tokens ? Number(data.output_tokens) : undefined,
+		});
+	} catch {}
+}
+
+function wrapResponseWithBalanceSniffing(
+	response: Response,
+	callbacks: SetuPaymentCallbacks,
+): Response {
+	if (!callbacks.onBalanceUpdate) return response;
+
+	const balanceHeader = response.headers.get('x-balance-remaining');
+	const costHeader = response.headers.get('x-cost-usd');
+	if (balanceHeader && costHeader) {
+		callbacks.onBalanceUpdate({
+			costUsd: parseFloat(costHeader),
+			balanceRemaining: parseFloat(balanceHeader),
+		});
+		return response;
+	}
+
+	if (!response.body) return response;
+
+	const onBalanceUpdate = callbacks.onBalanceUpdate;
+	let partial = '';
+	const decoder = new TextDecoder();
+	const transform = new TransformStream<Uint8Array, Uint8Array>({
+		transform(chunk, controller) {
+			controller.enqueue(chunk);
+			partial += decoder.decode(chunk, { stream: true });
+			let nlIndex = partial.indexOf('\n');
+			while (nlIndex !== -1) {
+				const line = partial.slice(0, nlIndex);
+				partial = partial.slice(nlIndex + 1);
+				tryParseSetuComment(line, onBalanceUpdate);
+				nlIndex = partial.indexOf('\n');
+			}
+		},
+		flush() {
+			if (partial.trim()) {
+				tryParseSetuComment(partial, onBalanceUpdate);
+			}
+		},
+	});
+
+	return new Response(response.body.pipeThrough(transform), {
+		status: response.status,
+		statusText: response.statusText,
+		headers: response.headers,
+	});
 }
 
 /**

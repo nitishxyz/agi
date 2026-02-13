@@ -384,65 +384,79 @@ function HeroMockup() {
 				</div>
 			</div>
 
-			<div className="px-5 py-4 space-y-3 font-mono text-xs">
-				{step >= 1 && (
-					<div className="animate-fade-in flex items-start gap-2">
-						<span className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">→</span>
-						<div>
-							<span className="text-otto-muted">POST</span>
-							<span className="text-otto-dim"> /v1/messages</span>
-							<span className="text-otto-dim/50 ml-2">claude-sonnet-4-5</span>
-						</div>
+		<div className="px-5 py-4 font-mono text-xs">
+			{step >= 1 && (
+			<div className="term-line-enter">
+				<div className="flex items-center gap-2 pb-3">
+					<span className="text-blue-600 dark:text-blue-400 shrink-0 inline-flex w-4 justify-center">→</span>
+					<div>
+						<span className="text-otto-muted">POST</span>
+						<span className="text-otto-dim"> /v1/messages</span>
+						<span className="text-otto-dim/50 ml-2">claude-sonnet-4-5</span>
 					</div>
-				)}
-				{step >= 2 && (
-					<div className="animate-fade-in flex items-start gap-2">
-						<span className="text-purple-600 dark:text-purple-400 shrink-0 mt-0.5">⚿</span>
-						<div>
-							<span className="text-purple-600 dark:text-purple-400 font-medium">auth</span>
-							<span className="text-otto-dim"> wallet verified</span>
-							<span className="text-otto-dim/50 ml-1">ed25519</span>
-						</div>
+				</div>
+			</div>
+		)}
+		{step >= 2 && (
+			<div className="term-line-enter">
+				<div className="flex items-center gap-2 pb-3">
+					<span className="text-purple-600 dark:text-purple-400 shrink-0 inline-flex w-4 justify-center">⚿</span>
+					<div>
+						<span className="text-purple-600 dark:text-purple-400 font-medium">auth</span>
+						<span className="text-otto-dim"> wallet verified</span>
+						<span className="text-otto-dim/50 ml-1">ed25519</span>
 					</div>
-				)}
-				{step >= 3 && (
-					<div className="animate-fade-in flex items-start gap-2">
-						<span className="text-green-600 dark:text-green-400 shrink-0 mt-0.5">◉</span>
-						<div>
-							<span className="text-green-600 dark:text-green-400 font-medium">balance</span>
-							<span className="text-otto-dim"> $4.9959</span>
-							<span className="text-green-600 dark:text-green-400 ml-1">✓</span>
-						</div>
+				</div>
+			</div>
+		)}
+		{step >= 3 && (
+			<div className="term-line-enter">
+				<div className="flex items-center gap-2 pb-3">
+					<span className="text-green-600 dark:text-green-400 shrink-0 inline-flex w-4 justify-center">◉</span>
+					<div>
+						<span className="text-green-600 dark:text-green-400 font-medium">balance</span>
+						<span className="text-otto-dim"> $4.9959</span>
+						<span className="text-green-600 dark:text-green-400 ml-1">✓</span>
 					</div>
-				)}
-				{step >= 4 && (
-					<div className="animate-fade-in flex items-start gap-2">
-						<span className="text-otto-muted shrink-0 mt-0.5">↗</span>
-						<div>
-							<span className="text-otto-muted">proxy</span>
-							<span className="text-otto-dim"> → api.anthropic.com</span>
-						</div>
+				</div>
+			</div>
+		)}
+		{step >= 4 && (
+			<div className="term-line-enter">
+				<div className="flex items-center gap-2 pb-3">
+					<span className="text-otto-muted shrink-0 inline-flex w-4 justify-center">↗</span>
+					<div>
+						<span className="text-otto-muted">proxy</span>
+						<span className="text-otto-dim"> → api.anthropic.com</span>
 					</div>
-				)}
-				{step >= 5 && (
-					<div className="animate-fade-in flex items-start gap-2">
-						<span className="text-green-600 dark:text-green-400 shrink-0 mt-0.5">←</span>
-						<div>
-							<span className="text-green-600 dark:text-green-300 font-medium">200</span>
-							<span className="text-otto-dim"> streaming response</span>
-						</div>
+				</div>
+			</div>
+		)}
+		{step >= 5 && (
+			<div className="term-line-enter">
+				<div className="flex items-center gap-2 pb-3">
+					<span className="text-green-600 dark:text-green-400 shrink-0 inline-flex w-4 justify-center">←</span>
+					<div>
+						<span className="text-green-600 dark:text-green-300 font-medium">200</span>
+						<span className="text-otto-dim"> streaming response</span>
 					</div>
-				)}
-				{step >= 6 && (
-					<div className="animate-fade-in pl-5 text-otto-text leading-relaxed">
+				</div>
+			</div>
+		)}
+			{step >= 6 && (
+				<div className="term-line-enter">
+					<div className="pl-6 text-otto-text leading-relaxed pb-3">
+
 						The key insight is that reactive systems must handle
 						backpressure gracefully. When a downstream consumer
 						can't keep up with the producer...
 					</div>
-				)}
-				{step >= 7 && (
-					<div className="animate-fade-in flex items-start gap-2 pt-1">
-						<span className="text-otto-dim shrink-0 mt-0.5">:</span>
+				</div>
+			)}
+			{step >= 7 && (
+				<div className="term-line-enter">
+				<div className="flex items-center gap-2 pt-1 pb-3">
+					<span className="text-otto-dim shrink-0 inline-flex w-4 justify-center">:</span>
 						<div>
 							<span className="text-otto-dim">setu</span>
 							<span className="text-otto-text ml-1">
@@ -450,9 +464,11 @@ function HeroMockup() {
 							</span>
 						</div>
 					</div>
-				)}
-				{step >= 8 && (
-					<div className="animate-fade-in flex items-center gap-3 pt-2 border-t border-otto-border mt-2">
+				</div>
+			)}
+			{step >= 8 && (
+				<div className="term-line-enter">
+					<div className="flex items-center gap-3 pt-2 border-t border-otto-border mt-2 pb-1">
 						<div className="flex items-center gap-1.5">
 							{['anthropic', 'openai', 'google', 'moonshot', 'zai'].map((p) => (
 								<ProviderLogo key={p} provider={p} size={14} className="text-otto-dim opacity-60" />
@@ -462,8 +478,9 @@ function HeroMockup() {
 							31+ models · 5 providers · one wallet
 						</span>
 					</div>
-				)}
-			</div>
+				</div>
+			)}
+		</div>
 		</div>
 	);
 }
@@ -475,33 +492,37 @@ export function Setu() {
 				<div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(139,92,246,0.08),transparent)]" />
 
 				<div className="relative z-10 w-full max-w-3xl mx-auto">
-					<Reveal>
-						<div className="text-center mb-10 sm:mb-12">
-							<p className="text-otto-dim text-xs uppercase tracking-[0.2em] mb-4">
-								by ottocode
-							</p>
-							<h1 className="text-4xl sm:text-6xl font-bold mb-6 tracking-tight">
-								setu
-							</h1>
-							<p className="text-otto-muted text-sm sm:text-base max-w-md mx-auto mb-8">
-								Pay for AI with your Solana wallet. No API keys needed.
-							</p>
-							<div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-								<Link
-									to="/docs/setu"
-									className="px-5 py-2.5 bg-otto-text text-otto-bg text-sm font-medium rounded-sm hover:opacity-80 transition-colors"
-								>
-									Get Started
-								</Link>
-								<Link
-									to="/docs/setu/integration"
-									className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
-								>
-									Integration Guide
-								</Link>
-							</div>
+				<Reveal>
+					<div className="text-center mb-10 sm:mb-14">
+						<p className="text-otto-dim text-xs uppercase tracking-[0.2em] mb-6">
+							by ottocode
+						</p>
+						<h1 className="text-5xl sm:text-7xl font-bold mb-6 tracking-tight">
+							setu
+						</h1>
+						<p className="text-otto-text text-lg sm:text-xl font-medium mb-3">
+							Your wallet is your API key.
+						</p>
+						<p className="text-otto-muted text-sm max-w-lg mx-auto mb-8">
+							AI inference proxy on Solana.<br />
+							Pay for frontier models with USDC or credit card.
+						</p>
+						<div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+							<Link
+								to="/docs/setu"
+								className="px-5 py-2.5 bg-otto-text text-otto-bg text-sm font-medium rounded-sm hover:opacity-80 transition-colors"
+							>
+								Get Started
+							</Link>
+							<Link
+								to="/docs/setu/integration"
+								className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
+							>
+								Integration Guide
+							</Link>
 						</div>
-					</Reveal>
+					</div>
+				</Reveal>
 
 					<Reveal delay={200}>
 						<HeroMockup />

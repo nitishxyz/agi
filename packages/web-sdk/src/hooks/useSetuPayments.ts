@@ -152,6 +152,20 @@ export function useSetuPayments(sessionId: string | undefined) {
 					break;
 				}
 
+				case 'setu.balance.updated': {
+					const rawBalance = payload?.balanceRemaining;
+					const newBalance =
+						typeof rawBalance === 'number'
+							? rawBalance
+							: typeof rawBalance === 'string'
+								? parseFloat(rawBalance)
+								: null;
+					if (newBalance !== null && !Number.isNaN(newBalance)) {
+						setBalance(newBalance);
+					}
+					break;
+				}
+
 				case 'setu.payment.error': {
 					clearPendingTopup();
 					const error =
