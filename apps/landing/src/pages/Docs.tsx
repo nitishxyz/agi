@@ -10,6 +10,7 @@ import { GettingStarted } from './docs/GettingStarted';
 import { Usage } from './docs/Usage';
 import { Configuration } from './docs/Configuration';
 import { AgentsTools } from './docs/AgentsTools';
+import { MCPServers } from './docs/MCPServers';
 import { Architecture } from './docs/Architecture';
 import { Embedding } from './docs/Embedding';
 import { ApiReference } from './docs/ApiReference';
@@ -32,6 +33,7 @@ const NAV_SECTIONS = [
 		title: 'Features',
 		items: [
 			{ to: '/docs/agents-tools', label: 'Agents & Tools' },
+			{ to: '/docs/mcp', label: 'MCP Servers' },
 			{ to: '/docs/sharing', label: 'Session Sharing' },
 			{ to: '/docs/acp', label: 'ACP Integration' },
 		],
@@ -134,6 +136,7 @@ export function Docs() {
 							<Route path="usage" element={<Usage />} />
 							<Route path="configuration" element={<Configuration />} />
 							<Route path="agents-tools" element={<AgentsTools />} />
+							<Route path="mcp" element={<MCPServers />} />
 							<Route path="architecture" element={<Architecture />} />
 							<Route path="embedding" element={<Embedding />} />
 							<Route path="api" element={<ApiReference />} />

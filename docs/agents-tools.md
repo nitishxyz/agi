@@ -179,6 +179,29 @@ Custom tools are automatically discovered and made available to agents.
 
 ---
 
+## MCP Tools
+
+MCP (Model Context Protocol) servers provide additional tools from external sources. When an MCP server is started, its tools are automatically available to all agents.
+
+MCP tools use the naming convention `servername__toolname`:
+
+| Example Tool | Server | Description |
+|---|---|---|
+| `helius__getBalance` | helius | Get SOL balance for a wallet |
+| `github__create_issue` | github | Create a GitHub issue |
+| `linear__list_issues` | linear | List Linear issues |
+
+MCP tools bypass the per-agent tool allowlist — any running MCP server's tools are available to every agent.
+
+```bash
+otto mcp list                  # list configured servers
+otto mcp add helius --command npx --args -y helius-mcp@latest
+```
+
+See [MCP Servers](./mcp.md) for setup, transports, and OAuth.
+
+---
+
 ## Skills
 
 Skills are markdown files that provide specialized instructions to agents on demand, loaded via the `skill` tool.

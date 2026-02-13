@@ -151,6 +151,44 @@ const app = createEmbeddedApp({
 
 See [Embedding Guide](./embedding-guide.md) for full details.
 
+## MCP Server Configuration
+
+MCP (Model Context Protocol) servers extend the agent with external tools.
+
+### Project Config
+
+Add to `.otto/config.json`:
+
+```json
+{
+  "mcp": {
+    "servers": [
+      {
+        "name": "github",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "env": { "GITHUB_TOKEN": "${GITHUB_TOKEN}" }
+      },
+      {
+        "name": "linear",
+        "transport": "http",
+        "url": "https://mcp.linear.app/mcp"
+      }
+    ]
+  }
+}
+```
+
+### Global Config
+
+Add to `~/.config/otto/config.json` to make servers available in all projects.
+
+### OAuth Tokens
+
+OAuth credentials are stored in `~/.config/otto/oauth/<server-name>.json` with `0600` permissions. Tokens refresh automatically.
+
+See [MCP Servers](./mcp.md) for full details.
+
 ## Configuration Scenarios
 
 | Mode | Injected | Env Vars | Files | Use Case |

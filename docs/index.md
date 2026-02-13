@@ -11,6 +11,7 @@
 ## Features
 
 - **[Agents & Tools](agents-tools.md)** — Built-in agents and tools reference
+- **[MCP Servers](mcp.md)** — Connect to external MCP servers (GitHub, Linear, Helius, etc.)
 - **[Customization](customization.md)** — Custom commands, tools, and agents
 - **[Environment](environment.md)** — Environment variables and flags
 - **[API Reference](api.md)** — REST endpoints and SSE events
@@ -115,7 +116,8 @@ const result = await generateText({
 2. [Usage Guide](usage.md)
 3. [Configuration](configuration.md)
 4. [Agents & Tools](agents-tools.md)
-5. [Troubleshooting](troubleshooting.md)
+5. [MCP Servers](mcp.md)
+6. [Troubleshooting](troubleshooting.md)
 
 ### For Developers (building with otto SDK)
 

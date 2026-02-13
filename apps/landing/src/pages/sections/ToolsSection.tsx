@@ -7,6 +7,7 @@ const TOOL_GROUPS = [
 	{ cat: 'Shell', items: ['bash', 'terminal'] },
 	{ cat: 'Git', items: ['git_status', 'git_diff', 'git_commit'] },
 	{ cat: 'Agent', items: ['progress_update', 'finish', 'update_todos'] },
+	{ cat: 'MCP', items: ['github', 'linear', 'helius', 'notion', '+ any'] },
 ];
 
 export function ToolsSection() {
@@ -18,11 +19,11 @@ export function ToolsSection() {
 						Tools
 					</p>
 					<h2 className="text-2xl sm:text-3xl font-bold mb-16 max-w-sm">
-						15+ built-in tools
+						15+ built-in tools + MCP
 					</h2>
 				</Reveal>
 
-				<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+				<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
 					{TOOL_GROUPS.map((g, i) => (
 						<Reveal key={g.cat} delay={i * 40}>
 							<div>

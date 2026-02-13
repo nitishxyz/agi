@@ -66,6 +66,9 @@ otto sessions                  # browse session history
 otto models                    # list available models
 otto agents                    # list/configure agents
 otto tools                     # list available tools
+otto mcp list                  # list MCP servers
+otto mcp add <name>            # add an MCP server
+otto mcp auth <name>           # authenticate OAuth server
 otto doctor                    # check configuration
 otto share <session-id>        # share a session publicly
 otto upgrade                   # upgrade to latest version
@@ -140,6 +143,74 @@ Agents are configurable per-project (`.otto/agents.json`) or globally (`~/.confi
 | Shell | `bash`, `terminal` |
 | Git | `git_status`, `git_diff`, `git_commit` |
 | Agent | `progress_update`, `finish`, `update_todos`, `skill` |
+
+### MCP (Model Context Protocol)
+
+otto supports MCP servers — the open standard for connecting AI agents to external tools and data sources. Connect to local or remote MCP servers to extend your agent's capabilities.
+
+#### Quick Start
+
+**From the Web UI:** Open the MCP panel (sidebar) → click **+** → add a server.
+
+**From the CLI:**
+
+```bash
+# Add a local (stdio) server
+otto mcp add helius --command npx --args -y helius-mcp@latest
+
+# Add a remote (HTTP) server
+otto mcp add linear --transport http --url https://mcp.linear.app/mcp
+
+# List configured servers
+otto mcp list
+
+# Authenticate with an OAuth server
+otto mcp auth linear
+```
+
+**From config (`.otto/config.json`):**
+
+```json
+{
+  "mcp": {
+    "servers": [
+      {
+        "name": "github",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "env": { "GITHUB_TOKEN": "${GITHUB_TOKEN}" }
+      },
+      {
+        "name": "linear",
+        "transport": "http",
+        "url": "https://mcp.linear.app/mcp"
+      }
+    ]
+  }
+}
+```
+
+MCP tools appear as `servername__toolname` (e.g., `helius__getBalance`) and are automatically available to all agents. Start servers from the sidebar panel — they stay alive for the duration of the session.
+
+#### Supported Transports
+
+| Transport | Use Case | Example |
+|---|---|---|
+| **stdio** | Local servers (npx, node, python) | `npx -y helius-mcp@latest` |
+| **HTTP** | Remote servers (recommended) | `https://mcp.linear.app/mcp` |
+| **SSE** | Remote servers (legacy) | `https://mcp.asana.com/sse` |
+
+#### OAuth
+
+Remote servers like Linear, Notion, and Sentry use OAuth. otto handles the full flow automatically:
+
+1. Click **Start** on a remote server → browser opens for authorization
+2. Authorize in the browser → otto receives the callback
+3. Server reconnects with tokens → tools become available
+
+Tokens are stored securely in `~/.config/otto/oauth/` and refresh automatically.
+
+---
 
 ### Custom Tools
 
@@ -371,6 +442,7 @@ bun run db:reset               # reset local database
 | [Usage Guide](docs/usage.md) | Commands and workflows |
 | [Configuration](docs/configuration.md) | Settings reference |
 | [Agents & Tools](docs/agents-tools.md) | Built-in agents and tools |
+| [MCP Servers](docs/mcp.md) | Connect to external MCP servers |
 | [Architecture](docs/architecture.md) | Monorepo structure, packages, infra |
 | [Development Guide](docs/development-guide.md) | Dev workflows for all components |
 | [Embedding Guide](docs/embedding-guide.md) | Embed otto in your apps |
