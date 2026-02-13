@@ -15,6 +15,8 @@ import {
 	renderGitCommitResult,
 } from './git.ts';
 import { renderWebSearchCall, renderWebSearchResult } from './websearch.ts';
+import { renderTerminalCall, renderTerminalResult } from './terminal.ts';
+import { isMcpTool, renderMcpCall, renderMcpResult } from './mcp.ts';
 import {
 	renderProgressCall,
 	renderTodosCall,
@@ -34,7 +36,7 @@ const callRenderers: Record<string, CallRenderer> = {
 	edit: renderWriteCall,
 	apply_patch: renderPatchCall,
 	bash: renderBashCall,
-	terminal: renderBashCall,
+	terminal: renderTerminalCall,
 	ripgrep: renderSearchCall,
 	glob: renderSearchCall,
 	tree: renderTreeCall,
@@ -54,7 +56,7 @@ const resultRenderers: Record<string, ResultRenderer> = {
 	edit: renderWriteResult,
 	apply_patch: renderPatchResult,
 	bash: renderBashResult,
-	terminal: renderBashResult,
+	terminal: renderTerminalResult,
 	ripgrep: renderSearchResult,
 	glob: renderSearchResult,
 	tree: renderTreeResult,
@@ -69,12 +71,12 @@ const resultRenderers: Record<string, ResultRenderer> = {
 };
 
 export function renderToolCall(ctx: RendererContext): string {
-	const renderer = callRenderers[ctx.toolName] ?? renderGenericCall;
+	const renderer = callRenderers[ctx.toolName] ?? (isMcpTool(ctx.toolName) ? renderMcpCall : renderGenericCall);
 	return renderer(ctx);
 }
 
 export function renderToolResult(ctx: RendererContext): string {
-	const renderer = resultRenderers[ctx.toolName] ?? renderGenericResult;
+	const renderer = resultRenderers[ctx.toolName] ?? (isMcpTool(ctx.toolName) ? renderMcpResult : renderGenericResult);
 	return renderer(ctx);
 }
 

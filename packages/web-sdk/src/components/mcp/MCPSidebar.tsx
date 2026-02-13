@@ -1,6 +1,6 @@
 import { memo, useState, useCallback } from 'react';
 import {
-	Blocks,
+	Plug,
 	ChevronDown,
 	ChevronRight,
 	Globe,
@@ -198,7 +198,7 @@ export const MCPSidebar = memo(function MCPSidebar() {
 		<div className="w-80 border-l border-border bg-background flex flex-col h-full">
 			<div className="h-14 flex items-center justify-between px-3 border-b border-border">
 				<div className="flex items-center gap-2">
-					<Blocks className="w-4 h-4 text-muted-foreground" />
+				<Plug className="w-4 h-4 text-muted-foreground" />
 					<span className="font-medium text-sm">MCP Servers</span>
 					{connectedCount > 0 && (
 						<span className="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">

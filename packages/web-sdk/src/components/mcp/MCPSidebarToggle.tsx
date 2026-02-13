@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Blocks } from 'lucide-react';
+import { Plug } from 'lucide-react';
 import { useMCPStore } from '../../stores/mcpStore';
 
 export const MCPSidebarToggle = memo(function MCPSidebarToggle() {
@@ -18,7 +18,7 @@ export const MCPSidebarToggle = memo(function MCPSidebarToggle() {
 			}`}
 			title="MCP Servers"
 		>
-			<Blocks className="w-5 h-5 text-muted-foreground mx-auto" />
+			<Plug className="w-5 h-5 text-muted-foreground mx-auto" />
 			{connectedCount > 0 && (
 				<span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full" />
 			)}

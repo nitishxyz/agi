@@ -19,6 +19,8 @@ import { ProgressUpdateRenderer } from './ProgressUpdateRenderer';
 import { WebSearchRenderer } from './WebSearchRenderer';
 import { ErrorRenderer } from './ErrorRenderer';
 import { DatabaseToolRenderer } from './DatabaseToolRenderer';
+import { TerminalRenderer } from './TerminalRenderer';
+import { McpToolRenderer, isMcpTool } from './McpToolRenderer';
 
 interface ToolResultRendererProps {
 	toolName: string;
@@ -114,6 +116,8 @@ export function ToolResultRenderer({
 			return <GitCommitRenderer {...props} />;
 		case 'apply_patch':
 			return <ApplyPatchRenderer {...props} />;
+		case 'terminal':
+			return <TerminalRenderer {...props} />;
 		case 'ls':
 			return <ListRenderer {...props} />;
 		case 'tree':
@@ -154,6 +158,9 @@ export function ToolResultRenderer({
 				/>
 			);
 		default:
+			if (isMcpTool(normalizedName)) {
+				return <McpToolRenderer {...props} toolName={toolName} />;
+			}
 			return <GenericRenderer {...props} toolName={toolName} />;
 	}
 }

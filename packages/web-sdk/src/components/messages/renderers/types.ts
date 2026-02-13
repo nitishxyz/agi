@@ -44,6 +44,9 @@ export interface ToolCallArgs {
 	command?: string;
 	script?: string;
 	input?: string;
+	operation?: string;
+	terminalId?: string;
+	purpose?: string;
 }
 
 export interface ToolResultData {
@@ -73,6 +76,15 @@ export interface ToolResultData {
 	files?: unknown[];
 	cwd?: string;
 	output?: string;
+	// Terminal fields
+	terminalId?: string;
+	purpose?: string;
+	command?: string;
+	pid?: number;
+	status?: string;
+	lines?: number;
+	terminals?: unknown[];
+	count?: number;
 	// Error fields
 	errorType?: ToolErrorType;
 	details?: {
