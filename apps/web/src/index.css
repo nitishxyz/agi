@@ -354,3 +354,27 @@ button:focus-visible {
 	font-size: 0.75rem;
 	padding: 0.0625rem 0.25rem;
 }
+
+/* Non-selectable line numbers using CSS counters + ::before pseudo-elements */
+.code-with-line-numbers {
+	counter-reset: line-number;
+}
+
+.code-with-line-numbers .code-line {
+	counter-increment: line-number;
+	/* biome-ignore lint/complexity/noImportantStyles: override react-syntax-highlighter inline style */
+	display: flex !important;
+	align-items: flex-start;
+}
+
+.code-with-line-numbers .code-line::before {
+	content: counter(line-number);
+	min-width: 3em;
+	padding-right: 1em;
+	text-align: right;
+	color: hsl(var(--muted-foreground) / 0.5);
+	font-size: 0.7rem;
+	flex-shrink: 0;
+	user-select: none;
+	pointer-events: none;
+}

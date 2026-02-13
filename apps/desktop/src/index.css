@@ -120,3 +120,34 @@ button:focus-visible {
 		transform: rotate(360deg);
 	}
 }
+
+/* Non-selectable line numbers using CSS pseudo-elements */
+.code-with-line-numbers {
+	counter-reset: line-number;
+}
+
+.code-with-line-numbers .code-line {
+	counter-increment: line-number;
+	display: flex;
+	align-items: flex-start;
+}
+
+.code-with-line-numbers .code-line::before {
+	content: counter(line-number);
+	min-width: 3em;
+	padding-right: 1em;
+	text-align: right;
+	color: hsl(var(--muted-foreground) / 0.5);
+	font-size: 0.7rem;
+	flex-shrink: 0;
+	user-select: none;
+	pointer-events: none;
+}
+
+/* Diff line numbers - positioned outside selectable content */
+.diff-line-gutter {
+	position: sticky;
+	left: 0;
+	background: inherit;
+	z-index: 1;
+}

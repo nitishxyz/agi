@@ -107,24 +107,29 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 
 				{/* Full file content with syntax highlighting */}
 				<div className="flex-1 overflow-auto">
-					<SyntaxHighlighter
-						language={resolvedLanguage}
-						style={syntaxTheme}
-						showLineNumbers
-						customStyle={{
-							margin: 0,
-							padding: '1rem',
-							background: 'transparent',
-						}}
-						lineNumberStyle={{
-							minWidth: '3em',
-							paddingRight: '1em',
-							color: 'var(--color-muted-foreground)',
-							userSelect: 'none',
-						}}
-					>
-						{diff.content}
-					</SyntaxHighlighter>
+					<div className="code-with-line-numbers">
+						<SyntaxHighlighter
+							language={resolvedLanguage}
+							style={syntaxTheme}
+							wrapLines
+							wrapLongLines
+							lineProps={() => ({
+								className: 'code-line',
+							})}
+							customStyle={{
+								margin: 0,
+								padding: '1rem',
+								background: 'transparent',
+							}}
+							codeTagProps={{
+								style: {
+									flex: 1,
+								},
+							}}
+						>
+							{diff.content}
+						</SyntaxHighlighter>
+					</div>
 				</div>
 			</div>
 		);
@@ -313,7 +318,12 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 
 		return (
 			<div key={index} className={rowClassName}>
-				<div className={lineNumberClassName}>
+				{/* Line numbers - using aria-hidden and pointer-events:none for better selection behavior */}
+				<div
+					className={lineNumberClassName}
+					aria-hidden="true"
+					style={{ pointerEvents: 'none' }}
+				>
 					<div className="flex justify-between gap-2">
 						<span className="text-right w-8">{oldNum}</span>
 						<span className="text-right w-8">{newNum}</span>

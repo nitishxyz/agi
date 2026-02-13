@@ -104,6 +104,12 @@ export function Nav() {
 						>
 							Docs
 						</Link>
+						<Link
+							to="/setu"
+							className="text-otto-muted hover:text-otto-text transition-colors"
+						>
+							Setu
+						</Link>
 						<a
 							href="https://github.com/nitishxyz/otto"
 							target="_blank"
@@ -205,6 +211,12 @@ export function Nav() {
 						className="block text-otto-muted hover:text-otto-text"
 					>
 						Docs
+					</Link>
+					<Link
+						to="/setu"
+						className="block text-otto-muted hover:text-otto-text"
+					>
+						Setu
 					</Link>
 					<a
 						href="https://github.com/nitishxyz/otto"

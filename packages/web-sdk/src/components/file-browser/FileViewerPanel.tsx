@@ -114,27 +114,31 @@ export const FileViewerPanel = memo(function FileViewerPanel() {
 						Loading file...
 					</div>
 				) : data ? (
-					<SyntaxHighlighter
-						language={language}
-						style={syntaxTheme}
-						showLineNumbers
-						customStyle={{
-							margin: 0,
-							padding: '1rem',
-							background: 'transparent',
-						fontSize: '0.75rem',
-						lineHeight: '1.25rem',
-						}}
-						lineNumberStyle={{
-							minWidth: '3em',
-							paddingRight: '1em',
-							color: 'var(--color-muted-foreground)',
-							userSelect: 'none',
-						fontSize: '0.7rem',
-						}}
-					>
-						{data.content}
-					</SyntaxHighlighter>
+					<div className="code-with-line-numbers">
+						<SyntaxHighlighter
+							language={language}
+							style={syntaxTheme}
+							wrapLines
+							wrapLongLines
+							lineProps={() => ({
+								className: 'code-line',
+							})}
+							customStyle={{
+								margin: 0,
+								padding: '1rem',
+								background: 'transparent',
+								fontSize: '0.75rem',
+								lineHeight: '1.25rem',
+							}}
+							codeTagProps={{
+								style: {
+									flex: 1,
+								},
+							}}
+						>
+							{data.content}
+						</SyntaxHighlighter>
+					</div>
 				) : (
 					<div className="h-full flex items-center justify-center text-muted-foreground">
 						Unable to load file

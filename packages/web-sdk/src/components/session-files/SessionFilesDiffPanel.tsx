@@ -313,10 +313,18 @@ function FullHeightDiffView({ patch }: { patch: string }) {
 
 					return (
 						<div key={key} className={`flex ${bgClass}`}>
-							<div className="px-2 py-0.5 text-right text-muted-foreground/40 select-none w-12 flex-shrink-0">
+							<div
+								className="px-2 py-0.5 text-right text-muted-foreground/40 select-none w-12 flex-shrink-0"
+								aria-hidden="true"
+								style={{ pointerEvents: 'none' }}
+							>
 								{line.oldLineNum || ''}
 							</div>
-							<div className="px-2 py-0.5 text-right text-muted-foreground/40 select-none w-12 flex-shrink-0 border-r border-border/50">
+							<div
+								className="px-2 py-0.5 text-right text-muted-foreground/40 select-none w-12 flex-shrink-0 border-r border-border/50"
+								aria-hidden="true"
+								style={{ pointerEvents: 'none' }}
+							>
 								{line.newLineNum || ''}
 							</div>
 							<div
