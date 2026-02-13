@@ -140,11 +140,9 @@ export function Nav() {
 						</button>
 						<Link
 							to="/setu"
-							className="px-3.5 py-1.5 border border-amber-500/30 text-amber-400 text-xs rounded-sm hover:border-amber-400 hover:text-amber-300 transition-colors inline-flex items-center gap-1.5 group"
+							className="px-3.5 py-1.5 border border-blue-400/50 text-blue-400 text-xs font-medium rounded-sm hover:border-blue-400 transition-colors inline-flex items-center gap-1.5"
 						>
-							<span className="opacity-50 group-hover:opacity-100 transition-opacity">
-								<SetuIcon />
-							</span>
+							<SetuIcon />
 							Setu
 						</Link>
 						<button
