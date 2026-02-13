@@ -1,5 +1,5 @@
 import { MCPServerManager } from './server-manager.ts';
-import type { MCPConfig, MCPServerConfig } from './types.ts';
+import type { MCPConfig, MCPServerConfig, MCPScope } from './types.ts';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 
@@ -11,11 +11,15 @@ export function getMCPManager(): MCPServerManager | null {
 
 export async function initializeMCP(
 	config: MCPConfig,
+	projectRoot?: string,
 ): Promise<MCPServerManager> {
 	if (globalMCPManager) {
 		await globalMCPManager.stopAll();
 	}
 	globalMCPManager = new MCPServerManager();
+	if (projectRoot) {
+		globalMCPManager.setProjectRoot(projectRoot);
+	}
 	await globalMCPManager.startServers(config.servers);
 	return globalMCPManager;
 }
@@ -41,7 +45,7 @@ export async function loadMCPConfig(
 		const globalServers = await readMCPServersFromFile(globalPath);
 		for (const s of globalServers) {
 			seen.add(s.name);
-			servers.push(s);
+			servers.push({ ...s, scope: 'global' });
 		}
 	}
 
@@ -50,9 +54,9 @@ export async function loadMCPConfig(
 	for (const s of projectServers) {
 		if (seen.has(s.name)) {
 			const idx = servers.findIndex((existing) => existing.name === s.name);
-			if (idx >= 0) servers[idx] = s;
+			if (idx >= 0) servers[idx] = { ...s, scope: 'project' };
 		} else {
-			servers.push(s);
+			servers.push({ ...s, scope: 'project' });
 		}
 	}
 
@@ -81,11 +85,30 @@ async function readMCPServersFromFile(
 	}
 }
 
+function resolveConfigPath(
+	projectRoot: string,
+	globalConfigDir: string | undefined,
+	scope: MCPScope,
+): string {
+	if (scope === 'global' && globalConfigDir) {
+		return join(globalConfigDir, 'config.json');
+	}
+	return join(projectRoot, '.otto', 'config.json');
+}
+
+async function ensureConfigDir(configPath: string): Promise<void> {
+	const dir = configPath.replace(/[/\\][^/\\]+$/, '');
+	await fs.mkdir(dir, { recursive: true });
+}
+
 export async function addMCPServerToConfig(
 	projectRoot: string,
 	server: MCPServerConfig,
+	globalConfigDir?: string,
 ): Promise<void> {
-	const configPath = join(projectRoot, '.otto', 'config.json');
+	const scope: MCPScope = server.scope ?? 'global';
+	const configPath = resolveConfigPath(projectRoot, globalConfigDir, scope);
+
 	let json: Record<string, unknown> = {};
 	try {
 		const text = await fs.readFile(configPath, 'utf-8');
@@ -98,37 +121,48 @@ export async function addMCPServerToConfig(
 
 	const servers = mcp.servers as MCPServerConfig[];
 	const idx = servers.findIndex((s) => s.name === server.name);
+
+	const { scope: _scope, ...serverWithoutScope } = server;
 	if (idx >= 0) {
-		servers[idx] = server;
+		servers[idx] = serverWithoutScope;
 	} else {
-		servers.push(server);
+		servers.push(serverWithoutScope);
 	}
 
-	await fs.mkdir(join(projectRoot, '.otto'), { recursive: true });
+	await ensureConfigDir(configPath);
 	await fs.writeFile(configPath, JSON.stringify(json, null, '\t'), 'utf-8');
 }
 
 export async function removeMCPServerFromConfig(
 	projectRoot: string,
 	name: string,
+	globalConfigDir?: string,
 ): Promise<boolean> {
-	const configPath = join(projectRoot, '.otto', 'config.json');
-	let json: Record<string, unknown> = {};
-	try {
-		const text = await fs.readFile(configPath, 'utf-8');
-		json = JSON.parse(text);
-	} catch {
-		return false;
+	const paths = [
+		...(globalConfigDir ? [join(globalConfigDir, 'config.json')] : []),
+		join(projectRoot, '.otto', 'config.json'),
+	];
+
+	for (const configPath of paths) {
+		let json: Record<string, unknown> = {};
+		try {
+			const text = await fs.readFile(configPath, 'utf-8');
+			json = JSON.parse(text);
+		} catch {
+			continue;
+		}
+
+		const mcp = json.mcp as Record<string, unknown> | undefined;
+		if (!mcp || !Array.isArray(mcp.servers)) continue;
+
+		const servers = mcp.servers as MCPServerConfig[];
+		const idx = servers.findIndex((s) => s.name === name);
+		if (idx < 0) continue;
+
+		servers.splice(idx, 1);
+		await fs.writeFile(configPath, JSON.stringify(json, null, '\t'), 'utf-8');
+		return true;
 	}
 
-	const mcp = json.mcp as Record<string, unknown> | undefined;
-	if (!mcp || !Array.isArray(mcp.servers)) return false;
-
-	const servers = mcp.servers as MCPServerConfig[];
-	const idx = servers.findIndex((s) => s.name === name);
-	if (idx < 0) return false;
-
-	servers.splice(idx, 1);
-	await fs.writeFile(configPath, JSON.stringify(json, null, '\t'), 'utf-8');
-	return true;
+	return false;
 }

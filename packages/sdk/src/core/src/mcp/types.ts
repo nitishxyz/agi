@@ -1,4 +1,5 @@
 export type MCPTransport = 'stdio' | 'http' | 'sse';
+export type MCPScope = 'global' | 'project';
 
 export interface MCPOAuthConfig {
 	clientId?: string;
@@ -21,6 +22,8 @@ export interface MCPServerConfig {
 	oauth?: MCPOAuthConfig;
 
 	disabled?: boolean;
+
+	scope?: MCPScope;
 }
 
 export interface MCPConfig {

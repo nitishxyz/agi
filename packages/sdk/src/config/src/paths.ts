@@ -35,11 +35,7 @@ export function getGlobalAuthPath(): string {
 	return joinPath(getGlobalConfigDir(), 'auth.json');
 }
 
-// Secure location for auth secrets (not in config dir or project)
-// - Linux: $XDG_STATE_HOME/otto/auth.json or ~/.local/state/otto/auth.json
-// - macOS: ~/Library/Application Support/otto/auth.json
-// - Windows: %APPDATA%\otto\auth.json
-export function getSecureAuthPath(): string {
+export function getSecureBaseDir(): string {
 	const platform = process.platform;
 	if (platform === 'darwin') {
 		return joinPath(
@@ -47,17 +43,28 @@ export function getSecureAuthPath(): string {
 			'Library',
 			'Application Support',
 			'otto',
-			'auth.json',
 		);
 	}
 	if (platform === 'win32') {
 		const appData = (process.env.APPDATA || '').replace(/\\/g, '/');
 		const base = appData || joinPath(getHomeDir(), 'AppData', 'Roaming');
-		return joinPath(base, 'otto', 'auth.json');
+		return joinPath(base, 'otto');
 	}
 	const stateHome = (process.env.XDG_STATE_HOME || '').replace(/\\/g, '/');
 	const base = stateHome || joinPath(getHomeDir(), '.local', 'state');
-	return joinPath(base, 'otto', 'auth.json');
+	return joinPath(base, 'otto');
+}
+
+export function getSecureOAuthDir(): string {
+	return joinPath(getSecureBaseDir(), 'oauth');
+}
+
+// Secure location for auth secrets (not in config dir or project)
+// - Linux: $XDG_STATE_HOME/otto/auth.json or ~/.local/state/otto/auth.json
+// - macOS: ~/Library/Application Support/otto/auth.json
+// - Windows: %APPDATA%\otto\auth.json
+export function getSecureAuthPath(): string {
+	return joinPath(getSecureBaseDir(), 'auth.json');
 }
 
 // Global content under config dir

@@ -2,6 +2,7 @@ import { MCPClientWrapper, type MCPToolInfo } from './client.ts';
 import type { MCPServerConfig, MCPServerStatus } from './types.ts';
 import { OAuthCredentialStore } from './oauth/store.ts';
 import { OttoOAuthProvider } from './oauth/provider.ts';
+import { createHash } from 'node:crypto';
 
 type IndexedTool = {
 	server: string;
@@ -14,10 +15,28 @@ export class MCPServerManager {
 	private authProviders = new Map<string, OttoOAuthProvider>();
 	private pendingAuth = new Map<string, string>();
 	private oauthStore = new OAuthCredentialStore();
+	private serverScopes = new Map<string, 'global' | 'project'>();
 	private _started = false;
+	private projectRoot: string | null = null;
 
 	get started(): boolean {
 		return this._started;
+	}
+
+	setProjectRoot(projectRoot: string): void {
+		this.projectRoot = projectRoot;
+	}
+
+	private oauthKey(serverName: string): string {
+		const scope = this.serverScopes.get(serverName);
+		if (scope === 'project' && this.projectRoot) {
+			const hash = createHash('sha256')
+				.update(this.projectRoot)
+				.digest('hex')
+				.slice(0, 8);
+			return `${serverName}_proj_${hash}`;
+		}
+		return serverName;
 	}
 
 	async startServers(configs: MCPServerConfig[]): Promise<void> {
@@ -25,6 +44,7 @@ export class MCPServerManager {
 
 		for (const config of configs) {
 			if (config.disabled) continue;
+			this.serverScopes.set(config.name, config.scope ?? 'global');
 			await this.startSingleServer(config);
 		}
 		this._started = true;
@@ -38,7 +58,8 @@ export class MCPServerManager {
 			const hasStaticAuth =
 				config.headers?.Authorization || config.headers?.authorization;
 			if (!hasStaticAuth) {
-				const provider = new OttoOAuthProvider(config.name, this.oauthStore, {
+				const key = this.oauthKey(config.name);
+				const provider = new OttoOAuthProvider(key, this.oauthStore, {
 					clientId: config.oauth?.clientId,
 					callbackPort: config.oauth?.callbackPort,
 					scopes: config.oauth?.scopes,
@@ -104,6 +125,7 @@ export class MCPServerManager {
 		this.toolsMap.clear();
 		this.authProviders.clear();
 		this.pendingAuth.clear();
+		this.serverScopes.clear();
 		this._started = false;
 	}
 
@@ -137,8 +159,9 @@ export class MCPServerManager {
 				.filter(([, v]) => v.server === name)
 				.map(([k]) => k);
 			const config = client.serverConfig;
+			const key = this.oauthKey(name);
 			const _authenticated = this.oauthStore
-				.isAuthenticated(name)
+				.isAuthenticated(key)
 				.catch(() => false);
 
 			statuses.push({
@@ -161,8 +184,9 @@ export class MCPServerManager {
 				.filter(([, v]) => v.server === name)
 				.map(([k]) => k);
 			const config = client.serverConfig;
+			const key = this.oauthKey(name);
 			const authenticated = await this.oauthStore
-				.isAuthenticated(name)
+				.isAuthenticated(key)
 				.catch(() => false);
 
 			statuses.push({
@@ -194,7 +218,9 @@ export class MCPServerManager {
 		const transport = config.transport ?? 'stdio';
 		if (transport === 'stdio') return null;
 
-		const provider = new OttoOAuthProvider(config.name, this.oauthStore, {
+		this.serverScopes.set(config.name, config.scope ?? 'global');
+		const key = this.oauthKey(config.name);
+		const provider = new OttoOAuthProvider(key, this.oauthStore, {
 			clientId: config.oauth?.clientId,
 			callbackPort: config.oauth?.callbackPort,
 			scopes: config.oauth?.scopes,
@@ -272,7 +298,8 @@ export class MCPServerManager {
 	async getAuthStatus(
 		name: string,
 	): Promise<{ authenticated: boolean; expiresAt?: number }> {
-		const tokens = await this.oauthStore.loadTokens(name);
+		const key = this.oauthKey(name);
+		const tokens = await this.oauthStore.loadTokens(key);
 		if (!tokens?.access_token) return { authenticated: false };
 		return {
 			authenticated: true,
@@ -282,6 +309,7 @@ export class MCPServerManager {
 
 	async restartServer(config: MCPServerConfig): Promise<void> {
 		await this.stopServer(config.name);
+		this.serverScopes.set(config.name, config.scope ?? 'global');
 		await this.startSingleServer(config);
 	}
 

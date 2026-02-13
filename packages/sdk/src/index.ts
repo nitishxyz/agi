@@ -171,6 +171,8 @@ export {
 	getGlobalToolsDir,
 	getGlobalCommandsDir,
 	getSecureAuthPath,
+	getSecureBaseDir,
+	getSecureOAuthDir,
 	getHomeDir,
 } from './config/src/paths.ts';
 export {
@@ -358,6 +360,7 @@ export type {
 	MCPToolInfo,
 	MCPTransport,
 	MCPOAuthConfig,
+	MCPScope,
 	StoredOAuthData,
 	OttoOAuthProviderOptions,
 	CallbackResult,

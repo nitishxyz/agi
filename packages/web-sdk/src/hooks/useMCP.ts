@@ -88,6 +88,7 @@ export interface AddMCPServerParams {
 		callbackPort?: number;
 		scopes?: string[];
 	};
+	scope?: 'global' | 'project';
 }
 
 export function useAddMCPServer() {

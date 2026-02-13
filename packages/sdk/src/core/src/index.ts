@@ -133,6 +133,7 @@ export type {
 	MCPToolInfo,
 	MCPTransport,
 	MCPOAuthConfig,
+	MCPScope,
 	StoredOAuthData,
 	OttoOAuthProviderOptions,
 	CallbackResult,

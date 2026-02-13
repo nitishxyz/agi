@@ -29,6 +29,7 @@ export function registerMCPRoutes(app: Hono) {
 				tools: status?.tools ?? [],
 				authRequired: status?.authRequired ?? false,
 				authenticated: status?.authenticated ?? false,
+				scope: s.scope ?? 'global',
 			};
 		});
 
@@ -39,7 +40,8 @@ export function registerMCPRoutes(app: Hono) {
 		const projectRoot = process.cwd();
 		const body = await c.req.json();
 
-		const { name, transport, command, args, env, url, headers, oauth } = body;
+		const { name, transport, command, args, env, url, headers, oauth, scope } =
+			body;
 		if (!name) {
 			return c.json({ ok: false, error: 'name is required' }, 400);
 		}
@@ -51,6 +53,16 @@ export function registerMCPRoutes(app: Hono) {
 				400,
 			);
 		}
+		if (t === 'stdio' && command && /^https?:\/\//i.test(String(command))) {
+			return c.json(
+				{
+					ok: false,
+					error:
+						'stdio transport requires a local command, not a URL. Use http or sse transport for remote servers.',
+				},
+				400,
+			);
+		}
 		if ((t === 'http' || t === 'sse') && !url) {
 			return c.json(
 				{ ok: false, error: 'url is required for http/sse transport' },
@@ -58,9 +70,12 @@ export function registerMCPRoutes(app: Hono) {
 			);
 		}
 
+		const serverScope = scope === 'project' ? 'project' : 'global';
+
 		const serverConfig = {
 			name: String(name),
 			transport: t,
+			scope: serverScope as 'global' | 'project',
 			...(command ? { command: String(command) } : {}),
 			...(Array.isArray(args) ? { args: args.map(String) } : {}),
 			...(env && typeof env === 'object' ? { env } : {}),
@@ -70,7 +85,11 @@ export function registerMCPRoutes(app: Hono) {
 		};
 
 		try {
-			await addMCPServerToConfig(projectRoot, serverConfig);
+			await addMCPServerToConfig(
+				projectRoot,
+				serverConfig,
+				getGlobalConfigDir(),
+			);
 			return c.json({ ok: true, server: serverConfig });
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
@@ -88,7 +107,11 @@ export function registerMCPRoutes(app: Hono) {
 				await manager.stopServer(name);
 			}
 
-			const removed = await removeMCPServerFromConfig(projectRoot, name);
+			const removed = await removeMCPServerFromConfig(
+				projectRoot,
+				name,
+				getGlobalConfigDir(),
+			);
 			if (!removed) {
 				return c.json({ ok: false, error: `Server "${name}" not found` }, 404);
 			}
@@ -112,7 +135,10 @@ export function registerMCPRoutes(app: Hono) {
 		try {
 			let manager = getMCPManager();
 			if (!manager) {
-				manager = await initializeMCP({ servers: [] });
+				manager = await initializeMCP({ servers: [] }, projectRoot);
+			}
+			if (!manager.started) {
+				manager.setProjectRoot(projectRoot);
 			}
 			await manager.restartServer(serverConfig);
 			const status = (await manager.getStatusAsync()).find(
@@ -162,7 +188,10 @@ export function registerMCPRoutes(app: Hono) {
 		try {
 			let manager = getMCPManager();
 			if (!manager) {
-				manager = await initializeMCP({ servers: [] });
+				manager = await initializeMCP({ servers: [] }, projectRoot);
+			}
+			if (!manager.started) {
+				manager.setProjectRoot(projectRoot);
 			}
 
 			const authUrl = await manager.initiateAuth(serverConfig);

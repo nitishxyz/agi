@@ -3,6 +3,7 @@ import {
 	Plug,
 	ChevronDown,
 	ChevronRight,
+	FolderDot,
 	Globe,
 	Loader2,
 	Lock,
@@ -129,10 +130,22 @@ const MCPServerCard = memo(function MCPServerCard({
 				</div>
 			</div>
 
-			<div className="text-xs text-muted-foreground truncate">
-				{isRemote
-					? server.url
-					: `${server.command ?? ''} ${server.args.join(' ')}`}
+			<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+				<span className="truncate">
+					{isRemote
+						? server.url
+						: `${server.command ?? ''} ${server.args.join(' ')}`}
+				</span>
+				<span
+					className="flex items-center gap-0.5 flex-shrink-0 opacity-60"
+					title={server.scope === 'project' ? 'Project-local' : 'Global'}
+				>
+					{server.scope === 'project' ? (
+						<FolderDot className="w-3 h-3" />
+					) : (
+						<Globe className="w-3 h-3" />
+					)}
+				</span>
 			</div>
 
 			{hasTools && !isCollapsed && (

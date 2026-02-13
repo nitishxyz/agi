@@ -6,6 +6,8 @@ import { useSettingsStore } from './settingsStore';
 import { useTunnelStore } from './tunnelStore';
 import { useFileBrowserStore } from './fileBrowserStore';
 
+export type MCPScope = 'global' | 'project';
+
 export interface MCPServerInfo {
 	name: string;
 	transport: string;
@@ -17,6 +19,7 @@ export interface MCPServerInfo {
 	tools: string[];
 	authRequired: boolean;
 	authenticated: boolean;
+	scope: MCPScope;
 }
 
 interface MCPState {

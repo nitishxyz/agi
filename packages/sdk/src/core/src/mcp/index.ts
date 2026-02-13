@@ -4,6 +4,7 @@ export type {
 	MCPServerStatus,
 	MCPTransport,
 	MCPOAuthConfig,
+	MCPScope,
 } from './types.ts';
 
 export { MCPClientWrapper, type MCPToolInfo } from './client.ts';

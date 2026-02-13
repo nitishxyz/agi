@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
+import { getSecureOAuthDir } from '../../../../config/src/paths.ts';
 
 export interface StoredOAuthData {
 	tokens?: {
@@ -22,14 +23,7 @@ export class OAuthCredentialStore {
 	private storePath: string;
 
 	constructor(storePath?: string) {
-		this.storePath =
-			storePath ??
-			join(
-				process.env.HOME ?? process.env.USERPROFILE ?? '',
-				'.config',
-				'otto',
-				'oauth',
-			);
+		this.storePath = storePath ?? getSecureOAuthDir();
 	}
 
 	private filePath(serverName: string): string {
