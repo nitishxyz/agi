@@ -575,9 +575,7 @@ class ApiClient {
 		};
 	}
 
-	async getFileTree(
-		dirPath = '.',
-	): Promise<{
+	async getFileTree(dirPath = '.'): Promise<{
 		items: Array<{ name: string; path: string; type: 'file' | 'directory' }>;
 		path: string;
 	}> {
@@ -599,9 +597,7 @@ class ApiClient {
 		return await response.json();
 	}
 
-	async readFileContent(
-		filePath: string,
-	): Promise<{
+	async readFileContent(filePath: string): Promise<{
 		content: string;
 		path: string;
 		extension: string;

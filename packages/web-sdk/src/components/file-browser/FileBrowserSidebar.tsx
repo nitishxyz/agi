@@ -160,7 +160,7 @@ export const FileBrowserSidebar = memo(function FileBrowserSidebar() {
 					)}
 				</div>
 
-			<div className="h-12 px-4 border-t border-border text-xs text-muted-foreground flex items-center justify-between gap-2">
+				<div className="h-12 px-4 border-t border-border text-xs text-muted-foreground flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2 min-w-0 flex-1">
 						<FolderTree className="w-3 h-3 flex-shrink-0" />
 						<span className="truncate">Project Files</span>

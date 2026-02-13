@@ -425,14 +425,14 @@ export const MessagePartItem = memo(
 											</div>
 										);
 									},
-								table: ({
-									children,
-									...props
-								}: ComponentPropsWithoutRef<'table'>) => (
-									<div className="overflow-x-auto max-w-full my-3">
-										<table {...props}>{children}</table>
-									</div>
-								),
+									table: ({
+										children,
+										...props
+									}: ComponentPropsWithoutRef<'table'>) => (
+										<div className="overflow-x-auto max-w-full my-3">
+											<table {...props}>{children}</table>
+										</div>
+									),
 								}}
 							>
 								{content}

@@ -10,8 +10,7 @@ function htmlToMarkdown(el: HTMLElement): string {
 		if (node.nodeType !== Node.ELEMENT_NODE) return '';
 
 		const tag = (node as HTMLElement).tagName.toLowerCase();
-		const children = () =>
-			Array.from(node.childNodes).map(walk).join('');
+		const children = () => Array.from(node.childNodes).map(walk).join('');
 
 		switch (tag) {
 			case 'h1':

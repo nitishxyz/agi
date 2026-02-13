@@ -98,7 +98,7 @@ export function AddProject() {
 					gitName: team.gitName,
 					gitEmail: team.gitEmail,
 					image: project.image ?? '',
-				devPorts: project.devPorts ?? '',
+					devPorts: project.devPorts ?? '',
 				};
 				await tauri.saveOttoFile(config, `${name}.otto`);
 			}
