@@ -61,6 +61,7 @@ export function registerModelsRoutes(app: Hono) {
 					toolCall: m.toolCall,
 					reasoningText: m.reasoningText,
 					vision: m.modalities?.input?.includes('image') ?? false,
+					attachment: m.attachment ?? false,
 				})),
 				default: getDefault(
 					embeddedConfig?.model,
@@ -124,6 +125,7 @@ export function registerModelsRoutes(app: Hono) {
 							toolCall: m.toolCall,
 							reasoningText: m.reasoningText,
 							vision: m.modalities?.input?.includes('image') ?? false,
+							attachment: m.attachment ?? false,
 						})),
 					};
 				}

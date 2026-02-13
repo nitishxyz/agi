@@ -109,6 +109,7 @@ export interface ModelInfo {
 	toolCall?: boolean;
 	reasoningText?: boolean;
 	vision?: boolean;
+	attachment?: boolean;
 }
 
 export interface ProviderModels {

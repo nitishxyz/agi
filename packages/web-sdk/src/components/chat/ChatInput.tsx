@@ -51,6 +51,7 @@ interface ChatInputProps {
 	isDragging?: boolean;
 	onPaste?: (e: ClipboardEvent) => void;
 	visionEnabled?: boolean;
+	attachmentEnabled?: boolean;
 	modelName?: string;
 	providerName?: string;
 	authType?: 'api' | 'oauth' | 'wallet';
@@ -84,6 +85,7 @@ export const ChatInput = memo(
 			isDragging = false,
 			onPaste,
 			visionEnabled = false,
+			attachmentEnabled = false,
 			modelName,
 			providerName,
 			authType,
@@ -354,23 +356,39 @@ export const ChatInput = memo(
 
 		return (
 			<>
-				{isDragging && (
-					<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-none">
-						<div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-card border-2 border-dashed border-primary/50">
-							<div className="p-4 rounded-full bg-primary/10">
-								<FileIcon className="w-12 h-12 text-primary" />
+				{isDragging &&
+					(() => {
+						const supportsAny = visionEnabled || attachmentEnabled;
+						const fileTypes = [
+							...(visionEnabled ? ['Images'] : []),
+							...(attachmentEnabled ? ['PDF'] : []),
+							'Markdown',
+							'Text',
+						].join(', ');
+						return (
+							<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-none">
+								<div
+									className={`flex flex-col items-center gap-4 p-8 rounded-2xl border-2 border-dashed ${supportsAny ? 'bg-card border-primary/50' : 'bg-card border-muted-foreground/30'}`}
+								>
+									<div
+										className={`p-4 rounded-full ${supportsAny ? 'bg-primary/10' : 'bg-muted'}`}
+									>
+										<FileIcon
+											className={`w-12 h-12 ${supportsAny ? 'text-primary' : 'text-muted-foreground'}`}
+										/>
+									</div>
+									<div className="text-center">
+										<p className="text-lg font-medium text-foreground">
+											Drop files here
+										</p>
+										<p className="text-sm text-muted-foreground">
+											{fileTypes} up to 10MB
+										</p>
+									</div>
+								</div>
 							</div>
-							<div className="text-center">
-								<p className="text-lg font-medium text-foreground">
-									Drop files here
-								</p>
-								<p className="text-sm text-muted-foreground">
-									Images, PDF, Markdown, Text up to 10MB
-								</p>
-							</div>
-						</div>
-					</div>
-				)}
+						);
+					})()}
 				<div className="absolute bottom-0 left-0 right-0 pt-16 pb-6 md:pb-8 px-2 md:px-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20 safe-area-inset-bottom">
 					<div className="max-w-3xl mx-auto pointer-events-auto mb-2 md:mb-0 relative">
 						{preferences.vimMode && vimMode === 'normal' && (

@@ -80,15 +80,6 @@ export const ChatInputContainer = memo(
 			);
 			const queryClient = useQueryClient();
 
-			const {
-				images,
-				documents,
-				isDragging,
-				removeFile,
-				clearFiles,
-				handlePaste,
-			} = useFileUpload();
-
 			const modelSupportsReasoning = allModels?.[provider]?.models?.find(
 				(m) => m.id === model,
 			)?.reasoningText;
@@ -96,6 +87,23 @@ export const ChatInputContainer = memo(
 			const modelSupportsVision = allModels?.[provider]?.models?.find(
 				(m) => m.id === model,
 			)?.vision;
+
+			const modelSupportsAttachment = allModels?.[provider]?.models?.find(
+				(m) => m.id === model,
+			)?.attachment;
+
+			const {
+				images,
+				documents,
+				isDragging,
+				removeFile,
+				clearFiles,
+				handlePaste,
+			} = useFileUpload({
+				supportsImages: !!modelSupportsVision,
+				supportsFileAttachments: !!modelSupportsAttachment,
+				onError: toast.error,
+			});
 
 			const pendingContextsMap = usePendingResearchStore(
 				(state) => state.pendingContexts,
@@ -436,6 +444,7 @@ export const ChatInputContainer = memo(
 						isDragging={isDragging}
 						onPaste={handlePaste}
 						visionEnabled={modelSupportsVision}
+						attachmentEnabled={modelSupportsAttachment}
 						modelName={model}
 						providerName={provider}
 						authType={providerAuthType}

@@ -21,8 +21,61 @@ export interface FileAttachment {
 
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 const PDF_TYPES = ['application/pdf'];
-const TEXT_TYPES = ['text/plain', 'text/markdown', 'text/x-markdown'];
-const TEXT_EXTENSIONS = ['.txt', '.md', '.markdown'];
+const TEXT_TYPES = [
+	'text/plain',
+	'text/markdown',
+	'text/x-markdown',
+	'application/json',
+	'text/csv',
+	'text/xml',
+	'application/xml',
+	'text/yaml',
+	'text/x-yaml',
+	'application/x-yaml',
+	'text/html',
+	'text/css',
+	'text/javascript',
+	'application/javascript',
+	'application/typescript',
+];
+const TEXT_EXTENSIONS = [
+	'.txt',
+	'.md',
+	'.markdown',
+	'.json',
+	'.csv',
+	'.xml',
+	'.yaml',
+	'.yml',
+	'.html',
+	'.css',
+	'.js',
+	'.ts',
+	'.jsx',
+	'.tsx',
+	'.py',
+	'.rs',
+	'.go',
+	'.java',
+	'.c',
+	'.cpp',
+	'.h',
+	'.hpp',
+	'.rb',
+	'.php',
+	'.sh',
+	'.bash',
+	'.zsh',
+	'.toml',
+	'.ini',
+	'.cfg',
+	'.env',
+	'.log',
+	'.sql',
+	'.graphql',
+	'.svelte',
+	'.vue',
+];
 
 const SUPPORTED_TYPES = [...IMAGE_TYPES, ...PDF_TYPES, ...TEXT_TYPES];
 
@@ -80,10 +133,20 @@ interface UseFileUploadOptions {
 	maxFiles?: number;
 	maxSizeMB?: number;
 	pageWide?: boolean;
+	supportsImages?: boolean;
+	supportsFileAttachments?: boolean;
+	onError?: (message: string) => void;
 }
 
 export function useFileUpload(options: UseFileUploadOptions = {}) {
-	const { maxFiles = 10, maxSizeMB = 10, pageWide = true } = options;
+	const {
+		maxFiles = 10,
+		maxSizeMB = 10,
+		pageWide = true,
+		supportsImages = true,
+		supportsFileAttachments = true,
+		onError,
+	} = options;
 
 	const [files, setFiles] = useState<FileAttachment[]>([]);
 	const [isDragging, setIsDragging] = useState(false);
@@ -93,15 +156,22 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 
 	const validateFile = useCallback(
 		(file: File): string | null => {
+			if (!supportsImages && IMAGE_TYPES.includes(file.type)) {
+				return 'This model does not support image attachments';
+			}
+			if (!supportsFileAttachments && PDF_TYPES.includes(file.type)) {
+				return 'This model does not support PDF attachments';
+			}
 			if (!isSupported(file)) {
-				return `Unsupported file type: ${file.type || file.name}. Supported: images, PDF, markdown, text`;
+				const ext = file.name.slice(file.name.lastIndexOf('.'));
+				return `Unsupported file type: ${ext || file.type || 'unknown'}`;
 			}
 			if (file.size > maxSizeBytes) {
 				return `File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB. Max: ${maxSizeMB}MB`;
 			}
 			return null;
 		},
-		[maxSizeBytes, maxSizeMB],
+		[maxSizeBytes, maxSizeMB, supportsImages, supportsFileAttachments],
 	);
 
 	const addFiles = useCallback(
@@ -111,7 +181,9 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 			const remaining = maxFiles - files.length;
 
 			if (remaining <= 0) {
-				setError(`Maximum ${maxFiles} files allowed`);
+				const msg = `Maximum ${maxFiles} files allowed`;
+				setError(msg);
+				onError?.(msg);
 				return;
 			}
 
@@ -122,6 +194,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 				const validationError = validateFile(file);
 				if (validationError) {
 					setError(validationError);
+					onError?.(validationError);
 					continue;
 				}
 
@@ -165,7 +238,9 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 						textContent,
 					});
 				} catch {
-					setError(`Failed to process file: ${file.name}`);
+					const msg = `Failed to process file: ${file.name}`;
+					setError(msg);
+					onError?.(msg);
 				}
 			}
 
@@ -173,7 +248,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 				setFiles((prev) => [...prev, ...newFiles]);
 			}
 		},
-		[files.length, maxFiles, validateFile],
+		[files.length, maxFiles, validateFile, onError],
 	);
 
 	const removeFile = useCallback((id: string) => {
@@ -218,10 +293,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 
 			const droppedFiles = e.dataTransfer.files;
 			if (droppedFiles.length > 0) {
-				const supportedFiles = Array.from(droppedFiles).filter(isSupported);
-				if (supportedFiles.length > 0) {
-					addFiles(supportedFiles);
-				}
+				addFiles(Array.from(droppedFiles));
 			}
 		},
 		[addFiles],
@@ -236,7 +308,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 			for (const item of Array.from(items)) {
 				if (item.kind === 'file') {
 					const file = item.getAsFile();
-					if (file && isSupported(file)) {
+					if (file) {
 						pastedFiles.push(file);
 					}
 				}
@@ -284,10 +356,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 
 			const droppedFiles = e.dataTransfer?.files;
 			if (droppedFiles && droppedFiles.length > 0) {
-				const supportedFiles = Array.from(droppedFiles).filter(isSupported);
-				if (supportedFiles.length > 0) {
-					addFiles(supportedFiles);
-				}
+				addFiles(Array.from(droppedFiles));
 			}
 		};
 
