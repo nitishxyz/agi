@@ -10,8 +10,8 @@ export const SettingsSidebarToggle = memo(function SettingsSidebarToggle() {
 		<button
 			type="button"
 			onClick={toggleSidebar}
-			className={`relative h-14 w-full transition-colors touch-manipulation flex items-center justify-center ${
-				isExpanded ? 'bg-muted border-r-2 border-primary' : 'hover:bg-muted/50'
+		className={`relative h-14 w-full transition-colors touch-manipulation flex items-center justify-center border-r-2 ${
+				isExpanded ? 'bg-muted border-primary' : 'border-transparent hover:bg-muted/50'
 			}`}
 			title="Settings"
 		>
