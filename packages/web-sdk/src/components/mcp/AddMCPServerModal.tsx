@@ -10,6 +10,8 @@ interface AddMCPServerModalProps {
 	onClose: () => void;
 }
 
+type ServerMode = 'local' | 'remote';
+
 function parseCommandString(input: string): {
 	command: string;
 	args: string[];
@@ -18,15 +20,42 @@ function parseCommandString(input: string): {
 	return { command: parts[0] ?? '', args: parts.slice(1) };
 }
 
+function parseEnv(envStr: string): Record<string, string> | undefined {
+	const trimmed = envStr.trim();
+	if (!trimmed) return undefined;
+	const env: Record<string, string> = {};
+	for (const line of trimmed.split('\n')) {
+		const eq = line.indexOf('=');
+		if (eq > 0) {
+			env[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
+		}
+	}
+	return Object.keys(env).length > 0 ? env : undefined;
+}
+
+function parseHeaders(headerStr: string): Record<string, string> | undefined {
+	const trimmed = headerStr.trim();
+	if (!trimmed) return undefined;
+	const headers: Record<string, string> = {};
+	for (const line of trimmed.split('\n')) {
+		const colon = line.indexOf(':');
+		if (colon > 0) {
+			headers[line.slice(0, colon).trim()] = line.slice(colon + 1).trim();
+		}
+	}
+	return Object.keys(headers).length > 0 ? headers : undefined;
+}
+
 export const AddMCPServerModal = memo(function AddMCPServerModal({
 	isOpen,
 	onClose,
 }: AddMCPServerModalProps) {
-	const [mode, setMode] = useState<'quick' | 'advanced'>('quick');
+	const [serverMode, setServerMode] = useState<ServerMode>('local');
 	const [name, setName] = useState('');
 	const [commandStr, setCommandStr] = useState('');
-	const [command, setCommand] = useState('');
-	const [argsStr, setArgsStr] = useState('');
+	const [url, setUrl] = useState('');
+	const [transport, setTransport] = useState<'http' | 'sse'>('http');
+	const [headersStr, setHeadersStr] = useState('');
 	const [envStr, setEnvStr] = useState('');
 	const [error, setError] = useState<string | null>(null);
 
@@ -35,11 +64,12 @@ export const AddMCPServerModal = memo(function AddMCPServerModal({
 	const reset = useCallback(() => {
 		setName('');
 		setCommandStr('');
-		setCommand('');
-		setArgsStr('');
+		setUrl('');
+		setTransport('http');
+		setHeadersStr('');
 		setEnvStr('');
 		setError(null);
-		setMode('quick');
+		setServerMode('local');
 	}, []);
 
 	const handleClose = useCallback(() => {
@@ -47,78 +77,58 @@ export const AddMCPServerModal = memo(function AddMCPServerModal({
 		onClose();
 	}, [reset, onClose]);
 
-	const handleQuickAdd = useCallback(async () => {
+	const handleSubmit = useCallback(async () => {
 		setError(null);
 		const trimmedName = name.trim();
-		const trimmedCmd = commandStr.trim();
 
 		if (!trimmedName) {
 			setError('Server name is required');
 			return;
 		}
-		if (!trimmedCmd) {
-			setError('Command is required');
-			return;
-		}
-
-		const { command: cmd, args } = parseCommandString(trimmedCmd);
 
 		try {
-			await addServer.mutateAsync({
-				name: trimmedName,
-				command: cmd,
-				args,
-			});
-			handleClose();
-		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Failed to add server');
-		}
-	}, [name, commandStr, addServer, handleClose]);
-
-	const handleAdvancedAdd = useCallback(async () => {
-		setError(null);
-		const trimmedName = name.trim();
-		const trimmedCmd = command.trim();
-
-		if (!trimmedName) {
-			setError('Server name is required');
-			return;
-		}
-		if (!trimmedCmd) {
-			setError('Command is required');
-			return;
-		}
-
-		const args = argsStr
-			.trim()
-			.split(/\s+/)
-			.filter((a) => a.length > 0);
-
-		let env: Record<string, string> | undefined;
-		if (envStr.trim()) {
-			env = {};
-			for (const line of envStr.split('\n')) {
-				const eq = line.indexOf('=');
-				if (eq > 0) {
-					env[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
+			if (serverMode === 'local') {
+				const trimmedCmd = commandStr.trim();
+				if (!trimmedCmd) {
+					setError('Command is required');
+					return;
 				}
+				const { command, args } = parseCommandString(trimmedCmd);
+				await addServer.mutateAsync({
+					name: trimmedName,
+					transport: 'stdio',
+					command,
+					args,
+					env: parseEnv(envStr),
+				});
+			} else {
+				const trimmedUrl = url.trim();
+				if (!trimmedUrl) {
+					setError('URL is required');
+					return;
+				}
+				await addServer.mutateAsync({
+					name: trimmedName,
+					transport,
+					url: trimmedUrl,
+					headers: parseHeaders(headersStr),
+				});
 			}
-		}
-
-		try {
-			await addServer.mutateAsync({
-				name: trimmedName,
-				command: trimmedCmd,
-				args,
-				env,
-			});
 			handleClose();
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to add server');
 		}
-	}, [name, command, argsStr, envStr, addServer, handleClose]);
-
-	const handleSubmit = mode === 'quick' ? handleQuickAdd : handleAdvancedAdd;
+	}, [
+		name,
+		serverMode,
+		commandStr,
+		envStr,
+		url,
+		transport,
+		headersStr,
+		addServer,
+		handleClose,
+	]);
 
 	return (
 		<Modal isOpen={isOpen} onClose={handleClose} title="Add MCP Server">
@@ -126,25 +136,25 @@ export const AddMCPServerModal = memo(function AddMCPServerModal({
 				<div className="flex gap-1 p-1 bg-muted rounded-md">
 					<button
 						type="button"
-						onClick={() => setMode('quick')}
+						onClick={() => setServerMode('local')}
 						className={`flex-1 text-xs py-1.5 px-3 rounded transition-colors ${
-							mode === 'quick'
+							serverMode === 'local'
 								? 'bg-background text-foreground shadow-sm'
 								: 'text-muted-foreground hover:text-foreground'
 						}`}
 					>
-						Quick Add
+						Local (stdio)
 					</button>
 					<button
 						type="button"
-						onClick={() => setMode('advanced')}
+						onClick={() => setServerMode('remote')}
 						className={`flex-1 text-xs py-1.5 px-3 rounded transition-colors ${
-							mode === 'advanced'
+							serverMode === 'remote'
 								? 'bg-background text-foreground shadow-sm'
 								: 'text-muted-foreground hover:text-foreground'
 						}`}
 					>
-						Advanced
+						Remote (HTTP)
 					</button>
 				</div>
 
@@ -153,46 +163,29 @@ export const AddMCPServerModal = memo(function AddMCPServerModal({
 					<Input
 						value={name}
 						onChange={(e) => setName(e.target.value)}
-						placeholder="e.g. github, helius, filesystem"
+						placeholder="e.g. github, linear, helius"
 						autoFocus
 					/>
 				</div>
 
-				{mode === 'quick' ? (
-					<div>
-						<div className="text-sm font-medium mb-1">Command</div>
-						<Input
-							value={commandStr}
-							onChange={(e) => setCommandStr(e.target.value)}
-							placeholder="e.g. npx -y @modelcontextprotocol/server-github"
-							onKeyDown={(e) => {
-								if (e.key === 'Enter') handleSubmit();
-							}}
-						/>
-						<p className="text-xs text-muted-foreground mt-1">
-							Like{' '}
-							<code className="bg-muted px-1 rounded">
-								npx -y helius-mcp@latest
-							</code>
-						</p>
-					</div>
-				) : (
+				{serverMode === 'local' ? (
 					<>
 						<div>
 							<div className="text-sm font-medium mb-1">Command</div>
 							<Input
-								value={command}
-								onChange={(e) => setCommand(e.target.value)}
-								placeholder="e.g. npx, node, python"
+								value={commandStr}
+								onChange={(e) => setCommandStr(e.target.value)}
+								placeholder="e.g. npx -y @modelcontextprotocol/server-github"
+								onKeyDown={(e) => {
+									if (e.key === 'Enter') handleSubmit();
+								}}
 							/>
-						</div>
-						<div>
-							<div className="text-sm font-medium mb-1">Arguments</div>
-							<Input
-								value={argsStr}
-								onChange={(e) => setArgsStr(e.target.value)}
-								placeholder="e.g. -y @modelcontextprotocol/server-github"
-							/>
+							<p className="text-xs text-muted-foreground mt-1">
+								Like{' '}
+								<code className="bg-muted px-1 rounded">
+									npx -y helius-mcp@latest
+								</code>
+							</p>
 						</div>
 						<div>
 							<div className="text-sm font-medium mb-1">
@@ -202,13 +195,71 @@ export const AddMCPServerModal = memo(function AddMCPServerModal({
 								value={envStr}
 								onChange={(e) => setEnvStr(e.target.value)}
 								placeholder={'GITHUB_TOKEN=ghp_xxx\nAPI_KEY=sk-xxx'}
-								rows={3}
+								rows={2}
 								className="w-full bg-muted border border-border rounded-md px-3 py-2 text-sm font-mono resize-none focus:outline-none focus:ring-1 focus:ring-primary"
 							/>
 							<p className="text-xs text-muted-foreground mt-1">
 								One per line: KEY=VALUE
 							</p>
 						</div>
+					</>
+				) : (
+					<>
+						<div>
+							<div className="text-sm font-medium mb-1">URL</div>
+							<Input
+								value={url}
+								onChange={(e) => setUrl(e.target.value)}
+								placeholder="e.g. https://mcp.linear.app/mcp"
+								onKeyDown={(e) => {
+									if (e.key === 'Enter') handleSubmit();
+								}}
+							/>
+						</div>
+						<div>
+							<div className="text-sm font-medium mb-1">Transport</div>
+							<div className="flex gap-2">
+								<button
+									type="button"
+									onClick={() => setTransport('http')}
+									className={`text-xs px-3 py-1.5 rounded border transition-colors ${
+										transport === 'http'
+											? 'border-primary bg-primary/10 text-foreground'
+											: 'border-border text-muted-foreground'
+									}`}
+								>
+									HTTP (recommended)
+								</button>
+								<button
+									type="button"
+									onClick={() => setTransport('sse')}
+									className={`text-xs px-3 py-1.5 rounded border transition-colors ${
+										transport === 'sse'
+											? 'border-primary bg-primary/10 text-foreground'
+											: 'border-border text-muted-foreground'
+									}`}
+								>
+									SSE (legacy)
+								</button>
+							</div>
+						</div>
+						<div>
+							<div className="text-sm font-medium mb-1">Headers</div>
+							<textarea
+								value={headersStr}
+								onChange={(e) => setHeadersStr(e.target.value)}
+								placeholder={'Authorization: Bearer xxx'}
+								rows={2}
+								className="w-full bg-muted border border-border rounded-md px-3 py-2 text-sm font-mono resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+							/>
+							<p className="text-xs text-muted-foreground mt-1">
+								One per line: Header-Name: value
+							</p>
+						</div>
+						<p className="text-xs text-muted-foreground">
+							For OAuth servers (Linear, Notion, etc.), leave headers empty and
+							authenticate after adding.
+						</p>
 					</>
 				)}
 

@@ -1,17 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useMCPStore } from '../stores/mcpStore';
+import { useMCPStore, type MCPServerInfo } from '../stores/mcpStore';
 import { API_BASE_URL } from '../lib/config';
 import { useEffect } from 'react';
 
 interface MCPServersResponse {
-	servers: Array<{
-		name: string;
-		command: string;
-		args: string[];
-		disabled: boolean;
-		connected: boolean;
-		tools: string[];
-	}>;
+	servers: MCPServerInfo[];
 }
 
 async function fetchMCPServers(): Promise<MCPServersResponse> {
@@ -84,9 +77,17 @@ export function useStopMCPServer() {
 
 export interface AddMCPServerParams {
 	name: string;
-	command: string;
-	args: string[];
+	transport?: string;
+	command?: string;
+	args?: string[];
 	env?: Record<string, string>;
+	url?: string;
+	headers?: Record<string, string>;
+	oauth?: {
+		clientId?: string;
+		callbackPort?: number;
+		scopes?: string[];
+	};
 }
 
 export function useAddMCPServer() {
@@ -126,5 +127,64 @@ export function useRemoveMCPServer() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
 		},
+	});
+}
+
+export function useAuthenticateMCPServer() {
+	const queryClient = useQueryClient();
+	const setLoading = useMCPStore((s) => s.setLoading);
+
+	return useMutation({
+		mutationFn: async (name: string) => {
+			setLoading(name, true);
+			const response = await fetch(
+				`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(name)}/auth`,
+				{ method: 'POST' },
+			);
+			const data = await response.json();
+			if (!data.ok) throw new Error(data.error || 'Failed to initiate auth');
+			return data as { ok: boolean; authUrl?: string; name: string };
+		},
+		onSettled: (_data, _error, name) => {
+			setLoading(name, false);
+			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
+		},
+	});
+}
+
+export function useRevokeMCPAuth() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (name: string) => {
+			const response = await fetch(
+				`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(name)}/auth`,
+				{ method: 'DELETE' },
+			);
+			const data = await response.json();
+			if (!data.ok) throw new Error(data.error || 'Failed to revoke auth');
+			return data;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
+		},
+	});
+}
+
+export function useMCPAuthStatus(name: string | null) {
+	return useQuery({
+		queryKey: ['mcp', 'auth', name],
+		queryFn: async () => {
+			if (!name) return { authenticated: false };
+			const response = await fetch(
+				`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(name)}/auth/status`,
+			);
+			return response.json() as Promise<{
+				authenticated: boolean;
+				expiresAt?: number;
+			}>;
+		},
+		enabled: !!name,
+		refetchInterval: 3000,
 	});
 }

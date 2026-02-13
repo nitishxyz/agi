@@ -122,10 +122,18 @@ export {
 	loadMCPConfig,
 	addMCPServerToConfig,
 	removeMCPServerFromConfig,
+	OAuthCredentialStore,
+	OttoOAuthProvider,
+	OAuthCallbackServer,
 } from './mcp/index.ts';
 export type {
 	MCPServerConfig,
 	MCPConfig,
 	MCPServerStatus,
 	MCPToolInfo,
+	MCPTransport,
+	MCPOAuthConfig,
+	StoredOAuthData,
+	OttoOAuthProviderOptions,
+	CallbackResult,
 } from './mcp/index.ts';

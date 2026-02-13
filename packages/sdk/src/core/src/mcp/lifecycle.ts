@@ -73,7 +73,8 @@ async function readMCPServersFromFile(
 				typeof s === 'object' &&
 				s !== null &&
 				typeof (s as MCPServerConfig).name === 'string' &&
-				typeof (s as MCPServerConfig).command === 'string',
+				(typeof (s as MCPServerConfig).command === 'string' ||
+					typeof (s as MCPServerConfig).url === 'string'),
 		);
 	} catch {
 		return [];

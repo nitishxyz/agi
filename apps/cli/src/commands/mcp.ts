@@ -4,10 +4,14 @@ import {
 	initializeMCP,
 	getGlobalConfigDir,
 	type MCPServerConfig,
+	OAuthCredentialStore,
+	OttoOAuthProvider,
+	OAuthCallbackServer,
 } from '@ottocode/sdk';
 import { MCPClientWrapper } from '@ottocode/sdk';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
+import { exec } from 'node:child_process';
 
 export function registerMCPCommand(program: Command) {
 	const mcp = program
@@ -41,15 +45,21 @@ export function registerMCPCommand(program: Command) {
 	mcp
 		.command('add <name>')
 		.description('Add an MCP server to project config')
-		.requiredOption('--command <cmd>', 'Command to run')
+		.option('--command <cmd>', 'Command to run (for stdio)')
 		.option('--args <args...>', 'Command arguments')
+		.option('--transport <type>', 'Transport type: stdio, http, sse', 'stdio')
+		.option('--url <url>', 'Server URL (for http/sse)')
+		.option('--header <headers...>', 'Headers (Key: Value)')
 		.option('--project <path>', 'Use project at <path>', process.cwd())
 		.option('--global', 'Add to global config instead of project', false)
 		.action(async (name, opts) => {
 			await runMCPAdd(name, {
 				project: opts.project,
+				transport: opts.transport,
 				command: opts.command,
 				args: opts.args,
+				url: opts.url,
+				headers: opts.header,
 				global: opts.global,
 			});
 		});
@@ -65,6 +75,20 @@ export function registerMCPCommand(program: Command) {
 				global: opts.global,
 			});
 		});
+
+	mcp
+		.command('auth <name>')
+		.description('Authenticate with an OAuth MCP server')
+		.option('--revoke', 'Revoke stored credentials', false)
+		.option('--status', 'Show auth status', false)
+		.option('--project <path>', 'Use project at <path>', process.cwd())
+		.action(async (name, opts) => {
+			await runMCPAuth(name, {
+				project: opts.project,
+				revoke: opts.revoke,
+				status: opts.status,
+			});
+		});
 }
 
 async function runMCPList(opts: { project: string }) {
@@ -72,36 +96,20 @@ async function runMCPList(opts: { project: string }) {
 
 	if (config.servers.length === 0) {
 		console.log('No MCP servers configured.');
-		console.log(
-			'\nAdd servers to .otto/config.json or ~/.config/otto/config.json:',
-		);
-		console.log(
-			JSON.stringify(
-				{
-					mcp: {
-						servers: [
-							{
-								name: 'example',
-								command: 'npx',
-								args: ['-y', '@modelcontextprotocol/server-github'],
-								env: { GITHUB_TOKEN: '${GITHUB_TOKEN}' },
-							},
-						],
-					},
-				},
-				null,
-				2,
-			),
-		);
 		return;
 	}
 
 	console.log(`\nMCP Servers (${config.servers.length}):\n`);
 	for (const server of config.servers) {
+		const transport = server.transport ?? 'stdio';
 		const status = server.disabled ? ' (disabled)' : '';
-		const args = server.args ? ` ${server.args.join(' ')}` : '';
-		console.log(`  ${server.name}${status}`);
-		console.log(`    command: ${server.command}${args}`);
+		console.log(`  ${server.name} [${transport}]${status}`);
+		if (transport === 'stdio') {
+			const args = server.args ? ` ${server.args.join(' ')}` : '';
+			console.log(`    command: ${server.command}${args}`);
+		} else {
+			console.log(`    url: ${server.url}`);
+		}
 		if (server.env) {
 			const envKeys = Object.keys(server.env);
 			if (envKeys.length > 0) {
@@ -149,10 +157,8 @@ async function runMCPTest(name: string, opts: { project: string }) {
 		process.exit(1);
 	}
 
-	console.log(`Testing connection to "${name}"...`);
-	console.log(
-		`  command: ${serverConfig.command} ${(serverConfig.args ?? []).join(' ')}`,
-	);
+	const transport = serverConfig.transport ?? 'stdio';
+	console.log(`Testing connection to "${name}" [${transport}]...`);
 
 	const client = new MCPClientWrapper(serverConfig);
 	try {
@@ -169,7 +175,7 @@ async function runMCPTest(name: string, opts: { project: string }) {
 		console.log('\nServer test passed ✓');
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err);
-		console.error(`  status: failed ✗`);
+		console.error('  status: failed ✗');
 		console.error(`  error: ${msg}`);
 		process.exit(1);
 	}
@@ -179,8 +185,11 @@ async function runMCPAdd(
 	name: string,
 	opts: {
 		project: string;
-		command: string;
+		transport: string;
+		command?: string;
 		args?: string[];
+		url?: string;
+		headers?: string[];
 		global: boolean;
 	},
 ) {
@@ -202,13 +211,38 @@ async function runMCPAdd(
 		mcp.servers = [];
 	}
 
-	const existing = mcp.servers.findIndex((s) => s.name === name);
+	const t = opts.transport ?? 'stdio';
+
+	if (t === 'stdio' && !opts.command) {
+		console.error('--command is required for stdio transport');
+		process.exit(1);
+	}
+	if ((t === 'http' || t === 'sse') && !opts.url) {
+		console.error('--url is required for http/sse transport');
+		process.exit(1);
+	}
+
+	let headers: Record<string, string> | undefined;
+	if (opts.headers?.length) {
+		headers = {};
+		for (const h of opts.headers) {
+			const colon = h.indexOf(':');
+			if (colon > 0) {
+				headers[h.slice(0, colon).trim()] = h.slice(colon + 1).trim();
+			}
+		}
+	}
+
 	const entry: MCPServerConfig = {
 		name,
-		command: opts.command,
+		transport: t as MCPServerConfig['transport'],
+		...(opts.command ? { command: opts.command } : {}),
 		...(opts.args?.length ? { args: opts.args } : {}),
+		...(opts.url ? { url: opts.url } : {}),
+		...(headers ? { headers } : {}),
 	};
 
+	const existing = mcp.servers.findIndex((s) => s.name === name);
 	if (existing >= 0) {
 		mcp.servers[existing] = entry;
 		console.log(`Updated MCP server "${name}" in ${configPath}`);
@@ -253,4 +287,120 @@ async function runMCPRemove(
 	mcp.servers.splice(idx, 1);
 	await fs.writeFile(configPath, JSON.stringify(config, null, '\t'), 'utf-8');
 	console.log(`Removed MCP server "${name}" from ${configPath}`);
+}
+
+async function runMCPAuth(
+	name: string,
+	opts: { project: string; revoke: boolean; status: boolean },
+) {
+	const config = await loadMCPConfig(opts.project, getGlobalConfigDir());
+	const serverConfig = config.servers.find((s) => s.name === name);
+
+	if (!serverConfig) {
+		console.error(`MCP server "${name}" not found in config.`);
+		process.exit(1);
+	}
+
+	const transport = serverConfig.transport ?? 'stdio';
+	if (transport === 'stdio') {
+		console.error(
+			`Server "${name}" uses stdio transport, OAuth not applicable.`,
+		);
+		process.exit(1);
+	}
+
+	const store = new OAuthCredentialStore();
+
+	if (opts.status) {
+		const authenticated = await store.isAuthenticated(name);
+		const tokens = await store.loadTokens(name);
+		console.log(`\nAuth status for "${name}":`);
+		console.log(`  authenticated: ${authenticated ? 'yes' : 'no'}`);
+		if (tokens?.expires_at) {
+			const expiresIn = tokens.expires_at - Math.floor(Date.now() / 1000);
+			if (expiresIn > 0) {
+				console.log(`  expires in: ${Math.floor(expiresIn / 60)} minutes`);
+			} else {
+				console.log('  token: expired');
+			}
+		}
+		return;
+	}
+
+	if (opts.revoke) {
+		await store.clearServer(name);
+		console.log(`Revoked credentials for "${name}".`);
+		return;
+	}
+
+	const callbackPort = serverConfig.oauth?.callbackPort ?? 8090;
+	const provider = new OttoOAuthProvider(name, store, {
+		clientId: serverConfig.oauth?.clientId,
+		callbackPort,
+		scopes: serverConfig.oauth?.scopes,
+	});
+
+	const client = new MCPClientWrapper(serverConfig);
+	client.setAuthProvider(provider);
+
+	console.log(`\nAuthenticating "${name}"...`);
+
+	try {
+		await client.connect();
+		console.log('Already authenticated. Connected successfully ✓');
+		const tools = await client.listTools();
+		console.log(`  ${tools.length} tools available`);
+		await client.disconnect();
+	} catch {
+		if (provider.pendingAuthUrl) {
+			console.log(`\n🔐 Opening browser for authorization...`);
+			console.log(`   ${provider.pendingAuthUrl}`);
+			openBrowser(provider.pendingAuthUrl);
+
+			console.log(
+				`⏳ Waiting for callback on http://localhost:${callbackPort}/callback...`,
+			);
+
+			try {
+				const callbackServer = new OAuthCallbackServer(callbackPort);
+				const result = await callbackServer.waitForCallback();
+				console.log('✅ Authorization code received!');
+
+				await client.finishAuth(result.code);
+				await client.disconnect();
+
+				const newClient = new MCPClientWrapper(serverConfig);
+				newClient.setAuthProvider(provider);
+				await newClient.connect();
+				const tools = await newClient.listTools();
+				console.log(`✅ Authenticated! ${tools.length} tools available.`);
+				await newClient.disconnect();
+			} catch (err) {
+				const msg = err instanceof Error ? err.message : String(err);
+				console.error(`\n✗ Auth failed: ${msg}`);
+				process.exit(1);
+			}
+		} else {
+			console.error('Server did not provide an auth URL.');
+			process.exit(1);
+		}
+	} finally {
+		provider.cleanup();
+	}
+}
+
+function openBrowser(url: string) {
+	const platform = process.platform;
+	const cmd =
+		platform === 'darwin'
+			? `open "${url}"`
+			: platform === 'win32'
+				? `start "${url}"`
+				: `xdg-open "${url}"`;
+
+	exec(cmd, (err) => {
+		if (err) {
+			console.log(`  Please open manually: ${url}`);
+		}
+	});
 }

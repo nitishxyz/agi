@@ -8,11 +8,15 @@ import { useFileBrowserStore } from './fileBrowserStore';
 
 export interface MCPServerInfo {
 	name: string;
-	command: string;
+	transport: string;
+	command?: string;
 	args: string[];
+	url?: string;
 	disabled: boolean;
 	connected: boolean;
 	tools: string[];
+	authRequired: boolean;
+	authenticated: boolean;
 }
 
 interface MCPState {

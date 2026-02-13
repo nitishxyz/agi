@@ -3,7 +3,9 @@ import {
 	Blocks,
 	ChevronDown,
 	ChevronRight,
+	Globe,
 	Loader2,
+	Lock,
 	Play,
 	Plus,
 	Square,
@@ -17,7 +19,9 @@ import {
 	useStartMCPServer,
 	useStopMCPServer,
 	useRemoveMCPServer,
+	useAuthenticateMCPServer,
 } from '../../hooks/useMCP';
+import { openUrl } from '../../lib/open-url';
 import { AddMCPServerModal } from './AddMCPServerModal';
 
 const MCPServerCard = memo(function MCPServerCard({
@@ -26,15 +30,18 @@ const MCPServerCard = memo(function MCPServerCard({
 	onStart,
 	onStop,
 	onRemove,
+	onAuth,
 }: {
 	server: MCPServerInfo;
 	isLoading: boolean;
 	onStart: () => void;
 	onStop: () => void;
 	onRemove: () => void;
+	onAuth: () => void;
 }) {
 	const [isCollapsed, setIsCollapsed] = useState(true);
 	const hasTools = server.connected && server.tools.length > 0;
+	const isRemote = server.transport === 'http' || server.transport === 'sse';
 
 	const toggleCollapse = useCallback(() => {
 		if (hasTools) setIsCollapsed((prev) => !prev);
@@ -50,10 +57,20 @@ const MCPServerCard = memo(function MCPServerCard({
 				>
 					<span
 						className={`w-2 h-2 rounded-full flex-shrink-0 ${
-							server.connected ? 'bg-green-500' : 'bg-muted-foreground/30'
+							server.connected
+								? 'bg-green-500'
+								: server.authRequired
+									? 'bg-yellow-500'
+									: 'bg-muted-foreground/30'
 						}`}
 					/>
 					<span className="text-sm font-medium truncate">{server.name}</span>
+					{isRemote && (
+						<Globe className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+					)}
+					{server.authRequired && !server.connected && (
+						<Lock className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+					)}
 					{hasTools && (
 						<span className="flex items-center gap-0.5 text-xs text-muted-foreground flex-shrink-0">
 							<Wrench className="w-3 h-3" />
@@ -78,6 +95,16 @@ const MCPServerCard = memo(function MCPServerCard({
 					</Button>
 					{isLoading ? (
 						<Loader2 className="w-4 h-4 animate-spin text-muted-foreground flex-shrink-0" />
+					) : server.authRequired && !server.connected ? (
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={onAuth}
+							title="Authenticate"
+							className="h-7 w-7 flex-shrink-0"
+						>
+							<Lock className="w-3 h-3 text-yellow-500" />
+						</Button>
 					) : server.connected ? (
 						<Button
 							variant="ghost"
@@ -103,7 +130,9 @@ const MCPServerCard = memo(function MCPServerCard({
 			</div>
 
 			<div className="text-xs text-muted-foreground truncate">
-				{server.command} {server.args.join(' ')}
+				{isRemote
+					? server.url
+					: `${server.command ?? ''} ${server.args.join(' ')}`}
 			</div>
 
 			{hasTools && !isCollapsed && (
@@ -133,8 +162,33 @@ export const MCPSidebar = memo(function MCPSidebar() {
 	const startServer = useStartMCPServer();
 	const stopServer = useStopMCPServer();
 	const removeServer = useRemoveMCPServer();
+	const authServer = useAuthenticateMCPServer();
 
 	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+	const handleAuth = useCallback(
+		async (name: string) => {
+			try {
+				const result = await authServer.mutateAsync(name);
+				if (result.authUrl) {
+					openUrl(result.authUrl);
+				}
+			} catch {}
+		},
+		[authServer],
+	);
+
+	const handleStart = useCallback(
+		async (name: string) => {
+			try {
+				const result = await startServer.mutateAsync(name);
+				if (result.authRequired && result.authUrl) {
+					openUrl(result.authUrl);
+				}
+			} catch {}
+		},
+		[startServer],
+	);
 
 	if (!isExpanded) return null;
 
@@ -205,9 +259,10 @@ export const MCPSidebar = memo(function MCPSidebar() {
 								key={server.name}
 								server={server}
 								isLoading={loading.has(server.name)}
-								onStart={() => startServer.mutate(server.name)}
+								onStart={() => handleStart(server.name)}
 								onStop={() => stopServer.mutate(server.name)}
 								onRemove={() => removeServer.mutate(server.name)}
+								onAuth={() => handleAuth(server.name)}
 							/>
 						))}
 					</div>
