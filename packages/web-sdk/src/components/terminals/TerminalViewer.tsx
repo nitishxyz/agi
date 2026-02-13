@@ -95,11 +95,12 @@ interface TerminalViewerProps {
 
 export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
-	const xtermRef = useRef<Terminal | null>(null);
+	const termRef = useRef<Terminal | null>(null);
 	const fitAddonRef = useRef<FitAddon | null>(null);
 	const eventSourceRef = useRef<EventSource | null>(null);
 	const retryCountRef = useRef(0);
 	const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const hasReceivedDataRef = useRef(false);
 	const [ready, setReady] = useState(false);
 	const onExitRef = useRef(onExit);
 	onExitRef.current = onExit;
@@ -115,15 +116,14 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 	}, []);
 
 	const connectSSE = useCallback(
-		(xterm: Terminal, baseUrl: string) => {
+		(term: Terminal, baseUrl: string, skipHistory: boolean) => {
 			if (eventSourceRef.current) {
 				eventSourceRef.current.close();
 				eventSourceRef.current = null;
 			}
 
-			const eventSource = new EventSource(
-				`${baseUrl}/v1/terminals/${terminalId}/output`,
-			);
+			const url = `${baseUrl}/v1/terminals/${terminalId}/output${skipHistory ? '?skipHistory=true' : ''}`;
+			const eventSource = new EventSource(url);
 			eventSourceRef.current = eventSource;
 
 			let gotFirstData = false;
@@ -132,13 +132,14 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 				try {
 					const data = JSON.parse(event.data);
 					if (data.type === 'data') {
-						xterm.write(data.line);
+						term.write(data.line);
+						hasReceivedDataRef.current = true;
 						if (!gotFirstData) {
 							gotFirstData = true;
 							setTimeout(() => setReady(true), 200);
 						}
 					} else if (data.type === 'exit') {
-						xterm.write(
+						term.write(
 							`\r\n\x1b[33m[Process exited with code ${data.exitCode}]\x1b[0m\r\n`,
 						);
 						if (onExitRef.current) {
@@ -159,8 +160,8 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 				if (retryCountRef.current < SSE_MAX_RETRIES) {
 					retryCountRef.current++;
 					retryTimerRef.current = setTimeout(() => {
-						if (xtermRef.current) {
-							connectSSE(xtermRef.current, baseUrl);
+						if (termRef.current) {
+							connectSSE(termRef.current, baseUrl, true);
 						}
 					}, SSE_RECONNECT_DELAY);
 				}
@@ -177,12 +178,13 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 		if (!containerRef.current || !terminalId) return;
 
 		let disposed = false;
-		let xterm: Terminal | null = null;
+		let term: Terminal | null = null;
 		let fitAddon: FitAddon | null = null;
 		let resizeObserver: ResizeObserver | null = null;
 
 		setReady(false);
 		retryCountRef.current = 0;
+		hasReceivedDataRef.current = false;
 
 		if (eventSourceRef.current) {
 			eventSourceRef.current.close();
@@ -202,7 +204,7 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 
 			const bg = resolveBackgroundColor();
 
-			xterm = new Terminal({
+			term = new Terminal({
 				theme: {
 					background: bg,
 					foreground: '#d4d4d4',
@@ -234,9 +236,9 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 			});
 
 			fitAddon = new FitAddon();
-			xterm.loadAddon(fitAddon);
-			xterm.open(containerRef.current);
-			xterm.focus();
+			term.loadAddon(fitAddon);
+			term.open(containerRef.current);
+			term.focus();
 
 			await new Promise<void>((resolve) => {
 				requestAnimationFrame(() => {
@@ -261,13 +263,13 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 				}).catch(() => {});
 			};
 
-			if (xterm) {
-				sendResize(xterm.cols, xterm.rows);
+			if (term) {
+				sendResize(term.cols, term.rows);
 			}
 
-			connectSSE(xterm, baseUrl);
+			connectSSE(term, baseUrl, false);
 
-			xterm.onData((data) => {
+			term.onData((data) => {
 				fetch(`${baseUrl}/v1/terminals/${terminalId}/input`, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
@@ -275,11 +277,11 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 				}).catch(() => {});
 			});
 
-			xterm.onResize(({ cols, rows }) => {
+			term.onResize(({ cols, rows }) => {
 				sendResize(cols, rows);
 			});
 
-			xtermRef.current = xterm;
+			termRef.current = term;
 			fitAddonRef.current = fitAddon;
 
 			resizeObserver = new ResizeObserver(() => {
@@ -317,10 +319,10 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 			if (resizeObserver) {
 				resizeObserver.disconnect();
 			}
-			if (xterm) {
-				xterm.dispose();
+			if (term) {
+				term.dispose();
 			}
-			xtermRef.current = null;
+			termRef.current = null;
 			fitAddonRef.current = null;
 		};
 	}, [terminalId, connectSSE]);

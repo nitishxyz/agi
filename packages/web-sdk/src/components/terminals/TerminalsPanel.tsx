@@ -221,6 +221,7 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 			<div className="flex-1 min-h-0 overflow-hidden">
 				{activeTabId ? (
 					<TerminalViewer
+						key={activeTabId}
 						terminalId={activeTabId}
 						onExit={handleKillTerminal}
 					/>
