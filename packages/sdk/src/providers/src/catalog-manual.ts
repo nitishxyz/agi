@@ -30,6 +30,12 @@ const isAllowedGoogleModel = (id: string): boolean => {
 	return false;
 };
 
+const isAllowedZaiModel = (id: string): boolean => {
+	if (id.startsWith('glm-4.7')) return true;
+	if (id.startsWith('glm-5')) return true;
+	return false;
+};
+
 const SETU_SOURCES: Array<{
 	id: ProviderId;
 	npm: string;
@@ -54,6 +60,11 @@ const SETU_SOURCES: Array<{
 		id: 'google',
 		npm: '@ai-sdk/google',
 		family: 'google',
+	},
+	{
+		id: 'zai',
+		npm: '@ai-sdk/openai-compatible',
+		family: 'openai-compatible',
 	},
 ];
 
@@ -83,6 +94,7 @@ function buildSetuEntry(base: CatalogMap): ProviderCatalogEntry | null {
 			if (id === 'openai') return isAllowedOpenAIModel(model.id);
 			if (id === 'anthropic') return isAllowedAnthropicModel(model.id);
 			if (id === 'google') return isAllowedGoogleModel(model.id);
+			if (id === 'zai') return isAllowedZaiModel(model.id);
 			return true;
 		});
 		return sourceModels.map((model) => {

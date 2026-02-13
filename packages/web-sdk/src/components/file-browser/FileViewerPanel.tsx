@@ -122,12 +122,15 @@ export const FileViewerPanel = memo(function FileViewerPanel() {
 							margin: 0,
 							padding: '1rem',
 							background: 'transparent',
+						fontSize: '0.75rem',
+						lineHeight: '1.25rem',
 						}}
 						lineNumberStyle={{
 							minWidth: '3em',
 							paddingRight: '1em',
 							color: 'var(--color-muted-foreground)',
 							userSelect: 'none',
+						fontSize: '0.7rem',
 						}}
 					>
 						{data.content}
