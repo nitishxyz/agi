@@ -1,7 +1,8 @@
 import { CodeBlock } from '../../components/CodeBlock';
+import { DocPage } from '../../components/DocPage';
 export function Configuration() {
 	return (
-		<div>
+		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Configuration</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				Settings, config files, and environment variables.
@@ -154,6 +155,6 @@ OTTO_AGENT=build`}</CodeBlock>
 					</tr>
 				</tbody>
 			</table>
-		</div>
+		</DocPage>
 	);
 }

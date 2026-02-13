@@ -1,7 +1,8 @@
 import { CodeBlock } from '../../components/CodeBlock';
+import { DocPage } from '../../components/DocPage';
 export function ApiReference() {
 	return (
-		<div>
+		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">API Reference</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				REST endpoints and SSE streaming.
@@ -119,6 +120,6 @@ const client = createClient({
 
 const sessions = await client.getSessions();
 const models = await client.getModels({ provider: "anthropic" });`}</CodeBlock>
-		</div>
+		</DocPage>
 	);
 }

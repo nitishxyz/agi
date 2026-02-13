@@ -1,7 +1,8 @@
 import { CodeBlock } from '../../components/CodeBlock';
+import { DocPage } from '../../components/DocPage';
 export function AcpIntegration() {
 	return (
-		<div>
+		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">ACP Integration</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				Agent Client Protocol — use otto as a headless AI agent in any editor.
@@ -213,6 +214,6 @@ export function AcpIntegration() {
 				Everything else is powered by otto&rsquo;s existing SDK and server
 				infrastructure.
 			</p>
-		</div>
+		</DocPage>
 	);
 }

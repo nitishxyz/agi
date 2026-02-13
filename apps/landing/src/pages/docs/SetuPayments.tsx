@@ -1,7 +1,8 @@
 import { CodeBlock } from '../../components/CodeBlock';
+import { DocPage } from '../../components/DocPage';
 export function SetuPayments() {
 	return (
-		<div>
+		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Payments</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				Solana wallet authentication, x402 USDC payments, and Polar credit card
@@ -471,6 +472,6 @@ Headers: x-wallet-address, x-wallet-signature, x-wallet-nonce
   "created_at": "2026-01-20T10:00:00.000Z",
   "last_request": "2026-01-24T15:30:00.000Z"
 }`}</CodeBlock>
-		</div>
+		</DocPage>
 	);
 }

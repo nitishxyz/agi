@@ -1,7 +1,8 @@
 import { CodeBlock } from '../../components/CodeBlock';
+import { DocPage } from '../../components/DocPage';
 export function Usage() {
 	return (
-		<div>
+		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Usage Guide</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				Commands and workflows for daily use.
@@ -104,6 +105,6 @@ otto ask "research how this works" --agent research`}</CodeBlock>
 
 			<h2>Upgrading</h2>
 			<CodeBlock>{`otto upgrade                   # upgrade to latest version`}</CodeBlock>
-		</div>
+		</DocPage>
 	);
 }

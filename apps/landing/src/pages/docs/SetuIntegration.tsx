@@ -1,7 +1,8 @@
 import { CodeBlock } from '../../components/CodeBlock';
+import { DocPage } from '../../components/DocPage';
 export function SetuIntegration() {
 	return (
-		<div>
+		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Integration Guide</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				Integrate Setu into your application using the AI SDK or raw HTTP.
@@ -816,6 +817,6 @@ otto ask "hello" --provider setu --model claude-sonnet-4-5`}</CodeBlock>
 				otto's SDK automatically uses <code>createSetuModel</code> under the
 				hood, handling all wallet auth and payment flows transparently.
 			</p>
-		</div>
+		</DocPage>
 	);
 }

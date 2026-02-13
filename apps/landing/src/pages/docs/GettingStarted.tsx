@@ -1,7 +1,8 @@
 import { CodeBlock } from '../../components/CodeBlock';
+import { DocPage } from '../../components/DocPage';
 export function GettingStarted() {
 	return (
-		<div>
+		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Getting Started</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				Install otto and start coding with AI in under a minute.
@@ -115,6 +116,6 @@ otto doctor                    # check what's configured`}</CodeBlock>
 
 			<h3>Binary not executable</h3>
 			<CodeBlock>{`chmod +x $(which otto)`}</CodeBlock>
-		</div>
+		</DocPage>
 	);
 }

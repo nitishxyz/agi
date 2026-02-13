@@ -1,7 +1,8 @@
 import { CodeBlock } from '../../components/CodeBlock';
+import { DocPage } from '../../components/DocPage';
 export function AgentsTools() {
 	return (
-		<div>
+		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Agents & Tools</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				Built-in agents, tools reference, and customization.
@@ -308,6 +309,6 @@ export default tool({
 				</li>
 			</ul>
 			<CodeBlock>{`otto skills                    # list available skills`}</CodeBlock>
-		</div>
+		</DocPage>
 	);
 }

@@ -1,8 +1,9 @@
 import { CodeBlock } from '../../components/CodeBlock';
+import { DocPage } from '../../components/DocPage';
 
 export function Sharing() {
 	return (
-		<div>
+		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Session Sharing</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				Share coding sessions as public read-only links.
@@ -79,6 +80,6 @@ otto share --title "Auth refactor" --description "Rewrote JWT flow"`}</CodeBlock
 					View example session →
 				</a>
 			</p>
-		</div>
+		</DocPage>
 	);
 }

@@ -1,7 +1,8 @@
 import { CodeBlock } from '../../components/CodeBlock';
+import { DocPage } from '../../components/DocPage';
 export function SetuOverview() {
 	return (
-		<div>
+		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Setu</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				AI inference proxy powered by Solana USDC payments. No API keys — just a
@@ -565,6 +566,6 @@ Setu Router (Cloudflare Worker)
 					</tbody>
 				</table>
 			</div>
-		</div>
+		</DocPage>
 	);
 }

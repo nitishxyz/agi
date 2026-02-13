@@ -1,7 +1,8 @@
 import { CodeBlock } from '../../components/CodeBlock';
+import { DocPage } from '../../components/DocPage';
 export function Embedding() {
 	return (
-		<div>
+		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Embedding Guide</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				Use otto as a library in your own applications.
@@ -171,6 +172,6 @@ const app = createStandaloneApp({
 					</tr>
 				</tbody>
 			</table>
-		</div>
+		</DocPage>
 	);
 }
