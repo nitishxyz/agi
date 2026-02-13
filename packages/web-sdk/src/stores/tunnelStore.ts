@@ -3,6 +3,7 @@ import { useGitStore } from './gitStore';
 import { useSessionFilesStore } from './sessionFilesStore';
 import { useSettingsStore } from './settingsStore';
 import { useResearchStore } from './researchStore';
+import { useFileBrowserStore } from './fileBrowserStore';
 
 export type TunnelStatus = 'idle' | 'starting' | 'connected' | 'error';
 
@@ -41,6 +42,7 @@ export const useTunnelStore = create<TunnelState>((set) => ({
 				useSessionFilesStore.getState().collapseSidebar();
 				useSettingsStore.getState().collapseSidebar();
 				useResearchStore.getState().collapseSidebar();
+				useFileBrowserStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
@@ -51,6 +53,7 @@ export const useTunnelStore = create<TunnelState>((set) => ({
 		useSessionFilesStore.getState().collapseSidebar();
 		useSettingsStore.getState().collapseSidebar();
 		useResearchStore.getState().collapseSidebar();
+		useFileBrowserStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
 

@@ -73,6 +73,12 @@ export function registerDiffRoute(app: Hono) {
 			const diffArgs = query.staged
 				? ['diff', '--cached', '--', query.file]
 				: ['diff', '--', query.file];
+
+			const fullFile = c.req.query('fullFile') === 'true';
+			if (fullFile) {
+				diffArgs.splice(1, 0, '-U99999');
+			}
+
 			const numstatArgs = query.staged
 				? ['diff', '--cached', '--numstat', '--', query.file]
 				: ['diff', '--numstat', '--', query.file];
@@ -116,6 +122,7 @@ export function registerDiffRoute(app: Hono) {
 					file: query.file,
 					absPath,
 					diff: diffText,
+					fullFile,
 					isNewFile: false,
 					isBinary: binary,
 					insertions,

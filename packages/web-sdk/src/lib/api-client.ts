@@ -575,6 +575,85 @@ class ApiClient {
 		};
 	}
 
+	async getFileTree(
+		dirPath = '.',
+	): Promise<{
+		items: Array<{ name: string; path: string; type: 'file' | 'directory' }>;
+		path: string;
+	}> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/files/tree?path=${encodeURIComponent(dirPath)}`,
+			{
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to fetch file tree' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async readFileContent(
+		filePath: string,
+	): Promise<{
+		content: string;
+		path: string;
+		extension: string;
+		lineCount: number;
+	}> {
+		const response = await fetch(
+			`${this.baseUrl}/v1/files/read?path=${encodeURIComponent(filePath)}`,
+			{
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to read file' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		return await response.json();
+	}
+
+	async getGitDiffFullFile(
+		file: string,
+		staged = false,
+	): Promise<GitDiffResponse> {
+		const params = new URLSearchParams({
+			file,
+			staged: staged ? 'true' : 'false',
+			fullFile: 'true',
+		});
+		const response = await fetch(
+			`${this.baseUrl}/v1/git/diff?${params.toString()}`,
+			{
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			},
+		);
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to get full file diff' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		const json = await response.json();
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
+		return (json as any)?.data as GitDiffResponse;
+	}
+
 	async getSessionFiles(sessionId: string): Promise<SessionFilesResponse> {
 		const response = await fetch(
 			`${this.baseUrl}/v1/sessions/${sessionId}/files`,

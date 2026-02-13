@@ -1,27 +1,29 @@
 import { create } from 'zustand';
 import { useGitStore } from './gitStore';
 import { useSessionFilesStore } from './sessionFilesStore';
+import { useResearchStore } from './researchStore';
 import { useSettingsStore } from './settingsStore';
 import { useTunnelStore } from './tunnelStore';
-import { useFileBrowserStore } from './fileBrowserStore';
 
-interface ResearchState {
+interface FileBrowserState {
 	isExpanded: boolean;
-	activeResearchSessionId: string | null;
-	parentSessionId: string | null;
+	selectedFile: string | null;
+	isViewerOpen: boolean;
+	expandedDirs: Set<string>;
 
 	toggleSidebar: () => void;
 	expandSidebar: () => void;
 	collapseSidebar: () => void;
-	selectResearchSession: (id: string | null) => void;
-	setParentSessionId: (id: string | null) => void;
-	reset: () => void;
+	openFile: (path: string) => void;
+	closeViewer: () => void;
+	toggleDir: (path: string) => void;
 }
 
-export const useResearchStore = create<ResearchState>((set, get) => ({
+export const useFileBrowserStore = create<FileBrowserState>((set) => ({
 	isExpanded: false,
-	activeResearchSessionId: null,
-	parentSessionId: null,
+	selectedFile: null,
+	isViewerOpen: false,
+	expandedDirs: new Set<string>(),
 
 	toggleSidebar: () => {
 		set((state) => {
@@ -29,40 +31,45 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
 			if (newExpanded) {
 				useGitStore.getState().collapseSidebar();
 				useSessionFilesStore.getState().collapseSidebar();
+				useResearchStore.getState().collapseSidebar();
 				useSettingsStore.getState().collapseSidebar();
 				useTunnelStore.getState().collapseSidebar();
-				useFileBrowserStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
 	},
-
 	expandSidebar: () => {
 		useGitStore.getState().collapseSidebar();
 		useSessionFilesStore.getState().collapseSidebar();
+		useResearchStore.getState().collapseSidebar();
 		useSettingsStore.getState().collapseSidebar();
 		useTunnelStore.getState().collapseSidebar();
-		useFileBrowserStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
-
-	collapseSidebar: () => set({ isExpanded: false }),
-
-	selectResearchSession: (id) => set({ activeResearchSessionId: id }),
-
-	setParentSessionId: (id) => {
-		const currentParentId = get().parentSessionId;
-		if (currentParentId !== id) {
-			set({
-				parentSessionId: id,
-				activeResearchSessionId: null,
-			});
-		}
-	},
-
-	reset: () =>
+	collapseSidebar: () =>
 		set({
-			activeResearchSessionId: null,
-			parentSessionId: null,
+			isExpanded: false,
+			isViewerOpen: false,
+			selectedFile: null,
+		}),
+	openFile: (path) =>
+		set({
+			selectedFile: path,
+			isViewerOpen: true,
+		}),
+	closeViewer: () =>
+		set({
+			isViewerOpen: false,
+			selectedFile: null,
+		}),
+	toggleDir: (path) =>
+		set((state) => {
+			const next = new Set(state.expandedDirs);
+			if (next.has(path)) {
+				next.delete(path);
+			} else {
+				next.add(path);
+			}
+			return { expandedDirs: next };
 		}),
 }));

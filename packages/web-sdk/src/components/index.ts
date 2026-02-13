@@ -73,6 +73,11 @@ export * from './settings/SetuTopupModal';
 export * from './tunnel/TunnelSidebar';
 export * from './tunnel/TunnelSidebarToggle';
 
+// File Browser Components
+export * from './file-browser/FileBrowserSidebar';
+export * from './file-browser/FileBrowserSidebarToggle';
+export * from './file-browser/FileViewerPanel';
+
 // Common Components
 export * from './common/ProviderLogo';
 export * from './common/StatusIndicator';

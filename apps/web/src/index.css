@@ -262,13 +262,9 @@ button:focus-visible {
 		margin-bottom: 1.5rem;
 	}
 	table {
-		width: 100%;
-		max-width: 100%;
 		border-collapse: collapse;
 		margin-top: 0.75rem;
 		margin-bottom: 0.75rem;
-		overflow-x: auto;
-		display: block;
 	}
 	th,
 	td {

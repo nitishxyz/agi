@@ -15,3 +15,4 @@ export * from './onboardingStore';
 export * from './panelWidthStore';
 export * from './tunnelStore';
 export * from './usageStore';
+export * from './fileBrowserStore';

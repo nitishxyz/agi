@@ -279,4 +279,71 @@ export function registerFilesRoutes(app: Hono) {
 			return c.json({ error: serializeError(err) }, 500);
 		}
 	});
+
+	app.get('/v1/files/tree', async (c) => {
+		try {
+			const projectRoot = c.req.query('project') || process.cwd();
+			const dirPath = c.req.query('path') || '.';
+			const targetDir = join(projectRoot, dirPath);
+
+			const gitignorePatterns = await parseGitignore(projectRoot);
+			const entries = await readdir(targetDir, { withFileTypes: true });
+
+			const items: Array<{
+				name: string;
+				path: string;
+				type: 'file' | 'directory';
+			}> = [];
+
+			for (const entry of entries) {
+				if (entry.name.startsWith('.') && entry.name !== '.otto') continue;
+				const relPath = relative(projectRoot, join(targetDir, entry.name));
+
+				if (entry.isDirectory()) {
+					if (shouldExcludeDir(entry.name)) continue;
+					if (matchesGitignorePattern(relPath, gitignorePatterns)) continue;
+					items.push({ name: entry.name, path: relPath, type: 'directory' });
+				} else if (entry.isFile()) {
+					if (shouldExcludeFile(entry.name)) continue;
+					if (matchesGitignorePattern(relPath, gitignorePatterns)) continue;
+					items.push({ name: entry.name, path: relPath, type: 'file' });
+				}
+			}
+
+			items.sort((a, b) => {
+				if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
+				return a.name.localeCompare(b.name);
+			});
+
+			return c.json({ items, path: dirPath });
+		} catch (err) {
+			logger.error('Files tree route error:', err);
+			return c.json({ error: serializeError(err) }, 500);
+		}
+	});
+
+	app.get('/v1/files/read', async (c) => {
+		try {
+			const projectRoot = c.req.query('project') || process.cwd();
+			const filePath = c.req.query('path');
+
+			if (!filePath) {
+				return c.json({ error: 'Missing required query parameter: path' }, 400);
+			}
+
+			const absPath = join(projectRoot, filePath);
+			if (!absPath.startsWith(projectRoot)) {
+				return c.json({ error: 'Path traversal not allowed' }, 403);
+			}
+
+			const content = await readFile(absPath, 'utf-8');
+			const extension = filePath.split('.').pop()?.toLowerCase() ?? '';
+			const lineCount = content.split('\n').length;
+
+			return c.json({ content, path: filePath, extension, lineCount });
+		} catch (err) {
+			logger.error('Files read route error:', err);
+			return c.json({ error: serializeError(err) }, 500);
+		}
+	});
 }

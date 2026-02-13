@@ -1,8 +1,9 @@
-import { useEffect, useRef, memo } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useRef, memo, useState } from 'react';
+import { X, Maximize2, Minimize2 } from 'lucide-react';
 import { useGitStore } from '../../stores/gitStore';
 import { useSidebarStore } from '../../stores/sidebarStore';
 import { useGitDiff } from '../../hooks/useGit';
+import { useGitDiffFullFile } from '../../hooks/useFileBrowser';
 import { Button } from '../ui/Button';
 import { GitDiffViewer } from './GitDiffViewer';
 
@@ -22,8 +23,18 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 		selectedFileStaged,
 	);
 
+	const [showFullFile, setShowFullFile] = useState(false);
+	const { data: fullFileDiff, isLoading: fullFileLoading } = useGitDiffFullFile(
+		selectedFile,
+		selectedFileStaged,
+		showFullFile,
+	);
+
+	const activeDiff = showFullFile && fullFileDiff ? fullFileDiff : diff;
+	const activeLoading = showFullFile ? fullFileLoading : isLoading;
+
 	useEffect(() => {
-		// Only act on transitions
+		if (!isDiffOpen) setShowFullFile(false);
 		if (isDiffOpen && !prevDiffOpenRef.current) {
 			// Diff just opened - save current state and collapse
 			const { isCollapsed } = useSidebarStore.getState();
@@ -73,7 +84,7 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 				<div className="flex-1 flex items-center gap-2 min-w-0">
 					<span
 						className="text-sm font-medium text-foreground font-mono truncate"
-						title={`${selectedFile}\n${diff?.absPath || ''}`}
+						title={`${selectedFile}\n${activeDiff?.absPath || ''}`}
 					>
 						{selectedFile}
 					</span>
@@ -83,16 +94,29 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 						</span>
 					)}
 				</div>
+				<Button
+					variant={showFullFile ? 'secondary' : 'ghost'}
+					size="sm"
+					onClick={() => setShowFullFile((v) => !v)}
+					title={showFullFile ? 'Show diff only' : 'Show full file with diff'}
+					className="flex items-center gap-1.5 text-xs h-7"
+				>
+					{showFullFile ? (
+						<Minimize2 className="w-3.5 h-3.5" />
+					) : (
+						<Maximize2 className="w-3.5 h-3.5" />
+					)}
+					{showFullFile ? 'Diff' : 'Full File'}
+				</Button>
 			</div>
 
-			{/* Diff content */}
 			<div className="flex-1 overflow-auto">
-				{isLoading ? (
+				{activeLoading ? (
 					<div className="h-full flex items-center justify-center text-muted-foreground">
 						Loading diff...
 					</div>
-				) : diff ? (
-					<GitDiffViewer diff={diff} />
+				) : activeDiff ? (
+					<GitDiffViewer diff={activeDiff} />
 				) : (
 					<div className="h-full flex items-center justify-center text-muted-foreground">
 						No diff available

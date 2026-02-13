@@ -3,6 +3,7 @@ import { useGitStore } from './gitStore';
 import { useSessionFilesStore } from './sessionFilesStore';
 import { useResearchStore } from './researchStore';
 import { useTunnelStore } from './tunnelStore';
+import { useFileBrowserStore } from './fileBrowserStore';
 
 interface SettingsState {
 	isExpanded: boolean;
@@ -22,6 +23,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 				useSessionFilesStore.getState().collapseSidebar();
 				useResearchStore.getState().collapseSidebar();
 				useTunnelStore.getState().collapseSidebar();
+				useFileBrowserStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});

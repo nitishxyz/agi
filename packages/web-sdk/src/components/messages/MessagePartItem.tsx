@@ -359,7 +359,7 @@ export const MessagePartItem = memo(
 								size="md"
 							/>
 						</div>
-						<div className="text-base text-foreground leading-relaxed markdown-content max-w-full overflow-hidden">
+						<div className="text-base text-foreground leading-relaxed markdown-content max-w-full overflow-x-auto">
 							<ReactMarkdown
 								remarkPlugins={[remarkGfm]}
 								components={{
@@ -425,6 +425,14 @@ export const MessagePartItem = memo(
 											</div>
 										);
 									},
+								table: ({
+									children,
+									...props
+								}: ComponentPropsWithoutRef<'table'>) => (
+									<div className="overflow-x-auto max-w-full my-3">
+										<table {...props}>{children}</table>
+									</div>
+								),
 								}}
 							>
 								{content}
