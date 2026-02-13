@@ -1,6 +1,6 @@
 {
 	"name": "@ottocode/sdk",
-	"version": "0.1.201",
+	"version": "0.1.202",
 	"description": "AI agent SDK for building intelligent assistants - tree-shakable and comprehensive",
 	"author": "nitishxyz",
 	"license": "MIT",

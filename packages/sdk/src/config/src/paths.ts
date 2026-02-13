@@ -38,12 +38,7 @@ export function getGlobalAuthPath(): string {
 export function getSecureBaseDir(): string {
 	const platform = process.platform;
 	if (platform === 'darwin') {
-		return joinPath(
-			getHomeDir(),
-			'Library',
-			'Application Support',
-			'otto',
-		);
+		return joinPath(getHomeDir(), 'Library', 'Application Support', 'otto');
 	}
 	if (platform === 'win32') {
 		const appData = (process.env.APPDATA || '').replace(/\\/g, '/');
