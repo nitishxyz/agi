@@ -460,6 +460,23 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: 1
           NO_STRIP: true
 
+      - name: Rename macOS updater artifacts to include arch
+        if: startsWith(matrix.platform, 'macos')
+        shell: bash
+        run: |
+          BUNDLE_DIR="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos"
+          for f in "$BUNDLE_DIR"/*.app.tar.gz; do
+            [ -f "$f" ] || continue
+            base=$(basename "$f" .app.tar.gz)
+            case "${{ matrix.target }}" in
+              aarch64-*) ARCH="aarch64" ;;
+              x86_64-*)  ARCH="x86_64" ;;
+              *)         ARCH="unknown" ;;
+            esac
+            mv "$f" "$BUNDLE_DIR/${base}_${ARCH}.app.tar.gz"
+            [ -f "${f}.sig" ] && mv "${f}.sig" "$BUNDLE_DIR/${base}_${ARCH}.app.tar.gz.sig"
+          done
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -584,6 +601,23 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           APPIMAGE_EXTRACT_AND_RUN: 1
           NO_STRIP: true
+
+      - name: Rename macOS updater artifacts to include arch
+        if: startsWith(matrix.platform, 'macos')
+        shell: bash
+        run: |
+          BUNDLE_DIR="apps/launcher/src-tauri/target/${{ matrix.target }}/release/bundle/macos"
+          for f in "$BUNDLE_DIR"/*.app.tar.gz; do
+            [ -f "$f" ] || continue
+            base=$(basename "$f" .app.tar.gz)
+            case "${{ matrix.target }}" in
+              aarch64-*) ARCH="aarch64" ;;
+              x86_64-*)  ARCH="x86_64" ;;
+              *)         ARCH="unknown" ;;
+            esac
+            mv "$f" "$BUNDLE_DIR/${base}_${ARCH}.app.tar.gz"
+            [ -f "${f}.sig" ] && mv "${f}.sig" "$BUNDLE_DIR/${base}_${ARCH}.app.tar.gz.sig"
+          done
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -765,7 +799,7 @@ jobs:
             if [ -f "$f" ]; then cat "$f"; else echo ""; fi
           }
 
-          DARWIN_AARCH64_SIG=$(read_sig "otto.app.tar.gz.sig" || read_sig "otto_aarch64.app.tar.gz.sig" || echo "")
+          DARWIN_AARCH64_SIG=""
           DARWIN_X64_SIG=""
           LINUX_X64_SIG=""
           LINUX_ARM64_SIG=""
