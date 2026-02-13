@@ -16,6 +16,8 @@ import { buildWebSearchTool } from './builtin/websearch.ts';
 import { buildTerminalTool } from './builtin/terminal.ts';
 import type { TerminalManager } from '../terminals/index.ts';
 import { initializeSkills, buildSkillTool } from '../../../skills/index.ts';
+import { getMCPManager } from '../mcp/index.ts';
+import { convertMCPToolsToAISDK } from '../mcp/tools.ts';
 import fg from 'fast-glob';
 import { dirname, isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -147,6 +149,14 @@ export async function discoverProjectTools(
 	await initializeSkills(projectRoot);
 	const skillTool = buildSkillTool();
 	tools.set(skillTool.name, skillTool.tool);
+
+	const mcpManager = getMCPManager();
+	if (mcpManager?.started) {
+		const mcpTools = convertMCPToolsToAISDK(mcpManager);
+		for (const { name, tool } of mcpTools) {
+			tools.set(name, tool);
+		}
+	}
 
 	async function loadFromBase(base: string | null | undefined) {
 		if (!base) return;

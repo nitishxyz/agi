@@ -1,28 +1,37 @@
 import { create } from 'zustand';
 import { useGitStore } from './gitStore';
 import { useSessionFilesStore } from './sessionFilesStore';
+import { useResearchStore } from './researchStore';
 import { useSettingsStore } from './settingsStore';
 import { useTunnelStore } from './tunnelStore';
 import { useFileBrowserStore } from './fileBrowserStore';
-import { useMCPStore } from './mcpStore';
 
-interface ResearchState {
+export interface MCPServerInfo {
+	name: string;
+	command: string;
+	args: string[];
+	disabled: boolean;
+	connected: boolean;
+	tools: string[];
+}
+
+interface MCPState {
 	isExpanded: boolean;
-	activeResearchSessionId: string | null;
-	parentSessionId: string | null;
+	servers: MCPServerInfo[];
+	loading: Set<string>;
 
 	toggleSidebar: () => void;
 	expandSidebar: () => void;
 	collapseSidebar: () => void;
-	selectResearchSession: (id: string | null) => void;
-	setParentSessionId: (id: string | null) => void;
-	reset: () => void;
+	setServers: (servers: MCPServerInfo[]) => void;
+	setLoading: (name: string, loading: boolean) => void;
+	updateServer: (name: string, updates: Partial<MCPServerInfo>) => void;
 }
 
-export const useResearchStore = create<ResearchState>((set, get) => ({
+export const useMCPStore = create<MCPState>((set) => ({
 	isExpanded: false,
-	activeResearchSessionId: null,
-	parentSessionId: null,
+	servers: [],
+	loading: new Set(),
 
 	toggleSidebar: () => {
 		set((state) => {
@@ -30,10 +39,10 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
 			if (newExpanded) {
 				useGitStore.getState().collapseSidebar();
 				useSessionFilesStore.getState().collapseSidebar();
+				useResearchStore.getState().collapseSidebar();
 				useSettingsStore.getState().collapseSidebar();
 				useTunnelStore.getState().collapseSidebar();
 				useFileBrowserStore.getState().collapseSidebar();
-				useMCPStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
@@ -42,30 +51,29 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
 	expandSidebar: () => {
 		useGitStore.getState().collapseSidebar();
 		useSessionFilesStore.getState().collapseSidebar();
+		useResearchStore.getState().collapseSidebar();
 		useSettingsStore.getState().collapseSidebar();
 		useTunnelStore.getState().collapseSidebar();
 		useFileBrowserStore.getState().collapseSidebar();
-		useMCPStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
 
 	collapseSidebar: () => set({ isExpanded: false }),
 
-	selectResearchSession: (id) => set({ activeResearchSessionId: id }),
+	setServers: (servers) => set({ servers }),
 
-	setParentSessionId: (id) => {
-		const currentParentId = get().parentSessionId;
-		if (currentParentId !== id) {
-			set({
-				parentSessionId: id,
-				activeResearchSessionId: null,
-			});
-		}
-	},
-
-	reset: () =>
-		set({
-			activeResearchSessionId: null,
-			parentSessionId: null,
+	setLoading: (name, loading) =>
+		set((state) => {
+			const next = new Set(state.loading);
+			if (loading) next.add(name);
+			else next.delete(name);
+			return { loading: next };
 		}),
+
+	updateServer: (name, updates) =>
+		set((state) => ({
+			servers: state.servers.map((s) =>
+				s.name === name ? { ...s, ...updates } : s,
+			),
+		})),
 }));

@@ -4,6 +4,7 @@ import { useSessionFilesStore } from './sessionFilesStore';
 import { useSettingsStore } from './settingsStore';
 import { useResearchStore } from './researchStore';
 import { useFileBrowserStore } from './fileBrowserStore';
+import { useMCPStore } from './mcpStore';
 
 export type TunnelStatus = 'idle' | 'starting' | 'connected' | 'error';
 
@@ -43,6 +44,7 @@ export const useTunnelStore = create<TunnelState>((set) => ({
 				useSettingsStore.getState().collapseSidebar();
 				useResearchStore.getState().collapseSidebar();
 				useFileBrowserStore.getState().collapseSidebar();
+				useMCPStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
@@ -54,6 +56,7 @@ export const useTunnelStore = create<TunnelState>((set) => ({
 		useSettingsStore.getState().collapseSidebar();
 		useResearchStore.getState().collapseSidebar();
 		useFileBrowserStore.getState().collapseSidebar();
+		useMCPStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
 

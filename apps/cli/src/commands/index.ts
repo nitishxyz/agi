@@ -11,3 +11,4 @@ export { registerDoctorCommand } from './doctor.ts';
 export { registerUpgradeCommand } from './upgrade.ts';
 export { registerSetuCommand } from './setu.ts';
 export { registerShareCommand } from './share.ts';
+export { registerMCPCommand } from './mcp.ts';

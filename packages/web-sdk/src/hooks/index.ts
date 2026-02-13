@@ -24,3 +24,4 @@ export * from './useAuthStatus';
 export * from './useTunnel';
 export * from './useProviderUsage';
 export * from './useFileBrowser';
+export * from './useMCP';

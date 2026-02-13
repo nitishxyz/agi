@@ -22,6 +22,8 @@ import {
 	FileBrowserSidebar,
 	FileBrowserSidebarToggle,
 	FileViewerPanel,
+	MCPSidebar,
+	MCPSidebarToggle,
 } from '@ottocode/web-sdk/components';
 import { Sidebar } from './Sidebar';
 import { Moon, Sun } from 'lucide-react';
@@ -73,6 +75,7 @@ export const AppLayout = memo(function AppLayout({
 						<SettingsSidebar />
 						<TunnelSidebar />
 						<FileBrowserSidebar />
+						<MCPSidebar />
 
 						<div className="flex flex-col w-12 border-l border-border bg-background">
 							<GitSidebarToggle />
@@ -81,6 +84,7 @@ export const AppLayout = memo(function AppLayout({
 							<FileBrowserSidebarToggle />
 							<SettingsSidebarToggle />
 							<TunnelSidebarToggle />
+							<MCPSidebarToggle />
 							<div className="flex-1" />
 							<TerminalPanelToggle />
 							<div className="h-12 border-t border-border flex items-center justify-center">

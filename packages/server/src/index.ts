@@ -20,6 +20,7 @@ import { registerSessionApprovalRoute } from './routes/session-approval.ts';
 import { registerSetuRoutes } from './routes/setu.ts';
 import { registerAuthRoutes } from './routes/auth.ts';
 import { registerTunnelRoutes } from './routes/tunnel.ts';
+import { registerMCPRoutes } from './routes/mcp.ts';
 import { registerProviderUsageRoutes } from './routes/provider-usage.ts';
 import type { AgentConfigEntry } from './runtime/agent/registry.ts';
 
@@ -77,6 +78,7 @@ function initApp() {
 	registerSetuRoutes(app);
 	registerAuthRoutes(app);
 	registerTunnelRoutes(app);
+	registerMCPRoutes(app);
 	registerProviderUsageRoutes(app);
 
 	return app;
@@ -150,6 +152,7 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	registerSetuRoutes(honoApp);
 	registerAuthRoutes(honoApp);
 	registerTunnelRoutes(honoApp);
+	registerMCPRoutes(honoApp);
 	registerProviderUsageRoutes(honoApp);
 
 	return honoApp;
@@ -251,6 +254,7 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 	registerSetuRoutes(honoApp);
 	registerAuthRoutes(honoApp);
 	registerTunnelRoutes(honoApp);
+	registerMCPRoutes(honoApp);
 	registerProviderUsageRoutes(honoApp);
 
 	return honoApp;

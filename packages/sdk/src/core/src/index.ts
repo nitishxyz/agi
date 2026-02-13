@@ -108,3 +108,24 @@ export {
 // =======================
 export { logger, debug, info, warn, error, time } from './utils/logger.ts';
 export { isDebugEnabled, isTraceEnabled } from './utils/debug.ts';
+
+// =======================
+// MCP (Model Context Protocol)
+// =======================
+export {
+	MCPClientWrapper,
+	MCPServerManager,
+	convertMCPToolsToAISDK,
+	getMCPManager,
+	initializeMCP,
+	shutdownMCP,
+	loadMCPConfig,
+	addMCPServerToConfig,
+	removeMCPServerFromConfig,
+} from './mcp/index.ts';
+export type {
+	MCPServerConfig,
+	MCPConfig,
+	MCPServerStatus,
+	MCPToolInfo,
+} from './mcp/index.ts';

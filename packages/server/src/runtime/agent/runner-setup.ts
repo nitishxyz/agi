@@ -160,8 +160,10 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 
 	toolsTimer.end({ count: allTools.length });
 	const allowedNames = new Set([...(agentCfg.tools || []), 'finish']);
-	const gated = allTools.filter((tool) => allowedNames.has(tool.name));
-	debugLog(`[tools] ${gated.length} allowed tools`);
+	const gated = allTools.filter(
+		(tool) => allowedNames.has(tool.name) || tool.name.includes('__'),
+	);
+	debugLog(`[tools] ${gated.length} allowed tools (including MCP)`);
 
 	debugLog(`[RUNNER] About to create model with provider: ${opts.provider}`);
 	debugLog(`[RUNNER] About to create model ID: ${opts.model}`);

@@ -333,3 +333,24 @@ export {
 } from './tunnel/index.ts';
 
 export type { TunnelConnection, TunnelEvents } from './tunnel/index.ts';
+
+// =======================
+// MCP (Model Context Protocol)
+// =======================
+export {
+	MCPClientWrapper,
+	MCPServerManager,
+	convertMCPToolsToAISDK,
+	getMCPManager,
+	initializeMCP,
+	shutdownMCP,
+	loadMCPConfig,
+	addMCPServerToConfig,
+	removeMCPServerFromConfig,
+} from './core/src/index.ts';
+export type {
+	MCPServerConfig,
+	MCPConfig,
+	MCPServerStatus,
+	MCPToolInfo,
+} from './core/src/index.ts';

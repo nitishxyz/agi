@@ -73,6 +73,10 @@ export * from './settings/SetuTopupModal';
 export * from './tunnel/TunnelSidebar';
 export * from './tunnel/TunnelSidebarToggle';
 
+// MCP Components
+export * from './mcp/MCPSidebar';
+export * from './mcp/MCPSidebarToggle';
+
 // File Browser Components
 export * from './file-browser/FileBrowserSidebar';
 export * from './file-browser/FileBrowserSidebarToggle';
