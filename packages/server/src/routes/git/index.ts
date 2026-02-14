@@ -7,6 +7,7 @@ import { registerCommitRoutes } from './commit.ts';
 import { registerPushRoute } from './push.ts';
 import { registerPullRoute } from './pull.ts';
 import { registerInitRoute } from './init.ts';
+import { registerRemoteRoutes } from './remote.ts';
 
 export type { GitFile } from './types.ts';
 
@@ -19,4 +20,5 @@ export function registerGitRoutes(app: Hono) {
 	registerPushRoute(app);
 	registerPullRoute(app);
 	registerInitRoute(app);
+	registerRemoteRoutes(app);
 }

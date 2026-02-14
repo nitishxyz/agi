@@ -156,6 +156,8 @@ export interface GitStatusResponse {
 	conflicted: GitFileStatus[];
 	hasChanges: boolean;
 	hasConflicts: boolean;
+	hasUpstream: boolean;
+	remotes: string[];
 }
 
 export interface GitDiffResponse {
@@ -221,6 +223,12 @@ export interface GitPullResponse {
 	output: string;
 	branch: string;
 	rebase: boolean;
+}
+
+export interface GitRemoteInfo {
+	name: string;
+	url: string;
+	type: string;
 }
 
 export interface SessionFileOperation {

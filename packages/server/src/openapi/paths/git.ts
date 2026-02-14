@@ -500,4 +500,139 @@ export const gitPaths = {
 			},
 		},
 	},
+	'/v1/git/remotes': {
+		get: {
+			tags: ['git'],
+			operationId: 'getGitRemotes',
+			summary: 'List git remotes',
+			parameters: [projectQueryParam()],
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: { type: 'string', enum: ['ok'] },
+									data: {
+										type: 'object',
+										properties: {
+											remotes: {
+												type: 'array',
+												items: {
+													type: 'object',
+													properties: {
+														name: { type: 'string' },
+														url: { type: 'string' },
+														type: { type: 'string' },
+													},
+													required: ['name', 'url', 'type'],
+												},
+											},
+										},
+										required: ['remotes'],
+									},
+								},
+								required: ['status', 'data'],
+							},
+						},
+					},
+				},
+				400: gitErrorResponse(),
+				500: gitErrorResponse(),
+			},
+		},
+		post: {
+			tags: ['git'],
+			operationId: 'addGitRemote',
+			summary: 'Add a git remote',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								project: { type: 'string' },
+								name: { type: 'string' },
+								url: { type: 'string' },
+							},
+							required: ['name', 'url'],
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: { type: 'string', enum: ['ok'] },
+									data: {
+										type: 'object',
+										properties: {
+											name: { type: 'string' },
+											url: { type: 'string' },
+										},
+										required: ['name', 'url'],
+									},
+								},
+								required: ['status', 'data'],
+							},
+						},
+					},
+				},
+				400: gitErrorResponse(),
+				500: gitErrorResponse(),
+			},
+		},
+		delete: {
+			tags: ['git'],
+			operationId: 'removeGitRemote',
+			summary: 'Remove a git remote',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								project: { type: 'string' },
+								name: { type: 'string' },
+							},
+							required: ['name'],
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: { type: 'string', enum: ['ok'] },
+									data: {
+										type: 'object',
+										properties: {
+											removed: { type: 'string' },
+										},
+										required: ['removed'],
+									},
+								},
+								required: ['status', 'data'],
+							},
+						},
+					},
+				},
+				500: gitErrorResponse(),
+			},
+		},
+	},
 } as const;

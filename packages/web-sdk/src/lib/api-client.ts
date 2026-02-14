@@ -38,6 +38,7 @@ import type {
 	GitBranchInfo,
 	GitPushResponse,
 	GitPullResponse,
+	GitRemoteInfo,
 	UpdateSessionRequest,
 	AllModelsResponse,
 	SessionFilesResponse,
@@ -579,6 +580,47 @@ class ApiClient {
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure mismatch
 		return (response.data as any)?.data as GitPullResponse;
+	}
+
+	async getRemotes(): Promise<GitRemoteInfo[]> {
+		const response = await fetch(`${this.baseUrl}/v1/git/remotes`, {
+			method: 'GET',
+			headers: { 'Content-Type': 'application/json' },
+		});
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({ error: 'Failed to list remotes' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+		const data = await response.json();
+		return data.data.remotes;
+	}
+
+	async addRemote(name: string, url: string): Promise<{ name: string; url: string }> {
+		const response = await fetch(`${this.baseUrl}/v1/git/remotes`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name, url }),
+		});
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({ error: 'Failed to add remote' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+		const data = await response.json();
+		return data.data;
+	}
+
+	async removeRemote(name: string): Promise<{ removed: string }> {
+		const response = await fetch(`${this.baseUrl}/v1/git/remotes`, {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name }),
+		});
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({ error: 'Failed to remove remote' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+		const data = await response.json();
+		return data.data;
 	}
 
 	async listFiles() {

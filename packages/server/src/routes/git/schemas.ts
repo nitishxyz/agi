@@ -50,3 +50,14 @@ export const gitPushSchema = z.object({
 export const gitPullSchema = z.object({
 	project: z.string().optional(),
 });
+
+export const gitRemoteAddSchema = z.object({
+	project: z.string().optional(),
+	name: z.string().min(1),
+	url: z.string().min(1),
+});
+
+export const gitRemoteRemoveSchema = z.object({
+	project: z.string().optional(),
+	name: z.string().min(1),
+});

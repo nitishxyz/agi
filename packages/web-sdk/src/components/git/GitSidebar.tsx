@@ -2,10 +2,14 @@ import { memo, useCallback, useEffect, useState } from 'react';
 import {
 	FolderGit2,
 	ChevronRight,
+	ChevronDown,
 	Download,
 	GitBranch,
+	Globe,
+	Plus,
 	RefreshCw,
 	Sparkles,
+	Trash2,
 	Upload,
 	X,
 } from 'lucide-react';
@@ -17,6 +21,9 @@ import {
 	usePullChanges,
 	usePushCommits,
 	useGitInit,
+	useGitRemotes,
+	useAddRemote,
+	useRemoveRemote,
 } from '../../hooks/useGit';
 import { Button } from '../ui/Button';
 import { GitFileList } from './GitFileList';
@@ -46,11 +53,19 @@ export const GitSidebar = memo(function GitSidebar({
 		(s) => s.widths[PANEL_KEY] ?? DEFAULT_WIDTH,
 	);
 	const { data: status, isLoading, error, refetch } = useGitStatus();
+	const { data: remotes } = useGitRemotes();
 	const queryClient = useQueryClient();
 	const pushMutation = usePushCommits();
 	const pullMutation = usePullChanges();
 	const initMutation = useGitInit();
+	const addRemoteMutation = useAddRemote();
+	const removeRemoteMutation = useRemoveRemote();
 	const [errors, setErrors] = useState<GitError[]>([]);
+	const [showRemotes, setShowRemotes] = useState(false);
+	const [showAddRemote, setShowAddRemote] = useState(false);
+	const [remoteName, setRemoteName] = useState('origin');
+	const [remoteUrl, setRemoteUrl] = useState('');
+	const [confirmRemoveRemote, setConfirmRemoveRemote] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (isExpanded) {
@@ -93,6 +108,40 @@ export const GitSidebar = memo(function GitSidebar({
 		}
 	};
 
+	const handleAddRemote = async () => {
+		if (!remoteName.trim() || !remoteUrl.trim()) return;
+		try {
+			await addRemoteMutation.mutateAsync({
+				name: remoteName.trim(),
+				url: remoteUrl.trim(),
+			});
+			setRemoteName('origin');
+			setRemoteUrl('');
+			setShowAddRemote(false);
+		} catch (err) {
+			addError(
+				err instanceof Error ? err.message : 'Failed to add remote',
+				'git remote add',
+			);
+		}
+	};
+
+	const handleRemoveRemote = async (name: string) => {
+		if (confirmRemoveRemote !== name) {
+			setConfirmRemoveRemote(name);
+			return;
+		}
+		setConfirmRemoveRemote(null);
+		try {
+			await removeRemoteMutation.mutateAsync(name);
+		} catch (err) {
+			addError(
+				err instanceof Error ? err.message : 'Failed to remove remote',
+				'git remote remove',
+			);
+		}
+	};
+
 	const handleFixWithAI = useCallback(
 		(gitError: GitError) => {
 			const prompt = gitError.context
@@ -114,13 +163,24 @@ export const GitSidebar = memo(function GitSidebar({
 	];
 
 	const totalChanges = allFiles.length;
-	const canPush = status && status.ahead > 0;
+	const hasRemotes = status && status.remotes && status.remotes.length > 0;
+	const hasUpstream = status?.hasUpstream ?? false;
+	const canPush =
+		status && hasRemotes && (status.ahead > 0 || !hasUpstream);
 	const _canPull = !!status;
 	const hasPendingPulls = status && status.behind > 0;
 	const isActing = pushMutation.isPending || pullMutation.isPending;
 	const isNotGitRepo =
 		error instanceof Error &&
 		error.message.toLowerCase().includes('not a git repository');
+
+	const pushTitle = !hasRemotes
+		? 'No remote configured'
+		: !hasUpstream
+			? 'Publish branch to remote'
+			: canPush
+				? `Push ${status?.ahead} commit(s) to remote`
+				: 'Nothing to push';
 
 	return (
 		<div
@@ -212,6 +272,128 @@ export const GitSidebar = memo(function GitSidebar({
 					)}
 				</div>
 
+				{status && !isNotGitRepo && !error && (
+					<div className="border-t border-border">
+						<button
+							type="button"
+							onClick={() => setShowRemotes(!showRemotes)}
+							className="w-full px-3 py-2 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+						>
+							{showRemotes ? (
+								<ChevronDown className="w-3 h-3" />
+							) : (
+								<ChevronRight className="w-3 h-3" />
+							)}
+							<Globe className="w-3 h-3" />
+							<span>Remotes</span>
+							{status.remotes && (
+								<span className="ml-auto text-[10px] opacity-60">
+									{status.remotes.length}
+								</span>
+							)}
+						</button>
+						{showRemotes && (
+							<div className="px-3 pb-2 space-y-1">
+								{remotes && remotes.length > 0 ? (
+									remotes
+										.filter((r) => r.type === 'fetch')
+										.map((remote) => (
+											<div
+												key={remote.name}
+												className="flex items-center gap-2 text-xs group"
+											>
+												<span className="font-medium text-foreground">
+													{remote.name}
+												</span>
+												<span className="truncate text-muted-foreground flex-1 min-w-0">
+													{remote.url}
+												</span>
+												<button
+													type="button"
+													onClick={() => {
+														if (confirmRemoveRemote === remote.name) {
+															handleRemoveRemote(remote.name);
+														} else {
+															setConfirmRemoveRemote(remote.name);
+														}
+													}}
+													onBlur={() => setConfirmRemoveRemote(null)}
+													disabled={removeRemoteMutation.isPending}
+													className={`${confirmRemoveRemote === remote.name ? 'opacity-100 text-red-500' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500'} transition-all p-0.5`}
+													title={confirmRemoveRemote === remote.name ? `Click again to confirm removing ${remote.name}` : `Remove ${remote.name}`}
+												>
+													{confirmRemoveRemote === remote.name ? (
+														<span className="text-[10px] font-medium">Remove?</span>
+													) : (
+														<Trash2 className="w-3 h-3" />
+													)}
+												</button>
+											</div>
+										))
+								) : (
+									<div className="text-xs text-muted-foreground py-1">
+										No remotes configured
+									</div>
+								)}
+								{showAddRemote ? (
+									<div className="space-y-1.5 pt-1">
+										<input
+											type="text"
+											value={remoteName}
+											onChange={(e) => setRemoteName(e.target.value)}
+											placeholder="Name (e.g. origin)"
+											className="w-full text-xs px-2 py-1 rounded border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+										/>
+										<input
+											type="text"
+											value={remoteUrl}
+											onChange={(e) => setRemoteUrl(e.target.value)}
+											placeholder="URL (e.g. https://github.com/...)"
+											className="w-full text-xs px-2 py-1 rounded border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+											onKeyDown={(e) => {
+												if (e.key === 'Enter') handleAddRemote();
+												if (e.key === 'Escape') setShowAddRemote(false);
+											}}
+										/>
+										<div className="flex gap-1">
+											<Button
+												variant="secondary"
+												size="sm"
+												onClick={handleAddRemote}
+												disabled={
+													addRemoteMutation.isPending ||
+													!remoteName.trim() ||
+													!remoteUrl.trim()
+												}
+												className="flex-1 h-6 text-[10px]"
+											>
+												{addRemoteMutation.isPending ? 'Adding...' : 'Add'}
+											</Button>
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => setShowAddRemote(false)}
+												className="h-6 text-[10px]"
+											>
+												Cancel
+											</Button>
+										</div>
+									</div>
+								) : (
+									<button
+										type="button"
+										onClick={() => setShowAddRemote(true)}
+										className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors pt-1"
+									>
+										<Plus className="w-3 h-3" />
+										<span>Add remote</span>
+									</button>
+								)}
+							</div>
+						)}
+					</div>
+				)}
+
 				{errors.length > 0 && (
 					<div className="border-t border-border">
 						{errors.map((gitError) => (
@@ -253,11 +435,13 @@ export const GitSidebar = memo(function GitSidebar({
 						variant="secondary"
 						size="sm"
 						onClick={handlePull}
-						disabled={isActing}
+						disabled={isActing || !hasRemotes}
 						title={
-							hasPendingPulls
-								? `Pull ${status?.behind} commit(s) from remote`
-								: 'Pull from remote'
+							!hasRemotes
+								? 'No remote configured'
+								: hasPendingPulls
+									? `Pull ${status?.behind} commit(s) from remote`
+									: 'Pull from remote'
 						}
 						className="flex-1 h-8 text-xs gap-1.5"
 					>
@@ -274,19 +458,15 @@ export const GitSidebar = memo(function GitSidebar({
 						size="sm"
 						onClick={handlePush}
 						disabled={!canPush || isActing}
-						title={
-							canPush
-								? `Push ${status?.ahead} commit(s) to remote`
-								: 'Nothing to push'
-						}
+						title={pushTitle}
 						className="flex-1 h-8 text-xs gap-1.5"
 					>
 						<Upload
 							className={`w-3.5 h-3.5 ${pushMutation.isPending ? 'animate-pulse' : ''}`}
 						/>
-						Push
-						{canPush && (
-							<span className="text-green-500">↑{status?.ahead}</span>
+						{!hasUpstream && hasRemotes ? 'Publish' : 'Push'}
+						{hasUpstream && status && status.ahead > 0 && (
+							<span className="text-green-500">↑{status.ahead}</span>
 						)}
 					</Button>
 				</div>
@@ -296,6 +476,11 @@ export const GitSidebar = memo(function GitSidebar({
 						<GitBranch className="w-3 h-3 flex-shrink-0" />
 						{status?.branch && (
 							<span className="truncate">{status.branch}</span>
+						)}
+						{status && !hasUpstream && hasRemotes && (
+							<span className="text-[10px] text-orange-500 flex-shrink-0">
+								unpublished
+							</span>
 						)}
 					</div>
 					<Button

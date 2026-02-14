@@ -45,6 +45,26 @@ export function registerStatusRoute(app: Hono) {
 
 			const branch = await getCurrentBranch(gitRoot);
 
+			let hasUpstream = false;
+			try {
+				await execFileAsync(
+					'git',
+					['rev-parse', '--abbrev-ref', '@{upstream}'],
+					{ cwd: gitRoot },
+				);
+				hasUpstream = true;
+			} catch {}
+
+			let remotes: string[] = [];
+			try {
+				const { stdout: remotesOutput } = await execFileAsync(
+					'git',
+					['remote'],
+					{ cwd: gitRoot },
+				);
+				remotes = remotesOutput.trim().split('\n').filter(Boolean);
+			} catch {}
+
 			const hasChanges =
 				staged.length > 0 ||
 				unstaged.length > 0 ||
@@ -59,6 +79,8 @@ export function registerStatusRoute(app: Hono) {
 					branch,
 					ahead,
 					behind,
+					hasUpstream,
+					remotes,
 					gitRoot,
 					workingDir: requestedPath,
 					staged,

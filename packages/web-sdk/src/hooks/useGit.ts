@@ -138,3 +138,40 @@ export function useGitInit() {
 		},
 	});
 }
+
+export function useGitRemotes() {
+	const isExpanded = useGitStore((state) => state.isExpanded);
+
+	return useQuery({
+		queryKey: ['git', 'remotes'],
+		queryFn: () => apiClient.getRemotes(),
+		enabled: isExpanded,
+		retry: 1,
+		staleTime: 10000,
+	});
+}
+
+export function useAddRemote() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: ({ name, url }: { name: string; url: string }) =>
+			apiClient.addRemote(name, url),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['git', 'remotes'] });
+			queryClient.invalidateQueries({ queryKey: ['git', 'status'] });
+		},
+	});
+}
+
+export function useRemoveRemote() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (name: string) => apiClient.removeRemote(name),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['git', 'remotes'] });
+			queryClient.invalidateQueries({ queryKey: ['git', 'status'] });
+		},
+	});
+}
