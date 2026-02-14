@@ -22,11 +22,9 @@ export function registerRemoteRoutes(app: Hono) {
 
 			const { gitRoot } = validation;
 
-			const { stdout } = await execFileAsync(
-				'git',
-				['remote', '-v'],
-				{ cwd: gitRoot },
-			);
+			const { stdout } = await execFileAsync('git', ['remote', '-v'], {
+				cwd: gitRoot,
+			});
 
 			const remotes: { name: string; url: string; type: string }[] = [];
 			const seen = new Set<string>();
@@ -50,7 +48,8 @@ export function registerRemoteRoutes(app: Hono) {
 			return c.json(
 				{
 					status: 'error',
-					error: error instanceof Error ? error.message : 'Failed to list remotes',
+					error:
+						error instanceof Error ? error.message : 'Failed to list remotes',
 				},
 				500,
 			);
@@ -82,7 +81,8 @@ export function registerRemoteRoutes(app: Hono) {
 				data: { name, url },
 			});
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to add remote';
+			const message =
+				error instanceof Error ? error.message : 'Failed to add remote';
 			const status = message.includes('already exists') ? 400 : 500;
 			return c.json({ status: 'error', error: message }, status);
 		}
@@ -113,7 +113,8 @@ export function registerRemoteRoutes(app: Hono) {
 				data: { removed: name },
 			});
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to remove remote';
+			const message =
+				error instanceof Error ? error.message : 'Failed to remove remote';
 			return c.json({ status: 'error', error: message }, 500);
 		}
 	});

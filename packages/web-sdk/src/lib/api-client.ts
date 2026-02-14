@@ -588,21 +588,28 @@ class ApiClient {
 			headers: { 'Content-Type': 'application/json' },
 		});
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({ error: 'Failed to list remotes' }));
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to list remotes' }));
 			throw new Error(extractErrorMessage(errorData));
 		}
 		const data = await response.json();
 		return data.data.remotes;
 	}
 
-	async addRemote(name: string, url: string): Promise<{ name: string; url: string }> {
+	async addRemote(
+		name: string,
+		url: string,
+	): Promise<{ name: string; url: string }> {
 		const response = await fetch(`${this.baseUrl}/v1/git/remotes`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ name, url }),
 		});
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({ error: 'Failed to add remote' }));
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to add remote' }));
 			throw new Error(extractErrorMessage(errorData));
 		}
 		const data = await response.json();
@@ -616,7 +623,9 @@ class ApiClient {
 			body: JSON.stringify({ name }),
 		});
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({ error: 'Failed to remove remote' }));
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to remove remote' }));
 			throw new Error(extractErrorMessage(errorData));
 		}
 		const data = await response.json();

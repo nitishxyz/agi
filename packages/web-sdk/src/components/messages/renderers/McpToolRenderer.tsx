@@ -63,10 +63,13 @@ export function McpToolRenderer({
 				? JSON.stringify(result.result, null, 2)
 				: null;
 
-	const images = Array.isArray(result.images) ? result.images as Array<{ data: string; mimeType: string }> : [];
+	const images = Array.isArray(result.images)
+		? (result.images as Array<{ data: string; mimeType: string }>)
+		: [];
 	const hasImages = images.length > 0;
 	const hasContent =
-		!hasToolError && (resultContent || Object.keys(result).length > 0 || hasImages);
+		!hasToolError &&
+		(resultContent || Object.keys(result).length > 0 || hasImages);
 	const displayResult = resultContent || JSON.stringify(result, null, 2);
 	const isJsonResult =
 		displayResult.startsWith('{') || displayResult.startsWith('[');
@@ -94,7 +97,7 @@ export function McpToolRenderer({
 				onToggle={onToggle}
 				isError={!!hasToolError}
 				colorVariant="purple"
-			canExpand={!!hasContent || !!hasToolError || hasImages}
+				canExpand={!!hasContent || !!hasToolError || hasImages}
 			>
 				{!compact && argsPreview && (
 					<>
@@ -128,32 +131,32 @@ export function McpToolRenderer({
 
 			{isExpanded && !hasToolError && hasContent && (
 				<div className="mt-2 ml-5 flex flex-col gap-2 max-w-full">
-				{hasImages && <ImagePreview images={images} />}
-				{displayResult && !hasImages && (
-					<ToolContentBox
-						title="result"
-						icon={<Plug className="h-3 w-3" />}
-						copyText={displayResult}
-						maxHeight="max-h-[30rem]"
-					>
-						<SyntaxHighlighter
-							language={isJsonResult ? 'json' : 'text'}
-							style={syntaxTheme}
-							customStyle={{
-								margin: 0,
-								padding: '0.75rem',
-								fontSize: '0.75rem',
-								lineHeight: '1.5',
-								background: 'transparent',
-								maxWidth: '100%',
-							}}
-							wrapLines
-							wrapLongLines
+					{hasImages && <ImagePreview images={images} />}
+					{displayResult && !hasImages && (
+						<ToolContentBox
+							title="result"
+							icon={<Plug className="h-3 w-3" />}
+							copyText={displayResult}
+							maxHeight="max-h-[30rem]"
 						>
-							{displayResult}
-						</SyntaxHighlighter>
-					</ToolContentBox>
-				)}
+							<SyntaxHighlighter
+								language={isJsonResult ? 'json' : 'text'}
+								style={syntaxTheme}
+								customStyle={{
+									margin: 0,
+									padding: '0.75rem',
+									fontSize: '0.75rem',
+									lineHeight: '1.5',
+									background: 'transparent',
+									maxWidth: '100%',
+								}}
+								wrapLines
+								wrapLongLines
+							>
+								{displayResult}
+							</SyntaxHighlighter>
+						</ToolContentBox>
+					)}
 				</div>
 			)}
 		</div>

@@ -234,11 +234,11 @@ export const schemas = {
 			},
 			hasChanges: { type: 'boolean' },
 			hasConflicts: { type: 'boolean' },
-		hasUpstream: { type: 'boolean' },
-		remotes: {
-			type: 'array',
-			items: { type: 'string' },
-		},
+			hasUpstream: { type: 'boolean' },
+			remotes: {
+				type: 'array',
+				items: { type: 'string' },
+			},
 		},
 		required: [
 			'branch',
@@ -250,8 +250,8 @@ export const schemas = {
 			'conflicted',
 			'hasChanges',
 			'hasConflicts',
-		'hasUpstream',
-		'remotes',
+			'hasUpstream',
+			'remotes',
 		],
 	},
 	GitFile: {

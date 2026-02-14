@@ -65,7 +65,9 @@ export const GitSidebar = memo(function GitSidebar({
 	const [showAddRemote, setShowAddRemote] = useState(false);
 	const [remoteName, setRemoteName] = useState('origin');
 	const [remoteUrl, setRemoteUrl] = useState('');
-	const [confirmRemoveRemote, setConfirmRemoveRemote] = useState<string | null>(null);
+	const [confirmRemoveRemote, setConfirmRemoveRemote] = useState<string | null>(
+		null,
+	);
 
 	useEffect(() => {
 		if (isExpanded) {
@@ -165,8 +167,7 @@ export const GitSidebar = memo(function GitSidebar({
 	const totalChanges = allFiles.length;
 	const hasRemotes = status && status.remotes && status.remotes.length > 0;
 	const hasUpstream = status?.hasUpstream ?? false;
-	const canPush =
-		status && hasRemotes && (status.ahead > 0 || !hasUpstream);
+	const canPush = status && hasRemotes && (status.ahead > 0 || !hasUpstream);
 	const _canPull = !!status;
 	const hasPendingPulls = status && status.behind > 0;
 	const isActing = pushMutation.isPending || pullMutation.isPending;
@@ -320,10 +321,16 @@ export const GitSidebar = memo(function GitSidebar({
 													onBlur={() => setConfirmRemoveRemote(null)}
 													disabled={removeRemoteMutation.isPending}
 													className={`${confirmRemoveRemote === remote.name ? 'opacity-100 text-red-500' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500'} transition-all p-0.5`}
-													title={confirmRemoveRemote === remote.name ? `Click again to confirm removing ${remote.name}` : `Remove ${remote.name}`}
+													title={
+														confirmRemoveRemote === remote.name
+															? `Click again to confirm removing ${remote.name}`
+															: `Remove ${remote.name}`
+													}
 												>
 													{confirmRemoveRemote === remote.name ? (
-														<span className="text-[10px] font-medium">Remove?</span>
+														<span className="text-[10px] font-medium">
+															Remove?
+														</span>
 													) : (
 														<Trash2 className="w-3 h-3" />
 													)}
@@ -435,15 +442,15 @@ export const GitSidebar = memo(function GitSidebar({
 						variant="secondary"
 						size="sm"
 						onClick={handlePull}
-					disabled={isActing || !hasRemotes || !hasUpstream}
-					title={
-						!hasRemotes
-							? 'No remote configured'
-							: !hasUpstream
-								? 'Branch not published yet'
-							: hasPendingPulls
-									? `Pull ${status?.behind} commit(s) from remote`
-									: 'Pull from remote'
+						disabled={isActing || !hasRemotes || !hasUpstream}
+						title={
+							!hasRemotes
+								? 'No remote configured'
+								: !hasUpstream
+									? 'Branch not published yet'
+									: hasPendingPulls
+										? `Pull ${status?.behind} commit(s) from remote`
+										: 'Pull from remote'
 						}
 						className="flex-1 h-8 text-xs gap-1.5"
 					>

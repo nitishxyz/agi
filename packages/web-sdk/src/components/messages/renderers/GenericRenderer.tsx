@@ -19,7 +19,9 @@ export function GenericRenderer({
 }: GenericRendererProps) {
 	const result = contentJson.result;
 	const timeStr = formatDuration(toolDurationMs);
-	const images = Array.isArray(result?.images) ? result.images as Array<{ data: string; mimeType: string }> : [];
+	const images = Array.isArray(result?.images)
+		? (result.images as Array<{ data: string; mimeType: string }>)
+		: [];
 	const hasImages = images.length > 0;
 	const hasResult = result && (Object.keys(result).length > 0 || hasImages);
 	const syntaxTheme = document?.documentElement.classList.contains('dark')
@@ -84,30 +86,30 @@ export function GenericRenderer({
 				<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />
 			)}
 			{isExpanded && !hasError && hasResult && (
-			<div className="mt-2 ml-5">
-				{hasImages && <ImagePreview images={images} />}
-				{!hasImages && (
-				<div className="bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto max-w-full">
-					<div className="overflow-x-auto max-w-full">
-						<SyntaxHighlighter
-							language="json"
-							style={syntaxTheme}
-							customStyle={{
-								margin: 0,
-								padding: '0.75rem',
-								fontSize: '0.75rem',
-								lineHeight: '1.5',
-								background: 'transparent',
-								maxWidth: '100%',
-							}}
-							wrapLines
-							wrapLongLines
-						>
-							{JSON.stringify(result, null, 2)}
-						</SyntaxHighlighter>
-					</div>
-				</div>
-				)}
+				<div className="mt-2 ml-5">
+					{hasImages && <ImagePreview images={images} />}
+					{!hasImages && (
+						<div className="bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto max-w-full">
+							<div className="overflow-x-auto max-w-full">
+								<SyntaxHighlighter
+									language="json"
+									style={syntaxTheme}
+									customStyle={{
+										margin: 0,
+										padding: '0.75rem',
+										fontSize: '0.75rem',
+										lineHeight: '1.5',
+										background: 'transparent',
+										maxWidth: '100%',
+									}}
+									wrapLines
+									wrapLongLines
+								>
+									{JSON.stringify(result, null, 2)}
+								</SyntaxHighlighter>
+							</div>
+						</div>
+					)}
 				</div>
 			)}
 		</div>

@@ -7,7 +7,15 @@ import type { GitDiffResponse } from '../../types/api';
 import { getRuntimeApiBaseUrl } from '../../lib/config';
 
 const IMAGE_EXTENSIONS = new Set([
-	'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp', 'avif',
+	'png',
+	'jpg',
+	'jpeg',
+	'gif',
+	'svg',
+	'webp',
+	'ico',
+	'bmp',
+	'avif',
 ]);
 
 function isImageFile(filePath: string): boolean {
