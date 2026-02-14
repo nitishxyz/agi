@@ -1,5 +1,5 @@
-import { memo, useState, useCallback } from 'react';
-import { Globe, Loader2, FolderDot } from 'lucide-react';
+import { memo, useState, useCallback, useRef, useEffect } from 'react';
+import { Globe, Laptop, Loader2, FolderDot, Terminal } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -142,30 +142,56 @@ export const AddMCPServerModal = memo(function AddMCPServerModal({
 		handleClose,
 	]);
 
+	const contentRef = useRef<HTMLDivElement>(null);
+	const [contentHeight, setContentHeight] = useState<number | undefined>(undefined);
+
+	useEffect(() => {
+		const el = contentRef.current;
+		if (!el) return;
+		const observer = new ResizeObserver(() => {
+			setContentHeight(el.scrollHeight);
+		});
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, []);
+
 	return (
 		<Modal isOpen={isOpen} onClose={handleClose} title="Add MCP Server">
-			<div className="space-y-4">
-				<div className="flex gap-1 p-1 bg-muted rounded-md">
+			<div
+				className="overflow-hidden transition-[height] duration-200 ease-in-out"
+				style={{ height: contentHeight !== undefined ? contentHeight : 'auto' }}
+			>
+				<div ref={contentRef} className="space-y-4">
+				<div className="relative flex w-full rounded-lg bg-muted p-1">
+					<div
+						className="absolute top-1 bottom-1 rounded-md bg-background shadow-md border border-border transition-all duration-200 ease-in-out"
+						style={{
+							left: serverMode === 'local' ? '4px' : '50%',
+							right: serverMode === 'remote' ? '4px' : '50%',
+						}}
+					/>
 					<button
 						type="button"
 						onClick={() => setServerMode('local')}
-						className={`flex-1 text-xs py-1.5 px-3 rounded transition-colors ${
+						className={`relative z-10 flex items-center justify-center gap-2 flex-1 text-sm font-medium py-2 rounded-md transition-colors duration-200 ${
 							serverMode === 'local'
-								? 'bg-background text-foreground shadow-sm'
-								: 'text-muted-foreground hover:text-foreground'
+								? 'text-foreground'
+								: 'text-muted-foreground/50'
 						}`}
 					>
+						<Terminal className="w-4 h-4" />
 						Local (stdio)
 					</button>
 					<button
 						type="button"
 						onClick={() => setServerMode('remote')}
-						className={`flex-1 text-xs py-1.5 px-3 rounded transition-colors ${
+						className={`relative z-10 flex items-center justify-center gap-2 flex-1 text-sm font-medium py-2 rounded-md transition-colors duration-200 ${
 							serverMode === 'remote'
-								? 'bg-background text-foreground shadow-sm'
-								: 'text-muted-foreground hover:text-foreground'
+								? 'text-foreground'
+								: 'text-muted-foreground/50'
 						}`}
 					>
+						<Globe className="w-4 h-4" />
 						Remote (HTTP)
 					</button>
 				</div>
@@ -230,30 +256,37 @@ export const AddMCPServerModal = memo(function AddMCPServerModal({
 						</div>
 						<div>
 							<div className="text-sm font-medium mb-1">Transport</div>
-							<div className="flex gap-2">
-								<button
-									type="button"
-									onClick={() => setTransport('http')}
-									className={`text-xs px-3 py-1.5 rounded border transition-colors ${
-										transport === 'http'
-											? 'border-primary bg-primary/10 text-foreground'
-											: 'border-border text-muted-foreground'
-									}`}
-								>
-									HTTP (recommended)
-								</button>
-								<button
-									type="button"
-									onClick={() => setTransport('sse')}
-									className={`text-xs px-3 py-1.5 rounded border transition-colors ${
-										transport === 'sse'
-											? 'border-primary bg-primary/10 text-foreground'
-											: 'border-border text-muted-foreground'
-									}`}
-								>
-									SSE (legacy)
-								</button>
-							</div>
+						<div className="relative flex w-full rounded-lg border border-border bg-muted/50 p-0.5">
+							<div
+								className="absolute top-0.5 bottom-0.5 rounded-md bg-background shadow-md border border-border transition-all duration-200 ease-in-out"
+								style={{
+									left: transport === 'http' ? '2px' : '50%',
+									right: transport === 'sse' ? '2px' : '50%',
+								}}
+							/>
+							<button
+								type="button"
+								onClick={() => setTransport('http')}
+								className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
+									transport === 'http'
+										? 'text-foreground'
+										: 'text-muted-foreground/50'
+								}`}
+							>
+								HTTP (recommended)
+							</button>
+							<button
+								type="button"
+								onClick={() => setTransport('sse')}
+								className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
+									transport === 'sse'
+										? 'text-foreground'
+										: 'text-muted-foreground/50'
+								}`}
+							>
+								SSE (legacy)
+							</button>
+						</div>
 						</div>
 						<div>
 							<div className="text-sm font-medium mb-1">Headers</div>
@@ -277,26 +310,33 @@ export const AddMCPServerModal = memo(function AddMCPServerModal({
 
 				<div>
 					<div className="text-sm font-medium mb-1">Scope</div>
-					<div className="flex gap-2">
+					<div className="relative flex w-full rounded-lg border border-border bg-muted/50 p-0.5">
+						<div
+							className="absolute top-0.5 bottom-0.5 rounded-md bg-background shadow-md border border-border transition-all duration-200 ease-in-out"
+							style={{
+								left: scope === 'global' ? '2px' : '50%',
+								right: scope === 'project' ? '2px' : '50%',
+							}}
+						/>
 						<button
 							type="button"
 							onClick={() => setScope('global')}
-							className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+							className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
 								scope === 'global'
-									? 'border-primary bg-primary/10 text-foreground'
-									: 'border-border text-muted-foreground'
+									? 'text-foreground'
+									: 'text-muted-foreground/50'
 							}`}
 						>
-							<Globe className="w-3 h-3" />
+							<Laptop className="w-3 h-3" />
 							All projects
 						</button>
 						<button
 							type="button"
 							onClick={() => setScope('project')}
-							className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+							className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
 								scope === 'project'
-									? 'border-primary bg-primary/10 text-foreground'
-									: 'border-border text-muted-foreground'
+									? 'text-foreground'
+									: 'text-muted-foreground/50'
 							}`}
 						>
 							<FolderDot className="w-3 h-3" />
@@ -334,6 +374,7 @@ export const AddMCPServerModal = memo(function AddMCPServerModal({
 							'Add Server'
 						)}
 					</Button>
+				</div>
 				</div>
 			</div>
 		</Modal>
