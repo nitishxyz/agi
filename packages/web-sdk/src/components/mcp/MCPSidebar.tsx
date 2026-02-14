@@ -1,34 +1,75 @@
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
-	Plug,
 	ChevronDown,
 	ChevronRight,
+	ExternalLink,
 	FolderDot,
 	Globe,
 	Laptop,
 	Loader2,
 	Lock,
-	Play,
+	Plug,
 	Plus,
-	Square,
 	Trash2,
 	Wrench,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
 import { useMCPStore, type MCPServerInfo } from '../../stores/mcpStore';
+import { useQueryClient } from '@tanstack/react-query';
 import {
 	useMCPServers,
 	useStartMCPServer,
 	useStopMCPServer,
 	useRemoveMCPServer,
 	useAuthenticateMCPServer,
+	useMCPAuthStatus,
 } from '../../hooks/useMCP';
 import { openUrl } from '../../lib/open-url';
 import { AddMCPServerModal } from './AddMCPServerModal';
 
+const ToggleSwitch = memo(function ToggleSwitch({
+	checked,
+	loading,
+	onChange,
+	disabled,
+}: {
+	checked: boolean;
+	loading: boolean;
+	onChange: () => void;
+	disabled?: boolean;
+}) {
+	return (
+		<button
+			type="button"
+			role="switch"
+			aria-checked={checked}
+			disabled={disabled || loading}
+			onClick={(e) => {
+				e.stopPropagation();
+				onChange();
+			}}
+			className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
+				checked ? 'bg-green-500' : 'bg-muted-foreground/30'
+			}`}
+		>
+			<span
+				className={`inline-block h-3.5 w-3.5 rounded-full transition-transform duration-200 ${
+					checked ? 'translate-x-[18px]' : 'translate-x-[3px]'
+				} ${loading ? 'bg-transparent' : 'bg-white'}`}
+			>
+				{loading && (
+					<Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+				)}
+			</span>
+		</button>
+	);
+});
+
 const MCPServerCard = memo(function MCPServerCard({
 	server,
 	isLoading,
+	authUrl,
 	onStart,
 	onStop,
 	onRemove,
@@ -36,141 +77,168 @@ const MCPServerCard = memo(function MCPServerCard({
 }: {
 	server: MCPServerInfo;
 	isLoading: boolean;
+	authUrl?: string;
 	onStart: () => void;
 	onStop: () => void;
 	onRemove: () => void;
 	onAuth: () => void;
 }) {
-	const [isCollapsed, setIsCollapsed] = useState(true);
+	const [showTools, setShowTools] = useState(false);
 	const hasTools = server.connected && server.tools.length > 0;
 	const isRemote = server.transport === 'http' || server.transport === 'sse';
+	const isAwaitingAuth = !!authUrl && !server.connected;
 
-	const toggleCollapse = useCallback(() => {
-		if (hasTools) setIsCollapsed((prev) => !prev);
+	const handleToggle = useCallback(() => {
+		if (server.authRequired && !server.connected) {
+			onAuth();
+		} else if (server.connected) {
+			onStop();
+		} else {
+			onStart();
+		}
+	}, [server.connected, server.authRequired, onAuth, onStop, onStart]);
+
+	const toggleTools = useCallback(() => {
+		if (hasTools) setShowTools((prev) => !prev);
 	}, [hasTools]);
 
 	return (
-		<div className="rounded-lg border border-border p-3 space-y-2 group">
-			<div className="flex items-center justify-between">
-				<button
-					type="button"
-					onClick={toggleCollapse}
-					className={`flex items-center gap-2 min-w-0 flex-1 text-left ${hasTools ? 'cursor-pointer' : 'cursor-default'}`}
-				>
-					<span
-						className={`w-2 h-2 rounded-full flex-shrink-0 ${
-							server.connected
-								? 'bg-green-500'
-								: server.authRequired
-									? 'bg-yellow-500'
-									: 'bg-muted-foreground/30'
-						}`}
-					/>
-					<span className="text-sm font-medium truncate">{server.name}</span>
-					{isRemote && (
-						<Globe className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-					)}
-					{server.authRequired && !server.connected && (
-						<Lock className="w-3 h-3 text-yellow-500 flex-shrink-0" />
-					)}
-					{hasTools && (
-						<span className="flex items-center gap-0.5 text-xs text-muted-foreground flex-shrink-0">
-							<Wrench className="w-3 h-3" />
-							{server.tools.length}
-							{isCollapsed ? (
-								<ChevronRight className="w-3 h-3" />
+		<div
+			className={`rounded-lg border transition-colors duration-200 group ${
+				server.connected
+					? 'border-green-500/30 bg-green-500/5'
+					: isAwaitingAuth
+						? 'border-yellow-500/30 bg-yellow-500/5'
+						: 'border-border bg-transparent'
+			}`}
+		>
+			<div className="flex items-center gap-3 px-3 py-2.5">
+				<ToggleSwitch
+					checked={server.connected}
+					loading={isLoading || isAwaitingAuth}
+					onChange={handleToggle}
+				/>
+
+				<div className="flex-1 min-w-0">
+					<div className="flex items-center gap-1.5">
+						<span className="text-sm font-medium truncate">
+							{server.name}
+						</span>
+						{isRemote && (
+							<Globe className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+						)}
+						{server.authRequired && !server.connected && (
+							<Lock className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+						)}
+					</div>
+					<div className="flex items-center gap-1.5 mt-0.5">
+						<span className="text-xs text-muted-foreground truncate">
+							{isRemote
+								? server.url
+								: `${server.command ?? ''} ${server.args.join(' ')}`}
+						</span>
+						<span
+							className="flex items-center flex-shrink-0 opacity-50"
+							title={server.scope === 'project' ? 'Project-local' : 'Global'}
+						>
+							{server.scope === 'project' ? (
+								<FolderDot className="w-3 h-3" />
 							) : (
-								<ChevronDown className="w-3 h-3" />
+								<Laptop className="w-3 h-3" />
 							)}
 						</span>
+					</div>
+				</div>
+
+				<div className="flex items-center gap-0.5 flex-shrink-0">
+					{hasTools && (
+						<button
+							type="button"
+							onClick={toggleTools}
+							className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground px-1.5 py-1 rounded transition-colors"
+						>
+							<Wrench className="w-3 h-3" />
+							{server.tools.length}
+							{showTools ? (
+								<ChevronDown className="w-3 h-3" />
+							) : (
+								<ChevronRight className="w-3 h-3" />
+							)}
+						</button>
 					)}
-				</button>
-				<div className="flex items-center gap-0.5">
 					<Button
 						variant="ghost"
 						size="icon"
 						onClick={onRemove}
 						title="Remove server"
-						className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+						className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
 					>
 						<Trash2 className="w-3 h-3 text-muted-foreground hover:text-red-400" />
 					</Button>
-					{isLoading ? (
-						<Loader2 className="w-4 h-4 animate-spin text-muted-foreground flex-shrink-0" />
-					) : server.authRequired && !server.connected ? (
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={onAuth}
-							title="Authenticate"
-							className="h-7 w-7 flex-shrink-0"
-						>
-							<Lock className="w-3 h-3 text-yellow-500" />
-						</Button>
-					) : server.connected ? (
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={onStop}
-							title="Stop server"
-							className="h-7 w-7 flex-shrink-0"
-						>
-							<Square className="w-3 h-3 text-red-400" />
-						</Button>
-					) : (
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={onStart}
-							title="Start server"
-							className="h-7 w-7 flex-shrink-0"
-						>
-							<Play className="w-3 h-3 text-green-400" />
-						</Button>
-					)}
 				</div>
 			</div>
 
-			<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-				<span className="truncate">
-					{isRemote
-						? server.url
-						: `${server.command ?? ''} ${server.args.join(' ')}`}
-				</span>
-				<span
-					className="flex items-center gap-0.5 flex-shrink-0 opacity-60"
-					title={server.scope === 'project' ? 'Project-local' : 'Global'}
-				>
-					{server.scope === 'project' ? (
-						<FolderDot className="w-3 h-3" />
-					) : (
-						<Laptop className="w-3 h-3" />
-					)}
-				</span>
-			</div>
-
-			{hasTools && !isCollapsed && (
-				<div className="flex flex-wrap gap-1 pt-1">
-					{server.tools.map((tool) => (
-						<span
-							key={tool}
-							className="text-xs bg-muted px-1.5 py-0.5 rounded"
-							title={tool}
+			{isAwaitingAuth && (
+				<div className="px-3 pb-2.5 pt-0">
+					<div className="flex items-center gap-1.5 text-xs">
+						<Loader2 className="w-3 h-3 animate-spin text-yellow-500 flex-shrink-0" />
+						<span className="text-yellow-500/80">Waiting for auth...</span>
+						<a
+							href={authUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							onClick={(e) => {
+								e.preventDefault();
+								openUrl(authUrl);
+							}}
+							className="inline-flex items-center gap-0.5 text-yellow-400 hover:text-yellow-300 underline underline-offset-2"
 						>
-							{tool.split('__').pop()}
-						</span>
-					))}
+							Open login
+							<ExternalLink className="w-3 h-3" />
+						</a>
+					</div>
+				</div>
+			)}
+
+			{hasTools && showTools && (
+				<div className="px-3 pb-2.5 pt-0">
+					<div className="flex flex-wrap gap-1">
+						{server.tools.map((tool) => (
+							<span
+								key={tool}
+								className="text-xs bg-muted px-1.5 py-0.5 rounded"
+								title={tool}
+							>
+								{tool.split('__').pop()}
+							</span>
+						))}
+					</div>
 				</div>
 			)}
 		</div>
 	);
 });
 
+function useAuthPoller(name: string | null, onAuthenticated: () => void) {
+	const { data } = useMCPAuthStatus(name);
+	const prevAuth = useRef(false);
+
+	useEffect(() => {
+		if (data?.authenticated && !prevAuth.current) {
+			onAuthenticated();
+		}
+		prevAuth.current = data?.authenticated ?? false;
+	}, [data?.authenticated, onAuthenticated]);
+}
+
 export const MCPSidebar = memo(function MCPSidebar() {
 	const isExpanded = useMCPStore((s) => s.isExpanded);
 	const collapseSidebar = useMCPStore((s) => s.collapseSidebar);
 	const servers = useMCPStore((s) => s.servers);
 	const loading = useMCPStore((s) => s.loading);
+	const authUrls = useMCPStore((s) => s.authUrls);
+	const setAuthUrl = useMCPStore((s) => s.setAuthUrl);
+	const setLoading = useMCPStore((s) => s.setLoading);
 
 	const { isLoading: isFetching } = useMCPServers();
 	const startServer = useStartMCPServer();
@@ -179,30 +247,77 @@ export const MCPSidebar = memo(function MCPSidebar() {
 	const authServer = useAuthenticateMCPServer();
 
 	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+	const [pollingServer, setPollingServer] = useState<string | null>(null);
+	const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+	const queryClient = useQueryClient();
+
+	const handleAuthCompleted = useCallback(() => {
+		if (pollingServer) {
+			setAuthUrl(pollingServer, null);
+			setPollingServer(null);
+			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
+		}
+	}, [pollingServer, setAuthUrl, queryClient]);
+
+	useAuthPoller(pollingServer, handleAuthCompleted);
+
+	useEffect(() => {
+		for (const name of loading) {
+			const server = servers.find((s) => s.name === name);
+			if (server?.connected) {
+				setLoading(name, false);
+			}
+		}
+	}, [servers, loading, setLoading]);
 
 	const handleAuth = useCallback(
 		async (name: string) => {
 			try {
+				setLoading(name, true);
 				const result = await authServer.mutateAsync(name);
 				if (result.authUrl) {
+					setAuthUrl(name, result.authUrl);
+					setPollingServer(name);
 					openUrl(result.authUrl);
+				} else {
+					setLoading(name, false);
 				}
-			} catch {}
+			} catch {
+				setLoading(name, false);
+				setAuthUrl(name, null);
+			}
 		},
-		[authServer],
+		[authServer, setAuthUrl, setLoading],
 	);
 
 	const handleStart = useCallback(
 		async (name: string) => {
 			try {
+				setLoading(name, true);
 				const result = await startServer.mutateAsync(name);
 				if (result.authRequired && result.authUrl) {
+					setAuthUrl(name, result.authUrl);
+					setPollingServer(name);
 					openUrl(result.authUrl);
+				} else {
+					setLoading(name, false);
 				}
-			} catch {}
+			} catch {
+				setLoading(name, false);
+				setAuthUrl(name, null);
+			}
 		},
-		[startServer],
+		[startServer, setAuthUrl, setLoading],
 	);
+
+	const sortedServers = useMemo(() => {
+		return [...servers].sort((a, b) => {
+			if (a.connected && !b.connected) return -1;
+			if (!a.connected && b.connected) return 1;
+			return a.name.localeCompare(b.name);
+		});
+	}, [servers]);
 
 	if (!isExpanded) return null;
 
@@ -267,15 +382,16 @@ export const MCPSidebar = memo(function MCPSidebar() {
 						</p>
 					</div>
 				) : (
-					<div className="p-2 space-y-1">
-						{servers.map((server) => (
+					<div className="p-2 space-y-1.5">
+						{sortedServers.map((server) => (
 							<MCPServerCard
 								key={server.name}
 								server={server}
 								isLoading={loading.has(server.name)}
+								authUrl={authUrls.get(server.name)}
 								onStart={() => handleStart(server.name)}
 								onStop={() => stopServer.mutate(server.name)}
-								onRemove={() => removeServer.mutate(server.name)}
+							onRemove={() => setDeleteTarget(server.name)}
 								onAuth={() => handleAuth(server.name)}
 							/>
 						))}
@@ -287,6 +403,42 @@ export const MCPSidebar = memo(function MCPSidebar() {
 				isOpen={isAddModalOpen}
 				onClose={() => setIsAddModalOpen(false)}
 			/>
+
+			<Modal
+				isOpen={!!deleteTarget}
+				onClose={() => setDeleteTarget(null)}
+				title="Remove MCP Server"
+				maxWidth="sm"
+				showCloseButton={false}
+			>
+				<p className="text-sm text-muted-foreground mb-4">
+					Are you sure you want to remove{' '}
+					<span className="font-medium text-foreground">{deleteTarget}</span>?
+					This will stop the server and remove its configuration.
+				</p>
+				<div className="flex justify-end gap-2">
+					<Button
+						variant="secondary"
+						size="sm"
+						onClick={() => setDeleteTarget(null)}
+					>
+						Cancel
+					</Button>
+					<Button
+						variant="primary"
+						size="sm"
+						className="bg-red-500 hover:bg-red-600 text-white"
+						onClick={() => {
+							if (deleteTarget) {
+								removeServer.mutate(deleteTarget);
+							}
+							setDeleteTarget(null);
+						}}
+					>
+						Remove
+					</Button>
+				</div>
+			</Modal>
 		</div>
 	);
 });

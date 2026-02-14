@@ -104,6 +104,10 @@ export function registerMCPRoutes(app: Hono) {
 		try {
 			const manager = getMCPManager();
 			if (manager) {
+				const config = await loadMCPConfig(projectRoot, getGlobalConfigDir());
+				const serverConfig = config.servers.find((s) => s.name === name);
+				const scope = serverConfig?.scope ?? 'global';
+				await manager.clearAuthData(name, scope, projectRoot);
 				await manager.stopServer(name);
 			}
 

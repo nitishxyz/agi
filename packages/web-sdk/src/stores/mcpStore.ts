@@ -26,6 +26,7 @@ interface MCPState {
 	isExpanded: boolean;
 	servers: MCPServerInfo[];
 	loading: Set<string>;
+	authUrls: Map<string, string>;
 
 	toggleSidebar: () => void;
 	expandSidebar: () => void;
@@ -33,12 +34,14 @@ interface MCPState {
 	setServers: (servers: MCPServerInfo[]) => void;
 	setLoading: (name: string, loading: boolean) => void;
 	updateServer: (name: string, updates: Partial<MCPServerInfo>) => void;
+	setAuthUrl: (name: string, url: string | null) => void;
 }
 
 export const useMCPStore = create<MCPState>((set) => ({
 	isExpanded: false,
 	servers: [],
 	loading: new Set(),
+	authUrls: new Map(),
 
 	toggleSidebar: () => {
 		set((state) => {
@@ -83,4 +86,12 @@ export const useMCPStore = create<MCPState>((set) => ({
 				s.name === name ? { ...s, ...updates } : s,
 			),
 		})),
+
+	setAuthUrl: (name, url) =>
+		set((state) => {
+			const next = new Map(state.authUrls);
+			if (url) next.set(name, url);
+			else next.delete(name);
+			return { authUrls: next };
+		}),
 }));

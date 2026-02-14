@@ -220,6 +220,7 @@ export class MCPServerManager {
 
 		this.serverScopes.set(config.name, config.scope ?? 'global');
 		const key = this.oauthKey(config.name);
+		await this.oauthStore.clearServer(key);
 		const provider = new OttoOAuthProvider(key, this.oauthStore, {
 			clientId: config.oauth?.clientId,
 			callbackPort: config.oauth?.callbackPort,
@@ -244,6 +245,7 @@ export class MCPServerManager {
 
 			if (provider.pendingAuthUrl) {
 				this.pendingAuth.set(config.name, provider.pendingAuthUrl);
+				this.waitForAuthAndReconnect(config.name, provider);
 				return provider.pendingAuthUrl;
 			}
 			return null;
@@ -293,6 +295,30 @@ export class MCPServerManager {
 		}
 		this.authProviders.delete(name);
 		await this.stopServer(name);
+	}
+
+	async clearAuthData(
+		name: string,
+		scope?: 'global' | 'project',
+		projectRoot?: string,
+	): Promise<void> {
+		const provider = this.authProviders.get(name);
+		if (provider) {
+			await provider.clearCredentials();
+			provider.cleanup();
+		}
+		this.authProviders.delete(name);
+		if (scope) {
+			this.serverScopes.set(name, scope);
+		}
+		if (projectRoot) {
+			this.projectRoot = projectRoot;
+		}
+		const key = this.oauthKey(name);
+		await this.oauthStore.clearServer(key);
+		if (key !== name) {
+			await this.oauthStore.clearServer(name);
+		}
 	}
 
 	async getAuthStatus(

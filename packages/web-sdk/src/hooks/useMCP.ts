@@ -33,11 +33,9 @@ export function useMCPServers() {
 
 export function useStartMCPServer() {
 	const queryClient = useQueryClient();
-	const setLoading = useMCPStore((s) => s.setLoading);
 
 	return useMutation({
 		mutationFn: async (name: string) => {
-			setLoading(name, true);
 			const response = await fetch(
 				`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(name)}/start`,
 				{ method: 'POST' },
@@ -46,8 +44,7 @@ export function useStartMCPServer() {
 			if (!data.ok) throw new Error(data.error || 'Failed to start server');
 			return data;
 		},
-		onSettled: (_data, _error, name) => {
-			setLoading(name, false);
+		onSettled: () => {
 			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
 		},
 	});
@@ -133,11 +130,9 @@ export function useRemoveMCPServer() {
 
 export function useAuthenticateMCPServer() {
 	const queryClient = useQueryClient();
-	const setLoading = useMCPStore((s) => s.setLoading);
 
 	return useMutation({
 		mutationFn: async (name: string) => {
-			setLoading(name, true);
 			const response = await fetch(
 				`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(name)}/auth`,
 				{ method: 'POST' },
@@ -146,8 +141,7 @@ export function useAuthenticateMCPServer() {
 			if (!data.ok) throw new Error(data.error || 'Failed to initiate auth');
 			return data as { ok: boolean; authUrl?: string; name: string };
 		},
-		onSettled: (_data, _error, name) => {
-			setLoading(name, false);
+		onSettled: () => {
 			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
 		},
 	});
