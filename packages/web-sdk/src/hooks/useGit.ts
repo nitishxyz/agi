@@ -126,3 +126,15 @@ export function usePullChanges() {
 		},
 	});
 }
+
+export function useGitInit() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: () => apiClient.initGitRepo(),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['git', 'status'] });
+			queryClient.invalidateQueries({ queryKey: ['git', 'branch'] });
+		},
+	});
+}

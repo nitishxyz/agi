@@ -431,6 +431,24 @@ class ApiClient {
 	}
 
 	// Git methods using new API
+	async initGitRepo(): Promise<{ initialized: boolean; path: string }> {
+		const response = await fetch(`${this.baseUrl}/v1/git/init`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({}),
+		});
+
+		if (!response.ok) {
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: 'Failed to initialize git repository' }));
+			throw new Error(extractErrorMessage(errorData));
+		}
+
+		const data = await response.json();
+		return data.data;
+	}
+
 	async getGitStatus(): Promise<GitStatusResponse> {
 		const response = await apiGetGitStatus();
 		if (response.error) {
