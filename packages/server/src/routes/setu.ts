@@ -4,7 +4,6 @@ import {
 	getPublicKeyFromPrivate,
 	getAuth,
 	loadConfig,
-	fetchSolanaUsdcBalance,
 } from '@ottocode/sdk';
 import { logger } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
@@ -117,18 +116,49 @@ export function registerSetuRoutes(app: Hono) {
 				return c.json({ error: 'Setu wallet not configured' }, 401);
 			}
 
-			const network =
-				(c.req.query('network') as 'mainnet' | 'devnet') || 'mainnet';
+			const publicKey = getPublicKeyFromPrivate(privateKey);
+			if (!publicKey) {
+				return c.json({ error: 'Invalid private key' }, 400);
+			}
 
-			const balance = await fetchSolanaUsdcBalance({ privateKey }, network);
-			if (!balance) {
+			const baseUrl = getSetuBaseUrl();
+			const response = await fetch(
+				`${baseUrl}/v1/wallet/${publicKey}/balances?limit=100&showNative=false&showNfts=false&showZeroBalance=false`,
+				{
+					method: 'GET',
+					headers: { 'Content-Type': 'application/json' },
+				},
+			);
+
+			if (!response.ok) {
 				return c.json(
-					{ error: 'Failed to fetch USDC balance from Solana' },
+					{ error: 'Failed to fetch wallet balances' },
 					502,
 				);
 			}
 
-			return c.json(balance);
+			const data = (await response.json()) as {
+				balances: Array<{
+					mint: string;
+					symbol: string;
+					name: string;
+					balance: number;
+					decimals: number;
+					pricePerToken: number | null;
+					usdValue: number | null;
+				}>;
+				totalUsdValue: number;
+			};
+
+			const usdcEntry = data.balances.find(
+				(b) => b.symbol === 'USDC',
+			);
+
+			return c.json({
+				walletAddress: publicKey,
+				usdcBalance: usdcEntry?.balance ?? 0,
+				network: 'mainnet' as const,
+			});
 		} catch (error) {
 			logger.error('Failed to fetch USDC balance', error);
 			const errorResponse = serializeError(error);

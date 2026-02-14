@@ -8,6 +8,7 @@ import {
 	Key,
 	ExternalLink,
 	ArrowRight,
+	RefreshCw,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ProviderLogo } from '../../common/ProviderLogo';
@@ -102,6 +103,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	copilotPollFnRef.current = onPollCopilotDeviceFlow;
 	const balance = useSetuStore((s) => s.balance);
 	const usdcBalance = useSetuStore((s) => s.usdcBalance);
+	const isBalanceLoading = useSetuStore((s) => s.isLoading);
 	const apiKeyInputRef = useRef<HTMLInputElement>(null);
 	const oauthCodeInputRef = useRef<HTMLInputElement>(null);
 	const importPrivateKeyRef = useRef<HTMLTextAreaElement>(null);
@@ -331,6 +333,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 			await onImportWallet(importPrivateKey.trim());
 			setIsImportModalOpen(false);
 			setImportPrivateKey('');
+			fetchBalance();
 		} catch (err) {
 			setImportWalletError(
 				err instanceof Error ? err.message : 'Failed to import wallet',
@@ -423,11 +426,23 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 											</button>
 
 											<div className="flex items-center justify-between px-3 py-2 bg-muted/50 rounded-lg">
-												<span className="text-xs text-muted-foreground">
-													Balance
-												</span>
-												<span className="font-mono text-sm text-foreground">
-													${((balance ?? 0) + (usdcBalance ?? 0)).toFixed(4)}
+												<div className="flex items-center gap-1">
+													<span className="font-mono text-sm text-foreground">
+														${((balance ?? 0) + (usdcBalance ?? 0)).toFixed(2)}
+													</span>
+													<button
+														type="button"
+														onClick={fetchBalance}
+														disabled={isBalanceLoading}
+														className="p-0.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+													>
+														<RefreshCw className={`w-3 h-3 ${isBalanceLoading ? 'animate-spin' : ''}`} />
+													</button>
+												</div>
+												<span className="text-[10px] text-muted-foreground font-mono">
+													{(balance ?? 0) > 0 && `${(balance ?? 0).toFixed(2)} cr`}
+													{(balance ?? 0) > 0 && (usdcBalance ?? 0) > 0 && ' + '}
+													{(usdcBalance ?? 0) > 0 && `${(usdcBalance ?? 0).toFixed(2)} usdc`}
 												</span>
 											</div>
 										</div>
