@@ -37,8 +37,14 @@ export async function handleWeb(opts: WebOptions, version: string) {
 	try {
 		await fetch(opts.api, { method: 'GET', signal: AbortSignal.timeout(3000) });
 	} catch {
-		console.log(colors.yellow(`  ⚠ API server at ${opts.api} is not responding`));
-		console.log(colors.dim('    Starting web UI anyway — it will retry when the server comes up'));
+		console.log(
+			colors.yellow(`  ⚠ API server at ${opts.api} is not responding`),
+		);
+		console.log(
+			colors.dim(
+				'    Starting web UI anyway — it will retry when the server comes up',
+			),
+		);
 	}
 
 	const webPort = opts.port ?? 0;

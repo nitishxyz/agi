@@ -177,21 +177,21 @@ export function ProjectPicker({
 				</div>
 				<div className="flex items-center gap-2 ml-auto">
 					{isAuthenticated && (
-					<div className="flex items-center gap-1.5 mr-2">
-						{user?.avatar_url && (
-							<img
-								src={user.avatar_url}
-								alt=""
-								className="w-4 h-4 rounded-full"
+						<div className="flex items-center gap-1.5 mr-2">
+							{user?.avatar_url && (
+								<img
+									src={user.avatar_url}
+									alt=""
+									className="w-4 h-4 rounded-full"
 								/>
 							)}
-						<span className="text-sm text-muted-foreground">
-							{user?.login}
-						</span>
-						<button
-							type="button"
-							onClick={logout}
-							className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 hover:bg-muted rounded"
+							<span className="text-sm text-muted-foreground">
+								{user?.login}
+							</span>
+							<button
+								type="button"
+								onClick={logout}
+								className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 hover:bg-muted rounded"
 							>
 								Disconnect
 							</button>
@@ -223,24 +223,24 @@ export function ProjectPicker({
 					<button
 						type="button"
 						onClick={toggleTheme}
-				className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
-					title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-				>
-					{theme === 'dark' ? (
-						<Sun className="w-3.5 h-3.5" />
-					) : (
-						<Moon className="w-3.5 h-3.5" />
+						className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+						title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+					>
+						{theme === 'dark' ? (
+							<Sun className="w-3.5 h-3.5" />
+						) : (
+							<Moon className="w-3.5 h-3.5" />
 						)}
 					</button>
 					<button
 						type="button"
 						onClick={() => tauriBridge.createNewWindow()}
-				className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
-					title="New Window"
-				>
-					<svg
-						width="14"
-						height="14"
+						className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+						title="New Window"
+					>
+						<svg
+							width="14"
+							height="14"
 							viewBox="0 0 16 16"
 							fill="none"
 							stroke="currentColor"
@@ -263,7 +263,10 @@ export function ProjectPicker({
 
 					<div className="relative z-10 flex-1 flex flex-col items-center pt-16 pb-12 px-6">
 						<div className="text-center mb-12">
-							<OttoWordmark height={32} className="text-foreground mx-auto mb-4" />
+							<OttoWordmark
+								height={32}
+								className="text-foreground mx-auto mb-4"
+							/>
 							<p className="text-sm text-muted-foreground max-w-sm mx-auto">
 								Open-source AI coding assistant
 							</p>
@@ -285,7 +288,9 @@ export function ProjectPicker({
 										<FolderOpen className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
 									</div>
 									<div>
-										<div className="text-xs font-medium text-foreground">Open</div>
+										<div className="text-xs font-medium text-foreground">
+											Open
+										</div>
 										<div className="text-[10px] text-muted-foreground/60 mt-0.5">
 											Local project
 										</div>
@@ -327,7 +332,9 @@ export function ProjectPicker({
 										<Link className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
 									</div>
 									<div>
-										<div className="text-xs font-medium text-foreground">Connect</div>
+										<div className="text-xs font-medium text-foreground">
+											Connect
+										</div>
 										<div className="text-[10px] text-muted-foreground/60 mt-0.5">
 											Remote server
 										</div>
