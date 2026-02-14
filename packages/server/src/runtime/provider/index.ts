@@ -21,6 +21,7 @@ export async function resolveModel(
 		sessionId?: string;
 		messageId?: string;
 		topupApprovalMode?: ResolveSetuModelOptions['topupApprovalMode'];
+		autoPayThresholdUsd?: ResolveSetuModelOptions['autoPayThresholdUsd'];
 	},
 ) {
 	if (provider === 'openai') {
@@ -46,6 +47,7 @@ export async function resolveModel(
 		return await resolveSetuModel(model, options?.sessionId, {
 			messageId: options?.messageId,
 			topupApprovalMode: options?.topupApprovalMode,
+			autoPayThresholdUsd: options?.autoPayThresholdUsd,
 		});
 	}
 	if (provider === 'zai') {

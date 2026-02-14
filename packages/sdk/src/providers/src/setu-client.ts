@@ -78,6 +78,7 @@ export type SetuProviderOptions = {
 	promptCacheKey?: string;
 	promptCacheRetention?: 'in_memory' | '24h';
 	topupApprovalMode?: 'auto' | 'approval';
+	autoPayThresholdUsd?: number;
 };
 
 export type SetuAuth = {
@@ -163,6 +164,7 @@ export function createSetuFetch(
 	const promptCacheKey = options.promptCacheKey;
 	const promptCacheRetention = options.promptCacheRetention;
 	const topupApprovalMode = options.topupApprovalMode ?? 'auto';
+	const autoPayThresholdUsd = options.autoPayThresholdUsd ?? 0;
 
 	const baseFetch = globalThis.fetch.bind(globalThis);
 
@@ -232,39 +234,62 @@ export function createSetuFetch(
 				const amountUsd =
 					parseInt(requirement.maxAmountRequired, 10) / 1_000_000;
 
-				if (topupApprovalMode === 'approval' && callbacks.onPaymentApproval) {
+				let walletUsdcBalance = 0;
+				if (autoPayThresholdUsd > 0) {
+					walletUsdcBalance = await getWalletUsdcBalance(walletAddress, rpcURL);
+				}
+
+				const canAutoPay =
+					autoPayThresholdUsd > 0 && walletUsdcBalance >= autoPayThresholdUsd;
+
+				const requestApproval = async () => {
+					if (!callbacks.onPaymentApproval) return;
 					const approval = await callbacks.onPaymentApproval({
 						amountUsd,
-						currentBalance: 0,
+						currentBalance: walletUsdcBalance,
 					});
-
 					if (approval === 'cancel') {
 						callbacks.onPaymentError?.('Payment cancelled by user');
 						throw new Error('Setu: payment cancelled by user');
 					}
-
 					if (approval === 'fiat') {
 						const err = new Error('Setu: fiat payment selected');
 						(err as Error & { code: string }).code = 'SETU_FIAT_SELECTED';
 						throw err;
 					}
+				};
+
+				if (!canAutoPay && topupApprovalMode === 'approval') {
+					await requestApproval();
 				}
 
-				callbacks.onPaymentRequired?.(amountUsd, 0);
+				callbacks.onPaymentRequired?.(amountUsd, walletUsdcBalance);
 
-				const outcome = await handlePayment({
-					requirement,
-					keypair,
-					rpcURL,
-					baseURL,
-					baseFetch,
-					buildWalletHeaders,
-					maxAttempts: remainingPayments,
-					callbacks,
-				});
+				const doPayment = async () => {
+					const outcome = await handlePayment({
+						requirement,
+						keypair,
+						rpcURL,
+						baseURL,
+						baseFetch,
+						buildWalletHeaders,
+						maxAttempts: remainingPayments,
+						callbacks,
+					});
+					const newTotal = currentAttempts + outcome.attemptsUsed;
+					globalPaymentAttempts.set(walletAddress, newTotal);
+				};
 
-				const newTotal = currentAttempts + outcome.attemptsUsed;
-				globalPaymentAttempts.set(walletAddress, newTotal);
+				if (canAutoPay) {
+					try {
+						await doPayment();
+					} catch (_autoPayErr) {
+						await requestApproval();
+						await doPayment();
+					}
+				} else {
+					await doPayment();
+				}
 			} finally {
 				releaseLock();
 			}
@@ -635,6 +660,48 @@ export function getPublicKeyFromPrivate(privateKey: string): string | null {
 		return keypair.publicKey.toBase58();
 	} catch {
 		return null;
+	}
+}
+
+async function getWalletUsdcBalance(
+	walletAddress: string,
+	rpcUrl: string,
+): Promise<number> {
+	try {
+		const usdcMint = rpcUrl.includes('devnet')
+			? USDC_MINT_DEVNET
+			: USDC_MINT_MAINNET;
+		const response = await fetch(rpcUrl, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				jsonrpc: '2.0',
+				id: 1,
+				method: 'getTokenAccountsByOwner',
+				params: [walletAddress, { mint: usdcMint }, { encoding: 'jsonParsed' }],
+			}),
+		});
+		if (!response.ok) return 0;
+		const data = (await response.json()) as {
+			result?: {
+				value?: Array<{
+					account: {
+						data: {
+							parsed: {
+								info: { tokenAmount: { uiAmount: number } };
+							};
+						};
+					};
+				}>;
+			};
+		};
+		let total = 0;
+		for (const acct of data.result?.value ?? []) {
+			total += acct.account.data.parsed.info.tokenAmount.uiAmount ?? 0;
+		}
+		return total;
+	} catch {
+		return 0;
 	}
 }
 

@@ -21,6 +21,7 @@ function getProviderNpm(model: string): string | undefined {
 export interface ResolveSetuModelOptions {
 	messageId?: string;
 	topupApprovalMode?: 'auto' | 'approval';
+	autoPayThresholdUsd?: number;
 }
 
 async function getSetuPrivateKey(): Promise<string> {
@@ -50,7 +51,11 @@ export async function resolveSetuModel(
 	}
 	const baseURL = process.env.SETU_BASE_URL;
 	const rpcURL = process.env.SETU_SOLANA_RPC_URL;
-	const { messageId, topupApprovalMode = 'approval' } = options;
+	const {
+		messageId,
+		topupApprovalMode = 'approval',
+		autoPayThresholdUsd = MIN_TOPUP_USD,
+	} = options;
 
 	const callbacks: SetuPaymentCallbacks = sessionId
 		? {
@@ -128,6 +133,7 @@ export async function resolveSetuModel(
 			callbacks,
 			providerNpm,
 			topupApprovalMode,
+			autoPayThresholdUsd,
 		},
 	);
 }
