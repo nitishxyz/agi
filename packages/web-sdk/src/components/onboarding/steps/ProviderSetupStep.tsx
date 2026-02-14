@@ -436,13 +436,19 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 														disabled={isBalanceLoading}
 														className="p-0.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 													>
-														<RefreshCw className={`w-3 h-3 ${isBalanceLoading ? 'animate-spin' : ''}`} />
+														<RefreshCw
+															className={`w-3 h-3 ${isBalanceLoading ? 'animate-spin' : ''}`}
+														/>
 													</button>
 												</div>
 												<span className="text-[10px] text-muted-foreground font-mono">
-													{(balance ?? 0) > 0 && `${(balance ?? 0).toFixed(2)} cr`}
-													{(balance ?? 0) > 0 && (usdcBalance ?? 0) > 0 && ' + '}
-													{(usdcBalance ?? 0) > 0 && `${(usdcBalance ?? 0).toFixed(2)} usdc`}
+													{(balance ?? 0) > 0 &&
+														`${(balance ?? 0).toFixed(2)} cr`}
+													{(balance ?? 0) > 0 &&
+														(usdcBalance ?? 0) > 0 &&
+														' + '}
+													{(usdcBalance ?? 0) > 0 &&
+														`${(usdcBalance ?? 0).toFixed(2)} usdc`}
 												</span>
 											</div>
 										</div>

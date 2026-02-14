@@ -26,12 +26,12 @@ export function ProjectCard({
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
 		>
-		<div className="w-9 h-9 rounded-md bg-muted/80 flex items-center justify-center flex-shrink-0">
-			{project.remoteUrl ? (
-				<Link className="w-4 h-4 text-muted-foreground" />
-			) : (
-				<svg
-					className="w-4 h-4 text-muted-foreground"
+			<div className="w-9 h-9 rounded-md bg-muted/80 flex items-center justify-center flex-shrink-0">
+				{project.remoteUrl ? (
+					<Link className="w-4 h-4 text-muted-foreground" />
+				) : (
+					<svg
+						className="w-4 h-4 text-muted-foreground"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
@@ -45,10 +45,10 @@ export function ProjectCard({
 			</div>
 
 			<div className="flex-1 min-w-0">
-			<div className="text-sm font-medium text-foreground truncate leading-snug">
-				{project.name}
-			</div>
-			<div className="text-[13px] text-muted-foreground/70 truncate">
+				<div className="text-sm font-medium text-foreground truncate leading-snug">
+					{project.name}
+				</div>
+				<div className="text-[13px] text-muted-foreground/70 truncate">
 					{project.remoteUrl || project.path}
 				</div>
 			</div>
@@ -82,7 +82,7 @@ export function ProjectCard({
 						</button>
 					</>
 				) : (
-				<span className="text-xs text-muted-foreground/50 tabular-nums">
+					<span className="text-xs text-muted-foreground/50 tabular-nums">
 						{formatTimeAgo(project.lastOpened)}
 					</span>
 				)}

@@ -224,9 +224,7 @@ export function CloneModal({
 										onClick={() => onClone(repo.clone_url, repo.name)}
 										disabled={cloning}
 										className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-colors text-left group ${
-											isThisCloning
-												? 'bg-muted/50'
-												: 'hover:bg-muted/30'
+											isThisCloning ? 'bg-muted/50' : 'hover:bg-muted/30'
 										}`}
 									>
 										<div className="w-7 h-7 rounded-md bg-muted/50 group-hover:bg-muted flex items-center justify-center shrink-0 transition-colors">

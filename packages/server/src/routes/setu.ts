@@ -131,10 +131,7 @@ export function registerSetuRoutes(app: Hono) {
 			);
 
 			if (!response.ok) {
-				return c.json(
-					{ error: 'Failed to fetch wallet balances' },
-					502,
-				);
+				return c.json({ error: 'Failed to fetch wallet balances' }, 502);
 			}
 
 			const data = (await response.json()) as {
@@ -150,9 +147,7 @@ export function registerSetuRoutes(app: Hono) {
 				totalUsdValue: number;
 			};
 
-			const usdcEntry = data.balances.find(
-				(b) => b.symbol === 'USDC',
-			);
+			const usdcEntry = data.balances.find((b) => b.symbol === 'USDC');
 
 			return c.json({
 				walletAddress: publicKey,
