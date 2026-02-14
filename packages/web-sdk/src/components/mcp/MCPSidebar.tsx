@@ -144,7 +144,7 @@ const MCPServerCard = memo(function MCPServerCard({
 					{server.scope === 'project' ? (
 						<FolderDot className="w-3 h-3" />
 					) : (
-					<Laptop className="w-3 h-3" />
+						<Laptop className="w-3 h-3" />
 					)}
 				</span>
 			</div>

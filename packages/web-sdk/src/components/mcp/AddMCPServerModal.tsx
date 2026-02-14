@@ -143,7 +143,9 @@ export const AddMCPServerModal = memo(function AddMCPServerModal({
 	]);
 
 	const contentRef = useRef<HTMLDivElement>(null);
-	const [contentHeight, setContentHeight] = useState<number | undefined>(undefined);
+	const [contentHeight, setContentHeight] = useState<number | undefined>(
+		undefined,
+	);
 
 	useEffect(() => {
 		const el = contentRef.current;
@@ -162,219 +164,219 @@ export const AddMCPServerModal = memo(function AddMCPServerModal({
 				style={{ height: contentHeight !== undefined ? contentHeight : 'auto' }}
 			>
 				<div ref={contentRef} className="space-y-4">
-				<div className="relative flex w-full rounded-lg bg-muted p-1">
-					<div
-						className="absolute top-1 bottom-1 rounded-md bg-background shadow-md border border-border transition-all duration-200 ease-in-out"
-						style={{
-							left: serverMode === 'local' ? '4px' : '50%',
-							right: serverMode === 'remote' ? '4px' : '50%',
-						}}
-					/>
-					<button
-						type="button"
-						onClick={() => setServerMode('local')}
-						className={`relative z-10 flex items-center justify-center gap-2 flex-1 text-sm font-medium py-2 rounded-md transition-colors duration-200 ${
-							serverMode === 'local'
-								? 'text-foreground'
-								: 'text-muted-foreground/50'
-						}`}
-					>
-						<Terminal className="w-4 h-4" />
-						Local (stdio)
-					</button>
-					<button
-						type="button"
-						onClick={() => setServerMode('remote')}
-						className={`relative z-10 flex items-center justify-center gap-2 flex-1 text-sm font-medium py-2 rounded-md transition-colors duration-200 ${
-							serverMode === 'remote'
-								? 'text-foreground'
-								: 'text-muted-foreground/50'
-						}`}
-					>
-						<Globe className="w-4 h-4" />
-						Remote (HTTP)
-					</button>
-				</div>
-
-				<div>
-					<div className="text-sm font-medium mb-1">Name</div>
-					<Input
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						placeholder="e.g. github, linear, helius"
-						autoFocus
-					/>
-				</div>
-
-				{serverMode === 'local' ? (
-					<>
-						<div>
-							<div className="text-sm font-medium mb-1">Command</div>
-							<Input
-								value={commandStr}
-								onChange={(e) => setCommandStr(e.target.value)}
-								placeholder="e.g. npx -y @modelcontextprotocol/server-github"
-								onKeyDown={(e) => {
-									if (e.key === 'Enter') handleSubmit();
-								}}
-							/>
-							<p className="text-xs text-muted-foreground mt-1">
-								Like{' '}
-								<code className="bg-muted px-1 rounded">
-									npx -y helius-mcp@latest
-								</code>
-							</p>
-						</div>
-						<div>
-							<div className="text-sm font-medium mb-1">
-								Environment Variables
-							</div>
-							<textarea
-								value={envStr}
-								onChange={(e) => setEnvStr(e.target.value)}
-								placeholder={'GITHUB_TOKEN=ghp_xxx\nAPI_KEY=sk-xxx'}
-								rows={2}
-								className="w-full bg-muted border border-border rounded-md px-3 py-2 text-sm font-mono resize-none focus:outline-none focus:ring-1 focus:ring-primary"
-							/>
-							<p className="text-xs text-muted-foreground mt-1">
-								One per line: KEY=VALUE
-							</p>
-						</div>
-					</>
-				) : (
-					<>
-						<div>
-							<div className="text-sm font-medium mb-1">URL</div>
-							<Input
-								value={url}
-								onChange={(e) => setUrl(e.target.value)}
-								placeholder="e.g. https://mcp.linear.app/mcp"
-								onKeyDown={(e) => {
-									if (e.key === 'Enter') handleSubmit();
-								}}
-							/>
-						</div>
-						<div>
-							<div className="text-sm font-medium mb-1">Transport</div>
-						<div className="relative flex w-full rounded-lg border border-border bg-muted/50 p-0.5">
-							<div
-								className="absolute top-0.5 bottom-0.5 rounded-md bg-background shadow-md border border-border transition-all duration-200 ease-in-out"
-								style={{
-									left: transport === 'http' ? '2px' : '50%',
-									right: transport === 'sse' ? '2px' : '50%',
-								}}
-							/>
-							<button
-								type="button"
-								onClick={() => setTransport('http')}
-								className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
-									transport === 'http'
-										? 'text-foreground'
-										: 'text-muted-foreground/50'
-								}`}
-							>
-								HTTP (recommended)
-							</button>
-							<button
-								type="button"
-								onClick={() => setTransport('sse')}
-								className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
-									transport === 'sse'
-										? 'text-foreground'
-										: 'text-muted-foreground/50'
-								}`}
-							>
-								SSE (legacy)
-							</button>
-						</div>
-						</div>
-						<div>
-							<div className="text-sm font-medium mb-1">Headers</div>
-							<textarea
-								value={headersStr}
-								onChange={(e) => setHeadersStr(e.target.value)}
-								placeholder={'Authorization: Bearer xxx'}
-								rows={2}
-								className="w-full bg-muted border border-border rounded-md px-3 py-2 text-sm font-mono resize-none focus:outline-none focus:ring-1 focus:ring-primary"
-							/>
-							<p className="text-xs text-muted-foreground mt-1">
-								One per line: Header-Name: value
-							</p>
-						</div>
-						<p className="text-xs text-muted-foreground">
-							For OAuth servers (Linear, Notion, etc.), leave headers empty and
-							authenticate after adding.
-						</p>
-					</>
-				)}
-
-				<div>
-					<div className="text-sm font-medium mb-1">Scope</div>
-					<div className="relative flex w-full rounded-lg border border-border bg-muted/50 p-0.5">
+					<div className="relative flex w-full rounded-lg bg-muted p-1">
 						<div
-							className="absolute top-0.5 bottom-0.5 rounded-md bg-background shadow-md border border-border transition-all duration-200 ease-in-out"
+							className="absolute top-1 bottom-1 rounded-md bg-background shadow-md border border-border transition-all duration-200 ease-in-out"
 							style={{
-								left: scope === 'global' ? '2px' : '50%',
-								right: scope === 'project' ? '2px' : '50%',
+								left: serverMode === 'local' ? '4px' : '50%',
+								right: serverMode === 'remote' ? '4px' : '50%',
 							}}
 						/>
 						<button
 							type="button"
-							onClick={() => setScope('global')}
-							className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
-								scope === 'global'
+							onClick={() => setServerMode('local')}
+							className={`relative z-10 flex items-center justify-center gap-2 flex-1 text-sm font-medium py-2 rounded-md transition-colors duration-200 ${
+								serverMode === 'local'
 									? 'text-foreground'
 									: 'text-muted-foreground/50'
 							}`}
 						>
-							<Laptop className="w-3 h-3" />
-							All projects
+							<Terminal className="w-4 h-4" />
+							Local (stdio)
 						</button>
 						<button
 							type="button"
-							onClick={() => setScope('project')}
-							className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
-								scope === 'project'
+							onClick={() => setServerMode('remote')}
+							className={`relative z-10 flex items-center justify-center gap-2 flex-1 text-sm font-medium py-2 rounded-md transition-colors duration-200 ${
+								serverMode === 'remote'
 									? 'text-foreground'
 									: 'text-muted-foreground/50'
 							}`}
 						>
-							<FolderDot className="w-3 h-3" />
-							This project only
+							<Globe className="w-4 h-4" />
+							Remote (HTTP)
 						</button>
 					</div>
-					<p className="text-xs text-muted-foreground mt-1">
-						{scope === 'global'
-							? 'Saved to ~/.config/otto/config.json'
-							: 'Saved to .otto/config.json (project-local)'}
-					</p>
-				</div>
 
-				{error && (
-					<div className="text-sm text-red-400 bg-red-500/10 px-3 py-2 rounded">
-						{error}
+					<div>
+						<div className="text-sm font-medium mb-1">Name</div>
+						<Input
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							placeholder="e.g. github, linear, helius"
+							autoFocus
+						/>
 					</div>
-				)}
 
-				<div className="flex justify-end gap-2 pt-2">
-					<Button variant="ghost" onClick={handleClose}>
-						Cancel
-					</Button>
-					<Button
-						variant="primary"
-						onClick={handleSubmit}
-						disabled={addServer.isPending}
-					>
-						{addServer.isPending ? (
-							<>
-								<Loader2 className="w-3 h-3 animate-spin mr-1" />
-								Adding...
-							</>
-						) : (
-							'Add Server'
-						)}
-					</Button>
-				</div>
+					{serverMode === 'local' ? (
+						<>
+							<div>
+								<div className="text-sm font-medium mb-1">Command</div>
+								<Input
+									value={commandStr}
+									onChange={(e) => setCommandStr(e.target.value)}
+									placeholder="e.g. npx -y @modelcontextprotocol/server-github"
+									onKeyDown={(e) => {
+										if (e.key === 'Enter') handleSubmit();
+									}}
+								/>
+								<p className="text-xs text-muted-foreground mt-1">
+									Like{' '}
+									<code className="bg-muted px-1 rounded">
+										npx -y helius-mcp@latest
+									</code>
+								</p>
+							</div>
+							<div>
+								<div className="text-sm font-medium mb-1">
+									Environment Variables
+								</div>
+								<textarea
+									value={envStr}
+									onChange={(e) => setEnvStr(e.target.value)}
+									placeholder={'GITHUB_TOKEN=ghp_xxx\nAPI_KEY=sk-xxx'}
+									rows={2}
+									className="w-full bg-muted border border-border rounded-md px-3 py-2 text-sm font-mono resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+								/>
+								<p className="text-xs text-muted-foreground mt-1">
+									One per line: KEY=VALUE
+								</p>
+							</div>
+						</>
+					) : (
+						<>
+							<div>
+								<div className="text-sm font-medium mb-1">URL</div>
+								<Input
+									value={url}
+									onChange={(e) => setUrl(e.target.value)}
+									placeholder="e.g. https://mcp.linear.app/mcp"
+									onKeyDown={(e) => {
+										if (e.key === 'Enter') handleSubmit();
+									}}
+								/>
+							</div>
+							<div>
+								<div className="text-sm font-medium mb-1">Transport</div>
+								<div className="relative flex w-full rounded-lg border border-border bg-muted/50 p-0.5">
+									<div
+										className="absolute top-0.5 bottom-0.5 rounded-md bg-background shadow-md border border-border transition-all duration-200 ease-in-out"
+										style={{
+											left: transport === 'http' ? '2px' : '50%',
+											right: transport === 'sse' ? '2px' : '50%',
+										}}
+									/>
+									<button
+										type="button"
+										onClick={() => setTransport('http')}
+										className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
+											transport === 'http'
+												? 'text-foreground'
+												: 'text-muted-foreground/50'
+										}`}
+									>
+										HTTP (recommended)
+									</button>
+									<button
+										type="button"
+										onClick={() => setTransport('sse')}
+										className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
+											transport === 'sse'
+												? 'text-foreground'
+												: 'text-muted-foreground/50'
+										}`}
+									>
+										SSE (legacy)
+									</button>
+								</div>
+							</div>
+							<div>
+								<div className="text-sm font-medium mb-1">Headers</div>
+								<textarea
+									value={headersStr}
+									onChange={(e) => setHeadersStr(e.target.value)}
+									placeholder={'Authorization: Bearer xxx'}
+									rows={2}
+									className="w-full bg-muted border border-border rounded-md px-3 py-2 text-sm font-mono resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+								/>
+								<p className="text-xs text-muted-foreground mt-1">
+									One per line: Header-Name: value
+								</p>
+							</div>
+							<p className="text-xs text-muted-foreground">
+								For OAuth servers (Linear, Notion, etc.), leave headers empty
+								and authenticate after adding.
+							</p>
+						</>
+					)}
+
+					<div>
+						<div className="text-sm font-medium mb-1">Scope</div>
+						<div className="relative flex w-full rounded-lg border border-border bg-muted/50 p-0.5">
+							<div
+								className="absolute top-0.5 bottom-0.5 rounded-md bg-background shadow-md border border-border transition-all duration-200 ease-in-out"
+								style={{
+									left: scope === 'global' ? '2px' : '50%',
+									right: scope === 'project' ? '2px' : '50%',
+								}}
+							/>
+							<button
+								type="button"
+								onClick={() => setScope('global')}
+								className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
+									scope === 'global'
+										? 'text-foreground'
+										: 'text-muted-foreground/50'
+								}`}
+							>
+								<Laptop className="w-3 h-3" />
+								All projects
+							</button>
+							<button
+								type="button"
+								onClick={() => setScope('project')}
+								className={`relative z-10 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md flex-1 transition-colors duration-200 ${
+									scope === 'project'
+										? 'text-foreground'
+										: 'text-muted-foreground/50'
+								}`}
+							>
+								<FolderDot className="w-3 h-3" />
+								This project only
+							</button>
+						</div>
+						<p className="text-xs text-muted-foreground mt-1">
+							{scope === 'global'
+								? 'Saved to ~/.config/otto/config.json'
+								: 'Saved to .otto/config.json (project-local)'}
+						</p>
+					</div>
+
+					{error && (
+						<div className="text-sm text-red-400 bg-red-500/10 px-3 py-2 rounded">
+							{error}
+						</div>
+					)}
+
+					<div className="flex justify-end gap-2 pt-2">
+						<Button variant="ghost" onClick={handleClose}>
+							Cancel
+						</Button>
+						<Button
+							variant="primary"
+							onClick={handleSubmit}
+							disabled={addServer.isPending}
+						>
+							{addServer.isPending ? (
+								<>
+									<Loader2 className="w-3 h-3 animate-spin mr-1" />
+									Adding...
+								</>
+							) : (
+								'Add Server'
+							)}
+						</Button>
+					</div>
 				</div>
 			</div>
 		</Modal>

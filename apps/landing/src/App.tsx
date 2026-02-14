@@ -1,4 +1,9 @@
-import { Route, Routes, useLocation, useNavigationType } from 'react-router-dom';
+import {
+	Route,
+	Routes,
+	useLocation,
+	useNavigationType,
+} from 'react-router-dom';
 import { useEffect } from 'react';
 import { Nav } from './components/Nav';
 import { Footer } from './components/Footer';

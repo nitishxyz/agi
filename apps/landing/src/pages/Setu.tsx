@@ -133,7 +133,7 @@ const MODELS = [
 		models: [
 			{ id: 'glm-5', label: 'GLM-5', input: 1, output: 3.2 },
 			{ id: 'glm-4.7', label: 'GLM-4.7', input: 0.6, output: 2.2 },
-		{ id: 'glm-4.7-flash', label: 'GLM-4.7 Flash', input: 0, output: 0 },
+			{ id: 'glm-4.7-flash', label: 'GLM-4.7 Flash', input: 0, output: 0 },
 		],
 	},
 	{
@@ -658,19 +658,24 @@ function HeroMockup() {
 					<div className="term-line-enter">
 						<div className="flex items-center gap-3 pt-2 border-t border-otto-border mt-2 pb-1">
 							<div className="flex items-center gap-1.5">
-							{['anthropic', 'openai', 'google', 'moonshot', 'zai', 'minimax'].map(
-									(p) => (
-										<ProviderLogo
-											key={p}
-											provider={p}
-											size={14}
-											className="text-otto-dim opacity-60"
-										/>
-									),
-								)}
+								{[
+									'anthropic',
+									'openai',
+									'google',
+									'moonshot',
+									'zai',
+									'minimax',
+								].map((p) => (
+									<ProviderLogo
+										key={p}
+										provider={p}
+										size={14}
+										className="text-otto-dim opacity-60"
+									/>
+								))}
 							</div>
 							<span className="text-otto-dim text-[10px]">
-							33+ models · 6 providers · one wallet
+								33+ models · 6 providers · one wallet
 							</span>
 						</div>
 					</div>
@@ -750,7 +755,7 @@ export function Setu() {
 						<div className="mt-8">
 							<TerminalBlock
 								title="architecture"
-							copyText="Client → Setu Router → OpenAI / Anthropic / Google / Moonshot / Zai / MiniMax"
+								copyText="Client → Setu Router → OpenAI / Anthropic / Google / Moonshot / Zai / MiniMax"
 							>
 								<div className="space-y-1">
 									<div>

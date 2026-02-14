@@ -162,43 +162,47 @@ export const GitSidebar = memo(function GitSidebar({
 						<div className="p-4 text-sm text-muted-foreground">
 							Loading git status...
 						</div>
-				) : isNotGitRepo ? (
-					<div className="p-4 flex flex-col items-center justify-center gap-3 text-center">
-						<FolderGit2 className="w-10 h-10 text-muted-foreground" />
-						<div className="text-sm text-muted-foreground">
-							No git repository found in this directory.
-						</div>
-						<Button
-							variant="secondary"
-							size="sm"
-							onClick={() => initMutation.mutate()}
-							disabled={initMutation.isPending}
-							className="gap-1.5"
-						>
-							<GitBranch className={`w-3.5 h-3.5 ${initMutation.isPending ? 'animate-spin' : ''}`} />
-							{initMutation.isPending ? 'Initializing...' : 'Initialize Repository'}
-						</Button>
-						{initMutation.isError && (
-							<span className="text-xs text-orange-500">
-								{initMutation.error instanceof Error
-									? initMutation.error.message
-									: 'Failed to initialize'}
-							</span>
-						)}
-					</div>
-				) : error ? (
-					<div className="p-3 text-sm text-muted-foreground">
-						<div className="flex flex-col gap-2">
-							<span className="text-orange-500">
-								{error instanceof Error
-									? error.message
-									: 'Failed to load git status'}
-							</span>
-							<Button variant="secondary" size="sm" onClick={handleRefresh}>
-								Retry
+					) : isNotGitRepo ? (
+						<div className="p-4 flex flex-col items-center justify-center gap-3 text-center">
+							<FolderGit2 className="w-10 h-10 text-muted-foreground" />
+							<div className="text-sm text-muted-foreground">
+								No git repository found in this directory.
+							</div>
+							<Button
+								variant="secondary"
+								size="sm"
+								onClick={() => initMutation.mutate()}
+								disabled={initMutation.isPending}
+								className="gap-1.5"
+							>
+								<GitBranch
+									className={`w-3.5 h-3.5 ${initMutation.isPending ? 'animate-spin' : ''}`}
+								/>
+								{initMutation.isPending
+									? 'Initializing...'
+									: 'Initialize Repository'}
 							</Button>
+							{initMutation.isError && (
+								<span className="text-xs text-orange-500">
+									{initMutation.error instanceof Error
+										? initMutation.error.message
+										: 'Failed to initialize'}
+								</span>
+							)}
 						</div>
-					</div>
+					) : error ? (
+						<div className="p-3 text-sm text-muted-foreground">
+							<div className="flex flex-col gap-2">
+								<span className="text-orange-500">
+									{error instanceof Error
+										? error.message
+										: 'Failed to load git status'}
+								</span>
+								<Button variant="secondary" size="sm" onClick={handleRefresh}>
+									Retry
+								</Button>
+							</div>
+						</div>
 					) : !status || totalChanges === 0 ? (
 						<div className="p-3 text-sm text-muted-foreground">
 							No changes detected
