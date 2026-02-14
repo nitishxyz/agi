@@ -21,17 +21,17 @@ export function ProjectCard({
 	return (
 		<button
 			type="button"
-			className="group relative flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-150 cursor-pointer w-full text-left hover:bg-muted/50"
+			className="group relative flex items-center gap-3.5 px-4 py-3.5 rounded-lg transition-all duration-150 cursor-pointer w-full text-left hover:bg-muted/50"
 			onClick={onSelect}
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
 		>
-			<div className="w-8 h-8 rounded-md bg-muted/80 flex items-center justify-center flex-shrink-0">
-				{project.remoteUrl ? (
-					<Link className="w-3.5 h-3.5 text-muted-foreground" />
-				) : (
-					<svg
-						className="w-3.5 h-3.5 text-muted-foreground"
+		<div className="w-9 h-9 rounded-md bg-muted/80 flex items-center justify-center flex-shrink-0">
+			{project.remoteUrl ? (
+				<Link className="w-4 h-4 text-muted-foreground" />
+			) : (
+				<svg
+					className="w-4 h-4 text-muted-foreground"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
@@ -45,10 +45,10 @@ export function ProjectCard({
 			</div>
 
 			<div className="flex-1 min-w-0">
-				<div className="text-sm font-medium text-foreground truncate">
-					{project.name}
-				</div>
-				<div className="text-xs text-muted-foreground/70 truncate">
+			<div className="text-sm font-medium text-foreground truncate leading-snug">
+				{project.name}
+			</div>
+			<div className="text-[13px] text-muted-foreground/70 truncate">
 					{project.remoteUrl || project.path}
 				</div>
 			</div>
@@ -66,7 +66,7 @@ export function ProjectCard({
 							title={pinned ? 'Unpin' : 'Pin'}
 						>
 							<Star
-								className={`w-3 h-3 ${pinned ? 'fill-yellow-500 text-yellow-500' : ''}`}
+								className={`w-3.5 h-3.5 ${pinned ? 'fill-yellow-500 text-yellow-500' : ''}`}
 							/>
 						</button>
 						<button
@@ -78,11 +78,11 @@ export function ProjectCard({
 							className="p-1.5 text-muted-foreground hover:text-destructive rounded-md hover:bg-destructive/10 transition-colors"
 							title="Remove"
 						>
-							<X className="w-3 h-3" />
+							<X className="w-3.5 h-3.5" />
 						</button>
 					</>
 				) : (
-					<span className="text-[11px] text-muted-foreground/50 tabular-nums">
+				<span className="text-xs text-muted-foreground/50 tabular-nums">
 						{formatTimeAgo(project.lastOpened)}
 					</span>
 				)}
