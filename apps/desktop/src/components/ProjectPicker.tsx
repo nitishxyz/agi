@@ -17,6 +17,7 @@ import {
 	GitBranch,
 	Link,
 	Star,
+	X,
 } from 'lucide-react';
 import { useDesktopTheme } from '../App';
 import { WindowControls } from './WindowControls';
@@ -432,65 +433,104 @@ export function ProjectPicker({
 				/>
 			)}
 
-			{showConnectModal && (
-				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-					<div className="bg-card border border-border rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
-						<h2 className="text-sm font-semibold text-foreground mb-4">
-							Connect to Server
-						</h2>
-						<div className="space-y-4">
-							<div>
-								<label className="block text-xs font-medium text-muted-foreground mb-1.5">
-									API Server URL
-								</label>
-								<input
-									type="url"
-									value={connectUrl}
-									onChange={(e) => setConnectUrl(e.target.value)}
-									placeholder="http://192.168.1.50:9100"
-									className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring"
-									autoFocus
-									onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
-								/>
+		{showConnectModal && (
+			<div
+				className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+				onClick={() => {
+					setShowConnectModal(false);
+					setConnectUrl('');
+					setConnectName('');
+				}}
+				onKeyDown={(e) => {
+					if (e.key === 'Escape') {
+						setShowConnectModal(false);
+						setConnectUrl('');
+						setConnectName('');
+					}
+				}}
+				tabIndex={-1}
+			>
+				<div
+					className="bg-background border border-border/50 rounded-xl w-full max-w-sm mx-6 shadow-2xl overflow-hidden"
+					onClick={(e) => e.stopPropagation()}
+					onKeyDown={(e) => e.stopPropagation()}
+					role="dialog"
+				>
+					<div className="flex items-center justify-between px-5 py-4">
+						<div className="flex items-center gap-2.5">
+							<div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center">
+								<Link className="w-4 h-4 text-muted-foreground" />
 							</div>
-							<div>
-								<label className="block text-xs font-medium text-muted-foreground mb-1.5">
-									Name (optional)
-								</label>
-								<input
-									type="text"
-									value={connectName}
-									onChange={(e) => setConnectName(e.target.value)}
-									placeholder="My Remote Server"
-									className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring"
-									onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
-								/>
-							</div>
-							<div className="flex justify-end gap-3 pt-2">
-								<button
-									type="button"
-									onClick={() => {
-										setShowConnectModal(false);
-										setConnectUrl('');
-										setConnectName('');
-									}}
-									className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-								>
-									Cancel
-								</button>
-								<button
-									type="button"
-									onClick={handleConnect}
-									disabled={!connectUrl.trim()}
-									className="px-3 py-1.5 text-xs bg-foreground text-background rounded-lg font-medium hover:opacity-90 transition-colors disabled:opacity-50"
-								>
-									Connect
-								</button>
-							</div>
+							<h3 className="text-sm font-semibold text-foreground">
+								Connect to Server
+							</h3>
+						</div>
+						<button
+							type="button"
+							onClick={() => {
+								setShowConnectModal(false);
+								setConnectUrl('');
+								setConnectName('');
+							}}
+							className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+						>
+							<X className="w-4 h-4" />
+						</button>
+					</div>
+
+					<div className="px-5 pb-5 space-y-3">
+						<div>
+							<label className="block text-[11px] font-medium text-muted-foreground/60 uppercase tracking-wider mb-1.5">
+								API Server URL
+							</label>
+							<input
+								type="url"
+								value={connectUrl}
+								onChange={(e) => setConnectUrl(e.target.value)}
+								placeholder="http://192.168.1.50:9100"
+								className="w-full h-9 px-3 bg-muted/30 border border-border/50 rounded-lg text-xs font-mono text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-ring/50 transition-colors"
+								autoFocus
+								onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
+							/>
+						</div>
+						<div>
+							<label className="block text-[11px] font-medium text-muted-foreground/60 uppercase tracking-wider mb-1.5">
+								Name (optional)
+							</label>
+							<input
+								type="text"
+								value={connectName}
+								onChange={(e) => setConnectName(e.target.value)}
+								placeholder="My Remote Server"
+								className="w-full h-9 px-3 bg-muted/30 border border-border/50 rounded-lg text-xs text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-ring/50 transition-colors"
+								onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
+							/>
+						</div>
+						<div className="flex justify-end gap-2 pt-1">
+							<button
+								type="button"
+								onClick={() => {
+									setShowConnectModal(false);
+									setConnectUrl('');
+									setConnectName('');
+								}}
+								className="px-3.5 h-9 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
+							>
+								Cancel
+							</button>
+							<button
+								type="button"
+								onClick={handleConnect}
+								disabled={!connectUrl.trim()}
+								className="px-3.5 h-9 text-xs bg-foreground text-background rounded-lg font-medium hover:opacity-90 transition-colors disabled:opacity-50"
+							>
+								Connect
+							</button>
 						</div>
 					</div>
 				</div>
-			)}
+			</div>
+		)}
 		</div>
 	);
 }

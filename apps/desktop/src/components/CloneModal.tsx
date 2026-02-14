@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X, GitBranch, Lock, Package, Download } from 'lucide-react';
 import { listen } from '@tauri-apps/api/event';
 
 interface CloneProgress {
@@ -101,7 +101,7 @@ export function CloneModal({
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: modal backdrop overlay pattern
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
 			onClick={cloning ? undefined : onClose}
 			onKeyDown={(e) => {
 				if (e.key === 'Escape' && !cloning) onClose();
@@ -109,44 +109,49 @@ export function CloneModal({
 			tabIndex={-1}
 		>
 			<div
-				className="bg-background border border-border rounded-xl w-full max-w-2xl mx-6 shadow-2xl max-h-[80vh] flex flex-col"
+				className="bg-background border border-border/50 rounded-xl w-full max-w-lg mx-6 shadow-2xl max-h-[80vh] flex flex-col overflow-hidden"
 				onClick={(e) => e.stopPropagation()}
 				onKeyDown={(e) => e.stopPropagation()}
 				role="dialog"
 			>
-				<div className="flex items-center justify-between p-6 border-b border-border">
-					<h3 className="text-lg font-semibold text-foreground">
-						Clone Repository
-					</h3>
+				<div className="shrink-0 flex items-center justify-between px-5 py-4">
+					<div className="flex items-center gap-2.5">
+						<div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center">
+							<GitBranch className="w-4 h-4 text-muted-foreground" />
+						</div>
+						<h3 className="text-sm font-semibold text-foreground">
+							Clone Repository
+						</h3>
+					</div>
 					<button
 						type="button"
 						onClick={onClose}
 						disabled={cloning}
-						className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
+						className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
 					>
-						✕
+						<X className="w-4 h-4" />
 					</button>
 				</div>
 
 				{cloning && cloningRepo && (
-					<div className="px-4 pt-4">
-						<div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-3">
-							<div className="flex items-center gap-3">
-								<div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin shrink-0" />
+					<div className="px-5 pb-3">
+						<div className="p-3 bg-muted/30 border border-border/50 rounded-lg space-y-2.5">
+							<div className="flex items-center gap-2.5">
+								<div className="w-4 h-4 border-2 border-muted-foreground/20 border-t-foreground rounded-full animate-spin shrink-0" />
 								<div className="flex-1 min-w-0">
-									<div className="text-sm font-medium text-foreground">
-										Cloning {cloningRepo}...
+									<div className="text-xs font-medium text-foreground">
+										Cloning {cloningRepo}
 									</div>
-									<div className="text-xs text-muted-foreground mt-0.5">
+									<div className="text-[11px] text-muted-foreground/60 mt-0.5">
 										{progress
 											? `${progress.phase} — ${progress.percent}% (${formatBytes(progress.receivedBytes)})`
 											: 'Connecting...'}
 									</div>
 								</div>
 							</div>
-							<div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+							<div className="w-full h-1 bg-border/50 rounded-full overflow-hidden">
 								<div
-									className="h-full bg-primary rounded-full transition-all duration-300"
+									className="h-full bg-foreground/70 rounded-full transition-all duration-300"
 									style={{ width: `${progress?.percent ?? 0}%` }}
 								/>
 							</div>
@@ -154,90 +159,101 @@ export function CloneModal({
 					</div>
 				)}
 
-				<div className="p-4 border-b border-border space-y-3">
+				<div className="shrink-0 px-5 pb-3 space-y-2">
 					<div className="relative">
-						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
 						<input
 							type="text"
-							placeholder="Search your repositories..."
+							placeholder="Search repositories..."
 							value={searchQuery}
 							onChange={(e) => handleSearch(e.target.value)}
 							disabled={cloning}
-							className="w-full h-10 pl-9 pr-4 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition-colors text-sm disabled:opacity-50"
+							autoFocus
+							className="w-full h-9 pl-8 pr-3 bg-muted/30 border border-border/50 rounded-lg text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-ring/50 transition-colors text-xs disabled:opacity-50"
 						/>
 					</div>
 					<div className="flex gap-2">
 						<input
 							type="text"
-							placeholder="Or paste a clone URL (https://github.com/...)"
+							placeholder="Or paste a clone URL..."
 							value={cloneUrl}
 							onChange={(e) => setCloneUrl(e.target.value)}
 							disabled={cloning}
 							onKeyDown={(e) => {
 								if (e.key === 'Enter') handleCloneUrl();
 							}}
-							className="flex-1 h-10 px-3 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition-colors text-sm font-mono disabled:opacity-50"
+							className="flex-1 h-9 px-3 bg-muted/30 border border-border/50 rounded-lg text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-ring/50 transition-colors text-xs font-mono disabled:opacity-50"
 						/>
 						<button
 							type="button"
 							onClick={handleCloneUrl}
 							disabled={!cloneUrl.trim() || cloning}
-							className="px-4 h-10 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+							className="px-3.5 h-9 bg-foreground text-background rounded-lg text-xs font-medium hover:opacity-90 transition-colors disabled:opacity-50"
 						>
 							Clone
 						</button>
 					</div>
 				</div>
 
+				<div className="mx-5 border-t border-border/30" />
+
 				<div
 					ref={listRef}
-					className={`flex-1 overflow-y-auto p-4 ${cloning ? 'pointer-events-none opacity-60' : ''}`}
+					className={`flex-1 overflow-y-auto scrollbar-hide ${cloning ? 'pointer-events-none opacity-60' : ''}`}
 					onScroll={handleScroll}
 				>
 					{repos.length === 0 ? (
-						<div className="text-center py-12 text-muted-foreground">
-							{searchQuery
-								? 'No repositories found'
-								: 'Loading repositories...'}
+						<div className="flex flex-col items-center justify-center py-16 text-center">
+							<div className="w-10 h-10 rounded-lg bg-muted/40 flex items-center justify-center mb-3">
+								<Package className="w-4 h-4 text-muted-foreground/40" />
+							</div>
+							<p className="text-xs text-muted-foreground/60">
+								{searchQuery
+									? 'No repositories found'
+									: 'Loading repositories...'}
+							</p>
 						</div>
 					) : (
-						<div className="space-y-2">
+						<div className="py-1.5 px-1.5">
 							{repos.map((repo) => {
 								const isThisCloning = cloning && cloningRepo === repo.full_name;
 								return (
-									<div
+									<button
+										type="button"
 										key={repo.id}
-										className={`flex items-center justify-between p-4 bg-card border rounded-xl transition-colors ${
+										onClick={() => onClone(repo.clone_url, repo.name)}
+										disabled={cloning}
+										className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-colors text-left group ${
 											isThisCloning
-												? 'border-primary/40 bg-primary/5'
-												: 'border-border hover:border-ring'
+												? 'bg-muted/50'
+												: 'hover:bg-muted/30'
 										}`}
 									>
+										<div className="w-7 h-7 rounded-md bg-muted/50 group-hover:bg-muted flex items-center justify-center shrink-0 transition-colors">
+											{repo.private ? (
+												<Lock className="w-3 h-3 text-muted-foreground/60" />
+											) : (
+												<Package className="w-3 h-3 text-muted-foreground/60" />
+											)}
+										</div>
 										<div className="flex-1 min-w-0">
-											<div className="flex items-center gap-2 mb-1">
-												<span>{repo.private ? '🔒' : '📦'}</span>
-												<span className="font-medium text-foreground truncate">
-													{repo.full_name}
-												</span>
+											<div className="text-xs font-medium text-foreground truncate">
+												{repo.full_name}
 											</div>
 											{repo.description && (
-												<div className="text-sm text-muted-foreground truncate">
+												<div className="text-[11px] text-muted-foreground/50 truncate mt-0.5">
 													{repo.description}
 												</div>
 											)}
 										</div>
-										<button
-											type="button"
-											onClick={() => onClone(repo.clone_url, repo.name)}
-											disabled={cloning}
-											className="ml-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-										>
-											{isThisCloning && (
-												<div className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+										<div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+											{isThisCloning ? (
+												<div className="w-3.5 h-3.5 border-2 border-muted-foreground/20 border-t-foreground rounded-full animate-spin" />
+											) : (
+												<Download className="w-3.5 h-3.5 text-muted-foreground/50" />
 											)}
-											{isThisCloning ? 'Cloning...' : 'Clone'}
-										</button>
-									</div>
+										</div>
+									</button>
 								);
 							})}
 						</div>
