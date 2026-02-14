@@ -72,5 +72,7 @@ export { createOpencodeModel } from './opencode-client.ts';
 export type { OpencodeProviderConfig } from './opencode-client.ts';
 export { createMoonshotModel } from './moonshot-client.ts';
 export type { MoonshotProviderConfig } from './moonshot-client.ts';
+export { createMinimaxModel } from './minimax-client.ts';
+export type { MinimaxProviderConfig } from './minimax-client.ts';
 export { createCopilotFetch, createCopilotModel } from './copilot-client.ts';
 export type { CopilotOAuthConfig } from './copilot-client.ts';

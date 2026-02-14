@@ -124,6 +124,7 @@ export type UnderlyingProviderKey =
 	| 'openai'
 	| 'google'
 	| 'moonshot'
+	| 'minimax'
 	| 'glm'
 	| 'openai-compatible'
 	| null;
@@ -136,6 +137,7 @@ export function getUnderlyingProviderKey(
 	if (provider === 'openai') return 'openai';
 	if (provider === 'google') return 'google';
 	if (provider === 'moonshot') return 'moonshot';
+	if (provider === 'minimax') return 'minimax';
 	if (provider === 'copilot') return 'openai';
 
 	if (provider === 'zai' || provider === 'zai-coding') return 'glm';
@@ -158,6 +160,7 @@ export function getModelFamily(
 	if (provider === 'openai') return 'openai';
 	if (provider === 'google') return 'google';
 	if (provider === 'moonshot') return 'moonshot';
+	if (provider === 'minimax') return 'minimax';
 	if (provider === 'copilot') return 'openai';
 	if (provider === 'zai' || provider === 'zai-coding') return 'glm';
 
@@ -190,6 +193,9 @@ export function getModelFamily(
 			lowerModel.startsWith('thudm/')
 		) {
 			return 'glm';
+		}
+		if (lowerModel.includes('minimax')) {
+			return 'minimax';
 		}
 	}
 

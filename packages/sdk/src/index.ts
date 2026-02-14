@@ -108,6 +108,8 @@ export { createOpencodeModel } from './providers/src/index.ts';
 export type { OpencodeProviderConfig } from './providers/src/index.ts';
 export { createMoonshotModel } from './providers/src/index.ts';
 export type { MoonshotProviderConfig } from './providers/src/index.ts';
+export { createMinimaxModel } from './providers/src/index.ts';
+export type { MinimaxProviderConfig } from './providers/src/index.ts';
 export {
 	createCopilotFetch,
 	createCopilotModel,

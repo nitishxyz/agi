@@ -10,6 +10,7 @@ import {
 	xaiLogo,
 	zaiLogo,
 	setuLogo,
+	minimaxLogo,
 	opencodeLogo,
 	copilotLogo,
 } from '../../assets/provider-logos';
@@ -25,6 +26,7 @@ const providerLogos: Record<string, string> = {
 	zai: zaiLogo,
 	'zai-coding': zaiLogo,
 	setu: setuLogo,
+	minimax: minimaxLogo,
 	opencode: opencodeLogo,
 	copilot: copilotLogo,
 };

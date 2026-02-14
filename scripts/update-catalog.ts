@@ -62,6 +62,7 @@ function pickProviders(
 		zai: createEmptyEntry('zai'),
 		'zai-coding': createEmptyEntry('zai-coding'),
 		moonshot: createEmptyEntry('moonshot'),
+		minimax: createEmptyEntry('minimax'),
 		copilot: createEmptyEntry('copilot'),
 	};
 	for (const providerKey of Object.keys(feed)) {
@@ -75,6 +76,9 @@ function pickProviders(
 		if (providerKey === 'github-copilot') {
 			targetKey = 'copilot';
 		}
+		if (providerKey === 'minimax') {
+			targetKey = 'minimax';
+		}
 		if (
 			![
 				'openai',
@@ -86,6 +90,7 @@ function pickProviders(
 				'zai-coding-plan',
 				'moonshotai',
 				'github-copilot',
+				'minimax',
 			].includes(providerKey)
 		)
 			continue;

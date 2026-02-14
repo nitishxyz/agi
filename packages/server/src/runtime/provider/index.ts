@@ -7,6 +7,7 @@ import { resolveSetuModel, type ResolveSetuModelOptions } from './setu.ts';
 import { getZaiInstance, getZaiCodingInstance } from './zai.ts';
 import { resolveOpencodeModel } from './opencode.ts';
 import { getMoonshotInstance } from './moonshot.ts';
+import { getMinimaxInstance } from './minimax.ts';
 import { resolveCopilotModel } from './copilot.ts';
 
 export type ProviderName = ProviderId;
@@ -55,6 +56,9 @@ export async function resolveModel(
 	}
 	if (provider === 'moonshot') {
 		return getMoonshotInstance(cfg, model);
+	}
+	if (provider === 'minimax') {
+		return getMinimaxInstance(cfg, model);
 	}
 	throw new Error(`Unsupported provider: ${provider}`);
 }

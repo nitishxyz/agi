@@ -11,7 +11,8 @@ export type ProviderId =
 	| 'setu'
 	| 'zai'
 	| 'zai-coding'
-	| 'moonshot';
+	| 'moonshot'
+	| 'minimax';
 
 /**
  * Provider family for prompt selection
@@ -21,6 +22,7 @@ export type ProviderFamily =
 	| 'anthropic'
 	| 'google'
 	| 'moonshot'
+	| 'minimax'
 	| 'openai-compatible';
 
 export type ModelProviderBinding = {

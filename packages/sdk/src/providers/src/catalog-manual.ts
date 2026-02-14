@@ -36,6 +36,12 @@ const isAllowedZaiModel = (id: string): boolean => {
 	return false;
 };
 
+const isAllowedMinimaxModel = (id: string): boolean => {
+	if (id === 'MiniMax-M2.5') return true;
+	if (id === 'MiniMax-M2.1') return true;
+	return false;
+};
+
 const SETU_SOURCES: Array<{
 	id: ProviderId;
 	npm: string;
@@ -66,6 +72,11 @@ const SETU_SOURCES: Array<{
 		npm: '@ai-sdk/openai-compatible',
 		family: 'openai-compatible',
 	},
+	{
+		id: 'minimax',
+		npm: '@ai-sdk/anthropic',
+		family: 'minimax',
+	},
 ];
 
 function cloneModel(model: ModelInfo): ModelInfo {
@@ -95,6 +106,7 @@ function buildSetuEntry(base: CatalogMap): ProviderCatalogEntry | null {
 			if (id === 'anthropic') return isAllowedAnthropicModel(model.id);
 			if (id === 'google') return isAllowedGoogleModel(model.id);
 			if (id === 'zai') return isAllowedZaiModel(model.id);
+			if (id === 'minimax') return isAllowedMinimaxModel(model.id);
 			return true;
 		});
 		return sourceModels.map((model) => {

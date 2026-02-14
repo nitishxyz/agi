@@ -11,6 +11,7 @@ const ENV_VARS: Record<ProviderId, string> = {
 	zai: 'ZAI_API_KEY',
 	'zai-coding': 'ZAI_CODING_API_KEY',
 	moonshot: 'MOONSHOT_API_KEY',
+	minimax: 'MINIMAX_API_KEY',
 };
 
 export function providerEnvVar(provider: ProviderId): string {
