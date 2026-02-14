@@ -12,3 +12,4 @@ export { registerUpgradeCommand } from './upgrade.ts';
 export { registerSetuCommand } from './setu.ts';
 export { registerShareCommand } from './share.ts';
 export { registerMCPCommand } from './mcp.ts';
+export { registerWebCommand } from './web.ts';

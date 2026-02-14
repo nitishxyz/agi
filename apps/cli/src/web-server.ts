@@ -31,7 +31,7 @@ function getMimeType(path: string): string {
  */
 export function createWebServer(
 	port: number,
-	agiServerPort: number,
+	agiServerPortOrUrl: number | string,
 	network = false,
 ): { port: number; server: Server } {
 	// Build asset map - maps URL paths to file paths
@@ -58,12 +58,14 @@ export function createWebServer(
 
 	// Get the appropriate server URL for network mode
 	const getServerUrl = (requestHost?: string) => {
-		if (network && requestHost) {
-			// Extract hostname from request (e.g., "192.168.1.100:3457" -> "192.168.1.100")
-			const hostname = requestHost.split(':')[0];
-			return `http://${hostname}:${agiServerPort}`;
+		if (typeof agiServerPortOrUrl === 'string') {
+			return agiServerPortOrUrl;
 		}
-		return `http://localhost:${agiServerPort}`;
+		if (network && requestHost) {
+			const hostname = requestHost.split(':')[0];
+			return `http://${hostname}:${agiServerPortOrUrl}`;
+		}
+		return `http://localhost:${agiServerPortOrUrl}`;
 	};
 
 	const server = Bun.serve({

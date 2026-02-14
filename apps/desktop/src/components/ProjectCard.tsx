@@ -22,14 +22,14 @@ export function ProjectCard({
 		>
 			<div className="flex-1 flex items-center gap-3 text-left">
 				<div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-					<span className="text-lg">📂</span>
+					<span className="text-lg">{project.remoteUrl ? '🔗' : '📂'}</span>
 				</div>
 				<div className="flex-1 min-w-0">
 					<div className="font-medium text-foreground truncate">
 						{project.name}
 					</div>
 					<div className="text-xs text-muted-foreground truncate">
-						{project.path}
+						{project.remoteUrl || project.path}
 					</div>
 				</div>
 				<div className="text-xs text-muted-foreground">

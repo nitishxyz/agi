@@ -66,6 +66,40 @@ export function useServer() {
 		[],
 	);
 
+	const startWebServer = useCallback(
+		async (apiUrl: string, name: string, port?: number) => {
+			if (startingRef.current) return null;
+			startingRef.current = true;
+
+			try {
+				setLoading(true);
+				setError(null);
+
+				console.log('[otto] Starting web server for remote API:', apiUrl);
+				const info = await tauriBridge.startWebServer(apiUrl, name, port);
+				console.log('[otto] Web server info returned:', info);
+
+				const ready = await waitForServer(info.port);
+				if (ready) {
+					setServer(info);
+					serverRef.current = info;
+					return info;
+				} else {
+					throw new Error('Web server started but not responding after 15s');
+				}
+			} catch (err) {
+				const message =
+					err instanceof Error ? err.message : 'Failed to start web server';
+				setError(message);
+				return null;
+			} finally {
+				setLoading(false);
+				startingRef.current = false;
+			}
+		},
+		[],
+	);
+
 	const stopServer = useCallback(async () => {
 		const currentServer = serverRef.current;
 		if (!currentServer) return;
@@ -89,6 +123,7 @@ export function useServer() {
 		error,
 		isRunning: !!server,
 		startServer,
+		startWebServer,
 		stopServer,
 	};
 }

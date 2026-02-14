@@ -158,6 +158,7 @@ pub fn run() {
             commands::project::remove_recent_project,
             commands::project::toggle_project_pinned,
             commands::server::start_server,
+            commands::server::start_web_server,
             commands::server::stop_server,
             commands::server::stop_all_servers,
             commands::server::list_servers,

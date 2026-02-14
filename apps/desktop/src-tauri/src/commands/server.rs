@@ -111,13 +111,11 @@ fn find_available_port(tracked_ports: &[u16]) -> u16 {
         let port = base + (offset * 2);
         if port > 60000 { break; }
         
-        // Skip ports we're already tracking
         if tracked_ports.contains(&port) {
             eprintln!("[otto] Port {} is tracked, skipping", port);
             continue;
         }
         
-        // Check if port is actually available (both API and web ports)
         let api_available = TcpListener::bind(("127.0.0.1", port)).is_ok();
         let web_available = TcpListener::bind(("127.0.0.1", port + 1)).is_ok();
         
@@ -129,6 +127,25 @@ fn find_available_port(tracked_ports: &[u16]) -> u16 {
         }
     }
     19100
+}
+
+fn find_single_available_port(tracked_ports: &[u16]) -> u16 {
+    let base = 19500u16;
+    
+    for offset in 0..500u16 {
+        let port = base + offset;
+        if port > 60000 { break; }
+        
+        if tracked_ports.contains(&port) {
+            continue;
+        }
+        
+        if TcpListener::bind(("127.0.0.1", port)).is_ok() {
+            eprintln!("[otto] Found available web port: {}", port);
+            return port;
+        }
+    }
+    19500
 }
 
 #[tauri::command]
@@ -196,6 +213,76 @@ pub async fn start_server(
     };
     
     eprintln!("[otto] Server started with pid: {}, url: {}", info.pid, info.url);
+
+    state
+        .servers
+        .lock()
+        .unwrap()
+        .insert(child.id(), (child, info.clone()));
+
+    Ok(info)
+}
+
+#[tauri::command]
+pub async fn start_web_server(
+    api_url: String,
+    name: String,
+    port: Option<u16>,
+    state: State<'_, ServerState>,
+    app: tauri::AppHandle,
+) -> Result<ServerInfo, String> {
+    let binary = get_binary_path(&app)?;
+
+    let tracked_ports: Vec<u16> = {
+        let servers = state.servers.lock().unwrap();
+        servers.values().map(|(_, info)| info.port).collect()
+    };
+
+    let actual_port = port.unwrap_or_else(|| find_single_available_port(&tracked_ports));
+    let port_arg = actual_port.to_string();
+
+    eprintln!("[otto] Starting web server for remote API: {} on port: {}", api_url, actual_port);
+
+    let log_path = format!("/tmp/otto-web-{}.log", actual_port);
+    let log_file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(&log_path)
+        .ok();
+
+    let stdout = log_file.as_ref().map(|f| Stdio::from(f.try_clone().unwrap())).unwrap_or(Stdio::null());
+    let stderr = log_file.map(|f| Stdio::from(f)).unwrap_or(Stdio::null());
+
+    let otto_bin_dir = dirs::config_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
+        .join("otto")
+        .join("bin");
+    let current_path = std::env::var("PATH").unwrap_or_default();
+    let augmented_path = format!(
+        "{}:/opt/homebrew/bin:/usr/local/bin:{}",
+        otto_bin_dir.display(),
+        current_path
+    );
+
+    let child = Command::new(&binary)
+        .args(["web", "--api", &api_url, "--port", &port_arg, "--no-open"])
+        .env("PATH", &augmented_path)
+        .env("TERM", "xterm-256color")
+        .stdout(stdout)
+        .stderr(stderr)
+        .spawn()
+        .map_err(|e| format!("Failed to start web server: {}", e))?;
+
+    let info = ServerInfo {
+        pid: child.id(),
+        port: actual_port,
+        web_port: actual_port,
+        url: format!("http://localhost:{}", actual_port),
+        project_path: name,
+    };
+
+    eprintln!("[otto] Web server started with pid: {}, url: {}", info.pid, info.url);
 
     state
         .servers

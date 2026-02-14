@@ -37,6 +37,9 @@ export function ProjectPicker({
 	} = useGitHub();
 	const [showCloneModal, setShowCloneModal] = useState(false);
 	const [showOAuthModal, setShowOAuthModal] = useState(false);
+	const [showConnectModal, setShowConnectModal] = useState(false);
+	const [connectUrl, setConnectUrl] = useState('');
+	const [connectName, setConnectName] = useState('');
 	const [cloning, setCloning] = useState(false);
 	const [cloningRepo, setCloningRepo] = useState<string | null>(null);
 	const platform = usePlatform();
@@ -69,6 +72,28 @@ export function ProjectPicker({
 			setShowCloneModal(true);
 			pageRef.current = 1;
 			await loadRepos(1);
+		}
+	};
+
+	const handleConnect = () => {
+		if (!connectUrl.trim()) return;
+		try {
+			const url = new URL(connectUrl.trim());
+			const name = connectName.trim() || url.hostname;
+			const project: Project = {
+				path: `remote://${url.host}`,
+				name,
+				lastOpened: new Date().toISOString(),
+				pinned: false,
+				remoteUrl: connectUrl.trim(),
+			};
+			tauriBridge.saveRecentProject(project).catch(() => {});
+			setShowConnectModal(false);
+			setConnectUrl('');
+			setConnectName('');
+			onSelectProject(project);
+		} catch {
+			alert('Invalid URL. Please enter a valid API server URL.');
 		}
 	};
 
@@ -241,7 +266,7 @@ export function ProjectPicker({
 						)}
 					</div>
 
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+				<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
 						<button
 							type="button"
 							onClick={handleOpenFolder}
@@ -283,6 +308,22 @@ export function ProjectPicker({
 								</div>
 							</div>
 						</button>
+
+					<button
+						type="button"
+						onClick={() => setShowConnectModal(true)}
+						className="flex items-center gap-4 p-5 bg-card border border-border hover:border-ring rounded-xl transition-colors text-left"
+					>
+						<div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-2xl">
+							🔗
+						</div>
+						<div>
+							<div className="font-medium text-foreground">Connect to Server</div>
+							<div className="text-sm text-muted-foreground">
+								Connect to a remote API server
+							</div>
+						</div>
+					</button>
 					</div>
 
 					<div className="space-y-8">
@@ -357,6 +398,66 @@ export function ProjectPicker({
 					onSearch={handleSearch}
 					onLoadMore={handleLoadMore}
 				/>
+			)}
+
+			{showConnectModal && (
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+					<div className="bg-card border border-border rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
+						<h2 className="text-lg font-semibold text-foreground mb-4">
+							Connect to Server
+						</h2>
+						<div className="space-y-4">
+							<div>
+								<label className="block text-sm font-medium text-foreground mb-1.5">
+									API Server URL
+								</label>
+								<input
+									type="url"
+									value={connectUrl}
+									onChange={(e) => setConnectUrl(e.target.value)}
+									placeholder="http://192.168.1.50:9100"
+									className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+									autoFocus
+									onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-foreground mb-1.5">
+									Name (optional)
+								</label>
+								<input
+									type="text"
+									value={connectName}
+									onChange={(e) => setConnectName(e.target.value)}
+									placeholder="My Remote Server"
+									className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+									onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
+								/>
+							</div>
+							<div className="flex justify-end gap-3 pt-2">
+								<button
+									type="button"
+									onClick={() => {
+										setShowConnectModal(false);
+										setConnectUrl('');
+										setConnectName('');
+									}}
+									className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+								>
+									Cancel
+								</button>
+								<button
+									type="button"
+									onClick={handleConnect}
+									disabled={!connectUrl.trim()}
+									className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+								>
+									Connect
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
 			)}
 		</div>
 	);

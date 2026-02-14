@@ -20,7 +20,7 @@ export function Workspace({
 	project: Project;
 	onBack: () => void;
 }) {
-	const { server, loading, error, startServer, stopServer } = useServer();
+	const { server, loading, error, startServer, startWebServer, stopServer } = useServer();
 	const startedRef = useRef(false);
 	const iframeRef = useRef<HTMLIFrameElement>(null);
 	const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -44,6 +44,8 @@ export function Workspace({
 		return `${server.url}?_t=${Date.now()}&_pid=${server.pid}&_project=${encodeURIComponent(project.path)}`;
 	}, [server, project.path]);
 
+	const isRemote = !!project.remoteUrl;
+
 	const handleBack = async () => {
 		await stopServer();
 		onBack();
@@ -52,13 +54,22 @@ export function Workspace({
 	useEffect(() => {
 		if (startedRef.current) return;
 		startedRef.current = true;
-		console.log(
-			'[otto] Workspace mounting for project:',
-			project.path,
-			project.name,
-		);
-		startServer(project.path);
-	}, [project.path, project.name, startServer]);
+		if (isRemote && project.remoteUrl) {
+			console.log(
+				'[otto] Workspace mounting for remote API:',
+				project.remoteUrl,
+				project.name,
+			);
+			startWebServer(project.remoteUrl, project.name);
+		} else {
+			console.log(
+				'[otto] Workspace mounting for project:',
+				project.path,
+				project.name,
+			);
+			startServer(project.path);
+		}
+	}, [project.path, project.name, project.remoteUrl, isRemote, startServer, startWebServer]);
 
 	useEffect(() => {
 		if (!server) setIframeLoaded(false);
@@ -168,6 +179,12 @@ export function Workspace({
 						)}
 					</div>
 				)}
+			{isRemote && (
+				<div className="flex items-center gap-1.5 text-xs">
+					<span className="w-2 h-2 rounded-full bg-blue-500" />
+					<span className="text-muted-foreground">Remote</span>
+				</div>
+			)}
 				<button
 					type="button"
 					onClick={toggleTheme}
@@ -204,26 +221,30 @@ export function Workspace({
 				{platform === 'linux' && <WindowControls />}
 			</div>
 
-			<div className="flex-1 relative flex items-center justify-center bg-background">
-				{(loading || (server && !iframeLoaded)) && (
-					<SetuLoader label={loading ? 'Starting server...' : 'Loading...'} />
-				)}
-				{error && !loading && (
-					<div className="text-center max-w-md">
-						<div className="text-destructive mb-4">{error}</div>
-						<button
-							type="button"
-							onClick={() => {
-								startedRef.current = false;
+		<div className="flex-1 relative flex items-center justify-center bg-background">
+			{(loading || (server && !iframeLoaded)) && (
+				<SetuLoader label={loading ? (isRemote ? 'Connecting to remote server...' : 'Starting server...') : 'Loading...'} />
+			)}
+			{error && !loading && (
+				<div className="text-center max-w-md">
+					<div className="text-destructive mb-4">{error}</div>
+					<button
+						type="button"
+						onClick={() => {
+							startedRef.current = false;
+							if (isRemote && project.remoteUrl) {
+								startWebServer(project.remoteUrl, project.name);
+							} else {
 								startServer(project.path);
-							}}
-							className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-						>
-							Retry
-						</button>
-					</div>
-				)}
-				{server && (
+							}
+						}}
+						className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+					>
+						Retry
+					</button>
+				</div>
+			)}
+			{server && iframeSrc && (
 					<iframe
 						ref={iframeRef}
 						src={iframeSrc ?? ''}

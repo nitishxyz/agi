@@ -16,6 +16,7 @@ import {
 	registerSetuCommand,
 	registerShareCommand,
 	registerMCPCommand,
+	registerWebCommand,
 } from './commands/index.ts';
 import { runDiscoveredCommand } from './custom-commands.ts';
 import { handleServe } from './commands/serve.ts';
@@ -62,6 +63,7 @@ export function createCli(version: string): Command {
 	registerSetuCommand(program);
 	registerShareCommand(program);
 	registerMCPCommand(program);
+	registerWebCommand(program, version);
 
 	return program;
 }
