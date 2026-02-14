@@ -41,6 +41,10 @@ export const moonshotLogo = `<svg width="24" height="24" viewBox="0 0 24 24" fil
 <path d="M12 4C8.5 4 7 8 7 12C7 16 8.5 20 12 20" stroke="currentColor" stroke-width="2"/>
 </svg>`;
 
+export const minimaxLogo = `<svg width="24" height="24" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+<path d="M6 32V12L13 22L20 12V32H17V20L13 26L9 20V32H6ZM22 32V12L29 22L36 12V32H33V20L29 26L25 20V32H22Z" fill="currentColor"/>
+</svg>`;
+
 export const providerLogos: Record<string, string> = {
 	anthropic: anthropicLogo,
 	openai: openaiLogo,
@@ -52,4 +56,5 @@ export const providerLogos: Record<string, string> = {
 	zai: zaiLogo,
 	'zai-coding': zaiLogo,
 	moonshot: moonshotLogo,
+	minimax: minimaxLogo,
 };
