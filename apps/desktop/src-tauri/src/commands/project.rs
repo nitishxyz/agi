@@ -10,6 +10,8 @@ pub struct Project {
     pub name: String,
     pub last_opened: DateTime<Utc>,
     pub pinned: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remote_url: Option<String>,
 }
 
 fn get_projects_config_path() -> Result<PathBuf, String> {

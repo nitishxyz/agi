@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { Star, X, Link } from 'lucide-react';
 import type { Project } from '../lib/tauri-bridge';
 import { formatTimeAgo } from '../utils/format-time';
 
@@ -14,51 +16,76 @@ export function ProjectCard({
 	onTogglePin: () => void;
 	onRemove: () => void;
 }) {
+	const [hovered, setHovered] = useState(false);
+
 	return (
 		<button
 			type="button"
-			className="group flex items-center gap-3 p-3 bg-card border border-border hover:border-ring rounded-xl transition-colors cursor-pointer w-full text-left"
+			className="group relative flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-150 cursor-pointer w-full text-left hover:bg-muted/50"
 			onClick={onSelect}
+			onMouseEnter={() => setHovered(true)}
+			onMouseLeave={() => setHovered(false)}
 		>
-			<div className="flex-1 flex items-center gap-3 text-left">
-				<div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-					<span className="text-lg">{project.remoteUrl ? '🔗' : '📂'}</span>
+			<div className="w-8 h-8 rounded-md bg-muted/80 flex items-center justify-center flex-shrink-0">
+				{project.remoteUrl ? (
+					<Link className="w-3.5 h-3.5 text-muted-foreground" />
+				) : (
+					<svg
+						className="w-3.5 h-3.5 text-muted-foreground"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="2"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+					>
+						<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+					</svg>
+				)}
+			</div>
+
+			<div className="flex-1 min-w-0">
+				<div className="text-sm font-medium text-foreground truncate">
+					{project.name}
 				</div>
-				<div className="flex-1 min-w-0">
-					<div className="font-medium text-foreground truncate">
-						{project.name}
-					</div>
-					<div className="text-xs text-muted-foreground truncate">
-						{project.remoteUrl || project.path}
-					</div>
-				</div>
-				<div className="text-xs text-muted-foreground">
-					{formatTimeAgo(project.lastOpened)}
+				<div className="text-xs text-muted-foreground/70 truncate">
+					{project.remoteUrl || project.path}
 				</div>
 			</div>
-			<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-				<button
-					type="button"
-					onClick={(e) => {
-						e.stopPropagation();
-						onTogglePin();
-					}}
-					className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-					title={pinned ? 'Unpin' : 'Pin'}
-				>
-					{pinned ? '⭐' : '☆'}
-				</button>
-				<button
-					type="button"
-					onClick={(e) => {
-						e.stopPropagation();
-						onRemove();
-					}}
-					className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-					title="Remove"
-				>
-					✕
-				</button>
+
+			<div className="flex items-center gap-1 flex-shrink-0">
+				{hovered ? (
+					<>
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								onTogglePin();
+							}}
+							className="p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors"
+							title={pinned ? 'Unpin' : 'Pin'}
+						>
+							<Star
+								className={`w-3 h-3 ${pinned ? 'fill-yellow-500 text-yellow-500' : ''}`}
+							/>
+						</button>
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								onRemove();
+							}}
+							className="p-1.5 text-muted-foreground hover:text-destructive rounded-md hover:bg-destructive/10 transition-colors"
+							title="Remove"
+						>
+							<X className="w-3 h-3" />
+						</button>
+					</>
+				) : (
+					<span className="text-[11px] text-muted-foreground/50 tabular-nums">
+						{formatTimeAgo(project.lastOpened)}
+					</span>
+				)}
 			</div>
 		</button>
 	);

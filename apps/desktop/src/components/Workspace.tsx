@@ -133,12 +133,12 @@ export function Workspace({
 						←
 					</button>
 				</div>
-				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-					<span className="font-medium text-foreground truncate">
-						{project.name}
-					</span>
-				</div>
-				<div className="flex-1" />
+			<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+				<span className="font-medium text-foreground truncate text-sm max-w-[40%]">
+					{project.name}
+				</span>
+			</div>
+			<div className="flex-1" />
 				{available &&
 					(downloaded ? (
 						<button
