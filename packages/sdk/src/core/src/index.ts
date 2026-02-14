@@ -30,7 +30,7 @@ export type { ProviderId, ModelInfo } from '../../types/src/index.ts';
 // Tools
 // =======================
 export { discoverProjectTools } from './tools/loader';
-export type { DiscoveredTool } from './tools/loader';
+export type { DiscoveredTool, DiscoverResult } from './tools/loader';
 export { setTerminalManager, getTerminalManager } from './tools/loader';
 
 // Tool error handling utilities

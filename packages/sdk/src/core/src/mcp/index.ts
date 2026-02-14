@@ -14,6 +14,14 @@ export { MCPServerManager } from './server-manager.ts';
 export { convertMCPToolsToAISDK } from './tools.ts';
 
 export {
+	getMCPToolBriefs,
+	buildLoadMCPToolsTool,
+	getMCPToolsRecord,
+	buildMCPToolCatalogDescription,
+	type MCPToolBrief,
+} from './lazy-tools.ts';
+
+export {
 	getMCPManager,
 	initializeMCP,
 	shutdownMCP,

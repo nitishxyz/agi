@@ -16,7 +16,12 @@ import { buildTerminalTool } from './builtin/terminal.ts';
 import type { TerminalManager } from '../terminals/index.ts';
 import { initializeSkills, buildSkillTool } from '../../../skills/index.ts';
 import { getMCPManager } from '../mcp/index.ts';
-import { convertMCPToolsToAISDK } from '../mcp/tools.ts';
+import {
+	getMCPToolBriefs,
+	buildLoadMCPToolsTool,
+	getMCPToolsRecord,
+	type MCPToolBrief,
+} from '../mcp/lazy-tools.ts';
 import fg from 'fast-glob';
 import { dirname, isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -24,6 +29,11 @@ import { promises as fs } from 'node:fs';
 import { spawn as nodeSpawn } from 'node:child_process';
 
 export type DiscoveredTool = { name: string; tool: Tool };
+
+export type DiscoverResult = {
+	tools: DiscoveredTool[];
+	mcpToolsRecord: Record<string, Tool>;
+};
 
 type PluginParameter = {
 	type: 'string' | 'number' | 'boolean';
@@ -108,7 +118,7 @@ export function getTerminalManager(): TerminalManager | null {
 export async function discoverProjectTools(
 	projectRoot: string,
 	globalConfigDir?: string,
-): Promise<DiscoveredTool[]> {
+): Promise<DiscoverResult> {
 	const tools = new Map<string, Tool>();
 	for (const { name, tool } of buildFsTools(projectRoot)) tools.set(name, tool);
 	for (const { name, tool } of buildGitTools(projectRoot))
@@ -148,10 +158,14 @@ export async function discoverProjectTools(
 	tools.set(skillTool.name, skillTool.tool);
 
 	const mcpManager = getMCPManager();
+	let mcpToolsRecord: Record<string, Tool> = {};
+	let mcpBriefs: MCPToolBrief[] = [];
 	if (mcpManager?.started) {
-		const mcpTools = convertMCPToolsToAISDK(mcpManager);
-		for (const { name, tool } of mcpTools) {
-			tools.set(name, tool);
+		mcpBriefs = getMCPToolBriefs(mcpManager);
+		if (mcpBriefs.length > 0) {
+			mcpToolsRecord = getMCPToolsRecord(mcpManager);
+			const loadTool = buildLoadMCPToolsTool(mcpBriefs);
+			tools.set(loadTool.name, loadTool.tool);
 		}
 	}
 
@@ -210,7 +224,10 @@ export async function discoverProjectTools(
 
 	await loadFromBase(globalConfigDir);
 	await loadFromBase(join(projectRoot, '.otto'));
-	return Array.from(tools.entries()).map(([name, tool]) => ({ name, tool }));
+	return {
+		tools: Array.from(tools.entries()).map(([name, tool]) => ({ name, tool })),
+		mcpToolsRecord,
+	};
 }
 
 async function loadPlugin(

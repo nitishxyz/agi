@@ -27,6 +27,11 @@ import { pruneSession } from '../message/compaction.ts';
 import { triggerDeferredTitleGeneration } from '../message/service.ts';
 import { setupRunner } from './runner-setup.ts';
 import {
+	createMCPPrepareStepState,
+	buildPrepareStep,
+} from './mcp-prepare-step.ts';
+import { adaptTools as adaptToolsFn } from '../../tools/adapter.ts';
+import {
 	type ReasoningState,
 	handleReasoningStart,
 	handleReasoningDelta,
@@ -83,13 +88,54 @@ async function runAssistant(opts: RunOpts) {
 		additionalSystemMessages,
 		model,
 		effectiveMaxOutputTokens,
-		toolset,
 		sharedCtx,
 		firstToolTimer,
 		firstToolSeen,
 		providerOptions,
 		isOpenAIOAuth,
+		mcpToolsRecord,
 	} = setup;
+	let { toolset } = setup;
+
+	const hasMCPTools = Object.keys(mcpToolsRecord).length > 0;
+	let prepareStep: ReturnType<typeof buildPrepareStep> | undefined;
+
+	if (hasMCPTools) {
+		const baseToolNames = Object.keys(toolset);
+		const { getAuth: getAuthFn } = await import('@ottocode/sdk');
+		const providerAuth = await getAuthFn(opts.provider, cfg.projectRoot);
+		const adaptedMCP = adaptToolsFn(
+			Object.entries(mcpToolsRecord).map(([name, tool]) => ({ name, tool })),
+			sharedCtx,
+			opts.provider,
+			providerAuth?.type,
+		);
+		toolset = { ...toolset, ...adaptedMCP };
+		const canonicalToRegistration: Record<string, string> = {};
+		for (const canonical of Object.keys(mcpToolsRecord)) {
+			const regKeys = Object.keys(adaptedMCP);
+			const regName = regKeys.find(
+				(k) =>
+					k === canonical ||
+					k.toLowerCase().replace(/_/g, '') ===
+						canonical.toLowerCase().replace(/_/g, ''),
+			);
+			canonicalToRegistration[canonical] = regName ?? canonical;
+		}
+		const loadToolRegName =
+			Object.keys(toolset).find(
+				(k) =>
+					k === 'load_mcp_tools' ||
+					k.toLowerCase().replace(/_/g, '') === 'loadmcptools',
+			) ?? 'load_mcp_tools';
+		const mcpState = createMCPPrepareStepState(
+			mcpToolsRecord,
+			baseToolNames,
+			canonicalToRegistration,
+			loadToolRegName,
+		);
+		prepareStep = buildPrepareStep(mcpState);
+	}
 
 	const isFirstMessage = !history.some((m) => m.role === 'assistant');
 
@@ -213,6 +259,7 @@ async function runAssistant(opts: RunOpts) {
 			...(Object.keys(providerOptions).length > 0 ? { providerOptions } : {}),
 			abortSignal: opts.abortSignal,
 			stopWhen: stopWhenCondition,
+			...(prepareStep ? { prepareStep } : {}),
 			// biome-ignore lint/suspicious/noExplicitAny: AI SDK callback types mismatch
 			onStepFinish: onStepFinish as any,
 			// biome-ignore lint/suspicious/noExplicitAny: AI SDK callback types mismatch

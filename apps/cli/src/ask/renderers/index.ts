@@ -18,6 +18,10 @@ import { renderWebSearchCall, renderWebSearchResult } from './websearch.ts';
 import { renderTerminalCall, renderTerminalResult } from './terminal.ts';
 import { isMcpTool, renderMcpCall, renderMcpResult } from './mcp.ts';
 import {
+	renderLoadMcpToolsCall,
+	renderLoadMcpToolsResult,
+} from './load-mcp-tools.ts';
+import {
 	renderProgressCall,
 	renderTodosCall,
 	renderTodosResult,
@@ -48,6 +52,7 @@ const callRenderers: Record<string, CallRenderer> = {
 	progress_update: renderProgressCall,
 	update_todos: renderTodosCall,
 	finish: renderFinishCall,
+	load_mcp_tools: renderLoadMcpToolsCall,
 };
 
 const resultRenderers: Record<string, ResultRenderer> = {
@@ -68,6 +73,7 @@ const resultRenderers: Record<string, ResultRenderer> = {
 	progress_update: renderGenericResult,
 	update_todos: renderTodosResult,
 	finish: renderFinishResult,
+	load_mcp_tools: renderLoadMcpToolsResult,
 };
 
 export function renderToolCall(ctx: RendererContext): string {

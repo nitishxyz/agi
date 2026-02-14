@@ -8,6 +8,7 @@ import { resolveModel } from '../provider/index.ts';
 import { resolveAgentConfig } from './registry.ts';
 import { composeSystemPrompt } from '../prompt/builder.ts';
 import { discoverProjectTools } from '@ottocode/sdk';
+import type { Tool } from 'ai';
 import { adaptTools } from '../../tools/adapter.ts';
 import { buildDatabaseTools } from '../../tools/database/index.ts';
 import { debugLog, time, isDebugEnabled } from '../debug/index.ts';
@@ -39,6 +40,7 @@ export interface SetupResult {
 	providerOptions: Record<string, unknown>;
 	needsSpoof: boolean;
 	isOpenAIOAuth: boolean;
+	mcpToolsRecord: Record<string, Tool>;
 }
 
 const THINKING_BUDGET = 16000;
@@ -143,7 +145,9 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	}
 
 	const toolsTimer = time('runner:discoverTools');
-	const allTools = await discoverProjectTools(cfg.projectRoot);
+	const discovered = await discoverProjectTools(cfg.projectRoot);
+	const allTools = discovered.tools;
+	const { mcpToolsRecord } = discovered;
 
 	if (opts.agent === 'research') {
 		const currentSession = sessionRows[0];
@@ -151,19 +155,23 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 
 		const dbTools = buildDatabaseTools(cfg.projectRoot, parentSessionId);
 		for (const dt of dbTools) {
-			allTools.push(dt);
+			discovered.tools.push(dt);
 		}
 		debugLog(
 			`[tools] Added ${dbTools.length} database tools for research agent (parent: ${parentSessionId ?? 'none'})`,
 		);
 	}
 
-	toolsTimer.end({ count: allTools.length });
+	toolsTimer.end({
+		count: allTools.length + Object.keys(mcpToolsRecord).length,
+	});
 	const allowedNames = new Set([...(agentCfg.tools || []), 'finish']);
 	const gated = allTools.filter(
-		(tool) => allowedNames.has(tool.name) || tool.name.includes('__'),
+		(tool) => allowedNames.has(tool.name) || tool.name === 'load_mcp_tools',
 	);
-	debugLog(`[tools] ${gated.length} allowed tools (including MCP)`);
+	debugLog(
+		`[tools] ${gated.length} gated tools, ${Object.keys(mcpToolsRecord).length} lazy MCP tools`,
+	);
 
 	debugLog(`[RUNNER] About to create model with provider: ${opts.provider}`);
 	debugLog(`[RUNNER] About to create model ID: ${opts.model}`);
@@ -249,6 +257,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		providerOptions,
 		needsSpoof: oauth.needsSpoof,
 		isOpenAIOAuth: oauth.isOpenAIOAuth,
+		mcpToolsRecord,
 	};
 }
 

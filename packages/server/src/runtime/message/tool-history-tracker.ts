@@ -80,6 +80,9 @@ function describeToolResult(info: ToolResultInfo): TargetDescriptor | null {
 		case 'multiedit':
 			return describeEdit(info);
 		default:
+			if (toolName.includes('__')) {
+				return describeMcpTool(info);
+			}
 			return null;
 	}
 }
@@ -214,4 +217,55 @@ function describeEdit(info: ToolResultInfo): TargetDescriptor | null {
 	const key = `edit:${normalized}`;
 	const summary = `[previous edit] ${normalized}`;
 	return { keys: [key], summary };
+}
+
+function describeMcpTool(info: ToolResultInfo): TargetDescriptor | null {
+	const { toolName } = info;
+	const result = getRecord(info.result);
+	const args = getRecord(info.args);
+
+	const hasImages =
+		result && Array.isArray(result.images) && result.images.length > 0;
+	const resultStr =
+		result && typeof result.result === 'string' ? result.result : null;
+	const estimatedSize = hasImages
+		? estimateBase64Size(result.images as Array<{ data: string }>)
+		: resultStr
+			? resultStr.length
+			: 0;
+
+	if (estimatedSize < 2000 && !hasImages) return null;
+
+	const argsHint = args
+		? Object.entries(args)
+				.slice(0, 3)
+				.map(([k, v]) => {
+					const val =
+						typeof v === 'string'
+							? v.length > 30
+								? `${v.slice(0, 27)}…`
+								: v
+							: JSON.stringify(v);
+					return `${k}=${val}`;
+				})
+				.join(' ')
+		: '';
+
+	const sizeLabel = hasImages
+		? `${(result.images as unknown[]).length} image(s), ~${Math.round(estimatedSize / 1024)}KB`
+		: `~${Math.round(estimatedSize / 1024)}KB`;
+
+	const key = `mcp:${toolName}`;
+	const summary = `[previous MCP call] ${toolName}${argsHint ? ` (${argsHint})` : ''} → ${sizeLabel}`;
+	return { keys: [key], summary };
+}
+
+function estimateBase64Size(images: Array<{ data: string }>): number {
+	let total = 0;
+	for (const img of images) {
+		if (typeof img.data === 'string') {
+			total += Math.floor(img.data.length * 0.75);
+		}
+	}
+	return total;
 }

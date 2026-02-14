@@ -6,3 +6,4 @@ web-dist/
 web-assets.ts
 vendor/
 src/generated/
+.devtools
