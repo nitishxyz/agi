@@ -166,15 +166,18 @@ export class MCPClientWrapper {
 		args: Record<string, unknown>,
 	): Promise<unknown> {
 		const result = await this.client.callTool({ name, arguments: args });
+		const images = extractImages(result.content);
 		if (result.isError) {
 			return {
 				ok: false,
 				error: formatContent(result.content),
+				...(images.length > 0 && { images }),
 			};
 		}
 		return {
 			ok: true,
 			result: formatContent(result.content),
+			...(images.length > 0 && { images }),
 		};
 	}
 
@@ -218,12 +221,34 @@ function formatContent(content: unknown): string {
 		if (item && typeof item === 'object' && 'text' in item) {
 			parts.push(String(item.text));
 		} else if (item && typeof item === 'object' && 'data' in item) {
-			parts.push(
-				`[binary data: ${(item as { mimeType?: string }).mimeType ?? 'unknown'}]`,
-			);
+			const mimeType = (item as { mimeType?: string }).mimeType ?? 'unknown';
+			if (mimeType.startsWith('image/')) {
+				parts.push(`[image: ${mimeType}]`);
+			} else {
+				parts.push(`[binary data: ${mimeType}]`);
+			}
 		} else {
 			parts.push(JSON.stringify(item));
 		}
 	}
 	return parts.join('\n');
+}
+
+function extractImages(
+	content: unknown,
+): Array<{ data: string; mimeType: string }> {
+	if (!Array.isArray(content)) return [];
+	const images: Array<{ data: string; mimeType: string }> = [];
+	for (const item of content) {
+		if (item && typeof item === 'object' && 'data' in item) {
+			const mimeType = (item as { mimeType?: string }).mimeType ?? 'unknown';
+			if (mimeType.startsWith('image/')) {
+				images.push({
+					data: String((item as { data: unknown }).data),
+					mimeType,
+				});
+			}
+		}
+	}
+	return images;
 }

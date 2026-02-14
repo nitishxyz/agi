@@ -108,6 +108,7 @@ export interface ToolResultData {
 		}>;
 	}>;
 	results?: unknown[]; // for WebSearchRenderer
+	images?: Array<{ data: string; mimeType: string }>; // for MCP tool image responses
 }
 
 export interface ContentJson {

@@ -1,6 +1,14 @@
 import { tool, type Tool } from 'ai';
+import type { ToolResultOutput } from '@ai-sdk/provider-utils';
 import { z } from 'zod/v3';
 import type { MCPServerManager } from './server-manager.ts';
+
+type MCPToolResult = {
+	ok: boolean;
+	result?: string;
+	error?: string;
+	images?: Array<{ data: string; mimeType: string }>;
+};
 
 export function convertMCPToolsToAISDK(
 	manager: MCPServerManager,
@@ -16,13 +24,38 @@ export function convertMCPToolsToAISDK(
 			) as z.ZodObject<z.ZodRawShape>,
 			async execute(args: Record<string, unknown>) {
 				try {
-					return await manager.callTool(name, args);
+					return (await manager.callTool(name, args)) as MCPToolResult;
 				} catch (err) {
 					return {
 						ok: false,
 						error: err instanceof Error ? err.message : String(err),
-					};
+					} satisfies MCPToolResult;
 				}
+			},
+			toModelOutput({ output }): ToolResultOutput {
+				const result = output as MCPToolResult;
+				if (result.images && result.images.length > 0) {
+					const parts: Array<
+						| { type: 'text'; text: string }
+						| { type: 'image-data'; data: string; mediaType: string }
+					> = [];
+					const text = result.ok ? result.result : result.error;
+					if (text) {
+						parts.push({ type: 'text', text });
+					}
+					for (const img of result.images) {
+						parts.push({
+							type: 'image-data',
+							data: img.data,
+							mediaType: img.mimeType,
+						});
+					}
+					return { type: 'content', value: parts } as ToolResultOutput;
+				}
+				return {
+					type: 'json',
+					value: result as unknown as import('@ai-sdk/provider').JSONValue,
+				};
 			},
 		}),
 	}));

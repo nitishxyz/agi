@@ -7,6 +7,7 @@ import {
 import type { GenericRendererProps } from './types';
 import { formatDuration } from './utils';
 import { ToolErrorDisplay } from './ToolErrorDisplay';
+import { ImagePreview } from './shared';
 
 export function GenericRenderer({
 	toolName,
@@ -18,7 +19,9 @@ export function GenericRenderer({
 }: GenericRendererProps) {
 	const result = contentJson.result;
 	const timeStr = formatDuration(toolDurationMs);
-	const hasResult = result && Object.keys(result).length > 0;
+	const images = Array.isArray(result?.images) ? result.images as Array<{ data: string; mimeType: string }> : [];
+	const hasImages = images.length > 0;
+	const hasResult = result && (Object.keys(result).length > 0 || hasImages);
 	const syntaxTheme = document?.documentElement.classList.contains('dark')
 		? vscDarkPlus
 		: prism;
@@ -81,7 +84,10 @@ export function GenericRenderer({
 				<ToolErrorDisplay error={errorMessage} stack={errorStack} showStack />
 			)}
 			{isExpanded && !hasError && hasResult && (
-				<div className="mt-2 ml-5 bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto max-w-full">
+			<div className="mt-2 ml-5">
+				{hasImages && <ImagePreview images={images} />}
+				{!hasImages && (
+				<div className="bg-card/60 border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto max-w-full">
 					<div className="overflow-x-auto max-w-full">
 						<SyntaxHighlighter
 							language="json"
@@ -100,6 +106,8 @@ export function GenericRenderer({
 							{JSON.stringify(result, null, 2)}
 						</SyntaxHighlighter>
 					</div>
+				</div>
+				)}
 				</div>
 			)}
 		</div>

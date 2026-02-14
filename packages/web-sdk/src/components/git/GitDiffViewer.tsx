@@ -4,6 +4,16 @@ import {
 	vscDarkPlus,
 } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { GitDiffResponse } from '../../types/api';
+import { getRuntimeApiBaseUrl } from '../../lib/config';
+
+const IMAGE_EXTENSIONS = new Set([
+	'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp', 'avif',
+]);
+
+function isImageFile(filePath: string): boolean {
+	const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+	return IMAGE_EXTENSIONS.has(ext);
+}
 
 interface GitDiffViewerProps {
 	diff: GitDiffResponse;
@@ -137,6 +147,11 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 
 	// Handle binary files
 	if (diff.isBinary) {
+		const isImage = isImageFile(diff.file);
+		const imageUrl = isImage
+			? `${getRuntimeApiBaseUrl()}/v1/files/raw?path=${encodeURIComponent(diff.file)}`
+			: null;
+
 		return (
 			<div className="flex flex-col h-full bg-background">
 				{/* Header with just filename */}
@@ -152,14 +167,23 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 					</div>
 				</div>
 
-				{/* Binary file message */}
-				<div className="flex-1 flex items-center justify-center">
-					<div className="p-4 text-center">
-						<p className="text-sm text-muted-foreground">
-							Binary file - cannot display diff
-						</p>
+				{imageUrl ? (
+					<div className="flex-1 flex items-center justify-center p-4 overflow-auto">
+						<img
+							src={imageUrl}
+							alt={fileName}
+							className="max-w-full max-h-[60vh] object-contain rounded border border-border"
+						/>
 					</div>
-				</div>
+				) : (
+					<div className="flex-1 flex items-center justify-center">
+						<div className="p-4 text-center">
+							<p className="text-sm text-muted-foreground">
+								Binary file - cannot display diff
+							</p>
+						</div>
+					</div>
+				)}
 			</div>
 		);
 	}

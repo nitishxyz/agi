@@ -346,4 +346,45 @@ export function registerFilesRoutes(app: Hono) {
 			return c.json({ error: serializeError(err) }, 500);
 		}
 	});
+
+	app.get('/v1/files/raw', async (c) => {
+		try {
+			const projectRoot = c.req.query('project') || process.cwd();
+			const filePath = c.req.query('path');
+
+			if (!filePath) {
+				return c.json({ error: 'Missing required query parameter: path' }, 400);
+			}
+
+			const absPath = join(projectRoot, filePath);
+			if (!absPath.startsWith(projectRoot)) {
+				return c.json({ error: 'Path traversal not allowed' }, 403);
+			}
+
+			const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+			const mimeTypes: Record<string, string> = {
+				png: 'image/png',
+				jpg: 'image/jpeg',
+				jpeg: 'image/jpeg',
+				gif: 'image/gif',
+				svg: 'image/svg+xml',
+				webp: 'image/webp',
+				ico: 'image/x-icon',
+				bmp: 'image/bmp',
+				avif: 'image/avif',
+			};
+			const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+			const data = await readFile(absPath);
+			return new Response(data, {
+				headers: {
+					'Content-Type': contentType,
+					'Cache-Control': 'no-cache',
+				},
+			});
+		} catch (err) {
+			logger.error('Files raw route error:', err);
+			return c.json({ error: serializeError(err) }, 500);
+		}
+	});
 }
