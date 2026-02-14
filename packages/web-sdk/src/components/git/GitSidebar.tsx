@@ -435,11 +435,13 @@ export const GitSidebar = memo(function GitSidebar({
 						variant="secondary"
 						size="sm"
 						onClick={handlePull}
-						disabled={isActing || !hasRemotes}
-						title={
-							!hasRemotes
-								? 'No remote configured'
-								: hasPendingPulls
+					disabled={isActing || !hasRemotes || !hasUpstream}
+					title={
+						!hasRemotes
+							? 'No remote configured'
+							: !hasUpstream
+								? 'Branch not published yet'
+							: hasPendingPulls
 									? `Pull ${status?.behind} commit(s) from remote`
 									: 'Pull from remote'
 						}
