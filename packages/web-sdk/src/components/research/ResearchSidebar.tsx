@@ -307,12 +307,15 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 					provider: newProvider,
 					model: newModel,
 				});
+				await queryClient.invalidateQueries({
+					queryKey: ['research', 'sessions', parentSessionId],
+				});
 				setShowModelSelector(false);
 			} catch (err) {
 				console.error('Failed to update research session model:', err);
 			}
 		},
-		[activeResearchSessionId, updateSession],
+		[activeResearchSessionId, updateSession, queryClient, parentSessionId],
 	);
 
 	const parentSession = useSession(parentSessionId ?? '');
