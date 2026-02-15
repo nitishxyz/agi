@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMCPStore, type MCPServerInfo } from '../stores/mcpStore';
 import { API_BASE_URL } from '../lib/config';
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 interface MCPServersResponse {
 	servers: MCPServerInfo[];
@@ -139,7 +139,17 @@ export function useAuthenticateMCPServer() {
 			);
 			const data = await response.json();
 			if (!data.ok) throw new Error(data.error || 'Failed to initiate auth');
-			return data as { ok: boolean; authUrl?: string; name: string };
+			return data as {
+				ok: boolean;
+				authUrl?: string;
+				authType?: string;
+				sessionId?: string;
+				userCode?: string;
+				verificationUri?: string;
+				interval?: number;
+				authenticated?: boolean;
+				name: string;
+			};
 		},
 		onSettled: () => {
 			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
@@ -182,4 +192,62 @@ export function useMCPAuthStatus(name: string | null) {
 		enabled: !!name,
 		refetchInterval: 3000,
 	});
+}
+
+export function useCopilotDevicePoller() {
+	const copilotDevice = useMCPStore((s) => s.copilotDevice);
+	const setCopilotDevice = useMCPStore((s) => s.setCopilotDevice);
+	const setLoading = useMCPStore((s) => s.setLoading);
+	const queryClient = useQueryClient();
+	const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+	const stopPolling = useCallback(() => {
+		if (timerRef.current) {
+			clearInterval(timerRef.current);
+			timerRef.current = null;
+		}
+	}, []);
+
+	useEffect(() => {
+		if (!copilotDevice) {
+			stopPolling();
+			return;
+		}
+
+		const { sessionId, serverName, interval } = copilotDevice;
+		const pollMs = (interval || 5) * 1000 + 1000;
+
+		timerRef.current = setInterval(async () => {
+			try {
+				const response = await fetch(
+					`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(serverName)}/auth/callback`,
+					{
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ sessionId }),
+					},
+				);
+				const data = await response.json();
+
+				if (data.status === 'complete') {
+					stopPolling();
+					setCopilotDevice(null);
+					setLoading(serverName, false);
+					queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
+				} else if (data.status === 'error') {
+					stopPolling();
+					setCopilotDevice(null);
+					setLoading(serverName, false);
+				}
+			} catch {
+				stopPolling();
+				setCopilotDevice(null);
+				setLoading(serverName, false);
+			}
+		}, pollMs);
+
+		return stopPolling;
+	}, [copilotDevice, setCopilotDevice, setLoading, queryClient, stopPolling]);
+
+	return copilotDevice;
 }

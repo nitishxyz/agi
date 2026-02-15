@@ -20,6 +20,7 @@ export type OAuth = {
 	expires: number;
 	accountId?: string;
 	idToken?: string;
+	scopes?: string;
 };
 
 /**

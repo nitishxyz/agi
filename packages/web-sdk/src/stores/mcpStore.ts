@@ -20,6 +20,15 @@ export interface MCPServerInfo {
 	authRequired: boolean;
 	authenticated: boolean;
 	scope: MCPScope;
+	authType?: string;
+}
+
+export interface CopilotDeviceInfo {
+	sessionId: string;
+	userCode: string;
+	verificationUri: string;
+	interval: number;
+	serverName: string;
 }
 
 interface MCPState {
@@ -27,6 +36,7 @@ interface MCPState {
 	servers: MCPServerInfo[];
 	loading: Set<string>;
 	authUrls: Map<string, string>;
+	copilotDevice: CopilotDeviceInfo | null;
 
 	toggleSidebar: () => void;
 	expandSidebar: () => void;
@@ -35,6 +45,7 @@ interface MCPState {
 	setLoading: (name: string, loading: boolean) => void;
 	updateServer: (name: string, updates: Partial<MCPServerInfo>) => void;
 	setAuthUrl: (name: string, url: string | null) => void;
+	setCopilotDevice: (info: CopilotDeviceInfo | null) => void;
 }
 
 export const useMCPStore = create<MCPState>((set) => ({
@@ -42,6 +53,7 @@ export const useMCPStore = create<MCPState>((set) => ({
 	servers: [],
 	loading: new Set(),
 	authUrls: new Map(),
+	copilotDevice: null,
 
 	toggleSidebar: () => {
 		set((state) => {
@@ -94,4 +106,6 @@ export const useMCPStore = create<MCPState>((set) => ({
 			else next.delete(name);
 			return { authUrls: next };
 		}),
+
+	setCopilotDevice: (info) => set({ copilotDevice: info }),
 }));

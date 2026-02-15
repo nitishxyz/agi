@@ -6,6 +6,10 @@ const POLLING_SAFETY_MARGIN_MS = 3000;
 const DEVICE_CODE_URL = 'https://github.com/login/device/code';
 const ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 
+const COPILOT_DEFAULT_SCOPE = 'read:user';
+const COPILOT_MCP_SCOPE =
+	'repo read:org read:packages gist notifications read:project security_events';
+
 export type CopilotDeviceCodeResponse = {
 	verification_uri: string;
 	user_code: string;
@@ -41,7 +45,9 @@ async function openBrowser(url: string) {
 	});
 }
 
-export async function requestDeviceCode(): Promise<CopilotDeviceCodeResponse> {
+export async function requestDeviceCode(
+	scope?: string,
+): Promise<CopilotDeviceCodeResponse> {
 	const response = await fetch(DEVICE_CODE_URL, {
 		method: 'POST',
 		headers: {
@@ -50,7 +56,7 @@ export async function requestDeviceCode(): Promise<CopilotDeviceCodeResponse> {
 		},
 		body: JSON.stringify({
 			client_id: CLIENT_ID,
-			scope: 'read:user',
+			scope: scope ?? COPILOT_DEFAULT_SCOPE,
 		}),
 	});
 
@@ -120,13 +126,16 @@ export async function pollForToken(
 	}
 }
 
-export async function authorizeCopilot(): Promise<{
+export async function authorizeCopilot(options?: {
+	mcp?: boolean;
+}): Promise<{
 	verificationUri: string;
 	userCode: string;
 	deviceCode: string;
 	interval: number;
 }> {
-	const deviceData = await requestDeviceCode();
+	const scope = options?.mcp ? COPILOT_MCP_SCOPE : COPILOT_DEFAULT_SCOPE;
+	const deviceData = await requestDeviceCode(scope);
 	return {
 		verificationUri: deviceData.verification_uri,
 		userCode: deviceData.user_code,

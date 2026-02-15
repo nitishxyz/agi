@@ -9,9 +9,32 @@ import {
 	OAuthCallbackServer,
 } from '@ottocode/sdk';
 import { MCPClientWrapper } from '@ottocode/sdk';
+import {
+	authorizeCopilot,
+	pollForCopilotToken,
+	openCopilotAuthUrl,
+} from '@ottocode/sdk';
+import { getAuth, setAuth } from '@ottocode/sdk';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { exec } from 'node:child_process';
+
+const GITHUB_COPILOT_HOSTS = [
+	'api.githubcopilot.com',
+	'copilot-proxy.githubusercontent.com',
+];
+
+function isGitHubCopilotUrl(url?: string): boolean {
+	if (!url) return false;
+	try {
+		const parsed = new URL(url);
+		return GITHUB_COPILOT_HOSTS.some(
+			(h) => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`),
+		);
+	} catch {
+		return false;
+	}
+}
 
 export function registerMCPCommand(program: Command) {
 	const mcp = program
@@ -309,8 +332,12 @@ async function runMCPAuth(
 		process.exit(1);
 	}
 
-	const store = new OAuthCredentialStore();
+	if (isGitHubCopilotUrl(serverConfig.url)) {
+		await runCopilotMCPAuth(name, serverConfig, opts);
+		return;
+	}
 
+	const store = new OAuthCredentialStore();
 	if (opts.status) {
 		const authenticated = await store.isAuthenticated(name);
 		const tokens = await store.loadTokens(name);
@@ -403,4 +430,91 @@ function openBrowser(url: string) {
 			console.log(`  Please open manually: ${url}`);
 		}
 	});
+}
+
+async function runCopilotMCPAuth(
+	name: string,
+	serverConfig: MCPServerConfig,
+	opts: { project: string; revoke: boolean; status: boolean },
+) {
+	if (opts.status) {
+		const auth = await getAuth('copilot');
+		const authenticated = auth?.type === 'oauth' && !!auth.refresh;
+		const scopes = (auth?.type === 'oauth' && auth.scopes) || 'none';
+		console.log(`\nAuth status for "${name}" (GitHub Copilot):`);
+		console.log(`  authenticated: ${authenticated ? 'yes' : 'no'}`);
+		console.log(`  scopes: ${scopes}`);
+		return;
+	}
+
+	if (opts.revoke) {
+		const { removeAuth } = await import('@ottocode/sdk');
+		await removeAuth('copilot');
+		console.log(`Revoked Copilot credentials for "${name}".`);
+		return;
+	}
+
+	const MCP_SCOPES = 'repo read:org read:packages gist notifications read:project security_events';
+	const existingAuth = await getAuth('copilot');
+	if (existingAuth?.type === 'oauth' && existingAuth.refresh && existingAuth.scopes === MCP_SCOPES) {
+		const client = new MCPClientWrapper({
+			...serverConfig,
+			headers: {
+				...serverConfig.headers,
+				Authorization: `Bearer ${existingAuth.refresh}`,
+			},
+		});
+		try {
+			await client.connect();
+			const tools = await client.listTools();
+			console.log(`Already authenticated with MCP scopes. ${tools.length} tools available ✓`);
+			await client.disconnect();
+			return;
+		} catch {
+			console.log('Existing token invalid or insufficient, re-authenticating...');
+		}
+	} else if (existingAuth?.type === 'oauth' && existingAuth.refresh) {
+		console.log('Existing token lacks MCP scopes, re-authenticating with broader permissions...');
+	}
+
+	console.log('\n🔐 Starting GitHub Copilot device flow (MCP scopes)...');
+	const deviceData = await authorizeCopilot({ mcp: true });
+
+	console.log(`\nOpen: ${deviceData.verificationUri}`);
+	console.log(`Enter code: ${deviceData.userCode}\n`);
+
+	await openCopilotAuthUrl(deviceData.verificationUri);
+
+	console.log('⏳ Waiting for authorization...');
+
+	try {
+		const accessToken = await pollForCopilotToken(
+			deviceData.deviceCode,
+			deviceData.interval,
+		);
+
+		await setAuth('copilot', {
+			type: 'oauth',
+			refresh: accessToken,
+			access: accessToken,
+			expires: 0,
+			scopes: MCP_SCOPES,
+		});
+
+		const client = new MCPClientWrapper({
+			...serverConfig,
+			headers: {
+				...serverConfig.headers,
+				Authorization: `Bearer ${accessToken}`,
+			},
+		});
+		await client.connect();
+		const tools = await client.listTools();
+		console.log(`✅ Authenticated! ${tools.length} tools available.`);
+		await client.disconnect();
+	} catch (err) {
+		const msg = err instanceof Error ? err.message : String(err);
+		console.error(`\n✗ Auth failed: ${msg}`);
+		process.exit(1);
+	}
 }

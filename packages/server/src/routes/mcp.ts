@@ -8,6 +8,34 @@ import {
 	addMCPServerToConfig,
 	removeMCPServerFromConfig,
 } from '@ottocode/sdk';
+import {
+	authorizeCopilot,
+	pollForCopilotTokenOnce,
+	getAuth,
+	setAuth,
+} from '@ottocode/sdk';
+
+const GITHUB_COPILOT_HOSTS = [
+	'api.githubcopilot.com',
+	'copilot-proxy.githubusercontent.com',
+];
+
+function isGitHubCopilotUrl(url?: string): boolean {
+	if (!url) return false;
+	try {
+		const parsed = new URL(url);
+		return GITHUB_COPILOT_HOSTS.some(
+			(h) => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`),
+		);
+	} catch {
+		return false;
+	}
+}
+
+const copilotMCPSessions = new Map<
+	string,
+	{ deviceCode: string; interval: number; serverName: string; createdAt: number }
+>();
 
 export function registerMCPRoutes(app: Hono) {
 	app.get('/v1/mcp/servers', async (c) => {
@@ -30,6 +58,7 @@ export function registerMCPRoutes(app: Hono) {
 				authRequired: status?.authRequired ?? false,
 				authenticated: status?.authenticated ?? false,
 				scope: s.scope ?? 'global',
+				...(isGitHubCopilotUrl(s.url) ? { authType: 'copilot-device' } : {}),
 			};
 		});
 
@@ -148,6 +177,40 @@ export function registerMCPRoutes(app: Hono) {
 			const status = (await manager.getStatusAsync()).find(
 				(s) => s.name === name,
 			);
+
+			if (
+				isGitHubCopilotUrl(serverConfig.url) &&
+				!(status?.connected)
+			) {
+				const MCP_SCOPES = 'repo read:org read:packages gist notifications read:project security_events';
+				const existingAuth = await getAuth('copilot');
+				const hasMCPScopes =
+					existingAuth?.type === 'oauth' &&
+					existingAuth.scopes === MCP_SCOPES;
+
+				if (!existingAuth || existingAuth.type !== 'oauth' || !hasMCPScopes) {
+					const deviceData = await authorizeCopilot({ mcp: true });
+					const sessionId = crypto.randomUUID();
+					copilotMCPSessions.set(sessionId, {
+						deviceCode: deviceData.deviceCode,
+						interval: deviceData.interval,
+						serverName: name,
+						createdAt: Date.now(),
+					});
+					return c.json({
+						ok: true,
+						name,
+						connected: false,
+						authRequired: true,
+						authType: 'copilot-device',
+						sessionId,
+						userCode: deviceData.userCode,
+						verificationUri: deviceData.verificationUri,
+						interval: deviceData.interval,
+					});
+				}
+			}
+
 			return c.json({
 				ok: true,
 				name,
@@ -189,6 +252,47 @@ export function registerMCPRoutes(app: Hono) {
 			return c.json({ ok: false, error: `Server "${name}" not found` }, 404);
 		}
 
+		if (isGitHubCopilotUrl(serverConfig.url)) {
+			try {
+			const MCP_SCOPES = 'repo read:org read:packages gist notifications read:project security_events';
+				const existingAuth = await getAuth('copilot');
+				if (
+					existingAuth?.type === 'oauth' &&
+					existingAuth.refresh &&
+					existingAuth.scopes === MCP_SCOPES
+				) {
+					return c.json({
+						ok: true,
+						name,
+						authType: 'copilot-device',
+						authenticated: true,
+						message: 'Already authenticated with MCP scopes',
+					});
+				}
+
+				const deviceData = await authorizeCopilot({ mcp: true });
+				const sessionId = crypto.randomUUID();
+				copilotMCPSessions.set(sessionId, {
+					deviceCode: deviceData.deviceCode,
+					interval: deviceData.interval,
+					serverName: name,
+					createdAt: Date.now(),
+				});
+				return c.json({
+					ok: true,
+					name,
+					authType: 'copilot-device',
+					sessionId,
+					userCode: deviceData.userCode,
+					verificationUri: deviceData.verificationUri,
+					interval: deviceData.interval,
+				});
+			} catch (err) {
+				const msg = err instanceof Error ? err.message : String(err);
+				return c.json({ ok: false, error: msg }, 500);
+			}
+		}
+
 		try {
 			let manager = getMCPManager();
 			if (!manager) {
@@ -216,7 +320,65 @@ export function registerMCPRoutes(app: Hono) {
 	app.post('/v1/mcp/servers/:name/auth/callback', async (c) => {
 		const name = c.req.param('name');
 		const body = await c.req.json();
-		const { code } = body;
+		const { code, sessionId } = body;
+
+		if (sessionId) {
+			const session = copilotMCPSessions.get(sessionId);
+			if (!session || session.serverName !== name) {
+				return c.json({ ok: false, error: 'Session expired or invalid' }, 400);
+			}
+			try {
+				const result = await pollForCopilotTokenOnce(session.deviceCode);
+				if (result.status === 'complete') {
+					copilotMCPSessions.delete(sessionId);
+				await setAuth(
+						'copilot',
+						{
+							type: 'oauth',
+							refresh: result.accessToken,
+							access: result.accessToken,
+							expires: 0,
+							scopes: 'repo read:org read:packages gist notifications read:project security_events',
+						},
+						undefined,
+						'global',
+					);
+				const projectRoot = process.cwd();
+					const config = await loadMCPConfig(projectRoot, getGlobalConfigDir());
+					const serverConfig = config.servers.find((s) => s.name === name);
+					let mcpMgr = getMCPManager();
+					if (serverConfig) {
+						if (!mcpMgr) {
+							mcpMgr = await initializeMCP({ servers: [] }, projectRoot);
+						}
+						await mcpMgr.restartServer(serverConfig);
+					}
+					mcpMgr = getMCPManager();
+					const status = mcpMgr
+						? (await mcpMgr.getStatusAsync()).find((s) => s.name === name)
+						: undefined;
+					return c.json({
+						ok: true,
+						status: 'complete',
+						name,
+						connected: status?.connected ?? false,
+						tools: status?.tools ?? [],
+					});
+				}
+				if (result.status === 'pending') {
+					return c.json({ ok: true, status: 'pending' });
+				}
+				copilotMCPSessions.delete(sessionId);
+				return c.json({
+					ok: false,
+					status: 'error',
+					error: result.status === 'error' ? result.error : 'Unknown error',
+				});
+			} catch (err) {
+				const msg = err instanceof Error ? err.message : String(err);
+				return c.json({ ok: false, error: msg }, 500);
+			}
+		}
 
 		if (!code) {
 			return c.json({ ok: false, error: 'code is required' }, 400);
@@ -249,8 +411,21 @@ export function registerMCPRoutes(app: Hono) {
 
 	app.get('/v1/mcp/servers/:name/auth/status', async (c) => {
 		const name = c.req.param('name');
-		const manager = getMCPManager();
+		const projectRoot = process.cwd();
+		const config = await loadMCPConfig(projectRoot, getGlobalConfigDir());
+		const serverConfig = config.servers.find((s) => s.name === name);
 
+		if (serverConfig && isGitHubCopilotUrl(serverConfig.url)) {
+			try {
+				const auth = await getAuth('copilot');
+				const authenticated = auth?.type === 'oauth' && !!auth.refresh;
+				return c.json({ authenticated, authType: 'copilot-device' });
+			} catch {
+				return c.json({ authenticated: false, authType: 'copilot-device' });
+			}
+		}
+
+		const manager = getMCPManager();
 		if (!manager) {
 			return c.json({ authenticated: false });
 		}
@@ -265,8 +440,26 @@ export function registerMCPRoutes(app: Hono) {
 
 	app.delete('/v1/mcp/servers/:name/auth', async (c) => {
 		const name = c.req.param('name');
-		const manager = getMCPManager();
+		const projectRoot = process.cwd();
+		const config = await loadMCPConfig(projectRoot, getGlobalConfigDir());
+		const serverConfig = config.servers.find((s) => s.name === name);
 
+		if (serverConfig && isGitHubCopilotUrl(serverConfig.url)) {
+			try {
+				const { removeAuth } = await import('@ottocode/sdk');
+				await removeAuth('copilot');
+				const manager = getMCPManager();
+				if (manager) {
+					await manager.stopServer(name);
+				}
+				return c.json({ ok: true, name });
+			} catch (err) {
+				const msg = err instanceof Error ? err.message : String(err);
+				return c.json({ ok: false, error: msg }, 500);
+			}
+		}
+
+		const manager = getMCPManager();
 		if (!manager) {
 			return c.json({ ok: false, error: 'No MCP manager active' }, 400);
 		}
