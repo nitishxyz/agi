@@ -101,9 +101,7 @@ const CopilotDeviceAuth = memo(function CopilotDeviceAuth({
 					>
 						<ClipboardCopy className="w-3.5 h-3.5" />
 					</button>
-					{copied && (
-						<span className="text-xs text-green-400">Copied!</span>
-					)}
+					{copied && <span className="text-xs text-green-400">Copied!</span>}
 				</div>
 				<a
 					href={verificationUri}
@@ -338,7 +336,15 @@ export const MCPSidebar = memo(function MCPSidebar() {
 	}, [servers, loading, setLoading]);
 
 	const handleCopilotDeviceResponse = useCallback(
-		(name: string, result: { sessionId?: string; userCode?: string; verificationUri?: string; interval?: number }) => {
+		(
+			name: string,
+			result: {
+				sessionId?: string;
+				userCode?: string;
+				verificationUri?: string;
+				interval?: number;
+			},
+		) => {
 			if (result.sessionId && result.userCode && result.verificationUri) {
 				setCopilotDevice({
 					sessionId: result.sessionId,
@@ -377,7 +383,13 @@ export const MCPSidebar = memo(function MCPSidebar() {
 				setAuthUrl(name, null);
 			}
 		},
-		[authServer, setAuthUrl, setLoading, handleCopilotDeviceResponse, queryClient],
+		[
+			authServer,
+			setAuthUrl,
+			setLoading,
+			handleCopilotDeviceResponse,
+			queryClient,
+		],
 	);
 
 	const handleStart = useCallback(

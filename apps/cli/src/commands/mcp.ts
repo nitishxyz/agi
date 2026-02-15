@@ -454,9 +454,14 @@ async function runCopilotMCPAuth(
 		return;
 	}
 
-	const MCP_SCOPES = 'repo read:org read:packages gist notifications read:project security_events';
+	const MCP_SCOPES =
+		'repo read:org read:packages gist notifications read:project security_events';
 	const existingAuth = await getAuth('copilot');
-	if (existingAuth?.type === 'oauth' && existingAuth.refresh && existingAuth.scopes === MCP_SCOPES) {
+	if (
+		existingAuth?.type === 'oauth' &&
+		existingAuth.refresh &&
+		existingAuth.scopes === MCP_SCOPES
+	) {
 		const client = new MCPClientWrapper({
 			...serverConfig,
 			headers: {
@@ -467,14 +472,20 @@ async function runCopilotMCPAuth(
 		try {
 			await client.connect();
 			const tools = await client.listTools();
-			console.log(`Already authenticated with MCP scopes. ${tools.length} tools available ✓`);
+			console.log(
+				`Already authenticated with MCP scopes. ${tools.length} tools available ✓`,
+			);
 			await client.disconnect();
 			return;
 		} catch {
-			console.log('Existing token invalid or insufficient, re-authenticating...');
+			console.log(
+				'Existing token invalid or insufficient, re-authenticating...',
+			);
 		}
 	} else if (existingAuth?.type === 'oauth' && existingAuth.refresh) {
-		console.log('Existing token lacks MCP scopes, re-authenticating with broader permissions...');
+		console.log(
+			'Existing token lacks MCP scopes, re-authenticating with broader permissions...',
+		);
 	}
 
 	console.log('\n🔐 Starting GitHub Copilot device flow (MCP scopes)...');

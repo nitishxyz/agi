@@ -126,9 +126,7 @@ export async function pollForToken(
 	}
 }
 
-export async function authorizeCopilot(options?: {
-	mcp?: boolean;
-}): Promise<{
+export async function authorizeCopilot(options?: { mcp?: boolean }): Promise<{
 	verificationUri: string;
 	userCode: string;
 	deviceCode: string;

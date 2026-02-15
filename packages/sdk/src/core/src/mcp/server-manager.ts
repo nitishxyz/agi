@@ -136,12 +136,17 @@ export class MCPServerManager {
 					} catch (err) {
 						this.clients.set(config.name, updatedClient);
 						const msg = err instanceof Error ? err.message : String(err);
-						if (msg.includes('insufficient scopes') || msg.includes('Forbidden')) {
+						if (
+							msg.includes('insufficient scopes') ||
+							msg.includes('Forbidden')
+						) {
 							console.error(
 								`[mcp] GitHub Copilot MCP server "${config.name}" has insufficient scopes. Run \`otto mcp auth ${config.name}\` to re-authenticate with required permissions.`,
 							);
 						} else {
-							console.error(`[mcp] Failed to start server "${config.name}": ${msg}`);
+							console.error(
+								`[mcp] Failed to start server "${config.name}": ${msg}`,
+							);
 						}
 					}
 					return;
@@ -350,7 +355,9 @@ export class MCPServerManager {
 				} catch (err) {
 					this.clients.set(config.name, client);
 					const msg = err instanceof Error ? err.message : String(err);
-					console.error(`[mcp] Failed to start server "${config.name}": ${msg}`);
+					console.error(
+						`[mcp] Failed to start server "${config.name}": ${msg}`,
+					);
 				}
 				return null;
 			}

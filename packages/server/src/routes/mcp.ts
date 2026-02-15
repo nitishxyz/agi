@@ -34,7 +34,12 @@ function isGitHubCopilotUrl(url?: string): boolean {
 
 const copilotMCPSessions = new Map<
 	string,
-	{ deviceCode: string; interval: number; serverName: string; createdAt: number }
+	{
+		deviceCode: string;
+		interval: number;
+		serverName: string;
+		createdAt: number;
+	}
 >();
 
 export function registerMCPRoutes(app: Hono) {
@@ -178,15 +183,12 @@ export function registerMCPRoutes(app: Hono) {
 				(s) => s.name === name,
 			);
 
-			if (
-				isGitHubCopilotUrl(serverConfig.url) &&
-				!(status?.connected)
-			) {
-				const MCP_SCOPES = 'repo read:org read:packages gist notifications read:project security_events';
+			if (isGitHubCopilotUrl(serverConfig.url) && !status?.connected) {
+				const MCP_SCOPES =
+					'repo read:org read:packages gist notifications read:project security_events';
 				const existingAuth = await getAuth('copilot');
 				const hasMCPScopes =
-					existingAuth?.type === 'oauth' &&
-					existingAuth.scopes === MCP_SCOPES;
+					existingAuth?.type === 'oauth' && existingAuth.scopes === MCP_SCOPES;
 
 				if (!existingAuth || existingAuth.type !== 'oauth' || !hasMCPScopes) {
 					const deviceData = await authorizeCopilot({ mcp: true });
@@ -254,7 +256,8 @@ export function registerMCPRoutes(app: Hono) {
 
 		if (isGitHubCopilotUrl(serverConfig.url)) {
 			try {
-			const MCP_SCOPES = 'repo read:org read:packages gist notifications read:project security_events';
+				const MCP_SCOPES =
+					'repo read:org read:packages gist notifications read:project security_events';
 				const existingAuth = await getAuth('copilot');
 				if (
 					existingAuth?.type === 'oauth' &&
@@ -331,19 +334,20 @@ export function registerMCPRoutes(app: Hono) {
 				const result = await pollForCopilotTokenOnce(session.deviceCode);
 				if (result.status === 'complete') {
 					copilotMCPSessions.delete(sessionId);
-				await setAuth(
+					await setAuth(
 						'copilot',
 						{
 							type: 'oauth',
 							refresh: result.accessToken,
 							access: result.accessToken,
 							expires: 0,
-							scopes: 'repo read:org read:packages gist notifications read:project security_events',
+							scopes:
+								'repo read:org read:packages gist notifications read:project security_events',
 						},
 						undefined,
 						'global',
 					);
-				const projectRoot = process.cwd();
+					const projectRoot = process.cwd();
 					const config = await loadMCPConfig(projectRoot, getGlobalConfigDir());
 					const serverConfig = config.servers.find((s) => s.name === name);
 					let mcpMgr = getMCPManager();
