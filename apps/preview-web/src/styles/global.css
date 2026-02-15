@@ -189,14 +189,22 @@ code {
 	border-collapse: collapse;
 	margin-top: 0.75rem;
 	margin-bottom: 0.75rem;
+	width: max-content;
+	min-width: 100%;
 }
 
 .markdown-content th,
 .markdown-content td {
 	border: 1px solid hsl(var(--border));
-	padding: 0.5rem;
+	padding: 0.5rem 0.75rem;
 	text-align: left;
-	word-break: break-word;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	max-width: 32rem;
+}
+
+.markdown-content th {
+	white-space: nowrap;
 }
 
 .markdown-content th {
