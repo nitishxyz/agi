@@ -6,6 +6,7 @@ import GIT_STATUS_DESCRIPTION from './git.status.txt' with { type: 'text' };
 import GIT_DIFF_DESCRIPTION from './git.diff.txt' with { type: 'text' };
 import GIT_COMMIT_DESCRIPTION from './git.commit.txt' with { type: 'text' };
 import { createToolError, type ToolResponse } from '../error.ts';
+import { appendCoAuthorTrailer } from './git-identity.ts';
 
 const execAsync = promisify(exec);
 
@@ -119,13 +120,14 @@ export function buildGitTools(
 				});
 			}
 			const gitRoot = await findGitRoot();
+			const fullMessage = appendCoAuthorTrailer(message);
 			const args = [
 				'git',
 				'-C',
 				`"${gitRoot}"`,
 				'commit',
 				'-m',
-				`"${message.replace(/"/g, '\\"')}"`,
+				`"${fullMessage.replace(/"/g, '\\"')}"`,
 			];
 			if (amend) args.push('--amend');
 			if (signoff) args.push('--signoff');

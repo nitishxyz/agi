@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import DESCRIPTION from './bash.txt' with { type: 'text' };
 import { createToolError, type ToolResponse } from '../error.ts';
 import { getAugmentedPath } from '../bin-manager.ts';
+import { injectCoAuthorIntoGitCommit } from './git-identity.ts';
 
 function normalizePath(p: string) {
 	const normalized = p.replace(/\\/g, '/');
@@ -95,8 +96,10 @@ export function buildBashTool(projectRoot: string): {
 
 			const absCwd = resolveSafePath(projectRoot, cwd || '.');
 
+			const finalCmd = injectCoAuthorIntoGitCommit(cmd);
+
 			return new Promise((resolve) => {
-				const proc = spawn(cmd, {
+				const proc = spawn(finalCmd, {
 					cwd: absCwd,
 					shell: true,
 					stdio: ['ignore', 'pipe', 'pipe'],

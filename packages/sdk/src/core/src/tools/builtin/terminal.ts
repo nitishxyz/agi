@@ -5,6 +5,7 @@ import { createToolError } from '../error.ts';
 import type { TerminalManager } from '../../terminals/index.ts';
 import type { TerminalStatus } from '../../terminals/terminal.ts';
 import { normalizeTerminalLine } from '../../utils/ansi.ts';
+import { injectCoAuthorIntoGitCommit } from './git-identity.ts';
 
 function shellQuote(segment: string): string {
 	if (/^[a-zA-Z0-9._-]+$/.test(segment)) {
@@ -163,7 +164,7 @@ export function buildTerminalTool(
 
 						if (initialCommand) {
 							queueMicrotask(() => {
-								term.write(`${initialCommand}\n`);
+								term.write(`${injectCoAuthorIntoGitCommit(initialCommand)}\n`);
 							});
 						}
 
@@ -238,7 +239,7 @@ export function buildTerminalTool(
 							return createToolError(`Terminal ${params.terminalId} not found`);
 						}
 
-						term.write(params.input);
+						term.write(injectCoAuthorIntoGitCommit(params.input));
 
 						return {
 							ok: true,

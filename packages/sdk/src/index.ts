@@ -222,6 +222,13 @@ export type { DiscoveredTool, DiscoverResult } from './core/src/index.ts';
 export { setTerminalManager, getTerminalManager } from './core/src/index.ts';
 export { buildFsTools } from './core/src/index.ts';
 export { buildGitTools } from './core/src/index.ts';
+export {
+	appendCoAuthorTrailer,
+	injectCoAuthorIntoGitCommit,
+	OTTOCODE_BOT_NAME,
+	OTTOCODE_BOT_EMAIL,
+	OTTOCODE_CO_AUTHOR,
+} from './core/src/tools/builtin/git-identity.ts';
 export { buildEditTool } from './core/src/index.ts';
 export { buildMultiEditTool } from './core/src/index.ts';
 

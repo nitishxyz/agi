@@ -15,6 +15,7 @@ import {
 	detectOAuth,
 	adaptSimpleCall,
 } from '../../runtime/provider/oauth-adapter.ts';
+import { appendCoAuthorTrailer } from '@ottocode/sdk';
 
 const execFileAsync = promisify(execFile);
 
@@ -36,7 +37,8 @@ export function registerCommitRoutes(app: Hono) {
 
 			const { gitRoot } = validation;
 
-			const { stdout } = await execFileAsync('git', ['commit', '-m', message], {
+			const fullMessage = appendCoAuthorTrailer(message);
+			const { stdout } = await execFileAsync('git', ['commit', '-m', fullMessage], {
 				cwd: gitRoot,
 			});
 
