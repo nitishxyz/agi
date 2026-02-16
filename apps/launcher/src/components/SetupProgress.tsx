@@ -88,7 +88,10 @@ export function SetupProgress() {
 	};
 
 	useEffect(() => {
-		tauri.isDesktopInstalled().then(setDesktopInstalled).catch(() => {});
+		tauri
+			.isDesktopInstalled()
+			.then(setDesktopInstalled)
+			.catch(() => {});
 	}, []);
 
 	const log = useCallback((msg: string) => {
