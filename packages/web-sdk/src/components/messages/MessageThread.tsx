@@ -205,9 +205,10 @@ export const MessageThread = memo(function MessageThread({
 		}
 	};
 
-	// Memoize filtered messages to avoid recalculating on every render
 	const filteredMessages = useMemo(() => {
-		return messages.filter((message) => message.role !== 'system');
+		return messages
+			.filter((message) => message.role !== 'system')
+			.sort((a, b) => a.createdAt - b.createdAt);
 	}, [messages]);
 
 	// Create a retry handler for error messages
@@ -217,7 +218,6 @@ export const MessageThread = memo(function MessageThread({
 				if (!sessionId) return;
 				if (!messageId) return;
 
-				// Optimistically update the message to pending state, removing only error parts
 				queryClient.setQueryData<Message[]>(
 					['messages', sessionId],
 					(oldMessages) => {

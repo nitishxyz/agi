@@ -12,6 +12,7 @@ import { ToolHistoryTracker } from './tool-history-tracker.ts';
 export async function buildHistoryMessages(
 	db: Awaited<ReturnType<typeof getDb>>,
 	sessionId: string,
+	currentMessageId?: string,
 ): Promise<ModelMessage[]> {
 	const rows = await db
 		.select()
@@ -26,10 +27,12 @@ export async function buildHistoryMessages(
 		if (
 			m.role === 'assistant' &&
 			m.status !== 'complete' &&
-			m.status !== 'completed'
+			m.status !== 'completed' &&
+			m.status !== 'error' &&
+			m.id !== currentMessageId
 		) {
 			debugLog(
-				`[buildHistoryMessages] Skipping assistant message ${m.id} with status ${m.status} (current turn still in progress)`,
+				`[buildHistoryMessages] Skipping assistant message ${m.id} with status ${m.status}`,
 			);
 			logPendingToolParts(db, m.id);
 			continue;

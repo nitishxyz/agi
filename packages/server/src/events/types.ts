@@ -13,6 +13,7 @@ export type OttoEventType =
 	| 'session.created'
 	| 'session.updated'
 	| 'message.created'
+	| 'message.updated'
 	| 'message.part.delta'
 	| 'reasoning.delta'
 	| 'message.completed'

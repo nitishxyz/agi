@@ -381,9 +381,20 @@ export function registerSessionsRoutes(app: Hono) {
 
 			if (existingMsg.length > 0) {
 				// Delete message parts first (foreign key constraint)
-				await db
-					.delete(messageParts)
-					.where(eq(messageParts.messageId, messageId));
+			await db
+				.delete(messageParts)
+				.where(
+					and(
+						eq(messageParts.messageId, messageId),
+						or(
+							eq(messageParts.type, 'error'),
+							and(
+								eq(messageParts.type, 'tool_call'),
+								eq(messageParts.toolName, 'finish'),
+							),
+						),
+					),
+				);
 				// Delete message
 				await db.delete(messages).where(eq(messages.id, messageId));
 
@@ -758,7 +769,6 @@ export function registerSessionsRoutes(app: Hono) {
 				return c.json({ error: 'Session not found' }, 404);
 			}
 
-			// Delete only error parts - preserve valid text/tool content
 			await db
 				.delete(messageParts)
 				.where(

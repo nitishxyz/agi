@@ -216,7 +216,7 @@ export function createErrorHandler(
 				publish({
 					type: 'message.created',
 					sessionId: opts.sessionId,
-					payload: { id: compactMessageId, role: 'assistant' },
+				payload: { id: compactMessageId, role: 'assistant', agent: opts.agent, provider: opts.provider, model: opts.model },
 				});
 
 				let compactionSucceeded = false;
@@ -288,7 +288,7 @@ export function createErrorHandler(
 					publish({
 						type: 'message.created',
 						sessionId: opts.sessionId,
-						payload: { id: retryMessageId, role: 'assistant' },
+					payload: { id: retryMessageId, role: 'assistant', agent: opts.agent, provider: opts.provider, model: opts.model },
 					});
 
 					enqueueAssistantRun(

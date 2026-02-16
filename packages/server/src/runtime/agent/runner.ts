@@ -454,7 +454,7 @@ async function runAssistant(opts: RunOpts) {
 			publish({
 				type: 'message.created',
 				sessionId: opts.sessionId,
-				payload: { id: continuationMessageId, role: 'assistant' },
+			payload: { id: continuationMessageId, role: 'assistant', agent: opts.agent, provider: opts.provider, model: opts.model },
 			});
 
 			enqueueAssistantRun(

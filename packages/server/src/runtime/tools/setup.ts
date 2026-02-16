@@ -1,4 +1,6 @@
 import type { getDb } from '@ottocode/database';
+import { messageParts } from '@ottocode/database/schema';
+import { eq, desc } from 'drizzle-orm';
 import { time } from '../debug/index.ts';
 import type { ToolAdapterContext } from '../../tools/adapter.ts';
 import type { RunOpts } from '../session/queue.ts';
@@ -16,8 +18,13 @@ export async function setupToolContext(
 	const firstToolTimer = time('runner:first-tool-call');
 	let firstToolSeen = false;
 
-	// Simple counter starting at 0 - first event gets 0, second gets 1, etc.
-	let currentIndex = 0;
+	const existingParts = await db
+		.select({ index: messageParts.index })
+		.from(messageParts)
+		.where(eq(messageParts.messageId, opts.assistantMessageId))
+		.orderBy(desc(messageParts.index))
+		.limit(1);
+	let currentIndex = existingParts.length > 0 ? existingParts[0].index + 1 : 0;
 	const nextIndex = () => currentIndex++;
 
 	const sharedCtx: RunnerToolContext = {
