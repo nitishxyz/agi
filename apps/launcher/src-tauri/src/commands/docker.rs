@@ -523,14 +523,18 @@ if [ ! -d "$REPO_DIR/.git" ]; then
   git clone "$REPO_URL" "$REPO_DIR"
 else
   echo "  Repo already cloned, pulling latest..."
-  cd "$REPO_DIR" && git pull
+  cd "$REPO_DIR" && git fetch --all && git pull || echo "  Warning: git pull failed (no upstream?), continuing on current branch"
 fi
 cd "$REPO_DIR"
 if command -v otto >/dev/null 2>&1; then
-  echo "  otto already installed: $(otto --version 2>&1 | head -1)"
+  echo "  otto installed: $(otto --version 2>&1 | head -1)"
+  echo "  Checking for updates..."
+  otto upgrade || echo "  Warning: otto upgrade failed, continuing with current version"
 else
   curl -fsSL https://install.ottocode.io | sh
+  export PATH="$HOME/.local/bin:$PATH"
 fi
+echo "  otto version: $(otto --version 2>&1 | head -1 || echo unknown)"
 echo "[4/5] ✓ Done"
 
 echo ""

@@ -33,6 +33,7 @@ function App() {
 	useEffect(() => {
 		const init = async () => {
 			const initialPath = await tauriBridge.getInitialProject();
+			const initialRemote = await tauriBridge.getInitialRemote();
 
 			try {
 				const status = await tauriOnboarding.getStatus();
@@ -46,7 +47,18 @@ function App() {
 				return;
 			}
 
-			if (initialPath) {
+			if (initialRemote) {
+				const [remoteUrl, remoteName] = initialRemote;
+				const project: Project = {
+					path: remoteName,
+					name: remoteName,
+					lastOpened: new Date().toISOString(),
+					pinned: false,
+					remoteUrl,
+				};
+				setSelectedProject(project);
+				setView('workspace');
+			} else if (initialPath) {
 				const name = initialPath.split('/').pop() || initialPath;
 				const project: Project = {
 					path: initialPath,

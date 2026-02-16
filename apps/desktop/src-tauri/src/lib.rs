@@ -35,6 +35,11 @@ pub struct InitialProjectState {
     pub path: Mutex<Option<String>>,
 }
 
+pub struct InitialRemoteState {
+    pub url: Mutex<Option<String>>,
+    pub name: Mutex<Option<String>>,
+}
+
 fn parse_project_arg() -> Option<String> {
     let args: Vec<String> = std::env::args().collect();
     for i in 0..args.len() {
@@ -50,9 +55,35 @@ fn parse_project_arg() -> Option<String> {
     None
 }
 
+fn parse_remote_args() -> (Option<String>, Option<String>) {
+    let args: Vec<String> = std::env::args().collect();
+    let mut url = None;
+    let mut name = None;
+    for i in 0..args.len() {
+        if args[i] == "--remote" {
+            url = args.get(i + 1).cloned();
+        }
+        if args[i] == "--name" {
+            name = args.get(i + 1).cloned();
+        }
+    }
+    (url, name)
+}
+
 #[tauri::command]
 fn get_initial_project(state: tauri::State<'_, InitialProjectState>) -> Option<String> {
     state.path.lock().unwrap().take()
+}
+
+#[tauri::command]
+fn get_initial_remote(state: tauri::State<'_, InitialRemoteState>) -> Option<(String, String)> {
+    let url = state.url.lock().unwrap().take();
+    let name = state.name.lock().unwrap().take();
+    match (url, name) {
+        (Some(u), Some(n)) => Some((u, n)),
+        (Some(u), None) => Some((u, "Remote".to_string())),
+        _ => None,
+    }
 }
 
 #[tauri::command]
@@ -70,6 +101,11 @@ pub fn run() {
         eprintln!("[otto] CLI requested project: {}", p);
     }
 
+    let (initial_remote_url, initial_remote_name) = parse_remote_args();
+    if let Some(ref u) = initial_remote_url {
+        eprintln!("[otto] CLI requested remote: {}", u);
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -81,6 +117,10 @@ pub fn run() {
         .manage(commands::updater::ReadyUpdate(Mutex::new(None)))
         .manage(InitialProjectState {
             path: Mutex::new(initial_project),
+        })
+        .manage(InitialRemoteState {
+            url: Mutex::new(initial_remote_url),
+            name: Mutex::new(initial_remote_name),
         })
         .setup(|app| {
             #[cfg(desktop)]
@@ -177,6 +217,7 @@ pub fn run() {
             commands::git::git_is_repo,
             commands::window::create_new_window,
             get_initial_project,
+            get_initial_remote,
             get_platform,
             commands::onboarding::get_onboarding_status,
             commands::onboarding::generate_wallet,

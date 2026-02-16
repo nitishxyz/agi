@@ -82,6 +82,8 @@ export const tauriBridge = {
 	createNewWindow: () => invoke('create_new_window'),
 
 	getInitialProject: () => invoke<string | null>('get_initial_project'),
+	getInitialRemote: () =>
+		invoke<[string, string] | null>('get_initial_remote'),
 
 	githubDeviceCodeRequest: () =>
 		invoke<DeviceCodeResponse>('github_device_code_request'),

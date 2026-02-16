@@ -57,6 +57,8 @@ pub fn run() {
             commands::updater::check_for_update,
             commands::updater::download_update,
             commands::updater::apply_update,
+            commands::desktop::is_desktop_installed,
+            commands::desktop::open_in_desktop,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

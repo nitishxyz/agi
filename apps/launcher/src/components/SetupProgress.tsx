@@ -11,8 +11,8 @@ import {
 	ExternalLink,
 	Square,
 	RotateCcw,
-	ArrowUpCircle,
 	Play,
+	Monitor,
 } from 'lucide-react';
 import { BackButton } from './shared';
 
@@ -72,6 +72,7 @@ export function SetupProgress() {
 	const [consoleOpen, setConsoleOpen] = useState(true);
 	const [hovered, setHovered] = useState(false);
 	const [actionLoading, setActionLoading] = useState<string | null>(null);
+	const [desktopInstalled, setDesktopInstalled] = useState(false);
 	const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 	const consoleRef = useRef<HTMLPreElement>(null);
 	const startedRef = useRef(false);
@@ -85,6 +86,10 @@ export function SetupProgress() {
 	const handleBack = () => {
 		setView(selectedTeam ? 'projects' : 'welcome');
 	};
+
+	useEffect(() => {
+		tauri.isDesktopInstalled().then(setDesktopInstalled).catch(() => {});
+	}, []);
 
 	const log = useCallback((msg: string) => {
 		setConsoleLogs((prev) => [
@@ -414,19 +419,22 @@ export function SetupProgress() {
 									)}
 									Restart
 								</button>
-								<button
-									type="button"
-									onClick={() => handleAction('update')}
-									disabled={!!actionLoading}
-									className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-secondary hover:bg-accent transition-colors disabled:opacity-50"
-								>
-									{actionLoading === 'update' ? (
-										<Loader2 size={12} className="animate-spin" />
-									) : (
-										<ArrowUpCircle size={12} />
-									)}
-									Update
-								</button>
+								{desktopInstalled && (
+									<button
+										type="button"
+										onClick={() =>
+											tauri.openInDesktop(
+												`http://localhost:${project?.apiPort}`,
+												repoName,
+											)
+										}
+										disabled={!done}
+										className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-secondary hover:bg-accent transition-colors disabled:opacity-50"
+									>
+										<Monitor size={12} />
+										Open in Desktop
+									</button>
+								)}
 							</>
 						) : (
 							<button

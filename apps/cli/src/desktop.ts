@@ -64,7 +64,8 @@ export function openDesktop(projectPath: string): boolean {
 
 	try {
 		if (os === 'darwin') {
-			spawn('open', [appPath, '--args', '--project', projectPath], {
+			const binary = join(appPath, 'Contents', 'MacOS', APP_NAME);
+			spawn(binary, ['--project', projectPath], {
 				detached: true,
 				stdio: 'ignore',
 			}).unref();

@@ -125,6 +125,10 @@ export const tauri = {
 
 	findAvailablePort: (trackedPorts: number[]) =>
 		invoke<number>('find_available_port', { trackedPorts }),
+
+	isDesktopInstalled: () => invoke<boolean>('is_desktop_installed'),
+	openInDesktop: (apiUrl: string, name: string) =>
+		invoke<void>('open_in_desktop', { apiUrl, name }),
 };
 
 export const openUrl = (url: string) => tauriOpenUrl(url);
