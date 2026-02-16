@@ -101,7 +101,7 @@ export function ApplyPatchRenderer({
 						dir="rtl"
 						title={singleFilePath}
 					>
-					{`\u2066${singleFilePath}\u2069`}
+						{`\u2066${singleFilePath}\u2069`}
 					</span>
 				) : (
 					<span className="text-foreground/70 flex-shrink-0">

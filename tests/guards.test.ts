@@ -99,9 +99,9 @@ describe('guardToolCall', () => {
 			expect(
 				guardToolCall('terminal', { operation: 'read', terminalId: 'x' }).type,
 			).toBe('allow');
-			expect(
-				guardToolCall('terminal', { operation: 'list' }).type,
-			).toBe('allow');
+			expect(guardToolCall('terminal', { operation: 'list' }).type).toBe(
+				'allow',
+			);
 		});
 	});
 
@@ -116,9 +116,7 @@ describe('guardToolCall', () => {
 		});
 
 		test('blocks /etc/shadow', () => {
-			expect(guardToolCall('read', { path: '/etc/shadow' }).type).toBe(
-				'block',
-			);
+			expect(guardToolCall('read', { path: '/etc/shadow' }).type).toBe('block');
 		});
 
 		test('requires approval for sensitive paths', () => {

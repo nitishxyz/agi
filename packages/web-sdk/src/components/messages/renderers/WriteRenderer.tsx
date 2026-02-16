@@ -69,7 +69,7 @@ export function WriteRenderer({
 							dir="rtl"
 							title={path}
 						>
-						{`\u2066${path}\u2069`}
+							{`\u2066${path}\u2069`}
 						</span>
 					</>
 				)}

@@ -64,7 +64,7 @@ export function EditRenderer({
 					dir="rtl"
 					title={path}
 				>
-				{`\u2066${path}\u2069`}
+					{`\u2066${path}\u2069`}
 				</span>
 				{!hasToolError && opsApplied > 0 && (
 					<span className="text-muted-foreground/80 whitespace-nowrap flex-shrink-0">
