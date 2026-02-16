@@ -30,7 +30,7 @@ export default defineConfig({
 	build: {
 		rollupOptions: {
 			output: {
-				manualChunks(id) {
+			manualChunks(id) {
 					if (
 						id.includes('react-syntax-highlighter') ||
 						id.includes('refractor') ||
@@ -52,12 +52,10 @@ export default defineConfig({
 					if (
 						id.includes('node_modules/react/') ||
 						id.includes('node_modules/react-dom/') ||
-						id.includes('scheduler')
+						id.includes('scheduler') ||
+						id.includes('@tanstack')
 					) {
-						return 'react';
-					}
-					if (id.includes('@tanstack')) {
-						return 'router';
+						return 'framework';
 					}
 					if (id.includes('lucide-react')) {
 						return 'icons';
