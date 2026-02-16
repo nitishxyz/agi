@@ -127,7 +127,7 @@ export function ReadRenderer({
 							dir="rtl"
 							title={displayText}
 						>
-							{displayText}
+						{`\u2066${displayText}\u2069`}
 						</span>
 					</>
 				)}
