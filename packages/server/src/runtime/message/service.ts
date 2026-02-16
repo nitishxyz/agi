@@ -168,7 +168,7 @@ export async function dispatchAssistantMessage(
 		);
 	}
 
-	const toolApprovalMode = cfg.defaults.toolApproval ?? 'auto';
+	const toolApprovalMode = cfg.defaults.toolApproval ?? 'dangerous';
 
 	enqueueAssistantRun(
 		{

@@ -322,7 +322,7 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 						/>
 						<SelectRow
 							label="Tool Approval"
-							value={config?.defaults?.toolApproval ?? 'auto'}
+							value={config?.defaults?.toolApproval ?? 'dangerous'}
 							options={[
 								{ id: 'auto', label: 'Auto (no approval)' },
 								{ id: 'dangerous', label: 'Dangerous only' },

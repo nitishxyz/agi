@@ -800,7 +800,7 @@ export function registerSessionsRoutes(app: Hono) {
 			);
 			const { runSessionLoop } = await import('../runtime/agent/runner.ts');
 
-			const toolApprovalMode = cfg.defaults.toolApproval ?? 'auto';
+			const toolApprovalMode = cfg.defaults.toolApproval ?? 'dangerous';
 
 			enqueueAssistantRun(
 				{

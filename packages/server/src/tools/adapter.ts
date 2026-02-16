@@ -17,6 +17,7 @@ import {
 	requiresApproval,
 	requestApproval,
 } from '../runtime/tools/approval.ts';
+import { guardToolCall } from '../runtime/tools/guards.ts';
 
 export type { ToolAdapterContext } from '../runtime/tools/context.ts';
 
@@ -38,6 +39,8 @@ type PendingCallMeta = {
 	stepIndex?: number;
 	args?: unknown;
 	approvalPromise?: Promise<boolean>;
+	blocked?: boolean;
+	blockReason?: string;
 };
 
 function getPendingQueue(
@@ -323,11 +326,24 @@ export function adaptTools(
 						toolCallId: callId,
 					});
 				} catch {}
-				// Start approval request with full args
+			// Start approval request with full args
 				if (
 					ctx.toolApprovalMode &&
 					requiresApproval(name, ctx.toolApprovalMode)
 				) {
+					meta.approvalPromise = requestApproval(
+						ctx.sessionId,
+						ctx.messageId,
+						callId,
+						name,
+						args,
+					);
+				}
+				const guard = guardToolCall(name, args);
+				if (guard.type === 'block') {
+					meta.blocked = true;
+					meta.blockReason = guard.reason;
+				} else if (guard.type === 'approve' && !meta.approvalPromise) {
 					meta.approvalPromise = requestApproval(
 						ctx.sessionId,
 						ctx.messageId,
@@ -365,18 +381,40 @@ export function adaptTools(
 					stepStates.set(stepKey, stepState);
 				}
 
-				const executeWithGuards = async (): Promise<ToolExecuteReturn> => {
+			const executeWithGuards = async (): Promise<ToolExecuteReturn> => {
 					try {
-						// Await approval if it was requested in onInputAvailable
-						if (meta?.approvalPromise) {
-							const approved = await meta.approvalPromise;
-							if (!approved) {
-								return {
-									ok: false,
-									error: 'Tool execution rejected by user',
-								} as ToolExecuteReturn;
-							}
+						if (meta?.blocked) {
+							const blockedResult = {
+								ok: false,
+								error: `Blocked: ${meta.blockReason}`,
+								details: { reason: 'safety_guard' },
+							};
+							await persistToolErrorResult(blockedResult, {
+								callId: callIdFromQueue,
+								startTs: startTsFromQueue,
+								stepIndexForEvent,
+								args: meta?.args,
+							});
+							return blockedResult as ToolExecuteReturn;
 						}
+					// Await approval if it was requested in onInputAvailable
+					if (meta?.approvalPromise) {
+						const approved = await meta.approvalPromise;
+						if (!approved) {
+							const rejectedResult = {
+								ok: false,
+								error: 'Tool execution rejected by user',
+								details: { reason: 'user_rejected' },
+							};
+							await persistToolErrorResult(rejectedResult, {
+								callId: callIdFromQueue,
+								startTs: startTsFromQueue,
+								stepIndexForEvent,
+								args: meta?.args,
+							});
+							return rejectedResult as ToolExecuteReturn;
+						}
+					}
 						// Handle session-relative paths and cwd tools
 						let res: ToolExecuteReturn | { cwd: string } | null | undefined;
 						const cwd = getCwd(ctx.sessionId);

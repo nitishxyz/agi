@@ -48,7 +48,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 	);
 	const [selectedApproval, setSelectedApproval] = useState<
 		'auto' | 'dangerous' | 'all'
-	>(authStatus.defaults.toolApproval || 'auto');
+	>(authStatus.defaults.toolApproval || 'dangerous');
 	const [guidedMode, setGuidedMode] = useState(false);
 	const hasUserChangedProvider = useRef(false);
 
