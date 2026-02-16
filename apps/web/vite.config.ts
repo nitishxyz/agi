@@ -30,7 +30,7 @@ export default defineConfig({
 	build: {
 		rollupOptions: {
 			output: {
-			manualChunks(id) {
+				manualChunks(id) {
 					if (
 						id.includes('react-syntax-highlighter') ||
 						id.includes('refractor') ||
