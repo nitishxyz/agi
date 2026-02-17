@@ -24,6 +24,7 @@ import {
 	FileViewerPanel,
 	MCPSidebar,
 	MCPSidebarToggle,
+	QuickFilePicker,
 } from '@ottocode/web-sdk/components';
 import { Sidebar } from './Sidebar';
 import { Moon, Sun } from 'lucide-react';
@@ -114,6 +115,7 @@ export const AppLayout = memo(function AppLayout({
 			{/* Modals */}
 			<GitCommitModal />
 			<ConfirmationDialog />
+			<QuickFilePicker />
 		</div>
 	);
 });

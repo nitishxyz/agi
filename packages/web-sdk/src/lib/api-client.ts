@@ -639,13 +639,19 @@ class ApiClient {
 		}
 		return response.data as {
 			files: string[];
+			ignoredFiles?: string[];
 			changedFiles: Array<{ path: string; status: string }>;
 			truncated: boolean;
 		};
 	}
 
 	async getFileTree(dirPath = '.'): Promise<{
-		items: Array<{ name: string; path: string; type: 'file' | 'directory' }>;
+		items: Array<{
+			name: string;
+			path: string;
+			type: 'file' | 'directory';
+			gitignored?: boolean;
+		}>;
 		path: string;
 	}> {
 		const response = await fetch(

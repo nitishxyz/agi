@@ -3,6 +3,7 @@ import { useFocusStore } from '../stores/focusStore';
 import { useSidebarStore } from '../stores/sidebarStore';
 import { useGitStore } from '../stores/gitStore';
 import { useResearchStore } from '../stores/researchStore';
+import { useFilePickerStore } from '../stores/filePickerStore';
 
 interface UseKeyboardShortcutsOptions {
 	sessionIds: string[];
@@ -146,6 +147,12 @@ export function useKeyboardShortcuts({
 			if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
 				e.preventDefault();
 				onNewSession();
+				return;
+			}
+
+			if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+				e.preventDefault();
+				useFilePickerStore.getState().toggle();
 				return;
 			}
 

@@ -17,3 +17,4 @@ export * from './tunnelStore';
 export * from './usageStore';
 export * from './fileBrowserStore';
 export * from './mcpStore';
+export * from './filePickerStore';

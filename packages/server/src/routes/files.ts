@@ -48,11 +48,15 @@ function shouldExcludeDir(name: string): boolean {
 async function listFilesWithRg(
 	projectRoot: string,
 	limit: number,
+	includeIgnored = false,
 ): Promise<{ files: string[]; truncated: boolean }> {
 	const rgBin = await resolveBinary('rg');
 
 	return new Promise((resolve) => {
 		const args = ['--files', '--hidden', '--glob', '!.git/', '--sort', 'path'];
+		if (includeIgnored) {
+			args.push('--no-ignore');
+		}
 
 		const proc = spawn(rgBin, args, { cwd: projectRoot });
 		let stdout = '';
@@ -232,6 +236,34 @@ async function getChangedFiles(
 	}
 }
 
+async function getGitIgnoredFiles(
+	projectRoot: string,
+	files: string[],
+): Promise<Set<string>> {
+	if (files.length === 0) return new Set();
+	try {
+		return new Promise((resolve) => {
+			const proc = spawn('git', ['check-ignore', '--stdin'], {
+				cwd: projectRoot,
+			});
+			let stdout = '';
+			proc.stdout.on('data', (data) => {
+				stdout += data.toString();
+			});
+			proc.on('close', () => {
+				resolve(new Set(stdout.split('\n').filter(Boolean)));
+			});
+			proc.on('error', () => {
+				resolve(new Set());
+			});
+			proc.stdin.write(files.join('\n'));
+			proc.stdin.end();
+		});
+	} catch (_err) {
+		return new Set();
+	}
+}
+
 export function registerFilesRoutes(app: Hono) {
 	app.get('/v1/files', async (c) => {
 		try {
@@ -239,7 +271,7 @@ export function registerFilesRoutes(app: Hono) {
 			const maxDepth = Number.parseInt(c.req.query('maxDepth') || '10', 10);
 			const limit = Number.parseInt(c.req.query('limit') || '1000', 10);
 
-			let result = await listFilesWithRg(projectRoot, limit);
+			let result = await listFilesWithRg(projectRoot, limit, true);
 
 			if (result.files.length === 0) {
 				const gitignorePatterns = await parseGitignore(projectRoot);
@@ -254,9 +286,15 @@ export function registerFilesRoutes(app: Hono) {
 				);
 			}
 
-			const changedFiles = await getChangedFiles(projectRoot);
+			const [changedFiles, ignoredFiles] = await Promise.all([
+				getChangedFiles(projectRoot),
+				getGitIgnoredFiles(projectRoot, result.files),
+			]);
 
 			result.files.sort((a, b) => {
+				const aIgnored = ignoredFiles.has(a);
+				const bIgnored = ignoredFiles.has(b);
+				if (aIgnored !== bIgnored) return aIgnored ? 1 : -1;
 				const aChanged = changedFiles.has(a);
 				const bChanged = changedFiles.has(b);
 				if (aChanged && !bChanged) return -1;
@@ -266,6 +304,7 @@ export function registerFilesRoutes(app: Hono) {
 
 			return c.json({
 				files: result.files,
+				ignoredFiles: Array.from(ignoredFiles),
 				changedFiles: Array.from(changedFiles.entries()).map(
 					([path, status]) => ({
 						path,
@@ -293,6 +332,7 @@ export function registerFilesRoutes(app: Hono) {
 				name: string;
 				path: string;
 				type: 'file' | 'directory';
+				gitignored?: boolean;
 			}> = [];
 
 			for (const entry of entries) {
@@ -301,17 +341,30 @@ export function registerFilesRoutes(app: Hono) {
 
 				if (entry.isDirectory()) {
 					if (shouldExcludeDir(entry.name)) continue;
-					if (matchesGitignorePattern(relPath, gitignorePatterns)) continue;
-					items.push({ name: entry.name, path: relPath, type: 'directory' });
+					const ignored = matchesGitignorePattern(relPath, gitignorePatterns);
+					items.push({
+						name: entry.name,
+						path: relPath,
+						type: 'directory',
+						gitignored: ignored || undefined,
+					});
 				} else if (entry.isFile()) {
 					if (shouldExcludeFile(entry.name)) continue;
-					if (matchesGitignorePattern(relPath, gitignorePatterns)) continue;
-					items.push({ name: entry.name, path: relPath, type: 'file' });
+					const ignored = matchesGitignorePattern(relPath, gitignorePatterns);
+					items.push({
+						name: entry.name,
+						path: relPath,
+						type: 'file',
+						gitignored: ignored || undefined,
+					});
 				}
 			}
 
 			items.sort((a, b) => {
 				if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
+				const aIgnored = a.gitignored ?? false;
+				const bIgnored = b.gitignored ?? false;
+				if (aIgnored !== bIgnored) return aIgnored ? 1 : -1;
 				return a.name.localeCompare(b.name);
 			});
 

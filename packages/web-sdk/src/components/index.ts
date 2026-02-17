@@ -81,6 +81,7 @@ export * from './mcp/MCPSidebarToggle';
 export * from './file-browser/FileBrowserSidebar';
 export * from './file-browser/FileBrowserSidebarToggle';
 export * from './file-browser/FileViewerPanel';
+export * from './file-browser/QuickFilePicker';
 
 // Common Components
 export * from './common/ProviderLogo';

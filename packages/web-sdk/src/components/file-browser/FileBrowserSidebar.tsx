@@ -40,6 +40,7 @@ function TreeDirectory({ dirPath }: { dirPath: string }) {
 					name={item.name}
 					path={item.path}
 					type={item.type}
+					gitignored={item.gitignored}
 				/>
 			))}
 		</div>
@@ -50,10 +51,12 @@ function TreeItem({
 	name,
 	path,
 	type,
+	gitignored,
 }: {
 	name: string;
 	path: string;
 	type: 'file' | 'directory';
+	gitignored?: boolean;
 }) {
 	const expandedDirs = useFileBrowserStore((s) => s.expandedDirs);
 	const toggleDir = useFileBrowserStore((s) => s.toggleDir);
@@ -77,7 +80,7 @@ function TreeItem({
 				onClick={handleClick}
 				className={`w-full text-left flex items-center gap-1.5 px-2 py-1 text-sm hover:bg-muted/50 rounded transition-colors ${
 					isSelected ? 'bg-muted text-foreground' : 'text-foreground/80'
-				}`}
+				} ${gitignored ? 'opacity-40' : ''}`}
 			>
 				{type === 'directory' ? (
 					<>
@@ -155,6 +158,7 @@ export const FileBrowserSidebar = memo(function FileBrowserSidebar() {
 								name={item.name}
 								path={item.path}
 								type={item.type}
+								gitignored={item.gitignored}
 							/>
 						))
 					)}
