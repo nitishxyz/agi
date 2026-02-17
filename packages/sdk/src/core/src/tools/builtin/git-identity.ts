@@ -15,6 +15,9 @@ const GIT_COMMIT_MSG_RE =
 export function injectCoAuthorIntoGitCommit(cmd: string): string {
 	return cmd.replace(GIT_COMMIT_MSG_RE, (match, quote, msg) => {
 		const patched = appendCoAuthorTrailer(msg);
-		return match.replace(`${quote}${msg}${quote}`, `${quote}${patched}${quote}`);
+		return match.replace(
+			`${quote}${msg}${quote}`,
+			`${quote}${patched}${quote}`,
+		);
 	});
 }

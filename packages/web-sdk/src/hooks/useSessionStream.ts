@@ -397,39 +397,42 @@ export function useSessionStream(sessionId: string | undefined) {
 					if (role === 'assistant' && id) {
 						assistantMessageIdRef.current = id;
 					}
-				if (id && role) {
-					const agent = typeof payload?.agent === 'string' ? payload.agent : '';
-					const provider = typeof payload?.provider === 'string' ? payload.provider : '';
-					const model = typeof payload?.model === 'string' ? payload.model : '';
-					queryClient.setQueryData<Message[]>(
-						['messages', sessionId],
-						(oldMessages) => {
-							if (!oldMessages) return oldMessages;
-							if (oldMessages.some((m) => m.id === id)) return oldMessages;
-							const newMessage: Message = {
-								id,
-								sessionId,
-								role: role as Message['role'],
-								status: 'pending',
-								agent,
-								provider,
-								model,
-								createdAt: Date.now(),
-								completedAt: null,
-								latencyMs: null,
-								promptTokens: null,
-								completionTokens: null,
-								totalTokens: null,
-								error: null,
-								parts: [],
-							};
-							const next = [...oldMessages, newMessage];
-							next.sort((a, b) => a.createdAt - b.createdAt);
-							return next;
-						},
-					);
-					throttledInvalidate();
-				}
+					if (id && role) {
+						const agent =
+							typeof payload?.agent === 'string' ? payload.agent : '';
+						const provider =
+							typeof payload?.provider === 'string' ? payload.provider : '';
+						const model =
+							typeof payload?.model === 'string' ? payload.model : '';
+						queryClient.setQueryData<Message[]>(
+							['messages', sessionId],
+							(oldMessages) => {
+								if (!oldMessages) return oldMessages;
+								if (oldMessages.some((m) => m.id === id)) return oldMessages;
+								const newMessage: Message = {
+									id,
+									sessionId,
+									role: role as Message['role'],
+									status: 'pending',
+									agent,
+									provider,
+									model,
+									createdAt: Date.now(),
+									completedAt: null,
+									latencyMs: null,
+									promptTokens: null,
+									completionTokens: null,
+									totalTokens: null,
+									error: null,
+									parts: [],
+								};
+								const next = [...oldMessages, newMessage];
+								next.sort((a, b) => a.createdAt - b.createdAt);
+								return next;
+							},
+						);
+						throttledInvalidate();
+					}
 					break;
 				}
 				case 'message.part.delta': {
@@ -513,7 +516,8 @@ export function useSessionStream(sessionId: string | undefined) {
 				}
 				case 'message.updated': {
 					const id = typeof payload?.id === 'string' ? payload.id : null;
-					const status = typeof payload?.status === 'string' ? payload.status : null;
+					const status =
+						typeof payload?.status === 'string' ? payload.status : null;
 					if (id && status) {
 						queryClient.setQueryData<Message[]>(
 							['messages', sessionId],
@@ -522,7 +526,10 @@ export function useSessionStream(sessionId: string | undefined) {
 								const idx = oldMessages.findIndex((m) => m.id === id);
 								if (idx === -1) return oldMessages;
 								const next = [...oldMessages];
-								next[idx] = { ...next[idx], status: status as Message['status'] };
+								next[idx] = {
+									...next[idx],
+									status: status as Message['status'],
+								};
 								return next;
 							},
 						);

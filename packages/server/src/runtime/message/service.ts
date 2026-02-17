@@ -141,7 +141,13 @@ export async function dispatchAssistantMessage(
 	publish({
 		type: 'message.created',
 		sessionId,
-		payload: { id: assistantMessageId, role: 'assistant', agent, provider, model },
+		payload: {
+			id: assistantMessageId,
+			role: 'assistant',
+			agent,
+			provider,
+			model,
+		},
 	});
 
 	debugLog(

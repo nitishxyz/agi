@@ -38,9 +38,13 @@ export function registerCommitRoutes(app: Hono) {
 			const { gitRoot } = validation;
 
 			const fullMessage = appendCoAuthorTrailer(message);
-			const { stdout } = await execFileAsync('git', ['commit', '-m', fullMessage], {
-				cwd: gitRoot,
-			});
+			const { stdout } = await execFileAsync(
+				'git',
+				['commit', '-m', fullMessage],
+				{
+					cwd: gitRoot,
+				},
+			);
 
 			return c.json({
 				status: 'ok',

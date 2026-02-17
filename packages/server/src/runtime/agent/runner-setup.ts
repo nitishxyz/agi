@@ -63,7 +63,11 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		debugLog('[RUNNER] Using minimal history for /compact command');
 		history = [];
 	} else {
-		history = await buildHistoryMessages(db, opts.sessionId, opts.assistantMessageId);
+		history = await buildHistoryMessages(
+			db,
+			opts.sessionId,
+			opts.assistantMessageId,
+		);
 	}
 	historyTimer.end({ messages: history.length });
 
