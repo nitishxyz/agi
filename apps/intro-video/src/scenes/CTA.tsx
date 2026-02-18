@@ -54,7 +54,7 @@ export const CTA: React.FC = () => {
         backgroundColor: colors.bg,
         justifyContent: "center",
         alignItems: "center",
-        fontFamily: font.mono,
+        fontFamily: font.sans,
       }}
     >
       <div
@@ -121,8 +121,9 @@ export const CTA: React.FC = () => {
             color: colors.bg,
             padding: "18px 36px",
             borderRadius: 12,
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: 500,
+            fontFamily: font.mono,
             opacity: cmdProgress,
             transform: `scale(${cmdScale})`,
             letterSpacing: "0.01em",

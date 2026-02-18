@@ -35,7 +35,7 @@ export const Tools: React.FC = () => {
         backgroundColor: colors.bg,
         justifyContent: "center",
         alignItems: "center",
-        fontFamily: font.mono,
+        fontFamily: font.sans,
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>

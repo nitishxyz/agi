@@ -62,7 +62,7 @@ export const Interfaces: React.FC = () => {
         backgroundColor: colors.bg,
         justifyContent: "center",
         alignItems: "center",
-        fontFamily: font.mono,
+        fontFamily: font.sans,
       }}
     >
       <div style={{ width: 1100 }}>

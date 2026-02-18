@@ -1,3 +1,16 @@
+import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
+import { loadFont as loadPlexMono } from "@remotion/google-fonts/IBMPlexMono";
+
+const { fontFamily: interFamily } = loadInter("normal", {
+  weights: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+});
+
+const { fontFamily: monoFamily } = loadPlexMono("normal", {
+  weights: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+});
+
 export const colors = {
   bg: "#E8E8EB",
   surface: "#F4F4F5",
@@ -16,5 +29,6 @@ export const colors = {
 };
 
 export const font = {
-  mono: "IBM Plex Mono, monospace",
+  sans: interFamily,
+  mono: monoFamily,
 };

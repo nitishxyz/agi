@@ -5,6 +5,9 @@ import { ProductMockup } from "./scenes/ProductMockup";
 import { Interfaces } from "./scenes/Interfaces";
 import { Providers } from "./scenes/Providers";
 import { Tools } from "./scenes/Tools";
+import { Setu } from "./scenes/Setu";
+import { LocalFirst } from "./scenes/LocalFirst";
+import { OpenSource } from "./scenes/OpenSource";
 import { CTA } from "./scenes/CTA";
 import { SoundDesign } from "./SoundDesign";
 
@@ -121,8 +124,11 @@ export const IntroVideo: React.FC = () => {
     { component: <ProductMockup />, duration: 230, enter: "push-up", exit: "push-up" },
     { component: <Interfaces />, duration: 150, enter: "push-up", exit: "slide-left" },
     { component: <Providers />, duration: 140, enter: "slide-left", exit: "scale" },
-    { component: <Tools />, duration: 130, enter: "scale", exit: "push-up" },
-    { component: <CTA />, duration: 160, enter: "drop", exit: "fade" },
+    { component: <Setu />, duration: 195, enter: "scale", exit: "push-up" },
+    { component: <LocalFirst />, duration: 195, enter: "push-up", exit: "slide-left" },
+    { component: <Tools />, duration: 130, enter: "slide-left", exit: "push-up" },
+    { component: <OpenSource />, duration: 195, enter: "drop", exit: "scale" },
+    { component: <CTA />, duration: 160, enter: "scale", exit: "fade" },
   ];
 
   let offset = 0;
