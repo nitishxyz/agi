@@ -35,6 +35,13 @@ const EXCLUDED_DIRS = new Set([
 	'.cache',
 	'__pycache__',
 	'.tsbuildinfo',
+	'target',
+	'.cargo',
+	'.rustup',
+	'vendor',
+	'.gradle',
+	'.idea',
+	'.vscode',
 ]);
 
 function shouldExcludeFile(name: string): boolean {
@@ -53,9 +60,12 @@ async function listFilesWithRg(
 	const rgBin = await resolveBinary('rg');
 
 	return new Promise((resolve) => {
-		const args = ['--files', '--hidden', '--glob', '!.git/', '--sort', 'path'];
+		const args = ['--files', '--hidden', '--glob', '!.*/', '--sort', 'path'];
 		if (includeIgnored) {
 			args.push('--no-ignore');
+		}
+		for (const dir of EXCLUDED_DIRS) {
+			args.push('--glob', `!**/${dir}/`);
 		}
 
 		const proc = spawn(rgBin, args, { cwd: projectRoot });
@@ -336,11 +346,9 @@ export function registerFilesRoutes(app: Hono) {
 			}> = [];
 
 			for (const entry of entries) {
-				if (entry.name.startsWith('.') && entry.name !== '.otto') continue;
 				const relPath = relative(projectRoot, join(targetDir, entry.name));
 
 				if (entry.isDirectory()) {
-					if (shouldExcludeDir(entry.name)) continue;
 					const ignored = matchesGitignorePattern(relPath, gitignorePatterns);
 					items.push({
 						name: entry.name,
