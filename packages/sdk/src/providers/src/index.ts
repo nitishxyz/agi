@@ -25,6 +25,7 @@ export { validateProviderModel } from './validate.ts';
 export { estimateModelCostUsd } from './pricing.ts';
 export { providerEnvVar, readEnvKey, setEnvKey } from './env.ts';
 export {
+	createSetu,
 	createSetuFetch,
 	createSetuModel,
 	fetchSetuBalance,
@@ -33,6 +34,7 @@ export {
 } from './setu-client.ts';
 export type {
 	SetuAuth,
+	SetuInstance,
 	SetuProviderOptions,
 	SetuPaymentCallbacks,
 	SetuBalanceUpdate,

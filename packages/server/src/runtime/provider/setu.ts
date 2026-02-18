@@ -1,6 +1,5 @@
 import {
-	createSetuModel,
-	catalog,
+	createSetu,
 	type SetuPaymentCallbacks,
 	getAuth,
 	loadConfig,
@@ -12,11 +11,6 @@ import {
 } from '../topup/manager.ts';
 
 const MIN_TOPUP_USD = 5;
-
-function getProviderNpm(model: string): string | undefined {
-	const entry = catalog.setu?.models?.find((m) => m.id === model);
-	return entry?.provider?.npm;
-}
 
 export interface ResolveSetuModelOptions {
 	messageId?: string;
@@ -122,18 +116,16 @@ export async function resolveSetuModel(
 			}
 		: {};
 
-	const providerNpm = getProviderNpm(model);
-
-	return createSetuModel(
-		model,
-		{ privateKey },
-		{
-			baseURL,
-			rpcURL,
-			callbacks,
-			providerNpm,
+	const setu = createSetu({
+		auth: { privateKey },
+		baseURL,
+		rpcURL,
+		callbacks,
+		payment: {
 			topupApprovalMode,
 			autoPayThresholdUsd,
 		},
-	);
+	});
+
+	return setu.model(model);
 }

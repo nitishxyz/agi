@@ -492,80 +492,18 @@ Setu Router (Cloudflare Worker)
 				All endpoints are prefixed with <code>/v1</code>.
 			</p>
 
-			<h2>Key Packages</h2>
-			<div className="overflow-x-auto">
-				<table>
-					<thead>
-						<tr>
-							<th>Package</th>
-							<th>Purpose</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>
-								<code>@solana/web3.js</code>
-							</td>
-							<td>Solana keypair generation and public key derivation</td>
-						</tr>
-						<tr>
-							<td>
-								<code>tweetnacl</code>
-							</td>
-							<td>Ed25519 signature creation and verification</td>
-						</tr>
-						<tr>
-							<td>
-								<code>bs58</code>
-							</td>
-							<td>Base58 encoding/decoding for keys and signatures</td>
-						</tr>
-						<tr>
-							<td>
-								<code>x402</code>
-							</td>
-							<td>
-								x402 payment protocol — transaction signing and header creation
-							</td>
-						</tr>
-						<tr>
-							<td>
-								<code>ai</code>
-							</td>
-							<td>Vercel AI SDK — provider-agnostic model interface</td>
-						</tr>
-						<tr>
-							<td>
-								<code>@ai-sdk/openai</code>
-							</td>
-							<td>AI SDK OpenAI provider (used for OpenAI models via Setu)</td>
-						</tr>
-						<tr>
-							<td>
-								<code>@ai-sdk/anthropic</code>
-							</td>
-							<td>
-								AI SDK Anthropic provider (used for Anthropic models via Setu)
-							</td>
-						</tr>
-						<tr>
-							<td>
-								<code>@ai-sdk/google</code>
-							</td>
-							<td>AI SDK Google provider (used for Google models via Setu)</td>
-						</tr>
-						<tr>
-							<td>
-								<code>@ai-sdk/openai-compatible</code>
-							</td>
-							<td>
-								AI SDK OpenAI-compatible provider (used for Moonshot models via
-								Setu)
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+			<h2>Client SDK</h2>
+			<p>
+				The <code>@ottocode/ai-sdk</code> package is the recommended way to
+				integrate with Setu. It handles wallet auth, x402 payments, provider
+				routing, and Anthropic prompt caching automatically.
+			</p>
+			<CodeBlock>{`bun add @ottocode/ai-sdk ai`}</CodeBlock>
+			<p>
+				See the{' '}
+				<a href="/docs/setu/integration">Integration Guide</a>{' '}
+				for full usage examples.
+			</p>
 		</DocPage>
 	);
 }

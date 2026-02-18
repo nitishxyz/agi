@@ -101,6 +101,7 @@
 		"@modelcontextprotocol/sdk": "^1.12",
 		"@openauthjs/openauth": "^0.4.3",
 		"@openrouter/ai-sdk-provider": "^1.2.0",
+		"@ottocode/ai-sdk": "^0.1.0",
 		"@solana/web3.js": "^1.95.2",
 		"ai": "^6.0.0",
 		"bs58": "^6.0.0",

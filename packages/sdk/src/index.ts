@@ -61,6 +61,7 @@ export {
 	setEnvKey,
 } from './providers/src/index.ts';
 export {
+	createSetu,
 	createSetuFetch,
 	createSetuModel,
 	fetchSetuBalance,
@@ -69,6 +70,7 @@ export {
 } from './providers/src/index.ts';
 export type {
 	SetuAuth,
+	SetuInstance,
 	SetuProviderOptions,
 	SetuPaymentCallbacks,
 	SetuBalanceUpdate,
