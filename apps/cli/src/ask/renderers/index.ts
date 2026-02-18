@@ -21,6 +21,7 @@ import {
 	renderLoadMcpToolsCall,
 	renderLoadMcpToolsResult,
 } from './load-mcp-tools.ts';
+import { renderSkillCall, renderSkillResult } from './skill.ts';
 import {
 	renderProgressCall,
 	renderTodosCall,
@@ -53,6 +54,7 @@ const callRenderers: Record<string, CallRenderer> = {
 	update_todos: renderTodosCall,
 	finish: renderFinishCall,
 	load_mcp_tools: renderLoadMcpToolsCall,
+	skill: renderSkillCall,
 };
 
 const resultRenderers: Record<string, ResultRenderer> = {
@@ -74,6 +76,7 @@ const resultRenderers: Record<string, ResultRenderer> = {
 	update_todos: renderTodosResult,
 	finish: renderFinishResult,
 	load_mcp_tools: renderLoadMcpToolsResult,
+	skill: renderSkillResult,
 };
 
 export function renderToolCall(ctx: RendererContext): string {

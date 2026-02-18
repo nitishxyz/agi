@@ -16,6 +16,7 @@ import {
 	Brain,
 	Database,
 	Plug,
+	BookOpen,
 } from 'lucide-react';
 import {
 	Fragment,
@@ -303,6 +304,10 @@ export const MessagePartItem = memo(
 					return (
 						<Terminal className="h-4 w-4 text-amber-600 dark:text-amber-300" />
 					);
+			if (toolName === 'skill')
+				return (
+					<BookOpen className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+				);
 				if (toolName.includes('__'))
 					return (
 						<Plug className="h-4 w-4 text-purple-600 dark:text-purple-300" />

@@ -22,6 +22,7 @@ import { DatabaseToolRenderer } from './DatabaseToolRenderer';
 import { TerminalRenderer } from './TerminalRenderer';
 import { McpToolRenderer, isMcpTool } from './McpToolRenderer';
 import { LoadMcpToolsRenderer } from './LoadMcpToolsRenderer';
+import { SkillRenderer } from './SkillRenderer';
 
 interface ToolResultRendererProps {
 	toolName: string;
@@ -68,6 +69,8 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
 	WebSearch: 'websearch',
 
 	LoadMcpTools: 'load_mcp_tools',
+
+	Skill: 'skill',
 };
 
 function normalizeToolName(name: string): string {
@@ -140,6 +143,8 @@ export function ToolResultRenderer({
 			return <ProgressUpdateRenderer {...props} />;
 		case 'load_mcp_tools':
 			return <LoadMcpToolsRenderer {...props} />;
+	case 'skill':
+		return <SkillRenderer {...props} />;
 		case 'error':
 			return (
 				<ErrorRenderer

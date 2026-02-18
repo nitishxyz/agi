@@ -51,6 +51,7 @@ export const TOOL_COLORS: Record<string, (s: string) => string> = {
 	websearch: c.magenta,
 
 	finish: c.dim,
+	skill: c.magenta,
 	progress_update: c.cyan,
 	update_todos: c.cyan,
 };
