@@ -220,7 +220,7 @@ export const Setu: React.FC = () => {
             marginTop: 8,
           }}
         >
-          setu.ottocode.io
+          ottocode.io/setu
         </div>
       </div>
     </AbsoluteFill>

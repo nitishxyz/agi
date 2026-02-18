@@ -1629,6 +1629,32 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					output: 64000,
 				},
 			},
+			{
+				id: 'claude-sonnet-4-6',
+				label: 'Claude Sonnet 4.6',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-08',
+				releaseDate: '2026-02-17',
+				lastUpdated: '2026-02-17',
+				openWeights: false,
+				cost: {
+					input: 3,
+					output: 15,
+					cacheRead: 0.3,
+					cacheWrite: 3.75,
+				},
+				limit: {
+					context: 200000,
+					output: 64000,
+				},
+			},
 		],
 		label: 'Anthropic',
 		env: ['ANTHROPIC_API_KEY'],
@@ -5279,6 +5305,29 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'openrouter/aurora-alpha',
+				label: 'Aurora Alpha',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2026-02-09',
+				lastUpdated: '2026-02-09',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 128000,
+					output: 50000,
+				},
+			},
+			{
 				id: 'openrouter/sherlock-dash-alpha',
 				label: 'Sherlock Dash Alpha',
 				modalities: {
@@ -5324,6 +5373,30 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 1840000,
 					output: 0,
+				},
+			},
+			{
+				id: 'prime-intellect/intellect-3',
+				label: 'Intellect 3',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-10',
+				releaseDate: '2025-01-15',
+				lastUpdated: '2025-01-15',
+				openWeights: true,
+				cost: {
+					input: 0.2,
+					output: 1.1,
+				},
+				limit: {
+					context: 131072,
+					output: 8192,
 				},
 			},
 			{
@@ -5923,6 +5996,54 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 262144,
 					output: 262144,
+				},
+			},
+			{
+				id: 'qwen/qwen3.5-397b-a17b',
+				label: 'Qwen3.5 397B A17B',
+				modalities: {
+					input: ['text', 'image', 'video'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2026-02-16',
+				lastUpdated: '2026-02-16',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 3.6,
+				},
+				limit: {
+					context: 262144,
+					output: 65536,
+				},
+			},
+			{
+				id: 'qwen/qwen3.5-plus-02-15',
+				label: 'Qwen3.5 Plus 2026-02-15',
+				modalities: {
+					input: ['text', 'image', 'video'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2026-02-16',
+				lastUpdated: '2026-02-16',
+				openWeights: false,
+				cost: {
+					input: 0.4,
+					output: 2.4,
+				},
+				limit: {
+					context: 1000000,
+					output: 65536,
 				},
 			},
 			{
@@ -6595,7 +6716,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 			},
 			{
 				id: 'z-ai/glm-4.7-flash',
-				label: 'GLM-4.7',
+				label: 'GLM-4.7-Flash',
 				modalities: {
 					input: ['text'],
 					output: ['text'],
@@ -6880,6 +7001,35 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'claude-sonnet-4-6',
+				label: 'Claude Sonnet 4.6',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-07-31',
+				releaseDate: '2026-02-17',
+				lastUpdated: '2026-02-17',
+				openWeights: false,
+				cost: {
+					input: 3,
+					output: 15,
+					cacheRead: 0.3,
+					cacheWrite: 3.75,
+				},
+				limit: {
+					context: 1000000,
+					output: 64000,
+				},
+				provider: {
+					npm: '@ai-sdk/anthropic',
+				},
+			},
+			{
 				id: 'gemini-3-flash',
 				label: 'Gemini 3 Flash',
 				modalities: {
@@ -7029,6 +7179,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					input: 1,
 					output: 3.2,
 					cacheRead: 0.2,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+			},
+			{
+				id: 'glm-5-free',
+				label: 'GLM-5 Free',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2026-02-11',
+				lastUpdated: '2026-02-11',
+				openWeights: true,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
 				},
 				limit: {
 					context: 204800,
@@ -8017,6 +8192,32 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'glm-4.7-flashx',
+				label: 'GLM-4.7-FlashX',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2026-01-19',
+				lastUpdated: '2026-01-19',
+				openWeights: true,
+				cost: {
+					input: 0.07,
+					output: 0.4,
+					cacheRead: 0.01,
+					cacheWrite: 0,
+				},
+				limit: {
+					context: 200000,
+					output: 131072,
+				},
+			},
+			{
 				id: 'glm-5',
 				label: 'GLM-5',
 				modalities: {
@@ -8282,6 +8483,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					output: 131072,
 				},
 			},
+			{
+				id: 'MiniMax-M2.5-highspeed',
+				label: 'MiniMax-M2.5-highspeed',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2026-02-13',
+				lastUpdated: '2026-02-13',
+				openWeights: true,
+				cost: {
+					input: 0.6,
+					output: 2.4,
+					cacheRead: 0.06,
+					cacheWrite: 0.375,
+				},
+				limit: {
+					context: 204800,
+					output: 131072,
+				},
+			},
 		],
 		label: 'MiniMax (minimax.io)',
 		env: ['MINIMAX_API_KEY'],
@@ -8426,6 +8652,29 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				knowledge: '2025-03-31',
 				releaseDate: '2025-09-29',
 				lastUpdated: '2025-09-29',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 128000,
+					output: 32000,
+				},
+			},
+			{
+				id: 'claude-sonnet-4.6',
+				label: 'Claude Sonnet 4.6',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				releaseDate: '2026-02-17',
+				lastUpdated: '2026-02-17',
 				openWeights: false,
 				cost: {
 					input: 0,

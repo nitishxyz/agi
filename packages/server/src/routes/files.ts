@@ -13,10 +13,6 @@ const execAsync = promisify(exec);
 const EXCLUDED_FILES = new Set([
 	'.DS_Store',
 	'bun.lockb',
-	'.env',
-	'.env.local',
-	'.env.production',
-	'.env.development',
 ]);
 
 const EXCLUDED_DIRS = new Set([
@@ -279,7 +275,7 @@ export function registerFilesRoutes(app: Hono) {
 		try {
 			const projectRoot = c.req.query('project') || process.cwd();
 			const maxDepth = Number.parseInt(c.req.query('maxDepth') || '10', 10);
-			const limit = Number.parseInt(c.req.query('limit') || '1000', 10);
+			const limit = Number.parseInt(c.req.query('limit') || '10000', 10);
 
 			let result = await listFilesWithRg(projectRoot, limit, true);
 
