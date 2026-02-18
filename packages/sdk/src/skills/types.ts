@@ -23,6 +23,22 @@ export interface DiscoveredSkill {
 	scope: SkillScope;
 }
 
+export interface SecurityNotice {
+	type:
+		| 'html_comment'
+		| 'hidden_instruction'
+		| 'base64_content'
+		| 'data_uri'
+		| 'invisible_chars';
+	description: string;
+	line?: number;
+}
+
+export interface SkillFileInfo {
+	relativePath: string;
+	size: number;
+}
+
 export interface SkillLoadResult {
 	ok: true;
 	name: string;
@@ -31,6 +47,8 @@ export interface SkillLoadResult {
 	path: string;
 	scope: SkillScope;
 	allowedTools?: string[];
+	availableFiles?: SkillFileInfo[];
+	securityNotices?: SecurityNotice[];
 }
 
 export interface SkillErrorResult {

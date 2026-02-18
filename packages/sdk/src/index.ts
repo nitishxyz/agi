@@ -300,6 +300,8 @@ export type {
 	SkillLoadResult,
 	SkillErrorResult,
 	SkillResult,
+	SkillFileInfo,
+	SecurityNotice,
 } from './skills/index.ts';
 
 export {
@@ -313,6 +315,8 @@ export { parseSkillFile, extractFrontmatter } from './skills/index.ts';
 export {
 	discoverSkills,
 	loadSkill,
+	loadSkillFile,
+	discoverSkillFiles,
 	getSkillCache,
 	clearSkillCache,
 	findGitRoot,
@@ -326,6 +330,8 @@ export {
 	buildSkillTool,
 	rebuildSkillDescription,
 } from './skills/index.ts';
+
+export { scanContent as scanSkillContent } from './skills/index.ts';
 
 // =======================
 // Tunnel (Cloudflare Tunnels for remote access)

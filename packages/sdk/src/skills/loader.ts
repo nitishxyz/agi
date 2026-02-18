@@ -2,7 +2,12 @@ import { join, dirname } from 'node:path';
 import { promises as fs } from 'node:fs';
 import fg from 'fast-glob';
 import { parseSkillFile } from './parser.ts';
-import type { SkillDefinition, DiscoveredSkill, SkillScope } from './types.ts';
+import type {
+	SkillDefinition,
+	DiscoveredSkill,
+	SkillScope,
+	SkillFileInfo,
+} from './types.ts';
 import { getGlobalConfigDir, getHomeDir } from '../config/src/paths.ts';
 
 const skillCache = new Map<string, SkillDefinition>();
@@ -13,6 +18,31 @@ const SKILL_DIRS = [
 	'.opencode/skills',
 	'.codex/skills',
 ];
+
+const ALLOWED_EXTENSIONS = new Set([
+	'.md',
+	'.txt',
+	'.json',
+	'.yaml',
+	'.yml',
+	'.toml',
+	'.ts',
+	'.js',
+	'.tsx',
+	'.jsx',
+	'.py',
+	'.rs',
+	'.go',
+	'.sh',
+	'.bash',
+	'.zsh',
+	'.css',
+	'.html',
+	'.xml',
+	'.svg',
+]);
+
+const MAX_FILE_SIZE = 256 * 1024;
 
 export async function discoverSkills(
 	cwd: string,
@@ -67,6 +97,68 @@ export async function discoverSkills(
 
 export async function loadSkill(name: string): Promise<SkillDefinition | null> {
 	return skillCache.get(name) ?? null;
+}
+
+export async function loadSkillFile(
+	name: string,
+	filePath: string,
+): Promise<{ content: string; resolvedPath: string } | null> {
+	const skill = skillCache.get(name);
+	if (!skill) return null;
+
+	const skillDir = dirname(skill.path);
+	const resolved = join(skillDir, filePath);
+
+	if (!resolved.startsWith(skillDir)) {
+		return null;
+	}
+
+	const ext = `.${resolved.split('.').pop()?.toLowerCase()}`;
+	if (!ALLOWED_EXTENSIONS.has(ext)) {
+		return null;
+	}
+
+	try {
+		const stat = await fs.stat(resolved);
+		if (stat.size > MAX_FILE_SIZE) {
+			return null;
+		}
+		const content = await fs.readFile(resolved, 'utf-8');
+		return { content, resolvedPath: resolved };
+	} catch {
+		return null;
+	}
+}
+
+export async function discoverSkillFiles(
+	name: string,
+): Promise<SkillFileInfo[]> {
+	const skill = skillCache.get(name);
+	if (!skill) return [];
+
+	const skillDir = dirname(skill.path);
+	try {
+		const files = await fg('**/*', {
+			cwd: skillDir,
+			absolute: false,
+			ignore: ['SKILL.md', 'node_modules/**', '.git/**'],
+			onlyFiles: true,
+		});
+
+		const results: SkillFileInfo[] = [];
+		for (const f of files.sort()) {
+			const ext = `.${f.split('.').pop()?.toLowerCase()}`;
+			if (!ALLOWED_EXTENSIONS.has(ext)) continue;
+
+			try {
+				const stat = await fs.stat(join(skillDir, f));
+				results.push({ relativePath: f, size: stat.size });
+			} catch {}
+		}
+		return results;
+	} catch {
+		return [];
+	}
 }
 
 export function getSkillCache(): Map<string, SkillDefinition> {
