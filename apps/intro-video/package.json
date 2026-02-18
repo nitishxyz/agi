@@ -1,0 +1,21 @@
+{
+  "name": "otto-intro-video",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion render IntroVideo out/intro.mp4",
+    "render": "remotion render IntroVideo out/intro.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.261",
+    "@remotion/transitions": "4.0.261",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "remotion": "4.0.261"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.16",
+    "typescript": "~5.9.3"
+  }
+}
