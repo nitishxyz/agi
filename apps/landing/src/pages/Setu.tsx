@@ -1097,9 +1097,9 @@ export function Setu() {
 					</Reveal>
 
 					<Reveal delay={80}>
-					<TerminalBlock
-						title="ai-sdk"
-						copyText={`import { createSetu } from "@ottocode/ai-sdk";
+						<TerminalBlock
+							title="ai-sdk"
+							copyText={`import { createSetu } from "@ottocode/ai-sdk";
 import { generateText } from "ai";
 
 const setu = createSetu({
@@ -1110,82 +1110,82 @@ const { text } = await generateText({
 		model: setu.model("claude-sonnet-4-6"),
 		prompt: "Hello",
 });`}
-					>
-						<span className="text-purple-700 dark:text-purple-400">
-							import
-						</span>
-						<span className="text-otto-text"> {'{ createSetu }'} </span>
-						<span className="text-purple-700 dark:text-purple-400">from</span>
-						<span className="text-green-700 dark:text-green-400">
-							{' '}
-							"@ottocode/ai-sdk"
-						</span>
-						<span className="text-otto-dim">;</span>
-						<br />
-						<span className="text-purple-700 dark:text-purple-400">
-							import
-						</span>
-						<span className="text-otto-text"> {'{ generateText }'} </span>
-						<span className="text-purple-700 dark:text-purple-400">from</span>
-						<span className="text-green-700 dark:text-green-400"> "ai"</span>
-						<span className="text-otto-dim">;</span>
-						<br />
-						<br />
-						<span className="text-purple-700 dark:text-purple-400">
-							const
-						</span>
-						<span className="text-blue-700 dark:text-blue-400"> setu </span>
-						<span className="text-otto-text">= </span>
-						<span className="text-yellow-700 dark:text-yellow-300">
-							createSetu
-						</span>
-						<span className="text-otto-text">(</span>
-						<span className="text-otto-text">{'{'}</span>
-						<br />
-						<span className="text-otto-text">
-							{'  '}auth: {'{ '}privateKey: process.env.
-						</span>
-						<span className="text-blue-700 dark:text-blue-400">
-							SETU_PRIVATE_KEY
-						</span>
-						<span className="text-otto-text">! {'}'}</span>
-						<span className="text-otto-dim">,</span>
-						<br />
-						<span className="text-otto-text">{'}'});</span>
-						<br />
-						<br />
-						<span className="text-purple-700 dark:text-purple-400">
-							const
-						</span>
-						<span className="text-otto-text"> {'{ text }'} = </span>
-						<span className="text-purple-700 dark:text-purple-400">
-							await
-						</span>
-						<span className="text-yellow-700 dark:text-yellow-300">
-							{' '}
-							generateText
-						</span>
-						<span className="text-otto-text">(</span>
-						<span className="text-otto-text">{'{'}</span>
-						<br />
-						<span className="text-otto-text">{'  '}model: setu.</span>
-						<span className="text-yellow-700 dark:text-yellow-300">
-							model
-						</span>
-						<span className="text-otto-text">(</span>
-						<span className="text-green-700 dark:text-green-400">
-							"claude-sonnet-4-6"
-						</span>
-						<span className="text-otto-text">),</span>
-						<br />
-						<span className="text-otto-text">{'  '}prompt: </span>
-						<span className="text-green-700 dark:text-green-400">
-							"Hello"
-						</span>
-						<span className="text-otto-dim">,</span>
-						<br />
-						<span className="text-otto-text">{'}'});</span>
-					</TerminalBlock>
+						>
+							<span className="text-purple-700 dark:text-purple-400">
+								import
+							</span>
+							<span className="text-otto-text"> {'{ createSetu }'} </span>
+							<span className="text-purple-700 dark:text-purple-400">from</span>
+							<span className="text-green-700 dark:text-green-400">
+								{' '}
+								"@ottocode/ai-sdk"
+							</span>
+							<span className="text-otto-dim">;</span>
+							<br />
+							<span className="text-purple-700 dark:text-purple-400">
+								import
+							</span>
+							<span className="text-otto-text"> {'{ generateText }'} </span>
+							<span className="text-purple-700 dark:text-purple-400">from</span>
+							<span className="text-green-700 dark:text-green-400"> "ai"</span>
+							<span className="text-otto-dim">;</span>
+							<br />
+							<br />
+							<span className="text-purple-700 dark:text-purple-400">
+								const
+							</span>
+							<span className="text-blue-700 dark:text-blue-400"> setu </span>
+							<span className="text-otto-text">= </span>
+							<span className="text-yellow-700 dark:text-yellow-300">
+								createSetu
+							</span>
+							<span className="text-otto-text">(</span>
+							<span className="text-otto-text">{'{'}</span>
+							<br />
+							<span className="text-otto-text">
+								{'  '}auth: {'{ '}privateKey: process.env.
+							</span>
+							<span className="text-blue-700 dark:text-blue-400">
+								SETU_PRIVATE_KEY
+							</span>
+							<span className="text-otto-text">! {'}'}</span>
+							<span className="text-otto-dim">,</span>
+							<br />
+							<span className="text-otto-text">{'}'});</span>
+							<br />
+							<br />
+							<span className="text-purple-700 dark:text-purple-400">
+								const
+							</span>
+							<span className="text-otto-text"> {'{ text }'} = </span>
+							<span className="text-purple-700 dark:text-purple-400">
+								await
+							</span>
+							<span className="text-yellow-700 dark:text-yellow-300">
+								{' '}
+								generateText
+							</span>
+							<span className="text-otto-text">(</span>
+							<span className="text-otto-text">{'{'}</span>
+							<br />
+							<span className="text-otto-text">{'  '}model: setu.</span>
+							<span className="text-yellow-700 dark:text-yellow-300">
+								model
+							</span>
+							<span className="text-otto-text">(</span>
+							<span className="text-green-700 dark:text-green-400">
+								"claude-sonnet-4-6"
+							</span>
+							<span className="text-otto-text">),</span>
+							<br />
+							<span className="text-otto-text">{'  '}prompt: </span>
+							<span className="text-green-700 dark:text-green-400">
+								"Hello"
+							</span>
+							<span className="text-otto-dim">,</span>
+							<br />
+							<span className="text-otto-text">{'}'});</span>
+						</TerminalBlock>
 					</Reveal>
 
 					<Reveal delay={120}>
@@ -1209,7 +1209,7 @@ const { text } = await generateText({
 									<span className="text-blue-700 dark:text-blue-400">setu</span>
 									<span className="text-otto-text"> --model </span>
 									<span className="text-blue-700 dark:text-blue-400">
-									claude-sonnet-4-6
+										claude-sonnet-4-6
 									</span>
 								</div>
 							</TerminalBlock>

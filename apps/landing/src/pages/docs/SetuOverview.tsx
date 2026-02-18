@@ -500,9 +500,8 @@ Setu Router (Cloudflare Worker)
 			</p>
 			<CodeBlock>{`bun add @ottocode/ai-sdk ai`}</CodeBlock>
 			<p>
-				See the{' '}
-				<a href="/docs/setu/integration">Integration Guide</a>{' '}
-				for full usage examples.
+				See the <a href="/docs/setu/integration">Integration Guide</a> for full
+				usage examples.
 			</p>
 		</DocPage>
 	);

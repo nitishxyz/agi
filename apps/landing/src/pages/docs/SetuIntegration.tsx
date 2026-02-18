@@ -299,11 +299,11 @@ createSetu({
 						</tr>
 						<tr>
 							<td>
-								<code>
-									onBalanceUpdate({'{ costUsd, balanceRemaining }'})
-								</code>
+								<code>onBalanceUpdate({'{ costUsd, balanceRemaining }'})</code>
 							</td>
-							<td>After each request with cost info (streaming & non-streaming)</td>
+							<td>
+								After each request with cost info (streaming & non-streaming)
+							</td>
 						</tr>
 					</tbody>
 				</table>
@@ -322,9 +322,7 @@ const wallet = await setu.walletBalance("mainnet");
 console.log(setu.walletAddress);`}</CodeBlock>
 
 			<h3>Low-Level: Custom Fetch</h3>
-			<p>
-				Use the x402-aware fetch wrapper directly for full control:
-			</p>
+			<p>Use the x402-aware fetch wrapper directly for full control:</p>
 			<CodeBlock>{`const customFetch = setu.fetch();
 
 const response = await customFetch(
@@ -362,8 +360,7 @@ const usdc = await fetchWalletUsdcBalance({ privateKey }, "mainnet");`}</CodeBlo
 
 			<h2>Raw HTTP Integration</h2>
 			<p>
-				You can integrate Setu without the SDK by making direct HTTP
-				requests.
+				You can integrate Setu without the SDK by making direct HTTP requests.
 			</p>
 
 			<h3>Endpoint Reference</h3>
