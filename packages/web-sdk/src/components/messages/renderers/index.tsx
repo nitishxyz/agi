@@ -143,8 +143,8 @@ export function ToolResultRenderer({
 			return <ProgressUpdateRenderer {...props} />;
 		case 'load_mcp_tools':
 			return <LoadMcpToolsRenderer {...props} />;
-	case 'skill':
-		return <SkillRenderer {...props} />;
+		case 'skill':
+			return <SkillRenderer {...props} />;
 		case 'error':
 			return (
 				<ErrorRenderer

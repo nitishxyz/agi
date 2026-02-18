@@ -27,9 +27,7 @@ export function SkillRenderer({
 	const content = (result as Record<string, unknown>).content as
 		| string
 		| undefined;
-	const scope = (result as Record<string, unknown>).scope as
-		| string
-		| undefined;
+	const scope = (result as Record<string, unknown>).scope as string | undefined;
 
 	const canExpand = !!content || hasToolError;
 

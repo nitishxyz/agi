@@ -10,10 +10,7 @@ import { resolveBinary } from '@ottocode/sdk/tools/bin-manager';
 
 const execAsync = promisify(exec);
 
-const EXCLUDED_FILES = new Set([
-	'.DS_Store',
-	'bun.lockb',
-]);
+const EXCLUDED_FILES = new Set(['.DS_Store', 'bun.lockb']);
 
 const EXCLUDED_DIRS = new Set([
 	'node_modules',
