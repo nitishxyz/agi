@@ -13,6 +13,7 @@ import {
 	type SetuAuth as _SetuAuth,
 	type SetuInstance,
 } from '@ottocode/ai-sdk';
+import type { LanguageModelV3Middleware } from '@ai-sdk/provider';
 
 export type SetuBalanceUpdate = BalanceUpdate;
 
@@ -30,6 +31,7 @@ export type SetuProviderOptions = {
 	promptCacheRetention?: 'in_memory' | '24h';
 	topupApprovalMode?: 'auto' | 'approval';
 	autoPayThresholdUsd?: number;
+	middleware?: LanguageModelV3Middleware | LanguageModelV3Middleware[];
 };
 
 export type SetuAuth = _SetuAuth;
@@ -64,6 +66,7 @@ function buildSetuConfig(
 		baseURL: options.baseURL,
 		rpcURL: options.rpcURL,
 		callbacks: options.callbacks,
+		middleware: options.middleware,
 		cache: {
 			promptCacheKey: options.promptCacheKey,
 			promptCacheRetention: options.promptCacheRetention,

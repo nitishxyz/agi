@@ -326,7 +326,7 @@
         "@modelcontextprotocol/sdk": "^1.12",
         "@openauthjs/openauth": "^0.4.3",
         "@openrouter/ai-sdk-provider": "^1.2.0",
-        "@ottocode/ai-sdk": "^0.1.0",
+        "@ottocode/ai-sdk": "^0.1.1",
         "@solana/web3.js": "^1.95.2",
         "ai": "^6.0.0",
         "bs58": "^6.0.0",
@@ -737,7 +737,7 @@
 
     "@ottocode/acp": ["@ottocode/acp@workspace:packages/acp"],
 
-    "@ottocode/ai-sdk": ["@ottocode/ai-sdk@0.1.0", "", { "dependencies": { "@ai-sdk/anthropic": "^3.0.0", "@ai-sdk/google": "^3.0.0", "@ai-sdk/openai": "^3.0.0", "@ai-sdk/openai-compatible": "^2.0.0", "@solana/web3.js": "^1.98.0", "bs58": "^6.0.0", "tweetnacl": "^1.0.3", "x402": "^1.1.0" }, "peerDependencies": { "ai": ">=6.0.0" } }, "sha512-9MDjCZJUon9Fl2W1QeftNHT9pZ2npSSUbIsxMFsG2YdYS5ElcGxyelySr07ZvgpafFGZSpu+PStjmNDTXs4BFQ=="],
+    "@ottocode/ai-sdk": ["@ottocode/ai-sdk@0.1.1", "", { "dependencies": { "@ai-sdk/anthropic": "^3.0.0", "@ai-sdk/google": "^3.0.0", "@ai-sdk/openai": "^3.0.0", "@ai-sdk/openai-compatible": "^2.0.0", "@solana/web3.js": "^1.98.0", "bs58": "^6.0.0", "tweetnacl": "^1.0.3", "x402": "^1.1.0" }, "peerDependencies": { "ai": ">=6.0.0" } }, "sha512-/foEBpaf0fBxMbmvupkFt2ynKFUWOBNDNBSYd0jOMHcV8kZuDn7d8qM9k5cgUu/Ipb3WA0QmHModzqcDKXLu+g=="],
 
     "@ottocode/api": ["@ottocode/api@workspace:packages/api"],
 

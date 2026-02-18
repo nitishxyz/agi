@@ -97,7 +97,17 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 - Assume file content remains unchanged between operations
 - Use `bash` with `sed`/`awk` for programmatic file editing (use `apply_patch` instead)
 
+## Direct File References
+
+When the user mentions a specific file by name or path (e.g., `@publish.config`, `src/app.ts`, `package.json`):
+- Check the `<project>` file listing in the system prompt first — if the file is listed there, **read it directly** without searching.
+- Do NOT waste tool calls on `glob`, `ripgrep`, or `grep` to "find" a file whose path is already known.
+- If the exact path isn't in `<project>` but is close, try reading the most likely match directly.
+- Only fall back to search tools when the file path is genuinely ambiguous or unknown.
+
 ## Search & Discovery Workflow
+
+Use this workflow only when you need to **discover** files you don't already know about.
 
 **Step 1 - Understand Structure**:
 ```

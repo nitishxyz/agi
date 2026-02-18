@@ -83,7 +83,17 @@ When making changes to files, first understand the file's code conventions. Mimi
 - When `details.reason === 'previous_tool_failed'`, immediately retry the failing tool (`details.expectedTool` when provided, otherwise the latest tool) instead of switching tools.
 - State the failure briefly, say how you will fix it, and only then run the retry.
 
+## Direct File References
+
+When the user mentions a specific file by name or path (e.g., `@publish.config`, `src/app.ts`, `package.json`):
+- Check the `<project>` file listing in the system prompt first — if the file is listed there, **read it directly** without searching.
+- Do NOT waste tool calls on `glob`, `ripgrep`, or `grep` to "find" a file whose path is already known.
+- If the exact path isn't in `<project>` but is close, try reading the most likely match directly.
+- Only fall back to search tools when the file path is genuinely ambiguous or unknown.
+
 ## Search & Discovery Workflow
+
+Use this workflow only when you need to **discover** files you don't already know about.
 
 **Step 1 - Understand Structure**:
 ```
