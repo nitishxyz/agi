@@ -1,6 +1,6 @@
 {
   "name": "@ottocode/openclaw-setu",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Setu provider for OpenClaw — pay for AI with Solana USDC. No API keys, just a wallet.",
   "type": "module",
   "main": "./dist/index.mjs",
