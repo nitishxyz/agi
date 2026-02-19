@@ -37,7 +37,7 @@ describe('discoverProjectTools', () => {
 			await writeFile(join(globalToolDir, 'tool.js'), pluginSource);
 
 			const globalConfigDir = join(homeDir, '.config', 'otto');
-			const tools = await discoverProjectTools(projectRoot, globalConfigDir);
+			const { tools } = await discoverProjectTools(projectRoot, globalConfigDir);
 			const names = tools.map((t) => t.name).sort();
 			expect(names).toContain('custom_echo');
 			expect(names).toContain('read');

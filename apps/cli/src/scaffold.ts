@@ -443,10 +443,10 @@ export async function listAvailableTools(
 	includeFinish: boolean,
 ): Promise<string[]> {
 	const globalConfigDir = getGlobalConfigDir();
-	const discovered = await discoverProjectTools(
+	const { tools: discovered } = await discoverProjectTools(
 		_projectRoot,
 		globalConfigDir,
-	).catch(() => []);
+	).catch(() => ({ tools: [] as { name: string }[], mcpToolsRecord: {} }));
 	const names = new Set<string>();
 	const curatedBuiltIns = [
 		'read',

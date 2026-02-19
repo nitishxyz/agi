@@ -42,7 +42,7 @@ afterAll(async () => {
 
 describe('Built-in Tools', () => {
 	it('should discover all built-in tools', async () => {
-		const tools = await discoverProjectTools(projectRoot);
+		const { tools } = await discoverProjectTools(projectRoot);
 		const names = tools.map((t) => t.name);
 
 		expect(names).toContain('read');
@@ -54,7 +54,6 @@ describe('Built-in Tools', () => {
 		expect(names).toContain('git_diff');
 		expect(names).toContain('git_commit');
 		expect(names).toContain('ripgrep');
-		expect(names).toContain('grep');
 		expect(names).toContain('glob');
 		expect(names).toContain('apply_patch');
 		expect(names).toContain('finish');
@@ -65,7 +64,7 @@ describe('Built-in Tools', () => {
 
 	describe('read tool', () => {
 		it('should read entire file', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const readTool = tools.find((t) => t.name === 'read');
 			expect(readTool).toBeDefined();
 
@@ -75,7 +74,7 @@ describe('Built-in Tools', () => {
 		});
 
 		it('should read file with line range', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const readTool = tools.find((t) => t.name === 'read');
 
 			const result = await readTool?.tool.execute({
@@ -93,7 +92,7 @@ describe('Built-in Tools', () => {
 
 	describe('write tool', () => {
 		it('should write content to file', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const writeTool = tools.find((t) => t.name === 'write');
 
 			const result = await writeTool?.tool.execute({
@@ -107,7 +106,7 @@ describe('Built-in Tools', () => {
 
 	describe('ls tool', () => {
 		it('should list directory contents', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const lsTool = tools.find((t) => t.name === 'ls');
 
 			const result = await lsTool?.tool.execute({ path: '.' });
@@ -120,7 +119,7 @@ describe('Built-in Tools', () => {
 
 	describe('tree tool', () => {
 		it('should show directory tree', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const treeTool = tools.find((t) => t.name === 'tree');
 
 			const result = await treeTool?.tool.execute({ path: '.', depth: 2 });
@@ -131,7 +130,7 @@ describe('Built-in Tools', () => {
 
 	describe('bash tool', () => {
 		it('should execute shell commands', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const bashTool = tools.find((t) => t.name === 'bash');
 
 			const result = await bashTool?.tool.execute({ cmd: 'echo "test"' });
@@ -140,7 +139,7 @@ describe('Built-in Tools', () => {
 		});
 
 		it('should handle command errors', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const bashTool = tools.find((t) => t.name === 'bash');
 
 			const result = await bashTool?.tool.execute({ cmd: 'exit 1' });
@@ -150,7 +149,7 @@ describe('Built-in Tools', () => {
 
 	describe('git tools', () => {
 		it('git_status should show repository status', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const gitStatusTool = tools.find((t) => t.name === 'git_status');
 
 			const result = await gitStatusTool?.tool.execute({});
@@ -159,7 +158,7 @@ describe('Built-in Tools', () => {
 		});
 
 		it('git_diff should show diff', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const gitDiffTool = tools.find((t) => t.name === 'git_diff');
 
 			const result = await gitDiffTool?.tool.execute({ all: false });
@@ -170,7 +169,7 @@ describe('Built-in Tools', () => {
 
 	describe('ripgrep tool', () => {
 		it('should search for patterns', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const ripgrepTool = tools.find((t) => t.name === 'ripgrep');
 
 			const result = await ripgrepTool?.tool.execute({
@@ -184,7 +183,7 @@ describe('Built-in Tools', () => {
 		});
 
 		it('should handle no matches gracefully', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const ripgrepTool = tools.find((t) => t.name === 'ripgrep');
 
 			const result = await ripgrepTool?.tool.execute({
@@ -197,11 +196,11 @@ describe('Built-in Tools', () => {
 
 	describe('grep tool', () => {
 		it('should search in files', async () => {
-			const tools = await discoverProjectTools(projectRoot);
-			const grepTool = tools.find((t) => t.name === 'grep');
+			const { tools } = await discoverProjectTools(projectRoot);
+			const grepTool = tools.find((t) => t.name === 'ripgrep');
 
 			const result = await grepTool?.tool.execute({
-				pattern: 'Hello',
+				query: 'Hello',
 				path: '.',
 			});
 			expect(result).toHaveProperty('matches');
@@ -209,13 +208,13 @@ describe('Built-in Tools', () => {
 		});
 
 		it('should support file includes', async () => {
-			const tools = await discoverProjectTools(projectRoot);
-			const grepTool = tools.find((t) => t.name === 'grep');
+			const { tools } = await discoverProjectTools(projectRoot);
+			const grepTool = tools.find((t) => t.name === 'ripgrep');
 
 			const result = await grepTool?.tool.execute({
-				pattern: 'export',
+				query: 'export',
 				path: '.',
-				include: '*.ts',
+				glob: ['*.ts'],
 			});
 			expect(result).toHaveProperty('matches');
 			expect(result).toHaveProperty('count');
@@ -224,7 +223,7 @@ describe('Built-in Tools', () => {
 
 	describe('glob tool', () => {
 		it('should find files by pattern', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const globTool = tools.find((t) => t.name === 'glob');
 
 			const result = await globTool?.tool.execute({
@@ -237,7 +236,7 @@ describe('Built-in Tools', () => {
 		});
 
 		it('should support glob patterns', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const globTool = tools.find((t) => t.name === 'glob');
 
 			const result = await globTool?.tool.execute({
@@ -252,7 +251,7 @@ describe('Built-in Tools', () => {
 
 	describe('finish tool', () => {
 		it('should signal completion', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const finishTool = tools.find((t) => t.name === 'finish');
 
 			const result = await finishTool?.tool.execute({});
@@ -263,7 +262,7 @@ describe('Built-in Tools', () => {
 
 	describe('progress_update tool', () => {
 		it('should update progress', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const progressTool = tools.find((t) => t.name === 'progress_update');
 
 			const result = await progressTool?.tool.execute({
@@ -276,7 +275,7 @@ describe('Built-in Tools', () => {
 
 	describe('update_todos tool', () => {
 		it('should update todo items', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const todosTool = tools.find((t) => t.name === 'update_todos');
 
 			const result = await todosTool?.tool.execute({
@@ -291,7 +290,7 @@ describe('Built-in Tools', () => {
 
 	describe('apply_patch tool', () => {
 		it('should apply enveloped patch', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const patchTool = tools.find((t) => t.name === 'apply_patch');
 
 			const patch = `*** Begin Patch
@@ -307,7 +306,7 @@ describe('Built-in Tools', () => {
 		});
 
 		it('should update existing file using enveloped patch', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const patchTool = tools.find((t) => t.name === 'apply_patch');
 
 			const patch = `*** Begin Patch
@@ -357,7 +356,7 @@ describe('Built-in Tools', () => {
 		});
 
 		it('should accept standard unified diff patches', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const patchTool = tools.find((t) => t.name === 'apply_patch');
 
 			const patch = `diff --git a/test.txt b/test.txt
@@ -378,7 +377,7 @@ describe('Built-in Tools', () => {
 		});
 
 		it('should allow rejects when requested', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const patchTool = tools.find((t) => t.name === 'apply_patch');
 
 			const patch = `*** Begin Patch
@@ -413,7 +412,7 @@ describe('Built-in Tools', () => {
 		});
 
 		it('should treat already-applied removals as success', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const patchTool = tools.find((t) => t.name === 'apply_patch');
 
 			// Reset file to a state that already omits the removal target.
@@ -437,7 +436,7 @@ describe('Built-in Tools', () => {
 
 	describe('websearch tool', () => {
 		it('should have websearch tool', async () => {
-			const tools = await discoverProjectTools(projectRoot);
+			const { tools } = await discoverProjectTools(projectRoot);
 			const websearchTool = tools.find((t) => t.name === 'websearch');
 
 			expect(websearchTool).toBeDefined();
