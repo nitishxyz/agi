@@ -101,4 +101,8 @@ jobs:
           git add publish.env packages/ai-sdk/package.json
           NEXT="${{ steps.version.outputs.next }}"
           git commit -m "chore: release @ottocode/ai-sdk v${NEXT}" -m "[skip ci]"
-          git push
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main && git push && break
+            echo "Push failed (attempt $i), retrying in 5s..."
+            sleep 5
+          done
