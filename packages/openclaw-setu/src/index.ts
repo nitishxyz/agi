@@ -12,6 +12,7 @@ import {
 import {
   buildProviderConfig,
   injectConfig,
+  injectAuthProfile,
   isConfigured,
 } from "./config.ts";
 import { isValidPrivateKey } from "@ottocode/ai-sdk";
@@ -31,6 +32,33 @@ const plugin: OpenClawPluginDefinition = {
 
   async register(api: OpenClawPluginApi) {
     const port = getPort(api);
+
+    await injectConfig(port).catch(() => {});
+    try { injectAuthProfile(); } catch {}
+
+    if (!api.config.models) {
+      api.config.models = { providers: {} };
+    }
+    if (!api.config.models.providers) {
+      api.config.models.providers = {};
+    }
+    const providerConfig = buildProviderConfig(port);
+    api.config.models.providers.setu = {
+      baseUrl: providerConfig.baseUrl,
+      api: providerConfig.api,
+      apiKey: providerConfig.apiKey,
+      models: providerConfig.models,
+    };
+
+    if (!api.config.agents) api.config.agents = {};
+    const agents = api.config.agents as Record<string, unknown>;
+    if (!agents.defaults) agents.defaults = {};
+    const defaults = agents.defaults as Record<string, unknown>;
+    if (!defaults.model) defaults.model = {};
+    const model = defaults.model as Record<string, unknown>;
+    if (!model.primary) {
+      model.primary = "setu/claude-sonnet-4-6";
+    }
 
     api.registerProvider({
       id: "setu",

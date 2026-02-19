@@ -1,4 +1,11 @@
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  readdirSync,
+  mkdirSync,
+  renameSync,
+} from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import type { ModelApi } from "./types.ts";
@@ -9,6 +16,7 @@ const OPENCLAW_CONFIG_PATH = join(OPENCLAW_DIR, "openclaw.json");
 const PROVIDER_KEY = "setu";
 const DEFAULT_PROXY_PORT = 8403;
 const DEFAULT_BASE_URL = "https://api.setu.ottocode.io";
+const SETU_PROXY_PORT_PATTERN = /[:\/]8403/;
 
 export interface SetuModelConfig {
   id: string;
@@ -28,17 +36,42 @@ export interface SetuProviderConfig {
   models: SetuModelConfig[];
 }
 
+const DUMMY_API_KEY = "setu-proxy-handles-auth";
+
+const MODEL_ALIASES: Array<{ id: string; alias: string }> = [
+  { id: "claude-sonnet-4-6", alias: "sonnet-4.6" },
+  { id: "claude-sonnet-4-5", alias: "sonnet-4.5" },
+  { id: "claude-opus-4-6", alias: "opus" },
+  { id: "claude-3-5-haiku-20241022", alias: "haiku" },
+  { id: "gpt-5.1-codex", alias: "codex" },
+  { id: "gpt-5", alias: "gpt5" },
+  { id: "gpt-5-mini", alias: "gpt5-mini" },
+  { id: "codex-mini-latest", alias: "codex-mini" },
+  { id: "gemini-3-pro-preview", alias: "gemini-pro" },
+  { id: "gemini-3-flash-preview", alias: "gemini-flash" },
+  { id: "kimi-k2.5", alias: "kimi" },
+  { id: "glm-5", alias: "glm" },
+  { id: "MiniMax-M2.5", alias: "minimax" },
+];
+
 function readOpenClawConfig(): Record<string, unknown> {
   if (!existsSync(OPENCLAW_CONFIG_PATH)) return {};
   try {
-    return JSON.parse(readFileSync(OPENCLAW_CONFIG_PATH, "utf-8"));
+    const content = readFileSync(OPENCLAW_CONFIG_PATH, "utf-8").trim();
+    if (!content) return {};
+    return JSON.parse(content);
   } catch {
     return {};
   }
 }
 
-function writeOpenClawConfig(config: Record<string, unknown>): void {
-  writeFileSync(OPENCLAW_CONFIG_PATH, JSON.stringify(config, null, 2) + "\n");
+function writeOpenClawConfigAtomic(config: Record<string, unknown>): void {
+  if (!existsSync(OPENCLAW_DIR)) {
+    mkdirSync(OPENCLAW_DIR, { recursive: true });
+  }
+  const tmpPath = `${OPENCLAW_CONFIG_PATH}.tmp.${process.pid}`;
+  writeFileSync(tmpPath, JSON.stringify(config, null, 2) + "\n");
+  renameSync(tmpPath, OPENCLAW_CONFIG_PATH);
 }
 
 interface CatalogModel {
@@ -233,17 +266,212 @@ export async function buildProviderConfigWithCatalog(
   };
 }
 
+function removeConflictingCustomProviders(
+  providers: Record<string, unknown>,
+  port: number,
+): string[] {
+  const removed: string[] = [];
+  for (const key of Object.keys(providers)) {
+    if (key === PROVIDER_KEY) continue;
+    if (!key.startsWith("custom-")) continue;
+    const p = providers[key] as Record<string, unknown> | undefined;
+    if (!p?.baseUrl) continue;
+    const baseUrl = String(p.baseUrl);
+    const pointsToSetuProxy =
+      baseUrl.includes(`:${port}`) || SETU_PROXY_PORT_PATTERN.test(baseUrl);
+    if (pointsToSetuProxy) {
+      delete providers[key];
+      removed.push(key);
+    }
+  }
+  return removed;
+}
+
+function migrateDefaultModel(
+  config: Record<string, unknown>,
+  removedKeys: string[],
+): void {
+  if (removedKeys.length === 0) return;
+  const agents = config.agents as Record<string, unknown> | undefined;
+  const defaults = agents?.defaults as Record<string, unknown> | undefined;
+  const model = defaults?.model as Record<string, unknown> | undefined;
+  if (!model?.primary) return;
+  const primary = String(model.primary);
+  for (const oldKey of removedKeys) {
+    if (primary.startsWith(`${oldKey}/`)) {
+      const modelId = primary.slice(oldKey.length + 1);
+      model.primary = `setu/${modelId}`;
+      break;
+    }
+  }
+}
+
 export async function injectConfig(port: number = DEFAULT_PROXY_PORT): Promise<void> {
   const config = readOpenClawConfig();
+  let needsWrite = false;
 
-  if (!config.models) config.models = {};
+  if (!config.models) {
+    config.models = {};
+    needsWrite = true;
+  }
   const models = config.models as Record<string, unknown>;
-  if (!models.providers) models.providers = {};
+  if (!models.providers) {
+    models.providers = {};
+    needsWrite = true;
+  }
   const providers = models.providers as Record<string, unknown>;
 
-  providers[PROVIDER_KEY] = await buildProviderConfigWithCatalog(port);
+  const removed = removeConflictingCustomProviders(providers, port);
+  if (removed.length > 0) {
+    migrateDefaultModel(config, removed);
+    needsWrite = true;
+  }
 
-  writeOpenClawConfig(config);
+  const expectedBaseUrl = `http://localhost:${port}/v1`;
+  const existing = providers[PROVIDER_KEY] as Record<string, unknown> | undefined;
+
+  if (!existing) {
+    providers[PROVIDER_KEY] = await buildProviderConfigWithCatalog(port);
+    needsWrite = true;
+  } else {
+    if (!existing.baseUrl || existing.baseUrl !== expectedBaseUrl) {
+      existing.baseUrl = expectedBaseUrl;
+      needsWrite = true;
+    }
+    if (!existing.apiKey) {
+      existing.apiKey = DUMMY_API_KEY;
+      needsWrite = true;
+    }
+    if (!existing.api) {
+      existing.api = "openai-completions";
+      needsWrite = true;
+    }
+    const currentModels = existing.models as Array<{ id?: string }> | undefined;
+    const defaultModels = getDefaultModels();
+    const currentIds = new Set(
+      Array.isArray(currentModels) ? currentModels.map((m) => m?.id).filter(Boolean) : [],
+    );
+    const expectedIds = defaultModels.map((m) => m.id);
+    if (
+      !currentModels ||
+      !Array.isArray(currentModels) ||
+      currentModels.length !== defaultModels.length ||
+      expectedIds.some((id) => !currentIds.has(id))
+    ) {
+      existing.models = await fetchModelsFromCatalog();
+      needsWrite = true;
+    }
+  }
+
+  if (!config.agents) {
+    config.agents = {};
+    needsWrite = true;
+  }
+  const agents = config.agents as Record<string, unknown>;
+  if (!agents.defaults) {
+    agents.defaults = {};
+    needsWrite = true;
+  }
+  const defaults = agents.defaults as Record<string, unknown>;
+  if (!defaults.model) {
+    defaults.model = {};
+    needsWrite = true;
+  }
+  const model = defaults.model as Record<string, unknown>;
+
+  if (!model.primary) {
+    model.primary = "setu/claude-sonnet-4-6";
+    needsWrite = true;
+  }
+
+  if (!defaults.models) {
+    defaults.models = {};
+    needsWrite = true;
+  }
+  const allowlist = defaults.models as Record<string, unknown>;
+  for (const m of MODEL_ALIASES) {
+    const fullId = `setu/${m.id}`;
+    const entry = allowlist[fullId] as Record<string, unknown> | undefined;
+    if (!entry) {
+      allowlist[fullId] = { alias: m.alias };
+      needsWrite = true;
+    } else if (entry.alias !== m.alias) {
+      entry.alias = m.alias;
+      needsWrite = true;
+    }
+  }
+
+  if (needsWrite) {
+    writeOpenClawConfigAtomic(config);
+  }
+}
+
+export function injectAuthProfile(): void {
+  const agentsDir = join(OPENCLAW_DIR, "agents");
+
+  if (!existsSync(agentsDir)) {
+    try {
+      mkdirSync(agentsDir, { recursive: true });
+    } catch {
+      return;
+    }
+  }
+
+  let agents: string[];
+  try {
+    agents = readdirSync(agentsDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+  } catch {
+    agents = [];
+  }
+
+  if (!agents.includes("main")) {
+    agents = ["main", ...agents];
+  }
+
+  for (const agentId of agents) {
+    const authDir = join(agentsDir, agentId, "agent");
+    const authPath = join(authDir, "auth-profiles.json");
+
+    if (!existsSync(authDir)) {
+      try {
+        mkdirSync(authDir, { recursive: true });
+      } catch {
+        continue;
+      }
+    }
+
+    let store: { version: number; profiles: Record<string, unknown> } = {
+      version: 1,
+      profiles: {},
+    };
+    if (existsSync(authPath)) {
+      try {
+        const existing = JSON.parse(readFileSync(authPath, "utf-8"));
+        if (existing.version && existing.profiles) {
+          store = existing;
+        }
+      } catch {
+        // use fresh store
+      }
+    }
+
+    const profileKey = "setu:default";
+    if (store.profiles[profileKey]) continue;
+
+    store.profiles[profileKey] = {
+      type: "api_key",
+      provider: "setu",
+      key: DUMMY_API_KEY,
+    };
+
+    try {
+      writeFileSync(authPath, JSON.stringify(store, null, 2));
+    } catch {
+      // skip
+    }
+  }
 }
 
 export function removeConfig(): void {
@@ -254,7 +482,7 @@ export function removeConfig(): void {
   const providers = models.providers as Record<string, unknown>;
   delete providers[PROVIDER_KEY];
 
-  writeOpenClawConfig(config);
+  writeOpenClawConfigAtomic(config);
 }
 
 export function isConfigured(): boolean {
