@@ -1,24 +1,28 @@
 {
   "name": "@ottocode/openclaw-setu",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Setu provider for OpenClaw — pay for AI with Solana USDC. No API keys, just a wallet.",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./dist/index.js"
   },
   "bin": {
-    "openclaw-setu": "./src/cli.ts"
+    "openclaw-setu": "./dist/cli.js"
   },
   "openclaw": {
     "extensions": [
-      "./src/index.ts"
+      "./dist/index.js"
     ]
   },
   "files": [
-    "src",
+    "dist",
     "openclaw.plugin.json"
   ],
+  "scripts": {
+    "build": "bun run build.ts",
+    "prepublishOnly": "bun run build"
+  },
   "keywords": [
     "openclaw",
     "setu",
@@ -35,9 +39,6 @@
     "type": "git",
     "url": "git+https://github.com/nitishxyz/otto.git",
     "directory": "packages/openclaw-setu"
-  },
-  "dependencies": {
-    "@ottocode/ai-sdk": "^0.1.4"
   },
   "peerDependencies": {
     "openclaw": ">=2025.1.0"

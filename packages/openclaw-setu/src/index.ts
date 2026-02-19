@@ -113,11 +113,12 @@ const plugin: OpenClawPluginDefinition = {
               },
             });
 
-            const key = typeof keyInput === "string" ? keyInput : "";
-            const wallet = key ? ensureWallet() : ensureWallet();
+            const key = typeof keyInput === "string" ? keyInput.trim() : "";
             if (key && isValidPrivateKey(key)) {
               const { saveWallet } = await import("./wallet.ts");
               saveWallet(key);
+            } else {
+              ensureWallet();
             }
 
             const finalWallet = loadWallet()!;
