@@ -202,6 +202,10 @@ const plugin: OpenClawPluginDefinition = {
     api.registerService({
       id: "setu-proxy",
       async start() {
+        if (typeof globalThis.Bun === "undefined") {
+          api.logger.info("Setu: Run `openclaw-setu start` to start the proxy (requires Bun).");
+          return;
+        }
         const wallet = loadWallet();
         if (!wallet) {
           api.logger.warn(
