@@ -82,19 +82,22 @@ interface CatalogModel {
   capabilities?: { tool_call?: boolean; reasoning?: boolean };
 }
 
+
+function displayName(id: string, owner: string): string {
+  return `${id} (${owner}, via Setu)`;
+}
+
 function apiForOwner(owner: string): ModelApi {
   switch (owner) {
     case "anthropic":
       return "anthropic-messages";
-    case "google":
-      return "google-generative-ai";
+    case "minimax":
+      return "anthropic-messages";
+    case "openai":
+      return "openai-responses";
     default:
       return "openai-completions";
   }
-}
-
-function displayName(id: string, owner: string): string {
-  return `${id} (${owner}, via Setu)`;
 }
 
 export async function fetchModelsFromCatalog(
@@ -159,7 +162,7 @@ export function getDefaultModels(): SetuModelConfig[] {
     {
       id: "gpt-5.1-codex",
       name: "GPT-5.1 Codex (openai, via Setu)",
-      api: "openai-completions",
+      api: "openai-responses",
       reasoning: false,
       input: ["text", "image"],
       contextWindow: 400000,
@@ -168,7 +171,7 @@ export function getDefaultModels(): SetuModelConfig[] {
     {
       id: "gpt-5",
       name: "GPT-5 (openai, via Setu)",
-      api: "openai-completions",
+      api: "openai-responses",
       reasoning: false,
       input: ["text", "image"],
       contextWindow: 400000,
@@ -177,7 +180,7 @@ export function getDefaultModels(): SetuModelConfig[] {
     {
       id: "gpt-5-mini",
       name: "GPT-5 Mini (openai, via Setu)",
-      api: "openai-completions",
+      api: "openai-responses",
       reasoning: false,
       input: ["text", "image"],
       contextWindow: 400000,
@@ -186,7 +189,7 @@ export function getDefaultModels(): SetuModelConfig[] {
     {
       id: "codex-mini-latest",
       name: "Codex Mini (openai, via Setu)",
-      api: "openai-completions",
+      api: "openai-responses",
       reasoning: false,
       input: ["text"],
       contextWindow: 200000,
@@ -231,7 +234,7 @@ export function getDefaultModels(): SetuModelConfig[] {
     {
       id: "MiniMax-M2.5",
       name: "MiniMax M2.5 (minimax, via Setu)",
-      api: "openai-completions",
+      api: "anthropic-messages",
       reasoning: false,
       input: ["text"],
       contextWindow: 204800,
