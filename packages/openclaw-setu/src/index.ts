@@ -25,7 +25,7 @@ function getPort(api: OpenClawPluginApi): number {
 }
 
 const plugin: OpenClawPluginDefinition = {
-  id: "setu",
+  id: "openclaw-setu",
   name: "Setu",
   description: "Pay for AI with Solana USDC — no API keys, just a wallet.",
   version: "0.1.0",

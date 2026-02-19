@@ -1,5 +1,5 @@
 {
-  "id": "setu",
+  "id": "openclaw-setu",
   "name": "Setu",
   "description": "Pay for AI with Solana USDC — 30+ models, no API keys, just a wallet.",
   "configSchema": {
