@@ -306,7 +306,7 @@ function migrateDefaultModel(
   }
 }
 
-export async function injectConfig(port: number = DEFAULT_PROXY_PORT): Promise<void> {
+export function injectConfig(port: number = DEFAULT_PROXY_PORT): void {
   const config = readOpenClawConfig();
   let needsWrite = false;
 
@@ -331,7 +331,7 @@ export async function injectConfig(port: number = DEFAULT_PROXY_PORT): Promise<v
   const existing = providers[PROVIDER_KEY] as Record<string, unknown> | undefined;
 
   if (!existing) {
-    providers[PROVIDER_KEY] = await buildProviderConfigWithCatalog(port);
+    providers[PROVIDER_KEY] = buildProviderConfig(port);
     needsWrite = true;
   } else {
     if (!existing.baseUrl || existing.baseUrl !== expectedBaseUrl) {
@@ -358,7 +358,7 @@ export async function injectConfig(port: number = DEFAULT_PROXY_PORT): Promise<v
       currentModels.length !== defaultModels.length ||
       expectedIds.some((id) => !currentIds.has(id))
     ) {
-      existing.models = await fetchModelsFromCatalog();
+      existing.models = getDefaultModels();
       needsWrite = true;
     }
   }

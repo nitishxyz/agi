@@ -30,10 +30,10 @@ const plugin: OpenClawPluginDefinition = {
   description: "Pay for AI with Solana USDC — no API keys, just a wallet.",
   version: "0.1.0",
 
-  async register(api: OpenClawPluginApi) {
+  register(api: OpenClawPluginApi) {
     const port = getPort(api);
 
-    await injectConfig(port).catch(() => {});
+    try { injectConfig(port); } catch {}
     try { injectAuthProfile(); } catch {}
 
     if (!api.config.models) {
