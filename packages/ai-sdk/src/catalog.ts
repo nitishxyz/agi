@@ -657,6 +657,70 @@ export const setuCatalog: SetuCatalog = {
       }
     },
     {
+      "id": "gemini-3.1-pro-preview",
+      "name": "Gemini 3.1 Pro Preview",
+      "owned_by": "google",
+      "context_length": 1048576,
+      "max_output": 65536,
+      "reasoning": true,
+      "tool_call": true,
+      "attachment": true,
+      "temperature": true,
+      "knowledge": "2025-01",
+      "release_date": "2026-02-19",
+      "last_updated": "2026-02-19",
+      "open_weights": false,
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "pricing": {
+        "input": 2.01,
+        "output": 12.059999999999999,
+        "cache_read": 0.20099999999999998
+      }
+    },
+    {
+      "id": "gemini-3.1-pro-preview-customtools",
+      "name": "Gemini 3.1 Pro Preview Custom Tools",
+      "owned_by": "google",
+      "context_length": 1048576,
+      "max_output": 65536,
+      "reasoning": true,
+      "tool_call": true,
+      "attachment": true,
+      "temperature": true,
+      "knowledge": "2025-01",
+      "release_date": "2026-02-19",
+      "last_updated": "2026-02-19",
+      "open_weights": false,
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "pricing": {
+        "input": 2.01,
+        "output": 12.059999999999999,
+        "cache_read": 0.20099999999999998
+      }
+    },
+    {
       "id": "MiniMax-M2.1",
       "name": "MiniMax-M2.1",
       "owned_by": "minimax",
@@ -879,34 +943,6 @@ export const setuCatalog: SetuCatalog = {
         "output": 3.0149999999999997,
         "cache_read": 0.10049999999999999,
         "cache_write": 0.6029999999999999
-      }
-    },
-    {
-      "id": "codex-mini-latest",
-      "name": "Codex Mini",
-      "owned_by": "openai",
-      "context_length": 200000,
-      "max_output": 100000,
-      "reasoning": true,
-      "tool_call": true,
-      "attachment": true,
-      "temperature": false,
-      "knowledge": "2024-04",
-      "release_date": "2025-05-16",
-      "last_updated": "2025-05-16",
-      "open_weights": false,
-      "modalities": {
-        "input": [
-          "text"
-        ],
-        "output": [
-          "text"
-        ]
-      },
-      "pricing": {
-        "input": 1.5074999999999998,
-        "output": 6.029999999999999,
-        "cache_read": 0.37687499999999996
       }
     },
     {

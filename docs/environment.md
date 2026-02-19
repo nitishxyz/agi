@@ -14,6 +14,7 @@ GOOGLE_AI_API_KEY=...
 OTTO_PROJECT_ROOT=/path/to/project    # Override project detection
 PORT=3000                             # Default server port
 DEBUG_OTTO=1                           # Enable debug output
+OTTO_DEVTOOLS=1                        # Enable AI SDK devtools middleware (heavy, writes to .devtools/)
 DB_FILE_NAME=.otto/otto.sqlite         # Database file location
 OTTO_RENDER_MARKDOWN=0                # Disable markdown (default is enabled)
 ```

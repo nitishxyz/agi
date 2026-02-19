@@ -284,7 +284,7 @@
     },
     "packages/ai-sdk": {
       "name": "@ottocode/ai-sdk",
-      "version": "0.1.2",
+      "version": "0.1.4",
       "dependencies": {
         "@ai-sdk/anthropic": "^3.0.0",
         "@ai-sdk/google": "^3.0.0",
@@ -337,12 +337,9 @@
     },
     "packages/openclaw-setu": {
       "name": "@ottocode/openclaw-setu",
-      "version": "0.1.0",
+      "version": "0.1.11",
       "bin": {
-        "openclaw-setu": "./src/cli.ts",
-      },
-      "dependencies": {
-        "@ottocode/ai-sdk": "workspace:*",
+        "openclaw-setu": "./dist/cli.mjs",
       },
       "devDependencies": {
         "typescript": "^5.0.0",

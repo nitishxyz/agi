@@ -140,7 +140,7 @@ describe('provider base prompts', () => {
 		});
 	});
 
-	describe('getModelFamily - catalog-based family detection', () => {
+	describe('getModelFamily - ownedBy-based family detection', () => {
 		it('returns direct provider mapping for known providers', () => {
 			expect(getModelFamily('openai', 'gpt-4o')).toBe('openai');
 			expect(getModelFamily('anthropic', 'claude-3-opus')).toBe('anthropic');
@@ -148,40 +148,35 @@ describe('provider base prompts', () => {
 			expect(getModelFamily('moonshot', 'kimi-k2.5')).toBe('moonshot');
 		});
 
-		it('reads family field from catalog for setu models', () => {
-			// Setu models have family set in their provider binding
+		it('reads ownedBy from catalog for setu models', () => {
 			const setuEntry = catalog.setu;
 			expect(setuEntry).toBeDefined();
 
-			// Find a kimi model in setu
 			const kimiModel = setuEntry?.models.find((m) => m.id.includes('kimi'));
 			if (kimiModel) {
-				expect(kimiModel.provider?.family).toBe('moonshot');
+				expect(kimiModel.ownedBy).toBe('moonshot');
 				expect(getModelFamily('setu', kimiModel.id)).toBe('moonshot');
 			}
 
-			// Find a claude model in setu
 			const claudeModel = setuEntry?.models.find((m) =>
 				m.id.startsWith('claude'),
 			);
 			if (claudeModel) {
-				expect(claudeModel.provider?.family).toBe('anthropic');
+				expect(claudeModel.ownedBy).toBe('anthropic');
 				expect(getModelFamily('setu', claudeModel.id)).toBe('anthropic');
 			}
 
-			// Find a gpt model in setu
 			const gptModel = setuEntry?.models.find(
 				(m) => m.id.startsWith('gpt') || m.id.startsWith('codex'),
 			);
 			if (gptModel) {
-				expect(gptModel.provider?.family).toBe('openai');
+				expect(gptModel.ownedBy).toBe('openai');
 				expect(getModelFamily('setu', gptModel.id)).toBe('openai');
 			}
 		});
 
-		it('falls back to npm binding when family not set', () => {
+		it('falls back to model ID inference for unknown models', () => {
 			const family = getModelFamily('openrouter', 'openai/gpt-4o');
-			// Now uses prefix detection instead of npm fallback
 			expect(family).toBe('openai');
 		});
 
@@ -204,9 +199,8 @@ describe('provider base prompts', () => {
 		});
 	});
 
-	describe('getUnderlyingProviderKey - npm-based detection', () => {
-		it('maps npm packages to provider keys', () => {
-			// Direct providers
+	describe('getUnderlyingProviderKey - ownedBy-based detection', () => {
+		it('maps direct providers correctly', () => {
 			expect(getUnderlyingProviderKey('anthropic', 'claude-3-opus')).toBe(
 				'anthropic',
 			);
@@ -215,39 +209,43 @@ describe('provider base prompts', () => {
 			expect(getUnderlyingProviderKey('moonshot', 'kimi-k2')).toBe('moonshot');
 		});
 
-		it('maps @ai-sdk/anthropic to anthropic', () => {
-			// For models that have npm binding set to anthropic
+		it('maps setu models via ownedBy', () => {
 			expect(getUnderlyingProviderKey('setu', 'claude-3-5-haiku-latest')).toBe(
 				'anthropic',
 			);
-		});
-
-		it('maps @ai-sdk/openai to openai', () => {
 			expect(getUnderlyingProviderKey('setu', 'codex-mini-latest')).toBe(
 				'openai',
 			);
-		});
-
-		it('maps @ai-sdk/openai-compatible to openai-compatible', () => {
-			// Moonshot uses openai-compatible SDK
-			expect(getUnderlyingProviderKey('setu', 'kimi-k2.5')).toBe(
-				'openai-compatible',
-			);
+			expect(getUnderlyingProviderKey('setu', 'kimi-k2.5')).toBe('moonshot');
 		});
 	});
 
-	describe('catalog family field is properly set', () => {
-		it('setu models have family field in provider binding', () => {
+	describe('catalog ownedBy field is properly set', () => {
+		it('setu models have ownedBy field', () => {
 			const setuEntry = catalog.setu;
 			expect(setuEntry).toBeDefined();
 			expect(setuEntry?.models.length).toBeGreaterThan(0);
 
-			// Every setu model should have a family field
 			for (const model of setuEntry?.models || []) {
-				expect(model.provider?.family).toBeDefined();
-				expect(['openai', 'anthropic', 'moonshot', 'google', 'minimax', 'openai-compatible']).toContain(
-					model.provider?.family,
+				expect(model.ownedBy).toBeDefined();
+				expect(['openai', 'anthropic', 'moonshot', 'google', 'minimax', 'zai']).toContain(
+					model.ownedBy,
 				);
+			}
+		});
+
+		it('single-provider models have ownedBy matching their provider', () => {
+			const openaiEntry = catalog.openai;
+			if (openaiEntry) {
+				for (const model of openaiEntry.models.slice(0, 3)) {
+					expect(model.ownedBy).toBe('openai');
+				}
+			}
+			const anthropicEntry = catalog.anthropic;
+			if (anthropicEntry) {
+				for (const model of anthropicEntry.models.slice(0, 3)) {
+					expect(model.ownedBy).toBe('anthropic');
+				}
 			}
 		});
 
@@ -256,7 +254,6 @@ describe('provider base prompts', () => {
 			expect(moonshotEntry).toBeDefined();
 			expect(moonshotEntry?.npm).toBe('@ai-sdk/openai-compatible');
 
-			// All moonshot models should be kimi models
 			for (const model of moonshotEntry?.models || []) {
 				expect(model.id).toContain('kimi');
 			}
@@ -281,7 +278,6 @@ describe('provider base prompts', () => {
 				process.cwd(),
 			);
 
-			// Each provider prompt should be non-empty and contain relevant instructions
 			expect(openai.prompt.length).toBeGreaterThan(100);
 			expect(google.prompt.length).toBeGreaterThan(100);
 			expect(moonshot.prompt.length).toBeGreaterThan(100);
@@ -295,7 +291,6 @@ describe('provider base prompts', () => {
 				process.cwd(),
 			);
 			expect(result.prompt).toContain('Claude');
-			// Anthropic prompt contains detailed instructions
 			expect(result.prompt.length).toBeGreaterThan(100);
 		});
 

@@ -1,5 +1,5 @@
 import { catalog } from './catalog-merged.ts';
-import type { ProviderId, ModelInfo } from '../../types/src/index.ts';
+import type { ProviderId, ModelInfo, ModelOwner } from '../../types/src/index.ts';
 import { filterModelsForAuthType } from './oauth-models.ts';
 
 export const providerIds = Object.keys(catalog) as ProviderId[];
@@ -76,7 +76,6 @@ export function getFastModelForAuth(
 		}
 	}
 
-	// For OAuth or when no preferred model found, use cost-based selection
 	const sorted = [...filteredModels]
 		.filter(
 			(m: ModelInfo) => m.cost?.input !== undefined && m.toolCall !== false,
@@ -93,13 +92,11 @@ export function getModelNpmBinding(
 	provider: ProviderId,
 	model: string,
 ): string | undefined {
-	// 1) Check provider's own catalog entry
 	const entry = catalog[provider];
 	const modelInfo = entry?.models?.find((m) => m.id === model);
 	if (modelInfo?.provider?.npm) return modelInfo.provider.npm;
 	if (entry?.npm) return entry.npm;
 
-	// 2) Search entire catalog for the model
 	for (const key of Object.keys(catalog) as ProviderId[]) {
 		const e = catalog[key];
 		const m = e?.models?.find((x) => x.id === model);
@@ -113,11 +110,32 @@ export function isAnthropicBasedModel(
 	provider: ProviderId,
 	model: string,
 ): boolean {
+	const info = getModelInfo(provider, model);
+	if (info?.ownedBy === 'anthropic') return true;
 	if (provider === 'anthropic') return true;
-	const npm = getModelNpmBinding(provider, model);
-	if (npm === '@ai-sdk/anthropic') return true;
 	return false;
 }
+
+const OWNER_TO_FAMILY: Record<ModelOwner, UnderlyingProviderKey> = {
+	openai: 'openai',
+	anthropic: 'anthropic',
+	google: 'google',
+	xai: 'openai',
+	moonshot: 'moonshot',
+	zai: 'glm',
+	minimax: 'minimax',
+};
+
+const DIRECT_PROVIDER_FAMILY: Partial<Record<ProviderId, UnderlyingProviderKey>> = {
+	openai: 'openai',
+	anthropic: 'anthropic',
+	google: 'google',
+	moonshot: 'moonshot',
+	minimax: 'minimax',
+	copilot: 'openai',
+	zai: 'glm',
+	'zai-coding': 'glm',
+};
 
 export type UnderlyingProviderKey =
 	| 'anthropic'
@@ -129,18 +147,31 @@ export type UnderlyingProviderKey =
 	| 'openai-compatible'
 	| null;
 
+function inferFromModelId(model: string): UnderlyingProviderKey {
+	const lower = model.toLowerCase();
+	if (lower.includes('claude') || lower.startsWith('anthropic/')) return 'anthropic';
+	if (lower.includes('gpt') || lower.startsWith('openai/') || lower.includes('codex')) return 'openai';
+	if (lower.includes('gemini') || lower.startsWith('google/')) return 'google';
+	if (lower.includes('kimi') || lower.startsWith('moonshotai/')) return 'moonshot';
+	if (lower.includes('glm') || lower.startsWith('z-ai/') || lower.startsWith('thudm/')) return 'glm';
+	if (lower.includes('minimax')) return 'minimax';
+	return null;
+}
+
 export function getUnderlyingProviderKey(
 	provider: ProviderId,
 	model: string,
 ): UnderlyingProviderKey {
-	if (provider === 'anthropic') return 'anthropic';
-	if (provider === 'openai') return 'openai';
-	if (provider === 'google') return 'google';
-	if (provider === 'moonshot') return 'moonshot';
-	if (provider === 'minimax') return 'minimax';
-	if (provider === 'copilot') return 'openai';
+	const info = getModelInfo(provider, model);
+	if (info?.ownedBy) {
+		return OWNER_TO_FAMILY[info.ownedBy];
+	}
 
-	if (provider === 'zai' || provider === 'zai-coding') return 'glm';
+	const direct = DIRECT_PROVIDER_FAMILY[provider];
+	if (direct) return direct;
+
+	const fromId = inferFromModelId(model);
+	if (fromId) return fromId;
 
 	const npm = getModelNpmBinding(provider, model);
 	if (npm === '@ai-sdk/anthropic') return 'anthropic';
@@ -155,57 +186,14 @@ export function getModelFamily(
 	provider: ProviderId,
 	model: string,
 ): UnderlyingProviderKey {
-	// 1) Direct provider mapping
-	if (provider === 'anthropic') return 'anthropic';
-	if (provider === 'openai') return 'openai';
-	if (provider === 'google') return 'google';
-	if (provider === 'moonshot') return 'moonshot';
-	if (provider === 'minimax') return 'minimax';
-	if (provider === 'copilot') return 'openai';
-	if (provider === 'zai' || provider === 'zai-coding') return 'glm';
-
-	// 2) For aggregate providers, infer from model ID patterns
-	if (provider === 'openrouter' || provider === 'opencode') {
-		const lowerModel = model.toLowerCase();
-		// Anthropic models
-		if (lowerModel.includes('claude') || lowerModel.startsWith('anthropic/')) {
-			return 'anthropic';
-		}
-		// OpenAI models
-		if (
-			lowerModel.includes('gpt') ||
-			lowerModel.startsWith('openai/') ||
-			lowerModel.includes('codex')
-		) {
-			return 'openai';
-		}
-		// Google models
-		if (lowerModel.includes('gemini') || lowerModel.startsWith('google/')) {
-			return 'google';
-		}
-		// Moonshot models
-		if (lowerModel.includes('kimi') || lowerModel.startsWith('moonshotai/')) {
-			return 'moonshot';
-		}
-		if (
-			lowerModel.includes('glm') ||
-			lowerModel.startsWith('z-ai/') ||
-			lowerModel.startsWith('thudm/')
-		) {
-			return 'glm';
-		}
-		if (lowerModel.includes('minimax')) {
-			return 'minimax';
-		}
-	}
-
-	// 2) Check model's family field in catalog
 	const info = getModelInfo(provider, model);
-	if (info?.provider?.family) {
-		return info.provider.family as UnderlyingProviderKey;
+	if (info?.ownedBy) {
+		return OWNER_TO_FAMILY[info.ownedBy];
 	}
 
-	// 3) Fall back to npm binding (for zai and other providers)
+	const direct = DIRECT_PROVIDER_FAMILY[provider];
+	if (direct) return direct;
+
 	return getUnderlyingProviderKey(provider, model);
 }
 

@@ -2,6 +2,7 @@
 export type {
 	ProviderId,
 	ProviderFamily,
+	ModelOwner,
 	ModelInfo,
 	ModelProviderBinding,
 	ProviderCatalogEntry,

@@ -1,62 +1,14 @@
 import type { ProviderId, ProviderConfig, ProviderApiFormat } from '../types.ts';
+import { setuCatalog } from '../catalog.ts';
 
-const BUILTIN_PROVIDERS: ProviderConfig[] = [
-  {
-    id: 'openai',
-    apiFormat: 'openai-responses',
-    modelPrefix: 'gpt-',
-  },
-  {
-    id: 'openai',
-    apiFormat: 'openai-responses',
-    modelPrefix: 'o1',
-  },
-  {
-    id: 'openai',
-    apiFormat: 'openai-responses',
-    modelPrefix: 'o3',
-  },
-  {
-    id: 'openai',
-    apiFormat: 'openai-responses',
-    modelPrefix: 'o4',
-  },
-  {
-    id: 'openai',
-    apiFormat: 'openai-responses',
-    modelPrefix: 'codex-',
-  },
-  {
-    id: 'anthropic',
-    apiFormat: 'anthropic-messages',
-    modelPrefix: 'claude-',
-  },
-  {
-    id: 'google',
-    apiFormat: 'google-native',
-    modelPrefix: 'gemini-',
-  },
-  {
-    id: 'moonshot',
-    apiFormat: 'openai-chat',
-    modelPrefix: 'kimi-',
-  },
-  {
-    id: 'minimax',
-    apiFormat: 'anthropic-messages',
-    modelPrefix: 'MiniMax-',
-  },
-  {
-    id: 'zai',
-    apiFormat: 'openai-chat',
-    modelPrefix: 'glm-',
-  },
-  {
-    id: 'zai',
-    apiFormat: 'openai-chat',
-    modelPrefix: 'z1-',
-  },
-];
+const OWNER_API_FORMAT: Record<string, ProviderApiFormat> = {
+  openai: 'openai-responses',
+  anthropic: 'anthropic-messages',
+  google: 'google-native',
+  minimax: 'anthropic-messages',
+  moonshot: 'openai-chat',
+  zai: 'openai-chat',
+};
 
 export class ProviderRegistry {
   private configs: ProviderConfig[];
@@ -66,7 +18,7 @@ export class ProviderRegistry {
     customProviders?: ProviderConfig[],
     modelMap?: Record<string, ProviderId>,
   ) {
-    this.configs = [...BUILTIN_PROVIDERS, ...(customProviders ?? [])];
+    this.configs = [...(customProviders ?? [])];
     this.modelMap = modelMap ?? {};
   }
 
@@ -90,6 +42,13 @@ export class ProviderRegistry {
       if (config.modelPrefix && modelId.startsWith(config.modelPrefix)) {
         return { providerId: config.id, apiFormat: config.apiFormat };
       }
+    }
+
+    const entry = setuCatalog.models.find((m) => m.id === modelId);
+    if (entry) {
+      const providerId = entry.owned_by as ProviderId;
+      const apiFormat = OWNER_API_FORMAT[providerId] ?? 'openai-chat';
+      return { providerId, apiFormat };
     }
 
     return null;

@@ -11,7 +11,8 @@ import { discoverProjectTools } from '@ottocode/sdk';
 import type { Tool } from 'ai';
 import { adaptTools } from '../../tools/adapter.ts';
 import { buildDatabaseTools } from '../../tools/database/index.ts';
-import { debugLog, time, isDebugEnabled } from '../debug/index.ts';
+import { debugLog, time } from '../debug/index.ts';
+import { isDevtoolsEnabled } from '../debug/state.ts';
 import { buildHistoryMessages } from '../message/history-builder.ts';
 import { getMaxOutputTokens } from '../utils/token.ts';
 import { setupToolContext } from '../tools/setup.ts';
@@ -184,7 +185,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		sessionId: opts.sessionId,
 		messageId: opts.assistantMessageId,
 	});
-	const wrappedModel = isDebugEnabled()
+	const wrappedModel = isDevtoolsEnabled()
 		? wrapLanguageModel({
 				// biome-ignore lint/suspicious/noExplicitAny: OpenRouter provider uses v2 spec
 				model: model as any,

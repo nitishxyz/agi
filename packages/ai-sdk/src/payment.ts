@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer';
 import bs58 from 'bs58';
 import { createPaymentHeader } from 'x402/client';
 import { svm } from 'x402/shared';
@@ -56,7 +55,7 @@ export async function createPaymentPayload(
     { svmConfig: { rpcUrl: rpcURL } },
   );
   const decoded = JSON.parse(
-    Buffer.from(header, 'base64').toString('utf-8'),
+    atob(header),
   ) as { payload: { transaction: string } };
 
   return {

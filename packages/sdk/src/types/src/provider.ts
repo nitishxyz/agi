@@ -25,6 +25,19 @@ export type ProviderFamily =
 	| 'minimax'
 	| 'openai-compatible';
 
+/**
+ * The upstream provider that owns/created the model.
+ * Used for API format routing, system prompt selection, and provider detection.
+ */
+export type ModelOwner =
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'xai'
+  | 'moonshot'
+  | 'zai'
+  | 'minimax';
+
 export type ModelProviderBinding = {
 	id?: string;
 	npm?: string;
@@ -42,6 +55,7 @@ export type ModelProviderBinding = {
  */
 export type ModelInfo = {
 	id: string;
+	ownedBy?: ModelOwner;
 	label?: string;
 	modalities?: { input?: string[]; output?: string[] };
 	toolCall?: boolean;

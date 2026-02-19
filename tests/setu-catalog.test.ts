@@ -6,11 +6,11 @@ describe('setu catalog entry', () => {
 		expect(providerIds).toContain('setu');
 	});
 
-	it('mirrors OpenAI/Anthropic models with codex-mini-latest default', () => {
+	it('sources models from setuCatalog with gpt-5-codex default', () => {
 		const entry = catalog.setu;
 		expect(entry).toBeDefined();
 		expect(entry?.models.length).toBeGreaterThan(0);
-		expect(entry?.models[0]?.id).toBe('codex-mini-latest');
+		expect(entry?.models[0]?.id).toBe('gpt-5-codex');
 		const providers = new Set(
 			entry?.models
 				.map((model) => model.provider?.npm)
@@ -24,5 +24,21 @@ describe('setu catalog entry', () => {
 				'@ai-sdk/openai-compatible',
 			]),
 		);
+	});
+
+	it('has cost and limit from setu API', () => {
+		const entry = catalog.setu;
+		const model = entry?.models.find((m) => m.id === 'gpt-5-codex');
+		expect(model?.cost?.input).toBeGreaterThan(0);
+		expect(model?.cost?.output).toBeGreaterThan(0);
+		expect(model?.limit?.context).toBeGreaterThan(0);
+		expect(model?.limit?.output).toBeGreaterThan(0);
+	});
+
+	it('every model has ownedBy set', () => {
+		const entry = catalog.setu;
+		for (const model of entry?.models ?? []) {
+			expect(model.ownedBy).toBeDefined();
+		}
 	});
 });

@@ -15,6 +15,7 @@
 // Provider types
 export type {
 	ProviderId,
+	ModelOwner,
 	ModelInfo,
 	ModelProviderBinding,
 	ProviderCatalogEntry,

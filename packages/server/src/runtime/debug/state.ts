@@ -65,6 +65,13 @@ function checkEnvTrace(): boolean {
 	return false;
 }
 
+function checkEnvDevtools(): boolean {
+	const raw = process.env.OTTO_DEVTOOLS;
+	if (!raw) return false;
+	const trimmed = raw.trim().toLowerCase();
+	return TRUTHY.has(trimmed);
+}
+
 /**
  * Initialize debug state from environment
  */
@@ -94,6 +101,10 @@ export function isDebugEnabled(): boolean {
 export function isTraceEnabled(): boolean {
 	initialize();
 	return state.enabled && state.traceEnabled;
+}
+
+export function isDevtoolsEnabled(): boolean {
+	return checkEnvDevtools();
 }
 
 /**

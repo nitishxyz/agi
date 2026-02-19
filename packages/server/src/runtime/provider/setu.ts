@@ -5,7 +5,7 @@ import {
 	loadConfig,
 } from '@ottocode/sdk';
 import { devToolsMiddleware } from '@ai-sdk/devtools';
-import { isDebugEnabled } from '../debug/index.ts';
+import { isDevtoolsEnabled } from '../debug/state.ts';
 import { publish } from '../../events/bus.ts';
 import {
 	waitForTopupMethodSelection,
@@ -123,7 +123,7 @@ export async function resolveSetuModel(
 		baseURL,
 		rpcURL,
 		callbacks,
-		middleware: isDebugEnabled() ? devToolsMiddleware() : undefined,
+		middleware: isDevtoolsEnabled() ? devToolsMiddleware() : undefined,
 		payment: {
 			topupApprovalMode,
 			autoPayThresholdUsd,
