@@ -10,6 +10,10 @@ export interface ProxyOptions {
   verbose?: boolean;
 }
 
+function normalizePathname(pathname: string): string {
+  return pathname.replace(/^\/v1\/v1\//, "/v1/");
+}
+
 export function createProxy(options: ProxyOptions = {}) {
   const port = options.port ?? DEFAULT_PORT;
   const baseURL = options.baseURL ?? DEFAULT_BASE_URL;
@@ -57,8 +61,9 @@ export function createProxy(options: ProxyOptions = {}) {
     port,
     async fetch(req: Request): Promise<Response> {
       const url = new URL(req.url);
+      const pathname = normalizePathname(url.pathname);
 
-      if (url.pathname === "/health") {
+      if (pathname === "/health") {
         return Response.json({
           status: "ok",
           wallet: wallet.publicKey,
@@ -66,7 +71,7 @@ export function createProxy(options: ProxyOptions = {}) {
         });
       }
 
-      if (url.pathname === "/v1/models") {
+      if (pathname === "/v1/models") {
         log("GET /v1/models");
         const resp = await setuFetch(`${proxyBaseURL}/v1/models`, {
           method: "GET",
@@ -82,11 +87,12 @@ export function createProxy(options: ProxyOptions = {}) {
         });
       }
 
-      const isCompletions = url.pathname === "/v1/chat/completions";
-      const isResponses = url.pathname === "/v1/responses";
-      if (!isCompletions && !isResponses) {
-        const targetURL = `${proxyBaseURL}${url.pathname}`;
-        log(`Proxying ${req.method} ${url.pathname}`);
+      const isCompletions = pathname === "/v1/chat/completions";
+      const isResponses = pathname === "/v1/responses";
+      const isMessages = pathname === "/v1/messages" || pathname === "/messages";
+      if (!isCompletions && !isResponses && !isMessages) {
+        const targetURL = `${proxyBaseURL}${pathname}`;
+        log(`Proxying ${req.method} ${pathname}`);
         const resp = await setuFetch(targetURL, {
           method: req.method,
           headers: { "Content-Type": "application/json" },
@@ -112,11 +118,14 @@ export function createProxy(options: ProxyOptions = {}) {
 
       const model = parsed.model as string;
       const stream = parsed.stream as boolean;
-      log(
-        `${isCompletions ? "POST /v1/chat/completions" : "POST /v1/responses"} model=${model} stream=${stream}`,
-      );
+      const endpoint = isCompletions
+        ? "/v1/chat/completions"
+        : isResponses
+          ? "/v1/responses"
+          : "/v1/messages";
+      log(`POST ${endpoint} model=${model} stream=${stream}`);
 
-      const targetURL = `${proxyBaseURL}${url.pathname}`;
+      const targetURL = `${proxyBaseURL}${endpoint}`;
       const resp = await setuFetch(targetURL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
