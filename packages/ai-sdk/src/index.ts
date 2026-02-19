@@ -28,8 +28,12 @@ export { createSetuFetch } from './fetch.ts';
 export type { CreateSetuFetchOptions } from './fetch.ts';
 
 export { fetchBalance, fetchWalletUsdcBalance } from './balance.ts';
-export { getPublicKeyFromPrivate } from './auth.ts';
+export { getPublicKeyFromPrivate, createWalletContext } from './auth.ts';
+export type { WalletContext } from './auth.ts';
 export { addAnthropicCacheControl } from './cache.ts';
 
 export { generateWallet, importWallet, isValidPrivateKey } from './wallet.ts';
 export type { WalletInfo } from './wallet.ts';
+
+export { setuCatalog } from './catalog.ts';
+export type { SetuModelCatalogEntry, SetuCatalog } from './catalog.ts';

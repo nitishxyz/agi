@@ -19,6 +19,10 @@ import { SetuOverview } from './docs/SetuOverview';
 import { SetuPayments } from './docs/SetuPayments';
 import { SetuIntegration } from './docs/SetuIntegration';
 import { AcpIntegration } from './docs/AcpIntegration';
+import { AiSdkOverview } from './docs/AiSdkOverview';
+import { AiSdkConfiguration } from './docs/AiSdkConfiguration';
+import { AiSdkCaching } from './docs/AiSdkCaching';
+import { OpenClawSetu } from './docs/OpenClawSetu';
 
 const NAV_SECTIONS = [
 	{
@@ -47,11 +51,20 @@ const NAV_SECTIONS = [
 		],
 	},
 	{
+		title: 'AI SDK',
+		items: [
+			{ to: '/docs/ai-sdk', label: 'Overview', end: true },
+			{ to: '/docs/ai-sdk/configuration', label: 'Configuration' },
+			{ to: '/docs/ai-sdk/caching', label: 'Caching' },
+		],
+	},
+	{
 		title: 'Setu',
 		items: [
 			{ to: '/docs/setu', label: 'Overview', end: true },
 			{ to: '/docs/setu/payments', label: 'Payments' },
 			{ to: '/docs/setu/integration', label: 'Integration Guide' },
+			{ to: '/docs/setu/openclaw', label: 'OpenClaw Plugin' },
 		],
 	},
 ];
@@ -142,9 +155,13 @@ export function Docs() {
 							<Route path="api" element={<ApiReference />} />
 							<Route path="sharing" element={<Sharing />} />
 							<Route path="acp" element={<AcpIntegration />} />
+							<Route path="ai-sdk" element={<AiSdkOverview />} />
+							<Route path="ai-sdk/configuration" element={<AiSdkConfiguration />} />
+							<Route path="ai-sdk/caching" element={<AiSdkCaching />} />
 							<Route path="setu" element={<SetuOverview />} />
 							<Route path="setu/payments" element={<SetuPayments />} />
 							<Route path="setu/integration" element={<SetuIntegration />} />
+						<Route path="setu/openclaw" element={<OpenClawSetu />} />
 							<Route path="*" element={<Navigate to="/docs" replace />} />
 						</Routes>
 					</div>

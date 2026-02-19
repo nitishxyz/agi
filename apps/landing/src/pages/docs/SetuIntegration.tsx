@@ -15,6 +15,10 @@ export function SetuIntegration() {
 				authentication, automatic 402 payment handling, provider routing, and
 				Anthropic prompt caching out of the box.
 			</p>
+		<p className="text-otto-dim text-sm">
+			For comprehensive SDK documentation, see the{' '}
+			<a href="/docs/ai-sdk">AI SDK docs</a>.
+		</p>
 
 			<h3>Install</h3>
 			<CodeBlock>{`bun add @ottocode/ai-sdk ai
