@@ -37,7 +37,7 @@
     "directory": "packages/openclaw-setu"
   },
   "dependencies": {
-    "@ottocode/ai-sdk": "workspace:*"
+    "@ottocode/ai-sdk": "^0.1.4"
   },
   "peerDependencies": {
     "openclaw": ">=2025.1.0"

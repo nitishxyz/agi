@@ -17,17 +17,22 @@ OpenClaw → localhost:8403 (Setu proxy) → api.setu.ottocode.io → LLM provid
 
 ## Quick Start
 
+No project installation needed — this is a global tool.
+
 ```bash
-# Install
-bun add @ottocode/openclaw-setu
+# Option 1: Zero-install with bunx (recommended)
+bunx @ottocode/openclaw-setu setup
 
-# Interactive setup (generates wallet, injects config)
-bunx openclaw-setu setup
+# Option 2: Global install
+bun install -g @ottocode/openclaw-setu
+openclaw-setu setup
+```
 
+```bash
 # Fund your wallet with USDC on Solana (address shown during setup)
 
 # Start the proxy
-bunx openclaw-setu start
+bunx @ottocode/openclaw-setu start
 
 # Restart OpenClaw
 openclaw gateway restart
@@ -48,6 +53,8 @@ openclaw-setu config inject      Inject Setu provider into openclaw.json
 openclaw-setu config remove      Remove Setu provider from openclaw.json
 openclaw-setu config status      Check if Setu is configured
 ```
+
+All commands work with `bunx @ottocode/openclaw-setu <command>` (no install required).
 
 ## As an OpenClaw Plugin
 
