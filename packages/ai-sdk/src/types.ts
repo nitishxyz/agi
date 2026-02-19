@@ -21,7 +21,7 @@ export interface ProviderConfig {
 }
 
 export interface SetuAuth {
-  privateKey: string;
+  privateKey?: string;
 }
 
 export interface BalanceUpdate {

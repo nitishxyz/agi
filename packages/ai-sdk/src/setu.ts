@@ -27,7 +27,12 @@ export interface SetuInstance {
 
 export function createSetu(config: SetuConfig): SetuInstance {
   const baseURL = trimTrailingSlash(config.baseURL ?? DEFAULT_BASE_URL);
-  const wallet = createWalletContext(config.auth);
+  const privateKey = config.auth.privateKey || process.env.SETU_PRIVATE_KEY;
+  if (!privateKey) {
+    throw new Error('Setu: privateKey is required. Pass it via config.auth.privateKey or set SETU_PRIVATE_KEY env variable.');
+  }
+  const resolvedAuth = { ...config.auth, privateKey };
+  const wallet = createWalletContext(resolvedAuth);
   const registry = new ProviderRegistry(config.providers, config.modelMap);
 
   const setuFetch = createSetuFetch({
@@ -74,14 +79,14 @@ export function createSetu(config: SetuConfig): SetuInstance {
     },
 
     async balance() {
-      return fetchBalance(config.auth, baseURL);
+      return fetchBalance(resolvedAuth, baseURL);
     },
 
     async walletBalance(network?: 'mainnet' | 'devnet') {
-      return fetchWalletUsdcBalance(config.auth, network);
+      return fetchWalletUsdcBalance(resolvedAuth, network);
     },
 
-    walletAddress: getPublicKeyFromPrivate(config.auth.privateKey),
+    walletAddress: getPublicKeyFromPrivate(resolvedAuth.privateKey),
 
     registry,
   };

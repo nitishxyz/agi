@@ -9,8 +9,8 @@ export interface WalletContext {
   privateKeyBytes: Uint8Array;
 }
 
-export function createWalletContext(auth: SetuAuth): WalletContext {
-  const privateKeyBytes = bs58.decode(auth.privateKey);
+export function createWalletContext(auth: Required<SetuAuth>): WalletContext {
+  const privateKeyBytes = bs58.decode(auth.privateKey!);
   const keypair = Keypair.fromSecretKey(privateKeyBytes);
   const walletAddress = keypair.publicKey.toBase58();
   return { keypair, walletAddress, privateKeyBytes };
@@ -32,7 +32,8 @@ export function buildWalletHeaders(ctx: WalletContext): Record<string, string> {
   };
 }
 
-export function getPublicKeyFromPrivate(privateKey: string): string | null {
+export function getPublicKeyFromPrivate(privateKey?: string): string | null {
+  if (!privateKey) return null;
   try {
     const privateKeyBytes = bs58.decode(privateKey);
     const keypair = Keypair.fromSecretKey(privateKeyBytes);

@@ -13,11 +13,11 @@ function trimTrailingSlash(url: string) {
 }
 
 export async function fetchBalance(
-  auth: SetuAuth,
+  auth: Required<SetuAuth>,
   baseURL?: string,
 ): Promise<BalanceResponse | null> {
   try {
-    const privateKeyBytes = bs58.decode(auth.privateKey);
+    const privateKeyBytes = bs58.decode(auth.privateKey!);
     const keypair = Keypair.fromSecretKey(privateKeyBytes);
     const walletAddress = keypair.publicKey.toBase58();
     const url = trimTrailingSlash(baseURL ?? DEFAULT_BASE_URL);
@@ -60,11 +60,11 @@ export async function fetchBalance(
 }
 
 export async function fetchWalletUsdcBalance(
-  auth: SetuAuth,
+  auth: Required<SetuAuth>,
   network: 'mainnet' | 'devnet' = 'mainnet',
 ): Promise<WalletUsdcBalance | null> {
   try {
-    const privateKeyBytes = bs58.decode(auth.privateKey);
+    const privateKeyBytes = bs58.decode(auth.privateKey!);
     const keypair = Keypair.fromSecretKey(privateKeyBytes);
     const walletAddress = keypair.publicKey.toBase58();
     const rpcUrl = network === 'devnet' ? 'https://api.devnet.solana.com' : DEFAULT_RPC_URL;
