@@ -85,6 +85,7 @@ export {
 export {
 	generateWallet,
 	importWallet,
+	isValidPrivateKey,
 	getSetuWallet,
 	ensureSetuWallet,
 	type WalletInfo,

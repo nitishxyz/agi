@@ -1,0 +1,122 @@
+import type { LanguageModelV3Middleware } from '@ai-sdk/provider';
+
+export type ProviderId =
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'moonshot'
+  | 'zai'
+  | 'minimax'
+  | (string & {});
+
+export type ProviderApiFormat = 'openai-responses' | 'anthropic-messages' | 'openai-chat' | 'google-native';
+
+export type FetchFunction = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+
+export interface ProviderConfig {
+  id: ProviderId;
+  apiFormat: ProviderApiFormat;
+  models?: string[];
+  modelPrefix?: string;
+}
+
+export interface SetuAuth {
+  privateKey: string;
+}
+
+export interface BalanceUpdate {
+  costUsd: number;
+  balanceRemaining: number;
+  inputTokens?: number;
+  outputTokens?: number;
+}
+
+export interface PaymentCallbacks {
+  onPaymentRequired?: (amountUsd: number, currentBalance?: number) => void;
+  onPaymentSigning?: () => void;
+  onPaymentComplete?: (data: {
+    amountUsd: number;
+    newBalance: number;
+    transactionId?: string;
+  }) => void;
+  onPaymentError?: (error: string) => void;
+  onPaymentApproval?: (info: {
+    amountUsd: number;
+    currentBalance: number;
+  }) => Promise<'crypto' | 'fiat' | 'cancel'>;
+  onBalanceUpdate?: (update: BalanceUpdate) => void;
+}
+
+export type AnthropicCacheStrategy = 'auto' | 'manual' | 'custom' | false;
+
+export type AnthropicCachePlacement = 'first' | 'last' | 'all';
+
+export interface AnthropicCacheConfig {
+  strategy?: AnthropicCacheStrategy;
+  systemBreakpoints?: number;
+  messageBreakpoints?: number;
+  systemPlacement?: AnthropicCachePlacement;
+  messagePlacement?: AnthropicCachePlacement;
+  cacheType?: 'ephemeral';
+  transform?: (body: Record<string, unknown>) => Record<string, unknown>;
+}
+
+export interface CacheOptions {
+  promptCacheKey?: string;
+  promptCacheRetention?: 'in_memory' | '24h';
+  anthropicCaching?: boolean | AnthropicCacheConfig;
+}
+
+export interface PaymentOptions {
+  topupApprovalMode?: 'auto' | 'approval';
+  autoPayThresholdUsd?: number;
+  maxRequestAttempts?: number;
+  maxPaymentAttempts?: number;
+}
+
+export interface SetuConfig {
+  auth: SetuAuth;
+  baseURL?: string;
+  rpcURL?: string;
+  providers?: ProviderConfig[];
+  modelMap?: Record<string, ProviderId>;
+  callbacks?: PaymentCallbacks;
+  cache?: CacheOptions;
+  payment?: PaymentOptions;
+  middleware?: LanguageModelV3Middleware | LanguageModelV3Middleware[];
+}
+
+export interface ExactPaymentRequirement {
+  scheme: 'exact';
+  network: string;
+  maxAmountRequired: string;
+  asset: string;
+  payTo: string;
+  description?: string;
+  resource?: string;
+  extra?: Record<string, unknown>;
+  maxTimeoutSeconds?: number;
+}
+
+export interface PaymentPayload {
+  x402Version: 1;
+  scheme: 'exact';
+  network: string;
+  payload: { transaction: string };
+}
+
+export interface BalanceResponse {
+  walletAddress: string;
+  balance: number;
+  totalSpent: number;
+  totalTopups: number;
+  requestCount: number;
+  createdAt?: string;
+  lastRequest?: string;
+}
+
+export interface WalletUsdcBalance {
+  walletAddress: string;
+  usdcBalance: number;
+  network: 'mainnet' | 'devnet';
+}

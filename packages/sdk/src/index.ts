@@ -147,6 +147,7 @@ export type { OpenAIOAuthResult } from './auth/src/index.ts';
 export {
 	generateWallet,
 	importWallet,
+	isValidPrivateKey,
 	getSetuWallet,
 	ensureSetuWallet,
 } from './auth/src/index.ts';

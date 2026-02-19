@@ -24,6 +24,16 @@ export function importWallet(privateKey: string): WalletInfo {
 	};
 }
 
+export function isValidPrivateKey(privateKey: string): boolean {
+	try {
+		const bytes = bs58.decode(privateKey);
+		Keypair.fromSecretKey(bytes);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 export async function getSetuWallet(
 	projectRoot?: string,
 ): Promise<WalletInfo | null> {

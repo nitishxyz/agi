@@ -245,7 +245,7 @@ describe('provider base prompts', () => {
 			// Every setu model should have a family field
 			for (const model of setuEntry?.models || []) {
 				expect(model.provider?.family).toBeDefined();
-				expect(['openai', 'anthropic', 'moonshot', 'google']).toContain(
+				expect(['openai', 'anthropic', 'moonshot', 'google', 'minimax', 'openai-compatible']).toContain(
 					model.provider?.family,
 				);
 			}
