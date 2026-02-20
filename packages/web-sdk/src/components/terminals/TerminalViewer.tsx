@@ -95,7 +95,11 @@ interface TerminalViewerProps {
 	onExit?: (terminalId: string) => void;
 }
 
-export function TerminalViewer({ terminalId, isActive, onExit }: TerminalViewerProps) {
+export function TerminalViewer({
+	terminalId,
+	isActive,
+	onExit,
+}: TerminalViewerProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const termRef = useRef<Terminal | null>(null);
 	const fitAddonRef = useRef<FitAddon | null>(null);
@@ -109,7 +113,10 @@ export function TerminalViewer({ terminalId, isActive, onExit }: TerminalViewerP
 	const blinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const userScrolledRef = useRef(false);
 	const bgColorRef = useRef('#121216');
-	const focusHandlersRef = useRef<{ focusin: () => void; focusout: () => void } | null>(null);
+	const focusHandlersRef = useRef<{
+		focusin: () => void;
+		focusout: () => void;
+	} | null>(null);
 
 	const fitTerminal = useCallback(() => {
 		if (fitAddonRef.current) {
@@ -254,29 +261,42 @@ export function TerminalViewer({ terminalId, isActive, onExit }: TerminalViewerP
 				termRef.current.renderer.setCursorBlink(false);
 				if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
 				blinkTimerRef.current = setTimeout(() => {
-				if (termRef.current?.renderer && document.activeElement && containerRef.current?.contains(document.activeElement)) {
+					if (
+						termRef.current?.renderer &&
+						document.activeElement &&
+						containerRef.current?.contains(document.activeElement)
+					) {
 						termRef.current.renderer.setCursorBlink(true);
 					}
 				}, CURSOR_BLINK_RESUME_DELAY);
 			});
 
-		bgColorRef.current = bg;
+			bgColorRef.current = bg;
 
-		const handleFocusIn = () => {
-			if (!termRef.current?.renderer) return;
-			termRef.current.renderer.setCursorBlink(true);
-			termRef.current.renderer.setTheme({ cursor: '#ffffff', cursorAccent: '#000000' });
-		};
+			const handleFocusIn = () => {
+				if (!termRef.current?.renderer) return;
+				termRef.current.renderer.setCursorBlink(true);
+				termRef.current.renderer.setTheme({
+					cursor: '#ffffff',
+					cursorAccent: '#000000',
+				});
+			};
 
-		const handleFocusOut = () => {
-			if (!termRef.current?.renderer) return;
-			termRef.current.renderer.setCursorBlink(false);
-			termRef.current.renderer.setTheme({ cursor: bgColorRef.current, cursorAccent: bgColorRef.current });
-		};
+			const handleFocusOut = () => {
+				if (!termRef.current?.renderer) return;
+				termRef.current.renderer.setCursorBlink(false);
+				termRef.current.renderer.setTheme({
+					cursor: bgColorRef.current,
+					cursorAccent: bgColorRef.current,
+				});
+			};
 
-		containerRef.current.addEventListener('focusin', handleFocusIn);
-		containerRef.current.addEventListener('focusout', handleFocusOut);
-		focusHandlersRef.current = { focusin: handleFocusIn, focusout: handleFocusOut };
+			containerRef.current.addEventListener('focusin', handleFocusIn);
+			containerRef.current.addEventListener('focusout', handleFocusOut);
+			focusHandlersRef.current = {
+				focusin: handleFocusIn,
+				focusout: handleFocusOut,
+			};
 
 			await new Promise<void>((resolve) => {
 				requestAnimationFrame(() => {
@@ -319,9 +339,9 @@ export function TerminalViewer({ terminalId, isActive, onExit }: TerminalViewerP
 				sendResize(cols, rows);
 			});
 
-		term.onScroll(() => {
-			userScrolledRef.current = term.getViewportY() > 0;
-		});
+			term.onScroll(() => {
+				userScrolledRef.current = term.getViewportY() > 0;
+			});
 
 			termRef.current = term;
 			fitAddonRef.current = fitAddon;
@@ -351,8 +371,14 @@ export function TerminalViewer({ terminalId, isActive, onExit }: TerminalViewerP
 		return () => {
 			disposed = true;
 			if (containerRef.current && focusHandlersRef.current) {
-				containerRef.current.removeEventListener('focusin', focusHandlersRef.current.focusin);
-				containerRef.current.removeEventListener('focusout', focusHandlersRef.current.focusout);
+				containerRef.current.removeEventListener(
+					'focusin',
+					focusHandlersRef.current.focusin,
+				);
+				containerRef.current.removeEventListener(
+					'focusout',
+					focusHandlersRef.current.focusout,
+				);
 				focusHandlersRef.current = null;
 			}
 			if (blinkTimerRef.current) {
@@ -388,7 +414,10 @@ export function TerminalViewer({ terminalId, isActive, onExit }: TerminalViewerP
 			term.blur();
 			if (term.renderer) {
 				term.renderer.setCursorBlink(false);
-				term.renderer.setTheme({ cursor: bgColorRef.current, cursorAccent: bgColorRef.current });
+				term.renderer.setTheme({
+					cursor: bgColorRef.current,
+					cursorAccent: bgColorRef.current,
+				});
 			}
 		}
 	}, [isActive, fitTerminal]);

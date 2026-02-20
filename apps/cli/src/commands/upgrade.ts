@@ -192,7 +192,7 @@ export function registerUpgradeCommand(program: Command, version: string) {
 				return;
 			}
 
-		await runUpgrade(latest);
+			await runUpgrade(latest);
 
 			console.log(`  ${colors.green('✓')} Upgrade complete!`);
 			console.log(`  Run ${colors.bold('otto')} to use the new version.`);
