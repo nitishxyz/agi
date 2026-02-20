@@ -63,10 +63,14 @@ function main() {
 		'packages/server',
 	];
 
+	const versionOnlyPackages = [
+		'packages/ai-sdk',
+	];
+
 	// First, collect all workspace package versions
 	const workspaceVersions = new Map<string, string>();
 
-	for (const pkgPath of packages) {
+	for (const pkgPath of [...packages, ...versionOnlyPackages]) {
 		const packagePath = resolve(process.cwd(), pkgPath, 'package.json');
 		const pkg = JSON.parse(readFileSync(packagePath, 'utf8')) as PackageJson;
 
