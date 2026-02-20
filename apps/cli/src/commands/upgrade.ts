@@ -3,7 +3,6 @@ import { createWriteStream, chmodSync } from 'node:fs';
 import { get } from 'node:https';
 import { homedir, platform, arch } from 'node:os';
 import { resolve } from 'node:path';
-import { createInterface } from 'node:readline';
 import { colors } from '../ui.ts';
 
 const GITHUB_REPO = 'nitishxyz/otto';
@@ -144,19 +143,6 @@ function downloadBinary(url: string, dest: string): Promise<void> {
 	});
 }
 
-function waitForEnter(message: string): Promise<void> {
-	return new Promise((resolve) => {
-		const rl = createInterface({
-			input: process.stdin,
-			output: process.stdout,
-		});
-		rl.question(message, () => {
-			rl.close();
-			resolve();
-		});
-	});
-}
-
 async function runUpgrade(version: string): Promise<void> {
 	const asset = getPlatformAsset();
 	const url = `https://github.com/${GITHUB_REPO}/releases/download/v${version}/${asset}`;
@@ -206,20 +192,10 @@ export function registerUpgradeCommand(program: Command, version: string) {
 				return;
 			}
 
-			await runUpgrade(latest);
+		await runUpgrade(latest);
 
 			console.log(`  ${colors.green('✓')} Upgrade complete!`);
-			console.log('');
-
-			await waitForEnter(`  Press ${colors.bold('Enter')} to restart otto... `);
-
-			const { spawn } = await import('node:child_process');
-			const child = spawn(process.argv[0], process.argv.slice(1), {
-				stdio: 'inherit',
-				detached: true,
-				env: process.env,
-			});
-			child.unref();
+			console.log(`  Run ${colors.bold('otto')} to use the new version.`);
 			process.exit(0);
 		});
 }
