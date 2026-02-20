@@ -215,4 +215,47 @@ export const configPaths = {
 			},
 		},
 	},
+	'/v1/config/models': {
+		get: {
+			tags: ['config'],
+			operationId: 'getAllModels',
+			summary: 'Get all models across authorized providers',
+			parameters: [projectQueryParam()],
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								additionalProperties: {
+									type: 'object',
+									properties: {
+										label: { type: 'string' },
+										authType: { type: 'string' },
+										models: {
+											type: 'array',
+											items: {
+												type: 'object',
+												properties: {
+													id: { type: 'string' },
+													label: { type: 'string' },
+													toolCall: { type: 'boolean' },
+													reasoningText: { type: 'boolean' },
+													vision: { type: 'boolean' },
+													attachment: { type: 'boolean' },
+												},
+												required: ['id', 'label'],
+											},
+										},
+									},
+									required: ['label', 'models'],
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
 } as const;

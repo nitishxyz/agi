@@ -1,6 +1,51 @@
 import { gitErrorResponse, projectQueryParam } from '../helpers';
 
 export const gitPaths = {
+	'/v1/git/init': {
+		post: {
+			tags: ['git'],
+			operationId: 'initGitRepo',
+			summary: 'Initialize a git repository',
+			requestBody: {
+				required: false,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								project: { type: 'string' },
+							},
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: { type: 'string', enum: ['ok'] },
+									data: {
+										type: 'object',
+										properties: {
+											initialized: { type: 'boolean' },
+											path: { type: 'string' },
+										},
+										required: ['initialized', 'path'],
+									},
+								},
+								required: ['status', 'data'],
+							},
+						},
+					},
+				},
+				500: gitErrorResponse(),
+			},
+		},
+	},
 	'/v1/git/status': {
 		get: {
 			tags: ['git'],
@@ -50,6 +95,13 @@ export const gitPaths = {
 					required: false,
 					schema: { type: 'string', enum: ['true', 'false'] },
 					description: 'Show staged diff (default: unstaged)',
+				},
+				{
+					in: 'query',
+					name: 'fullFile',
+					required: false,
+					schema: { type: 'string', enum: ['true', 'false'] },
+					description: 'Include full file content in diff',
 				},
 			],
 			responses: {

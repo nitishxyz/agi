@@ -228,9 +228,14 @@ describe('provider base prompts', () => {
 
 			for (const model of setuEntry?.models || []) {
 				expect(model.ownedBy).toBeDefined();
-				expect(['openai', 'anthropic', 'moonshot', 'google', 'minimax', 'zai']).toContain(
-					model.ownedBy,
-				);
+				expect([
+					'openai',
+					'anthropic',
+					'moonshot',
+					'google',
+					'minimax',
+					'zai',
+				]).toContain(model.ownedBy);
 			}
 		});
 

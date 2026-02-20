@@ -1,25 +1,25 @@
 {
-  "id": "openclaw-setu",
-  "name": "Setu",
-  "description": "Pay for AI with Solana USDC — 30+ models, no API keys, just a wallet.",
-  "configSchema": {
-    "type": "object",
-    "properties": {
-      "walletKey": {
-        "type": "string",
-        "description": "Solana wallet private key (base58). Optional — auto-generated if not set."
-      },
-      "baseURL": {
-        "type": "string",
-        "description": "Setu API base URL (default: https://api.setu.ottocode.io)"
-      }
-    }
-  },
-  "uiHints": {
-    "walletKey": {
-      "label": "Solana Wallet Private Key",
-      "sensitive": true,
-      "placeholder": "base58... (optional — auto-generated)"
-    }
-  }
+	"id": "openclaw-setu",
+	"name": "Setu",
+	"description": "Pay for AI with Solana USDC — 30+ models, no API keys, just a wallet.",
+	"configSchema": {
+		"type": "object",
+		"properties": {
+			"walletKey": {
+				"type": "string",
+				"description": "Solana wallet private key (base58). Optional — auto-generated if not set."
+			},
+			"baseURL": {
+				"type": "string",
+				"description": "Setu API base URL (default: https://api.setu.ottocode.io)"
+			}
+		}
+	},
+	"uiHints": {
+		"walletKey": {
+			"label": "Solana Wallet Private Key",
+			"sensitive": true,
+			"placeholder": "base58... (optional — auto-generated)"
+		}
+	}
 }

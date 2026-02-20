@@ -1,47 +1,64 @@
-import { isAbsolute, join } from 'node:path';
-import { read as readMerged, isAuthorized } from '@ottocode/sdk';
-import { discoverCommands } from './custom-commands.ts';
 import { box, colors } from './ui.ts';
-import type { ProviderId } from '@ottocode/sdk';
-import type { AgentConfigEntry } from '@ottocode/server/runtime/agent-registry';
-import { buildFsTools } from '@ottocode/sdk';
-import { buildGitTools } from '@ottocode/sdk';
-import type { CommandManifest } from './custom-commands.ts';
-import {
-	getSecureAuthPath,
-	getGlobalAgentsJsonPath,
-	getGlobalToolsDir,
-	getGlobalCommandsDir,
-} from '@ottocode/sdk';
+import { runDoctor } from '@ottocode/api';
 
-type MergedConfig = Awaited<ReturnType<typeof readMerged>>;
+type DoctorResult = {
+	providers: Array<{
+		id: string;
+		ok: boolean;
+		configured: boolean;
+		sources: string[];
+	}>;
+	defaults: {
+		agent: string;
+		provider: string;
+		model: string;
+		providerAuthorized: boolean;
+	};
+	agents: {
+		globalPath: string | null;
+		localPath: string | null;
+		globalNames: string[];
+		localNames: string[];
+	};
+	tools: {
+		defaultNames: string[];
+		globalPath: string | null;
+		globalNames: string[];
+		localPath: string | null;
+		localNames: string[];
+		effectiveNames: string[];
+	};
+	commands: {
+		globalPath: string | null;
+		globalNames: string[];
+		localPath: string | null;
+		localNames: string[];
+	};
+	issues: string[];
+	suggestions: string[];
+	globalAuthPath: string | null;
+};
 
-export async function runDoctor(opts: { project?: string } = {}) {
+export async function runDoctorCommand(opts: { project?: string } = {}) {
 	const projectRoot = opts.project ?? process.cwd();
-	const { cfg, auth } = await readMerged(projectRoot);
-	// Credentials source per provider (only show configured/default providers)
-	const providers: ProviderId[] = [
-		'openai',
-		'anthropic',
-		'google',
-		'openrouter',
-		'opencode',
-		'setu',
-	];
-	const providerMeta = await Promise.all(
-		providers.map(async (p) => {
-			const ok = await isAuthorized(p, projectRoot);
-			const info = await describeProvider(p, cfg, auth);
-			return { ...info, provider: p, ok };
-		}),
-	);
-	const configured = providerMeta.filter((p) => p.configured);
+
+	const { data, error } = await runDoctor({
+		query: { project: projectRoot },
+	});
+
+	if (error || !data) {
+		console.error('Failed to run doctor');
+		return;
+	}
+
+	const result = data as DoctorResult;
+
+	const configured = result.providers.filter((p) => p.configured);
 	if (configured.length) {
 		const providerLines: string[] = [];
-		const globalAuthPath = getSecureAuthPath();
-		if (await fileExists(globalAuthPath))
+		if (result.globalAuthPath)
 			providerLines.push(
-				colors.dim(`global auth: ${friendlyPath(globalAuthPath)}`),
+				colors.dim(`global auth: ${friendlyPath(result.globalAuthPath)}`),
 			);
 		if (providerLines.length) providerLines.push(' ');
 		for (const meta of configured) {
@@ -50,149 +67,81 @@ export async function runDoctor(opts: { project?: string } = {}) {
 				? colors.dim(`(${meta.sources.join(', ')})`)
 				: '';
 			providerLines.push(
-				`${colors.bold(meta.provider)} — ${status}${sources ? ` ${sources}` : ''}`,
+				`${colors.bold(meta.id)} — ${status}${sources ? ` ${sources}` : ''}`,
 			);
 		}
 		box('Credentials', providerLines);
 	}
 
-	const def = cfg.defaults;
-	const providerMatch = providers.find((p) => p === def.provider);
-	const defAuth = providerMatch
-		? await isAuthorized(providerMatch, projectRoot)
-		: false;
-	const defStatus = defAuth ? colors.green('ok') : colors.red('unauthorized');
+	const def = result.defaults;
+	const defStatus = def.providerAuthorized
+		? colors.green('ok')
+		: colors.red('unauthorized');
 	box('Defaults', [
 		`agent: ${def.agent}`,
 		`provider: ${def.provider} (${defStatus})`,
 		`model: ${def.model}`,
 	]);
 
-	const {
-		defaults: agentDefaults,
-		globalAgents,
-		localAgents,
-	} = await collectAgents(projectRoot);
 	const agentScopes = buildScopeLines([
-		['default', agentDefaults],
-		['global', globalAgents.names],
-		['local', localAgents.names],
-		[
-			'effective',
-			Array.from(
-				new Set([
-					...agentDefaults,
-					...globalAgents.names,
-					...localAgents.names,
-				]),
-			).sort(),
-		],
+		['global', result.agents.globalNames],
+		['local', result.agents.localNames],
 	]);
 	const agentLines: string[] = [];
-	if (globalAgents.path)
+	if (result.agents.globalPath)
 		agentLines.push(
-			colors.dim(`global file: ${friendlyPath(globalAgents.path)}`),
+			colors.dim(`global file: ${friendlyPath(result.agents.globalPath)}`),
 		);
-	if (localAgents.path)
+	if (result.agents.localPath)
 		agentLines.push(
-			colors.dim(`local file: ${friendlyPath(localAgents.path)}`),
+			colors.dim(`local file: ${friendlyPath(result.agents.localPath)}`),
 		);
 	if (agentLines.length) agentLines.push(' ');
 	agentLines.push(...agentScopes);
 	box('Agents', agentLines);
 
-	const {
-		defaults: defaultTools,
-		globalTools,
-		localTools,
-		effectiveTools,
-	} = await collectTools(projectRoot);
 	const toolScopes = buildScopeLines([
-		['default', defaultTools],
-		['global', globalTools.names],
-		['local', localTools.names],
-		['effective', effectiveTools],
+		['default', result.tools.defaultNames],
+		['global', result.tools.globalNames],
+		['local', result.tools.localNames],
+		['effective', result.tools.effectiveNames],
 	]);
 	const toolLines: string[] = [];
-	if (globalTools.path)
-		toolLines.push(colors.dim(`global dir: ${friendlyPath(globalTools.path)}`));
-	if (localTools.path)
-		toolLines.push(colors.dim(`local dir: ${friendlyPath(localTools.path)}`));
+	if (result.tools.globalPath)
+		toolLines.push(
+			colors.dim(`global dir: ${friendlyPath(result.tools.globalPath)}`),
+		);
+	if (result.tools.localPath)
+		toolLines.push(
+			colors.dim(`local dir: ${friendlyPath(result.tools.localPath)}`),
+		);
 	if (toolLines.length) toolLines.push(' ');
 	toolLines.push(...toolScopes);
 	box('Tools', toolLines);
 
-	const { globalDir, localDir, effectiveNames } =
-		await collectCommands(projectRoot);
 	const commandLines: string[] = [];
-	if (globalDir.path)
+	if (result.commands.globalPath)
 		commandLines.push(
-			colors.dim(`global dir: ${friendlyPath(globalDir.path)}`),
+			colors.dim(`global dir: ${friendlyPath(result.commands.globalPath)}`),
 		);
-	if (localDir.path)
-		commandLines.push(colors.dim(`local dir: ${friendlyPath(localDir.path)}`));
-	const scopeLines = buildScopeLines([
-		['global', globalDir.names],
-		['local', localDir.names],
-		['effective', effectiveNames],
+	if (result.commands.localPath)
+		commandLines.push(
+			colors.dim(`local dir: ${friendlyPath(result.commands.localPath)}`),
+		);
+	const cmdScopes = buildScopeLines([
+		['global', result.commands.globalNames],
+		['local', result.commands.localNames],
 	]);
 	if (commandLines.length) commandLines.push(' ');
-	commandLines.push(...scopeLines);
-	const detailLines = buildCommandDetailLines([
-		['global', globalDir.entries],
-		['local', localDir.entries],
-	]);
-	if (detailLines.length) {
-		commandLines.push(' ');
-		commandLines.push(...detailLines);
-	}
+	commandLines.push(...cmdScopes);
 	box('Commands', commandLines);
 
-	const agentIssues = detectAgentIssues(
-		globalAgents.entries,
-		localAgents.entries,
-	);
-	if (agentIssues.length)
-		box('Agent Checks', [colors.yellow('Issues found:'), ...agentIssues]);
-	else box('Agent Checks', [colors.green('No agent config issues detected')]);
+	if (result.issues.length)
+		box('Issues', [colors.yellow('Issues found:'), ...result.issues]);
+	else box('Checks', [colors.green('No config issues detected')]);
 
-	// Suggestions
-	const sugg: string[] = [];
-	if (!defAuth)
-		sugg.push(
-			`Run: otto auth login (${def.provider}) or switch defaults: otto models`,
-		);
-	if (agentIssues.length) sugg.push(`Review agents.json fields.`);
-	if (sugg.length) box('Suggestions', sugg);
+	if (result.suggestions.length) box('Suggestions', result.suggestions);
 	else box('Suggestions', [colors.green('No obvious issues found')]);
-}
-
-async function describeProvider(
-	provider: ProviderId,
-	cfg: MergedConfig['cfg'],
-	auth: MergedConfig['auth'],
-) {
-	const envVar = providerEnvVar(provider);
-	const envConfigured = envVar ? !!process.env[envVar] : false;
-	const locations = await detectAuthLocations(provider, cfg);
-	const sources: string[] = [];
-	if (envConfigured && envVar) sources.push(`env: ${envVar}`);
-	if (locations.global)
-		sources.push(`auth.json: ${friendlyPath(locations.global)}`);
-	const hasStoredSecret = (() => {
-		const info = auth?.[provider];
-		if (!info) return false;
-		if (info.type === 'api') return Boolean(info.key);
-		if (info.type === 'wallet') return Boolean(info.secret);
-		if (info.type === 'oauth') return Boolean(info.access || info.refresh);
-		return false;
-	})();
-	const configured =
-		envConfigured ||
-		Boolean(locations.global) ||
-		cfg.defaults.provider === provider ||
-		hasStoredSecret;
-	return { provider, sources: Array.from(new Set(sources)), configured };
 }
 
 function formatList(values: string[]): string {
@@ -212,340 +161,10 @@ function buildScopeLines(scopes: [string, string[]][]) {
 	});
 }
 
-async function collectAgents(projectRoot: string) {
-	// Read code-backed agent prompt names under src/prompts/agents
-	let defaults: string[] = [];
-	try {
-		const { readdir } = await import('node:fs/promises');
-		const dir = 'src/prompts/agents';
-		const entries = await readdir(dir).catch(() => [] as string[]);
-		const names = new Set<string>();
-		for (const file of entries) {
-			if (!/\.(md|txt)$/i.test(file)) continue;
-			const base = file.replace(/\.(md|txt)$/i, '');
-			if (base.trim()) names.add(base.trim());
-		}
-		defaults = Array.from(names).sort();
-	} catch {
-		defaults = [];
-	}
-	if (!defaults.includes('build')) defaults.push('build');
-	const globalPath = getGlobalAgentsJsonPath();
-	const localPath = `${projectRoot}/.otto/agents.json`.replace(/\\/g, '/');
-	const globalEntries = await readAgentsJson(globalPath);
-	const localEntries = await readAgentsJson(localPath);
-	return {
-		defaults,
-		globalAgents: {
-			path: globalPath && (await fileExists(globalPath)) ? globalPath : null,
-			names: Object.keys(globalEntries).sort(),
-			entries: globalEntries,
-		},
-		localAgents: {
-			path: (await fileExists(localPath)) ? localPath : null,
-			names: Object.keys(localEntries).sort(),
-			entries: localEntries,
-		},
-	};
-}
-
-async function collectTools(projectRoot: string) {
-	const defaults = Array.from(
-		new Set([
-			...buildFsTools(projectRoot).map((t) => t.name),
-			...buildGitTools(projectRoot).map((t) => t.name),
-			'finish',
-		]),
-	).sort();
-	const globalDir = getGlobalToolsDir();
-	const localDir = `${projectRoot}/.otto/tools`.replace(/\\/g, '/');
-	const globalNames = await listToolDirectories(globalDir);
-	const localNames = await listToolDirectories(localDir);
-	const effective = Array.from(
-		new Set([...defaults, ...globalNames.names, ...localNames.names]),
-	).sort();
-	return {
-		defaults,
-		globalTools: globalNames,
-		localTools: localNames,
-		effectiveTools: effective,
-	};
-}
-
-type CommandPromptInfo = {
-	kind: 'file' | 'inline' | 'template' | 'none';
-	path: string | null;
-	exists: boolean;
-};
-
-type CommandEntry = {
-	name: string;
-	manifestPath: string;
-	prompt: CommandPromptInfo;
-};
-
-type CommandScopeInfo = {
-	path: string | null;
-	names: string[];
-	entries: CommandEntry[];
-};
-
-async function collectCommands(projectRoot: string) {
-	const globalDir = getGlobalCommandsDir();
-	const localDir = `${projectRoot}/.otto/commands`.replace(/\\/g, '/');
-	const [globalDirInfo, localDirInfo] = await Promise.all([
-		readCommandDirectory(globalDir, projectRoot),
-		readCommandDirectory(localDir, projectRoot),
-	]);
-	const discovered = await discoverCommands(projectRoot);
-	const effectiveNames = Object.keys(discovered).sort();
-	return {
-		globalDir: globalDirInfo,
-		localDir: localDirInfo,
-		effectiveNames,
-	};
-}
-
-function buildCommandDetailLines(scopes: [string, CommandEntry[]][]): string[] {
-	const limit = 6;
-	const lines: string[] = [];
-	for (const [label, entries] of scopes) {
-		if (!entries.length) continue;
-		lines.push(colors.bold(`${label}:`));
-		const shown = entries.slice(0, limit);
-		for (const entry of shown)
-			lines.push(`• ${entry.name} — ${formatCommandEntry(entry)}`);
-		if (entries.length > shown.length)
-			lines.push(
-				colors.dim(`  ... +${entries.length - shown.length} more in ${label}`),
-			);
-	}
-	return lines;
-}
-
-function formatCommandEntry(entry: CommandEntry) {
-	const manifest = friendlyPath(entry.manifestPath);
-	const parts = [`json: ${manifest}`];
-	if (entry.prompt.kind === 'file') {
-		const promptPath = entry.prompt.path
-			? friendlyPath(entry.prompt.path)
-			: null;
-		parts.push(
-			`prompt: ${promptPath ?? 'unknown'}${entry.prompt.exists ? '' : ' (missing)'}`,
-		);
-	} else if (entry.prompt.kind === 'inline') parts.push('prompt: inline');
-	else if (entry.prompt.kind === 'template') parts.push('prompt: template');
-	return parts.join(', ');
-}
-
-async function readCommandDirectory(
-	dir: string | null,
-	projectRoot: string,
-): Promise<CommandScopeInfo> {
-	if (!dir) return { path: null, names: [], entries: [] };
-	try {
-		const normalizedDir = dir.replace(/\\/g, '/');
-		const { readdir } = await import('node:fs/promises');
-		let files: string[] = [];
-		let exists = true;
-		try {
-			files = await readdir(normalizedDir);
-		} catch {
-			exists = false;
-		}
-		if (!exists) return { path: null, names: [], entries: [] };
-		const entries: CommandEntry[] = [];
-		for (const file of files.sort()) {
-			if (!file.endsWith('.json')) continue;
-			const manifestPath = `${normalizedDir}/${file}`.replace(/\\/g, '/');
-			try {
-				const bunFile = Bun.file(manifestPath);
-				if (!(await bunFile.exists())) continue;
-				const manifest = (await bunFile
-					.json()
-					.catch(() => null)) as CommandManifest | null;
-				if (!manifest || typeof manifest !== 'object') continue;
-				const fallback = file.replace(/\.json$/i, '');
-				const name = manifest.name || fallback;
-				if (!name || !manifest.agent) continue;
-				const prompt = await resolvePromptInfo(manifest, {
-					projectRoot,
-					manifestDir: normalizedDir,
-					fallbackName: fallback,
-				});
-				entries.push({ name, manifestPath, prompt });
-			} catch {}
-		}
-		entries.sort((a, b) => a.name.localeCompare(b.name));
-		return {
-			path: normalizedDir,
-			names: entries.map((e) => e.name),
-			entries,
-		};
-	} catch {
-		return { path: null, names: [], entries: [] };
-	}
-}
-
-async function resolvePromptInfo(
-	manifest: CommandManifest,
-	ctx: {
-		projectRoot: string;
-		manifestDir: string | null;
-		fallbackName?: string;
-	},
-): Promise<CommandPromptInfo> {
-	if (manifest.promptPath) {
-		const { path, exists } = await resolvePromptPath(
-			manifest.promptPath,
-			ctx.manifestDir,
-			ctx.projectRoot,
-		);
-		return { kind: 'file', path, exists };
-	}
-	if (ctx.fallbackName && ctx.manifestDir) {
-		for (const ext of ['.md', '.txt']) {
-			const candidate = `${ctx.manifestDir}/${ctx.fallbackName}${ext}`.replace(
-				/\\/g,
-				'/',
-			);
-			if (await fileExists(candidate))
-				return { kind: 'file', path: candidate, exists: true };
-		}
-	}
-	if (manifest.prompt) return { kind: 'inline', path: null, exists: false };
-	if (manifest.promptTemplate)
-		return { kind: 'template', path: null, exists: false };
-	return { kind: 'none', path: null, exists: false };
-}
-
-async function resolvePromptPath(
-	promptPath: string,
-	manifestDir: string | null,
-	projectRoot: string,
-): Promise<{ path: string; exists: boolean }> {
-	const home = process.env.HOME || process.env.USERPROFILE || '';
-	const expanded =
-		promptPath.startsWith('~/') && home
-			? join(home, promptPath.slice(2))
-			: promptPath;
-	const normalizedInput = expanded.replace(/\\/g, '/');
-	const candidates: string[] = [];
-	if (isAbsolute(normalizedInput)) candidates.push(normalizedInput);
-	else {
-		if (manifestDir) candidates.push(join(manifestDir, normalizedInput));
-		candidates.push(join(projectRoot, normalizedInput));
-	}
-	for (const candidate of candidates) {
-		const normalized = candidate.replace(/\\/g, '/');
-		if (await fileExists(normalized)) return { path: normalized, exists: true };
-	}
-	const fallback = candidates[0]?.replace(/\\/g, '/') ?? normalizedInput;
-	return { path: fallback, exists: false };
-}
-
-async function readAgentsJson(path: string | null) {
-	if (!path) return {} as Record<string, AgentConfigEntry>;
-	try {
-		const file = Bun.file(path);
-		if (await file.exists())
-			return (await file.json().catch(() => ({}))) as Record<
-				string,
-				AgentConfigEntry
-			>;
-	} catch {}
-	return {} as Record<string, AgentConfigEntry>;
-}
-
-async function fileExists(path: string | null) {
-	if (!path) return false;
-	try {
-		const file = Bun.file(path);
-		return await file.exists();
-	} catch {
-		return false;
-	}
-}
-
-async function listToolDirectories(dir: string | null) {
-	if (!dir) return { names: [] as string[], path: null };
-	try {
-		const { readdir } = await import('node:fs/promises');
-		let entries: string[] = [];
-		let exists = false;
-		try {
-			entries = await readdir(dir);
-			exists = true;
-		} catch {
-			entries = [];
-		}
-		return {
-			names: entries.sort(),
-			path: exists ? dir : null,
-		};
-	} catch {
-		return { names: [] as string[], path: null };
-	}
-}
-
-function detectAgentIssues(
-	globalEntries: Record<string, AgentConfigEntry>,
-	localEntries: Record<string, AgentConfigEntry>,
-) {
-	const issues: string[] = [];
-	for (const [scope, entries] of [
-		['global', globalEntries] as const,
-		['local', localEntries] as const,
-	]) {
-		for (const [name, entry] of Object.entries(entries)) {
-			// Do not require 'finish' in overrides; it is always appended implicitly.
-			// Only warn if the override is clearly malformed (non-array tools field).
-			if (Object.hasOwn(entry, 'tools') && !Array.isArray(entry.tools)) {
-				issues.push(`${scope}:${name} tools field must be an array`);
-			}
-		}
-	}
-	return issues;
-}
-
 function friendlyPath(path: string | null) {
 	if (!path) return '';
 	const home = process.env.HOME || process.env.USERPROFILE || '';
 	if (home && path.startsWith(home))
 		return path.replace(home, '~').replace(/\\/g, '/');
 	return path.replace(/\\/g, '/');
-}
-
-function providerEnvVar(p: ProviderId) {
-	if (p === 'openai') return 'OPENAI_API_KEY';
-	if (p === 'anthropic') return 'ANTHROPIC_API_KEY';
-	if (p === 'google') return 'GOOGLE_GENERATIVE_AI_API_KEY';
-	if (p === 'opencode') return 'OPENCODE_API_KEY';
-	if (p === 'setu') return 'SETU_PRIVATE_KEY';
-	return null;
-}
-
-async function detectAuthLocations(
-	provider: ProviderId,
-	_cfg: MergedConfig['cfg'],
-) {
-	const locations: { global?: string; local?: string } = {};
-	const globalPath = getSecureAuthPath();
-	if (await fileHasProvider(globalPath, provider))
-		locations.global = globalPath;
-	return locations;
-}
-
-async function fileHasProvider(path: string, provider: ProviderId) {
-	try {
-		const file = Bun.file(path);
-		if (!(await file.exists())) return false;
-		const contents = (await file.json().catch(() => ({}))) as Record<
-			ProviderId,
-			unknown
-		>;
-		return Boolean(contents?.[provider]);
-	} catch {
-		return false;
-	}
 }

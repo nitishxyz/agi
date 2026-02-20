@@ -6,16 +6,16 @@ export function AiSdkOverview() {
 			<h1 className="text-3xl font-bold mb-2">AI SDK</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				Drop-in SDK for accessing AI models through{' '}
-				<a href="/docs/setu">Setu</a> with automatic x402 payments via
-				Solana USDC.
+				<a href="/docs/setu">Setu</a> with automatic x402 payments via Solana
+				USDC.
 			</p>
 
 			<h2>Overview</h2>
 			<p>
-				<code>@ottocode/ai-sdk</code> gives you a single entry point to
-				OpenAI, Anthropic, Google, Moonshot, MiniMax, and Z.AI models. All you
-				need is a Solana wallet — the SDK handles authentication, payment
-				negotiation, and provider routing automatically.
+				<code>@ottocode/ai-sdk</code> gives you a single entry point to OpenAI,
+				Anthropic, Google, Moonshot, MiniMax, and Z.AI models. All you need is a
+				Solana wallet — the SDK handles authentication, payment negotiation, and
+				provider routing automatically.
 			</p>
 			<p>
 				It returns{' '}
@@ -274,12 +274,12 @@ const setuFetch = createSetuFetch({
 			<h2>How It Works</h2>
 			<ol>
 				<li>
-					You call <code>setu.model("claude-sonnet-4-20250514")</code> — the
-					SDK resolves this to Anthropic
+					You call <code>setu.model("claude-sonnet-4-20250514")</code> — the SDK
+					resolves this to Anthropic
 				</li>
 				<li>
-					It creates an ai-sdk provider (<code>@ai-sdk/anthropic</code>)
-					pointed at the Setu proxy
+					It creates an ai-sdk provider (<code>@ai-sdk/anthropic</code>) pointed
+					at the Setu proxy
 				</li>
 				<li>
 					A custom fetch wrapper intercepts all requests to:
@@ -307,8 +307,8 @@ const setuFetch = createSetuFetch({
 
 			<p className="text-otto-dim text-sm mt-8">
 				See <a href="/docs/ai-sdk/configuration">Configuration</a> for full
-				options, <a href="/docs/ai-sdk/caching">Caching</a> for Anthropic
-				prompt caching details, and{' '}
+				options, <a href="/docs/ai-sdk/caching">Caching</a> for Anthropic prompt
+				caching details, and{' '}
 				<a href="/docs/setu/integration">Setu Integration</a> for raw HTTP
 				usage.
 			</p>

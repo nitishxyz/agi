@@ -1,5 +1,9 @@
 import { catalog } from './catalog-merged.ts';
-import type { ProviderId, ModelInfo, ModelOwner } from '../../types/src/index.ts';
+import type {
+	ProviderId,
+	ModelInfo,
+	ModelOwner,
+} from '../../types/src/index.ts';
 import { filterModelsForAuthType } from './oauth-models.ts';
 
 export const providerIds = Object.keys(catalog) as ProviderId[];
@@ -126,7 +130,9 @@ const OWNER_TO_FAMILY: Record<ModelOwner, UnderlyingProviderKey> = {
 	minimax: 'minimax',
 };
 
-const DIRECT_PROVIDER_FAMILY: Partial<Record<ProviderId, UnderlyingProviderKey>> = {
+const DIRECT_PROVIDER_FAMILY: Partial<
+	Record<ProviderId, UnderlyingProviderKey>
+> = {
 	openai: 'openai',
 	anthropic: 'anthropic',
 	google: 'google',
@@ -149,11 +155,23 @@ export type UnderlyingProviderKey =
 
 function inferFromModelId(model: string): UnderlyingProviderKey {
 	const lower = model.toLowerCase();
-	if (lower.includes('claude') || lower.startsWith('anthropic/')) return 'anthropic';
-	if (lower.includes('gpt') || lower.startsWith('openai/') || lower.includes('codex')) return 'openai';
+	if (lower.includes('claude') || lower.startsWith('anthropic/'))
+		return 'anthropic';
+	if (
+		lower.includes('gpt') ||
+		lower.startsWith('openai/') ||
+		lower.includes('codex')
+	)
+		return 'openai';
 	if (lower.includes('gemini') || lower.startsWith('google/')) return 'google';
-	if (lower.includes('kimi') || lower.startsWith('moonshotai/')) return 'moonshot';
-	if (lower.includes('glm') || lower.startsWith('z-ai/') || lower.startsWith('thudm/')) return 'glm';
+	if (lower.includes('kimi') || lower.startsWith('moonshotai/'))
+		return 'moonshot';
+	if (
+		lower.includes('glm') ||
+		lower.startsWith('z-ai/') ||
+		lower.startsWith('thudm/')
+	)
+		return 'glm';
 	if (lower.includes('minimax')) return 'minimax';
 	return null;
 }

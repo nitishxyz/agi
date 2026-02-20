@@ -721,6 +721,61 @@ export function registerSessionsRoutes(app: Hono) {
 		});
 	});
 
+	app.delete('/v1/sessions/:sessionId/share', async (c) => {
+		const sessionId = c.req.param('sessionId');
+		const projectRoot = c.req.query('project') || process.cwd();
+		const cfg = await loadConfig(projectRoot);
+		const db = await getDb(cfg.projectRoot);
+
+		const share = await db
+			.select()
+			.from(shares)
+			.where(eq(shares.sessionId, sessionId))
+			.limit(1);
+
+		if (!share.length) {
+			return c.json({ error: 'Session is not shared' }, 404);
+		}
+
+		try {
+			const res = await fetch(`${SHARE_API_URL}/share/${share[0].shareId}`, {
+				method: 'DELETE',
+				headers: { 'X-Share-Secret': share[0].secret },
+			});
+
+			if (!res.ok && res.status !== 404) {
+				const err = await res.text();
+				return c.json({ error: `Failed to delete share: ${err}` }, 500);
+			}
+		} catch {}
+
+		await db.delete(shares).where(eq(shares.sessionId, sessionId));
+
+		return c.json({ deleted: true, sessionId });
+	});
+
+	app.get('/v1/shares', async (c) => {
+		const projectRoot = c.req.query('project') || process.cwd();
+		const cfg = await loadConfig(projectRoot);
+		const db = await getDb(cfg.projectRoot);
+
+		const rows = await db
+			.select({
+				sessionId: shares.sessionId,
+				shareId: shares.shareId,
+				url: shares.url,
+				title: shares.title,
+				createdAt: shares.createdAt,
+				lastSyncedAt: shares.lastSyncedAt,
+			})
+			.from(shares)
+			.innerJoin(sessions, eq(shares.sessionId, sessions.id))
+			.where(eq(sessions.projectPath, cfg.projectRoot))
+			.orderBy(desc(shares.lastSyncedAt));
+
+		return c.json({ shares: rows });
+	});
+
 	// Retry a failed assistant message
 	app.post('/v1/sessions/:sessionId/messages/:messageId/retry', async (c) => {
 		try {

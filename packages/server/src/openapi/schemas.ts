@@ -349,4 +349,40 @@ export const schemas = {
 			uptime: { type: 'integer' },
 		},
 	},
+	MCPServer: {
+		type: 'object',
+		properties: {
+			name: { type: 'string' },
+			transport: {
+				type: 'string',
+				enum: ['stdio', 'http', 'sse'],
+			},
+			command: { type: 'string' },
+			args: {
+				type: 'array',
+				items: { type: 'string' },
+			},
+			url: { type: 'string' },
+			disabled: { type: 'boolean' },
+			connected: { type: 'boolean' },
+			tools: {
+				type: 'array',
+				items: {
+					type: 'object',
+					properties: {
+						name: { type: 'string' },
+						description: { type: 'string' },
+					},
+				},
+			},
+			authRequired: { type: 'boolean' },
+			authenticated: { type: 'boolean' },
+			scope: {
+				type: 'string',
+				enum: ['global', 'project'],
+			},
+			authType: { type: 'string' },
+		},
+		required: ['name', 'transport', 'connected'],
+	},
 } as const;

@@ -30,13 +30,13 @@ export type ProviderFamily =
  * Used for API format routing, system prompt selection, and provider detection.
  */
 export type ModelOwner =
-  | 'openai'
-  | 'anthropic'
-  | 'google'
-  | 'xai'
-  | 'moonshot'
-  | 'zai'
-  | 'minimax';
+	| 'openai'
+	| 'anthropic'
+	| 'google'
+	| 'xai'
+	| 'moonshot'
+	| 'zai'
+	| 'minimax';
 
 export type ModelProviderBinding = {
 	id?: string;

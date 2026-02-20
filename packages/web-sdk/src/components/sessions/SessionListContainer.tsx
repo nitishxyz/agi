@@ -23,10 +23,11 @@ export const SessionListContainer = memo(function SessionListContainer({
 	const { currentFocus, sessionIndex } = useFocusStore();
 	const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
-	const hasScrolledToActive = useRef(false);
+	const lastScrolledSessionId = useRef<string | undefined>(undefined);
 
 	const handleSessionClick = useCallback(
 		(sessionId: string) => {
+			lastScrolledSessionId.current = sessionId;
 			onSelectSession(sessionId);
 		},
 		[onSelectSession],
@@ -54,7 +55,7 @@ export const SessionListContainer = memo(function SessionListContainer({
 	useEffect(() => {
 		if (
 			!activeSessionId ||
-			hasScrolledToActive.current ||
+			lastScrolledSessionId.current === activeSessionId ||
 			sessions.length === 0
 		)
 			return;
@@ -66,18 +67,13 @@ export const SessionListContainer = memo(function SessionListContainer({
 		}
 
 		if (activeIndex !== -1) {
-			hasScrolledToActive.current = true;
+			lastScrolledSessionId.current = activeSessionId;
 			requestAnimationFrame(() => {
 				const element = itemRefs.current.get(activeSessionId);
-				element?.scrollIntoView({ block: 'center', behavior: 'instant' });
+				element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 			});
 		}
 	}, [activeSessionId, sessions, hasNextPage, fetchNextPage]);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional - reset scroll flag when active session changes
-	useEffect(() => {
-		hasScrolledToActive.current = false;
-	}, [activeSessionId]);
 
 	useEffect(() => {
 		const container = scrollContainerRef.current;
@@ -121,7 +117,7 @@ export const SessionListContainer = memo(function SessionListContainer({
 	return (
 		<div
 			ref={scrollContainerRef}
-			className="flex flex-col gap-1 px-2 py-2 overflow-y-auto scrollbar-hide"
+			className="flex flex-col gap-1 px-2 py-2 h-full overflow-y-auto scrollbar-hide"
 		>
 			{sessionSnapshot.map((session, index) => {
 				const fullSession = sessions.find((s) => s.id === session.id);

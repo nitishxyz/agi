@@ -102,8 +102,8 @@ createSetu({
 								<code>"first"</code>
 							</td>
 							<td>
-								Which system blocks: <code>"first"</code>,{' '}
-								<code>"last"</code>, <code>"all"</code>
+								Which system blocks: <code>"first"</code>, <code>"last"</code>,{' '}
+								<code>"all"</code>
 							</td>
 						</tr>
 						<tr>

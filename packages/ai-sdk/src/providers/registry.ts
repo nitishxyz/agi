@@ -1,64 +1,70 @@
-import type { ProviderId, ProviderConfig, ProviderApiFormat } from '../types.ts';
+import type {
+	ProviderId,
+	ProviderConfig,
+	ProviderApiFormat,
+} from '../types.ts';
 import { setuCatalog } from '../catalog.ts';
 
 const OWNER_API_FORMAT: Record<string, ProviderApiFormat> = {
-  openai: 'openai-responses',
-  anthropic: 'anthropic-messages',
-  google: 'google-native',
-  minimax: 'anthropic-messages',
-  moonshot: 'openai-chat',
-  zai: 'openai-chat',
+	openai: 'openai-responses',
+	anthropic: 'anthropic-messages',
+	google: 'google-native',
+	minimax: 'anthropic-messages',
+	moonshot: 'openai-chat',
+	zai: 'openai-chat',
 };
 
 export class ProviderRegistry {
-  private configs: ProviderConfig[];
-  private modelMap: Record<string, ProviderId>;
+	private configs: ProviderConfig[];
+	private modelMap: Record<string, ProviderId>;
 
-  constructor(
-    customProviders?: ProviderConfig[],
-    modelMap?: Record<string, ProviderId>,
-  ) {
-    this.configs = [...(customProviders ?? [])];
-    this.modelMap = modelMap ?? {};
-  }
+	constructor(
+		customProviders?: ProviderConfig[],
+		modelMap?: Record<string, ProviderId>,
+	) {
+		this.configs = [...(customProviders ?? [])];
+		this.modelMap = modelMap ?? {};
+	}
 
-  resolve(modelId: string): { providerId: ProviderId; apiFormat: ProviderApiFormat } | null {
-    if (this.modelMap[modelId]) {
-      const providerId = this.modelMap[modelId];
-      const config = this.configs.find((c) => c.id === providerId);
-      return {
-        providerId,
-        apiFormat: config?.apiFormat ?? 'openai-chat',
-      };
-    }
+	resolve(
+		modelId: string,
+	): { providerId: ProviderId; apiFormat: ProviderApiFormat } | null {
+		if (this.modelMap[modelId]) {
+			const providerId = this.modelMap[modelId];
+			const config = this.configs.find((c) => c.id === providerId);
+			return {
+				providerId,
+				apiFormat: config?.apiFormat ?? 'openai-chat',
+			};
+		}
 
-    for (const config of this.configs) {
-      if (config.models?.includes(modelId)) {
-        return { providerId: config.id, apiFormat: config.apiFormat };
-      }
-    }
+		for (const config of this.configs) {
+			if (config.models?.includes(modelId)) {
+				return { providerId: config.id, apiFormat: config.apiFormat };
+			}
+		}
 
-    for (const config of this.configs) {
-      if (config.modelPrefix && modelId.startsWith(config.modelPrefix)) {
-        return { providerId: config.id, apiFormat: config.apiFormat };
-      }
-    }
+		for (const config of this.configs) {
+			if (config.modelPrefix && modelId.startsWith(config.modelPrefix)) {
+				return { providerId: config.id, apiFormat: config.apiFormat };
+			}
+		}
 
-    const entry = setuCatalog.models.find((m) => m.id === modelId);
-    if (entry) {
-      const providerId = entry.owned_by as ProviderId;
-      const apiFormat = OWNER_API_FORMAT[providerId] ?? 'openai-chat';
-      return { providerId, apiFormat };
-    }
+		const entry = setuCatalog.models.find((m) => m.id === modelId);
+		if (entry) {
+			const providerId = entry.owned_by as ProviderId;
+			const apiFormat = OWNER_API_FORMAT[providerId] ?? 'openai-chat';
+			return { providerId, apiFormat };
+		}
 
-    return null;
-  }
+		return null;
+	}
 
-  register(config: ProviderConfig): void {
-    this.configs.push(config);
-  }
+	register(config: ProviderConfig): void {
+		this.configs.push(config);
+	}
 
-  mapModel(modelId: string, providerId: ProviderId): void {
-    this.modelMap[modelId] = providerId;
-  }
+	mapModel(modelId: string, providerId: ProviderId): void {
+		this.modelMap[modelId] = providerId;
+	}
 }

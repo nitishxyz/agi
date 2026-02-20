@@ -46,6 +46,7 @@
       "dependencies": {
         "@clack/prompts": "^0.11.0",
         "@ottocode/acp": "workspace:*",
+        "@ottocode/api": "workspace:*",
         "@ottocode/database": "workspace:*",
         "@ottocode/sdk": "workspace:*",
         "@ottocode/server": "workspace:*",

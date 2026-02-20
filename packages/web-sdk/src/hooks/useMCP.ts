@@ -1,16 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMCPStore, type MCPServerInfo } from '../stores/mcpStore';
-import { API_BASE_URL } from '../lib/config';
 import { useEffect, useRef, useCallback } from 'react';
+import {
+	listMcpServers,
+	startMcpServer,
+	stopMcpServer,
+	addMcpServer,
+	removeMcpServer,
+	initiateMcpAuth,
+	revokeMcpAuth,
+	getMcpAuthStatus,
+	completeMcpAuth,
+} from '@ottocode/api';
 
 interface MCPServersResponse {
 	servers: MCPServerInfo[];
-}
-
-async function fetchMCPServers(): Promise<MCPServersResponse> {
-	const response = await fetch(`${API_BASE_URL}/v1/mcp/servers`);
-	if (!response.ok) throw new Error('Failed to fetch MCP servers');
-	return response.json();
 }
 
 export function useMCPServers() {
@@ -18,7 +22,10 @@ export function useMCPServers() {
 
 	const query = useQuery({
 		queryKey: ['mcp', 'servers'],
-		queryFn: fetchMCPServers,
+		queryFn: async () => {
+			const { data } = await listMcpServers();
+			return data as MCPServersResponse;
+		},
 		refetchInterval: 10000,
 	});
 
@@ -36,13 +43,13 @@ export function useStartMCPServer() {
 
 	return useMutation({
 		mutationFn: async (name: string) => {
-			const response = await fetch(
-				`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(name)}/start`,
-				{ method: 'POST' },
-			);
-			const data = await response.json();
-			if (!data.ok) throw new Error(data.error || 'Failed to start server');
-			return data;
+			const { data, error } = await startMcpServer({
+				path: { name },
+			});
+			if (error) throw new Error('Failed to start server');
+			const result = data as { ok: boolean; error?: string };
+			if (!result.ok) throw new Error(result.error || 'Failed to start server');
+			return result;
 		},
 		onSettled: () => {
 			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
@@ -57,13 +64,13 @@ export function useStopMCPServer() {
 	return useMutation({
 		mutationFn: async (name: string) => {
 			setLoading(name, true);
-			const response = await fetch(
-				`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(name)}/stop`,
-				{ method: 'POST' },
-			);
-			const data = await response.json();
-			if (!data.ok) throw new Error(data.error || 'Failed to stop server');
-			return data;
+			const { data, error } = await stopMcpServer({
+				path: { name },
+			});
+			if (error) throw new Error('Failed to stop server');
+			const result = data as { ok: boolean; error?: string };
+			if (!result.ok) throw new Error(result.error || 'Failed to stop server');
+			return result;
 		},
 		onSettled: (_data, _error, name) => {
 			setLoading(name, false);
@@ -74,17 +81,13 @@ export function useStopMCPServer() {
 
 export interface AddMCPServerParams {
 	name: string;
-	transport?: string;
+	transport?: 'stdio' | 'http' | 'sse';
 	command?: string;
 	args?: string[];
 	env?: Record<string, string>;
 	url?: string;
 	headers?: Record<string, string>;
-	oauth?: {
-		clientId?: string;
-		callbackPort?: number;
-		scopes?: string[];
-	};
+	oauth?: Record<string, unknown>;
 	scope?: 'global' | 'project';
 }
 
@@ -93,14 +96,14 @@ export function useAddMCPServer() {
 
 	return useMutation({
 		mutationFn: async (params: AddMCPServerParams) => {
-			const response = await fetch(`${API_BASE_URL}/v1/mcp/servers`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(params),
+			const { data, error } = await addMcpServer({
+				body: params,
 			});
-			const data = await response.json();
-			if (!data.ok) throw new Error(data.error || 'Failed to add MCP server');
-			return data;
+			if (error) throw new Error('Failed to add MCP server');
+			const result = data as { ok: boolean; error?: string };
+			if (!result.ok)
+				throw new Error(result.error || 'Failed to add MCP server');
+			return result;
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
@@ -113,14 +116,14 @@ export function useRemoveMCPServer() {
 
 	return useMutation({
 		mutationFn: async (name: string) => {
-			const response = await fetch(
-				`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(name)}`,
-				{ method: 'DELETE' },
-			);
-			const data = await response.json();
-			if (!data.ok)
-				throw new Error(data.error || 'Failed to remove MCP server');
-			return data;
+			const { data, error } = await removeMcpServer({
+				path: { name },
+			});
+			if (error) throw new Error('Failed to remove MCP server');
+			const result = data as { ok: boolean; error?: string };
+			if (!result.ok)
+				throw new Error(result.error || 'Failed to remove MCP server');
+			return result;
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
@@ -133,13 +136,11 @@ export function useAuthenticateMCPServer() {
 
 	return useMutation({
 		mutationFn: async (name: string) => {
-			const response = await fetch(
-				`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(name)}/auth`,
-				{ method: 'POST' },
-			);
-			const data = await response.json();
-			if (!data.ok) throw new Error(data.error || 'Failed to initiate auth');
-			return data as {
+			const { data, error } = await initiateMcpAuth({
+				path: { name },
+			});
+			if (error) throw new Error('Failed to initiate auth');
+			const result = data as {
 				ok: boolean;
 				authUrl?: string;
 				authType?: string;
@@ -149,7 +150,11 @@ export function useAuthenticateMCPServer() {
 				interval?: number;
 				authenticated?: boolean;
 				name: string;
+				error?: string;
 			};
+			if (!result.ok)
+				throw new Error(result.error || 'Failed to initiate auth');
+			return result;
 		},
 		onSettled: () => {
 			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
@@ -162,13 +167,13 @@ export function useRevokeMCPAuth() {
 
 	return useMutation({
 		mutationFn: async (name: string) => {
-			const response = await fetch(
-				`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(name)}/auth`,
-				{ method: 'DELETE' },
-			);
-			const data = await response.json();
-			if (!data.ok) throw new Error(data.error || 'Failed to revoke auth');
-			return data;
+			const { data, error } = await revokeMcpAuth({
+				path: { name },
+			});
+			if (error) throw new Error('Failed to revoke auth');
+			const result = data as { ok: boolean; error?: string };
+			if (!result.ok) throw new Error(result.error || 'Failed to revoke auth');
+			return result;
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
@@ -181,13 +186,13 @@ export function useMCPAuthStatus(name: string | null) {
 		queryKey: ['mcp', 'auth', name],
 		queryFn: async () => {
 			if (!name) return { authenticated: false };
-			const response = await fetch(
-				`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(name)}/auth/status`,
-			);
-			return response.json() as Promise<{
+			const { data } = await getMcpAuthStatus({
+				path: { name },
+			});
+			return data as {
 				authenticated: boolean;
 				expiresAt?: number;
-			}>;
+			};
 		},
 		enabled: !!name,
 		refetchInterval: 3000,
@@ -219,22 +224,23 @@ export function useCopilotDevicePoller() {
 
 		timerRef.current = setInterval(async () => {
 			try {
-				const response = await fetch(
-					`${API_BASE_URL}/v1/mcp/servers/${encodeURIComponent(serverName)}/auth/callback`,
-					{
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ sessionId }),
-					},
-				);
-				const data = await response.json();
+				const { data } = await completeMcpAuth({
+					path: { name: serverName },
+					body: { sessionId },
+				});
 
-				if (data.status === 'complete') {
+				const result = data as {
+					ok: boolean;
+					status: string;
+					error?: string;
+				};
+
+				if (result?.status === 'complete') {
 					stopPolling();
 					setCopilotDevice(null);
 					setLoading(serverName, false);
 					queryClient.invalidateQueries({ queryKey: ['mcp', 'servers'] });
-				} else if (data.status === 'error') {
+				} else if (result?.status === 'error') {
 					stopPolling();
 					setCopilotDevice(null);
 					setLoading(serverName, false);

@@ -38,7 +38,7 @@ const SINGLE_PROVIDER_OWNER: Record<string, ModelOwner> = {
 };
 
 const FAMILY_TO_OWNER: Record<string, ModelOwner> = {
-	'gpt': 'openai',
+	gpt: 'openai',
 	'gpt-codex': 'openai',
 	'gpt-codex-mini': 'openai',
 	'gpt-codex-spark': 'openai',
@@ -46,44 +46,63 @@ const FAMILY_TO_OWNER: Record<string, ModelOwner> = {
 	'gpt-nano': 'openai',
 	'gpt-pro': 'openai',
 	'gpt-oss': 'openai',
-	'o': 'openai',
+	o: 'openai',
 	'o-mini': 'openai',
 	'o-pro': 'openai',
 	'text-embedding': 'openai',
 	'claude-haiku': 'anthropic',
 	'claude-sonnet': 'anthropic',
 	'claude-opus': 'anthropic',
-	'gemini': 'google',
+	gemini: 'google',
 	'gemini-flash': 'google',
 	'gemini-flash-lite': 'google',
 	'gemini-pro': 'google',
-	'kimi': 'moonshot',
+	kimi: 'moonshot',
 	'kimi-thinking': 'moonshot',
 	'kimi-free': 'moonshot',
-	'glm': 'zai',
+	glm: 'zai',
 	'glm-air': 'zai',
 	'glm-z': 'zai',
 	'glm-free': 'zai',
-	'minimax': 'minimax',
+	minimax: 'minimax',
 	'minimax-free': 'minimax',
-	'grok': 'xai',
+	grok: 'xai',
 	'grok-code': 'xai',
 };
 
-function resolveOwnedByFromFamily(family: string | undefined): ModelOwner | undefined {
+function resolveOwnedByFromFamily(
+	family: string | undefined,
+): ModelOwner | undefined {
 	if (!family) return undefined;
 	return FAMILY_TO_OWNER[family];
 }
 
 function resolveOwnedByFromModelId(modelId: string): ModelOwner | undefined {
 	const lower = modelId.toLowerCase();
-	if (lower.includes('claude') || lower.startsWith('anthropic/')) return 'anthropic';
-	if (lower.includes('gpt') || lower.startsWith('openai/') || lower.includes('codex')) return 'openai';
+	if (lower.includes('claude') || lower.startsWith('anthropic/'))
+		return 'anthropic';
+	if (
+		lower.includes('gpt') ||
+		lower.startsWith('openai/') ||
+		lower.includes('codex')
+	)
+		return 'openai';
 	if (lower.includes('gemini') || lower.startsWith('google/')) return 'google';
-	if (lower.includes('kimi') || lower.startsWith('moonshotai/')) return 'moonshot';
-	if (lower.includes('glm') || lower.startsWith('z-ai/') || lower.startsWith('thudm/')) return 'zai';
+	if (lower.includes('kimi') || lower.startsWith('moonshotai/'))
+		return 'moonshot';
+	if (
+		lower.includes('glm') ||
+		lower.startsWith('z-ai/') ||
+		lower.startsWith('thudm/')
+	)
+		return 'zai';
 	if (lower.includes('minimax')) return 'minimax';
-	if (lower.includes('grok') || lower.startsWith('x-ai/') || lower.startsWith('xai/')) return 'xai';
+	if (
+		lower.includes('grok') ||
+		lower.startsWith('x-ai/') ||
+		lower.startsWith('xai/')
+	)
+		return 'xai';
 	return undefined;
 }
 
@@ -160,7 +179,7 @@ function pickProviders(
 			continue;
 		const entry = feed[providerKey];
 		const key = targetKey;
-	const isAggregate = ['openrouter', 'opencode', 'copilot'].includes(key);
+		const isAggregate = ['openrouter', 'opencode', 'copilot'].includes(key);
 		const staticOwner = SINGLE_PROVIDER_OWNER[providerKey];
 		const models: ModelInfo[] = [];
 		for (const mid of Object.keys(entry.models || {})) {
@@ -168,7 +187,8 @@ function pickProviders(
 			const family = normalizeString(raw?.family);
 			let ownedBy: ModelOwner | undefined;
 			if (isAggregate) {
-				ownedBy = resolveOwnedByFromFamily(family) ?? resolveOwnedByFromModelId(mid);
+				ownedBy =
+					resolveOwnedByFromFamily(family) ?? resolveOwnedByFromModelId(mid);
 			} else {
 				ownedBy = staticOwner;
 			}
@@ -192,7 +212,11 @@ function pickProviders(
 	return out;
 }
 
-function mapModel(id: string, raw?: Record<string, unknown>, ownedBy?: ModelOwner): ModelInfo {
+function mapModel(
+	id: string,
+	raw?: Record<string, unknown>,
+	ownedBy?: ModelOwner,
+): ModelInfo {
 	const m = raw ?? {};
 	const info: ModelInfo = { id: String(m.id ?? id) };
 	if (ownedBy) info.ownedBy = ownedBy;
@@ -377,7 +401,12 @@ interface SetuApiModel {
 	last_updated?: string;
 	open_weights?: boolean;
 	modalities?: { input?: string[]; output?: string[] };
-	pricing: { input: number; output: number; cache_read?: number; cache_write?: number };
+	pricing: {
+		input: number;
+		output: number;
+		cache_read?: number;
+		cache_write?: number;
+	};
 	context_length: number;
 	max_output: number;
 	capabilities?: { tool_call?: boolean; reasoning?: boolean };
@@ -387,7 +416,9 @@ async function updateSetuCatalog() {
 	console.log(`Fetching ${SETU_SOURCE} ...`);
 	const res = await fetch(SETU_SOURCE);
 	if (!res.ok)
-		throw new Error(`Failed to fetch Setu catalog: ${res.status} ${res.statusText}`);
+		throw new Error(
+			`Failed to fetch Setu catalog: ${res.status} ${res.statusText}`,
+		);
 	const data = (await res.json()) as { data: SetuApiModel[] };
 
 	const providers = [...new Set(data.data.map((m) => m.owned_by))].sort();
@@ -411,8 +442,12 @@ async function updateSetuCatalog() {
 			pricing: {
 				input: m.pricing.input,
 				output: m.pricing.output,
-				...(m.pricing.cache_read !== undefined ? { cache_read: m.pricing.cache_read } : {}),
-				...(m.pricing.cache_write !== undefined ? { cache_write: m.pricing.cache_write } : {}),
+				...(m.pricing.cache_read !== undefined
+					? { cache_read: m.pricing.cache_read }
+					: {}),
+				...(m.pricing.cache_write !== undefined
+					? { cache_write: m.pricing.cache_write }
+					: {}),
 			},
 		}))
 		.sort((a, b) => {
@@ -430,7 +465,9 @@ async function updateSetuCatalog() {
 	const ts = `// AUTO-GENERATED by scripts/update-catalog.ts --setu. Do not edit manually.\n\nexport interface SetuModelCatalogEntry {\n  id: string;\n  name?: string;\n  owned_by: string;\n  context_length: number;\n  max_output: number;\n  reasoning: boolean;\n  tool_call: boolean;\n  attachment?: boolean;\n  temperature?: boolean | number;\n  knowledge?: string;\n  release_date?: string;\n  last_updated?: string;\n  open_weights?: boolean;\n  modalities?: {\n    input?: string[];\n    output?: string[];\n  };\n  pricing: {\n    input: number;\n    output: number;\n    cache_read?: number;\n    cache_write?: number;\n  };\n}\n\nexport interface SetuCatalog {\n  models: SetuModelCatalogEntry[];\n  providers: string[];\n  lastUpdated: string;\n}\n\nexport const setuCatalog: SetuCatalog = ${catalogJson} as const satisfies SetuCatalog;\n`;
 
 	await Bun.write(SETU_TARGET, ts);
-	console.log(`Wrote ${SETU_TARGET} (${data.data.length} models, ${providers.length} providers)`);
+	console.log(
+		`Wrote ${SETU_TARGET} (${data.data.length} models, ${providers.length} providers)`,
+	);
 }
 
 main().catch((err) => {

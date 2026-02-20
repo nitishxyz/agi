@@ -1,14 +1,24 @@
 import { askPaths } from './paths/ask';
+import { authPaths } from './paths/auth';
+import { branchPaths } from './paths/branch';
 import { configPaths } from './paths/config';
+import { doctorPaths } from './paths/doctor';
 import { filesPaths } from './paths/files';
 import { gitPaths } from './paths/git';
+import { mcpPaths } from './paths/mcp';
 import { messagesPaths } from './paths/messages';
+import { providerUsagePaths } from './paths/provider-usage';
+import { researchPaths } from './paths/research';
+import { sessionApprovalPaths } from './paths/session-approval';
+import { sessionExtrasPaths } from './paths/session-extras';
+import { sessionFilesPaths } from './paths/session-files';
 import { sessionsPaths } from './paths/sessions';
-import { streamPaths } from './paths/stream';
-import { schemas } from './schemas';
-
-import { terminalsPath } from './paths/terminals';
 import { setuPaths } from './paths/setu';
+import { skillsPaths } from './paths/skills';
+import { streamPaths } from './paths/stream';
+import { terminalsPath } from './paths/terminals';
+import { tunnelPaths } from './paths/tunnel';
+import { schemas } from './schemas';
 
 export function getOpenAPISpec() {
 	const spec = {
@@ -29,17 +39,31 @@ export function getOpenAPISpec() {
 			{ name: 'git' },
 			{ name: 'terminals' },
 			{ name: 'setu' },
+			{ name: 'auth' },
+			{ name: 'mcp' },
+			{ name: 'tunnel' },
 		],
 		paths: {
 			...askPaths,
-			...sessionsPaths,
-			...messagesPaths,
-			...streamPaths,
+			...authPaths,
+			...branchPaths,
 			...configPaths,
+			...doctorPaths,
 			...filesPaths,
 			...gitPaths,
-			...terminalsPath,
+			...mcpPaths,
+			...messagesPaths,
+			...providerUsagePaths,
+			...researchPaths,
+			...sessionApprovalPaths,
+			...sessionExtrasPaths,
+			...sessionFilesPaths,
+			...sessionsPaths,
 			...setuPaths,
+			...skillsPaths,
+			...streamPaths,
+			...terminalsPath,
+			...tunnelPaths,
 		},
 		components: {
 			schemas,

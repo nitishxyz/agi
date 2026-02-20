@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { runDoctor } from '../doctor.ts';
+import { runDoctorCommand } from '../doctor.ts';
 
 export function registerDoctorCommand(program: Command) {
 	program
@@ -7,6 +7,6 @@ export function registerDoctorCommand(program: Command) {
 		.description('Diagnose auth, defaults, and agent/tool issues')
 		.option('--project <path>', 'Use project at <path>', process.cwd())
 		.action(async (opts) => {
-			await runDoctor({ project: opts.project });
+			await runDoctorCommand({ project: opts.project });
 		});
 }

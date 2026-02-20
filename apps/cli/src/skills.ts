@@ -1,14 +1,8 @@
 import { intro, outro, select, isCancel, cancel, text } from '@clack/prompts';
 import { join } from 'node:path';
 import { promises as fs } from 'node:fs';
-import {
-	discoverSkills,
-	loadSkill,
-	findGitRoot,
-	validateSkillName,
-	getGlobalConfigDir,
-	type DiscoveredSkill,
-} from '@ottocode/sdk';
+import { getGlobalConfigDir, validateSkillName } from '@ottocode/sdk';
+import { listSkills, getSkill, validateSkill } from '@ottocode/api';
 import { colors } from './ui.ts';
 
 export interface SkillsOptions {
@@ -16,9 +10,36 @@ export interface SkillsOptions {
 	json?: boolean;
 }
 
+type SkillSummary = {
+	name: string;
+	description: string;
+	scope: string;
+	path: string;
+};
+
+type SkillDetail = {
+	name: string;
+	description: string;
+	license?: string | null;
+	compatibility?: string | null;
+	metadata?: unknown;
+	allowedTools?: string[] | null;
+	path: string;
+	scope: string;
+	content: string;
+};
+
 export async function runSkillsList(opts: SkillsOptions): Promise<void> {
-	const repoRoot = (await findGitRoot(opts.project)) ?? opts.project;
-	const skills = await discoverSkills(opts.project, repoRoot);
+	const { data, error } = await listSkills({
+		query: { project: opts.project },
+	});
+
+	if (error || !data) {
+		console.error('Failed to list skills');
+		return;
+	}
+
+	const skills = (data as { skills: SkillSummary[] }).skills ?? [];
 
 	if (opts.json) {
 		console.log(JSON.stringify(skills, null, 2));
@@ -40,7 +61,7 @@ export async function runSkillsList(opts: SkillsOptions): Promise<void> {
 	console.log(colors.bold('Discovered Skills'));
 	console.log('');
 
-	const byScope = new Map<string, DiscoveredSkill[]>();
+	const byScope = new Map<string, SkillSummary[]>();
 	for (const skill of skills) {
 		const list = byScope.get(skill.scope) ?? [];
 		list.push(skill);
@@ -65,47 +86,34 @@ export async function runSkillsShow(
 	name: string,
 	opts: SkillsOptions,
 ): Promise<void> {
-	const repoRoot = (await findGitRoot(opts.project)) ?? opts.project;
-	await discoverSkills(opts.project, repoRoot);
+	const { data, error } = await getSkill({
+		path: { name },
+		query: { project: opts.project },
+	});
 
-	const skill = await loadSkill(name);
-	if (!skill) {
+	if (error || !data) {
 		console.error(colors.red(`Skill '${name}' not found`));
 		process.exit(1);
 	}
 
+	const skill = data as SkillDetail;
+
 	if (opts.json) {
-		console.log(
-			JSON.stringify(
-				{
-					name: skill.metadata.name,
-					description: skill.metadata.description,
-					license: skill.metadata.license,
-					compatibility: skill.metadata.compatibility,
-					metadata: skill.metadata.metadata,
-					allowedTools: skill.metadata.allowedTools,
-					path: skill.path,
-					scope: skill.scope,
-					content: skill.content,
-				},
-				null,
-				2,
-			),
-		);
+		console.log(JSON.stringify(skill, null, 2));
 		return;
 	}
 
 	console.log('');
-	console.log(colors.bold(skill.metadata.name));
-	console.log(colors.dim(skill.metadata.description));
+	console.log(colors.bold(skill.name));
+	console.log(colors.dim(skill.description));
 	console.log('');
 	console.log(colors.dim(`Path: ${skill.path}`));
 	console.log(colors.dim(`Scope: ${skill.scope}`));
-	if (skill.metadata.license) {
-		console.log(colors.dim(`License: ${skill.metadata.license}`));
+	if (skill.license) {
+		console.log(colors.dim(`License: ${skill.license}`));
 	}
-	if (skill.metadata.compatibility) {
-		console.log(colors.dim(`Compatibility: ${skill.metadata.compatibility}`));
+	if (skill.compatibility) {
+		console.log(colors.dim(`Compatibility: ${skill.compatibility}`));
 	}
 	console.log('');
 	console.log(colors.dim('─'.repeat(60)));
@@ -225,20 +233,28 @@ export async function runSkillsValidate(
 
 	const content = await fs.readFile(skillPath, 'utf-8');
 
-	const { parseSkillFile } = await import('@ottocode/sdk');
-	try {
-		const skill = parseSkillFile(content, skillPath, 'cwd');
+	const { data } = await validateSkill({
+		body: { content, path: skillPath },
+	});
+
+	const result = data as {
+		valid: boolean;
+		name?: string;
+		description?: string;
+		license?: string | null;
+		error?: string;
+	};
+
+	if (result?.valid) {
 		console.log(colors.green('✓ Valid skill'));
 		console.log('');
-		console.log(`  Name: ${skill.metadata.name}`);
-		console.log(`  Description: ${skill.metadata.description}`);
-		if (skill.metadata.license) {
-			console.log(`  License: ${skill.metadata.license}`);
-		}
-	} catch (err) {
+		if (result.name) console.log(`  Name: ${result.name}`);
+		if (result.description) console.log(`  Description: ${result.description}`);
+		if (result.license) console.log(`  License: ${result.license}`);
+	} else {
 		console.error(colors.red('✗ Invalid skill'));
 		console.error('');
-		console.error(`  ${(err as Error).message}`);
+		console.error(`  ${result?.error ?? 'Unknown error'}`);
 		process.exit(1);
 	}
 }

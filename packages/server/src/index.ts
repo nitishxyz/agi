@@ -22,6 +22,8 @@ import { registerAuthRoutes } from './routes/auth.ts';
 import { registerTunnelRoutes } from './routes/tunnel.ts';
 import { registerMCPRoutes } from './routes/mcp.ts';
 import { registerProviderUsageRoutes } from './routes/provider-usage.ts';
+import { registerDoctorRoutes } from './routes/doctor.ts';
+import { registerSkillsRoutes } from './routes/skills.ts';
 import type { AgentConfigEntry } from './runtime/agent/registry.ts';
 
 const globalTerminalManager = new TerminalManager();
@@ -80,6 +82,8 @@ function initApp() {
 	registerTunnelRoutes(app);
 	registerMCPRoutes(app);
 	registerProviderUsageRoutes(app);
+	registerDoctorRoutes(app);
+	registerSkillsRoutes(app);
 
 	return app;
 }

@@ -1,5 +1,9 @@
 import { debugLog } from './debug.ts';
-import { getModelFamily, getModelInfo, isProviderId } from '../../providers/src/utils.ts';
+import {
+	getModelFamily,
+	getModelInfo,
+	isProviderId,
+} from '../../providers/src/utils.ts';
 import type { ProviderId } from '../../types/src/index.ts';
 import type { UnderlyingProviderKey } from '../../providers/src/utils.ts';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
@@ -74,14 +78,18 @@ export async function providerBasePrompt(
 		if (info?.ownedBy) {
 			const family = getModelFamily(id, modelId);
 			const result = promptForFamily(family);
-			debugLog(`[provider] prompt: ownedBy:${info.ownedBy} (via ${id}/${modelId}, ${result.length} chars)`);
+			debugLog(
+				`[provider] prompt: ownedBy:${info.ownedBy} (via ${id}/${modelId}, ${result.length} chars)`,
+			);
 			return { prompt: result, resolvedType: family ?? info.ownedBy };
 		}
 
 		const family = getModelFamily(id, modelId);
 		if (family) {
 			const result = promptForFamily(family);
-			debugLog(`[provider] prompt: family:${family} (via ${id}/${modelId}, ${result.length} chars)`);
+			debugLog(
+				`[provider] prompt: family:${family} (via ${id}/${modelId}, ${result.length} chars)`,
+			);
 			return { prompt: result, resolvedType: family };
 		}
 	}

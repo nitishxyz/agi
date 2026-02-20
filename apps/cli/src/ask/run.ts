@@ -34,7 +34,7 @@ import type {
 	Transcript,
 } from './types.ts';
 import { connectSSE, httpJson, safeJson } from './http.ts';
-import { startEphemeralServer, stopEphemeralServer } from './server.ts';
+import { getOrStartServerUrl } from './server.ts';
 import { extractToolError, isToolError } from '@ottocode/sdk/tools/error';
 
 const SAFE_TOOLS = new Set(['finish', 'progress_update', 'update_todos']);
@@ -42,9 +42,7 @@ const SAFE_TOOLS = new Set(['finish', 'progress_update', 'update_todos']);
 export async function runAsk(prompt: string, opts: AskOptions = {}) {
 	const startedAt = Date.now();
 	const projectRoot = opts.project ?? process.cwd();
-	const baseUrl = process.env.OTTO_SERVER_URL
-		? String(process.env.OTTO_SERVER_URL)
-		: await startEphemeralServer();
+	const baseUrl = await getOrStartServerUrl();
 
 	const flags = parseFlags(process.argv);
 	const jsonMode = flags.jsonEnabled || flags.jsonStreamEnabled;
@@ -176,12 +174,7 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 		try {
 			await sse?.close();
 		} catch {}
-		await maybeStopEphemeral();
 	}
-}
-
-async function maybeStopEphemeral() {
-	if (!process.env.OTTO_SERVER_URL) await stopEphemeralServer();
 }
 
 type StreamState = {

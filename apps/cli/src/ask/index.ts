@@ -1,6 +1,7 @@
 export { runAsk } from './run.ts';
 export { runAskStreamCapture } from './capture.ts';
 export {
+	ensureServer,
 	getOrStartServerUrl,
 	startEphemeralServer,
 	stopEphemeralServer,

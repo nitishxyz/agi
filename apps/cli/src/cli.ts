@@ -22,6 +22,15 @@ import { runDiscoveredCommand } from './custom-commands.ts';
 import { handleServe } from './commands/serve.ts';
 import { isDesktopInstalled, openDesktop } from './desktop.ts';
 import { colors } from './ui.ts';
+import { ensureServer, stopEphemeralServer } from './ask/server.ts';
+
+const SKIP_SERVER_COMMANDS = new Set([
+	'serve',
+	'upgrade',
+	'help',
+	'auth',
+	'web',
+]);
 
 export function createCli(version: string): Command {
 	const program = new Command();
@@ -33,7 +42,7 @@ export function createCli(version: string): Command {
 		.option('--debug', 'Enable debug logging')
 		.option('--trace', 'Enable stack traces in error logs')
 		.option('--no-desktop', 'Skip desktop app and start server')
-		.hook('preAction', (thisCommand) => {
+		.hook('preAction', async (thisCommand, actionCommand) => {
 			const opts = thisCommand.opts();
 			if (opts.debug) {
 				setDebugEnabled(true);
@@ -46,6 +55,11 @@ export function createCli(version: string): Command {
 						'[debug] Trace mode enabled (stack traces will be shown)',
 					);
 				}
+			}
+
+			const cmdName = actionCommand.name();
+			if (!SKIP_SERVER_COMMANDS.has(cmdName)) {
+				await ensureServer();
 			}
 		});
 
@@ -133,13 +147,18 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 				port,
 				network: networkFlag,
 				noOpen,
+				tunnel: false,
 			},
 			version,
 		);
 		return;
 	}
 
-	await program.parseAsync(argv, { from: 'user' });
+	try {
+		await program.parseAsync(argv, { from: 'user' });
+	} finally {
+		await stopEphemeralServer();
+	}
 }
 
 process.on('unhandledRejection', (reason) => {

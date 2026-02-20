@@ -7,82 +7,84 @@ import {
 	log,
 	text,
 } from '@clack/prompts';
-import { loadConfig } from '@ottocode/sdk';
-import { catalog, type ProviderId, type ModelInfo } from '@ottocode/sdk';
-import { getGlobalConfigDir, getGlobalConfigPath } from '@ottocode/sdk';
-import { isProviderAuthorized } from '@ottocode/sdk';
-import { getAuth, filterModelsForAuthType } from '@ottocode/sdk';
+import {
+	getProviders,
+	getProviderModels,
+	getConfig,
+	updateDefaults,
+} from '@ottocode/api';
 import { runAuth } from './auth.ts';
+
+type ModelOption = {
+	id: string;
+	label: string;
+	toolCall?: boolean;
+	reasoningText?: boolean;
+};
 
 export async function runModels(
 	opts: { project?: string; local?: boolean } = {},
 ) {
 	const projectRoot = opts.project ?? process.cwd();
-	const cfg = await loadConfig(projectRoot);
 
-	// Build list of authorized providers only
-	const providers: ProviderId[] = [
-		'openai',
-		'anthropic',
-		'google',
-		'openrouter',
-		'opencode',
-		'setu',
-	];
-	const authorization = await Promise.all(
-		providers.map((p) => isProviderAuthorized(cfg, p)),
-	);
-	const allowed = providers.filter((_, i) => authorization[i]);
+	const { data: providersData } = await getProviders({
+		query: { project: projectRoot },
+	});
+
+	let allowed: string[] =
+		(providersData as { providers: string[] })?.providers ?? [];
+
+	const { data: configData } = await getConfig({
+		query: { project: projectRoot },
+	});
+	const defaults = (
+		configData as {
+			defaults: { agent: string; provider: string; model: string };
+		}
+	)?.defaults ?? {
+		agent: 'coder',
+		provider: '',
+		model: '',
+	};
 
 	intro('Select provider and model');
 	if (!allowed.length) {
 		log.info('No providers configured. Launching auth…');
 		await runAuth(['login']);
-		// Recompute allowed after auth
-		const cfg2 = await loadConfig(projectRoot);
-		const allProviders = [
-			'openai',
-			'anthropic',
-			'google',
-			'openrouter',
-			'opencode',
-			'setu',
-		] as ProviderId[];
-		const authz2 = await Promise.all(
-			allProviders.map((p) => isProviderAuthorized(cfg2, p)),
-		);
-		const allowed2 = allProviders.filter((_, i) => authz2[i]);
-		if (!allowed2.length) {
+		const { data: providersData2 } = await getProviders({
+			query: { project: projectRoot },
+		});
+		allowed = (providersData2 as { providers: string[] })?.providers ?? [];
+		if (!allowed.length) {
 			log.error('No credentials added. Aborting.');
 			return outro('');
 		}
-		// replace vars for subsequent logic
-		allowed.length = 0;
-		allowed.push(...allowed2);
 	}
 
 	const provider = (await select({
 		message: 'Provider',
 		options: allowed.map((p) => ({ value: p, label: p })),
-		initialValue: cfg.defaults.provider,
-	})) as ProviderId | symbol;
+		initialValue: defaults.provider,
+	})) as string | symbol;
 	if (isCancel(provider)) return cancel('Cancelled');
 
-	const allModels = catalog[provider as ProviderId]?.models ?? [];
-	const auth = await getAuth(provider as ProviderId, projectRoot);
-	const authType = auth?.type as 'api' | 'oauth' | 'wallet' | undefined;
-	const models = filterModelsForAuthType(
-		provider as ProviderId,
-		allModels,
-		authType,
-	);
+	const { data: modelsData } = await getProviderModels({
+		path: { provider: String(provider) },
+		query: { project: projectRoot },
+	});
+
+	const modelsResponse = modelsData as {
+		models: ModelOption[];
+		default?: string;
+	};
+	const models = modelsResponse?.models ?? [];
+
 	if (!models.length) {
 		log.error('No models available for this provider.');
 		return outro('');
 	}
 
-	// Dedupe by id and sort for stable display
-	const uniq: ModelInfo[] = [];
+	const uniq: ModelOption[] = [];
 	const seen = new Set<string>();
 	for (const m of models) {
 		if (seen.has(m.id)) continue;
@@ -96,7 +98,6 @@ export async function runModels(
 	});
 
 	let filtered = uniq;
-	// For large catalogs, allow an optional filter to narrow the list
 	if (uniq.length > 50) {
 		const browseMode = (await select({
 			message: `This provider has ${uniq.length} models`,
@@ -137,8 +138,8 @@ export async function runModels(
 		value: m.id,
 		label: m.label ? `${m.label} (${m.id})` : m.id,
 	}));
-	const initial = options.some((o) => o.value === cfg.defaults.model)
-		? (cfg.defaults.model as string)
+	const initial = options.some((o) => o.value === defaults.model)
+		? (defaults.model as string)
 		: undefined;
 
 	async function pagedSelect(
@@ -194,48 +195,17 @@ export async function runModels(
 		| symbol;
 	if (isCancel(model)) return cancel('Cancelled');
 
-	// Write updated defaults: global by default, local when --local
 	const targetLocal = !!opts.local;
-	const enableProvider = <T extends Record<string, unknown>>(
-		providers: T,
-		name: ProviderId,
-	): T => {
-		const current = providers[name] as { enabled?: boolean } | undefined;
-		return {
-			...providers,
-			[name]: { ...(current ?? {}), enabled: true },
-		};
-	};
-	if (targetLocal) {
-		const next = {
-			projectRoot: cfg.projectRoot,
-			defaults: {
-				agent: cfg.defaults.agent,
-				provider: provider as ProviderId,
-				model: String(model),
-			},
-			providers: enableProvider(cfg.providers, provider as ProviderId),
-			paths: cfg.paths,
-		};
-		const path = `${cfg.paths.dataDir}/config.json`;
-		await Bun.write(path, JSON.stringify(next, null, 2));
-	} else {
-		const base = getGlobalConfigDir();
-		const path = getGlobalConfigPath();
-		const next = {
-			defaults: {
-				agent: cfg.defaults.agent,
-				provider: provider as ProviderId,
-				model: String(model),
-			},
-			providers: enableProvider(cfg.providers, provider as ProviderId),
-		};
-		try {
-			const { promises: fs } = await import('node:fs');
-			await fs.mkdir(base, { recursive: true }).catch(() => {});
-		} catch {}
-		await Bun.write(path, JSON.stringify(next, null, 2));
-	}
+
+	await updateDefaults({
+		body: {
+			provider: String(provider),
+			model: String(model),
+			scope: targetLocal ? 'local' : 'global',
+		},
+		query: { project: projectRoot },
+	});
+
 	log.success(
 		`Set default (${targetLocal ? 'local' : 'global'}) provider=${String(
 			provider,

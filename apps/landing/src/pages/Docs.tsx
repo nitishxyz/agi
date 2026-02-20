@@ -156,12 +156,15 @@ export function Docs() {
 							<Route path="sharing" element={<Sharing />} />
 							<Route path="acp" element={<AcpIntegration />} />
 							<Route path="ai-sdk" element={<AiSdkOverview />} />
-							<Route path="ai-sdk/configuration" element={<AiSdkConfiguration />} />
+							<Route
+								path="ai-sdk/configuration"
+								element={<AiSdkConfiguration />}
+							/>
 							<Route path="ai-sdk/caching" element={<AiSdkCaching />} />
 							<Route path="setu" element={<SetuOverview />} />
 							<Route path="setu/payments" element={<SetuPayments />} />
 							<Route path="setu/integration" element={<SetuIntegration />} />
-						<Route path="setu/openclaw" element={<OpenClawSetu />} />
+							<Route path="setu/openclaw" element={<OpenClawSetu />} />
 							<Route path="*" element={<Navigate to="/docs" replace />} />
 						</Routes>
 					</div>

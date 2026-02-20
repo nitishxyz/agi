@@ -13,21 +13,20 @@ export function OpenClawSetu() {
 				>
 					OpenClaw
 				</a>{' '}
-				— pay for 30+ AI models with Solana USDC. No API keys, no
-				accounts, just a wallet.
+				— pay for 30+ AI models with Solana USDC. No API keys, no accounts, just
+				a wallet.
 			</p>
 
 			<h2>How It Works</h2>
 			<p>
-				The <code>@ottocode/openclaw-setu</code> plugin runs a local
-				proxy that handles Solana wallet signing transparently. OpenClaw
-				talks to the proxy like any other OpenAI-compatible provider.
+				The <code>@ottocode/openclaw-setu</code> plugin runs a local proxy that
+				handles Solana wallet signing transparently. OpenClaw talks to the proxy
+				like any other OpenAI-compatible provider.
 			</p>
 			<CodeBlock>{`OpenClaw → localhost:8403 (Setu proxy) → api.setu.ottocode.io → LLM provider`}</CodeBlock>
 			<ol>
 				<li>
-					The plugin auto-generates a Solana wallet (or you import your
-					own)
+					The plugin auto-generates a Solana wallet (or you import your own)
 				</li>
 				<li>You fund the wallet with USDC on Solana</li>
 				<li>
@@ -35,8 +34,7 @@ export function OpenClawSetu() {
 					<strong>is</strong> authentication
 				</li>
 				<li>
-					Access models from Anthropic, OpenAI, Google, DeepSeek, and
-					more
+					Access models from Anthropic, OpenAI, Google, DeepSeek, and more
 				</li>
 			</ol>
 
@@ -50,16 +48,14 @@ bunx openclaw-setu setup`}</CodeBlock>
 			<p>The setup wizard will:</p>
 			<ul>
 				<li>
-					Generate a new Solana wallet (or let you import an existing
-					one)
+					Generate a new Solana wallet (or let you import an existing one)
 				</li>
 				<li>
-					Store the private key at{' '}
-					<code>~/.openclaw/setu/wallet.key</code> (mode 0600)
+					Store the private key at <code>~/.openclaw/setu/wallet.key</code>{' '}
+					(mode 0600)
 				</li>
 				<li>
-					Inject the Setu provider into{' '}
-					<code>~/.openclaw/openclaw.json</code>
+					Inject the Setu provider into <code>~/.openclaw/openclaw.json</code>
 				</li>
 				<li>Print your wallet address for funding</li>
 			</ul>
@@ -74,17 +70,16 @@ bunx openclaw-setu start
 openclaw gateway restart`}</CodeBlock>
 
 			<p>
-				That's it. Your OpenClaw instance now has access to all Setu
-				models. Select any <code>setu/</code> model in your OpenClaw
-				conversations.
+				That's it. Your OpenClaw instance now has access to all Setu models.
+				Select any <code>setu/</code> model in your OpenClaw conversations.
 			</p>
 
 			<hr />
 
 			<h2>Available Models</h2>
 			<p>
-				During setup, the plugin fetches the full model catalog from Setu's
-				API (currently 49 models). Here are highlights from each provider:
+				During setup, the plugin fetches the full model catalog from Setu's API
+				(currently 49 models). Here are highlights from each provider:
 			</p>
 			<div className="overflow-x-auto">
 				<table>
@@ -165,10 +160,10 @@ openclaw gateway restart`}</CodeBlock>
 				</table>
 			</div>
 			<p className="text-otto-dim text-sm">
-				Full catalog: 18 Anthropic models, 18 OpenAI models, 2 Google,
-				6 Moonshot, 3 Z.AI, 2 MiniMax. Run{' '}
-				<code>curl https://api.setu.ottocode.io/v1/models</code> to see
-				all available models with pricing.
+				Full catalog: 18 Anthropic models, 18 OpenAI models, 2 Google, 6
+				Moonshot, 3 Z.AI, 2 MiniMax. Run{' '}
+				<code>curl https://api.setu.ottocode.io/v1/models</code> to see all
+				available models with pricing.
 			</p>
 
 			<hr />
@@ -193,10 +188,7 @@ openclaw gateway restart`}</CodeBlock>
 							<td>
 								<code>openclaw-setu setup</code>
 							</td>
-							<td>
-								Interactive setup — wallet generation + config
-								injection
-							</td>
+							<td>Interactive setup — wallet generation + config injection</td>
 						</tr>
 						<tr>
 							<td>
@@ -247,8 +239,7 @@ openclaw gateway restart`}</CodeBlock>
 								<code>openclaw-setu wallet info</code>
 							</td>
 							<td>
-								Show wallet address, Setu balance, and on-chain
-								USDC balance
+								Show wallet address, Setu balance, and on-chain USDC balance
 							</td>
 						</tr>
 					</tbody>
@@ -270,8 +261,7 @@ openclaw gateway restart`}</CodeBlock>
 								<code>openclaw-setu config inject</code>
 							</td>
 							<td>
-								Add Setu provider to{' '}
-								<code>openclaw.json</code>
+								Add Setu provider to <code>openclaw.json</code>
 							</td>
 						</tr>
 						<tr>
@@ -279,8 +269,7 @@ openclaw gateway restart`}</CodeBlock>
 								<code>openclaw-setu config remove</code>
 							</td>
 							<td>
-								Remove Setu provider from{' '}
-								<code>openclaw.json</code>
+								Remove Setu provider from <code>openclaw.json</code>
 							</td>
 						</tr>
 						<tr>
@@ -297,29 +286,27 @@ openclaw gateway restart`}</CodeBlock>
 
 			<h2>OpenClaw Plugin Features</h2>
 			<p>
-				When OpenClaw loads the plugin (via{' '}
-				<code>openclaw.extensions</code> in package.json), it
-				automatically registers:
+				When OpenClaw loads the plugin (via <code>openclaw.extensions</code> in
+				package.json), it automatically registers:
 			</p>
 			<ul>
 				<li>
-					<strong>Provider</strong> — <code>setu</code> appears in
-					OpenClaw's auth wizard with wallet setup
+					<strong>Provider</strong> — <code>setu</code> appears in OpenClaw's
+					auth wizard with wallet setup
 				</li>
 				<li>
-					<strong>Service</strong> — <code>setu-proxy</code>{' '}
-					auto-starts with the gateway
+					<strong>Service</strong> — <code>setu-proxy</code> auto-starts with
+					the gateway
 				</li>
 				<li>
 					<strong>Commands</strong>:
 					<ul>
 						<li>
-							<code>/wallet</code> — Show your wallet address and
-							balances inline
+							<code>/wallet</code> — Show your wallet address and balances
+							inline
 						</li>
 						<li>
-							<code>/setu-status</code> — Check plugin
-							configuration status
+							<code>/setu-status</code> — Check plugin configuration status
 						</li>
 					</ul>
 				</li>
@@ -336,8 +323,8 @@ openclaw gateway restart`}</CodeBlock>
 				>
 					ClawRouter
 				</a>{' '}
-				is another payment plugin for OpenClaw that uses USDC on Base
-				(EVM) via the x402 protocol. Setu uses USDC on Solana instead.
+				is another payment plugin for OpenClaw that uses USDC on Base (EVM) via
+				the x402 protocol. Setu uses USDC on Solana instead.
 			</p>
 			<div className="overflow-x-auto">
 				<table>
@@ -392,27 +379,22 @@ openclaw gateway restart`}</CodeBlock>
 								<code>~/.openclaw/setu/wallet.key</code>
 							</td>
 							<td>
-								<code>
-									~/.openclaw/blockrun/wallet.key
-								</code>
+								<code>~/.openclaw/blockrun/wallet.key</code>
 							</td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
 			<p>
-				Both achieve the same goal: pay-per-token AI with no API keys.
-				Choose based on which chain you prefer. You can even run both
-				simultaneously — they use different ports.
+				Both achieve the same goal: pay-per-token AI with no API keys. Choose
+				based on which chain you prefer. You can even run both simultaneously —
+				they use different ports.
 			</p>
 
 			<hr />
 
 			<h2>Importing an Existing Wallet</h2>
-			<p>
-				If you already use otto with Setu, you can reuse the same
-				wallet:
-			</p>
+			<p>If you already use otto with Setu, you can reuse the same wallet:</p>
 			<CodeBlock>{`# Export from otto
 otto auth login setu  # if not already set up
 
@@ -420,8 +402,8 @@ otto auth login setu  # if not already set up
 openclaw-setu wallet import
 # Paste your base58 private key when prompted`}</CodeBlock>
 			<p>
-				Or set the <code>SETU_PRIVATE_KEY</code> environment variable —
-				the plugin checks it as a fallback.
+				Or set the <code>SETU_PRIVATE_KEY</code> environment variable — the
+				plugin checks it as a fallback.
 			</p>
 
 			<hr />
@@ -449,10 +431,7 @@ openclaw-setu wallet import
 								<code>SETU_PRIVATE_KEY</code>
 							</td>
 							<td>—</td>
-							<td>
-								Alternative to wallet file (base58 Solana
-								private key)
-							</td>
+							<td>Alternative to wallet file (base58 Solana private key)</td>
 						</tr>
 					</tbody>
 				</table>
@@ -464,31 +443,24 @@ openclaw-setu wallet import
 
 			<h3>Proxy won't start</h3>
 			<p>
-				Make sure you've run <code>openclaw-setu setup</code> first.
-				The proxy needs a wallet to sign requests.
+				Make sure you've run <code>openclaw-setu setup</code> first. The proxy
+				needs a wallet to sign requests.
 			</p>
 
 			<h3>402 Payment Required errors</h3>
-			<p>
-				Your Setu balance is low. Fund your wallet with USDC on
-				Solana:
-			</p>
+			<p>Your Setu balance is low. Fund your wallet with USDC on Solana:</p>
 			<CodeBlock>{`# Check your balance and wallet address
 openclaw-setu wallet info
 
 # Send USDC to the wallet address shown`}</CodeBlock>
 
 			<h3>Models not showing in OpenClaw</h3>
-			<p>
-				Verify the config was injected, then restart the gateway:
-			</p>
+			<p>Verify the config was injected, then restart the gateway:</p>
 			<CodeBlock>{`openclaw-setu config status
 openclaw gateway restart`}</CodeBlock>
 
 			<h3>Port conflict</h3>
-			<p>
-				If port 8403 is in use, set a custom port:
-			</p>
+			<p>If port 8403 is in use, set a custom port:</p>
 			<CodeBlock>{`SETU_PROXY_PORT=8404 openclaw-setu start`}</CodeBlock>
 			<p>
 				Then re-inject the config to update the port in{' '}

@@ -1,17 +1,29 @@
 import { createApp } from '@ottocode/server';
+import { client } from '@ottocode/api';
 
 let currentServer: ReturnType<typeof Bun.serve> | null = null;
+let configured = false;
 
 export async function startEphemeralServer(): Promise<string> {
 	if (currentServer) return `http://localhost:${currentServer.port}`;
 	const app = createApp();
 	currentServer = Bun.serve({ port: 0, fetch: app.fetch, idleTimeout: 240 });
-	return `http://localhost:${currentServer.port}`;
+	const url = `http://localhost:${currentServer.port}`;
+	configureClient(url);
+	return url;
 }
 
 export async function getOrStartServerUrl(): Promise<string> {
-	if (process.env.OTTO_SERVER_URL) return String(process.env.OTTO_SERVER_URL);
+	if (process.env.OTTO_SERVER_URL) {
+		const url = String(process.env.OTTO_SERVER_URL);
+		configureClient(url);
+		return url;
+	}
 	return await startEphemeralServer();
+}
+
+export async function ensureServer(): Promise<string> {
+	return await getOrStartServerUrl();
 }
 
 export async function stopEphemeralServer(): Promise<void> {
@@ -21,4 +33,10 @@ export async function stopEphemeralServer(): Promise<void> {
 		} catch {}
 		currentServer = null;
 	}
+}
+
+function configureClient(baseURL: string) {
+	if (configured) return;
+	client.setConfig({ baseURL });
+	configured = true;
 }

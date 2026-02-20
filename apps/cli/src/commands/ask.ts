@@ -1,6 +1,5 @@
 import type { Command } from 'commander';
-import { loadConfig, type ProviderId } from '@ottocode/sdk';
-import { getDb } from '@ottocode/database';
+import type { ProviderId } from '@ottocode/sdk';
 import { intro, outro, text, isCancel, cancel } from '@clack/prompts';
 import { runAsk } from '../ask.ts';
 import { ensureAuth } from '../middleware/with-auth.ts';
@@ -30,9 +29,6 @@ export async function handleAsk(prompt: string | undefined, opts: AskOptions) {
 		});
 		return;
 	}
-
-	const cfg = await loadConfig(projectRoot);
-	await getDb(cfg.projectRoot);
 
 	intro('otto ask');
 	const input = await text({ message: 'What would you like to ask?' });
