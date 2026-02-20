@@ -52,7 +52,6 @@
 		"@ottocode/acp": "workspace:*",
 		"@ottocode/api": "workspace:*",
 		"@clack/prompts": "^0.11.0",
-
 		"chalk": "^5.6.2",
 		"commander": "^14.0.2",
 		"diff": "^8.0.2",
@@ -63,6 +62,6 @@
 	"devDependencies": {
 		"@types/bun": "latest",
 		"@types/marked-terminal": "^6.1.1",
-		"typescript": "^5"
+		"typescript": "~5.9.3"
 	}
 }

@@ -53,10 +53,10 @@
 		"@ottocode/database": "workspace:*",
 		"drizzle-orm": "^0.44.5",
 		"hono": "^4.9.9",
-		"zod": "^4.1.8"
+		"zod": "^4.3.6"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
-		"typescript": "^5"
+		"typescript": "~5.9.3"
 	}
 }

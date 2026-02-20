@@ -102,7 +102,7 @@
 		"@openauthjs/openauth": "^0.4.3",
 		"@openrouter/ai-sdk-provider": "^1.2.0",
 		"@ottocode/ai-sdk": "workspace:*",
-		"@solana/web3.js": "^1.95.2",
+		"@solana/web3.js": "^1.98.0",
 		"ai": "^6.0.0",
 		"bs58": "^6.0.0",
 		"bun-pty": "^0.3.2",
@@ -114,11 +114,11 @@
 		"qrcode-terminal": "^0.12.0",
 		"tweetnacl": "^1.0.3",
 		"x402": "^1.1.0",
-		"zod": "^4.1.8"
+		"zod": "^4.3.6"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
-		"typescript": "^5"
+		"typescript": "~5.9.3"
 	},
 	"keywords": [
 		"ai",
