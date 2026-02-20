@@ -70,8 +70,8 @@ export function useCreateTerminal() {
 
 			return response.data as CreateTerminalResponse;
 		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['terminals'] });
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: ['terminals'] });
 		},
 	});
 }

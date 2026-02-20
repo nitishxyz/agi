@@ -6,6 +6,7 @@ import { client } from '@ottocode/api';
 const FONT_FAMILY = '"JetBrainsMono NFM", monospace';
 const SSE_RECONNECT_DELAY = 1500;
 const SSE_MAX_RETRIES = 5;
+const CURSOR_BLINK_RESUME_DELAY = 600;
 
 function resolveBackgroundColor(): string {
 	if (typeof document === 'undefined') return '#121216';
@@ -90,10 +91,11 @@ function resolveApiBaseUrl(): string {
 
 interface TerminalViewerProps {
 	terminalId: string;
+	isActive: boolean;
 	onExit?: (terminalId: string) => void;
 }
 
-export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
+export function TerminalViewer({ terminalId, isActive, onExit }: TerminalViewerProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const termRef = useRef<Terminal | null>(null);
 	const fitAddonRef = useRef<FitAddon | null>(null);
@@ -104,6 +106,10 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 	const [ready, setReady] = useState(false);
 	const onExitRef = useRef(onExit);
 	onExitRef.current = onExit;
+	const blinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const userScrolledRef = useRef(false);
+	const bgColorRef = useRef('#121216');
+	const focusHandlersRef = useRef<{ focusin: () => void; focusout: () => void } | null>(null);
 
 	const fitTerminal = useCallback(() => {
 		if (fitAddonRef.current) {
@@ -132,7 +138,11 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 				try {
 					const data = JSON.parse(event.data);
 					if (data.type === 'data') {
+						const savedY = userScrolledRef.current ? term.getViewportY() : 0;
 						term.write(data.line);
+						if (userScrolledRef.current && savedY > 0) {
+							term.scrollToLine(savedY);
+						}
 						hasReceivedDataRef.current = true;
 						if (!gotFirstData) {
 							gotFirstData = true;
@@ -238,7 +248,35 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 			fitAddon = new FitAddon();
 			term.loadAddon(fitAddon);
 			term.open(containerRef.current);
-			term.focus();
+
+			term.onData(() => {
+				if (!termRef.current?.renderer) return;
+				termRef.current.renderer.setCursorBlink(false);
+				if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
+				blinkTimerRef.current = setTimeout(() => {
+				if (termRef.current?.renderer && document.activeElement && containerRef.current?.contains(document.activeElement)) {
+						termRef.current.renderer.setCursorBlink(true);
+					}
+				}, CURSOR_BLINK_RESUME_DELAY);
+			});
+
+		bgColorRef.current = bg;
+
+		const handleFocusIn = () => {
+			if (!termRef.current?.renderer) return;
+			termRef.current.renderer.setCursorBlink(true);
+			termRef.current.renderer.setTheme({ cursor: '#ffffff', cursorAccent: '#000000' });
+		};
+
+		const handleFocusOut = () => {
+			if (!termRef.current?.renderer) return;
+			termRef.current.renderer.setCursorBlink(false);
+			termRef.current.renderer.setTheme({ cursor: bgColorRef.current, cursorAccent: bgColorRef.current });
+		};
+
+		containerRef.current.addEventListener('focusin', handleFocusIn);
+		containerRef.current.addEventListener('focusout', handleFocusOut);
+		focusHandlersRef.current = { focusin: handleFocusIn, focusout: handleFocusOut };
 
 			await new Promise<void>((resolve) => {
 				requestAnimationFrame(() => {
@@ -281,6 +319,10 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 				sendResize(cols, rows);
 			});
 
+		term.onScroll(() => {
+			userScrolledRef.current = term.getViewportY() > 0;
+		});
+
 			termRef.current = term;
 			fitAddonRef.current = fitAddon;
 
@@ -308,6 +350,15 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 
 		return () => {
 			disposed = true;
+			if (containerRef.current && focusHandlersRef.current) {
+				containerRef.current.removeEventListener('focusin', focusHandlersRef.current.focusin);
+				containerRef.current.removeEventListener('focusout', focusHandlersRef.current.focusout);
+				focusHandlersRef.current = null;
+			}
+			if (blinkTimerRef.current) {
+				clearTimeout(blinkTimerRef.current);
+				blinkTimerRef.current = null;
+			}
 			if (retryTimerRef.current) {
 				clearTimeout(retryTimerRef.current);
 				retryTimerRef.current = null;
@@ -328,12 +379,28 @@ export function TerminalViewer({ terminalId, onExit }: TerminalViewerProps) {
 	}, [terminalId, connectSSE]);
 
 	useEffect(() => {
+		const term = termRef.current;
+		if (!term) return;
+		if (isActive) {
+			fitTerminal();
+			term.focus();
+		} else {
+			term.blur();
+			if (term.renderer) {
+				term.renderer.setCursorBlink(false);
+				term.renderer.setTheme({ cursor: bgColorRef.current, cursorAccent: bgColorRef.current });
+			}
+		}
+	}, [isActive, fitTerminal]);
+
+	useEffect(() => {
 		fitTerminal();
 	}, [fitTerminal]);
 
 	return (
 		<div
-			className="flex h-full flex-col overflow-hidden bg-background"
+			className="flex h-full flex-col overflow-hidden bg-background absolute inset-0"
+			style={{ visibility: isActive ? 'visible' : 'hidden' }}
 			data-terminal-viewer
 		>
 			<div className="relative flex-1 min-h-0 overflow-hidden">

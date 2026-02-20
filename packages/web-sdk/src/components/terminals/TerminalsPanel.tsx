@@ -218,24 +218,22 @@ export const TerminalsPanel = memo(function TerminalsPanel() {
 				</div>
 			</div>
 
-			<div className="flex-1 min-h-0 overflow-hidden">
-				{activeTabId ? (
-					<TerminalViewer
-						key={activeTabId}
-						terminalId={activeTabId}
-						onExit={handleKillTerminal}
-					/>
-				) : (
-					<div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-						<TerminalIcon className="w-8 h-8 mb-2 opacity-40" />
-						<div className="text-xs">
-							{terminalsList.length === 0
-								? 'No terminals running'
-								: 'Select a terminal tab'}
-						</div>
-					</div>
-				)}
-			</div>
+		<div className="flex-1 min-h-0 overflow-hidden relative">
+			{terminalsList.map((t) => (
+				<TerminalViewer
+					key={t.id}
+					terminalId={t.id}
+					isActive={t.id === activeTabId}
+					onExit={handleKillTerminal}
+				/>
+			))}
+			{terminalsList.length === 0 && (
+				<div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+					<TerminalIcon className="w-8 h-8 mb-2 opacity-40" />
+					<div className="text-xs">No terminals running</div>
+				</div>
+			)}
+		</div>
 		</div>
 	);
 });
