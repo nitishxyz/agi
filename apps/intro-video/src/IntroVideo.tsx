@@ -88,7 +88,6 @@ function getEnterStyles(
 				opacity: progress,
 				transform: `scale(${interpolate(progress, [0, 1], [0.6, 1])})`,
 			};
-		case 'fade':
 		default:
 			return { opacity: progress };
 	}
@@ -118,7 +117,6 @@ function getExitStyles(
 				opacity: 1 - progress,
 				transform: `scale(${interpolate(progress, [0, 1], [1, 0.6])})`,
 			};
-		case 'fade':
 		default:
 			return { opacity: 1 - progress };
 	}

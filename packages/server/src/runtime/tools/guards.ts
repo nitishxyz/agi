@@ -140,7 +140,7 @@ const SENSITIVE_WRITE_PATHS: Array<{ pattern: RegExp; reason: string }> = [
 ];
 
 function guardWritePath(
-	toolName: string,
+	_toolName: string,
 	args: Record<string, unknown>,
 ): GuardAction {
 	const path =

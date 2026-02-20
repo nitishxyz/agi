@@ -3,8 +3,6 @@ import {
 	fetchBalance,
 	fetchWalletUsdcBalance,
 	getPublicKeyFromPrivate as _getPublicKeyFromPrivate,
-	addAnthropicCacheControl as _addAnthropicCacheControl,
-	createSetuFetch as _createSetuFetch,
 	type SetuConfig,
 	type PaymentCallbacks,
 	type BalanceUpdate,

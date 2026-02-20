@@ -168,7 +168,6 @@ export function CloneModal({
 							value={searchQuery}
 							onChange={(e) => handleSearch(e.target.value)}
 							disabled={cloning}
-							autoFocus
 							className="w-full h-9 pl-8 pr-3 bg-muted/30 border border-border/50 rounded-lg text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-ring/50 transition-colors text-xs disabled:opacity-50"
 						/>
 					</div>

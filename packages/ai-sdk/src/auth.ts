@@ -10,7 +10,7 @@ export interface WalletContext {
 }
 
 export function createWalletContext(auth: Required<SetuAuth>): WalletContext {
-	const privateKeyBytes = bs58.decode(auth.privateKey!);
+	const privateKeyBytes = bs58.decode(auth.privateKey);
 	const keypair = Keypair.fromSecretKey(privateKeyBytes);
 	const walletAddress = keypair.publicKey.toBase58();
 	return { keypair, walletAddress, privateKeyBytes };

@@ -70,7 +70,7 @@ function writeOpenClawConfigAtomic(config: Record<string, unknown>): void {
 		mkdirSync(OPENCLAW_DIR, { recursive: true });
 	}
 	const tmpPath = `${OPENCLAW_CONFIG_PATH}.tmp.${process.pid}`;
-	writeFileSync(tmpPath, JSON.stringify(config, null, 2) + '\n');
+	writeFileSync(tmpPath, `${JSON.stringify(config, null, 2)}\n`);
 	renameSync(tmpPath, OPENCLAW_CONFIG_PATH);
 }
 

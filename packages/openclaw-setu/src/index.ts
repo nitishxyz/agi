@@ -125,7 +125,8 @@ const plugin: OpenClawPluginDefinition = {
 							ensureWallet();
 						}
 
-						const finalWallet = loadWallet()!;
+						const finalWallet = loadWallet();
+						if (!finalWallet) throw new Error('Failed to load wallet');
 
 						await injectConfig(port);
 

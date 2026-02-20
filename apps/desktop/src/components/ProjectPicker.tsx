@@ -441,6 +441,7 @@ export function ProjectPicker({
 			)}
 
 			{showConnectModal && (
+				// biome-ignore lint/a11y/noStaticElementInteractions: modal backdrop dismiss
 				<div
 					className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
 					onClick={() => {
@@ -489,29 +490,28 @@ export function ProjectPicker({
 							<div>
 								<label className="block text-[11px] font-medium text-muted-foreground/60 uppercase tracking-wider mb-1.5">
 									API Server URL
+									<input
+										type="url"
+										value={connectUrl}
+										onChange={(e) => setConnectUrl(e.target.value)}
+										placeholder="http://192.168.1.50:9100"
+										className="w-full h-9 px-3 bg-muted/30 border border-border/50 rounded-lg text-xs font-mono text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-ring/50 transition-colors"
+										onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
+									/>
 								</label>
-								<input
-									type="url"
-									value={connectUrl}
-									onChange={(e) => setConnectUrl(e.target.value)}
-									placeholder="http://192.168.1.50:9100"
-									className="w-full h-9 px-3 bg-muted/30 border border-border/50 rounded-lg text-xs font-mono text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-ring/50 transition-colors"
-									autoFocus
-									onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
-								/>
 							</div>
 							<div>
 								<label className="block text-[11px] font-medium text-muted-foreground/60 uppercase tracking-wider mb-1.5">
 									Name (optional)
+									<input
+										type="text"
+										value={connectName}
+										onChange={(e) => setConnectName(e.target.value)}
+										placeholder="My Remote Server"
+										className="w-full h-9 px-3 bg-muted/30 border border-border/50 rounded-lg text-xs text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-ring/50 transition-colors"
+										onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
+									/>
 								</label>
-								<input
-									type="text"
-									value={connectName}
-									onChange={(e) => setConnectName(e.target.value)}
-									placeholder="My Remote Server"
-									className="w-full h-9 px-3 bg-muted/30 border border-border/50 rounded-lg text-xs text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-ring/50 transition-colors"
-									onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
-								/>
 							</div>
 							<div className="flex justify-end gap-2 pt-1">
 								<button

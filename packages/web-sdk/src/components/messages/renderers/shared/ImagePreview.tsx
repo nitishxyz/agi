@@ -34,7 +34,7 @@ export function ImagePreview({ images }: ImagePreviewProps) {
 								</button>
 								<img
 									src={src}
-									alt={`Tool result image ${i + 1}`}
+									alt={`Tool result ${i + 1}`}
 									className="max-w-full max-h-[32rem] rounded-lg border border-border object-contain"
 								/>
 							</div>
@@ -46,7 +46,7 @@ export function ImagePreview({ images }: ImagePreviewProps) {
 							>
 								<img
 									src={src}
-									alt={`Tool result image ${i + 1}`}
+									alt={`Tool result ${i + 1}`}
 									className="w-48 h-32 object-cover"
 								/>
 								<div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">

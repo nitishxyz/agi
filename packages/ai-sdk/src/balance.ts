@@ -17,7 +17,7 @@ export async function fetchBalance(
 	baseURL?: string,
 ): Promise<BalanceResponse | null> {
 	try {
-		const privateKeyBytes = bs58.decode(auth.privateKey!);
+		const privateKeyBytes = bs58.decode(auth.privateKey);
 		const keypair = Keypair.fromSecretKey(privateKeyBytes);
 		const walletAddress = keypair.publicKey.toBase58();
 		const url = trimTrailingSlash(baseURL ?? DEFAULT_BASE_URL);
@@ -64,7 +64,7 @@ export async function fetchWalletUsdcBalance(
 	network: 'mainnet' | 'devnet' = 'mainnet',
 ): Promise<WalletUsdcBalance | null> {
 	try {
-		const privateKeyBytes = bs58.decode(auth.privateKey!);
+		const privateKeyBytes = bs58.decode(auth.privateKey);
 		const keypair = Keypair.fromSecretKey(privateKeyBytes);
 		const walletAddress = keypair.publicKey.toBase58();
 		const rpcUrl =

@@ -4,7 +4,6 @@ import {
 	getModelInfo,
 	isProviderId,
 } from '../../providers/src/utils.ts';
-import type { ProviderId } from '../../types/src/index.ts';
 import type { UnderlyingProviderKey } from '../../providers/src/utils.ts';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import PROVIDER_OPENAI from './providers/openai.txt' with { type: 'text' };

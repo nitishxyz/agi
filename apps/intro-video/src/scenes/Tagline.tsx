@@ -39,7 +39,7 @@ export const Tagline: React.FC = () => {
 		fps,
 		config: { damping: 14, stiffness: 180 },
 	});
-	const pillScale = interpolate(pillProgress, [0, 1], [0.7, 1]);
+	const _pillScale = interpolate(pillProgress, [0, 1], [0.7, 1]);
 
 	const floatY = Math.sin(frame * 0.03) * 3;
 

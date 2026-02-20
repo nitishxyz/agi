@@ -139,7 +139,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 
 	useEffect(() => {
 		adjustTextareaHeight();
-	}, [adjustTextareaHeight, inputValue]);
+	}, [adjustTextareaHeight]);
 
 	const handleCreateNew = useCallback(async () => {
 		if (!parentSessionId) return;

@@ -30,9 +30,8 @@ export const approvalMixin = {
 			createdAt: number;
 		}>;
 	}> {
-		// biome-ignore lint/suspicious/noExplicitAny: API path type mismatch
 		const response = await apiGetPendingApprovals({
-			path: { sessionId } as any,
+			path: { sessionId } as Record<string, unknown>,
 		});
 		if (response.error) return { ok: false, pending: [] };
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure

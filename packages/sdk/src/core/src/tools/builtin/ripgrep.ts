@@ -102,13 +102,13 @@ export function buildRipgrepTool(projectRoot: string): {
 								return {
 									file: '',
 									line: 0,
-									text: l.length > TEXT_MAX ? l.slice(0, TEXT_MAX) + '…' : l,
+									text: l.length > TEXT_MAX ? `${l.slice(0, TEXT_MAX)}…` : l,
 								};
 							const file = m[1];
 							const line = Number.parseInt(m[2], 10);
 							const raw = m[3];
 							const text =
-								raw.length > TEXT_MAX ? raw.slice(0, TEXT_MAX) + '…' : raw;
+								raw.length > TEXT_MAX ? `${raw.slice(0, TEXT_MAX)}…` : raw;
 							return { file, line, text };
 						});
 						resolve({ ok: true, count: matches.length, matches });

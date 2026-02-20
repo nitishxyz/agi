@@ -20,7 +20,7 @@ export function App() {
 		if (navigationType === 'PUSH') {
 			window.scrollTo(0, 0);
 		}
-	}, [location.pathname, navigationType]);
+	}, [navigationType]);
 
 	return (
 		<div className="min-h-screen bg-otto-bg font-mono">

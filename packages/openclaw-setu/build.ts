@@ -1,5 +1,5 @@
 import { build } from 'bun';
-import { renameSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const entrypoints = ['./src/index.ts', './src/cli.ts'];

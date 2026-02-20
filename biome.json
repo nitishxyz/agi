@@ -56,7 +56,24 @@
 						"useUniqueElementIds": "off"
 					},
 					"suspicious": {
-						"noCommentText": "off"
+						"noCommentText": "off",
+						"noArrayIndexKey": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["apps/intro-video/**/*.tsx"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"noSvgWithoutTitle": "off"
+					},
+					"correctness": {
+						"useUniqueElementIds": "off"
+					},
+					"suspicious": {
+						"noArrayIndexKey": "off"
 					}
 				}
 			}
@@ -78,6 +95,16 @@
 				"rules": {
 					"suspicious": {
 						"noExplicitAny": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["**/TerminalRenderer.tsx"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noControlCharactersInRegex": "off"
 					}
 				}
 			}

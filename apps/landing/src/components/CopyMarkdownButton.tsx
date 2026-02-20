@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, type RefObject } from 'react';
+import { useState, useCallback, type RefObject } from 'react';
 
 function htmlToMarkdown(el: HTMLElement): string {
 	const lines: string[] = [];

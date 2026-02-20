@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { openAuthUrl, logger } from '@ottocode/sdk';
+import { openAuthUrl } from '@ottocode/sdk';
 import { createWebServer } from '../web-server.ts';
 import { colors } from '../ui.ts';
 
@@ -26,9 +26,9 @@ export interface WebOptions {
 }
 
 export async function handleWeb(opts: WebOptions, version: string) {
-	let apiUrl: URL;
+	let _apiUrl: URL;
 	try {
-		apiUrl = new URL(opts.api);
+		_apiUrl = new URL(opts.api);
 	} catch {
 		console.error(`Invalid API URL: ${opts.api}`);
 		process.exit(1);

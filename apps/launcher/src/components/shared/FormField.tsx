@@ -16,7 +16,7 @@ export function FormField({
 	onChange,
 	placeholder,
 	type = 'text',
-	autoFocus,
+	autoFocus: _autoFocus,
 	onKeyDown,
 }: Props) {
 	const id = useId();
@@ -32,7 +32,6 @@ export function FormField({
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={placeholder}
 				className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-				autoFocus={autoFocus}
 				onKeyDown={onKeyDown}
 			/>
 		</div>

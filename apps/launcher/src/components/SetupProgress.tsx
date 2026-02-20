@@ -105,10 +105,10 @@ export function SetupProgress() {
 		if (pollRef.current) clearInterval(pollRef.current);
 		pollRef.current = setInterval(async () => {
 			try {
-				const logText = await tauri.containerLogs(project!.containerName, 100);
+				const logText = await tauri.containerLogs(project?.containerName, 100);
 				setLogs(logText);
 
-				const running = await tauri.containerRunning(project!.containerName);
+				const running = await tauri.containerRunning(project?.containerName);
 				setContainerRunning(running);
 
 				const runLogs = currentRunLogs(logText);
@@ -163,16 +163,16 @@ export function SetupProgress() {
 		startedRef.current = true;
 
 		const run = async () => {
-			const exists = await tauri.containerExists(project!.containerName);
+			const exists = await tauri.containerExists(project?.containerName);
 
 			if (exists) {
 				log(`Connecting to ${repoName}...`);
-				const running = await tauri.containerRunning(project!.containerName);
+				const running = await tauri.containerRunning(project?.containerName);
 				setContainerRunning(running);
 
 				if (running) {
 					const logText = await tauri.containerLogs(
-						project!.containerName,
+						project?.containerName,
 						100,
 					);
 					const runLogs = currentRunLogs(logText);
@@ -260,7 +260,7 @@ export function SetupProgress() {
 				case 'stop':
 					stoppingRef.current = true;
 					log('Stopping container...');
-					await tauri.containerStop(project!.containerName);
+					await tauri.containerStop(project?.containerName);
 					setContainerRunning(false);
 					setDone(false);
 					log('Container stopped');
@@ -269,7 +269,7 @@ export function SetupProgress() {
 					stoppingRef.current = false;
 					graceRef.current = false;
 					log('Starting container...');
-					await tauri.containerStart(project!.containerName);
+					await tauri.containerStart(project?.containerName);
 					setContainerRunning(true);
 					setDone(false);
 					setCurrentStep(0);
@@ -283,9 +283,9 @@ export function SetupProgress() {
 					setDone(false);
 					setCurrentStep(0);
 					await tauri.containerRestartOtto(
-						project!.containerName,
+						project?.containerName,
 						`/workspace/${repoName}`,
-						project!.apiPort,
+						project?.apiPort,
 					);
 					setContainerRunning(true);
 					log('Container restarted, waiting for otto...');
@@ -294,7 +294,7 @@ export function SetupProgress() {
 				case 'update': {
 					log('Updating otto CLI...');
 					const result = await tauri.containerUpdateOtto(
-						project!.containerName,
+						project?.containerName,
 					);
 					log(`Update: ${result}`);
 					break;

@@ -27,9 +27,9 @@ const DEFAULT_CONFIG: Required<Omit<AnthropicCacheConfig, 'transform'>> = {
 	cacheType: 'ephemeral',
 };
 
-function resolveConfig(
-	config?: AnthropicCacheConfig,
-): Required<Omit<AnthropicCacheConfig, 'transform'>> & {
+function resolveConfig(config?: AnthropicCacheConfig): Required<
+	Omit<AnthropicCacheConfig, 'transform'>
+> & {
 	transform?: AnthropicCacheConfig['transform'];
 } {
 	if (!config) return { ...DEFAULT_CONFIG };
@@ -104,7 +104,7 @@ export function addAnthropicCacheControl(
 		return resolved.transform(parsed as Record<string, unknown>) as ParsedBody;
 	}
 
-	let systemUsed = 0;
+	let _systemUsed = 0;
 
 	if (parsed.system && Array.isArray(parsed.system)) {
 		const result = injectCacheOnBlocks(
@@ -114,7 +114,7 @@ export function addAnthropicCacheControl(
 			resolved.cacheType,
 		);
 		parsed.system = result.blocks;
-		systemUsed = result.used;
+		_systemUsed = result.used;
 	}
 
 	if (parsed.messages && Array.isArray(parsed.messages)) {

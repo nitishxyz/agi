@@ -165,7 +165,7 @@ export const GitSidebar = memo(function GitSidebar({
 	];
 
 	const totalChanges = allFiles.length;
-	const hasRemotes = status && status.remotes && status.remotes.length > 0;
+	const hasRemotes = status?.remotes && status.remotes.length > 0;
 	const hasUpstream = status?.hasUpstream ?? false;
 	const canPush = status && hasRemotes && (status.ahead > 0 || !hasUpstream);
 	const _canPull = !!status;

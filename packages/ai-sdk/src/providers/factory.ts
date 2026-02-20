@@ -16,7 +16,9 @@ export function createModel(
 ) {
 	const fetchFn = customFetch as unknown as typeof globalThis.fetch;
 
-	let model;
+	let model:
+		| ReturnType<ReturnType<typeof createOpenAI>['responses']>
+		| ReturnType<ReturnType<typeof createAnthropic>>;
 
 	switch (apiFormat) {
 		case 'anthropic-messages': {
@@ -49,8 +51,6 @@ export function createModel(
 			model = provider(modelId);
 			break;
 		}
-
-		case 'openai-responses':
 		default: {
 			const provider = createOpenAI({
 				baseURL,
