@@ -63,9 +63,7 @@ function main() {
 		'packages/server',
 	];
 
-	const versionOnlyPackages = [
-		'packages/ai-sdk',
-	];
+	const versionOnlyPackages = ['packages/ai-sdk'];
 
 	// First, collect all workspace package versions
 	const workspaceVersions = new Map<string, string>();
