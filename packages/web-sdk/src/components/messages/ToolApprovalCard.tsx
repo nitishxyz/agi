@@ -12,8 +12,8 @@ interface ToolApprovalCardProps {
 	toolName: string;
 	args: Record<string, unknown> | undefined;
 	pendingApproval: PendingToolApproval;
-	onApprove: (callId: string) => void;
-	onReject: (callId: string) => void;
+	onApprove: (callId: string) => void | Promise<void>;
+	onReject: (callId: string) => void | Promise<void>;
 }
 
 function getLanguageFromPath(path: string): string {
@@ -125,12 +125,16 @@ export const ToolApprovalCard = memo(function ToolApprovalCard({
 
 	const handleApprove = () => {
 		setIsProcessing(true);
-		onApprove(pendingApproval.callId);
+		Promise.resolve(onApprove(pendingApproval.callId)).catch(() => {
+			setIsProcessing(false);
+		});
 	};
 
 	const handleReject = () => {
 		setIsProcessing(true);
-		onReject(pendingApproval.callId);
+		Promise.resolve(onReject(pendingApproval.callId)).catch(() => {
+			setIsProcessing(false);
+		});
 	};
 
 	const renderContent = () => {

@@ -11,7 +11,7 @@ export const approvalMixin = {
 	): Promise<{ ok: boolean; callId: string; approved: boolean }> {
 		const response = await apiResolveApproval({
 			// biome-ignore lint/suspicious/noExplicitAny: API path type mismatch
-			path: { sessionId } as any,
+			path: { id: sessionId } as any,
 			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch
 			body: { callId, approved, sessionId } as any,
 		});
@@ -31,7 +31,7 @@ export const approvalMixin = {
 		}>;
 	}> {
 		const response = await apiGetPendingApprovals({
-			path: { sessionId } as Record<string, unknown>,
+			path: { id: sessionId } as Record<string, unknown>,
 		});
 		if (response.error) return { ok: false, pending: [] };
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure
