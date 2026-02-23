@@ -25,3 +25,4 @@ export * from './useTunnel';
 export * from './useProviderUsage';
 export * from './useFileBrowser';
 export * from './useMCP';
+export * from './useSkills';

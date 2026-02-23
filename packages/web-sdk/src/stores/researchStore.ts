@@ -5,6 +5,7 @@ import { useSettingsStore } from './settingsStore';
 import { useTunnelStore } from './tunnelStore';
 import { useFileBrowserStore } from './fileBrowserStore';
 import { useMCPStore } from './mcpStore';
+import { useSkillsStore } from './skillsStore';
 
 interface ResearchState {
 	isExpanded: boolean;
@@ -34,6 +35,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
 				useTunnelStore.getState().collapseSidebar();
 				useFileBrowserStore.getState().collapseSidebar();
 				useMCPStore.getState().collapseSidebar();
+				useSkillsStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
@@ -46,6 +48,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
 		useTunnelStore.getState().collapseSidebar();
 		useFileBrowserStore.getState().collapseSidebar();
 		useMCPStore.getState().collapseSidebar();
+		useSkillsStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
 

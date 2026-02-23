@@ -24,6 +24,9 @@ import {
 	FileViewerPanel,
 	MCPSidebar,
 	MCPSidebarToggle,
+	SkillsSidebar,
+	SkillsSidebarToggle,
+	SkillViewerPanel,
 	QuickFilePicker,
 } from '@ottocode/web-sdk/components';
 import { Sidebar } from './Sidebar';
@@ -62,6 +65,7 @@ export const AppLayout = memo(function AppLayout({
 						<GitDiffPanel />
 						<SessionFilesDiffPanel />
 						<FileViewerPanel />
+					<SkillViewerPanel />
 						{children}
 					</main>
 
@@ -77,6 +81,7 @@ export const AppLayout = memo(function AppLayout({
 						<TunnelSidebar />
 						<FileBrowserSidebar />
 						<MCPSidebar />
+					<SkillsSidebar />
 
 						<div className="flex flex-col w-12 border-l border-border bg-background">
 							<GitSidebarToggle />
@@ -86,6 +91,7 @@ export const AppLayout = memo(function AppLayout({
 							<SettingsSidebarToggle />
 							<TunnelSidebarToggle />
 							<MCPSidebarToggle />
+							<SkillsSidebarToggle />
 							<div className="flex-1" />
 							<TerminalPanelToggle />
 							<div className="h-12 border-t border-border flex items-center justify-center">

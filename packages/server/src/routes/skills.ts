@@ -2,6 +2,8 @@ import type { Hono } from 'hono';
 import {
 	discoverSkills,
 	loadSkill,
+	loadSkillFile,
+	discoverSkillFiles,
 	findGitRoot,
 	validateSkillName,
 	parseSkillFile,
@@ -61,6 +63,42 @@ export function registerSkillsRoutes(app: Hono) {
 	});
 
 	app.post('/v1/skills/validate', async (c) => {
+	app.get('/v1/skills/:name/files', async (c) => {
+		try {
+			const name = c.req.param('name');
+			const projectRoot = c.req.query('project') || process.cwd();
+			const repoRoot = (await findGitRoot(projectRoot)) ?? projectRoot;
+			await discoverSkills(projectRoot, repoRoot);
+
+			const files = await discoverSkillFiles(name);
+			return c.json({ files });
+		} catch (error) {
+			logger.error('Failed to list skill files', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, (errorResponse.error.status || 500) as 500);
+		}
+	});
+
+	app.get('/v1/skills/:name/files/*', async (c) => {
+		try {
+			const name = c.req.param('name');
+			const filePath = c.req.path.replace(`/v1/skills/${name}/files/`, '');
+			const projectRoot = c.req.query('project') || process.cwd();
+			const repoRoot = (await findGitRoot(projectRoot)) ?? projectRoot;
+			await discoverSkills(projectRoot, repoRoot);
+
+			const result = await loadSkillFile(name, filePath);
+			if (!result) {
+				return c.json({ error: `File '${filePath}' not found in skill '${name}'` }, 404);
+			}
+			return c.json({ content: result.content, path: result.resolvedPath });
+		} catch (error) {
+			logger.error('Failed to load skill file', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, (errorResponse.error.status || 500) as 500);
+		}
+	});
+
 		try {
 			const body = await c.req.json<{ content: string; path?: string }>();
 			if (!body.content) {

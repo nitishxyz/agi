@@ -77,6 +77,11 @@ export * from './tunnel/TunnelSidebarToggle';
 export * from './mcp/MCPSidebar';
 export * from './mcp/MCPSidebarToggle';
 
+// Skills Components
+export * from './skills/SkillsSidebar';
+export * from './skills/SkillsSidebarToggle';
+export * from './skills/SkillViewerPanel';
+
 // File Browser Components
 export * from './file-browser/FileBrowserSidebar';
 export * from './file-browser/FileBrowserSidebarToggle';

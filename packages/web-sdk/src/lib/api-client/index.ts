@@ -6,6 +6,7 @@ import { branchesMixin } from './branches';
 import { approvalMixin } from './approval';
 import { setuMixin } from './setu';
 import { authMixin } from './auth';
+import { skillsMixin } from './skills';
 
 export { configureApiClient } from './utils';
 
@@ -84,6 +85,11 @@ class ApiClient {
 	startCopilotDeviceFlow = authMixin.startCopilotDeviceFlow;
 	pollCopilotDeviceFlow = authMixin.pollCopilotDeviceFlow;
 	getProviderUsage = authMixin.getProviderUsage;
+
+	listSkills = skillsMixin.listSkills;
+	getSkill = skillsMixin.getSkill;
+	getSkillFiles = skillsMixin.getSkillFiles;
+	getSkillFileContent = skillsMixin.getSkillFileContent;
 }
 
 export const apiClient = new ApiClient();

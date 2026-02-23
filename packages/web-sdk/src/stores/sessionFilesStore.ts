@@ -5,6 +5,7 @@ import { useSettingsStore } from './settingsStore';
 import { useTunnelStore } from './tunnelStore';
 import { useFileBrowserStore } from './fileBrowserStore';
 import { useMCPStore } from './mcpStore';
+import { useSkillsStore } from './skillsStore';
 import type { SessionFileOperation } from '../types/api';
 
 interface SessionFilesState {
@@ -39,6 +40,7 @@ export const useSessionFilesStore = create<SessionFilesState>((set) => ({
 				useTunnelStore.getState().collapseSidebar();
 				useFileBrowserStore.getState().collapseSidebar();
 				useMCPStore.getState().collapseSidebar();
+				useSkillsStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
@@ -50,6 +52,7 @@ export const useSessionFilesStore = create<SessionFilesState>((set) => ({
 		useTunnelStore.getState().collapseSidebar();
 		useFileBrowserStore.getState().collapseSidebar();
 		useMCPStore.getState().collapseSidebar();
+		useSkillsStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
 	collapseSidebar: () =>

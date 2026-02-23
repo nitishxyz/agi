@@ -5,6 +5,7 @@ import { useSettingsStore } from './settingsStore';
 import { useTunnelStore } from './tunnelStore';
 import { useFileBrowserStore } from './fileBrowserStore';
 import { useMCPStore } from './mcpStore';
+import { useSkillsStore } from './skillsStore';
 
 interface GitState {
 	// Sidebar state
@@ -64,6 +65,7 @@ export const useGitStore = create<GitState>((set) => ({
 				useTunnelStore.getState().collapseSidebar();
 				useFileBrowserStore.getState().collapseSidebar();
 				useMCPStore.getState().collapseSidebar();
+				useSkillsStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});

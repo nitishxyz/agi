@@ -5,6 +5,7 @@ import { useResearchStore } from './researchStore';
 import { useTunnelStore } from './tunnelStore';
 import { useFileBrowserStore } from './fileBrowserStore';
 import { useMCPStore } from './mcpStore';
+import { useSkillsStore } from './skillsStore';
 
 interface SettingsState {
 	isExpanded: boolean;
@@ -26,6 +27,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 				useTunnelStore.getState().collapseSidebar();
 				useFileBrowserStore.getState().collapseSidebar();
 				useMCPStore.getState().collapseSidebar();
+				useSkillsStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});

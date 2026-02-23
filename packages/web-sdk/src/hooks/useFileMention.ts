@@ -39,10 +39,10 @@ export function useFileMention(): UseFileMentionReturn {
 			const cursorPos = textarea.selectionStart;
 			const textBeforeCursor = value.slice(0, cursorPos);
 
-			const match = textBeforeCursor.match(/@(\S*)$/);
+			const match = textBeforeCursor.match(/(^|[\s])@(\S*)$/);
 			if (!match) return;
 
-			const atPos = cursorPos - match[0].length;
+			const atPos = cursorPos - match[0].length + match[1].length;
 			const newValue = `${value.slice(0, atPos)}@${filePath} ${value.slice(cursorPos)}`;
 
 			setMessage(newValue);
@@ -63,11 +63,11 @@ export function useFileMention(): UseFileMentionReturn {
 
 	const checkForMention = useCallback((value: string, cursorPos: number) => {
 		const textBeforeCursor = value.slice(0, cursorPos);
-		const match = textBeforeCursor.match(/@(\S*)$/);
+		const match = textBeforeCursor.match(/(^|[\s])@(\S*)$/);
 
 		if (match) {
 			setShowFileMention(true);
-			setMentionQuery(match[1]);
+			setMentionQuery(match[2]);
 			setMentionSelectedIndex(0);
 		} else {
 			setShowFileMention(false);

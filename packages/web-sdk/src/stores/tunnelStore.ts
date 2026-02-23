@@ -5,6 +5,7 @@ import { useSettingsStore } from './settingsStore';
 import { useResearchStore } from './researchStore';
 import { useFileBrowserStore } from './fileBrowserStore';
 import { useMCPStore } from './mcpStore';
+import { useSkillsStore } from './skillsStore';
 
 export type TunnelStatus = 'idle' | 'starting' | 'connected' | 'error';
 
@@ -45,6 +46,7 @@ export const useTunnelStore = create<TunnelState>((set) => ({
 				useResearchStore.getState().collapseSidebar();
 				useFileBrowserStore.getState().collapseSidebar();
 				useMCPStore.getState().collapseSidebar();
+				useSkillsStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
@@ -57,6 +59,7 @@ export const useTunnelStore = create<TunnelState>((set) => ({
 		useResearchStore.getState().collapseSidebar();
 		useFileBrowserStore.getState().collapseSidebar();
 		useMCPStore.getState().collapseSidebar();
+		useSkillsStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
 

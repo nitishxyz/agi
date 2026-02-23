@@ -4,28 +4,39 @@ import { useSessionFilesStore } from './sessionFilesStore';
 import { useResearchStore } from './researchStore';
 import { useSettingsStore } from './settingsStore';
 import { useTunnelStore } from './tunnelStore';
+import { useFileBrowserStore } from './fileBrowserStore';
 import { useMCPStore } from './mcpStore';
-import { useSkillsStore } from './skillsStore';
 
-interface FileBrowserState {
+export interface SkillInfo {
+	name: string;
+	description: string;
+	scope: string;
+	path: string;
+}
+
+interface SkillsState {
 	isExpanded: boolean;
-	selectedFile: string | null;
+	skills: SkillInfo[];
+	selectedSkill: string | null;
+
 	isViewerOpen: boolean;
-	expandedDirs: Set<string>;
+	viewingFile: string | null;
 
 	toggleSidebar: () => void;
 	expandSidebar: () => void;
 	collapseSidebar: () => void;
-	openFile: (path: string) => void;
+	setSkills: (skills: SkillInfo[]) => void;
+	selectSkill: (name: string | null) => void;
+	openViewer: (file: string | null) => void;
 	closeViewer: () => void;
-	toggleDir: (path: string) => void;
 }
 
-export const useFileBrowserStore = create<FileBrowserState>((set) => ({
+export const useSkillsStore = create<SkillsState>((set) => ({
 	isExpanded: false,
-	selectedFile: null,
+	skills: [],
+	selectedSkill: null,
 	isViewerOpen: false,
-	expandedDirs: new Set<string>(),
+	viewingFile: null,
 
 	toggleSidebar: () => {
 		set((state) => {
@@ -36,46 +47,32 @@ export const useFileBrowserStore = create<FileBrowserState>((set) => ({
 				useResearchStore.getState().collapseSidebar();
 				useSettingsStore.getState().collapseSidebar();
 				useTunnelStore.getState().collapseSidebar();
+				useFileBrowserStore.getState().collapseSidebar();
 				useMCPStore.getState().collapseSidebar();
-				useSkillsStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
 	},
+
 	expandSidebar: () => {
 		useGitStore.getState().collapseSidebar();
 		useSessionFilesStore.getState().collapseSidebar();
 		useResearchStore.getState().collapseSidebar();
 		useSettingsStore.getState().collapseSidebar();
 		useTunnelStore.getState().collapseSidebar();
+		useFileBrowserStore.getState().collapseSidebar();
 		useMCPStore.getState().collapseSidebar();
-		useSkillsStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
-	collapseSidebar: () =>
-		set({
-			isExpanded: false,
-			isViewerOpen: false,
-			selectedFile: null,
-		}),
-	openFile: (path) =>
-		set({
-			selectedFile: path,
-			isViewerOpen: true,
-		}),
-	closeViewer: () =>
-		set({
-			isViewerOpen: false,
-			selectedFile: null,
-		}),
-	toggleDir: (path) =>
-		set((state) => {
-			const next = new Set(state.expandedDirs);
-			if (next.has(path)) {
-				next.delete(path);
-			} else {
-				next.add(path);
-			}
-			return { expandedDirs: next };
-		}),
+
+	collapseSidebar: () => set({ isExpanded: false }),
+
+	setSkills: (skills) => set({ skills }),
+
+	selectSkill: (name) =>
+		set({ selectedSkill: name, isViewerOpen: false, viewingFile: null }),
+
+	openViewer: (file) => set({ isViewerOpen: true, viewingFile: file }),
+
+	closeViewer: () => set({ isViewerOpen: false, viewingFile: null }),
 }));

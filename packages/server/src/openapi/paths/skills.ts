@@ -93,6 +93,90 @@ export const skillsPaths = {
 			},
 		},
 	},
+	'/v1/skills/{name}/files': {
+		get: {
+			tags: ['config'],
+			operationId: 'listSkillFiles',
+			summary: 'List files in a skill directory',
+			parameters: [
+				{
+					in: 'path',
+					name: 'name',
+					required: true,
+					schema: { type: 'string' },
+				},
+				projectQueryParam(),
+			],
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									files: {
+										type: 'array',
+										items: {
+											type: 'object',
+											properties: {
+												relativePath: { type: 'string' },
+												size: { type: 'number' },
+											},
+											required: ['relativePath', 'size'],
+										},
+									},
+								},
+								required: ['files'],
+							},
+						},
+					},
+				},
+				500: errorResponse(),
+			},
+		},
+	},
+	'/v1/skills/{name}/files/{filePath}': {
+		get: {
+			tags: ['config'],
+			operationId: 'getSkillFile',
+			summary: 'Read a specific file from a skill directory',
+			parameters: [
+				{
+					in: 'path',
+					name: 'name',
+					required: true,
+					schema: { type: 'string' },
+				},
+				{
+					in: 'path',
+					name: 'filePath',
+					required: true,
+					schema: { type: 'string' },
+				},
+				projectQueryParam(),
+			],
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									content: { type: 'string' },
+									path: { type: 'string' },
+								},
+								required: ['content', 'path'],
+							},
+						},
+					},
+				},
+				404: errorResponse(),
+				500: errorResponse(),
+			},
+		},
+	},
 	'/v1/skills/validate': {
 		post: {
 			tags: ['config'],

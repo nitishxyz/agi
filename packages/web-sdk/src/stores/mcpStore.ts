@@ -5,6 +5,7 @@ import { useResearchStore } from './researchStore';
 import { useSettingsStore } from './settingsStore';
 import { useTunnelStore } from './tunnelStore';
 import { useFileBrowserStore } from './fileBrowserStore';
+import { useSkillsStore } from './skillsStore';
 
 export type MCPScope = 'global' | 'project';
 
@@ -65,6 +66,7 @@ export const useMCPStore = create<MCPState>((set) => ({
 				useSettingsStore.getState().collapseSidebar();
 				useTunnelStore.getState().collapseSidebar();
 				useFileBrowserStore.getState().collapseSidebar();
+				useSkillsStore.getState().collapseSidebar();
 			}
 			return { isExpanded: newExpanded };
 		});
@@ -77,6 +79,7 @@ export const useMCPStore = create<MCPState>((set) => ({
 		useSettingsStore.getState().collapseSidebar();
 		useTunnelStore.getState().collapseSidebar();
 		useFileBrowserStore.getState().collapseSidebar();
+		useSkillsStore.getState().collapseSidebar();
 		set({ isExpanded: true });
 	},
 

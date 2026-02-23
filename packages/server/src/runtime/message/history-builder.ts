@@ -24,25 +24,29 @@ export async function buildHistoryMessages(
 	const toolHistory = new ToolHistoryTracker();
 
 	for (const m of rows) {
-		if (
-			m.role === 'assistant' &&
-			m.status !== 'complete' &&
-			m.status !== 'completed' &&
-			m.status !== 'error' &&
-			m.id !== currentMessageId
-		) {
-			debugLog(
-				`[buildHistoryMessages] Skipping assistant message ${m.id} with status ${m.status}`,
-			);
-			logPendingToolParts(db, m.id);
-			continue;
-		}
-
 		const parts = await db
 			.select()
 			.from(messageParts)
 			.where(eq(messageParts.messageId, m.id))
 			.orderBy(asc(messageParts.index));
+
+		if (
+			m.role === 'assistant' &&
+			m.status !== 'complete' &&
+			m.status !== 'completed' &&
+			m.status !== 'error'
+		) {
+			if (parts.length === 0) {
+				debugLog(
+					`[buildHistoryMessages] Skipping empty assistant message ${m.id} with status ${m.status}`,
+				);
+				continue;
+			}
+
+			debugLog(
+				`[buildHistoryMessages] Including non-complete assistant message ${m.id} (status: ${m.status}) with ${parts.length} parts to preserve context`,
+			);
+		}
 
 		if (m.role === 'user') {
 			const uparts: UIMessage['parts'] = [];
@@ -123,7 +127,6 @@ export async function buildHistoryMessages(
 						if (t) assistantParts.push({ type: 'text', text: t });
 					} catch {}
 				} else if (p.type === 'tool_call') {
-					// Skip compacted tool calls entirely
 					if (p.compactedAt) continue;
 
 					try {
@@ -141,7 +144,6 @@ export async function buildHistoryMessages(
 						}
 					} catch {}
 				} else if (p.type === 'tool_result') {
-					// Skip compacted tool results entirely
 					if (p.compactedAt) continue;
 
 					try {
@@ -159,7 +161,6 @@ export async function buildHistoryMessages(
 						}
 					} catch {}
 				}
-				// Skip error parts in history
 			}
 
 			const toolResultsById = new Map(
@@ -167,14 +168,12 @@ export async function buildHistoryMessages(
 			);
 
 			for (const call of toolCalls) {
-				// Skip finish tool from history - it's internal loop control
 				if (call.name === 'finish') continue;
 
 				const toolType = `tool-${call.name}` as `tool-${string}`;
 				let result = toolResultsById.get(call.callId);
 
 				if (!result) {
-					// Synthesize a result for incomplete tool calls to preserve history
 					debugLog(
 						`[buildHistoryMessages] Synthesizing error result for incomplete tool call ${call.name}#${call.callId}`,
 					);
