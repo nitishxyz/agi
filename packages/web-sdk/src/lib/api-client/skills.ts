@@ -43,9 +43,7 @@ export const skillsMixin = {
 		return response.data as SkillDetail;
 	},
 
-	async getSkillFiles(
-		name: string,
-	): Promise<{ files: SkillFileInfo[] }> {
+	async getSkillFiles(name: string): Promise<{ files: SkillFileInfo[] }> {
 		const response = await apiListSkillFiles({ path: { name } });
 		if (response.error) throw new Error(extractErrorMessage(response.error));
 		return response.data as { files: SkillFileInfo[] };

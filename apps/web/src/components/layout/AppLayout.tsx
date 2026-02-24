@@ -65,7 +65,7 @@ export const AppLayout = memo(function AppLayout({
 						<GitDiffPanel />
 						<SessionFilesDiffPanel />
 						<FileViewerPanel />
-					<SkillViewerPanel />
+						<SkillViewerPanel />
 						{children}
 					</main>
 
@@ -81,7 +81,7 @@ export const AppLayout = memo(function AppLayout({
 						<TunnelSidebar />
 						<FileBrowserSidebar />
 						<MCPSidebar />
-					<SkillsSidebar />
+						<SkillsSidebar />
 
 						<div className="flex flex-col w-12 border-l border-border bg-background">
 							<GitSidebarToggle />
