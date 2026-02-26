@@ -99,7 +99,7 @@ export function toClaudeCodeName(canonical: string): string {
 	}
 	// Default: convert snake_case to PascalCase
 	return canonical
-		.split('_')
+		.split(/[\s_]+/)
 		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
 		.join('');
 }

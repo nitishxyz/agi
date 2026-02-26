@@ -55,6 +55,79 @@ export const sessionsPaths = {
 			},
 		},
 	},
+	'/v1/sessions/{sessionId}': {
+		patch: {
+			tags: ['sessions'],
+			operationId: 'updateSession',
+			summary: 'Update session preferences',
+			parameters: [
+				{
+					in: 'path',
+					name: 'sessionId',
+					required: true,
+					schema: { type: 'string' },
+				},
+				projectQueryParam(),
+			],
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								title: { type: 'string' },
+								agent: { type: 'string' },
+								provider: { $ref: '#/components/schemas/Provider' },
+								model: { type: 'string' },
+							},
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: { $ref: '#/components/schemas/Session' },
+						},
+					},
+				},
+				400: errorResponse(),
+				404: errorResponse(),
+			},
+		},
+		delete: {
+			tags: ['sessions'],
+			operationId: 'deleteSession',
+			summary: 'Delete a session',
+			parameters: [
+				{
+					in: 'path',
+					name: 'sessionId',
+					required: true,
+					schema: { type: 'string' },
+				},
+				projectQueryParam(),
+			],
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: { success: { type: 'boolean' } },
+								required: ['success'],
+							},
+						},
+					},
+				},
+				404: errorResponse(),
+			},
+		},
+	},
 	'/v1/sessions/{sessionId}/abort': {
 		delete: {
 			tags: ['sessions'],

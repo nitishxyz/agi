@@ -140,10 +140,15 @@ export function registerSessionsRoutes(app: Hono) {
 				agent?: string;
 				provider?: string;
 				model?: string;
+				title?: string | null;
 				lastActiveAt?: number;
 			} = {
 				lastActiveAt: Date.now(),
 			};
+
+			if (typeof body.title === 'string') {
+				updates.title = body.title.trim() || null;
+			}
 
 			// Validate agent if provided
 			if (typeof body.agent === 'string') {

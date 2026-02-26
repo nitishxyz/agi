@@ -23,6 +23,7 @@ import { UsageRing } from '../common/UsageRing';
 import { UsageModal } from '../common/UsageModal';
 import { useProviderUsage } from '../../hooks/useProviderUsage';
 import { useAllModels } from '../../hooks/useConfig';
+import { EditableTitle } from './EditableTitle';
 
 interface LeanHeaderProps {
 	session: Session;
@@ -112,9 +113,11 @@ export function LeanHeader({
 						) : (
 							<MessageSquare className="w-4 h-4 flex-shrink-0" />
 						)}
-						<span className="text-foreground font-medium truncate">
-							{session.title || 'Untitled Session'}
-						</span>
+					<EditableTitle
+						sessionId={session.id}
+						title={session.title}
+						className="text-foreground font-medium text-sm"
+					/>
 						{shareStatus?.shared && (
 							<button
 								type="button"

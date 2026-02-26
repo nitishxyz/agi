@@ -10,9 +10,9 @@ export function SetuOverview() {
 			</p>
 
 			<h2>What is Setu?</h2>
-			<p>
-				Setu is an AI inference proxy that lets any developer access models from
-				OpenAI, Anthropic, Google, and Moonshot using a single Solana wallet.
+		<p>
+			Setu is an AI inference proxy that lets any developer access models from
+			OpenAI, Anthropic, Google, Moonshot, Zai, and MiniMax using a single Solana wallet.
 				Instead of managing separate API keys and billing accounts with each
 				provider, you top up a USDC balance and Setu routes your requests to the
 				right provider.
@@ -49,11 +49,13 @@ Setu Router (Cloudflare Worker)
   ├─ If balance < $0.05 → returns 402 with x402 payment options
   │
   ├─ Routes by model:
-  │   ├─ OpenAI models    → /v1/responses     → api.openai.com
-  │   ├─ Anthropic models → /v1/messages       → api.anthropic.com
-  │   ├─ Google models    → /v1/models/{model} → generativelanguage.googleapis.com
-  │   ├─ Moonshot models  → /v1/chat/completions → api.moonshot.ai
-  │   └─ Google (compat)  → /v1/chat/completions → Google OpenAI-compat endpoint
+  │   ├─ OpenAI models    → /v1/responses         → api.openai.com
+  │   ├─ Anthropic models → /v1/messages           → api.anthropic.com
+  │   ├─ Google models    → /v1/models/{model}     → generativelanguage.googleapis.com
+  │   ├─ Moonshot models  → /v1/chat/completions   → api.moonshot.ai
+  │   ├─ Zai models       → /v1/chat/completions   → open.bigmodel.cn
+  │   ├─ MiniMax models   → /v1/messages           → api.minimax.io
+  │   └─ Google (compat)  → /v1/chat/completions   → Google OpenAI-compat endpoint
   │
   ├─ Tracks token usage from provider response
   ├─ Deducts cost from user balance
@@ -109,15 +111,31 @@ Setu Router (Cloudflare Worker)
 							<td>OpenAI-compatible</td>
 							<td>Tool calling, reasoning, streaming</td>
 						</tr>
-						<tr>
-							<td>Moonshot</td>
-							<td>
-								<code>/v1/chat/completions</code>
-							</td>
-							<td>OpenAI-compatible</td>
-							<td>Tool calling, reasoning, streaming</td>
-						</tr>
-					</tbody>
+					<tr>
+						<td>Moonshot</td>
+						<td>
+							<code>/v1/chat/completions</code>
+						</td>
+						<td>OpenAI-compatible</td>
+						<td>Tool calling, reasoning, streaming</td>
+					</tr>
+					<tr>
+						<td>Zai</td>
+						<td>
+							<code>/v1/chat/completions</code>
+						</td>
+						<td>OpenAI-compatible</td>
+						<td>Tool calling, reasoning, streaming</td>
+					</tr>
+					<tr>
+						<td>MiniMax</td>
+						<td>
+							<code>/v1/messages</code>
+						</td>
+						<td>Anthropic Messages API</td>
+						<td>Tool calling, reasoning, streaming</td>
+					</tr>
+				</tbody>
 				</table>
 			</div>
 
@@ -136,110 +154,146 @@ Setu Router (Cloudflare Worker)
 							<th>Max Output</th>
 						</tr>
 					</thead>
-					<tbody>
-						<tr>
-							<td>
-								<code>codex-mini-latest</code>
-							</td>
-							<td>$1.50</td>
-							<td>$6.00</td>
-							<td>$0.375</td>
-							<td>200K</td>
-							<td>100K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>gpt-5</code>
-							</td>
-							<td>$1.25</td>
-							<td>$10.00</td>
-							<td>$0.125</td>
-							<td>400K</td>
-							<td>128K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>gpt-5-mini</code>
-							</td>
-							<td>$0.25</td>
-							<td>$2.00</td>
-							<td>$0.025</td>
-							<td>400K</td>
-							<td>128K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>gpt-5-nano</code>
-							</td>
-							<td>$0.05</td>
-							<td>$0.40</td>
-							<td>$0.005</td>
-							<td>400K</td>
-							<td>128K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>gpt-5-pro</code>
-							</td>
-							<td>$15.00</td>
-							<td>$120.00</td>
-							<td>—</td>
-							<td>400K</td>
-							<td>272K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>gpt-5-codex</code>
-							</td>
-							<td>$1.25</td>
-							<td>$10.00</td>
-							<td>$0.125</td>
-							<td>400K</td>
-							<td>128K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>gpt-5.1</code>
-							</td>
-							<td>$1.25</td>
-							<td>$10.00</td>
-							<td>$0.13</td>
-							<td>400K</td>
-							<td>128K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>gpt-5.1-codex</code>
-							</td>
-							<td>$1.25</td>
-							<td>$10.00</td>
-							<td>$0.125</td>
-							<td>400K</td>
-							<td>128K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>gpt-5.2</code>
-							</td>
-							<td>$1.75</td>
-							<td>$14.00</td>
-							<td>$0.175</td>
-							<td>400K</td>
-							<td>128K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>gpt-5.2-pro</code>
-							</td>
-							<td>$21.00</td>
-							<td>$168.00</td>
-							<td>—</td>
-							<td>400K</td>
-							<td>128K</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+				<tbody>
+					<tr>
+						<td><code>gpt-5</code></td>
+						<td>$1.25</td>
+						<td>$10.00</td>
+						<td>$0.125</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5-chat-latest</code></td>
+						<td>$1.25</td>
+						<td>$10.00</td>
+						<td>—</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5-codex</code></td>
+						<td>$1.25</td>
+						<td>$10.00</td>
+						<td>$0.125</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5-mini</code></td>
+						<td>$0.25</td>
+						<td>$2.00</td>
+						<td>$0.025</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5-nano</code></td>
+						<td>$0.05</td>
+						<td>$0.40</td>
+						<td>$0.005</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5-pro</code></td>
+						<td>$15.00</td>
+						<td>$120.00</td>
+						<td>—</td>
+						<td>400K</td>
+						<td>272K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5.1</code></td>
+						<td>$1.25</td>
+						<td>$10.00</td>
+						<td>$0.13</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5.1-chat-latest</code></td>
+						<td>$1.25</td>
+						<td>$10.00</td>
+						<td>$0.125</td>
+						<td>128K</td>
+						<td>16K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5.1-codex</code></td>
+						<td>$1.25</td>
+						<td>$10.00</td>
+						<td>$0.125</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5.1-codex-max</code></td>
+						<td>$1.25</td>
+						<td>$10.00</td>
+						<td>$0.125</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5.1-codex-mini</code></td>
+						<td>$0.25</td>
+						<td>$2.00</td>
+						<td>$0.025</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5.2</code></td>
+						<td>$1.75</td>
+						<td>$14.00</td>
+						<td>$0.175</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5.2-chat-latest</code></td>
+						<td>$1.75</td>
+						<td>$14.00</td>
+						<td>$0.175</td>
+						<td>128K</td>
+						<td>16K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5.2-codex</code></td>
+						<td>$1.75</td>
+						<td>$14.00</td>
+						<td>$0.175</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5.2-pro</code></td>
+						<td>$21.00</td>
+						<td>$168.00</td>
+						<td>—</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5.3-codex</code></td>
+						<td>$1.75</td>
+						<td>$14.00</td>
+						<td>$0.175</td>
+						<td>400K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>gpt-5.3-codex-spark</code></td>
+						<td>$1.75</td>
+						<td>$14.00</td>
+						<td>$0.175</td>
+						<td>128K</td>
+						<td>32K</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 
 			<h3>Anthropic</h3>
 			<div className="overflow-x-auto">
@@ -255,85 +309,170 @@ Setu Router (Cloudflare Worker)
 							<th>Max Output</th>
 						</tr>
 					</thead>
-					<tbody>
-						<tr>
-							<td>
-								<code>claude-sonnet-4-5</code>
-							</td>
-							<td>$3.00</td>
-							<td>$15.00</td>
-							<td>$0.30</td>
-							<td>$3.75</td>
-							<td>200K</td>
-							<td>64K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>claude-sonnet-4-0</code>
-							</td>
-							<td>$3.00</td>
-							<td>$15.00</td>
-							<td>$0.30</td>
-							<td>$3.75</td>
-							<td>200K</td>
-							<td>64K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>claude-opus-4-5</code>
-							</td>
-							<td>$5.00</td>
-							<td>$25.00</td>
-							<td>$0.50</td>
-							<td>$6.25</td>
-							<td>200K</td>
-							<td>64K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>claude-opus-4-1</code>
-							</td>
-							<td>$15.00</td>
-							<td>$75.00</td>
-							<td>$1.50</td>
-							<td>$18.75</td>
-							<td>200K</td>
-							<td>32K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>claude-opus-4-0</code>
-							</td>
-							<td>$15.00</td>
-							<td>$75.00</td>
-							<td>$1.50</td>
-							<td>$18.75</td>
-							<td>200K</td>
-							<td>32K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>claude-haiku-4-5</code>
-							</td>
-							<td>$1.00</td>
-							<td>$5.00</td>
-							<td>$0.10</td>
-							<td>$1.25</td>
-							<td>200K</td>
-							<td>64K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>claude-3-5-haiku-latest</code>
-							</td>
-							<td>$0.80</td>
-							<td>$4.00</td>
-							<td>$0.08</td>
-							<td>$1.00</td>
-							<td>200K</td>
-							<td>8K</td>
-						</tr>
-					</tbody>
+				<tbody>
+					<tr>
+						<td><code>claude-sonnet-4-6</code></td>
+						<td>$3.00</td>
+						<td>$15.00</td>
+						<td>$0.30</td>
+						<td>$3.75</td>
+						<td>200K</td>
+						<td>64K</td>
+					</tr>
+					<tr>
+						<td><code>claude-sonnet-4-5</code></td>
+						<td>$3.00</td>
+						<td>$15.00</td>
+						<td>$0.30</td>
+						<td>$3.75</td>
+						<td>200K</td>
+						<td>64K</td>
+					</tr>
+					<tr>
+						<td><code>claude-sonnet-4-5-20250929</code></td>
+						<td>$3.00</td>
+						<td>$15.00</td>
+						<td>$0.30</td>
+						<td>$3.75</td>
+						<td>200K</td>
+						<td>64K</td>
+					</tr>
+					<tr>
+						<td><code>claude-sonnet-4-0</code></td>
+						<td>$3.00</td>
+						<td>$15.00</td>
+						<td>$0.30</td>
+						<td>$3.75</td>
+						<td>200K</td>
+						<td>64K</td>
+					</tr>
+					<tr>
+						<td><code>claude-sonnet-4-20250514</code></td>
+						<td>$3.00</td>
+						<td>$15.00</td>
+						<td>$0.30</td>
+						<td>$3.75</td>
+						<td>200K</td>
+						<td>64K</td>
+					</tr>
+					<tr>
+						<td><code>claude-opus-4-6</code></td>
+						<td>$5.00</td>
+						<td>$25.00</td>
+						<td>$0.50</td>
+						<td>$6.25</td>
+						<td>200K</td>
+						<td>128K</td>
+					</tr>
+					<tr>
+						<td><code>claude-opus-4-5</code></td>
+						<td>$5.00</td>
+						<td>$25.00</td>
+						<td>$0.50</td>
+						<td>$6.25</td>
+						<td>200K</td>
+						<td>64K</td>
+					</tr>
+					<tr>
+						<td><code>claude-opus-4-5-20251101</code></td>
+						<td>$5.00</td>
+						<td>$25.00</td>
+						<td>$0.50</td>
+						<td>$6.25</td>
+						<td>200K</td>
+						<td>64K</td>
+					</tr>
+					<tr>
+						<td><code>claude-opus-4-1</code></td>
+						<td>$15.00</td>
+						<td>$75.00</td>
+						<td>$1.50</td>
+						<td>$18.75</td>
+						<td>200K</td>
+						<td>32K</td>
+					</tr>
+					<tr>
+						<td><code>claude-opus-4-1-20250805</code></td>
+						<td>$15.00</td>
+						<td>$75.00</td>
+						<td>$1.50</td>
+						<td>$18.75</td>
+						<td>200K</td>
+						<td>32K</td>
+					</tr>
+					<tr>
+						<td><code>claude-opus-4-0</code></td>
+						<td>$15.00</td>
+						<td>$75.00</td>
+						<td>$1.50</td>
+						<td>$18.75</td>
+						<td>200K</td>
+						<td>32K</td>
+					</tr>
+					<tr>
+						<td><code>claude-opus-4-20250514</code></td>
+						<td>$15.00</td>
+						<td>$75.00</td>
+						<td>$1.50</td>
+						<td>$18.75</td>
+						<td>200K</td>
+						<td>32K</td>
+					</tr>
+					<tr>
+						<td><code>claude-haiku-4-5</code></td>
+						<td>$1.00</td>
+						<td>$5.00</td>
+						<td>$0.10</td>
+						<td>$1.25</td>
+						<td>200K</td>
+						<td>64K</td>
+					</tr>
+					<tr>
+						<td><code>claude-haiku-4-5-20251001</code></td>
+						<td>$1.00</td>
+						<td>$5.00</td>
+						<td>$0.10</td>
+						<td>$1.25</td>
+						<td>200K</td>
+						<td>64K</td>
+					</tr>
+					<tr>
+						<td><code>claude-3-5-haiku-latest</code></td>
+						<td>$0.80</td>
+						<td>$4.00</td>
+						<td>$0.08</td>
+						<td>$1.00</td>
+						<td>200K</td>
+						<td>8K</td>
+					</tr>
+					<tr>
+						<td><code>claude-3-5-haiku-20241022</code></td>
+						<td>$0.80</td>
+						<td>$4.00</td>
+						<td>$0.08</td>
+						<td>$1.00</td>
+						<td>200K</td>
+						<td>8K</td>
+					</tr>
+					<tr>
+						<td><code>claude-3-5-sonnet-20241022</code></td>
+						<td>$3.00</td>
+						<td>$15.00</td>
+						<td>$0.30</td>
+						<td>$3.75</td>
+						<td>200K</td>
+						<td>8K</td>
+					</tr>
+					<tr>
+						<td><code>claude-3-5-sonnet-20240620</code></td>
+						<td>$3.00</td>
+						<td>$15.00</td>
+						<td>$0.30</td>
+						<td>$3.75</td>
+						<td>200K</td>
+						<td>8K</td>
+					</tr>
+				</tbody>
 				</table>
 			</div>
 
@@ -350,102 +489,186 @@ Setu Router (Cloudflare Worker)
 							<th>Max Output</th>
 						</tr>
 					</thead>
-					<tbody>
-						<tr>
-							<td>
-								<code>gemini-3-flash-preview</code>
-							</td>
-							<td>$0.50</td>
-							<td>$3.00</td>
-							<td>$0.05</td>
-							<td>1M</td>
-							<td>65K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>gemini-3-pro-preview</code>
-							</td>
-							<td>$2.00</td>
-							<td>$12.00</td>
-							<td>$0.20</td>
-							<td>1M</td>
-							<td>64K</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+				<tbody>
+					<tr>
+						<td><code>gemini-3.1-pro-preview</code></td>
+						<td>$2.00</td>
+						<td>$12.00</td>
+						<td>$0.20</td>
+						<td>1M</td>
+						<td>65K</td>
+					</tr>
+					<tr>
+						<td><code>gemini-3.1-pro-preview-customtools</code></td>
+						<td>$2.00</td>
+						<td>$12.00</td>
+						<td>$0.20</td>
+						<td>1M</td>
+						<td>65K</td>
+					</tr>
+					<tr>
+						<td><code>gemini-3-pro-preview</code></td>
+						<td>$2.00</td>
+						<td>$12.00</td>
+						<td>$0.20</td>
+						<td>1M</td>
+						<td>64K</td>
+					</tr>
+					<tr>
+						<td><code>gemini-3-flash-preview</code></td>
+						<td>$0.50</td>
+						<td>$3.00</td>
+						<td>$0.05</td>
+						<td>1M</td>
+						<td>65K</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 
-			<h3>Moonshot (Kimi)</h3>
-			<div className="overflow-x-auto">
-				<table>
-					<thead>
-						<tr>
-							<th>Model</th>
-							<th>Input $/1M</th>
-							<th>Output $/1M</th>
-							<th>Cache Read</th>
-							<th>Context</th>
-							<th>Max Output</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>
-								<code>kimi-k2.5</code>
-							</td>
-							<td>$0.60</td>
-							<td>$3.00</td>
-							<td>$0.10</td>
-							<td>256K</td>
-							<td>256K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>kimi-k2-thinking</code>
-							</td>
-							<td>$0.60</td>
-							<td>$2.50</td>
-							<td>$0.15</td>
-							<td>256K</td>
-							<td>256K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>kimi-k2-thinking-turbo</code>
-							</td>
-							<td>$1.15</td>
-							<td>$8.00</td>
-							<td>$0.15</td>
-							<td>256K</td>
-							<td>256K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>kimi-k2-turbo-preview</code>
-							</td>
-							<td>$2.40</td>
-							<td>$10.00</td>
-							<td>$0.60</td>
-							<td>256K</td>
-							<td>256K</td>
-						</tr>
-						<tr>
-							<td>
-								<code>kimi-k2-0905-preview</code>
-							</td>
-							<td>$0.60</td>
-							<td>$2.50</td>
-							<td>$0.15</td>
-							<td>256K</td>
-							<td>256K</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-			<p className="text-otto-dim text-xs mt-2">
-				All prices are base rates. Setu applies a 0.5% markup. Live pricing
-				available at <code>GET /v1/models</code>.
-			</p>
+		<h3>Moonshot (Kimi)</h3>
+		<div className="overflow-x-auto">
+			<table>
+				<thead>
+					<tr>
+						<th>Model</th>
+						<th>Input $/1M</th>
+						<th>Output $/1M</th>
+						<th>Cache Read</th>
+						<th>Context</th>
+						<th>Max Output</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><code>kimi-k2.5</code></td>
+						<td>$0.60</td>
+						<td>$3.00</td>
+						<td>$0.10</td>
+						<td>256K</td>
+						<td>256K</td>
+					</tr>
+					<tr>
+						<td><code>kimi-k2-thinking</code></td>
+						<td>$0.60</td>
+						<td>$2.50</td>
+						<td>$0.15</td>
+						<td>256K</td>
+						<td>256K</td>
+					</tr>
+					<tr>
+						<td><code>kimi-k2-thinking-turbo</code></td>
+						<td>$1.15</td>
+						<td>$8.00</td>
+						<td>$0.15</td>
+						<td>256K</td>
+						<td>256K</td>
+					</tr>
+					<tr>
+						<td><code>kimi-k2-turbo-preview</code></td>
+						<td>$2.40</td>
+						<td>$10.00</td>
+						<td>$0.60</td>
+						<td>256K</td>
+						<td>256K</td>
+					</tr>
+					<tr>
+						<td><code>kimi-k2-0905-preview</code></td>
+						<td>$0.60</td>
+						<td>$2.50</td>
+						<td>$0.15</td>
+						<td>256K</td>
+						<td>256K</td>
+					</tr>
+					<tr>
+						<td><code>kimi-k2-0711-preview</code></td>
+						<td>$0.60</td>
+						<td>$2.50</td>
+						<td>$0.15</td>
+						<td>128K</td>
+						<td>16K</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<h3>Zai</h3>
+		<div className="overflow-x-auto">
+			<table>
+				<thead>
+					<tr>
+						<th>Model</th>
+						<th>Input $/1M</th>
+						<th>Output $/1M</th>
+						<th>Cache Read</th>
+						<th>Context</th>
+						<th>Max Output</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><code>glm-5</code></td>
+						<td>$1.00</td>
+						<td>$3.20</td>
+						<td>$0.20</td>
+						<td>204K</td>
+						<td>131K</td>
+					</tr>
+					<tr>
+						<td><code>glm-4.7</code></td>
+						<td>$0.60</td>
+						<td>$2.20</td>
+						<td>$0.11</td>
+						<td>204K</td>
+						<td>131K</td>
+					</tr>
+					<tr>
+						<td><code>glm-4.7-flash</code></td>
+						<td>free</td>
+						<td>free</td>
+						<td>—</td>
+						<td>200K</td>
+						<td>131K</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<h3>MiniMax</h3>
+		<div className="overflow-x-auto">
+			<table>
+				<thead>
+					<tr>
+						<th>Model</th>
+						<th>Input $/1M</th>
+						<th>Output $/1M</th>
+						<th>Context</th>
+						<th>Max Output</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><code>MiniMax-M2.5</code></td>
+						<td>$0.30</td>
+						<td>$1.20</td>
+						<td>204K</td>
+						<td>131K</td>
+					</tr>
+					<tr>
+						<td><code>MiniMax-M2.1</code></td>
+						<td>$0.30</td>
+						<td>$1.20</td>
+						<td>204K</td>
+						<td>131K</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<p className="text-otto-dim text-xs mt-2">
+			All prices are base rates. Setu applies a 0.5% markup. Live pricing
+			available at <code>GET /v1/models</code>.
+		</p>
 
 			<h2>Environments</h2>
 			<div className="overflow-x-auto">

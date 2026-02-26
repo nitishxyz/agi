@@ -18,6 +18,7 @@ import { useParentSession } from '../../hooks/useBranch';
 import { useShareStatus } from '../../hooks/useShareStatus';
 import { ProviderLogo } from '../common/ProviderLogo';
 import { openUrl } from '../../lib/open-url';
+import { EditableTitle } from './EditableTitle';
 
 interface SessionHeaderProps {
 	session: Session;
@@ -127,9 +128,11 @@ export function SessionHeader({
 				)}
 
 				<div className="flex items-center gap-3">
-					<h1 className="text-2xl font-semibold text-foreground leading-tight truncate">
-						{session.title || 'Untitled Session'}
-					</h1>
+					<EditableTitle
+						sessionId={session.id}
+						title={session.title}
+						className="text-2xl font-semibold text-foreground leading-tight"
+					/>
 
 					{shareStatus?.shared && (
 						<button

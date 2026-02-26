@@ -76,6 +76,7 @@ export interface CreateSessionRequest {
 }
 
 export interface UpdateSessionRequest {
+	title?: string;
 	agent?: string;
 	provider?: string;
 	model?: string;

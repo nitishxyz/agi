@@ -11,22 +11,22 @@ const MODELS = [
 		endpoint: '/v1/responses',
 		models: [
 			{ id: 'gpt-5', label: 'GPT-5', input: 1.25, output: 10 },
+			{ id: 'gpt-5-chat-latest', label: 'GPT-5 Chat', input: 1.25, output: 10 },
+			{ id: 'gpt-5-codex', label: 'GPT-5 Codex', input: 1.25, output: 10 },
 			{ id: 'gpt-5-mini', label: 'GPT-5 Mini', input: 0.25, output: 2 },
 			{ id: 'gpt-5-nano', label: 'GPT-5 Nano', input: 0.05, output: 0.4 },
 			{ id: 'gpt-5-pro', label: 'GPT-5 Pro', input: 15, output: 120 },
-			{ id: 'gpt-5-codex', label: 'GPT-5 Codex', input: 1.25, output: 10 },
 			{ id: 'gpt-5.1', label: 'GPT-5.1', input: 1.25, output: 10 },
+			{ id: 'gpt-5.1-chat-latest', label: 'GPT-5.1 Chat', input: 1.25, output: 10 },
 			{ id: 'gpt-5.1-codex', label: 'GPT-5.1 Codex', input: 1.25, output: 10 },
-			{
-				id: 'gpt-5.1-codex-mini',
-				label: 'GPT-5.1 Codex Mini',
-				input: 0.25,
-				output: 2,
-			},
+			{ id: 'gpt-5.1-codex-max', label: 'GPT-5.1 Codex Max', input: 1.25, output: 10 },
+			{ id: 'gpt-5.1-codex-mini', label: 'GPT-5.1 Codex Mini', input: 0.25, output: 2 },
 			{ id: 'gpt-5.2', label: 'GPT-5.2', input: 1.75, output: 14 },
+			{ id: 'gpt-5.2-chat-latest', label: 'GPT-5.2 Chat', input: 1.75, output: 14 },
+			{ id: 'gpt-5.2-codex', label: 'GPT-5.2 Codex', input: 1.75, output: 14 },
 			{ id: 'gpt-5.2-pro', label: 'GPT-5.2 Pro', input: 21, output: 168 },
 			{ id: 'gpt-5.3-codex', label: 'GPT-5.3 Codex', input: 1.75, output: 14 },
-			{ id: 'codex-mini-latest', label: 'Codex Mini', input: 1.5, output: 6 },
+			{ id: 'gpt-5.3-codex-spark', label: 'GPT-5.3 Codex Spark', input: 1.75, output: 14 },
 		],
 	},
 	{
@@ -34,45 +34,24 @@ const MODELS = [
 		label: 'Anthropic',
 		endpoint: '/v1/messages',
 		models: [
-			{
-				id: 'claude-sonnet-4-5',
-				label: 'Claude Sonnet 4.5',
-				input: 3,
-				output: 15,
-			},
-			{
-				id: 'claude-sonnet-4-0',
-				label: 'Claude Sonnet 4',
-				input: 3,
-				output: 15,
-			},
+			{ id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', input: 3, output: 15 },
+			{ id: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5', input: 3, output: 15 },
+			{ id: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5 (20250929)', input: 3, output: 15 },
+			{ id: 'claude-sonnet-4-0', label: 'Claude Sonnet 4', input: 3, output: 15 },
+			{ id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (20250514)', input: 3, output: 15 },
 			{ id: 'claude-opus-4-6', label: 'Claude Opus 4.6', input: 5, output: 25 },
 			{ id: 'claude-opus-4-5', label: 'Claude Opus 4.5', input: 5, output: 25 },
-			{
-				id: 'claude-opus-4-1',
-				label: 'Claude Opus 4.1',
-				input: 15,
-				output: 75,
-			},
+			{ id: 'claude-opus-4-5-20251101', label: 'Claude Opus 4.5 (20251101)', input: 5, output: 25 },
+			{ id: 'claude-opus-4-1', label: 'Claude Opus 4.1', input: 15, output: 75 },
+			{ id: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1 (20250805)', input: 15, output: 75 },
 			{ id: 'claude-opus-4-0', label: 'Claude Opus 4', input: 15, output: 75 },
-			{
-				id: 'claude-haiku-4-5',
-				label: 'Claude Haiku 4.5',
-				input: 1,
-				output: 5,
-			},
-			{
-				id: 'claude-3-5-haiku-latest',
-				label: 'Claude Haiku 3.5',
-				input: 0.8,
-				output: 4,
-			},
-			{
-				id: 'claude-3-5-sonnet-20241022',
-				label: 'Claude Sonnet 3.5 v2',
-				input: 3,
-				output: 15,
-			},
+			{ id: 'claude-opus-4-20250514', label: 'Claude Opus 4 (20250514)', input: 15, output: 75 },
+			{ id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5', input: 1, output: 5 },
+			{ id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (20251001)', input: 1, output: 5 },
+			{ id: 'claude-3-5-haiku-latest', label: 'Claude Haiku 3.5', input: 0.8, output: 4 },
+			{ id: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (20241022)', input: 0.8, output: 4 },
+			{ id: 'claude-3-5-sonnet-20241022', label: 'Claude Sonnet 3.5 v2', input: 3, output: 15 },
+			{ id: 'claude-3-5-sonnet-20240620', label: 'Claude Sonnet 3.5', input: 3, output: 15 },
 		],
 	},
 	{
@@ -80,18 +59,10 @@ const MODELS = [
 		label: 'Google',
 		endpoint: '/v1/chat/completions',
 		models: [
-			{
-				id: 'gemini-3-pro-preview',
-				label: 'Gemini 3 Pro Preview',
-				input: 2,
-				output: 12,
-			},
-			{
-				id: 'gemini-3-flash-preview',
-				label: 'Gemini 3 Flash Preview',
-				input: 0.5,
-				output: 3,
-			},
+			{ id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview', input: 2, output: 12 },
+			{ id: 'gemini-3.1-pro-preview-customtools', label: 'Gemini 3.1 Pro Custom Tools', input: 2, output: 12 },
+			{ id: 'gemini-3-pro-preview', label: 'Gemini 3 Pro Preview', input: 2, output: 12 },
+			{ id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash Preview', input: 0.5, output: 3 },
 		],
 	},
 	{
@@ -100,30 +71,11 @@ const MODELS = [
 		endpoint: '/v1/chat/completions',
 		models: [
 			{ id: 'kimi-k2.5', label: 'Kimi K2.5', input: 0.6, output: 3 },
-			{
-				id: 'kimi-k2-thinking',
-				label: 'Kimi K2 Thinking',
-				input: 0.6,
-				output: 2.5,
-			},
-			{
-				id: 'kimi-k2-thinking-turbo',
-				label: 'Kimi K2 Thinking Turbo',
-				input: 1.15,
-				output: 8,
-			},
-			{
-				id: 'kimi-k2-turbo-preview',
-				label: 'Kimi K2 Turbo',
-				input: 2.4,
-				output: 10,
-			},
-			{
-				id: 'kimi-k2-0905-preview',
-				label: 'Kimi K2 0905',
-				input: 0.6,
-				output: 2.5,
-			},
+			{ id: 'kimi-k2-thinking', label: 'Kimi K2 Thinking', input: 0.6, output: 2.5 },
+			{ id: 'kimi-k2-thinking-turbo', label: 'Kimi K2 Thinking Turbo', input: 1.15, output: 8 },
+			{ id: 'kimi-k2-turbo-preview', label: 'Kimi K2 Turbo', input: 2.4, output: 10 },
+			{ id: 'kimi-k2-0905-preview', label: 'Kimi K2 0905', input: 0.6, output: 2.5 },
+			{ id: 'kimi-k2-0711-preview', label: 'Kimi K2 0711', input: 0.6, output: 2.5 },
 		],
 	},
 	{
@@ -675,7 +627,7 @@ function HeroMockup() {
 								))}
 							</div>
 							<span className="text-otto-dim text-[10px]">
-								33+ models · 6 providers · one wallet
+							50+ models · 6 providers · one wallet
 							</span>
 						</div>
 					</div>

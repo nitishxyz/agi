@@ -31,6 +31,7 @@ export * from './sessions/SessionItem';
 export * from './sessions/SessionListContainer';
 export * from './sessions/SessionHeader';
 export * from './sessions/LeanHeader';
+export * from './sessions/EditableTitle';
 
 // Branch Components
 export * from './branch/BranchModal';
