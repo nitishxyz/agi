@@ -128,7 +128,7 @@ export function Nav({ pathname }: { pathname: string }) {
 							{theme === 'dark' ? <SunIcon /> : <MoonIcon />}
 						</button>
 						<a
-							href="/setu"
+							href="https://setu.ottocode.io"
 							className="px-3.5 py-1.5 border border-blue-400/50 text-blue-400 text-xs font-medium rounded-sm hover:border-blue-400 transition-colors inline-flex items-center gap-1.5"
 						>
 							<SetuIcon />
@@ -211,7 +211,7 @@ export function Nav({ pathname }: { pathname: string }) {
 			{mobileOpen && (
 				<div className="md:hidden bg-otto-bg/95 backdrop-blur-md border-b border-otto-border px-6 py-4 space-y-3 text-sm">
 					<a
-						href="/setu"
+						href="https://setu.ottocode.io"
 						className="flex items-center gap-1.5 text-otto-muted hover:text-otto-text"
 					>
 						<span className="text-otto-muted">
