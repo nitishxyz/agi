@@ -5,6 +5,38 @@
 
 declare module "sst" {
   export interface Resource {
+    "Landing": {
+      "type": "sst.aws.Astro"
+      "url": string
+    }
+    "OGCache": {
+      "type": "sst.cloudflare.Kv"
+    }
+    "OGFunction": {
+      "name": string
+      "type": "sst.aws.Function"
+      "url": string
+    }
+    "OttoIo": {
+      "type": "sst.cloudflare.Worker"
+      "url": string
+    }
+    "PreviewApi": {
+      "type": "sst.cloudflare.Worker"
+      "url": string
+    }
+    "PreviewDB": {
+      "databaseId": string
+      "type": "sst.cloudflare.D1"
+    }
+    "PreviewWeb": {
+      "type": "sst.aws.Astro"
+      "url": string
+    }
+    "ShareStorage": {
+      "name": string
+      "type": "sst.cloudflare.Bucket"
+    }
   }
 }
 /// <reference path="sst-env.d.ts" />

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { OttoWordmark } from '../../components/OttoWordmark';
 import { ProviderLogo } from '../../components/ProviderLogo';
 import { Reveal } from '../../components/Reveal';
@@ -377,12 +376,12 @@ export function HeroSection() {
 								</svg>
 								Desktop App
 							</a>
-							<Link
-								to="/docs"
-								className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
-							>
-								Docs
-							</Link>
+						<a
+							href="/docs"
+							className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
+						>
+							Docs
+						</a>
 						</div>
 					</div>
 				</Reveal>

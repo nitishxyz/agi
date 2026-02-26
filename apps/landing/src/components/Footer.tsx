@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { OttoWordmark } from './OttoWordmark';
 
 export function Footer() {
@@ -13,30 +12,30 @@ export function Footer() {
 
 					<div className="flex gap-10 text-xs">
 						<div className="space-y-2">
-							<Link
-								to="/docs"
+							<a
+								href="/docs"
 								className="block text-otto-dim hover:text-otto-muted transition-colors"
 							>
 								Docs
-							</Link>
-							<Link
-								to="/docs/usage"
+							</a>
+							<a
+								href="/docs/usage"
 								className="block text-otto-dim hover:text-otto-muted transition-colors"
 							>
 								Usage
-							</Link>
-							<Link
-								to="/docs/agents-tools"
+							</a>
+							<a
+								href="/docs/agents-tools"
 								className="block text-otto-dim hover:text-otto-muted transition-colors"
 							>
 								Agents
-							</Link>
-							<Link
-								to="/docs/architecture"
+							</a>
+							<a
+								href="/docs/architecture"
 								className="block text-otto-dim hover:text-otto-muted transition-colors"
 							>
 								Architecture
-							</Link>
+							</a>
 						</div>
 						<div className="space-y-2">
 							<a

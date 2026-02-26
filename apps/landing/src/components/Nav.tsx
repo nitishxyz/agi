@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { OttoWordmark } from './OttoWordmark';
 import { useTheme } from '../hooks/useTheme';
 
@@ -59,21 +58,16 @@ function MoonIcon() {
 	);
 }
 
-export function Nav() {
+export function Nav({ pathname }: { pathname: string }) {
 	const [scrolled, setScrolled] = useState(false);
 	const [mobileOpen, setMobileOpen] = useState(false);
-	const location = useLocation();
-	const isDocs = location.pathname.startsWith('/docs');
+	const isDocs = pathname.startsWith('/docs');
 	const { theme, toggle } = useTheme();
-	const navigate = useNavigate();
 
 	const handleSectionLink = (hash: string) => (e: React.MouseEvent) => {
 		e.preventDefault();
-		if (location.pathname !== '/') {
-			navigate('/');
-			setTimeout(() => {
-				document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
-			}, 100);
+		if (pathname !== '/') {
+			window.location.href = '/#' + hash;
 		} else {
 			document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
 		}
@@ -84,11 +78,6 @@ export function Nav() {
 		window.addEventListener('scroll', onScroll);
 		return () => window.removeEventListener('scroll', onScroll);
 	}, []);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally trigger on route change
-	useEffect(() => {
-		setMobileOpen(false);
-	}, [location]);
 
 	return (
 		<nav
@@ -102,22 +91,22 @@ export function Nav() {
 		>
 			<div className="h-14 flex items-center">
 				<div className="w-64 shrink-0 hidden lg:flex items-center px-4">
-					<Link to="/" className="flex items-center gap-2 group">
+					<a href="/" className="flex items-center gap-2 group">
 						<OttoWordmark height={18} className="text-otto-text" />
-					</Link>
+					</a>
 				</div>
 				<div className="flex-1 flex items-center justify-between px-6 lg:px-8">
-					<Link to="/" className="flex items-center gap-2 group lg:hidden">
+					<a href="/" className="flex items-center gap-2 group lg:hidden">
 						<OttoWordmark height={18} className="text-otto-text" />
-					</Link>
+					</a>
 
 					<div className="hidden md:flex items-center gap-5 text-[13px] ml-auto">
-						<Link
-							to="/docs"
+						<a
+							href="/docs"
 							className="text-otto-muted hover:text-otto-text transition-colors"
 						>
 							Docs
-						</Link>
+						</a>
 						<a
 							href="https://github.com/nitishxyz/otto"
 							target="_blank"
@@ -138,13 +127,13 @@ export function Nav() {
 						>
 							{theme === 'dark' ? <SunIcon /> : <MoonIcon />}
 						</button>
-						<Link
-							to="/setu"
+						<a
+							href="/setu"
 							className="px-3.5 py-1.5 border border-blue-400/50 text-blue-400 text-xs font-medium rounded-sm hover:border-blue-400 transition-colors inline-flex items-center gap-1.5"
 						>
 							<SetuIcon />
 							Setu
-						</Link>
+						</a>
 						<button
 							type="button"
 							onClick={handleSectionLink('install')}
@@ -221,21 +210,21 @@ export function Nav() {
 
 			{mobileOpen && (
 				<div className="md:hidden bg-otto-bg/95 backdrop-blur-md border-b border-otto-border px-6 py-4 space-y-3 text-sm">
-					<Link
-						to="/setu"
+					<a
+						href="/setu"
 						className="flex items-center gap-1.5 text-otto-muted hover:text-otto-text"
 					>
 						<span className="text-otto-muted">
 							<SetuIcon />
 						</span>
 						Setu
-					</Link>
-					<Link
-						to="/docs"
+					</a>
+					<a
+						href="/docs"
 						className="block text-otto-muted hover:text-otto-text"
 					>
 						Docs
-					</Link>
+					</a>
 					<a
 						href="https://github.com/nitishxyz/otto"
 						target="_blank"

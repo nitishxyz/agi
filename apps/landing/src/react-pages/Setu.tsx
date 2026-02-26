@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+
 import { Reveal } from '../components/Reveal';
 import { TerminalBlock } from '../components/TerminalBlock';
 import { ProviderLogo } from '../components/ProviderLogo';
@@ -661,18 +661,18 @@ export function Setu() {
 								Pay for frontier models with USDC or credit card.
 							</p>
 							<div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-								<Link
-									to="/docs/setu"
+								<a
+									href="/docs/setu"
 									className="px-5 py-2.5 bg-otto-text text-otto-bg text-sm font-medium rounded-sm hover:opacity-80 transition-colors"
 								>
 									Get Started
-								</Link>
-								<Link
-									to="/docs/setu/integration"
+								</a>
+								<a
+									href="/docs/setu/integration"
 									className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
 								>
 									Integration Guide
-								</Link>
+								</a>
 							</div>
 						</div>
 					</Reveal>
@@ -1330,12 +1330,12 @@ const { text } = await generateText({
 									https://api.setu.ottocode.io
 								</code>
 							</div>
-							<Link
-								to="/docs/setu"
+							<a
+								href="/docs/setu"
 								className="shrink-0 px-5 py-2.5 text-sm font-medium bg-otto-text text-otto-bg rounded-sm hover:opacity-90 transition-opacity"
 							>
 								Full API docs →
-							</Link>
+							</a>
 						</div>
 					</Reveal>
 				</div>
@@ -1352,24 +1352,24 @@ const { text } = await generateText({
 							use.
 						</p>
 						<div className="flex flex-wrap items-center justify-center gap-3">
-							<Link
-								to="/docs/setu"
+							<a
+								href="/docs/setu"
 								className="px-5 py-2.5 bg-otto-text text-otto-bg text-sm font-medium rounded-sm hover:opacity-80 transition-colors"
 							>
 								Documentation
-							</Link>
-							<Link
-								to="/docs/setu/integration"
+							</a>
+							<a
+								href="/docs/setu/integration"
 								className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
 							>
 								Integration Guide
-							</Link>
-							<Link
-								to="/docs/setu/payments"
+							</a>
+							<a
+								href="/docs/setu/payments"
 								className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
 							>
 								Payment Details
-							</Link>
+							</a>
 						</div>
 					</Reveal>
 				</div>

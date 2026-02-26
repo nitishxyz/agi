@@ -1,0 +1,103 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import { DocsMobileNav } from '../components/DocsMobileNav';
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const { title, description } = Astro.props;
+const pathname = Astro.url.pathname;
+
+const NAV_SECTIONS = [
+	{
+		title: 'Getting Started',
+		items: [
+			{ href: '/docs', label: 'Installation & Setup', end: true },
+			{ href: '/docs/usage', label: 'Usage Guide' },
+			{ href: '/docs/configuration', label: 'Configuration' },
+		],
+	},
+	{
+		title: 'Features',
+		items: [
+			{ href: '/docs/agents-tools', label: 'Agents & Tools' },
+			{ href: '/docs/mcp', label: 'MCP Servers' },
+			{ href: '/docs/sharing', label: 'Session Sharing' },
+			{ href: '/docs/acp', label: 'ACP Integration' },
+		],
+	},
+	{
+		title: 'Architecture',
+		items: [
+			{ href: '/docs/architecture', label: 'System Architecture' },
+			{ href: '/docs/embedding', label: 'Embedding Guide' },
+			{ href: '/docs/api', label: 'API Reference' },
+		],
+	},
+	{
+		title: 'AI SDK',
+		items: [
+			{ href: '/docs/ai-sdk', label: 'Overview', end: true },
+			{ href: '/docs/ai-sdk/configuration', label: 'Configuration' },
+			{ href: '/docs/ai-sdk/caching', label: 'Caching' },
+		],
+	},
+	{
+		title: 'Setu',
+		items: [
+			{ href: '/docs/setu', label: 'Overview', end: true },
+			{ href: '/docs/setu/payments', label: 'Payments' },
+			{ href: '/docs/setu/integration', label: 'Integration Guide' },
+			{ href: '/docs/setu/openclaw', label: 'OpenClaw Plugin' },
+		],
+	},
+];
+
+function isActive(href: string, end?: boolean): boolean {
+	const clean = pathname.replace(/\/$/, '') || '/';
+	const target = href.replace(/\/$/, '') || '/';
+	if (end) return clean === target;
+	return clean === target || clean.startsWith(target + '/');
+}
+---
+
+<BaseLayout title={title} description={description} isDocs={true}>
+	<div class="pt-14 min-h-screen">
+		<aside class="w-64 shrink-0 hidden lg:flex flex-col border-r border-otto-border fixed top-14 bottom-0 left-0 overflow-y-auto">
+			<div class="flex-1 py-6 space-y-6">
+				{NAV_SECTIONS.map((section) => (
+					<div>
+						<h4 class="text-[10px] font-semibold text-otto-dim uppercase tracking-[0.15em] mb-2 px-4">
+							{section.title}
+						</h4>
+						<div class="space-y-0.5">
+							{section.items.map((item) => (
+								<a
+									href={item.href}
+									class:list={[
+										'block py-2 text-sm transition-colors truncate px-4',
+										isActive(item.href, 'end' in item ? item.end : false)
+											? 'bg-otto-card text-otto-text'
+											: 'text-otto-muted hover:text-otto-text',
+									]}
+								>
+									{item.label}
+								</a>
+							))}
+						</div>
+					</div>
+				))}
+			</div>
+		</aside>
+		<div class="lg:ml-64">
+			<main class="max-w-3xl mx-auto px-6 py-10 pb-24">
+				<DocsMobileNav client:load pathname={pathname} />
+				<div class="prose-otto">
+					<slot />
+				</div>
+			</main>
+		</div>
+	</div>
+</BaseLayout>

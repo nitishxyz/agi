@@ -1,12 +1,9 @@
 import { domains } from './domains';
 import { DEPLOYED_STAGES } from './utils';
 
-export const landing = new sst.aws.StaticSite('Landing', {
+export const landing = new sst.aws.Astro('Landing', {
 	path: 'apps/landing',
-	build: {
-		command: 'bun run build',
-		output: 'dist',
-	},
+	buildCommand: 'bun run build',
 	domain: DEPLOYED_STAGES.includes($app.stage)
 		? {
 				name: domains.landing,
