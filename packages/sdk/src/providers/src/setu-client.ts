@@ -93,7 +93,16 @@ export async function fetchSolanaUsdcBalance(
 	auth: SetuAuth,
 	network: 'mainnet' | 'devnet' = 'mainnet',
 ): Promise<SolanaUsdcBalanceResponse | null> {
-	return fetchWalletUsdcBalance(auth, network);
+	if (auth.privateKey) {
+		return fetchWalletUsdcBalance({ privateKey: auth.privateKey }, network);
+	}
+	if (auth.signer?.walletAddress) {
+		return fetchWalletUsdcBalance(
+			{ walletAddress: auth.signer.walletAddress },
+			network,
+		);
+	}
+	return null;
 }
 
 export { createSetu, type SetuInstance };

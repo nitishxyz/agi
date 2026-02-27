@@ -4,6 +4,8 @@ export type { SetuInstance, SetuProvider } from './setu.ts';
 export type {
 	SetuConfig,
 	SetuAuth,
+	ExternalSigner,
+	LegacySigner,
 	ProviderId,
 	ProviderApiFormat,
 	ProviderConfig,

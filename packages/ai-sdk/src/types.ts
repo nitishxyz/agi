@@ -1,4 +1,5 @@
 import type { LanguageModelV3Middleware } from '@ai-sdk/provider';
+import type { TransactionSigner } from '@solana/kit';
 
 export type ProviderId =
 	| 'openai'
@@ -27,8 +28,20 @@ export interface ProviderConfig {
 	modelPrefix?: string;
 }
 
+export interface LegacySigner {
+	publicKey: { toBase58(): string };
+	secretKey: Uint8Array;
+}
+
+export interface ExternalSigner {
+	walletAddress: string;
+	signNonce: (nonce: string) => Promise<string> | string;
+	signTransaction?: TransactionSigner | LegacySigner;
+}
+
 export interface SetuAuth {
 	privateKey?: string;
+	signer?: ExternalSigner;
 }
 
 export interface BalanceUpdate {

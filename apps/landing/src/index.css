@@ -111,6 +111,12 @@ body {
 	margin-top: 2rem;
 	margin-bottom: 0.75rem;
 }
+.prose-otto h4 {
+	font-size: 1rem;
+	font-weight: 600;
+	margin-top: 1.75rem;
+	margin-bottom: 0.5rem;
+}
 .prose-otto p {
 	margin-top: 0.75rem;
 	margin-bottom: 0.75rem;

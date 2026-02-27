@@ -7,8 +7,8 @@ import type {
 	ExactPaymentRequirement,
 	PaymentPayload,
 	PaymentCallbacks,
+	LegacySigner,
 } from './types.ts';
-import { buildWalletHeaders } from './auth.ts';
 
 function simplifyPaymentError(errMsg: string): string {
 	const lower = errMsg.toLowerCase();
@@ -45,13 +45,43 @@ export function pickPaymentRequirement(
 	return accepts.find((opt) => opt && opt.scheme === 'exact') ?? null;
 }
 
+function isLegacySigner(signer: unknown): signer is LegacySigner {
+	return (
+		typeof signer === 'object' &&
+		signer !== null &&
+		'secretKey' in signer &&
+		signer.secretKey instanceof Uint8Array &&
+		'publicKey' in signer &&
+		typeof (signer as LegacySigner).publicKey?.toBase58 === 'function'
+	);
+}
+
+async function resolvePaymentSigner(wallet: WalletContext) {
+	if (wallet.transactionSigner) {
+		if (isLegacySigner(wallet.transactionSigner)) {
+			const privateKeyBase58 = bs58.encode(wallet.transactionSigner.secretKey);
+			return svm.createSignerFromBase58(privateKeyBase58);
+		}
+		return wallet.transactionSigner as Exclude<
+			typeof wallet.transactionSigner,
+			LegacySigner
+		>;
+	}
+	if (wallet.keypair) {
+		const privateKeyBase58 = bs58.encode(wallet.keypair.secretKey);
+		return svm.createSignerFromBase58(privateKeyBase58);
+	}
+	throw new Error(
+		'Setu: payments require either a privateKey or signer.signTransaction.',
+	);
+}
+
 export async function createPaymentPayload(
 	requirement: ExactPaymentRequirement,
 	wallet: WalletContext,
 	rpcURL: string,
 ): Promise<PaymentPayload> {
-	const privateKeyBase58 = bs58.encode(wallet.keypair.secretKey);
-	const signer = await svm.createSignerFromBase58(privateKeyBase58);
+	const signer = await resolvePaymentSigner(wallet);
 	const header = await createPaymentHeader(
 		signer,
 		1,
@@ -102,7 +132,7 @@ export async function processSinglePayment(args: {
 		throw new Error(`Setu: ${userMsg}`);
 	}
 
-	const walletHeaders = buildWalletHeaders(args.wallet);
+	const walletHeaders = await args.wallet.buildHeaders();
 	const response = await args.baseFetch(`${args.baseURL}/v1/topup`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json', ...walletHeaders },

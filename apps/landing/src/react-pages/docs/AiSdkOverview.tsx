@@ -51,6 +51,27 @@ const { text } = await generateText({
 
 console.log(text);`}</CodeBlock>
 
+			<h2>External Signer (No Private Key)</h2>
+			<p>
+				Don't want to share your private key? Use an external signer with
+				browser wallets, hardware wallets, or any custom signing logic. Supports
+				both <code>@solana/kit</code> (v2) and <code>@solana/web3.js</code>{' '}
+				(v1).
+			</p>
+			<CodeBlock>{`const setu = createSetu({
+  auth: {
+    signer: {
+			walletAddress: "YOUR_SOLANA_PUBLIC_KEY",
+			signNonce: async (nonce) => await myWallet.signMessage(nonce),
+			signTransaction: walletAdapter, // optional, for auto-topup payments
+    },
+  },
+});`}</CodeBlock>
+			<p className="text-otto-dim text-sm">
+				See <a href="/docs/setu/integration">Integration Guide</a> for detailed
+				examples with web3.js v1, @solana/kit, and auth-only mode.
+			</p>
+
 			<h2>Provider Auto-Resolution</h2>
 			<p>
 				Models are resolved to providers by prefix — no need to specify the

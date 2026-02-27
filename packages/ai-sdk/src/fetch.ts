@@ -5,7 +5,6 @@ import type {
 	CacheOptions,
 	BalanceUpdate,
 } from './types.ts';
-import { buildWalletHeaders } from './auth.ts';
 import { pickPaymentRequirement, handlePayment } from './payment.ts';
 import { addAnthropicCacheControl } from './cache.ts';
 
@@ -205,7 +204,7 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 			}
 
 			const headers = new Headers(init?.headers);
-			const walletHeaders = buildWalletHeaders(wallet);
+			const walletHeaders = await wallet.buildHeaders();
 			headers.set('x-wallet-address', walletHeaders['x-wallet-address']);
 			headers.set('x-wallet-nonce', walletHeaders['x-wallet-nonce']);
 			headers.set('x-wallet-signature', walletHeaders['x-wallet-signature']);

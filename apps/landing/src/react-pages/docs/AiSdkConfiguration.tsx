@@ -10,8 +10,16 @@ export function AiSdkConfiguration() {
 
 			<h2>createSetu Options</h2>
 			<CodeBlock>{`const setu = createSetu({
-  // Required: Solana wallet private key (base58)
+  // Auth: private key (default) or external signer
   auth: { privateKey: "..." },
+  // OR use an external signer:
+  // auth: {
+  //   signer: {
+  //     walletAddress: "...",
+  //     signNonce: async (nonce) => "...",
+  //     signTransaction: walletAdapter, // @solana/kit or web3.js v1
+  //   },
+  // },
 
   // Optional: Setu API base URL (default: https://api.setu.ottocode.io)
   baseURL: "https://api.setu.ottocode.io",
@@ -165,8 +173,11 @@ export function AiSdkConfiguration() {
 							<td>
 								<code>SETU_PRIVATE_KEY</code>
 							</td>
-							<td>Yes</td>
-							<td>Base58-encoded Solana private key</td>
+							<td>Yes*</td>
+							<td>
+								Base58-encoded Solana private key (* not required when using
+								external signer)
+							</td>
 						</tr>
 						<tr>
 							<td>

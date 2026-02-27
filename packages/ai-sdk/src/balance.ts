@@ -1,7 +1,8 @@
 import bs58 from 'bs58';
 import { Keypair } from '@solana/web3.js';
 import type { SetuAuth, BalanceResponse, WalletUsdcBalance } from './types.ts';
-import { signNonce } from './auth.ts';
+import type { WalletContext } from './auth.ts';
+import { createWalletContext } from './auth.ts';
 
 const DEFAULT_BASE_URL = 'https://api.setu.ottocode.io';
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
@@ -12,26 +13,27 @@ function trimTrailingSlash(url: string) {
 	return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
+function isWalletContext(input: unknown): input is WalletContext {
+	return (
+		typeof input === 'object' &&
+		input !== null &&
+		'buildHeaders' in input &&
+		typeof (input as WalletContext).buildHeaders === 'function'
+	);
+}
+
 export async function fetchBalance(
-	auth: Required<SetuAuth>,
+	walletOrAuth: WalletContext | SetuAuth,
 	baseURL?: string,
 ): Promise<BalanceResponse | null> {
 	try {
-		const privateKeyBytes = bs58.decode(auth.privateKey);
-		const keypair = Keypair.fromSecretKey(privateKeyBytes);
-		const walletAddress = keypair.publicKey.toBase58();
+		const wallet = isWalletContext(walletOrAuth)
+			? walletOrAuth
+			: createWalletContext(walletOrAuth);
 		const url = trimTrailingSlash(baseURL ?? DEFAULT_BASE_URL);
+		const headers = await wallet.buildHeaders();
 
-		const nonce = Date.now().toString();
-		const signature = signNonce(nonce, privateKeyBytes);
-
-		const response = await fetch(`${url}/v1/balance`, {
-			headers: {
-				'x-wallet-address': walletAddress,
-				'x-wallet-nonce': nonce,
-				'x-wallet-signature': signature,
-			},
-		});
+		const response = await fetch(`${url}/v1/balance`, { headers });
 
 		if (!response.ok) return null;
 
@@ -59,14 +61,23 @@ export async function fetchBalance(
 	}
 }
 
+type WalletUsdcBalanceInput =
+	| Required<Pick<SetuAuth, 'privateKey'>>
+	| { walletAddress: string };
+
+function resolveWalletAddress(input: WalletUsdcBalanceInput): string {
+	if ('walletAddress' in input) return input.walletAddress;
+	const privateKeyBytes = bs58.decode(input.privateKey);
+	const keypair = Keypair.fromSecretKey(privateKeyBytes);
+	return keypair.publicKey.toBase58();
+}
+
 export async function fetchWalletUsdcBalance(
-	auth: Required<SetuAuth>,
+	input: WalletUsdcBalanceInput,
 	network: 'mainnet' | 'devnet' = 'mainnet',
 ): Promise<WalletUsdcBalance | null> {
 	try {
-		const privateKeyBytes = bs58.decode(auth.privateKey);
-		const keypair = Keypair.fromSecretKey(privateKeyBytes);
-		const walletAddress = keypair.publicKey.toBase58();
+		const walletAddress = resolveWalletAddress(input);
 		const rpcUrl =
 			network === 'devnet' ? 'https://api.devnet.solana.com' : DEFAULT_RPC_URL;
 		const usdcMint =

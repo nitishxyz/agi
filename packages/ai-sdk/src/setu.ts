@@ -5,8 +5,10 @@ import type {
 	FetchFunction,
 	BalanceResponse,
 	WalletUsdcBalance,
+	SetuAuth,
 } from './types.ts';
-import { createWalletContext, getPublicKeyFromPrivate } from './auth.ts';
+import { createWalletContext } from './auth.ts';
+import type { WalletContext } from './auth.ts';
 import { createSetuFetch } from './fetch.ts';
 import { ProviderRegistry } from './providers/registry.ts';
 import { createModel } from './providers/factory.ts';
@@ -34,16 +36,27 @@ export interface SetuInstance {
 	registry: ProviderRegistry;
 }
 
-export function createSetu(config: SetuConfig): SetuInstance {
-	const baseURL = trimTrailingSlash(config.baseURL ?? DEFAULT_BASE_URL);
-	const privateKey = config.auth.privateKey || process.env.SETU_PRIVATE_KEY;
+function resolveAuth(auth: SetuAuth): {
+	auth: SetuAuth;
+	wallet: WalletContext;
+} {
+	if (auth.signer) {
+		return { auth, wallet: createWalletContext(auth) };
+	}
+
+	const privateKey = auth.privateKey || process.env.SETU_PRIVATE_KEY;
 	if (!privateKey) {
 		throw new Error(
-			'Setu: privateKey is required. Pass it via config.auth.privateKey or set SETU_PRIVATE_KEY env variable.',
+			'Setu: either privateKey (or SETU_PRIVATE_KEY env) or signer is required.',
 		);
 	}
-	const resolvedAuth = { ...config.auth, privateKey };
-	const wallet = createWalletContext(resolvedAuth);
+	const resolvedAuth = { ...auth, privateKey };
+	return { auth: resolvedAuth, wallet: createWalletContext(resolvedAuth) };
+}
+
+export function createSetu(config: SetuConfig): SetuInstance {
+	const baseURL = trimTrailingSlash(config.baseURL ?? DEFAULT_BASE_URL);
+	const { auth: resolvedAuth, wallet } = resolveAuth(config.auth);
 	const registry = new ProviderRegistry(config.providers, config.modelMap);
 
 	const setuFetch = createSetuFetch({
@@ -100,14 +113,24 @@ export function createSetu(config: SetuConfig): SetuInstance {
 		},
 
 		async balance() {
-			return fetchBalance(resolvedAuth, baseURL);
+			return fetchBalance(wallet, baseURL);
 		},
 
 		async walletBalance(network?: 'mainnet' | 'devnet') {
-			return fetchWalletUsdcBalance(resolvedAuth, network);
+			const walletAddr = wallet.walletAddress;
+			if (!resolvedAuth.privateKey && !walletAddr) {
+				return null;
+			}
+			if (resolvedAuth.privateKey) {
+				return fetchWalletUsdcBalance(
+					resolvedAuth as Required<Pick<SetuAuth, 'privateKey'>>,
+					network,
+				);
+			}
+			return fetchWalletUsdcBalance({ walletAddress: walletAddr }, network);
 		},
 
-		walletAddress: getPublicKeyFromPrivate(resolvedAuth.privateKey),
+		walletAddress: wallet.walletAddress,
 
 		registry,
 	};
