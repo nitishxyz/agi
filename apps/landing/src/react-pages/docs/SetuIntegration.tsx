@@ -233,78 +233,53 @@ createSetu({
 
 			<h3>External Signer (No Private Key)</h3>
 			<p>
-				If you don't want to share your private key with the SDK, you can
-				provide an external signer instead. This is useful for browser wallets
-				(Phantom, Solflare), hardware wallets, or HSMs. Supports both{' '}
-				<code>@solana/kit</code> (v2) and <code>@solana/web3.js</code> (v1).
+				Instead of sharing your private key, provide callback functions for
+				signing. The SDK builds transactions and hands you raw bytes — you sign
+				them however you want. Works with any wallet, framework, or HSM.
 			</p>
 			<CodeBlock>{`import { createSetu } from "@ottocode/ai-sdk";
 import { generateText } from "ai";
 
 const setu = createSetu({
-  auth: {
-    signer: {
+	auth: {
+		signer: {
 			walletAddress: "YOUR_SOLANA_PUBLIC_KEY",
 
-			// Required: sign auth nonces (any signing method)
+			// Required: sign auth nonces
 			signNonce: async (nonce) => {
 				return await myWallet.signMessage(nonce);
 			},
 
-			// Optional: enable auto-topup payments without sharing private key
-			// Accepts @solana/kit TransactionSigner or @solana/web3.js Keypair
-			signTransaction: walletAdapter, // e.g. Phantom adapter
-    },
-  },
+			// Optional: sign payment transactions (raw bytes in, signed bytes out)
+			signTransaction: async (transaction) => {
+				return await myWallet.signTransaction(transaction);
+			},
+		},
+	},
 });
 
 const { text } = await generateText({
-  model: setu.model("claude-sonnet-4-6"),
-  prompt: "Hello!",
+	model: setu.model("claude-sonnet-4-6"),
+	prompt: "Hello!",
 });`}</CodeBlock>
 
-			<h4>With @solana/web3.js v1</h4>
-			<p>
-				Pass a <code>Keypair</code> directly as <code>signTransaction</code> —
-				the SDK detects and converts it automatically:
-			</p>
-			<CodeBlock>{`import { Keypair } from "@solana/web3.js";
-
-const keypair = Keypair.fromSecretKey(mySecretKey);
-
-const setu = createSetu({
-  auth: {
-    signer: {
-			walletAddress: keypair.publicKey.toBase58(),
-			signNonce: (nonce) => {
-				const data = new TextEncoder().encode(nonce);
-				const sig = nacl.sign.detached(data, keypair.secretKey);
-				return bs58.encode(sig);
-			},
-			signTransaction: keypair, // web3.js Keypair works directly
-    },
-  },
-});`}</CodeBlock>
-
-			<h4>With @solana/kit (v2)</h4>
-			<p>
-				Pass any <code>TransactionSigner</code> from <code>@solana/kit</code> —
-				used directly by x402 for payments:
-			</p>
-			<CodeBlock>{`import { createSignerFromBase58 } from "@solana/kit";
-
-const signer = await createSignerFromBase58(privateKeyBase58);
-
-const setu = createSetu({
-  auth: {
-    signer: {
-			walletAddress: signer.address,
+			<h4>With Phantom / Wallet Adapter</h4>
+			<CodeBlock>{`const setu = createSetu({
+	auth: {
+		signer: {
+			walletAddress: wallet.publicKey.toBase58(),
 			signNonce: async (nonce) => {
-				// your nonce signing logic
+				const encoded = new TextEncoder().encode(nonce);
+				const { signature } = await wallet.signMessage(encoded);
+				return bs58.encode(signature);
 			},
-			signTransaction: signer, // kit TransactionSigner works directly
-    },
-  },
+			signTransaction: async (txBytes) => {
+				const tx = Transaction.from(txBytes);
+				const signed = await wallet.signTransaction(tx);
+				return signed.serialize();
+			},
+		},
+	},
 });`}</CodeBlock>
 
 			<h4>Auth-Only (No Payments)</h4>
@@ -314,15 +289,14 @@ const setu = createSetu({
 				if attempted:
 			</p>
 			<CodeBlock>{`const setu = createSetu({
-  auth: {
-    signer: {
+	auth: {
+		signer: {
 			walletAddress: "YOUR_SOLANA_PUBLIC_KEY",
 			signNonce: async (nonce) => {
 				return await myWallet.signMessage(nonce);
 			},
-			// No signTransaction — payments will throw a clear error
-    },
-  },
+		},
+	},
 });`}</CodeBlock>
 
 			<h3>Payment Callbacks</h3>

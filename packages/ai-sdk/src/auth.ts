@@ -1,15 +1,14 @@
 import { Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
-import type { SetuAuth, LegacySigner } from './types.ts';
-import type { TransactionSigner } from '@solana/kit';
+import type { SetuAuth } from './types.ts';
 
 export interface WalletContext {
 	walletAddress: string;
 	buildHeaders: () => Promise<Record<string, string>> | Record<string, string>;
 	keypair?: Keypair;
 	privateKeyBytes?: Uint8Array;
-	transactionSigner?: TransactionSigner | LegacySigner;
+	signTransaction?: (transaction: Uint8Array) => Promise<Uint8Array>;
 }
 
 export function createWalletContext(auth: SetuAuth): WalletContext {
@@ -21,7 +20,7 @@ export function createWalletContext(auth: SetuAuth): WalletContext {
 		} = auth.signer;
 		return {
 			walletAddress,
-			transactionSigner: signTransaction,
+			signTransaction,
 			buildHeaders: async () => {
 				const nonce = Date.now().toString();
 				const signature = await customSignNonce(nonce);

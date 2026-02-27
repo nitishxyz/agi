@@ -17,7 +17,7 @@ export function AiSdkConfiguration() {
   //   signer: {
   //     walletAddress: "...",
   //     signNonce: async (nonce) => "...",
-  //     signTransaction: walletAdapter, // @solana/kit or web3.js v1
+  //     signTransaction: async (tx) => signedTx, // raw bytes callback
   //   },
   // },
 

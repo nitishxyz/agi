@@ -5,7 +5,6 @@ export type {
 	SetuConfig,
 	SetuAuth,
 	ExternalSigner,
-	LegacySigner,
 	ProviderId,
 	ProviderApiFormat,
 	ProviderConfig,

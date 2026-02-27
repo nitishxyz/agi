@@ -7,8 +7,15 @@ import type {
 	ExactPaymentRequirement,
 	PaymentPayload,
 	PaymentCallbacks,
-	LegacySigner,
 } from './types.ts';
+import {
+	address,
+	getTransactionEncoder,
+	getTransactionDecoder,
+	type Transaction,
+	type TransactionWithLifetime,
+	type TransactionWithinSizeLimit,
+} from '@solana/kit';
 
 function simplifyPaymentError(errMsg: string): string {
 	const lower = errMsg.toLowerCase();
@@ -45,27 +52,43 @@ export function pickPaymentRequirement(
 	return accepts.find((opt) => opt && opt.scheme === 'exact') ?? null;
 }
 
-function isLegacySigner(signer: unknown): signer is LegacySigner {
-	return (
-		typeof signer === 'object' &&
-		signer !== null &&
-		'secretKey' in signer &&
-		signer.secretKey instanceof Uint8Array &&
-		'publicKey' in signer &&
-		typeof (signer as LegacySigner).publicKey?.toBase58 === 'function'
-	);
+function wrapCallbackAsSigner(
+	walletAddress: string,
+	callback: (transaction: Uint8Array) => Promise<Uint8Array>,
+) {
+	const encoder = getTransactionEncoder();
+	const decoder = getTransactionDecoder();
+	return {
+		address: address(walletAddress),
+		modifyAndSignTransactions: async (
+			transactions: readonly (
+				| Transaction
+				| (Transaction & TransactionWithLifetime)
+			)[],
+		): Promise<
+			readonly (Transaction &
+				TransactionWithinSizeLimit &
+				TransactionWithLifetime)[]
+		> => {
+			const results = [];
+			for (const tx of transactions) {
+				const bytes = new Uint8Array(encoder.encode(tx));
+				const signedBytes = await callback(bytes);
+				const signed = decoder.decode(signedBytes);
+				results.push(
+					signed as Transaction &
+						TransactionWithinSizeLimit &
+						TransactionWithLifetime,
+				);
+			}
+			return results;
+		},
+	};
 }
 
 async function resolvePaymentSigner(wallet: WalletContext) {
-	if (wallet.transactionSigner) {
-		if (isLegacySigner(wallet.transactionSigner)) {
-			const privateKeyBase58 = bs58.encode(wallet.transactionSigner.secretKey);
-			return svm.createSignerFromBase58(privateKeyBase58);
-		}
-		return wallet.transactionSigner as Exclude<
-			typeof wallet.transactionSigner,
-			LegacySigner
-		>;
+	if (wallet.signTransaction) {
+		return wrapCallbackAsSigner(wallet.walletAddress, wallet.signTransaction);
 	}
 	if (wallet.keypair) {
 		const privateKeyBase58 = bs58.encode(wallet.keypair.secretKey);

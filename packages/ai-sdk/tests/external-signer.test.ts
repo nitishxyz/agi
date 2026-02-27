@@ -16,7 +16,7 @@ describe('createWalletContext', () => {
 		expect(ctx.walletAddress).toBe(keypair.publicKey.toBase58());
 		expect(ctx.keypair).toBeDefined();
 		expect(ctx.privateKeyBytes).toBeDefined();
-		expect(ctx.transactionSigner).toBeUndefined();
+		expect(ctx.signTransaction).toBeUndefined();
 
 		const headers = ctx.buildHeaders() as Record<string, string>;
 		expect(headers['x-wallet-address']).toBe(keypair.publicKey.toBase58());
@@ -41,7 +41,7 @@ describe('createWalletContext', () => {
 		expect(ctx.walletAddress).toBe(walletAddress);
 		expect(ctx.keypair).toBeUndefined();
 		expect(ctx.privateKeyBytes).toBeUndefined();
-		expect(ctx.transactionSigner).toBeUndefined();
+		expect(ctx.signTransaction).toBeUndefined();
 
 		const headers = await ctx.buildHeaders();
 		expect(headers['x-wallet-address']).toBe(walletAddress);
@@ -49,18 +49,19 @@ describe('createWalletContext', () => {
 		expect(headers['x-wallet-signature']).toBeDefined();
 	});
 
-	test('external signer with signTransaction passes through', () => {
+	test('external signer with signTransaction callback passes through', () => {
 		const walletAddress = keypair.publicKey.toBase58();
+		const mockSign = async (tx: Uint8Array) => tx;
 		const auth: SetuAuth = {
 			signer: {
 				walletAddress,
 				signNonce: () => 'test-sig',
-				signTransaction: keypair,
+				signTransaction: mockSign,
 			},
 		};
 		const ctx = createWalletContext(auth);
 
-		expect(ctx.transactionSigner).toBe(keypair);
+		expect(ctx.signTransaction).toBe(mockSign);
 	});
 
 	test('external signer with async signNonce', async () => {
