@@ -91,6 +91,7 @@ export interface PaymentOptions {
 export interface SetuConfig {
 	auth: SetuAuth;
 	baseURL?: string;
+	fetch?: FetchFunction;
 	rpcURL?: string;
 	providers?: ProviderConfig[];
 	modelMap?: Record<string, ProviderId>;

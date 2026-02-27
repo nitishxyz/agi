@@ -62,6 +62,7 @@ export function createSetu(config: SetuConfig): SetuInstance {
 	const setuFetch = createSetuFetch({
 		wallet,
 		baseURL,
+		fetch: config.fetch,
 		rpcURL: config.rpcURL,
 		callbacks: config.callbacks,
 		cache: config.cache,

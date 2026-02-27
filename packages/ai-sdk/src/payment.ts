@@ -7,6 +7,7 @@ import type {
 	ExactPaymentRequirement,
 	PaymentPayload,
 	PaymentCallbacks,
+	FetchFunction,
 } from './types.ts';
 import {
 	address,
@@ -136,7 +137,7 @@ export async function processSinglePayment(args: {
 	wallet: WalletContext;
 	rpcURL: string;
 	baseURL: string;
-	baseFetch: typeof fetch;
+	baseFetch: FetchFunction;
 	callbacks: PaymentCallbacks;
 }): Promise<{ attempts: number; balance?: number | string }> {
 	args.callbacks.onPaymentSigning?.();
@@ -208,7 +209,7 @@ export async function handlePayment(args: {
 	wallet: WalletContext;
 	rpcURL: string;
 	baseURL: string;
-	baseFetch: typeof fetch;
+	baseFetch: FetchFunction;
 	maxAttempts: number;
 	callbacks: PaymentCallbacks;
 }): Promise<{ attemptsUsed: number }> {

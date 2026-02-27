@@ -4,6 +4,7 @@ import type {
 	PaymentOptions,
 	CacheOptions,
 	BalanceUpdate,
+	FetchFunction,
 } from './types.ts';
 import { pickPaymentRequirement, handlePayment } from './payment.ts';
 import { addAnthropicCacheControl } from './cache.ts';
@@ -80,34 +81,41 @@ function wrapResponseWithBalanceSniffing(
 	}
 
 	if (!response.body) return response;
+	if (typeof TransformStream === 'undefined') return response;
+	if (typeof response.body.pipeThrough !== 'function') return response;
 
 	const onBalanceUpdate = callbacks.onBalanceUpdate;
 	let partial = '';
 	const decoder = new TextDecoder();
-	const transform = new TransformStream<Uint8Array, Uint8Array>({
-		transform(chunk, controller) {
-			controller.enqueue(chunk);
-			partial += decoder.decode(chunk, { stream: true });
-			let nlIndex = partial.indexOf('\n');
-			while (nlIndex !== -1) {
-				const line = partial.slice(0, nlIndex);
-				partial = partial.slice(nlIndex + 1);
-				tryParseSetuComment(line, onBalanceUpdate);
-				nlIndex = partial.indexOf('\n');
-			}
-		},
-		flush() {
-			if (partial.trim()) {
-				tryParseSetuComment(partial, onBalanceUpdate);
-			}
-		},
-	});
 
-	return new Response(response.body.pipeThrough(transform), {
-		status: response.status,
-		statusText: response.statusText,
-		headers: response.headers,
-	});
+	try {
+		const transform = new TransformStream<Uint8Array, Uint8Array>({
+			transform(chunk, controller) {
+				controller.enqueue(chunk);
+				partial += decoder.decode(chunk, { stream: true });
+				let nlIndex = partial.indexOf('\n');
+				while (nlIndex !== -1) {
+					const line = partial.slice(0, nlIndex);
+					partial = partial.slice(nlIndex + 1);
+					tryParseSetuComment(line, onBalanceUpdate);
+					nlIndex = partial.indexOf('\n');
+				}
+			},
+			flush() {
+				if (partial.trim()) {
+					tryParseSetuComment(partial, onBalanceUpdate);
+				}
+			},
+		});
+
+		return new Response(response.body.pipeThrough(transform), {
+			status: response.status,
+			statusText: response.statusText,
+			headers: response.headers,
+		});
+	} catch {
+		return response;
+	}
 }
 
 async function getWalletUsdcBalance(
@@ -154,6 +162,7 @@ async function getWalletUsdcBalance(
 export interface CreateSetuFetchOptions {
 	wallet: WalletContext;
 	baseURL: string;
+	fetch?: FetchFunction;
 	rpcURL?: string;
 	callbacks?: PaymentCallbacks;
 	cache?: CacheOptions;
@@ -164,6 +173,7 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 	const {
 		wallet,
 		baseURL,
+		fetch: customFetch,
 		rpcURL = DEFAULT_RPC_URL,
 		callbacks = {},
 		cache,
@@ -175,7 +185,7 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 		payment?.maxPaymentAttempts ?? DEFAULT_MAX_PAYMENT_ATTEMPTS;
 	const topupApprovalMode = payment?.topupApprovalMode ?? 'auto';
 	const autoPayThresholdUsd = payment?.autoPayThresholdUsd ?? 0;
-	const baseFetch = globalThis.fetch.bind(globalThis);
+	const baseFetch = customFetch ?? globalThis.fetch.bind(globalThis);
 
 	return async (
 		input: Parameters<typeof fetch>[0],
