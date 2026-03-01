@@ -71,7 +71,17 @@ function getPartCategory(part: MessagePart): string {
 	return part.type;
 }
 
-function PartRenderer({ part, isActive, isLastTool, prevType }: { part: MessagePart; isActive: boolean; isLastTool: boolean; prevType: string | null }) {
+function PartRenderer({
+	part,
+	isActive,
+	isLastTool,
+	prevType,
+}: {
+	part: MessagePart;
+	isActive: boolean;
+	isLastTool: boolean;
+	prevType: string | null;
+}) {
 	const { colors, syntaxStyle } = useTheme();
 	const category = getPartCategory(part);
 	const needsTopGap = prevType === null || prevType !== category;
@@ -95,12 +105,40 @@ function PartRenderer({ part, isActive, isLastTool, prevType }: { part: MessageP
 	if (part.type === 'reasoning') {
 		const text = extractText(part);
 		if (!text.trim()) return null;
+		const isThinking = isActive && !part.completedAt;
+		const lines = text.split('\n').filter((l) => l.trim());
+		let display: string;
+		if (isThinking) {
+			const tail = lines.slice(-5);
+			display = (lines.length > 5 ? '…\n' : '') + tail.join('\n');
+		} else {
+			const preview = lines[0] ?? '';
+			display =
+				lines.length > 1
+					? `${preview.length > 120 ? `${preview.slice(0, 117)}…` : preview} (+${lines.length - 1} lines)`
+					: preview.length > 200
+						? `${preview.slice(0, 197)}…`
+						: preview;
+		}
 		return (
-			<box style={{ flexDirection: 'row', gap: 1, paddingLeft: 1, marginTop: needsTopGap ? 1 : 0 }}>
-				<text fg={colors.fgDark}>~</text>
-				<text fg={colors.fgDark}>
-					<i>{text.length > 200 ? `${text.slice(0, 197)}…` : text}</i>
-				</text>
+			<box
+				style={{
+					flexDirection: 'column',
+					paddingLeft: 1,
+					marginTop: needsTopGap ? 1 : 0,
+				}}
+			>
+				<box style={{ flexDirection: 'row', gap: 1 }}>
+					<text fg={colors.fgDark}>~</text>
+					<text fg={colors.fgDark}>
+						<i>{isThinking ? 'thinking…' : 'thought'}</i>
+					</text>
+				</box>
+				<box style={{ paddingLeft: 2 }}>
+					<text fg={colors.fgDark}>
+						<i>{display}</i>
+					</text>
+				</box>
 			</box>
 		);
 	}
@@ -108,7 +146,9 @@ function PartRenderer({ part, isActive, isLastTool, prevType }: { part: MessageP
 	if (isToolPart(part)) {
 		const toolName = part.toolName || '';
 		if (SKIP_TOOLS.has(toolName)) return null;
-		return <ToolCallItem part={part} isLast={isLastTool} isFirst={needsTopGap} />;
+		return (
+			<ToolCallItem part={part} isLast={isLastTool} isFirst={needsTopGap} />
+		);
 	}
 
 	if (part.type === 'error') {
@@ -123,7 +163,15 @@ function PartRenderer({ part, isActive, isLastTool, prevType }: { part: MessageP
 	return null;
 }
 
-function UserMessage({ message, isQueued, isFirstMessage }: { message: Message; isQueued?: boolean; isFirstMessage: boolean }) {
+function UserMessage({
+	message,
+	isQueued,
+	isFirstMessage,
+}: {
+	message: Message;
+	isQueued?: boolean;
+	isFirstMessage: boolean;
+}) {
 	const { colors } = useTheme();
 	const parts = useMemo(() => getSortedParts(message), [message.parts]);
 	const content = useMemo(() => {
@@ -133,16 +181,35 @@ function UserMessage({ message, isQueued, isFirstMessage }: { message: Message; 
 			.join('');
 	}, [parts]);
 
+	const attachmentNames = useMemo(() => {
+		const names: string[] = [];
+		for (const p of parts) {
+			if (p.type === 'image' || p.type === 'file') {
+				const cj = p.contentJson as Record<string, unknown> | undefined;
+				const name = typeof cj?.name === 'string' ? cj.name : null;
+				if (name) {
+					names.push(name);
+				} else if (p.type === 'image') {
+					names.push('image');
+				}
+			}
+		}
+		if (message.attachmentNames?.length && names.length === 0) {
+			return message.attachmentNames;
+		}
+		return names;
+	}, [parts, message.attachmentNames]);
+
 	return (
 		<box
 			style={{
-			flexDirection: 'column',
-			width: '100%',
-			backgroundColor: isQueued ? colors.bgHighlight : colors.userBg,
-			paddingLeft: 1,
-			paddingRight: 1,
-			paddingTop: 1,
-			paddingBottom: 1,
+				flexDirection: 'column',
+				width: '100%',
+				backgroundColor: isQueued ? colors.bgHighlight : colors.userBg,
+				paddingLeft: 1,
+				paddingRight: 1,
+				paddingTop: 1,
+				paddingBottom: 1,
 			}}
 		>
 			<box style={{ flexDirection: 'row', gap: 1 }}>
@@ -152,13 +219,29 @@ function UserMessage({ message, isQueued, isFirstMessage }: { message: Message; 
 				{message.createdAt > 0 && (
 					<text fg={colors.fgDimmed}>{formatTime(message.createdAt)}</text>
 				)}
-			{isQueued && (
-				<text fg={colors.yellow}>queued</text>
-			)}
+				{isQueued && <text fg={colors.yellow}>queued</text>}
 			</box>
-		<text fg={isQueued ? colors.fgDark : colors.fgBright}>{content}</text>
-	</box>
-);
+			{attachmentNames.length > 0 && (
+				<box style={{ flexDirection: 'row', gap: 1 }}>
+					{attachmentNames.map((name) => (
+						<box
+							key={name}
+							style={{
+								backgroundColor: colors.yellow,
+								paddingLeft: 1,
+								paddingRight: 1,
+							}}
+						>
+							<text fg={colors.bgDark}>{name}</text>
+						</box>
+					))}
+				</box>
+			)}
+			{content ? (
+				<text fg={isQueued ? colors.fgDark : colors.fgBright}>{content}</text>
+			) : null}
+		</box>
+	);
 }
 
 function deduplicateToolParts(parts: MessagePart[]): MessagePart[] {
@@ -169,14 +252,20 @@ function deduplicateToolParts(parts: MessagePart[]): MessagePart[] {
 		}
 	}
 	return parts.filter((p) => {
-		if (p.type === 'tool_call' && p.toolCallId && resultCallIds.has(p.toolCallId)) {
+		if (
+			p.type === 'tool_call' &&
+			p.toolCallId &&
+			resultCallIds.has(p.toolCallId)
+		) {
 			return false;
 		}
 		return true;
 	});
 }
 
-function extractProgressInfo(part: MessagePart): { message: string; stage?: string; pct?: number } | null {
+function extractProgressInfo(
+	part: MessagePart,
+): { message: string; stage?: string; pct?: number } | null {
 	const cj = part.contentJson as Record<string, unknown> | undefined;
 	if (!cj) return null;
 	const candidates = [
@@ -200,11 +289,18 @@ function extractProgressInfo(part: MessagePart): { message: string; stage?: stri
 
 const SHIMMER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
-function StreamingIndicator({ progressPart }: { progressPart: MessagePart | null }) {
+function StreamingIndicator({
+	progressPart,
+}: {
+	progressPart: MessagePart | null;
+}) {
 	const { colors } = useTheme();
 	const [frame, setFrame] = useState(0);
 	useEffect(() => {
-		const id = setInterval(() => setFrame((f) => (f + 1) % SHIMMER_FRAMES.length), 80);
+		const id = setInterval(
+			() => setFrame((f) => (f + 1) % SHIMMER_FRAMES.length),
+			80,
+		);
 		return () => clearInterval(id);
 	}, []);
 
@@ -213,12 +309,16 @@ function StreamingIndicator({ progressPart }: { progressPart: MessagePart | null
 	if (progressPart) {
 		const info = extractProgressInfo(progressPart);
 		if (info) {
-		return (
-			<box style={{ flexDirection: 'row', height: 1, marginTop: 1 }}>
+			return (
+				<box style={{ flexDirection: 'row', height: 1, marginTop: 1 }}>
 					<text fg={colors.purple}>{spinner}</text>
-					<text fg={colors.fgDark}>{info.stage ? ` [${info.stage}] ` : ' '}</text>
+					<text fg={colors.fgDark}>
+						{info.stage ? ` [${info.stage}] ` : ' '}
+					</text>
 					<text fg={colors.purple}>{info.message}</text>
-					{info.pct !== undefined && <text fg={colors.fgDark}>  {info.pct}%</text>}
+					{info.pct !== undefined && (
+						<text fg={colors.fgDark}> {info.pct}%</text>
+					)}
 				</box>
 			);
 		}
@@ -232,10 +332,21 @@ function StreamingIndicator({ progressPart }: { progressPart: MessagePart | null
 	);
 }
 
-function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage, pendingApprovals, onApprove, onDeny }: MessageItemProps) {
+function AssistantMessage({
+	message,
+	isStreaming,
+	isQueued,
+	isFirstMessage,
+	pendingApprovals,
+	onApprove,
+	onDeny,
+}: MessageItemProps) {
 	const { colors } = useTheme();
 	const sortedParts = useMemo(() => getSortedParts(message), [message.parts]);
-	const dedupedParts = useMemo(() => deduplicateToolParts(sortedParts), [sortedParts]);
+	const dedupedParts = useMemo(
+		() => deduplicateToolParts(sortedParts),
+		[sortedParts],
+	);
 	const isActive = isStreaming && message.status !== 'complete';
 	const hasError = message.status === 'error';
 	const hasFinish = sortedParts.some((p) => p.toolName === 'finish');
@@ -243,18 +354,29 @@ function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage, pend
 	const latestProgressPart = useMemo(() => {
 		for (let i = sortedParts.length - 1; i >= 0; i--) {
 			const p = sortedParts[i];
-			if ((p.type === 'tool_result' || p.type === 'tool_call') && p.toolName === 'progress_update') {
+			if (
+				(p.type === 'tool_result' || p.type === 'tool_call') &&
+				p.toolName === 'progress_update'
+			) {
 				return p;
 			}
 		}
 		return null;
 	}, [sortedParts]);
 
-	const toolParts = dedupedParts.filter((p) => isToolPart(p) && !SKIP_TOOLS.has(p.toolName || ''));
-	const lastToolIdx = toolParts.length > 0 ? dedupedParts.lastIndexOf(toolParts[toolParts.length - 1]) : -1;
+	const toolParts = dedupedParts.filter(
+		(p) => isToolPart(p) && !SKIP_TOOLS.has(p.toolName || ''),
+	);
+	const lastToolIdx =
+		toolParts.length > 0
+			? dedupedParts.lastIndexOf(toolParts[toolParts.length - 1])
+			: -1;
 
 	const hasAnyContent = dedupedParts.some(
-		(p) => (p.type === 'text' && extractText(p).trim()) || isToolPart(p) || p.type === 'reasoning',
+		(p) =>
+			(p.type === 'text' && extractText(p).trim()) ||
+			isToolPart(p) ||
+			p.type === 'reasoning',
 	);
 
 	const messageApprovals = useMemo(() => {
@@ -267,13 +389,13 @@ function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage, pend
 	return (
 		<box
 			style={{
-			flexDirection: 'column',
-			width: '100%',
-			backgroundColor: colors.assistantBg,
-			paddingLeft: 1,
-			paddingRight: 1,
-			paddingTop: 1,
-			paddingBottom: 1,
+				flexDirection: 'column',
+				width: '100%',
+				backgroundColor: colors.assistantBg,
+				paddingLeft: 1,
+				paddingRight: 1,
+				paddingTop: 1,
+				paddingBottom: 1,
 			}}
 		>
 			<box style={{ flexDirection: 'row', gap: 1 }}>
@@ -289,14 +411,16 @@ function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage, pend
 				{message.totalTokens && message.status === 'complete' && (
 					<text fg={colors.fgDimmed}>{message.totalTokens}tok</text>
 				)}
-		</box>
+			</box>
 
-		{dedupedParts.map((part, i) => {
+			{dedupedParts.map((part, i) => {
 				const prev = i > 0 ? dedupedParts[i - 1] : null;
 				const prevCat = prev ? getPartCategory(prev) : null;
-				const approval = isToolPart(part) && part.toolCallId
-					? messageApprovals.find((a) => a.callId === part.toolCallId) ?? null
-					: null;
+				const approval =
+					isToolPart(part) && part.toolCallId
+						? (messageApprovals.find((a) => a.callId === part.toolCallId) ??
+							null)
+						: null;
 				return (
 					<box key={part.id} style={{ flexDirection: 'column', width: '100%' }}>
 						<PartRenderer
@@ -316,23 +440,49 @@ function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage, pend
 				);
 			})}
 
-		{showStreamingIndicator && (
-			<StreamingIndicator progressPart={latestProgressPart} />
-		)}
+			{showStreamingIndicator && (
+				<StreamingIndicator progressPart={latestProgressPart} />
+			)}
 
-		{hasError && !sortedParts.some((p) => p.type === 'error') && (
-			<text fg={colors.red}>{formatError(message.error) || 'Unknown error'}</text>
+			{hasError && !sortedParts.some((p) => p.type === 'error') && (
+				<text fg={colors.red}>
+					{formatError(message.error) || 'Unknown error'}
+				</text>
 			)}
 		</box>
 	);
 }
 
-export function MessageItem({ message, isStreaming, isQueued, isFirstMessage, pendingApprovals, onApprove, onDeny }: MessageItemProps) {
+export function MessageItem({
+	message,
+	isStreaming,
+	isQueued,
+	isFirstMessage,
+	pendingApprovals,
+	onApprove,
+	onDeny,
+}: MessageItemProps) {
 	if (message.role === 'user') {
-		return <UserMessage message={message} isQueued={isQueued} isFirstMessage={isFirstMessage} />;
+		return (
+			<UserMessage
+				message={message}
+				isQueued={isQueued}
+				isFirstMessage={isFirstMessage}
+			/>
+		);
 	}
 	if (message.role === 'assistant') {
-		return <AssistantMessage message={message} isStreaming={isStreaming} isQueued={isQueued} isFirstMessage={isFirstMessage} pendingApprovals={pendingApprovals} onApprove={onApprove} onDeny={onDeny} />;
+		return (
+			<AssistantMessage
+				message={message}
+				isStreaming={isStreaming}
+				isQueued={isQueued}
+				isFirstMessage={isFirstMessage}
+				pendingApprovals={pendingApprovals}
+				onApprove={onApprove}
+				onDeny={onDeny}
+			/>
+		);
 	}
 	return null;
 }

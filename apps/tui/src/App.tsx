@@ -30,11 +30,19 @@ async function copyToClipboard(text: string): Promise<void> {
 			: process.platform === 'win32'
 				? 'clip'
 				: 'xclip -selection clipboard';
-	const proc = Bun.spawn(['sh', '-c', `printf '%s' ${JSON.stringify(text)} | ${cmd}`]);
+	const proc = Bun.spawn([
+		'sh',
+		'-c',
+		`printf '%s' ${JSON.stringify(text)} | ${cmd}`,
+	]);
 	await proc.exited;
 }
 
-export type StatusIndicator = { type: 'idle' } | { type: 'loading'; label: string } | { type: 'success'; label: string } | { type: 'error'; label: string };
+export type StatusIndicator =
+	| { type: 'idle' }
+	| { type: 'loading'; label: string }
+	| { type: 'success'; label: string }
+	| { type: 'error'; label: string };
 
 export function App({ onQuit }: { onQuit: () => void }) {
 	const { colors, setTheme, themeName } = useTheme();
@@ -46,11 +54,19 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
 		setStatus(s);
 		if (autoClearMs) {
-			statusTimerRef.current = setTimeout(() => setStatus({ type: 'idle' }), autoClearMs);
+			statusTimerRef.current = setTimeout(
+				() => setStatus({ type: 'idle' }),
+				autoClearMs,
+			);
 		}
 	}, []);
 
-	useEffect(() => () => { if (statusTimerRef.current) clearTimeout(statusTimerRef.current); }, []);
+	useEffect(
+		() => () => {
+			if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+		},
+		[],
+	);
 
 	const {
 		sessions,
@@ -146,7 +162,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 					}
 					break;
 				case 'reasoning':
-				await updateDefaults({ reasoningText: !(config.defaults.reasoningText ?? true) });
+					await updateDefaults({
+						reasoningText: !(config.defaults.reasoningText ?? true),
+					});
 					break;
 				case 'stage':
 					try {
@@ -183,48 +201,48 @@ export function App({ onQuit }: { onQuit: () => void }) {
 						} catch {}
 					}
 					break;
-			case 'share':
-				if (activeSession) {
-					showStatus({ type: 'loading', label: 'sharing…' });
-					try {
-						const shareResponse = await shareSession({
-							path: { sessionId: activeSession.id },
-						});
-						// biome-ignore lint/suspicious/noExplicitAny: SDK response structure
-						const shareData = shareResponse.data as any;
-						const shareUrl = shareData?.url;
-						if (shareUrl) {
-							await copyToClipboard(shareUrl);
-							showStatus({ type: 'success', label: 'url copied' }, 3000);
-						} else {
+				case 'share':
+					if (activeSession) {
+						showStatus({ type: 'loading', label: 'sharing…' });
+						try {
+							const shareResponse = await shareSession({
+								path: { sessionId: activeSession.id },
+							});
+							// biome-ignore lint/suspicious/noExplicitAny: SDK response structure
+							const shareData = shareResponse.data as any;
+							const shareUrl = shareData?.url;
+							if (shareUrl) {
+								await copyToClipboard(shareUrl);
+								showStatus({ type: 'success', label: 'url copied' }, 3000);
+							} else {
+								showStatus({ type: 'error', label: 'share failed' }, 3000);
+							}
+						} catch {
 							showStatus({ type: 'error', label: 'share failed' }, 3000);
 						}
-					} catch {
-						showStatus({ type: 'error', label: 'share failed' }, 3000);
 					}
-				}
-				break;
-			case 'sync':
-				if (activeSession) {
-					showStatus({ type: 'loading', label: 'syncing…' });
-					try {
-						const syncResponse = await syncShare({
-							path: { sessionId: activeSession.id },
-						});
-						// biome-ignore lint/suspicious/noExplicitAny: SDK response structure
-						const syncData = syncResponse.data as any;
-						const syncUrl = syncData?.url;
-						if (syncUrl) {
-							await copyToClipboard(syncUrl);
-							showStatus({ type: 'success', label: 'synced & copied' }, 3000);
-						} else {
+					break;
+				case 'sync':
+					if (activeSession) {
+						showStatus({ type: 'loading', label: 'syncing…' });
+						try {
+							const syncResponse = await syncShare({
+								path: { sessionId: activeSession.id },
+							});
+							// biome-ignore lint/suspicious/noExplicitAny: SDK response structure
+							const syncData = syncResponse.data as any;
+							const syncUrl = syncData?.url;
+							if (syncUrl) {
+								await copyToClipboard(syncUrl);
+								showStatus({ type: 'success', label: 'synced & copied' }, 3000);
+							} else {
+								showStatus({ type: 'error', label: 'sync failed' }, 3000);
+							}
+						} catch {
 							showStatus({ type: 'error', label: 'sync failed' }, 3000);
 						}
-					} catch {
-						showStatus({ type: 'error', label: 'sync failed' }, 3000);
 					}
-				}
-				break;
+					break;
 			}
 		},
 		[
@@ -244,25 +262,40 @@ export function App({ onQuit }: { onQuit: () => void }) {
 	);
 
 	const handleSubmit = useCallback(
-		async (text: string) => {
+		async (text: string, images?: unknown[], files?: unknown[]) => {
 			const cmd = parseCommand(text);
 			if (cmd) {
 				await handleCommand(cmd.name, cmd.args);
 				return;
 			}
 
+			const attachmentNames = [
+				...((images as { name?: string }[]) ?? [])
+					.map((i) => i.name)
+					.filter(Boolean),
+				...((files as { name?: string }[]) ?? [])
+					.map((f) => f.name)
+					.filter(Boolean),
+			] as string[];
+
 			if (!activeSession) {
 				const session = await createSession();
 				if (session) {
-					addOptimisticUser(text);
+					addOptimisticUser(
+						text,
+						attachmentNames.length > 0 ? attachmentNames : undefined,
+					);
 					await new Promise((r) => setTimeout(r, 150));
-					await sendMessage(session.id, text);
+					await sendMessage(session.id, text, images, files);
 				}
 				return;
 			}
 
-			addOptimisticUser(text);
-			await sendMessage(activeSession.id, text);
+			addOptimisticUser(
+				text,
+				attachmentNames.length > 0 ? attachmentNames : undefined,
+			);
+			await sendMessage(activeSession.id, text, images, files);
 		},
 		[
 			activeSession,
@@ -302,7 +335,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 	const handleApproveAll = useCallback(async () => {
 		if (!activeSession) return;
 		await Promise.all(
-			pendingApprovals.map((a) => approveToolCall(activeSession.id, a.callId, true)),
+			pendingApprovals.map((a) =>
+				approveToolCall(activeSession.id, a.callId, true),
+			),
 		);
 		setPendingApprovals([]);
 	}, [activeSession, approveToolCall, pendingApprovals, setPendingApprovals]);
@@ -352,7 +387,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				paddingBottom: 1,
 			}}
 		>
-		<StatusBar
+			<StatusBar
 				sessionTitle={activeSession?.title ?? null}
 				queueSize={queueSize}
 			/>
@@ -376,7 +411,14 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				/>
 			)}
 
-		<ChatInput onSubmit={handleSubmit} disabled={pendingApprovals.length > 0} status={status} isStreaming={isStreaming} provider={provider} model={model} />
+			<ChatInput
+				onSubmit={handleSubmit}
+				disabled={pendingApprovals.length > 0}
+				status={status}
+				isStreaming={isStreaming}
+				provider={provider}
+				model={model}
+			/>
 
 			{overlay === 'sessions' && (
 				<SessionsOverlay
@@ -402,7 +444,12 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			)}
 
 			{overlay === 'help' && <HelpOverlay onClose={() => setOverlay('none')} />}
-		{overlay === 'theme' && <ThemeOverlay onClose={() => setOverlay('none')} onSave={(name: string) => updateDefaults({ theme: name })} />}
+			{overlay === 'theme' && (
+				<ThemeOverlay
+					onClose={() => setOverlay('none')}
+					onSave={(name: string) => updateDefaults({ theme: name })}
+				/>
+			)}
 		</box>
 	);
 }

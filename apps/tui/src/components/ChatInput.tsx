@@ -6,9 +6,18 @@ import { listFiles } from '@ottocode/api';
 import { useTheme } from '../theme.ts';
 import { COMMANDS } from '../commands.ts';
 import type { StatusIndicator } from '../App.tsx';
+import { useFileAttachments, isFilePath } from '../hooks/useFileAttachments.ts';
+import type {
+	ImageAttachment,
+	FileAttachment,
+} from '../hooks/useFileAttachments.ts';
 
 interface ChatInputProps {
-	onSubmit: (text: string) => void;
+	onSubmit: (
+		text: string,
+		images?: ImageAttachment[],
+		files?: FileAttachment[],
+	) => void;
 	disabled: boolean;
 	status: StatusIndicator;
 	isStreaming: boolean;
@@ -19,11 +28,37 @@ interface ChatInputProps {
 const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 const MAX_FILE_RESULTS = 15;
 
-export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, model }: ChatInputProps) {
+export function ChatInput({
+	onSubmit,
+	disabled,
+	status,
+	isStreaming,
+	provider,
+	model,
+}: ChatInputProps) {
 	const { colors } = useTheme();
 	const renderer = useRenderer();
 	const textareaRef = useRef<TextareaRenderable | null>(null);
 	const containerRef = useRef<string>(`chat-input-${Date.now()}`);
+
+	const {
+		images: attachedImages,
+		files: attachedFiles,
+		count: attachmentCount,
+		names: attachmentNames,
+		addFromPath,
+		clear: clearAttachments,
+	} = useFileAttachments();
+	const addFromPathRef = useRef(addFromPath);
+	const attachedImagesRef = useRef(attachedImages);
+	const attachedFilesRef = useRef(attachedFiles);
+	const attachmentCountRef = useRef(attachmentCount);
+	const clearAttachmentsRef = useRef(clearAttachments);
+	addFromPathRef.current = addFromPath;
+	attachedImagesRef.current = attachedImages;
+	attachedFilesRef.current = attachedFiles;
+	attachmentCountRef.current = attachmentCount;
+	clearAttachmentsRef.current = clearAttachments;
 
 	const [commandMatches, setCommandMatches] = useState<typeof COMMANDS>([]);
 	const [selectedIdx, setSelectedIdx] = useState(0);
@@ -89,7 +124,10 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 	const isAnimating = isStreaming || status.type === 'loading';
 	useEffect(() => {
 		if (!isAnimating) return;
-		const interval = setInterval(() => setSpinnerIdx((i) => (i + 1) % SPINNER.length), 80);
+		const interval = setInterval(
+			() => setSpinnerIdx((i) => (i + 1) % SPINNER.length),
+			80,
+		);
 		return () => clearInterval(interval);
 	}, [isAnimating]);
 
@@ -136,11 +174,14 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 		if (text.startsWith('/') && !text.includes(' ')) {
 			setShowFileMention(false);
 			const query = text.slice(1).toLowerCase();
-			const matches = query.length === 0
-				? COMMANDS
-				: COMMANDS.filter(
-						(c) => c.name.startsWith(query) || (c.alias && c.alias.slice(1).startsWith(query)),
-					);
+			const matches =
+				query.length === 0
+					? COMMANDS
+					: COMMANDS.filter(
+							(c) =>
+								c.name.startsWith(query) ||
+								(c.alias && c.alias.slice(1).startsWith(query)),
+						);
 			setCommandMatches(matches);
 			setSelectedIdx(0);
 		} else {
@@ -171,9 +212,18 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 			return;
 		}
 		const text = textareaRef.current.plainText.trim();
-		if (!text) return;
-		onSubmit(text);
+		if (!text && attachmentCountRef.current === 0) return;
+		const imgData =
+			attachedImagesRef.current.length > 0
+				? attachedImagesRef.current
+				: undefined;
+		const fileData =
+			attachedFilesRef.current.length > 0
+				? attachedFilesRef.current
+				: undefined;
+		onSubmit(text, imgData, fileData);
 		textareaRef.current.clear();
+		clearAttachmentsRef.current();
 		setCommandMatches([]);
 		setShowFileMention(false);
 	}, [onSubmit, handleFileSelect]);
@@ -216,7 +266,12 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 		} else if (key.name === 'tab') {
 			const matches = commandMatchesRef.current;
 			const idx = selectedIdxRef.current;
-			if (matches.length > 0 && idx >= 0 && idx < matches.length && textareaRef.current) {
+			if (
+				matches.length > 0 &&
+				idx >= 0 &&
+				idx < matches.length &&
+				textareaRef.current
+			) {
 				textareaRef.current.clear();
 				textareaRef.current.insertText(`/${matches[idx].name}`);
 				handleContentChange();
@@ -235,9 +290,9 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 			width: '100%',
 			height: 3,
 			placeholder: 'Message otto…  ↵ send  ⇧↵ newline  @ files  / commands',
-		placeholderColor: colors.fgDark,
-		textColor: colors.fgBright,
-		focusedTextColor: colors.fgBright,
+			placeholderColor: colors.fgDark,
+			textColor: colors.fgBright,
+			focusedTextColor: colors.fgBright,
 			cursorColor: colors.blue,
 			wrapMode: 'word',
 			keyBindings: [
@@ -248,6 +303,17 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 		});
 
 		textarea.onContentChange = handleContentChange;
+
+		const origHandlePaste = textarea.handlePaste.bind(textarea);
+		textarea.handlePaste = (event) => {
+			const text = event.text.trim();
+			const filePath = text.replace(/\\ /g, ' ');
+			if (isFilePath(filePath)) {
+				addFromPathRef.current(filePath);
+				return;
+			}
+			origHandlePaste(event);
+		};
 
 		container.add(textarea);
 		textareaRef.current = textarea;
@@ -288,91 +354,130 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 				flexDirection: 'column',
 			}}
 		>
-		{showFileMention && filteredFiles.length > 0 && (
-			<box
-				style={{
-					flexDirection: 'column',
-					backgroundColor: colors.bgHighlight,
-					borderStyle: 'rounded',
-					border: true,
-					borderColor: colors.border,
-					paddingLeft: 1,
-					paddingRight: 1,
-					width: '100%',
-				}}
-			>
-				{filteredFiles.map((filePath, i) => (
+			{showFileMention && filteredFiles.length > 0 && (
+				<box
+					style={{
+						flexDirection: 'column',
+						backgroundColor: colors.bgHighlight,
+						borderStyle: 'rounded',
+						border: true,
+						borderColor: colors.border,
+						paddingLeft: 1,
+						paddingRight: 1,
+						width: '100%',
+					}}
+				>
+					{filteredFiles.map((filePath, i) => (
+						<box
+							key={filePath}
+							style={{
+								flexDirection: 'row',
+								gap: 1,
+								height: 1,
+								width: '100%',
+								backgroundColor:
+									i === mentionSelectedIdx ? colors.bgSubtle : undefined,
+							}}
+						>
+							<text fg={i === mentionSelectedIdx ? colors.blue : colors.fgDark}>
+								@
+							</text>
+							<text
+								fg={i === mentionSelectedIdx ? colors.green : colors.fgMuted}
+							>
+								{filePath}
+							</text>
+						</box>
+					))}
+				</box>
+			)}
+			{showFileMention &&
+				filteredFiles.length === 0 &&
+				mentionQuery.length > 0 && (
 					<box
-						key={filePath}
 						style={{
-							flexDirection: 'row',
-							gap: 1,
-							height: 1,
+							backgroundColor: colors.bgHighlight,
+							borderStyle: 'rounded',
+							border: true,
+							borderColor: colors.border,
+							paddingLeft: 1,
+							paddingRight: 1,
 							width: '100%',
-							backgroundColor: i === mentionSelectedIdx ? colors.bgSubtle : undefined,
+							height: 1,
 						}}
 					>
-						<text fg={i === mentionSelectedIdx ? colors.blue : colors.fgDark}>@</text>
-						<text fg={i === mentionSelectedIdx ? colors.green : colors.fgMuted}>{filePath}</text>
+						<text fg={colors.fgDark}>No files found</text>
 					</box>
-				))}
-			</box>
-		)}
-		{showFileMention && filteredFiles.length === 0 && mentionQuery.length > 0 && (
-			<box
-				style={{
-					backgroundColor: colors.bgHighlight,
-					borderStyle: 'rounded',
-					border: true,
-					borderColor: colors.border,
-					paddingLeft: 1,
-					paddingRight: 1,
-					width: '100%',
-					height: 1,
-				}}
-			>
-				<text fg={colors.fgDark}>No files found</text>
-			</box>
-		)}
-		{commandMatches.length > 0 && (
-		<box
-				style={{
-					flexDirection: 'column',
-					backgroundColor: colors.bgHighlight,
-					borderStyle: 'rounded',
-					border: true,
-					borderColor: colors.border,
-					paddingLeft: 1,
-					paddingRight: 1,
-					width: '100%',
-				}}
-			>
-				{commandMatches.map((cmd, i) => (
-					<box
-						key={cmd.name}
-						style={{
-							flexDirection: 'row',
-							gap: 1,
-							height: 1,
-							width: '100%',
-							backgroundColor: i === selectedIdx ? colors.bgSubtle : undefined,
-						}}
-					>
-						<text fg={i === selectedIdx ? colors.green : colors.fgMuted}>/{cmd.name}</text>
-						<text fg={i === selectedIdx ? colors.fgMuted : colors.fgDark}>{cmd.description}</text>
-					</box>
-				))}
-			</box>
+				)}
+			{commandMatches.length > 0 && (
+				<box
+					style={{
+						flexDirection: 'column',
+						backgroundColor: colors.bgHighlight,
+						borderStyle: 'rounded',
+						border: true,
+						borderColor: colors.border,
+						paddingLeft: 1,
+						paddingRight: 1,
+						width: '100%',
+					}}
+				>
+					{commandMatches.map((cmd, i) => (
+						<box
+							key={cmd.name}
+							style={{
+								flexDirection: 'row',
+								gap: 1,
+								height: 1,
+								width: '100%',
+								backgroundColor:
+									i === selectedIdx ? colors.bgSubtle : undefined,
+							}}
+						>
+							<text fg={i === selectedIdx ? colors.green : colors.fgMuted}>
+								/{cmd.name}
+							</text>
+							<text fg={i === selectedIdx ? colors.fgMuted : colors.fgDark}>
+								{cmd.description}
+							</text>
+						</box>
+					))}
+				</box>
 			)}
 			<box
-				id={containerRef.current}
 				style={{
 					width: '100%',
 					borderStyle: 'rounded',
 					border: true,
 					borderColor: disabled ? colors.border : colors.fgDimmed,
+					flexDirection: 'column',
 				}}
-			/>
+			>
+				{attachmentCount > 0 && (
+					<box
+						style={{
+							flexDirection: 'row',
+							gap: 1,
+							paddingLeft: 1,
+							paddingRight: 1,
+						}}
+					>
+						{attachmentNames.map((name) => (
+							<box
+								key={name}
+								style={{
+									backgroundColor: colors.yellow,
+									paddingLeft: 1,
+									paddingRight: 1,
+								}}
+							>
+								<text fg={colors.bgDark}>{name}</text>
+							</box>
+						))}
+					</box>
+				)}
+				<box id={containerRef.current} style={{ width: '100%' }} />
+			</box>
 			<box
 				style={{
 					width: '100%',
@@ -381,27 +486,33 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 					justifyContent: 'space-between',
 				}}
 			>
-			{hasStatus ? (
+				{hasStatus ? (
+					<box style={{ flexDirection: 'row' }}>
+						{isStreaming && status.type === 'idle' && (
+							<text fg={colors.streamDot}>
+								{SPINNER[spinnerIdx]} generating
+							</text>
+						)}
+						{status.type === 'loading' && (
+							<text fg={colors.blue}>
+								{SPINNER[spinnerIdx]} {status.label}
+							</text>
+						)}
+						{status.type === 'success' && (
+							<text fg={colors.green}>✓ {status.label}</text>
+						)}
+						{status.type === 'error' && (
+							<text fg={colors.red}>✗ {status.label}</text>
+						)}
+					</box>
+				) : (
+					<box />
+				)}
 				<box style={{ flexDirection: 'row' }}>
-					{isStreaming && status.type === 'idle' && (
-						<text fg={colors.streamDot}>{SPINNER[spinnerIdx]} generating</text>
-					)}
-					{status.type === 'loading' && (
-						<text fg={colors.blue}>{SPINNER[spinnerIdx]} {status.label}</text>
-					)}
-					{status.type === 'success' && (
-						<text fg={colors.green}>✓ {status.label}</text>
-					)}
-					{status.type === 'error' && (
-						<text fg={colors.red}>✗ {status.label}</text>
-					)}
+					<text fg={colors.fgDark}>{provider}</text>
+					<text fg={colors.fgDimmed}>/</text>
+					<text fg={colors.fgMuted}>{model}</text>
 				</box>
-			) : <box />}
-			<box style={{ flexDirection: 'row' }}>
-				<text fg={colors.fgDark}>{provider}</text>
-				<text fg={colors.fgDimmed}>/</text>
-				<text fg={colors.fgMuted}>{model}</text>
-			</box>
 			</box>
 		</box>
 	);

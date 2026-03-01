@@ -1,10 +1,20 @@
 import { useEffect, useReducer, useRef, useState, useCallback } from 'react';
 import { getBaseUrl } from '../api.ts';
-import type { Message, MessagePart, PendingApproval, SSEEvent } from '../types.ts';
+import type {
+	Message,
+	MessagePart,
+	PendingApproval,
+	SSEEvent,
+} from '../types.ts';
 
 type Action =
 	| { type: 'LOAD'; messages: Message[] }
-	| { type: 'ADD_OPTIMISTIC_USER'; id: string; content: string }
+	| {
+			type: 'ADD_OPTIMISTIC_USER';
+			id: string;
+			content: string;
+			attachmentNames?: string[];
+	  }
 	| { type: 'MESSAGE_CREATED'; payload: Record<string, unknown> }
 	| { type: 'TEXT_DELTA'; payload: Record<string, unknown> }
 	| { type: 'REASONING_DELTA'; payload: Record<string, unknown> }
@@ -40,7 +50,8 @@ function applyDelta(
 	payload: Record<string, unknown>,
 	partType: 'text' | 'reasoning',
 ): Message[] {
-	const messageId = typeof payload.messageId === 'string' ? payload.messageId : null;
+	const messageId =
+		typeof payload.messageId === 'string' ? payload.messageId : null;
 	const partId = typeof payload.partId === 'string' ? payload.partId : null;
 	const delta = typeof payload.delta === 'string' ? payload.delta : null;
 	if (!messageId || !partId || delta === null) return messages;
@@ -52,7 +63,8 @@ function applyDelta(
 	const msg = next[msgIdx];
 	const parts = msg.parts ? [...msg.parts] : [];
 	const partIdx = parts.findIndex((p) => p.id === partId);
-	const stepIndex = typeof payload.stepIndex === 'number' ? payload.stepIndex : null;
+	const stepIndex =
+		typeof payload.stepIndex === 'number' ? payload.stepIndex : null;
 
 	if (partIdx === -1) {
 		parts.push({
@@ -117,6 +129,7 @@ function messageReducer(state: Message[], action: Action): Message[] {
 				completionTokens: null,
 				totalTokens: null,
 				error: null,
+				attachmentNames: action.attachmentNames,
 				parts: [
 					{
 						id: `${action.id}-text`,
@@ -147,7 +160,10 @@ function messageReducer(state: Message[], action: Action): Message[] {
 			if (!id || !role) return state;
 			if (state.some((m) => m.id === id)) return state;
 			const optimisticIdx = state.findIndex(
-				(m) => m.id.startsWith('optimistic-') && m.role === 'user' && role === 'user',
+				(m) =>
+					m.id.startsWith('optimistic-') &&
+					m.role === 'user' &&
+					role === 'user',
 			);
 			let next = state;
 			if (optimisticIdx !== -1 && role === 'user') {
@@ -155,11 +171,12 @@ function messageReducer(state: Message[], action: Action): Message[] {
 				next[optimisticIdx] = {
 					...next[optimisticIdx],
 					id,
-					parts: next[optimisticIdx].parts?.map((p) => ({
-						...p,
-						id: p.id.startsWith('optimistic-') ? `${id}-text` : p.id,
-						messageId: id,
-					})) ?? [],
+					parts:
+						next[optimisticIdx].parts?.map((p) => ({
+							...p,
+							id: p.id.startsWith('optimistic-') ? `${id}-text` : p.id,
+							messageId: id,
+						})) ?? [],
 				};
 				return next;
 			}
@@ -192,7 +209,8 @@ function messageReducer(state: Message[], action: Action): Message[] {
 			const { payload } = action;
 			const callId = typeof payload.callId === 'string' ? payload.callId : null;
 			const name = typeof payload.name === 'string' ? payload.name : null;
-			const messageId = typeof payload.messageId === 'string' ? payload.messageId : null;
+			const messageId =
+				typeof payload.messageId === 'string' ? payload.messageId : null;
 			if (!name) return state;
 
 			const next = [...state];
@@ -213,7 +231,8 @@ function messageReducer(state: Message[], action: Action): Message[] {
 			const msg = next[targetIdx];
 			const parts = msg.parts ? [...msg.parts] : [];
 			const args = (payload as { args?: unknown }).args;
-			const stepIndex = typeof payload.stepIndex === 'number' ? payload.stepIndex : null;
+			const stepIndex =
+				typeof payload.stepIndex === 'number' ? payload.stepIndex : null;
 			const contentJson: Record<string, unknown> = { name };
 			if (callId) contentJson.callId = callId;
 			if (args !== undefined) contentJson.args = args;
@@ -224,7 +243,9 @@ function messageReducer(state: Message[], action: Action): Message[] {
 
 			if (existingIdx === -1) {
 				parts.push({
-					id: callId ? `ephemeral-${callId}` : `ephemeral-${name}-${Date.now()}`,
+					id: callId
+						? `ephemeral-${callId}`
+						: `ephemeral-${name}-${Date.now()}`,
 					messageId: msg.id,
 					index: parts.length,
 					stepIndex,
@@ -244,7 +265,8 @@ function messageReducer(state: Message[], action: Action): Message[] {
 			} else {
 				const existing = parts[existingIdx];
 				const nextJson: Record<string, unknown> = {
-					...(typeof existing.contentJson === 'object' && !Array.isArray(existing.contentJson)
+					...(typeof existing.contentJson === 'object' &&
+					!Array.isArray(existing.contentJson)
 						? (existing.contentJson as Record<string, unknown>)
 						: {}),
 					name,
@@ -267,7 +289,8 @@ function messageReducer(state: Message[], action: Action): Message[] {
 
 		case 'TOOL_DELTA': {
 			const { payload } = action;
-			const channel = typeof payload.channel === 'string' ? payload.channel : null;
+			const channel =
+				typeof payload.channel === 'string' ? payload.channel : null;
 			if (channel !== 'input') return state;
 			return messageReducer(state, { type: 'TOOL_CALL', payload });
 		}
@@ -284,10 +307,18 @@ function messageReducer(state: Message[], action: Action): Message[] {
 					if (p.ephemeral && p.toolCallId === callId) {
 						changed = true;
 						const updatedJson = {
-							...(typeof p.contentJson === 'object' && !Array.isArray(p.contentJson) ? p.contentJson as Record<string, unknown> : {}),
+							...(typeof p.contentJson === 'object' &&
+							!Array.isArray(p.contentJson)
+								? (p.contentJson as Record<string, unknown>)
+								: {}),
 							...(result !== undefined ? { result } : {}),
 						};
-						return { ...p, completedAt: Date.now(), contentJson: updatedJson, content: JSON.stringify(updatedJson) };
+						return {
+							...p,
+							completedAt: Date.now(),
+							contentJson: updatedJson,
+							content: JSON.stringify(updatedJson),
+						};
 					}
 					return p;
 				});
@@ -308,10 +339,19 @@ function messageReducer(state: Message[], action: Action): Message[] {
 				...msg,
 				status: 'complete',
 				completedAt: Date.now(),
-				promptTokens: typeof payload.promptTokens === 'number' ? payload.promptTokens : msg.promptTokens,
-				completionTokens: typeof payload.completionTokens === 'number' ? payload.completionTokens : msg.completionTokens,
-				totalTokens: typeof payload.totalTokens === 'number' ? payload.totalTokens : msg.totalTokens,
-			parts: msg.parts ?? [],
+				promptTokens:
+					typeof payload.promptTokens === 'number'
+						? payload.promptTokens
+						: msg.promptTokens,
+				completionTokens:
+					typeof payload.completionTokens === 'number'
+						? payload.completionTokens
+						: msg.completionTokens,
+				totalTokens:
+					typeof payload.totalTokens === 'number'
+						? payload.totalTokens
+						: msg.totalTokens,
+				parts: msg.parts ?? [],
 			};
 			return next;
 		}
@@ -330,11 +370,15 @@ function messageReducer(state: Message[], action: Action): Message[] {
 
 		case 'ERROR': {
 			const { payload } = action;
-			const messageId = typeof payload.messageId === 'string' ? payload.messageId : null;
+			const messageId =
+				typeof payload.messageId === 'string' ? payload.messageId : null;
 			if (!messageId) {
-				const errorText = typeof payload.error === 'string' ? payload.error
-					: typeof payload.message === 'string' ? payload.message
-					: 'Unknown error';
+				const errorText =
+					typeof payload.error === 'string'
+						? payload.error
+						: typeof payload.message === 'string'
+							? payload.message
+							: 'Unknown error';
 				const errMsg: Message = {
 					id: `error-${Date.now()}`,
 					sessionId: '',
@@ -349,23 +393,25 @@ function messageReducer(state: Message[], action: Action): Message[] {
 					completionTokens: null,
 					totalTokens: null,
 					error: errorText,
-					parts: [{
-						id: `error-part-${Date.now()}`,
-						messageId: `error-${Date.now()}`,
-						index: 0,
-						stepIndex: null,
-						type: 'error',
-						content: JSON.stringify({ text: errorText }),
-						contentJson: { text: errorText },
-						agent: '',
-						provider: '',
-						model: '',
-						startedAt: Date.now(),
-						completedAt: Date.now(),
-						toolName: null,
-						toolCallId: null,
-						toolDurationMs: null,
-					}],
+					parts: [
+						{
+							id: `error-part-${Date.now()}`,
+							messageId: `error-${Date.now()}`,
+							index: 0,
+							stepIndex: null,
+							type: 'error',
+							content: JSON.stringify({ text: errorText }),
+							contentJson: { text: errorText },
+							agent: '',
+							provider: '',
+							model: '',
+							startedAt: Date.now(),
+							completedAt: Date.now(),
+							toolName: null,
+							toolCallId: null,
+							toolDurationMs: null,
+						},
+					],
 				};
 				return [...state, errMsg];
 			}
@@ -375,11 +421,15 @@ function messageReducer(state: Message[], action: Action): Message[] {
 			const msg = next[idx];
 			next[idx] = {
 				...msg,
-			status: 'error',
-			error: typeof payload.error === 'string' ? payload.error
-				: typeof payload.message === 'string' ? payload.message
-				: typeof payload.error === 'object' && payload.error ? JSON.stringify(payload.error)
-				: JSON.stringify(payload),
+				status: 'error',
+				error:
+					typeof payload.error === 'string'
+						? payload.error
+						: typeof payload.message === 'string'
+							? payload.message
+							: typeof payload.error === 'object' && payload.error
+								? JSON.stringify(payload.error)
+								: JSON.stringify(payload),
 				parts: msg.parts ?? [],
 			};
 			return next;
@@ -444,20 +494,32 @@ async function connectSSE(
 	}
 }
 
-export function useStream(sessionId: string | null, onSessionUpdate?: (payload: Record<string, unknown>) => void) {
+export function useStream(
+	sessionId: string | null,
+	onSessionUpdate?: (payload: Record<string, unknown>) => void,
+) {
 	const [messages, dispatch] = useReducer(messageReducer, []);
-	const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+	const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+		null,
+	);
 	const [queueSize, setQueueSize] = useState(0);
-	const [queuedMessageIds, setQueuedMessageIds] = useState<Set<string>>(new Set());
-	const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
+	const [queuedMessageIds, setQueuedMessageIds] = useState<Set<string>>(
+		new Set(),
+	);
+	const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>(
+		[],
+	);
 	const abortRef = useRef<AbortController | null>(null);
 	const onSessionUpdateRef = useRef(onSessionUpdate);
 	onSessionUpdateRef.current = onSessionUpdate;
 
-	const addOptimisticUser = useCallback((content: string) => {
-		const id = `optimistic-${Date.now()}`;
-		dispatch({ type: 'ADD_OPTIMISTIC_USER', id, content });
-	}, []);
+	const addOptimisticUser = useCallback(
+		(content: string, attachmentNames?: string[]) => {
+			const id = `optimistic-${Date.now()}`;
+			dispatch({ type: 'ADD_OPTIMISTIC_USER', id, content, attachmentNames });
+		},
+		[],
+	);
 
 	useEffect(() => {
 		if (!sessionId) {
@@ -472,7 +534,9 @@ export function useStream(sessionId: string | null, onSessionUpdate?: (payload: 
 		fetch(`${baseUrl}/v1/sessions/${sessionId}/messages`)
 			.then((r) => r.json())
 			.then((data) => {
-				const msgs = Array.isArray(data) ? data : (data as { items?: Message[] }).items || [];
+				const msgs = Array.isArray(data)
+					? data
+					: (data as { items?: Message[] }).items || [];
 				dispatch({ type: 'LOAD', messages: msgs });
 			})
 			.catch(() => {});
@@ -484,10 +548,10 @@ export function useStream(sessionId: string | null, onSessionUpdate?: (payload: 
 			switch (event.type) {
 				case 'message.created':
 					dispatch({ type: 'MESSAGE_CREATED', payload });
-				if (payload.role === 'assistant') {
-					const id = typeof payload.id === 'string' ? payload.id : null;
-					if (id) setStreamingMessageId((prev) => prev ?? id);
-				}
+					if (payload.role === 'assistant') {
+						const id = typeof payload.id === 'string' ? payload.id : null;
+						if (id) setStreamingMessageId((prev) => prev ?? id);
+					}
 					break;
 				case 'message.part.delta':
 					dispatch({ type: 'TEXT_DELTA', payload });
@@ -504,35 +568,46 @@ export function useStream(sessionId: string | null, onSessionUpdate?: (payload: 
 				case 'tool.result':
 					dispatch({ type: 'TOOL_RESULT', payload });
 					break;
-			case 'tool.approval.required': {
-				const callId = typeof payload.callId === 'string' ? payload.callId : '';
-				const toolName = typeof payload.toolName === 'string' ? payload.toolName : '';
-				const messageId = typeof payload.messageId === 'string' ? payload.messageId : '';
-				if (callId && toolName && messageId) {
-					setPendingApprovals((prev) => {
-						if (prev.some((a) => a.callId === callId)) return prev;
-						return [...prev, { callId, toolName, args: payload.args, messageId }];
-					});
+				case 'tool.approval.required': {
+					const callId =
+						typeof payload.callId === 'string' ? payload.callId : '';
+					const toolName =
+						typeof payload.toolName === 'string' ? payload.toolName : '';
+					const messageId =
+						typeof payload.messageId === 'string' ? payload.messageId : '';
+					if (callId && toolName && messageId) {
+						setPendingApprovals((prev) => {
+							if (prev.some((a) => a.callId === callId)) return prev;
+							return [
+								...prev,
+								{ callId, toolName, args: payload.args, messageId },
+							];
+						});
+					}
+					break;
 				}
-				break;
-			}
-			case 'tool.approval.resolved': {
-				const resolvedCallId = typeof payload.callId === 'string' ? payload.callId : '';
-				if (resolvedCallId) {
-					setPendingApprovals((prev) => prev.filter((a) => a.callId !== resolvedCallId));
-				} else {
-					setPendingApprovals([]);
+				case 'tool.approval.resolved': {
+					const resolvedCallId =
+						typeof payload.callId === 'string' ? payload.callId : '';
+					if (resolvedCallId) {
+						setPendingApprovals((prev) =>
+							prev.filter((a) => a.callId !== resolvedCallId),
+						);
+					} else {
+						setPendingApprovals([]);
+					}
+					break;
 				}
-				break;
-			}
-			case 'message.completed':
+				case 'message.completed':
 					dispatch({ type: 'MESSAGE_COMPLETED', payload });
-				setStreamingMessageId(null);
+					setStreamingMessageId(null);
 					setTimeout(() => {
 						fetch(`${baseUrl}/v1/sessions/${sessionId}/messages`)
 							.then((r) => r.json())
 							.then((data) => {
-								const reloaded = Array.isArray(data) ? data : (data as { items?: Message[] }).items || [];
+								const reloaded = Array.isArray(data)
+									? data
+									: (data as { items?: Message[] }).items || [];
 								dispatch({ type: 'LOAD', messages: reloaded });
 							})
 							.catch(() => {});
@@ -543,21 +618,29 @@ export function useStream(sessionId: string | null, onSessionUpdate?: (payload: 
 					break;
 				case 'error':
 					dispatch({ type: 'ERROR', payload });
-				setStreamingMessageId(null);
+					setStreamingMessageId(null);
 					break;
-		case 'session.updated': {
-			onSessionUpdateRef.current?.(payload);
-			break;
-		}
-		case 'queue.updated': {
-				const queueLength = typeof payload.queueLength === 'number' ? payload.queueLength : 0;
-				setQueueSize(queueLength);
-			const currentMsgId = typeof payload.currentMessageId === 'string' ? payload.currentMessageId : null;
-			if (currentMsgId) setStreamingMessageId(currentMsgId);
-			const queuedMsgs = Array.isArray(payload.queuedMessages) ? payload.queuedMessages : [];
-			setQueuedMessageIds(new Set(queuedMsgs.map((q: { messageId: string }) => q.messageId)));
-				break;
-			}
+				case 'session.updated': {
+					onSessionUpdateRef.current?.(payload);
+					break;
+				}
+				case 'queue.updated': {
+					const queueLength =
+						typeof payload.queueLength === 'number' ? payload.queueLength : 0;
+					setQueueSize(queueLength);
+					const currentMsgId =
+						typeof payload.currentMessageId === 'string'
+							? payload.currentMessageId
+							: null;
+					if (currentMsgId) setStreamingMessageId(currentMsgId);
+					const queuedMsgs = Array.isArray(payload.queuedMessages)
+						? payload.queuedMessages
+						: [];
+					setQueuedMessageIds(
+						new Set(queuedMsgs.map((q: { messageId: string }) => q.messageId)),
+					);
+					break;
+				}
 			}
 		});
 
@@ -573,12 +656,25 @@ export function useStream(sessionId: string | null, onSessionUpdate?: (payload: 
 		fetch(`${baseUrl}/v1/sessions/${sessionId}/messages`)
 			.then((r) => r.json())
 			.then((data) => {
-				const msgs = Array.isArray(data) ? data : (data as { items?: Message[] }).items || [];
+				const msgs = Array.isArray(data)
+					? data
+					: (data as { items?: Message[] }).items || [];
 				dispatch({ type: 'LOAD', messages: msgs });
 			})
 			.catch(() => {});
 	};
 
 	const isStreaming = streamingMessageId !== null;
-	return { messages, isStreaming, streamingMessageId, queueSize, queuedMessageIds, pendingApprovals, setPendingApprovals, reload, dispatch, addOptimisticUser };
+	return {
+		messages,
+		isStreaming,
+		streamingMessageId,
+		queueSize,
+		queuedMessageIds,
+		pendingApprovals,
+		setPendingApprovals,
+		reload,
+		dispatch,
+		addOptimisticUser,
+	};
 }

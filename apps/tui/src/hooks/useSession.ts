@@ -110,11 +110,21 @@ export function useSession() {
 	}, []);
 
 	const sendMessage = useCallback(
-		async (sessionId: string, content: string) => {
+		async (
+			sessionId: string,
+			content: string,
+			images?: unknown[],
+			files?: unknown[],
+		) => {
 			try {
 				await createMessage({
 					path: { id: sessionId },
-					body: { content },
+					body: {
+						content,
+						...(images ? { images } : {}),
+						...(files ? { files } : {}),
+						// biome-ignore lint/suspicious/noExplicitAny: Server accepts images/files but SDK types don't include them
+					} as any,
 				});
 			} catch {}
 		},

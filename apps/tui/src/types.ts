@@ -26,6 +26,7 @@ export interface Message {
 	totalTokens: number | null;
 	error: string | null;
 	parts?: MessagePart[];
+	attachmentNames?: string[];
 }
 
 export interface MessagePart {
@@ -33,7 +34,14 @@ export interface MessagePart {
 	messageId: string;
 	index: number;
 	stepIndex: number | null;
-	type: 'text' | 'tool_call' | 'tool_result' | 'image' | 'file' | 'error' | 'reasoning';
+	type:
+		| 'text'
+		| 'tool_call'
+		| 'tool_result'
+		| 'image'
+		| 'file'
+		| 'error'
+		| 'reasoning';
 	content: string;
 	contentJson?: Record<string, unknown>;
 	agent: string;
