@@ -19,11 +19,11 @@ export function parseCommand(input: string): ParsedCommand | null {
 
 export const COMMAND_ALIASES: Record<string, string> = {
 	s: 'sessions',
-	c: 'config',
 	q: 'quit',
 	'?': 'help',
 	x: 'stop',
 	t: 'theme',
+	m: 'models',
 };
 
 export function resolveCommand(name: string): string {
@@ -31,20 +31,14 @@ export function resolveCommand(name: string): string {
 }
 
 export const COMMANDS = [
-	{ name: 'models', alias: '', description: 'Open model selector' },
-	{ name: 'agents', alias: '', description: 'Open agent selector' },
+	{ name: 'models', alias: '/m', description: 'Open model selector' },
 	{ name: 'new', alias: '', description: 'Create a new session' },
 	{ name: 'stop', alias: '/x', description: 'Stop current generation' },
 	{ name: 'help', alias: '/?', description: 'Show this help' },
 	{ name: 'reasoning', alias: '', description: 'Toggle extended thinking' },
 	{ name: 'stage', alias: '', description: 'Stage all changes (git add -A)' },
-	{ name: 'commit', alias: '', description: 'Commit staged changes' },
+	{ name: 'commit', alias: '', description: 'Open commit overlay' },
 	{ name: 'compact', alias: '', description: 'Compact conversation history' },
-	{
-		name: 'branch',
-		alias: '',
-		description: 'Branch session from last message',
-	},
 	{ name: 'delete', alias: '', description: 'Delete current session' },
 	{ name: 'share', alias: '', description: 'Share session publicly' },
 	{
@@ -53,10 +47,7 @@ export const COMMANDS = [
 		description: 'Sync new messages to shared session',
 	},
 	{ name: 'sessions', alias: '/s', description: 'List and switch sessions' },
-	{ name: 'config', alias: '/c', description: 'Change provider/model/agent' },
-	{ name: 'model', alias: '', description: 'Quick-switch model' },
 	{ name: 'provider', alias: '', description: 'Quick-switch provider' },
-	{ name: 'agent', alias: '', description: 'Quick-switch agent' },
 	{ name: 'theme', alias: '/t', description: 'Switch color theme' },
 	{ name: 'clear', alias: '', description: 'Reload messages' },
 	{ name: 'quit', alias: '/q', description: 'Exit TUI' },
