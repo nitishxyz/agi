@@ -19,7 +19,7 @@ export function parseCommand(input: string): ParsedCommand | null {
 
 export const COMMAND_ALIASES: Record<string, string> = {
 	s: 'sessions',
-	q: 'quit',
+	q: 'exit',
 	'?': 'help',
 	x: 'stop',
 	t: 'theme',
@@ -50,5 +50,5 @@ export const COMMANDS = [
 	{ name: 'provider', alias: '', description: 'Quick-switch provider' },
 	{ name: 'theme', alias: '/t', description: 'Switch color theme' },
 	{ name: 'clear', alias: '', description: 'Reload messages' },
-	{ name: 'quit', alias: '/q', description: 'Exit TUI' },
+	{ name: 'exit', alias: '/q', description: 'Exit TUI' },
 ];

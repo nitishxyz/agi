@@ -113,8 +113,8 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		async (name: string, args: string) => {
 			const cmd = resolveCommand(name);
 			switch (cmd) {
-				case 'quit':
-					onQuit();
+			case 'exit':
+				onQuit();
 					break;
 				case 'sessions':
 					await loadSessions();
