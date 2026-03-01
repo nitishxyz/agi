@@ -19,7 +19,13 @@ interface CommitOverlayProps {
 	onCommitted: () => void;
 }
 
-type Phase = 'loading' | 'idle' | 'generating' | 'committing' | 'done' | 'error';
+type Phase =
+	| 'loading'
+	| 'idle'
+	| 'generating'
+	| 'committing'
+	| 'done'
+	| 'error';
 
 export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 	const { colors } = useTheme();
@@ -69,7 +75,8 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 		setErrorText('');
 		setStatusText('Generating commit message…');
 		try {
-			const hasUnstaged = unstagedRef.current.length > 0 || untrackedRef.current.length > 0;
+			const hasUnstaged =
+				unstagedRef.current.length > 0 || untrackedRef.current.length > 0;
 			if (stagedRef.current.length === 0 && hasUnstaged) {
 				setStatusText('Staging files…');
 				// biome-ignore lint/suspicious/noExplicitAny: SDK body type mismatch
@@ -82,7 +89,9 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 			if ((res as any).error) {
 				// biome-ignore lint/suspicious/noExplicitAny: SDK error type
 				const errData = (res as any).error;
-				throw new Error(errData?.error || errData?.message || 'Unknown API error');
+				throw new Error(
+					errData?.error || errData?.message || 'Unknown API error',
+				);
 			}
 			// biome-ignore lint/suspicious/noExplicitAny: SDK response type
 			const data = (res.data as any)?.data;
@@ -98,7 +107,9 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 			setStatusText('');
 			setPhase('idle');
 		} catch (err) {
-			setErrorText(`Generate failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+			setErrorText(
+				`Generate failed: ${err instanceof Error ? err.message : 'unknown error'}`,
+			);
 			setStatusText('');
 			setPhase('idle');
 		}
@@ -133,7 +144,9 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 			onCommitted();
 			setTimeout(onClose, 800);
 		} catch (err) {
-			setErrorText(`Commit failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+			setErrorText(
+				`Commit failed: ${err instanceof Error ? err.message : 'unknown error'}`,
+			);
 			setStatusText('');
 			setPhase('idle');
 		}
@@ -200,11 +213,15 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 	const totalChanges = staged.length + unstaged.length + untracked.length;
 	const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 	const [spinnerIdx, setSpinnerIdx] = useState(0);
-	const isSpinning = phase === 'generating' || phase === 'committing' || phase === 'loading';
+	const isSpinning =
+		phase === 'generating' || phase === 'committing' || phase === 'loading';
 
 	useEffect(() => {
 		if (!isSpinning) return;
-		const iv = setInterval(() => setSpinnerIdx((i) => (i + 1) % SPINNER.length), 80);
+		const iv = setInterval(
+			() => setSpinnerIdx((i) => (i + 1) % SPINNER.length),
+			80,
+		);
 		return () => clearInterval(iv);
 	}, [isSpinning]);
 
@@ -254,45 +271,63 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 
 					{staged.length > 0 && (
 						<box style={{ flexDirection: 'column', marginBottom: 1 }}>
-							<text fg={colors.green}><b>Staged ({staged.length})</b></text>
+							<text fg={colors.green}>
+								<b>Staged ({staged.length})</b>
+							</text>
 							{staged.slice(0, 8).map((f) => (
-								<box key={f.path} style={{ flexDirection: 'row', gap: 1, height: 1 }}>
+								<box
+									key={f.path}
+									style={{ flexDirection: 'row', gap: 1, height: 1 }}
+								>
 									<text fg={statusColor(f.status)}>{statusChar(f.status)}</text>
 									<text fg={colors.fgMuted}>{f.path}</text>
 								</box>
 							))}
 							{staged.length > 8 && (
-								<text fg={colors.fgDark}>  …and {staged.length - 8} more</text>
+								<text fg={colors.fgDark}> …and {staged.length - 8} more</text>
 							)}
 						</box>
 					)}
 
 					{unstaged.length > 0 && (
 						<box style={{ flexDirection: 'column', marginBottom: 1 }}>
-							<text fg={colors.yellow}><b>Unstaged ({unstaged.length})</b></text>
+							<text fg={colors.yellow}>
+								<b>Unstaged ({unstaged.length})</b>
+							</text>
 							{unstaged.slice(0, 5).map((f) => (
-								<box key={f.path} style={{ flexDirection: 'row', gap: 1, height: 1 }}>
+								<box
+									key={f.path}
+									style={{ flexDirection: 'row', gap: 1, height: 1 }}
+								>
 									<text fg={statusColor(f.status)}>{statusChar(f.status)}</text>
 									<text fg={colors.fgDark}>{f.path}</text>
 								</box>
 							))}
 							{unstaged.length > 5 && (
-								<text fg={colors.fgDark}>  …and {unstaged.length - 5} more</text>
+								<text fg={colors.fgDark}> …and {unstaged.length - 5} more</text>
 							)}
 						</box>
 					)}
 
 					{untracked.length > 0 && (
 						<box style={{ flexDirection: 'column', marginBottom: 1 }}>
-							<text fg={colors.fgDark}><b>Untracked ({untracked.length})</b></text>
+							<text fg={colors.fgDark}>
+								<b>Untracked ({untracked.length})</b>
+							</text>
 							{untracked.slice(0, 3).map((f) => (
-								<box key={f.path} style={{ flexDirection: 'row', gap: 1, height: 1 }}>
+								<box
+									key={f.path}
+									style={{ flexDirection: 'row', gap: 1, height: 1 }}
+								>
 									<text fg={colors.fgDark}>?</text>
 									<text fg={colors.fgDark}>{f.path}</text>
 								</box>
 							))}
 							{untracked.length > 3 && (
-								<text fg={colors.fgDark}>  …and {untracked.length - 3} more</text>
+								<text fg={colors.fgDark}>
+									{' '}
+									…and {untracked.length - 3} more
+								</text>
 							)}
 						</box>
 					)}
@@ -301,7 +336,9 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 						<box style={{ flexDirection: 'row', gap: 1 }}>
 							<text fg={colors.fgDimmed}>Commit message:</text>
 							{statusText && (
-								<text fg={colors.yellow}>{SPINNER[spinnerIdx]} {statusText}</text>
+								<text fg={colors.yellow}>
+									{SPINNER[spinnerIdx]} {statusText}
+								</text>
 							)}
 						</box>
 						<box
@@ -311,16 +348,18 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 								flexShrink: 0,
 								border: true,
 								borderStyle: 'rounded',
-								borderColor: phase === 'generating' ? colors.yellow : colors.border,
+								borderColor:
+									phase === 'generating' ? colors.yellow : colors.border,
 							}}
 						>
-							<box id={containerRef.current} style={{ width: '100%', height: 3 }} />
+							<box
+								id={containerRef.current}
+								style={{ width: '100%', height: 3 }}
+							/>
 						</box>
 					</box>
 
-					{errorText && (
-						<text fg={colors.red}>{errorText}</text>
-					)}
+					{errorText && <text fg={colors.red}>{errorText}</text>}
 				</box>
 			)}
 

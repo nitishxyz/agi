@@ -154,19 +154,16 @@ export function ModelsOverlay({
 
 	const VISIBLE_ROWS = 20;
 
-	const ensureVisible = useCallback(
-		(idx: number) => {
-			let offset = scrollOffsetRef.current;
-			if (idx < offset) {
-				offset = idx;
-			} else if (idx >= offset + VISIBLE_ROWS) {
-				offset = idx - VISIBLE_ROWS + 1;
-			}
-			scrollOffsetRef.current = offset;
-			setScrollOffset(offset);
-		},
-		[],
-	);
+	const ensureVisible = useCallback((idx: number) => {
+		let offset = scrollOffsetRef.current;
+		if (idx < offset) {
+			offset = idx;
+		} else if (idx >= offset + VISIBLE_ROWS) {
+			offset = idx - VISIBLE_ROWS + 1;
+		}
+		scrollOffsetRef.current = offset;
+		setScrollOffset(offset);
+	}, []);
 
 	const handleContentChange = useCallback(() => {
 		if (!textareaRef.current) return;
@@ -209,11 +206,17 @@ export function ModelsOverlay({
 		if (list.length === 0) return;
 
 		if (key.name === 'up' || (key.ctrl && key.name === 'k')) {
-			const next = selectedIdxRef.current <= 0 ? list.length - 1 : selectedIdxRef.current - 1;
+			const next =
+				selectedIdxRef.current <= 0
+					? list.length - 1
+					: selectedIdxRef.current - 1;
 			setSelectedIdx(next);
 			ensureVisible(next);
 		} else if (key.name === 'down' || (key.ctrl && key.name === 'j')) {
-			const next = selectedIdxRef.current >= list.length - 1 ? 0 : selectedIdxRef.current + 1;
+			const next =
+				selectedIdxRef.current >= list.length - 1
+					? 0
+					: selectedIdxRef.current + 1;
 			setSelectedIdx(next);
 			ensureVisible(next);
 		} else if (key.name === 'return') {
@@ -234,7 +237,11 @@ export function ModelsOverlay({
 		for (let i = 0; i < flatList.length; i++) {
 			const item = flatList[i];
 			if (item.providerKey !== lastProvider) {
-				rows.push({ type: 'header', providerKey: item.providerKey, label: item.providerLabel });
+				rows.push({
+					type: 'header',
+					providerKey: item.providerKey,
+					label: item.providerLabel,
+				});
 				lastProvider = item.providerKey;
 			}
 			rows.push({ type: 'model', flatIndex: i, item });
@@ -260,7 +267,11 @@ export function ModelsOverlay({
 
 		const result: DisplayRow[] = [];
 		let visibleModels = 0;
-		for (let i = startRowIdx; i < displayRows.length && visibleModels < VISIBLE_ROWS; i++) {
+		for (
+			let i = startRowIdx;
+			i < displayRows.length && visibleModels < VISIBLE_ROWS;
+			i++
+		) {
 			result.push(displayRows[i]);
 			if (displayRows[i].type === 'model') visibleModels++;
 		}
@@ -270,11 +281,11 @@ export function ModelsOverlay({
 	return (
 		<box
 			style={{
-			position: 'absolute',
-			top: 1,
-			left: 2,
-			right: 2,
-			border: true,
+				position: 'absolute',
+				top: 1,
+				left: 2,
+				right: 2,
+				border: true,
 				borderStyle: 'rounded',
 				borderColor: colors.blue,
 				backgroundColor: colors.bg,
@@ -284,7 +295,7 @@ export function ModelsOverlay({
 			}}
 			title=" Models "
 		>
-		<box
+			<box
 				style={{
 					width: '100%',
 					height: 3,
@@ -295,28 +306,29 @@ export function ModelsOverlay({
 					marginBottom: 1,
 				}}
 			>
-				<box
-					style={{ flexDirection: 'row', width: '100%', height: 1 }}
-				>
+				<box style={{ flexDirection: 'row', width: '100%', height: 1 }}>
 					<text fg={colors.fgDark}>🔍 </text>
 					<box id={containerRef.current} style={{ width: '100%', height: 1 }} />
 				</box>
 			</box>
 
-			{!allModels && (
-				<text fg={colors.fgDark}>Loading models…</text>
-			)}
+			{!allModels && <text fg={colors.fgDark}>Loading models…</text>}
 
 			{allModels && flatList.length === 0 && searchQuery && (
 				<text fg={colors.fgDark}>No models found</text>
 			)}
 
 			{flatList.length > 0 && (
-				<box style={{ flexDirection: 'column', overflow: 'hidden', flexGrow: 1 }}>
+				<box
+					style={{ flexDirection: 'column', overflow: 'hidden', flexGrow: 1 }}
+				>
 					{visibleDisplayRows.map((row, i) => {
 						if (row.type === 'header') {
 							return (
-								<box key={`h-${row.providerKey}`} style={{ height: 1, width: '100%' }}>
+								<box
+									key={`h-${row.providerKey}`}
+									style={{ height: 1, width: '100%' }}
+								>
 									<text fg={colors.fgDark}>
 										<b>{row.label.toUpperCase()}</b>
 									</text>
@@ -347,13 +359,9 @@ export function ModelsOverlay({
 								<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
 									{row.item.modelLabel}
 								</text>
-								{isCurrent && (
-									<text fg={colors.blue}>●</text>
-								)}
+								{isCurrent && <text fg={colors.blue}>●</text>}
 								{badges.length > 0 && (
-									<text fg={colors.fgDark}>
-										{badges.join(' ')}
-									</text>
+									<text fg={colors.fgDark}>{badges.join(' ')}</text>
 								)}
 							</box>
 						);

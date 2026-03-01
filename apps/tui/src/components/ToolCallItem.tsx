@@ -87,7 +87,12 @@ function extractToolError(part: MessagePart): string | null {
 	if (typeof cj.error === 'string') return cj.error;
 
 	const result = cj.result as Record<string, unknown> | undefined;
-	if (result && typeof result === 'object' && 'ok' in result && result.ok === false) {
+	if (
+		result &&
+		typeof result === 'object' &&
+		'ok' in result &&
+		result.ok === false
+	) {
 		if (typeof result.error === 'string') return result.error;
 		return 'Tool execution failed';
 	}
@@ -114,16 +119,25 @@ export function ToolCallItem({ part, _isLast, isFirst }: ToolCallItemProps) {
 		: isCompleted
 			? colors.green
 			: colors.fgDark;
-	const nameColor = hasError ? colors.red : isCompleted ? colors.fgMuted : colors.fgDark;
+	const nameColor = hasError
+		? colors.red
+		: isCompleted
+			? colors.fgMuted
+			: colors.fgDark;
 
 	const durationStr = duration
-		? duration < 1000 ? `${duration}ms` : `${(duration / 1000).toFixed(1)}s`
+		? duration < 1000
+			? `${duration}ms`
+			: `${(duration / 1000).toFixed(1)}s`
 		: '';
 
 	const maxErrorLen = Math.max(20, 60 - displayName.length);
-	const truncatedError = hasError && toolError
-		? (toolError.length > maxErrorLen ? `${toolError.slice(0, maxErrorLen - 1)}…` : toolError)
-		: '';
+	const truncatedError =
+		hasError && toolError
+			? toolError.length > maxErrorLen
+				? `${toolError.slice(0, maxErrorLen - 1)}…`
+				: toolError
+			: '';
 
 	const diffPatch = extractDiffPatch(part);
 	const filePath = extractFilePath(part);

@@ -1,10 +1,6 @@
 import { useKeyboard } from '@opentui/react';
 import { useState, useCallback, useEffect, useRef } from 'react';
-import {
-	stageFiles,
-	shareSession,
-	syncShare,
-} from '@ottocode/api';
+import { stageFiles, shareSession, syncShare } from '@ottocode/api';
 import { StatusBar } from './components/StatusBar.tsx';
 import { ChatView } from './components/ChatView.tsx';
 import { ChatInput } from './components/ChatInput.tsx';
@@ -113,8 +109,8 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		async (name: string, args: string) => {
 			const cmd = resolveCommand(name);
 			switch (cmd) {
-			case 'exit':
-				onQuit();
+				case 'exit':
+					onQuit();
 					break;
 				case 'sessions':
 					await loadSessions();
@@ -130,22 +126,22 @@ export function App({ onQuit }: { onQuit: () => void }) {
 						await deleteSession(activeSession.id);
 					}
 					break;
-		case 'models':
-			setOverlay('models');
-			break;
-			case 'commit':
-				setOverlay('commit');
-				break;
-			case 'stage':
-				try {
-					// biome-ignore lint/suspicious/noExplicitAny: SDK body type mismatch
-					await stageFiles({ body: { files: ['.'] } as any });
-					showStatus({ type: 'success', label: 'staged all' }, 3000);
-				} catch {
-					showStatus({ type: 'error', label: 'stage failed' }, 3000);
-				}
-				break;
-			case 'help':
+				case 'models':
+					setOverlay('models');
+					break;
+				case 'commit':
+					setOverlay('commit');
+					break;
+				case 'stage':
+					try {
+						// biome-ignore lint/suspicious/noExplicitAny: SDK body type mismatch
+						await stageFiles({ body: { files: ['.'] } as any });
+						showStatus({ type: 'success', label: 'staged all' }, 3000);
+					} catch {
+						showStatus({ type: 'error', label: 'stage failed' }, 3000);
+					}
+					break;
+				case 'help':
 					setOverlay('help');
 					break;
 				case 'theme':
@@ -154,9 +150,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				case 'clear':
 					reload();
 					break;
-			case 'provider':
-				if (args) await updateDefaults({ provider: args });
-				break;
+				case 'provider':
+					if (args) await updateDefaults({ provider: args });
+					break;
 				case 'compact':
 					if (activeSession) {
 						await sendMessage(activeSession.id, '/compact');
@@ -437,24 +433,26 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				/>
 			)}
 
-	{overlay === 'commit' && (
-		<CommitOverlay
-			onClose={() => setOverlay('none')}
-			onCommitted={() => showStatus({ type: 'success', label: 'committed' }, 3000)}
-		/>
-	)}
+			{overlay === 'commit' && (
+				<CommitOverlay
+					onClose={() => setOverlay('none')}
+					onCommitted={() =>
+						showStatus({ type: 'success', label: 'committed' }, 3000)
+					}
+				/>
+			)}
 
-	{overlay === 'models' && (
-		<ModelsOverlay
-				currentProvider={provider}
-				currentModel={model}
-				onClose={() => setOverlay('none')}
-				onSelect={(p, m) => {
-					updateDefaults({ provider: p, model: m });
-					setOverlay('none');
-				}}
-			/>
-		)}
+			{overlay === 'models' && (
+				<ModelsOverlay
+					currentProvider={provider}
+					currentModel={model}
+					onClose={() => setOverlay('none')}
+					onSelect={(p, m) => {
+						updateDefaults({ provider: p, model: m });
+						setOverlay('none');
+					}}
+				/>
+			)}
 
 			{overlay === 'help' && <HelpOverlay onClose={() => setOverlay('none')} />}
 			{overlay === 'theme' && (
