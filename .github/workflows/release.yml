@@ -11,7 +11,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: publish-main
+  group: release-main
   cancel-in-progress: false
 
 jobs:
@@ -1198,17 +1198,20 @@ jobs:
         run: |
           CHANGED=false
 
-          if [ "${{ needs.check-flags.outputs.publish_cli }}" = "true" ] && [ "${{ needs.publish-npm.result }}" = "success" ]; then
+          if [ "${{ needs.check-flags.outputs.publish_cli }}" = "true" ]; then
+            echo "CLI publish result: ${{ needs.publish-npm.result }}"
             sed -i 's/^PUBLISH_CLI=true$/PUBLISH_CLI=false/' publish.env
             CHANGED=true
           fi
 
-          if [ "${{ needs.check-flags.outputs.publish_desktop }}" = "true" ] && [ "${{ needs.publish-desktop.result }}" = "success" ]; then
+          if [ "${{ needs.check-flags.outputs.publish_desktop }}" = "true" ]; then
+            echo "Desktop publish result: ${{ needs.publish-desktop.result }}"
             sed -i 's/^PUBLISH_DESKTOP=true$/PUBLISH_DESKTOP=false/' publish.env
             CHANGED=true
           fi
 
-          if [ "${{ needs.check-flags.outputs.publish_launcher }}" = "true" ] && [ "${{ needs.publish-launcher.result }}" = "success" ]; then
+          if [ "${{ needs.check-flags.outputs.publish_launcher }}" = "true" ]; then
+            echo "Launcher publish result: ${{ needs.publish-launcher.result }}"
             sed -i 's/^PUBLISH_LAUNCHER=true$/PUBLISH_LAUNCHER=false/' publish.env
             CHANGED=true
           fi
