@@ -26,6 +26,12 @@ const INTERFACES = [
 		cmd: 'otto',
 	},
 	{
+		tag: 'Web',
+		headline: 'Remote web client',
+		body: 'Run only the Web UI and point it at an existing otto API server URL.',
+		cmd: 'otto web --api <url>',
+	},
+	{
 		tag: 'SDK',
 		headline: 'Embed anywhere',
 		body: 'Use @ottocode/server in your own apps. Provider-agnostic. Tree-shakable.',
