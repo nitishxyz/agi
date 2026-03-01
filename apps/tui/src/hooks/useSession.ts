@@ -6,6 +6,7 @@ import {
 	createMessage,
 	abortSession as apiAbortSession,
 	resolveApproval,
+	updateSession as apiUpdateSession,
 } from '@ottocode/api';
 import type { Session } from '../types.ts';
 
@@ -109,6 +110,29 @@ export function useSession() {
 		}
 	}, []);
 
+	const updateSessionPrefs = useCallback(
+		async (
+			sessionId: string,
+			changes: { agent?: string; provider?: string; model?: string },
+		) => {
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: provider type mismatch between string and Provider enum
+				await apiUpdateSession({
+					path: { sessionId },
+					body: changes,
+				} as any);
+				setActiveSession((prev) => {
+					if (prev?.id !== sessionId) return prev;
+					return { ...prev, ...changes };
+				});
+				setSessions((prev) =>
+					prev.map((s) => (s.id === sessionId ? { ...s, ...changes } : s)),
+				);
+			} catch {}
+		},
+		[],
+	);
+
 	const sendMessage = useCallback(
 		async (
 			sessionId: string,
@@ -164,6 +188,7 @@ export function useSession() {
 		deleteSession: deleteSessionFn,
 		switchSession,
 		updateSessionMeta,
+		updateSessionPrefs,
 		sendMessage,
 		abortSession: abortSessionFn,
 		approveToolCall,

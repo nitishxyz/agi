@@ -405,20 +405,34 @@ function AssistantMessage({
 				paddingBottom: 1,
 			}}
 		>
-			<box style={{ flexDirection: 'row', gap: 1 }}>
-				<text fg={colors.assistantBadge}>
-					<b>assistant</b>
+		<box style={{ flexDirection: 'row', gap: 0 }}>
+			<text fg={colors.purple}>✦ </text>
+			{message.agent && (
+				<text
+					fg={message.agent === 'plan' ? colors.cyan : colors.purple}
+				>
+					<b>{message.agent}</b>
 				</text>
-				{message.provider && (
-					<text fg={colors.fgDimmed}>{message.provider}</text>
-				)}
-				{message.createdAt > 0 && (
+			)}
+			{message.provider && (
+				<>
+					<text fg={colors.fgDark}> · </text>
+					<text fg={colors.fgMuted}>{message.provider}</text>
+				</>
+			)}
+			{message.model && (
+				<>
+					<text fg={colors.fgDark}> · </text>
+					<text fg={colors.fgDimmed}>{message.model}</text>
+				</>
+			)}
+			{message.createdAt > 0 && (
+				<>
+					<text fg={colors.fgDark}> · </text>
 					<text fg={colors.fgDimmed}>{formatTime(message.createdAt)}</text>
-				)}
-				{message.totalTokens && message.status === 'complete' && (
-					<text fg={colors.fgDimmed}>{message.totalTokens}tok</text>
-				)}
-			</box>
+				</>
+			)}
+		</box>
 
 			{dedupedParts.map((part, i) => {
 				const prev = i > 0 ? dedupedParts[i - 1] : null;

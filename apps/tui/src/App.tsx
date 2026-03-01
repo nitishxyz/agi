@@ -82,6 +82,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		deleteSession,
 		switchSession,
 		updateSessionMeta,
+		updateSessionPrefs,
 		sendMessage,
 		abortSession,
 		approveToolCall,
@@ -399,6 +400,18 @@ export function App({ onQuit }: { onQuit: () => void }) {
 
 	const provider = activeSession?.provider || config.defaults.provider;
 	const model = activeSession?.model || config.defaults.model;
+	const currentAgent = activeSession?.agent || config.defaults.agent;
+
+	const handlePlanModeToggle = useCallback(
+		async (isPlanMode: boolean) => {
+			const newAgent = isPlanMode ? 'plan' : 'build';
+			if (activeSession) {
+				await updateSessionPrefs(activeSession.id, { agent: newAgent });
+			}
+			await updateDefaults({ agent: newAgent });
+		},
+		[activeSession, updateSessionPrefs, updateDefaults],
+	);
 
 	return (
 		<box
@@ -434,15 +447,17 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				/>
 			)}
 
-			<ChatInput
-				onSubmit={handleSubmit}
-				disabled={pendingApprovals.length > 0}
-				status={status}
-				isStreaming={isStreaming}
-				provider={provider}
-				model={model}
-				escHint={escHint}
-			/>
+		<ChatInput
+			onSubmit={handleSubmit}
+			disabled={pendingApprovals.length > 0}
+			status={status}
+			isStreaming={isStreaming}
+			provider={provider}
+			model={model}
+			escHint={escHint}
+			isPlanMode={currentAgent === 'plan'}
+			onPlanModeToggle={handlePlanModeToggle}
+		/>
 
 			{overlay === 'sessions' && (
 				<SessionsOverlay

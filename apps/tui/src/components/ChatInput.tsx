@@ -24,6 +24,8 @@ interface ChatInputProps {
 	provider: string;
 	model: string;
 	escHint: boolean;
+	isPlanMode?: boolean;
+	onPlanModeToggle?: (isPlanMode: boolean) => void;
 }
 
 const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
@@ -50,11 +52,22 @@ export function ChatInput({
 	provider,
 	model,
 	escHint,
+	isPlanMode: externalIsPlanMode,
+	onPlanModeToggle,
 }: ChatInputProps) {
 	const { colors } = useTheme();
 	const renderer = useRenderer();
 	const textareaRef = useRef<TextareaRenderable | null>(null);
 	const containerRef = useRef<string>(`chat-input-${Date.now()}`);
+	const [isPlanMode, setIsPlanMode] = useState(externalIsPlanMode || false);
+	const isPlanModeRef = useRef(isPlanMode);
+	isPlanModeRef.current = isPlanMode;
+
+	useEffect(() => {
+		if (externalIsPlanMode !== undefined) {
+			setIsPlanMode(externalIsPlanMode);
+		}
+	}, [externalIsPlanMode]);
 
 	const {
 		images: attachedImages,
@@ -267,32 +280,40 @@ export function ChatInput({
 			return;
 		}
 
-		if (commandMatchesRef.current.length === 0) return;
-		if (key.name === 'up') {
-			setSelectedIdx((prev) => {
-				const next = prev - 1;
-				return next < 0 ? commandMatchesRef.current.length - 1 : next;
-			});
-		} else if (key.name === 'down') {
-			setSelectedIdx((prev) => {
-				const next = prev + 1;
-				return next >= commandMatchesRef.current.length ? 0 : next;
-			});
-		} else if (key.name === 'tab') {
-			const matches = commandMatchesRef.current;
-			const idx = selectedIdxRef.current;
-			if (
-				matches.length > 0 &&
-				idx >= 0 &&
-				idx < matches.length &&
-				textareaRef.current
-			) {
-				textareaRef.current.clear();
-				textareaRef.current.insertText(`/${matches[idx].name}`);
-				handleContentChange();
+		if (commandMatchesRef.current.length > 0) {
+			if (key.name === 'up') {
+				setSelectedIdx((prev) => {
+					const next = prev - 1;
+					return next < 0 ? commandMatchesRef.current.length - 1 : next;
+				});
+			} else if (key.name === 'down') {
+				setSelectedIdx((prev) => {
+					const next = prev + 1;
+					return next >= commandMatchesRef.current.length ? 0 : next;
+				});
+			} else if (key.name === 'tab') {
+				const matches = commandMatchesRef.current;
+				const idx = selectedIdxRef.current;
+				if (
+					matches.length > 0 &&
+					idx >= 0 &&
+					idx < matches.length &&
+					textareaRef.current
+				) {
+					textareaRef.current.clear();
+					textareaRef.current.insertText(`/${matches[idx].name}`);
+					handleContentChange();
+				}
+			} else if (key.name === 'escape') {
+				setCommandMatches([]);
 			}
-		} else if (key.name === 'escape') {
-			setCommandMatches([]);
+			return;
+		}
+
+		if (key.name === 'tab') {
+			const next = !isPlanModeRef.current;
+			setIsPlanMode(next);
+			onPlanModeToggle?.(next);
 		}
 	});
 
@@ -305,7 +326,7 @@ export function ChatInput({
 			id: 'chat-textarea',
 			width: '100%',
 			height: 3,
-			placeholder: 'Message otto…  ↵ send  ⇧↵ newline  @ files  / commands',
+		placeholder: 'Message otto…  ↵ send  ⇧↵ newline  ⇥ mode',
 			placeholderColor: colors.fgDark,
 			textColor: colors.fgBright,
 			focusedTextColor: colors.fgBright,
@@ -469,15 +490,19 @@ export function ChatInput({
 					))}
 				</box>
 			)}
-			<box
-				style={{
-					width: '100%',
-					borderStyle: 'rounded',
-					border: true,
-					borderColor: disabled ? colors.border : colors.fgDimmed,
-					flexDirection: 'column',
-				}}
-			>
+		<box
+			style={{
+				width: '100%',
+				borderStyle: 'rounded',
+				border: true,
+				borderColor: disabled
+					? colors.border
+					: isPlanMode
+						? colors.cyan
+						: colors.blue,
+				flexDirection: 'column',
+			}}
+		>
 				<box id={containerRef.current} style={{ width: '100%' }} />
 			</box>
 			<box
@@ -488,6 +513,13 @@ export function ChatInput({
 					justifyContent: 'space-between',
 				}}
 			>
+			<box style={{ flexDirection: 'row', gap: 1 }}>
+				<text
+					fg={isPlanMode ? colors.bg : colors.bg}
+					bg={isPlanMode ? colors.cyan : colors.blue}
+				>
+					{isPlanMode ? ' PLAN ' : ' BUILD '}
+				</text>
 				{hasStatus ? (
 					<box style={{ flexDirection: 'row' }}>
 						{isStreaming && status.type === 'idle' && (
@@ -513,8 +545,9 @@ export function ChatInput({
 						)}
 					</box>
 				) : (
-					<text fg={colors.fgDark}>@ files / commands</text>
+					<text fg={colors.fgDark}>⇥ switch mode</text>
 				)}
+			</box>
 				<box style={{ flexDirection: 'row' }}>
 					<text fg={colors.fgDark}>{provider}</text>
 					<text fg={colors.fgDimmed}>/</text>
