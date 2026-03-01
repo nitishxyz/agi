@@ -151,7 +151,14 @@ export function App({ onQuit }: { onQuit: () => void }) {
 					reload();
 					break;
 				case 'provider':
-					if (args) await updateDefaults({ provider: args });
+				if (args) {
+					if (activeSession) {
+						await updateSessionPrefs(activeSession.id, { provider: args });
+					} else {
+						const s = await createSession();
+						if (s) await updateSessionPrefs(s.id, { provider: args });
+					}
+					}
 					break;
 				case 'compact':
 					if (activeSession) {
@@ -370,10 +377,12 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			const newAgent = isPlanMode ? 'plan' : 'build';
 			if (activeSession) {
 				await updateSessionPrefs(activeSession.id, { agent: newAgent });
+			} else {
+				const s = await createSession();
+				if (s) await updateSessionPrefs(s.id, { agent: newAgent });
 			}
-			await updateDefaults({ agent: newAgent });
 		},
-		[activeSession, updateSessionPrefs, updateDefaults],
+		[activeSession, updateSessionPrefs, createSession],
 	);
 
 	return (
@@ -448,7 +457,13 @@ export function App({ onQuit }: { onQuit: () => void }) {
 					currentModel={model}
 					onClose={() => setOverlay('none')}
 					onSelect={(p, m) => {
-						updateDefaults({ provider: p, model: m });
+						if (activeSession) {
+							updateSessionPrefs(activeSession.id, { provider: p, model: m });
+					} else {
+						createSession().then((s) => {
+							if (s) updateSessionPrefs(s.id, { provider: p, model: m });
+						});
+						}
 						setOverlay('none');
 					}}
 				/>
