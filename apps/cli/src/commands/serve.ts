@@ -11,6 +11,46 @@ import { getDb } from '@ottocode/database';
 import { createWebServer } from '../web-server.ts';
 import { colors } from '../ui.ts';
 
+export interface StartServerResult {
+	port: number;
+	stop: () => Promise<void>;
+}
+
+export async function startApiServer(opts: {
+	project: string;
+	port?: number;
+}): Promise<StartServerResult> {
+	const projectRoot = opts.project;
+	const cfg = await loadConfig(projectRoot);
+	await getDb(cfg.projectRoot);
+
+	const app = createServer();
+	const portEnv = process.env.PORT ? Number(process.env.PORT) : undefined;
+	const requestedPort = opts.port ?? portEnv ?? 0;
+
+	const agiServer = Bun.serve({
+		port: requestedPort,
+		hostname: 'localhost',
+		fetch: app.fetch,
+		idleTimeout: 240,
+	});
+
+	const serverPort = agiServer.port ?? requestedPort;
+	setServerPort(serverPort);
+
+	const stop = async () => {
+		try {
+			const terminalManager = getTerminalManager();
+			if (terminalManager) await terminalManager.killAll();
+		} catch {}
+		try {
+			agiServer.stop(true);
+		} catch {}
+	};
+
+	return { port: serverPort, stop };
+}
+
 function getLocalIP(): string {
 	try {
 		const { networkInterfaces } = require('node:os');

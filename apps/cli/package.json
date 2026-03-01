@@ -51,6 +51,7 @@
 		"@ottocode/server": "workspace:*",
 		"@ottocode/acp": "workspace:*",
 		"@ottocode/api": "workspace:*",
+		"@ottocode/tui": "workspace:*",
 		"@clack/prompts": "^0.11.0",
 		"chalk": "^5.6.2",
 		"commander": "^14.0.2",

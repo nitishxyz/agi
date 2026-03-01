@@ -19,8 +19,9 @@ import {
 	registerWebCommand,
 } from './commands/index.ts';
 import { runDiscoveredCommand } from './custom-commands.ts';
+import { startApiServer } from './commands/serve.ts';
 import { handleServe } from './commands/serve.ts';
-import { isDesktopInstalled, openDesktop } from './desktop.ts';
+import { startTui } from '@ottocode/tui';
 import { colors } from './ui.ts';
 import { ensureServer, stopEphemeralServer } from './ask/server.ts';
 
@@ -41,7 +42,7 @@ export function createCli(version: string): Command {
 		.version(version, '-v, --version', 'Print version and exit')
 		.option('--debug', 'Enable debug logging')
 		.option('--trace', 'Enable stack traces in error logs')
-		.option('--no-desktop', 'Skip desktop app and start server')
+		.option('--web', 'Open Web UI instead of TUI')
 		.hook('preAction', async (thisCommand, actionCommand) => {
 			const opts = thisCommand.opts();
 			if (opts.debug) {
@@ -104,8 +105,7 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 			!argv.includes('-h') &&
 			!argv.includes('--help') &&
 			!argv.includes('-v') &&
-			!argv.includes('--version') &&
-			!argv.includes('--no-desktop'))
+			!argv.includes('--version'))
 	) {
 		const debugEnabled = argv.includes('--debug');
 		const traceEnabled = argv.includes('--trace');
@@ -120,37 +120,29 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 			}
 		}
 
-		const noDesktop = argv.includes('--no-desktop');
-		if (!noDesktop && isDesktopInstalled()) {
-			console.log('');
-			console.log(
-				colors.bold('  ⚡ otto') + colors.dim(' — Opening desktop app...'),
-			);
-			console.log('');
-			const opened = openDesktop(projectRoot);
-			if (opened) return;
-			console.log(
-				colors.dim('  Failed to open desktop app, falling back to serve'),
-			);
-			console.log('');
-		}
-
-		const noOpen = argv.includes('--no-open');
-		const networkFlag = argv.includes('--network');
+		const useWeb = argv.includes('--web');
 		const portFlagIndex = argv.indexOf('--port');
 		const port =
 			portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : undefined;
 
-		await handleServe(
-			{
-				project: projectRoot,
-				port,
-				network: networkFlag,
-				noOpen,
-				tunnel: false,
-			},
-			version,
-		);
+		if (useWeb) {
+			const noOpen = argv.includes('--no-open');
+			const networkFlag = argv.includes('--network');
+			await handleServe(
+				{
+					project: projectRoot,
+					port,
+					network: networkFlag,
+					noOpen,
+					tunnel: false,
+				},
+				version,
+			);
+			return;
+		}
+
+		const server = await startApiServer({ project: projectRoot, port });
+		await startTui(server.port);
 		return;
 	}
 

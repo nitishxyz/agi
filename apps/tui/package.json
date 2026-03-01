@@ -3,6 +3,9 @@
 	"version": "0.1.0",
 	"type": "module",
 	"private": true,
+	"exports": {
+		".": "./start.tsx"
+	},
 	"scripts": {
 		"dev": "bun run index.tsx",
 		"build": "bun build index.tsx --outdir dist --target bun"
