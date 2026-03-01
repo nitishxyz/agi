@@ -128,23 +128,21 @@ export function ConfigModal({
 							<button
 								type="button"
 								role="switch"
-							aria-checked={reasoningEnabled}
+								aria-checked={reasoningEnabled}
 								onClick={() =>
-								updateDefaults.mutate({
-									reasoningText: !reasoningEnabled,
-									scope: 'global',
+									updateDefaults.mutate({
+										reasoningText: !reasoningEnabled,
+										scope: 'global',
 									})
 								}
 								className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-								reasoningEnabled ? 'bg-primary' : 'bg-muted'
+									reasoningEnabled ? 'bg-primary' : 'bg-muted'
 								}`}
 							>
 								<span
 									className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
-									reasoningEnabled
-											? 'translate-x-6'
-											: 'translate-x-1'
-								} ${reasoningEnabled ? 'bg-primary-foreground' : 'bg-foreground'}`}
+										reasoningEnabled ? 'translate-x-6' : 'translate-x-1'
+									} ${reasoningEnabled ? 'bg-primary-foreground' : 'bg-foreground'}`}
 								/>
 							</button>
 						</div>

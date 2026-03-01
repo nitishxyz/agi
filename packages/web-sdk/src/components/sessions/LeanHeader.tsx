@@ -113,11 +113,11 @@ export function LeanHeader({
 						) : (
 							<MessageSquare className="w-4 h-4 flex-shrink-0" />
 						)}
-					<EditableTitle
-						sessionId={session.id}
-						title={session.title}
-						className="text-foreground font-medium text-sm"
-					/>
+						<EditableTitle
+							sessionId={session.id}
+							title={session.title}
+							className="text-foreground font-medium text-sm"
+						/>
 						{shareStatus?.shared && (
 							<button
 								type="button"

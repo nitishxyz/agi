@@ -101,57 +101,59 @@ export function SessionsOverlay({
 					</text>
 				</box>
 			) : (
-			<box style={{ flexGrow: 1, flexShrink: 1, overflow: 'hidden' }}>
-			<scrollbox
-				id={scrollboxIdRef.current}
-				style={{
-					width: '100%',
-					height: '100%',
-				}}
-				stickyScroll
-				stickyStart="top"
-				viewportCulling
-			>
-					{sessions.map((s, i) => {
-						const isSelected = i === selectedIdx;
-						const title = s.title || 'untitled';
-						const meta = `${s.provider || 'unknown'}/${s.model || ''} · ${timeAgo(s.lastActiveAt)}`;
-						return (
-							<box
-								key={s.id}
-								style={{
-									flexDirection: 'column',
-									width: '100%',
-									backgroundColor: isSelected ? colors.bgHighlight : undefined,
-									paddingLeft: 1,
-									paddingRight: 1,
-									height: ITEM_HEIGHT,
-								}}
-							>
-								<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
-									{title}
-								</text>
-								<text fg={isSelected ? colors.fgDimmed : colors.fgDark}>
-									{meta}
-								</text>
+				<box style={{ flexGrow: 1, flexShrink: 1, overflow: 'hidden' }}>
+					<scrollbox
+						id={scrollboxIdRef.current}
+						style={{
+							width: '100%',
+							height: '100%',
+						}}
+						stickyScroll
+						stickyStart="top"
+						viewportCulling
+					>
+						{sessions.map((s, i) => {
+							const isSelected = i === selectedIdx;
+							const title = s.title || 'untitled';
+							const meta = `${s.provider || 'unknown'}/${s.model || ''} · ${timeAgo(s.lastActiveAt)}`;
+							return (
+								<box
+									key={s.id}
+									style={{
+										flexDirection: 'column',
+										width: '100%',
+										backgroundColor: isSelected
+											? colors.bgHighlight
+											: undefined,
+										paddingLeft: 1,
+										paddingRight: 1,
+										height: ITEM_HEIGHT,
+									}}
+								>
+									<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
+										{title}
+									</text>
+									<text fg={isSelected ? colors.fgDimmed : colors.fgDark}>
+										{meta}
+									</text>
+								</box>
+							);
+						})}
+						{loadingMore && (
+							<box style={{ height: 1, paddingLeft: 1 }}>
+								<text fg={colors.fgDimmed}>loading more…</text>
 							</box>
-						);
-					})}
-					{loadingMore && (
-						<box style={{ height: 1, paddingLeft: 1 }}>
-							<text fg={colors.fgDimmed}>loading more…</text>
-						</box>
-					)}
-					{hasMore && !loadingMore && (
-						<box style={{ height: 1, paddingLeft: 1 }}>
-							<text fg={colors.fgDark}>↓ scroll for more</text>
-						</box>
-					)}
-				</scrollbox>
-			</box>
+						)}
+						{hasMore && !loadingMore && (
+							<box style={{ height: 1, paddingLeft: 1 }}>
+								<text fg={colors.fgDark}>↓ scroll for more</text>
+							</box>
+						)}
+					</scrollbox>
+				</box>
 			)}
 			<box style={{ height: 1, flexShrink: 0, paddingLeft: 1 }}>
-				<text fg={colors.fgDimmed}>↑↓ navigate  enter select  esc close</text>
+				<text fg={colors.fgDimmed}>↑↓ navigate enter select esc close</text>
 			</box>
 		</box>
 	);

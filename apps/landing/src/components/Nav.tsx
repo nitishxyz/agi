@@ -67,7 +67,7 @@ export function Nav({ pathname }: { pathname: string }) {
 	const handleSectionLink = (hash: string) => (e: React.MouseEvent) => {
 		e.preventDefault();
 		if (pathname !== '/') {
-			window.location.href = '/#' + hash;
+			window.location.href = `/#${hash}`;
 		} else {
 			document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
 		}

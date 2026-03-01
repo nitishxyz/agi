@@ -12,7 +12,7 @@ import { ToolHistoryTracker } from './tool-history-tracker.ts';
 export async function buildHistoryMessages(
 	db: Awaited<ReturnType<typeof getDb>>,
 	sessionId: string,
-	currentMessageId?: string,
+	_currentMessageId?: string,
 ): Promise<ModelMessage[]> {
 	const rows = await db
 		.select()
@@ -220,7 +220,7 @@ export async function buildHistoryMessages(
 	return await convertToModelMessages(ui);
 }
 
-async function logPendingToolParts(
+async function _logPendingToolParts(
 	db: Awaited<ReturnType<typeof getDb>>,
 	messageId: string,
 ) {

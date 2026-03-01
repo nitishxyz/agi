@@ -19,7 +19,11 @@ function formatArgs(args: unknown): string {
 	return str.length > 200 ? `${str.slice(0, 197)}…` : str;
 }
 
-export function InlineApproval({ approval, onApprove, onDeny }: InlineApprovalProps) {
+export function InlineApproval({
+	approval,
+	_onApprove,
+	_onDeny,
+}: InlineApprovalProps) {
 	const { colors } = useTheme();
 	const toolLabel = approval.toolName.includes('__')
 		? approval.toolName.replace('__', ' › ')

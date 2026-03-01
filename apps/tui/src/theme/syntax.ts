@@ -25,7 +25,11 @@ export function buildSyntaxStyle(syntax: ThemeSyntax): SyntaxStyle {
 		'punctuation.delimiter': { fg: RGBA.fromHex(syntax.punctuationDelimiter) },
 		default: { fg: RGBA.fromHex(syntax.default) },
 		'markup.heading': { fg: RGBA.fromHex(syntax.markupHeading), bold: true },
-		'markup.heading.1': { fg: RGBA.fromHex(syntax.markupHeading1), bold: true, underline: true },
+		'markup.heading.1': {
+			fg: RGBA.fromHex(syntax.markupHeading1),
+			bold: true,
+			underline: true,
+		},
 		'markup.heading.2': { fg: RGBA.fromHex(syntax.markupHeading2), bold: true },
 		'markup.bold': { fg: RGBA.fromHex(syntax.markupBold), bold: true },
 		'markup.strong': { fg: RGBA.fromHex(syntax.markupStrong), bold: true },
@@ -35,6 +39,9 @@ export function buildSyntaxStyle(syntax: ThemeSyntax): SyntaxStyle {
 		'markup.raw': { fg: RGBA.fromHex(syntax.markupRaw) },
 		'markup.raw.block': { fg: RGBA.fromHex(syntax.markupRawBlock) },
 		'markup.link': { fg: RGBA.fromHex(syntax.markupLink), underline: true },
-		'markup.link.url': { fg: RGBA.fromHex(syntax.markupLinkUrl), underline: true },
+		'markup.link.url': {
+			fg: RGBA.fromHex(syntax.markupLinkUrl),
+			underline: true,
+		},
 	});
 }

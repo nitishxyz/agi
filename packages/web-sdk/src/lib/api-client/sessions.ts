@@ -45,9 +45,7 @@ export const sessionsMixin = {
 		if (response.error) throw new Error(extractErrorMessage(response.error));
 		const data = response.data;
 		return {
-			items: (data?.items ?? []).map((s) =>
-				convertSession(s as ApiSession),
-			),
+			items: (data?.items ?? []).map((s) => convertSession(s as ApiSession)),
 			hasMore: data?.hasMore ?? false,
 			nextOffset: data?.nextOffset ?? null,
 		};

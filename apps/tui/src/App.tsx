@@ -45,7 +45,7 @@ export type StatusIndicator =
 	| { type: 'error'; label: string };
 
 export function App({ onQuit }: { onQuit: () => void }) {
-	const { colors, setTheme, themeName } = useTheme();
+	const { colors, setTheme } = useTheme();
 	const [overlay, setOverlay] = useState<Overlay>('none');
 	const [status, setStatus] = useState<StatusIndicator>({ type: 'idle' });
 	const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

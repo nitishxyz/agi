@@ -166,14 +166,14 @@ function PartRenderer({
 function UserMessage({
 	message,
 	isQueued,
-	isFirstMessage,
+	_isFirstMessage,
 }: {
 	message: Message;
 	isQueued?: boolean;
 	isFirstMessage: boolean;
 }) {
 	const { colors } = useTheme();
-	const parts = useMemo(() => getSortedParts(message), [message.parts]);
+	const parts = useMemo(() => getSortedParts(message), [message]);
 	const content = useMemo(() => {
 		return parts
 			.filter((p) => p.type === 'text')
@@ -221,8 +221,10 @@ function UserMessage({
 				)}
 				{isQueued && <text fg={colors.yellow}>queued</text>}
 			</box>
-		{attachmentNames.length > 0 && (
-				<box style={{ flexDirection: 'row', gap: 1, height: 1, flexWrap: 'wrap' }}>
+			{attachmentNames.length > 0 && (
+				<box
+					style={{ flexDirection: 'row', gap: 1, height: 1, flexWrap: 'wrap' }}
+				>
 					{attachmentNames.map((name) => {
 						const short = name.length > 20 ? `${name.slice(0, 17)}…` : name;
 						return (
@@ -340,14 +342,14 @@ function StreamingIndicator({
 function AssistantMessage({
 	message,
 	isStreaming,
-	isQueued,
-	isFirstMessage,
+	_isQueued,
+	_isFirstMessage,
 	pendingApprovals,
 	onApprove,
 	onDeny,
 }: MessageItemProps) {
 	const { colors } = useTheme();
-	const sortedParts = useMemo(() => getSortedParts(message), [message.parts]);
+	const sortedParts = useMemo(() => getSortedParts(message), [message]);
 	const dedupedParts = useMemo(
 		() => deduplicateToolParts(sortedParts),
 		[sortedParts],
@@ -377,7 +379,7 @@ function AssistantMessage({
 			? dedupedParts.lastIndexOf(toolParts[toolParts.length - 1])
 			: -1;
 
-	const hasAnyContent = dedupedParts.some(
+	const _hasAnyContent = dedupedParts.some(
 		(p) =>
 			(p.type === 'text' && extractText(p).trim()) ||
 			isToolPart(p) ||

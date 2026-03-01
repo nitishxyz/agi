@@ -13,7 +13,15 @@ interface ChatViewProps {
 	onDeny: (callId: string) => void;
 }
 
-export function ChatView({ messages, isStreaming, streamingMessageId, queuedMessageIds, pendingApprovals, onApprove, onDeny }: ChatViewProps) {
+export function ChatView({
+	messages,
+	_isStreaming,
+	streamingMessageId,
+	queuedMessageIds,
+	pendingApprovals,
+	onApprove,
+	onDeny,
+}: ChatViewProps) {
 	const { colors } = useTheme();
 
 	const sorted = useMemo(() => {
@@ -28,7 +36,11 @@ export function ChatView({ messages, isStreaming, streamingMessageId, queuedMess
 			const msg = sorted[i];
 			if (msg.role === 'user') {
 				const next = sorted[i + 1];
-				if (next && next.role === 'assistant' && queuedMessageIds.has(next.id)) {
+				if (
+					next &&
+					next.role === 'assistant' &&
+					queuedMessageIds.has(next.id)
+				) {
 					ids.add(msg.id);
 				}
 			}
@@ -65,7 +77,9 @@ export function ChatView({ messages, isStreaming, streamingMessageId, queuedMess
 				<text fg={colors.blue}>
 					<b>otto</b>
 				</text>
-				<text fg={colors.fgDark}>Type a message below to start a conversation</text>
+				<text fg={colors.fgDark}>
+					Type a message below to start a conversation
+				</text>
 				<text fg={colors.fgDimmed}>or type /help for commands</text>
 			</box>
 		);

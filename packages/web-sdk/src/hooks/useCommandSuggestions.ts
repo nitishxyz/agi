@@ -3,9 +3,7 @@ import { apiClient } from '../lib/api-client';
 
 interface UseCommandSuggestionsOptions {
 	onCommand?: (commandId: string) => void;
-	updatePreferences: (prefs: {
-		vimMode?: boolean;
-	}) => void;
+	updatePreferences: (prefs: { vimMode?: boolean }) => void;
 	updateReasoningText: (enabled: boolean) => void;
 	vimModeEnabled: boolean;
 	reasoningEnabled: boolean;
@@ -68,7 +66,7 @@ export function useCommandSuggestions({
 				resetInput();
 				return;
 			}
-		if (commandId === 'reasoning') {
+			if (commandId === 'reasoning') {
 				updateReasoningText(!reasoningEnabled);
 				resetInput();
 				return;

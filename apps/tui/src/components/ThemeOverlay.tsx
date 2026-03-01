@@ -11,13 +11,19 @@ export function ThemeOverlay({ onClose, onSave }: ThemeOverlayProps) {
 	const { colors, themeName, setTheme } = useTheme();
 	const originalThemeRef = useRef(themeName);
 	const [selectedIdx, setSelectedIdx] = useState(
-		Math.max(0, themeList.findIndex((t) => t.name === themeName)),
+		Math.max(
+			0,
+			themeList.findIndex((t) => t.name === themeName),
+		),
 	);
 
-	const navigate = useCallback((next: number) => {
-		setSelectedIdx(next);
-		setTheme(themeList[next].name);
-	}, [setTheme]);
+	const navigate = useCallback(
+		(next: number) => {
+			setSelectedIdx(next);
+			setTheme(themeList[next].name);
+		},
+		[setTheme],
+	);
 
 	useKeyboard((key) => {
 		if (key.name === 'up') {
@@ -61,7 +67,10 @@ export function ThemeOverlay({ onClose, onSave }: ThemeOverlayProps) {
 					const isSelected = i === selectedIdx;
 					const isCurrent = t.name === themeName;
 					return (
-						<box key={t.name} style={{ flexDirection: 'row', gap: 1, height: 1 }}>
+						<box
+							key={t.name}
+							style={{ flexDirection: 'row', gap: 1, height: 1 }}
+						>
 							<text fg={isSelected ? colors.green : colors.fgDimmed}>
 								{isSelected ? '▸' : ' '}
 							</text>
@@ -81,7 +90,7 @@ export function ThemeOverlay({ onClose, onSave }: ThemeOverlayProps) {
 				})}
 			</box>
 			<box style={{ marginTop: 1 }}>
-			<text fg={colors.fgDimmed}>↑↓ preview  enter confirm  esc cancel</text>
+				<text fg={colors.fgDimmed}>↑↓ preview enter confirm esc cancel</text>
 			</box>
 		</box>
 	);

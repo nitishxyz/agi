@@ -1,4 +1,3 @@
-
 import { OttoWordmark } from '../../components/OttoWordmark';
 import { Reveal } from '../../components/Reveal';
 import { TerminalBlock } from '../../components/TerminalBlock';
@@ -57,12 +56,12 @@ export function InstallSection() {
 							</svg>
 							Desktop App
 						</a>
-					<a
-						href="/docs"
-						className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
-					>
-						Docs
-					</a>
+						<a
+							href="/docs"
+							className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
+						>
+							Docs
+						</a>
 						<a
 							href="https://github.com/nitishxyz/otto"
 							target="_blank"

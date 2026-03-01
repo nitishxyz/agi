@@ -10,6 +10,10 @@ permissions:
   contents: write
   actions: read
 
+concurrency:
+  group: publish-main
+  cancel-in-progress: false
+
 jobs:
   check-flags:
     runs-on: ubuntu-latest
@@ -135,8 +139,11 @@ jobs:
             git config --local user.name "GitHub Action"
             git add .
             git commit -m "chore: bump versions [skip ci]"
-            BRANCH=$(git rev-parse --abbrev-ref HEAD)
-            git push origin "$BRANCH"
+            for i in 1 2 3 4 5; do
+              git pull --rebase origin "${{ github.ref_name }}" && git push origin "${{ github.ref_name }}" && break
+              echo "Push failed (attempt $i), retrying in 5s..."
+              sleep 5
+            done
           fi
 
   build-cli:
@@ -1211,5 +1218,9 @@ jobs:
             git config --local user.name "GitHub Action"
             git add publish.env
             git commit -m "chore: reset publish flags [skip ci]" || echo "No changes to commit"
-            git push origin "${{ github.ref_name }}"
+            for i in 1 2 3 4 5; do
+              git pull --rebase origin "${{ github.ref_name }}" && git push origin "${{ github.ref_name }}" && break
+              echo "Push failed (attempt $i), retrying in 5s..."
+              sleep 5
+            done
           fi

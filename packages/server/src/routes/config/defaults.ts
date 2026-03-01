@@ -7,35 +7,36 @@ export function registerDefaultsRoute(app: Hono) {
 	app.patch('/v1/config/defaults', async (c) => {
 		try {
 			const projectRoot = c.req.query('project') || process.cwd();
-		const body = await c.req.json<{
-			agent?: string;
-			provider?: string;
-			model?: string;
-			toolApproval?: 'auto' | 'dangerous' | 'all';
-			guidedMode?: boolean;
-			reasoningText?: boolean;
-			theme?: string;
-			scope?: 'global' | 'local';
-		}>();
+			const body = await c.req.json<{
+				agent?: string;
+				provider?: string;
+				model?: string;
+				toolApproval?: 'auto' | 'dangerous' | 'all';
+				guidedMode?: boolean;
+				reasoningText?: boolean;
+				theme?: string;
+				scope?: 'global' | 'local';
+			}>();
 
-		const scope = body.scope || 'global';
-		const updates: Partial<{
-			agent: string;
-			provider: string;
-			model: string;
-			toolApproval: 'auto' | 'dangerous' | 'all';
-			guidedMode: boolean;
-			reasoningText: boolean;
-			theme: string;
-		}> = {};
+			const scope = body.scope || 'global';
+			const updates: Partial<{
+				agent: string;
+				provider: string;
+				model: string;
+				toolApproval: 'auto' | 'dangerous' | 'all';
+				guidedMode: boolean;
+				reasoningText: boolean;
+				theme: string;
+			}> = {};
 
-		if (body.agent) updates.agent = body.agent;
-		if (body.provider) updates.provider = body.provider;
-		if (body.model) updates.model = body.model;
-		if (body.toolApproval) updates.toolApproval = body.toolApproval;
-		if (body.guidedMode !== undefined) updates.guidedMode = body.guidedMode;
-		if (body.reasoningText !== undefined) updates.reasoningText = body.reasoningText;
-		if (body.theme) updates.theme = body.theme;
+			if (body.agent) updates.agent = body.agent;
+			if (body.provider) updates.provider = body.provider;
+			if (body.model) updates.model = body.model;
+			if (body.toolApproval) updates.toolApproval = body.toolApproval;
+			if (body.guidedMode !== undefined) updates.guidedMode = body.guidedMode;
+			if (body.reasoningText !== undefined)
+				updates.reasoningText = body.reasoningText;
+			if (body.theme) updates.theme = body.theme;
 
 			await setConfig(scope, updates, projectRoot);
 

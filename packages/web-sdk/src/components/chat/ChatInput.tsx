@@ -165,7 +165,10 @@ export const ChatInput = memo(
 			onCommand,
 			updatePreferences,
 			updateReasoningText: (enabled: boolean) =>
-				updateDefaultsMutation.mutate({ reasoningText: enabled, scope: 'global' }),
+				updateDefaultsMutation.mutate({
+					reasoningText: enabled,
+					scope: 'global',
+				}),
 			vimModeEnabled: preferences.vimMode,
 			reasoningEnabled: configData?.defaults?.reasoningText ?? true,
 			textareaRef,
@@ -593,32 +596,33 @@ export const ChatInput = memo(
 													<span className="opacity-50">(pro)</span>
 												)}
 											</button>
-											{isSetu && (setuBalance !== null || setuSubscription?.active) && (
-												<>
-													<span className="text-emerald-600 dark:text-emerald-400">
-														{setuSubscription?.active
-															? `${setuSubscription.creditsRemaining?.toFixed(1) ?? '—'} credits`
-															: setuPayg?.effectiveSpendableUsd !== undefined
-																? `$${setuPayg.effectiveSpendableUsd.toFixed(2)}`
-																: `$${(setuBalance ?? 0).toFixed(2)}`}
-													</span>
-													{onRefreshBalance && (
-														<button
-															type="button"
-															onClick={(e) => {
-																e.stopPropagation();
-																onRefreshBalance();
-															}}
-															disabled={isBalanceLoading}
-															className="p-0.5 hover:bg-background/50 rounded transition-colors disabled:opacity-50"
-														>
-															<RefreshCw
-																className={`h-2.5 w-2.5 text-muted-foreground ${isBalanceLoading ? 'animate-spin' : ''}`}
-															/>
-														</button>
-													)}
-												</>
-											)}
+											{isSetu &&
+												(setuBalance !== null || setuSubscription?.active) && (
+													<>
+														<span className="text-emerald-600 dark:text-emerald-400">
+															{setuSubscription?.active
+																? `${setuSubscription.creditsRemaining?.toFixed(1) ?? '—'} credits`
+																: setuPayg?.effectiveSpendableUsd !== undefined
+																	? `$${setuPayg.effectiveSpendableUsd.toFixed(2)}`
+																	: `$${(setuBalance ?? 0).toFixed(2)}`}
+														</span>
+														{onRefreshBalance && (
+															<button
+																type="button"
+																onClick={(e) => {
+																	e.stopPropagation();
+																	onRefreshBalance();
+																}}
+																disabled={isBalanceLoading}
+																className="p-0.5 hover:bg-background/50 rounded transition-colors disabled:opacity-50"
+															>
+																<RefreshCw
+																	className={`h-2.5 w-2.5 text-muted-foreground ${isBalanceLoading ? 'animate-spin' : ''}`}
+																/>
+															</button>
+														)}
+													</>
+												)}
 										</div>
 									)}
 								</div>

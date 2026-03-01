@@ -313,16 +313,16 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 							checked={preferences.vimMode}
 							onChange={(checked) => updatePreferences({ vimMode: checked })}
 						/>
-					<ToggleRow
-						label="Show Reasoning"
-						checked={config?.defaults?.reasoningText ?? true}
-						onChange={(checked) =>
-							updateDefaults.mutate({
-								reasoningText: checked,
-								scope: 'global',
-							})
-						}
-					/>
+						<ToggleRow
+							label="Show Reasoning"
+							checked={config?.defaults?.reasoningText ?? true}
+							onChange={(checked) =>
+								updateDefaults.mutate({
+									reasoningText: checked,
+									scope: 'global',
+								})
+							}
+						/>
 						<SelectRow
 							label="Tool Approval"
 							value={config?.defaults?.toolApproval ?? 'dangerous'}
@@ -434,7 +434,7 @@ function SetuSubscriptionInfo() {
 									<div
 										className="bg-emerald-500 h-1.5 rounded-full transition-all"
 										style={{
-											width: `${Math.min(100, ((subscription.creditsUsed / subscription.creditsIncluded) * 100))}%`,
+											width: `${Math.min(100, (subscription.creditsUsed / subscription.creditsIncluded) * 100)}%`,
 										}}
 									/>
 								</div>
@@ -448,12 +448,14 @@ function SetuSubscriptionInfo() {
 					)}
 				</>
 			)}
-			{payg && scope === 'account' && (payg.walletBalanceUsd > 0 || payg.accountBalanceUsd > 0) && (
-				<SettingRow
-					label="PAYG Balance"
-					value={`$${payg.effectiveSpendableUsd.toFixed(4)}`}
-				/>
-			)}
+			{payg &&
+				scope === 'account' &&
+				(payg.walletBalanceUsd > 0 || payg.accountBalanceUsd > 0) && (
+					<SettingRow
+						label="PAYG Balance"
+						value={`$${payg.effectiveSpendableUsd.toFixed(4)}`}
+					/>
+				)}
 		</>
 	);
 }
@@ -594,14 +596,17 @@ const SetuWalletSection = memo(function SetuWalletSection({
 							)}
 						</button>
 					</div>
-				<SetuSubscriptionInfo />
-				{!hasActiveSubscription && (
-					<>
-						<SettingRow label="Balance" value={formatBalance(setuBalance)} />
-						<SettingRow label="USDC" value={formatUsdcBalance(setuUsdcBalance)} />
-					</>
-				)}
-			</>
+					<SetuSubscriptionInfo />
+					{!hasActiveSubscription && (
+						<>
+							<SettingRow label="Balance" value={formatBalance(setuBalance)} />
+							<SettingRow
+								label="USDC"
+								value={formatUsdcBalance(setuUsdcBalance)}
+							/>
+						</>
+					)}
+				</>
 			) : (
 				<>
 					<div className="flex justify-center pb-3">

@@ -427,7 +427,8 @@ export const ChatInputContainer = memo(
 						onPlanModeToggle={handlePlanModeToggle}
 						isPlanMode={agent === 'plan'}
 						reasoningEnabled={
-						modelSupportsReasoning && (config?.defaults?.reasoningText ?? true)
+							modelSupportsReasoning &&
+							(config?.defaults?.reasoningText ?? true)
 						}
 						sessionId={sessionId}
 						images={images}

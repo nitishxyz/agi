@@ -22,7 +22,7 @@ import { runDiscoveredCommand } from './custom-commands.ts';
 import { startApiServer } from './commands/serve.ts';
 import { handleServe } from './commands/serve.ts';
 import { startTui } from '@ottocode/tui';
-import { colors } from './ui.ts';
+
 import { ensureServer, stopEphemeralServer } from './ask/server.ts';
 
 const SKIP_SERVER_COMMANDS = new Set([

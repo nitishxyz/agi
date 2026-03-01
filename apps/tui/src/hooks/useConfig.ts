@@ -37,7 +37,13 @@ export function useConfig() {
 	}, [config]);
 
 	const updateDefaults = useCallback(
-	async (changes: { provider?: string; model?: string; agent?: string; reasoningText?: boolean; theme?: string }) => {
+		async (changes: {
+			provider?: string;
+			model?: string;
+			agent?: string;
+			reasoningText?: boolean;
+			theme?: string;
+		}) => {
 			try {
 				const response = await apiUpdateDefaults({
 					body: changes,

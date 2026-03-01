@@ -31,7 +31,10 @@ const MAX_FILE_RESULTS = 15;
 const ATTACHMENT_RE = /\[📎 [^\]]+\]/g;
 
 function stripAttachmentMarkers(text: string): string {
-	return text.replace(ATTACHMENT_RE, '').replace(/\n{3,}/g, '\n\n').trim();
+	return text
+		.replace(ATTACHMENT_RE, '')
+		.replace(/\n{3,}/g, '\n\n')
+		.trim();
 }
 
 function makeAttachmentMarker(name: string): string {
@@ -191,8 +194,7 @@ export function ChatInput({
 					? COMMANDS
 					: COMMANDS.filter(
 							(c) =>
-								c.name.startsWith(query) ||
-								(c.alias && c.alias.slice(1).startsWith(query)),
+								c.name.startsWith(query) || c.alias?.slice(1).startsWith(query),
 						);
 			setCommandMatches(matches);
 			setSelectedIdx(0);
@@ -327,7 +329,8 @@ export function ChatInput({
 					const name = filePath.split('/').pop() || filePath;
 					const marker = makeAttachmentMarker(name);
 					const current = textarea.plainText;
-					const prefix = current.length > 0 && !current.endsWith('\n') ? '\n' : '';
+					const prefix =
+						current.length > 0 && !current.endsWith('\n') ? '\n' : '';
 					textarea.editBuffer.setText(`${current}${prefix}${marker} `);
 					textarea.editBuffer.setCursorByOffset(textarea.plainText.length);
 				}
@@ -346,7 +349,14 @@ export function ChatInput({
 				textareaRef.current = null;
 			}
 		};
-	}, [renderer, handleContentChange]);
+	}, [
+		renderer,
+		handleContentChange,
+		colors.fgDark,
+		colors.fgBright,
+		colors.blue,
+		handleSubmit,
+	]);
 
 	useEffect(() => {
 		if (textareaRef.current) {
@@ -487,16 +497,14 @@ export function ChatInput({
 				{hasStatus ? (
 					<box style={{ flexDirection: 'row' }}>
 						{isStreaming && status.type === 'idle' && (
-						<box style={{ flexDirection: 'row', gap: 1 }}>
-							<text fg={colors.streamDot}>
-								{SPINNER[spinnerIdx]} generating
-							</text>
-							{escHint && (
-								<text fg={colors.yellow}>
-									press Esc again to stop
+							<box style={{ flexDirection: 'row', gap: 1 }}>
+								<text fg={colors.streamDot}>
+									{SPINNER[spinnerIdx]} generating
 								</text>
-							)}
-						</box>
+								{escHint && (
+									<text fg={colors.yellow}>press Esc again to stop</text>
+								)}
+							</box>
 						)}
 						{status.type === 'loading' && (
 							<text fg={colors.blue}>
@@ -511,7 +519,7 @@ export function ChatInput({
 						)}
 					</box>
 				) : (
-					<text fg={colors.fgDark}>@ files  / commands</text>
+					<text fg={colors.fgDark}>@ files / commands</text>
 				)}
 				<box style={{ flexDirection: 'row' }}>
 					<text fg={colors.fgDark}>{provider}</text>

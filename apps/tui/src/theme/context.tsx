@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import {
+	createContext,
+	useContext,
+	useState,
+	useCallback,
+	useMemo,
+} from 'react';
 import type { Theme, ThemeColors } from './types.ts';
 import { themes, DEFAULT_THEME } from './themes/index.ts';
 import { buildSyntaxStyle } from './syntax.ts';
@@ -18,7 +24,13 @@ function resolveTheme(name: string): Theme {
 	return themes[name] ?? themes[DEFAULT_THEME];
 }
 
-export function ThemeProvider({ initialTheme, children }: { initialTheme?: string; children: React.ReactNode }) {
+export function ThemeProvider({
+	initialTheme,
+	children,
+}: {
+	initialTheme?: string;
+	children: React.ReactNode;
+}) {
 	const [themeName, setThemeName] = useState(
 		initialTheme && themes[initialTheme] ? initialTheme : DEFAULT_THEME,
 	);
@@ -30,7 +42,10 @@ export function ThemeProvider({ initialTheme, children }: { initialTheme?: strin
 	}, []);
 
 	const theme = resolveTheme(themeName);
-	const syntaxStyle = useMemo(() => buildSyntaxStyle(theme.syntax), [theme.syntax]);
+	const syntaxStyle = useMemo(
+		() => buildSyntaxStyle(theme.syntax),
+		[theme.syntax],
+	);
 
 	const value = useMemo<ThemeContextValue>(
 		() => ({
@@ -43,7 +58,9 @@ export function ThemeProvider({ initialTheme, children }: { initialTheme?: strin
 		[theme, syntaxStyle, themeName, setTheme],
 	);
 
-	return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+	return (
+		<ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+	);
 }
 
 export function useTheme(): ThemeContextValue {

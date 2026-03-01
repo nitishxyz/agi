@@ -20,7 +20,11 @@ function formatArgs(args: unknown): string {
 	return str.length > 200 ? `${str.slice(0, 197)}…` : str;
 }
 
-export function ApprovalOverlay({ approval, onApprove, onDeny }: ApprovalOverlayProps) {
+export function ApprovalOverlay({
+	approval,
+	onApprove,
+	onDeny,
+}: ApprovalOverlayProps) {
 	const { colors } = useTheme();
 
 	useKeyboard((key) => {

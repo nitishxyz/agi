@@ -7,7 +7,11 @@ interface ConfigOverlayProps {
 	currentModel: string;
 	currentAgent: string;
 	onClose: () => void;
-	onUpdate: (changes: { provider?: string; model?: string; agent?: string }) => void;
+	onUpdate: (changes: {
+		provider?: string;
+		model?: string;
+		agent?: string;
+	}) => void;
 }
 
 export function ConfigOverlay({
@@ -16,8 +20,8 @@ export function ConfigOverlay({
 	currentProvider,
 	currentModel,
 	currentAgent,
-	onClose,
-	onUpdate,
+	_onClose,
+	_onUpdate,
 }: ConfigOverlayProps) {
 	const { colors } = useTheme();
 
@@ -61,17 +65,19 @@ export function ConfigOverlay({
 			{providers.length > 0 && (
 				<box style={{ marginTop: 1, flexDirection: 'column' }}>
 					<text fg={colors.fgDark}>available providers:</text>
-					<text fg={colors.fgMuted}>  {providers.join(', ')}</text>
+					<text fg={colors.fgMuted}> {providers.join(', ')}</text>
 				</box>
 			)}
 			{agents.length > 0 && (
 				<box style={{ flexDirection: 'column' }}>
 					<text fg={colors.fgDark}>available agents:</text>
-					<text fg={colors.fgMuted}>  {agents.join(', ')}</text>
+					<text fg={colors.fgMuted}> {agents.join(', ')}</text>
 				</box>
 			)}
 			<box style={{ marginTop: 1 }}>
-				<text fg={colors.fgDimmed}>Use /provider, /model, /agent to change  esc close</text>
+				<text fg={colors.fgDimmed}>
+					Use /provider, /model, /agent to change esc close
+				</text>
 			</box>
 		</box>
 	);

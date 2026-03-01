@@ -376,12 +376,12 @@ export function HeroSection() {
 								</svg>
 								Desktop App
 							</a>
-						<a
-							href="/docs"
-							className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
-						>
-							Docs
-						</a>
+							<a
+								href="/docs"
+								className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
+							>
+								Docs
+							</a>
 						</div>
 					</div>
 				</Reveal>

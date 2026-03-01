@@ -9,7 +9,12 @@ interface ApproveAllBarProps {
 	onDeny: (callId: string) => void;
 }
 
-export function ApproveAllBar({ approvals, onApprove, onApproveAll, onDeny }: ApproveAllBarProps) {
+export function ApproveAllBar({
+	approvals,
+	onApprove,
+	onApproveAll,
+	onDeny,
+}: ApproveAllBarProps) {
 	const { colors } = useTheme();
 
 	useKeyboard((key) => {
@@ -39,7 +44,8 @@ export function ApproveAllBar({ approvals, onApprove, onApproveAll, onDeny }: Ap
 				{isSingle ? '1 tool' : `${count} tools`} waiting
 			</text>
 			<text fg={colors.green}>
-				<b>[y]</b>{isSingle ? ' approve' : ' next'}
+				<b>[y]</b>
+				{isSingle ? ' approve' : ' next'}
 			</text>
 			{!isSingle && (
 				<text fg={colors.green}>

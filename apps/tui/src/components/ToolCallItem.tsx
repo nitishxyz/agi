@@ -33,7 +33,7 @@ function getTarget(part: MessagePart): string | null {
 	return null;
 }
 
-export function ToolCallItem({ part, isLast, isFirst }: ToolCallItemProps) {
+export function ToolCallItem({ part, _isLast, isFirst }: ToolCallItemProps) {
 	const { colors } = useTheme();
 	const toolName = part.toolName || 'unknown';
 	const target = getTarget(part);
@@ -41,10 +41,16 @@ export function ToolCallItem({ part, isLast, isFirst }: ToolCallItemProps) {
 	const isCompleted = isResult || !!part.completedAt;
 	const hasError = part.type === 'error';
 	const duration = part.toolDurationMs;
-	const displayName = toolName.includes('__') ? toolName.replace('__', ' > ') : toolName;
+	const displayName = toolName.includes('__')
+		? toolName.replace('__', ' > ')
+		: toolName;
 
 	const icon = hasError ? 'x' : isCompleted ? '✓' : '→';
-	const iconColor = hasError ? colors.red : isCompleted ? colors.green : colors.fgDark;
+	const iconColor = hasError
+		? colors.red
+		: isCompleted
+			? colors.green
+			: colors.fgDark;
 	const nameColor = isCompleted ? colors.fgMuted : colors.fgDark;
 
 	return (
@@ -60,12 +66,25 @@ export function ToolCallItem({ part, isLast, isFirst }: ToolCallItemProps) {
 				overflow: 'hidden',
 			}}
 		>
-			<text style={{ flexShrink: 0 }} fg={iconColor}>{icon}</text>
-			<text style={{ flexShrink: 0 }} fg={nameColor}>{displayName}</text>
-			{target && <text style={{ flexShrink: 1, overflow: 'hidden' }} fg={colors.toolArgs}>{target}</text>}
+			<text style={{ flexShrink: 0 }} fg={iconColor}>
+				{icon}
+			</text>
+			<text style={{ flexShrink: 0 }} fg={nameColor}>
+				{displayName}
+			</text>
+			{target && (
+				<text
+					style={{ flexShrink: 1, overflow: 'hidden' }}
+					fg={colors.toolArgs}
+				>
+					{target}
+				</text>
+			)}
 			{duration ? (
 				<text style={{ flexShrink: 0 }} fg={colors.fgDimmed}>
-					{duration < 1000 ? `${duration}ms` : `${(duration / 1000).toFixed(1)}s`}
+					{duration < 1000
+						? `${duration}ms`
+						: `${(duration / 1000).toFixed(1)}s`}
 				</text>
 			) : null}
 		</box>

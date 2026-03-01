@@ -12,13 +12,13 @@ export function StatusBar({ sessionTitle, queueSize = 0 }: StatusBarProps) {
 	return (
 		<box
 			style={{
-		width: '100%',
-		flexShrink: 0,
-		backgroundColor: colors.bgDark,
-		flexDirection: 'row',
-		paddingLeft: 1,
-		paddingRight: 1,
-		gap: 1,
+				width: '100%',
+				flexShrink: 0,
+				backgroundColor: colors.bgDark,
+				flexDirection: 'row',
+				paddingLeft: 1,
+				paddingRight: 1,
+				gap: 1,
 			}}
 		>
 			<text fg={colors.blue}>
@@ -26,9 +26,7 @@ export function StatusBar({ sessionTitle, queueSize = 0 }: StatusBarProps) {
 			</text>
 			<text fg={colors.fgDimmed}>│</text>
 			<text fg={sessionTitle ? colors.fg : colors.fgDark}>{title}</text>
-			{queueSize > 0 && (
-				<text fg={colors.yellow}>({queueSize} queued)</text>
-			)}
+			{queueSize > 0 && <text fg={colors.yellow}>({queueSize} queued)</text>}
 		</box>
 	);
 }

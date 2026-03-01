@@ -5,7 +5,7 @@ interface HelpOverlayProps {
 	onClose: () => void;
 }
 
-export function HelpOverlay({ onClose }: HelpOverlayProps) {
+export function HelpOverlay({ _onClose }: HelpOverlayProps) {
 	const { colors } = useTheme();
 
 	return (

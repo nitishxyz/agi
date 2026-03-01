@@ -22,7 +22,7 @@ function isActive(pathname: string, href: string, end?: boolean): boolean {
 	const clean = pathname.replace(/\/$/, '') || '/';
 	const target = href.replace(/\/$/, '') || '/';
 	if (end) return clean === target;
-	return clean === target || clean.startsWith(target + '/');
+	return clean === target || clean.startsWith(`${target}/`);
 }
 
 export function DocsMobileNav({ pathname }: { pathname: string }) {
