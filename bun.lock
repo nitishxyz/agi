@@ -209,6 +209,7 @@
         "@opentui/react": "latest",
         "@ottocode/api": "workspace:*",
         "eventsource-parser": "^3.0.0",
+        "fuse.js": "^7.1.0",
         "react": "^19.1.1",
       },
       "devDependencies": {

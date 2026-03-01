@@ -1,6 +1,8 @@
 import { useRenderer, useKeyboard } from '@opentui/react';
 import { TextareaRenderable } from '@opentui/core';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import Fuse from 'fuse.js';
+import { listFiles } from '@ottocode/api';
 import { useTheme } from '../theme.ts';
 import { COMMANDS } from '../commands.ts';
 import type { StatusIndicator } from '../App.tsx';
@@ -15,19 +17,74 @@ interface ChatInputProps {
 }
 
 const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+const MAX_FILE_RESULTS = 15;
 
 export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, model }: ChatInputProps) {
 	const { colors } = useTheme();
 	const renderer = useRenderer();
 	const textareaRef = useRef<TextareaRenderable | null>(null);
 	const containerRef = useRef<string>(`chat-input-${Date.now()}`);
+
 	const [commandMatches, setCommandMatches] = useState<typeof COMMANDS>([]);
 	const [selectedIdx, setSelectedIdx] = useState(0);
 	const commandMatchesRef = useRef(commandMatches);
 	const selectedIdxRef = useRef(selectedIdx);
 	commandMatchesRef.current = commandMatches;
 	selectedIdxRef.current = selectedIdx;
+
 	const [spinnerIdx, setSpinnerIdx] = useState(0);
+
+	const [files, setFiles] = useState<string[]>([]);
+	const [showFileMention, setShowFileMention] = useState(false);
+	const [mentionQuery, setMentionQuery] = useState('');
+	const [mentionSelectedIdx, setMentionSelectedIdx] = useState(0);
+	const mentionSelectedIdxRef = useRef(mentionSelectedIdx);
+	const showFileMentionRef = useRef(showFileMention);
+	showFileMentionRef.current = showFileMention;
+	mentionSelectedIdxRef.current = mentionSelectedIdx;
+
+	const fuse = useMemo(
+		() =>
+			new Fuse(
+				files.map((f) => ({
+					path: f,
+					filename: f.split('/').pop() || f,
+					normalized: f.replace(/[.\-_/]/g, ''),
+				})),
+				{
+					keys: [
+						{ name: 'filename', weight: 2 },
+						{ name: 'normalized', weight: 1.5 },
+						{ name: 'path', weight: 1 },
+					],
+					threshold: 0.3,
+					distance: 200,
+					ignoreLocation: true,
+					includeScore: true,
+				},
+			),
+		[files],
+	);
+
+	const filteredFiles = useMemo(() => {
+		if (!mentionQuery) {
+			return files.slice(0, MAX_FILE_RESULTS);
+		}
+		const normalizedQuery = mentionQuery.replace(/[.\-_/]/g, '');
+		const searchResults = fuse.search(normalizedQuery);
+		return searchResults.slice(0, MAX_FILE_RESULTS).map((r) => r.item.path);
+	}, [fuse, mentionQuery, files]);
+
+	const filteredFilesRef = useRef(filteredFiles);
+	filteredFilesRef.current = filteredFiles;
+
+	useEffect(() => {
+		listFiles().then((res) => {
+			if (res.data) {
+				setFiles(res.data.files);
+			}
+		});
+	}, []);
 
 	const isAnimating = isStreaming || status.type === 'loading';
 	useEffect(() => {
@@ -36,12 +93,50 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 		return () => clearInterval(interval);
 	}, [isAnimating]);
 
+	const checkForMention = useCallback((text: string, cursorOffset: number) => {
+		const textBeforeCursor = text.slice(0, cursorOffset);
+		const match = textBeforeCursor.match(/(^|[\s])@(\S*)$/);
+		if (match) {
+			setShowFileMention(true);
+			setMentionQuery(match[2]);
+			setMentionSelectedIdx(0);
+		} else {
+			setShowFileMention(false);
+		}
+	}, []);
+
+	const handleFileSelect = useCallback((filePath: string) => {
+		const textarea = textareaRef.current;
+		if (!textarea) return;
+
+		const text = textarea.plainText;
+		const cursor = textarea.editBuffer.getCursorPosition();
+		const cursorOffset = cursor.offset;
+		const textBeforeCursor = text.slice(0, cursorOffset);
+
+		const match = textBeforeCursor.match(/(^|[\s])@(\S*)$/);
+		if (!match) return;
+
+		const atPos = cursorOffset - match[0].length + match[1].length;
+		const newValue = `${text.slice(0, atPos)}@${filePath} ${text.slice(cursorOffset)}`;
+
+		textarea.editBuffer.setText(newValue);
+		const newCursorOffset = atPos + filePath.length + 2;
+		textarea.editBuffer.setCursorByOffset(newCursorOffset);
+
+		setShowFileMention(false);
+		setMentionQuery('');
+	}, []);
+
 	const handleContentChange = useCallback(() => {
 		if (!textareaRef.current) return;
 		const text = textareaRef.current.plainText;
+		const cursor = textareaRef.current.editBuffer.getCursorPosition();
+
 		if (text.startsWith('/') && !text.includes(' ')) {
+			setShowFileMention(false);
 			const query = text.slice(1).toLowerCase();
-		const matches = query.length === 0
+			const matches = query.length === 0
 				? COMMANDS
 				: COMMANDS.filter(
 						(c) => c.name.startsWith(query) || (c.alias && c.alias.slice(1).startsWith(query)),
@@ -50,11 +145,22 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 			setSelectedIdx(0);
 		} else {
 			setCommandMatches([]);
+			checkForMention(text, cursor.offset);
 		}
-	}, []);
+	}, [checkForMention]);
 
 	const handleSubmit = useCallback(() => {
 		if (!textareaRef.current) return;
+
+		if (showFileMentionRef.current) {
+			const ff = filteredFilesRef.current;
+			const idx = mentionSelectedIdxRef.current;
+			if (ff.length > 0 && idx >= 0 && idx < ff.length) {
+				handleFileSelect(ff[idx]);
+				return;
+			}
+		}
+
 		const matches = commandMatchesRef.current;
 		const idx = selectedIdxRef.current;
 		if (matches.length > 0 && idx >= 0 && idx < matches.length) {
@@ -69,9 +175,33 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 		onSubmit(text);
 		textareaRef.current.clear();
 		setCommandMatches([]);
-	}, [onSubmit]);
+		setShowFileMention(false);
+	}, [onSubmit, handleFileSelect]);
 
 	useKeyboard((key) => {
+		if (showFileMentionRef.current && filteredFilesRef.current.length > 0) {
+			if (key.name === 'up') {
+				setMentionSelectedIdx((prev) => {
+					const next = prev - 1;
+					return next < 0 ? filteredFilesRef.current.length - 1 : next;
+				});
+			} else if (key.name === 'down') {
+				setMentionSelectedIdx((prev) => {
+					const next = prev + 1;
+					return next >= filteredFilesRef.current.length ? 0 : next;
+				});
+			} else if (key.name === 'tab') {
+				const ff = filteredFilesRef.current;
+				const idx = mentionSelectedIdxRef.current;
+				if (ff.length > 0 && idx >= 0 && idx < ff.length) {
+					handleFileSelect(ff[idx]);
+				}
+			} else if (key.name === 'escape') {
+				setShowFileMention(false);
+			}
+			return;
+		}
+
 		if (commandMatchesRef.current.length === 0) return;
 		if (key.name === 'up') {
 			setSelectedIdx((prev) => {
@@ -104,12 +234,10 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 			id: 'chat-textarea',
 			width: '100%',
 			height: 3,
-			placeholder: 'Message otto…  ↵ send  ⇧↵ newline  / commands',
-			placeholderColor: colors.fgDark,
-			backgroundColor: colors.bg,
-			focusedBackgroundColor: colors.bg,
-			textColor: colors.fgBright,
-			focusedTextColor: colors.fgBright,
+			placeholder: 'Message otto…  ↵ send  ⇧↵ newline  @ files  / commands',
+		placeholderColor: colors.fgDark,
+		textColor: colors.fgBright,
+		focusedTextColor: colors.fgBright,
 			cursorColor: colors.blue,
 			wrapMode: 'word',
 			keyBindings: [
@@ -160,6 +288,52 @@ export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, m
 				flexDirection: 'column',
 			}}
 		>
+		{showFileMention && filteredFiles.length > 0 && (
+			<box
+				style={{
+					flexDirection: 'column',
+					backgroundColor: colors.bgHighlight,
+					borderStyle: 'rounded',
+					border: true,
+					borderColor: colors.border,
+					paddingLeft: 1,
+					paddingRight: 1,
+					width: '100%',
+				}}
+			>
+				{filteredFiles.map((filePath, i) => (
+					<box
+						key={filePath}
+						style={{
+							flexDirection: 'row',
+							gap: 1,
+							height: 1,
+							width: '100%',
+							backgroundColor: i === mentionSelectedIdx ? colors.bgSubtle : undefined,
+						}}
+					>
+						<text fg={i === mentionSelectedIdx ? colors.blue : colors.fgDark}>@</text>
+						<text fg={i === mentionSelectedIdx ? colors.green : colors.fgMuted}>{filePath}</text>
+					</box>
+				))}
+			</box>
+		)}
+		{showFileMention && filteredFiles.length === 0 && mentionQuery.length > 0 && (
+			<box
+				style={{
+					backgroundColor: colors.bgHighlight,
+					borderStyle: 'rounded',
+					border: true,
+					borderColor: colors.border,
+					paddingLeft: 1,
+					paddingRight: 1,
+					width: '100%',
+					height: 1,
+				}}
+			>
+				<text fg={colors.fgDark}>No files found</text>
+			</box>
+		)}
 		{commandMatches.length > 0 && (
 		<box
 				style={{
