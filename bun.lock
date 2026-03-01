@@ -41,7 +41,7 @@
     },
     "apps/cli": {
       "name": "@ottocode/cli",
-      "version": "0.1.216",
+      "version": "0.1.217",
       "bin": {
         "otto": "./dist/otto",
       },
@@ -68,7 +68,7 @@
     },
     "apps/desktop": {
       "name": "@ottocode/desktop",
-      "version": "0.1.60",
+      "version": "0.1.61",
       "dependencies": {
         "@ottocode/web-sdk": "workspace:*",
         "@tanstack/react-query": "^5.90.2",
@@ -324,7 +324,7 @@
     },
     "packages/api": {
       "name": "@ottocode/api",
-      "version": "0.1.216",
+      "version": "0.1.217",
       "dependencies": {
         "axios": "^1.7.9",
         "eventsource-parser": "^2.0.1",
@@ -337,7 +337,7 @@
     },
     "packages/database": {
       "name": "@ottocode/database",
-      "version": "0.1.216",
+      "version": "0.1.217",
       "dependencies": {
         "@ottocode/sdk": "workspace:*",
         "drizzle-orm": "^0.44.5",
@@ -350,7 +350,7 @@
     },
     "packages/install": {
       "name": "@ottocode/install",
-      "version": "0.1.216",
+      "version": "0.1.217",
       "bin": {
         "otto": "./start.js",
       },
@@ -373,7 +373,7 @@
     },
     "packages/sdk": {
       "name": "@ottocode/sdk",
-      "version": "0.1.216",
+      "version": "0.1.217",
       "dependencies": {
         "@ai-sdk/anthropic": "^3.0.0",
         "@ai-sdk/google": "^3.0.0",
@@ -404,7 +404,7 @@
     },
     "packages/server": {
       "name": "@ottocode/server",
-      "version": "0.1.216",
+      "version": "0.1.217",
       "dependencies": {
         "@ottocode/database": "workspace:*",
         "@ottocode/sdk": "workspace:*",
@@ -419,7 +419,7 @@
     },
     "packages/web-sdk": {
       "name": "@ottocode/web-sdk",
-      "version": "0.1.216",
+      "version": "0.1.217",
       "dependencies": {
         "@ottocode/api": "workspace:*",
         "@ottocode/sdk": "workspace:*",
@@ -457,7 +457,7 @@
     },
     "packages/web-ui": {
       "name": "@ottocode/web-ui",
-      "version": "0.1.216",
+      "version": "0.1.217",
       "dependencies": {
         "express": "^5.1.0",
       },
