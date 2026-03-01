@@ -45,9 +45,36 @@ export async function fetchBalance(
 			request_count: number;
 			created_at?: string;
 			last_request?: string;
+			scope?: 'wallet' | 'account';
+			payg?: {
+				wallet_balance_usd: number;
+				account_balance_usd: number;
+				raw_pool_usd: number;
+				effective_spendable_usd: number;
+			};
+			limits?: {
+				enabled: boolean;
+				daily_limit_usd: number | null;
+				daily_spent_usd: number;
+				daily_remaining_usd: number | null;
+				monthly_limit_usd: number | null;
+				monthly_spent_usd: number;
+				monthly_remaining_usd: number | null;
+				cap_remaining_usd: number | null;
+			} | null;
+			subscription?: {
+				active: boolean;
+				tier_id?: string;
+				tier_name?: string;
+				credits_included?: number;
+				credits_used?: number;
+				credits_remaining?: number;
+				period_start?: string;
+				period_end?: string;
+			} | null;
 		};
 
-		return {
+		const result: BalanceResponse = {
 			walletAddress: data.wallet_address,
 			balance: data.balance_usd,
 			totalSpent: data.total_spent,
@@ -55,7 +82,49 @@ export async function fetchBalance(
 			requestCount: data.request_count,
 			createdAt: data.created_at,
 			lastRequest: data.last_request,
+			scope: data.scope,
 		};
+
+		if (data.payg) {
+			result.payg = {
+				walletBalanceUsd: data.payg.wallet_balance_usd,
+				accountBalanceUsd: data.payg.account_balance_usd,
+				rawPoolUsd: data.payg.raw_pool_usd,
+				effectiveSpendableUsd: data.payg.effective_spendable_usd,
+			};
+		}
+
+		if (data.limits !== undefined) {
+			result.limits = data.limits
+				? {
+						enabled: data.limits.enabled,
+						dailyLimitUsd: data.limits.daily_limit_usd,
+						dailySpentUsd: data.limits.daily_spent_usd,
+						dailyRemainingUsd: data.limits.daily_remaining_usd,
+						monthlyLimitUsd: data.limits.monthly_limit_usd,
+						monthlySpentUsd: data.limits.monthly_spent_usd,
+						monthlyRemainingUsd: data.limits.monthly_remaining_usd,
+						capRemainingUsd: data.limits.cap_remaining_usd,
+					}
+				: null;
+		}
+
+		if (data.subscription !== undefined) {
+			result.subscription = data.subscription
+				? {
+						active: data.subscription.active,
+						tierId: data.subscription.tier_id,
+						tierName: data.subscription.tier_name,
+						creditsIncluded: data.subscription.credits_included,
+						creditsUsed: data.subscription.credits_used,
+						creditsRemaining: data.subscription.credits_remaining,
+						periodStart: data.subscription.period_start,
+						periodEnd: data.subscription.period_end,
+					}
+				: null;
+		}
+
+		return result;
 	} catch {
 		return null;
 	}

@@ -7,6 +7,10 @@ export function useSetuBalance(providerName: string | undefined) {
 	const setUsdcBalance = useSetuStore((s) => s.setUsdcBalance);
 	const setWalletAddress = useSetuStore((s) => s.setWalletAddress);
 	const setLoading = useSetuStore((s) => s.setLoading);
+	const setScope = useSetuStore((s) => s.setScope);
+	const setPayg = useSetuStore((s) => s.setPayg);
+	const setSubscription = useSetuStore((s) => s.setSubscription);
+	const setLimits = useSetuStore((s) => s.setLimits);
 	const balance = useSetuStore((s) => s.balance);
 	const usdcBalance = useSetuStore((s) => s.usdcBalance);
 	const network = useSetuStore((s) => s.network);
@@ -27,6 +31,10 @@ export function useSetuBalance(providerName: string | undefined) {
 			if (setuData) {
 				setBalance(setuData.balance);
 				setWalletAddress(setuData.walletAddress);
+				setScope(setuData.scope ?? null);
+				setPayg(setuData.payg ?? null);
+				setSubscription(setuData.subscription ?? null);
+				setLimits(setuData.limits ?? null);
 			} else if (walletData?.configured && walletData.publicKey) {
 				setWalletAddress(walletData.publicKey);
 			}
@@ -48,6 +56,10 @@ export function useSetuBalance(providerName: string | undefined) {
 		setUsdcBalance,
 		setWalletAddress,
 		setLoading,
+		setScope,
+		setPayg,
+		setSubscription,
+		setLimits,
 	]);
 
 	useEffect(() => {

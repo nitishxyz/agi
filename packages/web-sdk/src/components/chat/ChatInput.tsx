@@ -113,6 +113,8 @@ export const ChatInput = memo(
 		const changedFiles = filesData?.changedFiles || [];
 
 		const setuBalance = useSetuStore((s) => s.balance);
+		const setuSubscription = useSetuStore((s) => s.subscription);
+		const setuPayg = useSetuStore((s) => s.payg);
 		const isSetu = providerName === 'setu';
 
 		useEffect(() => {
@@ -586,10 +588,14 @@ export const ChatInput = memo(
 													<span className="opacity-50">(pro)</span>
 												)}
 											</button>
-											{isSetu && setuBalance !== null && (
+											{isSetu && (setuBalance !== null || setuSubscription?.active) && (
 												<>
 													<span className="text-emerald-600 dark:text-emerald-400">
-														${setuBalance.toFixed(2)}
+														{setuSubscription?.active
+															? `${setuSubscription.creditsRemaining?.toFixed(1) ?? '—'} credits`
+															: setuPayg?.effectiveSpendableUsd !== undefined
+																? `$${setuPayg.effectiveSpendableUsd.toFixed(2)}`
+																: `$${(setuBalance ?? 0).toFixed(2)}`}
 													</span>
 													{onRefreshBalance && (
 														<button

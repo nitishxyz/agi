@@ -128,6 +128,33 @@ export interface BalanceResponse {
 	requestCount: number;
 	createdAt?: string;
 	lastRequest?: string;
+	scope?: 'wallet' | 'account';
+	payg?: {
+		walletBalanceUsd: number;
+		accountBalanceUsd: number;
+		rawPoolUsd: number;
+		effectiveSpendableUsd: number;
+	};
+	limits?: {
+		enabled: boolean;
+		dailyLimitUsd: number | null;
+		dailySpentUsd: number;
+		dailyRemainingUsd: number | null;
+		monthlyLimitUsd: number | null;
+		monthlySpentUsd: number;
+		monthlyRemainingUsd: number | null;
+		capRemainingUsd: number | null;
+	} | null;
+	subscription?: {
+		active: boolean;
+		tierId?: string;
+		tierName?: string;
+		creditsIncluded?: number;
+		creditsUsed?: number;
+		creditsRemaining?: number;
+		periodStart?: string;
+		periodEnd?: string;
+	} | null;
 }
 
 export interface WalletUsdcBalance {

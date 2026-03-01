@@ -399,6 +399,62 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 	);
 });
 
+function SetuSubscriptionInfo() {
+	const subscription = useSetuStore((s) => s.subscription);
+	const payg = useSetuStore((s) => s.payg);
+	const scope = useSetuStore((s) => s.scope);
+
+	if (!subscription?.active && !payg) return null;
+
+	const formatCredits = (value: number) => {
+		if (value >= 10) return Math.floor(value).toString();
+		if (value >= 1) return value.toFixed(1);
+		return value.toFixed(2);
+	};
+
+	return (
+		<>
+			{subscription?.active && (
+				<>
+					<SettingRow
+						label="Plan"
+						value={subscription.tierName ?? 'Subscription'}
+					/>
+					{subscription.creditsIncluded !== undefined &&
+						subscription.creditsUsed !== undefined && (
+							<div className="space-y-1">
+								<SettingRow
+									label="Used"
+									value={`${formatCredits(subscription.creditsUsed)} / ${formatCredits(subscription.creditsIncluded)}`}
+								/>
+								<div className="w-full bg-muted rounded-full h-1.5">
+									<div
+										className="bg-emerald-500 h-1.5 rounded-full transition-all"
+										style={{
+											width: `${Math.min(100, ((subscription.creditsUsed / subscription.creditsIncluded) * 100))}%`,
+										}}
+									/>
+								</div>
+							</div>
+						)}
+					{subscription.periodEnd && (
+						<SettingRow
+							label="Renews"
+							value={new Date(subscription.periodEnd).toLocaleDateString()}
+						/>
+					)}
+				</>
+			)}
+			{payg && scope === 'account' && (payg.walletBalanceUsd > 0 || payg.accountBalanceUsd > 0) && (
+				<SettingRow
+					label="PAYG Balance"
+					value={`$${payg.effectiveSpendableUsd.toFixed(4)}`}
+				/>
+			)}
+		</>
+	);
+}
+
 interface SetuWalletSectionProps {
 	setuWallet: string | null;
 	setuBalance: number | null;
@@ -422,6 +478,7 @@ const SetuWalletSection = memo(function SetuWalletSection({
 	openTopupModal,
 	onExportPrivateKey,
 }: SetuWalletSectionProps) {
+	const hasActiveSubscription = useSetuStore((s) => !!s.subscription?.active);
 	const [copied, setCopied] = useState(false);
 	const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 	const [exportPrivateKey, setExportPrivateKey] = useState<string | null>(null);
@@ -534,9 +591,14 @@ const SetuWalletSection = memo(function SetuWalletSection({
 							)}
 						</button>
 					</div>
-					<SettingRow label="Balance" value={formatBalance(setuBalance)} />
-					<SettingRow label="USDC" value={formatUsdcBalance(setuUsdcBalance)} />
-				</>
+				<SetuSubscriptionInfo />
+				{!hasActiveSubscription && (
+					<>
+						<SettingRow label="Balance" value={formatBalance(setuBalance)} />
+						<SettingRow label="USDC" value={formatUsdcBalance(setuUsdcBalance)} />
+					</>
+				)}
+			</>
 			) : (
 				<>
 					<div className="flex justify-center pb-3">

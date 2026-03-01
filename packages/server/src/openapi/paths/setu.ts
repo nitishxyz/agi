@@ -3,34 +3,72 @@ export const setuPaths = {
 		get: {
 			tags: ['setu'],
 			operationId: 'getSetuBalance',
-			summary: 'Get Setu account balance',
-			description:
-				'Returns wallet balance, total spent, total topups, and request count',
-			responses: {
-				200: {
-					description: 'OK',
-					content: {
-						'application/json': {
-							schema: {
-								type: 'object',
-								properties: {
-									walletAddress: { type: 'string' },
-									balance: { type: 'number' },
-									totalSpent: { type: 'number' },
-									totalTopups: { type: 'number' },
-									requestCount: { type: 'number' },
+		summary: 'Get Setu account balance',
+		description:
+			'Returns wallet balance, subscription, account info, limits, and usage data',
+		responses: {
+			200: {
+				description: 'OK',
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								walletAddress: { type: 'string' },
+								balance: { type: 'number' },
+								totalSpent: { type: 'number' },
+								totalTopups: { type: 'number' },
+								requestCount: { type: 'number' },
+								scope: { type: 'string', enum: ['wallet', 'account'] },
+								payg: {
+									type: 'object',
+									properties: {
+										walletBalanceUsd: { type: 'number' },
+										accountBalanceUsd: { type: 'number' },
+										rawPoolUsd: { type: 'number' },
+										effectiveSpendableUsd: { type: 'number' },
+									},
 								},
-								required: [
-									'walletAddress',
-									'balance',
-									'totalSpent',
-									'totalTopups',
-									'requestCount',
-								],
+								limits: {
+									type: 'object',
+									nullable: true,
+									properties: {
+										enabled: { type: 'boolean' },
+										dailyLimitUsd: { type: 'number', nullable: true },
+										dailySpentUsd: { type: 'number' },
+										dailyRemainingUsd: { type: 'number', nullable: true },
+										monthlyLimitUsd: { type: 'number', nullable: true },
+										monthlySpentUsd: { type: 'number' },
+										monthlyRemainingUsd: { type: 'number', nullable: true },
+										capRemainingUsd: { type: 'number', nullable: true },
+									},
+								},
+								subscription: {
+									type: 'object',
+									nullable: true,
+									properties: {
+										active: { type: 'boolean' },
+										tierId: { type: 'string' },
+										tierName: { type: 'string' },
+										creditsIncluded: { type: 'number' },
+										creditsUsed: { type: 'number' },
+										creditsRemaining: { type: 'number' },
+										periodStart: { type: 'string' },
+										periodEnd: { type: 'string' },
+									},
+								},
 							},
+							required: [
+								'walletAddress',
+								'balance',
+								'totalSpent',
+								'totalTopups',
+								'requestCount',
+							],
 						},
 					},
 				},
+			},
 				401: {
 					description: 'Wallet not configured',
 					content: {
