@@ -14,6 +14,7 @@ import { ModelsOverlay } from './components/ModelsOverlay.tsx';
 import { CommitOverlay } from './components/CommitOverlay.tsx';
 import { HelpOverlay } from './components/HelpOverlay.tsx';
 import { ThemeOverlay } from './components/ThemeOverlay.tsx';
+import { MCPOverlay } from './components/MCPOverlay.tsx';
 import { ApproveAllBar } from './components/ApproveAllBar.tsx';
 import { useSession } from './hooks/useSession.ts';
 import { useStream } from './hooks/useStream.ts';
@@ -147,10 +148,13 @@ export function App({ onQuit }: { onQuit: () => void }) {
 						await deleteSession(activeSession.id);
 					}
 					break;
-				case 'models':
-					setOverlay('models');
-					break;
-				case 'commit':
+			case 'mcp':
+				setOverlay('mcp');
+				break;
+			case 'models':
+				setOverlay('models');
+				break;
+			case 'commit':
 					setOverlay('commit');
 					break;
 			case 'push':
@@ -389,6 +393,10 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			setOverlay('theme');
 			return;
 		}
+		if (key.ctrl && key.name === 'm') {
+			setOverlay('mcp');
+			return;
+		}
 		if (key.ctrl && key.name === 'c') {
 			if (isStreaming && activeSession) {
 				abortSession(activeSession.id);
@@ -508,13 +516,16 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				/>
 			)}
 
-			{overlay === 'help' && <HelpOverlay onClose={() => setOverlay('none')} />}
-			{overlay === 'theme' && (
-				<ThemeOverlay
-					onClose={() => setOverlay('none')}
-					onSave={(name: string) => updateDefaults({ theme: name })}
-				/>
-			)}
-		</box>
+		{overlay === 'help' && <HelpOverlay onClose={() => setOverlay('none')} />}
+		{overlay === 'theme' && (
+			<ThemeOverlay
+				onClose={() => setOverlay('none')}
+				onSave={(name: string) => updateDefaults({ theme: name })}
+			/>
+		)}
+		{overlay === 'mcp' && (
+			<MCPOverlay onClose={() => setOverlay('none')} />
+		)}
+	</box>
 	);
 }
