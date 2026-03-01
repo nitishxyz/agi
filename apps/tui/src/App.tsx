@@ -32,7 +32,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 	const { config, updateDefaults } = useConfig();
 
 	const sessionId = activeSession?.id ?? null;
-	const { messages, isStreaming, streamingMessageId, queueSize, pendingApproval, setPendingApproval, reload, addOptimisticUser } =
+	const { messages, isStreaming, streamingMessageId, queueSize, queuedMessageIds, pendingApproval, setPendingApproval, reload, addOptimisticUser } =
 		useStream(sessionId);
 
 	const handleCommand = useCallback(
@@ -197,7 +197,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			queueSize={queueSize}
 			/>
 
-		<ChatView messages={messages} isStreaming={isStreaming} streamingMessageId={streamingMessageId} />
+		<ChatView messages={messages} isStreaming={isStreaming} streamingMessageId={streamingMessageId} queuedMessageIds={queuedMessageIds} />
 
 		<ChatInput onSubmit={handleSubmit} disabled={false} />
 

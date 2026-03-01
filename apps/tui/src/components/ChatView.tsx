@@ -7,25 +7,43 @@ interface ChatViewProps {
 	messages: Message[];
 	isStreaming: boolean;
 	streamingMessageId: string | null;
+	queuedMessageIds: Set<string>;
 }
 
-export function ChatView({ messages, isStreaming, streamingMessageId }: ChatViewProps) {
-	const visibleMessages = useMemo(() => {
+export function ChatView({ messages, isStreaming, streamingMessageId, queuedMessageIds }: ChatViewProps) {
+	const sorted = useMemo(() => {
 		return messages
 			.filter((m) => m.role === 'user' || m.role === 'assistant')
-			.filter((m) => {
-				if (
-					m.role === 'assistant' &&
-					m.status === 'pending' &&
-					(!m.parts || m.parts.length === 0) &&
-					m.id !== streamingMessageId
-				) {
-					return false;
-				}
-				return true;
-			})
 			.sort((a, b) => a.createdAt - b.createdAt);
-	}, [messages, streamingMessageId]);
+	}, [messages]);
+
+	const queuedUserIds = useMemo(() => {
+		const ids = new Set<string>();
+		for (let i = 0; i < sorted.length; i++) {
+			const msg = sorted[i];
+			if (msg.role === 'user') {
+				const next = sorted[i + 1];
+				if (next && next.role === 'assistant' && queuedMessageIds.has(next.id)) {
+					ids.add(msg.id);
+				}
+			}
+		}
+		return ids;
+	}, [sorted, queuedMessageIds]);
+
+	const visibleMessages = useMemo(() => {
+		return sorted.filter((m) => {
+			if (
+				m.role === 'assistant' &&
+				m.status === 'pending' &&
+				(!m.parts || m.parts.length === 0) &&
+				m.id !== streamingMessageId
+			) {
+				return false;
+			}
+			return true;
+		});
+	}, [sorted, streamingMessageId]);
 
 	if (visibleMessages.length === 0) {
 		return (
@@ -66,6 +84,7 @@ export function ChatView({ messages, isStreaming, streamingMessageId }: ChatView
 					key={msg.id}
 					message={msg}
 					isStreaming={msg.id === streamingMessageId}
+					isQueued={queuedUserIds.has(msg.id)}
 					isFirstMessage={i === 0}
 				/>
 			))}

@@ -443,6 +443,7 @@ export function useStream(sessionId: string | null) {
 	const [messages, dispatch] = useReducer(messageReducer, []);
 	const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
 	const [queueSize, setQueueSize] = useState(0);
+	const [queuedMessageIds, setQueuedMessageIds] = useState<Set<string>>(new Set());
 	const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
 	const abortRef = useRef<AbortController | null>(null);
 
@@ -533,6 +534,8 @@ export function useStream(sessionId: string | null) {
 				setQueueSize(queueLength);
 			const currentMsgId = typeof payload.currentMessageId === 'string' ? payload.currentMessageId : null;
 			if (currentMsgId) setStreamingMessageId(currentMsgId);
+			const queuedMsgs = Array.isArray(payload.queuedMessages) ? payload.queuedMessages : [];
+			setQueuedMessageIds(new Set(queuedMsgs.map((q: { messageId: string }) => q.messageId)));
 				break;
 			}
 			}
@@ -557,5 +560,5 @@ export function useStream(sessionId: string | null) {
 	};
 
 	const isStreaming = streamingMessageId !== null;
-	return { messages, isStreaming, streamingMessageId, queueSize, pendingApproval, setPendingApproval, reload, dispatch, addOptimisticUser };
+	return { messages, isStreaming, streamingMessageId, queueSize, queuedMessageIds, pendingApproval, setPendingApproval, reload, dispatch, addOptimisticUser };
 }

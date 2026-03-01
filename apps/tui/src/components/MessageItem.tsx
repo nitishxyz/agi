@@ -6,6 +6,7 @@ import type { Message, MessagePart } from '../types.ts';
 interface MessageItemProps {
 	message: Message;
 	isStreaming: boolean;
+	isQueued?: boolean;
 	isFirstMessage: boolean;
 }
 
@@ -117,7 +118,7 @@ function PartRenderer({ part, isActive, isLastTool, prevType }: { part: MessageP
 	return null;
 }
 
-function UserMessage({ message, isFirstMessage }: { message: Message; isFirstMessage: boolean }) {
+function UserMessage({ message, isQueued, isFirstMessage }: { message: Message; isQueued?: boolean; isFirstMessage: boolean }) {
 	const parts = useMemo(() => getSortedParts(message), [message.parts]);
 	const content = useMemo(() => {
 		return parts
@@ -129,14 +130,13 @@ function UserMessage({ message, isFirstMessage }: { message: Message; isFirstMes
 	return (
 		<box
 			style={{
-				flexDirection: 'column',
-				width: '100%',
-				marginTop: isFirstMessage ? 0 : 1,
-				backgroundColor: colors.userBg,
-				paddingLeft: 1,
-				paddingRight: 1,
-				paddingTop: 0,
-				paddingBottom: 0,
+			flexDirection: 'column',
+			width: '100%',
+			backgroundColor: isQueued ? colors.bgHighlight : colors.userBg,
+			paddingLeft: 1,
+			paddingRight: 1,
+			paddingTop: 1,
+			paddingBottom: 1,
 			}}
 		>
 			<box style={{ flexDirection: 'row', gap: 1 }}>
@@ -146,10 +146,13 @@ function UserMessage({ message, isFirstMessage }: { message: Message; isFirstMes
 				{message.createdAt > 0 && (
 					<text fg={colors.fgDimmed}>{formatTime(message.createdAt)}</text>
 				)}
+			{isQueued && (
+				<text fg={colors.yellow}>queued</text>
+			)}
 			</box>
-			<text fg={colors.fgBright}>{content}</text>
-		</box>
-	);
+		<text fg={isQueued ? colors.fgDark : colors.fgBright}>{content}</text>
+	</box>
+);
 }
 
 function deduplicateToolParts(parts: MessagePart[]): MessagePart[] {
@@ -167,7 +170,7 @@ function deduplicateToolParts(parts: MessagePart[]): MessagePart[] {
 	});
 }
 
-function AssistantMessage({ message, isStreaming, isFirstMessage }: MessageItemProps) {
+function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage }: MessageItemProps) {
 	const sortedParts = useMemo(() => getSortedParts(message), [message.parts]);
 	const dedupedParts = useMemo(() => deduplicateToolParts(sortedParts), [sortedParts]);
 	const isActive = isStreaming && message.status !== 'complete';
@@ -183,14 +186,13 @@ function AssistantMessage({ message, isStreaming, isFirstMessage }: MessageItemP
 	return (
 		<box
 			style={{
-				flexDirection: 'column',
-				width: '100%',
-				marginTop: isFirstMessage ? 0 : 1,
-				backgroundColor: colors.assistantBg,
-				paddingLeft: 1,
-				paddingRight: 1,
-				paddingTop: 1,
-				paddingBottom: 1,
+			flexDirection: 'column',
+			width: '100%',
+			backgroundColor: colors.assistantBg,
+			paddingLeft: 1,
+			paddingRight: 1,
+			paddingTop: 1,
+			paddingBottom: 1,
 			}}
 		>
 			<box style={{ flexDirection: 'row', gap: 1 }}>
@@ -206,7 +208,7 @@ function AssistantMessage({ message, isStreaming, isFirstMessage }: MessageItemP
 				{message.totalTokens && message.status === 'complete' && (
 					<text fg={colors.fgDimmed}>{message.totalTokens}tok</text>
 				)}
-			</box>
+		</box>
 
 		{dedupedParts.map((part, i) => {
 				const prev = i > 0 ? dedupedParts[i - 1] : null;
@@ -226,19 +228,19 @@ function AssistantMessage({ message, isStreaming, isFirstMessage }: MessageItemP
 				<text fg={colors.fgDark}>thinking…</text>
 			)}
 
-			{hasError && !sortedParts.some((p) => p.type === 'error') && (
+		{hasError && !sortedParts.some((p) => p.type === 'error') && (
 			<text fg={colors.red}>{formatError(message.error) || 'Unknown error'}</text>
 			)}
 		</box>
 	);
 }
 
-export function MessageItem({ message, isStreaming, isFirstMessage }: MessageItemProps) {
+export function MessageItem({ message, isStreaming, isQueued, isFirstMessage }: MessageItemProps) {
 	if (message.role === 'user') {
-		return <UserMessage message={message} isFirstMessage={isFirstMessage} />;
+		return <UserMessage message={message} isQueued={isQueued} isFirstMessage={isFirstMessage} />;
 	}
 	if (message.role === 'assistant') {
-		return <AssistantMessage message={message} isStreaming={isStreaming} isFirstMessage={isFirstMessage} />;
+		return <AssistantMessage message={message} isStreaming={isStreaming} isQueued={isQueued} isFirstMessage={isFirstMessage} />;
 	}
 	return null;
 }
