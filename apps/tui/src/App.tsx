@@ -137,24 +137,22 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				case 'commit':
 					setOverlay('commit');
 					break;
-				case 'push':
-					showStatus({ type: 'loading', label: 'pushing…' });
-					try {
-						const pushResponse = await pushCommits();
+			case 'push':
+				showStatus({ type: 'loading', label: 'pushing…' });
+				try {
+					// biome-ignore lint/suspicious/noExplicitAny: API type mismatch
+					const pushResponse = await pushCommits({ body: {} as any });
+					if (pushResponse.error) {
+						// biome-ignore lint/suspicious/noExplicitAny: SDK error type
+						const err = pushResponse.error as any;
+						showStatus({ type: 'error', label: err?.error || 'push failed' }, 3000);
+					} else {
+						// biome-ignore lint/suspicious/noExplicitAny: SDK response type
 						const pushData = pushResponse.data as any;
-						if (pushData?.success) {
-							showStatus(
-								{ type: 'success', label: pushData.output || 'pushed' },
-								3000,
-							);
-						} else {
-							showStatus(
-								{ type: 'error', label: pushData?.error || 'push failed' },
-								3000,
-							);
-						}
-					} catch {
-						showStatus({ type: 'error', label: 'push failed' }, 3000);
+						showStatus({ type: 'success', label: pushData?.data?.output || 'pushed' }, 3000);
+					}
+				} catch {
+					showStatus({ type: 'error', label: 'push failed' }, 3000);
 					}
 					break;
 				case 'stage':
