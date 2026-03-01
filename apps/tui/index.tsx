@@ -1,6 +1,7 @@
 import { createCliRenderer } from '@opentui/core';
 import { createRoot } from '@opentui/react';
 import { App } from './src/App.tsx';
+import { ThemeProvider } from './src/theme.ts';
 import { configureApi } from './src/api.ts';
 
 configureApi();
@@ -28,4 +29,8 @@ function handleQuit() {
 	process.exit(0);
 }
 
-createRoot(renderer).render(<App onQuit={handleQuit} />);
+createRoot(renderer).render(
+	<ThemeProvider>
+		<App onQuit={handleQuit} />
+	</ThemeProvider>,
+);

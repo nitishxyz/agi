@@ -59,7 +59,7 @@ export interface PendingApproval {
 	messageId: string;
 }
 
-export type Overlay = 'none' | 'sessions' | 'config' | 'help';
+export type Overlay = 'none' | 'sessions' | 'config' | 'help' | 'theme';
 
 export interface AppState {
 	sessionId: string | null;

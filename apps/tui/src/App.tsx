@@ -14,12 +14,13 @@ import { ChatInput } from './components/ChatInput.tsx';
 import { SessionsOverlay } from './components/SessionsOverlay.tsx';
 import { ConfigOverlay } from './components/ConfigOverlay.tsx';
 import { HelpOverlay } from './components/HelpOverlay.tsx';
+import { ThemeOverlay } from './components/ThemeOverlay.tsx';
 import { ApproveAllBar } from './components/ApproveAllBar.tsx';
 import { useSession } from './hooks/useSession.ts';
 import { useStream } from './hooks/useStream.ts';
 import { useConfig } from './hooks/useConfig.ts';
 import { parseCommand, resolveCommand } from './commands.ts';
-import { colors } from './theme.ts';
+import { useTheme } from './theme.ts';
 import type { Overlay, Session } from './types.ts';
 
 async function copyToClipboard(text: string): Promise<void> {
@@ -36,6 +37,7 @@ async function copyToClipboard(text: string): Promise<void> {
 export type StatusIndicator = { type: 'idle' } | { type: 'loading'; label: string } | { type: 'success'; label: string } | { type: 'error'; label: string };
 
 export function App({ onQuit }: { onQuit: () => void }) {
+	const { colors, setTheme, themeName } = useTheme();
 	const [overlay, setOverlay] = useState<Overlay>('none');
 	const [status, setStatus] = useState<StatusIndicator>({ type: 'idle' });
 	const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,6 +69,14 @@ export function App({ onQuit }: { onQuit: () => void }) {
 	} = useSession();
 
 	const { config, updateDefaults } = useConfig();
+
+	const themeSyncedRef = useRef(false);
+	useEffect(() => {
+		if (!themeSyncedRef.current && config.defaults.theme) {
+			setTheme(config.defaults.theme);
+			themeSyncedRef.current = true;
+		}
+	}, [config.defaults.theme, setTheme]);
 
 	const sessionId = activeSession?.id ?? null;
 	const {
@@ -109,6 +119,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 					break;
 				case 'help':
 					setOverlay('help');
+					break;
+				case 'theme':
+					setOverlay('theme');
 					break;
 				case 'clear':
 					reload();
@@ -313,6 +326,10 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			setOverlay('config');
 			return;
 		}
+		if (key.ctrl && key.name === 't') {
+			setOverlay('theme');
+			return;
+		}
 		if (key.ctrl && key.name === 'c') {
 			if (isStreaming && activeSession) {
 				abortSession(activeSession.id);
@@ -385,6 +402,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			)}
 
 			{overlay === 'help' && <HelpOverlay onClose={() => setOverlay('none')} />}
+		{overlay === 'theme' && <ThemeOverlay onClose={() => setOverlay('none')} onSave={(name: string) => updateDefaults({ theme: name })} />}
 		</box>
 	);
 }

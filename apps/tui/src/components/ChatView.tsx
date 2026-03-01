@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { MessageItem } from './MessageItem.tsx';
-import { colors } from '../theme.ts';
+import { useTheme } from '../theme.ts';
 import type { Message, PendingApproval } from '../types.ts';
 
 interface ChatViewProps {
@@ -14,6 +14,8 @@ interface ChatViewProps {
 }
 
 export function ChatView({ messages, isStreaming, streamingMessageId, queuedMessageIds, pendingApprovals, onApprove, onDeny }: ChatViewProps) {
+	const { colors } = useTheme();
+
 	const sorted = useMemo(() => {
 		return messages
 			.filter((m) => m.role === 'user' || m.role === 'assistant')

@@ -15,6 +15,7 @@ export type DefaultConfig = {
 	toolApproval?: ToolApprovalMode;
 	guidedMode?: boolean;
 	reasoningText?: boolean;
+	theme?: string;
 };
 
 /**

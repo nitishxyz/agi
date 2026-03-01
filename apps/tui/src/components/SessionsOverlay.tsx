@@ -1,6 +1,6 @@
 import { useKeyboard, useRenderer } from '@opentui/react';
 import { useState, useEffect, useRef } from 'react';
-import { colors } from '../theme.ts';
+import { useTheme } from '../theme.ts';
 import type { Session } from '../types.ts';
 
 interface SessionsOverlayProps {
@@ -35,6 +35,7 @@ export function SessionsOverlay({
 	onSelect,
 	onClose,
 }: SessionsOverlayProps) {
+	const { colors } = useTheme();
 	const [selectedIdx, setSelectedIdx] = useState(0);
 	const renderer = useRenderer();
 	const scrollboxIdRef = useRef(`sessions-scrollbox-${Date.now()}`);

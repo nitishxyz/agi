@@ -14,6 +14,7 @@ export function registerDefaultsRoute(app: Hono) {
 			toolApproval?: 'auto' | 'dangerous' | 'all';
 			guidedMode?: boolean;
 			reasoningText?: boolean;
+			theme?: string;
 			scope?: 'global' | 'local';
 		}>();
 
@@ -25,6 +26,7 @@ export function registerDefaultsRoute(app: Hono) {
 			toolApproval: 'auto' | 'dangerous' | 'all';
 			guidedMode: boolean;
 			reasoningText: boolean;
+			theme: string;
 		}> = {};
 
 		if (body.agent) updates.agent = body.agent;
@@ -33,6 +35,7 @@ export function registerDefaultsRoute(app: Hono) {
 		if (body.toolApproval) updates.toolApproval = body.toolApproval;
 		if (body.guidedMode !== undefined) updates.guidedMode = body.guidedMode;
 		if (body.reasoningText !== undefined) updates.reasoningText = body.reasoningText;
+		if (body.theme) updates.theme = body.theme;
 
 			await setConfig(scope, updates, projectRoot);
 

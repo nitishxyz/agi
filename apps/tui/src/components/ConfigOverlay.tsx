@@ -1,4 +1,4 @@
-import { colors } from '../theme.ts';
+import { useTheme } from '../theme.ts';
 
 interface ConfigOverlayProps {
 	providers: string[];
@@ -19,6 +19,8 @@ export function ConfigOverlay({
 	onClose,
 	onUpdate,
 }: ConfigOverlayProps) {
+	const { colors } = useTheme();
+
 	return (
 		<box
 			style={{

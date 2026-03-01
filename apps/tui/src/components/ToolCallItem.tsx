@@ -1,4 +1,4 @@
-import { colors } from '../theme.ts';
+import { useTheme } from '../theme.ts';
 import type { MessagePart } from '../types.ts';
 
 interface ToolCallItemProps {
@@ -34,6 +34,7 @@ function getTarget(part: MessagePart): string | null {
 }
 
 export function ToolCallItem({ part, isLast, isFirst }: ToolCallItemProps) {
+	const { colors } = useTheme();
 	const toolName = part.toolName || 'unknown';
 	const target = getTarget(part);
 	const isResult = part.type === 'tool_result';

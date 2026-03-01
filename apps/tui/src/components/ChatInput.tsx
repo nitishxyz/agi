@@ -1,7 +1,7 @@
 import { useRenderer, useKeyboard } from '@opentui/react';
 import { TextareaRenderable } from '@opentui/core';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { colors } from '../theme.ts';
+import { useTheme } from '../theme.ts';
 import { COMMANDS } from '../commands.ts';
 import type { StatusIndicator } from '../App.tsx';
 
@@ -17,6 +17,7 @@ interface ChatInputProps {
 const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, model }: ChatInputProps) {
+	const { colors } = useTheme();
 	const renderer = useRenderer();
 	const textareaRef = useRef<TextareaRenderable | null>(null);
 	const containerRef = useRef<string>(`chat-input-${Date.now()}`);

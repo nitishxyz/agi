@@ -1,4 +1,4 @@
-import { colors } from '../theme.ts';
+import { useTheme } from '../theme.ts';
 
 interface StatusBarProps {
 	sessionTitle: string | null;
@@ -6,6 +6,7 @@ interface StatusBarProps {
 }
 
 export function StatusBar({ sessionTitle, queueSize = 0 }: StatusBarProps) {
+	const { colors } = useTheme();
 	const title = sessionTitle || 'new session';
 
 	return (

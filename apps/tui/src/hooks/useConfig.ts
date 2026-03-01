@@ -9,6 +9,7 @@ interface Config {
 		provider: string;
 		model: string;
 		reasoningText?: boolean;
+		theme?: string;
 	};
 }
 
@@ -36,7 +37,7 @@ export function useConfig() {
 	}, [config]);
 
 	const updateDefaults = useCallback(
-		async (changes: { provider?: string; model?: string; agent?: string; reasoningText?: boolean }) => {
+	async (changes: { provider?: string; model?: string; agent?: string; reasoningText?: boolean; theme?: string }) => {
 			try {
 				const response = await apiUpdateDefaults({
 					body: changes,

@@ -23,6 +23,7 @@ export const COMMAND_ALIASES: Record<string, string> = {
 	q: 'quit',
 	'?': 'help',
 	x: 'stop',
+	t: 'theme',
 };
 
 export function resolveCommand(name: string): string {
@@ -56,6 +57,7 @@ export const COMMANDS = [
 	{ name: 'model', alias: '', description: 'Quick-switch model' },
 	{ name: 'provider', alias: '', description: 'Quick-switch provider' },
 	{ name: 'agent', alias: '', description: 'Quick-switch agent' },
+	{ name: 'theme', alias: '/t', description: 'Switch color theme' },
 	{ name: 'clear', alias: '', description: 'Reload messages' },
 	{ name: 'quit', alias: '/q', description: 'Exit TUI' },
 ];

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { colors, syntaxStyle } from '../theme.ts';
+import { useTheme } from '../theme.ts';
 import { ToolCallItem } from './ToolCallItem.tsx';
 import { InlineApproval } from './InlineApproval.tsx';
 import type { Message, MessagePart, PendingApproval } from '../types.ts';
@@ -72,6 +72,7 @@ function getPartCategory(part: MessagePart): string {
 }
 
 function PartRenderer({ part, isActive, isLastTool, prevType }: { part: MessagePart; isActive: boolean; isLastTool: boolean; prevType: string | null }) {
+	const { colors, syntaxStyle } = useTheme();
 	const category = getPartCategory(part);
 	const needsTopGap = prevType === null || prevType !== category;
 
@@ -123,6 +124,7 @@ function PartRenderer({ part, isActive, isLastTool, prevType }: { part: MessageP
 }
 
 function UserMessage({ message, isQueued, isFirstMessage }: { message: Message; isQueued?: boolean; isFirstMessage: boolean }) {
+	const { colors } = useTheme();
 	const parts = useMemo(() => getSortedParts(message), [message.parts]);
 	const content = useMemo(() => {
 		return parts
@@ -199,6 +201,7 @@ function extractProgressInfo(part: MessagePart): { message: string; stage?: stri
 const SHIMMER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 function StreamingIndicator({ progressPart }: { progressPart: MessagePart | null }) {
+	const { colors } = useTheme();
 	const [frame, setFrame] = useState(0);
 	useEffect(() => {
 		const id = setInterval(() => setFrame((f) => (f + 1) % SHIMMER_FRAMES.length), 80);
@@ -230,6 +233,7 @@ function StreamingIndicator({ progressPart }: { progressPart: MessagePart | null
 }
 
 function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage, pendingApprovals, onApprove, onDeny }: MessageItemProps) {
+	const { colors } = useTheme();
 	const sortedParts = useMemo(() => getSortedParts(message), [message.parts]);
 	const dedupedParts = useMemo(() => deduplicateToolParts(sortedParts), [sortedParts]);
 	const isActive = isStreaming && message.status !== 'complete';

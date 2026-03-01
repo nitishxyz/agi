@@ -1,4 +1,4 @@
-import { colors } from '../theme.ts';
+import { useTheme } from '../theme.ts';
 import { COMMANDS } from '../commands.ts';
 
 interface HelpOverlayProps {
@@ -6,6 +6,8 @@ interface HelpOverlayProps {
 }
 
 export function HelpOverlay({ onClose }: HelpOverlayProps) {
+	const { colors } = useTheme();
+
 	return (
 		<box
 			style={{
@@ -67,6 +69,11 @@ export function HelpOverlay({ onClose }: HelpOverlayProps) {
 					<text fg={colors.fgMuted}>Ctrl+P</text>
 					<text fg={colors.fgDimmed}>—</text>
 					<text fg={colors.fgDark}>Config</text>
+				</box>
+				<box style={{ flexDirection: 'row', gap: 1 }}>
+					<text fg={colors.fgMuted}>Ctrl+T</text>
+					<text fg={colors.fgDimmed}>—</text>
+					<text fg={colors.fgDark}>Switch theme</text>
 				</box>
 				<box style={{ flexDirection: 'row', gap: 1 }}>
 					<text fg={colors.fgMuted}>Escape</text>

@@ -1,5 +1,5 @@
 import { useKeyboard } from '@opentui/react';
-import { colors } from '../theme.ts';
+import { useTheme } from '../theme.ts';
 import type { PendingApproval } from '../types.ts';
 
 interface ApprovalOverlayProps {
@@ -21,6 +21,8 @@ function formatArgs(args: unknown): string {
 }
 
 export function ApprovalOverlay({ approval, onApprove, onDeny }: ApprovalOverlayProps) {
+	const { colors } = useTheme();
+
 	useKeyboard((key) => {
 		if (key.name === 'y') onApprove(approval.callId);
 		if (key.name === 'n') onDeny(approval.callId);

@@ -1,4 +1,4 @@
-import { colors } from '../theme.ts';
+import { useTheme } from '../theme.ts';
 import type { PendingApproval } from '../types.ts';
 
 interface InlineApprovalProps {
@@ -20,6 +20,7 @@ function formatArgs(args: unknown): string {
 }
 
 export function InlineApproval({ approval, onApprove, onDeny }: InlineApprovalProps) {
+	const { colors } = useTheme();
 	const toolLabel = approval.toolName.includes('__')
 		? approval.toolName.replace('__', ' › ')
 		: approval.toolName;
