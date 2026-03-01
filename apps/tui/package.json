@@ -1,0 +1,21 @@
+{
+	"name": "@ottocode/tui",
+	"version": "0.1.0",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"dev": "bun run index.tsx",
+		"build": "bun build index.tsx --outdir dist --target bun"
+	},
+	"dependencies": {
+		"@opentui/core": "latest",
+		"@opentui/react": "latest",
+		"@ottocode/api": "workspace:*",
+		"react": "^19.1.1",
+		"eventsource-parser": "^3.0.0"
+	},
+	"devDependencies": {
+		"@types/react": "^19.1.16",
+		"typescript": "^5.7.0"
+	}
+}
