@@ -79,25 +79,51 @@ function extractFilePath(part: MessagePart): string | undefined {
 	return undefined;
 }
 
+function extractToolError(part: MessagePart): string | null {
+	if (part.type === 'error') return null;
+	const cj = part.contentJson as Record<string, unknown> | undefined;
+	if (!cj) return null;
+
+	if (typeof cj.error === 'string') return cj.error;
+
+	const result = cj.result as Record<string, unknown> | undefined;
+	if (result && typeof result === 'object' && 'ok' in result && result.ok === false) {
+		if (typeof result.error === 'string') return result.error;
+		return 'Tool execution failed';
+	}
+
+	return null;
+}
+
 export function ToolCallItem({ part, _isLast, isFirst }: ToolCallItemProps) {
 	const { colors } = useTheme();
 	const toolName = part.toolName || 'unknown';
 	const target = getTarget(part);
 	const isResult = part.type === 'tool_result';
 	const isCompleted = isResult || !!part.completedAt;
-	const hasError = part.type === 'error';
+	const toolError = extractToolError(part);
+	const hasError = part.type === 'error' || !!toolError;
 	const duration = part.toolDurationMs;
 	const displayName = toolName.includes('__')
 		? toolName.replace('__', ' > ')
 		: toolName;
 
-	const icon = hasError ? 'x' : isCompleted ? '✓' : '→';
+	const icon = hasError ? '✗' : isCompleted ? '✓' : '→';
 	const iconColor = hasError
 		? colors.red
 		: isCompleted
 			? colors.green
 			: colors.fgDark;
-	const nameColor = isCompleted ? colors.fgMuted : colors.fgDark;
+	const nameColor = hasError ? colors.red : isCompleted ? colors.fgMuted : colors.fgDark;
+
+	const durationStr = duration
+		? duration < 1000 ? `${duration}ms` : `${(duration / 1000).toFixed(1)}s`
+		: '';
+
+	const maxErrorLen = Math.max(20, 60 - displayName.length);
+	const truncatedError = hasError && toolError
+		? (toolError.length > maxErrorLen ? `${toolError.slice(0, maxErrorLen - 1)}…` : toolError)
+		: '';
 
 	const diffPatch = extractDiffPatch(part);
 	const filePath = extractFilePath(part);
@@ -127,7 +153,17 @@ export function ToolCallItem({ part, _isLast, isFirst }: ToolCallItemProps) {
 				<text style={{ flexShrink: 0 }} fg={nameColor}>
 					{displayName}
 				</text>
-				{target && (
+				{hasError && truncatedError ? (
+					<text style={{ flexShrink: 0 }} fg={colors.red}>
+						{truncatedError}
+					</text>
+				) : null}
+				{hasError && durationStr ? (
+					<text style={{ flexShrink: 0 }} fg={colors.fgDimmed}>
+						{durationStr}
+					</text>
+				) : null}
+				{!hasError && target && (
 					<text
 						style={{ flexShrink: 1, overflow: 'hidden' }}
 						fg={colors.toolArgs}
@@ -135,11 +171,9 @@ export function ToolCallItem({ part, _isLast, isFirst }: ToolCallItemProps) {
 						{target}
 					</text>
 				)}
-				{duration ? (
+				{!hasError && durationStr ? (
 					<text style={{ flexShrink: 0 }} fg={colors.fgDimmed}>
-						{duration < 1000
-							? `${duration}ms`
-							: `${(duration / 1000).toFixed(1)}s`}
+						{durationStr}
 					</text>
 				) : null}
 			</box>

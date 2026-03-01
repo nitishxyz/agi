@@ -316,9 +316,12 @@ function messageReducer(state: Message[], action: Action): Message[] {
 							...(result !== undefined ? { result } : {}),
 							...(artifact !== undefined ? { artifact } : {}),
 						};
+						const now = Date.now();
+						const durationMs = p.startedAt ? now - p.startedAt : null;
 						return {
 							...p,
-							completedAt: Date.now(),
+							completedAt: now,
+							toolDurationMs: durationMs,
 							contentJson: updatedJson,
 							content: JSON.stringify(updatedJson),
 						};
