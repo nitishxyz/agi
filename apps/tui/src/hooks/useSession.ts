@@ -100,7 +100,10 @@ export function useSession() {
 	const sendMessage = useCallback(
 		async (sessionId: string, content: string) => {
 			try {
-				await createMessage({ path: { id: sessionId }, body: { content } });
+				await createMessage({
+					path: { id: sessionId },
+					body: { content },
+				});
 			} catch {}
 		},
 		[],

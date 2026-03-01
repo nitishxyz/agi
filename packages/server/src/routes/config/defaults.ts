@@ -7,29 +7,32 @@ export function registerDefaultsRoute(app: Hono) {
 	app.patch('/v1/config/defaults', async (c) => {
 		try {
 			const projectRoot = c.req.query('project') || process.cwd();
-			const body = await c.req.json<{
-				agent?: string;
-				provider?: string;
-				model?: string;
-				toolApproval?: 'auto' | 'dangerous' | 'all';
-				guidedMode?: boolean;
-				scope?: 'global' | 'local';
-			}>();
+		const body = await c.req.json<{
+			agent?: string;
+			provider?: string;
+			model?: string;
+			toolApproval?: 'auto' | 'dangerous' | 'all';
+			guidedMode?: boolean;
+			reasoningText?: boolean;
+			scope?: 'global' | 'local';
+		}>();
 
-			const scope = body.scope || 'global';
-			const updates: Partial<{
-				agent: string;
-				provider: string;
-				model: string;
-				toolApproval: 'auto' | 'dangerous' | 'all';
-				guidedMode: boolean;
-			}> = {};
+		const scope = body.scope || 'global';
+		const updates: Partial<{
+			agent: string;
+			provider: string;
+			model: string;
+			toolApproval: 'auto' | 'dangerous' | 'all';
+			guidedMode: boolean;
+			reasoningText: boolean;
+		}> = {};
 
-			if (body.agent) updates.agent = body.agent;
-			if (body.provider) updates.provider = body.provider;
-			if (body.model) updates.model = body.model;
-			if (body.toolApproval) updates.toolApproval = body.toolApproval;
-			if (body.guidedMode !== undefined) updates.guidedMode = body.guidedMode;
+		if (body.agent) updates.agent = body.agent;
+		if (body.provider) updates.provider = body.provider;
+		if (body.model) updates.model = body.model;
+		if (body.toolApproval) updates.toolApproval = body.toolApproval;
+		if (body.guidedMode !== undefined) updates.guidedMode = body.guidedMode;
+		if (body.reasoningText !== undefined) updates.reasoningText = body.reasoningText;
 
 			await setConfig(scope, updates, projectRoot);
 

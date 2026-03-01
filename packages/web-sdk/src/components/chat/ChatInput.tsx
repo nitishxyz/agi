@@ -29,6 +29,7 @@ import { ShortcutsModal } from './ShortcutsModal';
 import { ProviderLogo } from '../common/ProviderLogo';
 import { useFiles } from '../../hooks/useFiles';
 import { usePreferences } from '../../hooks/usePreferences';
+import { useConfig, useUpdateDefaults } from '../../hooks/useConfig';
 import { useVimMode } from '../../hooks/useVimMode';
 import { useFileMention } from '../../hooks/useFileMention';
 import { useCommandSuggestions } from '../../hooks/useCommandSuggestions';
@@ -109,6 +110,8 @@ export const ChatInput = memo(
 
 		const { data: filesData, isLoading: filesLoading } = useFiles();
 		const { preferences, updatePreferences } = usePreferences();
+		const { data: configData } = useConfig();
+		const updateDefaultsMutation = useUpdateDefaults();
 		const files = filesData?.files || [];
 		const changedFiles = filesData?.changedFiles || [];
 
@@ -161,8 +164,10 @@ export const ChatInput = memo(
 		} = useCommandSuggestions({
 			onCommand,
 			updatePreferences,
+			updateReasoningText: (enabled: boolean) =>
+				updateDefaultsMutation.mutate({ reasoningText: enabled, scope: 'global' }),
 			vimModeEnabled: preferences.vimMode,
-			reasoningEnabled: preferences.reasoningEnabled,
+			reasoningEnabled: configData?.defaults?.reasoningText ?? true,
 			textareaRef,
 			setMessage,
 			setShowShortcutsModal,

@@ -62,11 +62,16 @@ export const messagesPaths = {
 								},
 								provider: { $ref: '#/components/schemas/Provider' },
 								model: { type: 'string' },
-								userContext: {
-									type: 'string',
-									description:
-										'Optional user-provided context to include in the system prompt.',
-								},
+							userContext: {
+								type: 'string',
+								description:
+									'Optional user-provided context to include in the system prompt.',
+							},
+							reasoningText: {
+								type: 'boolean',
+								description:
+									'Enable extended thinking / reasoning for models that support it.',
+							},
 							},
 						},
 					},

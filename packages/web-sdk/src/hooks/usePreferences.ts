@@ -2,13 +2,11 @@ import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
 interface Preferences {
 	vimMode: boolean;
-	reasoningEnabled: boolean;
 }
 
 const STORAGE_KEY = 'otto-preferences';
 const DEFAULT_PREFERENCES: Preferences = {
 	vimMode: false,
-	reasoningEnabled: true,
 };
 
 function resolveInitialPreferences(): Preferences {

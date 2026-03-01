@@ -188,15 +188,16 @@ export const schemas = {
 				type: 'array',
 				items: { $ref: '#/components/schemas/Provider' },
 			},
-			defaults: {
-				type: 'object',
-				properties: {
-					agent: { type: 'string' },
-					provider: { $ref: '#/components/schemas/Provider' },
-					model: { type: 'string' },
-				},
-				required: ['agent', 'provider', 'model'],
+		defaults: {
+			type: 'object',
+			properties: {
+				agent: { type: 'string' },
+				provider: { $ref: '#/components/schemas/Provider' },
+				model: { type: 'string' },
+				reasoningText: { type: 'boolean' },
 			},
+			required: ['agent', 'provider', 'model'],
+		},
 		},
 		required: ['agents', 'providers', 'defaults'],
 	},

@@ -16,6 +16,7 @@ const DEFAULTS: { defaults: OttoConfig['defaults'] } = {
 		model: 'kimi-k2.5',
 		toolApproval: 'auto',
 		guidedMode: false,
+		reasoningText: true,
 	},
 };
 

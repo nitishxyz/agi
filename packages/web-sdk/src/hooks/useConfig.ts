@@ -34,6 +34,7 @@ export function useUpdateDefaults() {
 			model?: string;
 			toolApproval?: 'auto' | 'dangerous' | 'all';
 			guidedMode?: boolean;
+			reasoningText?: boolean;
 			scope?: 'global' | 'local';
 		}) => apiClient.updateDefaults(data),
 		onSuccess: () => {

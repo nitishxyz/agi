@@ -313,13 +313,16 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 							checked={preferences.vimMode}
 							onChange={(checked) => updatePreferences({ vimMode: checked })}
 						/>
-						<ToggleRow
-							label="Show Reasoning"
-							checked={preferences.reasoningEnabled}
-							onChange={(checked) =>
-								updatePreferences({ reasoningEnabled: checked })
-							}
-						/>
+					<ToggleRow
+						label="Show Reasoning"
+						checked={config?.defaults?.reasoningText ?? true}
+						onChange={(checked) =>
+							updateDefaults.mutate({
+								reasoningText: checked,
+								scope: 'global',
+							})
+						}
+					/>
 						<SelectRow
 							label="Tool Approval"
 							value={config?.defaults?.toolApproval ?? 'dangerous'}

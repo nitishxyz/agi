@@ -1,13 +1,17 @@
 import { useMemo } from 'react';
 import { colors, syntaxStyle } from '../theme.ts';
 import { ToolCallItem } from './ToolCallItem.tsx';
-import type { Message, MessagePart } from '../types.ts';
+import { InlineApproval } from './InlineApproval.tsx';
+import type { Message, MessagePart, PendingApproval } from '../types.ts';
 
 interface MessageItemProps {
 	message: Message;
 	isStreaming: boolean;
 	isQueued?: boolean;
 	isFirstMessage: boolean;
+	pendingApprovals?: PendingApproval[];
+	onApprove?: (callId: string) => void;
+	onDeny?: (callId: string) => void;
 }
 
 function extractText(part: MessagePart): string {
@@ -170,7 +174,7 @@ function deduplicateToolParts(parts: MessagePart[]): MessagePart[] {
 	});
 }
 
-function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage }: MessageItemProps) {
+function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage, pendingApprovals, onApprove, onDeny }: MessageItemProps) {
 	const sortedParts = useMemo(() => getSortedParts(message), [message.parts]);
 	const dedupedParts = useMemo(() => deduplicateToolParts(sortedParts), [sortedParts]);
 	const isActive = isStreaming && message.status !== 'complete';
@@ -182,6 +186,11 @@ function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage }: Me
 	const hasAnyContent = dedupedParts.some(
 		(p) => (p.type === 'text' && extractText(p).trim()) || isToolPart(p) || p.type === 'reasoning',
 	);
+
+	const messageApprovals = useMemo(() => {
+		if (!pendingApprovals?.length) return [];
+		return pendingApprovals.filter((a) => a.messageId === message.id);
+	}, [pendingApprovals, message.id]);
 
 	return (
 		<box
@@ -213,14 +222,25 @@ function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage }: Me
 		{dedupedParts.map((part, i) => {
 				const prev = i > 0 ? dedupedParts[i - 1] : null;
 				const prevCat = prev ? getPartCategory(prev) : null;
+				const approval = isToolPart(part) && part.toolCallId
+					? messageApprovals.find((a) => a.callId === part.toolCallId) ?? null
+					: null;
 				return (
-					<PartRenderer
-						key={part.id}
-						part={part}
-						isActive={isActive}
-						isLastTool={i === lastToolIdx}
-						prevType={prevCat}
-					/>
+					<box key={part.id} style={{ flexDirection: 'column', width: '100%' }}>
+						<PartRenderer
+							part={part}
+							isActive={isActive}
+							isLastTool={i === lastToolIdx}
+							prevType={prevCat}
+						/>
+						{approval && onApprove && onDeny && (
+							<InlineApproval
+								approval={approval}
+								onApprove={onApprove}
+								onDeny={onDeny}
+							/>
+						)}
+					</box>
 				);
 			})}
 
@@ -235,12 +255,12 @@ function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage }: Me
 	);
 }
 
-export function MessageItem({ message, isStreaming, isQueued, isFirstMessage }: MessageItemProps) {
+export function MessageItem({ message, isStreaming, isQueued, isFirstMessage, pendingApprovals, onApprove, onDeny }: MessageItemProps) {
 	if (message.role === 'user') {
 		return <UserMessage message={message} isQueued={isQueued} isFirstMessage={isFirstMessage} />;
 	}
 	if (message.role === 'assistant') {
-		return <AssistantMessage message={message} isStreaming={isStreaming} isQueued={isQueued} isFirstMessage={isFirstMessage} />;
+		return <AssistantMessage message={message} isStreaming={isStreaming} isQueued={isQueued} isFirstMessage={isFirstMessage} pendingApprovals={pendingApprovals} onApprove={onApprove} onDeny={onDeny} />;
 	}
 	return null;
 }

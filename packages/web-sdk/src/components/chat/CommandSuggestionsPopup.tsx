@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { useConfig } from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useShareStatus } from '../../hooks/useShareStatus';
 import { filterCommands, getCommandDescription } from '../../lib/commands';
@@ -21,15 +22,16 @@ export function CommandSuggestionsPopup({
 	sessionId,
 }: CommandSuggestionsPopupProps) {
 	const { preferences } = usePreferences();
+	const { data: config } = useConfig();
 	const { data: shareStatus } = useShareStatus(sessionId);
 
 	const state = useMemo(
 		() => ({
 			vimModeEnabled: preferences.vimMode,
-			reasoningEnabled: preferences.reasoningEnabled,
+			reasoningEnabled: config?.defaults?.reasoningText ?? true,
 			isShared: shareStatus?.shared,
 		}),
-		[preferences.vimMode, preferences.reasoningEnabled, shareStatus?.shared],
+		[preferences.vimMode, config?.defaults?.reasoningText, shareStatus?.shared],
 	);
 
 	const results = useMemo(() => filterCommands(query, state), [query, state]);

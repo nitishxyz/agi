@@ -122,7 +122,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				typeOf: typeof userContext,
 			});
 
-			const reasoning = body?.reasoningText === true;
+			const reasoning = body?.reasoningText ?? cfg.defaults.reasoningText ?? false;
 
 			// Validate model capabilities if tools are allowed for this agent
 			const wantsToolCalls = true; // agent toolset may be non-empty

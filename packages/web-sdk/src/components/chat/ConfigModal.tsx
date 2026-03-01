@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useConfig } from '../../hooks/useConfig';
-import { usePreferences } from '../../hooks/usePreferences';
+import { useConfig, useUpdateDefaults } from '../../hooks/useConfig';
 import { Modal } from '../ui/Modal';
 import {
 	UnifiedModelSelector,
@@ -41,7 +40,8 @@ export function ConfigModal({
 	onModelSelectorChange,
 }: ConfigModalProps) {
 	const { data: config, isLoading: configLoading } = useConfig();
-	const { preferences, updatePreferences } = usePreferences();
+	const updateDefaults = useUpdateDefaults();
+	const reasoningEnabled = config?.defaults?.reasoningText ?? true;
 	const agentSelectorRef = useRef<UnifiedAgentSelectorRef>(null);
 	const modelSelectorRef = useRef<UnifiedModelSelectorRef>(null);
 
@@ -128,22 +128,23 @@ export function ConfigModal({
 							<button
 								type="button"
 								role="switch"
-								aria-checked={preferences.reasoningEnabled}
+							aria-checked={reasoningEnabled}
 								onClick={() =>
-									updatePreferences({
-										reasoningEnabled: !preferences.reasoningEnabled,
+								updateDefaults.mutate({
+									reasoningText: !reasoningEnabled,
+									scope: 'global',
 									})
 								}
 								className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-									preferences.reasoningEnabled ? 'bg-primary' : 'bg-muted'
+								reasoningEnabled ? 'bg-primary' : 'bg-muted'
 								}`}
 							>
 								<span
 									className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
-										preferences.reasoningEnabled
+									reasoningEnabled
 											? 'translate-x-6'
 											: 'translate-x-1'
-									} ${preferences.reasoningEnabled ? 'bg-primary-foreground' : 'bg-foreground'}`}
+								} ${reasoningEnabled ? 'bg-primary-foreground' : 'bg-foreground'}`}
 								/>
 							</button>
 						</div>

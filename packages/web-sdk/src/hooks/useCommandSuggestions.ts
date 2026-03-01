@@ -5,8 +5,8 @@ interface UseCommandSuggestionsOptions {
 	onCommand?: (commandId: string) => void;
 	updatePreferences: (prefs: {
 		vimMode?: boolean;
-		reasoningEnabled?: boolean;
 	}) => void;
+	updateReasoningText: (enabled: boolean) => void;
 	vimModeEnabled: boolean;
 	reasoningEnabled: boolean;
 	textareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -32,6 +32,7 @@ interface UseCommandSuggestionsReturn {
 export function useCommandSuggestions({
 	onCommand,
 	updatePreferences,
+	updateReasoningText,
 	vimModeEnabled,
 	reasoningEnabled,
 	textareaRef,
@@ -67,8 +68,8 @@ export function useCommandSuggestions({
 				resetInput();
 				return;
 			}
-			if (commandId === 'reasoning') {
-				updatePreferences({ reasoningEnabled: !reasoningEnabled });
+		if (commandId === 'reasoning') {
+				updateReasoningText(!reasoningEnabled);
 				resetInput();
 				return;
 			}
@@ -93,6 +94,7 @@ export function useCommandSuggestions({
 			vimModeEnabled,
 			reasoningEnabled,
 			updatePreferences,
+			updateReasoningText,
 			textareaRef,
 			setMessage,
 			setShowShortcutsModal,

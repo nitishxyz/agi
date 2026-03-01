@@ -123,6 +123,15 @@ export function ChatInput({ onSubmit, disabled }: ChatInputProps) {
 		}
 	}, [handleSubmit]);
 
+	useEffect(() => {
+		if (!textareaRef.current) return;
+		if (disabled) {
+			textareaRef.current.blur();
+		} else {
+			textareaRef.current.focus();
+		}
+	}, [disabled]);
+
 	return (
 		<box
 			style={{

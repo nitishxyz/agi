@@ -8,6 +8,7 @@ interface Config {
 		agent: string;
 		provider: string;
 		model: string;
+		reasoningText?: boolean;
 	};
 }
 
@@ -19,6 +20,7 @@ export function useConfig() {
 			agent: 'build',
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-20250514',
+			reasoningText: true,
 		},
 	});
 
@@ -34,7 +36,7 @@ export function useConfig() {
 	}, [config]);
 
 	const updateDefaults = useCallback(
-		async (changes: { provider?: string; model?: string; agent?: string }) => {
+		async (changes: { provider?: string; model?: string; agent?: string; reasoningText?: boolean }) => {
 			try {
 				const response = await apiUpdateDefaults({
 					body: changes,

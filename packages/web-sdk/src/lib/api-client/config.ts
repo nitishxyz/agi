@@ -17,6 +17,7 @@ export const configMixin = {
 			model: string;
 			toolApproval?: 'auto' | 'dangerous' | 'all';
 			guidedMode?: boolean;
+			reasoningText?: boolean;
 		};
 	}> {
 		const response = await apiGetConfig();
@@ -50,6 +51,7 @@ export const configMixin = {
 		model?: string;
 		toolApproval?: 'auto' | 'dangerous' | 'all';
 		guidedMode?: boolean;
+		reasoningText?: boolean;
 		scope?: 'global' | 'local';
 	}): Promise<{
 		success: boolean;
@@ -59,6 +61,7 @@ export const configMixin = {
 			model: string;
 			toolApproval?: 'auto' | 'dangerous' | 'all';
 			guidedMode?: boolean;
+			reasoningText?: boolean;
 		};
 	}> {
 		const response = await apiUpdateDefaults({

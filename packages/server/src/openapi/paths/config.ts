@@ -178,6 +178,7 @@ export const configPaths = {
 								agent: { type: 'string' },
 								provider: { type: 'string' },
 								model: { type: 'string' },
+								reasoningText: { type: 'boolean' },
 								scope: {
 									type: 'string',
 									enum: ['global', 'local'],
@@ -203,6 +204,7 @@ export const configPaths = {
 											agent: { type: 'string' },
 											provider: { type: 'string' },
 											model: { type: 'string' },
+											reasoningText: { type: 'boolean' },
 										},
 										required: ['agent', 'provider', 'model'],
 									},

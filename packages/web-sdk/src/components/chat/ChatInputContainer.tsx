@@ -16,7 +16,6 @@ import {
 	useDeleteSession,
 } from '../../hooks/useSessions';
 import { useAllModels, useConfig } from '../../hooks/useConfig';
-import { usePreferences } from '../../hooks/usePreferences';
 import { useGitStatus, useStageFiles } from '../../hooks/useGit';
 import { useGitStore } from '../../stores/gitStore';
 import { useFileUpload } from '../../hooks/useFileUpload';
@@ -69,7 +68,6 @@ export const ChatInputContainer = memo(
 			const deleteSession = useDeleteSession();
 			const { data: allModels } = useAllModels();
 			const { data: config } = useConfig();
-			const { preferences } = usePreferences();
 			const { data: gitStatus } = useGitStatus();
 			const stageFiles = useStageFiles();
 			const openCommitModalForSession = useGitStore(
@@ -214,10 +212,6 @@ export const ChatInputContainer = memo(
 							provider: provider || undefined,
 							model: model || undefined,
 							userContext: userContext || undefined,
-							reasoningText:
-								modelSupportsReasoning && preferences.reasoningEnabled
-									? true
-									: undefined,
 						});
 
 						clearFiles();
@@ -234,8 +228,6 @@ export const ChatInputContainer = memo(
 					provider,
 					model,
 					userContext,
-					modelSupportsReasoning,
-					preferences.reasoningEnabled,
 					sessionId,
 					consumeResearchContexts,
 				],
@@ -435,7 +427,7 @@ export const ChatInputContainer = memo(
 						onPlanModeToggle={handlePlanModeToggle}
 						isPlanMode={agent === 'plan'}
 						reasoningEnabled={
-							modelSupportsReasoning && preferences.reasoningEnabled
+						modelSupportsReasoning && (config?.defaults?.reasoningText ?? true)
 						}
 						sessionId={sessionId}
 						images={images}

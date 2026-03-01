@@ -14,7 +14,7 @@ import { ChatInput } from './components/ChatInput.tsx';
 import { SessionsOverlay } from './components/SessionsOverlay.tsx';
 import { ConfigOverlay } from './components/ConfigOverlay.tsx';
 import { HelpOverlay } from './components/HelpOverlay.tsx';
-import { ApprovalOverlay } from './components/ApprovalOverlay.tsx';
+import { ApproveAllBar } from './components/ApproveAllBar.tsx';
 import { useSession } from './hooks/useSession.ts';
 import { useStream } from './hooks/useStream.ts';
 import { useConfig } from './hooks/useConfig.ts';
@@ -39,7 +39,6 @@ async function copyToClipboard(text: string): Promise<void> {
 
 export function App({ onQuit }: { onQuit: () => void }) {
 	const [overlay, setOverlay] = useState<Overlay>('none');
-	const [_reasoningEnabled, setReasoningEnabled] = useState(false);
 
 	const {
 		sessions,
@@ -65,8 +64,8 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		streamingMessageId,
 		queueSize,
 		queuedMessageIds,
-		pendingApproval,
-		setPendingApproval,
+		pendingApprovals,
+		setPendingApprovals,
 		reload,
 		addOptimisticUser,
 	} = useStream(sessionId);
@@ -123,7 +122,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 					}
 					break;
 				case 'reasoning':
-					setReasoningEnabled((prev) => !prev);
+				await updateDefaults({ reasoningText: !(config.defaults.reasoningText ?? true) });
 					break;
 				case 'stage':
 					try {
@@ -190,6 +189,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		},
 		[
 			activeSession,
+			config,
 			createSession,
 			deleteSession,
 			loadSessions,
@@ -244,19 +244,27 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		async (callId: string) => {
 			if (!activeSession) return;
 			await approveToolCall(activeSession.id, callId, true);
-			setPendingApproval(null);
+			setPendingApprovals((prev) => prev.filter((a) => a.callId !== callId));
 		},
-		[activeSession, approveToolCall, setPendingApproval],
+		[activeSession, approveToolCall, setPendingApprovals],
 	);
 
 	const handleDeny = useCallback(
 		async (callId: string) => {
 			if (!activeSession) return;
 			await approveToolCall(activeSession.id, callId, false);
-			setPendingApproval(null);
+			setPendingApprovals((prev) => prev.filter((a) => a.callId !== callId));
 		},
-		[activeSession, approveToolCall, setPendingApproval],
+		[activeSession, approveToolCall, setPendingApprovals],
 	);
+
+	const handleApproveAll = useCallback(async () => {
+		if (!activeSession) return;
+		await Promise.all(
+			pendingApprovals.map((a) => approveToolCall(activeSession.id, a.callId, true)),
+		);
+		setPendingApprovals([]);
+	}, [activeSession, approveToolCall, pendingApprovals, setPendingApprovals]);
 
 	useKeyboard((key) => {
 		if (key.name === 'escape') {
@@ -311,9 +319,21 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				isStreaming={isStreaming}
 				streamingMessageId={streamingMessageId}
 				queuedMessageIds={queuedMessageIds}
+				pendingApprovals={pendingApprovals}
+				onApprove={handleApprove}
+				onDeny={handleDeny}
 			/>
 
-			<ChatInput onSubmit={handleSubmit} disabled={false} />
+			{pendingApprovals.length > 0 && (
+				<ApproveAllBar
+					approvals={pendingApprovals}
+					onApprove={handleApprove}
+					onApproveAll={handleApproveAll}
+					onDeny={handleDeny}
+				/>
+			)}
+
+			<ChatInput onSubmit={handleSubmit} disabled={pendingApprovals.length > 0} />
 
 			<box
 				style={{
@@ -356,14 +376,6 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			)}
 
 			{overlay === 'help' && <HelpOverlay onClose={() => setOverlay('none')} />}
-
-			{pendingApproval && (
-				<ApprovalOverlay
-					approval={pendingApproval}
-					onApprove={handleApprove}
-					onDeny={handleDeny}
-				/>
-			)}
 		</box>
 	);
 }

@@ -444,7 +444,7 @@ export function useStream(sessionId: string | null) {
 	const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
 	const [queueSize, setQueueSize] = useState(0);
 	const [queuedMessageIds, setQueuedMessageIds] = useState<Set<string>>(new Set());
-	const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
+	const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
 	const abortRef = useRef<AbortController | null>(null);
 
 	const addOptimisticUser = useCallback((content: string) => {
@@ -497,18 +497,27 @@ export function useStream(sessionId: string | null) {
 				case 'tool.result':
 					dispatch({ type: 'TOOL_RESULT', payload });
 					break;
-				case 'tool.approval.required': {
-					const callId = typeof payload.callId === 'string' ? payload.callId : '';
-					const toolName = typeof payload.toolName === 'string' ? payload.toolName : '';
-					const messageId = typeof payload.messageId === 'string' ? payload.messageId : '';
-					if (callId && toolName && messageId) {
-						setPendingApproval({ callId, toolName, args: payload.args, messageId });
-					}
-					break;
+			case 'tool.approval.required': {
+				const callId = typeof payload.callId === 'string' ? payload.callId : '';
+				const toolName = typeof payload.toolName === 'string' ? payload.toolName : '';
+				const messageId = typeof payload.messageId === 'string' ? payload.messageId : '';
+				if (callId && toolName && messageId) {
+					setPendingApprovals((prev) => {
+						if (prev.some((a) => a.callId === callId)) return prev;
+						return [...prev, { callId, toolName, args: payload.args, messageId }];
+					});
 				}
-				case 'tool.approval.resolved':
-					setPendingApproval(null);
-					break;
+				break;
+			}
+			case 'tool.approval.resolved': {
+				const resolvedCallId = typeof payload.callId === 'string' ? payload.callId : '';
+				if (resolvedCallId) {
+					setPendingApprovals((prev) => prev.filter((a) => a.callId !== resolvedCallId));
+				} else {
+					setPendingApprovals([]);
+				}
+				break;
+			}
 			case 'message.completed':
 					dispatch({ type: 'MESSAGE_COMPLETED', payload });
 				setStreamingMessageId(null);
@@ -560,5 +569,5 @@ export function useStream(sessionId: string | null) {
 	};
 
 	const isStreaming = streamingMessageId !== null;
-	return { messages, isStreaming, streamingMessageId, queueSize, queuedMessageIds, pendingApproval, setPendingApproval, reload, dispatch, addOptimisticUser };
+	return { messages, isStreaming, streamingMessageId, queueSize, queuedMessageIds, pendingApprovals, setPendingApprovals, reload, dispatch, addOptimisticUser };
 }

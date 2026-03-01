@@ -1,16 +1,19 @@
 import { useMemo } from 'react';
 import { MessageItem } from './MessageItem.tsx';
 import { colors } from '../theme.ts';
-import type { Message } from '../types.ts';
+import type { Message, PendingApproval } from '../types.ts';
 
 interface ChatViewProps {
 	messages: Message[];
 	isStreaming: boolean;
 	streamingMessageId: string | null;
 	queuedMessageIds: Set<string>;
+	pendingApprovals: PendingApproval[];
+	onApprove: (callId: string) => void;
+	onDeny: (callId: string) => void;
 }
 
-export function ChatView({ messages, isStreaming, streamingMessageId, queuedMessageIds }: ChatViewProps) {
+export function ChatView({ messages, isStreaming, streamingMessageId, queuedMessageIds, pendingApprovals, onApprove, onDeny }: ChatViewProps) {
 	const sorted = useMemo(() => {
 		return messages
 			.filter((m) => m.role === 'user' || m.role === 'assistant')
@@ -86,6 +89,9 @@ export function ChatView({ messages, isStreaming, streamingMessageId, queuedMess
 					isStreaming={msg.id === streamingMessageId}
 					isQueued={queuedUserIds.has(msg.id)}
 					isFirstMessage={i === 0}
+					pendingApprovals={pendingApprovals}
+					onApprove={onApprove}
+					onDeny={onDeny}
 				/>
 			))}
 		</scrollbox>
