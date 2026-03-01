@@ -1,6 +1,6 @@
 import { useKeyboard } from '@opentui/react';
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { stageFiles, shareSession, syncShare } from '@ottocode/api';
+import { stageFiles, shareSession, syncShare, pushCommits } from '@ottocode/api';
 import { StatusBar } from './components/StatusBar.tsx';
 import { ChatView } from './components/ChatView.tsx';
 import { ChatInput } from './components/ChatInput.tsx';
@@ -132,6 +132,20 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				case 'commit':
 					setOverlay('commit');
 					break;
+			case 'push':
+				showStatus({ type: 'loading', label: 'pushing…' });
+				try {
+					const pushResponse = await pushCommits();
+					const pushData = pushResponse.data as any;
+					if (pushData?.success) {
+						showStatus({ type: 'success', label: pushData.output || 'pushed' }, 3000);
+					} else {
+						showStatus({ type: 'error', label: pushData?.error || 'push failed' }, 3000);
+					}
+				} catch {
+					showStatus({ type: 'error', label: 'push failed' }, 3000);
+				}
+				break;
 				case 'stage':
 					try {
 						// biome-ignore lint/suspicious/noExplicitAny: SDK body type mismatch

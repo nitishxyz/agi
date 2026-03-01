@@ -38,6 +38,7 @@ export const COMMANDS = [
 	{ name: 'reasoning', alias: '', description: 'Toggle extended thinking' },
 	{ name: 'stage', alias: '', description: 'Stage all changes (git add -A)' },
 	{ name: 'commit', alias: '', description: 'Open commit overlay' },
+	{ name: 'push', alias: '', description: 'Push commits to remote' },
 	{ name: 'compact', alias: '', description: 'Compact conversation history' },
 	{ name: 'delete', alias: '', description: 'Delete current session' },
 	{ name: 'share', alias: '', description: 'Share session publicly' },
