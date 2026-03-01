@@ -1,6 +1,15 @@
-import { useState, useCallback, useEffect } from 'react';
-import { fetchJson } from '../api.ts';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import {
+	listSessions,
+	createSession as apiCreateSession,
+	deleteSession as apiDeleteSession,
+	createMessage,
+	abortSession as apiAbortSession,
+	resolveApproval,
+} from '@ottocode/api';
 import type { Session } from '../types.ts';
+
+const PAGE_SIZE = 50;
 
 function sortSessions(list: Session[]): Session[] {
 	return [...list].sort((a, b) => {
@@ -13,89 +22,124 @@ function sortSessions(list: Session[]): Session[] {
 export function useSession() {
 	const [sessions, setSessions] = useState<Session[]>([]);
 	const [activeSession, setActiveSession] = useState<Session | null>(null);
-	const [loading, setLoading] = useState(false);
+	const [hasMore, setHasMore] = useState(false);
+	const [loadingMore, setLoadingMore] = useState(false);
+	const nextOffsetRef = useRef<number | null>(null);
 
 	const loadSessions = useCallback(async () => {
 		try {
-			const data = await fetchJson<{ items?: Session[] } | Session[]>('/v1/sessions?limit=200');
-			const list = Array.isArray(data) ? data : data.items || [];
-			const sorted = sortSessions(list);
+			const response = await listSessions({
+				query: { limit: PAGE_SIZE, offset: 0 },
+			});
+			const data = response.data;
+			const sorted = sortSessions((data?.items ?? []) as Session[]);
 			setSessions(sorted);
+			setHasMore(data?.hasMore ?? false);
+			nextOffsetRef.current = data?.nextOffset ?? null;
 			return sorted;
 		} catch {
 			return [];
 		}
 	}, []);
 
-	const createSession = useCallback(async (title?: string): Promise<Session | null> => {
+	const loadMoreSessions = useCallback(async () => {
+		if (loadingMore || !hasMore || nextOffsetRef.current === null) return;
+		setLoadingMore(true);
 		try {
-			const session = await fetchJson<Session>('/v1/sessions', {
-				method: 'POST',
-				body: JSON.stringify({ title }),
+			const response = await listSessions({
+				query: { limit: PAGE_SIZE, offset: nextOffsetRef.current },
 			});
-			setSessions((prev) => sortSessions([session, ...prev]));
-			setActiveSession(session);
-			return session;
+			const data = response.data;
+			const newItems = (data?.items ?? []) as Session[];
+			setSessions((prev) => {
+				const existingIds = new Set(prev.map((s) => s.id));
+				const unique = newItems.filter((s) => !existingIds.has(s.id));
+				return sortSessions([...prev, ...unique]);
+			});
+			setHasMore(data?.hasMore ?? false);
+			nextOffsetRef.current = data?.nextOffset ?? null;
 		} catch {
-			return null;
+		} finally {
+			setLoadingMore(false);
 		}
-	}, []);
+	}, [loadingMore, hasMore]);
 
-	const deleteSession = useCallback(async (id: string) => {
-		try {
-			await fetchJson('/v1/sessions/' + id, { method: 'DELETE' });
-			setSessions((prev) => prev.filter((s) => s.id !== id));
-			if (activeSession?.id === id) {
-				setActiveSession(null);
+	const createSession = useCallback(
+		async (title?: string): Promise<Session | null> => {
+			try {
+				const response = await apiCreateSession({ body: { title } });
+				const session = response.data as Session;
+				if (!session) return null;
+				setSessions((prev) => sortSessions([session, ...prev]));
+				setActiveSession(session);
+				return session;
+			} catch {
+				return null;
 			}
-		} catch {}
-	}, [activeSession]);
+		},
+		[],
+	);
+
+	const deleteSessionFn = useCallback(
+		async (id: string) => {
+			try {
+				await apiDeleteSession({ path: { sessionId: id } });
+				setSessions((prev) => prev.filter((s) => s.id !== id));
+				if (activeSession?.id === id) {
+					setActiveSession(null);
+				}
+			} catch {}
+		},
+		[activeSession],
+	);
 
 	const switchSession = useCallback((session: Session) => {
 		setActiveSession(session);
 	}, []);
 
-	const sendMessage = useCallback(async (sessionId: string, content: string) => {
+	const sendMessage = useCallback(
+		async (sessionId: string, content: string) => {
+			try {
+				await createMessage({ path: { id: sessionId }, body: { content } });
+			} catch {}
+		},
+		[],
+	);
+
+	const abortSessionFn = useCallback(async (sessionId: string) => {
 		try {
-			await fetchJson(`/v1/sessions/${sessionId}/messages`, {
-				method: 'POST',
-				body: JSON.stringify({ content }),
-			});
+			await apiAbortSession({ path: { sessionId } });
 		} catch {}
 	}, []);
 
-	const abortSession = useCallback(async (sessionId: string) => {
-		try {
-			await fetchJson(`/v1/sessions/${sessionId}/abort`, {
-				method: 'DELETE',
-				body: JSON.stringify({ clearQueue: true }),
-			});
-		} catch {}
-	}, []);
-
-	const approveToolCall = useCallback(async (sessionId: string, callId: string, approved: boolean) => {
-		try {
-			await fetchJson(`/v1/sessions/${sessionId}/approval`, {
-				method: 'POST',
-				body: JSON.stringify({ callId, approved }),
-			});
-		} catch {}
-	}, []);
+	const approveToolCall = useCallback(
+		async (sessionId: string, callId: string, approved: boolean) => {
+			try {
+				await resolveApproval({
+					path: { id: sessionId },
+					body: { callId, approved },
+				});
+			} catch {}
+		},
+		[],
+	);
 
 	useEffect(() => {
 		loadSessions();
-	}, []);
+	}, [loadSessions]);
 
 	return {
 		sessions,
 		activeSession,
-		loading,
+		hasMore,
+		loadingMore,
 		loadSessions,
+		loadMoreSessions,
 		createSession,
-		deleteSession,
+		deleteSession: deleteSessionFn,
 		switchSession,
 		sendMessage,
-		abortSession,
+		abortSession: abortSessionFn,
 		approveToolCall,
 	};
 }

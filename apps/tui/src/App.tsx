@@ -1,5 +1,13 @@
 import { useKeyboard } from '@opentui/react';
 import { useState, useCallback } from 'react';
+import {
+	stageFiles,
+	generateCommitMessage,
+	commitChanges,
+	createBranch,
+	shareSession,
+	syncShare,
+} from '@ottocode/api';
 import { StatusBar } from './components/StatusBar.tsx';
 import { ChatView } from './components/ChatView.tsx';
 import { ChatInput } from './components/ChatInput.tsx';
@@ -14,13 +22,32 @@ import { parseCommand, resolveCommand } from './commands.ts';
 import { colors } from './theme.ts';
 import type { Overlay, Session } from './types.ts';
 
+async function copyToClipboard(text: string): Promise<void> {
+	const cmd =
+		process.platform === 'darwin'
+			? 'pbcopy'
+			: process.platform === 'win32'
+				? 'clip'
+				: 'xclip -selection clipboard';
+	const proc = Bun.spawn([
+		'sh',
+		'-c',
+		`echo -n ${JSON.stringify(text)} | ${cmd}`,
+	]);
+	await proc.exited;
+}
+
 export function App({ onQuit }: { onQuit: () => void }) {
 	const [overlay, setOverlay] = useState<Overlay>('none');
+	const [_reasoningEnabled, setReasoningEnabled] = useState(false);
 
 	const {
 		sessions,
 		activeSession,
+		hasMore,
+		loadingMore,
 		loadSessions,
+		loadMoreSessions,
 		createSession,
 		deleteSession,
 		switchSession,
@@ -32,8 +59,17 @@ export function App({ onQuit }: { onQuit: () => void }) {
 	const { config, updateDefaults } = useConfig();
 
 	const sessionId = activeSession?.id ?? null;
-	const { messages, isStreaming, streamingMessageId, queueSize, queuedMessageIds, pendingApproval, setPendingApproval, reload, addOptimisticUser } =
-		useStream(sessionId);
+	const {
+		messages,
+		isStreaming,
+		streamingMessageId,
+		queueSize,
+		queuedMessageIds,
+		pendingApproval,
+		setPendingApproval,
+		reload,
+		addOptimisticUser,
+	} = useStream(sessionId);
 
 	const handleCommand = useCallback(
 		async (name: string, args: string) => {
@@ -57,6 +93,8 @@ export function App({ onQuit }: { onQuit: () => void }) {
 					}
 					break;
 				case 'config':
+				case 'models':
+				case 'agents':
 					setOverlay('config');
 					break;
 				case 'help':
@@ -84,6 +122,70 @@ export function App({ onQuit }: { onQuit: () => void }) {
 						await abortSession(activeSession.id);
 					}
 					break;
+				case 'reasoning':
+					setReasoningEnabled((prev) => !prev);
+					break;
+				case 'stage':
+					try {
+						// biome-ignore lint/suspicious/noExplicitAny: SDK body type mismatch
+						await stageFiles({ body: { files: ['.'] } as any });
+					} catch {}
+					break;
+				case 'commit': {
+					try {
+						const genResponse = await generateCommitMessage({
+							body: {},
+						});
+						// biome-ignore lint/suspicious/noExplicitAny: SDK response structure
+						const genData = genResponse.data as any;
+						const msg = genData?.data?.message || args || 'update';
+						// biome-ignore lint/suspicious/noExplicitAny: SDK body type mismatch
+						await commitChanges({ body: { message: msg } as any });
+					} catch {}
+					break;
+				}
+				case 'branch':
+					if (activeSession) {
+						try {
+							const branchResponse = await createBranch({
+								path: { sessionId: activeSession.id },
+								// biome-ignore lint/suspicious/noExplicitAny: SDK body type mismatch
+								body: {} as any,
+							});
+							const branched = branchResponse.data as unknown as Session;
+							if (branched?.id) {
+								await loadSessions();
+								switchSession(branched);
+							}
+						} catch {}
+					}
+					break;
+				case 'share':
+					if (activeSession) {
+						try {
+							const shareResponse = await shareSession({
+								path: { sessionId: activeSession.id },
+							});
+							// biome-ignore lint/suspicious/noExplicitAny: SDK response structure
+							const shareData = shareResponse.data as any;
+							const shareUrl = shareData?.url;
+							if (shareUrl) await copyToClipboard(shareUrl);
+						} catch {}
+					}
+					break;
+				case 'sync':
+					if (activeSession) {
+						try {
+							const syncResponse = await syncShare({
+								path: { sessionId: activeSession.id },
+							});
+							// biome-ignore lint/suspicious/noExplicitAny: SDK response structure
+							const syncData = syncResponse.data as any;
+							const syncUrl = syncData?.url;
+							if (syncUrl) await copyToClipboard(syncUrl);
+						} catch {}
+					}
+					break;
 			}
 		},
 		[
@@ -96,6 +198,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			updateDefaults,
 			sendMessage,
 			abortSession,
+			switchSession,
 		],
 	);
 
@@ -107,7 +210,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				return;
 			}
 
-		if (!activeSession) {
+			if (!activeSession) {
 				const session = await createSession();
 				if (session) {
 					addOptimisticUser(text);
@@ -120,7 +223,13 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			addOptimisticUser(text);
 			await sendMessage(activeSession.id, text);
 		},
-		[activeSession, createSession, handleCommand, sendMessage, addOptimisticUser],
+		[
+			activeSession,
+			createSession,
+			handleCommand,
+			sendMessage,
+			addOptimisticUser,
+		],
 	);
 
 	const handleSessionSelect = useCallback(
@@ -194,12 +303,17 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				model={model}
 				sessionTitle={activeSession?.title ?? null}
 				isStreaming={isStreaming}
-			queueSize={queueSize}
+				queueSize={queueSize}
 			/>
 
-		<ChatView messages={messages} isStreaming={isStreaming} streamingMessageId={streamingMessageId} queuedMessageIds={queuedMessageIds} />
+			<ChatView
+				messages={messages}
+				isStreaming={isStreaming}
+				streamingMessageId={streamingMessageId}
+				queuedMessageIds={queuedMessageIds}
+			/>
 
-		<ChatInput onSubmit={handleSubmit} disabled={false} />
+			<ChatInput onSubmit={handleSubmit} disabled={false} />
 
 			<box
 				style={{
@@ -213,12 +327,17 @@ export function App({ onQuit }: { onQuit: () => void }) {
 					gap: 0,
 				}}
 			>
-				<text fg={colors.fgDimmed}>^N new  ^S sessions  ^P config  /help  ^C {isStreaming ? 'abort' : 'quit'}</text>
+				<text fg={colors.fgDimmed}>
+					^N new ^S sessions ^P config /help ^C {isStreaming ? 'abort' : 'quit'}
+				</text>
 			</box>
 
 			{overlay === 'sessions' && (
 				<SessionsOverlay
 					sessions={sessions}
+					hasMore={hasMore}
+					loadingMore={loadingMore}
+					onLoadMore={loadMoreSessions}
 					onSelect={handleSessionSelect}
 					onClose={() => setOverlay('none')}
 				/>

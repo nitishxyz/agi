@@ -6,15 +6,37 @@ export const sessionsPaths = {
 			tags: ['sessions'],
 			operationId: 'listSessions',
 			summary: 'List sessions',
-			parameters: [projectQueryParam()],
+			parameters: [
+				projectQueryParam(),
+				{
+					in: 'query',
+					name: 'limit',
+					schema: { type: 'integer', default: 50, minimum: 1, maximum: 200 },
+					description: 'Maximum number of sessions to return',
+				},
+				{
+					in: 'query',
+					name: 'offset',
+					schema: { type: 'integer', default: 0, minimum: 0 },
+					description: 'Offset for pagination',
+				},
+			],
 			responses: {
 				200: {
 					description: 'OK',
 					content: {
 						'application/json': {
 							schema: {
-								type: 'array',
-								items: { $ref: '#/components/schemas/Session' },
+								type: 'object',
+								properties: {
+									items: {
+										type: 'array',
+										items: { $ref: '#/components/schemas/Session' },
+									},
+									hasMore: { type: 'boolean' },
+									nextOffset: { type: 'integer', nullable: true },
+								},
+								required: ['items', 'hasMore', 'nextOffset'],
 							},
 						},
 					},

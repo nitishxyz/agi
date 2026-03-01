@@ -1,10 +1,13 @@
 import { useKeyboard, useRenderer } from '@opentui/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { colors } from '../theme.ts';
 import type { Session } from '../types.ts';
 
 interface SessionsOverlayProps {
 	sessions: Session[];
+	hasMore?: boolean;
+	loadingMore?: boolean;
+	onLoadMore?: () => void;
 	onSelect: (session: Session) => void;
 	onClose: () => void;
 }
@@ -22,18 +25,41 @@ function timeAgo(ts: number | null): string {
 }
 
 const ITEM_HEIGHT = 2;
+const LOAD_MORE_THRESHOLD = 5;
 
-export function SessionsOverlay({ sessions, onSelect, onClose }: SessionsOverlayProps) {
+export function SessionsOverlay({
+	sessions,
+	hasMore,
+	loadingMore,
+	onLoadMore,
+	onSelect,
+	onClose,
+}: SessionsOverlayProps) {
 	const [selectedIdx, setSelectedIdx] = useState(0);
 	const renderer = useRenderer();
+	const scrollboxIdRef = useRef(`sessions-scrollbox-${Date.now()}`);
 
 	useKeyboard((key) => {
 		if (key.name === 'up') {
 			setSelectedIdx((prev) => (prev <= 0 ? sessions.length - 1 : prev - 1));
 		} else if (key.name === 'down') {
-			setSelectedIdx((prev) => (prev >= sessions.length - 1 ? 0 : prev + 1));
+			setSelectedIdx((prev) => {
+				const next = prev >= sessions.length - 1 ? 0 : prev + 1;
+				if (
+					hasMore &&
+					onLoadMore &&
+					sessions.length - next <= LOAD_MORE_THRESHOLD
+				) {
+					onLoadMore();
+				}
+				return next;
+			});
 		} else if (key.name === 'return') {
-			if (sessions.length > 0 && selectedIdx >= 0 && selectedIdx < sessions.length) {
+			if (
+				sessions.length > 0 &&
+				selectedIdx >= 0 &&
+				selectedIdx < sessions.length
+			) {
 				onSelect(sessions[selectedIdx]);
 			}
 		} else if (key.name === 'escape') {
@@ -42,9 +68,11 @@ export function SessionsOverlay({ sessions, onSelect, onClose }: SessionsOverlay
 	});
 
 	useEffect(() => {
-		const scrollbox = renderer.root.findDescendantById('sessions-scrollbox');
+		const scrollbox = renderer.root.findDescendantById(scrollboxIdRef.current);
 		if (scrollbox && 'scrollTo' in scrollbox) {
-			(scrollbox as { scrollTo: (pos: number) => void }).scrollTo(selectedIdx * ITEM_HEIGHT);
+			(scrollbox as { scrollTo: (pos: number) => void }).scrollTo(
+				selectedIdx * ITEM_HEIGHT,
+			);
 		}
 	}, [selectedIdx, renderer]);
 
@@ -52,31 +80,37 @@ export function SessionsOverlay({ sessions, onSelect, onClose }: SessionsOverlay
 		<box
 			style={{
 				position: 'absolute',
-				top: 2,
-				left: 2,
-				right: 2,
-				bottom: 2,
+				top: 1,
+				left: 1,
+				right: 1,
+				bottom: 1,
 				border: true,
 				borderStyle: 'rounded',
 				borderColor: colors.border,
 				backgroundColor: colors.bg,
 				zIndex: 100,
 				flexDirection: 'column',
-				padding: 1,
 			}}
 			title=" Sessions "
 		>
 			{sessions.length === 0 ? (
-				<text fg={colors.fgDark}>No sessions yet. Type /new to create one.</text>
+				<box style={{ padding: 1, flexGrow: 1 }}>
+					<text fg={colors.fgDark}>
+						No sessions yet. Type /new to create one.
+					</text>
+				</box>
 			) : (
-				<scrollbox
-					id="sessions-scrollbox"
-					style={{
-						flexGrow: 1,
-						width: '100%',
-						flexDirection: 'column',
-					}}
-				>
+			<box style={{ flexGrow: 1, flexShrink: 1, overflow: 'hidden' }}>
+			<scrollbox
+				id={scrollboxIdRef.current}
+				style={{
+					width: '100%',
+					height: '100%',
+				}}
+				stickyScroll
+				stickyStart="top"
+				viewportCulling
+			>
 					{sessions.map((s, i) => {
 						const isSelected = i === selectedIdx;
 						const title = s.title || 'untitled';
@@ -93,14 +127,29 @@ export function SessionsOverlay({ sessions, onSelect, onClose }: SessionsOverlay
 									height: ITEM_HEIGHT,
 								}}
 							>
-								<text fg={isSelected ? colors.fgBright : colors.fgMuted}>{title}</text>
-								<text fg={isSelected ? colors.fgDimmed : colors.fgDark}>{meta}</text>
+								<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
+									{title}
+								</text>
+								<text fg={isSelected ? colors.fgDimmed : colors.fgDark}>
+									{meta}
+								</text>
 							</box>
 						);
 					})}
+					{loadingMore && (
+						<box style={{ height: 1, paddingLeft: 1 }}>
+							<text fg={colors.fgDimmed}>loading more…</text>
+						</box>
+					)}
+					{hasMore && !loadingMore && (
+						<box style={{ height: 1, paddingLeft: 1 }}>
+							<text fg={colors.fgDark}>↓ scroll for more</text>
+						</box>
+					)}
 				</scrollbox>
+			</box>
 			)}
-			<box style={{ height: 1, flexShrink: 0 }}>
+			<box style={{ height: 1, flexShrink: 0, paddingLeft: 1 }}>
 				<text fg={colors.fgDimmed}>↑↓ navigate  enter select  esc close</text>
 			</box>
 		</box>

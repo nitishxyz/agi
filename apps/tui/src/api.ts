@@ -9,7 +9,9 @@ export function setPort(port: number) {
 }
 
 export function getBaseUrl(): string {
-	const port = overridePort ?? (process.env.OTTO_PORT ? Number(process.env.OTTO_PORT) : DEFAULT_PORT);
+	const port =
+		overridePort ??
+		(process.env.OTTO_PORT ? Number(process.env.OTTO_PORT) : DEFAULT_PORT);
 	return `http://localhost:${port}`;
 }
 
@@ -17,18 +19,4 @@ export function configureApi() {
 	client.setConfig({
 		baseURL: getBaseUrl(),
 	});
-}
-
-export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
-	const res = await fetch(`${getBaseUrl()}${path}`, {
-		...init,
-		headers: {
-			'Content-Type': 'application/json',
-			...init?.headers,
-		},
-	});
-	if (!res.ok) {
-		throw new Error(`API error ${res.status}: ${res.statusText}`);
-	}
-	return res.json() as Promise<T>;
 }

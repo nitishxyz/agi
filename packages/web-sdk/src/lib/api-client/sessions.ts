@@ -40,14 +40,12 @@ export const sessionsMixin = {
 	): Promise<SessionsPage> {
 		const { limit = 50, offset = 0 } = params;
 		const response = await apiListSessions({
-			// biome-ignore lint/suspicious/noExplicitAny: API query type mismatch
-			query: { limit, offset } as any,
+			query: { limit, offset },
 		});
 		if (response.error) throw new Error(extractErrorMessage(response.error));
-		// biome-ignore lint/suspicious/noExplicitAny: API response structure
-		const data = response.data as any;
+		const data = response.data;
 		return {
-			items: (data?.items || data || []).map((s: unknown) =>
+			items: (data?.items ?? []).map((s) =>
 				convertSession(s as ApiSession),
 			),
 			hasMore: data?.hasMore ?? false,

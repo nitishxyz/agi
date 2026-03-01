@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { fetchJson } from '../api.ts';
+import { getConfig, updateDefaults as apiUpdateDefaults } from '@ottocode/api';
 
 interface Config {
 	agents: string[];
@@ -24,25 +24,27 @@ export function useConfig() {
 
 	const loadConfig = useCallback(async () => {
 		try {
-			const data = await fetchJson<Config>('/v1/config');
-			setConfig(data);
-			return data;
+			const response = await getConfig();
+			const data = response.data as unknown as Config;
+			if (data) setConfig(data);
+			return data ?? config;
 		} catch {
 			return config;
 		}
-	}, []);
+	}, [config]);
 
 	const updateDefaults = useCallback(
 		async (changes: { provider?: string; model?: string; agent?: string }) => {
 			try {
-				const result = await fetchJson<{ defaults: Config['defaults'] }>(
-					'/v1/config/defaults',
-					{
-						method: 'PATCH',
-						body: JSON.stringify(changes),
-					},
-				);
-				setConfig((prev) => ({ ...prev, defaults: result.defaults }));
+				const response = await apiUpdateDefaults({
+					body: changes,
+				});
+				const result = response.data as unknown as {
+					defaults: Config['defaults'];
+				};
+				if (result?.defaults) {
+					setConfig((prev) => ({ ...prev, defaults: result.defaults }));
+				}
 			} catch {}
 		},
 		[],

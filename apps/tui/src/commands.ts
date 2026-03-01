@@ -30,16 +30,32 @@ export function resolveCommand(name: string): string {
 }
 
 export const COMMANDS = [
-	{ name: 'sessions', alias: '/s', description: 'List and switch sessions' },
+	{ name: 'models', alias: '', description: 'Open model selector' },
+	{ name: 'agents', alias: '', description: 'Open agent selector' },
 	{ name: 'new', alias: '', description: 'Create a new session' },
+	{ name: 'stop', alias: '/x', description: 'Stop current generation' },
+	{ name: 'help', alias: '/?', description: 'Show this help' },
+	{ name: 'reasoning', alias: '', description: 'Toggle extended thinking' },
+	{ name: 'stage', alias: '', description: 'Stage all changes (git add -A)' },
+	{ name: 'commit', alias: '', description: 'Commit staged changes' },
+	{ name: 'compact', alias: '', description: 'Compact conversation history' },
+	{
+		name: 'branch',
+		alias: '',
+		description: 'Branch session from last message',
+	},
+	{ name: 'delete', alias: '', description: 'Delete current session' },
+	{ name: 'share', alias: '', description: 'Share session publicly' },
+	{
+		name: 'sync',
+		alias: '',
+		description: 'Sync new messages to shared session',
+	},
+	{ name: 'sessions', alias: '/s', description: 'List and switch sessions' },
 	{ name: 'config', alias: '/c', description: 'Change provider/model/agent' },
 	{ name: 'model', alias: '', description: 'Quick-switch model' },
 	{ name: 'provider', alias: '', description: 'Quick-switch provider' },
 	{ name: 'agent', alias: '', description: 'Quick-switch agent' },
-	{ name: 'compact', alias: '', description: 'Compact conversation history' },
-	{ name: 'stop', alias: '/x', description: 'Stop current generation' },
-	{ name: 'delete', alias: '', description: 'Delete current session' },
 	{ name: 'clear', alias: '', description: 'Reload messages' },
-	{ name: 'help', alias: '/?', description: 'Show this help' },
 	{ name: 'quit', alias: '/q', description: 'Exit TUI' },
 ];
