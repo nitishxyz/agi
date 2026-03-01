@@ -211,16 +211,35 @@ function extractFilePathFromUnified(patch: string): string | undefined {
 	return undefined;
 }
 
-function countDiffLines(patch: string): number {
-	return patch
-		.split('\n')
-		.filter(
-			(l) =>
-				l.startsWith('+') ||
-				l.startsWith('-') ||
-				l.startsWith('@@') ||
-				l.startsWith(' '),
-		).length;
+function countSplitViewRows(patch: string): number {
+	const lines = patch.split('\n');
+	let rows = 0;
+	let removed = 0;
+	let added = 0;
+
+	const flushHunk = () => {
+		rows += Math.max(removed, added);
+		removed = 0;
+		added = 0;
+	};
+
+	for (const l of lines) {
+		if (l.startsWith('@@')) {
+			flushHunk();
+			continue;
+		}
+		if (l.startsWith('---') || l.startsWith('+++')) continue;
+		if (l.startsWith('-')) {
+			removed++;
+		} else if (l.startsWith('+')) {
+			added++;
+		} else if (l.startsWith(' ')) {
+			flushHunk();
+			rows++;
+		}
+	}
+	flushHunk();
+	return rows;
 }
 
 interface DiffViewProps {
@@ -242,8 +261,8 @@ function SingleDiffView({
 	const filetype = filePath ? detectFiletype(filePath) : undefined;
 
 	const height = useMemo(() => {
-		const lines = countDiffLines(unifiedDiff);
-		return Math.min(Math.max(lines + 2, 5), maxHeight);
+		const rows = countSplitViewRows(unifiedDiff);
+		return Math.min(Math.max(rows, 1), maxHeight);
 	}, [unifiedDiff, maxHeight]);
 
 	return (

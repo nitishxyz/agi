@@ -17,18 +17,18 @@ export async function startTui(port: number): Promise<void> {
 	process.on('uncaughtException', (error) => {
 		renderer.destroy();
 		console.error('Uncaught exception:', error);
-		process.exit(1);
+		setTimeout(() => process.exit(1), 50);
 	});
 
 	process.on('unhandledRejection', (reason) => {
 		renderer.destroy();
 		console.error('Unhandled rejection:', reason);
-		process.exit(1);
+		setTimeout(() => process.exit(1), 50);
 	});
 
 	function handleQuit() {
 		renderer.destroy();
-		process.exit(0);
+		setTimeout(() => process.exit(0), 50);
 	}
 
 	createRoot(renderer).render(

@@ -30,11 +30,11 @@ export function useConfig() {
 			const response = await getConfig();
 			const data = response.data as unknown as Config;
 			if (data) setConfig(data);
-			return data ?? config;
+			return data;
 		} catch {
-			return config;
+			return null;
 		}
-	}, [config]);
+	}, []);
 
 	const updateDefaults = useCallback(
 		async (changes: {
@@ -59,9 +59,10 @@ export function useConfig() {
 		[],
 	);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally empty deps — loadConfig is stable but including it caused an infinite fetch loop (config was in its dependency chain)
 	useEffect(() => {
 		loadConfig();
-	}, [loadConfig]);
+	}, []);
 
 	return { config, loadConfig, updateDefaults };
 }

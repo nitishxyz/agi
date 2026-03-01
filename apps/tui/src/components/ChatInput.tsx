@@ -296,6 +296,7 @@ export function ChatInput({
 		}
 	});
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally sparse deps — this effect creates the textarea once; handleSubmit is synced via a separate useEffect below. Do NOT add colors.* or handleSubmit here — it causes the textarea to be destroyed/recreated on every render, breaking input.
 	useEffect(() => {
 		const container = renderer.root.findDescendantById(containerRef.current);
 		if (!container || textareaRef.current) return;
@@ -349,8 +350,6 @@ export function ChatInput({
 				textareaRef.current = null;
 			}
 		};
-	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally sparse deps — this effect creates the textarea once; handleSubmit is synced via a separate useEffect below. Do NOT add colors.* or handleSubmit here — it causes the textarea to be destroyed/recreated on every render, breaking input.
-	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [renderer, handleContentChange]);
 
 	useEffect(() => {
