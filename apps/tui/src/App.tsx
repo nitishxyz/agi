@@ -1,4 +1,4 @@
-import { useKeyboard } from '@opentui/react';
+import { useKeyboard, useRenderer } from '@opentui/react';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
 	stageFiles,
@@ -44,6 +44,7 @@ export type StatusIndicator =
 	| { type: 'error'; label: string };
 
 export function App({ onQuit }: { onQuit: () => void }) {
+	const renderer = useRenderer();
 	const { colors, setTheme } = useTheme();
 	const [overlay, setOverlay] = useState<Overlay>('none');
 	const [status, setStatus] = useState<StatusIndicator>({ type: 'idle' });
@@ -69,6 +70,21 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		},
 		[],
 	);
+
+	useEffect(() => {
+		const handler = (selection: { getSelectedText: () => string }) => {
+			const text = selection.getSelectedText();
+			if (text) {
+				copyToClipboard(text).then(() => {
+					showStatus({ type: 'success', label: 'copied to clipboard' }, 2000);
+				});
+			}
+		};
+		renderer.on('selection', handler);
+		return () => {
+			renderer.off('selection', handler);
+		};
+	}, [renderer, showStatus]);
 
 	const {
 		sessions,
