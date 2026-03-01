@@ -276,13 +276,18 @@ function messageReducer(state: Message[], action: Action): Message[] {
 			const { payload } = action;
 			const callId = typeof payload.callId === 'string' ? payload.callId : null;
 			if (!callId) return state;
+			const result = payload.result !== undefined ? payload.result : undefined;
 			let changed = false;
 			const next = state.map((msg) => {
 				if (!msg.parts?.length) return msg;
 				const updatedParts = msg.parts.map((p) => {
 					if (p.ephemeral && p.toolCallId === callId) {
 						changed = true;
-						return { ...p, completedAt: Date.now() };
+						const updatedJson = {
+							...(typeof p.contentJson === 'object' && !Array.isArray(p.contentJson) ? p.contentJson as Record<string, unknown> : {}),
+							...(result !== undefined ? { result } : {}),
+						};
+						return { ...p, completedAt: Date.now(), contentJson: updatedJson, content: JSON.stringify(updatedJson) };
 					}
 					return p;
 				});

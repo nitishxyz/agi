@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { colors, syntaxStyle } from '../theme.ts';
 import { ToolCallItem } from './ToolCallItem.tsx';
 import { InlineApproval } from './InlineApproval.tsx';
@@ -174,11 +174,77 @@ function deduplicateToolParts(parts: MessagePart[]): MessagePart[] {
 	});
 }
 
+function extractProgressInfo(part: MessagePart): { message: string; stage?: string; pct?: number } | null {
+	const cj = part.contentJson as Record<string, unknown> | undefined;
+	if (!cj) return null;
+	const candidates = [
+		cj.result as Record<string, unknown> | undefined,
+		cj.args as Record<string, unknown> | undefined,
+		cj,
+	];
+	for (const src of candidates) {
+		if (!src || typeof src !== 'object') continue;
+		const msg = typeof src.message === 'string' ? src.message : null;
+		if (msg) {
+			return {
+				message: msg,
+				stage: typeof src.stage === 'string' ? src.stage : undefined,
+				pct: typeof src.pct === 'number' ? src.pct : undefined,
+			};
+		}
+	}
+	return null;
+}
+
+const SHIMMER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+function StreamingIndicator({ progressPart }: { progressPart: MessagePart | null }) {
+	const [frame, setFrame] = useState(0);
+	useEffect(() => {
+		const id = setInterval(() => setFrame((f) => (f + 1) % SHIMMER_FRAMES.length), 80);
+		return () => clearInterval(id);
+	}, []);
+
+	const spinner = SHIMMER_FRAMES[frame];
+
+	if (progressPart) {
+		const info = extractProgressInfo(progressPart);
+		if (info) {
+		return (
+			<box style={{ flexDirection: 'row', height: 1, marginTop: 1 }}>
+					<text fg={colors.purple}>{spinner}</text>
+					<text fg={colors.fgDark}>{info.stage ? ` [${info.stage}] ` : ' '}</text>
+					<text fg={colors.purple}>{info.message}</text>
+					{info.pct !== undefined && <text fg={colors.fgDark}>  {info.pct}%</text>}
+				</box>
+			);
+		}
+	}
+
+	return (
+		<box style={{ flexDirection: 'row', gap: 1, height: 1, marginTop: 1 }}>
+			<text fg={colors.purple}>{spinner}</text>
+			<text fg={colors.fgDark}>thinking…</text>
+		</box>
+	);
+}
+
 function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage, pendingApprovals, onApprove, onDeny }: MessageItemProps) {
 	const sortedParts = useMemo(() => getSortedParts(message), [message.parts]);
 	const dedupedParts = useMemo(() => deduplicateToolParts(sortedParts), [sortedParts]);
 	const isActive = isStreaming && message.status !== 'complete';
 	const hasError = message.status === 'error';
+	const hasFinish = sortedParts.some((p) => p.toolName === 'finish');
+
+	const latestProgressPart = useMemo(() => {
+		for (let i = sortedParts.length - 1; i >= 0; i--) {
+			const p = sortedParts[i];
+			if ((p.type === 'tool_result' || p.type === 'tool_call') && p.toolName === 'progress_update') {
+				return p;
+			}
+		}
+		return null;
+	}, [sortedParts]);
 
 	const toolParts = dedupedParts.filter((p) => isToolPart(p) && !SKIP_TOOLS.has(p.toolName || ''));
 	const lastToolIdx = toolParts.length > 0 ? dedupedParts.lastIndexOf(toolParts[toolParts.length - 1]) : -1;
@@ -191,6 +257,8 @@ function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage, pend
 		if (!pendingApprovals?.length) return [];
 		return pendingApprovals.filter((a) => a.messageId === message.id);
 	}, [pendingApprovals, message.id]);
+
+	const showStreamingIndicator = isActive && !hasFinish;
 
 	return (
 		<box
@@ -244,9 +312,9 @@ function AssistantMessage({ message, isStreaming, isQueued, isFirstMessage, pend
 				);
 			})}
 
-			{!hasAnyContent && isActive && (
-				<text fg={colors.fgDark}>thinking…</text>
-			)}
+		{showStreamingIndicator && (
+			<StreamingIndicator progressPart={latestProgressPart} />
+		)}
 
 		{hasError && !sortedParts.some((p) => p.type === 'error') && (
 			<text fg={colors.red}>{formatError(message.error) || 'Unknown error'}</text>
