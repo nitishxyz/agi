@@ -49,6 +49,8 @@ export function App({ onQuit }: { onQuit: () => void }) {
 	const [overlay, setOverlay] = useState<Overlay>('none');
 	const [status, setStatus] = useState<StatusIndicator>({ type: 'idle' });
 	const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const [escHint, setEscHint] = useState(false);
+	const escTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const showStatus = useCallback((s: StatusIndicator, autoClearMs?: number) => {
 		if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
@@ -64,6 +66,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 	useEffect(
 		() => () => {
 			if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+			if (escTimerRef.current) clearTimeout(escTimerRef.current);
 		},
 		[],
 	);
@@ -348,6 +351,17 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				setOverlay('none');
 				return;
 			}
+			if (isStreaming && activeSession) {
+				if (escHint) {
+					abortSession(activeSession.id);
+					setEscHint(false);
+					if (escTimerRef.current) clearTimeout(escTimerRef.current);
+				} else {
+					setEscHint(true);
+					escTimerRef.current = setTimeout(() => setEscHint(false), 3000);
+				}
+				return;
+			}
 		}
 		if (key.ctrl && key.name === 'n') {
 			createSession();
@@ -368,11 +382,20 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		if (key.ctrl && key.name === 'c') {
 			if (isStreaming && activeSession) {
 				abortSession(activeSession.id);
+				setEscHint(false);
+				if (escTimerRef.current) clearTimeout(escTimerRef.current);
 			} else {
 				onQuit();
 			}
 		}
 	});
+
+	useEffect(() => {
+		if (!isStreaming) {
+			setEscHint(false);
+			if (escTimerRef.current) clearTimeout(escTimerRef.current);
+		}
+	}, [isStreaming]);
 
 	const provider = activeSession?.provider || config.defaults.provider;
 	const model = activeSession?.model || config.defaults.model;
@@ -418,6 +441,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				isStreaming={isStreaming}
 				provider={provider}
 				model={model}
+				escHint={escHint}
 			/>
 
 			{overlay === 'sessions' && (

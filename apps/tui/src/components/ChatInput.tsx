@@ -23,6 +23,7 @@ interface ChatInputProps {
 	isStreaming: boolean;
 	provider: string;
 	model: string;
+	escHint: boolean;
 }
 
 const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
@@ -35,6 +36,7 @@ export function ChatInput({
 	isStreaming,
 	provider,
 	model,
+	escHint,
 }: ChatInputProps) {
 	const { colors } = useTheme();
 	const renderer = useRenderer();
@@ -489,9 +491,16 @@ export function ChatInput({
 				{hasStatus ? (
 					<box style={{ flexDirection: 'row' }}>
 						{isStreaming && status.type === 'idle' && (
+						<box style={{ flexDirection: 'row', gap: 1 }}>
 							<text fg={colors.streamDot}>
 								{SPINNER[spinnerIdx]} generating
 							</text>
+							{escHint && (
+								<text fg={colors.yellow}>
+									press Esc again to stop
+								</text>
+							)}
+						</box>
 						)}
 						{status.type === 'loading' && (
 							<text fg={colors.blue}>
