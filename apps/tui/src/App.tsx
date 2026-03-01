@@ -148,31 +148,37 @@ export function App({ onQuit }: { onQuit: () => void }) {
 						await deleteSession(activeSession.id);
 					}
 					break;
-			case 'mcp':
-				setOverlay('mcp');
-				break;
-			case 'models':
-				setOverlay('models');
-				break;
-			case 'commit':
+				case 'mcp':
+					setOverlay('mcp');
+					break;
+				case 'models':
+					setOverlay('models');
+					break;
+				case 'commit':
 					setOverlay('commit');
 					break;
-			case 'push':
-				showStatus({ type: 'loading', label: 'pushing…' });
-				try {
-					// biome-ignore lint/suspicious/noExplicitAny: API type mismatch
-					const pushResponse = await pushCommits({ body: {} as any });
-					if (pushResponse.error) {
-						// biome-ignore lint/suspicious/noExplicitAny: SDK error type
-						const err = pushResponse.error as any;
-						showStatus({ type: 'error', label: err?.error || 'push failed' }, 3000);
-					} else {
-						// biome-ignore lint/suspicious/noExplicitAny: SDK response type
-						const pushData = pushResponse.data as any;
-						showStatus({ type: 'success', label: pushData?.data?.output || 'pushed' }, 3000);
-					}
-				} catch {
-					showStatus({ type: 'error', label: 'push failed' }, 3000);
+				case 'push':
+					showStatus({ type: 'loading', label: 'pushing…' });
+					try {
+						// biome-ignore lint/suspicious/noExplicitAny: API type mismatch
+						const pushResponse = await pushCommits({ body: {} as any });
+						if (pushResponse.error) {
+							// biome-ignore lint/suspicious/noExplicitAny: SDK error type
+							const err = pushResponse.error as any;
+							showStatus(
+								{ type: 'error', label: err?.error || 'push failed' },
+								3000,
+							);
+						} else {
+							// biome-ignore lint/suspicious/noExplicitAny: SDK response type
+							const pushData = pushResponse.data as any;
+							showStatus(
+								{ type: 'success', label: pushData?.data?.output || 'pushed' },
+								3000,
+							);
+						}
+					} catch {
+						showStatus({ type: 'error', label: 'push failed' }, 3000);
 					}
 					break;
 				case 'stage':
@@ -516,16 +522,14 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				/>
 			)}
 
-		{overlay === 'help' && <HelpOverlay onClose={() => setOverlay('none')} />}
-		{overlay === 'theme' && (
-			<ThemeOverlay
-				onClose={() => setOverlay('none')}
-				onSave={(name: string) => updateDefaults({ theme: name })}
-			/>
-		)}
-		{overlay === 'mcp' && (
-			<MCPOverlay onClose={() => setOverlay('none')} />
-		)}
-	</box>
+			{overlay === 'help' && <HelpOverlay onClose={() => setOverlay('none')} />}
+			{overlay === 'theme' && (
+				<ThemeOverlay
+					onClose={() => setOverlay('none')}
+					onSave={(name: string) => updateDefaults({ theme: name })}
+				/>
+			)}
+			{overlay === 'mcp' && <MCPOverlay onClose={() => setOverlay('none')} />}
+		</box>
 	);
 }

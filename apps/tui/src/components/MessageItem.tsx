@@ -286,7 +286,10 @@ function extractProgressInfo(
 		if (msg) {
 			return {
 				message: msg,
-				stage: typeof src.stage === 'string' && src.stage.trim() ? src.stage : undefined,
+				stage:
+					typeof src.stage === 'string' && src.stage.trim()
+						? src.stage
+						: undefined,
 				pct: typeof src.pct === 'number' ? src.pct : undefined,
 			};
 		}
@@ -320,7 +323,7 @@ function StreamingIndicator({
 				<box style={{ flexDirection: 'row', height: 1, marginTop: 1 }}>
 					<text fg={colors.purple}>{spinner}</text>
 					<text fg={colors.fgDark}>
-					{info.stage?.trim() ? ` [${info.stage}] ` : ' '}
+						{info.stage?.trim() ? ` [${info.stage}] ` : ' '}
 					</text>
 					<text fg={colors.purple}>{info.message}</text>
 					{info.pct !== undefined && (

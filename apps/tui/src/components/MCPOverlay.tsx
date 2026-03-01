@@ -72,7 +72,9 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 	const [busyServers, setBusyServers] = useState<Set<string>>(new Set());
 	const [selectedIdx, setSelectedIdx] = useState(0);
 	const [view, setView] = useState<View>('list');
-	const [copilotDevice, setCopilotDevice] = useState<CopilotDevice | null>(null);
+	const [copilotDevice, setCopilotDevice] = useState<CopilotDevice | null>(
+		null,
+	);
 	const [copilotCopied, setCopilotCopied] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -99,7 +101,10 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 
 	useEffect(() => {
 		if (!loading && busyServers.size === 0 && !copilotDevice) return;
-		const t = setInterval(() => setSpinFrame((f) => (f + 1) % SPIN_CHARS.length), 80);
+		const t = setInterval(
+			() => setSpinFrame((f) => (f + 1) % SPIN_CHARS.length),
+			80,
+		);
 		return () => clearInterval(t);
 	}, [loading, busyServers.size, copilotDevice, SPIN_CHARS.length]);
 
@@ -187,7 +192,9 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 			try {
 				if (server.connected) {
 					// biome-ignore lint/suspicious/noExplicitAny: API type
-					const { data, error: err } = await stopMcpServer({ path: { name: server.name } });
+					const { data, error: err } = await stopMcpServer({
+						path: { name: server.name },
+					});
 					if (err) throw new Error('Failed to stop server');
 					// biome-ignore lint/suspicious/noExplicitAny: API type
 					const result = data as any;
@@ -195,7 +202,9 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 					showStatus(`${server.name} stopped`);
 				} else if (server.authRequired && !server.authenticated) {
 					// biome-ignore lint/suspicious/noExplicitAny: API type
-					const { data, error: err } = await initiateMcpAuth({ path: { name: server.name } });
+					const { data, error: err } = await initiateMcpAuth({
+						path: { name: server.name },
+					});
 					if (err) throw new Error('Failed to initiate auth');
 					// biome-ignore lint/suspicious/noExplicitAny: API type
 					const result = data as any;
@@ -230,7 +239,9 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 					}
 				} else {
 					// biome-ignore lint/suspicious/noExplicitAny: API type
-					const { data, error: err } = await startMcpServer({ path: { name: server.name } });
+					const { data, error: err } = await startMcpServer({
+						path: { name: server.name },
+					});
 					if (err) throw new Error('Failed to start server');
 					// biome-ignore lint/suspicious/noExplicitAny: API type
 					const result = data as any;
@@ -276,7 +287,9 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 		setError(null);
 		try {
 			// biome-ignore lint/suspicious/noExplicitAny: API type
-			const { error: err } = await removeMcpServer({ path: { name: server.name } });
+			const { error: err } = await removeMcpServer({
+				path: { name: server.name },
+			});
 			if (err) throw new Error('Failed to remove');
 			showStatus(`${server.name} removed`);
 			setView('list');
@@ -337,7 +350,15 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 		} catch (e) {
 			setError(e instanceof Error ? e.message : 'Add failed');
 		}
-	}, [addName, addCommand, addUrl, addMode, addScope, showStatus, fetchServers]);
+	}, [
+		addName,
+		addCommand,
+		addUrl,
+		addMode,
+		addScope,
+		showStatus,
+		fetchServers,
+	]);
 
 	const sortedServers = [...servers].sort((a, b) => {
 		if (a.connected && !b.connected) return -1;
@@ -427,11 +448,17 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 		if (key.name === 'escape') {
 			onClose();
 		} else if (key.name === 'up' || (key.ctrl && key.name === 'k')) {
-			const next = selectedIdxRef.current <= 0 ? list.length - 1 : selectedIdxRef.current - 1;
+			const next =
+				selectedIdxRef.current <= 0
+					? list.length - 1
+					: selectedIdxRef.current - 1;
 			setSelectedIdx(next);
 			ensureVisible(next);
 		} else if (key.name === 'down' || (key.ctrl && key.name === 'j')) {
-			const next = selectedIdxRef.current >= list.length - 1 ? 0 : selectedIdxRef.current + 1;
+			const next =
+				selectedIdxRef.current >= list.length - 1
+					? 0
+					: selectedIdxRef.current + 1;
 			setSelectedIdx(next);
 			ensureVisible(next);
 		} else if (key.name === 'return' || key.name === 'space') {
@@ -460,8 +487,10 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 	});
 
 	const connectedCount = servers.filter((s) => s.connected).length;
-	const visibleServers = sortedServers.slice(scrollOffset, scrollOffset + VISIBLE_ROWS);
-
+	const visibleServers = sortedServers.slice(
+		scrollOffset,
+		scrollOffset + VISIBLE_ROWS,
+	);
 
 	if (view === 'add') {
 		return (
@@ -533,22 +562,20 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 						<text fg={addMode === 'remote' ? colors.green : colors.fgDimmed}>
 							{addMode === 'remote' ? '● remote (http)' : '○ remote (http)'}
 						</text>
-						{addField === 2 && (
-							<text fg={colors.fgDark}>← → to switch</text>
-						)}
+						{addField === 2 && <text fg={colors.fgDark}>← → to switch</text>}
 					</box>
 
 					<box style={{ flexDirection: 'row', gap: 2 }}>
-						<text fg={addField === 3 ? colors.blue : colors.fgDark}>Scope:</text>
+						<text fg={addField === 3 ? colors.blue : colors.fgDark}>
+							Scope:
+						</text>
 						<text fg={addScope === 'global' ? colors.green : colors.fgDimmed}>
 							{addScope === 'global' ? '● global' : '○ global'}
 						</text>
 						<text fg={addScope === 'project' ? colors.green : colors.fgDimmed}>
 							{addScope === 'project' ? '● project' : '○ project'}
 						</text>
-						{addField === 3 && (
-							<text fg={colors.fgDark}>← → to switch</text>
-						)}
+						{addField === 3 && <text fg={colors.fgDark}>← → to switch</text>}
 					</box>
 				</box>
 
@@ -589,7 +616,9 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 				<text fg={colors.fgMuted}>
 					Remove <b>{target?.name}</b>?
 				</text>
-				<text fg={colors.fgDark}>This will stop and remove the configuration.</text>
+				<text fg={colors.fgDark}>
+					This will stop and remove the configuration.
+				</text>
 				<box style={{ marginTop: 1, flexDirection: 'row', gap: 2 }}>
 					<text fg={colors.red}>y/↵ confirm</text>
 					<text fg={colors.fgDimmed}>any key cancel</text>
@@ -603,24 +632,26 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 			<box
 				style={{
 					position: 'absolute',
-				top: 2,
-				left: 4,
-				right: 4,
-				height: Math.min(toolsServer.tools.length + 4, termRows - 4),
-				border: true,
-				borderStyle: 'rounded',
-				borderColor: colors.blue,
-				backgroundColor: colors.bg,
-				zIndex: 100,
-				flexDirection: 'column',
-				padding: 1,
-			}}
-			title={` ${toolsServer.name} — Tools (${toolsServer.tools.length}) `}
+					top: 2,
+					left: 4,
+					right: 4,
+					height: Math.min(toolsServer.tools.length + 4, termRows - 4),
+					border: true,
+					borderStyle: 'rounded',
+					borderColor: colors.blue,
+					backgroundColor: colors.bg,
+					zIndex: 100,
+					flexDirection: 'column',
+					padding: 1,
+				}}
+				title={` ${toolsServer.name} — Tools (${toolsServer.tools.length}) `}
 			>
-				<box style={{ flexDirection: 'column', overflow: 'hidden', flexGrow: 1 }}>
+				<box
+					style={{ flexDirection: 'column', overflow: 'hidden', flexGrow: 1 }}
+				>
 					{toolsServer.tools.map((tool) => (
 						<box key={tool} style={{ flexDirection: 'row', height: 1 }}>
-							<text fg={colors.fgDimmed}>  •</text>
+							<text fg={colors.fgDimmed}> •</text>
 							<text fg={colors.fgMuted}> {tool.split('__').pop()}</text>
 							<text fg={colors.fgDark}> ({tool})</text>
 						</box>
@@ -636,18 +667,18 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 	return (
 		<box
 			style={{
-			position: 'absolute',
-			top: 2,
-			left: 4,
-			right: 4,
-			bottom: 2,
-			border: true,
-			borderStyle: 'rounded',
-			borderColor: colors.blue,
-			backgroundColor: colors.bg,
-			zIndex: 100,
-			flexDirection: 'column',
-			padding: 1,
+				position: 'absolute',
+				top: 2,
+				left: 4,
+				right: 4,
+				bottom: 2,
+				border: true,
+				borderStyle: 'rounded',
+				borderColor: colors.blue,
+				backgroundColor: colors.bg,
+				zIndex: 100,
+				flexDirection: 'column',
+				padding: 1,
 			}}
 			title=" MCP Servers "
 		>
@@ -656,9 +687,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 					{servers.length} server{servers.length !== 1 ? 's' : ''}
 				</text>
 				{connectedCount > 0 && (
-					<text fg={colors.green}>
-						{connectedCount} active
-					</text>
+					<text fg={colors.green}>{connectedCount} active</text>
 				)}
 				{statusMsg && <text fg={colors.green}>{statusMsg}</text>}
 				{error && <text fg={colors.red}>{error}</text>}
@@ -695,12 +724,12 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 				</box>
 			)}
 
-		{loading && servers.length === 0 && (
-			<box style={{ flexDirection: 'row', gap: 1 }}>
-				<text fg={colors.blue}>{SPIN_CHARS[spinFrame]}</text>
-				<text fg={colors.fgDark}>Loading servers…</text>
-			</box>
-		)}
+			{loading && servers.length === 0 && (
+				<box style={{ flexDirection: 'row', gap: 1 }}>
+					<text fg={colors.blue}>{SPIN_CHARS[spinFrame]}</text>
+					<text fg={colors.fgDark}>Loading servers…</text>
+				</box>
+			)}
 
 			{!loading && servers.length === 0 && (
 				<box style={{ flexDirection: 'column', gap: 1 }}>
@@ -710,12 +739,15 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 			)}
 
 			{sortedServers.length > 0 && (
-				<box style={{ flexDirection: 'column', overflow: 'hidden', flexGrow: 1 }}>
+				<box
+					style={{ flexDirection: 'column', overflow: 'hidden', flexGrow: 1 }}
+				>
 					{visibleServers.map((server, vi) => {
 						const idx = scrollOffset + vi;
 						const isSelected = idx === selectedIdx;
 						const isBusy = busyServers.has(server.name);
-						const isRemote = server.transport === 'http' || server.transport === 'sse';
+						const isRemote =
+							server.transport === 'http' || server.transport === 'sse';
 						const toolCount = server.tools.length;
 
 						return (
@@ -732,8 +764,8 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 									{isSelected ? '▸ ' : '  '}
 								</text>
 
-							{isBusy ? (
-								<text fg={colors.yellow}>{SPIN_CHARS[spinFrame]} </text>
+								{isBusy ? (
+									<text fg={colors.yellow}>{SPIN_CHARS[spinFrame]} </text>
 								) : server.connected ? (
 									<text fg={colors.green}>● </text>
 								) : server.authRequired && !server.authenticated ? (
@@ -759,9 +791,11 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 									<text fg={colors.fgDark}> {toolCount} tools</text>
 								)}
 
-								{server.authRequired && !server.authenticated && !server.connected && (
-									<text fg={colors.yellow}> (auth required)</text>
-								)}
+								{server.authRequired &&
+									!server.authenticated &&
+									!server.connected && (
+										<text fg={colors.yellow}> (auth required)</text>
+									)}
 							</box>
 						);
 					})}
