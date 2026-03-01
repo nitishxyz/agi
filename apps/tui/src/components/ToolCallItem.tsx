@@ -56,13 +56,14 @@ export function ToolCallItem({ part, isLast, isFirst }: ToolCallItemProps) {
 				width: '100%',
 				backgroundColor: colors.toolBg,
 				marginTop: isFirst ? 1 : 0,
+				overflow: 'hidden',
 			}}
 		>
-			<text fg={iconColor}>{icon}</text>
-			<text fg={nameColor}>{displayName}</text>
-			{target && <text fg={colors.toolArgs}>{target}</text>}
+			<text style={{ flexShrink: 0 }} fg={iconColor}>{icon}</text>
+			<text style={{ flexShrink: 0 }} fg={nameColor}>{displayName}</text>
+			{target && <text style={{ flexShrink: 1, overflow: 'hidden' }} fg={colors.toolArgs}>{target}</text>}
 			{duration ? (
-				<text fg={colors.fgDimmed}>
+				<text style={{ flexShrink: 0 }} fg={colors.fgDimmed}>
 					{duration < 1000 ? `${duration}ms` : `${(duration / 1000).toFixed(1)}s`}
 				</text>
 			) : null}
