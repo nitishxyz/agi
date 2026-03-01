@@ -97,6 +97,18 @@ export function useSession() {
 		setActiveSession(session);
 	}, []);
 
+	const updateSessionMeta = useCallback((payload: Record<string, unknown>) => {
+		const id = typeof payload.id === 'string' ? payload.id : null;
+		if (!id) return;
+		const title = typeof payload.title === 'string' ? payload.title : undefined;
+		if (title !== undefined) {
+			setActiveSession((prev) => (prev?.id === id ? { ...prev, title } : prev));
+			setSessions((prev) =>
+				prev.map((s) => (s.id === id ? { ...s, title } : s)),
+			);
+		}
+	}, []);
+
 	const sendMessage = useCallback(
 		async (sessionId: string, content: string) => {
 			try {
@@ -141,6 +153,7 @@ export function useSession() {
 		createSession,
 		deleteSession: deleteSessionFn,
 		switchSession,
+		updateSessionMeta,
 		sendMessage,
 		abortSession: abortSessionFn,
 		approveToolCall,

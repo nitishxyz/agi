@@ -60,6 +60,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		createSession,
 		deleteSession,
 		switchSession,
+		updateSessionMeta,
 		sendMessage,
 		abortSession,
 		approveToolCall,
@@ -78,7 +79,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		setPendingApprovals,
 		reload,
 		addOptimisticUser,
-	} = useStream(sessionId);
+	} = useStream(sessionId, updateSessionMeta);
 
 	const handleCommand = useCallback(
 		async (name: string, args: string) => {

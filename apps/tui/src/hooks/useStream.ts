@@ -444,13 +444,15 @@ async function connectSSE(
 	}
 }
 
-export function useStream(sessionId: string | null) {
+export function useStream(sessionId: string | null, onSessionUpdate?: (payload: Record<string, unknown>) => void) {
 	const [messages, dispatch] = useReducer(messageReducer, []);
 	const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
 	const [queueSize, setQueueSize] = useState(0);
 	const [queuedMessageIds, setQueuedMessageIds] = useState<Set<string>>(new Set());
 	const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
 	const abortRef = useRef<AbortController | null>(null);
+	const onSessionUpdateRef = useRef(onSessionUpdate);
+	onSessionUpdateRef.current = onSessionUpdate;
 
 	const addOptimisticUser = useCallback((content: string) => {
 		const id = `optimistic-${Date.now()}`;
@@ -543,7 +545,11 @@ export function useStream(sessionId: string | null) {
 					dispatch({ type: 'ERROR', payload });
 				setStreamingMessageId(null);
 					break;
-			case 'queue.updated': {
+		case 'session.updated': {
+			onSessionUpdateRef.current?.(payload);
+			break;
+		}
+		case 'queue.updated': {
 				const queueLength = typeof payload.queueLength === 'number' ? payload.queueLength : 0;
 				setQueueSize(queueLength);
 			const currentMsgId = typeof payload.currentMessageId === 'string' ? payload.currentMessageId : null;
