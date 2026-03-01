@@ -405,34 +405,32 @@ function AssistantMessage({
 				paddingBottom: 1,
 			}}
 		>
-		<box style={{ flexDirection: 'row', gap: 0 }}>
-			<text fg={colors.purple}>✦ </text>
-			{message.agent && (
-				<text
-					fg={message.agent === 'plan' ? colors.cyan : colors.purple}
-				>
-					<b>{message.agent}</b>
-				</text>
-			)}
-			{message.provider && (
-				<>
-					<text fg={colors.fgDark}> · </text>
-					<text fg={colors.fgMuted}>{message.provider}</text>
-				</>
-			)}
-			{message.model && (
-				<>
-					<text fg={colors.fgDark}> · </text>
-					<text fg={colors.fgDimmed}>{message.model}</text>
-				</>
-			)}
-			{message.createdAt > 0 && (
-				<>
-					<text fg={colors.fgDark}> · </text>
-					<text fg={colors.fgDimmed}>{formatTime(message.createdAt)}</text>
-				</>
-			)}
-		</box>
+			<box style={{ flexDirection: 'row', gap: 0 }}>
+				<text fg={colors.purple}>✦ </text>
+				{message.agent && (
+					<text fg={message.agent === 'plan' ? colors.cyan : colors.purple}>
+						<b>{message.agent}</b>
+					</text>
+				)}
+				{message.provider && (
+					<>
+						<text fg={colors.fgDark}> · </text>
+						<text fg={colors.fgMuted}>{message.provider}</text>
+					</>
+				)}
+				{message.model && (
+					<>
+						<text fg={colors.fgDark}> · </text>
+						<text fg={colors.fgDimmed}>{message.model}</text>
+					</>
+				)}
+				{message.createdAt > 0 && (
+					<>
+						<text fg={colors.fgDark}> · </text>
+						<text fg={colors.fgDimmed}>{formatTime(message.createdAt)}</text>
+					</>
+				)}
+			</box>
 
 			{dedupedParts.map((part, i) => {
 				const prev = i > 0 ? dedupedParts[i - 1] : null;

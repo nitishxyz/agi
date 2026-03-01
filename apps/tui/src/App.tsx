@@ -447,17 +447,17 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				/>
 			)}
 
-		<ChatInput
-			onSubmit={handleSubmit}
-			disabled={pendingApprovals.length > 0}
-			status={status}
-			isStreaming={isStreaming}
-			provider={provider}
-			model={model}
-			escHint={escHint}
-			isPlanMode={currentAgent === 'plan'}
-			onPlanModeToggle={handlePlanModeToggle}
-		/>
+			<ChatInput
+				onSubmit={handleSubmit}
+				disabled={pendingApprovals.length > 0}
+				status={status}
+				isStreaming={isStreaming}
+				provider={provider}
+				model={model}
+				escHint={escHint}
+				isPlanMode={currentAgent === 'plan'}
+				onPlanModeToggle={handlePlanModeToggle}
+			/>
 
 			{overlay === 'sessions' && (
 				<SessionsOverlay

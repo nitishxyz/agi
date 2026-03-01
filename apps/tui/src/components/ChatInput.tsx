@@ -326,7 +326,7 @@ export function ChatInput({
 			id: 'chat-textarea',
 			width: '100%',
 			height: 3,
-		placeholder: 'Message otto…  ↵ send  ⇧↵ newline  ⇥ mode',
+			placeholder: 'Message otto…  ↵ send  ⇧↵ newline  ⇥ mode',
 			placeholderColor: colors.fgDark,
 			textColor: colors.fgBright,
 			focusedTextColor: colors.fgBright,
@@ -490,19 +490,19 @@ export function ChatInput({
 					))}
 				</box>
 			)}
-		<box
-			style={{
-				width: '100%',
-				borderStyle: 'rounded',
-				border: true,
-				borderColor: disabled
-					? colors.border
-					: isPlanMode
-						? colors.cyan
-						: colors.blue,
-				flexDirection: 'column',
-			}}
-		>
+			<box
+				style={{
+					width: '100%',
+					borderStyle: 'rounded',
+					border: true,
+					borderColor: disabled
+						? colors.border
+						: isPlanMode
+							? colors.cyan
+							: colors.blue,
+					flexDirection: 'column',
+				}}
+			>
 				<box id={containerRef.current} style={{ width: '100%' }} />
 			</box>
 			<box
@@ -513,41 +513,41 @@ export function ChatInput({
 					justifyContent: 'space-between',
 				}}
 			>
-			<box style={{ flexDirection: 'row', gap: 1 }}>
-				<text
-					fg={isPlanMode ? colors.bg : colors.bg}
-					bg={isPlanMode ? colors.cyan : colors.blue}
-				>
-					{isPlanMode ? ' PLAN ' : ' BUILD '}
-				</text>
-				{hasStatus ? (
-					<box style={{ flexDirection: 'row' }}>
-						{isStreaming && status.type === 'idle' && (
-							<box style={{ flexDirection: 'row', gap: 1 }}>
-								<text fg={colors.streamDot}>
-									{SPINNER[spinnerIdx]} generating
+				<box style={{ flexDirection: 'row', gap: 1 }}>
+					<text
+						fg={isPlanMode ? colors.bg : colors.bg}
+						bg={isPlanMode ? colors.cyan : colors.blue}
+					>
+						{isPlanMode ? ' PLAN ' : ' BUILD '}
+					</text>
+					{hasStatus ? (
+						<box style={{ flexDirection: 'row' }}>
+							{isStreaming && status.type === 'idle' && (
+								<box style={{ flexDirection: 'row', gap: 1 }}>
+									<text fg={colors.streamDot}>
+										{SPINNER[spinnerIdx]} generating
+									</text>
+									{escHint && (
+										<text fg={colors.yellow}>press Esc again to stop</text>
+									)}
+								</box>
+							)}
+							{status.type === 'loading' && (
+								<text fg={colors.blue}>
+									{SPINNER[spinnerIdx]} {status.label}
 								</text>
-								{escHint && (
-									<text fg={colors.yellow}>press Esc again to stop</text>
-								)}
-							</box>
-						)}
-						{status.type === 'loading' && (
-							<text fg={colors.blue}>
-								{SPINNER[spinnerIdx]} {status.label}
-							</text>
-						)}
-						{status.type === 'success' && (
-							<text fg={colors.green}>✓ {status.label}</text>
-						)}
-						{status.type === 'error' && (
-							<text fg={colors.red}>✗ {status.label}</text>
-						)}
-					</box>
-				) : (
-					<text fg={colors.fgDark}>⇥ switch mode</text>
-				)}
-			</box>
+							)}
+							{status.type === 'success' && (
+								<text fg={colors.green}>✓ {status.label}</text>
+							)}
+							{status.type === 'error' && (
+								<text fg={colors.red}>✗ {status.label}</text>
+							)}
+						</box>
+					) : (
+						<text fg={colors.fgDark}>⇥ switch mode</text>
+					)}
+				</box>
 				<box style={{ flexDirection: 'row' }}>
 					<text fg={colors.fgDark}>{provider}</text>
 					<text fg={colors.fgDimmed}>/</text>
