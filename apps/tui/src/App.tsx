@@ -1,5 +1,5 @@
 import { useKeyboard } from '@opentui/react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
 	stageFiles,
 	generateCommitMessage,
@@ -29,16 +29,26 @@ async function copyToClipboard(text: string): Promise<void> {
 			: process.platform === 'win32'
 				? 'clip'
 				: 'xclip -selection clipboard';
-	const proc = Bun.spawn([
-		'sh',
-		'-c',
-		`echo -n ${JSON.stringify(text)} | ${cmd}`,
-	]);
+	const proc = Bun.spawn(['sh', '-c', `printf '%s' ${JSON.stringify(text)} | ${cmd}`]);
 	await proc.exited;
 }
 
+export type StatusIndicator = { type: 'idle' } | { type: 'loading'; label: string } | { type: 'success'; label: string } | { type: 'error'; label: string };
+
 export function App({ onQuit }: { onQuit: () => void }) {
 	const [overlay, setOverlay] = useState<Overlay>('none');
+	const [status, setStatus] = useState<StatusIndicator>({ type: 'idle' });
+	const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const showStatus = useCallback((s: StatusIndicator, autoClearMs?: number) => {
+		if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+		setStatus(s);
+		if (autoClearMs) {
+			statusTimerRef.current = setTimeout(() => setStatus({ type: 'idle' }), autoClearMs);
+		}
+	}, []);
+
+	useEffect(() => () => { if (statusTimerRef.current) clearTimeout(statusTimerRef.current); }, []);
 
 	const {
 		sessions,
@@ -159,32 +169,48 @@ export function App({ onQuit }: { onQuit: () => void }) {
 						} catch {}
 					}
 					break;
-				case 'share':
-					if (activeSession) {
-						try {
-							const shareResponse = await shareSession({
-								path: { sessionId: activeSession.id },
-							});
-							// biome-ignore lint/suspicious/noExplicitAny: SDK response structure
-							const shareData = shareResponse.data as any;
-							const shareUrl = shareData?.url;
-							if (shareUrl) await copyToClipboard(shareUrl);
-						} catch {}
+			case 'share':
+				if (activeSession) {
+					showStatus({ type: 'loading', label: 'sharing…' });
+					try {
+						const shareResponse = await shareSession({
+							path: { sessionId: activeSession.id },
+						});
+						// biome-ignore lint/suspicious/noExplicitAny: SDK response structure
+						const shareData = shareResponse.data as any;
+						const shareUrl = shareData?.url;
+						if (shareUrl) {
+							await copyToClipboard(shareUrl);
+							showStatus({ type: 'success', label: 'url copied' }, 3000);
+						} else {
+							showStatus({ type: 'error', label: 'share failed' }, 3000);
+						}
+					} catch {
+						showStatus({ type: 'error', label: 'share failed' }, 3000);
 					}
-					break;
-				case 'sync':
-					if (activeSession) {
-						try {
-							const syncResponse = await syncShare({
-								path: { sessionId: activeSession.id },
-							});
-							// biome-ignore lint/suspicious/noExplicitAny: SDK response structure
-							const syncData = syncResponse.data as any;
-							const syncUrl = syncData?.url;
-							if (syncUrl) await copyToClipboard(syncUrl);
-						} catch {}
+				}
+				break;
+			case 'sync':
+				if (activeSession) {
+					showStatus({ type: 'loading', label: 'syncing…' });
+					try {
+						const syncResponse = await syncShare({
+							path: { sessionId: activeSession.id },
+						});
+						// biome-ignore lint/suspicious/noExplicitAny: SDK response structure
+						const syncData = syncResponse.data as any;
+						const syncUrl = syncData?.url;
+						if (syncUrl) {
+							await copyToClipboard(syncUrl);
+							showStatus({ type: 'success', label: 'synced & copied' }, 3000);
+						} else {
+							showStatus({ type: 'error', label: 'sync failed' }, 3000);
+						}
+					} catch {
+						showStatus({ type: 'error', label: 'sync failed' }, 3000);
 					}
-					break;
+				}
+				break;
 			}
 		},
 		[
@@ -199,6 +225,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			sendMessage,
 			abortSession,
 			switchSession,
+			showStatus,
 		],
 	);
 
@@ -304,13 +331,11 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				height: '100%',
 				flexDirection: 'column',
 				backgroundColor: colors.bg,
+				paddingBottom: 1,
 			}}
 		>
-			<StatusBar
-				provider={provider}
-				model={model}
+		<StatusBar
 				sessionTitle={activeSession?.title ?? null}
-				isStreaming={isStreaming}
 				queueSize={queueSize}
 			/>
 
@@ -333,24 +358,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				/>
 			)}
 
-			<ChatInput onSubmit={handleSubmit} disabled={pendingApprovals.length > 0} />
-
-			<box
-				style={{
-					width: '100%',
-					height: 1,
-					flexShrink: 0,
-					backgroundColor: colors.bgDark,
-					flexDirection: 'row',
-					paddingLeft: 1,
-					paddingRight: 1,
-					gap: 0,
-				}}
-			>
-				<text fg={colors.fgDimmed}>
-					^N new ^S sessions ^P config /help ^C {isStreaming ? 'abort' : 'quit'}
-				</text>
-			</box>
+		<ChatInput onSubmit={handleSubmit} disabled={pendingApprovals.length > 0} status={status} isStreaming={isStreaming} provider={provider} model={model} />
 
 			{overlay === 'sessions' && (
 				<SessionsOverlay

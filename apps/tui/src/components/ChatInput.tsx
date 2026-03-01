@@ -3,13 +3,20 @@ import { TextareaRenderable } from '@opentui/core';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { colors } from '../theme.ts';
 import { COMMANDS } from '../commands.ts';
+import type { StatusIndicator } from '../App.tsx';
 
 interface ChatInputProps {
 	onSubmit: (text: string) => void;
 	disabled: boolean;
+	status: StatusIndicator;
+	isStreaming: boolean;
+	provider: string;
+	model: string;
 }
 
-export function ChatInput({ onSubmit, disabled }: ChatInputProps) {
+const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+export function ChatInput({ onSubmit, disabled, status, isStreaming, provider, model }: ChatInputProps) {
 	const renderer = useRenderer();
 	const textareaRef = useRef<TextareaRenderable | null>(null);
 	const containerRef = useRef<string>(`chat-input-${Date.now()}`);
@@ -19,6 +26,14 @@ export function ChatInput({ onSubmit, disabled }: ChatInputProps) {
 	const selectedIdxRef = useRef(selectedIdx);
 	commandMatchesRef.current = commandMatches;
 	selectedIdxRef.current = selectedIdx;
+	const [spinnerIdx, setSpinnerIdx] = useState(0);
+
+	const isAnimating = isStreaming || status.type === 'loading';
+	useEffect(() => {
+		if (!isAnimating) return;
+		const interval = setInterval(() => setSpinnerIdx((i) => (i + 1) % SPINNER.length), 80);
+		return () => clearInterval(interval);
+	}, [isAnimating]);
 
 	const handleContentChange = useCallback(() => {
 		if (!textareaRef.current) return;
@@ -132,6 +147,8 @@ export function ChatInput({ onSubmit, disabled }: ChatInputProps) {
 		}
 	}, [disabled]);
 
+	const hasStatus = isStreaming || status.type !== 'idle';
+
 	return (
 		<box
 			style={{
@@ -176,13 +193,41 @@ export function ChatInput({ onSubmit, disabled }: ChatInputProps) {
 				id={containerRef.current}
 				style={{
 					width: '100%',
-					minHeight: 3,
-					maxHeight: 5,
 					borderStyle: 'rounded',
 					border: true,
 					borderColor: disabled ? colors.border : colors.fgDimmed,
 				}}
 			/>
+			<box
+				style={{
+					width: '100%',
+					flexShrink: 0,
+					flexDirection: 'row',
+					justifyContent: 'space-between',
+				}}
+			>
+			{hasStatus ? (
+				<box style={{ flexDirection: 'row' }}>
+					{isStreaming && status.type === 'idle' && (
+						<text fg={colors.streamDot}>{SPINNER[spinnerIdx]} generating</text>
+					)}
+					{status.type === 'loading' && (
+						<text fg={colors.blue}>{SPINNER[spinnerIdx]} {status.label}</text>
+					)}
+					{status.type === 'success' && (
+						<text fg={colors.green}>✓ {status.label}</text>
+					)}
+					{status.type === 'error' && (
+						<text fg={colors.red}>✗ {status.label}</text>
+					)}
+				</box>
+			) : <box />}
+			<box style={{ flexDirection: 'row' }}>
+				<text fg={colors.fgDark}>{provider}</text>
+				<text fg={colors.fgDimmed}>/</text>
+				<text fg={colors.fgMuted}>{model}</text>
+			</box>
+			</box>
 		</box>
 	);
 }
