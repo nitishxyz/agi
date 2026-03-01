@@ -44,6 +44,13 @@ export const ayuDark: Theme = {
 
 		streamDot: '#7FD962',
 		errorBg: '#2b1a1a',
+
+		diffAddedBg: '#1a3a1a',
+		diffRemovedBg: '#2b1a1a',
+		diffContextBg: 'transparent',
+		diffAddedSign: '#7FD962',
+		diffRemovedSign: '#D95757',
+		diffLineNumberFg: '#565B66',
 	},
 	syntax: {
 		keyword: '#FF8F40',

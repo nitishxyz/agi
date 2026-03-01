@@ -44,6 +44,13 @@ export const dracula: Theme = {
 
 		streamDot: '#50fa7b',
 		errorBg: '#3b1f1f',
+
+		diffAddedBg: '#1a3a1a',
+		diffRemovedBg: '#3b1f1f',
+		diffContextBg: 'transparent',
+		diffAddedSign: '#50fa7b',
+		diffRemovedSign: '#ff5555',
+		diffLineNumberFg: '#6272a4',
 	},
 	syntax: {
 		keyword: '#ff79c6',

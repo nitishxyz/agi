@@ -44,6 +44,13 @@ export const catppuccinMocha: Theme = {
 
 		streamDot: '#a6e3a1',
 		errorBg: '#302030',
+
+		diffAddedBg: '#1a3a1a',
+		diffRemovedBg: '#3a1a2a',
+		diffContextBg: 'transparent',
+		diffAddedSign: '#a6e3a1',
+		diffRemovedSign: '#f38ba8',
+		diffLineNumberFg: '#6c7086',
 	},
 	syntax: {
 		keyword: '#cba6f7',

@@ -44,6 +44,13 @@ export const nord: Theme = {
 
 		streamDot: '#a3be8c',
 		errorBg: '#3b2a2a',
+
+		diffAddedBg: '#1a3020',
+		diffRemovedBg: '#3b2020',
+		diffContextBg: 'transparent',
+		diffAddedSign: '#a3be8c',
+		diffRemovedSign: '#bf616a',
+		diffLineNumberFg: '#616e88',
 	},
 	syntax: {
 		keyword: '#81a1c1',

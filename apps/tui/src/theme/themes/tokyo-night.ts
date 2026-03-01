@@ -44,6 +44,13 @@ export const tokyoNight: Theme = {
 
 		streamDot: '#9ece6a',
 		errorBg: '#2d202a',
+
+		diffAddedBg: '#1a3a1a',
+		diffRemovedBg: '#3a1a1a',
+		diffContextBg: 'transparent',
+		diffAddedSign: '#9ece6a',
+		diffRemovedSign: '#f7768e',
+		diffLineNumberFg: '#565f89',
 	},
 	syntax: {
 		keyword: '#FF7B72',

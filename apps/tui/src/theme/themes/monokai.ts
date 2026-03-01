@@ -44,6 +44,13 @@ export const monokai: Theme = {
 
 		streamDot: '#a9dc76',
 		errorBg: '#3d1f28',
+
+		diffAddedBg: '#1e3a1e',
+		diffRemovedBg: '#3d1f28',
+		diffContextBg: 'transparent',
+		diffAddedSign: '#a9dc76',
+		diffRemovedSign: '#ff6188',
+		diffLineNumberFg: '#727072',
 	},
 	syntax: {
 		keyword: '#ff6188',

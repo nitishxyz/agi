@@ -39,6 +39,13 @@ export interface ThemeColors {
 
 	streamDot: string;
 	errorBg: string;
+
+	diffAddedBg: string;
+	diffRemovedBg: string;
+	diffContextBg: string;
+	diffAddedSign: string;
+	diffRemovedSign: string;
+	diffLineNumberFg: string;
 }
 
 export interface ThemeSyntax {

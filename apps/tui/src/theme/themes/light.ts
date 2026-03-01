@@ -44,6 +44,13 @@ export const light: Theme = {
 
 		streamDot: '#1a7f37',
 		errorBg: '#ffebe9',
+
+		diffAddedBg: '#dafbe1',
+		diffRemovedBg: '#ffebe9',
+		diffContextBg: 'transparent',
+		diffAddedSign: '#1a7f37',
+		diffRemovedSign: '#cf222e',
+		diffLineNumberFg: '#8b949e',
 	},
 	syntax: {
 		keyword: '#cf222e',

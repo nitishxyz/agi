@@ -44,6 +44,13 @@ export const solarizedDark: Theme = {
 
 		streamDot: '#859900',
 		errorBg: '#2a1515',
+
+		diffAddedBg: '#003a1a',
+		diffRemovedBg: '#2a1515',
+		diffContextBg: 'transparent',
+		diffAddedSign: '#859900',
+		diffRemovedSign: '#dc322f',
+		diffLineNumberFg: '#586e75',
 	},
 	syntax: {
 		keyword: '#859900',

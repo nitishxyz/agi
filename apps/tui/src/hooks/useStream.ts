@@ -300,6 +300,8 @@ function messageReducer(state: Message[], action: Action): Message[] {
 			const callId = typeof payload.callId === 'string' ? payload.callId : null;
 			if (!callId) return state;
 			const result = payload.result !== undefined ? payload.result : undefined;
+			const artifact =
+				payload.artifact !== undefined ? payload.artifact : undefined;
 			let changed = false;
 			const next = state.map((msg) => {
 				if (!msg.parts?.length) return msg;
@@ -312,6 +314,7 @@ function messageReducer(state: Message[], action: Action): Message[] {
 								? (p.contentJson as Record<string, unknown>)
 								: {}),
 							...(result !== undefined ? { result } : {}),
+							...(artifact !== undefined ? { artifact } : {}),
 						};
 						return {
 							...p,

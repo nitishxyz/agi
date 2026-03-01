@@ -44,6 +44,13 @@ export const gruvbox: Theme = {
 
 		streamDot: '#b8bb26',
 		errorBg: '#3c1f1f',
+
+		diffAddedBg: '#2a3a1a',
+		diffRemovedBg: '#3c1f1f',
+		diffContextBg: 'transparent',
+		diffAddedSign: '#b8bb26',
+		diffRemovedSign: '#fb4934',
+		diffLineNumberFg: '#7c6f64',
 	},
 	syntax: {
 		keyword: '#fb4934',
