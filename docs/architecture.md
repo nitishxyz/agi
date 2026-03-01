@@ -2,7 +2,7 @@
 
 [← Back to README](../README.md) · [Docs Index](./index.md)
 
-otto is a **Bun workspace monorepo** with 6 apps, 7 packages, and SST infrastructure.
+otto is a **Bun workspace monorepo** with 7 apps, 7 packages, and SST infrastructure.
 
 ---
 
@@ -10,10 +10,10 @@ otto is a **Bun workspace monorepo** with 6 apps, 7 packages, and SST infrastruc
 
 otto is a local-first AI coding assistant. The core flow:
 
-1. **CLI binary** starts a local HTTP server (Hono) with an embedded web UI
+1. **CLI binary** starts a local HTTP server (Hono) and launches the interactive TUI by default
 2. **Server** manages sessions, persists messages to SQLite, and streams AI responses via SSE
 3. **SDK** handles provider resolution, tool execution, agent prompts, and authentication
-4. **Web UI** (or desktop app) is a client that talks to the local server API
+4. **Web UI**, **desktop app**, and **TUI app** are clients that talk to the local server API
 
 The CLI binary is self-contained — built with `bun build --compile`, it bundles the server, database, web UI assets, and all tools into a single executable.
 
@@ -25,6 +25,7 @@ The CLI binary is self-contained — built with `bun build --compile`, it bundle
 otto/
 ├── apps/
 │   ├── cli/              # CLI binary (Commander, bun build --compile)
+│   ├── tui/              # Interactive TUI client (OpenTUI + React)
 │   ├── web/              # Web UI client (React + Vite + TanStack)
 │   ├── desktop/          # Desktop app (Tauri v2, embeds CLI binary + web UI)
 │   ├── setu/             # AI provider proxy with Solana payments (Hono)
@@ -58,13 +59,22 @@ Main CLI application. Compiles to a self-contained binary via `bun build --compi
 - **Binary size:** ~61MB
 - **Distribution:** GitHub releases + install script (not published to npm as a package)
 
-When run with no arguments, it checks for the desktop app. If not found, it starts the local server and opens the web UI in the browser. With arguments, it runs the specified command or one-shot prompt.
+When run with no arguments, it starts the local API server and launches the TUI. With arguments, it runs the specified command or one-shot prompt.
 
 Key behaviors:
-- `otto` → open desktop app (if installed) or start server + web UI
+- `otto` → start interactive TUI
+- `otto --web` → start server + web UI in browser
 - `otto "prompt"` → one-shot question via local server
 - `otto serve` → start API server + web UI explicitly
 - `otto setup` → interactive provider configuration
+
+### `apps/tui`
+
+Interactive terminal UI client used by the CLI's default launch flow.
+
+- **Stack:** OpenTUI + React
+- **Dependencies:** `@ottocode/api`
+- **Command:** `otto` (default) or `bun run --filter @ottocode/tui dev` (from source)
 
 ### `apps/web`
 
@@ -84,7 +94,7 @@ Desktop application that embeds the CLI binary and web UI via Tauri.
 - **Dependencies:** `@ottocode/web-sdk`
 - **Platforms:** macOS (dmg, app), Linux (AppImage), Windows (msi)
 
-The CLI checks for the desktop app on startup. If found, `otto` opens it directly instead of the browser-based web UI.
+The desktop app is an optional interface that embeds the CLI binary and web UI for native desktop workflows.
 
 ### `apps/setu`
 

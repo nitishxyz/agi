@@ -16,6 +16,10 @@ export function ApiReference() {
 			<p>
 				Base URL: <code>http://localhost:{'<port>'}</code>
 			</p>
+			<p>
+				For first-party clients (web, desktop, tui), prefer the generated{' '}
+				<code>@ottocode/api</code> SDK over direct <code>fetch</code> calls.
+			</p>
 
 			<h2>Ask (Streaming)</h2>
 			<h3>POST /api/ask</h3>
@@ -109,6 +113,23 @@ Content-Type: application/json
 			<p>
 				Full OpenAPI spec available at <code>/openapi.json</code>.
 			</p>
+
+			<h3>Updating the API contract</h3>
+			<ol>
+				<li>
+					Add/update route methods in <code>packages/server/src/routes/</code>
+				</li>
+				<li>
+					Update <code>packages/server/src/openapi/spec.ts</code>
+				</li>
+				<li>
+					Regenerate OpenAPI JSON and SDK with{' '}
+					<code>bun run --filter @ottocode/api generate</code>
+				</li>
+				<li>
+					Consume the new methods from <code>@ottocode/api</code> in client apps
+				</li>
+			</ol>
 
 			<h2>TypeScript Client</h2>
 			<p>Use the generated type-safe client:</p>

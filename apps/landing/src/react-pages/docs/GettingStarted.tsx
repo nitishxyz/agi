@@ -52,7 +52,8 @@ export GOOGLE_GENERATIVE_AI_API_KEY="..."
 export OPENROUTER_API_KEY="sk-or-..."`}</CodeBlock>
 
 			<h3>2. Start Using otto</h3>
-			<CodeBlock>{`otto                           # start server + web UI (opens browser)
+			<CodeBlock>{`otto                           # start interactive TUI (default)
+otto --web                     # start server + web UI (opens browser)
 otto ask "explain this error"  # one-shot question
 otto ask "write tests" --agent build
 otto ask "follow up" --last    # continue last session`}</CodeBlock>
@@ -68,9 +69,12 @@ otto models                    # list available models`}</CodeBlock>
 				When you run <code>otto</code>, it:
 			</p>
 			<ol>
-				<li>Checks if the desktop app is installed — if so, opens it</li>
-				<li>Otherwise, starts a local HTTP server (API + web UI)</li>
-				<li>Opens the web UI in your browser</li>
+				<li>Starts a local HTTP server for the otto API</li>
+				<li>Launches the interactive TUI in your terminal</li>
+				<li>
+					With <code>otto --web</code> or <code>otto serve</code>, opens the web
+					UI in your browser
+				</li>
 			</ol>
 			<p>
 				All AI interactions, session storage, and tool execution happen locally

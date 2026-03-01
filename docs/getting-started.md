@@ -65,7 +65,8 @@ export OPENROUTER_API_KEY="sk-or-..."
 ### 2. Start Using otto
 
 ```bash
-otto                           # start server + web UI (opens browser)
+otto                           # start interactive TUI (default)
+otto --web                     # start server + web UI (opens browser)
 otto "explain this error"      # one-shot question
 otto "write tests" --agent build
 otto "follow up" --last        # continue last session
@@ -86,9 +87,9 @@ otto models                    # list available models
 
 When you run `otto`, it:
 
-1. Checks if the desktop app is installed — if so, opens it
-2. Otherwise, starts a local HTTP server (API + web UI)
-3. Opens the web UI in your browser
+1. Starts a local HTTP server for the otto API
+2. Launches the interactive TUI in your terminal
+3. With `otto --web` or `otto serve`, opens the web UI in your browser
 
 The web UI is a client for the local server. All AI interactions, session storage, and tool execution happen locally on your machine.
 

@@ -8,6 +8,12 @@ const INTERFACES = [
 		cmd: 'otto ask "fix the auth bug"',
 	},
 	{
+		tag: 'TUI',
+		headline: 'Interactive terminal UI',
+		body: 'OpenTUI + React client for otto with keyboard-first workflows powered by @ottocode/api.',
+		cmd: 'bun run --filter @ottocode/tui dev',
+	},
+	{
 		tag: 'Server',
 		headline: 'HTTP API + Web UI',
 		body: 'Local Hono server with SSE streaming. React web interface with session management.',

@@ -1,6 +1,6 @@
 # otto
 
-AI-powered coding assistant. CLI, desktop app, embeddable server, ACP agent — one tool, multiple interfaces.
+AI-powered coding assistant. CLI, interactive TUI, desktop app, embeddable server, ACP agent — one tool, multiple interfaces.
 
 [![Version](https://img.shields.io/badge/version-0.1.161-blue)](https://github.com/nitishxyz/otto)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -16,7 +16,8 @@ otto is an AI coding assistant that runs locally. It connects to AI providers (A
 
 It ships as:
 
-- **CLI** — run `otto` in your terminal for interactive or one-shot usage
+- **CLI** — run `otto` in your terminal for interactive or one-shot usage (default launch starts the TUI)
+- **TUI App (`apps/tui`)** — interactive terminal UI client powered by `@ottocode/api`
 - **Server + Web UI** — run `otto serve` to get a local HTTP API and browser interface
 - **Desktop App** — Tauri app that embeds the CLI binary and web UI
 - **Embeddable SDK** — use `@ottocode/server` and `@ottocode/sdk` in your own apps
@@ -44,17 +45,33 @@ This downloads the prebuilt binary for your platform (macOS arm64/x64, Linux arm
 ## Usage
 
 ```bash
-otto                           # start server + web UI (opens browser)
-otto --no-desktop              # skip desktop app and serve
+otto                           # start interactive TUI (default)
+otto --web                     # start local server + web UI (opens browser)
+otto web --api <url>           # start web UI only, connected to an existing API server
 otto "explain this error"      # one-shot question
 otto "write tests" --agent build
 otto "follow up" --last        # continue last session
-otto serve                     # start server without desktop check
+otto serve                     # start server + web UI directly
+otto serve --no-open           # start server + web UI without opening browser
 otto serve --port 3000         # custom port
 otto serve --network           # bind to 0.0.0.0 for LAN access
 ```
 
-When you run `otto` with no arguments, it checks for the desktop app first. If installed, it opens it. Otherwise it starts the local server and opens the web UI in your browser.
+When you run `otto` with no arguments, it starts the local API server and launches the interactive TUI.
+
+- Use `otto --web` for local server + browser web UI in one command
+- Use `otto web --api <url>` to run only the web UI against a specific API URL
+- Use `otto serve --no-open` to start server + web UI without auto-opening the browser
+
+### Command Matrix
+
+| Scenario | Command | Starts API server | Starts Web UI server | Opens browser |
+|---|---|---|---|---|
+| Default interactive terminal workflow | `otto` | Yes (local) | No | No |
+| Local browser workflow (all-in-one) | `otto --web` | Yes (local) | Yes (local) | Yes |
+| Remote/existing API + local Web UI | `otto web --api <url>` | No | Yes (local) | Yes |
+| Host API + Web UI locally | `otto serve` | Yes (local) | Yes (local) | Yes |
+| Host API + Web UI without auto-open | `otto serve --no-open` | Yes (local) | Yes (local) | No |
 
 ### Other Commands
 
@@ -66,6 +83,7 @@ otto sessions                  # browse session history
 otto models                    # list available models
 otto agents                    # list/configure agents
 otto tools                     # list available tools
+otto web --api <url>           # run web UI against an existing API server
 otto mcp list                  # list MCP servers
 otto mcp add <name>            # add an MCP server
 otto mcp auth <name>           # authenticate OAuth server
@@ -278,6 +296,7 @@ Bun workspace monorepo. Infrastructure managed with [SST](https://sst.dev).
 | App | Description | Stack |
 |---|---|---|
 | `apps/cli` | Main CLI binary | Commander, compiles to single binary via `bun build --compile` |
+| `apps/tui` | Interactive terminal UI client for the otto API | OpenTUI + React, consumes `@ottocode/api` |
 | `apps/web` | Web UI (client for the server) | React 19, Vite, TanStack Router/Query, Tailwind, Zustand |
 | `apps/desktop` | Desktop app (embeds CLI binary + web UI) | Tauri v2, React |
 | `apps/setu` | AI provider proxy with Solana payments | Hono, Cloudflare Worker |
@@ -295,6 +314,24 @@ Bun workspace monorepo. Infrastructure managed with [SST](https://sst.dev).
 | `@ottocode/web-sdk` | React components, hooks, stores for building web UIs |
 | `@ottocode/web-ui` | Pre-built static web UI assets (embedded in CLI binary) |
 | `@ottocode/install` | npm installer package (downloads binary on postinstall) |
+
+### API Client and OpenAPI Workflow
+
+All first-party clients (`apps/web`, `apps/desktop`, `apps/tui`) should use
+`@ottocode/api` for server communication. Avoid direct `fetch` calls to otto
+API routes when an SDK method exists.
+
+When updating server API surface:
+
+1. Add or update route handlers/methods under `packages/server/src/routes/`
+2. Update the OpenAPI source of truth: `packages/server/src/openapi/spec.ts`
+3. Regenerate `packages/api/openapi.json` and SDK client:
+
+```bash
+bun run --filter @ottocode/api generate
+```
+
+4. Use the regenerated SDK from `@ottocode/api` in all clients
 
 ### Dependency Graph
 
@@ -395,6 +432,7 @@ bun run compile                # build standalone binary
 
 ```bash
 bun run dev:cli                # CLI dev mode
+bun run --filter @ottocode/tui dev # TUI app (interactive terminal UI)
 bun run dev:web                # Web UI (Vite dev server)
 bun run dev:desktop            # Desktop app (Tauri)
 bun sst dev                    # SST dev (setu, preview-api, preview-web)

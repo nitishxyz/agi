@@ -10,13 +10,13 @@ export function Architecture() {
 
 			<h2>Overview</h2>
 			<p>
-				otto is a <strong>Bun workspace monorepo</strong> with 6 apps, 7
+				otto is a <strong>Bun workspace monorepo</strong> with 7 apps, 7
 				packages, and SST infrastructure.
 			</p>
 			<ol>
 				<li>
-					<strong>CLI binary</strong> starts a local HTTP server (Hono) with an
-					embedded web UI
+					<strong>CLI binary</strong> starts a local HTTP server (Hono) and
+					launches the interactive TUI by default
 				</li>
 				<li>
 					<strong>Server</strong> manages sessions, persists messages to SQLite,
@@ -27,8 +27,8 @@ export function Architecture() {
 					agent prompts, and authentication
 				</li>
 				<li>
-					<strong>Web UI</strong> (or desktop app) is a client that talks to the
-					local server API
+					<strong>Web UI</strong>, <strong>desktop app</strong>, and{' '}
+					<strong>TUI app</strong> are clients that talk to the local server API
 				</li>
 			</ol>
 			<p>
@@ -41,6 +41,7 @@ export function Architecture() {
 			<CodeBlock>{`otto/
 ├── apps/
 │   ├── cli/              # CLI binary (Commander, bun build --compile)
+│   ├── tui/              # Interactive terminal UI client (OpenTUI + React)
 │   ├── web/              # Web UI (React + Vite + TanStack)
 │   ├── desktop/          # Desktop app (Tauri v2)
 │   ├── setu/             # AI provider proxy (Solana payments)
@@ -72,6 +73,22 @@ export function Architecture() {
 				<li>
 					<strong>Dependencies:</strong> @ottocode/sdk, @ottocode/server,
 					@ottocode/database
+				</li>
+			</ul>
+
+			<h3>apps/tui</h3>
+			<p>
+				Interactive terminal UI client built with OpenTUI + React. Uses{' '}
+				<code>@ottocode/api</code> as the typed interface to server routes.
+			</p>
+			<ul>
+				<li>
+					<strong>Command:</strong>{' '}
+					<code>bun run --filter @ottocode/tui dev</code>
+				</li>
+				<li>
+					<strong>Rule:</strong> Prefer SDK methods from{' '}
+					<code>@ottocode/api</code> over direct <code>fetch</code> calls
 				</li>
 			</ul>
 
@@ -151,6 +168,11 @@ export function Architecture() {
 			<p>
 				Type-safe API client generated from OpenAPI spec via{' '}
 				<code>@hey-api/openapi-ts</code>.
+			</p>
+			<p>
+				API update workflow: implement route methods, update{' '}
+				<code>packages/server/src/openapi/spec.ts</code>, then run{' '}
+				<code>bun run --filter @ottocode/api generate</code>.
 			</p>
 
 			<h3>@ottocode/web-sdk</h3>

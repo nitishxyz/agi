@@ -53,7 +53,8 @@ cd otto && bun install && bun run compile
 ### Key Commands
 
 ```bash
-otto                          # start server + web UI
+otto                          # start interactive TUI (default)
+otto --web                    # start server + web UI
 otto "your question"          # one-shot question
 otto --agent build "task"     # use specific agent
 otto --last "follow up"       # continue last session
@@ -71,6 +72,7 @@ otto doctor                   # diagnostics
 otto/
 ├── apps/
 │   ├── cli/          # CLI binary (Commander, bun build --compile)
+│   ├── tui/          # Interactive TUI client (OpenTUI + React)
 │   ├── web/          # Web UI (React + Vite + TanStack)
 │   ├── desktop/      # Desktop app (Tauri v2)
 │   ├── setu/         # AI provider proxy (Cloudflare Worker)

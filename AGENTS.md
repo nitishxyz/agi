@@ -14,6 +14,7 @@ This file defines conventions for AI agents and human contributors working in th
 - Prefer many small, focused modules over large files
 - One route module per endpoint group (or per endpoint if it grows)
 - One schema/table per file under `packages/database/src/schema/`, re-exported via index
+- Keep `apps/tui` focused on interactive terminal UX and use `@ottocode/api` for server calls
 - Avoid circular dependencies
 - If a module grows beyond ~200–300 lines, consider refactoring
 
@@ -65,6 +66,11 @@ When you need schema/database changes:
 - Each endpoint belongs in its own module under `packages/server/src/routes/`
 - Expose OpenAPI at `/openapi.json` - keep spec in code and serve JSON
 - Streaming uses SSE; prefer AI SDK helpers for stream responses
+- For API changes, follow this order:
+  1. Implement/update route methods in `packages/server/src/routes/`
+  2. Update `packages/server/src/openapi/spec.ts`
+  3. Regenerate OpenAPI JSON + SDK: `bun run --filter @ottocode/api generate`
+- All first-party clients (web, desktop, tui) should consume `@ottocode/api`; avoid direct `fetch` calls to otto endpoints when SDK methods exist
 
 ## AI SDK and Agents
 

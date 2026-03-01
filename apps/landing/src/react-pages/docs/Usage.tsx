@@ -11,15 +11,25 @@ export function Usage() {
 			<h2>Core Commands</h2>
 
 			<h3>Interactive / One-Shot</h3>
-			<CodeBlock>{`otto                           # start server + web UI (opens browser)
+			<CodeBlock>{`otto                           # start interactive TUI (default)
+otto --web                     # start local server + web UI (opens browser)
+otto web --api <url>           # start web UI only for an existing API server
 otto ask "explain this error"  # one-shot question
 otto ask "write tests" --agent build
 otto ask "follow up" --last    # continue last session`}</CodeBlock>
 
 			<h3>Server Mode</h3>
-			<CodeBlock>{`otto serve                     # start HTTP server on random port
+			<CodeBlock>{`otto serve                     # start server + web UI on random port
+otto serve --no-open           # start server + web UI without opening browser
 otto serve --port 3000         # start on specific port
 otto serve --network           # bind to 0.0.0.0 for LAN access`}</CodeBlock>
+
+			<h3>TUI Client (apps/tui)</h3>
+			<CodeBlock>{`bun run --filter @ottocode/tui dev   # start interactive TUI client from source`}</CodeBlock>
+			<p>
+				The TUI is an interactive terminal interface that consumes{' '}
+				<code>@ottocode/api</code>.
+			</p>
 
 			<h3>Session Management</h3>
 			<CodeBlock>{`otto sessions                  # interactive session picker
