@@ -28,6 +28,16 @@ interface ChatInputProps {
 
 const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 const MAX_FILE_RESULTS = 15;
+const ATTACHMENT_RE = /\[📎 [^\]]+\]/g;
+
+function stripAttachmentMarkers(text: string): string {
+	return text.replace(ATTACHMENT_RE, '').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function makeAttachmentMarker(name: string): string {
+	const short = name.length > 20 ? `${name.slice(0, 17)}…` : name;
+	return `[📎 ${short}]`;
+}
 
 export function ChatInput({
 	onSubmit,
@@ -47,7 +57,7 @@ export function ChatInput({
 		images: attachedImages,
 		files: attachedFiles,
 		count: attachmentCount,
-		names: attachmentNames,
+		names: _attachmentNames,
 		addFromPath,
 		clear: clearAttachments,
 	} = useFileAttachments();
@@ -213,7 +223,8 @@ export function ChatInput({
 			onSubmit(`/${cmd.name}`);
 			return;
 		}
-		const text = textareaRef.current.plainText.trim();
+		const rawText = textareaRef.current.plainText.trim();
+		const text = stripAttachmentMarkers(rawText);
 		if (!text && attachmentCountRef.current === 0) return;
 		const imgData =
 			attachedImagesRef.current.length > 0
@@ -311,7 +322,15 @@ export function ChatInput({
 			const text = event.text.trim();
 			const filePath = text.replace(/\\ /g, ' ');
 			if (isFilePath(filePath)) {
-				addFromPathRef.current(filePath);
+				const added = addFromPathRef.current(filePath);
+				if (added) {
+					const name = filePath.split('/').pop() || filePath;
+					const marker = makeAttachmentMarker(name);
+					const current = textarea.plainText;
+					const prefix = current.length > 0 && !current.endsWith('\n') ? '\n' : '';
+					textarea.editBuffer.setText(`${current}${prefix}${marker} `);
+					textarea.editBuffer.setCursorByOffset(textarea.plainText.length);
+				}
 				return;
 			}
 			origHandlePaste(event);
@@ -455,29 +474,6 @@ export function ChatInput({
 					flexDirection: 'column',
 				}}
 			>
-				{attachmentCount > 0 && (
-					<box
-						style={{
-							flexDirection: 'row',
-							gap: 1,
-							paddingLeft: 1,
-							paddingRight: 1,
-						}}
-					>
-						{attachmentNames.map((name) => (
-							<box
-								key={name}
-								style={{
-									backgroundColor: colors.yellow,
-									paddingLeft: 1,
-									paddingRight: 1,
-								}}
-							>
-								<text fg={colors.bgDark}>{name}</text>
-							</box>
-						))}
-					</box>
-				)}
 				<box id={containerRef.current} style={{ width: '100%' }} />
 			</box>
 			<box
@@ -515,7 +511,7 @@ export function ChatInput({
 						)}
 					</box>
 				) : (
-					<box />
+					<text fg={colors.fgDark}>@ files  / commands</text>
 				)}
 				<box style={{ flexDirection: 'row' }}>
 					<text fg={colors.fgDark}>{provider}</text>

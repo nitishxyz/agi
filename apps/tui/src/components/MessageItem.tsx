@@ -221,22 +221,27 @@ function UserMessage({
 				)}
 				{isQueued && <text fg={colors.yellow}>queued</text>}
 			</box>
-			{attachmentNames.length > 0 && (
-				<box style={{ flexDirection: 'row', gap: 1 }}>
-					{attachmentNames.map((name) => (
-						<box
-							key={name}
-							style={{
-								backgroundColor: colors.yellow,
-								paddingLeft: 1,
-								paddingRight: 1,
-							}}
-						>
-							<text fg={colors.bgDark}>{name}</text>
-						</box>
-					))}
+		{attachmentNames.length > 0 && (
+				<box style={{ flexDirection: 'row', gap: 1, height: 1, flexWrap: 'wrap' }}>
+					{attachmentNames.map((name) => {
+						const short = name.length > 20 ? `${name.slice(0, 17)}…` : name;
+						return (
+							<box
+								key={name}
+								style={{
+									backgroundColor: colors.yellow,
+									paddingLeft: 1,
+									paddingRight: 1,
+									height: 1,
+								}}
+							>
+								<text fg={colors.bgDark}>{short}</text>
+							</box>
+						);
+					})}
 				</box>
 			)}
+			{attachmentNames.length > 0 && <box style={{ height: 1 }} />}
 			{content ? (
 				<text fg={isQueued ? colors.fgDark : colors.fgBright}>{content}</text>
 			) : null}
