@@ -6,14 +6,26 @@ import type { Message } from '../types.ts';
 interface ChatViewProps {
 	messages: Message[];
 	isStreaming: boolean;
+	streamingMessageId: string | null;
 }
 
-export function ChatView({ messages, isStreaming }: ChatViewProps) {
+export function ChatView({ messages, isStreaming, streamingMessageId }: ChatViewProps) {
 	const visibleMessages = useMemo(() => {
 		return messages
 			.filter((m) => m.role === 'user' || m.role === 'assistant')
+			.filter((m) => {
+				if (
+					m.role === 'assistant' &&
+					m.status === 'pending' &&
+					(!m.parts || m.parts.length === 0) &&
+					m.id !== streamingMessageId
+				) {
+					return false;
+				}
+				return true;
+			})
 			.sort((a, b) => a.createdAt - b.createdAt);
-	}, [messages]);
+	}, [messages, streamingMessageId]);
 
 	if (visibleMessages.length === 0) {
 		return (
@@ -49,18 +61,14 @@ export function ChatView({ messages, isStreaming }: ChatViewProps) {
 			stickyScroll
 			stickyStart="bottom"
 		>
-			{visibleMessages.map((msg, i) => {
-				const isLast =
-					i === visibleMessages.length - 1 && msg.role === 'assistant';
-				return (
-					<MessageItem
-						key={msg.id}
-						message={msg}
-						isStreaming={isStreaming && isLast}
-						isFirstMessage={i === 0}
-					/>
-				);
-			})}
+			{visibleMessages.map((msg, i) => (
+				<MessageItem
+					key={msg.id}
+					message={msg}
+					isStreaming={msg.id === streamingMessageId}
+					isFirstMessage={i === 0}
+				/>
+			))}
 		</scrollbox>
 	);
 }

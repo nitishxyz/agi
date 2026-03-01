@@ -67,7 +67,8 @@ export function useSession() {
 	const abortSession = useCallback(async (sessionId: string) => {
 		try {
 			await fetchJson(`/v1/sessions/${sessionId}/abort`, {
-				method: 'POST',
+				method: 'DELETE',
+				body: JSON.stringify({ clearQueue: true }),
 			});
 		} catch {}
 	}, []);

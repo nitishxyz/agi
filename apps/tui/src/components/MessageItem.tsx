@@ -44,6 +44,19 @@ function formatTime(ts: number): string {
 
 const SKIP_TOOLS = new Set(['finish', 'progress_update', 'update_todos']);
 
+function formatError(raw: string | null | undefined): string {
+	if (!raw) return '';
+	try {
+		const parsed = JSON.parse(raw);
+		if (parsed && typeof parsed === 'object') {
+			if (typeof parsed.message === 'string') return parsed.message;
+			if (typeof parsed.error === 'string') return parsed.error;
+			if (typeof parsed.text === 'string') return parsed.text;
+		}
+	} catch {}
+	return raw;
+}
+
 function isToolPart(part: MessagePart): boolean {
 	return part.type === 'tool_call' || part.type === 'tool_result';
 }
@@ -93,7 +106,7 @@ function PartRenderer({ part, isActive, isLastTool, prevType }: { part: MessageP
 	}
 
 	if (part.type === 'error') {
-		const text = extractText(part);
+		const text = formatError(extractText(part));
 		return (
 			<box style={{ marginTop: 1, paddingLeft: 1 }}>
 				<text fg={colors.red}>{text || 'Error occurred'}</text>
@@ -214,7 +227,7 @@ function AssistantMessage({ message, isStreaming, isFirstMessage }: MessageItemP
 			)}
 
 			{hasError && !sortedParts.some((p) => p.type === 'error') && (
-				<text fg={colors.red}>{message.error || 'Unknown error'}</text>
+			<text fg={colors.red}>{formatError(message.error) || 'Unknown error'}</text>
 			)}
 		</box>
 	);

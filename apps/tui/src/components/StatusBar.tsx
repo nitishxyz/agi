@@ -5,6 +5,7 @@ interface StatusBarProps {
 	model: string;
 	sessionTitle: string | null;
 	isStreaming: boolean;
+	queueSize?: number;
 }
 
 function truncateModel(model: string, max: number): string {
@@ -17,7 +18,7 @@ function truncateModel(model: string, max: number): string {
 	return `${model.slice(0, max - 1)}…`;
 }
 
-export function StatusBar({ provider, model, sessionTitle, isStreaming }: StatusBarProps) {
+export function StatusBar({ provider, model, sessionTitle, isStreaming, queueSize = 0 }: StatusBarProps) {
 	const title = sessionTitle || 'new session';
 	const modelShort = truncateModel(model, 28);
 
@@ -45,6 +46,9 @@ export function StatusBar({ provider, model, sessionTitle, isStreaming }: Status
 			<text fg={sessionTitle ? colors.fg : colors.fgDark}>{title}</text>
 			{isStreaming && (
 				<text fg={colors.streamDot}> ● generating</text>
+			)}
+			{queueSize > 0 && (
+				<text fg={colors.yellow}> ({queueSize} queued)</text>
 			)}
 		</box>
 	);

@@ -326,7 +326,44 @@ function messageReducer(state: Message[], action: Action): Message[] {
 		case 'ERROR': {
 			const { payload } = action;
 			const messageId = typeof payload.messageId === 'string' ? payload.messageId : null;
-			if (!messageId) return state;
+			if (!messageId) {
+				const errorText = typeof payload.error === 'string' ? payload.error
+					: typeof payload.message === 'string' ? payload.message
+					: 'Unknown error';
+				const errMsg: Message = {
+					id: `error-${Date.now()}`,
+					sessionId: '',
+					role: 'assistant',
+					status: 'error',
+					agent: '',
+					provider: '',
+					model: '',
+					createdAt: Date.now(),
+					completedAt: Date.now(),
+					promptTokens: null,
+					completionTokens: null,
+					totalTokens: null,
+					error: errorText,
+					parts: [{
+						id: `error-part-${Date.now()}`,
+						messageId: `error-${Date.now()}`,
+						index: 0,
+						stepIndex: null,
+						type: 'error',
+						content: JSON.stringify({ text: errorText }),
+						contentJson: { text: errorText },
+						agent: '',
+						provider: '',
+						model: '',
+						startedAt: Date.now(),
+						completedAt: Date.now(),
+						toolName: null,
+						toolCallId: null,
+						toolDurationMs: null,
+					}],
+				};
+				return [...state, errMsg];
+			}
 			const next = [...state];
 			const idx = next.findIndex((m) => m.id === messageId);
 			if (idx === -1) return state;
@@ -334,7 +371,10 @@ function messageReducer(state: Message[], action: Action): Message[] {
 			next[idx] = {
 				...msg,
 			status: 'error',
-				error: typeof payload.error === 'string' ? payload.error : 'Unknown error',
+			error: typeof payload.error === 'string' ? payload.error
+				: typeof payload.message === 'string' ? payload.message
+				: typeof payload.error === 'object' && payload.error ? JSON.stringify(payload.error)
+				: JSON.stringify(payload),
 				parts: msg.parts ?? [],
 			};
 			return next;
@@ -401,7 +441,8 @@ async function connectSSE(
 
 export function useStream(sessionId: string | null) {
 	const [messages, dispatch] = useReducer(messageReducer, []);
-	const [isStreaming, setIsStreaming] = useState(false);
+	const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+	const [queueSize, setQueueSize] = useState(0);
 	const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
 	const abortRef = useRef<AbortController | null>(null);
 
@@ -435,7 +476,10 @@ export function useStream(sessionId: string | null) {
 			switch (event.type) {
 				case 'message.created':
 					dispatch({ type: 'MESSAGE_CREATED', payload });
-					if (payload.role === 'assistant') setIsStreaming(true);
+				if (payload.role === 'assistant') {
+					const id = typeof payload.id === 'string' ? payload.id : null;
+					if (id) setStreamingMessageId((prev) => prev ?? id);
+				}
 					break;
 				case 'message.part.delta':
 					dispatch({ type: 'TEXT_DELTA', payload });
@@ -466,7 +510,7 @@ export function useStream(sessionId: string | null) {
 					break;
 			case 'message.completed':
 					dispatch({ type: 'MESSAGE_COMPLETED', payload });
-					setIsStreaming(false);
+				setStreamingMessageId(null);
 					setTimeout(() => {
 						fetch(`${baseUrl}/v1/sessions/${sessionId}/messages`)
 							.then((r) => r.json())
@@ -482,8 +526,15 @@ export function useStream(sessionId: string | null) {
 					break;
 				case 'error':
 					dispatch({ type: 'ERROR', payload });
-					setIsStreaming(false);
+				setStreamingMessageId(null);
 					break;
+			case 'queue.updated': {
+				const queueLength = typeof payload.queueLength === 'number' ? payload.queueLength : 0;
+				setQueueSize(queueLength);
+			const currentMsgId = typeof payload.currentMessageId === 'string' ? payload.currentMessageId : null;
+			if (currentMsgId) setStreamingMessageId(currentMsgId);
+				break;
+			}
 			}
 		});
 
@@ -505,5 +556,6 @@ export function useStream(sessionId: string | null) {
 			.catch(() => {});
 	};
 
-	return { messages, isStreaming, pendingApproval, setPendingApproval, reload, dispatch, addOptimisticUser };
+	const isStreaming = streamingMessageId !== null;
+	return { messages, isStreaming, streamingMessageId, queueSize, pendingApproval, setPendingApproval, reload, dispatch, addOptimisticUser };
 }
