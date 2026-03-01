@@ -198,6 +198,15 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Install cross-platform @opentui/core binaries
+        shell: bash
+        run: |
+          OPENTUI_VERSION=$(jq -r '.optionalDependencies["@opentui/core-darwin-arm64"] // empty' node_modules/@opentui/core/package.json)
+          if [ -n "$OPENTUI_VERSION" ]; then
+            echo "Installing @opentui/core platform packages v${OPENTUI_VERSION}..."
+            bun add @opentui/core-darwin-x64@${OPENTUI_VERSION} @opentui/core-darwin-arm64@${OPENTUI_VERSION} @opentui/core-linux-x64@${OPENTUI_VERSION} @opentui/core-linux-arm64@${OPENTUI_VERSION} || true
+          fi
+
       - name: Download ripgrep binary
         shell: bash
         run: |
@@ -331,6 +340,15 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+
+      - name: Install cross-platform @opentui/core binaries
+        shell: bash
+        run: |
+          OPENTUI_VERSION=$(jq -r '.optionalDependencies["@opentui/core-darwin-arm64"] // empty' node_modules/@opentui/core/package.json)
+          if [ -n "$OPENTUI_VERSION" ]; then
+            echo "Installing @opentui/core platform packages v${OPENTUI_VERSION}..."
+            bun add @opentui/core-darwin-x64@${OPENTUI_VERSION} @opentui/core-darwin-arm64@${OPENTUI_VERSION} @opentui/core-linux-x64@${OPENTUI_VERSION} @opentui/core-linux-arm64@${OPENTUI_VERSION} || true
+          fi
 
       - name: Download ripgrep binary
         shell: bash
