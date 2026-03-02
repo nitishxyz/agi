@@ -1,11 +1,16 @@
 import { useKeyboard, useRenderer } from '@opentui/react';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
 	stageFiles,
 	shareSession,
 	syncShare,
 	pushCommits,
 } from '@ottocode/api';
+import {
+	estimateModelCostUsd,
+	getModelInfo,
+	type ProviderId,
+} from '@ottocode/sdk';
 import { StatusBar } from './components/StatusBar.tsx';
 import { ChatView } from './components/ChatView.tsx';
 import { ChatInput } from './components/ChatInput.tsx';
@@ -99,6 +104,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		switchSession,
 		updateSessionMeta,
 		updateSessionPrefs,
+		refreshActiveSession,
 		sendMessage,
 		abortSession,
 		approveToolCall,
@@ -115,6 +121,11 @@ export function App({ onQuit }: { onQuit: () => void }) {
 	}, [config.defaults.theme, setTheme]);
 
 	const sessionId = activeSession?.id ?? null;
+
+	const handleMessageCompleted = useCallback(() => {
+		if (sessionId) refreshActiveSession(sessionId);
+	}, [sessionId, refreshActiveSession]);
+
 	const {
 		messages,
 		isStreaming,
@@ -125,7 +136,42 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		setPendingApprovals,
 		reload,
 		addOptimisticUser,
-	} = useStream(sessionId, updateSessionMeta);
+	} = useStream(sessionId, updateSessionMeta, handleMessageCompleted);
+
+	const contextTokens = activeSession?.currentContextTokens ?? 0;
+	const sessionProvider = activeSession?.provider ?? '';
+	const sessionModel = activeSession?.model ?? '';
+	const totalIn = activeSession?.totalInputTokens ?? 0;
+	const totalOut = activeSession?.totalOutputTokens ?? 0;
+	const totalCached = activeSession?.totalCachedTokens ?? 0;
+	const totalCacheCreation = activeSession?.totalCacheCreationTokens ?? 0;
+
+	const estimatedCost = useMemo(() => {
+		if (!sessionProvider) return 0;
+		return (
+			estimateModelCostUsd(sessionProvider as ProviderId, sessionModel, {
+				inputTokens: totalIn,
+				outputTokens: totalOut,
+				cachedInputTokens: totalCached,
+				cacheCreationInputTokens: totalCacheCreation,
+			}) ?? 0
+		);
+	}, [
+		sessionProvider,
+		sessionModel,
+		totalIn,
+		totalOut,
+		totalCached,
+		totalCacheCreation,
+	]);
+
+	const contextUsagePercent = useMemo(() => {
+		if (!sessionProvider || !contextTokens) return 0;
+		const info = getModelInfo(sessionProvider as ProviderId, sessionModel);
+		const limit = info?.limit?.context;
+		if (!limit) return 0;
+		return (contextTokens / limit) * 100;
+	}, [sessionProvider, sessionModel, contextTokens]);
 
 	const handleCommand = useCallback(
 		async (name: string, args: string) => {
@@ -451,6 +497,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			<StatusBar
 				sessionTitle={activeSession?.title ?? null}
 				queueSize={queueSize}
+				contextTokens={contextTokens}
+				estimatedCost={estimatedCost}
+				contextUsagePercent={contextUsagePercent}
 			/>
 
 			<ChatView

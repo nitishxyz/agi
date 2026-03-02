@@ -9,6 +9,9 @@ export interface Session {
 	lastActiveAt: number | null;
 	totalInputTokens: number | null;
 	totalOutputTokens: number | null;
+	totalCachedTokens: number | null;
+	totalCacheCreationTokens: number | null;
+	currentContextTokens: number | null;
 }
 
 export interface Message {

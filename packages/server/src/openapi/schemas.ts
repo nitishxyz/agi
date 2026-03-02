@@ -66,6 +66,7 @@ export const schemas = {
 			totalOutputTokens: { type: 'integer', nullable: true },
 			totalCachedTokens: { type: 'integer', nullable: true },
 			totalCacheCreationTokens: { type: 'integer', nullable: true },
+			currentContextTokens: { type: 'integer', nullable: true },
 			totalToolTimeMs: { type: 'integer', nullable: true },
 			toolCounts: {
 				type: 'object',

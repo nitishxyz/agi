@@ -104,6 +104,40 @@ export function registerSessionsRoutes(app: Hono) {
 		}
 	});
 
+	// Get single session
+	app.get('/v1/sessions/:sessionId', async (c) => {
+		try {
+			const sessionId = c.req.param('sessionId');
+			const projectRoot = c.req.query('project') || process.cwd();
+			const cfg = await loadConfig(projectRoot);
+			const db = await getDb(cfg.projectRoot);
+			const rows = await db
+				.select()
+				.from(sessions)
+				.where(eq(sessions.id, sessionId))
+				.limit(1);
+			if (!rows.length) {
+				return c.json({ error: { message: 'Session not found', status: 404 } }, 404);
+			}
+			const r = rows[0];
+			let counts: Record<string, unknown> | undefined;
+			if (r.toolCountsJson) {
+				try {
+					const parsed = JSON.parse(r.toolCountsJson);
+					if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+						counts = parsed as Record<string, unknown>;
+					}
+				} catch {}
+			}
+			const { toolCountsJson: _toolCountsJson, ...rest } = r;
+			return c.json(counts ? { ...rest, toolCounts: counts } : rest);
+		} catch (err) {
+			logger.error('Failed to get session', err);
+			const errorResponse = serializeError(err);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
 	// Update session preferences
 	app.patch('/v1/sessions/:sessionId', async (c) => {
 		try {

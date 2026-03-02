@@ -503,6 +503,7 @@ async function connectSSE(
 export function useStream(
 	sessionId: string | null,
 	onSessionUpdate?: (payload: Record<string, unknown>) => void,
+	onMessageCompleted?: () => void,
 ) {
 	const [messages, dispatch] = useReducer(messageReducer, []);
 	const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
@@ -518,6 +519,8 @@ export function useStream(
 	const abortRef = useRef<AbortController | null>(null);
 	const onSessionUpdateRef = useRef(onSessionUpdate);
 	onSessionUpdateRef.current = onSessionUpdate;
+	const onMessageCompletedRef = useRef(onMessageCompleted);
+	onMessageCompletedRef.current = onMessageCompleted;
 
 	const addOptimisticUser = useCallback(
 		(content: string, attachmentNames?: string[]) => {
@@ -607,6 +610,7 @@ export function useStream(
 				case 'message.completed':
 					dispatch({ type: 'MESSAGE_COMPLETED', payload });
 					setStreamingMessageId(null);
+					onMessageCompletedRef.current?.();
 					setTimeout(() => {
 						fetch(`${baseUrl}/v1/sessions/${sessionId}/messages`)
 							.then((r) => r.json())

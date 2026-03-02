@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useTheme } from '../theme.ts';
 
 const EXT_TO_FILETYPE: Record<string, string> = {
@@ -248,6 +248,18 @@ interface DiffViewProps {
 	maxHeight?: number;
 }
 
+function findScrollableChild(renderable: any): any | null {
+	if ('scrollY' in renderable && 'scrollHeight' in renderable) {
+		return renderable;
+	}
+	const children = renderable.getChildren?.() ?? [];
+	for (const child of children) {
+		const found = findScrollableChild(child);
+		if (found) return found;
+	}
+	return null;
+}
+
 function SingleDiffView({
 	unifiedDiff,
 	filePath,
@@ -260,10 +272,34 @@ function SingleDiffView({
 	const { colors, syntaxStyle } = useTheme();
 	const filetype = filePath ? detectFiletype(filePath) : undefined;
 
-	const height = useMemo(() => {
-		const rows = countSplitViewRows(unifiedDiff);
-		return Math.min(Math.max(rows, 1), maxHeight);
-	}, [unifiedDiff, maxHeight]);
+	const diffRef = useRef<any>(null);
+
+	const totalRows = useMemo(
+		() => countSplitViewRows(unifiedDiff),
+		[unifiedDiff],
+	);
+	const height = useMemo(
+		() => Math.min(Math.max(totalRows, 1), maxHeight),
+		[totalRows, maxHeight],
+	);
+
+	const handleMouseScroll = useCallback((event: any) => {
+		const diff = diffRef.current;
+		if (!diff) return;
+		const scrollable = findScrollableChild(diff);
+		if (!scrollable) return;
+		const maxScroll = Math.max(
+			0,
+			scrollable.scrollHeight - scrollable.height,
+		);
+		if (maxScroll <= 0) return;
+		const direction = event.scroll?.direction;
+		const atTop = scrollable.scrollY <= 0;
+		const atBottom = scrollable.scrollY >= maxScroll;
+		if ((direction === 'up' && atTop) || (direction === 'down' && atBottom))
+			return;
+		event.stopPropagation();
+	}, []);
 
 	return (
 		<box style={{ width: '100%', flexDirection: 'column' }}>
@@ -273,8 +309,10 @@ function SingleDiffView({
 				</box>
 			)}
 			<diff
+				ref={diffRef}
 				style={{ width: '100%', height }}
 				diff={unifiedDiff}
+				onMouseScroll={handleMouseScroll}
 				view="split"
 				filetype={filetype}
 				syntaxStyle={syntaxStyle}

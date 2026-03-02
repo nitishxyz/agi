@@ -78,6 +78,31 @@ export const sessionsPaths = {
 		},
 	},
 	'/v1/sessions/{sessionId}': {
+		get: {
+			tags: ['sessions'],
+			operationId: 'getSession',
+			summary: 'Get a single session by ID',
+			parameters: [
+				{
+					in: 'path',
+					name: 'sessionId',
+					required: true,
+					schema: { type: 'string' },
+				},
+				projectQueryParam(),
+			],
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: { $ref: '#/components/schemas/Session' },
+						},
+					},
+				},
+				404: errorResponse(),
+			},
+		},
 		patch: {
 			tags: ['sessions'],
 			operationId: 'updateSession',

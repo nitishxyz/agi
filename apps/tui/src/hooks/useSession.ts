@@ -7,6 +7,7 @@ import {
 	abortSession as apiAbortSession,
 	resolveApproval,
 	updateSession as apiUpdateSession,
+	getSession as apiGetSession,
 } from '@ottocode/api';
 import type { Session } from '../types.ts';
 
@@ -173,6 +174,20 @@ export function useSession() {
 		[],
 	);
 
+	const refreshActiveSession = useCallback(async (sessionId: string) => {
+		try {
+			const response = await apiGetSession({ path: { sessionId } });
+			const session = response.data as Session | undefined;
+			if (!session) return;
+			setActiveSession((prev) =>
+				prev?.id === sessionId ? { ...prev, ...session } : prev,
+			);
+			setSessions((prev) =>
+				prev.map((s) => (s.id === sessionId ? { ...s, ...session } : s)),
+			);
+		} catch {}
+	}, []);
+
 	useEffect(() => {
 		loadSessions();
 	}, [loadSessions]);
@@ -189,6 +204,7 @@ export function useSession() {
 		switchSession,
 		updateSessionMeta,
 		updateSessionPrefs,
+		refreshActiveSession,
 		sendMessage,
 		abortSession: abortSessionFn,
 		approveToolCall,
