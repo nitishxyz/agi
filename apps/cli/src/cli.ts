@@ -141,8 +141,8 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 			return;
 		}
 
-		const server = await startApiServer({ project: projectRoot, port });
-		await startTui(server.port);
+	const server = await startApiServer({ project: projectRoot, port });
+		await startTui(server.port, server.stop);
 		return;
 	}
 

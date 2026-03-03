@@ -12,21 +12,34 @@ const renderer = await createCliRenderer({
 	targetFps: 30,
 });
 
+let exiting = false;
+
+function gracefulExit(code: number) {
+	if (exiting) return;
+	exiting = true;
+	try {
+		renderer.destroy();
+	} catch {}
+	setTimeout(() => process.exit(code), 100);
+}
+
 process.on('uncaughtException', (error) => {
 	renderer.destroy();
 	console.error('Uncaught exception:', error);
-	setTimeout(() => process.exit(1), 50);
+	gracefulExit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
 	renderer.destroy();
 	console.error('Unhandled rejection:', reason);
-	setTimeout(() => process.exit(1), 50);
+	gracefulExit(1);
 });
 
+process.on('SIGINT', () => gracefulExit(0));
+process.on('SIGTERM', () => gracefulExit(0));
+
 function handleQuit() {
-	renderer.destroy();
-	setTimeout(() => process.exit(0), 50);
+	gracefulExit(0);
 }
 
 createRoot(renderer).render(

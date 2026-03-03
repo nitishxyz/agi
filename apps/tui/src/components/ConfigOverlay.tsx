@@ -29,10 +29,9 @@ export function ConfigOverlay({
 		<box
 			style={{
 				position: 'absolute',
-				top: 2,
-				left: 2,
-				right: 2,
-				bottom: 2,
+				top: Math.floor((process.stdout.rows ?? 40) * 0.2),
+				left: Math.floor((process.stdout.columns ?? 120) * 0.2),
+				right: Math.floor((process.stdout.columns ?? 120) * 0.2),
 				border: true,
 				borderStyle: 'rounded',
 				borderColor: colors.border,

@@ -81,10 +81,10 @@ export function SessionsOverlay({
 		<box
 			style={{
 				position: 'absolute',
-				top: 1,
-				left: 1,
-				right: 1,
-				bottom: 1,
+				top: Math.floor((process.stdout.rows ?? 40) * 0.1),
+				left: Math.floor((process.stdout.columns ?? 120) * 0.15),
+				right: Math.floor((process.stdout.columns ?? 120) * 0.15),
+				bottom: Math.floor((process.stdout.rows ?? 40) * 0.1),
 				border: true,
 				borderStyle: 'rounded',
 				borderColor: colors.border,
@@ -152,9 +152,9 @@ export function SessionsOverlay({
 					</scrollbox>
 				</box>
 			)}
-			<box style={{ height: 1, flexShrink: 0, paddingLeft: 1 }}>
-				<text fg={colors.fgDimmed}>↑↓ navigate enter select esc close</text>
-			</box>
+		<box style={{ height: 1, flexShrink: 0, paddingLeft: 1 }}>
+			<text fg={colors.fgDimmed}>↑↓ nav · ↵ select · esc close</text>
+		</box>
 		</box>
 	);
 }

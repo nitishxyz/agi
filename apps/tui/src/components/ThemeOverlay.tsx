@@ -45,10 +45,9 @@ export function ThemeOverlay({ onClose, onSave }: ThemeOverlayProps) {
 		<box
 			style={{
 				position: 'absolute',
-				top: 2,
-				left: 2,
-				right: 2,
-				bottom: 2,
+				top: Math.floor((process.stdout.rows ?? 40) * 0.15),
+				left: Math.floor((process.stdout.columns ?? 120) * 0.2),
+				right: Math.floor((process.stdout.columns ?? 120) * 0.2),
 				border: true,
 				borderStyle: 'rounded',
 				borderColor: colors.border,
@@ -69,11 +68,17 @@ export function ThemeOverlay({ onClose, onSave }: ThemeOverlayProps) {
 					return (
 						<box
 							key={t.name}
-							style={{ flexDirection: 'row', gap: 1, height: 1 }}
+							style={{
+								flexDirection: 'row',
+								gap: 1,
+								height: 1,
+								width: '100%',
+								backgroundColor: isSelected
+									? colors.bgHighlight
+									: undefined,
+							paddingLeft: 1,
+							}}
 						>
-							<text fg={isSelected ? colors.green : colors.fgDimmed}>
-								{isSelected ? '▸' : ' '}
-							</text>
 							<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
 								{t.displayName}
 							</text>
@@ -89,9 +94,7 @@ export function ThemeOverlay({ onClose, onSave }: ThemeOverlayProps) {
 					);
 				})}
 			</box>
-			<box style={{ marginTop: 1 }}>
-				<text fg={colors.fgDimmed}>↑↓ preview enter confirm esc cancel</text>
-			</box>
+		<text fg={colors.fgDimmed}>↑↓ preview · ↵ confirm · esc cancel</text>
 		</box>
 	);
 }

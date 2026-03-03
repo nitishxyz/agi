@@ -242,12 +242,12 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 		<box
 			style={{
 				position: 'absolute',
-				top: 1,
-				left: 2,
-				right: 2,
+				top: Math.floor((process.stdout.rows ?? 40) * 0.1),
+				left: Math.floor((process.stdout.columns ?? 120) * 0.15),
+				right: Math.floor((process.stdout.columns ?? 120) * 0.15),
 				border: true,
 				borderStyle: 'rounded',
-				borderColor: colors.blue,
+				borderColor: colors.border,
 				backgroundColor: colors.bg,
 				zIndex: 100,
 				flexDirection: 'column',
@@ -364,11 +364,7 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 			)}
 
 			{phase !== 'loading' && phase !== 'done' && (
-				<box style={{ marginTop: 1, flexDirection: 'row', gap: 2 }}>
-					<text fg={colors.fgDimmed}>⌃G generate</text>
-					<text fg={colors.fgDimmed}>⌃↵ commit</text>
-					<text fg={colors.fgDimmed}>esc close</text>
-				</box>
+			<text fg={colors.fgDimmed}>⌃G generate · ⌃↵ commit · esc close</text>
 			)}
 		</box>
 	);

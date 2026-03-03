@@ -492,17 +492,20 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 		scrollOffset + VISIBLE_ROWS,
 	);
 
+	const rows = process.stdout.rows ?? 40;
+	const cols = process.stdout.columns ?? 120;
+
 	if (view === 'add') {
 		return (
 			<box
 				style={{
 					position: 'absolute',
-					top: 2,
-					left: 4,
-					right: 4,
+					top: Math.floor(rows * 0.1),
+					left: Math.floor(cols * 0.15),
+					right: Math.floor(cols * 0.15),
 					border: true,
 					borderStyle: 'rounded',
-					borderColor: colors.blue,
+					borderColor: colors.border,
 					backgroundColor: colors.bg,
 					zIndex: 100,
 					flexDirection: 'column',
@@ -585,11 +588,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 					</box>
 				)}
 
-				<box style={{ marginTop: 1, flexDirection: 'row', gap: 2 }}>
-					<text fg={colors.fgDimmed}>tab/↑↓ fields</text>
-					<text fg={colors.fgDimmed}>↵ next/submit</text>
-					<text fg={colors.fgDimmed}>esc cancel</text>
-				</box>
+			<text fg={colors.fgDimmed}>tab/↑↓ fields · ↵ submit · esc cancel</text>
 			</box>
 		);
 	}
@@ -599,13 +598,13 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 		return (
 			<box
 				style={{
-					position: 'absolute',
-					top: '40%',
-					left: '25%',
-					right: '25%',
+				position: 'absolute',
+					top: Math.floor(rows * 0.4),
+					left: Math.floor(cols * 0.25),
+					right: Math.floor(cols * 0.25),
 					border: true,
 					borderStyle: 'rounded',
-					borderColor: colors.red,
+					borderColor: colors.border,
 					backgroundColor: colors.bg,
 					zIndex: 101,
 					flexDirection: 'column',
@@ -631,14 +630,13 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 		return (
 			<box
 				style={{
-					position: 'absolute',
-					top: 2,
-					left: 4,
-					right: 4,
-					height: Math.min(toolsServer.tools.length + 4, termRows - 4),
+				position: 'absolute',
+					top: Math.floor(rows * 0.15),
+					left: Math.floor(cols * 0.15),
+					right: Math.floor(cols * 0.15),
 					border: true,
 					borderStyle: 'rounded',
-					borderColor: colors.blue,
+					borderColor: colors.border,
 					backgroundColor: colors.bg,
 					zIndex: 100,
 					flexDirection: 'column',
@@ -657,9 +655,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 						</box>
 					))}
 				</box>
-				<box style={{ marginTop: 1 }}>
-					<text fg={colors.fgDimmed}>esc/↵ back</text>
-				</box>
+			<text fg={colors.fgDimmed}>esc/↵ back</text>
 			</box>
 		);
 	}
@@ -667,14 +663,14 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 	return (
 		<box
 			style={{
-				position: 'absolute',
-				top: 2,
-				left: 4,
-				right: 4,
-				bottom: 2,
+			position: 'absolute',
+				top: Math.floor(rows * 0.1),
+				left: Math.floor(cols * 0.15),
+				right: Math.floor(cols * 0.15),
+				bottom: Math.floor(rows * 0.1),
 				border: true,
 				borderStyle: 'rounded',
-				borderColor: colors.blue,
+				borderColor: colors.border,
 				backgroundColor: colors.bg,
 				zIndex: 100,
 				flexDirection: 'column',
@@ -757,12 +753,10 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 									flexDirection: 'row',
 									height: 1,
 									width: '100%',
-									backgroundColor: isSelected ? colors.bgSubtle : undefined,
+									backgroundColor: isSelected ? colors.bgHighlight : undefined,
+									paddingLeft: 1,
 								}}
 							>
-								<text fg={isSelected ? colors.green : colors.fgDimmed}>
-									{isSelected ? '▸ ' : '  '}
-								</text>
 
 								{isBusy ? (
 									<text fg={colors.yellow}>{SPIN_CHARS[spinFrame]} </text>
@@ -802,14 +796,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 				</box>
 			)}
 
-			<box style={{ marginTop: 1, flexDirection: 'row', gap: 2 }}>
-				<text fg={colors.fgDimmed}>↑↓ navigate</text>
-				<text fg={colors.fgDimmed}>↵/space toggle</text>
-				<text fg={colors.fgDimmed}>a add</text>
-				<text fg={colors.fgDimmed}>d delete</text>
-				<text fg={colors.fgDimmed}>t tools</text>
-				<text fg={colors.fgDimmed}>esc close</text>
-			</box>
+		<text fg={colors.fgDimmed}>↑↓ nav · ↵ toggle · a add · d del · t tools · esc close</text>
 		</box>
 	);
 }

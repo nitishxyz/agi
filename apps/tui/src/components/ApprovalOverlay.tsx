@@ -40,12 +40,12 @@ export function ApprovalOverlay({
 		<box
 			style={{
 				position: 'absolute',
-				top: '30%',
-				left: 4,
-				right: 4,
+				top: Math.floor((process.stdout.rows ?? 40) * 0.3),
+				left: Math.floor((process.stdout.columns ?? 120) * 0.2),
+				right: Math.floor((process.stdout.columns ?? 120) * 0.2),
 				border: true,
 				borderStyle: 'rounded',
-				borderColor: colors.yellow,
+				borderColor: colors.border,
 				backgroundColor: colors.bg,
 				zIndex: 200,
 				flexDirection: 'column',

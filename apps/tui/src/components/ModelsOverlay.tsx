@@ -282,12 +282,13 @@ export function ModelsOverlay({
 		<box
 			style={{
 				position: 'absolute',
-				top: 1,
-				left: 2,
-				right: 2,
+				top: Math.floor((process.stdout.rows ?? 40) * 0.1),
+				left: Math.floor((process.stdout.columns ?? 120) * 0.15),
+				right: Math.floor((process.stdout.columns ?? 120) * 0.15),
+				bottom: Math.floor((process.stdout.rows ?? 40) * 0.1),
 				border: true,
 				borderStyle: 'rounded',
-				borderColor: colors.blue,
+				borderColor: colors.border,
 				backgroundColor: colors.bg,
 				zIndex: 100,
 				flexDirection: 'column',
@@ -350,12 +351,10 @@ export function ModelsOverlay({
 									gap: 1,
 									height: 1,
 									width: '100%',
-									backgroundColor: isSelected ? colors.bgSubtle : undefined,
+									backgroundColor: isSelected ? colors.bgHighlight : undefined,
+									paddingLeft: 1,
 								}}
 							>
-								<text fg={isSelected ? colors.green : colors.fgDimmed}>
-									{isSelected ? '▸' : ' '}
-								</text>
 								<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
 									{row.item.modelLabel}
 								</text>
@@ -369,11 +368,7 @@ export function ModelsOverlay({
 				</box>
 			)}
 
-			<box style={{ marginTop: 1, flexDirection: 'row', gap: 2 }}>
-				<text fg={colors.fgDimmed}>↑↓ navigate</text>
-				<text fg={colors.fgDimmed}>↵ select</text>
-				<text fg={colors.fgDimmed}>esc close</text>
-			</box>
+		<text fg={colors.fgDimmed}>↑↓ nav · ↵ select · esc close</text>
 		</box>
 	);
 }
