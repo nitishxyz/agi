@@ -194,11 +194,27 @@ export async function authorizeOpenAI(): Promise<OpenAIOAuthResult> {
 		server.listen(OPENAI_CALLBACK_PORT, '127.0.0.1', () => resolve());
 	});
 
+	const OAUTH_TIMEOUT_MS = 5 * 60 * 1000;
+	let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+	const timeoutPromise = new Promise<string>((_resolve, reject) => {
+		timeoutId = setTimeout(() => {
+			server.close();
+			reject(new Error('OAuth callback timeout - authorization took too long'));
+		}, OAUTH_TIMEOUT_MS);
+	});
+
+	const callbackWithTimeout = () =>
+		Promise.race([callbackPromise, timeoutPromise]).finally(() => {
+			if (timeoutId) clearTimeout(timeoutId);
+		});
+
 	return {
 		url: authUrl,
 		verifier: pkce.verifier,
-		waitForCallback: () => callbackPromise,
+		waitForCallback: callbackWithTimeout,
 		close: () => {
+			if (timeoutId) clearTimeout(timeoutId);
 			server.close();
 		},
 	};

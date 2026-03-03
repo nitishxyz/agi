@@ -77,7 +77,8 @@ export type Overlay =
 	| 'commit'
 	| 'help'
 	| 'theme'
-	| 'mcp';
+	| 'mcp'
+	| 'usage';
 
 export interface AppState {
 	sessionId: string | null;

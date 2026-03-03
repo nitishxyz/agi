@@ -24,10 +24,6 @@ const INTERMEDIATE_PROGRESS_PATTERNS: RegExp[] = [
 	/\b(and|then)\s+continue\b/i,
 ];
 
-/**
- * Detects whether assistant text looks like an intermediate progress update
- * (e.g. "Next I'll inspect...") rather than a final user-facing completion.
- */
 export function looksLikeIntermediateProgressText(text: string): boolean {
 	const trimmed = text.trim();
 	if (!trimmed) return false;
@@ -44,11 +40,15 @@ function isTruncatedResponse(
 	return rawFinishReason === 'max_output_tokens';
 }
 
-/**
- * Decides whether an OpenAI OAuth Codex turn should auto-continue to recover
- * only from hard truncation. Other completion behavior is handled by
- * stream step limits and prompt alignment, not synthetic continuation turns.
- */
+const MAX_UNCLEAN_EOF_RETRIES = 1;
+
+function isUncleanEof(input: OauthCodexContinuationInput): boolean {
+	if (input.finishReason && input.finishReason !== 'unknown') return false;
+	if (input.firstToolSeen) return true;
+	if (looksLikeIntermediateProgressText(input.lastAssistantText)) return true;
+	return false;
+}
+
 export function decideOauthCodexContinuation(
 	input: OauthCodexContinuationInput,
 ): OauthCodexContinuationDecision {
@@ -66,6 +66,13 @@ export function decideOauthCodexContinuation(
 
 	if (isTruncatedResponse(input.finishReason, input.rawFinishReason)) {
 		return { shouldContinue: true, reason: 'truncated' };
+	}
+
+	if (
+		isUncleanEof(input) &&
+		input.continuationCount < MAX_UNCLEAN_EOF_RETRIES
+	) {
+		return { shouldContinue: true, reason: 'unclean-eof' };
 	}
 
 	return { shouldContinue: false };

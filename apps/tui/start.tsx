@@ -1,5 +1,8 @@
 import { createCliRenderer } from '@opentui/core';
 import { createRoot } from '@opentui/react';
+import treeSitterWorkerPath from '../../node_modules/@opentui/core/parser.worker.js' with {
+	type: 'file',
+};
 import { App } from './src/App.tsx';
 import { ThemeProvider } from './src/theme.ts';
 import { setPort, configureApi } from './src/api.ts';
@@ -7,6 +10,9 @@ import { setPort, configureApi } from './src/api.ts';
 export async function startTui(port: number): Promise<void> {
 	setPort(port);
 	configureApi();
+	if (!process.env.OTUI_TREE_SITTER_WORKER_PATH) {
+		process.env.OTUI_TREE_SITTER_WORKER_PATH = treeSitterWorkerPath;
+	}
 
 	const renderer = await createCliRenderer({
 		exitOnCtrlC: false,

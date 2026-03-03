@@ -1,5 +1,5 @@
 import { hasToolCall, stepCountIs, streamText } from 'ai';
-import { messages, messageParts } from '@ottocode/database/schema';
+import { messages, messageParts, sessions } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish, subscribe } from '../../events/bus.ts';
 import { debugLog, time } from '../debug/index.ts';
@@ -243,7 +243,7 @@ async function runAssistant(opts: RunOpts) {
 
 	const onFinish = createFinishHandler(opts, db, completeAssistantMessage);
 	const stopWhenCondition = isOpenAIOAuth
-		? stepCountIs(48)
+		? stepCountIs(20)
 		: hasToolCall('finish');
 
 	try {
@@ -423,6 +423,18 @@ async function runAssistant(opts: RunOpts) {
 		});
 
 		if (continuationDecision.shouldContinue) {
+			const sessRows = await db
+				.select()
+				.from(sessions)
+				.where(eq(sessions.id, opts.sessionId))
+				.limit(1);
+			const sessionInputTokens = Number(sessRows[0]?.totalInputTokens ?? 0);
+			const MAX_SESSION_INPUT_TOKENS = 800_000;
+			if (sessionInputTokens > MAX_SESSION_INPUT_TOKENS) {
+				debugLog(
+					`[RUNNER] Token budget exceeded (${sessionInputTokens} > ${MAX_SESSION_INPUT_TOKENS}), stopping continuation.`,
+				);
+			} else {
 			debugLog(
 				`[RUNNER] WARNING: Stream ended without finish. reason=${continuationDecision.reason ?? 'unknown'}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}, firstToolSeen=${fs}. Auto-continuing.`,
 			);
@@ -472,6 +484,7 @@ async function runAssistant(opts: RunOpts) {
 				runSessionLoop,
 			);
 			return;
+			}
 		}
 		if (
 			continuationDecision.reason === 'max-continuations-reached' &&

@@ -25,7 +25,7 @@ export async function resolveModel(
 	},
 ) {
 	if (provider === 'openai') {
-		return resolveOpenAIModel(model, cfg);
+		return resolveOpenAIModel(model, cfg, options?.sessionId);
 	}
 	if (provider === 'anthropic') {
 		const instance = await getAnthropicInstance(cfg);

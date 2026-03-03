@@ -320,14 +320,14 @@ function StreamingIndicator({
 		const info = extractProgressInfo(progressPart);
 		if (info) {
 			return (
-				<box style={{ flexDirection: 'row', height: 1, marginTop: 1 }}>
-					<text fg={colors.purple}>{spinner}</text>
-					<text fg={colors.fgDark}>
-						{info.stage?.trim() ? ` [${info.stage}] ` : ' '}
-					</text>
-					<text fg={colors.purple}>{info.message}</text>
+			<box style={{ flexDirection: 'row', height: 1, marginTop: 1 }}>
+					<text style={{ flexShrink: 0 }} fg={colors.purple}>{spinner}</text>
+					{info.stage?.trim() && (
+						<text style={{ flexShrink: 0 }} fg={colors.fgDark}> [{info.stage}]</text>
+					)}
+					<text style={{ flexShrink: 1, overflow: 'hidden' }} fg={colors.purple}> {info.message}</text>
 					{info.pct !== undefined && (
-						<text fg={colors.fgDark}> {info.pct}%</text>
+						<text style={{ flexShrink: 0 }} fg={colors.fgDark}> {info.pct}%</text>
 					)}
 				</box>
 			);

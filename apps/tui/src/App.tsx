@@ -20,6 +20,7 @@ import { CommitOverlay } from './components/CommitOverlay.tsx';
 import { HelpOverlay } from './components/HelpOverlay.tsx';
 import { ThemeOverlay } from './components/ThemeOverlay.tsx';
 import { MCPOverlay } from './components/MCPOverlay.tsx';
+import { UsageOverlay } from './components/UsageOverlay.tsx';
 import { ApproveAllBar } from './components/ApproveAllBar.tsx';
 import { useSession } from './hooks/useSession.ts';
 import { useStream } from './hooks/useStream.ts';
@@ -255,6 +256,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				case 'theme':
 					setOverlay('theme');
 					break;
+			case 'usage':
+				setOverlay('usage');
+				break;
 				case 'clear':
 					reload();
 					break;
@@ -592,6 +596,12 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				/>
 			)}
 			{overlay === 'mcp' && <MCPOverlay onClose={() => setOverlay('none')} />}
+			{overlay === 'usage' && (
+				<UsageOverlay
+					currentProvider={provider}
+					onClose={() => setOverlay('none')}
+				/>
+			)}
 		</box>
 	);
 }

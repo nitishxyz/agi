@@ -25,6 +25,7 @@ export const COMMAND_ALIASES: Record<string, string> = {
 	t: 'theme',
 	m: 'models',
 	p: 'mcp',
+	u: 'usage',
 };
 
 export function resolveCommand(name: string): string {
@@ -52,6 +53,7 @@ export const COMMANDS = [
 	{ name: 'sessions', alias: '/s', description: 'List and switch sessions' },
 	{ name: 'provider', alias: '', description: 'Quick-switch provider' },
 	{ name: 'theme', alias: '/t', description: 'Switch color theme' },
+	{ name: 'usage', alias: '/u', description: 'Show OAuth provider usage' },
 	{ name: 'clear', alias: '', description: 'Reload messages' },
 	{ name: 'exit', alias: '/q', description: 'Exit TUI' },
 ];

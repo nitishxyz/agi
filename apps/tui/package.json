@@ -11,8 +11,8 @@
 		"build": "bun build index.tsx --outdir dist --target bun"
 	},
 	"dependencies": {
-		"@opentui/core": "latest",
-		"@opentui/react": "latest",
+		"@opentui/core": "0.1.84",
+		"@opentui/react": "0.1.84",
 		"@ottocode/api": "workspace:*",
 		"@ottocode/sdk": "workspace:*",
 		"eventsource-parser": "^3.0.0",
