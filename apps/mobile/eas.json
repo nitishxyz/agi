@@ -1,0 +1,43 @@
+{
+  "cli": {
+    "version": ">= 16.3.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENV": "dev",
+        "EXPO_PUBLIC_API_URL": "http://localhost:3000"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_ENV": "beta",
+        "EXPO_PUBLIC_API_URL": "http://localhost:3000"
+      }
+    },
+    "beta": {
+      "autoIncrement": "buildNumber",
+      "channel": "beta",
+      "env": {
+        "EXPO_PUBLIC_ENV": "beta",
+        "EXPO_PUBLIC_API_URL": "http://localhost:3000"
+      }
+    },
+    "production": {
+      "autoIncrement": "buildNumber",
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_ENV": "prod",
+        "EXPO_PUBLIC_API_URL": "http://localhost:3000"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
