@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useTheme } from '../theme.ts';
 import { DiffView } from './DiffView.tsx';
 import type { MessagePart } from '../types.ts';
@@ -100,7 +101,7 @@ function extractToolError(part: MessagePart): string | null {
 	return null;
 }
 
-export function ToolCallItem({ part, _isLast, isFirst }: ToolCallItemProps) {
+export const ToolCallItem = memo(function ToolCallItem({ part, _isLast, isFirst }: ToolCallItemProps) {
 	const { colors } = useTheme();
 	const toolName = part.toolName || 'unknown';
 	const target = getTarget(part);
@@ -194,4 +195,4 @@ export function ToolCallItem({ part, _isLast, isFirst }: ToolCallItemProps) {
 			{diffPatch && <DiffView patch={diffPatch} filePath={filePath} />}
 		</box>
 	);
-}
+});

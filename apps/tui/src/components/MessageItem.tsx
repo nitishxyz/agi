@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { memo, useMemo, useState, useEffect } from 'react';
 import { useTheme } from '../theme.ts';
 import { ToolCallItem } from './ToolCallItem.tsx';
 import { InlineApproval } from './InlineApproval.tsx';
@@ -71,7 +71,7 @@ function getPartCategory(part: MessagePart): string {
 	return part.type;
 }
 
-function PartRenderer({
+const PartRenderer = memo(function PartRenderer({
 	part,
 	isActive,
 	isLastTool,
@@ -161,9 +161,81 @@ function PartRenderer({
 	}
 
 	return null;
+});
+
+function extractProgressInfo(
+	part: MessagePart,
+): { message: string; stage?: string; pct?: number } | null {
+	const cj = part.contentJson as Record<string, unknown> | undefined;
+	if (!cj) return null;
+	const candidates = [
+		cj.result as Record<string, unknown> | undefined,
+		cj.args as Record<string, unknown> | undefined,
+		cj,
+	];
+	for (const src of candidates) {
+		if (!src || typeof src !== 'object') continue;
+		const msg = typeof src.message === 'string' ? src.message : null;
+		if (msg) {
+			return {
+				message: msg,
+				stage:
+					typeof src.stage === 'string' && src.stage.trim()
+						? src.stage
+						: undefined,
+				pct: typeof src.pct === 'number' ? src.pct : undefined,
+			};
+		}
+	}
+	return null;
 }
 
-function UserMessage({
+const SHIMMER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+function StreamingIndicator({
+	progressPart,
+}: {
+	progressPart: MessagePart | null;
+}) {
+	const { colors } = useTheme();
+	const [frame, setFrame] = useState(0);
+	useEffect(() => {
+		const id = setInterval(
+			() => setFrame((f) => (f + 1) % SHIMMER_FRAMES.length),
+			80,
+		);
+		return () => clearInterval(id);
+	}, []);
+
+	const spinner = SHIMMER_FRAMES[frame];
+
+	if (progressPart) {
+		const info = extractProgressInfo(progressPart);
+		if (info) {
+			return (
+			<box style={{ flexDirection: 'row', height: 1, marginTop: 1 }}>
+					<text style={{ flexShrink: 0 }} fg={colors.purple}>{spinner}</text>
+					{info.stage?.trim() && (
+						<text style={{ flexShrink: 0 }} fg={colors.fgDark}> [{info.stage}]</text>
+					)}
+					<text style={{ flexShrink: 1, overflow: 'hidden' }} fg={colors.purple}> {info.message}</text>
+					{info.pct !== undefined && (
+						<text style={{ flexShrink: 0 }} fg={colors.fgDark}> {info.pct}%</text>
+					)}
+				</box>
+			);
+		}
+	}
+
+	return (
+		<box style={{ flexDirection: 'row', gap: 1, height: 1, marginTop: 1 }}>
+			<text fg={colors.purple}>{spinner}</text>
+			<text fg={colors.fgDark}>thinking…</text>
+		</box>
+	);
+}
+
+const UserMessage = memo(function UserMessage({
 	message,
 	isQueued,
 	_isFirstMessage,
@@ -249,7 +321,7 @@ function UserMessage({
 			) : null}
 		</box>
 	);
-}
+});
 
 function deduplicateToolParts(parts: MessagePart[]): MessagePart[] {
 	const resultCallIds = new Set<string>();
@@ -270,79 +342,7 @@ function deduplicateToolParts(parts: MessagePart[]): MessagePart[] {
 	});
 }
 
-function extractProgressInfo(
-	part: MessagePart,
-): { message: string; stage?: string; pct?: number } | null {
-	const cj = part.contentJson as Record<string, unknown> | undefined;
-	if (!cj) return null;
-	const candidates = [
-		cj.result as Record<string, unknown> | undefined,
-		cj.args as Record<string, unknown> | undefined,
-		cj,
-	];
-	for (const src of candidates) {
-		if (!src || typeof src !== 'object') continue;
-		const msg = typeof src.message === 'string' ? src.message : null;
-		if (msg) {
-			return {
-				message: msg,
-				stage:
-					typeof src.stage === 'string' && src.stage.trim()
-						? src.stage
-						: undefined,
-				pct: typeof src.pct === 'number' ? src.pct : undefined,
-			};
-		}
-	}
-	return null;
-}
-
-const SHIMMER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-
-function StreamingIndicator({
-	progressPart,
-}: {
-	progressPart: MessagePart | null;
-}) {
-	const { colors } = useTheme();
-	const [frame, setFrame] = useState(0);
-	useEffect(() => {
-		const id = setInterval(
-			() => setFrame((f) => (f + 1) % SHIMMER_FRAMES.length),
-			80,
-		);
-		return () => clearInterval(id);
-	}, []);
-
-	const spinner = SHIMMER_FRAMES[frame];
-
-	if (progressPart) {
-		const info = extractProgressInfo(progressPart);
-		if (info) {
-			return (
-			<box style={{ flexDirection: 'row', height: 1, marginTop: 1 }}>
-					<text style={{ flexShrink: 0 }} fg={colors.purple}>{spinner}</text>
-					{info.stage?.trim() && (
-						<text style={{ flexShrink: 0 }} fg={colors.fgDark}> [{info.stage}]</text>
-					)}
-					<text style={{ flexShrink: 1, overflow: 'hidden' }} fg={colors.purple}> {info.message}</text>
-					{info.pct !== undefined && (
-						<text style={{ flexShrink: 0 }} fg={colors.fgDark}> {info.pct}%</text>
-					)}
-				</box>
-			);
-		}
-	}
-
-	return (
-		<box style={{ flexDirection: 'row', gap: 1, height: 1, marginTop: 1 }}>
-			<text fg={colors.purple}>{spinner}</text>
-			<text fg={colors.fgDark}>thinking…</text>
-		</box>
-	);
-}
-
-function AssistantMessage({
+const AssistantMessage = memo(function AssistantMessage({
 	message,
 	isStreaming,
 	_isQueued,
@@ -381,18 +381,6 @@ function AssistantMessage({
 		toolParts.length > 0
 			? dedupedParts.lastIndexOf(toolParts[toolParts.length - 1])
 			: -1;
-
-	const _hasAnyContent = dedupedParts.some(
-		(p) =>
-			(p.type === 'text' && extractText(p).trim()) ||
-			isToolPart(p) ||
-			p.type === 'reasoning',
-	);
-
-	const messageApprovals = useMemo(() => {
-		if (!pendingApprovals?.length) return [];
-		return pendingApprovals.filter((a) => a.messageId === message.id);
-	}, [pendingApprovals, message.id]);
 
 	const showStreamingIndicator = isActive && !hasFinish;
 
@@ -440,7 +428,7 @@ function AssistantMessage({
 				const prevCat = prev ? getPartCategory(prev) : null;
 				const approval =
 					isToolPart(part) && part.toolCallId
-						? (messageApprovals.find((a) => a.callId === part.toolCallId) ??
+						? (pendingApprovals?.find((a) => a.callId === part.toolCallId) ??
 							null)
 						: null;
 				return (
@@ -473,9 +461,9 @@ function AssistantMessage({
 			)}
 		</box>
 	);
-}
+});
 
-export function MessageItem({
+export const MessageItem = memo(function MessageItem({
 	message,
 	isStreaming,
 	isQueued,
@@ -507,4 +495,4 @@ export function MessageItem({
 		);
 	}
 	return null;
-}
+});

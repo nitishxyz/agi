@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { MessageItem } from './MessageItem.tsx';
 import { useTheme } from '../theme.ts';
 import type { Message, PendingApproval } from '../types.ts';
@@ -13,7 +13,7 @@ interface ChatViewProps {
 	onDeny: (callId: string) => void;
 }
 
-export function ChatView({
+export const ChatView = memo(function ChatView({
 	messages,
 	_isStreaming,
 	streamingMessageId,
@@ -62,6 +62,19 @@ export function ChatView({
 		});
 	}, [sorted, streamingMessageId]);
 
+	const approvalsByMessage = useMemo(() => {
+		const map = new Map<string, PendingApproval[]>();
+		for (const a of pendingApprovals) {
+			const existing = map.get(a.messageId);
+			if (existing) {
+				existing.push(a);
+			} else {
+				map.set(a.messageId, [a]);
+			}
+		}
+		return map;
+	}, [pendingApprovals]);
+
 	if (visibleMessages.length === 0) {
 		return (
 			<box
@@ -105,11 +118,13 @@ export function ChatView({
 					isStreaming={msg.id === streamingMessageId}
 					isQueued={queuedUserIds.has(msg.id)}
 					isFirstMessage={i === 0}
-					pendingApprovals={pendingApprovals}
+					pendingApprovals={approvalsByMessage.get(msg.id) ?? EMPTY_APPROVALS}
 					onApprove={onApprove}
 					onDeny={onDeny}
 				/>
 			))}
 		</scrollbox>
 	);
-}
+});
+
+const EMPTY_APPROVALS: PendingApproval[] = [];

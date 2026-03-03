@@ -14,20 +14,15 @@ import {
 import { StatusBar } from './components/StatusBar.tsx';
 import { ChatView } from './components/ChatView.tsx';
 import { ChatInput } from './components/ChatInput.tsx';
-import { SessionsOverlay } from './components/SessionsOverlay.tsx';
-import { ModelsOverlay } from './components/ModelsOverlay.tsx';
-import { CommitOverlay } from './components/CommitOverlay.tsx';
-import { HelpOverlay } from './components/HelpOverlay.tsx';
-import { ThemeOverlay } from './components/ThemeOverlay.tsx';
-import { MCPOverlay } from './components/MCPOverlay.tsx';
-import { UsageOverlay } from './components/UsageOverlay.tsx';
+import { Overlays } from './components/Overlays.tsx';
 import { ApproveAllBar } from './components/ApproveAllBar.tsx';
 import { useSession } from './hooks/useSession.ts';
 import { useStream } from './hooks/useStream.ts';
 import { useConfig } from './hooks/useConfig.ts';
 import { parseCommand, resolveCommand } from './commands.ts';
 import { useTheme } from './theme.ts';
-import type { Overlay, Session } from './types.ts';
+import { useOverlayStore } from './stores/overlay.ts';
+import type { Session } from './types.ts';
 
 async function copyToClipboard(text: string): Promise<void> {
 	const cmd =
@@ -44,39 +39,20 @@ async function copyToClipboard(text: string): Promise<void> {
 	await proc.exited;
 }
 
-export type StatusIndicator =
-	| { type: 'idle' }
-	| { type: 'loading'; label: string }
-	| { type: 'success'; label: string }
-	| { type: 'error'; label: string };
-
 export function App({ onQuit }: { onQuit: () => void }) {
 	const renderer = useRenderer();
 	const { colors, setTheme } = useTheme();
-	const [overlay, setOverlay] = useState<Overlay>('none');
-	const [status, setStatus] = useState<StatusIndicator>({ type: 'idle' });
-	const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const [escHint, setEscHint] = useState(false);
-	const escTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const showStatus = useCallback((s: StatusIndicator, autoClearMs?: number) => {
-		if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-		setStatus(s);
-		if (autoClearMs) {
-			statusTimerRef.current = setTimeout(
-				() => setStatus({ type: 'idle' }),
-				autoClearMs,
-			);
-		}
-	}, []);
+	const overlay = useOverlayStore((s) => s.overlay);
+	const setOverlay = useOverlayStore((s) => s.setOverlay);
+	const status = useOverlayStore((s) => s.status);
+	const showStatus = useOverlayStore((s) => s.showStatus);
+	const escHint = useOverlayStore((s) => s.escHint);
+	const setEscHint = useOverlayStore((s) => s.setEscHint);
+	const clearEscHint = useOverlayStore((s) => s.clearEscHint);
+	const cleanup = useOverlayStore((s) => s.cleanup);
 
-	useEffect(
-		() => () => {
-			if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-			if (escTimerRef.current) clearTimeout(escTimerRef.current);
-		},
-		[],
-	);
+	useEffect(() => () => cleanup(), [cleanup]);
 
 	useEffect(() => {
 		const handler = (selection: { getSelectedText: () => string }) => {
@@ -342,8 +318,8 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			updateDefaults,
 			sendMessage,
 			abortSession,
-			switchSession,
 			showStatus,
+			setOverlay,
 		],
 	);
 
@@ -397,36 +373,42 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			switchSession(session);
 			setOverlay('none');
 		},
-		[switchSession],
+		[switchSession, setOverlay],
 	);
+
+	const sessionIdRef = useRef(activeSession?.id);
+	sessionIdRef.current = activeSession?.id;
 
 	const handleApprove = useCallback(
 		async (callId: string) => {
-			if (!activeSession) return;
-			await approveToolCall(activeSession.id, callId, true);
+			const sid = sessionIdRef.current;
+			if (!sid) return;
+			await approveToolCall(sid, callId, true);
 			setPendingApprovals((prev) => prev.filter((a) => a.callId !== callId));
 		},
-		[activeSession, approveToolCall, setPendingApprovals],
+		[approveToolCall, setPendingApprovals],
 	);
 
 	const handleDeny = useCallback(
 		async (callId: string) => {
-			if (!activeSession) return;
-			await approveToolCall(activeSession.id, callId, false);
+			const sid = sessionIdRef.current;
+			if (!sid) return;
+			await approveToolCall(sid, callId, false);
 			setPendingApprovals((prev) => prev.filter((a) => a.callId !== callId));
 		},
-		[activeSession, approveToolCall, setPendingApprovals],
+		[approveToolCall, setPendingApprovals],
 	);
 
 	const handleApproveAll = useCallback(async () => {
-		if (!activeSession) return;
+		const sid = sessionIdRef.current;
+		if (!sid) return;
 		await Promise.all(
 			pendingApprovals.map((a) =>
-				approveToolCall(activeSession.id, a.callId, true),
+				approveToolCall(sid, a.callId, true),
 			),
 		);
 		setPendingApprovals([]);
-	}, [activeSession, approveToolCall, pendingApprovals, setPendingApprovals]);
+	}, [approveToolCall, pendingApprovals, setPendingApprovals]);
 
 	useKeyboard((key) => {
 		if (key.name === 'escape') {
@@ -437,11 +419,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			if (isStreaming && activeSession) {
 				if (escHint) {
 					abortSession(activeSession.id);
-					setEscHint(false);
-					if (escTimerRef.current) clearTimeout(escTimerRef.current);
+					clearEscHint();
 				} else {
 					setEscHint(true);
-					escTimerRef.current = setTimeout(() => setEscHint(false), 3000);
 				}
 				return;
 			}
@@ -469,8 +449,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		if (key.ctrl && key.name === 'c') {
 			if (isStreaming && activeSession) {
 				abortSession(activeSession.id);
-				setEscHint(false);
-				if (escTimerRef.current) clearTimeout(escTimerRef.current);
+				clearEscHint();
 			} else {
 				onQuit();
 			}
@@ -479,10 +458,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 
 	useEffect(() => {
 		if (!isStreaming) {
-			setEscHint(false);
-			if (escTimerRef.current) clearTimeout(escTimerRef.current);
+			clearEscHint();
 		}
-	}, [isStreaming]);
+	}, [isStreaming, clearEscHint]);
 
 	const provider = activeSession?.provider || config.defaults.provider;
 	const model = activeSession?.model || config.defaults.model;
@@ -499,6 +477,24 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			}
 		},
 		[activeSession, updateSessionPrefs, createSession],
+	);
+
+	const handleModelSelect = useCallback(
+		(p: string, m: string) => {
+			if (activeSession) {
+				updateSessionPrefs(activeSession.id, { provider: p, model: m });
+			} else {
+				createSession().then((s) => {
+					if (s) updateSessionPrefs(s.id, { provider: p, model: m });
+				});
+			}
+		},
+		[activeSession, updateSessionPrefs, createSession],
+	);
+
+	const handleThemeSave = useCallback(
+		(name: string) => updateDefaults({ theme: name }),
+		[updateDefaults],
 	);
 
 	return (
@@ -550,58 +546,17 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				onPlanModeToggle={handlePlanModeToggle}
 			/>
 
-			{overlay === 'sessions' && (
-				<SessionsOverlay
-					sessions={sessions}
-					hasMore={hasMore}
-					loadingMore={loadingMore}
-					onLoadMore={loadMoreSessions}
-					onSelect={handleSessionSelect}
-					onClose={() => setOverlay('none')}
-				/>
-			)}
-
-			{overlay === 'commit' && (
-				<CommitOverlay
-					onClose={() => setOverlay('none')}
-					onCommitted={() =>
-						showStatus({ type: 'success', label: 'committed' }, 3000)
-					}
-				/>
-			)}
-
-			{overlay === 'models' && (
-				<ModelsOverlay
-					currentProvider={provider}
-					currentModel={model}
-					onClose={() => setOverlay('none')}
-					onSelect={(p, m) => {
-						if (activeSession) {
-							updateSessionPrefs(activeSession.id, { provider: p, model: m });
-						} else {
-							createSession().then((s) => {
-								if (s) updateSessionPrefs(s.id, { provider: p, model: m });
-							});
-						}
-						setOverlay('none');
-					}}
-				/>
-			)}
-
-			{overlay === 'help' && <HelpOverlay onClose={() => setOverlay('none')} />}
-			{overlay === 'theme' && (
-				<ThemeOverlay
-					onClose={() => setOverlay('none')}
-					onSave={(name: string) => updateDefaults({ theme: name })}
-				/>
-			)}
-			{overlay === 'mcp' && <MCPOverlay onClose={() => setOverlay('none')} />}
-			{overlay === 'usage' && (
-				<UsageOverlay
-					currentProvider={provider}
-					onClose={() => setOverlay('none')}
-				/>
-			)}
+			<Overlays
+				sessions={sessions}
+				hasMore={hasMore}
+				loadingMore={loadingMore}
+				onLoadMore={loadMoreSessions}
+				onSessionSelect={handleSessionSelect}
+				provider={provider}
+				model={model}
+				onModelSelect={handleModelSelect}
+				onThemeSave={handleThemeSave}
+			/>
 		</box>
 	);
 }

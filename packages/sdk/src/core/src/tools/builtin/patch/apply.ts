@@ -704,8 +704,8 @@ async function applyAddOperation(
 		oldStart: 0,
 		oldLines: 0,
 		newStart: 1,
-		newLines: lines.length,
-		additions: lines.length,
+		newLines: operation.lines.length,
+		additions: operation.lines.length,
 		deletions: 0,
 	};
 

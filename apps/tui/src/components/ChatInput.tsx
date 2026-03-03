@@ -5,7 +5,7 @@ import Fuse from 'fuse.js';
 import { listFiles } from '@ottocode/api';
 import { useTheme } from '../theme.ts';
 import { COMMANDS } from '../commands.ts';
-import type { StatusIndicator } from '../App.tsx';
+import type { StatusIndicator } from '../stores/overlay.ts';
 import { useFileAttachments, isFilePath } from '../hooks/useFileAttachments.ts';
 import type {
 	ImageAttachment,
