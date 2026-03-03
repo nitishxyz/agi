@@ -27,6 +27,7 @@ export function useSessionStream(sessionId: string | undefined) {
 		}
 
 		assistantMessageIdRef.current = null;
+		let lastSessionInvalidation = 0;
 
 		// Fetch pending approvals from server for this session
 		apiClient
@@ -555,6 +556,14 @@ export function useSessionStream(sessionId: string | undefined) {
 			if (invalidatingEvents.has(event.type)) {
 				// Use throttled invalidation instead of immediate
 				throttledInvalidate();
+			}
+
+			if (event.type === 'finish-step') {
+				const now = Date.now();
+				if (now - lastSessionInvalidation >= 2000) {
+					lastSessionInvalidation = now;
+					queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
+				}
 			}
 		});
 

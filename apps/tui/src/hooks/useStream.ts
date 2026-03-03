@@ -504,6 +504,7 @@ export function useStream(
 	sessionId: string | null,
 	onSessionUpdate?: (payload: Record<string, unknown>) => void,
 	onMessageCompleted?: () => void,
+	onStepFinish?: () => void,
 ) {
 	const [messages, dispatch] = useReducer(messageReducer, []);
 	const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
@@ -521,6 +522,8 @@ export function useStream(
 	onSessionUpdateRef.current = onSessionUpdate;
 	const onMessageCompletedRef = useRef(onMessageCompleted);
 	onMessageCompletedRef.current = onMessageCompleted;
+	const onStepFinishRef = useRef(onStepFinish);
+	onStepFinishRef.current = onStepFinish;
 
 	const addOptimisticUser = useCallback(
 		(content: string, attachmentNames?: string[]) => {
@@ -649,6 +652,10 @@ export function useStream(
 					setQueuedMessageIds(
 						new Set(queuedMsgs.map((q: { messageId: string }) => q.messageId)),
 					);
+					break;
+				}
+				case 'finish-step': {
+					onStepFinishRef.current?.();
 					break;
 				}
 			}

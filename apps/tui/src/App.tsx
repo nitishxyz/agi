@@ -126,6 +126,14 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		if (sessionId) refreshActiveSession(sessionId);
 	}, [sessionId, refreshActiveSession]);
 
+	const lastStepRefreshRef = useRef<number>(0);
+	const handleStepFinish = useCallback(() => {
+		const now = Date.now();
+		if (now - lastStepRefreshRef.current < 2000) return;
+		lastStepRefreshRef.current = now;
+		if (sessionId) refreshActiveSession(sessionId);
+	}, [sessionId, refreshActiveSession]);
+
 	const {
 		messages,
 		isStreaming,
@@ -136,7 +144,12 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		setPendingApprovals,
 		reload,
 		addOptimisticUser,
-	} = useStream(sessionId, updateSessionMeta, handleMessageCompleted);
+	} = useStream(
+		sessionId,
+		updateSessionMeta,
+		handleMessageCompleted,
+		handleStepFinish,
+	);
 
 	const contextTokens = activeSession?.currentContextTokens ?? 0;
 	const sessionProvider = activeSession?.provider ?? '';

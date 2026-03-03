@@ -288,16 +288,14 @@ function SingleDiffView({
 		if (!diff) return;
 		const scrollable = findScrollableChild(diff);
 		if (!scrollable) return;
-		const maxScroll = Math.max(
-			0,
-			scrollable.scrollHeight - scrollable.height,
-		);
-		if (maxScroll <= 0) return;
+		const viewportH = scrollable.height;
+		const contentH = scrollable.scrollHeight;
+		if (contentH <= viewportH) return;
+		const maxScroll = contentH - viewportH;
 		const direction = event.scroll?.direction;
-		const atTop = scrollable.scrollY <= 0;
-		const atBottom = scrollable.scrollY >= maxScroll;
-		if ((direction === 'up' && atTop) || (direction === 'down' && atBottom))
-			return;
+		const scrollY = scrollable.scrollY;
+		if (direction === 'up' && scrollY <= 0) return;
+		if (direction === 'down' && scrollY >= maxScroll) return;
 		event.stopPropagation();
 	}, []);
 

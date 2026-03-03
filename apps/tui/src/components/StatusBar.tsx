@@ -31,39 +31,68 @@ export function StatusBar({
 				? colors.yellow
 				: colors.fgDimmed;
 
+	const rightParts: string[] = [];
+	if (queueSize > 0) rightParts.push(`${queueSize} queued`);
+	if (contextTokens > 0) rightParts.push(`ctx ${formatCompact(contextTokens)}`);
+	if (estimatedCost > 0) rightParts.push(`$${estimatedCost.toFixed(2)}`);
+
+	const leftLabel = ' otto │ ';
+	const rightStr = rightParts.length > 0 ? `  ${rightParts.join(' │ ')}` : '';
+	const cols = process.stdout.columns || 80;
+	const padding = 2;
+	const maxTitle = cols - padding - leftLabel.length - rightStr.length;
+	const displayTitle =
+		title.length > maxTitle && maxTitle > 1
+			? `${title.slice(0, maxTitle - 1)}…`
+			: title;
+
 	return (
 		<box
 			style={{
 				width: '100%',
+				height: 1,
 				flexShrink: 0,
 				backgroundColor: colors.bgDark,
 				flexDirection: 'row',
 				paddingLeft: 1,
 				paddingRight: 1,
-				gap: 1,
+				overflow: 'hidden',
 			}}
 		>
-			<text fg={colors.blue}>
-				<b> otto </b>
-			</text>
-			<text fg={colors.fgDimmed}>│</text>
-			<text fg={sessionTitle ? colors.fg : colors.fgDark}>{title}</text>
-			{queueSize > 0 && <text fg={colors.yellow}>({queueSize} queued)</text>}
+			<box style={{ flexShrink: 0, flexDirection: 'row' }}>
+				<text fg={colors.blue}>
+					<b> otto </b>
+				</text>
+				<text fg={colors.fgDimmed}>│ </text>
+			</box>
 
-			<box style={{ flexGrow: 1 }} />
+			<box style={{ flexShrink: 1, flexGrow: 1, overflow: 'hidden' }}>
+				<text fg={sessionTitle ? colors.fg : colors.fgDark} wrapMode="none" truncate>
+					{displayTitle}
+				</text>
+			</box>
 
-			{contextTokens > 0 && (
-				<>
-					<text fg={colors.fgDimmed}>ctx </text>
-					<text fg={contextColor}>{formatCompact(contextTokens)}</text>
-				</>
-			)}
-			{estimatedCost > 0 && (
-				<>
-					<text fg={colors.fgDimmed}> │ </text>
-					<text fg={colors.fg}>${estimatedCost.toFixed(4)}</text>
-				</>
-			)}
+			<box style={{ flexShrink: 0, flexDirection: 'row' }}>
+				{rightParts.map((part, i) => {
+					const isCtx = part.startsWith('ctx ');
+					const isCost = part.startsWith('$');
+					const isQueued = part.includes('queued');
+					let color = colors.fgDimmed;
+					if (isCtx) color = contextColor;
+					if (isCost) color = colors.fg;
+					if (isQueued) color = colors.yellow;
+					return (
+						<box key={part} style={{ flexDirection: 'row', flexShrink: 0 }}>
+							{i > 0 ? (
+								<text fg={colors.fgDimmed}> │ </text>
+							) : (
+								<text fg={colors.fgDimmed}>  </text>
+							)}
+							<text fg={color}>{part}</text>
+						</box>
+					);
+				})}
+			</box>
 		</box>
 	);
 }
