@@ -117,7 +117,10 @@ export function registerSessionsRoutes(app: Hono) {
 				.where(eq(sessions.id, sessionId))
 				.limit(1);
 			if (!rows.length) {
-				return c.json({ error: { message: 'Session not found', status: 404 } }, 404);
+				return c.json(
+					{ error: { message: 'Session not found', status: 404 } },
+					404,
+				);
 			}
 			const r = rows[0];
 			let counts: Record<string, unknown> | undefined;

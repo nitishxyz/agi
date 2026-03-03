@@ -435,55 +435,55 @@ async function runAssistant(opts: RunOpts) {
 					`[RUNNER] Token budget exceeded (${sessionInputTokens} > ${MAX_SESSION_INPUT_TOKENS}), stopping continuation.`,
 				);
 			} else {
-			debugLog(
-				`[RUNNER] WARNING: Stream ended without finish. reason=${continuationDecision.reason ?? 'unknown'}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}, firstToolSeen=${fs}. Auto-continuing.`,
-			);
-
-			debugLog(
-				`[RUNNER] Auto-continuing (${continuationCount + 1}/${MAX_CONTINUATIONS})...`,
-			);
-
-			try {
-				await completeAssistantMessage({}, opts, db);
-			} catch (err) {
 				debugLog(
-					`[RUNNER] completeAssistantMessage failed before continuation: ${err instanceof Error ? err.message : String(err)}`,
+					`[RUNNER] WARNING: Stream ended without finish. reason=${continuationDecision.reason ?? 'unknown'}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}, firstToolSeen=${fs}. Auto-continuing.`,
 				);
-			}
 
-			const continuationMessageId = crypto.randomUUID();
-			await db.insert(messages).values({
-				id: continuationMessageId,
-				sessionId: opts.sessionId,
-				role: 'assistant',
-				status: 'pending',
-				agent: opts.agent,
-				provider: opts.provider,
-				model: opts.model,
-				createdAt: Date.now(),
-			});
+				debugLog(
+					`[RUNNER] Auto-continuing (${continuationCount + 1}/${MAX_CONTINUATIONS})...`,
+				);
 
-			publish({
-				type: 'message.created',
-				sessionId: opts.sessionId,
-				payload: {
+				try {
+					await completeAssistantMessage({}, opts, db);
+				} catch (err) {
+					debugLog(
+						`[RUNNER] completeAssistantMessage failed before continuation: ${err instanceof Error ? err.message : String(err)}`,
+					);
+				}
+
+				const continuationMessageId = crypto.randomUUID();
+				await db.insert(messages).values({
 					id: continuationMessageId,
+					sessionId: opts.sessionId,
 					role: 'assistant',
+					status: 'pending',
 					agent: opts.agent,
 					provider: opts.provider,
 					model: opts.model,
-				},
-			});
+					createdAt: Date.now(),
+				});
 
-			enqueueAssistantRun(
-				{
-					...opts,
-					assistantMessageId: continuationMessageId,
-					continuationCount: continuationCount + 1,
-				},
-				runSessionLoop,
-			);
-			return;
+				publish({
+					type: 'message.created',
+					sessionId: opts.sessionId,
+					payload: {
+						id: continuationMessageId,
+						role: 'assistant',
+						agent: opts.agent,
+						provider: opts.provider,
+						model: opts.model,
+					},
+				});
+
+				enqueueAssistantRun(
+					{
+						...opts,
+						assistantMessageId: continuationMessageId,
+						continuationCount: continuationCount + 1,
+					},
+					runSessionLoop,
+				);
+				return;
 			}
 		}
 		if (

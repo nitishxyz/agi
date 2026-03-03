@@ -67,7 +67,11 @@ export function StatusBar({
 			</box>
 
 			<box style={{ flexShrink: 1, flexGrow: 1, overflow: 'hidden' }}>
-				<text fg={sessionTitle ? colors.fg : colors.fgDark} wrapMode="none" truncate>
+				<text
+					fg={sessionTitle ? colors.fg : colors.fgDark}
+					wrapMode="none"
+					truncate
+				>
 					{displayTitle}
 				</text>
 			</box>
@@ -86,7 +90,7 @@ export function StatusBar({
 							{i > 0 ? (
 								<text fg={colors.fgDimmed}> │ </text>
 							) : (
-								<text fg={colors.fgDimmed}>  </text>
+								<text fg={colors.fgDimmed}> </text>
 							)}
 							<text fg={color}>{part}</text>
 						</box>

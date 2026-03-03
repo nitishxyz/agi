@@ -49,7 +49,10 @@ function makeBar(percent: number, width: number): string {
 	return '█'.repeat(filled) + '░'.repeat(empty);
 }
 
-function barColor(percent: number, colors: ReturnType<typeof useTheme>['colors']): string {
+function barColor(
+	percent: number,
+	colors: ReturnType<typeof useTheme>['colors'],
+): string {
 	if (percent >= 90) return colors.red;
 	if (percent >= 70) return colors.yellow;
 	return colors.blue;
@@ -86,7 +89,9 @@ export function UsageOverlay({ currentProvider, onClose }: UsageOverlayProps) {
 				if (!isOAuthProvider) {
 					if (!cancelled) {
 						setLoading(false);
-						setError('Usage is only available for OAuth providers (OpenAI, Anthropic)');
+						setError(
+							'Usage is only available for OAuth providers (OpenAI, Anthropic)',
+						);
 					}
 					return;
 				}
@@ -179,7 +184,8 @@ export function UsageOverlay({ currentProvider, onClose }: UsageOverlayProps) {
 								</text>
 								{usage.primaryWindow.resetsAt && (
 									<text fg={colors.fgDark}>
-										resets in {formatTimeRemaining(usage.primaryWindow.resetsAt)}
+										resets in{' '}
+										{formatTimeRemaining(usage.primaryWindow.resetsAt)}
 									</text>
 								)}
 							</box>
@@ -205,7 +211,9 @@ export function UsageOverlay({ currentProvider, onClose }: UsageOverlayProps) {
 									</text>
 								)}
 							</box>
-							<text fg={barColor(usage.secondaryWindow.usedPercent ?? 0, colors)}>
+							<text
+								fg={barColor(usage.secondaryWindow.usedPercent ?? 0, colors)}
+							>
 								{makeBar(usage.secondaryWindow.usedPercent ?? 0, BAR_WIDTH)}
 							</text>
 						</box>
@@ -218,13 +226,15 @@ export function UsageOverlay({ currentProvider, onClose }: UsageOverlayProps) {
 						</box>
 					)}
 
-					{!usage.primaryWindow && !usage.secondaryWindow && !usage.limitReached && (
-						<text fg={colors.fgDark}>No usage data available</text>
-					)}
+					{!usage.primaryWindow &&
+						!usage.secondaryWindow &&
+						!usage.limitReached && (
+							<text fg={colors.fgDark}>No usage data available</text>
+						)}
 				</box>
 			)}
 
-		<text fg={colors.fgDimmed}>esc close</text>
+			<text fg={colors.fgDimmed}>esc close</text>
 		</box>
 	);
 }

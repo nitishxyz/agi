@@ -364,7 +364,7 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 			)}
 
 			{phase !== 'loading' && phase !== 'done' && (
-			<text fg={colors.fgDimmed}>⌃G generate · ⌃↵ commit · esc close</text>
+				<text fg={colors.fgDimmed}>⌃G generate · ⌃↵ commit · esc close</text>
 			)}
 		</box>
 	);

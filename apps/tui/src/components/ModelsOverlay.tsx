@@ -368,7 +368,7 @@ export function ModelsOverlay({
 				</box>
 			)}
 
-		<text fg={colors.fgDimmed}>↑↓ nav · ↵ select · esc close</text>
+			<text fg={colors.fgDimmed}>↑↓ nav · ↵ select · esc close</text>
 		</box>
 	);
 }

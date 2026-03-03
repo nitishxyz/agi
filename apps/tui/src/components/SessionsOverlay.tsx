@@ -152,9 +152,9 @@ export function SessionsOverlay({
 					</scrollbox>
 				</box>
 			)}
-		<box style={{ height: 1, flexShrink: 0, paddingLeft: 1 }}>
-			<text fg={colors.fgDimmed}>↑↓ nav · ↵ select · esc close</text>
-		</box>
+			<box style={{ height: 1, flexShrink: 0, paddingLeft: 1 }}>
+				<text fg={colors.fgDimmed}>↑↓ nav · ↵ select · esc close</text>
+			</box>
 		</box>
 	);
 }

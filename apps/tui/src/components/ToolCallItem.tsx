@@ -101,7 +101,11 @@ function extractToolError(part: MessagePart): string | null {
 	return null;
 }
 
-export const ToolCallItem = memo(function ToolCallItem({ part, _isLast, isFirst }: ToolCallItemProps) {
+export const ToolCallItem = memo(function ToolCallItem({
+	part,
+	_isLast,
+	isFirst,
+}: ToolCallItemProps) {
 	const { colors } = useTheme();
 	const toolName = part.toolName || 'unknown';
 	const target = getTarget(part);

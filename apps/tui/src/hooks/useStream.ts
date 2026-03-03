@@ -646,16 +646,21 @@ export function useStream(
 							? payload.currentMessageId
 							: null;
 					if (currentMsgId) setStreamingMessageId(currentMsgId);
-				const queuedMsgs = Array.isArray(payload.queuedMessages)
-					? payload.queuedMessages
-					: [];
-				const nextIds = queuedMsgs.map((q: { messageId: string }) => q.messageId);
-				setQueuedMessageIds((prev) => {
-					if (prev.size === nextIds.length && nextIds.every((id: string) => prev.has(id))) {
-						return prev;
-					}
-					return new Set(nextIds);
-				});
+					const queuedMsgs = Array.isArray(payload.queuedMessages)
+						? payload.queuedMessages
+						: [];
+					const nextIds = queuedMsgs.map(
+						(q: { messageId: string }) => q.messageId,
+					);
+					setQueuedMessageIds((prev) => {
+						if (
+							prev.size === nextIds.length &&
+							nextIds.every((id: string) => prev.has(id))
+						) {
+							return prev;
+						}
+						return new Set(nextIds);
+					});
 					break;
 				}
 				case 'finish-step': {

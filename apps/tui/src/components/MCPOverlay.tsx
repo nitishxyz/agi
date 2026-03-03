@@ -588,7 +588,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 					</box>
 				)}
 
-			<text fg={colors.fgDimmed}>tab/↑↓ fields · ↵ submit · esc cancel</text>
+				<text fg={colors.fgDimmed}>tab/↑↓ fields · ↵ submit · esc cancel</text>
 			</box>
 		);
 	}
@@ -598,7 +598,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 		return (
 			<box
 				style={{
-				position: 'absolute',
+					position: 'absolute',
 					top: Math.floor(rows * 0.4),
 					left: Math.floor(cols * 0.25),
 					right: Math.floor(cols * 0.25),
@@ -630,7 +630,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 		return (
 			<box
 				style={{
-				position: 'absolute',
+					position: 'absolute',
 					top: Math.floor(rows * 0.15),
 					left: Math.floor(cols * 0.15),
 					right: Math.floor(cols * 0.15),
@@ -655,7 +655,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 						</box>
 					))}
 				</box>
-			<text fg={colors.fgDimmed}>esc/↵ back</text>
+				<text fg={colors.fgDimmed}>esc/↵ back</text>
 			</box>
 		);
 	}
@@ -663,7 +663,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 	return (
 		<box
 			style={{
-			position: 'absolute',
+				position: 'absolute',
 				top: Math.floor(rows * 0.1),
 				left: Math.floor(cols * 0.15),
 				right: Math.floor(cols * 0.15),
@@ -757,7 +757,6 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 									paddingLeft: 1,
 								}}
 							>
-
 								{isBusy ? (
 									<text fg={colors.yellow}>{SPIN_CHARS[spinFrame]} </text>
 								) : server.connected ? (
@@ -796,7 +795,9 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 				</box>
 			)}
 
-		<text fg={colors.fgDimmed}>↑↓ nav · ↵ toggle · a add · d del · t tools · esc close</text>
+			<text fg={colors.fgDimmed}>
+				↑↓ nav · ↵ toggle · a add · d del · t tools · esc close
+			</text>
 		</box>
 	);
 }

@@ -1,35 +1,35 @@
-import React, { createContext, useContext } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { DevToolbar } from "../components/ui/dev-toolbar";
+import type React from 'react';
+import { createContext, useContext } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { DevToolbar } from '../components/ui/dev-toolbar';
 
 const QueryClearContext = createContext<
-  { clearQueries: () => Promise<void> } | undefined
+	{ clearQueries: () => Promise<void> } | undefined
 >(undefined);
 
 export const useQueryClear = () => {
-  const context = useContext(QueryClearContext);
-  if (!context) {
-    throw new Error("useQueryClear must be used within QueryClearProvider");
-  }
-  return context;
+	const context = useContext(QueryClearContext);
+	if (!context) {
+		throw new Error('useQueryClear must be used within QueryClearProvider');
+	}
+	return context;
 };
 
 export const QueryClearProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
+	children,
 }) => {
-  const queryClient = useQueryClient();
+	const queryClient = useQueryClient();
 
+	const clearQueries = async () => {
+		queryClient.clear();
+		await queryClient.invalidateQueries();
+		queryClient.removeQueries();
+	};
 
-  const clearQueries = async () => {
-    queryClient.clear();
-    await queryClient.invalidateQueries();
-    queryClient.removeQueries();
-  };
-
-  return (
-    <QueryClearContext.Provider value={{ clearQueries }}>
-      {children}
-      {/* {__DEV__ && <DevToolbar />} */}
-    </QueryClearContext.Provider>
-  );
+	return (
+		<QueryClearContext.Provider value={{ clearQueries }}>
+			{children}
+			{/* {__DEV__ && <DevToolbar />} */}
+		</QueryClearContext.Provider>
+	);
 };

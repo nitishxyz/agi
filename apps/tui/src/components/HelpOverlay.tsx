@@ -80,7 +80,7 @@ export function HelpOverlay({ _onClose }: HelpOverlayProps) {
 					<text fg={colors.fgDark}>Close overlay</text>
 				</box>
 			</box>
-		<text fg={colors.fgDimmed}>esc close</text>
+			<text fg={colors.fgDimmed}>esc close</text>
 		</box>
 	);
 }

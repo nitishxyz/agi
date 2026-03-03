@@ -232,9 +232,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				case 'theme':
 					setOverlay('theme');
 					break;
-			case 'usage':
-				setOverlay('usage');
-				break;
+				case 'usage':
+					setOverlay('usage');
+					break;
 				case 'clear':
 					reload();
 					break;
@@ -403,9 +403,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		const sid = sessionIdRef.current;
 		if (!sid) return;
 		await Promise.all(
-			pendingApprovals.map((a) =>
-				approveToolCall(sid, a.callId, true),
-			),
+			pendingApprovals.map((a) => approveToolCall(sid, a.callId, true)),
 		);
 		setPendingApprovals([]);
 	}, [approveToolCall, pendingApprovals, setPendingApprovals]);

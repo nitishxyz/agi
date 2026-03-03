@@ -73,10 +73,8 @@ export function ThemeOverlay({ onClose, onSave }: ThemeOverlayProps) {
 								gap: 1,
 								height: 1,
 								width: '100%',
-								backgroundColor: isSelected
-									? colors.bgHighlight
-									: undefined,
-							paddingLeft: 1,
+								backgroundColor: isSelected ? colors.bgHighlight : undefined,
+								paddingLeft: 1,
 							}}
 						>
 							<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
@@ -94,7 +92,7 @@ export function ThemeOverlay({ onClose, onSave }: ThemeOverlayProps) {
 					);
 				})}
 			</box>
-		<text fg={colors.fgDimmed}>↑↓ preview · ↵ confirm · esc cancel</text>
+			<text fg={colors.fgDimmed}>↑↓ preview · ↵ confirm · esc cancel</text>
 		</box>
 	);
 }
