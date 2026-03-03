@@ -34,7 +34,7 @@ export async function ensureAuth(projectRoot: string): Promise<boolean> {
 	if (defaultAuthorized) return true;
 	if (await checkAny(cfg)) return true;
 
-	const authSuccess = await runAuth(['login', defaultProvider]);
+	const authSuccess = await runAuth(['login']);
 	if (!authSuccess) {
 		return false;
 	}

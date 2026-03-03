@@ -22,6 +22,7 @@ import { runDiscoveredCommand } from './custom-commands.ts';
 import { startApiServer } from './commands/serve.ts';
 import { handleServe } from './commands/serve.ts';
 import { startTui } from '@ottocode/tui';
+import { ensureAuth } from './middleware/with-auth.ts';
 
 import { ensureServer, stopEphemeralServer } from './ask/server.ts';
 
@@ -142,6 +143,7 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 		}
 
 		const server = await startApiServer({ project: projectRoot, port });
+		if (!(await ensureAuth(projectRoot))) return;
 		await startTui(server.port, server.stop);
 		return;
 	}
