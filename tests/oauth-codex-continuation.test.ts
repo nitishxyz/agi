@@ -29,11 +29,48 @@ describe('oauth codex continuation decision', () => {
 			finishReason: 'length',
 			rawFinishReason: 'max_output_tokens',
 			firstToolSeen: true,
+			hasTrailingAssistantText: false,
 			droppedPseudoToolText: false,
 			lastAssistantText: 'Partial answer...',
 		});
 		expect(decision.shouldContinue).toBe(true);
 		expect(decision.reason).toBe('truncated');
+	});
+
+	test('continues when tools ran but no assistant text was produced', () => {
+		const decision = decideOauthCodexContinuation({
+			provider: 'openai',
+			isOpenAIOAuth: true,
+			finishObserved: false,
+			continuationCount: 0,
+			maxContinuations: 6,
+			finishReason: 'stop',
+			rawFinishReason: undefined,
+			firstToolSeen: true,
+			hasTrailingAssistantText: false,
+			droppedPseudoToolText: false,
+			lastAssistantText: '',
+		});
+		expect(decision.shouldContinue).toBe(true);
+		expect(decision.reason).toBe('no-trailing-assistant-text');
+	});
+
+	test('continues when only mid-tool text exists but no trailing text after tools', () => {
+		const decision = decideOauthCodexContinuation({
+			provider: 'openai',
+			isOpenAIOAuth: true,
+			finishObserved: false,
+			continuationCount: 0,
+			maxContinuations: 6,
+			finishReason: 'stop',
+			rawFinishReason: undefined,
+			firstToolSeen: true,
+			hasTrailingAssistantText: false,
+			droppedPseudoToolText: false,
+			lastAssistantText: "Next I'll inspect parser files.",
+		});
+		expect(decision.shouldContinue).toBe(true);
+		expect(decision.reason).toBe('no-trailing-assistant-text');
 	});
 
 	test('does not continue for pseudo tool leakage alone', () => {
@@ -46,6 +83,7 @@ describe('oauth codex continuation decision', () => {
 			finishReason: 'stop',
 			rawFinishReason: undefined,
 			firstToolSeen: true,
+			hasTrailingAssistantText: true,
 			droppedPseudoToolText: true,
 			lastAssistantText: "Next I'll inspect the parser.",
 		});
@@ -62,6 +100,7 @@ describe('oauth codex continuation decision', () => {
 			finishReason: 'stop',
 			rawFinishReason: undefined,
 			firstToolSeen: true,
+			hasTrailingAssistantText: true,
 			droppedPseudoToolText: false,
 			lastAssistantText:
 				'Found core files. Next I will inspect parser + apply logic.',
@@ -79,6 +118,7 @@ describe('oauth codex continuation decision', () => {
 			finishReason: 'stop',
 			rawFinishReason: undefined,
 			firstToolSeen: true,
+			hasTrailingAssistantText: true,
 			droppedPseudoToolText: false,
 			lastAssistantText: 'Done.',
 		});
@@ -95,6 +135,7 @@ describe('oauth codex continuation decision', () => {
 			finishReason: 'stop',
 			rawFinishReason: undefined,
 			firstToolSeen: true,
+			hasTrailingAssistantText: false,
 			droppedPseudoToolText: false,
 			lastAssistantText: "Next I'll inspect files.",
 		});
@@ -111,6 +152,7 @@ describe('oauth codex continuation decision', () => {
 			finishReason: 'length',
 			rawFinishReason: 'max_output_tokens',
 			firstToolSeen: true,
+			hasTrailingAssistantText: false,
 			droppedPseudoToolText: false,
 			lastAssistantText: 'Partial output',
 		});

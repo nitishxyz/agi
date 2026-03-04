@@ -7,6 +7,7 @@ export type OauthCodexContinuationInput = {
 	finishReason?: string;
 	rawFinishReason?: string;
 	firstToolSeen: boolean;
+	hasTrailingAssistantText: boolean;
 	droppedPseudoToolText: boolean;
 	lastAssistantText: string;
 };
@@ -40,6 +41,13 @@ function isTruncatedResponse(
 	return rawFinishReason === 'max_output_tokens';
 }
 
+function isMissingAssistantSummary(
+	input: OauthCodexContinuationInput,
+): boolean {
+	if (!input.firstToolSeen) return false;
+	return !input.hasTrailingAssistantText;
+}
+
 const MAX_UNCLEAN_EOF_RETRIES = 1;
 
 function isUncleanEof(input: OauthCodexContinuationInput): boolean {
@@ -66,6 +74,10 @@ export function decideOauthCodexContinuation(
 
 	if (isTruncatedResponse(input.finishReason, input.rawFinishReason)) {
 		return { shouldContinue: true, reason: 'truncated' };
+	}
+
+	if (isMissingAssistantSummary(input)) {
+		return { shouldContinue: true, reason: 'no-trailing-assistant-text' };
 	}
 
 	if (

@@ -180,7 +180,13 @@ async function runAssistant(opts: RunOpts) {
 	);
 
 	let _finishObserved = false;
+	let _toolActivityObserved = false;
+	let _trailingAssistantTextAfterTool = false;
 	const unsubscribeFinish = subscribe(opts.sessionId, (evt) => {
+		if (evt.type === 'tool.call' || evt.type === 'tool.result') {
+			_toolActivityObserved = true;
+			_trailingAssistantTextAfterTool = false;
+		}
 		if (evt.type !== 'tool.result') return;
 		try {
 			const name = (evt.payload as { name?: string } | undefined)?.name;
@@ -286,6 +292,12 @@ async function runAssistant(opts: RunOpts) {
 				accumulated += delta;
 				if (accumulated.trim()) {
 					latestAssistantText = accumulated;
+				}
+				if (
+					(delta.trim().length > 0 && _toolActivityObserved) ||
+					(delta.trim().length > 0 && firstToolSeen())
+				) {
+					_trailingAssistantTextAfterTool = true;
 				}
 
 				if (!currentPartId && !accumulated.trim()) {
@@ -404,7 +416,7 @@ async function runAssistant(opts: RunOpts) {
 		}
 
 		debugLog(
-			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}`,
+			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}, trailingAssistantTextAfterTool=${_trailingAssistantTextAfterTool}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}`,
 		);
 
 		const MAX_CONTINUATIONS = 6;
@@ -418,6 +430,7 @@ async function runAssistant(opts: RunOpts) {
 			finishReason: streamFinishReason,
 			rawFinishReason: streamRawFinishReason,
 			firstToolSeen: fs,
+			hasTrailingAssistantText: _trailingAssistantTextAfterTool,
 			droppedPseudoToolText: oauthTextGuard?.dropped ?? false,
 			lastAssistantText: latestAssistantText,
 		});
