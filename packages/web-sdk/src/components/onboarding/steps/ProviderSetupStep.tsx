@@ -103,6 +103,8 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	copilotPollFnRef.current = onPollCopilotDeviceFlow;
 	const balance = useSetuStore((s) => s.balance);
 	const usdcBalance = useSetuStore((s) => s.usdcBalance);
+	const payg = useSetuStore((s) => s.payg);
+	const subscription = useSetuStore((s) => s.subscription);
 	const isBalanceLoading = useSetuStore((s) => s.isLoading);
 	const apiKeyInputRef = useRef<HTMLInputElement>(null);
 	const oauthCodeInputRef = useRef<HTMLInputElement>(null);
@@ -110,6 +112,10 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	const isTopupModalOpen = useSetuStore((s) => s.isTopupModalOpen);
 	const prevTopupModalOpen = useRef(false);
 	const { fetchBalance } = useSetuBalance('setu');
+	const effectivePayg = payg?.effectiveSpendableUsd ?? balance ?? 0;
+	const setuStatusLabel = subscription?.active
+		? `GO ${(subscription.creditsRemaining ?? 0).toFixed(1)} credits`
+		: `$${effectivePayg.toFixed(2)}`;
 
 	// Refetch balance when topup modal closes
 	useEffect(() => {
@@ -380,7 +386,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 						<p className="text-lg text-muted-foreground max-w-2xl">
 							{manageMode
 								? 'Add or remove AI providers. Your changes are saved automatically.'
-								: "Setu is your default AI provider, powered by your wallet. Add more providers below if you'd like."}
+								: 'Setu is your default AI provider. GO plan credits are applied automatically.'}
 						</p>
 					</div>
 
@@ -425,11 +431,13 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 												)}
 											</button>
 
-											<div className="flex items-center justify-between px-3 py-2 bg-muted/50 rounded-lg">
-												<div className="flex items-center gap-1">
-													<span className="font-mono text-sm text-foreground">
-														${((balance ?? 0) + (usdcBalance ?? 0)).toFixed(2)}
-													</span>
+											<div className="space-y-1.5 px-3 py-2 bg-muted/50 rounded-lg">
+												<div className="flex items-center justify-between gap-2">
+													<div className="flex items-center gap-1.5 min-w-0">
+														<span className="font-mono text-xs sm:text-sm text-foreground truncate">
+															{setuStatusLabel}
+														</span>
+													</div>
 													<button
 														type="button"
 														onClick={fetchBalance}
@@ -442,13 +450,8 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 													</button>
 												</div>
 												<span className="text-[10px] text-muted-foreground font-mono">
-													{(balance ?? 0) > 0 &&
-														`${(balance ?? 0).toFixed(2)} cr`}
-													{(balance ?? 0) > 0 &&
-														(usdcBalance ?? 0) > 0 &&
-														' + '}
-													{(usdcBalance ?? 0) > 0 &&
-														`${(usdcBalance ?? 0).toFixed(2)} usdc`}
+													Balance ${(balance ?? 0).toFixed(2)} • On-chain{' '}
+													{(usdcBalance ?? 0).toFixed(2)} USDC
 												</span>
 											</div>
 										</div>
@@ -468,7 +471,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 											className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
 										>
 											<CreditCard className="w-4 h-4" />
-											Pay via Card
+											Top Up with Card
 										</button>
 
 										<button
@@ -715,7 +718,8 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 						</div>
 						<div className="p-6">
 							<p className="text-sm text-muted-foreground mb-4">
-								Paste your base58 private key to replace the current wallet.
+								Paste your base58 private key to replace the current wallet used
+								for Setu.
 							</p>
 							<textarea
 								ref={importPrivateKeyRef}

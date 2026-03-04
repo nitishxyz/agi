@@ -233,7 +233,7 @@ export function ErrorRenderer({
 					<span className="font-medium text-foreground">Balance too low</span>
 				</div>
 				<p className="text-sm text-muted-foreground">
-					Complete your top-up in the modal, then retry your request.
+					Top up in the modal, then retry your request.
 				</p>
 				{onRetry && (
 					<div className="pt-1">

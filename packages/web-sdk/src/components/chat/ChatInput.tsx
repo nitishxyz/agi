@@ -119,6 +119,25 @@ export const ChatInput = memo(
 		const setuSubscription = useSetuStore((s) => s.subscription);
 		const setuPayg = useSetuStore((s) => s.payg);
 		const isSetu = providerName === 'setu';
+		const setuStatusLabel = useMemo(() => {
+			if (!isSetu) return null;
+
+			const effectivePayg =
+				setuPayg?.effectiveSpendableUsd !== undefined
+					? setuPayg.effectiveSpendableUsd
+					: setuBalance;
+
+			if (setuSubscription?.active) {
+				const credits = `${setuSubscription.creditsRemaining?.toFixed(1) ?? '—'} credits`;
+				return `GO ${credits}`;
+			}
+
+			if (effectivePayg !== null && effectivePayg !== undefined) {
+				return `$${effectivePayg.toFixed(2)}`;
+			}
+
+			return null;
+		}, [isSetu, setuPayg, setuBalance, setuSubscription]);
 
 		useEffect(() => {
 			if (!showAgentDropdown) return;
@@ -596,33 +615,28 @@ export const ChatInput = memo(
 													<span className="opacity-50">(pro)</span>
 												)}
 											</button>
-											{isSetu &&
-												(setuBalance !== null || setuSubscription?.active) && (
-													<>
-														<span className="text-emerald-600 dark:text-emerald-400">
-															{setuSubscription?.active
-																? `${setuSubscription.creditsRemaining?.toFixed(1) ?? '—'} credits`
-																: setuPayg?.effectiveSpendableUsd !== undefined
-																	? `$${setuPayg.effectiveSpendableUsd.toFixed(2)}`
-																	: `$${(setuBalance ?? 0).toFixed(2)}`}
-														</span>
-														{onRefreshBalance && (
-															<button
-																type="button"
-																onClick={(e) => {
-																	e.stopPropagation();
-																	onRefreshBalance();
-																}}
-																disabled={isBalanceLoading}
-																className="p-0.5 hover:bg-background/50 rounded transition-colors disabled:opacity-50"
-															>
-																<RefreshCw
-																	className={`h-2.5 w-2.5 text-muted-foreground ${isBalanceLoading ? 'animate-spin' : ''}`}
-																/>
-															</button>
-														)}
-													</>
-												)}
+											{isSetu && setuStatusLabel && (
+												<>
+													<span className="text-emerald-600 dark:text-emerald-400">
+														{setuStatusLabel}
+													</span>
+													{onRefreshBalance && (
+														<button
+															type="button"
+															onClick={(e) => {
+																e.stopPropagation();
+																onRefreshBalance();
+															}}
+															disabled={isBalanceLoading}
+															className="p-0.5 hover:bg-background/50 rounded transition-colors disabled:opacity-50"
+														>
+															<RefreshCw
+																className={`h-2.5 w-2.5 text-muted-foreground ${isBalanceLoading ? 'animate-spin' : ''}`}
+															/>
+														</button>
+													)}
+												</>
+											)}
 										</div>
 									)}
 								</div>

@@ -369,4 +369,120 @@ export function registerSetuRoutes(app: Hono) {
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}
 	});
+
+	app.get('/v1/setu/topup/razorpay/estimate', async (c) => {
+		try {
+			const amount = c.req.query('amount');
+			if (!amount) {
+				return c.json({ error: 'Missing amount parameter' }, 400);
+			}
+
+			const baseUrl = getSetuBaseUrl();
+			const response = await fetch(
+				`${baseUrl}/v1/topup/razorpay/estimate?amount=${amount}`,
+				{
+					method: 'GET',
+					headers: { 'Content-Type': 'application/json' },
+				},
+			);
+
+			const data = await response.json();
+			if (!response.ok) {
+				return c.json(data, response.status as 400 | 500);
+			}
+
+			return c.json(data);
+		} catch (error) {
+			logger.error('Failed to get Razorpay estimate', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
+	app.post('/v1/setu/topup/razorpay', async (c) => {
+		try {
+			const privateKey = await getSetuPrivateKey();
+			if (!privateKey) {
+				return c.json({ error: 'Setu wallet not configured' }, 401);
+			}
+
+			const body = await c.req.json();
+			const { amount } = body as { amount: number };
+
+			if (!amount || typeof amount !== 'number') {
+				return c.json({ error: 'Invalid amount' }, 400);
+			}
+
+			const walletHeaders = buildWalletHeaders(privateKey);
+			const baseUrl = getSetuBaseUrl();
+
+			const response = await fetch(`${baseUrl}/v1/topup/razorpay`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					...walletHeaders,
+				},
+				body: JSON.stringify({ amount }),
+			});
+
+			const data = await response.json();
+			if (!response.ok) {
+				return c.json(data, response.status as 400 | 500);
+			}
+
+			return c.json(data);
+		} catch (error) {
+			logger.error('Failed to create Razorpay order', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
+	app.post('/v1/setu/topup/razorpay/verify', async (c) => {
+		try {
+			const privateKey = await getSetuPrivateKey();
+			if (!privateKey) {
+				return c.json({ error: 'Setu wallet not configured' }, 401);
+			}
+
+			const body = await c.req.json();
+			const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+				body as {
+					razorpay_order_id: string;
+					razorpay_payment_id: string;
+					razorpay_signature: string;
+				};
+
+			if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+				return c.json({ error: 'Missing payment details' }, 400);
+			}
+
+			const walletHeaders = buildWalletHeaders(privateKey);
+			const baseUrl = getSetuBaseUrl();
+
+			const response = await fetch(`${baseUrl}/v1/topup/razorpay/verify`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					...walletHeaders,
+				},
+				body: JSON.stringify({
+					razorpay_order_id,
+					razorpay_payment_id,
+					razorpay_signature,
+				}),
+			});
+
+			const data = await response.json();
+			if (!response.ok) {
+				return c.json(data, response.status as 400 | 500);
+			}
+
+			return c.json(data);
+		} catch (error) {
+			logger.error('Failed to verify Razorpay payment', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
 }

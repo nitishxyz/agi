@@ -447,4 +447,148 @@ export const setuPaths = {
 			},
 		},
 	},
+	'/v1/setu/topup/razorpay/estimate': {
+		get: {
+			tags: ['setu'],
+			operationId: 'getRazorpayTopupEstimate',
+			summary: 'Get estimated fees for a Razorpay topup',
+			parameters: [
+				{
+					in: 'query',
+					name: 'amount',
+					required: true,
+					schema: { type: 'number' },
+					description: 'Amount in USD',
+				},
+			],
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									creditAmountUsd: { type: 'number' },
+									chargeAmountInr: { type: 'number' },
+									feeAmountInr: { type: 'number' },
+									currency: { type: 'string' },
+									exchangeRate: { type: 'number' },
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	'/v1/setu/topup/razorpay': {
+		post: {
+			tags: ['setu'],
+			operationId: 'createRazorpayOrder',
+			summary: 'Create a Razorpay order for topping up',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								amount: { type: 'number' },
+							},
+							required: ['amount'],
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: { type: 'boolean' },
+									orderId: { type: 'string' },
+									amount: { type: 'number' },
+									currency: { type: 'string' },
+									creditAmountUsd: { type: 'number' },
+									keyId: { type: 'string' },
+								},
+							},
+						},
+					},
+				},
+				401: {
+					description: 'Wallet not configured',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: { error: { type: 'string' } },
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	'/v1/setu/topup/razorpay/verify': {
+		post: {
+			tags: ['setu'],
+			operationId: 'verifyRazorpayPayment',
+			summary: 'Verify Razorpay payment and credit balance',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								razorpay_order_id: { type: 'string' },
+								razorpay_payment_id: { type: 'string' },
+								razorpay_signature: { type: 'string' },
+							},
+							required: [
+								'razorpay_order_id',
+								'razorpay_payment_id',
+								'razorpay_signature',
+							],
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: { type: 'boolean' },
+									credited: { type: 'number' },
+									newBalance: { type: 'number' },
+								},
+							},
+						},
+					},
+				},
+				401: {
+					description: 'Wallet not configured',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: { error: { type: 'string' } },
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+	},
 } as const;

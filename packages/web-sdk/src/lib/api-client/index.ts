@@ -71,6 +71,9 @@ class ApiClient {
 	cancelTopup = setuMixin.cancelTopup;
 	getPendingTopup = setuMixin.getPendingTopup;
 	getPolarTopupStatus = setuMixin.getPolarTopupStatus;
+	getRazorpayTopupEstimate = setuMixin.getRazorpayTopupEstimate;
+	createRazorpayOrder = setuMixin.createRazorpayOrder;
+	verifyRazorpayPayment = setuMixin.verifyRazorpayPayment;
 
 	getAuthStatus = authMixin.getAuthStatus;
 	setupSetuWallet = authMixin.setupSetuWallet;

@@ -27,11 +27,11 @@ export function useTopupCallback() {
 			window.history.replaceState({}, '', url.toString());
 
 			if (!pendingCheckoutId) {
-				toast.info('Checking payment status...');
+				toast.info('Checking top-up status...');
 				return;
 			}
 
-			loadingToastId.current = toast.loading('Verifying payment...');
+			loadingToastId.current = toast.loading('Verifying top-up...');
 
 			let attempts = 0;
 			const maxAttempts = 10;
@@ -59,7 +59,7 @@ export function useTopupCallback() {
 						}
 
 						toast.success(
-							`Payment confirmed! +$${status.amountUsd?.toFixed(2)} credited`,
+							`Top-up confirmed! +$${status.amountUsd?.toFixed(2)} credited`,
 						);
 						return;
 					}
@@ -70,7 +70,7 @@ export function useTopupCallback() {
 						localStorage.removeItem(STORAGE_KEY);
 						dismissLoading();
 						toast.info(
-							'Payment processing. Balance will update automatically.',
+							'Top-up is still processing. Balance will update automatically.',
 						);
 					}
 				} catch {
@@ -79,7 +79,7 @@ export function useTopupCallback() {
 					} else {
 						localStorage.removeItem(STORAGE_KEY);
 						dismissLoading();
-						toast.error('Could not verify payment. Please check your balance.');
+						toast.error('Could not verify top-up. Please check your balance.');
 					}
 				}
 			};

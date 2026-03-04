@@ -404,10 +404,8 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 
 function SetuSubscriptionInfo() {
 	const subscription = useSetuStore((s) => s.subscription);
-	const payg = useSetuStore((s) => s.payg);
-	const scope = useSetuStore((s) => s.scope);
 
-	if (!subscription?.active && !payg) return null;
+	if (!subscription?.active) return null;
 
 	const formatCredits = (value: number) => {
 		if (value >= 10) return Math.floor(value).toString();
@@ -417,45 +415,36 @@ function SetuSubscriptionInfo() {
 
 	return (
 		<>
-			{subscription?.active && (
-				<>
-					<SettingRow
-						label="Plan"
-						value={subscription.tierName ?? 'Subscription'}
-					/>
-					{subscription.creditsIncluded !== undefined &&
-						subscription.creditsUsed !== undefined && (
-							<div className="space-y-1">
-								<SettingRow
-									label="Used"
-									value={`${formatCredits(subscription.creditsUsed)} / ${formatCredits(subscription.creditsIncluded)}`}
-								/>
-								<div className="w-full bg-muted rounded-full h-1.5">
-									<div
-										className="bg-emerald-500 h-1.5 rounded-full transition-all"
-										style={{
-											width: `${Math.min(100, (subscription.creditsUsed / subscription.creditsIncluded) * 100)}%`,
-										}}
-									/>
-								</div>
-							</div>
-						)}
-					{subscription.periodEnd && (
+			<SettingRow label="Plan" value={subscription.tierName ?? 'GO'} />
+			{subscription.creditsIncluded !== undefined &&
+				subscription.creditsUsed !== undefined && (
+					<div className="space-y-1">
 						<SettingRow
-							label="Renews"
-							value={new Date(subscription.periodEnd).toLocaleDateString()}
+							label="Used"
+							value={`${formatCredits(subscription.creditsUsed)} / ${formatCredits(subscription.creditsIncluded)}`}
 						/>
-					)}
-				</>
-			)}
-			{payg &&
-				scope === 'account' &&
-				(payg.walletBalanceUsd > 0 || payg.accountBalanceUsd > 0) && (
-					<SettingRow
-						label="PAYG Balance"
-						value={`$${payg.effectiveSpendableUsd.toFixed(4)}`}
-					/>
+						<div className="w-full bg-muted rounded-full h-1.5">
+							<div
+								className="bg-emerald-500 h-1.5 rounded-full transition-all"
+								style={{
+									width: `${Math.min(100, (subscription.creditsUsed / subscription.creditsIncluded) * 100)}%`,
+								}}
+							/>
+						</div>
+					</div>
 				)}
+			{subscription.periodEnd && (
+				<SettingRow
+					label="Renews"
+					value={new Date(subscription.periodEnd)
+						.toLocaleDateString('en-US', {
+							month: 'short',
+							day: 'numeric',
+							year: 'numeric',
+						})
+						.replace(',', '')}
+				/>
+			)}
 		</>
 	);
 }

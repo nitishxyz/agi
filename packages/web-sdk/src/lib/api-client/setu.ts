@@ -5,6 +5,9 @@ import {
 	createPolarCheckout as apiCreatePolarCheckout,
 	getPolarTopupEstimate as apiGetPolarTopupEstimate,
 	getPolarTopupStatus as apiGetPolarTopupStatus,
+	getRazorpayTopupEstimate as apiGetRazorpayTopupEstimate,
+	createRazorpayOrder as apiCreateRazorpayOrder,
+	verifyRazorpayPayment as apiVerifyRazorpayPayment,
 	selectTopupMethod as apiSelectTopupMethod,
 	cancelTopup as apiCancelTopup,
 	getPendingTopup as apiGetPendingTopup,
@@ -189,5 +192,57 @@ export const setuMixin = {
 		} catch {
 			return null;
 		}
+	},
+
+	async getRazorpayTopupEstimate(amount: number): Promise<{
+		creditAmountUsd: number;
+		chargeAmountInr: number;
+		feeAmountInr: number;
+		currency: string;
+		exchangeRate: number;
+	} | null> {
+		try {
+			const response = await apiGetRazorpayTopupEstimate({
+				query: { amount },
+			});
+			if (response.error) return null;
+			// biome-ignore lint/suspicious/noExplicitAny: API response structure
+			return response.data as any;
+		} catch {
+			return null;
+		}
+	},
+
+	async createRazorpayOrder(amount: number): Promise<{
+		success: boolean;
+		orderId: string;
+		amount: number;
+		currency: string;
+		creditAmountUsd: number;
+		keyId: string;
+	}> {
+		const response = await apiCreateRazorpayOrder({
+			body: { amount },
+		});
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure
+		return response.data as any;
+	},
+
+	async verifyRazorpayPayment(params: {
+		razorpay_order_id: string;
+		razorpay_payment_id: string;
+		razorpay_signature: string;
+	}): Promise<{
+		success: boolean;
+		credited: number;
+		newBalance: number;
+	}> {
+		const response = await apiVerifyRazorpayPayment({
+			body: params,
+		});
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure
+		return response.data as any;
 	},
 };

@@ -21,6 +21,7 @@ export const TopupApprovalCard = memo(function TopupApprovalCard({
 		'crypto' | 'fiat' | null
 	>(null);
 	const openTopupModal = useSetuStore((s) => s.openTopupModal);
+	const hasGoPlan = useSetuStore((s) => !!s.subscription?.active);
 
 	const handleSelectCrypto = async () => {
 		setSelectedMethod('crypto');
@@ -71,6 +72,12 @@ export const TopupApprovalCard = memo(function TopupApprovalCard({
 				</span>
 			</div>
 
+			{hasGoPlan && (
+				<p className="ml-6 text-xs text-muted-foreground">
+					GO credits may not apply to this request. Add balance to continue.
+				</p>
+			)}
+
 			<div className="ml-6 bg-muted/30 rounded-lg p-3 space-y-2 text-sm">
 				<div className="flex justify-between">
 					<span className="text-muted-foreground">Request cost</span>
@@ -117,7 +124,7 @@ export const TopupApprovalCard = memo(function TopupApprovalCard({
 					type="button"
 					onClick={handleSelectFiat}
 					disabled={isProcessing}
-					title="Top up balance with card (min $5)"
+					title="Top up with card (min $5)"
 					className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border border-violet-500 text-violet-600 dark:text-violet-400 hover:bg-violet-500/10 transition-colors disabled:opacity-50"
 				>
 					{selectedMethod === 'fiat' && isProcessing ? (
@@ -134,7 +141,7 @@ export const TopupApprovalCard = memo(function TopupApprovalCard({
 				{selectedMethod === 'crypto'
 					? 'Processing USDC payment from your wallet...'
 					: selectedMethod === 'fiat'
-						? 'Opening Polar checkout...'
+						? 'Opening checkout...'
 						: 'Select a payment method to continue your request.'}
 			</p>
 		</div>
