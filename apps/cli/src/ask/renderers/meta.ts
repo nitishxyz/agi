@@ -1,6 +1,14 @@
 import { c, ICONS, truncate } from './theme.ts';
 import type { RendererContext } from './types.ts';
 
+const SHIMMER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+let shimmerIdx = 0;
+
+export function getSpinner(): string {
+	shimmerIdx = (shimmerIdx + 1) % SHIMMER.length;
+	return SHIMMER[shimmerIdx];
+}
+
 export function renderProgressCall(ctx: RendererContext): string {
 	const args = (ctx.args ?? {}) as Record<string, unknown>;
 	const msg =
@@ -8,14 +16,14 @@ export function renderProgressCall(ctx: RendererContext): string {
 	const stage = typeof args.stage === 'string' ? args.stage : '';
 	const pct = typeof args.pct === 'number' ? args.pct : undefined;
 	const pctStr = pct !== undefined ? `${pct}%` : '';
-	const stageStr = stage ? c.dim(`[${stage}]`) : '';
-	return `  ${c.cyan(ICONS.spinner)} ${msg} ${stageStr} ${c.dim(pctStr)}`.trimEnd();
+	const stageStr = stage ? c.fgDark(`[${stage}]`) : '';
+	return `  ${c.purple(getSpinner())} ${c.purple(msg)} ${stageStr} ${c.fgDark(pctStr)}`.trimEnd();
 }
 
 export function renderTodosCall(ctx: RendererContext): string {
 	const args = (ctx.args ?? {}) as Record<string, unknown>;
 	const todos = Array.isArray(args.todos) ? args.todos : [];
-	return `  ${c.dim(ICONS.spinner)} ${c.cyan('todos')} ${c.dim(ICONS.arrow)} ${c.dim(`${todos.length} items`)}`;
+	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark('todos')} ${c.fgDimmed(`${todos.length} items`)}`;
 }
 
 export function renderTodosResult(ctx: RendererContext): string {
@@ -27,7 +35,7 @@ export function renderTodosResult(ctx: RendererContext): string {
 	const lines: string[] = [];
 
 	if (note) {
-		lines.push(`  ${c.dim(note)}`);
+		lines.push(`  ${c.fgDark(note)}`);
 	}
 
 	for (const item of items) {
@@ -52,12 +60,14 @@ export function renderTodosResult(ctx: RendererContext): string {
 			status === 'completed'
 				? c.green(ICONS.check)
 				: status === 'in_progress'
-					? c.yellow(ICONS.spinner)
+					? c.yellow(getSpinner())
 					: status === 'cancelled'
-						? c.dim(ICONS.cross)
-						: c.dim(ICONS.pending);
+						? c.fgDark(ICONS.cross)
+						: c.fgDark(ICONS.pending);
 
-		lines.push(`  ${icon} ${status === 'completed' ? c.dim(step) : step}`);
+		lines.push(
+			`  ${icon} ${status === 'completed' ? c.fgDark(step) : c.fgMuted(step)}`,
+		);
 	}
 
 	return lines.join('\n');
@@ -72,13 +82,13 @@ export function renderFinishResult(_ctx: RendererContext): string {
 }
 
 export function renderGenericCall(ctx: RendererContext): string {
-	return `  ${c.dim(ICONS.spinner)} ${c.cyan(ctx.toolName)}`;
+	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark(ctx.toolName)}`;
 }
 
 export function renderGenericResult(ctx: RendererContext): string {
-	const time = ctx.durationMs ? c.dim(`(${ctx.durationMs}ms)`) : '';
+	const time = ctx.durationMs ? c.fgDimmed(`${ctx.durationMs}ms`) : '';
 	if (ctx.error) {
-		return `  ${c.red(ICONS.cross)} ${ctx.toolName} error ${time}\n  ${c.red(ctx.error)}`;
+		return `  ${c.red(ICONS.cross)} ${c.fgDark(ctx.toolName)} ${c.red(ctx.error)} ${time}`;
 	}
 	return '';
 }

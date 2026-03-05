@@ -108,3 +108,4 @@ export {
 	renderThinkingEnd,
 	isThinking,
 } from './thinking.ts';
+export { getSpinner } from './meta.ts';

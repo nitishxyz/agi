@@ -19,7 +19,7 @@ export function renderSummary(
 
 	const lines: string[] = [];
 	lines.push('');
-	lines.push(c.dim('─'.repeat(40)));
+	lines.push(c.fgDimmed('─'.repeat(40)));
 
 	if (toolCalls.length > 0) {
 		const counts = new Map<string, number>();
@@ -29,13 +29,13 @@ export function renderSummary(
 		const parts = Array.from(counts.entries()).map(
 			([name, count]) => `${name}×${count}`,
 		);
-		lines.push(`  ${c.dim('tools')}  ${c.dim(parts.join('  '))}`);
+		lines.push(`  ${c.fgDark('tools')}  ${c.fgDark(parts.join('  '))}`);
 	}
 
 	if (filesArray.length > 0) {
 		const display = filesArray.slice(0, 5);
 		lines.push(
-			`  ${c.dim('files')}  ${c.dim(display.join(', '))}${filesArray.length > 5 ? c.dim(` +${filesArray.length - 5}`) : ''}`,
+			`  ${c.fgDark('files')}  ${c.fgDark(display.join(', '))}${filesArray.length > 5 ? c.fgDark(` +${filesArray.length - 5}`) : ''}`,
 		);
 	}
 
@@ -48,7 +48,7 @@ export function renderSummary(
 		if (tokenUsage.costUsd !== undefined)
 			parts.push(`$${tokenUsage.costUsd.toFixed(4)}`);
 		if (parts.length > 0) {
-			lines.push(`  ${c.dim('usage')}  ${c.dim(parts.join('  '))}`);
+			lines.push(`  ${c.fgDark('usage')}  ${c.fgDark(parts.join('  '))}`);
 		}
 	}
 
@@ -61,7 +61,7 @@ export function renderContextHeader(opts: {
 	provider: string;
 	model: string;
 }): string {
-	return `${c.bold('otto')} ${c.dim(ICONS.dot)} ${c.dim(opts.agent)} ${c.dim(ICONS.dot)} ${opts.provider}${c.dim('/')}${opts.model}`;
+	return `${c.purple(ICONS.star)} ${c.purpleBold(opts.agent)} ${c.fgDark(ICONS.dot)} ${c.fgMuted(opts.provider)} ${c.fgDark(ICONS.dot)} ${c.fgDimmed(opts.model)}`;
 }
 
 export function renderSessionInfo(
@@ -69,9 +69,9 @@ export function renderSessionInfo(
 	sessionId: string,
 ): string {
 	const label = kind === 'created' ? 'new session' : 'session';
-	return c.dim(`${label} ${sessionId}`);
+	return c.fgDark(`${label} ${sessionId}`);
 }
 
 export function renderDoneMessage(elapsedMs: number): string {
-	return c.dim(`done ${formatMs(elapsedMs)}`);
+	return c.fgDark(`done ${formatMs(elapsedMs)}`);
 }

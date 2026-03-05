@@ -16,6 +16,7 @@ import {
 	renderThinkingEnd,
 	isThinking,
 } from './renderers/index.ts';
+import { getSpinner } from './renderers/meta.ts';
 import {
 	computeAssistantLines,
 	computeAssistantSegments,
@@ -218,6 +219,9 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 	let lastPrintedCallId: string | null = null;
 	let hasStartedText = false;
 	let hadToolOutput = false;
+	let spinnerInterval: ReturnType<typeof setInterval> | null = null;
+	let spinnerCallId: string | null = null;
+	let lastToolCallLine: string | null = null;
 
 	try {
 		for await (const ev of sse) {
@@ -244,21 +248,10 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		}
 	} finally {
 		await sse.close();
+		if (spinnerInterval) clearInterval(spinnerInterval);
 	}
 
-	const useMarkdownBuffer = process.env.OTTO_RENDER_MARKDOWN === '1';
-	if (
-		useMarkdownBuffer &&
-		state.output.length &&
-		!flags.jsonEnabled &&
-		!flags.jsonStreamEnabled
-	) {
-		Bun.write(Bun.stdout, `${renderMarkdown(state.output)}\n`);
-	} else if (
-		state.output.length &&
-		!flags.jsonEnabled &&
-		!flags.jsonStreamEnabled
-	) {
+	if (state.output.length && !flags.jsonEnabled && !flags.jsonStreamEnabled) {
 		Bun.write(Bun.stdout, '\n');
 	}
 
@@ -284,19 +277,21 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 				})}\n`,
 			);
 		} else if (!flags.jsonEnabled) {
-			const useMarkdownBuffer = process.env.OTTO_RENDER_MARKDOWN === '1';
-			if (!useMarkdownBuffer) {
-				if (isThinking()) {
-					const endOut = renderThinkingEnd();
-					if (endOut) Bun.write(Bun.stderr, endOut);
-				}
-				if (!hasStartedText && hadToolOutput) {
-					Bun.write(Bun.stdout, '\n');
-				}
-				hasStartedText = true;
-				Bun.write(Bun.stdout, delta);
-				lastPrintedCallId = null;
+			if (isThinking()) {
+				const endOut = renderThinkingEnd();
+				if (endOut) Bun.write(Bun.stderr, endOut);
 			}
+			if (spinnerInterval) {
+				clearInterval(spinnerInterval);
+				spinnerInterval = null;
+				spinnerCallId = null;
+			}
+			if (!hasStartedText && hadToolOutput) {
+				Bun.write(Bun.stdout, '\n');
+			}
+			hasStartedText = true;
+			Bun.write(Bun.stdout, delta);
+			lastPrintedCallId = null;
 		}
 	}
 
@@ -321,16 +316,33 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		} else if (!flags.jsonEnabled) {
 			const output = renderToolCall({ toolName: name, args: data?.args });
 			if (output) {
+				if (spinnerInterval) {
+					clearInterval(spinnerInterval);
+					spinnerInterval = null;
+					spinnerCallId = null;
+				}
 				if (isThinking()) {
 					const endOut = renderThinkingEnd();
 					if (endOut) Bun.write(Bun.stderr, endOut);
-					Bun.write(Bun.stderr, `\n${output}\n`);
-				} else {
-					Bun.write(Bun.stderr, `\n${output}\n`);
 				}
+				if (hasStartedText) {
+					Bun.write(Bun.stderr, '\n');
+				}
+				Bun.write(Bun.stderr, `${output}\n`);
 				lastPrintedCallId = callId ?? null;
+				lastToolCallLine = output;
 				hadToolOutput = true;
 				hasStartedText = false;
+				if (callId && name !== 'finish' && name !== 'progress_update') {
+					spinnerCallId = callId;
+					spinnerInterval = setInterval(() => {
+						const spin = c.fgDark(getSpinner());
+						Bun.write(
+							Bun.stderr,
+							`\x1b[A\x1b[2K\r${lastToolCallLine} ${spin}\n`,
+						);
+					}, 80);
+				}
 			}
 		}
 	}
@@ -380,6 +392,11 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 				: JSON.stringify(data?.delta);
 		if (!delta) return;
 		lastPrintedCallId = null;
+		if (spinnerInterval) {
+			clearInterval(spinnerInterval);
+			spinnerInterval = null;
+			spinnerCallId = null;
+		}
 		Bun.write(
 			Bun.stderr,
 			`${c.dim(`[${channel}]`)} ${name} ${c.dim(ICONS.arrow)} ${truncateStr(delta, 160)}\n`,
@@ -466,6 +483,11 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		});
 
 		if (output) {
+			if (spinnerInterval && callId === spinnerCallId) {
+				clearInterval(spinnerInterval);
+				spinnerInterval = null;
+				spinnerCallId = null;
+			}
 			if (callId && callId === lastPrintedCallId) {
 				Bun.write(Bun.stderr, `\x1b[A\x1b[2K\r${output}\n`);
 			} else {
@@ -474,12 +496,18 @@ async function consumeAskStream(flags: StreamFlags): Promise<StreamState> {
 		}
 
 		lastPrintedCallId = null;
+		lastToolCallLine = null;
 		if (name === 'finish') state.finishSeen = true;
 	}
 
 	async function handleApproval(raw: string) {
 		if (flags.jsonEnabled || flags.jsonStreamEnabled) return;
 		lastPrintedCallId = null;
+		if (spinnerInterval) {
+			clearInterval(spinnerInterval);
+			spinnerInterval = null;
+			spinnerCallId = null;
+		}
 		const data = safeJson(raw);
 		if (!data) return;
 

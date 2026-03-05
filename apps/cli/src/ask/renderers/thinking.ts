@@ -2,18 +2,18 @@ import { c } from './theme.ts';
 
 let thinkingActive = false;
 
-export function renderThinkingDelta(delta: string): string {
+export function renderThinkingDelta(_delta: string): string {
 	if (!thinkingActive) {
 		thinkingActive = true;
-		return `\n  ${c.dim.italic('thinking ···')}\n${c.dim(delta)}`;
+		return `\n  ${c.fgDark('~')} ${c.fgDark(c.italic('thinking…'))}\n`;
 	}
-	return c.dim(delta);
+	return '';
 }
 
 export function renderThinkingEnd(): string {
 	if (thinkingActive) {
 		thinkingActive = false;
-		return '\n';
+		return '';
 	}
 	return '';
 }

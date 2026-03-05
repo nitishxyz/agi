@@ -7,8 +7,7 @@ export function renderSearchCall(ctx: RendererContext): string {
 	const pattern = typeof args.pattern === 'string' ? args.pattern : '';
 	const term = query || pattern;
 	const name = ctx.toolName === 'glob' ? 'glob' : 'search';
-	const color = ctx.toolName === 'glob' ? c.cyan : c.blue;
-	return `  ${c.dim(ICONS.spinner)} ${color(name)} ${c.dim(ICONS.arrow)} ${c.dim(`"${truncate(term, 40)}"`)}`;
+	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark(name)} ${c.fgDimmed(`"${truncate(term, 40)}"`)}`;
 }
 
 export function renderSearchResult(ctx: RendererContext): string {
@@ -17,10 +16,9 @@ export function renderSearchResult(ctx: RendererContext): string {
 	const files = Array.isArray(result.files) ? result.files : [];
 	const time = formatMs(ctx.durationMs);
 	const name = ctx.toolName === 'glob' ? 'glob' : 'search';
-	const color = ctx.toolName === 'glob' ? c.cyan : c.blue;
 
 	if (ctx.error) {
-		return `  ${c.red(ICONS.cross)} ${name} error ${c.dim(time)}\n  ${c.red(ctx.error)}`;
+		return `  ${c.red(ICONS.cross)} ${c.fgDark(name)} ${c.red(ctx.error)} ${c.fgDimmed(time)}`;
 	}
 
 	const count = matches.length || files.length;
@@ -29,5 +27,5 @@ export function renderSearchResult(ctx: RendererContext): string {
 			? pluralize(count, 'match', 'matches')
 			: pluralize(count, 'file');
 
-	return `  ${c.dim(ICONS.arrow)} ${color(name)} ${c.dim(ICONS.dot)} ${c.dim(`${count} ${label}`)} ${c.dim(ICONS.dot)} ${c.dim(time)}`;
+	return `  ${c.green(ICONS.check)} ${c.fgMuted(name)} ${c.fgDimmed(`${count} ${label}`)} ${c.fgDimmed(time)}`;
 }

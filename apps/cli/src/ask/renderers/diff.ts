@@ -1,27 +1,31 @@
 import { c, ICONS } from './theme.ts';
 
 export function colorizeDiffLine(line: string): string {
-	if (line.startsWith('+++') || line.startsWith('---')) return c.bold(line);
-	if (line.startsWith('+')) return c.green(line);
-	if (line.startsWith('-')) return c.red(line);
-	if (line.startsWith('@@')) return c.cyan(line);
-	return c.dim(line);
+	if (line.startsWith('+++') || line.startsWith('---')) return c.fgDark(line);
+	if (line.startsWith('+')) return c.diffAddedBg(c.diffAdded(line));
+	if (line.startsWith('-')) return c.diffRemovedBg(c.diffRemoved(line));
+	if (line.startsWith('@@')) return c.fgDark(line);
+	return c.fgDimmed(line);
 }
 
-export function renderDiffPreview(patch: string, maxLines = 5): string {
+export function renderDiffPreview(patch: string, maxLines = 8): string {
 	const allLines = patch.split('\n');
 	const meaningful = allLines.filter(
-		(l) => l.startsWith('+') || l.startsWith('-') || l.startsWith('@@'),
+		(l) =>
+			l.startsWith('+') ||
+			l.startsWith('-') ||
+			l.startsWith('@@') ||
+			l.startsWith(' '),
 	);
 	const display = meaningful.slice(0, maxLines);
 	const remaining = meaningful.length - display.length;
 
 	const out: string[] = [];
 	for (const line of display) {
-		out.push(`      ${colorizeDiffLine(line)}`);
+		out.push(`    ${colorizeDiffLine(line)}`);
 	}
 	if (remaining > 0) {
-		out.push(`      ${c.dim(`${ICONS.ellipsis} ${remaining} more changes`)}`);
+		out.push(`    ${c.fgDark(`${ICONS.ellipsis} ${remaining} more changes`)}`);
 	}
 	return out.join('\n');
 }

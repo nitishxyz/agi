@@ -4,7 +4,7 @@ import type { RendererContext } from './types.ts';
 export function renderBashCall(ctx: RendererContext): string {
 	const args = (ctx.args ?? {}) as Record<string, unknown>;
 	const cmd = typeof args.cmd === 'string' ? truncate(args.cmd, 60) : '';
-	return `  ${c.dim(ICONS.spinner)} ${c.yellow('bash')} ${c.dim(ICONS.arrow)} ${c.dim(cmd)}`;
+	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark('bash')} ${c.fgDimmed(cmd)}`;
 }
 
 export function renderBashResult(ctx: RendererContext): string {
@@ -22,40 +22,40 @@ export function renderBashResult(ctx: RendererContext): string {
 	const time = formatMs(ctx.durationMs);
 
 	if (ctx.error) {
-		return `  ${c.red(ICONS.cross)} ${c.yellow('bash')} ${cmd ? `${c.dim(cmd)} ` : ''}${c.red('error')} ${c.dim(time)}\n      ${c.red(ctx.error)}`;
+		return `  ${c.red(ICONS.cross)} ${c.fgDark('bash')} ${c.fgDimmed(cmd)} ${c.red(truncate(ctx.error, 60))} ${c.fgDimmed(time)}`;
 	}
 
 	const lines: string[] = [];
-	const status =
+	const icon =
 		exitCode === 0
 			? c.green(ICONS.check)
 			: c.red(`${ICONS.cross} exit ${exitCode}`);
 	lines.push(
-		`  ${c.dim(ICONS.arrow)} ${c.yellow('bash')} ${cmd ? `${c.dim(cmd)} ` : ''}${status} ${c.dim(time)}`,
+		`  ${icon} ${c.fgMuted('bash')} ${c.fgDimmed(cmd)} ${c.fgDimmed(time)}`,
 	);
 
 	if (stdout) {
 		const stdoutLines = stdout.split('\n').filter((l) => l.length > 0);
 		const display = stdoutLines.slice(0, 4);
 		for (const l of display) {
-			lines.push(`      ${c.dim(l)}`);
+			lines.push(`    ${c.fgDark(truncate(l, 80))}`);
 		}
 		if (stdoutLines.length > 4) {
 			lines.push(
-				`      ${c.dim(`${ICONS.ellipsis} ${stdoutLines.length - 4} more lines`)}`,
+				`    ${c.fgDark(`${ICONS.ellipsis} ${stdoutLines.length - 4} more lines`)}`,
 			);
 		}
 	}
 
-	if (stderr) {
+	if (stderr && exitCode !== 0) {
 		const stderrLines = stderr.split('\n').filter((l) => l.length > 0);
 		const display = stderrLines.slice(0, 3);
 		for (const l of display) {
-			lines.push(`      ${c.red(l)}`);
+			lines.push(`    ${c.red(truncate(l, 80))}`);
 		}
 		if (stderrLines.length > 3) {
 			lines.push(
-				`      ${c.red(`${ICONS.ellipsis} ${stderrLines.length - 3} more lines`)}`,
+				`    ${c.red(`${ICONS.ellipsis} ${stderrLines.length - 3} more lines`)}`,
 			);
 		}
 	}

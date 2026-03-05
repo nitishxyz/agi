@@ -1,4 +1,4 @@
-import { c, ICONS, toolColor, truncate } from './theme.ts';
+import { c, ICONS, truncate } from './theme.ts';
 
 export interface ApprovalRequest {
 	callId: string;
@@ -8,23 +8,25 @@ export interface ApprovalRequest {
 }
 
 export function renderApprovalPrompt(req: ApprovalRequest): string {
-	const color = toolColor(req.toolName);
 	const lines: string[] = [];
+
+	const toolLabel = req.toolName.includes('__')
+		? req.toolName.replace('__', ' › ')
+		: req.toolName;
 
 	lines.push('');
 	lines.push(
-		`  ${c.yellowBold('⚠')}  ${c.bold('Approval required')} ${c.dim(ICONS.arrow)} ${color(req.toolName)}`,
+		`  ${c.yellow(ICONS.warning)} ${c.fgBright(c.bold(toolLabel))} ${c.yellow('requires approval')}`,
 	);
 
 	const args = (req.args ?? {}) as Record<string, unknown>;
 	const preview = extractApprovalPreview(req.toolName, args);
 	if (preview) {
-		lines.push(`     ${c.dim(preview)}`);
+		lines.push(`    ${c.fgMuted(preview)}`);
 	}
 
-	lines.push('');
 	lines.push(
-		`  ${c.green('y')}${c.dim('es')}  ${c.red('n')}${c.dim('o')}  ${c.yellow('a')}${c.dim('lways')}`,
+		`    ${c.green(c.bold('[y]'))} approve  ${c.red(c.bold('[n]'))} deny  ${c.green(c.bold('[a]'))} approve all`,
 	);
 	lines.push('');
 
@@ -37,11 +39,12 @@ function extractApprovalPreview(
 ): string {
 	switch (toolName) {
 		case 'bash':
-			if (typeof args.cmd === 'string') return truncate(args.cmd, 80);
+			if (typeof args.cmd === 'string') return `$ ${truncate(args.cmd, 80)}`;
 			break;
 		case 'write':
 		case 'edit':
 			if (typeof args.path === 'string') return args.path;
+			if (typeof args.filePath === 'string') return args.filePath;
 			break;
 		case 'apply_patch': {
 			if (typeof args.patch !== 'string') break;

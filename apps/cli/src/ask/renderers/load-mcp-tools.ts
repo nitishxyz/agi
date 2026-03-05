@@ -6,7 +6,7 @@ export function renderLoadMcpToolsCall(ctx: RendererContext): string {
 	const tools = Array.isArray(args.tools) ? (args.tools as string[]) : [];
 	const names = tools.slice(0, 5).join(', ');
 	const more = tools.length > 5 ? ` +${tools.length - 5} more` : '';
-	return `  ${c.dim(ICONS.spinner)} ${c.magenta('mcp')} ${c.dim('loading')} ${c.cyan(names)}${c.dim(more)}`;
+	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark('mcp')} ${c.fgDimmed(`loading ${names}`)}${c.fgDimmed(more)}`;
 }
 
 export function renderLoadMcpToolsResult(ctx: RendererContext): string {
@@ -21,7 +21,7 @@ export function renderLoadMcpToolsResult(ctx: RendererContext): string {
 		: [];
 
 	if (ctx.error) {
-		return `  ${c.red(ICONS.cross)} ${c.magenta('mcp')} ${c.dim('load')} ${c.red('error')} ${c.dim(time)}\n      ${c.red(ctx.error)}`;
+		return `  ${c.red(ICONS.cross)} ${c.fgDark('mcp')} ${c.red('load error')} ${c.fgDimmed(time)}`;
 	}
 
 	const lines: string[] = [];
@@ -29,19 +29,19 @@ export function renderLoadMcpToolsResult(ctx: RendererContext): string {
 	if (loaded.length > 0) {
 		const names = loaded.join(', ');
 		lines.push(
-			`  ${c.green(ICONS.check)} ${c.magenta('mcp')} ${c.dim('loaded')} ${c.cyan(names)} ${c.dim(time)}`,
+			`  ${c.green(ICONS.check)} ${c.fgMuted('mcp')} ${c.fgDimmed(`loaded ${names}`)} ${c.fgDimmed(time)}`,
 		);
 	}
 
 	for (const name of notFound) {
 		lines.push(
-			`  ${c.red(ICONS.cross)} ${c.magenta('mcp')} ${c.dim('not found')} ${c.red(name)}`,
+			`  ${c.red(ICONS.cross)} ${c.fgDark('mcp')} ${c.red(`not found: ${name}`)}`,
 		);
 	}
 
 	if (lines.length === 0) {
 		lines.push(
-			`  ${c.dim(ICONS.arrow)} ${c.magenta('mcp')} ${c.dim('no tools loaded')} ${c.dim(time)}`,
+			`  ${c.fgDark(ICONS.arrow)} ${c.fgDark('mcp')} ${c.fgDimmed('no tools loaded')} ${c.fgDimmed(time)}`,
 		);
 	}
 

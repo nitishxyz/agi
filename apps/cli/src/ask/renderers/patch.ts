@@ -11,7 +11,7 @@ export function renderPatchCall(ctx: RendererContext): string {
 	);
 	const label =
 		fileNames.length === 1 ? fileNames[0] : `${fileNames.length} files`;
-	return `  ${c.dim(ICONS.spinner)} ${c.green('patch')} ${c.dim(ICONS.arrow)} ${label ?? 'patch'}`;
+	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark('patch')} ${c.fgDimmed(label ?? 'patch')}`;
 }
 
 export function renderPatchResult(ctx: RendererContext): string {
@@ -27,10 +27,10 @@ export function renderPatchResult(ctx: RendererContext): string {
 
 	if (ctx.error) {
 		const lines: string[] = [];
-		lines.push(`  ${c.red(ICONS.cross)} patch error ${c.dim(time)}`);
-		lines.push(`  ${c.red(ctx.error)}`);
+		lines.push(
+			`  ${c.red(ICONS.cross)} ${c.fgDark('patch')} ${c.red(ctx.error)} ${c.fgDimmed(time)}`,
+		);
 		if (artifact?.patch) {
-			lines.push(`  ${c.dim('failed patch:')}`);
 			lines.push(renderDiffPreview(artifact.patch, 3));
 		}
 		return lines.join('\n');
@@ -38,22 +38,19 @@ export function renderPatchResult(ctx: RendererContext): string {
 
 	const hasOkFalse = result.ok === false;
 	if (hasOkFalse && typeof result.error === 'string') {
-		const lines: string[] = [];
-		lines.push(`  ${c.red(ICONS.cross)} patch error ${c.dim(time)}`);
-		lines.push(`  ${c.red(String(result.error))}`);
-		return lines.join('\n');
+		return `  ${c.red(ICONS.cross)} ${c.fgDark('patch')} ${c.red(String(result.error))} ${c.fgDimmed(time)}`;
 	}
 
 	const lines: string[] = [];
 	const summary = artifact?.summary;
 	const summaryStr = renderDiffSummary(summary);
-	const meta = [summaryStr, time].filter(Boolean).join(` ${c.dim(ICONS.dot)} `);
+	const meta = [summaryStr, time].filter(Boolean).join(' ');
 	lines.push(
-		`  ${c.dim(ICONS.arrow)} ${c.green('patch')} ${c.dim(ICONS.dot)} ${c.dim(meta)}`,
+		`  ${c.green(ICONS.check)} ${c.fgMuted('patch')} ${c.fgDimmed(meta)}`,
 	);
 
 	if (artifact?.kind === 'file_diff' && artifact.patch) {
-		lines.push(renderDiffPreview(artifact.patch, 5));
+		lines.push(renderDiffPreview(artifact.patch));
 	}
 
 	return lines.join('\n');

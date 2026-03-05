@@ -13,24 +13,7 @@ export function isMcpTool(toolName: string): boolean {
 
 export function renderMcpCall(ctx: RendererContext): string {
 	const { server, tool } = parseMcpToolName(ctx.toolName);
-	const args = (ctx.args ?? {}) as Record<string, unknown>;
-	const argKeys = Object.keys(args);
-	const preview =
-		argKeys.length > 0
-			? truncate(
-					argKeys
-						.slice(0, 3)
-						.map((k) => {
-							const v = args[k];
-							const val =
-								typeof v === 'string' ? truncate(v, 20) : JSON.stringify(v);
-							return `${k}=${val}`;
-						})
-						.join(' '),
-					60,
-				)
-			: '';
-	return `  ${c.dim(ICONS.spinner)} ${c.magenta('mcp')} ${c.dim(server)} ${c.dim(ICONS.arrow)} ${c.cyan(tool)} ${c.dim(preview)}`;
+	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark(`${server} › ${tool}`)}`;
 }
 
 export function renderMcpResult(ctx: RendererContext): string {
@@ -39,31 +22,19 @@ export function renderMcpResult(ctx: RendererContext): string {
 	const time = formatMs(ctx.durationMs);
 
 	if (ctx.error) {
-		return `  ${c.red(ICONS.cross)} ${c.magenta('mcp')} ${c.dim(server)} ${c.dim(ICONS.arrow)} ${c.cyan(tool)} ${c.red('error')} ${c.dim(time)}\n      ${c.red(ctx.error)}`;
+		return `  ${c.red(ICONS.cross)} ${c.fgDark(`${server} › ${tool}`)} ${c.red(truncate(ctx.error, 50))} ${c.fgDimmed(time)}`;
 	}
 
 	const ok = result.ok !== false;
-	const status = ok ? c.green(ICONS.check) : c.red(ICONS.cross);
+	const icon = ok ? c.green(ICONS.check) : c.red(ICONS.cross);
 
 	const lines: string[] = [];
 	lines.push(
-		`  ${c.dim(ICONS.arrow)} ${c.magenta('mcp')} ${c.dim(server)} ${c.dim(ICONS.arrow)} ${c.cyan(tool)} ${status} ${c.dim(time)}`,
+		`  ${icon} ${c.fgMuted(`${server} › ${tool}`)} ${c.fgDimmed(time)}`,
 	);
 
-	const resultContent = result.result;
-	if (typeof resultContent === 'string' && resultContent.length > 0) {
-		const contentLines = resultContent.split('\n').filter((l) => l.length > 0);
-		const display = contentLines.slice(0, 4);
-		for (const l of display) {
-			lines.push(`      ${c.dim(truncate(l, 80))}`);
-		}
-		if (contentLines.length > 4) {
-			lines.push(
-				`      ${c.dim(`${ICONS.ellipsis} ${contentLines.length - 4} more lines`)}`,
-			);
-		}
-	} else if (!ok && typeof result.error === 'string') {
-		lines.push(`      ${c.red(truncate(result.error, 80))}`);
+	if (!ok && typeof result.error === 'string') {
+		lines.push(`    ${c.red(truncate(result.error, 80))}`);
 	}
 
 	return lines.join('\n');

@@ -1,34 +1,53 @@
 import chalk from 'chalk';
 
+const hex = chalk.hex.bind(chalk);
+const bgHex = chalk.bgHex.bind(chalk);
+
 export const c = {
 	dim: chalk.dim,
 	bold: chalk.bold,
 	italic: chalk.italic,
 
-	blue: chalk.blue,
-	cyan: chalk.cyan,
-	green: chalk.green,
-	yellow: chalk.yellow,
-	red: chalk.red,
-	magenta: chalk.magenta,
-	white: chalk.white,
-	gray: chalk.gray,
+	blue: hex('#7aa2f7'),
+	cyan: hex('#7dcfff'),
+	green: hex('#9ece6a'),
+	yellow: hex('#e0af68'),
+	red: hex('#f7768e'),
+	purple: hex('#bb9af7'),
+	magenta: hex('#c678dd'),
+	orange: hex('#ff9e64'),
+	teal: hex('#73daca'),
+	white: hex('#e6edf3'),
+	gray: hex('#565f89'),
 
-	blueBold: chalk.blue.bold,
-	greenBold: chalk.green.bold,
-	yellowBold: chalk.yellow.bold,
-	redBold: chalk.red.bold,
-	cyanBold: chalk.cyan.bold,
-	magentaBold: chalk.magenta.bold,
+	fgBright: hex('#e6edf3'),
+	fgMuted: hex('#a9b1d6'),
+	fgDark: hex('#565f89'),
+	fgDimmed: hex('#3b4261'),
 
-	dimBlue: chalk.blue.dim,
-	dimGreen: chalk.green.dim,
-	dimYellow: chalk.yellow.dim,
-	dimRed: chalk.red.dim,
-	dimCyan: chalk.cyan.dim,
+	blueBold: hex('#7aa2f7').bold,
+	greenBold: hex('#9ece6a').bold,
+	yellowBold: hex('#e0af68').bold,
+	redBold: hex('#f7768e').bold,
+	cyanBold: hex('#7dcfff').bold,
+	magentaBold: hex('#c678dd').bold,
+	purpleBold: hex('#bb9af7').bold,
+
+	dimBlue: hex('#7aa2f7').dim,
+	dimGreen: hex('#9ece6a').dim,
+	dimYellow: hex('#e0af68').dim,
+	dimRed: hex('#f7768e').dim,
+	dimCyan: hex('#7dcfff').dim,
 
 	greenDim: chalk.dim.green,
 	redDim: chalk.dim.red,
+
+	diffAdded: hex('#9ece6a'),
+	diffRemoved: hex('#f7768e'),
+	diffAddedBg: bgHex('#1a3a1a'),
+	diffRemovedBg: bgHex('#3a1a1a'),
+
+	toolBg: bgHex('#1e2030'),
 };
 
 export const TOOL_COLORS: Record<string, (s: string) => string> = {
@@ -61,18 +80,20 @@ export function toolColor(name: string): (s: string) => string {
 }
 
 export const ICONS = {
-	arrow: '›',
+	arrow: '→',
 	check: '✓',
 	cross: '✗',
 	dot: '·',
 	ellipsis: '…',
 	pending: '○',
-	spinner: '⋯',
+	spinner: '→',
 	plus: '+',
 	minus: '-',
 	pipe: '│',
 	todo: '☐',
 	todoDone: '☑',
+	star: '✦',
+	warning: '⚠',
 };
 
 export function formatMs(ms?: number): string {
