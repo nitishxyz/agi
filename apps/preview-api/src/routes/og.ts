@@ -7,6 +7,25 @@ import type { SharedSessionData } from '../types';
 
 export const ogRoutes = new Hono<{ Bindings: { OG_FUNCTION_URL: string } }>();
 
+ogRoutes.get('/page', async (c) => {
+	const ogUrl = (c.env.OG_FUNCTION_URL || '').replace(/\/$/, '');
+	const query = new URL(c.req.url).search;
+	const targetUrl = `${ogUrl}${query}`;
+
+	const res = await fetch(targetUrl);
+	if (!res.ok) {
+		return c.text('Failed to generate OG image', 500);
+	}
+
+	return new Response(res.body, {
+		status: 200,
+		headers: {
+			'Content-Type': 'image/png',
+			'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+		},
+	});
+});
+
 ogRoutes.get('/:shareId', async (c) => {
 	const { shareId } = c.req.param();
 
@@ -48,8 +67,19 @@ ogRoutes.get('/:shareId', async (c) => {
 		params.set('tokenCount', data.tokenCount.toString());
 	}
 
-	const ogUrl = c.env.OG_FUNCTION_URL || process.env.OG_FUNCTION_URL;
+	const ogUrl = (c.env.OG_FUNCTION_URL || '').replace(/\/$/, '');
 	const targetUrl = `${ogUrl}?${params.toString()}`;
 
-	return c.redirect(targetUrl, 302);
+	const res = await fetch(targetUrl);
+	if (!res.ok) {
+		return c.text('Failed to generate OG image', 500);
+	}
+
+	return new Response(res.body, {
+		status: 200,
+		headers: {
+			'Content-Type': 'image/png',
+			'Cache-Control': 'public, max-age=86400',
+		},
+	});
 });

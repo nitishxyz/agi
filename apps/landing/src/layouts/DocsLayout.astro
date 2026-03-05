@@ -5,9 +5,10 @@ import { DocsMobileNav } from '../components/DocsMobileNav';
 interface Props {
 	title?: string;
 	description?: string;
+	section?: string;
 }
 
-const { title, description } = Astro.props;
+const { title, description, section } = Astro.props;
 const pathname = Astro.url.pathname;
 
 const NAV_SECTIONS = [
@@ -61,9 +62,21 @@ function isActive(href: string, end?: boolean): boolean {
 	if (end) return clean === target;
 	return clean === target || clean.startsWith(`${target}/`);
 }
+
+const ogTitle = title?.replace(/ — otto docs$/, '') || 'Documentation';
+const resolvedSection = section || (() => {
+	for (const s of NAV_SECTIONS) {
+		for (const item of s.items) {
+			const clean = pathname.replace(/\/$/, '') || '/';
+			const target = item.href.replace(/\/$/, '') || '/';
+			if (clean === target || clean.startsWith(`${target}/`)) return s.title;
+		}
+	}
+	return '';
+})();
 ---
 
-<BaseLayout title={title} description={description} isDocs={true}>
+<BaseLayout title={title} description={description} isDocs={true} ogType="docs" ogTitle={ogTitle} ogSection={resolvedSection} ogDescription={description}>
 	<div class="pt-14 min-h-screen">
 		<aside class="w-64 shrink-0 hidden lg:flex flex-col border-r border-otto-border fixed top-14 bottom-0 left-0 overflow-y-auto">
 			<div class="flex-1 py-6 space-y-6">

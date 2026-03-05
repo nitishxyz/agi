@@ -24,6 +24,7 @@ app.get('/', (c) => {
 			'PUT /share/:shareId': 'Update a share',
 			'DELETE /share/:shareId': 'Delete a share',
 			'GET /og/:shareId': 'Get OG image for a share',
+		'GET /og/page': 'Get OG image for landing/docs/blog pages',
 		},
 	});
 });

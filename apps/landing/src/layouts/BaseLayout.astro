@@ -7,13 +7,35 @@ interface Props {
 	title?: string;
 	description?: string;
 	isDocs?: boolean;
+	ogType?: 'landing' | 'docs' | 'blog';
+	ogTitle?: string;
+	ogSection?: string;
+	ogDescription?: string;
+	ogDate?: string;
+	ogAuthor?: string;
 }
 
 const {
 	title = 'otto — AI-powered coding assistant',
 	description = 'AI-powered coding assistant. CLI, interactive TUI, desktop app, embeddable server — one tool, multiple interfaces. Open source.',
 	isDocs = false,
+	ogType = 'landing',
+	ogTitle,
+	ogSection,
+	ogDescription,
+	ogDate,
+	ogAuthor,
 } = Astro.props;
+
+const OG_BASE = (import.meta.env.PUBLIC_OG_URL || '').replace(/\/$/, '');
+const ogParams = new URLSearchParams({ type: ogType });
+if (ogTitle) ogParams.set('title', ogTitle);
+if (ogSection) ogParams.set('sec', ogSection);
+if (ogDescription) ogParams.set('description', ogDescription);
+if (ogDate) ogParams.set('date', ogDate);
+if (ogAuthor) ogParams.set('author', ogAuthor);
+const ogImage = `${OG_BASE}?${ogParams.toString()}`;
+const canonicalUrl = new URL(Astro.url.pathname, 'https://ottocode.io').href;
 ---
 
 <!DOCTYPE html>
@@ -24,6 +46,19 @@ const {
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		<link rel="canonical" href={canonicalUrl} />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={ogImage} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:url" content={canonicalUrl} />
+		<meta property="og:site_name" content="otto" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={ogImage} />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />

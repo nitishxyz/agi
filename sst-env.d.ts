@@ -10,6 +10,7 @@ declare module "sst" {
       "url": string
     }
     "OGCache": {
+      "namespaceId": string
       "type": "sst.cloudflare.Kv"
     }
     "OGFunction": {
