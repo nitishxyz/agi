@@ -47,6 +47,43 @@ interface ProviderSetupStepProps {
 	onPollCopilotDeviceFlow?: (
 		sessionId: string,
 	) => Promise<{ status: 'complete' | 'pending' | 'error'; error?: string }>;
+	onGetCopilotAuthMethods?: () => Promise<{
+		oauth: boolean;
+		token: boolean;
+		ghImport: { available: boolean; authenticated: boolean; reason?: string };
+	}>;
+	onSaveCopilotToken?: (token: string) => Promise<{
+		success: boolean;
+		provider: string;
+		source: 'token';
+		modelCount: number;
+		hasGpt52Codex: boolean;
+		sampleModels: string[];
+	}>;
+	onImportCopilotTokenFromGh?: () => Promise<{
+		success: boolean;
+		provider: string;
+		source: 'gh';
+		modelCount: number;
+		hasGpt52Codex: boolean;
+		sampleModels: string[];
+	}>;
+	onGetCopilotDiagnostics?: () => Promise<{
+		tokenSources: Array<{
+			source: 'env' | 'stored';
+			configured: boolean;
+			modelCount?: number;
+			hasGpt52Codex?: boolean;
+			restrictedByOrgPolicy?: boolean;
+			restrictedOrg?: string;
+			error?: string;
+		}>;
+		methods: {
+			oauth: boolean;
+			token: boolean;
+			ghImport: { available: boolean; authenticated: boolean; reason?: string };
+		};
+	}>;
 }
 
 export const ProviderSetupStep = memo(function ProviderSetupStep({
@@ -65,6 +102,10 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	hideHeader = false,
 	onStartCopilotDeviceFlow,
 	onPollCopilotDeviceFlow,
+	onGetCopilotAuthMethods,
+	onSaveCopilotToken,
+	onImportCopilotTokenFromGh,
+	onGetCopilotDiagnostics,
 }: ProviderSetupStepProps) {
 	const [copied, setCopied] = useState(false);
 	const [isSettingUp, setIsSettingUp] = useState(false);
@@ -94,6 +135,28 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	} | null>(null);
 	const [copilotPolling, setCopilotPolling] = useState(false);
 	const [copilotError, setCopilotError] = useState<string | null>(null);
+	const [copilotAuthMode, setCopilotAuthMode] = useState<'oauth' | 'token'>(
+		'oauth',
+	);
+	const [copilotTokenInput, setCopilotTokenInput] = useState('');
+	const [copilotTokenSaving, setCopilotTokenSaving] = useState(false);
+	const [copilotGhImporting, setCopilotGhImporting] = useState(false);
+	const [copilotAuthMethods, setCopilotAuthMethods] = useState<{
+		oauth: boolean;
+		token: boolean;
+		ghImport: { available: boolean; authenticated: boolean; reason?: string };
+	} | null>(null);
+	const [copilotDiagnostics, setCopilotDiagnostics] = useState<{
+		tokenSources: Array<{
+			source: 'env' | 'stored';
+			configured: boolean;
+			modelCount?: number;
+			hasGpt52Codex?: boolean;
+			restrictedByOrgPolicy?: boolean;
+			restrictedOrg?: string;
+			error?: string;
+		}>;
+	} | null>(null);
 	const [copilotCodeCopied, setCopilotCodeCopied] = useState(false);
 	const [copilotModalOpen, setCopilotModalOpen] = useState(false);
 	const [copilotLoading, setCopilotLoading] = useState(false);
@@ -232,24 +295,49 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 		setConfirmingDelete(null);
 	};
 
+	const startCopilotDeviceAuthorization = () => {
+		if (!onStartCopilotDeviceFlow) return;
+		setCopilotLoading(true);
+		setCopilotError(null);
+		onStartCopilotDeviceFlow()
+			.then((data) => {
+				setCopilotDevice(data);
+				setCopilotLoading(false);
+			})
+			.catch((err) => {
+				setCopilotError(
+					err instanceof Error ? err.message : 'Failed to start device flow',
+				);
+				setCopilotLoading(false);
+			});
+	};
+
 	const handleStartOAuth = async (providerId: string, mode?: string) => {
 		if (providerId === 'anthropic') {
 			setOauthSession({ provider: providerId, sessionId: null, mode });
-		} else if (providerId === 'copilot' && onStartCopilotDeviceFlow) {
+		} else if (providerId === 'copilot') {
+			setCopilotAuthMode('oauth');
+			setCopilotTokenInput('');
+			setCopilotDiagnostics(null);
+			setCopilotAuthMethods(null);
+			setCopilotPolling(false);
+			setCopilotDevice(null);
 			setCopilotError(null);
 			setCopilotModalOpen(true);
-			setCopilotLoading(true);
-			onStartCopilotDeviceFlow()
-				.then((data) => {
-					setCopilotDevice(data);
-					setCopilotLoading(false);
-				})
-				.catch((err) => {
-					setCopilotError(
-						err instanceof Error ? err.message : 'Failed to start device flow',
-					);
-					setCopilotLoading(false);
-				});
+
+			if (onGetCopilotAuthMethods) {
+				onGetCopilotAuthMethods()
+					.then((methods) => setCopilotAuthMethods(methods))
+					.catch(() => {});
+			}
+
+			if (onGetCopilotDiagnostics) {
+				onGetCopilotDiagnostics()
+					.then((diagnostics) => setCopilotDiagnostics(diagnostics))
+					.catch(() => {});
+			}
+
+			startCopilotDeviceAuthorization();
 		} else {
 			onStartOAuth(providerId, mode);
 		}
@@ -297,6 +385,51 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 		setCopilotPolling(true);
 	};
 
+	const handleCopilotSwitchMode = (mode: 'oauth' | 'token') => {
+		setCopilotAuthMode(mode);
+		setCopilotError(null);
+		if (mode === 'token') {
+			setCopilotPolling(false);
+		}
+		if (mode === 'oauth' && !copilotDevice && !copilotLoading) {
+			startCopilotDeviceAuthorization();
+		}
+	};
+
+	const handleCopilotSaveToken = async () => {
+		if (!copilotTokenInput.trim() || !onSaveCopilotToken) return;
+		setCopilotTokenSaving(true);
+		setCopilotError(null);
+		try {
+			await onSaveCopilotToken(copilotTokenInput.trim());
+			handleCancelCopilot();
+		} catch (err) {
+			setCopilotError(
+				err instanceof Error ? err.message : 'Failed to save Copilot token',
+			);
+		} finally {
+			setCopilotTokenSaving(false);
+		}
+	};
+
+	const handleCopilotImportFromGh = async () => {
+		if (!onImportCopilotTokenFromGh) return;
+		setCopilotGhImporting(true);
+		setCopilotError(null);
+		try {
+			await onImportCopilotTokenFromGh();
+			handleCancelCopilot();
+		} catch (err) {
+			setCopilotError(
+				err instanceof Error
+					? err.message
+					: 'Failed to import token from GitHub CLI',
+			);
+		} finally {
+			setCopilotGhImporting(false);
+		}
+	};
+
 	const handleCopilotCopyCode = async () => {
 		if (!copilotDevice) return;
 		await navigator.clipboard.writeText(copilotDevice.userCode);
@@ -308,6 +441,10 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 		setCopilotDevice(null);
 		setCopilotPolling(false);
 		setCopilotError(null);
+		setCopilotTokenInput('');
+		setCopilotTokenSaving(false);
+		setCopilotGhImporting(false);
+		setCopilotAuthMode('oauth');
 		setCopilotCodeCopied(false);
 		setCopilotModalOpen(false);
 		setCopilotLoading(false);
@@ -864,45 +1001,137 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 							<ProviderLogo provider="copilot" size={24} />
 							<h3 className="text-lg font-semibold">Connect GitHub Copilot</h3>
 						</div>
-						<div className="p-6">
-							<p className="text-sm text-muted-foreground mb-4">
-								Enter this code on GitHub to authorize:
-							</p>
-							<div className="flex items-center justify-center gap-3 mb-6">
-								{copilotLoading ? (
-									<div className="bg-muted px-6 py-3 rounded-lg animate-pulse">
-										<div className="h-9 w-48 bg-muted-foreground/20 rounded" />
+						<div className="p-6 space-y-4">
+							<div className="flex items-center gap-2">
+								<button
+									type="button"
+									onClick={() => handleCopilotSwitchMode('oauth')}
+									className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+										copilotAuthMode === 'oauth'
+											? 'bg-foreground text-background'
+											: 'bg-muted text-muted-foreground hover:text-foreground'
+									}`}
+								>
+									OAuth
+								</button>
+								<button
+									type="button"
+									onClick={() => handleCopilotSwitchMode('token')}
+									className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+										copilotAuthMode === 'token'
+											? 'bg-foreground text-background'
+											: 'bg-muted text-muted-foreground hover:text-foreground'
+									}`}
+								>
+									Token
+								</button>
+							</div>
+
+							{copilotAuthMode === 'oauth' ? (
+								<>
+									<p className="text-sm text-muted-foreground">
+										Enter this code on GitHub to authorize:
+									</p>
+									<div className="flex items-center justify-center gap-3">
+										{copilotLoading ? (
+											<div className="bg-muted px-6 py-3 rounded-lg animate-pulse">
+												<div className="h-9 w-48 bg-muted-foreground/20 rounded" />
+											</div>
+										) : copilotDevice ? (
+											<>
+												<code className="text-3xl font-mono font-bold tracking-widest text-foreground bg-muted px-6 py-3 rounded-lg select-all">
+													{copilotDevice.userCode}
+												</code>
+												<button
+													type="button"
+													onClick={handleCopilotCopyCode}
+													className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+												>
+													{copilotCodeCopied ? (
+														<Check className="w-5 h-5 text-green-500" />
+													) : (
+														<Copy className="w-5 h-5" />
+													)}
+												</button>
+											</>
+										) : null}
 									</div>
-								) : copilotDevice ? (
-									<>
-										<code className="text-3xl font-mono font-bold tracking-widest text-foreground bg-muted px-6 py-3 rounded-lg select-all">
-											{copilotDevice.userCode}
-										</code>
+								</>
+							) : (
+								<>
+									<p className="text-sm text-muted-foreground">
+										Paste a GitHub token with Copilot model access.
+									</p>
+									<input
+										type="password"
+										value={copilotTokenInput}
+										onChange={(e) => setCopilotTokenInput(e.target.value)}
+										placeholder="gho_..."
+										className="w-full h-11 px-4 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 transition-colors"
+									/>
+									{copilotAuthMethods?.ghImport.available && (
 										<button
 											type="button"
-											onClick={handleCopilotCopyCode}
-											className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+											onClick={handleCopilotImportFromGh}
+											disabled={copilotGhImporting}
+											className="w-full h-10 px-4 bg-muted text-foreground rounded-lg font-medium hover:bg-muted/80 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
 										>
-											{copilotCodeCopied ? (
-												<Check className="w-5 h-5 text-green-500" />
+											{copilotGhImporting ? (
+												<Loader2 className="w-4 h-4 animate-spin" />
 											) : (
-												<Copy className="w-5 h-5" />
+												'Import from GH CLI'
 											)}
 										</button>
-									</>
-								) : null}
-							</div>
+									)}
+									{copilotAuthMethods?.ghImport.available &&
+										!copilotAuthMethods.ghImport.authenticated && (
+											<p className="text-xs text-muted-foreground">
+												{copilotAuthMethods.ghImport.reason ||
+													'GitHub CLI is not authenticated'}
+											</p>
+										)}
+									{copilotAuthMethods &&
+										!copilotAuthMethods.ghImport.available &&
+										copilotAuthMethods.ghImport.reason && (
+											<p className="text-xs text-muted-foreground">
+												{copilotAuthMethods.ghImport.reason}
+											</p>
+										)}
+								</>
+							)}
+
+							{copilotDiagnostics &&
+								copilotDiagnostics.tokenSources.length > 0 && (
+									<div className="text-xs text-muted-foreground space-y-1">
+										{copilotDiagnostics.tokenSources.map((source) => (
+											<div key={source.source}>
+												{source.source}:{' '}
+												{source.configured
+													? source.error
+														? source.error
+														: `${source.modelCount ?? 0} models visible`
+													: 'not configured'}
+												{source.restrictedByOrgPolicy && source.restrictedOrg
+													? ` (org restriction: ${source.restrictedOrg})`
+													: ''}
+											</div>
+										))}
+									</div>
+								)}
+
 							{copilotError && (
-								<p className="text-sm text-red-500 mb-4 text-center">
+								<p className="text-sm text-red-500 text-center">
 									{copilotError}
 								</p>
 							)}
-							{copilotPolling && (
-								<div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-4">
+
+							{copilotPolling && copilotAuthMode === 'oauth' && (
+								<div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
 									<Loader2 className="w-4 h-4 animate-spin" />
 									Waiting for authorization...
 								</div>
 							)}
+
 							<div className="flex gap-3">
 								<button
 									type="button"
@@ -911,21 +1140,36 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 								>
 									Cancel
 								</button>
-								<button
-									type="button"
-									onClick={handleCopilotOpenGithub}
-									disabled={copilotPolling || copilotLoading}
-									className="flex-1 h-11 px-4 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-								>
-									{copilotPolling || copilotLoading ? (
-										<Loader2 className="w-4 h-4 animate-spin" />
-									) : (
-										<>
-											Open GitHub
-											<ExternalLink className="w-4 h-4" />
-										</>
-									)}
-								</button>
+								{copilotAuthMode === 'oauth' ? (
+									<button
+										type="button"
+										onClick={handleCopilotOpenGithub}
+										disabled={copilotPolling || copilotLoading}
+										className="flex-1 h-11 px-4 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+									>
+										{copilotPolling || copilotLoading ? (
+											<Loader2 className="w-4 h-4 animate-spin" />
+										) : (
+											<>
+												Open GitHub
+												<ExternalLink className="w-4 h-4" />
+											</>
+										)}
+									</button>
+								) : (
+									<button
+										type="button"
+										onClick={handleCopilotSaveToken}
+										disabled={!copilotTokenInput.trim() || copilotTokenSaving}
+										className="flex-1 h-11 px-4 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+									>
+										{copilotTokenSaving ? (
+											<Loader2 className="w-4 h-4 animate-spin" />
+										) : (
+											'Save token'
+										)}
+									</button>
+								)}
 							</div>
 						</div>
 					</div>

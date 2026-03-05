@@ -2,11 +2,13 @@ import type { Hono } from 'hono';
 import {
 	loadConfig,
 	catalog,
+	getAuth,
+	logger,
+	readEnvKey,
 	type ProviderId,
 	filterModelsForAuthType,
 } from '@ottocode/sdk';
 import type { EmbeddedAppConfig } from '../../index.ts';
-import { logger } from '@ottocode/sdk';
 import { serializeError } from '../../runtime/errors/api-error.ts';
 import {
 	isProviderAuthorizedHybrid,
@@ -14,6 +16,70 @@ import {
 	getDefault,
 	getAuthTypeForProvider,
 } from './utils.ts';
+
+const COPILOT_MODELS_URL = 'https://api.githubcopilot.com/models';
+
+function filterCopilotAvailability<
+	T extends { id: string },
+>(
+	provider: ProviderId,
+	models: T[],
+	copilotAllowedModels: Set<string> | null,
+): T[] {
+	if (provider !== 'copilot') return models;
+	if (!copilotAllowedModels || copilotAllowedModels.size === 0) return models;
+	return models.filter((m) => copilotAllowedModels.has(m.id));
+}
+
+async function getCopilotAuthTokens(projectRoot: string): Promise<string[]> {
+	const tokens: string[] = [];
+
+	const envToken = readEnvKey('copilot');
+	if (envToken) tokens.push(envToken);
+
+	const auth = await getAuth('copilot', projectRoot);
+	if (auth?.type === 'oauth' && auth.refresh) {
+		if (auth.refresh !== envToken) {
+			tokens.push(auth.refresh);
+		}
+	}
+
+	return tokens;
+}
+
+async function getAuthorizedCopilotModels(
+	projectRoot: string,
+): Promise<Set<string> | null> {
+	const tokens = await getCopilotAuthTokens(projectRoot);
+	if (!tokens.length) return null;
+
+	const merged = new Set<string>();
+	let successful = false;
+
+	for (const token of tokens) {
+		try {
+			const response = await fetch(COPILOT_MODELS_URL, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+					'Openai-Intent': 'conversation-edits',
+					'User-Agent': 'ottocode',
+				},
+			});
+			if (!response.ok) continue;
+
+			successful = true;
+			const payload = (await response.json()) as {
+				data?: Array<{ id?: string }>;
+			};
+
+			for (const id of (payload.data ?? []).map((item) => item.id)) {
+				if (id) merged.add(id);
+			}
+		} catch {}
+	}
+
+	return successful ? merged : null;
+}
 
 export function registerModelsRoutes(app: Hono) {
 	app.get('/v1/config/providers/:provider/models', async (c) => {
@@ -53,9 +119,19 @@ export function registerModelsRoutes(app: Hono) {
 				providerCatalog.models,
 				authType,
 			);
+			const copilotAllowedModels =
+				provider === 'copilot'
+					? await getAuthorizedCopilotModels(projectRoot)
+					: null;
+
+			const availableModels = filterCopilotAvailability(
+				provider,
+				filteredModels,
+				copilotAllowedModels,
+			);
 
 			return c.json({
-				models: filteredModels.map((m) => ({
+				models: availableModels.map((m) => ({
 					id: m.id,
 					label: m.label || m.id,
 					toolCall: m.toolCall,
@@ -94,6 +170,7 @@ export function registerModelsRoutes(app: Hono) {
 				string,
 				{
 					label: string;
+					authType?: 'api' | 'oauth' | 'wallet';
 					models: Array<{
 						id: string;
 						label: string;
@@ -116,10 +193,19 @@ export function registerModelsRoutes(app: Hono) {
 						providerCatalog.models,
 						authType,
 					);
+					const copilotAllowedModels =
+						provider === 'copilot'
+							? await getAuthorizedCopilotModels(projectRoot)
+							: null;
+				const availableModels = filterCopilotAvailability(
+					provider,
+					filteredModels,
+					copilotAllowedModels,
+				);
 					modelsMap[provider] = {
 						label: providerCatalog.label || provider,
 						authType,
-						models: filteredModels.map((m) => ({
+					models: availableModels.map((m) => ({
 							id: m.id,
 							label: m.label || m.id,
 							toolCall: m.toolCall,

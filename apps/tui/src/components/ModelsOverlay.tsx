@@ -10,6 +10,8 @@ interface ModelItem {
 	label: string;
 	toolCall?: boolean;
 	reasoningText?: boolean;
+	available?: boolean;
+	unavailableReason?: string;
 }
 
 interface ProviderModels {
@@ -26,6 +28,8 @@ interface FlatItem {
 	modelLabel: string;
 	toolCall?: boolean;
 	reasoningText?: boolean;
+	available?: boolean;
+	unavailableReason?: string;
 }
 
 interface ModelsOverlayProps {
@@ -73,6 +77,8 @@ export function ModelsOverlay({
 					modelLabel: m.label,
 					toolCall: m.toolCall,
 					reasoningText: m.reasoningText,
+					available: m.available,
+					unavailableReason: m.unavailableReason,
 				});
 			}
 		}
@@ -120,6 +126,8 @@ export function ModelsOverlay({
 					label: item.modelLabel,
 					toolCall: item.toolCall,
 					reasoningText: item.reasoningText,
+					available: item.available,
+					unavailableReason: item.unavailableReason,
 				});
 			}
 		}
@@ -137,6 +145,8 @@ export function ModelsOverlay({
 					modelLabel: m.label,
 					toolCall: m.toolCall,
 					reasoningText: m.reasoningText,
+					available: m.available,
+					unavailableReason: m.unavailableReason,
 				});
 			}
 		}
@@ -147,6 +157,7 @@ export function ModelsOverlay({
 	flatListRef.current = flatList;
 
 	useEffect(() => {
+		void searchQuery;
 		setSelectedIdx(0);
 		scrollOffsetRef.current = 0;
 		setScrollOffset(0);
@@ -221,7 +232,9 @@ export function ModelsOverlay({
 			ensureVisible(next);
 		} else if (key.name === 'return') {
 			const item = list[selectedIdxRef.current];
-			if (item) onSelect(item.providerKey, item.modelId);
+			if (item && item.available !== false) {
+				onSelect(item.providerKey, item.modelId);
+			}
 		} else if (key.name === 'escape') {
 			onClose();
 		}
@@ -323,7 +336,7 @@ export function ModelsOverlay({
 				<box
 					style={{ flexDirection: 'column', overflow: 'hidden', flexGrow: 1 }}
 				>
-					{visibleDisplayRows.map((row, i) => {
+					{visibleDisplayRows.map((row) => {
 						if (row.type === 'header') {
 							return (
 								<box
@@ -341,6 +354,7 @@ export function ModelsOverlay({
 							row.item.providerKey === currentProvider &&
 							row.item.modelId === currentModel;
 						const badges: string[] = [];
+						if (row.item.available === false) badges.push('unavailable');
 						if (row.item.toolCall) badges.push('tools');
 						if (row.item.reasoningText) badges.push('reasoning');
 						return (

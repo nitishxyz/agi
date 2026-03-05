@@ -182,6 +182,7 @@ async function runAssistant(opts: RunOpts) {
 	let _finishObserved = false;
 	let _toolActivityObserved = false;
 	let _trailingAssistantTextAfterTool = false;
+	let _abortedByUser = false;
 	const unsubscribeFinish = subscribe(opts.sessionId, (evt) => {
 		if (evt.type === 'tool.call' || evt.type === 'tool.result') {
 			_toolActivityObserved = true;
@@ -245,7 +246,11 @@ async function runAssistant(opts: RunOpts) {
 		runSessionLoop,
 	);
 
-	const onAbort = createAbortHandler(opts, db, getStepIndex, sharedCtx);
+	const baseOnAbort = createAbortHandler(opts, db, getStepIndex, sharedCtx);
+	const onAbort = async (event: Parameters<typeof baseOnAbort>[0]) => {
+		_abortedByUser = true;
+		await baseOnAbort(event);
+	};
 
 	const onFinish = createFinishHandler(opts, db, completeAssistantMessage);
 	const stopWhenCondition = isOpenAIOAuth
@@ -421,16 +426,20 @@ async function runAssistant(opts: RunOpts) {
 
 		const MAX_CONTINUATIONS = 6;
 		const continuationCount = opts.continuationCount ?? 0;
+		const endedWithToolActivity =
+			_toolActivityObserved && !_trailingAssistantTextAfterTool;
 		const continuationDecision = decideOauthCodexContinuation({
 			provider: opts.provider,
 			isOpenAIOAuth,
 			finishObserved: _finishObserved,
+			abortedByUser: _abortedByUser,
 			continuationCount,
 			maxContinuations: MAX_CONTINUATIONS,
 			finishReason: streamFinishReason,
 			rawFinishReason: streamRawFinishReason,
 			firstToolSeen: fs,
 			hasTrailingAssistantText: _trailingAssistantTextAfterTool,
+			endedWithToolActivity,
 			droppedPseudoToolText: oauthTextGuard?.dropped ?? false,
 			lastAssistantText: latestAssistantText,
 		});

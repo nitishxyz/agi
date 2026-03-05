@@ -10,6 +10,10 @@ import {
 	exchangeOAuthCode as apiExchangeOAuthCode,
 	startCopilotDeviceFlow as apiStartCopilotDeviceFlow,
 	pollCopilotDeviceFlow as apiPollCopilotDeviceFlow,
+	getCopilotAuthMethods as apiGetCopilotAuthMethods,
+	saveCopilotToken as apiSaveCopilotToken,
+	importCopilotTokenFromGh as apiImportCopilotTokenFromGh,
+	getCopilotDiagnostics as apiGetCopilotDiagnostics,
 	getProviderUsage as apiGetProviderUsage,
 } from '@ottocode/api';
 import type { ProviderUsageResponse } from '../../types/api';
@@ -26,6 +30,8 @@ export const authMixin = {
 				type?: 'api' | 'oauth' | 'wallet';
 				label: string;
 				supportsOAuth: boolean;
+				supportsToken?: boolean;
+				supportsGhImport?: boolean;
 				modelCount: number;
 				costRange?: { min: number; max: number };
 			}
@@ -158,6 +164,69 @@ export const authMixin = {
 		const response = await apiPollCopilotDeviceFlow({
 			body: { sessionId },
 		});
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure
+		return response.data as any;
+	},
+
+	async getCopilotAuthMethods(): Promise<{
+		oauth: boolean;
+		token: boolean;
+		ghImport: { available: boolean; authenticated: boolean; reason?: string };
+	}> {
+		const response = await apiGetCopilotAuthMethods();
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure
+		return response.data as any;
+	},
+
+	async saveCopilotToken(token: string): Promise<{
+		success: boolean;
+		provider: string;
+		source: 'token';
+		modelCount: number;
+		hasGpt52Codex: boolean;
+		sampleModels: string[];
+	}> {
+		const response = await apiSaveCopilotToken({ body: { token } });
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure
+		return response.data as any;
+	},
+
+	async importCopilotTokenFromGh(): Promise<{
+		success: boolean;
+		provider: string;
+		source: 'gh';
+		modelCount: number;
+		hasGpt52Codex: boolean;
+		sampleModels: string[];
+	}> {
+		const response = await apiImportCopilotTokenFromGh();
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure
+		return response.data as any;
+	},
+
+	async getCopilotDiagnostics(): Promise<{
+		tokenSources: Array<{
+			source: 'env' | 'stored';
+			configured: boolean;
+			modelCount?: number;
+			hasGpt52Codex?: boolean;
+			sampleModels?: string[];
+			restrictedByOrgPolicy?: boolean;
+			restrictedOrg?: string;
+			restrictionMessage?: string;
+			error?: string;
+		}>;
+		methods: {
+			oauth: boolean;
+			token: boolean;
+			ghImport: { available: boolean; authenticated: boolean; reason?: string };
+		};
+	}> {
+		const response = await apiGetCopilotDiagnostics();
 		if (response.error) throw new Error(extractErrorMessage(response.error));
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure
 		return response.data as any;

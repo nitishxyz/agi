@@ -111,6 +111,8 @@ export interface ModelInfo {
 	reasoningText?: boolean;
 	vision?: boolean;
 	attachment?: boolean;
+	available?: boolean;
+	unavailableReason?: string;
 }
 
 export interface ProviderModels {

@@ -295,6 +295,69 @@ export function useSessionStream(sessionId: string | undefined) {
 			);
 		};
 
+		const resolveEphemeralToolCall = (
+			payload: Record<string, unknown> | undefined,
+		) => {
+			const callId =
+				typeof payload?.callId === 'string' ? payload.callId : null;
+			if (!callId) return;
+			const payloadName =
+				typeof payload?.name === 'string' ? payload.name : null;
+			const payloadStepIndex =
+				typeof payload?.stepIndex === 'number' ? payload.stepIndex : null;
+			const payloadResult = payload?.result;
+			const payloadArtifact = payload?.artifact;
+			queryClient.setQueryData<Message[]>(
+				['messages', sessionId],
+				(oldMessages) => {
+					if (!oldMessages) return oldMessages;
+					let changed = false;
+					const now = Date.now();
+					const nextMessages = oldMessages.map((message) => {
+						if (!message.parts?.length) return message;
+						let messageChanged = false;
+						const updatedParts = message.parts.map((part) => {
+							if (!(part.ephemeral && part.toolCallId === callId)) {
+								return part;
+							}
+							messageChanged = true;
+							changed = true;
+							const nextContentJson: Record<string, unknown> = {
+								...(typeof part.contentJson === 'object' &&
+								!Array.isArray(part.contentJson)
+									? (part.contentJson as Record<string, unknown>)
+									: {}),
+								name: payloadName ?? part.toolName ?? 'tool',
+								callId,
+							};
+							if (payloadResult !== undefined)
+								nextContentJson.result = payloadResult;
+							if (payloadArtifact !== undefined)
+								nextContentJson.artifact = payloadArtifact;
+							const durationMs =
+								part.startedAt && Number.isFinite(part.startedAt)
+									? Math.max(0, now - part.startedAt)
+									: part.toolDurationMs;
+							const resolvedPart: MessagePart = {
+								...part,
+								type: 'tool_result',
+								content: JSON.stringify(nextContentJson),
+								contentJson: nextContentJson,
+								stepIndex: payloadStepIndex ?? part.stepIndex ?? null,
+								completedAt: now,
+								toolName: payloadName ?? part.toolName,
+								toolDurationMs: durationMs ?? null,
+							};
+							return resolvedPart;
+						});
+						if (!messageChanged) return message;
+						return { ...message, parts: updatedParts };
+					});
+					return changed ? nextMessages : oldMessages;
+				},
+			);
+		};
+
 		const removeEphemeralToolCall = (
 			payload: Record<string, unknown> | undefined,
 		) => {
@@ -331,11 +394,19 @@ export function useSessionStream(sessionId: string | undefined) {
 					);
 					if (targetIndex === -1) return oldMessages;
 					const target = oldMessages[targetIndex];
-					if (!target.parts?.some((part) => part.ephemeral)) return oldMessages;
+					if (
+						!target.parts?.some(
+							(part) => part.ephemeral && part.type === 'tool_call',
+						)
+					)
+						return oldMessages;
 					const nextMessages = [...oldMessages];
 					nextMessages[targetIndex] = {
 						...target,
-						parts: target.parts?.filter((part) => !part.ephemeral) ?? [],
+						parts:
+							target.parts?.filter(
+								(part) => !(part.ephemeral && part.type === 'tool_call'),
+							) ?? [],
 					};
 					return nextMessages;
 				},
@@ -382,7 +453,6 @@ export function useSessionStream(sessionId: string | undefined) {
 		const invalidatingEvents = new Set([
 			'message.completed',
 			'message.updated',
-			'tool.result',
 			'finish-step',
 			'error',
 		]);
@@ -467,7 +537,7 @@ export function useSessionStream(sessionId: string | undefined) {
 					break;
 				}
 				case 'tool.result': {
-					removeEphemeralToolCall(payload);
+					resolveEphemeralToolCall(payload);
 					break;
 				}
 				case 'tool.approval.required': {

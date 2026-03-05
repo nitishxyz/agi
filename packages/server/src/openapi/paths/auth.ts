@@ -35,6 +35,8 @@ export const authPaths = {
 												},
 												label: { type: 'string' },
 												supportsOAuth: { type: 'boolean' },
+												supportsToken: { type: 'boolean' },
+												supportsGhImport: { type: 'boolean' },
 												modelCount: { type: 'integer' },
 												costRange: {
 													type: 'object',
@@ -470,6 +472,194 @@ export const authPaths = {
 					},
 				},
 				400: errorResponse(),
+			},
+		},
+	},
+	'/v1/auth/copilot/methods': {
+		get: {
+			tags: ['auth'],
+			operationId: 'getCopilotAuthMethods',
+			summary: 'Get available Copilot auth methods',
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									oauth: { type: 'boolean' },
+									token: { type: 'boolean' },
+									ghImport: {
+										type: 'object',
+										properties: {
+											available: { type: 'boolean' },
+											authenticated: { type: 'boolean' },
+											reason: { type: 'string' },
+										},
+										required: ['available', 'authenticated'],
+									},
+								},
+								required: ['oauth', 'token', 'ghImport'],
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	'/v1/auth/copilot/token': {
+		post: {
+			tags: ['auth'],
+			operationId: 'saveCopilotToken',
+			summary: 'Save Copilot token after validating model access',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								token: { type: 'string' },
+							},
+							required: ['token'],
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: { type: 'boolean' },
+									provider: { type: 'string' },
+									source: { type: 'string', enum: ['token'] },
+									modelCount: { type: 'integer' },
+									hasGpt52Codex: { type: 'boolean' },
+									sampleModels: {
+										type: 'array',
+										items: { type: 'string' },
+									},
+								},
+								required: [
+									'success',
+									'provider',
+									'source',
+									'modelCount',
+									'hasGpt52Codex',
+									'sampleModels',
+								],
+							},
+						},
+					},
+				},
+				400: errorResponse(),
+			},
+		},
+	},
+	'/v1/auth/copilot/gh/import': {
+		post: {
+			tags: ['auth'],
+			operationId: 'importCopilotTokenFromGh',
+			summary: 'Import Copilot token from GitHub CLI (gh)',
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: { type: 'boolean' },
+									provider: { type: 'string' },
+									source: { type: 'string', enum: ['gh'] },
+									modelCount: { type: 'integer' },
+									hasGpt52Codex: { type: 'boolean' },
+									sampleModels: {
+										type: 'array',
+										items: { type: 'string' },
+									},
+								},
+								required: [
+									'success',
+									'provider',
+									'source',
+									'modelCount',
+									'hasGpt52Codex',
+									'sampleModels',
+								],
+							},
+						},
+					},
+				},
+				400: errorResponse(),
+			},
+		},
+	},
+	'/v1/auth/copilot/diagnostics': {
+		get: {
+			tags: ['auth'],
+			operationId: 'getCopilotDiagnostics',
+			summary: 'Get Copilot token diagnostics and model visibility',
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									tokenSources: {
+										type: 'array',
+										items: {
+											type: 'object',
+											properties: {
+												source: {
+													type: 'string',
+													enum: ['env', 'stored'],
+												},
+												configured: { type: 'boolean' },
+												modelCount: { type: 'integer' },
+												hasGpt52Codex: { type: 'boolean' },
+												sampleModels: {
+													type: 'array',
+													items: { type: 'string' },
+												},
+												restrictedByOrgPolicy: { type: 'boolean' },
+												restrictedOrg: { type: 'string' },
+												restrictionMessage: { type: 'string' },
+												error: { type: 'string' },
+											},
+											required: ['source', 'configured'],
+										},
+									},
+									methods: {
+										type: 'object',
+										properties: {
+											oauth: { type: 'boolean' },
+											token: { type: 'boolean' },
+											ghImport: {
+												type: 'object',
+												properties: {
+													available: { type: 'boolean' },
+													authenticated: { type: 'boolean' },
+													reason: { type: 'string' },
+												},
+												required: ['available', 'authenticated'],
+											},
+										},
+										required: ['oauth', 'token', 'ghImport'],
+									},
+								},
+								required: ['tokenSources', 'methods'],
+							},
+						},
+					},
+				},
 			},
 		},
 	},

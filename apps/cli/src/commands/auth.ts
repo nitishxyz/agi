@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { runAuth, runAuthList, runAuthLogout } from '../auth.ts';
+import { runAuth, runAuthList, runAuthLogout, runAuthStatus } from '../auth.ts';
 
 export function registerAuthCommand(program: Command) {
 	const auth = program
@@ -10,10 +10,20 @@ export function registerAuthCommand(program: Command) {
 		.command('login [provider]')
 		.description('Add or update provider credentials')
 		.option('--local', 'Store credentials locally (deprecated)', false)
+		.option('--method <method>', 'Auth method (copilot: oauth|token|gh)')
 		.action(async (provider, opts) => {
 			const args = provider ? [provider] : [];
 			if (opts.local) args.push('--local');
+			if (opts.method) args.push('--method', opts.method);
 			await runAuth(['login', ...args]);
+		});
+
+	auth
+		.command('status [provider]')
+		.description('Show detailed auth diagnostics (copilot supported)')
+		.action(async (provider) => {
+			const args = provider ? [provider] : [];
+			await runAuthStatus(args);
 		});
 
 	auth

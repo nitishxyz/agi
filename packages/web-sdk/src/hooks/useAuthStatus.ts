@@ -274,6 +274,45 @@ export function useAuthStatus() {
 		[fetchAuthStatus],
 	);
 
+	const saveCopilotToken = useCallback(
+		async (token: string) => {
+			setLoading(true);
+			setError(null);
+			try {
+				const result = await apiClient.saveCopilotToken(token);
+				await fetchAuthStatus();
+				return result;
+			} catch (err) {
+				const message =
+					err instanceof Error ? err.message : 'Failed to save Copilot token';
+				setError(message);
+				throw err;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[fetchAuthStatus, setLoading, setError],
+	);
+
+	const importCopilotTokenFromGh = useCallback(async () => {
+		setLoading(true);
+		setError(null);
+		try {
+			const result = await apiClient.importCopilotTokenFromGh();
+			await fetchAuthStatus();
+			return result;
+		} catch (err) {
+			const message =
+				err instanceof Error
+					? err.message
+					: 'Failed to import Copilot token from GH';
+			setError(message);
+			throw err;
+		} finally {
+			setLoading(false);
+		}
+	}, [fetchAuthStatus, setLoading, setError]);
+
 	return {
 		authStatus,
 		isOpen,
@@ -290,5 +329,9 @@ export function useAuthStatus() {
 		exchangeOAuthCode,
 		startCopilotDeviceFlow: apiClient.startCopilotDeviceFlow.bind(apiClient),
 		pollCopilotDeviceFlow,
+		getCopilotAuthMethods: apiClient.getCopilotAuthMethods.bind(apiClient),
+		saveCopilotToken,
+		importCopilotTokenFromGh,
+		getCopilotDiagnostics: apiClient.getCopilotDiagnostics.bind(apiClient),
 	};
 }

@@ -37,6 +37,25 @@ describe('oauth codex continuation decision', () => {
 		expect(decision.reason).toBe('truncated');
 	});
 
+	test('continues when stream ends on tool activity without trailing text', () => {
+		const decision = decideOauthCodexContinuation({
+			provider: 'openai',
+			isOpenAIOAuth: true,
+			finishObserved: false,
+			continuationCount: 0,
+			maxContinuations: 6,
+			finishReason: 'stop',
+			rawFinishReason: undefined,
+			firstToolSeen: true,
+			hasTrailingAssistantText: false,
+			endedWithToolActivity: true,
+			droppedPseudoToolText: false,
+			lastAssistantText: 'Working through tool calls',
+		});
+		expect(decision.shouldContinue).toBe(true);
+		expect(decision.reason).toBe('ended-on-tool-activity');
+	});
+
 	test('continues when tools ran but no assistant text was produced', () => {
 		const decision = decideOauthCodexContinuation({
 			provider: 'openai',
@@ -123,6 +142,26 @@ describe('oauth codex continuation decision', () => {
 			lastAssistantText: 'Done.',
 		});
 		expect(decision.shouldContinue).toBe(false);
+	});
+
+	test('does not continue when stream was aborted by user', () => {
+		const decision = decideOauthCodexContinuation({
+			provider: 'openai',
+			isOpenAIOAuth: true,
+			finishObserved: false,
+			abortedByUser: true,
+			continuationCount: 0,
+			maxContinuations: 6,
+			finishReason: 'length',
+			rawFinishReason: 'max_output_tokens',
+			firstToolSeen: true,
+			hasTrailingAssistantText: false,
+			endedWithToolActivity: true,
+			droppedPseudoToolText: false,
+			lastAssistantText: 'Partial output',
+		});
+		expect(decision.shouldContinue).toBe(false);
+		expect(decision.reason).toBe('aborted-by-user');
 	});
 
 	test('does not continue for non-oauth provider calls', () => {

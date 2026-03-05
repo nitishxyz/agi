@@ -87,6 +87,10 @@ class ApiClient {
 	exchangeOAuthCode = authMixin.exchangeOAuthCode;
 	startCopilotDeviceFlow = authMixin.startCopilotDeviceFlow;
 	pollCopilotDeviceFlow = authMixin.pollCopilotDeviceFlow;
+	getCopilotAuthMethods = authMixin.getCopilotAuthMethods;
+	saveCopilotToken = authMixin.saveCopilotToken;
+	importCopilotTokenFromGh = authMixin.importCopilotTokenFromGh;
+	getCopilotDiagnostics = authMixin.getCopilotDiagnostics;
 	getProviderUsage = authMixin.getProviderUsage;
 
 	listSkills = skillsMixin.listSkills;

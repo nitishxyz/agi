@@ -114,11 +114,23 @@ export function ErrorRenderer({
 		}
 	}
 
+	const copilotContext =
+		String(errorDetails?.url ?? '').includes('githubcopilot.com') ||
+		String(errorMessage ?? '')
+			.toLowerCase()
+			.includes('copilot model');
+
+	const normalizedErrorMessage = String(
+		apiError?.message ?? errorMessage ?? '',
+	).toLowerCase();
+
 	const isCopilotModelError =
+		copilotContext &&
 		(apiError?.code === 'model_not_supported' ||
-			apiError?.message?.toLowerCase().includes('model is not supported')) &&
-		(String(errorDetails?.url ?? '').includes('githubcopilot.com') ||
-			contentJson.type === 'api_error');
+			normalizedErrorMessage.includes('model is not supported') ||
+			normalizedErrorMessage.includes(
+				'not available for this account/organization token',
+			));
 
 	const isCopilotResponsesOnly =
 		apiError?.message
@@ -141,11 +153,11 @@ export function ErrorRenderer({
 								<code className="px-1 py-0.5 bg-muted rounded text-xs">
 									{String(model)}
 								</code>{' '}
-								is only available via the Responses API, which is not yet
-								supported.
+								must be sent through the Responses API. If this persists,
+								refresh auth and retry.
 							</>
 						) : (
-							'This model is only available via the Responses API, which is not yet supported.'
+							'This model must be sent through the Responses API. If this persists, refresh auth and retry.'
 						)}
 					</p>
 					<p className="text-xs text-muted-foreground">
@@ -185,15 +197,18 @@ export function ErrorRenderer({
 								<code className="px-1 py-0.5 bg-muted rounded text-xs">
 									{String(model)}
 								</code>{' '}
-								is not available. You need a Copilot Pro (or higher) plan and
-								the model must be enabled in your settings.
+								is not available for the current Copilot token.
 							</>
 						) : (
-							'The requested model is not available. You need a Copilot Pro (or higher) plan and the model must be enabled in your settings.'
+							'The requested model is not available for the current Copilot token.'
 						)}
 					</p>
 					<p className="text-xs text-muted-foreground">
-						Enable models at{' '}
+						Your org may restrict third-party OAuth apps, so OAuth and GH tokens
+						can see different model entitlements.
+					</p>
+					<p className="text-xs text-muted-foreground">
+						Check model settings at{' '}
 						<a
 							href="https://github.com/settings/copilot"
 							target="_blank"
@@ -206,6 +221,7 @@ export function ErrorRenderer({
 						>
 							github.com/settings/copilot
 						</a>
+						, then reconnect Copilot with OAuth or token mode.
 					</p>
 				</div>
 				{onRetry && (

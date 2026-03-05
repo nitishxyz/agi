@@ -39,6 +39,11 @@ const PREFERRED_FAST_MODELS: Partial<Record<ProviderId, string[]>> = {
 	copilot: ['gpt-4.1-mini'],
 };
 
+const PREFERRED_FAST_MODELS_OAUTH: Partial<Record<ProviderId, string[]>> = {
+	openai: ['gpt-5.1-codex-mini'],
+	anthropic: ['claude-haiku-4-5'],
+};
+
 export function getFastModel(provider: ProviderId): string | undefined {
 	const providerModels = catalog[provider]?.models ?? [];
 	if (!providerModels.length) return undefined;
@@ -71,12 +76,12 @@ export function getFastModelForAuth(
 	);
 	if (!filteredModels.length) return getFastModel(provider);
 
-	if (authType !== 'oauth') {
-		const preferred = PREFERRED_FAST_MODELS[provider] ?? [];
-		for (const modelId of preferred) {
-			if (filteredModels.some((m) => m.id === modelId)) {
-				return modelId;
-			}
+	const preferredMap =
+		authType === 'oauth' ? PREFERRED_FAST_MODELS_OAUTH : PREFERRED_FAST_MODELS;
+	const preferred = preferredMap[provider] ?? [];
+	for (const modelId of preferred) {
+		if (filteredModels.some((m) => m.id === modelId)) {
+			return modelId;
 		}
 	}
 

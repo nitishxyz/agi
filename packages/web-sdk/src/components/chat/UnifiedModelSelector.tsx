@@ -24,6 +24,8 @@ interface FlattenedModel {
 	modelLabel: string;
 	toolCall?: boolean;
 	reasoningText?: boolean;
+	available?: boolean;
+	unavailableReason?: string;
 }
 
 export interface UnifiedModelSelectorRef {
@@ -63,6 +65,8 @@ export const UnifiedModelSelector = forwardRef<
 					modelLabel: modelItem.label,
 					toolCall: modelItem.toolCall,
 					reasoningText: modelItem.reasoningText,
+					available: modelItem.available,
+					unavailableReason: modelItem.unavailableReason,
 				});
 			}
 		}
@@ -127,6 +131,8 @@ export const UnifiedModelSelector = forwardRef<
 					label: item.modelLabel,
 					toolCall: item.toolCall,
 					reasoningText: item.reasoningText,
+					available: item.available,
+					unavailableReason: item.unavailableReason,
 				});
 			}
 		}
@@ -145,6 +151,8 @@ export const UnifiedModelSelector = forwardRef<
 					modelLabel: modelItem.label,
 					toolCall: modelItem.toolCall,
 					reasoningText: modelItem.reasoningText,
+					available: modelItem.available,
+					unavailableReason: modelItem.unavailableReason,
 				});
 			}
 		}
@@ -203,7 +211,12 @@ export const UnifiedModelSelector = forwardRef<
 		};
 	}, [isOpen]);
 
-	const handleSelect = (selectedProvider: string, selectedModel: string) => {
+	const handleSelect = (
+		selectedProvider: string,
+		selectedModel: string,
+		available?: boolean,
+	) => {
+		if (available === false) return;
 		onChange(selectedProvider, selectedModel);
 		setIsOpen(false);
 		setSearchQuery('');
@@ -228,8 +241,12 @@ export const UnifiedModelSelector = forwardRef<
 		} else if (event.key === 'Enter') {
 			event.preventDefault();
 			const highlighted = filteredFlatList[highlightedIndex];
-			if (highlighted) {
-				handleSelect(highlighted.providerKey, highlighted.modelId);
+			if (highlighted && highlighted.available !== false) {
+				handleSelect(
+					highlighted.providerKey,
+					highlighted.modelId,
+					highlighted.available,
+				);
 			}
 		}
 	};
@@ -301,6 +318,7 @@ export const UnifiedModelSelector = forwardRef<
 														item.modelId === modelItem.id,
 												);
 												const isHighlighted = flatIndex === highlightedIndex;
+												const isAvailable = modelItem.available !== false;
 
 												return (
 													<button
@@ -311,8 +329,14 @@ export const UnifiedModelSelector = forwardRef<
 															}
 														}}
 														type="button"
+														disabled={!isAvailable}
+														title={modelItem.unavailableReason}
 														onClick={() =>
-															handleSelect(providerKey, modelItem.id)
+															handleSelect(
+																providerKey,
+																modelItem.id,
+																modelItem.available,
+															)
 														}
 														onMouseEnter={() => setHighlightedIndex(flatIndex)}
 														className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors ${
@@ -323,12 +347,22 @@ export const UnifiedModelSelector = forwardRef<
 															isSelected
 																? 'text-[hsl(var(--accent-foreground))] font-medium'
 																: 'text-[hsl(var(--foreground))]'
+														} ${
+															!isAvailable
+																? 'opacity-60 cursor-not-allowed'
+																: ''
 														}`}
 													>
 														<span className="truncate">{modelItem.label}</span>
-														{(modelItem.toolCall ||
+														{(!isAvailable ||
+															modelItem.toolCall ||
 															modelItem.reasoningText) && (
 															<div className="flex gap-1 ml-2 flex-shrink-0">
+																{!isAvailable && (
+																	<span className="text-[10px] px-1.5 py-0.5 bg-red-600/20 text-red-400 rounded">
+																		Unavailable
+																	</span>
+																)}
 																{modelItem.toolCall && (
 																	<span className="text-[10px] px-1.5 py-0.5 bg-green-600/20 text-green-400 rounded">
 																		Tools

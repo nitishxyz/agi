@@ -19,6 +19,14 @@ export function providerEnvVar(provider: ProviderId): string {
 }
 
 export function readEnvKey(provider: ProviderId): string | undefined {
+	if (provider === 'copilot') {
+		const copilotToken =
+			process.env.COPILOT_GITHUB_TOKEN ??
+			process.env.GH_TOKEN ??
+			process.env.GITHUB_TOKEN;
+		return copilotToken?.length ? copilotToken : undefined;
+	}
+
 	const key = providerEnvVar(provider);
 	const value = process.env[key];
 	return value?.length ? value : undefined;

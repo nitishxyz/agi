@@ -8,6 +8,7 @@ import {
 	log,
 	text,
 } from '@clack/prompts';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { box, table, colors } from './ui.ts';
 import {
 	getAllAuth,
@@ -82,6 +83,11 @@ const PROVIDER_LINKS: Record<
 		url: 'https://platform.moonshot.ai/console/api-keys',
 		env: 'MOONSHOT_API_KEY',
 	},
+	minimax: {
+		name: 'MiniMax',
+		url: 'https://api.minimaxi.chat/user-center/basic-information/interface-key',
+		env: 'MINIMAX_API_KEY',
+	},
 	copilot: {
 		name: 'GitHub Copilot',
 		url: 'https://github.com/features/copilot',
@@ -89,14 +95,90 @@ const PROVIDER_LINKS: Record<
 	},
 };
 
+const COPILOT_MODELS_URL = 'https://api.githubcopilot.com/models';
+
+type CopilotLoginMethod = 'oauth' | 'token' | 'gh';
+
+function parseOptionValue(
+	args: string[],
+	optionName: string,
+): string | undefined {
+	const exactPrefix = `${optionName}=`;
+	for (let i = 0; i < args.length; i++) {
+		const arg = args[i];
+		if (arg.startsWith(exactPrefix)) return arg.slice(exactPrefix.length);
+		if (arg === optionName && i + 1 < args.length) return args[i + 1];
+	}
+	return undefined;
+}
+
+function getCopilotLoginMethodArg(
+	args: string[],
+): CopilotLoginMethod | undefined {
+	const method = parseOptionValue(args, '--method');
+	if (method === 'oauth' || method === 'token' || method === 'gh')
+		return method;
+	return undefined;
+}
+
+async function fetchCopilotModels(
+	token: string,
+): Promise<
+	| { ok: true; models: Set<string> }
+	| { ok: false; status: number; message: string }
+> {
+	try {
+		const response = await fetch(COPILOT_MODELS_URL, {
+			headers: {
+				Authorization: `Bearer ${token}`,
+				'Openai-Intent': 'conversation-edits',
+				'User-Agent': 'ottocode',
+			},
+		});
+		const text = await response.text();
+		if (!response.ok) {
+			let message = `Copilot models endpoint returned ${response.status}`;
+			try {
+				const parsed = JSON.parse(text) as {
+					message?: string;
+					error?: { message?: string };
+				};
+				message = parsed.error?.message || parsed.message || message;
+			} catch {}
+			return { ok: false, status: response.status, message };
+		}
+
+		const payload = JSON.parse(text) as { data?: Array<{ id?: string }> };
+		const models = new Set(
+			(payload.data ?? [])
+				.map((item) => item.id)
+				.filter((id): id is string => Boolean(id)),
+		);
+		return { ok: true, models };
+	} catch (error) {
+		const message =
+			error instanceof Error ? error.message : 'Failed to fetch Copilot models';
+		return { ok: false, status: 0, message };
+	}
+}
+
+function logCopilotTokenSummary(models: Set<string>) {
+	log.info(`Visible Copilot models: ${models.size}`);
+	const sampleModels = Array.from(models).sort().slice(0, 8);
+	if (sampleModels.length > 0) {
+		log.info(`Sample models: ${sampleModels.join(', ')}`);
+	}
+}
+
 export async function runAuth(args: string[]) {
 	const sub = args[0];
 	if (sub === 'login') return await runAuthLogin(args.slice(1));
 	if (sub === 'list' || sub === 'ls') return await runAuthList(args.slice(1));
+	if (sub === 'status') return await runAuthStatus(args.slice(1));
 	if (sub === 'logout' || sub === 'rm' || sub === 'remove')
 		return await runAuthLogout(args.slice(1));
 	intro('otto auth');
-	log.info('usage: otto auth login|list|logout');
+	log.info('usage: otto auth login|list|status|logout');
 	outro('');
 	return false;
 }
@@ -127,6 +209,60 @@ export async function runAuthList(_args: string[]) {
 		if (process.env[meta.env]) envRows.push(`${pid} ${colors.dim(meta.env)}`);
 	}
 	if (envRows.length) box('Environment', envRows);
+}
+
+export async function runAuthStatus(_args: string[]) {
+	const cfg = await loadConfig(process.cwd());
+	const auth = await getAllAuth(cfg.projectRoot);
+	const provider = _args[0] as ProviderId | undefined;
+
+	if (provider && provider !== 'copilot') {
+		log.info('Detailed status currently supports only Copilot.');
+		return runAuthList([]);
+	}
+
+	const rows: string[][] = [];
+	const envToken =
+		process.env.COPILOT_GITHUB_TOKEN ??
+		process.env.GH_TOKEN ??
+		process.env.GITHUB_TOKEN;
+
+	if (envToken) {
+		const envModels = await fetchCopilotModels(envToken);
+		rows.push([
+			'env',
+			envModels.ok ? String(envModels.models.size) : '-',
+			envModels.ok
+				? envModels.models.has('gpt-5.2-codex')
+					? 'yes'
+					: 'no'
+				: '-',
+			envModels.ok ? 'ok' : envModels.message,
+		]);
+	} else {
+		rows.push(['env', '-', '-', 'not configured']);
+	}
+
+	const stored = auth.copilot;
+	if (stored?.type === 'oauth') {
+		const storedModels = await fetchCopilotModels(stored.refresh);
+		rows.push([
+			'stored',
+			storedModels.ok ? String(storedModels.models.size) : '-',
+			storedModels.ok
+				? storedModels.models.has('gpt-5.2-codex')
+					? 'yes'
+					: 'no'
+				: '-',
+			storedModels.ok ? 'ok' : storedModels.message,
+		]);
+	} else {
+		rows.push(['stored', '-', '-', 'not configured']);
+	}
+
+	box('Copilot token status', []);
+	table(['Source', 'Models', 'Codex', 'Details'], rows);
+	outro('Done');
 }
 
 export async function runAuthLogin(_args: string[]): Promise<boolean> {
@@ -175,7 +311,7 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 	}
 
 	if (provider === 'copilot') {
-		return runAuthLoginCopilot(cfg, wantLocal);
+		return runAuthLoginCopilot(cfg, wantLocal, _args);
 	}
 
 	const meta = PROVIDER_LINKS[provider];
@@ -562,36 +698,105 @@ async function runAuthLoginSetu(
 async function runAuthLoginCopilot(
 	cfg: Awaited<ReturnType<typeof loadConfig>>,
 	wantLocal: boolean,
+	args: string[],
 ): Promise<boolean> {
 	try {
-		log.info('Starting GitHub Copilot device flow...');
+		const methodArg = getCopilotLoginMethodArg(args);
+		const authMethod = methodArg
+			? methodArg
+			: ((await select({
+					message: 'Select Copilot authentication method',
+					options: [
+						{ value: 'oauth', label: 'OAuth device flow (GitHub login)' },
+						{ value: 'token', label: 'Paste GitHub token manually' },
+						{ value: 'gh', label: 'Import token from gh CLI' },
+					],
+				})) as CopilotLoginMethod | symbol);
 
-		const deviceData = await authorizeCopilot();
-
-		log.info(`Opening browser: ${deviceData.verificationUri}`);
-		log.info(`Enter code: ${colors.cyan(deviceData.userCode)}\n`);
-
-		const opened = await openCopilotAuthUrl(deviceData.verificationUri);
-		if (!opened) {
-			log.warn(
-				'Could not open browser automatically. Please visit the URL above manually.\n',
-			);
+		if (isCancel(authMethod)) {
+			cancel('Cancelled');
+			return false;
 		}
 
-		log.info('Waiting for authorization...');
-		log.info('(Complete the login in your browser)\n');
+		let token = '';
+		if (authMethod === 'oauth') {
+			log.info('Starting GitHub Copilot device flow...');
+			const deviceData = await authorizeCopilot();
 
-		const accessToken = await pollForCopilotToken(
-			deviceData.deviceCode,
-			deviceData.interval,
-		);
+			log.info(`Opening browser: ${deviceData.verificationUri}`);
+			log.info(`Enter code: ${colors.cyan(deviceData.userCode)}\n`);
+
+			const opened = await openCopilotAuthUrl(deviceData.verificationUri);
+			if (!opened) {
+				log.warn(
+					'Could not open browser automatically. Please visit the URL above manually.\n',
+				);
+			}
+
+			log.info('Waiting for authorization...');
+			log.info('(Complete the login in your browser)\n');
+
+			token = await pollForCopilotToken(
+				deviceData.deviceCode,
+				deviceData.interval,
+			);
+		} else if (authMethod === 'token') {
+			const pasted = await password({
+				message:
+					'Paste GitHub token (gho_... / github_pat_...) with Copilot access',
+				validate: (v) =>
+					v && String(v).trim().length > 0 ? undefined : 'Token is required',
+			});
+			if (isCancel(pasted)) {
+				cancel('Cancelled');
+				return false;
+			}
+			token = String(pasted).trim();
+		} else {
+			const version = spawnSync('gh', ['--version'], {
+				encoding: 'utf8',
+				stdio: ['ignore', 'pipe', 'pipe'],
+			});
+			if (version.status !== 0) {
+				log.error('GitHub CLI (gh) is not installed.');
+				outro('Failed');
+				return false;
+			}
+
+			const ghStatus = spawnSync('gh', ['auth', 'status', '-h', 'github.com'], {
+				encoding: 'utf8',
+				stdio: ['ignore', 'pipe', 'pipe'],
+			});
+			if (ghStatus.status !== 0) {
+				log.error('GitHub CLI is not authenticated. Run `gh auth login`.');
+				outro('Failed');
+				return false;
+			}
+
+			token = execFileSync('gh', ['auth', 'token'], {
+				encoding: 'utf8',
+				stdio: ['ignore', 'pipe', 'pipe'],
+			}).trim();
+			if (!token) {
+				log.error('GitHub CLI returned an empty token.');
+				outro('Failed');
+				return false;
+			}
+		}
+
+		const models = await fetchCopilotModels(token);
+		if (!models.ok) {
+			log.error(`Copilot token validation failed: ${models.message}`);
+			outro('Failed');
+			return false;
+		}
 
 		await setAuth(
 			'copilot',
 			{
 				type: 'oauth',
-				refresh: accessToken,
-				access: accessToken,
+				refresh: token,
+				access: token,
 				expires: 0,
 			},
 			cfg.projectRoot,
@@ -605,8 +810,9 @@ async function runAuthLoginCopilot(
 
 		await ensureGlobalConfigDefaults('copilot');
 		log.success('GitHub Copilot authorized!');
+		logCopilotTokenSummary(models.models);
 		log.info(
-			'You can now use Copilot models (free with GitHub Copilot subscription).',
+			'You can also use env vars: COPILOT_GITHUB_TOKEN / GH_TOKEN / GITHUB_TOKEN',
 		);
 		outro('Done');
 		return true;
@@ -672,6 +878,10 @@ async function ensureGlobalConfigDefaults(provider: ProviderId) {
 			opencode: { enabled: provider === 'opencode' },
 			copilot: { enabled: provider === 'copilot' },
 			setu: { enabled: provider === 'setu' },
+			zai: { enabled: provider === 'zai' },
+			'zai-coding': { enabled: provider === 'zai-coding' },
+			moonshot: { enabled: provider === 'moonshot' },
+			minimax: { enabled: provider === 'minimax' },
 		},
 	};
 	// Ensure directory and write file

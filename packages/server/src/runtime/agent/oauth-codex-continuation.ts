@@ -2,12 +2,14 @@ export type OauthCodexContinuationInput = {
 	provider: string;
 	isOpenAIOAuth: boolean;
 	finishObserved: boolean;
+	abortedByUser?: boolean;
 	continuationCount: number;
 	maxContinuations: number;
 	finishReason?: string;
 	rawFinishReason?: string;
 	firstToolSeen: boolean;
 	hasTrailingAssistantText: boolean;
+	endedWithToolActivity?: boolean;
 	droppedPseudoToolText: boolean;
 	lastAssistantText: string;
 };
@@ -68,12 +70,20 @@ export function decideOauthCodexContinuation(
 		return { shouldContinue: false };
 	}
 
+	if (input.abortedByUser) {
+		return { shouldContinue: false, reason: 'aborted-by-user' };
+	}
+
 	if (input.continuationCount >= input.maxContinuations) {
 		return { shouldContinue: false, reason: 'max-continuations-reached' };
 	}
 
 	if (isTruncatedResponse(input.finishReason, input.rawFinishReason)) {
 		return { shouldContinue: true, reason: 'truncated' };
+	}
+
+	if (input.endedWithToolActivity) {
+		return { shouldContinue: true, reason: 'ended-on-tool-activity' };
 	}
 
 	if (isMissingAssistantSummary(input)) {

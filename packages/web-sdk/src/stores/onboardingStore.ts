@@ -7,6 +7,8 @@ export interface ProviderInfo {
 	type?: 'api' | 'oauth' | 'wallet';
 	label: string;
 	supportsOAuth: boolean;
+	supportsToken?: boolean;
+	supportsGhImport?: boolean;
 	modelCount: number;
 	costRange?: { min: number; max: number };
 }

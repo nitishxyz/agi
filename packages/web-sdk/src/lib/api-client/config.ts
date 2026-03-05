@@ -27,7 +27,13 @@ export const configMixin = {
 	},
 
 	async getModels(providerId: string): Promise<{
-		models: Array<{ id: string; label: string; toolCall?: boolean }>;
+		models: Array<{
+			id: string;
+			label: string;
+			toolCall?: boolean;
+			available?: boolean;
+			unavailableReason?: string;
+		}>;
 		default: string;
 	}> {
 		const response = await apiGetProviderModels({

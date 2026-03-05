@@ -69,11 +69,10 @@ export function detectOAuth(
 ): OAuthContext {
 	const isOAuth = auth?.type === 'oauth';
 	const needsSpoof = !!isOAuth && provider === 'anthropic';
-	const isCopilot = provider === 'copilot';
 	return {
-		isOAuth: !!isOAuth || isCopilot,
+		isOAuth: !!isOAuth,
 		needsSpoof,
-		isOpenAIOAuth: (!!isOAuth && provider === 'openai') || isCopilot,
+		isOpenAIOAuth: !!isOAuth && provider === 'openai',
 		spoofPrompt: needsSpoof ? getProviderSpoofPrompt(provider) : undefined,
 	};
 }

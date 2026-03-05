@@ -32,6 +32,10 @@ export const OnboardingModal = memo(function OnboardingModal({
 		exchangeOAuthCode,
 		startCopilotDeviceFlow,
 		pollCopilotDeviceFlow,
+		getCopilotAuthMethods,
+		saveCopilotToken,
+		importCopilotTokenFromGh,
+		getCopilotDiagnostics,
 	} = useAuthStatus();
 
 	if (!isOpen || !authStatus) return null;
@@ -55,6 +59,10 @@ export const OnboardingModal = memo(function OnboardingModal({
 					hideHeader={hideHeader}
 					onStartCopilotDeviceFlow={startCopilotDeviceFlow}
 					onPollCopilotDeviceFlow={pollCopilotDeviceFlow}
+					onGetCopilotAuthMethods={getCopilotAuthMethods}
+					onSaveCopilotToken={saveCopilotToken}
+					onImportCopilotTokenFromGh={importCopilotTokenFromGh}
+					onGetCopilotDiagnostics={getCopilotDiagnostics}
 				/>
 			)}
 
