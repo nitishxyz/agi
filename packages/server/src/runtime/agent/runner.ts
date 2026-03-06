@@ -255,9 +255,10 @@ async function runAssistant(opts: RunOpts) {
 	const onFinish = createFinishHandler(opts, db, completeAssistantMessage);
 	const isCopilotResponsesApi =
 		opts.provider === 'copilot' && !opts.model.startsWith('gpt-5-mini');
-	const stopWhenCondition = isOpenAIOAuth || isCopilotResponsesApi
-		? stepCountIs(20)
-		: hasToolCall('finish');
+	const stopWhenCondition =
+		isOpenAIOAuth || isCopilotResponsesApi
+			? stepCountIs(20)
+			: hasToolCall('finish');
 
 	try {
 		const result = streamText({

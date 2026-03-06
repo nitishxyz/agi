@@ -89,12 +89,7 @@ const accentColor = '#3b82f6';
 function OttoLogo({ size = 32 }: { size?: number }) {
 	const w = Math.round(size * (748 / 303));
 	return (
-		<svg
-			width={w}
-			height={size}
-			viewBox="0 0 748 303"
-			fill={fgColor}
-		>
+		<svg width={w} height={size} viewBox="0 0 748 303" fill={fgColor}>
 			<path d={OTTO_WORDMARK_PATH} />
 		</svg>
 	);
@@ -141,7 +136,8 @@ function renderLandingOG() {
 					width: '500px',
 					height: '500px',
 					borderRadius: '50%',
-					background: 'radial-gradient(circle, rgba(59,130,246,0.12), transparent 70%)',
+					background:
+						'radial-gradient(circle, rgba(59,130,246,0.12), transparent 70%)',
 					display: 'flex',
 				}}
 			/>
@@ -182,26 +178,24 @@ function renderLandingOG() {
 						marginTop: '44px',
 					}}
 				>
-					{['CLI', 'TUI', 'Desktop', 'Server', 'Embeddable'].map(
-						(label) => (
-							<div
-								key={label}
-								style={{
-									display: 'flex',
-									alignItems: 'center',
-									padding: '10px 24px',
-									background: '#18181b',
-									border: '1px solid #3f3f46',
-									borderRadius: '8px',
-									fontSize: '17px',
-									color: '#d4d4d8',
-									letterSpacing: '0.04em',
-								}}
-							>
-								{label}
-							</div>
-						),
-					)}
+					{['CLI', 'TUI', 'Desktop', 'Server', 'Embeddable'].map((label) => (
+						<div
+							key={label}
+							style={{
+								display: 'flex',
+								alignItems: 'center',
+								padding: '10px 24px',
+								background: '#18181b',
+								border: '1px solid #3f3f46',
+								borderRadius: '8px',
+								fontSize: '17px',
+								color: '#d4d4d8',
+								letterSpacing: '0.04em',
+							}}
+						>
+							{label}
+						</div>
+					))}
 				</div>
 			</div>
 
@@ -488,9 +482,7 @@ function renderBlogOG(data: PageOGRequest) {
 					<span>{author}</span>
 					{date && (
 						<>
-							<span style={{ margin: '0 16px', opacity: 0.5 }}>
-								·
-							</span>
+							<span style={{ margin: '0 16px', opacity: 0.5 }}>·</span>
 							<span>{date}</span>
 						</>
 					)}
@@ -674,7 +666,7 @@ export const handler = async (event: {
 			type,
 			title: params.title,
 			description: params.description,
-		section: params.sec || params.section,
+			section: params.sec || params.section,
 			date: params.date,
 			author: params.author,
 		};

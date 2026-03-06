@@ -129,7 +129,11 @@ export const ChatInput = memo(
 
 			if (setuSubscription?.active) {
 				const credits = `${setuSubscription.creditsRemaining?.toFixed(1) ?? '—'} credits`;
-				if (effectivePayg !== null && effectivePayg !== undefined && effectivePayg > 0) {
+				if (
+					effectivePayg !== null &&
+					effectivePayg !== undefined &&
+					effectivePayg > 0
+				) {
 					return `GO ${credits} · $${effectivePayg.toFixed(2)}`;
 				}
 				return `GO ${credits}`;
@@ -560,7 +564,7 @@ export const ChatInput = memo(
 							providerName ||
 							authType ||
 							agent) && (
-						<div className="grid grid-cols-[auto_1fr_auto] items-center mt-1 px-3">
+							<div className="grid grid-cols-[auto_1fr_auto] items-center mt-1 px-3">
 								<div
 									className="justify-self-start flex-shrink-0 relative"
 									ref={agentDropdownRef}

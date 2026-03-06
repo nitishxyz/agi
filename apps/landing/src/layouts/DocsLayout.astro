@@ -64,16 +64,18 @@ function isActive(href: string, end?: boolean): boolean {
 }
 
 const ogTitle = title?.replace(/ — otto docs$/, '') || 'Documentation';
-const resolvedSection = section || (() => {
-	for (const s of NAV_SECTIONS) {
-		for (const item of s.items) {
-			const clean = pathname.replace(/\/$/, '') || '/';
-			const target = item.href.replace(/\/$/, '') || '/';
-			if (clean === target || clean.startsWith(`${target}/`)) return s.title;
+const resolvedSection =
+	section ||
+	(() => {
+		for (const s of NAV_SECTIONS) {
+			for (const item of s.items) {
+				const clean = pathname.replace(/\/$/, '') || '/';
+				const target = item.href.replace(/\/$/, '') || '/';
+				if (clean === target || clean.startsWith(`${target}/`)) return s.title;
+			}
 		}
-	}
-	return '';
-})();
+		return '';
+	})();
 ---
 
 <BaseLayout title={title} description={description} isDocs={true} ogType="docs" ogTitle={ogTitle} ogSection={resolvedSection} ogDescription={description}>

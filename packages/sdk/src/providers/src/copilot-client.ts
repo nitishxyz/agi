@@ -69,7 +69,9 @@ function sanitizeCopilotResponsesStream(response: Response): Response {
 	let seenCompleted = false;
 	let seenDone = false;
 
-	function processBuffer(controller: TransformStreamDefaultController<Uint8Array>) {
+	function processBuffer(
+		controller: TransformStreamDefaultController<Uint8Array>,
+	) {
 		let boundary = buffer.indexOf('\n\n');
 		while (boundary !== -1) {
 			const rawEvent = buffer.slice(0, boundary);

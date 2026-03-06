@@ -19,9 +19,7 @@ import {
 
 const COPILOT_MODELS_URL = 'https://api.githubcopilot.com/models';
 
-function filterCopilotAvailability<
-	T extends { id: string },
->(
+function filterCopilotAvailability<T extends { id: string }>(
 	provider: ProviderId,
 	models: T[],
 	copilotAllowedModels: Set<string> | null,
