@@ -211,6 +211,13 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const providerOptions = { ...adapted.providerOptions };
 	let effectiveMaxOutputTokens = maxOutputTokens;
 
+	if (opts.provider === 'copilot') {
+		providerOptions.openai = {
+			...((providerOptions.openai as Record<string, unknown>) || {}),
+			store: false,
+		};
+	}
+
 	if (opts.reasoningText) {
 		const underlyingProvider = getUnderlyingProviderKey(
 			opts.provider,

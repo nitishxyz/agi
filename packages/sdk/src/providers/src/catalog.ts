@@ -9431,6 +9431,39 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
         }
       },
       {
+        "id": "gpt-5.3-codex-spark",
+        "ownedBy": "openai",
+        "label": "GPT-5.3 Codex Spark",
+        "modalities": {
+          "input": [
+            "text"
+          ],
+          "output": [
+            "text"
+          ]
+        },
+        "toolCall": true,
+        "reasoningText": true,
+        "attachment": false,
+        "temperature": false,
+        "knowledge": "2025-08-31",
+        "releaseDate": "2026-02-12",
+        "lastUpdated": "2026-02-12",
+        "openWeights": false,
+        "cost": {
+          "input": 1.75,
+          "output": 14,
+          "cacheRead": 0.175
+        },
+        "limit": {
+          "context": 128000,
+          "output": 128000
+        },
+        "provider": {
+          "npm": "@ai-sdk/openai"
+        }
+      },
+      {
         "id": "gpt-5.4",
         "ownedBy": "openai",
         "label": "GPT-5.4",

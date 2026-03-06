@@ -129,6 +129,9 @@ export const ChatInput = memo(
 
 			if (setuSubscription?.active) {
 				const credits = `${setuSubscription.creditsRemaining?.toFixed(1) ?? '—'} credits`;
+				if (effectivePayg !== null && effectivePayg !== undefined && effectivePayg > 0) {
+					return `GO ${credits} · $${effectivePayg.toFixed(2)}`;
+				}
 				return `GO ${credits}`;
 			}
 

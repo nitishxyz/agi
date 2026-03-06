@@ -193,19 +193,10 @@ export function registerModelsRoutes(app: Hono) {
 						providerCatalog.models,
 						authType,
 					);
-					const copilotAllowedModels =
-						provider === 'copilot'
-							? await getAuthorizedCopilotModels(projectRoot)
-							: null;
-				const availableModels = filterCopilotAvailability(
-					provider,
-					filteredModels,
-					copilotAllowedModels,
-				);
 					modelsMap[provider] = {
 						label: providerCatalog.label || provider,
 						authType,
-					models: availableModels.map((m) => ({
+						models: filteredModels.map((m) => ({
 							id: m.id,
 							label: m.label || m.id,
 							toolCall: m.toolCall,

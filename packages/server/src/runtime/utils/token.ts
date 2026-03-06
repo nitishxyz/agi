@@ -10,6 +10,9 @@ export function getMaxOutputTokens(
 	provider: ProviderName,
 	modelId: string,
 ): number | undefined {
+	if (provider === 'copilot') {
+		return undefined;
+	}
 	try {
 		const providerCatalog = catalog[provider];
 		if (!providerCatalog) {

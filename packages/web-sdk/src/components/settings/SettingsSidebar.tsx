@@ -404,6 +404,7 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 
 function SetuSubscriptionInfo() {
 	const subscription = useSetuStore((s) => s.subscription);
+	const payg = useSetuStore((s) => s.payg);
 
 	if (!subscription?.active) return null;
 
@@ -433,6 +434,12 @@ function SetuSubscriptionInfo() {
 						</div>
 					</div>
 				)}
+			{payg && payg.effectiveSpendableUsd > 0 && (
+				<SettingRow
+					label="PAYG Balance"
+					value={`$${payg.effectiveSpendableUsd.toFixed(2)}`}
+				/>
+			)}
 			{subscription.periodEnd && (
 				<SettingRow
 					label="Renews"
