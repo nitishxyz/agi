@@ -3,6 +3,7 @@ import { Keypair } from '@solana/web3.js';
 import type { SetuAuth, BalanceResponse, WalletUsdcBalance } from './types.ts';
 import type { WalletContext } from './auth.ts';
 import { createWalletContext } from './auth.ts';
+import { createAccessTokenManager } from './token.ts';
 
 const DEFAULT_BASE_URL = 'https://api.setu.ottocode.io';
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
@@ -17,8 +18,10 @@ function isWalletContext(input: unknown): input is WalletContext {
 	return (
 		typeof input === 'object' &&
 		input !== null &&
-		'buildHeaders' in input &&
-		typeof (input as WalletContext).buildHeaders === 'function'
+		(('buildWalletAuthHeaders' in input &&
+			typeof (input as WalletContext).buildWalletAuthHeaders === 'function') ||
+			('buildHeaders' in input &&
+				typeof (input as WalletContext).buildHeaders === 'function'))
 	);
 }
 
@@ -31,9 +34,19 @@ export async function fetchBalance(
 			? walletOrAuth
 			: createWalletContext(walletOrAuth);
 		const url = trimTrailingSlash(baseURL ?? DEFAULT_BASE_URL);
-		const headers = await wallet.buildHeaders();
+		const tokenManager = createAccessTokenManager({ wallet, baseURL: url });
+		const requestBalance = async (forceRefresh = false) => {
+			const accessToken = await tokenManager.getToken(forceRefresh);
+			return fetch(`${url}/v1/balance`, {
+				headers: { authorization: `Bearer ${accessToken}` },
+			});
+		};
 
-		const response = await fetch(`${url}/v1/balance`, { headers });
+		let response = await requestBalance();
+		if (response.status === 401) {
+			tokenManager.invalidate();
+			response = await requestBalance(true);
+		}
 
 		if (!response.ok) return null;
 

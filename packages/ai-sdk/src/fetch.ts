@@ -8,6 +8,7 @@ import type {
 } from './types.ts';
 import { pickPaymentRequirement, handlePayment } from './payment.ts';
 import { addAnthropicCacheControl } from './cache.ts';
+import { createAccessTokenManager } from './token.ts';
 
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const DEFAULT_MAX_ATTEMPTS = 3;
@@ -186,6 +187,11 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 	const topupApprovalMode = payment?.topupApprovalMode ?? 'auto';
 	const autoPayThresholdUsd = payment?.autoPayThresholdUsd ?? 0;
 	const baseFetch = customFetch ?? globalThis.fetch.bind(globalThis);
+	const tokenManager = createAccessTokenManager({
+		wallet,
+		baseURL,
+		fetch: baseFetch,
+	});
 
 	return async (
 		input: Parameters<typeof fetch>[0],
@@ -195,6 +201,13 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 
 		while (attempt < maxAttempts) {
 			attempt++;
+			const performAuthenticatedRequest = async (forceRefresh = false) => {
+				const headers = new Headers(init?.headers);
+				const accessToken = await tokenManager.getToken(forceRefresh);
+				headers.set('authorization', `Bearer ${accessToken}`);
+				return baseFetch(input, { ...init, body, headers });
+			};
+
 			let body = init?.body;
 			if (body && typeof body === 'string') {
 				try {
@@ -213,13 +226,11 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 				} catch {}
 			}
 
-			const headers = new Headers(init?.headers);
-			const walletHeaders = await wallet.buildHeaders();
-			headers.set('x-wallet-address', walletHeaders['x-wallet-address']);
-			headers.set('x-wallet-nonce', walletHeaders['x-wallet-nonce']);
-			headers.set('x-wallet-signature', walletHeaders['x-wallet-signature']);
-
-			const response = await baseFetch(input, { ...init, body, headers });
+			let response = await performAuthenticatedRequest();
+			if (response.status === 401) {
+				tokenManager.invalidate();
+				response = await performAuthenticatedRequest(true);
+			}
 
 			if (response.status !== 402) {
 				return wrapResponseWithBalanceSniffing(response, callbacks);
@@ -292,6 +303,7 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 						rpcURL,
 						baseURL,
 						baseFetch,
+						tokenManager,
 						maxAttempts: remainingPayments,
 						callbacks,
 					});

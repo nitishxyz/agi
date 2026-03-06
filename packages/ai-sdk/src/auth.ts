@@ -5,7 +5,13 @@ import type { SetuAuth } from './types.ts';
 
 export interface WalletContext {
 	walletAddress: string;
-	buildHeaders: () => Promise<Record<string, string>> | Record<string, string>;
+	buildWalletAuthHeaders:
+		| (() => Promise<Record<string, string>>)
+		| (() => Record<string, string>);
+	/** @deprecated Use buildWalletAuthHeaders() instead. */
+	buildHeaders:
+		| (() => Promise<Record<string, string>>)
+		| (() => Record<string, string>);
 	keypair?: Keypair;
 	privateKeyBytes?: Uint8Array;
 	signTransaction?: (transaction: Uint8Array) => Promise<Uint8Array>;
@@ -18,18 +24,20 @@ export function createWalletContext(auth: SetuAuth): WalletContext {
 			signNonce: customSignNonce,
 			signTransaction,
 		} = auth.signer;
+		const buildWalletAuthHeaders = async () => {
+			const nonce = Date.now().toString();
+			const signature = await customSignNonce(nonce);
+			return {
+				'x-wallet-address': walletAddress,
+				'x-wallet-nonce': nonce,
+				'x-wallet-signature': signature,
+			};
+		};
 		return {
 			walletAddress,
 			signTransaction,
-			buildHeaders: async () => {
-				const nonce = Date.now().toString();
-				const signature = await customSignNonce(nonce);
-				return {
-					'x-wallet-address': walletAddress,
-					'x-wallet-nonce': nonce,
-					'x-wallet-signature': signature,
-				};
-			},
+			buildWalletAuthHeaders,
+			buildHeaders: buildWalletAuthHeaders,
 		};
 	}
 
@@ -40,11 +48,14 @@ export function createWalletContext(auth: SetuAuth): WalletContext {
 	const privateKeyBytes = bs58.decode(auth.privateKey);
 	const keypair = Keypair.fromSecretKey(privateKeyBytes);
 	const walletAddress = keypair.publicKey.toBase58();
+	const buildWalletAuthHeaders = () =>
+		buildWalletHeaders(walletAddress, privateKeyBytes);
 	return {
 		keypair,
 		walletAddress,
 		privateKeyBytes,
-		buildHeaders: () => buildWalletHeaders(walletAddress, privateKeyBytes),
+		buildWalletAuthHeaders,
+		buildHeaders: buildWalletAuthHeaders,
 	};
 }
 
@@ -66,6 +77,8 @@ export function buildWalletHeaders(
 		'x-wallet-signature': signature,
 	};
 }
+
+export const buildWalletAuthHeaders = buildWalletHeaders;
 
 export function getPublicKeyFromPrivate(privateKey?: string): string | null {
 	if (!privateKey) return null;

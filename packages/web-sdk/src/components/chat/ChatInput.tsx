@@ -560,7 +560,7 @@ export const ChatInput = memo(
 							providerName ||
 							authType ||
 							agent) && (
-							<div className="grid grid-cols-3 items-center mt-1 px-3">
+						<div className="grid grid-cols-[auto_1fr_auto] items-center mt-1 px-3">
 								<div
 									className="justify-self-start flex-shrink-0 relative"
 									ref={agentDropdownRef}

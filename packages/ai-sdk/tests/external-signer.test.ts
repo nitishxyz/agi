@@ -18,10 +18,11 @@ describe('createWalletContext', () => {
 		expect(ctx.privateKeyBytes).toBeDefined();
 		expect(ctx.signTransaction).toBeUndefined();
 
-		const headers = ctx.buildHeaders() as Record<string, string>;
+		const headers = ctx.buildWalletAuthHeaders() as Record<string, string>;
 		expect(headers['x-wallet-address']).toBe(keypair.publicKey.toBase58());
 		expect(headers['x-wallet-nonce']).toBeDefined();
 		expect(headers['x-wallet-signature']).toBeDefined();
+		expect(ctx.buildHeaders).toBe(ctx.buildWalletAuthHeaders);
 	});
 
 	test('external signer mode uses signNonce', async () => {
@@ -43,7 +44,7 @@ describe('createWalletContext', () => {
 		expect(ctx.privateKeyBytes).toBeUndefined();
 		expect(ctx.signTransaction).toBeUndefined();
 
-		const headers = await ctx.buildHeaders();
+		const headers = await ctx.buildWalletAuthHeaders();
 		expect(headers['x-wallet-address']).toBe(walletAddress);
 		expect(headers['x-wallet-nonce']).toBeDefined();
 		expect(headers['x-wallet-signature']).toBeDefined();
@@ -78,7 +79,7 @@ describe('createWalletContext', () => {
 			},
 		};
 		const ctx = createWalletContext(auth);
-		const headers = await ctx.buildHeaders();
+		const headers = await ctx.buildWalletAuthHeaders();
 
 		expect(headers['x-wallet-signature']).toBeDefined();
 		expect(headers['x-wallet-signature'].length).toBeGreaterThan(10);
@@ -92,7 +93,7 @@ describe('createWalletContext', () => {
 
 	test('private key signature is valid', () => {
 		const ctx = createWalletContext({ privateKey });
-		const headers = ctx.buildHeaders() as Record<string, string>;
+		const headers = ctx.buildWalletAuthHeaders() as Record<string, string>;
 
 		const nonce = headers['x-wallet-nonce'];
 		const sig = bs58.decode(headers['x-wallet-signature']);
@@ -117,7 +118,7 @@ describe('createWalletContext', () => {
 				},
 			},
 		});
-		const headers = await ctx.buildHeaders();
+		const headers = await ctx.buildWalletAuthHeaders();
 
 		const nonce = headers['x-wallet-nonce'];
 		const sig = bs58.decode(headers['x-wallet-signature']);

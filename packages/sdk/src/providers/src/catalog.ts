@@ -900,6 +900,67 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
         }
       },
       {
+        "id": "gpt-5.4",
+        "ownedBy": "openai",
+        "label": "GPT-5.4",
+        "modalities": {
+          "input": [
+            "text",
+            "image"
+          ],
+          "output": [
+            "text"
+          ]
+        },
+        "toolCall": true,
+        "reasoningText": true,
+        "attachment": true,
+        "temperature": false,
+        "knowledge": "2025-08-31",
+        "releaseDate": "2026-03-05",
+        "lastUpdated": "2026-03-05",
+        "openWeights": false,
+        "cost": {
+          "input": 2.5,
+          "output": 15,
+          "cacheRead": 0.25
+        },
+        "limit": {
+          "context": 1050000,
+          "output": 128000
+        }
+      },
+      {
+        "id": "gpt-5.4-pro",
+        "ownedBy": "openai",
+        "label": "GPT-5.4 Pro",
+        "modalities": {
+          "input": [
+            "text",
+            "image"
+          ],
+          "output": [
+            "text"
+          ]
+        },
+        "toolCall": true,
+        "reasoningText": true,
+        "attachment": true,
+        "temperature": false,
+        "knowledge": "2025-08-31",
+        "releaseDate": "2026-03-05",
+        "lastUpdated": "2026-03-05",
+        "openWeights": false,
+        "cost": {
+          "input": 30,
+          "output": 180
+        },
+        "limit": {
+          "context": 1050000,
+          "output": 128000
+        }
+      },
+      {
         "id": "o1",
         "ownedBy": "openai",
         "label": "o1",
@@ -6562,6 +6623,102 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
         }
       },
       {
+        "id": "openai/gpt-5.3-codex",
+        "ownedBy": "openai",
+        "label": "GPT-5.3-Codex",
+        "modalities": {
+          "input": [
+            "text",
+            "image",
+            "pdf"
+          ],
+          "output": [
+            "text"
+          ]
+        },
+        "toolCall": true,
+        "reasoningText": true,
+        "attachment": true,
+        "temperature": false,
+        "knowledge": "2025-08-31",
+        "releaseDate": "2026-02-24",
+        "lastUpdated": "2026-02-24",
+        "openWeights": false,
+        "cost": {
+          "input": 1.75,
+          "output": 14,
+          "cacheRead": 0.175
+        },
+        "limit": {
+          "context": 400000,
+          "output": 128000
+        }
+      },
+      {
+        "id": "openai/gpt-5.4",
+        "ownedBy": "openai",
+        "label": "GPT-5.4",
+        "modalities": {
+          "input": [
+            "text",
+            "image",
+            "pdf"
+          ],
+          "output": [
+            "text"
+          ]
+        },
+        "toolCall": true,
+        "reasoningText": true,
+        "attachment": true,
+        "temperature": false,
+        "knowledge": "2025-08-31",
+        "releaseDate": "2026-03-05",
+        "lastUpdated": "2026-03-05",
+        "openWeights": false,
+        "cost": {
+          "input": 2.5,
+          "output": 15,
+          "cacheRead": 0.25
+        },
+        "limit": {
+          "context": 1050000,
+          "output": 128000
+        }
+      },
+      {
+        "id": "openai/gpt-5.4-pro",
+        "ownedBy": "openai",
+        "label": "GPT-5.4 Pro",
+        "modalities": {
+          "input": [
+            "text",
+            "image",
+            "pdf"
+          ],
+          "output": [
+            "text"
+          ]
+        },
+        "toolCall": true,
+        "reasoningText": true,
+        "attachment": true,
+        "temperature": false,
+        "knowledge": "2025-08-31",
+        "releaseDate": "2026-03-05",
+        "lastUpdated": "2026-03-05",
+        "openWeights": false,
+        "cost": {
+          "input": 30,
+          "output": 180,
+          "cacheRead": 30
+        },
+        "limit": {
+          "context": 1050000,
+          "output": 128000
+        }
+      },
+      {
         "id": "openai/gpt-oss-120b",
         "ownedBy": "openai",
         "label": "GPT OSS 120B",
@@ -9499,6 +9656,41 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
         }
       },
       {
+        "id": "gpt-5.4-pro",
+        "ownedBy": "openai",
+        "label": "GPT-5.4 Pro",
+        "modalities": {
+          "input": [
+            "text",
+            "image",
+            "pdf"
+          ],
+          "output": [
+            "text"
+          ]
+        },
+        "toolCall": true,
+        "reasoningText": true,
+        "attachment": true,
+        "temperature": false,
+        "knowledge": "2025-08-31",
+        "releaseDate": "2026-03-05",
+        "lastUpdated": "2026-03-05",
+        "openWeights": false,
+        "cost": {
+          "input": 30,
+          "output": 180,
+          "cacheRead": 30
+        },
+        "limit": {
+          "context": 1050000,
+          "output": 128000
+        },
+        "provider": {
+          "npm": "@ai-sdk/openai"
+        }
+      },
+      {
         "id": "grok-code",
         "ownedBy": "xai",
         "label": "Grok Code Fast 1",
@@ -11411,6 +11603,66 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
         },
         "limit": {
           "context": 272000,
+          "output": 128000
+        }
+      },
+      {
+        "id": "gpt-5.3-codex",
+        "ownedBy": "openai",
+        "label": "GPT-5.3-Codex",
+        "modalities": {
+          "input": [
+            "text",
+            "image"
+          ],
+          "output": [
+            "text"
+          ]
+        },
+        "toolCall": true,
+        "reasoningText": true,
+        "attachment": false,
+        "temperature": false,
+        "knowledge": "2025-08-31",
+        "releaseDate": "2026-02-24",
+        "lastUpdated": "2026-02-24",
+        "openWeights": false,
+        "cost": {
+          "input": 0,
+          "output": 0
+        },
+        "limit": {
+          "context": 400000,
+          "output": 128000
+        }
+      },
+      {
+        "id": "gpt-5.4",
+        "ownedBy": "openai",
+        "label": "GPT-5.4",
+        "modalities": {
+          "input": [
+            "text",
+            "image"
+          ],
+          "output": [
+            "text"
+          ]
+        },
+        "toolCall": true,
+        "reasoningText": true,
+        "attachment": false,
+        "temperature": false,
+        "knowledge": "2025-08-31",
+        "releaseDate": "2026-03-05",
+        "lastUpdated": "2026-03-05",
+        "openWeights": false,
+        "cost": {
+          "input": 0,
+          "output": 0
+        },
+        "limit": {
+          "context": 400000,
           "output": 128000
         }
       },

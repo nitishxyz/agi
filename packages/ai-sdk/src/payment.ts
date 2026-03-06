@@ -9,6 +9,7 @@ import type {
 	PaymentCallbacks,
 	FetchFunction,
 } from './types.ts';
+import type { AccessTokenManager } from './token.ts';
 import {
 	address,
 	getTransactionEncoder,
@@ -138,6 +139,7 @@ export async function processSinglePayment(args: {
 	rpcURL: string;
 	baseURL: string;
 	baseFetch: FetchFunction;
+	tokenManager: AccessTokenManager;
 	callbacks: PaymentCallbacks;
 }): Promise<{ attempts: number; balance?: number | string }> {
 	args.callbacks.onPaymentSigning?.();
@@ -156,15 +158,26 @@ export async function processSinglePayment(args: {
 		throw new Error(`Setu: ${userMsg}`);
 	}
 
-	const walletHeaders = await args.wallet.buildHeaders();
-	const response = await args.baseFetch(`${args.baseURL}/v1/topup`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json', ...walletHeaders },
-		body: JSON.stringify({
-			paymentPayload,
-			paymentRequirement: args.requirement,
-		}),
-	});
+	const sendTopupRequest = async (forceRefresh = false) => {
+		const accessToken = await args.tokenManager.getToken(forceRefresh);
+		return args.baseFetch(`${args.baseURL}/v1/topup`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				authorization: `Bearer ${accessToken}`,
+			},
+			body: JSON.stringify({
+				paymentPayload,
+				paymentRequirement: args.requirement,
+			}),
+		});
+	};
+
+	let response = await sendTopupRequest();
+	if (response.status === 401) {
+		args.tokenManager.invalidate();
+		response = await sendTopupRequest(true);
+	}
 
 	const rawBody = await response.text().catch(() => '');
 	if (!response.ok) {
@@ -210,6 +223,7 @@ export async function handlePayment(args: {
 	rpcURL: string;
 	baseURL: string;
 	baseFetch: FetchFunction;
+	tokenManager: AccessTokenManager;
 	maxAttempts: number;
 	callbacks: PaymentCallbacks;
 }): Promise<{ attemptsUsed: number }> {

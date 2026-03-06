@@ -4,6 +4,8 @@ A drop-in SDK for accessing AI models (OpenAI, Anthropic, Google, Moonshot, Mini
 
 All you need is a Solana wallet — the SDK handles authentication, payment negotiation, and provider routing automatically.
 
+Normal API requests use bearer auth. The SDK signs a wallet nonce once to exchange for a short-lived Setu token, reuses that token across requests, and refreshes it automatically when needed.
+
 ## Install
 
 ```bash
@@ -31,6 +33,8 @@ console.log(text);
 ```
 
 The SDK auto-resolves which provider to use based on the model name. It returns ai-sdk compatible model instances that work directly with `generateText()`, `streamText()`, etc.
+
+Under the hood, the first protected request exchanges wallet auth headers for a bearer token via `POST /v1/auth/wallet-token`. Subsequent requests reuse `Authorization: Bearer <token>` until refresh is needed.
 
 ## Provider Auto-Resolution
 
@@ -102,6 +106,8 @@ const setu = createSetu({
 ## Payment Callbacks
 
 Monitor and control the payment lifecycle:
+
+Request authentication and payment signing are separate: bearer auth is used for normal Setu HTTP requests, while your wallet still signs the x402 payment transaction during topups.
 
 ```ts
 const setu = createSetu({
@@ -287,6 +293,8 @@ setu.registry.mapModel('some-model', 'openai');
 
 Use the x402-aware fetch wrapper directly:
 
+`setu.fetch()` uses bearer auth for normal requests and automatically refreshes the Setu access token on `401` once before retrying.
+
 ```ts
 const customFetch = setu.fetch();
 
@@ -306,6 +314,7 @@ import {
   getPublicKeyFromPrivate,
   addAnthropicCacheControl,
   createSetuFetch,
+  createWalletContext,
 } from '@ottocode/ai-sdk';
 
 // Get wallet address from private key
@@ -324,16 +333,21 @@ const setuFetch = createSetuFetch({
 });
 ```
 
+`createWalletContext()` remains available for advanced usage. Its wallet headers are now intended for token exchange only; regular API traffic should go through `createSetu()`, `setu.fetch()`, `createSetuFetch()`, or `fetchBalance()` so bearer auth refresh is handled automatically.
+
 ## How It Works
 
 1. You call `setu.model('claude-sonnet-4-20250514')` — the SDK resolves this to Anthropic
 2. It creates an ai-sdk provider (`@ai-sdk/anthropic`) pointed at the Setu proxy
 3. A custom fetch wrapper intercepts all requests to:
-   - Inject wallet auth headers (address, nonce, signature)
+   - Exchange signed wallet headers for a short-lived bearer token when needed
+   - Inject `Authorization: Bearer <token>` into normal API requests
    - Inject Anthropic cache control (if enabled)
+   - Handle `401` by refreshing the bearer token once and retrying
    - Handle 402 responses by signing USDC payments via x402
    - Sniff balance/cost info from SSE stream comments
-4. The Setu proxy verifies the wallet, checks balance, forwards to the real provider, tracks usage
+4. During topups, the wallet still signs the x402 transaction, but the `/v1/topup` HTTP request itself uses bearer auth
+5. The Setu proxy verifies the wallet/token, checks balance, forwards to the real provider, and tracks usage
 
 ## Requirements
 
