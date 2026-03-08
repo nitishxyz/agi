@@ -183,10 +183,14 @@ async function runAssistant(opts: RunOpts) {
 	let _toolActivityObserved = false;
 	let _trailingAssistantTextAfterTool = false;
 	let _abortedByUser = false;
+	let titleGenerationTriggered = false;
 	const unsubscribeFinish = subscribe(opts.sessionId, (evt) => {
 		if (evt.type === 'tool.call' || evt.type === 'tool.result') {
 			_toolActivityObserved = true;
 			_trailingAssistantTextAfterTool = false;
+		}
+		if (evt.type === 'tool.call') {
+			triggerTitleGenerationWhenReady();
 		}
 		if (evt.type !== 'tool.result') return;
 		try {
@@ -222,6 +226,22 @@ async function runAssistant(opts: RunOpts) {
 		stepIndex += 1;
 		return stepIndex;
 	};
+	const triggerTitleGenerationWhenReady = () => {
+		if (titleGenerationTriggered) {
+			return;
+		}
+
+		titleGenerationTriggered = true;
+		if (!isFirstMessage) {
+			return;
+		}
+
+		void triggerDeferredTitleGeneration({
+			cfg,
+			db,
+			sessionId: opts.sessionId,
+		});
+	};
 
 	const reasoningStates = new Map<string, ReasoningState>();
 
@@ -233,6 +253,7 @@ async function runAssistant(opts: RunOpts) {
 		getCurrentPartId,
 		updateCurrentPartId,
 		updateAccumulated,
+		triggerTitleGenerationWhenReady,
 		sharedCtx,
 		updateSessionTokensIncremental,
 		updateMessageTokensIncremental,
@@ -315,13 +336,6 @@ async function runAssistant(opts: RunOpts) {
 				if (!firstDeltaSeen) {
 					firstDeltaSeen = true;
 					streamStartTimer.end();
-					if (isFirstMessage) {
-						void triggerDeferredTitleGeneration({
-							cfg,
-							db,
-							sessionId: opts.sessionId,
-						});
-					}
 				}
 
 				if (!currentPartId) {

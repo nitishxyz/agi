@@ -16,6 +16,7 @@ export function createStepFinishHandler(
 	getCurrentPartId: () => string | null,
 	updateCurrentPartId: (id: string | null) => void,
 	updateAccumulated: (text: string) => void,
+	triggerTitleGenerationWhenReady: () => void,
 	sharedCtx: ToolAdapterContext,
 	updateSessionTokensIncrementalFn: (
 		usage: UsageData,
@@ -31,6 +32,8 @@ export function createStepFinishHandler(
 	) => Promise<void>,
 ) {
 	return async (step: StepFinishEvent) => {
+		triggerTitleGenerationWhenReady();
+
 		const finishedAt = Date.now();
 		const currentPartId = getCurrentPartId();
 		const stepIndex = getStepIndex();
