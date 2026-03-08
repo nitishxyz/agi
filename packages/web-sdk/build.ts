@@ -36,6 +36,10 @@ const build = await Bun.build({
 	target: 'browser',
 	sourcemap: 'external',
 	packages: 'external',
+	define: {
+		'process.env.NODE_ENV': '"production"',
+		'import.meta.env.DEV': 'false',
+	},
 });
 
 if (!build.success) {
