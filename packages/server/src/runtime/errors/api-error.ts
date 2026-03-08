@@ -5,6 +5,7 @@
  * across all API endpoints.
  */
 
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { isDebugEnabled } from '../debug/state.ts';
 import { toErrorPayload } from './handling.ts';
 
@@ -16,7 +17,7 @@ export type APIErrorResponse = {
 		message: string;
 		type: string;
 		code?: string;
-		status?: number;
+		status?: ContentfulStatusCode;
 		details?: Record<string, unknown>;
 		stack?: string;
 	};
@@ -27,29 +28,33 @@ export type APIErrorResponse = {
  */
 export class APIError extends Error {
 	public readonly code?: string;
-	public readonly status: number;
+	public readonly status: ContentfulStatusCode;
 	public readonly type: string;
 	public readonly details?: Record<string, unknown>;
 
 	constructor(
 		message: string,
-		options?: {
-			code?: string;
-			status?: number;
-			type?: string;
-			details?: Record<string, unknown>;
-			cause?: unknown;
-		},
+		options?:
+			| ContentfulStatusCode
+			| {
+					code?: string;
+					status?: ContentfulStatusCode;
+					type?: string;
+					details?: Record<string, unknown>;
+					cause?: unknown;
+			  },
 	) {
 		super(message);
 		this.name = 'APIError';
-		this.code = options?.code;
-		this.status = options?.status ?? 500;
-		this.type = options?.type ?? 'api_error';
-		this.details = options?.details;
+		const normalizedOptions =
+			typeof options === 'number' ? { status: options } : options;
+		this.code = normalizedOptions?.code;
+		this.status = normalizedOptions?.status ?? 500;
+		this.type = normalizedOptions?.type ?? 'api_error';
+		this.details = normalizedOptions?.details;
 
-		if (options?.cause) {
-			this.cause = options.cause;
+		if (normalizedOptions?.cause) {
+			this.cause = normalizedOptions.cause;
 		}
 
 		// Maintain proper stack trace
@@ -72,7 +77,7 @@ export function serializeError(err: unknown): APIErrorResponse {
 	// Determine HTTP status code
 	// Default to 400 for generic errors (client errors)
 	// Only use 500 if explicitly set or for APIError instances without a status
-	let status = 400;
+	let status: ContentfulStatusCode = 400;
 
 	// Handle APIError instances first
 	if (err instanceof APIError) {
@@ -80,15 +85,16 @@ export function serializeError(err: unknown): APIErrorResponse {
 	} else if (err && typeof err === 'object') {
 		const errObj = err as Record<string, unknown>;
 		if (typeof errObj.status === 'number') {
-			status = errObj.status;
+			status = errObj.status as ContentfulStatusCode;
 		} else if (typeof errObj.statusCode === 'number') {
-			status = errObj.statusCode;
+			status = errObj.statusCode as ContentfulStatusCode;
 		} else if (
 			errObj.details &&
 			typeof errObj.details === 'object' &&
 			typeof (errObj.details as Record<string, unknown>).statusCode === 'number'
 		) {
-			status = (errObj.details as Record<string, unknown>).statusCode as number;
+			status = (errObj.details as Record<string, unknown>)
+				.statusCode as ContentfulStatusCode;
 		}
 	}
 
@@ -130,7 +136,9 @@ export function serializeError(err: unknown): APIErrorResponse {
  * @param err - The error to convert
  * @returns Tuple of [APIErrorResponse, HTTP status code]
  */
-export function createErrorResponse(err: unknown): [APIErrorResponse, number] {
+export function createErrorResponse(
+	err: unknown,
+): [APIErrorResponse, ContentfulStatusCode] {
 	const response = serializeError(err);
 	return [response, response.error.status ?? 500];
 }

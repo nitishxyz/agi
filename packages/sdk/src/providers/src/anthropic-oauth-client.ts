@@ -3,6 +3,11 @@ import { addAnthropicCacheControl } from './anthropic-caching.ts';
 
 const CLAUDE_CLI_VERSION = '1.0.61';
 
+type FetchLike = (
+	input: Parameters<typeof fetch>[0],
+	init?: Parameters<typeof fetch>[1],
+) => Promise<Response>;
+
 export type AnthropicOAuthConfig = {
 	oauth: {
 		access: string;
@@ -42,7 +47,7 @@ function buildOAuthHeaders(accessToken: string): Record<string, string> {
 }
 
 function filterExistingHeaders(
-	initHeaders: HeadersInit | undefined,
+	initHeaders: RequestInit['headers'] | undefined,
 ): Record<string, string> {
 	const headers: Record<string, string> = {};
 	if (!initHeaders) return headers;
@@ -75,7 +80,7 @@ function filterExistingHeaders(
 
 export function createAnthropicOAuthFetch(
 	config: AnthropicOAuthConfig,
-): typeof fetch {
+): FetchLike {
 	const { oauth, toolNameTransformer } = config;
 
 	return async (input: string | URL | Request, init?: RequestInit) => {

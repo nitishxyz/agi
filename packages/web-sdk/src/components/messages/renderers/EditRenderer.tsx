@@ -5,13 +5,14 @@ import { formatDuration } from './utils';
 import { ToolErrorDisplay } from './ToolErrorDisplay';
 
 export function EditRenderer({
-	args,
-	result,
-	artifact,
+	contentJson,
 	toolDurationMs,
 	isExpanded,
 	onToggle,
 }: RendererProps) {
+	const args = (contentJson.args || {}) as Record<string, unknown>;
+	const result = (contentJson.result || {}) as Record<string, unknown>;
+	const artifact = contentJson.artifact;
 	const hasToolError =
 		typeof result === 'object' && 'ok' in result && result.ok === false;
 	const errorMessage =

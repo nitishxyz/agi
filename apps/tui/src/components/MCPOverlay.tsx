@@ -34,6 +34,25 @@ interface CopilotDevice {
 	serverName: string;
 }
 
+type MCPServerListResponse = {
+	servers?: MCPServerInfo[];
+};
+
+type MCPMutationResponse = {
+	ok?: boolean;
+	error?: string;
+	connected?: boolean;
+	authRequired?: boolean;
+	authenticated?: boolean;
+	authUrl?: string;
+	authType?: string;
+	sessionId?: string;
+	userCode?: string;
+	verificationUri?: string;
+	interval?: number;
+	status?: string;
+};
+
 type View = 'list' | 'add' | 'confirm-delete' | 'tools';
 
 interface MCPOverlayProps {
@@ -64,6 +83,8 @@ async function copyToClipboard(text: string): Promise<void> {
 	]);
 	await proc.exited;
 }
+
+const SPIN_CHARS = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 export function MCPOverlay({ onClose }: MCPOverlayProps) {
 	const { colors } = useTheme();
@@ -97,7 +118,6 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 	copilotDeviceRef.current = copilotDevice;
 	const pollerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const [spinFrame, setSpinFrame] = useState(0);
-	const SPIN_CHARS = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 	useEffect(() => {
 		if (!loading && busyServers.size === 0 && !copilotDevice) return;
@@ -106,13 +126,12 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 			80,
 		);
 		return () => clearInterval(t);
-	}, [loading, busyServers.size, copilotDevice, SPIN_CHARS.length]);
+	}, [loading, busyServers.size, copilotDevice]);
 
 	const fetchServers = useCallback(async () => {
 		try {
 			const { data } = await listMcpServers();
-			// biome-ignore lint/suspicious/noExplicitAny: API type
-			const resp = data as any;
+			const resp = data as MCPServerListResponse | undefined;
 			if (resp?.servers) {
 				setServers(resp.servers);
 			}
@@ -164,8 +183,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 						path: { name: device.serverName },
 						body: { sessionId: device.sessionId },
 					});
-					// biome-ignore lint/suspicious/noExplicitAny: API type
-					const result = data as any;
+					const result = data as MCPMutationResponse | undefined;
 					if (result?.status === 'complete') {
 						stopCopilotPolling();
 						setBusy(device.serverName, false);
@@ -191,23 +209,19 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 			setBusy(server.name, true);
 			try {
 				if (server.connected) {
-					// biome-ignore lint/suspicious/noExplicitAny: API type
 					const { data, error: err } = await stopMcpServer({
 						path: { name: server.name },
 					});
 					if (err) throw new Error('Failed to stop server');
-					// biome-ignore lint/suspicious/noExplicitAny: API type
-					const result = data as any;
+					const result = data as MCPMutationResponse | undefined;
 					if (!result?.ok) throw new Error(result?.error || 'Failed to stop');
 					showStatus(`${server.name} stopped`);
 				} else if (server.authRequired && !server.authenticated) {
-					// biome-ignore lint/suspicious/noExplicitAny: API type
 					const { data, error: err } = await initiateMcpAuth({
 						path: { name: server.name },
 					});
 					if (err) throw new Error('Failed to initiate auth');
-					// biome-ignore lint/suspicious/noExplicitAny: API type
-					const result = data as any;
+					const result = data as MCPMutationResponse | undefined;
 					if (!result?.ok) throw new Error(result?.error || 'Auth failed');
 
 					if (result.authType === 'copilot-device') {
@@ -238,13 +252,11 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 						return;
 					}
 				} else {
-					// biome-ignore lint/suspicious/noExplicitAny: API type
 					const { data, error: err } = await startMcpServer({
 						path: { name: server.name },
 					});
 					if (err) throw new Error('Failed to start server');
-					// biome-ignore lint/suspicious/noExplicitAny: API type
-					const result = data as any;
+					const result = data as MCPMutationResponse | undefined;
 					if (!result?.ok) throw new Error(result?.error || 'Failed to start');
 
 					if (result.authType === 'copilot-device' && !result.connected) {
@@ -286,7 +298,6 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 		if (!server) return;
 		setError(null);
 		try {
-			// biome-ignore lint/suspicious/noExplicitAny: API type
 			const { error: err } = await removeMcpServer({
 				path: { name: server.name },
 			});
@@ -377,7 +388,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 			else if (idx >= offset + VISIBLE_ROWS) offset = idx - VISIBLE_ROWS + 1;
 			setScrollOffset(offset);
 		},
-		[scrollOffset],
+		[scrollOffset, VISIBLE_ROWS],
 	);
 
 	useKeyboard((key) => {

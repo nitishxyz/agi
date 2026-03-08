@@ -135,8 +135,7 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 		const response = await fetch(targetUrl, {
 			...init,
 			headers,
-			// biome-ignore lint/suspicious/noTsIgnore: Bun-specific fetch option
-			// @ts-ignore
+			// @ts-expect-error Bun-specific fetch option
 			timeout: false,
 		});
 
@@ -165,8 +164,7 @@ export function createOpenAIOAuthFetch(config: OpenAIOAuthConfig) {
 				return fetch(targetUrl, {
 					...init,
 					headers: retryHeaders,
-					// biome-ignore lint/suspicious/noTsIgnore: Bun-specific fetch option
-					// @ts-ignore
+					// @ts-expect-error Bun-specific fetch option
 					timeout: false,
 				});
 			} catch {

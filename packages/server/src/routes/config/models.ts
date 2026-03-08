@@ -82,9 +82,11 @@ async function getAuthorizedCopilotModels(
 export function registerModelsRoutes(app: Hono) {
 	app.get('/v1/config/providers/:provider/models', async (c) => {
 		try {
-			const embeddedConfig = c.get('embeddedConfig') as
-				| EmbeddedAppConfig
-				| undefined;
+			const embeddedConfig = (
+				c as unknown as {
+					get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
+				}
+			).get('embeddedConfig');
 			const provider = c.req.param('provider') as ProviderId;
 
 			const projectRoot = c.req.query('project') || process.cwd();
@@ -152,9 +154,11 @@ export function registerModelsRoutes(app: Hono) {
 
 	app.get('/v1/config/models', async (c) => {
 		try {
-			const embeddedConfig = c.get('embeddedConfig') as
-				| EmbeddedAppConfig
-				| undefined;
+			const embeddedConfig = (
+				c as unknown as {
+					get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
+				}
+			).get('embeddedConfig');
 
 			const projectRoot = c.req.query('project') || process.cwd();
 			const cfg = await loadConfig(projectRoot);

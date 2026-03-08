@@ -62,6 +62,8 @@ toast.success = (message: string, duration = 4000) =>
 	toast(message, 'success', duration);
 toast.error = (message: string, duration = 5000) =>
 	toast(message, 'error', duration);
+toast.info = (message: string, duration = 4000) =>
+	toast(message, 'default', duration);
 toast.loading = (message: string) => toast(message, 'loading', 0);
 
 toast.successWithAction = (

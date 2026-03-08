@@ -206,7 +206,13 @@ export function summarizeTools(
 export function collectDiffArtifacts(toolResults: ToolResultRecord[]) {
 	return toolResults
 		.filter((r) => r.artifact?.kind === 'file_diff')
-		.map((r) => ({ name: r.name, summary: r.artifact?.summary }));
+		.map((r) => ({
+			name: r.name,
+			summary:
+				r.artifact && r.artifact.kind === 'file_diff'
+					? r.artifact.summary
+					: undefined,
+		}));
 }
 
 export function summarizeFilesTouched(

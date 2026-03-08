@@ -1,5 +1,6 @@
 import type { Command } from 'commander';
 import { log } from '@clack/prompts';
+// @ts-expect-error No bundled types for qrcode-terminal in all workspace builds
 import qrcode from 'qrcode-terminal';
 import { box, colors } from '../ui.ts';
 import {

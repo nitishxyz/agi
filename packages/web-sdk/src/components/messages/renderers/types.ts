@@ -47,6 +47,7 @@ export interface ToolCallArgs {
 	operation?: string;
 	terminalId?: string;
 	purpose?: string;
+	path?: string;
 }
 
 export interface ToolResultData {
@@ -64,6 +65,7 @@ export interface ToolResultData {
 	unstaged?: number;
 	raw?: string[];
 	path?: string;
+	lineRange?: string;
 	content?: string;
 	bytes?: number;
 	opsApplied?: number;
@@ -144,5 +146,5 @@ export interface RendererProps {
 }
 
 export interface GenericRendererProps extends RendererProps {
-	toolName: string;
+	toolName?: string;
 }

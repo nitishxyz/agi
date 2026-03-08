@@ -252,7 +252,7 @@ function StreamingIndicator({
 const UserMessage = memo(function UserMessage({
 	message,
 	isQueued,
-	_isFirstMessage,
+	isFirstMessage: _isFirstMessage,
 }: {
 	message: Message;
 	isQueued?: boolean;
@@ -359,8 +359,8 @@ function deduplicateToolParts(parts: MessagePart[]): MessagePart[] {
 const AssistantMessage = memo(function AssistantMessage({
 	message,
 	isStreaming,
-	_isQueued,
-	_isFirstMessage,
+	isQueued: _isQueued,
+	isFirstMessage: _isFirstMessage,
 	pendingApprovals,
 	onApprove,
 	onDeny,

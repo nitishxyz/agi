@@ -9,7 +9,24 @@ import type { OttoConfig } from '../../types/src/index.ts';
 
 export type { OttoConfig } from '../../types/src/index.ts';
 
-const DEFAULTS: { defaults: OttoConfig['defaults'] } = {
+const DEFAULT_PROVIDER_SETTINGS: OttoConfig['providers'] = {
+	openai: { enabled: false },
+	anthropic: { enabled: false },
+	google: { enabled: false },
+	openrouter: { enabled: false },
+	opencode: { enabled: false },
+	copilot: { enabled: false },
+	setu: { enabled: true },
+	zai: { enabled: false },
+	'zai-coding': { enabled: false },
+	moonshot: { enabled: false },
+	minimax: { enabled: false },
+};
+
+const DEFAULTS: {
+	defaults: OttoConfig['defaults'];
+	providers: OttoConfig['providers'];
+} = {
 	defaults: {
 		agent: 'build',
 		provider: 'setu',
@@ -18,6 +35,7 @@ const DEFAULTS: { defaults: OttoConfig['defaults'] } = {
 		guidedMode: false,
 		reasoningText: true,
 	},
+	providers: DEFAULT_PROVIDER_SETTINGS,
 };
 
 export async function loadConfig(
@@ -42,6 +60,7 @@ export async function loadConfig(
 	return {
 		projectRoot,
 		defaults: merged.defaults as OttoConfig['defaults'],
+		providers: merged.providers as OttoConfig['providers'],
 		paths: {
 			dataDir,
 			dbPath,

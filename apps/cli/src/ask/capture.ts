@@ -126,7 +126,7 @@ export async function runAskStreamCapture(
 						? { error: errorMessage ?? 'Tool reported an error' }
 						: data?.result;
 				if (shouldRenderResult) {
-					printToolResult(name, resultPayload, data?.artifact, {
+					printToolResult(name, resultPayload, data?.artifact as never, {
 						verbose,
 						durationMs,
 						error: errorMessage,

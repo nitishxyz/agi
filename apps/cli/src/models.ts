@@ -69,7 +69,7 @@ export async function runModels(
 	if (isCancel(provider)) return cancel('Cancelled');
 
 	const { data: modelsData } = await getProviderModels({
-		path: { provider: String(provider) },
+		path: { provider: String(provider) } as never,
 		query: { project: projectRoot },
 	});
 

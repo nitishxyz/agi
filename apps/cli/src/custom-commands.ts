@@ -52,8 +52,8 @@ async function scanDirInto(
 				const manifest = JSON.parse(await f.text()) as CommandManifest;
 				if (manifest && (manifest.name || name) && manifest.agent) {
 					const resolved = {
-						name: manifest.name || name,
 						...manifest,
+						name: manifest.name || name,
 						__dir: dir,
 					} as CommandManifest;
 					if (
@@ -117,7 +117,10 @@ export async function runDiscoveredCommand(
 		const got = await text({
 			message: cmd.description ? `${cmd.description}\nInput:` : 'Input:',
 		});
-		if (isCancel(got)) return !!cancel('Cancelled');
+		if (isCancel(got)) {
+			cancel('Cancelled');
+			return false;
+		}
 		userInput = String(got ?? '').trim();
 		outro('');
 	}

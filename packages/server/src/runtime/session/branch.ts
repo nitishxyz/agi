@@ -160,7 +160,14 @@ export async function createBranch({
 	}
 
 	const result: SessionRow = {
-		...newSession,
+		id: newSession.id,
+		title: newSession.title ?? null,
+		agent: newSession.agent,
+		provider: newSession.provider,
+		model: newSession.model,
+		projectPath: newSession.projectPath,
+		createdAt: newSession.createdAt,
+		lastActiveAt: newSession.lastActiveAt ?? null,
 		totalInputTokens: null,
 		totalOutputTokens: null,
 		totalCachedTokens: null,
@@ -171,6 +178,9 @@ export async function createBranch({
 		currentContextTokens: null,
 		contextSummary: null,
 		lastCompactedAt: null,
+		parentSessionId: newSession.parentSessionId ?? null,
+		branchPointMessageId: newSession.branchPointMessageId ?? null,
+		sessionType: newSession.sessionType ?? null,
 	};
 
 	publish({

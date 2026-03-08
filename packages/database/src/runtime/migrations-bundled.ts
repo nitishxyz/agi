@@ -1,3 +1,4 @@
+// @ts-expect-error Bun text asset import
 import mig0000 from '../../drizzle/0000_material_swarm.sql' with {
 	type: 'text',
 };

@@ -13,9 +13,11 @@ export function registerMainConfigRoute(app: Hono) {
 	app.get('/v1/config', async (c) => {
 		try {
 			const projectRoot = c.req.query('project') || process.cwd();
-			const embeddedConfig = c.get('embeddedConfig') as
-				| EmbeddedAppConfig
-				| undefined;
+			const embeddedConfig = (
+				c as unknown as {
+					get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
+				}
+			).get('embeddedConfig');
 
 			const cfg = await loadConfig(projectRoot);
 

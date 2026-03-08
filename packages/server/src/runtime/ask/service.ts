@@ -127,7 +127,12 @@ async function processAskRequest(
 				google: { enabled: true },
 				openrouter: { enabled: true },
 				opencode: { enabled: true },
+				copilot: { enabled: true },
 				setu: { enabled: true },
+				zai: { enabled: true },
+				'zai-coding': { enabled: true },
+				moonshot: { enabled: true },
+				minimax: { enabled: true },
 			},
 			paths: {
 				dataDir: `${projectRoot}/.otto`,

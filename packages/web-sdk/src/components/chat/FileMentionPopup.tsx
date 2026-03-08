@@ -225,10 +225,11 @@ export function FileMentionPopup({
 							const status = getGitStatusInfo(filePath, changedFilesMap);
 							return (
 								status && (
-									<status.icon
-										className={`w-3.5 h-3.5 flex-shrink-0 ${status.className}`}
-										title={status.label}
-									/>
+									<span title={status.label}>
+										<status.icon
+											className={`w-3.5 h-3.5 flex-shrink-0 ${status.className}`}
+										/>
+									</span>
 								)
 							);
 						})()}

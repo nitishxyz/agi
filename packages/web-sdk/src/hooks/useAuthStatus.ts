@@ -16,7 +16,7 @@ export function useAuthStatus() {
 
 	const [initialized, setInitialized] = useState(false);
 	const [oauthPolling, setOauthPolling] = useState(false);
-	const oauthPollingRef = useRef<ReturnType<typeof setInterval>>();
+	const oauthPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const preOauthProvidersRef = useRef<Set<string>>(new Set());
 
 	const fetchAuthStatus = useCallback(async () => {

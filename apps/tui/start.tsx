@@ -1,5 +1,6 @@
 import { createCliRenderer } from '@opentui/core';
 import { createRoot } from '@opentui/react';
+// @ts-expect-error Bun file asset import
 import treeSitterWorkerPath from '../../node_modules/@opentui/core/parser.worker.js' with {
 	type: 'file',
 };

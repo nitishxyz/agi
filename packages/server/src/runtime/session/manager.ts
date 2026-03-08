@@ -39,7 +39,7 @@ export async function createSession({
 	await ensureProviderEnv(cfg, provider);
 	const id = crypto.randomUUID();
 	const now = Date.now();
-	const row = {
+	const row: SessionRow = {
 		id,
 		title: title ?? null,
 		agent,
@@ -56,6 +56,11 @@ export async function createSession({
 		totalToolTimeMs: null,
 		toolCountsJson: null,
 		currentContextTokens: null,
+		contextSummary: null,
+		lastCompactedAt: null,
+		parentSessionId: null,
+		branchPointMessageId: null,
+		sessionType: 'main',
 	};
 	await db.insert(sessions).values(row);
 	publish({ type: 'session.created', sessionId: id, payload: row });

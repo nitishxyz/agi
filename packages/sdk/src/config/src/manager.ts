@@ -65,6 +65,7 @@ export async function writeDefaults(
 		model: string;
 		toolApproval: 'auto' | 'dangerous' | 'all';
 		guidedMode: boolean;
+		reasoningText: boolean;
 		theme: string;
 	}>,
 	projectRoot?: string,

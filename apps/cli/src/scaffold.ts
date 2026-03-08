@@ -93,9 +93,9 @@ async function scaffoldAgent(
 		createPrompt = Boolean(wantPrompt);
 	}
 	const agentsPath = `${baseDir}/agents.json`;
-	const current = await readJson(agentsPath).catch(
+	const current = (await readJson(agentsPath).catch(
 		() => ({}) as Record<string, unknown>,
-	);
+	)) as Record<string, unknown>;
 	let promptRel: string | undefined;
 	if (createPrompt) {
 		const rel = `agents/${String(name)}.md`;

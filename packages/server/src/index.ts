@@ -191,6 +191,7 @@ export type EmbeddedAppConfig = {
 		provider?: ProviderId;
 		model?: string;
 		agent?: string;
+		toolApproval?: 'auto' | 'dangerous' | 'all';
 	};
 	/** Additional CORS origins for proxies/Tailscale (e.g., ['https://myapp.ts.net', 'https://example.com']) */
 	corsOrigins?: string[];
@@ -202,7 +203,14 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 	// Store injected config in Hono context for routes to access
 	// Config can be empty - routes will fall back to files/env
 	honoApp.use('*', async (c, next) => {
-		c.set('embeddedConfig', config);
+		(
+			c as unknown as {
+				set: (
+					key: 'embeddedConfig',
+					value: EmbeddedAppConfig | undefined,
+				) => void;
+			}
+		).set('embeddedConfig', config);
 		await next();
 	});
 

@@ -87,12 +87,14 @@ export function registerTerminalsRoutes(
 			return c.json({ error: 'Terminal not found' }, 404);
 		}
 
+		const activeTerminal = terminal;
+
 		return streamSSE(c, async (stream) => {
 			logger.debug('SSE stream started for terminal', { id });
 			// Send historical buffer first (unless skipHistory is set)
 			const skipHistory = c.req.query('skipHistory') === 'true';
 			if (!skipHistory) {
-				const history = terminal.read();
+				const history = activeTerminal.read();
 				logger.debug('SSE sending terminal history', {
 					id,
 					lines: history.length,
@@ -120,8 +122,8 @@ export function registerTerminalsRoutes(
 			let finished = false;
 
 			function cleanup() {
-				terminal.removeDataListener(onData);
-				terminal.removeExitListener(onExit);
+				activeTerminal.removeDataListener(onData);
+				activeTerminal.removeExitListener(onExit);
 				c.req.raw.signal.removeEventListener('abort', onAbort);
 			}
 
@@ -145,7 +147,7 @@ export function registerTerminalsRoutes(
 
 			function onAbort() {
 				logger.debug('SSE client disconnected from terminal', {
-					id: terminal.id,
+					id: activeTerminal.id,
 				});
 				stream.close();
 				finish();

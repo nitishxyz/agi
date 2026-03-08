@@ -7,7 +7,7 @@ export async function runToolsList(opts: { project?: string } = {}) {
 	const projectRoot = opts.project ?? process.cwd();
 	const cfg = await loadConfig(projectRoot);
 	const tools = await discoverProjectTools(cfg.projectRoot);
-	const toolNames = tools.map((t) => t.name).sort();
+	const toolNames = tools.tools.map((t) => t.name).sort();
 	const agents = await collectAgents(cfg.projectRoot);
 	// Build header row: Tool | agents columns
 	const headers = ['Tool', ...agents];

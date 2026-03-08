@@ -21,9 +21,11 @@ export function registerAskRoutes(app: Hono) {
 			return c.json({ error: 'Prompt is required.' }, 400);
 		}
 
-		const embeddedConfig = c.get('embeddedConfig') as
-			| EmbeddedAppConfig
-			| undefined;
+		const embeddedConfig = (
+			c as unknown as {
+				get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
+			}
+		).get('embeddedConfig');
 
 		// Hybrid fallback: Use embedded config if provided, otherwise fall back to files/env
 		let injectableConfig: InjectableConfig | undefined;

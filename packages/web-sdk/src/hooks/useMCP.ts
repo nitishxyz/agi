@@ -47,7 +47,19 @@ export function useStartMCPServer() {
 				path: { name },
 			});
 			if (error) throw new Error('Failed to start server');
-			const result = data as { ok: boolean; error?: string };
+			const result = data as {
+				ok: boolean;
+				error?: string;
+				connected?: boolean;
+				authRequired?: boolean;
+				authUrl?: string;
+				authType?: string;
+				authenticated?: boolean;
+				sessionId?: string;
+				userCode?: string;
+				verificationUri?: string;
+				interval?: number;
+			};
 			if (!result.ok) throw new Error(result.error || 'Failed to start server');
 			return result;
 		},

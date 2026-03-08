@@ -1,5 +1,6 @@
 export type OttoEventType =
 	| 'tool.approval.required'
+	| 'tool.approval.updated'
 	| 'tool.approval.resolved'
 	| 'setu.payment.required'
 	| 'setu.payment.signing'
@@ -11,6 +12,7 @@ export type OttoEventType =
 	| 'setu.fiat.checkout_created'
 	| 'setu.balance.updated'
 	| 'session.created'
+	| 'session.deleted'
 	| 'session.updated'
 	| 'message.created'
 	| 'message.updated'

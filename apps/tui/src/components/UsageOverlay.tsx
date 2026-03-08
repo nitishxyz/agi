@@ -58,12 +58,15 @@ function barColor(
 	return colors.blue;
 }
 
-export function UsageOverlay({ currentProvider, onClose }: UsageOverlayProps) {
+export function UsageOverlay({
+	currentProvider,
+	onClose: _onClose,
+}: UsageOverlayProps) {
 	const { colors } = useTheme();
 	const [usage, setUsage] = useState<UsageData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [isOAuth, setIsOAuth] = useState(false);
+	const [_isOAuth, setIsOAuth] = useState(false);
 
 	useEffect(() => {
 		let cancelled = false;

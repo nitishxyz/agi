@@ -1,5 +1,5 @@
 import { useKeyboard, useRenderer } from '@opentui/react';
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useMemo } from 'react';
 import {
 	stageFiles,
 	shareSession,
@@ -320,6 +320,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			abortSession,
 			showStatus,
 			setOverlay,
+			updateSessionPrefs,
 		],
 	);
 

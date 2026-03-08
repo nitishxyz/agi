@@ -284,7 +284,7 @@ async function generateSessionTitle(args: {
 			return;
 		}
 
-		const provider = sess.provider ?? cfg.defaults.provider;
+		const provider = (sess.provider ?? cfg.defaults.provider) as ProviderId;
 		const modelName = sess.model ?? cfg.defaults.model;
 
 		debugLog('[TITLE_GEN] Generating title for session');
@@ -365,7 +365,7 @@ Output ONLY the title, nothing else.`;
 
 		await db
 			.update(sessions)
-			.set({ title: sanitized, updatedAt: Date.now() })
+			.set({ title: sanitized, lastActiveAt: Date.now() })
 			.where(eq(sessions.id, sessionId));
 
 		debugLog(`[TITLE_GEN] Setting final title: "${sanitized}"`);

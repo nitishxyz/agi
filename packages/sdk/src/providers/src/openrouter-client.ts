@@ -19,7 +19,10 @@ export function getOpenRouterInstance(
 	const customFetch = model
 		? createConditionalCachingFetch(isAnthropicModel, model)
 		: undefined;
-	return createOpenRouter({ apiKey, fetch: customFetch });
+	return createOpenRouter({
+		apiKey,
+		fetch: customFetch as typeof fetch | undefined,
+	});
 }
 
 export function createOpenRouterModel(

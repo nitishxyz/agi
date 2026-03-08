@@ -103,7 +103,7 @@ function extractToolError(part: MessagePart): string | null {
 
 export const ToolCallItem = memo(function ToolCallItem({
 	part,
-	_isLast,
+	isLast: _isLast,
 	isFirst,
 }: ToolCallItemProps) {
 	const { colors } = useTheme();

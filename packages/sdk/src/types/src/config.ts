@@ -1,3 +1,5 @@
+import type { ProviderId } from './provider';
+
 /**
  * Configuration scope - where settings are stored
  */
@@ -18,6 +20,14 @@ export type DefaultConfig = {
 	theme?: string;
 };
 
+export type ProviderSettings = Record<
+	ProviderId,
+	{
+		enabled: boolean;
+		apiKey?: string;
+	}
+>;
+
 /**
  * Path configuration
  */
@@ -34,6 +44,7 @@ export type PathConfig = {
 export type OttoConfig = {
 	projectRoot: string;
 	defaults: DefaultConfig;
+	providers: ProviderSettings;
 	paths: PathConfig;
 	onboardingComplete?: boolean;
 };

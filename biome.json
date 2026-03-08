@@ -46,6 +46,15 @@
 			}
 		},
 		{
+			"includes": ["apps/mobile/**"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			}
+		},
+		{
 			"includes": ["apps/landing/**/*.tsx"],
 			"linter": {
 				"rules": {

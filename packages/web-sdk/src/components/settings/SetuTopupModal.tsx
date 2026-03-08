@@ -43,14 +43,6 @@ interface CheckoutInfo {
 	chargeAmount: number;
 }
 
-interface RazorpayOrderInfo {
-	orderId: string;
-	amount: number;
-	currency: string;
-	creditAmountUsd: number;
-	keyId: string;
-}
-
 declare global {
 	interface Window {
 		Razorpay: new (
@@ -84,6 +76,7 @@ function PolarIcon({ className = 'w-5 h-5' }: { className?: string }) {
 			fill="currentColor"
 			xmlns="http://www.w3.org/2000/svg"
 		>
+			<title>Polar</title>
 			<path
 				fillRule="evenodd"
 				clipRule="evenodd"
@@ -111,6 +104,7 @@ function RazorpayIcon({ className = 'w-5 h-5' }: { className?: string }) {
 			fill="currentColor"
 			xmlns="http://www.w3.org/2000/svg"
 		>
+			<title>Razorpay</title>
 			<path d="M22.436 0l-11.91 7.773-1.174 4.276 6.625-4.297L11.65 24h4.391l6.395-24zM14.26 10.098L3.389 17.166 1.564 24h9.008l3.688-13.902Z" />
 		</svg>
 	);

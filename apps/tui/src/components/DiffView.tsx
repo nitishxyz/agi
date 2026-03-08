@@ -248,11 +248,34 @@ interface DiffViewProps {
 	maxHeight?: number;
 }
 
-function findScrollableChild(renderable: any): any | null {
-	if ('scrollY' in renderable && 'scrollHeight' in renderable) {
-		return renderable;
+type ScrollableRenderable = {
+	scrollY: number;
+	scrollHeight: number;
+	height: number;
+	getChildren?: () => unknown[];
+};
+
+type ScrollEvent = {
+	scroll?: {
+		direction?: 'up' | 'down' | string;
+	};
+	stopPropagation: () => void;
+};
+
+function findScrollableChild(renderable: unknown): ScrollableRenderable | null {
+	if (
+		typeof renderable === 'object' &&
+		renderable !== null &&
+		'scrollY' in renderable &&
+		'scrollHeight' in renderable &&
+		'height' in renderable
+	) {
+		return renderable as ScrollableRenderable;
 	}
-	const children = renderable.getChildren?.() ?? [];
+	const renderableWithChildren = renderable as {
+		getChildren?: () => unknown[];
+	};
+	const children = renderableWithChildren.getChildren?.() ?? [];
 	for (const child of children) {
 		const found = findScrollableChild(child);
 		if (found) return found;
@@ -272,7 +295,7 @@ function SingleDiffView({
 	const { colors, syntaxStyle } = useTheme();
 	const filetype = filePath ? detectFiletype(filePath) : undefined;
 
-	const diffRef = useRef<any>(null);
+	const diffRef = useRef<unknown>(null);
 
 	const totalRows = useMemo(
 		() => countSplitViewRows(unifiedDiff),
@@ -283,7 +306,7 @@ function SingleDiffView({
 		[totalRows, maxHeight],
 	);
 
-	const handleMouseScroll = useCallback((event: any) => {
+	const handleMouseScroll = useCallback((event: ScrollEvent) => {
 		const diff = diffRef.current;
 		if (!diff) return;
 		const scrollable = findScrollableChild(diff);

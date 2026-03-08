@@ -85,6 +85,59 @@ export function useSessionStream(sessionId: string | undefined) {
 			return '';
 		};
 
+		const getOptimisticPartIndex = (
+			parts: MessagePart[],
+			stepIndex: number | null,
+		): number => {
+			if (typeof stepIndex !== 'number') {
+				return parts.length;
+			}
+
+			const sameStepIndexes = parts
+				.filter((part) => part.stepIndex === stepIndex)
+				.map((part) => part.index)
+				.filter((index): index is number => Number.isFinite(index));
+
+			if (sameStepIndexes.length > 0) {
+				return Math.max(...sameStepIndexes) + 0.001;
+			}
+
+			const previousStepIndexes = parts
+				.filter(
+					(part) =>
+						typeof part.stepIndex === 'number' && part.stepIndex < stepIndex,
+				)
+				.map((part) => part.index)
+				.filter((index): index is number => Number.isFinite(index));
+
+			const nextStepIndexes = parts
+				.filter(
+					(part) =>
+						typeof part.stepIndex === 'number' && part.stepIndex > stepIndex,
+				)
+				.map((part) => part.index)
+				.filter((index): index is number => Number.isFinite(index));
+
+			const lowerBound =
+				previousStepIndexes.length > 0
+					? Math.max(...previousStepIndexes)
+					: null;
+			const upperBound =
+				nextStepIndexes.length > 0 ? Math.min(...nextStepIndexes) : null;
+
+			if (lowerBound !== null && upperBound !== null) {
+				return (lowerBound + upperBound) / 2;
+			}
+			if (lowerBound !== null) {
+				return lowerBound + 1;
+			}
+			if (upperBound !== null) {
+				return upperBound - 1;
+			}
+
+			return parts.length;
+		};
+
 		const applyReasoningDelta = (
 			payload: Record<string, unknown> | undefined,
 		) => {
@@ -112,7 +165,7 @@ export function useSessionStream(sessionId: string | undefined) {
 						const newPart: MessagePart = {
 							id: partId,
 							messageId,
-							index: parts.length,
+							index: getOptimisticPartIndex(parts, stepIndex),
 							stepIndex,
 							type: 'reasoning',
 							content: JSON.stringify({ text: delta }),
@@ -173,7 +226,7 @@ export function useSessionStream(sessionId: string | undefined) {
 						const newPart: MessagePart = {
 							id: partId,
 							messageId,
-							index: parts.length,
+							index: getOptimisticPartIndex(parts, stepIndex),
 							stepIndex,
 							type: 'text',
 							content: JSON.stringify({ text: delta }),
@@ -253,7 +306,7 @@ export function useSessionStream(sessionId: string | undefined) {
 								? `ephemeral-tool-call-${callId}`
 								: `ephemeral-tool-call-${name}-${Date.now()}`,
 							messageId: targetMessage.id,
-							index: parts.length,
+							index: getOptimisticPartIndex(parts, stepIndex),
 							stepIndex,
 							type: 'tool_call',
 							content: JSON.stringify(contentJsonBase),

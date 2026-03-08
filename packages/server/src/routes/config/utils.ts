@@ -63,7 +63,8 @@ export async function getAuthTypeForProvider(
 	projectRoot: string,
 ): Promise<'api' | 'oauth' | 'wallet' | undefined> {
 	if (embeddedConfig?.auth?.[provider]) {
-		return embeddedConfig.auth[provider].type as 'api' | 'oauth' | 'wallet';
+		const embeddedAuth = embeddedConfig.auth[provider];
+		return 'type' in embeddedAuth ? embeddedAuth.type : 'api';
 	}
 	const auth = await getAuth(provider, projectRoot);
 	return auth?.type as 'api' | 'oauth' | 'wallet' | undefined;
@@ -83,7 +84,9 @@ export async function discoverAllAgents(
 			}
 		}
 	} catch (err) {
-		logger.debug('Failed to load agents.json', err);
+		logger.debug('Failed to load agents.json', {
+			error: err instanceof Error ? err.message : String(err),
+		});
 	}
 
 	try {
@@ -98,7 +101,9 @@ export async function discoverAllAgents(
 			}
 		}
 	} catch (err) {
-		logger.debug('Failed to read local agents directory', err);
+		logger.debug('Failed to read local agents directory', {
+			error: err instanceof Error ? err.message : String(err),
+		});
 	}
 
 	try {
@@ -113,7 +118,9 @@ export async function discoverAllAgents(
 			}
 		}
 	} catch (err) {
-		logger.debug('Failed to read global agents directory', err);
+		logger.debug('Failed to read global agents directory', {
+			error: err instanceof Error ? err.message : String(err),
+		});
 	}
 
 	return Array.from(agentSet).sort();

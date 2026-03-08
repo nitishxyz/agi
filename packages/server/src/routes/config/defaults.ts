@@ -1,5 +1,5 @@
 import type { Hono } from 'hono';
-import { setConfig, loadConfig } from '@ottocode/sdk';
+import { setConfig, loadConfig, type ProviderId } from '@ottocode/sdk';
 import { logger } from '@ottocode/sdk';
 import { serializeError } from '../../runtime/errors/api-error.ts';
 
@@ -21,7 +21,7 @@ export function registerDefaultsRoute(app: Hono) {
 			const scope = body.scope || 'global';
 			const updates: Partial<{
 				agent: string;
-				provider: string;
+				provider: ProviderId;
 				model: string;
 				toolApproval: 'auto' | 'dangerous' | 'all';
 				guidedMode: boolean;
@@ -30,7 +30,7 @@ export function registerDefaultsRoute(app: Hono) {
 			}> = {};
 
 			if (body.agent) updates.agent = body.agent;
-			if (body.provider) updates.provider = body.provider;
+			if (body.provider) updates.provider = body.provider as ProviderId;
 			if (body.model) updates.model = body.model;
 			if (body.toolApproval) updates.toolApproval = body.toolApproval;
 			if (body.guidedMode !== undefined) updates.guidedMode = body.guidedMode;

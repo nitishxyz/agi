@@ -130,12 +130,13 @@ export function adaptTools(
 			}: {
 				callId?: string;
 				startTs?: number;
-				stepIndexForEvent: number;
+				stepIndexForEvent?: number;
 				args?: unknown;
 			},
 		) => {
 			const resultPartId = crypto.randomUUID();
 			const endTs = Date.now();
+			const effectiveStepIndex = stepIndexForEvent ?? ctx.stepIndex;
 			const dur =
 				typeof startTs === 'number' ? Math.max(0, endTs - startTs) : null;
 
@@ -160,7 +161,7 @@ export function adaptTools(
 				id: resultPartId,
 				messageId: ctx.messageId,
 				index,
-				stepIndex: stepIndexForEvent,
+				stepIndex: effectiveStepIndex,
 				type: 'tool_result',
 				content: JSON.stringify(contentObj),
 				agent: ctx.agent,
@@ -176,7 +177,7 @@ export function adaptTools(
 			publish({
 				type: 'tool.result',
 				sessionId: ctx.sessionId,
-				payload: { ...contentObj, stepIndex: stepIndexForEvent },
+				payload: { ...contentObj, stepIndex: effectiveStepIndex },
 			});
 		};
 

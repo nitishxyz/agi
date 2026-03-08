@@ -33,7 +33,8 @@ export async function runSessions(opts: SessionsOptions = {}) {
 		return;
 	}
 
-	const list = (data as SessionRecord[]) ?? [];
+	const list = ((data as { items?: SessionRecord[] })?.items ??
+		[]) as SessionRecord[];
 	const seen = new Set<string>();
 	const uniq: SessionRecord[] = [];
 	for (const r of list) {

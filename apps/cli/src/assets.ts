@@ -6,10 +6,13 @@
 
 // Root-relative from apps/cli/src/assets.ts
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+// @ts-expect-error Bun file asset import
 import README from '../../../README.md' with { type: 'file' };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+// @ts-expect-error Bun file asset import
 import AGENTS from '../../../AGENTS.md' with { type: 'file' };
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+// @ts-expect-error Bun file asset import
 import CLAUDE from '../../../CLAUDE.md' with { type: 'file' };
 
 export const embeddedTextAssets: Record<string, string> = {

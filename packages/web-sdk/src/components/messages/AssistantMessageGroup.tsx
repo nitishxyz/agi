@@ -121,6 +121,8 @@ export const AssistantMessageGroup = memo(
 			return [...rawParts].sort((a, b) => {
 				const indexDiff = (a.index ?? 0) - (b.index ?? 0);
 				if (indexDiff !== 0) return indexDiff;
+				const stepDiff = (a.stepIndex ?? 0) - (b.stepIndex ?? 0);
+				if (stepDiff !== 0) return stepDiff;
 				// Secondary sort by startedAt for parts with same index
 				return (a.startedAt ?? 0) - (b.startedAt ?? 0);
 			});
@@ -409,10 +411,16 @@ export const AssistantMessageGroup = memo(
 			const nextPart = nextParts[i];
 			if (
 				prevPart.id !== nextPart.id ||
+				prevPart.index !== nextPart.index ||
+				prevPart.stepIndex !== nextPart.stepIndex ||
+				prevPart.type !== nextPart.type ||
 				prevPart.content !== nextPart.content ||
 				prevPart.contentJson !== nextPart.contentJson ||
+				prevPart.toolName !== nextPart.toolName ||
+				prevPart.toolCallId !== nextPart.toolCallId ||
 				prevPart.ephemeral !== nextPart.ephemeral ||
-				prevPart.completedAt !== nextPart.completedAt
+				prevPart.completedAt !== nextPart.completedAt ||
+				prevPart.startedAt !== nextPart.startedAt
 			) {
 				return false;
 			}

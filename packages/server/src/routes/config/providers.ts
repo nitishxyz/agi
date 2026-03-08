@@ -9,14 +9,18 @@ import { getAuthorizedProviders, getDefault } from './utils.ts';
 export function registerProvidersRoute(app: Hono) {
 	app.get('/v1/config/providers', async (c) => {
 		try {
-			const embeddedConfig = c.get('embeddedConfig') as
-				| EmbeddedAppConfig
-				| undefined;
+			const embeddedConfig = (
+				c as unknown as {
+					get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
+				}
+			).get('embeddedConfig');
 
 			if (embeddedConfig) {
 				const providers = embeddedConfig.auth
 					? (Object.keys(embeddedConfig.auth) as ProviderId[])
-					: [embeddedConfig.provider];
+					: embeddedConfig.provider
+						? [embeddedConfig.provider]
+						: [];
 
 				return c.json({
 					providers,

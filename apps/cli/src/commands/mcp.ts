@@ -203,7 +203,10 @@ async function runMCPAdd(
 		global: boolean;
 	},
 ) {
-	const t = opts.transport ?? 'stdio';
+	const t: 'stdio' | 'http' | 'sse' =
+		opts.transport === 'http' || opts.transport === 'sse'
+			? opts.transport
+			: 'stdio';
 
 	if (t === 'stdio' && !opts.command) {
 		console.error('--command is required for stdio transport');

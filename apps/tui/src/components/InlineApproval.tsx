@@ -21,8 +21,8 @@ function formatArgs(args: unknown): string {
 
 export function InlineApproval({
 	approval,
-	_onApprove,
-	_onDeny,
+	onApprove: _onApprove,
+	onDeny: _onDeny,
 }: InlineApprovalProps) {
 	const { colors } = useTheme();
 	const toolLabel = approval.toolName.includes('__')

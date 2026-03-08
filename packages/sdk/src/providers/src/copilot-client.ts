@@ -150,7 +150,12 @@ function sanitizeCopilotRequestBody(body: string): string {
 	}
 }
 
-export function createCopilotFetch(config: CopilotOAuthConfig): typeof fetch {
+export function createCopilotFetch(
+	config: CopilotOAuthConfig,
+): (
+	input: Parameters<typeof fetch>[0],
+	init?: Parameters<typeof fetch>[1],
+) => Promise<Response> {
 	return async (
 		input: string | URL | Request,
 		init?: RequestInit,
@@ -202,7 +207,7 @@ export function createCopilotModel(model: string, config: CopilotOAuthConfig) {
 	const provider = createOpenAI({
 		apiKey: 'copilot-oauth',
 		baseURL: COPILOT_BASE_URL,
-		fetch: customFetch,
+		fetch: customFetch as typeof fetch,
 	});
 
 	return needsResponsesApi(model)

@@ -8,9 +8,11 @@ import { discoverAllAgents, getDefault } from './utils.ts';
 export function registerAgentsRoute(app: Hono) {
 	app.get('/v1/config/agents', async (c) => {
 		try {
-			const embeddedConfig = c.get('embeddedConfig') as
-				| EmbeddedAppConfig
-				| undefined;
+			const embeddedConfig = (
+				c as unknown as {
+					get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
+				}
+			).get('embeddedConfig');
 
 			if (embeddedConfig) {
 				const agents = embeddedConfig.agents

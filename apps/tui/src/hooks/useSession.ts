@@ -117,11 +117,10 @@ export function useSession() {
 			changes: { agent?: string; provider?: string; model?: string },
 		) => {
 			try {
-				// biome-ignore lint/suspicious/noExplicitAny: provider type mismatch between string and Provider enum
 				await apiUpdateSession({
 					path: { sessionId },
 					body: changes,
-				} as any);
+				} as never);
 				setActiveSession((prev) => {
 					if (prev?.id !== sessionId) return prev;
 					return { ...prev, ...changes };

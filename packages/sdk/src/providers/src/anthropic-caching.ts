@@ -16,6 +16,11 @@ type ParsedBody = {
 	[key: string]: unknown;
 };
 
+type FetchLike = (
+	input: Parameters<typeof fetch>[0],
+	init?: Parameters<typeof fetch>[1],
+) => Promise<Response>;
+
 export function addAnthropicCacheControl(parsed: ParsedBody): ParsedBody {
 	const MAX_SYSTEM_CACHE = 1;
 	const MAX_MESSAGE_CACHE = 1;
@@ -84,8 +89,8 @@ export function addAnthropicCacheControl(parsed: ParsedBody): ParsedBody {
 	return parsed;
 }
 
-export function createAnthropicCachingFetch(): typeof fetch {
-	return async (input: RequestInfo | URL, init?: RequestInit) => {
+export function createAnthropicCachingFetch(): FetchLike {
+	return async (input, init) => {
 		let body = init?.body;
 		if (body && typeof body === 'string') {
 			try {
@@ -103,8 +108,8 @@ export function createAnthropicCachingFetch(): typeof fetch {
 export function createConditionalCachingFetch(
 	shouldCache: (model: string) => boolean,
 	model: string,
-): typeof fetch {
-	return async (input: RequestInfo | URL, init?: RequestInit) => {
+): FetchLike {
+	return async (input, init) => {
 		if (!shouldCache(model)) {
 			return fetch(input, init);
 		}

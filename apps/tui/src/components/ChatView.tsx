@@ -15,7 +15,7 @@ interface ChatViewProps {
 
 export const ChatView = memo(function ChatView({
 	messages,
-	_isStreaming,
+	isStreaming: _isStreaming,
 	streamingMessageId,
 	queuedMessageIds,
 	pendingApprovals,

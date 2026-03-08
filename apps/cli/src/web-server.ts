@@ -3,7 +3,6 @@
  * Serves the web UI from embedded assets
  */
 
-import type { Server } from 'bun';
 import { webAssetPaths, assetPaths, getEmbeddedAsset } from './web-assets';
 import { logger } from '@ottocode/sdk';
 
@@ -33,7 +32,7 @@ export function createWebServer(
 	port: number,
 	agiServerPortOrUrl: number | string,
 	network = false,
-): { port: number; server: Server } {
+): { port: number; server: ReturnType<typeof Bun.serve> } {
 	// Build asset map - maps URL paths to file paths
 	const assetMap = new Map<string, string>();
 
@@ -198,5 +197,5 @@ export function createWebServer(
 		},
 	});
 
-	return { port: server.port, server };
+	return { port: Number(server.port ?? port), server };
 }

@@ -17,7 +17,7 @@ import type {
 	ToolKind,
 	ToolCallLocation,
 	ToolCallContent,
-} from '@agentclientprotocol/sdk/schema/types.gen';
+} from '@agentclientprotocol/sdk/dist/schema';
 import { handleAskRequest } from '@ottocode/server/runtime/ask/service';
 import { subscribe } from '@ottocode/server/events/bus';
 import {
@@ -76,7 +76,9 @@ export class OttoAcpAgent implements Agent {
 
 	async authenticate(
 		_params: AuthenticateRequest,
-	): Promise<AuthenticateResponse | undefined> {}
+	): Promise<AuthenticateResponse | undefined> {
+		return undefined;
+	}
 
 	async newSession(params: NewSessionRequest): Promise<NewSessionResponse> {
 		const cwd = params.cwd || process.cwd();
@@ -173,9 +175,9 @@ export class OttoAcpAgent implements Agent {
 
 				if (!session.assistantMessageId) return;
 
-				const state = getRunnerState();
-				const isRunning = state.running.has(session.ottoSessionId);
-				const hasQueued = state.queued[session.ottoSessionId]?.length > 0;
+				const state = getRunnerState(session.ottoSessionId);
+				const isRunning = state?.running ?? false;
+				const hasQueued = (state?.queue.length ?? 0) > 0;
 
 				if (!isRunning && !hasQueued && session.assistantMessageId) {
 					clearInterval(checkInterval);
@@ -263,6 +265,7 @@ export class OttoAcpAgent implements Agent {
 								sessionUpdate: 'plan',
 								entries: items.map((item) => ({
 									content: item.step,
+									priority: 'medium',
 									status: mapPlanStatus(item.status),
 								})),
 							},
@@ -843,14 +846,12 @@ function extractFilePath(
 
 function mapPlanStatus(
 	status?: string,
-): 'pending' | 'in_progress' | 'completed' | 'cancelled' {
+): 'pending' | 'in_progress' | 'completed' {
 	switch (status) {
 		case 'in_progress':
 			return 'in_progress';
 		case 'completed':
 			return 'completed';
-		case 'cancelled':
-			return 'cancelled';
 		default:
 			return 'pending';
 	}

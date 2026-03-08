@@ -59,7 +59,7 @@ export function registerTunnelRoutes(app: Hono) {
 
 			const url = await activeTunnel.start(port, (msg) => {
 				progressMessage = msg;
-				logger.debug('Tunnel progress:', msg);
+				logger.debug('Tunnel progress', { message: msg });
 			});
 
 			tunnelUrl = url;
