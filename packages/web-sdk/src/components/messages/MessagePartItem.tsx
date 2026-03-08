@@ -80,6 +80,13 @@ function getPrimaryCommand(
 	return null;
 }
 
+function getPatchedFileFromPatch(patch: string): string | null {
+	const match = patch.match(
+		/^\*\*\*\s+(?:Update|Add|Delete|Replace in):\s+(.+)$/m,
+	);
+	return match?.[1]?.trim() || null;
+}
+
 function normalizeToolTarget(
 	toolName: string,
 	args: Record<string, unknown> | undefined,
@@ -105,6 +112,15 @@ function normalizeToolTarget(
 		const command = args.command;
 		if (typeof command === 'string' && command.trim().length > 0) {
 			return { key: 'command', value: command.trim() };
+		}
+	}
+	if (toolName === 'apply_patch') {
+		const patch = args.patch;
+		if (typeof patch === 'string' && patch.trim().length > 0) {
+			const target = getPatchedFileFromPatch(patch);
+			if (target) {
+				return { key: 'patch', value: target };
+			}
 		}
 	}
 	return null;
@@ -161,8 +177,11 @@ export const MessagePartItem = memo(
 		onCompact,
 	}: MessagePartItemProps) {
 		// Show tool_call if it's the last one OR if it has a pending approval
-		if (part.type === 'tool_call' && !isLastToolCall && !pendingApproval) {
-			return null;
+		// Never show loading indicator for progress_update calls
+		if (part.type === 'tool_call') {
+			const toolName = part.toolName || '';
+			if (toolName === 'progress_update') return null;
+			if (!isLastToolCall && !pendingApproval) return null;
 		}
 
 		if (
@@ -205,7 +224,7 @@ export const MessagePartItem = memo(
 		const contentClasses = ['flex-1', 'min-w-0', 'max-w-full'];
 
 		if (isToolMessage || part.type === 'reasoning') {
-			contentClasses.push('pt-1');
+			contentClasses.push(compact ? 'pt-0.5' : 'pt-1');
 		} else if (part.type === 'error') {
 			contentClasses.push('pt-0.5');
 		} else if (part.type === 'text') {
@@ -619,6 +638,7 @@ export const MessagePartItem = memo(
 			prevProps.showLine === nextProps.showLine &&
 			prevProps.isLastToolCall === nextProps.isLastToolCall &&
 			prevProps.isLastProgressUpdate === nextProps.isLastProgressUpdate &&
+			prevProps.compact === nextProps.compact &&
 			prevProps.onNavigateToSession === nextProps.onNavigateToSession &&
 			prevProps.pendingApproval?.callId === nextProps.pendingApproval?.callId &&
 			prevProps.onApprove === nextProps.onApprove &&

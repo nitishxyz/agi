@@ -77,6 +77,14 @@ function normalizeToolName(name: string): string {
 	return TOOL_NAME_ALIASES[name] ?? name;
 }
 
+const COMPACT_DETAIL_TOOL_NAMES = new Set([
+	'bash',
+	'write',
+	'edit',
+	'apply_patch',
+	'terminal',
+]);
+
 export function ToolResultRenderer({
 	toolName,
 	contentJson,
@@ -90,6 +98,8 @@ export function ToolResultRenderer({
 }: ToolResultRendererProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const normalizedName = normalizeToolName(toolName);
+	const rendererCompact =
+		compact && !COMPACT_DETAIL_TOOL_NAMES.has(normalizedName);
 
 	const handleToggle = () => setIsExpanded(!isExpanded);
 
@@ -98,7 +108,7 @@ export function ToolResultRenderer({
 		toolDurationMs: toolDurationMs ?? undefined,
 		isExpanded,
 		onToggle: handleToggle,
-		compact,
+		compact: rendererCompact,
 	};
 
 	if (debug) {

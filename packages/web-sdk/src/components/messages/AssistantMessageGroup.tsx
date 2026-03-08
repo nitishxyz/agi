@@ -7,13 +7,19 @@ import {
 	Shield,
 	CheckCheck,
 } from 'lucide-react';
-import type { Message } from '../../types/api';
+import type { Message, MessagePart } from '../../types/api';
 import { MessagePartItem } from './MessagePartItem';
+import { CompactActivityGroup } from './CompactActivityGroup';
 import { useMessageQueuePosition } from '../../hooks/useQueueState';
 import { BranchModal } from '../branch/BranchModal';
 import { ProviderLogo } from '../common/ProviderLogo';
 import { useToolApprovalStore } from '../../stores/toolApprovalStore';
 import { apiClient } from '../../lib/api-client';
+import {
+	type CompactActivityEntry,
+	buildCompactActivityEntries,
+	isCompactActivityPart,
+} from './compactActivity';
 
 interface AssistantMessageGroupProps {
 	sessionId?: string;
@@ -46,6 +52,19 @@ function getLoadingMessage(messageId: string) {
 		.reduce((acc, char) => acc + char.charCodeAt(0), 0);
 	return loadingMessages[hash % loadingMessages.length];
 }
+
+type AssistantRenderItem =
+	| {
+		  kind: 'part';
+		  index: number;
+		  part: MessagePart;
+	  }
+	| {
+		  kind: 'group';
+		  id: string;
+		  entries: CompactActivityEntry[];
+		  titleOverride?: string;
+	  };
 
 export const AssistantMessageGroup = memo(
 	function AssistantMessageGroup({
@@ -138,10 +157,87 @@ export const AssistantMessageGroup = memo(
 		);
 		const latestProgressUpdatePart =
 			latestProgressUpdateIndex >= 0 ? parts[latestProgressUpdateIndex] : null;
-		const hasVisibleNonProgressParts = parts.some(
-			(part) =>
-				!(part.type === 'tool_result' && part.toolName === 'progress_update'),
-		);
+		const renderItems = useMemo(() => {
+			const items: AssistantRenderItem[] = [];
+			let compactBuffer: MessagePart[] = [];
+			let bufferStartIndex = -1;
+			let pendingTitle: string | undefined;
+
+			const flushCompactBuffer = (nextTitle?: string) => {
+				if (compactBuffer.length === 0) {
+					if (nextTitle) {
+						pendingTitle = nextTitle;
+					}
+					return;
+				}
+
+				const entries = buildCompactActivityEntries(compactBuffer);
+				if (entries.length > 0) {
+					items.push({
+						kind: 'group',
+						id: `compact-${compactBuffer[0].id}`,
+						entries,
+						titleOverride: pendingTitle,
+					});
+				} else {
+					for (const [offset, part] of compactBuffer.entries()) {
+						items.push({
+							kind: 'part',
+							index: bufferStartIndex + offset,
+							part,
+						});
+					}
+				}
+
+				compactBuffer = [];
+				bufferStartIndex = -1;
+				pendingTitle = nextTitle;
+			};
+
+			for (const [index, part] of parts.entries()) {
+				const isProgressUpdate =
+					(part.type === 'tool_result' || part.type === 'tool_call') &&
+					part.toolName === 'progress_update';
+
+				if (isProgressUpdate) {
+					let msg: string | undefined;
+					const payload =
+						part.contentJson && typeof part.contentJson === 'object'
+							? part.contentJson
+							: null;
+					if (payload) {
+						const bucket =
+							(payload as Record<string, unknown>).args ??
+							(payload as Record<string, unknown>).result;
+						if (bucket && typeof bucket === 'object') {
+							const m = (bucket as Record<string, unknown>).message;
+							if (typeof m === 'string' && m.trim()) {
+								msg = m.trim();
+							}
+						}
+					}
+					if (msg) {
+						flushCompactBuffer(msg);
+					}
+					continue;
+				}
+
+				if (compact && isCompactActivityPart(part)) {
+					if (compactBuffer.length === 0) {
+						bufferStartIndex = index;
+					}
+					compactBuffer.push(part);
+					continue;
+				}
+
+				flushCompactBuffer();
+				items.push({ kind: 'part', index, part });
+			}
+
+			flushCompactBuffer();
+			return items;
+		}, [parts, compact]);
+		const hasVisibleNonProgressParts = renderItems.length > 0;
 		const firstVisiblePartIndex = parts.findIndex(
 			(part) =>
 				!(part.type === 'tool_result' && part.toolName === 'progress_update'),
@@ -260,7 +356,28 @@ export const AssistantMessageGroup = memo(
 				)}
 
 				<div className="relative ml-1">
-					{parts.map((part, index) => {
+					{renderItems.map((item, renderIndex) => {
+						const hasFollowingContent =
+							renderIndex < renderItems.length - 1 ||
+							hasNextAssistantMessage ||
+							shouldShowProgressUpdate;
+
+						if (item.kind === 'group') {
+							return (
+								<CompactActivityGroup
+									key={item.id}
+									entries={item.entries}
+									titleOverride={item.titleOverride}
+									showLine={hasFollowingContent}
+									collapsed={
+										message.status !== 'pending' ||
+										renderIndex < renderItems.length - 1
+									}
+								/>
+							);
+						}
+
+						const { part, index } = item;
 						const isLastPart = index === parts.length - 1;
 						// Find pending approval for this part's tool call
 						const pendingApproval =
@@ -270,16 +387,8 @@ export const AssistantMessageGroup = memo(
 								: null;
 						const isFinishTool =
 							part.type === 'tool_result' && part.toolName === 'finish';
-						const showLine =
-							(!isLastPart || hasNextAssistantMessage) && !isFinishTool;
+						const showLine = hasFollowingContent && !isFinishTool;
 						const isLastToolCall = part.type === 'tool_call' && isLastPart;
-						const isProgressUpdate =
-							part.type === 'tool_result' &&
-							part.toolName === 'progress_update';
-
-						if (isProgressUpdate) {
-							return null;
-						}
 
 						return (
 							<MessagePartItem

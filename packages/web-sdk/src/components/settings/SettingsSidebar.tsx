@@ -314,6 +314,13 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 							onChange={(checked) => updatePreferences({ vimMode: checked })}
 						/>
 						<ToggleRow
+							label="Compact Thread"
+							checked={preferences.compactThread}
+							onChange={(checked) =>
+								updatePreferences({ compactThread: checked })
+							}
+						/>
+						<ToggleRow
 							label="Show Reasoning"
 							checked={config?.defaults?.reasoningText ?? true}
 							onChange={(checked) =>

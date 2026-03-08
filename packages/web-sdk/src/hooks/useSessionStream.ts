@@ -360,6 +360,7 @@ export function useSessionStream(sessionId: string | undefined) {
 				typeof payload?.stepIndex === 'number' ? payload.stepIndex : null;
 			const payloadResult = payload?.result;
 			const payloadArtifact = payload?.artifact;
+			const payloadArgs = payload?.args;
 			queryClient.setQueryData<Message[]>(
 				['messages', sessionId],
 				(oldMessages) => {
@@ -383,6 +384,8 @@ export function useSessionStream(sessionId: string | undefined) {
 								name: payloadName ?? part.toolName ?? 'tool',
 								callId,
 							};
+						if (payloadArgs !== undefined)
+							nextContentJson.args = payloadArgs;
 							if (payloadResult !== undefined)
 								nextContentJson.result = payloadResult;
 							if (payloadArtifact !== undefined)

@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react';
 import { useMessages } from '../../hooks/useMessages';
 import { useSessionStream } from '../../hooks/useSessionStream';
 import { useSessions } from '../../hooks/useSessions';
+import { usePreferences } from '../../hooks/usePreferences';
 import { MessageThread } from './MessageThread';
 import { useToolApprovalShortcuts } from '../../hooks/useToolApprovalShortcuts';
 import { SetuTopupModal } from '../settings/SetuTopupModal';
@@ -17,6 +18,7 @@ export const MessageThreadContainer = memo(function MessageThreadContainer({
 }: MessageThreadContainerProps) {
 	const { data: messages = [], isLoading } = useMessages(sessionId);
 	const { data: sessions = [] } = useSessions();
+	const { preferences } = usePreferences();
 
 	useSessionStream(sessionId);
 
@@ -49,6 +51,7 @@ export const MessageThreadContainer = memo(function MessageThreadContainer({
 				sessionId={sessionId}
 				session={session}
 				isGenerating={isGenerating}
+				compact={preferences.compactThread}
 				onSelectSession={onSelectSession}
 			/>
 			<SetuTopupModal />

@@ -16,6 +16,7 @@ interface MessageThreadProps {
 	session?: Session;
 	sessionId?: string;
 	isGenerating?: boolean;
+	compact?: boolean;
 	disableAutoScroll?: boolean;
 	onSelectSession?: (sessionId: string) => void;
 }
@@ -25,6 +26,7 @@ export const MessageThread = memo(function MessageThread({
 	session,
 	sessionId,
 	isGenerating,
+	compact = false,
 	disableAutoScroll = false,
 	onSelectSession,
 }: MessageThreadProps) {
@@ -300,8 +302,14 @@ export const MessageThread = memo(function MessageThread({
 				</div>
 
 				{/* Messages */}
-				<div className="p-6 pb-64">
-					<div className="max-w-3xl mx-auto space-y-6">
+				<div className={compact ? 'p-4 pb-56' : 'p-6 pb-64'}>
+					<div
+						className={
+							compact
+								? 'max-w-3xl mx-auto space-y-4'
+								: 'max-w-3xl mx-auto space-y-6'
+						}
+					>
 						{filteredMessages.map((message, idx) => {
 							const prevMessage = filteredMessages[idx - 1];
 							const nextMessage = filteredMessages[idx + 1];
@@ -341,6 +349,7 @@ export const MessageThread = memo(function MessageThread({
 										onRetry={
 											isLastMessage ? createRetryHandler(message.id) : undefined
 										}
+										compact={compact}
 										onCompact={isLastMessage ? handleCompact : undefined}
 									/>
 								);
