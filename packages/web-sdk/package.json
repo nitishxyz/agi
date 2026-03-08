@@ -36,7 +36,7 @@
 		"README.md"
 	],
 	"scripts": {
-		"build": "(tsc || true) && mkdir -p dist/assets/fonts && cp src/assets/fonts/*.woff2 dist/assets/fonts/",
+		"build": "bun run build.ts",
 		"typecheck": "tsc --noEmit",
 		"dev": "tsc --watch",
 		"prepublishOnly": "bun run build"
