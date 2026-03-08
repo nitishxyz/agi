@@ -55,15 +55,15 @@ function getLoadingMessage(messageId: string) {
 
 type AssistantRenderItem =
 	| {
-		  kind: 'part';
-		  index: number;
-		  part: MessagePart;
+			kind: 'part';
+			index: number;
+			part: MessagePart;
 	  }
 	| {
-		  kind: 'group';
-		  id: string;
-		  entries: CompactActivityEntry[];
-		  titleOverride?: string;
+			kind: 'group';
+			id: string;
+			entries: CompactActivityEntry[];
+			titleOverride?: string;
 	  };
 
 export const AssistantMessageGroup = memo(

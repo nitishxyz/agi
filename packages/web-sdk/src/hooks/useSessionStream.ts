@@ -384,8 +384,7 @@ export function useSessionStream(sessionId: string | undefined) {
 								name: payloadName ?? part.toolName ?? 'tool',
 								callId,
 							};
-						if (payloadArgs !== undefined)
-							nextContentJson.args = payloadArgs;
+							if (payloadArgs !== undefined) nextContentJson.args = payloadArgs;
 							if (payloadResult !== undefined)
 								nextContentJson.result = payloadResult;
 							if (payloadArtifact !== undefined)

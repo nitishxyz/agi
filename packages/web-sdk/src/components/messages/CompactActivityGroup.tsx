@@ -45,7 +45,8 @@ export function CompactActivityGroup({
 	const hasReasoning = entries.some((e) => e.toolName === 'reasoning');
 
 	const visibleCount = Math.min(MAX_VISIBLE, entries.length);
-	const targetH = visibleCount * ROW_H + Math.max(0, visibleCount - 1) * ROW_GAP;
+	const targetH =
+		visibleCount * ROW_H + Math.max(0, visibleCount - 1) * ROW_GAP;
 
 	useEffect(() => {
 		if (!collapsed && !latched) {
@@ -104,9 +105,7 @@ export function CompactActivityGroup({
 			return;
 		}
 
-		const incoming = new Set(
-			entries.slice(prev.length).map((e) => e.id),
-		);
+		const incoming = new Set(entries.slice(prev.length).map((e) => e.id));
 		setNewIds(incoming);
 		clearNewRef.current = window.setTimeout(() => {
 			setNewIds(new Set());
@@ -180,7 +179,9 @@ export function CompactActivityGroup({
 				<div
 					className="relative rounded-lg overflow-hidden"
 					style={{
-						border: isLive ? '1px solid hsl(var(--border) / 0.6)' : '1px solid transparent',
+						border: isLive
+							? '1px solid hsl(var(--border) / 0.6)'
+							: '1px solid transparent',
 						background: isLive ? 'hsl(var(--muted) / 0.2)' : 'transparent',
 						padding: isLive ? '8px 12px' : '0px 0px',
 						transition: `border ${ANIM_MS}ms ${EASING}, background ${ANIM_MS}ms ${EASING}, padding ${ANIM_MS}ms ${EASING}`,
@@ -226,7 +227,9 @@ export function CompactActivityGroup({
 										<div
 											key={entry.id}
 											className={`flex items-center px-1 text-xs leading-5 ${
-												isLatest ? 'text-foreground' : 'text-muted-foreground/70'
+												isLatest
+													? 'text-foreground'
+													: 'text-muted-foreground/70'
 											}`}
 											style={{
 												height: `${ROW_H}px`,
@@ -236,7 +239,9 @@ export function CompactActivityGroup({
 													: undefined,
 											}}
 										>
-											<span className="block min-w-0 truncate">{entry.label}</span>
+											<span className="block min-w-0 truncate">
+												{entry.label}
+											</span>
 										</div>
 									);
 								})}
