@@ -23,6 +23,8 @@ interface CompactActivityEntry {
 	path?: string;
 	query?: string;
 	url?: string;
+	startedAt?: number | null;
+	completedAt?: number | null;
 }
 
 interface CompactActivitySummary {
@@ -142,6 +144,8 @@ export function getCompactActivityEntry(
 			id: part.id,
 			label: reasoning ? truncate(reasoning) : 'Thinking through the approach',
 			toolName: 'reasoning',
+			startedAt: part.startedAt,
+			completedAt: part.completedAt,
 		};
 	}
 
@@ -159,6 +163,8 @@ export function getCompactActivityEntry(
 			toolName: part.toolName,
 			path,
 			label: path ? `Reading ${truncate(path)}` : 'Reading file contents',
+			startedAt: part.startedAt,
+			completedAt: part.completedAt,
 		};
 	}
 
@@ -169,6 +175,8 @@ export function getCompactActivityEntry(
 			toolName: part.toolName,
 			path,
 			label: path ? `Scanning ${truncate(path)}` : 'Scanning the project',
+			startedAt: part.startedAt,
+			completedAt: part.completedAt,
 		};
 	}
 
@@ -185,6 +193,8 @@ export function getCompactActivityEntry(
 			toolName: part.toolName,
 			query,
 			label: query ? `Searching for ${truncate(query, 42)}` : 'Searching code',
+			startedAt: part.startedAt,
+			completedAt: part.completedAt,
 		};
 	}
 
@@ -201,6 +211,8 @@ export function getCompactActivityEntry(
 				: url
 					? `Reviewing ${truncate(url, 42)}`
 					: 'Researching references',
+			startedAt: part.startedAt,
+			completedAt: part.completedAt,
 		};
 	}
 
@@ -212,6 +224,8 @@ export function getCompactActivityEntry(
 			label: skillName
 				? `Loading skill ${truncate(skillName, 36)}`
 				: 'Loading a skill',
+			startedAt: part.startedAt,
+			completedAt: part.completedAt,
 		};
 	}
 
@@ -219,6 +233,8 @@ export function getCompactActivityEntry(
 		id: part.id,
 		toolName: part.toolName,
 		label: 'Reviewing prior context',
+		startedAt: part.startedAt,
+		completedAt: part.completedAt,
 	};
 }
 
@@ -268,6 +284,35 @@ function collectReferencedFiles(entries: CompactActivityEntry[]): Set<string> {
 	return files;
 }
 
+function computeElapsedMs(entries: CompactActivityEntry[]): number | null {
+	let earliest: number | null = null;
+	let latest: number | null = null;
+
+	for (const entry of entries) {
+		const start = entry.startedAt ?? null;
+		const end = entry.completedAt ?? entry.startedAt ?? null;
+		if (start !== null && (earliest === null || start < earliest)) {
+			earliest = start;
+		}
+		if (end !== null && (latest === null || end > latest)) {
+			latest = end;
+		}
+	}
+
+	if (earliest !== null && latest !== null && latest > earliest) {
+		return latest - earliest;
+	}
+	return null;
+}
+
+function formatDuration(ms: number): string {
+	const secs = Math.round(ms / 1000);
+	if (secs < 60) return `${secs}s`;
+	const mins = Math.floor(secs / 60);
+	const rem = secs % 60;
+	return rem > 0 ? `${mins}m ${rem}s` : `${mins}m`;
+}
+
 /**
  * Summarizes a rolling sequence of exploratory activity for the compact UI.
  */
@@ -311,9 +356,22 @@ export function summarizeCompactActivities(
 		}
 	}
 	const hasProjectReview = files.size > 0 || scans > 0;
+	const elapsedMs = computeElapsedMs(entries);
+	const durationStr = elapsedMs !== null ? formatDuration(elapsedMs) : null;
 
-	const title =
-		webLookups > 0
+	const isReasoningOnly =
+		reasoning > 0 &&
+		files.size === 0 &&
+		searches === 0 &&
+		scans === 0 &&
+		webLookups === 0 &&
+		historyLookups === 0;
+
+	const title = isReasoningOnly
+		? durationStr
+			? `Thought for ${durationStr}`
+			: 'Thought through the approach'
+		: webLookups > 0
 			? hasProjectReview || searches > 0
 				? 'Researched and reviewed the project'
 				: 'Researched references'
@@ -330,6 +388,9 @@ export function summarizeCompactActivities(
 								: 'Thought through the approach';
 
 	const details: string[] = [];
+	if (!isReasoningOnly && durationStr) {
+		details.push(durationStr);
+	}
 	if (files.size > 0) {
 		details.push(`${files.size} ${files.size === 1 ? 'file' : 'files'}`);
 	}
@@ -347,7 +408,7 @@ export function summarizeCompactActivities(
 	if (historyLookups > 0 && title !== 'Reviewed prior context') {
 		details.push('prior context');
 	}
-	if (reasoning > 0 && title !== 'Thought through the approach') {
+	if (reasoning > 0 && !isReasoningOnly) {
 		details.push('reasoning');
 	}
 	if (details.length === 0 && reasoning === 0) {
