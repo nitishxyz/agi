@@ -198,8 +198,7 @@ jobs:
       - name: Install dependencies (all platforms)
         shell: bash
         run: |
-          bun install
-          cd node_modules/@opentui/core && bun install --os="*" --cpu="*"
+          bun install --os="*" --cpu="*"
 
       - name: Download ripgrep binary
         shell: bash
@@ -335,8 +334,7 @@ jobs:
       - name: Install dependencies (all platforms)
         shell: bash
         run: |
-          bun install
-          cd node_modules/@opentui/core && bun install --os="*" --cpu="*"
+          bun install --os="*" --cpu="*"
 
       - name: Download ripgrep binary
         shell: bash
