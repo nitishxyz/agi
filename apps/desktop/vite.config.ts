@@ -12,11 +12,26 @@ export default defineConfig(async () => ({
 
 	resolve: {
 		alias: {
-			'@ottocode/web-sdk/lib': path.resolve(__dirname, '../../packages/web-sdk/src/lib/index.ts'),
-			'@ottocode/web-sdk/hooks': path.resolve(__dirname, '../../packages/web-sdk/src/hooks/index.ts'),
-			'@ottocode/web-sdk/stores': path.resolve(__dirname, '../../packages/web-sdk/src/stores/index.ts'),
-			'@ottocode/web-sdk/components': path.resolve(__dirname, '../../packages/web-sdk/src/components/index.ts'),
-			'@ottocode/web-sdk': path.resolve(__dirname, '../../packages/web-sdk/src/index.ts'),
+			'@ottocode/web-sdk/lib': path.resolve(
+				__dirname,
+				'../../packages/web-sdk/src/lib/index.ts',
+			),
+			'@ottocode/web-sdk/hooks': path.resolve(
+				__dirname,
+				'../../packages/web-sdk/src/hooks/index.ts',
+			),
+			'@ottocode/web-sdk/stores': path.resolve(
+				__dirname,
+				'../../packages/web-sdk/src/stores/index.ts',
+			),
+			'@ottocode/web-sdk/components': path.resolve(
+				__dirname,
+				'../../packages/web-sdk/src/components/index.ts',
+			),
+			'@ottocode/web-sdk': path.resolve(
+				__dirname,
+				'../../packages/web-sdk/src/index.ts',
+			),
 		},
 	},
 

@@ -130,7 +130,14 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 			console.log('[otto] Server ready, checking onboarding...');
 			checkOnboarding().then(() => {
 				const state = useOnboardingStore.getState();
-				console.log('[otto] checkOnboarding done, isOpen:', state.isOpen, 'authStatus:', !!state.authStatus, 'error:', state.error);
+				console.log(
+					'[otto] checkOnboarding done, isOpen:',
+					state.isOpen,
+					'authStatus:',
+					!!state.authStatus,
+					'error:',
+					state.error,
+				);
 			});
 		}
 	}, [serverReady, checkOnboarding]);
