@@ -10,6 +10,7 @@ export type OauthCodexContinuationInput = {
 	firstToolSeen: boolean;
 	hasTrailingAssistantText: boolean;
 	endedWithToolActivity?: boolean;
+	lastToolName?: string;
 	droppedPseudoToolText: boolean;
 	lastAssistantText: string;
 };
@@ -54,7 +55,7 @@ const MAX_UNCLEAN_EOF_RETRIES = 1;
 
 function isUncleanEof(input: OauthCodexContinuationInput): boolean {
 	if (input.finishReason && input.finishReason !== 'unknown') return false;
-	if (input.firstToolSeen) return true;
+	if (isMissingAssistantSummary(input)) return true;
 	if (looksLikeIntermediateProgressText(input.lastAssistantText)) return true;
 	return false;
 }
@@ -80,6 +81,10 @@ export function decideOauthCodexContinuation(
 
 	if (isTruncatedResponse(input.finishReason, input.rawFinishReason)) {
 		return { shouldContinue: true, reason: 'truncated' };
+	}
+
+	if (input.lastToolName === 'finish') {
+		return { shouldContinue: false };
 	}
 
 	if (input.endedWithToolActivity) {

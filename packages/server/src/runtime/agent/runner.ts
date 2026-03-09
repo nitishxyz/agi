@@ -182,12 +182,20 @@ async function runAssistant(opts: RunOpts) {
 	let _finishObserved = false;
 	let _toolActivityObserved = false;
 	let _trailingAssistantTextAfterTool = false;
+	let _endedWithToolActivity = false;
+	let _lastToolName: string | undefined;
 	let _abortedByUser = false;
 	let titleGenerationTriggered = false;
 	const unsubscribeFinish = subscribe(opts.sessionId, (evt) => {
 		if (evt.type === 'tool.call' || evt.type === 'tool.result') {
 			_toolActivityObserved = true;
 			_trailingAssistantTextAfterTool = false;
+			_endedWithToolActivity = true;
+			try {
+				_lastToolName = (evt.payload as { name?: string } | undefined)?.name;
+			} catch {
+				_lastToolName = undefined;
+			}
 		}
 		if (evt.type === 'tool.call') {
 			triggerTitleGenerationWhenReady();
@@ -327,6 +335,7 @@ async function runAssistant(opts: RunOpts) {
 					(delta.trim().length > 0 && firstToolSeen())
 				) {
 					_trailingAssistantTextAfterTool = true;
+					_endedWithToolActivity = false;
 				}
 
 				if (!currentPartId && !accumulated.trim()) {
@@ -443,8 +452,6 @@ async function runAssistant(opts: RunOpts) {
 
 		const MAX_CONTINUATIONS = 6;
 		const continuationCount = opts.continuationCount ?? 0;
-		const endedWithToolActivity =
-			_toolActivityObserved && !_trailingAssistantTextAfterTool;
 		const continuationDecision = decideOauthCodexContinuation({
 			provider: opts.provider,
 			isOpenAIOAuth,
@@ -456,7 +463,8 @@ async function runAssistant(opts: RunOpts) {
 			rawFinishReason: streamRawFinishReason,
 			firstToolSeen: fs,
 			hasTrailingAssistantText: _trailingAssistantTextAfterTool,
-			endedWithToolActivity,
+			endedWithToolActivity: _endedWithToolActivity,
+			lastToolName: _lastToolName,
 			droppedPseudoToolText: oauthTextGuard?.dropped ?? false,
 			lastAssistantText: latestAssistantText,
 		});

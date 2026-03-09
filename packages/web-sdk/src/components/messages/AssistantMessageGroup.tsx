@@ -302,14 +302,17 @@ export const AssistantMessageGroup = memo(
 								<Sparkles className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
 							</div>
 							<div className="flex items-center gap-x-1.5 md:gap-x-2 text-xs md:text-sm text-muted-foreground pl-2 md:pl-3 min-w-0">
-								{message.agent && !compact && (
-									<span className="font-medium text-violet-700 dark:text-violet-300 whitespace-nowrap">
+								{message.agent && (
+									<span
+										className={`font-medium text-violet-700 dark:text-violet-300 ${compact ? 'inline-block truncate max-w-[120px]' : 'whitespace-nowrap'}`}
+										title={message.agent}
+									>
 										{message.agent}
 									</span>
 								)}
 								{message.provider && (
 									<>
-										{!compact && message.agent && (
+										{message.agent && (
 											<span className="text-muted-foreground/50">·</span>
 										)}
 										<ProviderLogo

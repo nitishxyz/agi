@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import path from 'node:path';
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
@@ -8,6 +9,16 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
 	plugins: [react()],
 	base: './',
+
+	resolve: {
+		alias: {
+			'@ottocode/web-sdk/lib': path.resolve(__dirname, '../../packages/web-sdk/src/lib/index.ts'),
+			'@ottocode/web-sdk/hooks': path.resolve(__dirname, '../../packages/web-sdk/src/hooks/index.ts'),
+			'@ottocode/web-sdk/stores': path.resolve(__dirname, '../../packages/web-sdk/src/stores/index.ts'),
+			'@ottocode/web-sdk/components': path.resolve(__dirname, '../../packages/web-sdk/src/components/index.ts'),
+			'@ottocode/web-sdk': path.resolve(__dirname, '../../packages/web-sdk/src/index.ts'),
+		},
+	},
 
 	// Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
 	//

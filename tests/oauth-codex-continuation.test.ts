@@ -49,11 +49,31 @@ describe('oauth codex continuation decision', () => {
 			firstToolSeen: true,
 			hasTrailingAssistantText: false,
 			endedWithToolActivity: true,
+			lastToolName: 'read',
 			droppedPseudoToolText: false,
 			lastAssistantText: 'Working through tool calls',
 		});
 		expect(decision.shouldContinue).toBe(true);
 		expect(decision.reason).toBe('ended-on-tool-activity');
+	});
+
+	test('does not continue when the final tool activity is finish', () => {
+		const decision = decideOauthCodexContinuation({
+			provider: 'openai',
+			isOpenAIOAuth: true,
+			finishObserved: false,
+			continuationCount: 0,
+			maxContinuations: 6,
+			finishReason: 'stop',
+			rawFinishReason: undefined,
+			firstToolSeen: true,
+			hasTrailingAssistantText: false,
+			endedWithToolActivity: true,
+			lastToolName: 'finish',
+			droppedPseudoToolText: false,
+			lastAssistantText: 'Done',
+		});
+		expect(decision.shouldContinue).toBe(false);
 	});
 
 	test('continues when tools ran but no assistant text was produced', () => {
@@ -67,6 +87,7 @@ describe('oauth codex continuation decision', () => {
 			rawFinishReason: undefined,
 			firstToolSeen: true,
 			hasTrailingAssistantText: false,
+			lastToolName: 'search',
 			droppedPseudoToolText: false,
 			lastAssistantText: '',
 		});
@@ -74,25 +95,7 @@ describe('oauth codex continuation decision', () => {
 		expect(decision.reason).toBe('no-trailing-assistant-text');
 	});
 
-	test('continues when only mid-tool text exists but no trailing text after tools', () => {
-		const decision = decideOauthCodexContinuation({
-			provider: 'openai',
-			isOpenAIOAuth: true,
-			finishObserved: false,
-			continuationCount: 0,
-			maxContinuations: 6,
-			finishReason: 'stop',
-			rawFinishReason: undefined,
-			firstToolSeen: true,
-			hasTrailingAssistantText: false,
-			droppedPseudoToolText: false,
-			lastAssistantText: "Next I'll inspect parser files.",
-		});
-		expect(decision.shouldContinue).toBe(true);
-		expect(decision.reason).toBe('no-trailing-assistant-text');
-	});
-
-	test('does not continue for pseudo tool leakage alone', () => {
+	test('does not continue after a clean assistant summary following tool activity', () => {
 		const decision = decideOauthCodexContinuation({
 			provider: 'openai',
 			isOpenAIOAuth: true,
@@ -103,13 +106,15 @@ describe('oauth codex continuation decision', () => {
 			rawFinishReason: undefined,
 			firstToolSeen: true,
 			hasTrailingAssistantText: true,
-			droppedPseudoToolText: true,
-			lastAssistantText: "Next I'll inspect the parser.",
+			lastToolName: 'read',
+			droppedPseudoToolText: false,
+			lastAssistantText:
+				'I checked the parser files and removed the leftover block.',
 		});
 		expect(decision.shouldContinue).toBe(false);
 	});
 
-	test('does not continue on intermediate progress text alone', () => {
+	test('continues for non-finish tool activity even if pseudo tool leakage was dropped', () => {
 		const decision = decideOauthCodexContinuation({
 			provider: 'openai',
 			isOpenAIOAuth: true,
@@ -119,6 +124,45 @@ describe('oauth codex continuation decision', () => {
 			finishReason: 'stop',
 			rawFinishReason: undefined,
 			firstToolSeen: true,
+			hasTrailingAssistantText: false,
+			endedWithToolActivity: true,
+			lastToolName: 'apply_patch',
+			droppedPseudoToolText: true,
+			lastAssistantText: '',
+		});
+		expect(decision.shouldContinue).toBe(true);
+		expect(decision.reason).toBe('ended-on-tool-activity');
+	});
+
+	test('does not continue after summary text even without finish tool', () => {
+		const decision = decideOauthCodexContinuation({
+			provider: 'openai',
+			isOpenAIOAuth: true,
+			finishObserved: false,
+			continuationCount: 0,
+			maxContinuations: 6,
+			finishReason: 'stop',
+			rawFinishReason: undefined,
+			firstToolSeen: true,
+			hasTrailingAssistantText: true,
+			lastToolName: 'search',
+			droppedPseudoToolText: false,
+			lastAssistantText:
+				'I searched the workspace and confirmed the follow-up references are gone.',
+		});
+		expect(decision.shouldContinue).toBe(false);
+	});
+
+	test('does not continue on text alone before any tool activity', () => {
+		const decision = decideOauthCodexContinuation({
+			provider: 'openai',
+			isOpenAIOAuth: true,
+			finishObserved: false,
+			continuationCount: 0,
+			maxContinuations: 6,
+			finishReason: 'stop',
+			rawFinishReason: undefined,
+			firstToolSeen: false,
 			hasTrailingAssistantText: true,
 			droppedPseudoToolText: false,
 			lastAssistantText:
@@ -157,6 +201,7 @@ describe('oauth codex continuation decision', () => {
 			firstToolSeen: true,
 			hasTrailingAssistantText: false,
 			endedWithToolActivity: true,
+			lastToolName: 'write',
 			droppedPseudoToolText: false,
 			lastAssistantText: 'Partial output',
 		});
@@ -192,6 +237,7 @@ describe('oauth codex continuation decision', () => {
 			rawFinishReason: 'max_output_tokens',
 			firstToolSeen: true,
 			hasTrailingAssistantText: false,
+			lastToolName: 'search',
 			droppedPseudoToolText: false,
 			lastAssistantText: 'Partial output',
 		});

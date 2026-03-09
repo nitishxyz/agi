@@ -30,7 +30,9 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 	const startedRef = useRef(false);
 	const isOpen = useOnboardingStore((s) => s.isOpen);
 	const { checkOnboarding, fetchAuthStatus } = useAuthStatus();
-	const prevIsOpen = useRef(true);
+	const onboardingError = useOnboardingStore((s) => s.error);
+	const onboardingLoading = useOnboardingStore((s) => s.isLoading);
+	const hasBeenOpened = useRef(false);
 	const oauthPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const oauthTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const preOauthProvidersRef = useRef<Set<string>>(new Set());
@@ -125,15 +127,20 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 
 	useEffect(() => {
 		if (serverReady) {
-			checkOnboarding();
+			console.log('[otto] Server ready, checking onboarding...');
+			checkOnboarding().then(() => {
+				const state = useOnboardingStore.getState();
+				console.log('[otto] checkOnboarding done, isOpen:', state.isOpen, 'authStatus:', !!state.authStatus, 'error:', state.error);
+			});
 		}
 	}, [serverReady, checkOnboarding]);
 
 	useEffect(() => {
-		if (prevIsOpen.current && !isOpen && serverReady) {
+		if (isOpen) {
+			hasBeenOpened.current = true;
+		} else if (hasBeenOpened.current && serverReady) {
 			stopServer().then(() => onComplete());
 		}
-		prevIsOpen.current = isOpen;
 	}, [isOpen, serverReady, stopServer, onComplete]);
 
 	useEffect(() => {
@@ -200,6 +207,23 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 			</div>
 			<div className="pt-10">
 				<OnboardingModal hideHeader />
+				{!isOpen && !onboardingLoading && onboardingError && (
+					<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+						<p className="text-sm text-destructive">{onboardingError}</p>
+						<button
+							type="button"
+							onClick={() => checkOnboarding()}
+							className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+						>
+							Retry
+						</button>
+					</div>
+				)}
+				{!isOpen && onboardingLoading && (
+					<div className="flex items-center justify-center min-h-[60vh]">
+						<SetuLoader label="Loading..." />
+					</div>
+				)}
 			</div>
 			<SetuTopupModal />
 			<Toaster />

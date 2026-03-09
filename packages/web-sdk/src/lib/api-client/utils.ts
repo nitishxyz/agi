@@ -10,6 +10,13 @@ interface WindowWithAgiServerUrl extends Window {
 	OTTO_SERVER_URL?: string;
 }
 
+function getClientAdapter(): 'fetch' | undefined {
+	if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
+		return 'fetch';
+	}
+	return undefined;
+}
+
 export function extractErrorMessage(error: unknown): string {
 	if (!error) return 'Unknown error';
 	if (typeof error === 'string') return error;
@@ -33,7 +40,10 @@ export function extractErrorMessage(error: unknown): string {
 export function configureApiClient() {
 	const win = window as WindowWithAgiServerUrl;
 	const baseURL = win.OTTO_SERVER_URL || API_BASE_URL;
-	client.setConfig({ baseURL });
+	client.setConfig({
+		baseURL,
+		adapter: getClientAdapter(),
+	});
 }
 
 configureApiClient();
