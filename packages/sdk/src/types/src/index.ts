@@ -19,4 +19,5 @@ export type {
 	ProviderSettings,
 	OttoConfig,
 	ToolApprovalMode,
+	ReasoningLevel,
 } from './config';

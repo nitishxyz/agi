@@ -9,6 +9,13 @@ export type Scope = 'global' | 'local';
  * Default settings for the CLI
  */
 export type ToolApprovalMode = 'auto' | 'dangerous' | 'all';
+export type ReasoningLevel =
+	| 'minimal'
+	| 'low'
+	| 'medium'
+	| 'high'
+	| 'max'
+	| 'xhigh';
 
 export type DefaultConfig = {
 	agent: string;
@@ -17,6 +24,7 @@ export type DefaultConfig = {
 	toolApproval?: ToolApprovalMode;
 	guidedMode?: boolean;
 	reasoningText?: boolean;
+	reasoningLevel?: ReasoningLevel;
 	theme?: string;
 };
 

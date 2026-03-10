@@ -196,6 +196,10 @@ export const schemas = {
 					provider: { $ref: '#/components/schemas/Provider' },
 					model: { type: 'string' },
 					reasoningText: { type: 'boolean' },
+					reasoningLevel: {
+						type: 'string',
+						enum: ['minimal', 'low', 'medium', 'high', 'max', 'xhigh'],
+					},
 				},
 				required: ['agent', 'provider', 'model'],
 			},

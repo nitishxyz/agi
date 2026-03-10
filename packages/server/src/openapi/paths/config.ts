@@ -179,6 +179,10 @@ export const configPaths = {
 								provider: { type: 'string' },
 								model: { type: 'string' },
 								reasoningText: { type: 'boolean' },
+								reasoningLevel: {
+									type: 'string',
+									enum: ['minimal', 'low', 'medium', 'high', 'max', 'xhigh'],
+								},
 								scope: {
 									type: 'string',
 									enum: ['global', 'local'],
@@ -205,6 +209,10 @@ export const configPaths = {
 											provider: { type: 'string' },
 											model: { type: 'string' },
 											reasoningText: { type: 'boolean' },
+											reasoningLevel: {
+												type: 'string',
+												enum: ['minimal', 'low', 'medium', 'high', 'max', 'xhigh'],
+											},
 										},
 										required: ['agent', 'provider', 'model'],
 									},

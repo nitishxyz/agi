@@ -11,7 +11,7 @@
 		"lib": ["ESNext", "DOM", "DOM.Iterable"],
 		"strict": false,
 		"esModuleInterop": true,
-		"types": ["@types/react", "@types/react-dom"]
+		"types": ["react", "react-dom"]
 	},
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]

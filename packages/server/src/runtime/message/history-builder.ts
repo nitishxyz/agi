@@ -222,7 +222,7 @@ export async function buildHistoryMessages(
 			if (assistantParts.length) {
 				history.push(
 					...(await convertToModelMessages([
-						{ id: m.id, role: 'assistant', parts: assistantParts },
+						{ role: 'assistant', parts: assistantParts },
 					])),
 				);
 			}

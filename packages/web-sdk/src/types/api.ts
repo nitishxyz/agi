@@ -98,6 +98,7 @@ export interface SendMessageRequest {
 	oneShot?: boolean;
 	userContext?: string;
 	reasoningText?: boolean;
+	reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 }
 
 export interface SendMessageResponse {

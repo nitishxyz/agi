@@ -79,6 +79,14 @@ export function registerAskRoutes(app: Hono) {
 			agent: typeof body.agent === 'string' ? body.agent : undefined,
 			provider: typeof body.provider === 'string' ? body.provider : undefined,
 			model: typeof body.model === 'string' ? body.model : undefined,
+			reasoningText:
+				typeof body.reasoningText === 'boolean'
+					? body.reasoningText
+					: undefined,
+			reasoningLevel:
+				typeof body.reasoningLevel === 'string'
+					? (body.reasoningLevel as AskServerRequest['reasoningLevel'])
+					: undefined,
 			sessionId:
 				typeof body.sessionId === 'string' ? body.sessionId : undefined,
 			last: Boolean(body.last),

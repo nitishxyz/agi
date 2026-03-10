@@ -1,5 +1,5 @@
 import type { Hono } from 'hono';
-import { loadConfig } from '@ottocode/sdk';
+import { loadConfig, type ReasoningLevel } from '@ottocode/sdk';
 import { getDb } from '@ottocode/database';
 import { messages, messageParts, sessions } from '@ottocode/database/schema';
 import { eq, inArray } from 'drizzle-orm';
@@ -124,6 +124,10 @@ export function registerSessionMessagesRoutes(app: Hono) {
 
 			const reasoning =
 				body?.reasoningText ?? cfg.defaults.reasoningText ?? false;
+			const reasoningLevel =
+				(body?.reasoningLevel as ReasoningLevel | undefined) ??
+				cfg.defaults.reasoningLevel ??
+				'high';
 
 			// Validate model capabilities if tools are allowed for this agent
 			const wantsToolCalls = true; // agent toolset may be non-empty
@@ -158,6 +162,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				oneShot: Boolean(body?.oneShot),
 				userContext,
 				reasoningText: reasoning,
+				reasoningLevel,
 				images,
 				files,
 			});

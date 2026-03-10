@@ -29,6 +29,7 @@ export type {
 	DefaultConfig,
 	PathConfig,
 	OttoConfig,
+	ReasoningLevel,
 } from './types/src/index.ts';
 
 // =======================

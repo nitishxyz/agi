@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'bun:test';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
 	providerBasePrompt,
 	getModelFamily,
@@ -15,6 +18,36 @@ describe('provider base prompts', () => {
 		);
 		expect(result.prompt.length).toBeGreaterThan(0);
 		expect(result.resolvedType).toBe('default');
+	});
+
+	it('loads project provider prompt overrides from .otto/prompts/providers', async () => {
+		const projectRoot = await mkdtemp(join(tmpdir(), 'otto-provider-prompt-'));
+		try {
+			const promptsDir = join(projectRoot, '.otto', 'prompts', 'providers');
+			await mkdir(promptsDir, { recursive: true });
+			await writeFile(join(promptsDir, 'openai.txt'), 'PROJECT OPENAI PROMPT');
+
+			const result = await providerBasePrompt('openai', 'gpt-4o', projectRoot);
+			expect(result.prompt).toBe('PROJECT OPENAI PROMPT');
+			expect(result.resolvedType).toBe('custom:openai');
+		} finally {
+			await rm(projectRoot, { recursive: true, force: true });
+		}
+	});
+
+	it('loads project model prompt overrides from .otto/prompts/models', async () => {
+		const projectRoot = await mkdtemp(join(tmpdir(), 'otto-model-prompt-'));
+		try {
+			const promptsDir = join(projectRoot, '.otto', 'prompts', 'models');
+			await mkdir(promptsDir, { recursive: true });
+			await writeFile(join(promptsDir, 'gpt-4o.txt'), 'PROJECT MODEL PROMPT');
+
+			const result = await providerBasePrompt('openai', 'gpt-4o', projectRoot);
+			expect(result.prompt).toBe('PROJECT MODEL PROMPT');
+			expect(result.resolvedType).toBe('model:gpt-4o');
+		} finally {
+			await rm(projectRoot, { recursive: true, force: true });
+		}
 	});
 
 	describe('direct provider prompt selection', () => {

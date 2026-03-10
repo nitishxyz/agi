@@ -1,4 +1,4 @@
-import { loadConfig, getUnderlyingProviderKey } from '@ottocode/sdk';
+import { loadConfig } from '@ottocode/sdk';
 import { wrapLanguageModel } from 'ai';
 import { devToolsMiddleware } from '@ai-sdk/devtools';
 import { getDb } from '@ottocode/database';
@@ -18,6 +18,7 @@ import { getMaxOutputTokens } from '../utils/token.ts';
 import { setupToolContext } from '../tools/setup.ts';
 import { getCompactionSystemPrompt } from '../message/compaction.ts';
 import { detectOAuth, adaptRunnerCall } from '../provider/oauth-adapter.ts';
+import { buildReasoningConfig } from '../provider/reasoning.ts';
 import type { RunOpts } from '../session/queue.ts';
 import type { ToolAdapterContext } from '../../tools/adapter.ts';
 
@@ -44,7 +45,32 @@ export interface SetupResult {
 	mcpToolsRecord: Record<string, Tool>;
 }
 
-const THINKING_BUDGET = 16000;
+export function mergeProviderOptions(
+	base: Record<string, unknown>,
+	incoming: Record<string, unknown>,
+): Record<string, unknown> {
+	for (const [key, value] of Object.entries(incoming)) {
+		const existing = base[key];
+		if (
+			existing &&
+			typeof existing === 'object' &&
+			!Array.isArray(existing) &&
+			value &&
+			typeof value === 'object' &&
+			!Array.isArray(value)
+		) {
+			base[key] = {
+				...(existing as Record<string, unknown>),
+				...(value as Record<string, unknown>),
+			};
+			continue;
+		}
+
+		base[key] = value;
+	}
+
+	return base;
+}
 
 export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const cfgTimer = time('runner:loadConfig+db');
@@ -218,38 +244,21 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		};
 	}
 
-	if (opts.reasoningText) {
-		const underlyingProvider = getUnderlyingProviderKey(
-			opts.provider,
-			opts.model,
-		);
-
-		if (underlyingProvider === 'anthropic') {
-			providerOptions.anthropic = {
-				thinking: { type: 'enabled', budgetTokens: THINKING_BUDGET },
-			};
-			if (maxOutputTokens && maxOutputTokens > THINKING_BUDGET) {
-				effectiveMaxOutputTokens = maxOutputTokens - THINKING_BUDGET;
-			}
-		} else if (underlyingProvider === 'openai') {
-			providerOptions.openai = {
-				...((providerOptions.openai as Record<string, unknown>) || {}),
-				reasoningEffort: 'high',
-				reasoningSummary: 'auto',
-			};
-		} else if (underlyingProvider === 'google') {
-			const isGemini3 = opts.model.includes('gemini-3');
-			providerOptions.google = {
-				thinkingConfig: isGemini3
-					? { thinkingLevel: 'high', includeThoughts: true }
-					: { thinkingBudget: THINKING_BUDGET },
-			};
-		} else if (underlyingProvider === 'openai-compatible') {
-			providerOptions.openaiCompatible = {
-				reasoningEffort: 'high',
-			};
-		}
-	}
+	const reasoningConfig = buildReasoningConfig({
+		provider: opts.provider,
+		model: opts.model,
+		reasoningText: opts.reasoningText,
+		reasoningLevel: opts.reasoningLevel,
+		maxOutputTokens,
+	});
+	mergeProviderOptions(providerOptions, reasoningConfig.providerOptions);
+	effectiveMaxOutputTokens = reasoningConfig.effectiveMaxOutputTokens;
+	debugLog(
+		`[RUNNER] reasoning enabled for ${opts.provider}/${opts.model}: ${reasoningConfig.enabled}, level: ${opts.reasoningLevel ?? 'default'}`,
+	);
+	debugLog(
+		`[RUNNER] final providerOptions: ${JSON.stringify(providerOptions)}`,
+	);
 
 	return {
 		cfg,

@@ -1,6 +1,7 @@
 import type { ProviderName } from '../provider/index.ts';
 import { publish } from '../../events/bus.ts';
 import type { ToolApprovalMode } from '../tools/approval.ts';
+import type { ReasoningLevel } from '@ottocode/sdk';
 
 export type RunOpts = {
 	sessionId: string;
@@ -12,6 +13,7 @@ export type RunOpts = {
 	oneShot?: boolean;
 	userContext?: string;
 	reasoningText?: boolean;
+	reasoningLevel?: ReasoningLevel;
 	abortSignal?: AbortSignal;
 	isCompactCommand?: boolean;
 	compactionContext?: string;

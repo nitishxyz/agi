@@ -331,6 +331,31 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 							}
 						/>
 						<SelectRow
+							label="Reasoning Level"
+							value={config?.defaults?.reasoningLevel ?? 'high'}
+							options={[
+								{ id: 'minimal', label: 'Minimal' },
+								{ id: 'low', label: 'Low' },
+								{ id: 'medium', label: 'Medium' },
+								{ id: 'high', label: 'High' },
+								{ id: 'max', label: 'Max' },
+								{ id: 'xhigh', label: 'Extra High' },
+							]}
+							onChange={(value) =>
+								updateDefaults.mutate({
+									reasoningLevel: value as
+										| 'minimal'
+										| 'low'
+										| 'medium'
+										| 'high'
+										| 'max'
+										| 'xhigh',
+									scope: 'global',
+								})
+							}
+							disabled={updateDefaults.isPending}
+						/>
+						<SelectRow
 							label="Tool Approval"
 							value={config?.defaults?.toolApproval ?? 'dangerous'}
 							options={[

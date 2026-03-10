@@ -49,6 +49,25 @@ async function readIfExists(path: string): Promise<string | undefined> {
 	return undefined;
 }
 
+function getPromptOverridePaths(args: {
+	projectRoot: string;
+	provider: string;
+	modelId?: string;
+}): { modelPaths: string[]; providerPaths: string[] } {
+	const { projectRoot, provider, modelId } = args;
+	const modelPaths: string[] = [];
+	const providerPaths: string[] = [];
+
+	if (modelId) {
+		const sanitized = sanitizeModelId(modelId);
+		modelPaths.push(`${projectRoot}/.otto/prompts/models/${sanitized}.txt`);
+	}
+
+	providerPaths.push(`${projectRoot}/.otto/prompts/providers/${provider}.txt`);
+
+	return { modelPaths, providerPaths };
+}
+
 export type ProviderPromptResult = {
 	prompt: string;
 	resolvedType: string;
@@ -57,19 +76,35 @@ export type ProviderPromptResult = {
 export async function providerBasePrompt(
 	provider: string,
 	modelId: string | undefined,
-	_projectRoot: string,
+	projectRoot: string,
 ): Promise<ProviderPromptResult> {
 	const id = String(provider || '').toLowerCase();
+	const { modelPaths, providerPaths } = getPromptOverridePaths({
+		projectRoot,
+		provider: id,
+		modelId,
+	});
 
 	if (modelId) {
 		const sanitized = sanitizeModelId(modelId);
-		const modelPath = `src/prompts/models/${sanitized}.txt`;
-		const modelText = await readIfExists(modelPath);
-		if (modelText) {
+		for (const modelPath of modelPaths) {
+			const modelText = await readIfExists(modelPath);
+			if (!modelText) continue;
 			const promptType = `model:${sanitized}`;
-			debugLog(`[provider] prompt: ${promptType} (${modelText.length} chars)`);
+			debugLog(
+				`[provider] prompt: ${promptType} (${modelText.length} chars) from ${modelPath}`,
+			);
 			return { prompt: modelText, resolvedType: promptType };
 		}
+	}
+
+	for (const providerPath of providerPaths) {
+		const providerText = await readIfExists(providerPath);
+		if (!providerText) continue;
+		debugLog(
+			`[provider] prompt: custom:${id} (${providerText.length} chars) from ${providerPath}`,
+		);
+		return { prompt: providerText, resolvedType: `custom:${id}` };
 	}
 
 	if (isProviderId(id) && modelId) {
@@ -117,13 +152,6 @@ export async function providerBasePrompt(
 		const result = PROVIDER_GLM.trim();
 		debugLog(`[provider] prompt: glm (${result.length} chars)`);
 		return { prompt: result, resolvedType: 'glm' };
-	}
-
-	const providerPath = `src/prompts/providers/${id}.txt`;
-	const providerText = await readIfExists(providerPath);
-	if (providerText) {
-		debugLog(`[provider] prompt: custom:${id} (${providerText.length} chars)`);
-		return { prompt: providerText, resolvedType: `custom:${id}` };
 	}
 
 	const result = PROVIDER_DEFAULT.trim();

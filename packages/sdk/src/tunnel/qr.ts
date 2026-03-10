@@ -1,4 +1,3 @@
-// @ts-expect-error No bundled types for qrcode-terminal in all workspace builds
 import qrcode from 'qrcode-terminal';
 
 export function generateQRCode(data: string): Promise<string> {

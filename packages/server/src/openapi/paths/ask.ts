@@ -35,6 +35,17 @@ export const askPaths = {
 									description:
 										'Optional model override for the selected provider.',
 								},
+								reasoningText: {
+									type: 'boolean',
+									description:
+										'Enable extended thinking / reasoning for models that support it.',
+								},
+								reasoningLevel: {
+									type: 'string',
+									enum: ['minimal', 'low', 'medium', 'high', 'max', 'xhigh'],
+									description:
+										'Optional reasoning intensity override for supported providers/models.',
+								},
 								sessionId: {
 									type: 'string',
 									description: 'Send the prompt to a specific session.',

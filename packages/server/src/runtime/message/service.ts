@@ -7,7 +7,11 @@ import { publish } from '../../events/bus.ts';
 import { enqueueAssistantRun } from '../session/queue.ts';
 import { runSessionLoop } from '../agent/runner.ts';
 import { resolveModel } from '../provider/index.ts';
-import { getFastModelForAuth, type ProviderId } from '@ottocode/sdk';
+import {
+	getFastModelForAuth,
+	type ProviderId,
+	type ReasoningLevel,
+} from '@ottocode/sdk';
 import { debugLog } from '../debug/index.ts';
 import { isCompactCommand, buildCompactionContext } from './compaction.ts';
 import { detectOAuth, adaptSimpleCall } from '../provider/oauth-adapter.ts';
@@ -25,6 +29,7 @@ type DispatchOptions = {
 	oneShot?: boolean;
 	userContext?: string;
 	reasoningText?: boolean;
+	reasoningLevel?: ReasoningLevel;
 	images?: Array<{ data: string; mediaType: string }>;
 	files?: Array<{
 		type: 'image' | 'pdf' | 'text';
@@ -49,6 +54,7 @@ export async function dispatchAssistantMessage(
 		oneShot,
 		userContext,
 		reasoningText,
+		reasoningLevel,
 		images,
 		files,
 	} = options;
@@ -187,6 +193,7 @@ export async function dispatchAssistantMessage(
 			oneShot: Boolean(oneShot),
 			userContext,
 			reasoningText,
+			reasoningLevel,
 			isCompactCommand: isCompact,
 			compactionContext,
 			toolApprovalMode,

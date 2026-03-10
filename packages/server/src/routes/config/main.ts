@@ -61,6 +61,7 @@ export function registerMainConfigRoute(app: Hono) {
 				) as 'auto' | 'dangerous' | 'all',
 				guidedMode: cfg.defaults.guidedMode ?? false,
 				reasoningText: cfg.defaults.reasoningText ?? true,
+				reasoningLevel: cfg.defaults.reasoningLevel ?? 'high',
 				theme: cfg.defaults.theme,
 			};
 

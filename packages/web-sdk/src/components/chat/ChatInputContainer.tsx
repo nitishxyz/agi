@@ -212,6 +212,9 @@ export const ChatInputContainer = memo(
 							provider: provider || undefined,
 							model: model || undefined,
 							userContext: userContext || undefined,
+							reasoningText:
+								modelSupportsReasoning && (config?.defaults?.reasoningText ?? true),
+							reasoningLevel: config?.defaults?.reasoningLevel ?? 'high',
 						});
 
 						clearFiles();

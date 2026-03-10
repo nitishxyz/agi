@@ -1,5 +1,10 @@
 import type { Hono } from 'hono';
-import { setConfig, loadConfig, type ProviderId } from '@ottocode/sdk';
+import {
+	setConfig,
+	loadConfig,
+	type ProviderId,
+	type ReasoningLevel,
+} from '@ottocode/sdk';
 import { logger } from '@ottocode/sdk';
 import { serializeError } from '../../runtime/errors/api-error.ts';
 
@@ -14,6 +19,7 @@ export function registerDefaultsRoute(app: Hono) {
 				toolApproval?: 'auto' | 'dangerous' | 'all';
 				guidedMode?: boolean;
 				reasoningText?: boolean;
+				reasoningLevel?: ReasoningLevel;
 				theme?: string;
 				scope?: 'global' | 'local';
 			}>();
@@ -26,6 +32,7 @@ export function registerDefaultsRoute(app: Hono) {
 				toolApproval: 'auto' | 'dangerous' | 'all';
 				guidedMode: boolean;
 				reasoningText: boolean;
+				reasoningLevel: ReasoningLevel;
 				theme: string;
 			}> = {};
 
@@ -36,6 +43,7 @@ export function registerDefaultsRoute(app: Hono) {
 			if (body.guidedMode !== undefined) updates.guidedMode = body.guidedMode;
 			if (body.reasoningText !== undefined)
 				updates.reasoningText = body.reasoningText;
+			if (body.reasoningLevel) updates.reasoningLevel = body.reasoningLevel;
 			if (body.theme) updates.theme = body.theme;
 
 			await setConfig(scope, updates, projectRoot);

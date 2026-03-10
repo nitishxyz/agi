@@ -34,6 +34,7 @@ const DEFAULTS: {
 		toolApproval: 'auto',
 		guidedMode: false,
 		reasoningText: true,
+		reasoningLevel: 'high',
 	},
 	providers: DEFAULT_PROVIDER_SETTINGS,
 };

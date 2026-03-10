@@ -16,7 +16,8 @@
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false,
-		"resolveJsonModule": true
+		"resolveJsonModule": true,
+		"typeRoots": ["./types", "./node_modules/@types"]
 		// "types": ["bun-types"]
 	}
 }

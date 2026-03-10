@@ -1,3 +1,4 @@
+import type { DiffRenderable } from '@opentui/core';
 import { useCallback, useMemo, useRef } from 'react';
 import { useTheme } from '../theme.ts';
 
@@ -295,7 +296,7 @@ function SingleDiffView({
 	const { colors, syntaxStyle } = useTheme();
 	const filetype = filePath ? detectFiletype(filePath) : undefined;
 
-	const diffRef = useRef<unknown>(null);
+	const diffRef = useRef<DiffRenderable | null>(null);
 
 	const totalRows = useMemo(
 		() => countSplitViewRows(unifiedDiff),

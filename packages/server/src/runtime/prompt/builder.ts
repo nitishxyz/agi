@@ -71,20 +71,22 @@ export async function composeSystemPrompt(options: {
 			options.projectRoot,
 		);
 		const baseInstructions = (BASE_PROMPT || '').trim();
+		const agentInstructions = options.agentPrompt.trim();
+		const providerInstructions = providerResult.prompt.trim();
 
 		parts.push(
-			providerResult.prompt.trim(),
 			baseInstructions.trim(),
-			options.agentPrompt.trim(),
+			agentInstructions,
+			providerInstructions,
 		);
-		if (providerResult.prompt.trim()) {
-			components.push(`provider:${providerResult.resolvedType}`);
-		}
 		if (baseInstructions.trim()) {
 			components.push('base');
 		}
-		if (options.agentPrompt.trim()) {
+		if (agentInstructions) {
 			components.push('agent');
+		}
+		if (providerInstructions) {
+			components.push(`provider:${providerResult.resolvedType}`);
 		}
 	}
 

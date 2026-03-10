@@ -19,6 +19,7 @@ import {
 	isProviderId,
 	providerEnvVar,
 	type ProviderId,
+	type ReasoningLevel,
 } from '@ottocode/sdk';
 import { sessions } from '@ottocode/database/schema';
 import { time } from '../debug/index.ts';
@@ -48,6 +49,8 @@ export type InjectableConfig = {
 	model?: string;
 	apiKey?: string;
 	agent?: string;
+	reasoningText?: boolean;
+	reasoningLevel?: ReasoningLevel;
 };
 
 export type InjectableCredentials = Partial<
@@ -60,6 +63,8 @@ export type AskServerRequest = {
 	agent?: string;
 	provider?: string;
 	model?: string;
+	reasoningText?: boolean;
+	reasoningLevel?: ReasoningLevel;
 	sessionId?: string;
 	last?: boolean;
 	jsonMode?: boolean;
@@ -120,6 +125,10 @@ async function processAskRequest(
 				provider: injectedProvider,
 				model: injectedModel,
 				agent: injectedAgent,
+				reasoningText:
+					request.config?.reasoningText ?? request.reasoningText ?? true,
+				reasoningLevel:
+					request.config?.reasoningLevel ?? request.reasoningLevel ?? 'high',
 			},
 			providers: {
 				openai: { enabled: true },
@@ -299,6 +308,9 @@ async function processAskRequest(
 		await ensureProviderEnv(cfg, providerForMessage);
 	}
 
+	const reasoningText = request.reasoningText ?? cfg.defaults.reasoningText ?? false;
+	const reasoningLevel = request.reasoningLevel ?? cfg.defaults.reasoningLevel ?? 'high';
+
 	const assistantMessage = await dispatchAssistantMessage({
 		cfg,
 		db,
@@ -308,6 +320,8 @@ async function processAskRequest(
 		model: modelForMessage,
 		content: request.prompt,
 		oneShot: !request.sessionId && !request.last,
+		reasoningText,
+		reasoningLevel,
 	});
 
 	const headerAgent = session.agent ?? agentName;

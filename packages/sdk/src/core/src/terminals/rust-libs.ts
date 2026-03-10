@@ -1,20 +1,15 @@
-// @ts-expect-error Bun file asset import
 import darwinArm64 from 'bun-pty/rust-pty/target/release/librust_pty_arm64.dylib' with {
 	type: 'file',
 };
-// @ts-expect-error Bun file asset import
 import darwinX64 from 'bun-pty/rust-pty/target/release/librust_pty.dylib' with {
 	type: 'file',
 };
-// @ts-expect-error Bun file asset import
 import linuxArm64 from 'bun-pty/rust-pty/target/release/librust_pty_arm64.so' with {
 	type: 'file',
 };
-// @ts-expect-error Bun file asset import
 import linuxX64 from 'bun-pty/rust-pty/target/release/librust_pty.so' with {
 	type: 'file',
 };
-// @ts-expect-error Bun file asset import
 import windowsDll from 'bun-pty/rust-pty/target/release/rust_pty.dll' with {
 	type: 'file',
 };

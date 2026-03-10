@@ -66,6 +66,7 @@ export async function writeDefaults(
 		toolApproval: 'auto' | 'dangerous' | 'all';
 		guidedMode: boolean;
 		reasoningText: boolean;
+		reasoningLevel: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 		theme: string;
 	}>,
 	projectRoot?: string,

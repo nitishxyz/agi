@@ -9,6 +9,7 @@ interface Config {
 		provider: string;
 		model: string;
 		reasoningText?: boolean;
+		reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 		theme?: string;
 	};
 }
@@ -22,6 +23,7 @@ export function useConfig() {
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-20250514',
 			reasoningText: true,
+			reasoningLevel: 'high',
 		},
 	});
 
@@ -42,6 +44,7 @@ export function useConfig() {
 			model?: string;
 			agent?: string;
 			reasoningText?: boolean;
+			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 			theme?: string;
 		}) => {
 			try {

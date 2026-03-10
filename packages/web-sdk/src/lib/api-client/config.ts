@@ -18,6 +18,7 @@ export const configMixin = {
 			toolApproval?: 'auto' | 'dangerous' | 'all';
 			guidedMode?: boolean;
 			reasoningText?: boolean;
+			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 		};
 	}> {
 		const response = await apiGetConfig();
@@ -58,6 +59,7 @@ export const configMixin = {
 		toolApproval?: 'auto' | 'dangerous' | 'all';
 		guidedMode?: boolean;
 		reasoningText?: boolean;
+		reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 		scope?: 'global' | 'local';
 	}): Promise<{
 		success: boolean;
@@ -68,6 +70,7 @@ export const configMixin = {
 			toolApproval?: 'auto' | 'dangerous' | 'all';
 			guidedMode?: boolean;
 			reasoningText?: boolean;
+			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 		};
 	}> {
 		const response = await apiUpdateDefaults({

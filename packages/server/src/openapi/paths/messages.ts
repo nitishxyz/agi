@@ -72,6 +72,12 @@ export const messagesPaths = {
 									description:
 										'Enable extended thinking / reasoning for models that support it.',
 								},
+								reasoningLevel: {
+									type: 'string',
+									enum: ['minimal', 'low', 'medium', 'high', 'max', 'xhigh'],
+									description:
+										'Reasoning intensity level for providers/models that support it.',
+								},
 							},
 						},
 					},
