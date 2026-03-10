@@ -1,4 +1,10 @@
-import { convertToModelMessages, type ModelMessage, type UIMessage } from 'ai';
+import {
+	convertToModelMessages,
+	type FilePart,
+	type ModelMessage,
+	type TextPart,
+	type UIMessage,
+} from 'ai';
 import type { getDb } from '@ottocode/database';
 import { messages, messageParts } from '@ottocode/database/schema';
 import { eq, asc } from 'drizzle-orm';
@@ -20,7 +26,7 @@ export async function buildHistoryMessages(
 		.where(eq(messages.sessionId, sessionId))
 		.orderBy(asc(messages.createdAt));
 
-	const ui: UIMessage[] = [];
+	const history: ModelMessage[] = [];
 	const toolHistory = new ToolHistoryTracker();
 
 	for (const m of rows) {
@@ -49,13 +55,13 @@ export async function buildHistoryMessages(
 		}
 
 		if (m.role === 'user') {
-			const uparts: UIMessage['parts'] = [];
+			const userParts: Array<TextPart | FilePart> = [];
 			for (const p of parts) {
 				if (p.type === 'text') {
 					try {
 						const obj = JSON.parse(p.content ?? '{}');
 						const t = String(obj.text ?? '');
-						if (t) uparts.push({ type: 'text', text: t });
+						if (t) userParts.push({ type: 'text', text: t });
 					} catch {}
 				} else if (p.type === 'image') {
 					try {
@@ -64,11 +70,11 @@ export async function buildHistoryMessages(
 							mediaType?: string;
 						};
 						if (obj.data && obj.mediaType) {
-							uparts.push({
+							userParts.push({
 								type: 'file',
+								data: obj.data,
 								mediaType: obj.mediaType,
-								url: `data:${obj.mediaType};base64,${obj.data}`,
-							} as never);
+							});
 						}
 					} catch {}
 				} else if (p.type === 'file') {
@@ -81,28 +87,30 @@ export async function buildHistoryMessages(
 							textContent?: string;
 						};
 						if (obj.type === 'text' && obj.textContent) {
-							uparts.push({
+							userParts.push({
 								type: 'text',
 								text: `<file name="${obj.name || 'file'}">\n${obj.textContent}\n</file>`,
 							});
 						} else if (obj.type === 'pdf' && obj.data && obj.mediaType) {
-							uparts.push({
+							userParts.push({
 								type: 'file',
+								data: obj.data,
+								filename: obj.name,
 								mediaType: obj.mediaType,
-								url: `data:${obj.mediaType};base64,${obj.data}`,
-							} as never);
+							});
 						} else if (obj.type === 'image' && obj.data && obj.mediaType) {
-							uparts.push({
+							userParts.push({
 								type: 'file',
+								data: obj.data,
+								filename: obj.name,
 								mediaType: obj.mediaType,
-								url: `data:${obj.mediaType};base64,${obj.data}`,
-							} as never);
+							});
 						}
 					} catch {}
 				}
 			}
-			if (uparts.length) {
-				ui.push({ id: m.id, role: 'user', parts: uparts });
+			if (userParts.length) {
+				history.push({ role: 'user', content: userParts });
 			}
 			continue;
 		}
@@ -212,12 +220,16 @@ export async function buildHistoryMessages(
 			}
 
 			if (assistantParts.length) {
-				ui.push({ id: m.id, role: 'assistant', parts: assistantParts });
+				history.push(
+					...(await convertToModelMessages([
+						{ id: m.id, role: 'assistant', parts: assistantParts },
+					])),
+				);
 			}
 		}
 	}
 
-	return await convertToModelMessages(ui);
+	return history;
 }
 
 async function _logPendingToolParts(

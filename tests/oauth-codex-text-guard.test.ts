@@ -129,4 +129,71 @@ describe('oauth codex text guard', () => {
 		expect(history[0]?.role).toBe('user');
 		expect(history[1]?.role).toBe('assistant');
 	});
+
+	test('keeps stored image attachments as raw file data in history', async () => {
+		const projectRoot = mkdtempSync(join(tmpdir(), 'otto-history-images-'));
+		const db = await getDb(projectRoot);
+		const now = Date.now();
+
+		await db.insert(sessions).values({
+			id: 'session-image-test',
+			agent: 'build',
+			provider: 'openai',
+			model: 'gpt-5.3-codex',
+			projectPath: projectRoot,
+			createdAt: now,
+			lastActiveAt: now,
+		});
+
+		await db.insert(messages).values({
+			id: 'user-image-msg',
+			sessionId: 'session-image-test',
+			role: 'user',
+			status: 'complete',
+			agent: 'build',
+			provider: 'openai',
+			model: 'gpt-5.3-codex',
+			createdAt: now,
+		});
+
+		await db.insert(messageParts).values([
+			{
+				id: 'user-image-text-part',
+				messageId: 'user-image-msg',
+				index: 0,
+				type: 'text',
+				content: JSON.stringify({ text: 'what is in this image?' }),
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+			},
+			{
+				id: 'user-image-part',
+				messageId: 'user-image-msg',
+				index: 1,
+				type: 'image',
+				content: JSON.stringify({
+					data: 'ZmFrZS1pbWFnZS1ieXRlcw==',
+					mediaType: 'image/png',
+				}),
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+			},
+		]);
+
+		const history = await buildHistoryMessages(db, 'session-image-test');
+		expect(history).toHaveLength(1);
+		expect(history[0]).toEqual({
+			role: 'user',
+			content: [
+				{ type: 'text', text: 'what is in this image?' },
+				{
+					type: 'file',
+					data: 'ZmFrZS1pbWFnZS1ieXRlcw==',
+					mediaType: 'image/png',
+				},
+			],
+		});
+	});
 });

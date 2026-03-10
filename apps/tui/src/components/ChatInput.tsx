@@ -30,6 +30,8 @@ interface ChatInputProps {
 
 const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 const MAX_FILE_RESULTS = 15;
+const INPUT_MIN_HEIGHT = 2;
+const INPUT_MAX_HEIGHT = 8;
 const ATTACHMENT_RE = /\[📎 [^\]]+\]/g;
 
 function stripAttachmentMarkers(text: string): string {
@@ -257,6 +259,19 @@ export function ChatInput({
 	}, [onSubmit, handleFileSelect]);
 
 	useKeyboard((key) => {
+		if (key.ctrl && key.name === 'l') {
+			if (textareaRef.current) {
+				textareaRef.current.clear();
+			}
+			clearAttachmentsRef.current();
+			setCommandMatches([]);
+			setSelectedIdx(0);
+			setShowFileMention(false);
+			setMentionQuery('');
+			setMentionSelectedIdx(0);
+			return;
+		}
+
 		if (showFileMentionRef.current && filteredFilesRef.current.length > 0) {
 			if (key.name === 'up') {
 				setMentionSelectedIdx((prev) => {
@@ -325,7 +340,9 @@ export function ChatInput({
 		const textarea = new TextareaRenderable(renderer, {
 			id: 'chat-textarea',
 			width: '100%',
-			height: 3,
+			height: 'auto',
+			minHeight: INPUT_MIN_HEIGHT,
+			maxHeight: INPUT_MAX_HEIGHT,
 			placeholder: 'Message otto…  ↵ send  ⇧↵ newline  ⇥ mode',
 			placeholderColor: colors.fgDark,
 			textColor: colors.fgBright,
@@ -493,14 +510,13 @@ export function ChatInput({
 			<box
 				style={{
 					width: '100%',
-					borderStyle: 'rounded',
-					border: true,
-					borderColor: disabled
-						? colors.border
-						: isPlanMode
-							? colors.cyan
-							: colors.blue,
+					backgroundColor: colors.bgHighlight,
 					flexDirection: 'column',
+					paddingTop: 1,
+					paddingBottom: 1,
+					paddingLeft: 1,
+					paddingRight: 1,
+					marginBottom: 1,
 				}}
 			>
 				<box id={containerRef.current} style={{ width: '100%' }} />
@@ -545,7 +561,7 @@ export function ChatInput({
 							)}
 						</box>
 					) : (
-						<text fg={colors.fgDark}>⇥ switch mode</text>
+						<text fg={colors.fgDark}>⇥ switch mode · ⌃L clear</text>
 					)}
 				</box>
 				<box style={{ flexDirection: 'row' }}>
