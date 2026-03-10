@@ -3,7 +3,17 @@ import { apiClient } from '../lib/api-client';
 import type { SendMessageRequest } from '../types/api';
 import { sessionsQueryKey } from './useSessions';
 
-export function useMessages(sessionId: string | undefined) {
+interface UseMessagesOptions {
+	enabled?: boolean;
+	staleTime?: number;
+}
+
+export function useMessages(
+	sessionId: string | undefined,
+	options: UseMessagesOptions = {},
+) {
+	const { enabled = true, staleTime = 15_000 } = options;
+
 	return useQuery({
 		queryKey: ['messages', sessionId],
 		queryFn: () => {
@@ -12,7 +22,9 @@ export function useMessages(sessionId: string | undefined) {
 			}
 			return apiClient.getMessages(sessionId);
 		},
-		enabled: !!sessionId,
+		enabled: !!sessionId && enabled,
+		staleTime,
+		refetchOnWindowFocus: false,
 	});
 }
 

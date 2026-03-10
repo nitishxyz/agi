@@ -13,7 +13,7 @@ export const SessionFilesSidebarToggle = memo(
 	}: SessionFilesSidebarToggleProps) {
 		const isExpanded = useSessionFilesStore((state) => state.isExpanded);
 		const toggleSidebar = useSessionFilesStore((state) => state.toggleSidebar);
-		const { data } = useSessionFiles(sessionId);
+		const { data } = useSessionFiles(sessionId, isExpanded);
 
 		const fileCount = data?.totalFiles ?? 0;
 

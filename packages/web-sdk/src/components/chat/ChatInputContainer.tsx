@@ -9,7 +9,7 @@ import {
 	useMemo,
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useSendMessage, useMessages } from '../../hooks/useMessages';
+import { useSendMessage } from '../../hooks/useMessages';
 import {
 	useSession,
 	useUpdateSession,
@@ -63,7 +63,6 @@ export const ChatInputContainer = memo(
 			}>(null);
 
 			const sendMessage = useSendMessage(sessionId);
-			useMessages(sessionId);
 			const updateSession = useUpdateSession(sessionId);
 			const deleteSession = useDeleteSession();
 			const { data: allModels } = useAllModels();
@@ -213,7 +212,8 @@ export const ChatInputContainer = memo(
 							model: model || undefined,
 							userContext: userContext || undefined,
 							reasoningText:
-								modelSupportsReasoning && (config?.defaults?.reasoningText ?? true),
+								modelSupportsReasoning &&
+								(config?.defaults?.reasoningText ?? true),
 							reasoningLevel: config?.defaults?.reasoningLevel ?? 'high',
 						});
 
@@ -233,6 +233,9 @@ export const ChatInputContainer = memo(
 					userContext,
 					sessionId,
 					consumeResearchContexts,
+					config?.defaults?.reasoningLevel,
+					config?.defaults?.reasoningText,
+					modelSupportsReasoning,
 				],
 			);
 

@@ -208,9 +208,7 @@ export const MessageThread = memo(function MessageThread({
 	};
 
 	const filteredMessages = useMemo(() => {
-		return messages
-			.filter((message) => message.role !== 'system')
-			.sort((a, b) => a.createdAt - b.createdAt);
+		return messages.filter((message) => message.role !== 'system');
 	}, [messages]);
 
 	// Create a retry handler for error messages

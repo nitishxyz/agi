@@ -137,13 +137,16 @@ export const SessionFilesSidebar = memo(function SessionFilesSidebar({
 	const panelWidth = usePanelWidthStore(
 		(s) => s.widths[PANEL_KEY] ?? DEFAULT_WIDTH,
 	);
-	const { data, isLoading, error, refetch } = useSessionFiles(sessionId);
+	const { data, isLoading, error, refetch } = useSessionFiles(
+		sessionId,
+		isExpanded,
+	);
 
 	if (!isExpanded) return null;
 
 	return (
 		<div
-	className="border-l border-sidebar-border sidebar-fade-in flex h-full relative"
+			className="border-l border-sidebar-border sidebar-fade-in flex h-full relative"
 			style={{ width: panelWidth }}
 		>
 			<ResizeHandle

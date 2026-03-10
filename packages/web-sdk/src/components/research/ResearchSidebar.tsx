@@ -74,7 +74,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 		data: researchData,
 		isLoading,
 		refetch,
-	} = useResearchSessions(parentSessionId);
+	} = useResearchSessions(parentSessionId, isExpanded);
 	const createMutation = useCreateResearchSession();
 	const injectMutation = useInjectContext();
 	const exportMutation = useExportToSession();
@@ -82,14 +82,16 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 
 	const { data: messagesData } = useMessages(
 		activeResearchSessionId ?? undefined,
+		{ enabled: isExpanded },
 	);
 
 	const { data: parentMessagesData } = useMessages(
 		parentSessionId ?? undefined,
+		{ enabled: isExpanded },
 	);
 
 	// Enable streaming for the active research session
-	useSessionStream(activeResearchSessionId ?? undefined);
+	useSessionStream(activeResearchSessionId ?? undefined, isExpanded);
 
 	const updateSession = useUpdateSession(activeResearchSessionId ?? '');
 
@@ -338,7 +340,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 
 	return (
 		<div
-	className="border-l border-sidebar-border sidebar-fade-in flex h-full relative"
+			className="border-l border-sidebar-border sidebar-fade-in flex h-full relative"
 			style={{ width: panelWidth }}
 		>
 			<ResizeHandle

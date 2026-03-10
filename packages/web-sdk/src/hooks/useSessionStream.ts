@@ -6,11 +6,13 @@ import type { Message, MessagePart } from '../types/api';
 import { useToolApprovalStore } from '../stores/toolApprovalStore';
 import { sessionsQueryKey } from './useSessions';
 
-export function useSessionStream(sessionId: string | undefined) {
+export function useSessionStream(
+	sessionId: string | undefined,
+	enabled = true,
+) {
 	const queryClient = useQueryClient();
 	const clientRef = useRef<SSEClient | null>(null);
 	const assistantMessageIdRef = useRef<string | null>(null);
-	const lastInvalidationRef = useRef<number>(0);
 
 	const {
 		addPendingApproval,
@@ -20,9 +22,7 @@ export function useSessionStream(sessionId: string | undefined) {
 	} = useToolApprovalStore();
 
 	useEffect(() => {
-		// console.log('[useSessionStream] Hook called with sessionId:', sessionId)
-		if (!sessionId) {
-			console.log('[useSessionStream] No sessionId, skipping');
+		if (!sessionId || !enabled) {
 			return;
 		}
 
@@ -493,25 +493,6 @@ export function useSessionStream(sessionId: string | undefined) {
 			);
 		};
 
-		// Throttle invalidations to prevent excessive re-renders
-		// Only invalidate at most once every 500ms during streaming
-		const throttledInvalidate = () => {
-			const now = Date.now();
-			if (now - lastInvalidationRef.current < 500) {
-				return; // Skip if we invalidated less than 500ms ago
-			}
-			lastInvalidationRef.current = now;
-			// console.log('[useSessionStream] Invalidating messages query (throttled)');
-			queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
-		};
-
-		const invalidatingEvents = new Set([
-			'message.completed',
-			'message.updated',
-			'finish-step',
-			'error',
-		]);
-
 		const unsubscribe = client.on('*', (event) => {
 			// console.log('[useSessionStream] Event received:', event);
 			const payload = event.payload as Record<string, unknown> | undefined;
@@ -557,7 +538,6 @@ export function useSessionStream(sessionId: string | undefined) {
 								return next;
 							},
 						);
-						throttledInvalidate();
 					}
 					break;
 				}
@@ -576,6 +556,7 @@ export function useSessionStream(sessionId: string | undefined) {
 					}
 					markMessageCompleted(payload);
 					clearEphemeralForMessage(id);
+					queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
 					queryClient.invalidateQueries({ queryKey: sessionsQueryKey });
 					break;
 				}
@@ -638,6 +619,7 @@ export function useSessionStream(sessionId: string | undefined) {
 					if (messageId) {
 						clearEphemeralForMessage(messageId);
 					}
+					queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
 					break;
 				}
 				case 'message.updated': {
@@ -678,11 +660,6 @@ export function useSessionStream(sessionId: string | undefined) {
 					break;
 			}
 
-			if (invalidatingEvents.has(event.type)) {
-				// Use throttled invalidation instead of immediate
-				throttledInvalidate();
-			}
-
 			if (event.type === 'finish-step') {
 				const now = Date.now();
 				if (now - lastSessionInvalidation >= 2000) {
@@ -701,6 +678,7 @@ export function useSessionStream(sessionId: string | undefined) {
 		queryClient,
 		addPendingApproval,
 		removePendingApproval,
+		enabled,
 		setPendingApprovals,
 		updatePendingApproval,
 	]);

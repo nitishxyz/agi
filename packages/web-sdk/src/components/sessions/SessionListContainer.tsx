@@ -43,6 +43,11 @@ export const SessionListContainer = memo(function SessionListContainer({
 		}));
 	}, [sessions]);
 
+	const sessionMap = useMemo(
+		() => new Map(sessions.map((session) => [session.id, session])),
+		[sessions],
+	);
+
 	const recents = sessionSnapshot;
 
 	useEffect(() => {
@@ -116,11 +121,13 @@ export const SessionListContainer = memo(function SessionListContainer({
 		);
 	}
 
-	const renderSession = (session: (typeof sessionSnapshot)[0], index: number) => {
-		const fullSession = sessions.find((s) => s.id === session.id);
+	const renderSession = (
+		session: (typeof sessionSnapshot)[0],
+		index: number,
+	) => {
+		const fullSession = sessionMap.get(session.id);
 		if (!fullSession) return null;
-		const globalIndex = sessionSnapshot.findIndex((s) => s.id === session.id);
-		const isFocused = currentFocus === 'sessions' && sessionIndex === globalIndex;
+		const isFocused = currentFocus === 'sessions' && sessionIndex === index;
 
 		return (
 			<div
@@ -146,16 +153,16 @@ export const SessionListContainer = memo(function SessionListContainer({
 			className="flex flex-col h-full overflow-y-auto scrollbar-hide"
 		>
 			<div className="h-14 shrink-0" aria-hidden="true" />
-		{recents.length > 0 && (
-			<div className="px-3 pt-4 pb-1">
-				<h3 className="text-xs font-medium text-sidebar-muted-foreground uppercase tracking-wider px-3 mb-2">
-					Recents
-				</h3>
-				<div className="flex flex-col gap-0.5">
-					{recents.map((session, index) => renderSession(session, index))}
+			{recents.length > 0 && (
+				<div className="px-3 pt-4 pb-1">
+					<h3 className="text-xs font-medium text-sidebar-muted-foreground uppercase tracking-wider px-3 mb-2">
+						Recents
+					</h3>
+					<div className="flex flex-col gap-0.5">
+						{recents.map((session, index) => renderSession(session, index))}
+					</div>
 				</div>
-			</div>
-		)}
+			)}
 
 			{isFetchingNextPage && (
 				<div className="flex justify-center py-3">
