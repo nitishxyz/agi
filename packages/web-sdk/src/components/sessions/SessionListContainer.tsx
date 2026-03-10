@@ -43,17 +43,7 @@ export const SessionListContainer = memo(function SessionListContainer({
 		}));
 	}, [sessions]);
 
-	const { starred, recents } = useMemo(() => {
-		const now = Date.now();
-		const oneHourAgo = now - 60 * 60 * 1000;
-		const starredItems = sessionSnapshot.filter(
-			(s) => (s.lastActiveAt || s.createdAt) > oneHourAgo,
-		);
-		const recentItems = sessionSnapshot.filter(
-			(s) => (s.lastActiveAt || s.createdAt) <= oneHourAgo,
-		);
-		return { starred: starredItems.slice(0, 5), recents: recentItems };
-	}, [sessionSnapshot]);
+	const recents = sessionSnapshot;
 
 	useEffect(() => {
 		if (currentFocus === 'sessions') {
@@ -155,27 +145,17 @@ export const SessionListContainer = memo(function SessionListContainer({
 			ref={scrollContainerRef}
 			className="flex flex-col h-full overflow-y-auto scrollbar-hide"
 		>
-			{starred.length > 0 && (
-				<div className="px-3 pt-4 pb-1">
-					<h3 className="text-xs font-medium text-sidebar-muted-foreground uppercase tracking-wider px-3 mb-2">
-						Starred
-					</h3>
-					<div className="flex flex-col gap-0.5">
-						{starred.map((session, index) => renderSession(session, index))}
-					</div>
+			<div className="h-16 shrink-0" aria-hidden="true" />
+		{recents.length > 0 && (
+			<div className="px-3 pt-4 pb-1">
+				<h3 className="text-xs font-medium text-sidebar-muted-foreground uppercase tracking-wider px-3 mb-2">
+					Recents
+				</h3>
+				<div className="flex flex-col gap-0.5">
+					{recents.map((session, index) => renderSession(session, index))}
 				</div>
-			)}
-
-			{recents.length > 0 && (
-				<div className="px-3 pt-4 pb-1">
-					<h3 className="text-xs font-medium text-sidebar-muted-foreground uppercase tracking-wider px-3 mb-2">
-						Recents
-					</h3>
-					<div className="flex flex-col gap-0.5">
-						{recents.map((session, index) => renderSession(session, index))}
-					</div>
-				</div>
-			)}
+			</div>
+		)}
 
 			{isFetchingNextPage && (
 				<div className="flex justify-center py-3">

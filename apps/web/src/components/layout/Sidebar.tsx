@@ -119,7 +119,7 @@ export const Sidebar = memo(function Sidebar({
 
 				<div className="flex-1 relative overflow-hidden">
 					<div className="absolute top-0 left-0 right-0 z-10 pointer-events-none">
-						<div className="px-4 pt-4 pb-3 flex items-center justify-end bg-sidebar">
+						<div className="h-14 px-4 flex items-center justify-end border-b border-sidebar-border/40 bg-sidebar/40 backdrop-blur-xl supports-[backdrop-filter]:bg-sidebar/20">
 							<button
 								type="button"
 								onClick={onNewSession}
@@ -129,10 +129,8 @@ export const Sidebar = memo(function Sidebar({
 								<Plus className="w-4 h-4 text-sidebar-primary-foreground" />
 							</button>
 						</div>
-						<div className="h-8 bg-gradient-to-b from-sidebar to-transparent" />
 					</div>
-					<div className="absolute inset-0 overflow-y-auto scrollbar-hide">
-						<div className="h-16" />
+					<div className="absolute inset-0 overflow-hidden">
 						{children}
 					</div>
 				</div>
