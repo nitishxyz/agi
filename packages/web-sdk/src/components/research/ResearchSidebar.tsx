@@ -338,7 +338,7 @@ export const ResearchSidebar = memo(function ResearchSidebar({
 
 	return (
 		<div
-			className="border-l border-border bg-background flex h-full relative"
+	className="border-l border-sidebar-border sidebar-fade-in flex h-full relative"
 			style={{ width: panelWidth }}
 		>
 			<ResizeHandle

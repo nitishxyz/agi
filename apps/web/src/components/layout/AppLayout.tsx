@@ -29,6 +29,16 @@ import {
 	SkillViewerPanel,
 	QuickFilePicker,
 } from '@ottocode/web-sdk/components';
+import {
+	useGitStore,
+	useSessionFilesStore,
+	useResearchStore,
+	useSettingsStore,
+	useTunnelStore,
+	useFileBrowserStore,
+	useMCPStore,
+	useSkillsStore,
+} from '@ottocode/web-sdk/stores';
 import { Sidebar } from './Sidebar';
 import { Moon, Sun } from 'lucide-react';
 
@@ -53,6 +63,24 @@ export const AppLayout = memo(function AppLayout({
 	onNavigateToSession,
 	onFixWithAI,
 }: AppLayoutProps) {
+	const gitExpanded = useGitStore((s) => s.isExpanded);
+	const sessionFilesExpanded = useSessionFilesStore((s) => s.isExpanded);
+	const researchExpanded = useResearchStore((s) => s.isExpanded);
+	const settingsExpanded = useSettingsStore((s) => s.isExpanded);
+	const tunnelExpanded = useTunnelStore((s) => s.isExpanded);
+	const fileBrowserExpanded = useFileBrowserStore((s) => s.isExpanded);
+	const mcpExpanded = useMCPStore((s) => s.isExpanded);
+	const skillsExpanded = useSkillsStore((s) => s.isExpanded);
+	const anyRightPanelOpen =
+		gitExpanded ||
+		sessionFilesExpanded ||
+		researchExpanded ||
+		settingsExpanded ||
+		tunnelExpanded ||
+		fileBrowserExpanded ||
+		mcpExpanded ||
+		skillsExpanded;
+
 	return (
 		<div className="h-screen flex bg-background touch-manipulation border-t border-border/50">
 			{/* Left sidebar - Sessions */}
@@ -83,7 +111,7 @@ export const AppLayout = memo(function AppLayout({
 						<MCPSidebar />
 						<SkillsSidebar />
 
-						<div className="flex flex-col w-12 border-l border-border bg-background">
+			<div className={`flex flex-col w-12 border-l ${anyRightPanelOpen ? 'sidebar-fade-in border-sidebar-border' : 'bg-background border-border'}`}>
 							<GitSidebarToggle />
 							<SessionFilesSidebarToggle sessionId={sessionId} />
 							<ResearchSidebarToggle parentSessionId={sessionId} />

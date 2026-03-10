@@ -39,8 +39,21 @@ export const SessionListContainer = memo(function SessionListContainer({
 			title: s.title,
 			agent: s.agent,
 			createdAt: s.createdAt,
+			lastActiveAt: s.lastActiveAt,
 		}));
 	}, [sessions]);
+
+	const { starred, recents } = useMemo(() => {
+		const now = Date.now();
+		const oneHourAgo = now - 60 * 60 * 1000;
+		const starredItems = sessionSnapshot.filter(
+			(s) => (s.lastActiveAt || s.createdAt) > oneHourAgo,
+		);
+		const recentItems = sessionSnapshot.filter(
+			(s) => (s.lastActiveAt || s.createdAt) <= oneHourAgo,
+		);
+		return { starred: starredItems.slice(0, 5), recents: recentItems };
+	}, [sessionSnapshot]);
 
 	useEffect(() => {
 		if (currentFocus === 'sessions') {
@@ -96,54 +109,77 @@ export const SessionListContainer = memo(function SessionListContainer({
 
 	if (isLoading) {
 		return (
-			<div className="flex flex-col gap-2 px-2 py-2">
-				<div className="h-12 rounded-md bg-muted/30 animate-pulse" />
-				<div className="h-12 rounded-md bg-muted/30 animate-pulse" />
-				<div className="h-12 rounded-md bg-muted/30 animate-pulse" />
-				<div className="h-12 rounded-md bg-muted/30 animate-pulse" />
-				<div className="h-12 rounded-md bg-muted/30 animate-pulse" />
+			<div className="flex flex-col gap-2 px-3 py-2">
+				<div className="h-8 rounded-md bg-sidebar-accent/50 animate-pulse" />
+				<div className="h-8 rounded-md bg-sidebar-accent/50 animate-pulse" />
+				<div className="h-8 rounded-md bg-sidebar-accent/50 animate-pulse" />
+				<div className="h-8 rounded-md bg-sidebar-accent/50 animate-pulse" />
 			</div>
 		);
 	}
 
 	if (sessionSnapshot.length === 0) {
 		return (
-			<div className="px-4 py-8 text-center text-sm text-muted-foreground/80">
+			<div className="px-4 py-8 text-center text-sm text-sidebar-muted-foreground">
 				No sessions yet. Create one to get started.
 			</div>
 		);
 	}
 
+	const renderSession = (session: (typeof sessionSnapshot)[0], index: number) => {
+		const fullSession = sessions.find((s) => s.id === session.id);
+		if (!fullSession) return null;
+		const globalIndex = sessionSnapshot.findIndex((s) => s.id === session.id);
+		const isFocused = currentFocus === 'sessions' && sessionIndex === globalIndex;
+
+		return (
+			<div
+				key={session.id}
+				ref={(el) => {
+					if (el) itemRefs.current.set(session.id, el);
+					else itemRefs.current.delete(session.id);
+				}}
+				className={isFocused ? 'ring-1 ring-sidebar-ring/40 rounded-md' : ''}
+			>
+				<SessionItem
+					session={fullSession}
+					isActive={session.id === activeSessionId}
+					onClick={() => handleSessionClick(session.id)}
+				/>
+			</div>
+		);
+	};
+
 	return (
 		<div
 			ref={scrollContainerRef}
-			className="flex flex-col gap-1 px-2 py-2 h-full overflow-y-auto scrollbar-hide"
+			className="flex flex-col h-full overflow-y-auto scrollbar-hide"
 		>
-			{sessionSnapshot.map((session, index) => {
-				const fullSession = sessions.find((s) => s.id === session.id);
-				if (!fullSession) return null;
-				const isFocused = currentFocus === 'sessions' && sessionIndex === index;
-
-				return (
-					<div
-						key={session.id}
-						ref={(el) => {
-							if (el) itemRefs.current.set(session.id, el);
-							else itemRefs.current.delete(session.id);
-						}}
-						className={isFocused ? 'ring-1 ring-primary/40 rounded-md' : ''}
-					>
-						<SessionItem
-							session={fullSession}
-							isActive={session.id === activeSessionId}
-							onClick={() => handleSessionClick(session.id)}
-						/>
+			{starred.length > 0 && (
+				<div className="px-3 pt-4 pb-1">
+					<h3 className="text-xs font-medium text-sidebar-muted-foreground uppercase tracking-wider px-3 mb-2">
+						Starred
+					</h3>
+					<div className="flex flex-col gap-0.5">
+						{starred.map((session, index) => renderSession(session, index))}
 					</div>
-				);
-			})}
+				</div>
+			)}
+
+			{recents.length > 0 && (
+				<div className="px-3 pt-4 pb-1">
+					<h3 className="text-xs font-medium text-sidebar-muted-foreground uppercase tracking-wider px-3 mb-2">
+						Recents
+					</h3>
+					<div className="flex flex-col gap-0.5">
+						{recents.map((session, index) => renderSession(session, index))}
+					</div>
+				</div>
+			)}
+
 			{isFetchingNextPage && (
 				<div className="flex justify-center py-3">
-					<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+					<Loader2 className="h-4 w-4 animate-spin text-sidebar-muted-foreground" />
 				</div>
 			)}
 		</div>

@@ -67,7 +67,7 @@ export const TunnelSidebar = memo(function TunnelSidebar() {
 	if (!isExpanded) return null;
 
 	return (
-		<div className="w-80 border-l border-border bg-background flex flex-col h-full">
+	<div className="w-80 border-l border-sidebar-border sidebar-fade-in flex flex-col h-full">
 			<div className="h-14 flex items-center justify-between px-3 border-b border-border">
 				<div className="flex items-center gap-2">
 					<Globe className="w-4 h-4 text-muted-foreground" />

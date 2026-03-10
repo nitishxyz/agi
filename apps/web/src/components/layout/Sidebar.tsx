@@ -1,6 +1,10 @@
 import { memo, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { ChevronRight, Plus, X } from 'lucide-react';
+import {
+	Plus,
+	ChevronRight,
+	X,
+} from 'lucide-react';
 import {
 	useGitStore,
 	useSidebarStore,
@@ -9,7 +13,7 @@ import {
 import { Button, ResizeHandle } from '@ottocode/web-sdk/components';
 
 const PANEL_KEY = 'left-sidebar';
-const DEFAULT_WIDTH = 256;
+const DEFAULT_WIDTH = 272;
 const MIN_WIDTH = 256;
 const MAX_WIDTH = 480;
 
@@ -17,6 +21,7 @@ interface SidebarProps {
 	children: ReactNode;
 	onNewSession?: () => void;
 }
+
 
 export const Sidebar = memo(function Sidebar({
 	children,
@@ -42,14 +47,14 @@ export const Sidebar = memo(function Sidebar({
 
 	if (isCollapsed) {
 		return (
-			<aside className="w-12 md:w-12 border-r border-border bg-background flex flex-col transition-all duration-300 ease-in-out hidden md:flex">
-				<div className="h-14 border-b border-border flex items-center justify-center">
+		<aside className="w-12 md:w-12 border-r border-border bg-background flex flex-col transition-all duration-300 ease-in-out hidden md:flex">
+			<div className="h-14 border-b border-border flex items-center justify-center">
 					<Button
 						variant="ghost"
 						size="icon"
 						onClick={onNewSession}
 						title="New session"
-						className="rounded-full touch-manipulation"
+						className="rounded-full touch-manipulation text-muted-foreground hover:bg-muted/50"
 					>
 						<Plus className="w-4 h-4" />
 					</Button>
@@ -57,20 +62,20 @@ export const Sidebar = memo(function Sidebar({
 
 				<button
 					type="button"
-					className="flex-1 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation"
+				className="flex-1 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation"
 					onClick={!isDiffOpen ? toggleCollapse : undefined}
 					title={!isDiffOpen ? 'Expand sidebar' : undefined}
 					aria-label="Expand sidebar"
 				/>
 
-				<div className="h-12 border-t border-border flex items-center justify-center">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={toggleCollapse}
-						title="Expand sidebar"
-						disabled={isDiffOpen}
-						className="transition-transform duration-200 hover:scale-110 touch-manipulation"
+			<div className="h-12 border-t border-border flex items-center justify-center">
+				<Button
+					variant="ghost"
+					size="icon"
+					onClick={toggleCollapse}
+					title="Expand sidebar"
+					disabled={isDiffOpen}
+					className="transition-transform duration-200 hover:scale-110 touch-manipulation text-muted-foreground hover:bg-muted/50"
 					>
 						<ChevronRight className="w-4 h-4" />
 					</Button>
@@ -89,53 +94,57 @@ export const Sidebar = memo(function Sidebar({
 				/>
 			)}
 			<aside
-				className="border-r border-border bg-background flex transition-all duration-300 ease-in-out fixed md:relative top-0 left-0 z-50 h-screen md:h-auto w-full md:w-auto"
+			className="border-r border-sidebar-border sidebar-fade-in flex transition-all duration-300 ease-in-out fixed md:relative top-0 left-0 z-50 h-screen md:h-auto w-full md:w-auto"
 				style={{ maxWidth: '100%' }}
 			>
 				<div
-					className="flex-1 flex flex-col min-w-0"
+				className="flex-1 flex flex-col min-w-0 relative"
 					style={{ width: panelWidth }}
 				>
-					<div className="h-14 border-b border-border px-4 flex items-center gap-2 md:hidden bg-background">
+					<div className="h-14 border-b border-sidebar-border px-4 flex items-center gap-2 md:hidden bg-sidebar">
 						<Button
 							variant="ghost"
 							size="icon"
 							onClick={toggleCollapse}
 							title="Close menu"
-							className="touch-manipulation flex-shrink-0"
+							className="touch-manipulation flex-shrink-0 text-sidebar-foreground hover:bg-sidebar-accent"
 							aria-label="Close menu"
 						>
 							<X className="w-5 h-5" />
 						</Button>
-						<h1 className="text-lg font-semibold text-foreground flex-1">
+						<h1 className="text-lg font-semibold text-sidebar-foreground flex-1">
 							otto
 						</h1>
 					</div>
 
-					<div className="h-14 border-b border-border px-4 flex items-center gap-2">
-						<Button
-							variant="primary"
-							size="sm"
-							onClick={onNewSession}
-							className="flex-1 touch-manipulation"
-						>
-							<Plus className="w-4 h-4 mr-2" />
-							New Session
-						</Button>
+				<div className="flex-1 relative overflow-hidden">
+					<div className="absolute top-0 left-0 right-0 z-10 pointer-events-none">
+						<div className="px-4 pt-4 pb-3 flex items-center justify-end bg-sidebar">
+							<button
+								type="button"
+								onClick={onNewSession}
+								className="w-9 h-9 rounded-full bg-sidebar-primary flex items-center justify-center hover:opacity-90 transition-opacity touch-manipulation pointer-events-auto"
+								title="New session"
+							>
+								<Plus className="w-4 h-4 text-sidebar-primary-foreground" />
+							</button>
+						</div>
+						<div className="h-8 bg-gradient-to-b from-sidebar to-transparent" />
 					</div>
-
-					<div className="flex-1 overflow-y-auto scrollbar-hide">
+					<div className="absolute inset-0 overflow-y-auto scrollbar-hide">
+						<div className="h-16" />
 						{children}
 					</div>
+				</div>
 
-					<div className="h-12 border-t border-border px-2 flex items-center justify-end">
+					<div className="h-10 border-t border-sidebar-border px-2 flex items-center justify-end">
 						<Button
 							variant="ghost"
 							size="icon"
 							onClick={toggleCollapse}
 							title="Collapse sidebar"
 							disabled={isDiffOpen}
-							className="transition-transform duration-200 hover:scale-110 touch-manipulation"
+							className="transition-transform duration-200 hover:scale-110 touch-manipulation text-sidebar-muted-foreground hover:bg-sidebar-accent w-8 h-8"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"

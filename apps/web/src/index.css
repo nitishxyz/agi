@@ -17,6 +17,19 @@
 	animation: shimmer 2s ease-in-out infinite;
 }
 
+@keyframes sidebar-bg-fade-in {
+	from {
+		background-color: hsl(var(--background));
+	}
+	to {
+		background-color: hsl(var(--sidebar-background));
+	}
+}
+
+.sidebar-fade-in {
+	animation: sidebar-bg-fade-in 300ms ease-out forwards;
+}
+
 @layer base {
 	:root {
 		--background: 220 25% 95%;
@@ -44,14 +57,15 @@
 		--chart-4: 43 74% 66%;
 		--chart-5: 27 87% 67%;
 		--radius: 0.5rem;
-		--sidebar-background: 220 25% 91%;
-		--sidebar-foreground: 220 10% 15%;
-		--sidebar-primary: 222.2 47.4% 11.2%;
+		--sidebar-background: 220 40% 93%;
+		--sidebar-foreground: 220 20% 15%;
+		--sidebar-primary: 222 50% 25%;
 		--sidebar-primary-foreground: 210 40% 98%;
-		--sidebar-accent: 220 20% 86%;
-		--sidebar-accent-foreground: 222.2 35% 25%;
-		--sidebar-border: 220 15% 89%;
-		--sidebar-ring: 222.2 84% 4.9%;
+		--sidebar-accent: 220 35% 88%;
+		--sidebar-accent-foreground: 222 35% 20%;
+		--sidebar-border: 220 30% 87%;
+		--sidebar-ring: 222 60% 30%;
+		--sidebar-muted-foreground: 220 20% 45%;
 		--code-background: hsl(220 25% 93%);
 		--code-foreground: hsl(220 10% 10%);
 		--code-keyword: hsl(300 85% 42%);
@@ -90,14 +104,15 @@
 		--chart-4: 280 65% 60%;
 		--chart-5: 340 75% 55%;
 		--radius: 0.5rem;
-		--sidebar-background: 240 10% 10%;
-		--sidebar-foreground: 0 0% 98%;
-		--sidebar-primary: 217.2 91.2% 59.8%;
-		--sidebar-primary-foreground: 240 5.9% 10%;
-		--sidebar-accent: 240 3.7% 15.9%;
-		--sidebar-accent-foreground: 0 0% 98%;
-		--sidebar-border: 240 3.7% 15.9%;
-		--sidebar-ring: 217.2 91.2% 59.8%;
+		--sidebar-background: 240 10% 7%;
+		--sidebar-foreground: 0 0% 92%;
+		--sidebar-primary: 0 0% 92%;
+		--sidebar-primary-foreground: 240 10% 7%;
+		--sidebar-accent: 240 8% 12%;
+		--sidebar-accent-foreground: 0 0% 95%;
+		--sidebar-border: 240 5% 13%;
+		--sidebar-ring: 240 4.9% 83.9%;
+		--sidebar-muted-foreground: 240 5% 50%;
 		--code-background: hsl(240 10% 10%);
 		--code-foreground: hsl(0 0% 98%);
 		--code-keyword: #c678dd;
