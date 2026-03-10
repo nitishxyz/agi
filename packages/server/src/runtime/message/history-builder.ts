@@ -117,13 +117,42 @@ export async function buildHistoryMessages(
 
 		if (m.role === 'assistant') {
 			const assistantParts: UIMessage['parts'] = [];
-			const toolCalls: Array<{ name: string; callId: string; args: unknown }> =
-				[];
-			const toolResults: Array<{
-				name: string;
-				callId: string;
-				result: unknown;
-			}> = [];
+			const flushAssistantParts = async () => {
+				if (!assistantParts.length) return;
+				history.push(
+					...(await convertToModelMessages([
+						{ role: 'assistant', parts: assistantParts },
+					])),
+				);
+				assistantParts.length = 0;
+			};
+			const toolResultsById = new Map<
+				string,
+				{
+					name: string;
+					callId: string;
+					result: unknown;
+				}
+			>();
+
+			for (const p of parts) {
+				if (p.type !== 'tool_result' || p.compactedAt) continue;
+
+				try {
+					const obj = JSON.parse(p.content ?? '{}') as {
+						name?: string;
+						callId?: string;
+						result?: unknown;
+					};
+					if (obj.callId) {
+						toolResultsById.set(obj.callId, {
+							name: obj.name ?? 'tool',
+							callId: obj.callId,
+							result: obj.result,
+						});
+					}
+				} catch {}
+			}
 
 			for (const p of parts) {
 				if (p.type === 'reasoning') continue;
@@ -143,88 +172,55 @@ export async function buildHistoryMessages(
 							callId?: string;
 							args?: unknown;
 						};
-						if (obj.callId && obj.name) {
-							toolCalls.push({
+						if (!obj.callId || !obj.name) continue;
+						if (obj.name === 'finish') continue;
+
+						const toolType = `tool-${obj.name}` as `tool-${string}`;
+						let result = toolResultsById.get(obj.callId);
+
+						if (!result) {
+							debugLog(
+								`[buildHistoryMessages] Synthesizing error result for incomplete tool call ${obj.name}#${obj.callId}`,
+							);
+							result = {
 								name: obj.name,
 								callId: obj.callId,
-								args: obj.args,
-							});
+								result:
+									'Error: The tool execution was interrupted or failed to return a result. You may need to retry this operation.',
+							};
 						}
-					} catch {}
-				} else if (p.type === 'tool_result') {
-					if (p.compactedAt) continue;
 
-					try {
-						const obj = JSON.parse(p.content ?? '{}') as {
-							name?: string;
-							callId?: string;
-							result?: unknown;
+						const part = {
+							type: toolType,
+							state: 'output-available',
+							toolCallId: obj.callId,
+							input: obj.args,
+							output: (() => {
+								const r = result.result;
+								if (typeof r === 'string') return r;
+								try {
+									return JSON.stringify(r);
+								} catch {
+									return String(r);
+								}
+							})(),
 						};
-						if (obj.callId) {
-							toolResults.push({
-								name: obj.name ?? 'tool',
-								callId: obj.callId,
-								result: obj.result,
-							});
-						}
+
+						toolHistory.register(part, {
+							toolName: obj.name,
+							callId: obj.callId,
+							args: obj.args,
+							result: result.result,
+						});
+
+						assistantParts.push(part as never);
+						await flushAssistantParts();
 					} catch {}
 				}
-			}
-
-			const toolResultsById = new Map(
-				toolResults.map((result) => [result.callId, result]),
-			);
-
-			for (const call of toolCalls) {
-				if (call.name === 'finish') continue;
-
-				const toolType = `tool-${call.name}` as `tool-${string}`;
-				let result = toolResultsById.get(call.callId);
-
-				if (!result) {
-					debugLog(
-						`[buildHistoryMessages] Synthesizing error result for incomplete tool call ${call.name}#${call.callId}`,
-					);
-					result = {
-						name: call.name,
-						callId: call.callId,
-						result:
-							'Error: The tool execution was interrupted or failed to return a result. You may need to retry this operation.',
-					};
-				}
-
-				const part = {
-					type: toolType,
-					state: 'output-available',
-					toolCallId: call.callId,
-					input: call.args,
-					output: (() => {
-						const r = result.result;
-						if (typeof r === 'string') return r;
-						try {
-							return JSON.stringify(r);
-						} catch {
-							return String(r);
-						}
-					})(),
-				};
-
-				toolHistory.register(part, {
-					toolName: call.name,
-					callId: call.callId,
-					args: call.args,
-					result: result.result,
-				});
-
-				assistantParts.push(part as never);
 			}
 
 			if (assistantParts.length) {
-				history.push(
-					...(await convertToModelMessages([
-						{ role: 'assistant', parts: assistantParts },
-					])),
-				);
+				await flushAssistantParts();
 			}
 		}
 	}

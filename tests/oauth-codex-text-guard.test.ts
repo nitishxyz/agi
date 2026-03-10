@@ -130,6 +130,147 @@ describe('oauth codex text guard', () => {
 		expect(history[1]?.role).toBe('assistant');
 	});
 
+	test('preserves assistant tool chronology when rebuilding history', async () => {
+		const projectRoot = mkdtempSync(join(tmpdir(), 'otto-history-order-'));
+		const db = await getDb(projectRoot);
+		const now = Date.now();
+
+		await db.insert(sessions).values({
+			id: 'session-history-order-test',
+			agent: 'build',
+			provider: 'openai',
+			model: 'gpt-5.3-codex',
+			projectPath: projectRoot,
+			createdAt: now,
+			lastActiveAt: now,
+		});
+
+		await db.insert(messages).values({
+			id: 'user-history-order-msg',
+			sessionId: 'session-history-order-test',
+			role: 'user',
+			status: 'complete',
+			agent: 'build',
+			provider: 'openai',
+			model: 'gpt-5.3-codex',
+			createdAt: now,
+		});
+
+		await db.insert(messageParts).values({
+			id: 'user-history-order-part',
+			messageId: 'user-history-order-msg',
+			index: 0,
+			type: 'text',
+			content: JSON.stringify({ text: 'read README' }),
+			agent: 'build',
+			provider: 'openai',
+			model: 'gpt-5.3-codex',
+		});
+
+		await db.insert(messages).values({
+			id: 'assistant-history-order-msg',
+			sessionId: 'session-history-order-test',
+			role: 'assistant',
+			status: 'complete',
+			agent: 'build',
+			provider: 'openai',
+			model: 'gpt-5.3-codex',
+			createdAt: now + 1,
+		});
+
+		await db.insert(messageParts).values([
+			{
+				id: 'assistant-history-order-part-1',
+				messageId: 'assistant-history-order-msg',
+				index: 0,
+				type: 'text',
+				content: JSON.stringify({ text: "I'll read it now." }),
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+			},
+			{
+				id: 'assistant-history-order-part-2',
+				messageId: 'assistant-history-order-msg',
+				index: 1,
+				type: 'tool_call',
+				content: JSON.stringify({
+					name: 'read',
+					callId: 'call-readme',
+					args: { path: 'README.md' },
+				}),
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+			},
+			{
+				id: 'assistant-history-order-part-3',
+				messageId: 'assistant-history-order-msg',
+				index: 2,
+				type: 'tool_result',
+				content: JSON.stringify({
+					name: 'read',
+					callId: 'call-readme',
+					result: { ok: true, path: 'README.md' },
+				}),
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+			},
+			{
+				id: 'assistant-history-order-part-4',
+				messageId: 'assistant-history-order-msg',
+				index: 3,
+				type: 'text',
+				content: JSON.stringify({ text: 'I read README.' }),
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+			},
+		]);
+
+		const history = await buildHistoryMessages(
+			db,
+			'session-history-order-test',
+		);
+		expect(history).toEqual([
+			{
+				role: 'user',
+				content: [{ type: 'text', text: 'read README' }],
+			},
+			{
+				role: 'assistant',
+				content: [
+					{ type: 'text', text: "I'll read it now." },
+					{
+						type: 'tool-call',
+						toolCallId: 'call-readme',
+						toolName: 'read',
+						input: { path: 'README.md' },
+					},
+				],
+			},
+			{
+				role: 'tool',
+				content: [
+					{
+						type: 'tool-result',
+						toolCallId: 'call-readme',
+						toolName: 'read',
+						output: {
+							type: 'text',
+							value: '{"ok":true,"path":"README.md"}',
+						},
+					},
+				],
+			},
+			{
+				role: 'assistant',
+				content: [{ type: 'text', text: 'I read README.' }],
+			},
+		]);
+	});
+
 	test('keeps stored image attachments as raw file data in history', async () => {
 		const projectRoot = mkdtempSync(join(tmpdir(), 'otto-history-images-'));
 		const db = await getDb(projectRoot);

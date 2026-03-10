@@ -42,6 +42,7 @@ import {
 	consumeOauthCodexTextDelta,
 } from '../stream/text-guard.ts';
 import { decideOauthCodexContinuation } from './oauth-codex-continuation.ts';
+import { createTurnDumpCollector } from '../debug/turn-dump.ts';
 
 export {
 	enqueueAssistantRun,
@@ -179,6 +180,31 @@ async function runAssistant(opts: RunOpts) {
 		`[RUNNER] messagesWithSystemInstructions length: ${messagesWithSystemInstructions.length}`,
 	);
 
+	const dump = createTurnDumpCollector({
+		sessionId: opts.sessionId,
+		messageId: opts.assistantMessageId,
+		provider: opts.provider,
+		model: opts.model,
+		agent: opts.agent,
+		continuationCount: opts.continuationCount,
+	});
+	if (dump) {
+		dump.setSystemPrompt(system, setup.systemComponents);
+		dump.setAdditionalSystemMessages(
+			additionalSystemMessages as Array<{ role: string; content: string }>,
+		);
+		dump.setHistory(history as Array<{ role: string; content: unknown }>);
+		dump.setFinalMessages(messagesWithSystemInstructions);
+		dump.setTools(toolset);
+		dump.setModelConfig({
+			maxOutputTokens: setup.maxOutputTokens,
+			effectiveMaxOutputTokens,
+			providerOptions,
+			isOpenAIOAuth,
+			needsSpoof: setup.needsSpoof,
+		});
+	}
+
 	let _finishObserved = false;
 	let _toolActivityObserved = false;
 	let _trailingAssistantTextAfterTool = false;
@@ -199,15 +225,41 @@ async function runAssistant(opts: RunOpts) {
 		}
 		if (evt.type === 'tool.call') {
 			triggerTitleGenerationWhenReady();
+			if (dump) {
+				try {
+					const p = evt.payload as {
+						name?: string;
+						callId?: string;
+						args?: unknown;
+					};
+					dump.recordToolCall(stepIndex, p.name ?? '', p.callId ?? '', p.args);
+				} catch {}
+			}
 		}
-		if (evt.type !== 'tool.result') return;
-		try {
-			const name = (evt.payload as { name?: string } | undefined)?.name;
-			if (name === 'finish') _finishObserved = true;
-		} catch (err) {
-			debugLog(
-				`[RUNNER] finish observer error: ${err instanceof Error ? err.message : String(err)}`,
-			);
+		if (evt.type === 'tool.result') {
+			if (dump) {
+				try {
+					const p = evt.payload as {
+						name?: string;
+						callId?: string;
+						result?: unknown;
+					};
+					dump.recordToolResult(
+						stepIndex,
+						p.name ?? '',
+						p.callId ?? '',
+						p.result,
+					);
+				} catch {}
+			}
+			try {
+				const name = (evt.payload as { name?: string } | undefined)?.name;
+				if (name === 'finish') _finishObserved = true;
+			} catch (err) {
+				debugLog(
+					`[RUNNER] finish observer error: ${err instanceof Error ? err.message : String(err)}`,
+				);
+			}
 		}
 	});
 
@@ -217,6 +269,7 @@ async function runAssistant(opts: RunOpts) {
 	let currentPartId: string | null = null;
 	let accumulated = '';
 	let latestAssistantText = '';
+	let lastTextDeltaStepIndex: number | null = null;
 	let stepIndex = 0;
 	const oauthTextGuard = isOpenAIOAuth
 		? createOauthCodexTextGuardState()
@@ -330,6 +383,10 @@ async function runAssistant(opts: RunOpts) {
 				if (accumulated.trim()) {
 					latestAssistantText = accumulated;
 				}
+				if (accumulated.length > 0) {
+					lastTextDeltaStepIndex = stepIndex;
+				}
+				dump?.recordTextDelta(stepIndex, accumulated);
 				if (
 					(delta.trim().length > 0 && _toolActivityObserved) ||
 					(delta.trim().length > 0 && firstToolSeen())
@@ -450,6 +507,23 @@ async function runAssistant(opts: RunOpts) {
 			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}, trailingAssistantTextAfterTool=${_trailingAssistantTextAfterTool}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}`,
 		);
 
+		if (dump) {
+			const finalTextSnapshot = latestAssistantText || accumulated;
+			if (finalTextSnapshot.length > 0) {
+				dump.recordTextDelta(
+					lastTextDeltaStepIndex ?? stepIndex,
+					finalTextSnapshot,
+					{ force: true },
+				);
+			}
+			dump.recordStreamEnd({
+				finishReason: streamFinishReason,
+				rawFinishReason: streamRawFinishReason,
+				finishObserved: _finishObserved,
+				aborted: _abortedByUser,
+			});
+		}
+
 		const MAX_CONTINUATIONS = 6;
 		const continuationCount = opts.continuationCount ?? 0;
 		const continuationDecision = decideOauthCodexContinuation({
@@ -543,6 +617,7 @@ async function runAssistant(opts: RunOpts) {
 		}
 	} catch (err) {
 		unsubscribeFinish();
+		dump?.recordError(err);
 		const payload = toErrorPayload(err);
 
 		const errorMessage = err instanceof Error ? err.message : String(err);
@@ -627,6 +702,16 @@ async function runAssistant(opts: RunOpts) {
 		}
 		throw err;
 	} finally {
+		if (dump) {
+			try {
+				const dumpPath = await dump.flush(cfg.projectRoot);
+				debugLog(`[RUNNER] Debug dump written to ${dumpPath}`);
+			} catch (dumpErr) {
+				debugLog(
+					`[RUNNER] Failed to write debug dump: ${dumpErr instanceof Error ? dumpErr.message : String(dumpErr)}`,
+				);
+			}
+		}
 		debugLog(
 			`[RUNNER] Turn complete for session ${opts.sessionId}, message ${opts.assistantMessageId}`,
 		);
