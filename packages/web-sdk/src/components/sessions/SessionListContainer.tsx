@@ -145,7 +145,7 @@ export const SessionListContainer = memo(function SessionListContainer({
 			ref={scrollContainerRef}
 			className="flex flex-col h-full overflow-y-auto scrollbar-hide"
 		>
-			<div className="h-16 shrink-0" aria-hidden="true" />
+			<div className="h-14 shrink-0" aria-hidden="true" />
 		{recents.length > 0 && (
 			<div className="px-3 pt-4 pb-1">
 				<h3 className="text-xs font-medium text-sidebar-muted-foreground uppercase tracking-wider px-3 mb-2">
