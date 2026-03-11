@@ -82,7 +82,9 @@ function toThinkingBudget(
 	level: ReasoningLevel | undefined,
 	maxOutputTokens: number | undefined,
 ): number {
-	const cap = maxOutputTokens ? Math.max(maxOutputTokens, THINKING_BUDGET) : THINKING_BUDGET;
+	const cap = maxOutputTokens
+		? Math.max(maxOutputTokens, THINKING_BUDGET)
+		: THINKING_BUDGET;
 	switch (level) {
 		case 'minimal':
 			return Math.min(2048, cap);
@@ -142,9 +144,19 @@ function usesAdaptiveAnthropicThinking(model: string): boolean {
 function getReasoningProviderTarget(
 	provider: ProviderId,
 	model: string,
-): 'anthropic' | 'openai' | 'google' | 'openai-compatible' | 'openrouter' | null {
+):
+	| 'anthropic'
+	| 'openai'
+	| 'google'
+	| 'openai-compatible'
+	| 'openrouter'
+	| null {
 	if (provider === 'openrouter') return 'openrouter';
-	if (provider === 'moonshot' || provider === 'zai' || provider === 'zai-coding') {
+	if (
+		provider === 'moonshot' ||
+		provider === 'zai' ||
+		provider === 'zai-coding'
+	) {
 		return 'openai-compatible';
 	}
 	if (provider === 'minimax') return 'anthropic';
@@ -171,7 +183,8 @@ export function buildReasoningConfig(args: {
 	reasoningLevel?: ReasoningLevel;
 	maxOutputTokens: number | undefined;
 }): ReasoningConfigResult {
-	const { provider, model, reasoningText, reasoningLevel, maxOutputTokens } = args;
+	const { provider, model, reasoningText, reasoningLevel, maxOutputTokens } =
+		args;
 	if (!reasoningText || !modelSupportsReasoning(provider, model)) {
 		return {
 			providerOptions: {},
@@ -235,7 +248,10 @@ export function buildReasoningConfig(args: {
 								includeThoughts: true,
 							}
 						: {
-								thinkingBudget: toThinkingBudget(reasoningLevel, maxOutputTokens),
+								thinkingBudget: toThinkingBudget(
+									reasoningLevel,
+									maxOutputTokens,
+								),
 								includeThoughts: true,
 							},
 				},

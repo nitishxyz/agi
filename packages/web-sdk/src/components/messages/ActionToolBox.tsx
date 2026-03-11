@@ -169,7 +169,9 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 	const streamedContent = getContentFromStream(toolName, streamedInput);
 	const displayContent =
 		toolName === 'bash'
-			? streamedOutput || streamedContent || (args ? getContentFromArgs(toolName, args) : '')
+			? streamedOutput ||
+				streamedContent ||
+				(args ? getContentFromArgs(toolName, args) : '')
 			: args
 				? getContentFromArgs(toolName, args)
 				: streamedContent;
@@ -286,9 +288,7 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 						border: isLive
 							? '1px solid hsl(var(--border) / 0.6)'
 							: '1px solid transparent',
-						background: isLive
-							? 'hsl(var(--muted) / 0.2)'
-							: 'transparent',
+						background: isLive ? 'hsl(var(--muted) / 0.2)' : 'transparent',
 						padding: isLive ? '8px 12px' : '0px 0px',
 						transition: `border ${ANIM_MS}ms ${EASING}, background ${ANIM_MS}ms ${EASING}, padding ${ANIM_MS}ms ${EASING}`,
 					}}
@@ -330,32 +330,30 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 							}}
 						>
 							{displayContent && (
-								<div
-									className="pt-1.5"
-								>
+								<div className="pt-1.5">
 									<div
-									ref={scrollRef}
-									className="overflow-y-auto"
-									style={{
+										ref={scrollRef}
+										className="overflow-y-auto"
+										style={{
 											height: `${contentHeight}px`,
-										maskImage:
-											'linear-gradient(to bottom, transparent 0px, black 20px)',
-										WebkitMaskImage:
-											'linear-gradient(to bottom, transparent 0px, black 20px)',
-									}}
-									onMouseEnter={() => {
-										hoveredRef.current = true;
-									}}
-									onMouseLeave={() => {
-										hoveredRef.current = false;
-									}}
-								>
-									<pre
-										ref={contentMeasureRef}
-										className="px-1 pt-2.5 pb-1 text-[11px] leading-relaxed text-foreground/60 font-mono whitespace-pre-wrap break-all"
+											maskImage:
+												'linear-gradient(to bottom, transparent 0px, black 20px)',
+											WebkitMaskImage:
+												'linear-gradient(to bottom, transparent 0px, black 20px)',
+										}}
+										onMouseEnter={() => {
+											hoveredRef.current = true;
+										}}
+										onMouseLeave={() => {
+											hoveredRef.current = false;
+										}}
 									>
-										{displayContent}
-									</pre>
+										<pre
+											ref={contentMeasureRef}
+											className="px-1 pt-2.5 pb-1 text-[11px] leading-relaxed text-foreground/60 font-mono whitespace-pre-wrap break-all"
+										>
+											{displayContent}
+										</pre>
 									</div>
 								</div>
 							)}
@@ -387,9 +385,7 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 									className="block min-w-0 truncate leading-5 text-foreground"
 									title={target || config.label}
 								>
-									{target
-										? `${config.label}\u00A0· ${target}`
-										: config.label}
+									{target ? `${config.label}\u00A0· ${target}` : config.label}
 								</span>
 							</div>
 						)}

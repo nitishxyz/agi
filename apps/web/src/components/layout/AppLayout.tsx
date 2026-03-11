@@ -111,7 +111,9 @@ export const AppLayout = memo(function AppLayout({
 						<MCPSidebar />
 						<SkillsSidebar />
 
-			<div className={`flex flex-col w-12 border-l ${anyRightPanelOpen ? 'sidebar-fade-in border-sidebar-border' : 'bg-background border-border'}`}>
+						<div
+							className={`flex flex-col w-12 border-l ${anyRightPanelOpen ? 'sidebar-fade-in border-sidebar-border' : 'bg-background border-border'}`}
+						>
 							<GitSidebarToggle />
 							<SessionFilesSidebarToggle sessionId={sessionId} />
 							<ResearchSidebarToggle parentSessionId={sessionId} />

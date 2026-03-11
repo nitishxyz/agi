@@ -308,8 +308,10 @@ async function processAskRequest(
 		await ensureProviderEnv(cfg, providerForMessage);
 	}
 
-	const reasoningText = request.reasoningText ?? cfg.defaults.reasoningText ?? false;
-	const reasoningLevel = request.reasoningLevel ?? cfg.defaults.reasoningLevel ?? 'high';
+	const reasoningText =
+		request.reasoningText ?? cfg.defaults.reasoningText ?? false;
+	const reasoningLevel =
+		request.reasoningLevel ?? cfg.defaults.reasoningLevel ?? 'high';
 
 	const assistantMessage = await dispatchAssistantMessage({
 		cfg,

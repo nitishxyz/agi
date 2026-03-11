@@ -651,7 +651,10 @@ export const ChatInput = memo(
 									{reasoningEnabled && (
 										<span className="text-[10px] text-indigo-600 dark:text-indigo-300 flex items-center gap-1 w-[52px] justify-center">
 											<Brain className="h-3 w-3 flex-shrink-0" />
-											{(configData?.defaults?.reasoningLevel ?? 'high').replace('xhigh', 'x-high')}
+											{(configData?.defaults?.reasoningLevel ?? 'high').replace(
+												'xhigh',
+												'x-high',
+											)}
 										</span>
 									)}
 									{visionEnabled && (

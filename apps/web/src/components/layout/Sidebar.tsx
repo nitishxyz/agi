@@ -1,10 +1,6 @@
 import { memo, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import {
-	Plus,
-	ChevronRight,
-	X,
-} from 'lucide-react';
+import { Plus, ChevronRight, X } from 'lucide-react';
 import {
 	useGitStore,
 	useSidebarStore,
@@ -21,7 +17,6 @@ interface SidebarProps {
 	children: ReactNode;
 	onNewSession?: () => void;
 }
-
 
 export const Sidebar = memo(function Sidebar({
 	children,
@@ -47,8 +42,8 @@ export const Sidebar = memo(function Sidebar({
 
 	if (isCollapsed) {
 		return (
-		<aside className="w-12 md:w-12 border-r border-border bg-background flex flex-col transition-all duration-300 ease-in-out hidden md:flex">
-			<div className="h-14 border-b border-border flex items-center justify-center">
+			<aside className="w-12 md:w-12 border-r border-border bg-background flex flex-col transition-all duration-300 ease-in-out hidden md:flex">
+				<div className="h-14 border-b border-border flex items-center justify-center">
 					<Button
 						variant="ghost"
 						size="icon"
@@ -62,20 +57,20 @@ export const Sidebar = memo(function Sidebar({
 
 				<button
 					type="button"
-				className="flex-1 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation"
+					className="flex-1 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation"
 					onClick={!isDiffOpen ? toggleCollapse : undefined}
 					title={!isDiffOpen ? 'Expand sidebar' : undefined}
 					aria-label="Expand sidebar"
 				/>
 
-			<div className="h-12 border-t border-border flex items-center justify-center">
-				<Button
-					variant="ghost"
-					size="icon"
-					onClick={toggleCollapse}
-					title="Expand sidebar"
-					disabled={isDiffOpen}
-					className="transition-transform duration-200 hover:scale-110 touch-manipulation text-muted-foreground hover:bg-muted/50"
+				<div className="h-12 border-t border-border flex items-center justify-center">
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={toggleCollapse}
+						title="Expand sidebar"
+						disabled={isDiffOpen}
+						className="transition-transform duration-200 hover:scale-110 touch-manipulation text-muted-foreground hover:bg-muted/50"
 					>
 						<ChevronRight className="w-4 h-4" />
 					</Button>
@@ -94,11 +89,11 @@ export const Sidebar = memo(function Sidebar({
 				/>
 			)}
 			<aside
-			className="border-r border-sidebar-border sidebar-fade-in flex transition-all duration-300 ease-in-out fixed md:relative top-0 left-0 z-50 h-screen md:h-auto w-full md:w-auto"
+				className="border-r border-sidebar-border sidebar-fade-in flex transition-all duration-300 ease-in-out fixed md:relative top-0 left-0 z-50 h-screen md:h-auto w-full md:w-auto"
 				style={{ maxWidth: '100%' }}
 			>
 				<div
-				className="flex-1 flex flex-col min-w-0 relative"
+					className="flex-1 flex flex-col min-w-0 relative"
 					style={{ width: panelWidth }}
 				>
 					<div className="h-14 border-b border-sidebar-border px-4 flex items-center gap-2 md:hidden bg-sidebar">
@@ -117,23 +112,21 @@ export const Sidebar = memo(function Sidebar({
 						</h1>
 					</div>
 
-				<div className="flex-1 relative overflow-hidden">
-					<div className="absolute top-0 left-0 right-0 z-10 pointer-events-none">
-						<div className="h-14 px-4 flex items-center justify-end border-b border-sidebar-border/40 bg-sidebar/40 backdrop-blur-xl supports-[backdrop-filter]:bg-sidebar/20">
-							<button
-								type="button"
-								onClick={onNewSession}
-								className="w-9 h-9 rounded-full bg-sidebar-primary flex items-center justify-center hover:opacity-90 transition-opacity touch-manipulation pointer-events-auto"
-								title="New session"
-							>
-								<Plus className="w-4 h-4 text-sidebar-primary-foreground" />
-							</button>
+					<div className="flex-1 relative overflow-hidden">
+						<div className="absolute top-0 left-0 right-0 z-10 pointer-events-none">
+							<div className="h-14 px-4 flex items-center justify-end border-b border-sidebar-border/40 bg-sidebar/40 backdrop-blur-xl supports-[backdrop-filter]:bg-sidebar/20">
+								<button
+									type="button"
+									onClick={onNewSession}
+									className="w-9 h-9 rounded-full bg-sidebar-primary flex items-center justify-center hover:opacity-90 transition-opacity touch-manipulation pointer-events-auto"
+									title="New session"
+								>
+									<Plus className="w-4 h-4 text-sidebar-primary-foreground" />
+								</button>
+							</div>
 						</div>
+						<div className="absolute inset-0 overflow-hidden">{children}</div>
 					</div>
-					<div className="absolute inset-0 overflow-hidden">
-						{children}
-					</div>
-				</div>
 
 					<div className="h-10 border-t border-sidebar-border px-2 flex items-center justify-end">
 						<Button

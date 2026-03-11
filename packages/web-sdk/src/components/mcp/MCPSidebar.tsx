@@ -427,7 +427,7 @@ export const MCPSidebar = memo(function MCPSidebar() {
 	const connectedCount = servers.filter((s) => s.connected).length;
 
 	return (
-	<div className="w-80 border-l border-sidebar-border sidebar-fade-in flex flex-col h-full">
+		<div className="w-80 border-l border-sidebar-border sidebar-fade-in flex flex-col h-full">
 			<div className="h-14 flex items-center justify-between px-3 border-b border-border">
 				<div className="flex items-center gap-2">
 					<Plug className="w-4 h-4 text-muted-foreground" />

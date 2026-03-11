@@ -397,7 +397,7 @@ export const AssistantMessageGroup = memo(
 						const isLastPart = index === parts.length - 1;
 						const isActionTool =
 							part.ephemeral &&
-						(part.type === 'tool_call' || part.type === 'tool_result') &&
+							(part.type === 'tool_call' || part.type === 'tool_result') &&
 							['bash', 'write', 'edit', 'apply_patch', 'terminal'].includes(
 								part.toolName || '',
 							);

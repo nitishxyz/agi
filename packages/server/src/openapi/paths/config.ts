@@ -211,7 +211,14 @@ export const configPaths = {
 											reasoningText: { type: 'boolean' },
 											reasoningLevel: {
 												type: 'string',
-												enum: ['minimal', 'low', 'medium', 'high', 'max', 'xhigh'],
+												enum: [
+													'minimal',
+													'low',
+													'medium',
+													'high',
+													'max',
+													'xhigh',
+												],
 											},
 										},
 										required: ['agent', 'provider', 'model'],

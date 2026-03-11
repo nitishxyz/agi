@@ -519,11 +519,7 @@ export function adaptTools(
 							let streamedResult: unknown = null;
 							for await (const chunk of res as AsyncIterable<unknown>) {
 								chunks.push(chunk);
-								if (
-									chunk &&
-									typeof chunk === 'object' &&
-									'result' in chunk
-								) {
+								if (chunk && typeof chunk === 'object' && 'result' in chunk) {
 									streamedResult = (chunk as { result: unknown }).result;
 									continue;
 								}
@@ -531,11 +527,11 @@ export function adaptTools(
 									typeof chunk === 'string'
 										? chunk
 										: chunk &&
-											typeof chunk === 'object' &&
-											'delta' in chunk &&
-											typeof (chunk as { delta?: unknown }).delta === 'string'
-												? ((chunk as { delta: string }).delta ?? '')
-												: null;
+												typeof chunk === 'object' &&
+												'delta' in chunk &&
+												typeof (chunk as { delta?: unknown }).delta === 'string'
+											? ((chunk as { delta: string }).delta ?? '')
+											: null;
 								if (!delta) continue;
 								const channel =
 									chunk &&
@@ -557,7 +553,9 @@ export function adaptTools(
 									},
 								});
 							}
-							result = streamedResult ?? (chunks.length > 0 ? chunks[chunks.length - 1] : null);
+							result =
+								streamedResult ??
+								(chunks.length > 0 ? chunks[chunks.length - 1] : null);
 						} else {
 							// Await promise or passthrough value
 							result = await Promise.resolve(res as ToolExecuteReturn);

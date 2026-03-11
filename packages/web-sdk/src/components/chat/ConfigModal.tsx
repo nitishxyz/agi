@@ -36,7 +36,8 @@ function ReasoningTabs({
 	useLayoutEffect(() => {
 		if (!containerRef.current) return;
 		const activeIndex = REASONING_LEVELS.findIndex((l) => l.value === value);
-		const buttons = containerRef.current.querySelectorAll<HTMLButtonElement>('[data-tab]');
+		const buttons =
+			containerRef.current.querySelectorAll<HTMLButtonElement>('[data-tab]');
 		const activeBtn = buttons[activeIndex];
 		if (activeBtn) {
 			setPillStyle({
@@ -66,8 +67,8 @@ function ReasoningTabs({
 					type="button"
 					onClick={() => onChange(level.value)}
 					disabled={disabled}
-				className={`relative z-10 flex-1 px-3 py-1.5 text-xs font-medium rounded-full transition-colors duration-200 ${
-					value === level.value
+					className={`relative z-10 flex-1 px-3 py-1.5 text-xs font-medium rounded-full transition-colors duration-200 ${
+						value === level.value
 							? 'text-background'
 							: 'text-muted-foreground hover:text-foreground'
 					}`}

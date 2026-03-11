@@ -185,7 +185,7 @@ export const GitSidebar = memo(function GitSidebar({
 
 	return (
 		<div
-	className="border-l border-sidebar-border sidebar-fade-in flex h-full relative"
+			className="border-l border-sidebar-border sidebar-fade-in flex h-full relative"
 			style={{ width: panelWidth }}
 		>
 			<ResizeHandle
