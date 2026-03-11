@@ -128,7 +128,7 @@ export const Sidebar = memo(function Sidebar({
 						<div className="absolute inset-0 overflow-hidden">{children}</div>
 					</div>
 
-					<div className="h-10 border-t border-sidebar-border px-2 flex items-center justify-end">
+				<div className="h-12 border-t border-sidebar-border px-2 flex items-center justify-end">
 						<Button
 							variant="ghost"
 							size="icon"
