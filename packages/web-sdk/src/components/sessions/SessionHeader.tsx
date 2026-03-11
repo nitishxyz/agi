@@ -15,6 +15,7 @@ import {
 	RefreshCw,
 } from 'lucide-react';
 import { useParentSession } from '../../hooks/useBranch';
+import { usePreferences } from '../../hooks/usePreferences';
 import { useShareStatus } from '../../hooks/useShareStatus';
 import { ProviderLogo } from '../common/ProviderLogo';
 import { openUrl } from '../../lib/open-url';
@@ -32,6 +33,7 @@ export function SessionHeader({
 	const { data: parentData } = useParentSession(
 		session.sessionType === 'branch' ? session.id : undefined,
 	);
+	const { preferences } = usePreferences();
 	const { data: shareStatus } = useShareStatus(session.id);
 
 	const estimatedCost = useMemo(() => {
@@ -96,9 +98,13 @@ export function SessionHeader({
 		return 'text-foreground';
 	};
 
+	const headerWidthClass = preferences.fullWidthContent
+		? 'w-full px-6 py-6'
+		: 'max-w-3xl mx-auto px-6 py-6';
+
 	return (
 		<div className="border-b border-border bg-background/95 backdrop-blur-sm">
-			<div className="max-w-3xl mx-auto px-6 py-6">
+			<div className={headerWidthClass}>
 				{isBranch && (
 					<div className="flex items-center gap-2 mb-3 text-sm">
 						<GitBranch className="h-4 w-4 text-violet-500" />

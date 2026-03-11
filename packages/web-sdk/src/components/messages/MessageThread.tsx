@@ -7,6 +7,7 @@ import { UserMessageGroup } from './UserMessageGroup';
 import { SessionHeader } from '../sessions/SessionHeader';
 import { LeanHeader } from '../sessions/LeanHeader';
 import { TopupApprovalCard } from './TopupApprovalCard';
+import { usePreferences } from '../../hooks/usePreferences';
 import { useTopupApprovalStore } from '../../stores/topupApprovalStore';
 import { apiClient } from '../../lib/api-client';
 import { toast } from '../../stores/toastStore';
@@ -31,6 +32,7 @@ export const MessageThread = memo(function MessageThread({
 	onSelectSession,
 }: MessageThreadProps) {
 	const queryClient = useQueryClient();
+	const { preferences } = usePreferences();
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const sessionHeaderRef = useRef<HTMLDivElement>(null);
@@ -211,6 +213,14 @@ export const MessageThread = memo(function MessageThread({
 		return messages.filter((message) => message.role !== 'system');
 	}, [messages]);
 
+	const contentWidthClass = preferences.fullWidthContent
+		? compact
+			? 'w-full space-y-4'
+			: 'w-full space-y-6'
+		: compact
+			? 'max-w-3xl mx-auto space-y-4'
+			: 'max-w-3xl mx-auto space-y-6';
+
 	// Create a retry handler for error messages
 	const createRetryHandler = useCallback(
 		(messageId: string) => {
@@ -301,13 +311,7 @@ export const MessageThread = memo(function MessageThread({
 
 				{/* Messages */}
 				<div className={compact ? 'p-4 pb-56' : 'p-6 pb-64'}>
-					<div
-						className={
-							compact
-								? 'max-w-3xl mx-auto space-y-4'
-								: 'max-w-3xl mx-auto space-y-6'
-						}
-					>
+					<div className={contentWidthClass}>
 						{filteredMessages.map((message, idx) => {
 							const prevMessage = filteredMessages[idx - 1];
 							const nextMessage = filteredMessages[idx + 1];

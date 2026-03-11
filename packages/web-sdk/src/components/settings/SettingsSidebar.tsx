@@ -321,6 +321,13 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 							}
 						/>
 						<ToggleRow
+							label="Full Width Content"
+							checked={preferences.fullWidthContent}
+							onChange={(checked) =>
+								updatePreferences({ fullWidthContent: checked })
+							}
+						/>
+						<ToggleRow
 							label="Show Reasoning"
 							checked={config?.defaults?.reasoningText ?? true}
 							onChange={(checked) =>

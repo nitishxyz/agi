@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Settings } from 'lucide-react';
 import { useConfig, useModels } from '../../hooks/useConfig';
+import { usePreferences } from '../../hooks/usePreferences';
 
 interface ConfigSelectorProps {
 	agent: string;
@@ -21,6 +22,7 @@ export function ConfigSelector({
 }: ConfigSelectorProps) {
 	const { data: config, isLoading: configLoading } = useConfig();
 	const { data: modelsData, isLoading: modelsLoading } = useModels(provider);
+	const { preferences } = usePreferences();
 
 	console.log('ConfigSelector rendered', {
 		config,
@@ -68,9 +70,13 @@ export function ConfigSelector({
 
 	if (!config) return null;
 
+	const selectorWidthClass = preferences.fullWidthContent
+		? 'w-full pointer-events-auto'
+		: 'max-w-3xl mx-auto pointer-events-auto';
+
 	return (
 		<div className="absolute bottom-24 left-0 right-0 pb-2 px-4 pointer-events-none z-40">
-			<div className="max-w-3xl mx-auto pointer-events-auto">
+			<div className={selectorWidthClass}>
 				<div className="flex items-center gap-2 px-4 py-2 border border-border bg-background/95 backdrop-blur-sm rounded-lg">
 					<Settings className="h-4 w-4 text-muted-foreground" />
 
