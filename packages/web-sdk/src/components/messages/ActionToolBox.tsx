@@ -352,7 +352,7 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 								>
 									<pre
 										ref={contentMeasureRef}
-										className="px-1 py-1 text-[11px] leading-relaxed text-foreground/60 font-mono whitespace-pre-wrap break-all"
+										className="px-1 pt-2.5 pb-1 text-[11px] leading-relaxed text-foreground/60 font-mono whitespace-pre-wrap break-all"
 									>
 										{displayContent}
 									</pre>
@@ -363,31 +363,35 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 					</div>
 
 					<div
-						className="flex items-center text-xs"
+						className="min-w-0 text-xs"
 						style={{
 							opacity: showSummary ? 1 : 0,
-							height: showSummary ? '20px' : '0px',
+							maxHeight: showSummary ? '1200px' : '0px',
 							overflow: 'hidden',
-							transition: `opacity ${ANIM_MS}ms ${EASING}, height ${ANIM_MS}ms ${EASING}`,
+							transition: `opacity ${ANIM_MS}ms ${EASING}, max-height ${ANIM_MS}ms ${EASING}`,
 						}}
 					>
 						{resultContentJson ? (
-							<ToolResultRenderer
-								toolName={toolName}
-								contentJson={resultContentJson}
-								toolDurationMs={part.toolDurationMs ?? undefined}
-								debug={false}
-								compact={false}
-							/>
+							<div className="min-w-0">
+								<ToolResultRenderer
+									toolName={toolName}
+									contentJson={resultContentJson}
+									toolDurationMs={part.toolDurationMs ?? undefined}
+									debug={false}
+									compact={false}
+								/>
+							</div>
 						) : (
-							<span
-								className="block min-w-0 truncate leading-5 text-foreground"
-								title={target || config.label}
-							>
-								{target
-									? `${config.label}\u00A0· ${target}`
-									: config.label}
-							</span>
+							<div className="flex min-w-0 items-center">
+								<span
+									className="block min-w-0 truncate leading-5 text-foreground"
+									title={target || config.label}
+								>
+									{target
+										? `${config.label}\u00A0· ${target}`
+										: config.label}
+								</span>
+							</div>
 						)}
 					</div>
 				</div>

@@ -73,6 +73,7 @@ export const schemas = {
 				additionalProperties: { type: 'integer' },
 				nullable: true,
 			},
+			isRunning: { type: 'boolean' },
 		},
 		required: ['id', 'agent', 'provider', 'model', 'projectPath', 'createdAt'],
 	},

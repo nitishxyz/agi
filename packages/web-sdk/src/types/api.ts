@@ -17,6 +17,7 @@ export interface Session {
 	parentSessionId?: string | null;
 	branchPointMessageId?: string | null;
 	sessionType?: 'main' | 'branch';
+	isRunning?: boolean;
 }
 
 export interface Message {

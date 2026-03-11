@@ -15,6 +15,7 @@ import { resolveAgentConfig } from '../runtime/agent/registry.ts';
 import { createSession as createSessionRow } from '../runtime/session/manager.ts';
 import { serializeError } from '../runtime/errors/api-error.ts';
 import { logger } from '@ottocode/sdk';
+import { getRunnerState } from '../runtime/session/queue.ts';
 
 export function registerSessionsRoutes(app: Hono) {
 	// List sessions
@@ -53,7 +54,9 @@ export function registerSessionsRoutes(app: Hono) {
 				} catch {}
 			}
 			const { toolCountsJson: _toolCountsJson, ...rest } = r;
-			return counts ? { ...rest, toolCounts: counts } : rest;
+			const isRunning = getRunnerState(r.id)?.running ?? false;
+			const base = counts ? { ...rest, toolCounts: counts } : rest;
+			return { ...base, isRunning };
 		});
 		return c.json({
 			items: normalized,

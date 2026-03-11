@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Brain, Search } from 'lucide-react';
 import {
 	type CompactActivityEntry,
@@ -25,9 +25,12 @@ export function CompactActivityGroup({
 	const mountedCollapsed = collapsed && entries.length > 0;
 	const [showSummary, setShowSummary] = useState(mountedCollapsed);
 	const [latched, setLatched] = useState(mountedCollapsed);
+	const contentMeasureRef = useRef<HTMLDivElement>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const scrollAnimationRef = useRef<number | null>(null);
 	const hoveredRef = useRef(false);
 	const prevCountRef = useRef(entries.length);
+	const [contentHeight, setContentHeight] = useState(0);
 
 	const summary = useMemo(() => summarizeCompactActivities(entries), [entries]);
 	const summaryTitle = titleOverride || summary.title;
@@ -50,12 +53,71 @@ export function CompactActivityGroup({
 		return () => window.clearTimeout(t);
 	}, [collapsed, showSummary, latched, entries.length]);
 
+	useLayoutEffect(() => {
+		if (showSummary) return;
+		const el = contentMeasureRef.current;
+		if (!el) return;
+		const updateHeight = () => {
+			const nextHeight = Math.min(el.scrollHeight, MAX_SCROLL_H);
+			setContentHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+		};
+		updateHeight();
+		const observer = new ResizeObserver(() => updateHeight());
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [showSummary]);
+
+	useEffect(() => {
+		return () => {
+			if (scrollAnimationRef.current !== null) {
+				window.cancelAnimationFrame(scrollAnimationRef.current);
+			}
+		};
+	}, []);
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: auto-scroll on new entries or streaming text
 	useEffect(() => {
-		if (showSummary || hoveredRef.current || !scrollRef.current) return;
+		if (showSummary || hoveredRef.current) return;
 		const el = scrollRef.current;
-		el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-	}, [entries.length, lastEntry?.fullText, showSummary]);
+		if (!el) return;
+		const naturalHeight = contentMeasureRef.current?.scrollHeight ?? 0;
+		const isOverflowing = naturalHeight > contentHeight + 1;
+		const targetTop = isOverflowing
+			? Math.max(0, naturalHeight - contentHeight)
+			: 0;
+
+		if (scrollAnimationRef.current !== null) {
+			window.cancelAnimationFrame(scrollAnimationRef.current);
+			scrollAnimationRef.current = null;
+		}
+
+		if (!isOverflowing) {
+			el.scrollTop = 0;
+			return;
+		}
+
+		const startTop = el.scrollTop;
+		const distance = targetTop - startTop;
+		if (distance <= 1) {
+			el.scrollTop = targetTop;
+			return;
+		}
+
+		const startTime = performance.now();
+		const duration = Math.min(360, Math.max(180, distance * 0.9));
+		const tick = (now: number) => {
+			const progress = Math.min(1, (now - startTime) / duration);
+			const eased = 1 - (1 - progress) ** 3;
+			el.scrollTop = startTop + distance * eased;
+			if (progress < 1 && !hoveredRef.current) {
+				scrollAnimationRef.current = window.requestAnimationFrame(tick);
+				return;
+			}
+			scrollAnimationRef.current = null;
+		};
+
+		scrollAnimationRef.current = window.requestAnimationFrame(tick);
+	}, [entries.length, lastEntry?.fullText, showSummary, contentHeight]);
 
 	useEffect(() => {
 		prevCountRef.current = entries.length;
@@ -109,7 +171,8 @@ export function CompactActivityGroup({
 							ref={scrollRef}
 							className="overflow-y-auto"
 							style={{
-								maxHeight: `${MAX_SCROLL_H}px`,
+								height: `${contentHeight}px`,
+								transition: `height ${ANIM_MS}ms ${EASING}`,
 								maskImage:
 									'linear-gradient(to bottom, transparent 0px, black 20px)',
 								WebkitMaskImage:
@@ -123,56 +186,57 @@ export function CompactActivityGroup({
 								hoveredRef.current = false;
 							}}
 						>
-							{entries.map((entry, i) => {
-								const isLast = i === entries.length - 1;
-								const isNewAppend = i >= prevCountRef.current;
-								const isReasoning = entry.toolName === 'reasoning';
-								const showFullText =
-									isReasoning && entry.fullText && entry.fullText.trim();
+							<div ref={contentMeasureRef} className="pt-2.5">
+								{entries.map((entry, i) => {
+									const isLast = i === entries.length - 1;
+									const isNewAppend = i >= prevCountRef.current;
+									const isReasoning = entry.toolName === 'reasoning';
+									const showFullText =
+										isReasoning && entry.fullText && entry.fullText.trim();
 
-								if (showFullText) {
+									if (showFullText) {
+										return (
+											<div
+												key={entry.id}
+												className="px-1 py-0.5"
+												style={{
+													animation: isNewAppend
+														? `ottoEntryIn ${ANIM_MS}ms ${EASING} both`
+														: undefined,
+												}}
+											>
+												<p
+													className={`text-[11px] leading-relaxed font-mono whitespace-pre-wrap ${
+														isLast
+															? 'text-foreground/80'
+															: 'text-muted-foreground/60'
+													}`}
+												>
+													{entry.fullText}
+												</p>
+											</div>
+										);
+									}
+
 									return (
 										<div
 											key={entry.id}
-											className="px-1 py-0.5"
+											className={`flex items-center px-1 text-xs leading-5 h-7 ${
+												isLast ? 'text-foreground' : 'text-muted-foreground/70'
+											}`}
 											style={{
 												animation: isNewAppend
 													? `ottoEntryIn ${ANIM_MS}ms ${EASING} both`
 													: undefined,
 											}}
 										>
-											<p
-												className={`text-[11px] leading-relaxed font-mono whitespace-pre-wrap ${
-													isLast
-														? 'text-foreground/80'
-														: 'text-muted-foreground/60'
-												}`}
-											>
-												{entry.fullText}
-											</p>
+											<span className="block min-w-0 truncate">
+												{entry.label}
+											</span>
 										</div>
 									);
-								}
-
-								return (
-									<div
-										key={entry.id}
-										className={`flex items-center px-1 text-xs leading-5 h-7 ${
-											isLast ? 'text-foreground' : 'text-muted-foreground/70'
-										}`}
-										style={{
-											animation: isNewAppend
-												? `ottoEntryIn ${ANIM_MS}ms ${EASING} both`
-												: undefined,
-										}}
-									>
-										<span className="block min-w-0 truncate">
-											{entry.label}
-										</span>
-									</div>
-								);
-							})}
-
+								})}
+							</div>
 						</div>
 					</div>
 
