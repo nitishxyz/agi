@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
 	Terminal,
 	FileEdit,
@@ -32,6 +32,13 @@ function getStreamedInput(part: MessagePart): string {
 	const payload = getPayload(part);
 	return typeof payload._streamedInput === 'string'
 		? payload._streamedInput
+		: '';
+}
+
+function getStreamedOutput(part: MessagePart): string {
+	const payload = getPayload(part);
+	return typeof payload._streamedOutput === 'string'
+		? payload._streamedOutput
 		: '';
 }
 
@@ -136,9 +143,12 @@ interface ActionToolBoxProps {
 }
 
 export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
+	const contentMeasureRef = useRef<HTMLPreElement>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const scrollAnimationRef = useRef<number | null>(null);
 	const hoveredRef = useRef(false);
 	const previousContentLengthRef = useRef(0);
+	const [contentHeight, setContentHeight] = useState(0);
 	const toolName = part.toolName || '';
 	const isComplete = part.type === 'tool_result';
 	const config = TOOL_CONFIG[toolName] || {
@@ -152,13 +162,17 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 
 	const args = getArgs(part);
 	const streamedInput = getStreamedInput(part);
+	const streamedOutput = getStreamedOutput(part);
 	const target =
 		getTargetFromArgs(toolName, args) ||
 		getTargetFromStream(toolName, streamedInput);
 	const streamedContent = getContentFromStream(toolName, streamedInput);
-	const displayContent = args
-		? getContentFromArgs(toolName, args)
-		: streamedContent;
+	const displayContent =
+		toolName === 'bash'
+			? streamedOutput || streamedContent || (args ? getContentFromArgs(toolName, args) : '')
+			: args
+				? getContentFromArgs(toolName, args)
+				: streamedContent;
 	const hasDisplayContent = displayContent.trim().length > 0;
 
 	useEffect(() => {
@@ -175,18 +189,77 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 		return () => window.clearTimeout(t);
 	}, [isComplete, showSummary, latched]);
 
+	useLayoutEffect(() => {
+		if (!hasDisplayContent) {
+			setContentHeight(0);
+			return;
+		}
+		const el = contentMeasureRef.current;
+		if (!el) return;
+		const nextHeight = Math.min(el.scrollHeight, MAX_SCROLL_H - 12);
+		setContentHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+	}, [displayContent, hasDisplayContent]);
+
+	useEffect(() => {
+		return () => {
+			if (scrollAnimationRef.current !== null) {
+				window.cancelAnimationFrame(scrollAnimationRef.current);
+			}
+		};
+	}, []);
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: auto-scroll on content change
 	useEffect(() => {
-		if (scrollRef.current && !hoveredRef.current) {
-			const nextLength = displayContent.length;
-			scrollRef.current.scrollTo({
-				top: scrollRef.current.scrollHeight,
-				behavior:
-					nextLength > previousContentLengthRef.current ? 'smooth' : 'auto',
-			});
-			previousContentLengthRef.current = nextLength;
+		const el = scrollRef.current;
+		if (!el || hoveredRef.current) return;
+		const nextLength = displayContent.length;
+		const naturalHeight = contentMeasureRef.current?.scrollHeight ?? 0;
+		const isOverflowing = naturalHeight > contentHeight + 1;
+		const targetTop = isOverflowing
+			? Math.max(0, naturalHeight - contentHeight)
+			: 0;
+
+		if (scrollAnimationRef.current !== null) {
+			window.cancelAnimationFrame(scrollAnimationRef.current);
+			scrollAnimationRef.current = null;
 		}
-	}, [displayContent]);
+
+		if (!isOverflowing) {
+			el.scrollTop = 0;
+			previousContentLengthRef.current = nextLength;
+			return;
+		}
+
+		if (nextLength <= previousContentLengthRef.current) {
+			el.scrollTop = targetTop;
+			previousContentLengthRef.current = nextLength;
+			return;
+		}
+
+		const startTop = el.scrollTop;
+		const distance = targetTop - startTop;
+		if (distance <= 1) {
+			el.scrollTop = targetTop;
+			previousContentLengthRef.current = nextLength;
+			return;
+		}
+
+		const startTime = performance.now();
+		const duration = Math.min(360, Math.max(180, distance * 0.9));
+		const tick = (now: number) => {
+			const progress = Math.min(1, (now - startTime) / duration);
+			const eased = 1 - (1 - progress) ** 3;
+			el.scrollTop = startTop + distance * eased;
+			if (progress < 1 && !hoveredRef.current) {
+				scrollAnimationRef.current = window.requestAnimationFrame(tick);
+				return;
+			}
+			scrollAnimationRef.current = null;
+		};
+
+		scrollAnimationRef.current = window.requestAnimationFrame(tick);
+		previousContentLengthRef.current = nextLength;
+	}, [displayContent, contentHeight]);
 
 	const isLive = !showSummary;
 
@@ -241,7 +314,7 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 									</span>
 								</>
 							)}
-							{!args && !streamedContent && (
+							{!args && !streamedContent && !streamedOutput && (
 								<span className="text-muted-foreground/50 animate-pulse lowercase tracking-normal font-normal">
 									generating…
 								</span>
@@ -252,19 +325,19 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 							style={{
 								overflow: 'hidden',
 								opacity: hasDisplayContent ? 1 : 0,
-								maxHeight: hasDisplayContent
-									? `${MAX_SCROLL_H}px`
-									: '0px',
-								marginTop: hasDisplayContent ? '6px' : '0px',
-								transition: `opacity ${ANIM_MS}ms ${EASING}, max-height ${ANIM_MS}ms ${EASING}, margin-top ${ANIM_MS}ms ${EASING}`,
+								height: hasDisplayContent ? `${contentHeight + 6}px` : '0px',
+								transition: `opacity ${ANIM_MS}ms ${EASING}, height ${ANIM_MS}ms ${EASING}`,
 							}}
 						>
 							{displayContent && (
 								<div
+									className="pt-1.5"
+								>
+									<div
 									ref={scrollRef}
 									className="overflow-y-auto"
 									style={{
-										maxHeight: `${MAX_SCROLL_H - 12}px`,
+											height: `${contentHeight}px`,
 										maskImage:
 											'linear-gradient(to bottom, transparent 0px, black 20px)',
 										WebkitMaskImage:
@@ -277,9 +350,13 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 										hoveredRef.current = false;
 									}}
 								>
-									<pre className="px-1 py-1 text-[11px] leading-relaxed text-foreground/60 font-mono whitespace-pre-wrap break-all">
+									<pre
+										ref={contentMeasureRef}
+										className="px-1 py-1 text-[11px] leading-relaxed text-foreground/60 font-mono whitespace-pre-wrap break-all"
+									>
 										{displayContent}
 									</pre>
+									</div>
 								</div>
 							)}
 						</div>

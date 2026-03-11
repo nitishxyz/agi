@@ -114,6 +114,15 @@ export function useSessionStream(
 				: null;
 		};
 
+		const getToolOutputDelta = (
+			payload: Record<string, unknown> | undefined,
+		): string | null => {
+			if (typeof payload?.delta === 'string') return payload.delta;
+			return typeof payload?.outputTextDelta === 'string'
+				? payload.outputTextDelta
+				: null;
+		};
+
 		const getOptimisticPartIndex = (
 			parts: MessagePart[],
 			stepIndex: number | null,
@@ -468,6 +477,97 @@ export function useSessionStream(
 			);
 		};
 
+		const accumulateToolOutputDelta = (
+			payload: Record<string, unknown> | undefined,
+			delta: string,
+		) => {
+			if (!payload) return;
+			const callId = getToolEventCallId(payload);
+			const name = getToolEventName(payload);
+			if (!name) return;
+			queryClient.setQueryData<Message[]>(
+				['messages', sessionId],
+				(oldMessages) => {
+					if (!oldMessages) return oldMessages;
+					const nextMessages = [...oldMessages];
+					let targetIndex = resolveAssistantTargetIndex(nextMessages);
+					if (typeof payload.messageId === 'string') {
+						const explicitIndex = nextMessages.findIndex(
+							(message) => message.id === payload.messageId,
+						);
+						if (explicitIndex !== -1) targetIndex = explicitIndex;
+					}
+					if (targetIndex === -1) return oldMessages;
+					const targetMessage = nextMessages[targetIndex];
+					const parts = targetMessage.parts ? [...targetMessage.parts] : [];
+					let partIndex = -1;
+					if (callId) {
+						partIndex = parts.findIndex(
+							(part) => part.toolCallId === callId && part.ephemeral,
+						);
+					}
+					if (partIndex === -1 && !callId) {
+						partIndex = parts.findIndex(
+							(part) => part.ephemeral && part.toolName === name,
+						);
+					}
+					const stepIndex =
+						typeof payload.stepIndex === 'number' ? payload.stepIndex : null;
+					if (partIndex === -1) {
+						const contentJsonBase: Record<string, unknown> = {
+							name,
+							_streamedOutput: delta,
+						};
+						if (callId) contentJsonBase.callId = callId;
+						const newPart: MessagePart = {
+							id: callId
+								? `ephemeral-tool-call-${callId}`
+								: `ephemeral-tool-call-${name}-${Date.now()}`,
+							messageId: targetMessage.id,
+							index: getOptimisticPartIndex(parts, stepIndex),
+							stepIndex,
+							type: 'tool_call',
+							content: JSON.stringify(contentJsonBase),
+							contentJson: contentJsonBase,
+							agent: targetMessage.agent,
+							provider: targetMessage.provider,
+							model: targetMessage.model,
+							startedAt: Date.now(),
+							completedAt: null,
+							toolName: name,
+							toolCallId: callId,
+							toolDurationMs: null,
+							ephemeral: true,
+						};
+						parts.push(newPart);
+					} else {
+						const existing = parts[partIndex];
+						const prev =
+							typeof (existing.contentJson as Record<string, unknown>)
+								?._streamedOutput === 'string'
+								? ((existing.contentJson as Record<string, unknown>)
+										._streamedOutput as string)
+								: '';
+						const nextContentJson: Record<string, unknown> = {
+							...(typeof existing.contentJson === 'object' &&
+							!Array.isArray(existing.contentJson)
+								? (existing.contentJson as Record<string, unknown>)
+								: {}),
+							_streamedOutput: prev + delta,
+						};
+						parts[partIndex] = {
+							...existing,
+							content: JSON.stringify(nextContentJson),
+							contentJson: nextContentJson,
+							stepIndex: stepIndex ?? existing.stepIndex ?? null,
+						};
+					}
+					nextMessages[targetIndex] = { ...targetMessage, parts };
+					return nextMessages;
+				},
+			);
+		};
+
 		const resolveEphemeralToolCall = (
 			payload: Record<string, unknown> | undefined,
 		) => {
@@ -680,13 +780,18 @@ export function useSessionStream(
 				case 'tool.delta': {
 					const channel =
 						typeof payload?.channel === 'string' ? payload.channel : null;
-					const delta = getToolInputDelta(payload);
+					const delta =
+						channel === 'output'
+							? getToolOutputDelta(payload)
+							: getToolInputDelta(payload);
 					if (channel === 'input' || (channel == null && delta)) {
 						if (delta) {
 							accumulateToolInputDelta(payload, delta);
 						} else {
 							upsertEphemeralToolCall(payload);
 						}
+					} else if (channel === 'output' && delta) {
+						accumulateToolOutputDelta(payload, delta);
 					}
 					break;
 				}

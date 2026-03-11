@@ -1,9 +1,9 @@
 import { tool, type Tool } from 'ai';
-import { z } from 'zod/v3';
 import { spawn } from 'node:child_process';
+import { z } from 'zod/v3';
 import DESCRIPTION from './bash.txt' with { type: 'text' };
-import { createToolError, type ToolResponse } from '../error.ts';
 import { getAugmentedPath } from '../bin-manager.ts';
+import { createToolError, type ToolResponse } from '../error.ts';
 import { injectCoAuthorIntoGitCommit } from './git-identity.ts';
 
 function normalizePath(p: string) {
@@ -41,10 +41,26 @@ function killProcessTree(pid: number) {
 	}
 }
 
+type BashResult = ToolResponse<{
+	exitCode: number;
+	stdout: string;
+	stderr: string;
+}>;
+
+type BashStreamChunk =
+	| {
+			channel: 'output';
+			delta: string;
+	  }
+	| {
+			result: BashResult;
+	  };
+
 export function buildBashTool(projectRoot: string): {
 	name: string;
 	tool: Tool;
 } {
+	// biome-ignore lint/suspicious/noExplicitAny: AI SDK tool typings do not model async-iterable execute results yet.
 	const bash = tool({
 		description: DESCRIPTION,
 		inputSchema: z
@@ -66,7 +82,7 @@ export function buildBashTool(projectRoot: string): {
 					.describe('Timeout in milliseconds (default: 300000 = 5 minutes)'),
 			})
 			.strict(),
-		async execute(
+		execute(
 			{
 				cmd,
 				cwd,
@@ -79,13 +95,7 @@ export function buildBashTool(projectRoot: string): {
 				timeout?: number;
 			},
 			options?: { abortSignal?: AbortSignal },
-		): Promise<
-			ToolResponse<{
-				exitCode: number;
-				stdout: string;
-				stderr: string;
-			}>
-		> {
+		): AsyncIterable<BashStreamChunk> | BashResult {
 			const abortSignal = options?.abortSignal;
 
 			if (abortSignal?.aborted) {
@@ -95,126 +105,163 @@ export function buildBashTool(projectRoot: string): {
 			}
 
 			const absCwd = resolveSafePath(projectRoot, cwd || '.');
-
 			const finalCmd = injectCoAuthorIntoGitCommit(cmd);
 
-			return new Promise((resolve) => {
-				const proc = spawn(finalCmd, {
-					cwd: absCwd,
-					shell: true,
-					stdio: ['ignore', 'pipe', 'pipe'],
-					env: { ...process.env, PATH: getAugmentedPath() },
-					detached: true,
-				});
+			const proc = spawn(finalCmd, {
+				cwd: absCwd,
+				shell: true,
+				stdio: ['ignore', 'pipe', 'pipe'],
+				env: { ...process.env, PATH: getAugmentedPath() },
+				detached: true,
+			});
 
-				let stdout = '';
-				let stderr = '';
-				let didTimeout = false;
-				let didAbort = false;
-				let settled = false;
-				let timeoutId: ReturnType<typeof setTimeout> | null = null;
+			let stdout = '';
+			let stderr = '';
+			let didTimeout = false;
+			let didAbort = false;
+			let settled = false;
+			let done = false;
+			let timeoutId: ReturnType<typeof setTimeout> | null = null;
+			const queue: BashStreamChunk[] = [];
+			let notify: (() => void) | null = null;
 
-				const settle = (
-					result: ToolResponse<{
-						exitCode: number;
-						stdout: string;
-						stderr: string;
-					}>,
-				) => {
-					if (settled) return;
-					settled = true;
-					if (timeoutId) clearTimeout(timeoutId);
-					if (abortSignal) {
-						abortSignal.removeEventListener('abort', onAbort);
-					}
-					resolve(result);
-				};
+			const wake = () => {
+				if (!notify) return;
+				notify();
+				notify = null;
+			};
 
-				const onAbort = () => {
-					if (settled) return;
-					didAbort = true;
-					if (proc.pid) killProcessTree(proc.pid);
-					else proc.kill('SIGTERM');
-				};
+			const pushDelta = (text: string) => {
+				if (!text) return;
+				queue.push({ channel: 'output', delta: text });
+				wake();
+			};
 
+			const settle = (result: BashResult) => {
+				if (settled) return;
+				settled = true;
+				if (timeoutId) clearTimeout(timeoutId);
 				if (abortSignal) {
-					abortSignal.addEventListener('abort', onAbort, { once: true });
+					abortSignal.removeEventListener('abort', onAbort);
 				}
+				queue.push({ result });
+				done = true;
+				wake();
+			};
 
-				if (timeout > 0) {
-					timeoutId = setTimeout(() => {
-						didTimeout = true;
-						if (proc.pid) killProcessTree(proc.pid);
-						else proc.kill();
-					}, timeout);
-				}
+			const onAbort = () => {
+				if (settled) return;
+				didAbort = true;
+				if (proc.pid) killProcessTree(proc.pid);
+				else proc.kill('SIGTERM');
+			};
 
-				proc.stdout?.on('data', (chunk) => {
-					stdout += chunk.toString();
-				});
+			if (abortSignal) {
+				abortSignal.addEventListener('abort', onAbort, { once: true });
+			}
 
-				proc.stderr?.on('data', (chunk) => {
-					stderr += chunk.toString();
-				});
+			if (timeout > 0) {
+				timeoutId = setTimeout(() => {
+					didTimeout = true;
+					if (proc.pid) killProcessTree(proc.pid);
+					else proc.kill();
+				}, timeout);
+			}
 
-				proc.on('close', (exitCode) => {
-					if (didAbort) {
-						settle(
-							createToolError(`Command aborted by user: ${cmd}`, 'abort', {
-								cmd,
-								stdout,
-								stderr,
-							}),
-						);
-					} else if (didTimeout) {
-						settle(
-							createToolError(
-								`Command timed out after ${timeout}ms: ${cmd}`,
-								'timeout',
-								{
-									parameter: 'timeout',
-									value: timeout,
-									suggestion: 'Increase timeout or optimize the command',
-								},
-							),
-						);
-					} else if (exitCode !== 0 && !allowNonZeroExit) {
-						const errorDetail = stderr.trim() || stdout.trim() || '';
-						const errorMsg = `Command failed with exit code ${exitCode}${errorDetail ? `\n\n${errorDetail}` : ''}`;
-						settle(
-							createToolError(errorMsg, 'execution', {
-								exitCode,
-								stdout,
-								stderr,
-								cmd,
-								suggestion:
-									'Check command syntax or use allowNonZeroExit: true',
-							}),
-						);
-					} else {
-						settle({
-							ok: true,
-							exitCode: exitCode ?? 0,
+			proc.stdout?.on('data', (chunk) => {
+				const text = chunk.toString();
+				stdout += text;
+				pushDelta(text);
+			});
+
+			proc.stderr?.on('data', (chunk) => {
+				const text = chunk.toString();
+				stderr += text;
+				pushDelta(text);
+			});
+
+			proc.on('close', (exitCode) => {
+				if (didAbort) {
+					settle(
+						createToolError(`Command aborted by user: ${cmd}`, 'abort', {
+							cmd,
 							stdout,
 							stderr,
-						});
-					}
-				});
+						}),
+					);
+					return;
+				}
 
-				proc.on('error', (err) => {
+				if (didTimeout) {
 					settle(
 						createToolError(
-							`Command execution failed: ${err.message}`,
-							'execution',
+							`Command timed out after ${timeout}ms: ${cmd}`,
+							'timeout',
 							{
-								cmd,
-								originalError: err.message,
+								parameter: 'timeout',
+								value: timeout,
+								stdout,
+								stderr,
+								suggestion: 'Increase timeout or optimize the command',
 							},
 						),
 					);
+					return;
+				}
+
+				if (exitCode !== 0 && !allowNonZeroExit) {
+					const errorDetail = stderr.trim() || stdout.trim() || '';
+					const errorMsg = `Command failed with exit code ${exitCode}${errorDetail ? `\n\n${errorDetail}` : ''}`;
+					settle(
+						createToolError(errorMsg, 'execution', {
+							exitCode,
+							stdout,
+							stderr,
+							cmd,
+							suggestion:
+								'Check command syntax or use allowNonZeroExit: true',
+						}),
+					);
+					return;
+				}
+
+				settle({
+					ok: true,
+					exitCode: exitCode ?? 0,
+					stdout,
+					stderr,
 				});
 			});
+
+			proc.on('error', (err) => {
+				settle(
+					createToolError(
+						`Command execution failed: ${err.message}`,
+						'execution',
+						{
+							cmd,
+							originalError: err.message,
+						},
+					),
+				);
+			});
+
+			const stream = async function* (): AsyncGenerator<BashStreamChunk> {
+				while (!done || queue.length > 0) {
+					if (queue.length === 0) {
+						await new Promise<void>((resolve) => {
+							notify = resolve;
+						});
+					}
+					while (queue.length > 0) {
+						const chunk = queue.shift();
+						if (chunk) yield chunk;
+					}
+				}
+			};
+
+			return stream();
 		},
-	});
+	} as any);
 	return { name: 'bash', tool: bash };
 }

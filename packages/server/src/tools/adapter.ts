@@ -516,23 +516,48 @@ export function adaptTools(
 						// If tool returns an async iterable, stream deltas while accumulating
 						if (res && typeof res === 'object' && Symbol.asyncIterator in res) {
 							const chunks: unknown[] = [];
+							let streamedResult: unknown = null;
 							for await (const chunk of res as AsyncIterable<unknown>) {
 								chunks.push(chunk);
+								if (
+									chunk &&
+									typeof chunk === 'object' &&
+									'result' in chunk
+								) {
+									streamedResult = (chunk as { result: unknown }).result;
+									continue;
+								}
+								const delta =
+									typeof chunk === 'string'
+										? chunk
+										: chunk &&
+											typeof chunk === 'object' &&
+											'delta' in chunk &&
+											typeof (chunk as { delta?: unknown }).delta === 'string'
+												? ((chunk as { delta: string }).delta ?? '')
+												: null;
+								if (!delta) continue;
+								const channel =
+									chunk &&
+									typeof chunk === 'object' &&
+									'channel' in chunk &&
+									typeof (chunk as { channel?: unknown }).channel === 'string'
+										? ((chunk as { channel: string }).channel ?? 'output')
+										: 'output';
 								publish({
 									type: 'tool.delta',
 									sessionId: ctx.sessionId,
 									payload: {
 										name,
-										channel: 'output',
-										delta: chunk,
+										channel,
+										delta,
 										stepIndex: stepIndexForEvent,
 										callId: callIdFromQueue,
 										messageId: ctx.messageId,
 									},
 								});
 							}
-							// Prefer the last chunk as the result if present, otherwise the entire array
-							result = chunks.length > 0 ? chunks[chunks.length - 1] : null;
+							result = streamedResult ?? (chunks.length > 0 ? chunks[chunks.length - 1] : null);
 						} else {
 							// Await promise or passthrough value
 							result = await Promise.resolve(res as ToolExecuteReturn);
