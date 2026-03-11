@@ -7,6 +7,7 @@ import {
 	usePanelWidthStore,
 } from '@ottocode/web-sdk/stores';
 import { Button, ResizeHandle } from '@ottocode/web-sdk/components';
+import { OttoWordmark } from './OttoWordmark';
 
 const PANEL_KEY = 'left-sidebar';
 const DEFAULT_WIDTH = 272;
@@ -107,14 +108,17 @@ export const Sidebar = memo(function Sidebar({
 						>
 							<X className="w-5 h-5" />
 						</Button>
-						<h1 className="text-lg font-semibold text-sidebar-foreground flex-1">
-							otto
-						</h1>
+						<div className="flex-1 flex items-center">
+							<OttoWordmark height={14} className="text-sidebar-foreground" />
+						</div>
 					</div>
 
 					<div className="flex-1 relative overflow-hidden">
 						<div className="absolute top-0 left-0 right-0 z-10 pointer-events-none">
-							<div className="h-14 px-4 flex items-center justify-end border-b border-sidebar-border/40 bg-sidebar/40 backdrop-blur-xl supports-[backdrop-filter]:bg-sidebar/20">
+							<div className="h-14 px-4 flex items-center justify-between border-b border-sidebar-border/40 bg-sidebar/40 backdrop-blur-xl supports-[backdrop-filter]:bg-sidebar/20">
+								<div className="flex items-center text-sidebar-foreground/90">
+									<OttoWordmark height={14} className="select-none" />
+								</div>
 								<button
 									type="button"
 									onClick={onNewSession}
@@ -128,7 +132,7 @@ export const Sidebar = memo(function Sidebar({
 						<div className="absolute inset-0 overflow-hidden">{children}</div>
 					</div>
 
-				<div className="h-12 border-t border-sidebar-border px-2 flex items-center justify-end">
+					<div className="h-12 border-t border-sidebar-border px-2 flex items-center justify-end">
 						<Button
 							variant="ghost"
 							size="icon"
