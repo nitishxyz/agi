@@ -3,6 +3,7 @@ import { useSessions } from '../../hooks/useSessions';
 import { SessionItem } from './SessionItem';
 import { useFocusStore } from '../../stores/focusStore';
 import { Loader2 } from 'lucide-react';
+import { getSessionGroupLabel } from './session-time';
 
 interface SessionListContainerProps {
 	activeSessionId?: string;
@@ -34,12 +35,14 @@ export const SessionListContainer = memo(function SessionListContainer({
 	);
 
 	const sessionSnapshot = useMemo(() => {
-		return sessions.map((s) => ({
+		return sessions.map((s, index) => ({
 			id: s.id,
+			index,
 			title: s.title,
 			agent: s.agent,
 			createdAt: s.createdAt,
 			lastActiveAt: s.lastActiveAt,
+			activityAt: s.lastActiveAt ?? s.createdAt,
 		}));
 	}, [sessions]);
 
@@ -48,7 +51,21 @@ export const SessionListContainer = memo(function SessionListContainer({
 		[sessions],
 	);
 
-	const recents = sessionSnapshot;
+	const recentGroups = useMemo(() => {
+		const groups = new Map<string, typeof sessionSnapshot>();
+
+		for (const session of sessionSnapshot) {
+			const label = getSessionGroupLabel(session.activityAt);
+			const existingSessions = groups.get(label) ?? [];
+			existingSessions.push(session);
+			groups.set(label, existingSessions);
+		}
+
+		return Array.from(groups.entries()).map(([label, groupedSessions]) => ({
+			label,
+			sessions: groupedSessions,
+		}));
+	}, [sessionSnapshot]);
 
 	useEffect(() => {
 		if (currentFocus === 'sessions') {
@@ -121,13 +138,11 @@ export const SessionListContainer = memo(function SessionListContainer({
 		);
 	}
 
-	const renderSession = (
-		session: (typeof sessionSnapshot)[0],
-		index: number,
-	) => {
+	const renderSession = (session: (typeof sessionSnapshot)[0]) => {
 		const fullSession = sessionMap.get(session.id);
 		if (!fullSession) return null;
-		const isFocused = currentFocus === 'sessions' && sessionIndex === index;
+		const isFocused =
+			currentFocus === 'sessions' && sessionIndex === session.index;
 
 		return (
 			<div
@@ -153,13 +168,19 @@ export const SessionListContainer = memo(function SessionListContainer({
 			className="flex flex-col h-full overflow-y-auto scrollbar-hide"
 		>
 			<div className="h-14 shrink-0" aria-hidden="true" />
-			{recents.length > 0 && (
-				<div className="px-3 pt-4 pb-1">
-					<h3 className="text-xs font-medium text-sidebar-muted-foreground uppercase tracking-wider px-3 mb-2">
-						Recents
-					</h3>
-					<div className="flex flex-col gap-0.5">
-						{recents.map((session, index) => renderSession(session, index))}
+			{recentGroups.length > 0 && (
+				<div className="px-3 pt-3 pb-1">
+					<div className="space-y-3">
+						{recentGroups.map((group) => (
+							<div key={group.label}>
+								<h4 className="sticky top-14 z-10 px-3 py-2 mb-1 text-[11px] font-medium uppercase tracking-[0.18em] text-sidebar-muted-foreground/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+									{group.label}
+								</h4>
+								<div className="flex flex-col gap-1">
+									{group.sessions.map((session) => renderSession(session))}
+								</div>
+							</div>
+						))}
 					</div>
 				</div>
 			)}
