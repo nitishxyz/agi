@@ -85,6 +85,35 @@ export function useSessionStream(
 			return '';
 		};
 
+		const getToolEventCallId = (
+			payload: Record<string, unknown> | undefined,
+		): string | null => {
+			if (typeof payload?.callId === 'string') return payload.callId;
+			return typeof payload?.toolCallId === 'string'
+				? payload.toolCallId
+				: null;
+		};
+
+		const getToolEventName = (
+			payload: Record<string, unknown> | undefined,
+		): string | null => {
+			if (typeof payload?.name === 'string') return payload.name;
+			return typeof payload?.toolName === 'string' ? payload.toolName : null;
+		};
+
+		const getToolEventArgs = (
+			payload: Record<string, unknown> | undefined,
+		): unknown => payload?.args ?? payload?.input;
+
+		const getToolInputDelta = (
+			payload: Record<string, unknown> | undefined,
+		): string | null => {
+			if (typeof payload?.delta === 'string') return payload.delta;
+			return typeof payload?.inputTextDelta === 'string'
+				? payload.inputTextDelta
+				: null;
+		};
+
 		const getOptimisticPartIndex = (
 			parts: MessagePart[],
 			stepIndex: number | null,
@@ -264,8 +293,8 @@ export function useSessionStream(
 			payload: Record<string, unknown> | undefined,
 		) => {
 			if (!payload) return;
-			const callId = typeof payload.callId === 'string' ? payload.callId : null;
-			const name = typeof payload.name === 'string' ? payload.name : null;
+			const callId = getToolEventCallId(payload);
+			const name = getToolEventName(payload);
 			if (!name) return;
 			queryClient.setQueryData<Message[]>(
 				['messages', sessionId],
@@ -294,7 +323,7 @@ export function useSessionStream(
 							(part) => part.ephemeral && part.toolName === name,
 						);
 					}
-					const args = (payload as { args?: unknown }).args;
+					const args = getToolEventArgs(payload);
 					const stepIndex =
 						typeof payload.stepIndex === 'number' ? payload.stepIndex : null;
 					const contentJsonBase: Record<string, unknown> = { name };
@@ -348,19 +377,108 @@ export function useSessionStream(
 			);
 		};
 
+		const accumulateToolInputDelta = (
+			payload: Record<string, unknown> | undefined,
+			delta: string,
+		) => {
+			if (!payload) return;
+			const callId = getToolEventCallId(payload);
+			const name = getToolEventName(payload);
+			if (!name) return;
+			queryClient.setQueryData<Message[]>(
+				['messages', sessionId],
+				(oldMessages) => {
+					if (!oldMessages) return oldMessages;
+					const nextMessages = [...oldMessages];
+					let targetIndex = resolveAssistantTargetIndex(nextMessages);
+					if (typeof payload.messageId === 'string') {
+						const explicitIndex = nextMessages.findIndex(
+							(message) => message.id === payload.messageId,
+						);
+						if (explicitIndex !== -1) targetIndex = explicitIndex;
+					}
+					if (targetIndex === -1) return oldMessages;
+					const targetMessage = nextMessages[targetIndex];
+					const parts = targetMessage.parts ? [...targetMessage.parts] : [];
+					let partIndex = -1;
+					if (callId) {
+						partIndex = parts.findIndex(
+							(part) => part.toolCallId === callId && part.ephemeral,
+						);
+					}
+					if (partIndex === -1 && !callId) {
+						partIndex = parts.findIndex(
+							(part) => part.ephemeral && part.toolName === name,
+						);
+					}
+					const stepIndex =
+						typeof payload.stepIndex === 'number' ? payload.stepIndex : null;
+					if (partIndex === -1) {
+						const contentJsonBase: Record<string, unknown> = {
+							name,
+							_streamedInput: delta,
+						};
+						if (callId) contentJsonBase.callId = callId;
+						const newPart: MessagePart = {
+							id: callId
+								? `ephemeral-tool-call-${callId}`
+								: `ephemeral-tool-call-${name}-${Date.now()}`,
+							messageId: targetMessage.id,
+							index: getOptimisticPartIndex(parts, stepIndex),
+							stepIndex,
+							type: 'tool_call',
+							content: JSON.stringify(contentJsonBase),
+							contentJson: contentJsonBase,
+							agent: targetMessage.agent,
+							provider: targetMessage.provider,
+							model: targetMessage.model,
+							startedAt: Date.now(),
+							completedAt: null,
+							toolName: name,
+							toolCallId: callId,
+							toolDurationMs: null,
+							ephemeral: true,
+						};
+						parts.push(newPart);
+					} else {
+						const existing = parts[partIndex];
+						const prev =
+							typeof (existing.contentJson as Record<string, unknown>)
+								?._streamedInput === 'string'
+								? ((existing.contentJson as Record<string, unknown>)
+										._streamedInput as string)
+								: '';
+						const nextContentJson: Record<string, unknown> = {
+							...(typeof existing.contentJson === 'object' &&
+							!Array.isArray(existing.contentJson)
+								? (existing.contentJson as Record<string, unknown>)
+								: {}),
+							_streamedInput: prev + delta,
+						};
+						parts[partIndex] = {
+							...existing,
+							content: JSON.stringify(nextContentJson),
+							contentJson: nextContentJson,
+							stepIndex: stepIndex ?? existing.stepIndex ?? null,
+						};
+					}
+					nextMessages[targetIndex] = { ...targetMessage, parts };
+					return nextMessages;
+				},
+			);
+		};
+
 		const resolveEphemeralToolCall = (
 			payload: Record<string, unknown> | undefined,
 		) => {
-			const callId =
-				typeof payload?.callId === 'string' ? payload.callId : null;
+			const callId = getToolEventCallId(payload);
 			if (!callId) return;
-			const payloadName =
-				typeof payload?.name === 'string' ? payload.name : null;
+			const payloadName = getToolEventName(payload);
 			const payloadStepIndex =
 				typeof payload?.stepIndex === 'number' ? payload.stepIndex : null;
 			const payloadResult = payload?.result;
 			const payloadArtifact = payload?.artifact;
-			const payloadArgs = payload?.args;
+			const payloadArgs = getToolEventArgs(payload);
 			queryClient.setQueryData<Message[]>(
 				['messages', sessionId],
 				(oldMessages) => {
@@ -416,8 +534,7 @@ export function useSessionStream(
 		const removeEphemeralToolCall = (
 			payload: Record<string, unknown> | undefined,
 		) => {
-			const callId =
-				typeof payload?.callId === 'string' ? payload.callId : null;
+			const callId = getToolEventCallId(payload);
 			if (!callId) return;
 			queryClient.setQueryData<Message[]>(
 				['messages', sessionId],
@@ -563,8 +680,13 @@ export function useSessionStream(
 				case 'tool.delta': {
 					const channel =
 						typeof payload?.channel === 'string' ? payload.channel : null;
-					if (channel === 'input') {
-						upsertEphemeralToolCall(payload);
+					const delta = getToolInputDelta(payload);
+					if (channel === 'input' || (channel == null && delta)) {
+						if (delta) {
+							accumulateToolInputDelta(payload, delta);
+						} else {
+							upsertEphemeralToolCall(payload);
+						}
 					}
 					break;
 				}

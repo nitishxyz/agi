@@ -18,6 +18,7 @@ import {
 	requestApproval,
 } from '../runtime/tools/approval.ts';
 import { guardToolCall } from '../runtime/tools/guards.ts';
+import { debugLog } from '../runtime/debug/index.ts';
 
 export type { ToolAdapterContext } from '../runtime/tools/context.ts';
 
@@ -53,6 +54,37 @@ function getPendingQueue(
 		map.set(name, queue);
 	}
 	return queue;
+}
+
+function extractToolCallId(options: unknown): string | undefined {
+	return (options as { toolCallId?: string } | undefined)?.toolCallId;
+}
+
+const DEFAULT_TRACED_TOOL_INPUTS = new Set(['write', 'apply_patch']);
+
+function shouldTraceToolInput(name: string): boolean {
+	const raw = process.env.OTTO_DEBUG_TOOL_INPUT?.trim();
+	if (!raw) return false;
+	const normalized = raw.toLowerCase();
+	if (['1', 'true', 'yes', 'on', 'all'].includes(normalized)) {
+		return DEFAULT_TRACED_TOOL_INPUTS.has(name);
+	}
+	const tokens = raw
+		.split(/[\s,]+/)
+		.map((token) => token.trim().toLowerCase())
+		.filter(Boolean);
+	return tokens.includes('all') || tokens.includes(name.toLowerCase());
+}
+
+function summarizeTraceValue(value: unknown, max = 160): string {
+	try {
+		const json = JSON.stringify(value);
+		if (typeof json === 'string') {
+			return json.length > max ? `${json.slice(0, max)}…` : json;
+		}
+	} catch {}
+	const fallback = String(value);
+	return fallback.length > max ? `${fallback.slice(0, max)}…` : fallback;
 }
 
 function unwrapDoubleWrappedArgs(
@@ -199,12 +231,18 @@ export function adaptTools(
 			...base,
 			...(providerOptions ? { providerOptions } : {}),
 			async onInputStart(options: unknown) {
+				const sdkCallId = extractToolCallId(options);
 				const queue = getPendingQueue(pendingCalls, name);
 				queue.push({
-					callId: crypto.randomUUID(),
+					callId: sdkCallId || crypto.randomUUID(),
 					startTs: Date.now(),
 					stepIndex: ctx.stepIndex,
 				});
+				if (shouldTraceToolInput(name)) {
+					debugLog(
+						`[TOOL_INPUT_TRACE][adapter] onInputStart tool=${name} callId=${sdkCallId ?? queue[queue.length - 1]?.callId ?? 'unknown'} step=${ctx.stepIndex}`,
+					);
+				}
 				if (typeof base.onInputStart === 'function')
 					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
 					await base.onInputStart(options as any);
@@ -212,8 +250,14 @@ export function adaptTools(
 			async onInputDelta(options: unknown) {
 				const delta = (options as { inputTextDelta?: string } | undefined)
 					?.inputTextDelta;
+				const sdkCallId = extractToolCallId(options);
 				const queue = pendingCalls.get(name);
 				const meta = queue?.length ? queue[queue.length - 1] : undefined;
+				if (shouldTraceToolInput(name)) {
+					debugLog(
+						`[TOOL_INPUT_TRACE][adapter] onInputDelta tool=${name} callId=${sdkCallId ?? meta?.callId ?? 'unknown'} step=${meta?.stepIndex ?? ctx.stepIndex} delta=${summarizeTraceValue(delta ?? '')}`,
+					);
+				}
 				// Stream tool argument deltas as events if needed
 				publish({
 					type: 'tool.delta',
@@ -233,21 +277,30 @@ export function adaptTools(
 			},
 			async onInputAvailable(options: unknown) {
 				const args = (options as { input?: unknown } | undefined)?.input;
+				const sdkCallId = extractToolCallId(options);
 				const queue = getPendingQueue(pendingCalls, name);
 				let meta = queue.length ? queue[queue.length - 1] : undefined;
 				if (!meta) {
 					meta = {
-						callId: crypto.randomUUID(),
+						callId: sdkCallId || crypto.randomUUID(),
 						startTs: Date.now(),
 						stepIndex: ctx.stepIndex,
 					};
 					queue.push(meta);
+				}
+				if (sdkCallId && meta.callId !== sdkCallId) {
+					meta.callId = sdkCallId;
 				}
 				meta.stepIndex = ctx.stepIndex;
 				meta.args = args;
 				const callId = meta.callId;
 				const callPartId = crypto.randomUUID();
 				const startTs = meta.startTs;
+				if (shouldTraceToolInput(name)) {
+					debugLog(
+						`[TOOL_INPUT_TRACE][adapter] onInputAvailable tool=${name} callId=${callId} step=${ctx.stepIndex} input=${summarizeTraceValue(args)}`,
+					);
+				}
 
 				if (
 					!firstToolCallReported &&
@@ -360,10 +413,11 @@ export function adaptTools(
 			},
 			async execute(input: ToolExecuteInput, options: ToolExecuteOptions) {
 				input = unwrapDoubleWrappedArgs(input, name);
+				const sdkCallId = extractToolCallId(options);
 				const queue = pendingCalls.get(name);
 				const meta = queue?.shift();
 				if (queue && queue.length === 0) pendingCalls.delete(name);
-				const callIdFromQueue = meta?.callId;
+				const callIdFromQueue = sdkCallId || meta?.callId;
 				const startTsFromQueue = meta?.startTs;
 				const stepIndexForEvent = meta?.stepIndex ?? ctx.stepIndex;
 

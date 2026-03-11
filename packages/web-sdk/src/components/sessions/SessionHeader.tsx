@@ -195,7 +195,7 @@ export function SessionHeader({
 
 					<div className="flex items-center gap-2 ml-auto">
 						<ProviderLogo provider={session.provider} size={18} />
-						<span className="font-medium text-foreground truncate max-w-48">
+						<span className="font-medium text-foreground">
 							{session.model}
 						</span>
 					</div>

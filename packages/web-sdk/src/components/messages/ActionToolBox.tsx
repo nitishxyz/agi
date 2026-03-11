@@ -1,0 +1,373 @@
+import { useEffect, useRef, useState } from 'react';
+import {
+	Terminal,
+	FileEdit,
+	Diff,
+	Loader2,
+	type LucideIcon,
+} from 'lucide-react';
+import type { MessagePart } from '../../types/api';
+import { ToolResultRenderer, type ContentJson } from './renderers';
+
+const ANIM_MS = 320;
+const EASING = 'cubic-bezier(0.25, 1, 0.5, 1)';
+const MAX_SCROLL_H = 140;
+
+function getPayload(part: MessagePart): Record<string, unknown> {
+	if (part.contentJson && typeof part.contentJson === 'object') {
+		return part.contentJson as Record<string, unknown>;
+	}
+	try {
+		if (part.content) {
+			const parsed = JSON.parse(part.content);
+			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+				return parsed as Record<string, unknown>;
+			}
+		}
+	} catch {}
+	return {};
+}
+
+function getStreamedInput(part: MessagePart): string {
+	const payload = getPayload(part);
+	return typeof payload._streamedInput === 'string'
+		? payload._streamedInput
+		: '';
+}
+
+function getArgs(part: MessagePart): Record<string, unknown> | undefined {
+	const payload = getPayload(part);
+	const args = payload?.args;
+	if (args && typeof args === 'object' && !Array.isArray(args)) {
+		return args as Record<string, unknown>;
+	}
+	return undefined;
+}
+
+function getPatchTarget(patch: string): string | null {
+	const match = patch.match(
+		/^\*\*\*\s+(?:Update|Add|Delete|Replace in):\s+(.+)$/m,
+	);
+	return match?.[1]?.trim() || null;
+}
+
+const TOOL_CONFIG: Record<
+	string,
+	{ Icon: LucideIcon; color: string; label: string }
+> = {
+	bash: { Icon: Terminal, color: 'text-muted-foreground', label: 'Running' },
+	write: {
+		Icon: FileEdit,
+		color: 'text-emerald-600 dark:text-emerald-300',
+		label: 'Writing',
+	},
+	apply_patch: {
+		Icon: Diff,
+		color: 'text-purple-600 dark:text-purple-300',
+		label: 'Patching',
+	},
+	edit: {
+		Icon: FileEdit,
+		color: 'text-purple-600 dark:text-purple-300',
+		label: 'Editing',
+	},
+	terminal: {
+		Icon: Terminal,
+		color: 'text-amber-600 dark:text-amber-300',
+		label: 'Terminal',
+	},
+};
+
+function getTargetFromArgs(
+	toolName: string,
+	args: Record<string, unknown> | undefined,
+): string {
+	if (!args) return '';
+	if (toolName === 'bash') {
+		const cmd = String(args.cmd || '');
+		return cmd.length > 80 ? `${cmd.slice(0, 77)}…` : cmd;
+	}
+	if (toolName === 'write') return String(args.path || '');
+	if (toolName === 'edit') return String(args.filePath || args.file || '');
+	if (toolName === 'apply_patch') {
+		const patch = String(args.patch || '');
+		return getPatchTarget(patch) || '';
+	}
+	return '';
+}
+
+function getTargetFromStream(toolName: string, raw: string): string {
+	if (toolName === 'bash') {
+		const cmd = extractJsonStringField(raw, 'cmd');
+		if (cmd) {
+			return cmd.length > 80 ? `${cmd.slice(0, 77)}…` : cmd;
+		}
+	}
+	if (toolName === 'write' || toolName === 'edit') {
+		return (
+			extractJsonStringField(raw, 'path') ||
+			extractJsonStringField(raw, 'filePath')
+		);
+	}
+	if (toolName === 'apply_patch') {
+		const m = raw.match(
+			/\*\*\*\s+(?:Update|Add|Delete|Replace in):\s+(.+?)(?:\\n|")/,
+		);
+		return m ? m[1].trim() : '';
+	}
+	return '';
+}
+
+function getResultContentJson(part: MessagePart): ContentJson {
+	try {
+		if (part.contentJson && typeof part.contentJson === 'object') {
+			return part.contentJson as ContentJson;
+		}
+		if (typeof part.content === 'string') {
+			return JSON.parse(part.content);
+		}
+	} catch {}
+	return {};
+}
+
+interface ActionToolBoxProps {
+	part: MessagePart;
+	showLine: boolean;
+}
+
+export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
+	const scrollRef = useRef<HTMLDivElement>(null);
+	const hoveredRef = useRef(false);
+	const previousContentLengthRef = useRef(0);
+	const toolName = part.toolName || '';
+	const isComplete = part.type === 'tool_result';
+	const config = TOOL_CONFIG[toolName] || {
+		Icon: Terminal,
+		color: 'text-muted-foreground',
+		label: toolName.replace(/_/g, ' '),
+	};
+
+	const [showSummary, setShowSummary] = useState(() => isComplete);
+	const [latched, setLatched] = useState(() => isComplete);
+
+	const args = getArgs(part);
+	const streamedInput = getStreamedInput(part);
+	const target =
+		getTargetFromArgs(toolName, args) ||
+		getTargetFromStream(toolName, streamedInput);
+	const streamedContent = getContentFromStream(toolName, streamedInput);
+	const displayContent = args
+		? getContentFromArgs(toolName, args)
+		: streamedContent;
+	const hasDisplayContent = displayContent.trim().length > 0;
+
+	useEffect(() => {
+		if (!isComplete && !latched) {
+			setShowSummary(false);
+			return;
+		}
+		if (!latched && isComplete) {
+			setLatched(true);
+		}
+		if (showSummary) return;
+		if (!isComplete) return;
+		const t = window.setTimeout(() => setShowSummary(true), 500);
+		return () => window.clearTimeout(t);
+	}, [isComplete, showSummary, latched]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: auto-scroll on content change
+	useEffect(() => {
+		if (scrollRef.current && !hoveredRef.current) {
+			const nextLength = displayContent.length;
+			scrollRef.current.scrollTo({
+				top: scrollRef.current.scrollHeight,
+				behavior:
+					nextLength > previousContentLengthRef.current ? 'smooth' : 'auto',
+			});
+			previousContentLengthRef.current = nextLength;
+		}
+	}, [displayContent]);
+
+	const isLive = !showSummary;
+
+	const resultContentJson = isComplete ? getResultContentJson(part) : null;
+
+	return (
+		<div className="flex gap-3 pb-2 relative max-w-full overflow-hidden">
+			<div className="flex-shrink-0 w-6 flex items-start justify-center relative pt-0.5">
+				<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full relative bg-background">
+					<config.Icon className={`h-4 w-4 ${config.color}`} />
+				</div>
+				{showLine && (
+					<div
+						className="absolute left-1/2 -translate-x-1/2 w-[2px] bg-border z-0"
+						style={{ top: '1.25rem', bottom: '-0.5rem' }}
+					/>
+				)}
+			</div>
+
+			<div className="flex-1 min-w-0 pt-0.5">
+				<div
+					className="relative rounded-lg overflow-hidden"
+					style={{
+						border: isLive
+							? '1px solid hsl(var(--border) / 0.6)'
+							: '1px solid transparent',
+						background: isLive
+							? 'hsl(var(--muted) / 0.2)'
+							: 'transparent',
+						padding: isLive ? '8px 12px' : '0px 0px',
+						transition: `border ${ANIM_MS}ms ${EASING}, background ${ANIM_MS}ms ${EASING}, padding ${ANIM_MS}ms ${EASING}`,
+					}}
+				>
+					<div
+						style={{
+							overflow: 'hidden',
+							opacity: isLive ? 1 : 0,
+							maxHeight: isLive ? `${MAX_SCROLL_H + 28}px` : '0px',
+							transition: `opacity ${ANIM_MS}ms ${EASING}, max-height ${ANIM_MS}ms ${EASING}`,
+						}}
+					>
+						<div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/70">
+							<Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
+							<span className="flex-shrink-0">{config.label}</span>
+							{target && (
+								<>
+									<span className="text-muted-foreground/40 flex-shrink-0">
+										·
+									</span>
+									<span className="truncate text-foreground/60 lowercase tracking-normal font-normal font-mono">
+										{target}
+									</span>
+								</>
+							)}
+							{!args && !streamedContent && (
+								<span className="text-muted-foreground/50 animate-pulse lowercase tracking-normal font-normal">
+									generating…
+								</span>
+							)}
+						</div>
+
+						<div
+							style={{
+								overflow: 'hidden',
+								opacity: hasDisplayContent ? 1 : 0,
+								maxHeight: hasDisplayContent
+									? `${MAX_SCROLL_H}px`
+									: '0px',
+								marginTop: hasDisplayContent ? '6px' : '0px',
+								transition: `opacity ${ANIM_MS}ms ${EASING}, max-height ${ANIM_MS}ms ${EASING}, margin-top ${ANIM_MS}ms ${EASING}`,
+							}}
+						>
+							{displayContent && (
+								<div
+									ref={scrollRef}
+									className="overflow-y-auto"
+									style={{
+										maxHeight: `${MAX_SCROLL_H - 12}px`,
+										maskImage:
+											'linear-gradient(to bottom, transparent 0px, black 20px)',
+										WebkitMaskImage:
+											'linear-gradient(to bottom, transparent 0px, black 20px)',
+									}}
+									onMouseEnter={() => {
+										hoveredRef.current = true;
+									}}
+									onMouseLeave={() => {
+										hoveredRef.current = false;
+									}}
+								>
+									<pre className="px-1 py-1 text-[11px] leading-relaxed text-foreground/60 font-mono whitespace-pre-wrap break-all">
+										{displayContent}
+									</pre>
+								</div>
+							)}
+						</div>
+					</div>
+
+					<div
+						className="flex items-center text-xs"
+						style={{
+							opacity: showSummary ? 1 : 0,
+							height: showSummary ? '20px' : '0px',
+							overflow: 'hidden',
+							transition: `opacity ${ANIM_MS}ms ${EASING}, height ${ANIM_MS}ms ${EASING}`,
+						}}
+					>
+						{resultContentJson ? (
+							<ToolResultRenderer
+								toolName={toolName}
+								contentJson={resultContentJson}
+								toolDurationMs={part.toolDurationMs ?? undefined}
+								debug={false}
+								compact={false}
+							/>
+						) : (
+							<span
+								className="block min-w-0 truncate leading-5 text-foreground"
+								title={target || config.label}
+							>
+								{target
+									? `${config.label}\u00A0· ${target}`
+									: config.label}
+							</span>
+						)}
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function getContentFromArgs(
+	toolName: string,
+	args: Record<string, unknown>,
+): string {
+	if (toolName === 'bash') return String(args.cmd || '');
+	if (toolName === 'write') return String(args.content || '');
+	if (toolName === 'apply_patch') return String(args.patch || '');
+	if (toolName === 'edit') {
+		const oldStr = String(args.oldString || '');
+		const newStr = String(args.newString || '');
+		return oldStr && newStr ? `- ${oldStr}\n+ ${newStr}` : newStr || '';
+	}
+	return '';
+}
+
+function extractJsonStringField(raw: string, field: string): string {
+	const pattern = new RegExp(`"${field}"\\s*:\\s*"`);
+	const m = pattern.exec(raw);
+	if (!m) return '';
+	const start = m.index + m[0].length;
+	let result = '';
+	let i = start;
+	while (i < raw.length) {
+		if (raw[i] === '\\' && i + 1 < raw.length) {
+			const next = raw[i + 1];
+			if (next === 'n') result += '\n';
+			else if (next === 't') result += '\t';
+			else if (next === '"') result += '"';
+			else if (next === '\\') result += '\\';
+			else result += next;
+			i += 2;
+		} else if (raw[i] === '"') {
+			break;
+		} else {
+			result += raw[i];
+			i += 1;
+		}
+	}
+	return result;
+}
+
+function getContentFromStream(toolName: string, raw: string): string {
+	if (!raw) return '';
+	if (toolName === 'bash') return extractJsonStringField(raw, 'cmd');
+	if (toolName === 'write') return extractJsonStringField(raw, 'content');
+	if (toolName === 'apply_patch') return extractJsonStringField(raw, 'patch');
+	if (toolName === 'edit') {
+		const newStr = extractJsonStringField(raw, 'newString');
+		return newStr || extractJsonStringField(raw, 'oldString');
+	}
+	return '';
+}

@@ -23,6 +23,7 @@ interface CompactActivityEntry {
 	path?: string;
 	query?: string;
 	url?: string;
+	fullText?: string;
 	startedAt?: number | null;
 	completedAt?: number | null;
 }
@@ -137,13 +138,13 @@ export function getCompactActivityEntry(
 	part: MessagePart,
 ): CompactActivityEntry | null {
 	if (part.type === 'reasoning') {
-		const reasoning = stripInlineMarkdown(
-			firstMeaningfulLine(getReasoningText(part)),
-		);
+		const rawText = getReasoningText(part);
+		const reasoning = stripInlineMarkdown(firstMeaningfulLine(rawText));
 		return {
 			id: part.id,
 			label: reasoning ? truncate(reasoning) : 'Thinking through the approach',
 			toolName: 'reasoning',
+			fullText: rawText || undefined,
 			startedAt: part.startedAt,
 			completedAt: part.completedAt,
 		};

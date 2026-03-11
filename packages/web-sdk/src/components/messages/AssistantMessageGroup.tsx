@@ -10,6 +10,7 @@ import {
 import type { Message, MessagePart } from '../../types/api';
 import { MessagePartItem } from './MessagePartItem';
 import { CompactActivityGroup } from './CompactActivityGroup';
+import { ActionToolBox } from './ActionToolBox';
 import { useMessageQueuePosition } from '../../hooks/useQueueState';
 import { BranchModal } from '../branch/BranchModal';
 import { ProviderLogo } from '../common/ProviderLogo';
@@ -157,6 +158,18 @@ export const AssistantMessageGroup = memo(
 		);
 		const latestProgressUpdatePart =
 			latestProgressUpdateIndex >= 0 ? parts[latestProgressUpdateIndex] : null;
+		const liveActionToolCallIds = new Set(
+			parts
+				.filter(
+					(part) =>
+						part.ephemeral &&
+						['bash', 'write', 'edit', 'apply_patch', 'terminal'].includes(
+							part.toolName || '',
+						),
+				)
+				.map((part) => part.toolCallId)
+				.filter((callId): callId is string => Boolean(callId)),
+		);
 		const renderItems = useMemo(() => {
 			const items: AssistantRenderItem[] = [];
 			let compactBuffer: MessagePart[] = [];
@@ -304,7 +317,7 @@ export const AssistantMessageGroup = memo(
 							<div className="flex items-center gap-x-1.5 md:gap-x-2 text-xs md:text-sm text-muted-foreground pl-2 md:pl-3 min-w-0">
 								{message.agent && (
 									<span
-										className={`font-medium text-violet-700 dark:text-violet-300 ${compact ? 'inline-block truncate max-w-[120px]' : 'whitespace-nowrap'}`}
+										className="font-medium text-violet-700 dark:text-violet-300 whitespace-nowrap"
 										title={message.agent}
 									>
 										{message.agent}
@@ -328,7 +341,7 @@ export const AssistantMessageGroup = memo(
 											·
 										</span>
 										<span
-											className={`hidden md:inline text-muted-foreground ${compact ? 'truncate max-w-[120px]' : ''}`}
+											className="hidden md:inline text-muted-foreground whitespace-nowrap"
 											title={message.model}
 										>
 											{message.model}
@@ -382,12 +395,35 @@ export const AssistantMessageGroup = memo(
 
 						const { part, index } = item;
 						const isLastPart = index === parts.length - 1;
-						// Find pending approval for this part's tool call
+						const isActionTool =
+							part.ephemeral &&
+						(part.type === 'tool_call' || part.type === 'tool_result') &&
+							['bash', 'write', 'edit', 'apply_patch', 'terminal'].includes(
+								part.toolName || '',
+							);
+
+						if (isActionTool) {
+							return (
+								<ActionToolBox
+									key={part.id}
+									part={part}
+									showLine={hasFollowingContent}
+								/>
+							);
+						}
+
 						const pendingApproval =
 							part.type === 'tool_call' && part.toolCallId
 								? (pendingApprovals.find((a) => a.callId === part.toolCallId) ??
 									null)
 								: null;
+						if (
+							part.type === 'tool_result' &&
+							part.toolCallId &&
+							liveActionToolCallIds.has(part.toolCallId)
+						) {
+							return null;
+						}
 						const isFinishTool =
 							part.type === 'tool_result' && part.toolName === 'finish';
 						const showLine = hasFollowingContent && !isFinishTool;

@@ -53,6 +53,33 @@ export {
 	getRunnerState,
 } from '../session/queue.ts';
 
+const DEFAULT_TRACED_TOOL_INPUTS = new Set(['write', 'apply_patch']);
+
+function shouldTraceToolInput(name: string): boolean {
+	const raw = process.env.OTTO_DEBUG_TOOL_INPUT?.trim();
+	if (!raw) return false;
+	const normalized = raw.toLowerCase();
+	if (['1', 'true', 'yes', 'on', 'all'].includes(normalized)) {
+		return DEFAULT_TRACED_TOOL_INPUTS.has(name);
+	}
+	const tokens = raw
+		.split(/[\s,]+/)
+		.map((token) => token.trim().toLowerCase())
+		.filter(Boolean);
+	return tokens.includes('all') || tokens.includes(name.toLowerCase());
+}
+
+function summarizeTraceValue(value: unknown, max = 160): string {
+	try {
+		const json = JSON.stringify(value);
+		if (typeof json === 'string') {
+			return json.length > max ? `${json.slice(0, max)}…` : json;
+		}
+	} catch {}
+	const fallback = String(value);
+	return fallback.length > max ? `${fallback.slice(0, max)}…` : fallback;
+}
+
 export async function runSessionLoop(sessionId: string) {
 	setRunning(sessionId, true);
 
@@ -366,9 +393,60 @@ async function runAssistant(opts: RunOpts) {
 			onFinish: onFinish as any,
 			// biome-ignore lint/suspicious/noExplicitAny: AI SDK streamText options type
 		} as any);
+		const tracedToolInputNamesById = new Map<string, string>();
 
 		for await (const part of result.fullStream) {
 			if (!part) continue;
+
+			if (part.type === 'tool-input-start') {
+				if (shouldTraceToolInput(part.toolName)) {
+					tracedToolInputNamesById.set(part.id, part.toolName);
+					debugLog(
+						`[TOOL_INPUT_TRACE][runner] fullStream tool-input-start tool=${part.toolName} callId=${part.id}`,
+					);
+				}
+				continue;
+			}
+
+			if (part.type === 'tool-input-delta') {
+				const toolName = tracedToolInputNamesById.get(part.id);
+				if (toolName) {
+					debugLog(
+						`[TOOL_INPUT_TRACE][runner] fullStream tool-input-delta tool=${toolName} callId=${part.id} delta=${summarizeTraceValue(part.delta)}`,
+					);
+				}
+				continue;
+			}
+
+			if (part.type === 'tool-input-end') {
+				const toolName = tracedToolInputNamesById.get(part.id);
+				if (toolName) {
+					debugLog(
+						`[TOOL_INPUT_TRACE][runner] fullStream tool-input-end tool=${toolName} callId=${part.id}`,
+					);
+					tracedToolInputNamesById.delete(part.id);
+				}
+				continue;
+			}
+
+			if (part.type === 'tool-call') {
+				if (shouldTraceToolInput(part.toolName)) {
+					tracedToolInputNamesById.delete(part.toolCallId);
+					debugLog(
+						`[TOOL_INPUT_TRACE][runner] fullStream tool-call tool=${part.toolName} callId=${part.toolCallId} input=${summarizeTraceValue(part.input)}`,
+					);
+				}
+				continue;
+			}
+
+			if (part.type === 'tool-result') {
+				if (shouldTraceToolInput(part.toolName)) {
+					debugLog(
+						`[TOOL_INPUT_TRACE][runner] fullStream tool-result tool=${part.toolName} callId=${part.toolCallId} output=${summarizeTraceValue(part.output)}`,
+					);
+				}
+				continue;
+			}
 
 			if (part.type === 'text-delta') {
 				const rawDelta = part.text;
