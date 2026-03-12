@@ -14,6 +14,15 @@ export { MCPServerManager } from './server-manager.ts';
 export { convertMCPToolsToAISDK } from './tools.ts';
 
 export {
+	COPILOT_MCP_SCOPE,
+	getCopilotMCPOAuthKey,
+	getStoredCopilotMCPToken,
+	hasCopilotMCPScopes,
+	isGitHubCopilotUrl,
+	isStoredCopilotMCPAuthenticated,
+} from './copilot-auth.ts';
+
+export {
 	getMCPToolBriefs,
 	buildLoadMCPToolsTool,
 	getMCPToolsRecord,

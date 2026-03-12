@@ -2,66 +2,12 @@ import { MCPClientWrapper, type MCPToolInfo } from './client.ts';
 import type { MCPServerConfig, MCPServerStatus } from './types.ts';
 import { OAuthCredentialStore } from './oauth/store.ts';
 import { OttoOAuthProvider } from './oauth/provider.ts';
-import { createHash } from 'node:crypto';
-import { getAuth } from '../../../auth/src/index.ts';
-
-const GITHUB_COPILOT_HOSTS = [
-	'api.githubcopilot.com',
-	'copilot-proxy.githubusercontent.com',
-];
-
-function isGitHubCopilotUrl(url?: string): boolean {
-	if (!url) return false;
-	try {
-		const parsed = new URL(url);
-		return GITHUB_COPILOT_HOSTS.some(
-			(h) => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`),
-		);
-	} catch {
-		return false;
-	}
-}
-
-const COPILOT_MCP_REQUIRED_SCOPES = [
-	'repo',
-	'read:org',
-	'gist',
-	'notifications',
-	'read:project',
-	'security_events',
-];
-
-function hasMCPScopes(scopes?: string): boolean {
-	if (!scopes) return false;
-	const granted = scopes.split(/[\s,]+/).filter(Boolean);
-	return COPILOT_MCP_REQUIRED_SCOPES.every((s) => granted.includes(s));
-}
-
-async function getCopilotToken(): Promise<string | null> {
-	try {
-		const auth = await getAuth('copilot');
-		if (auth?.type === 'oauth' && auth.refresh) {
-			return auth.refresh;
-		}
-	} catch {}
-	return null;
-}
-
-async function getCopilotMCPToken(): Promise<{
-	token: string | null;
-	needsReauth: boolean;
-}> {
-	try {
-		const auth = await getAuth('copilot');
-		if (auth?.type === 'oauth' && auth.refresh) {
-			if (!hasMCPScopes(auth.scopes)) {
-				return { token: auth.refresh, needsReauth: true };
-			}
-			return { token: auth.refresh, needsReauth: false };
-		}
-	} catch {}
-	return { token: null, needsReauth: true };
-}
+import {
+	getCopilotMCPOAuthKey,
+	getStoredCopilotMCPToken,
+	isGitHubCopilotUrl,
+	isStoredCopilotMCPAuthenticated,
+} from './copilot-auth.ts';
 
 type IndexedTool = {
 	server: string;
@@ -88,14 +34,11 @@ export class MCPServerManager {
 
 	private oauthKey(serverName: string): string {
 		const scope = this.serverScopes.get(serverName);
-		if (scope === 'project' && this.projectRoot) {
-			const hash = createHash('sha256')
-				.update(this.projectRoot)
-				.digest('hex')
-				.slice(0, 8);
-			return `${serverName}_proj_${hash}`;
-		}
-		return serverName;
+		return getCopilotMCPOAuthKey(
+			serverName,
+			scope,
+			this.projectRoot ?? undefined,
+		);
 	}
 
 	async startServers(configs: MCPServerConfig[]): Promise<void> {
@@ -115,7 +58,12 @@ export class MCPServerManager {
 
 		if (transport !== 'stdio') {
 			if (isGitHubCopilotUrl(config.url)) {
-				const { token, needsReauth } = await getCopilotMCPToken();
+				const { token, needsReauth } = await getStoredCopilotMCPToken(
+					this.oauthStore,
+					config.name,
+					config.scope ?? 'global',
+					this.projectRoot ?? undefined,
+				);
 				if (token && !needsReauth) {
 					config = {
 						...config,
@@ -159,7 +107,7 @@ export class MCPServerManager {
 					return;
 				}
 				console.error(
-					`[mcp] GitHub Copilot MCP server "${config.name}" requires authentication. Run \`otto auth login copilot\` or \`otto mcp auth ${config.name}\`.`,
+					`[mcp] GitHub Copilot MCP server "${config.name}" requires authentication. Run \`otto mcp auth ${config.name}\`.`,
 				);
 				this.clients.set(config.name, client);
 				return;
@@ -296,7 +244,12 @@ export class MCPServerManager {
 			const config = client.serverConfig;
 			let authenticated = false;
 			if (isGitHubCopilotUrl(config.url)) {
-				authenticated = !!(await getCopilotToken());
+				authenticated = await isStoredCopilotMCPAuthenticated(
+					this.oauthStore,
+					name,
+					config.scope ?? 'global',
+					this.projectRoot ?? undefined,
+				).catch(() => false);
 			} else {
 				const key = this.oauthKey(name);
 				authenticated = await this.oauthStore
@@ -334,8 +287,13 @@ export class MCPServerManager {
 		if (transport === 'stdio') return null;
 
 		if (isGitHubCopilotUrl(config.url)) {
-			const token = await getCopilotToken();
-			if (token) {
+			const { token, needsReauth } = await getStoredCopilotMCPToken(
+				this.oauthStore,
+				config.name,
+				config.scope ?? 'global',
+				this.projectRoot ?? undefined,
+			);
+			if (token && !needsReauth) {
 				const authedConfig = {
 					...config,
 					headers: {
@@ -472,8 +430,19 @@ export class MCPServerManager {
 	): Promise<{ authenticated: boolean; expiresAt?: number }> {
 		const client = this.clients.get(name);
 		if (client && isGitHubCopilotUrl(client.serverConfig.url)) {
-			const token = await getCopilotToken();
-			return { authenticated: !!token };
+			const key = this.oauthKey(name);
+			const tokens = await this.oauthStore.loadTokens(key);
+			return {
+				authenticated:
+					!!tokens?.access_token &&
+					(await isStoredCopilotMCPAuthenticated(
+						this.oauthStore,
+						name,
+						client.serverConfig.scope ?? 'global',
+						this.projectRoot ?? undefined,
+					)),
+				expiresAt: tokens?.expires_at,
+			};
 		}
 		const key = this.oauthKey(name);
 		const tokens = await this.oauthStore.loadTokens(key);

@@ -1,36 +1,21 @@
 import type { Hono } from 'hono';
 import {
+	COPILOT_MCP_SCOPE,
 	getMCPManager,
+	getCopilotMCPOAuthKey,
+	getStoredCopilotMCPToken,
 	initializeMCP,
+	isGitHubCopilotUrl,
 	loadMCPConfig,
 	getGlobalConfigDir,
 	MCPClientWrapper,
+	OAuthCredentialStore,
 	addMCPServerToConfig,
 	removeMCPServerFromConfig,
 } from '@ottocode/sdk';
-import {
-	authorizeCopilot,
-	pollForCopilotTokenOnce,
-	getAuth,
-	setAuth,
-} from '@ottocode/sdk';
+import { authorizeCopilot, pollForCopilotTokenOnce } from '@ottocode/sdk';
 
-const GITHUB_COPILOT_HOSTS = [
-	'api.githubcopilot.com',
-	'copilot-proxy.githubusercontent.com',
-];
-
-function isGitHubCopilotUrl(url?: string): boolean {
-	if (!url) return false;
-	try {
-		const parsed = new URL(url);
-		return GITHUB_COPILOT_HOSTS.some(
-			(h) => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`),
-		);
-	} catch {
-		return false;
-	}
-}
+const copilotMCPOAuthStore = new OAuthCredentialStore();
 
 const copilotMCPSessions = new Map<
 	string,
@@ -184,13 +169,14 @@ export function registerMCPRoutes(app: Hono) {
 			);
 
 			if (isGitHubCopilotUrl(serverConfig.url) && !status?.connected) {
-				const MCP_SCOPES =
-					'repo read:org read:packages gist notifications read:project security_events';
-				const existingAuth = await getAuth('copilot');
-				const hasMCPScopes =
-					existingAuth?.type === 'oauth' && existingAuth.scopes === MCP_SCOPES;
+				const existingAuth = await getStoredCopilotMCPToken(
+					copilotMCPOAuthStore,
+					name,
+					serverConfig.scope ?? 'global',
+					projectRoot,
+				);
 
-				if (!existingAuth || existingAuth.type !== 'oauth' || !hasMCPScopes) {
+				if (!existingAuth.token || existingAuth.needsReauth) {
 					const deviceData = await authorizeCopilot({ mcp: true });
 					const sessionId = crypto.randomUUID();
 					copilotMCPSessions.set(sessionId, {
@@ -256,14 +242,13 @@ export function registerMCPRoutes(app: Hono) {
 
 		if (isGitHubCopilotUrl(serverConfig.url)) {
 			try {
-				const MCP_SCOPES =
-					'repo read:org read:packages gist notifications read:project security_events';
-				const existingAuth = await getAuth('copilot');
-				if (
-					existingAuth?.type === 'oauth' &&
-					existingAuth.refresh &&
-					existingAuth.scopes === MCP_SCOPES
-				) {
+				const existingAuth = await getStoredCopilotMCPToken(
+					copilotMCPOAuthStore,
+					name,
+					serverConfig.scope ?? 'global',
+					projectRoot,
+				);
+				if (existingAuth.token && !existingAuth.needsReauth) {
 					return c.json({
 						ok: true,
 						name,
@@ -334,29 +319,31 @@ export function registerMCPRoutes(app: Hono) {
 				const result = await pollForCopilotTokenOnce(session.deviceCode);
 				if (result.status === 'complete') {
 					copilotMCPSessions.delete(sessionId);
-					await setAuth(
-						'copilot',
-						{
-							type: 'oauth',
-							refresh: result.accessToken,
-							access: result.accessToken,
-							expires: 0,
-							scopes:
-								'repo read:org read:packages gist notifications read:project security_events',
-						},
-						undefined,
-						'global',
-					);
 					const projectRoot = process.cwd();
 					const config = await loadMCPConfig(projectRoot, getGlobalConfigDir());
 					const serverConfig = config.servers.find((s) => s.name === name);
-					let mcpMgr = getMCPManager();
-					if (serverConfig) {
-						if (!mcpMgr) {
-							mcpMgr = await initializeMCP({ servers: [] }, projectRoot);
-						}
-						await mcpMgr.restartServer(serverConfig);
+					if (!serverConfig) {
+						return c.json(
+							{ ok: false, error: `Server "${name}" not found` },
+							404,
+						);
 					}
+					await copilotMCPOAuthStore.saveTokens(
+						getCopilotMCPOAuthKey(
+							name,
+							serverConfig.scope ?? 'global',
+							projectRoot,
+						),
+						{
+							access_token: result.accessToken,
+							scope: COPILOT_MCP_SCOPE,
+						},
+					);
+					let mcpMgr = getMCPManager();
+					if (!mcpMgr) {
+						mcpMgr = await initializeMCP({ servers: [] }, projectRoot);
+					}
+					await mcpMgr.restartServer(serverConfig);
 					mcpMgr = getMCPManager();
 					const status = mcpMgr
 						? (await mcpMgr.getStatusAsync()).find((s) => s.name === name)
@@ -421,8 +408,13 @@ export function registerMCPRoutes(app: Hono) {
 
 		if (serverConfig && isGitHubCopilotUrl(serverConfig.url)) {
 			try {
-				const auth = await getAuth('copilot');
-				const authenticated = auth?.type === 'oauth' && !!auth.refresh;
+				const auth = await getStoredCopilotMCPToken(
+					copilotMCPOAuthStore,
+					name,
+					serverConfig.scope ?? 'global',
+					projectRoot,
+				);
+				const authenticated = !!auth.token && !auth.needsReauth;
 				return c.json({ authenticated, authType: 'copilot-device' });
 			} catch {
 				return c.json({ authenticated: false, authType: 'copilot-device' });
@@ -450,10 +442,22 @@ export function registerMCPRoutes(app: Hono) {
 
 		if (serverConfig && isGitHubCopilotUrl(serverConfig.url)) {
 			try {
-				const { removeAuth } = await import('@ottocode/sdk');
-				await removeAuth('copilot');
+				const key = getCopilotMCPOAuthKey(
+					name,
+					serverConfig.scope ?? 'global',
+					projectRoot,
+				);
+				await copilotMCPOAuthStore.clearServer(key);
+				if (key !== name) {
+					await copilotMCPOAuthStore.clearServer(name);
+				}
 				const manager = getMCPManager();
 				if (manager) {
+					await manager.clearAuthData(
+						name,
+						serverConfig.scope ?? 'global',
+						projectRoot,
+					);
 					await manager.stopServer(name);
 				}
 				return c.json({ ok: true, name });
