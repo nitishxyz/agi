@@ -762,7 +762,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				ownedBy: 'openai',
 				label: 'GPT-5.4',
 				modalities: {
-					input: ['text', 'image'],
+					input: ['text', 'image', 'pdf'],
 					output: ['text'],
 				},
 				toolCall: true,
@@ -2321,6 +2321,57 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 1000000,
 					output: 64000,
+				},
+			},
+			{
+				id: 'gemini-3.1-flash-image-preview',
+				ownedBy: 'google',
+				label: 'Gemini 3.1 Flash Image (Preview)',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text', 'image'],
+				},
+				toolCall: false,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2026-02-26',
+				lastUpdated: '2026-02-26',
+				openWeights: false,
+				cost: {
+					input: 0.25,
+					output: 60,
+				},
+				limit: {
+					context: 131072,
+					output: 32768,
+				},
+			},
+			{
+				id: 'gemini-3.1-flash-lite-preview',
+				ownedBy: 'google',
+				label: 'Gemini 3.1 Flash Lite Preview',
+				modalities: {
+					input: ['text', 'image', 'video', 'audio', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-01',
+				releaseDate: '2026-03-03',
+				lastUpdated: '2026-03-03',
+				openWeights: false,
+				cost: {
+					input: 0.5,
+					output: 3,
+					cacheRead: 0.05,
+				},
+				limit: {
+					context: 1048576,
+					output: 65536,
 				},
 			},
 			{
@@ -3938,6 +3989,78 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 8192,
 					output: 2000,
+				},
+			},
+			{
+				id: 'inception/mercury',
+				label: 'Mercury',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: false,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2025-06-26',
+				lastUpdated: '2025-06-26',
+				openWeights: false,
+				cost: {
+					input: 0.25,
+					output: 0.75,
+					cacheRead: 0.025,
+				},
+				limit: {
+					context: 128000,
+					output: 32000,
+				},
+			},
+			{
+				id: 'inception/mercury-2',
+				label: 'Mercury 2',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2026-03-04',
+				lastUpdated: '2026-03-04',
+				openWeights: false,
+				cost: {
+					input: 0.25,
+					output: 0.75,
+					cacheRead: 0.025,
+				},
+				limit: {
+					context: 128000,
+					output: 50000,
+				},
+			},
+			{
+				id: 'inception/mercury-coder',
+				label: 'Mercury Coder',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: false,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2025-04-30',
+				lastUpdated: '2025-04-30',
+				openWeights: false,
+				cost: {
+					input: 0.25,
+					output: 0.75,
+					cacheRead: 0.025,
+				},
+				limit: {
+					context: 128000,
+					output: 32000,
 				},
 			},
 			{
@@ -5741,6 +5864,77 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 128000,
 					output: 50000,
+				},
+			},
+			{
+				id: 'openrouter/free',
+				label: 'Free Models Router',
+				modalities: {
+					input: ['text', 'image'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				releaseDate: '2026-02-01',
+				lastUpdated: '2026-02-01',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 200000,
+					output: 8000,
+				},
+			},
+			{
+				id: 'openrouter/healer-alpha',
+				label: 'Healer Alpha',
+				modalities: {
+					input: ['text', 'image', 'audio', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2026-03-11',
+				releaseDate: '2026-03-11',
+				lastUpdated: '2026-03-11',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 262144,
+					output: 64000,
+				},
+			},
+			{
+				id: 'openrouter/hunter-alpha',
+				label: 'Hunter Alpha',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2026-03-11',
+				releaseDate: '2026-03-11',
+				lastUpdated: '2026-03-11',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 1048576,
+					output: 64000,
 				},
 			},
 			{
@@ -8200,6 +8394,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'mimo-v2-flash-free',
+				label: 'MiMo V2 Flash Free',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2024-12',
+				releaseDate: '2025-12-16',
+				lastUpdated: '2025-12-16',
+				openWeights: true,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
+				},
+				limit: {
+					context: 262144,
+					output: 65536,
+				},
+			},
+			{
 				id: 'minimax-m2.1',
 				ownedBy: 'minimax',
 				label: 'MiniMax M2.1',
@@ -8307,6 +8526,31 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 				provider: {
 					npm: '@ai-sdk/anthropic',
+				},
+			},
+			{
+				id: 'nemotron-3-super-free',
+				label: 'Nemotron 3 Super Free',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				knowledge: '2026-02',
+				releaseDate: '2026-03-11',
+				lastUpdated: '2026-03-11',
+				openWeights: true,
+				cost: {
+					input: 0,
+					output: 0,
+					cacheRead: 0,
+				},
+				limit: {
+					context: 1000000,
+					output: 128000,
 				},
 			},
 			{
@@ -8593,7 +8837,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				temperature: true,
 				releaseDate: '2026-02-11',
 				lastUpdated: '2026-02-11',
-				openWeights: false,
+				openWeights: true,
 				cost: {
 					input: 1,
 					output: 3.2,
@@ -8868,7 +9112,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				temperature: true,
 				releaseDate: '2026-02-11',
 				lastUpdated: '2026-02-11',
-				openWeights: false,
+				openWeights: true,
 				cost: {
 					input: 0,
 					output: 0,
@@ -9661,7 +9905,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					output: 0,
 				},
 				limit: {
-					context: 128000,
+					context: 264000,
 					output: 64000,
 				},
 			},
@@ -9686,7 +9930,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 					output: 0,
 				},
 				limit: {
-					context: 272000,
+					context: 400000,
 					output: 128000,
 				},
 			},
