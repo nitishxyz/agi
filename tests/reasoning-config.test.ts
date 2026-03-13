@@ -52,6 +52,23 @@ describe('buildReasoningConfig', () => {
 		});
 	});
 
+	test('uses OpenRouter request-level reasoning options for Setu OpenRouter-backed models', () => {
+		const result = buildReasoningConfig({
+			provider: 'setu',
+			model: 'healer-alpha',
+			reasoningText: true,
+			reasoningLevel: 'medium',
+			maxOutputTokens: 4000,
+		});
+
+		expect(result.enabled).toBe(true);
+		expect(result.providerOptions).toEqual({
+			openrouter: {
+				reasoning: { effort: 'medium' },
+			},
+		});
+	});
+
 	test('uses shared OpenAI-compatible reasoning keys for Moonshot', () => {
 		const result = buildReasoningConfig({
 			provider: 'moonshot',

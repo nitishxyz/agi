@@ -206,6 +206,19 @@ describe('provider base prompts', () => {
 				expect(gptModel.ownedBy).toBe('openai');
 				expect(getModelFamily('setu', gptModel.id)).toBe('openai');
 			}
+
+			const openrouterModel = setuEntry?.models.find(
+				(m) => m.id === 'healer-alpha',
+			);
+			if (openrouterModel) {
+				expect(openrouterModel.ownedBy).toBe('openrouter');
+				expect(openrouterModel.provider?.npm).toBe(
+					'@openrouter/ai-sdk-provider',
+				);
+				expect(getModelFamily('setu', openrouterModel.id)).toBe(
+					'openai-compatible',
+				);
+			}
 		});
 
 		it('falls back to model ID inference for unknown models', () => {
@@ -250,6 +263,9 @@ describe('provider base prompts', () => {
 				'openai',
 			);
 			expect(getUnderlyingProviderKey('setu', 'kimi-k2.5')).toBe('moonshot');
+			expect(getUnderlyingProviderKey('setu', 'healer-alpha')).toBe(
+				'openai-compatible',
+			);
 		});
 	});
 
@@ -264,6 +280,7 @@ describe('provider base prompts', () => {
 				expect([
 					'openai',
 					'anthropic',
+					'openrouter',
 					'moonshot',
 					'google',
 					'minimax',

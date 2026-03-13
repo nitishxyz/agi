@@ -14,6 +14,7 @@ const OWNER_NPM: Record<ModelOwner, string> = {
 	openai: '@ai-sdk/openai',
 	anthropic: '@ai-sdk/anthropic',
 	google: '@ai-sdk/google',
+	openrouter: '@openrouter/ai-sdk-provider',
 	xai: '@ai-sdk/xai',
 	moonshot: '@ai-sdk/openai-compatible',
 	zai: '@ai-sdk/openai-compatible',

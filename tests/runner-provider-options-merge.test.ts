@@ -30,4 +30,37 @@ describe('mergeProviderOptions', () => {
 			},
 		});
 	});
+
+	test('merges nested OpenRouter provider options without dropping existing routing config', () => {
+		const base = {
+			openrouter: {
+				provider: {
+					allow_fallbacks: true,
+					require_parameters: true,
+				},
+			},
+		};
+
+		const incoming = {
+			openrouter: {
+				reasoning: {
+					effort: 'medium',
+				},
+			},
+		};
+
+		const result = mergeProviderOptions(base, incoming);
+
+		expect(result).toEqual({
+			openrouter: {
+				provider: {
+					allow_fallbacks: true,
+					require_parameters: true,
+				},
+				reasoning: {
+					effort: 'medium',
+				},
+			},
+		});
+	});
 });

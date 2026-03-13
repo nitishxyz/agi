@@ -33,6 +33,7 @@ export type ModelOwner =
 	| 'openai'
 	| 'anthropic'
 	| 'google'
+	| 'openrouter'
 	| 'xai'
 	| 'moonshot'
 	| 'zai'

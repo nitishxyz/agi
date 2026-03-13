@@ -2,9 +2,11 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { wrapLanguageModel } from 'ai';
 import type { LanguageModelV3Middleware } from '@ai-sdk/provider';
 import type { ProviderApiFormat, ProviderId, FetchFunction } from '../types.ts';
+import { createSetuOpenRouterFetch } from '../fetch.ts';
 
 export function createModel(
 	modelId: string,
@@ -14,31 +16,43 @@ export function createModel(
 	customFetch: FetchFunction,
 	middleware?: LanguageModelV3Middleware | LanguageModelV3Middleware[],
 ) {
-	const fetchFn = customFetch as unknown as typeof globalThis.fetch;
+	const applyMiddleware = <TModel>(model: TModel) => {
+		if (middleware) {
+			return wrapLanguageModel({ model: model as never, middleware });
+		}
 
-	let model:
-		| ReturnType<ReturnType<typeof createOpenAI>['responses']>
-		| ReturnType<ReturnType<typeof createAnthropic>>;
+		return model;
+	};
 
 	switch (apiFormat) {
 		case 'anthropic-messages': {
 			const provider = createAnthropic({
 				baseURL,
 				apiKey: 'setu-wallet-auth',
-				fetch: fetchFn,
+				fetch: customFetch as unknown as typeof globalThis.fetch,
 			});
-			model = provider(modelId);
-			break;
+			return applyMiddleware(provider(modelId));
 		}
 
 		case 'google-native': {
 			const provider = createGoogleGenerativeAI({
 				baseURL,
 				apiKey: 'setu-wallet-auth',
-				fetch: fetchFn,
+				fetch: customFetch as unknown as typeof globalThis.fetch,
 			});
-			model = provider(modelId);
-			break;
+			return applyMiddleware(provider(modelId));
+		}
+
+		case 'openrouter-chat': {
+			const provider = createOpenRouter({
+				baseURL,
+				apiKey: 'setu-wallet-auth',
+				compatibility: 'strict',
+				fetch: createSetuOpenRouterFetch(
+					customFetch,
+				) as unknown as typeof globalThis.fetch,
+			});
+			return applyMiddleware(provider.chat(`openrouter/${modelId}`));
 		}
 
 		case 'openai-chat': {
@@ -46,25 +60,17 @@ export function createModel(
 				name: `setu-${providerId}`,
 				baseURL,
 				headers: { Authorization: 'Bearer setu-wallet-auth' },
-				fetch: fetchFn,
+				fetch: customFetch as unknown as typeof globalThis.fetch,
 			});
-			model = provider(modelId);
-			break;
+			return applyMiddleware(provider(modelId));
 		}
 		default: {
 			const provider = createOpenAI({
 				baseURL,
 				apiKey: 'setu-wallet-auth',
-				fetch: fetchFn,
+				fetch: customFetch as unknown as typeof globalThis.fetch,
 			});
-			model = provider.responses(modelId);
-			break;
+			return applyMiddleware(provider.responses(modelId));
 		}
 	}
-
-	if (middleware) {
-		return wrapLanguageModel({ model, middleware });
-	}
-
-	return model;
 }

@@ -4,6 +4,7 @@ import { getModelNpmBinding } from './utils.ts';
 
 export type OpenRouterProviderConfig = {
 	apiKey?: string;
+	baseURL?: string;
 };
 
 function isAnthropicModel(model: string): boolean {

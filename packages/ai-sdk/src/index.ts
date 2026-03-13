@@ -25,7 +25,7 @@ export type {
 export { ProviderRegistry } from './providers/registry.ts';
 export { createModel } from './providers/factory.ts';
 
-export { createSetuFetch } from './fetch.ts';
+export { createSetuFetch, createSetuOpenRouterFetch } from './fetch.ts';
 export type { CreateSetuFetchOptions } from './fetch.ts';
 
 export { fetchBalance, fetchWalletUsdcBalance } from './balance.ts';

@@ -13,6 +13,7 @@ export type ProviderApiFormat =
 	| 'openai-responses'
 	| 'anthropic-messages'
 	| 'openai-chat'
+	| 'openrouter-chat'
 	| 'google-native';
 
 export type FetchFunction = (

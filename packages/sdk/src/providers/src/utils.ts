@@ -129,6 +129,7 @@ const OWNER_TO_FAMILY: Record<ModelOwner, UnderlyingProviderKey> = {
 	openai: 'openai',
 	anthropic: 'anthropic',
 	google: 'google',
+	openrouter: 'openai-compatible',
 	xai: 'openai',
 	moonshot: 'moonshot',
 	zai: 'glm',

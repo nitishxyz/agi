@@ -11,6 +11,7 @@ const OWNER_API_FORMAT: Record<string, ProviderApiFormat> = {
 	google: 'google-native',
 	minimax: 'anthropic-messages',
 	moonshot: 'openai-chat',
+	openrouter: 'openrouter-chat',
 	zai: 'openai-chat',
 };
 

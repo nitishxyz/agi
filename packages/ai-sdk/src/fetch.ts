@@ -119,6 +119,75 @@ function wrapResponseWithBalanceSniffing(
 	}
 }
 
+function getRequestUrl(input: string | URL | Request): URL | null {
+	try {
+		if (input instanceof Request) {
+			return new URL(input.url);
+		}
+		return new URL(input.toString(), 'https://setu.local');
+	} catch {
+		return null;
+	}
+}
+
+async function rewriteSetuOpenRouterChatRequest(
+	input: string | URL | Request,
+	init?: RequestInit,
+): Promise<{ input: string | URL | Request; init?: RequestInit }> {
+	const url = getRequestUrl(input);
+	if (!url || !url.pathname.endsWith('/chat/completions')) {
+		return { input, init };
+	}
+
+	let bodyText = typeof init?.body === 'string' ? init.body : null;
+	if (!bodyText && input instanceof Request && !init?.body) {
+		const contentType = input.headers.get('content-type') ?? '';
+		if (contentType.includes('application/json')) {
+			bodyText = await input.clone().text();
+		}
+	}
+
+	if (!bodyText) {
+		return { input, init };
+	}
+
+	try {
+		const parsed = JSON.parse(bodyText) as { model?: unknown };
+		if (
+			typeof parsed.model !== 'string' ||
+			!parsed.model.startsWith('openrouter/')
+		) {
+			return { input, init };
+		}
+
+		parsed.model = parsed.model.slice('openrouter/'.length);
+		const nextBody = JSON.stringify(parsed);
+
+		if (input instanceof Request && !init) {
+			const headers = new Headers(input.headers);
+			if (!headers.has('content-type')) {
+				headers.set('content-type', 'application/json');
+			}
+			return {
+				input: new Request(input, {
+					body: nextBody,
+					headers,
+				}),
+			};
+		}
+
+		return {
+			input,
+			init: {
+				...init,
+				body: nextBody,
+			},
+		};
+	} catch {
+		return { input, init };
+	}
+}
+
 async function getWalletUsdcBalance(
 	walletAddress: string,
 	rpcUrl: string,
@@ -170,6 +239,18 @@ export interface CreateSetuFetchOptions {
 	payment?: PaymentOptions;
 }
 
+export function createSetuOpenRouterFetch(
+	baseFetch: FetchFunction,
+): FetchFunction {
+	return async (input, init) => {
+		const rewrittenRequest = await rewriteSetuOpenRouterChatRequest(
+			input,
+			init,
+		);
+		return baseFetch(rewrittenRequest.input, rewrittenRequest.init);
+	};
+}
+
 export function createSetuFetch(options: CreateSetuFetchOptions) {
 	const {
 		wallet,
@@ -216,11 +297,15 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 						parsed.prompt_cache_key = cache.promptCacheKey;
 					if (cache?.promptCacheRetention)
 						parsed.prompt_cache_retention = cache.promptCacheRetention;
-					const cacheConfig = cache?.anthropicCaching;
-					if (cacheConfig !== false) {
-						const anthropicConfig =
-							typeof cacheConfig === 'object' ? cacheConfig : undefined;
-						addAnthropicCacheControl(parsed, anthropicConfig);
+					const requestUrl = getRequestUrl(input);
+					const isAnthropicRoute = requestUrl?.pathname.endsWith('/messages') ?? false;
+					if (isAnthropicRoute) {
+						const cacheConfig = cache?.anthropicCaching;
+						if (cacheConfig !== false) {
+							const anthropicConfig =
+								typeof cacheConfig === 'object' ? cacheConfig : undefined;
+							addAnthropicCacheControl(parsed, anthropicConfig);
+						}
 					}
 					body = JSON.stringify(parsed);
 				} catch {}
