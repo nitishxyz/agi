@@ -113,6 +113,7 @@ export interface ModelInfo {
 	reasoningText?: boolean;
 	vision?: boolean;
 	attachment?: boolean;
+	free?: boolean;
 	available?: boolean;
 	unavailableReason?: string;
 }

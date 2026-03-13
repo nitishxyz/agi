@@ -15,8 +15,11 @@ export class SSEClient {
 		this.abortController = new AbortController();
 		this.running = true;
 
+		const isTunnel = !url.includes('localhost') && !url.includes('127.0.0.1');
+
 		try {
 			const response = await fetch(url, {
+				method: isTunnel ? 'POST' : 'GET',
 				headers: { Accept: 'text/event-stream' },
 				signal: this.abortController.signal,
 			});

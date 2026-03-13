@@ -1,3 +1,4 @@
+import type { Context } from 'hono';
 import type { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import type { TerminalManager } from '@ottocode/sdk';
@@ -77,7 +78,7 @@ export function registerTerminalsRoutes(
 		return c.json({ terminal: terminal.toJSON() });
 	});
 
-	app.get('/v1/terminals/:id/output', async (c) => {
+	const handleTerminalOutput = async (c: Context) => {
 		const id = c.req.param('id');
 		logger.debug('SSE client connecting to terminal', { id });
 		const terminal = terminalManager.get(id);
@@ -91,7 +92,6 @@ export function registerTerminalsRoutes(
 
 		return streamSSE(c, async (stream) => {
 			logger.debug('SSE stream started for terminal', { id });
-			// Send historical buffer first (unless skipHistory is set)
 			const skipHistory = c.req.query('skipHistory') === 'true';
 			if (!skipHistory) {
 				const history = activeTerminal.read();
@@ -121,10 +121,19 @@ export function registerTerminalsRoutes(
 			let resolveStream: (() => void) | null = null;
 			let finished = false;
 
+			const hb = setInterval(async () => {
+				try {
+					await stream.write(`: hb ${Date.now()}\n\n`);
+				} catch {
+					clearInterval(hb);
+				}
+			}, 15000);
+
 			function cleanup() {
 				activeTerminal.removeDataListener(onData);
 				activeTerminal.removeExitListener(onExit);
 				c.req.raw.signal.removeEventListener('abort', onAbort);
+				clearInterval(hb);
 			}
 
 			function finish() {
@@ -168,7 +177,10 @@ export function registerTerminalsRoutes(
 
 			await waitForClose;
 		});
-	});
+	};
+
+	app.get('/v1/terminals/:id/output', handleTerminalOutput);
+	app.post('/v1/terminals/:id/output', handleTerminalOutput);
 
 	app.post('/v1/terminals/:id/input', async (c) => {
 		const id = c.req.param('id');

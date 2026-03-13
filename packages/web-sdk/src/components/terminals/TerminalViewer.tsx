@@ -103,7 +103,7 @@ export function TerminalViewer({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const termRef = useRef<Terminal | null>(null);
 	const fitAddonRef = useRef<FitAddon | null>(null);
-	const eventSourceRef = useRef<EventSource | null>(null);
+	const sseAbortRef = useRef<AbortController | null>(null);
 	const retryCountRef = useRef(0);
 	const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const hasReceivedDataRef = useRef(false);
@@ -130,20 +130,22 @@ export function TerminalViewer({
 
 	const connectSSE = useCallback(
 		(term: Terminal, baseUrl: string, skipHistory: boolean) => {
-			if (eventSourceRef.current) {
-				eventSourceRef.current.close();
-				eventSourceRef.current = null;
+			if (sseAbortRef.current) {
+				sseAbortRef.current.abort();
+				sseAbortRef.current = null;
 			}
 
 			const url = `${baseUrl}/v1/terminals/${terminalId}/output${skipHistory ? '?skipHistory=true' : ''}`;
-			const eventSource = new EventSource(url);
-			eventSourceRef.current = eventSource;
+			const isTunnel =
+				!baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1');
+			const controller = new AbortController();
+			sseAbortRef.current = controller;
 
 			let gotFirstData = false;
 
-			eventSource.onmessage = (event) => {
+			const handleMessage = (raw: string) => {
 				try {
-					const data = JSON.parse(event.data);
+					const data = JSON.parse(raw);
 					if (data.type === 'data') {
 						const savedY = userScrolledRef.current ? term.getViewportY() : 0;
 						term.write(data.line);
@@ -164,17 +166,44 @@ export function TerminalViewer({
 						}
 					}
 				} catch {
-					// ignore parse errors
 				}
 			};
 
-			eventSource.onerror = () => {
-				eventSource.close();
-				if (eventSourceRef.current === eventSource) {
-					eventSourceRef.current = null;
+			const run = async () => {
+				try {
+					const response = await fetch(url, {
+						method: isTunnel ? 'POST' : 'GET',
+						headers: { Accept: 'text/event-stream' },
+						signal: controller.signal,
+					});
+					if (!response.ok || !response.body) return;
+					retryCountRef.current = 0;
+					const reader = response.body.getReader();
+					const decoder = new TextDecoder();
+					let buffer = '';
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
+						buffer += decoder.decode(value, { stream: true });
+						let idx = buffer.indexOf('\n\n');
+						while (idx !== -1) {
+							const raw = buffer.slice(0, idx);
+							buffer = buffer.slice(idx + 2);
+							for (const line of raw.split('\n')) {
+								if (line.startsWith('data: ')) {
+									handleMessage(line.slice(6));
+								}
+							}
+							idx = buffer.indexOf('\n\n');
+						}
+					}
+				} catch (error) {
+					if (error instanceof Error && error.name === 'AbortError') return;
 				}
-
-				if (retryCountRef.current < SSE_MAX_RETRIES) {
+				if (sseAbortRef.current === controller) {
+					sseAbortRef.current = null;
+				}
+				if (!controller.signal.aborted && retryCountRef.current < SSE_MAX_RETRIES) {
 					retryCountRef.current++;
 					retryTimerRef.current = setTimeout(() => {
 						if (termRef.current) {
@@ -183,10 +212,7 @@ export function TerminalViewer({
 					}, SSE_RECONNECT_DELAY);
 				}
 			};
-
-			eventSource.onopen = () => {
-				retryCountRef.current = 0;
-			};
+			void run();
 		},
 		[terminalId],
 	);
@@ -203,9 +229,9 @@ export function TerminalViewer({
 		retryCountRef.current = 0;
 		hasReceivedDataRef.current = false;
 
-		if (eventSourceRef.current) {
-			eventSourceRef.current.close();
-			eventSourceRef.current = null;
+		if (sseAbortRef.current) {
+			sseAbortRef.current.abort();
+			sseAbortRef.current = null;
 		}
 		if (retryTimerRef.current) {
 			clearTimeout(retryTimerRef.current);
@@ -389,11 +415,11 @@ export function TerminalViewer({
 				clearTimeout(retryTimerRef.current);
 				retryTimerRef.current = null;
 			}
-			if (eventSourceRef.current) {
-				eventSourceRef.current.close();
-				eventSourceRef.current = null;
-			}
-			if (resizeObserver) {
+		if (sseAbortRef.current) {
+			sseAbortRef.current.abort();
+			sseAbortRef.current = null;
+		}
+		if (resizeObserver) {
 				resizeObserver.disconnect();
 			}
 			if (term) {

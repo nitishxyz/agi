@@ -1,4 +1,5 @@
 import type { Hono } from 'hono';
+import type { Context } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import {
 	OttoTunnel,
@@ -159,8 +160,8 @@ export function registerTunnelRoutes(app: Hono) {
 		}
 	});
 
-	app.get('/v1/tunnel/stream', async (c) => {
-		return streamSSE(c, async (stream) => {
+	const handleTunnelStream = async (c: Context) => {
+		return streamSSE(c as Context, async (stream) => {
 			const sendEvent = async (data: Record<string, unknown>) => {
 				try {
 					await stream.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -202,7 +203,10 @@ export function registerTunnelRoutes(app: Hono) {
 
 			clearInterval(interval);
 		});
-	});
+	};
+
+	app.get('/v1/tunnel/stream', handleTunnelStream);
+	app.post('/v1/tunnel/stream', handleTunnelStream);
 }
 
 export function stopActiveTunnel() {

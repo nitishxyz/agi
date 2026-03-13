@@ -99,8 +99,12 @@ export async function createSSEStream(
 
 	const fetchImpl = customFetch || fetch;
 
+	const isTunnel =
+		!baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1');
+
 	try {
 		const response = await fetchImpl(url.toString(), {
+			method: isTunnel ? 'POST' : 'GET',
 			headers: {
 				Accept: 'text/event-stream',
 			},

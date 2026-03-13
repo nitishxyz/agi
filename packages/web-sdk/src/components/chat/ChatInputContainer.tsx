@@ -22,8 +22,6 @@ import { useFileUpload } from '../../hooks/useFileUpload';
 import { useQueueStore } from '../../stores/queueStore';
 import { usePendingResearchStore } from '../../stores/pendingResearchStore';
 import { formatResearchContextForMessage } from '../../lib/parseResearchContext';
-import { useSetuBalance } from '../../hooks/useSetuBalance';
-import { useSetuStore } from '../../stores/setuStore';
 import { toast } from '../../stores/toastStore';
 import { useToastStore } from '../../stores/toastStore';
 import { apiClient } from '../../lib/api-client';
@@ -89,6 +87,10 @@ export const ChatInputContainer = memo(
 				(m) => m.id === model,
 			)?.attachment;
 
+			const modelIsFree = allModels?.[provider]?.models?.find(
+				(m) => m.id === model,
+			)?.free;
+
 			const {
 				images,
 				documents,
@@ -131,9 +133,6 @@ export const ChatInputContainer = memo(
 			);
 
 			const providerAuthType = allModels?.[provider]?.authType;
-
-			const { fetchBalance } = useSetuBalance(provider);
-			const isBalanceLoading = useSetuStore((s) => s.isLoading);
 
 			useEffect(() => {
 				if (session) {
@@ -447,11 +446,10 @@ export const ChatInputContainer = memo(
 						modelName={model}
 						providerName={provider}
 						authType={providerAuthType}
+					isFreeModel={modelIsFree}
 						researchContexts={researchContexts}
-						onResearchContextRemove={handleResearchContextRemove}
-						onRefreshBalance={provider === 'setu' ? fetchBalance : undefined}
-						isBalanceLoading={isBalanceLoading}
-						onModelInfoClick={() => {
+					onResearchContextRemove={handleResearchContextRemove}
+					onModelInfoClick={() => {
 							setConfigFocusTarget('model');
 							setIsConfigOpen(true);
 						}}

@@ -108,7 +108,6 @@ export type StandaloneAppConfig = {
 export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	const honoApp = new Hono();
 
-	// Enable CORS for localhost and local network access
 	honoApp.use(
 		'*',
 		cors({
@@ -215,7 +214,6 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 		await next();
 	});
 
-	// Enable CORS for localhost and local network access
 	honoApp.use(
 		'*',
 		cors({
