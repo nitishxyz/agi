@@ -196,6 +196,7 @@ export const schemas = {
 					agent: { type: 'string' },
 					provider: { $ref: '#/components/schemas/Provider' },
 					model: { type: 'string' },
+					fullWidthContent: { type: 'boolean' },
 					reasoningText: { type: 'boolean' },
 					reasoningLevel: {
 						type: 'string',

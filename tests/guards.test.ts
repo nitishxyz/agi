@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'bun:test';
+import { join, resolve } from 'node:path';
 import { guardToolCall } from '../packages/server/src/runtime/tools/guards.ts';
 
 describe('guardToolCall', () => {
@@ -152,6 +153,15 @@ describe('guardToolCall', () => {
 				'allow',
 			);
 			expect(guardToolCall('read', { path: './README.md' }).type).toBe('allow');
+		});
+
+		test('allows absolute paths inside the current project root', () => {
+			const projectRoot = resolve('/tmp/otto-project');
+			const path = join(projectRoot, 'packages', 'server', 'src', 'routes');
+
+			expect(guardToolCall('read', { path }, { projectRoot }).type).toBe(
+				'allow',
+			);
 		});
 	});
 

@@ -63,6 +63,12 @@ export function registerMainConfigRoute(app: Hono) {
 				reasoningText: cfg.defaults.reasoningText ?? true,
 				reasoningLevel: cfg.defaults.reasoningLevel ?? 'high',
 				theme: cfg.defaults.theme,
+				fullWidthContent:
+					getDefault(
+						undefined,
+						embeddedConfig?.defaults?.fullWidthContent,
+						cfg.defaults.fullWidthContent,
+					) ?? false,
 			};
 
 			return c.json({

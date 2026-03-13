@@ -26,6 +26,7 @@ export type DefaultConfig = {
 	reasoningText?: boolean;
 	reasoningLevel?: ReasoningLevel;
 	theme?: string;
+	fullWidthContent?: boolean;
 };
 
 export type ProviderSettings = Record<

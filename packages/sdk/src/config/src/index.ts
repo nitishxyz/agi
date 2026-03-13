@@ -35,6 +35,7 @@ const DEFAULTS: {
 		guidedMode: false,
 		reasoningText: true,
 		reasoningLevel: 'high',
+		fullWidthContent: true,
 	},
 	providers: DEFAULT_PROVIDER_SETTINGS,
 };

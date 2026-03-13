@@ -393,7 +393,9 @@ export function adaptTools(
 						args,
 					);
 				}
-				const guard = guardToolCall(name, args);
+				const guard = guardToolCall(name, args, {
+					projectRoot: ctx.projectRoot,
+				});
 				if (guard.type === 'block') {
 					meta.blocked = true;
 					meta.blockReason = guard.reason;

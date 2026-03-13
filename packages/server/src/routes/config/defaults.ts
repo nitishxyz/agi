@@ -21,6 +21,7 @@ export function registerDefaultsRoute(app: Hono) {
 				reasoningText?: boolean;
 				reasoningLevel?: ReasoningLevel;
 				theme?: string;
+				fullWidthContent?: boolean;
 				scope?: 'global' | 'local';
 			}>();
 
@@ -34,6 +35,7 @@ export function registerDefaultsRoute(app: Hono) {
 				reasoningText: boolean;
 				reasoningLevel: ReasoningLevel;
 				theme: string;
+				fullWidthContent: boolean;
 			}> = {};
 
 			if (body.agent) updates.agent = body.agent;
@@ -45,6 +47,8 @@ export function registerDefaultsRoute(app: Hono) {
 				updates.reasoningText = body.reasoningText;
 			if (body.reasoningLevel) updates.reasoningLevel = body.reasoningLevel;
 			if (body.theme) updates.theme = body.theme;
+			if (body.fullWidthContent !== undefined)
+				updates.fullWidthContent = body.fullWidthContent;
 
 			await setConfig(scope, updates, projectRoot);
 

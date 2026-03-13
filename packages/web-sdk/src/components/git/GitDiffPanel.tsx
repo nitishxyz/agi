@@ -61,11 +61,14 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 			if ((e.key === 'Escape' || (e.key === 'q' && !isInInput)) && isDiffOpen) {
 				closeDiff();
 			}
+			if (e.key === 'f' && !isInInput && isDiffOpen) {
+				setShowFullFile((v) => !v);
+			}
 		};
 
 		document.addEventListener('keydown', handleEscape);
 		return () => document.removeEventListener('keydown', handleEscape);
-	}, [isDiffOpen, closeDiff]);
+	}, [isDiffOpen, closeDiff, setShowFullFile]);
 
 	if (!isDiffOpen || !selectedFile) return null;
 
@@ -98,7 +101,7 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 					variant={showFullFile ? 'secondary' : 'ghost'}
 					size="sm"
 					onClick={() => setShowFullFile((v) => !v)}
-					title={showFullFile ? 'Show diff only' : 'Show full file with diff'}
+				title={showFullFile ? 'Show diff only (f)' : 'Show full file with diff (f)'}
 					className="flex items-center gap-1.5 text-xs h-7"
 				>
 					{showFullFile ? (

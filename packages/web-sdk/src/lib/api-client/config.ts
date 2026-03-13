@@ -19,6 +19,7 @@ export const configMixin = {
 			guidedMode?: boolean;
 			reasoningText?: boolean;
 			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
+			fullWidthContent?: boolean;
 		};
 	}> {
 		const response = await apiGetConfig();
@@ -60,6 +61,7 @@ export const configMixin = {
 		guidedMode?: boolean;
 		reasoningText?: boolean;
 		reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
+		fullWidthContent?: boolean;
 		scope?: 'global' | 'local';
 	}): Promise<{
 		success: boolean;
@@ -71,6 +73,7 @@ export const configMixin = {
 			guidedMode?: boolean;
 			reasoningText?: boolean;
 			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
+			fullWidthContent?: boolean;
 		};
 	}> {
 		const response = await apiUpdateDefaults({

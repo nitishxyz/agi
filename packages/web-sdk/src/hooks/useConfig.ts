@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 
+type ConfigData = Awaited<ReturnType<typeof apiClient.getConfig>>;
+
 export function useConfig() {
 	return useQuery({
 		queryKey: ['config'],
@@ -36,8 +38,36 @@ export function useUpdateDefaults() {
 			guidedMode?: boolean;
 			reasoningText?: boolean;
 			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
+			fullWidthContent?: boolean;
 			scope?: 'global' | 'local';
 		}) => apiClient.updateDefaults(data),
+		onMutate: async (data) => {
+			await queryClient.cancelQueries({ queryKey: ['config'] });
+
+			const previousConfig = queryClient.getQueryData<ConfigData>(['config']);
+			if (previousConfig) {
+				const defaultUpdates = Object.fromEntries(
+					Object.entries(data).filter(
+						([key, value]) => key !== 'scope' && value !== undefined,
+					),
+				) as Partial<ConfigData['defaults']>;
+
+				queryClient.setQueryData<ConfigData>(['config'], {
+					...previousConfig,
+					defaults: {
+						...previousConfig.defaults,
+						...defaultUpdates,
+					},
+				});
+			}
+
+			return { previousConfig };
+		},
+		onError: (_error, _data, context) => {
+			if (context?.previousConfig) {
+				queryClient.setQueryData(['config'], context.previousConfig);
+			}
+		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['config'] });
 		},

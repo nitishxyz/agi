@@ -19,6 +19,8 @@ interface ConfigData {
 		provider: string;
 		model: string;
 		toolApproval?: 'auto' | 'dangerous' | 'all';
+		guidedMode?: boolean;
+		fullWidthContent?: boolean;
 	};
 }
 
@@ -123,6 +125,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 				agent: selectedAgent,
 				toolApproval: selectedApproval,
 				guidedMode,
+				fullWidthContent: config?.defaults?.fullWidthContent ?? true,
 				scope: 'global',
 			});
 			await onComplete();

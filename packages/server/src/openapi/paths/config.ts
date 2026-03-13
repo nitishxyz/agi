@@ -178,6 +178,7 @@ export const configPaths = {
 								agent: { type: 'string' },
 								provider: { type: 'string' },
 								model: { type: 'string' },
+								fullWidthContent: { type: 'boolean' },
 								reasoningText: { type: 'boolean' },
 								reasoningLevel: {
 									type: 'string',
@@ -208,6 +209,7 @@ export const configPaths = {
 											agent: { type: 'string' },
 											provider: { type: 'string' },
 											model: { type: 'string' },
+											fullWidthContent: { type: 'boolean' },
 											reasoningText: { type: 'boolean' },
 											reasoningLevel: {
 												type: 'string',

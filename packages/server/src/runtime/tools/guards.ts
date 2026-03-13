@@ -1,9 +1,19 @@
+import { resolve as resolvePath } from 'node:path';
+
 export type GuardAction =
 	| { type: 'block'; reason: string }
 	| { type: 'approve'; reason: string }
 	| { type: 'allow' };
 
-export function guardToolCall(toolName: string, args: unknown): GuardAction {
+export type GuardContext = {
+	projectRoot?: string;
+};
+
+export function guardToolCall(
+	toolName: string,
+	args: unknown,
+	context: GuardContext = {},
+): GuardAction {
 	const a = (args ?? {}) as Record<string, unknown>;
 
 	switch (toolName) {
@@ -12,7 +22,7 @@ export function guardToolCall(toolName: string, args: unknown): GuardAction {
 		case 'terminal':
 			return guardTerminal(a);
 		case 'read':
-			return guardReadPath(String(a.path ?? ''));
+			return guardReadPath(String(a.path ?? ''), context.projectRoot);
 		case 'write':
 		case 'edit':
 		case 'multiedit':
@@ -118,7 +128,42 @@ const SENSITIVE_READ_PATHS: Array<{ pattern: RegExp; reason: string }> = [
 	{ pattern: /^~?\/?\.docker\/config\.json$/, reason: 'Docker credentials' },
 ];
 
-function guardReadPath(path: string): GuardAction {
+function normalizeForComparison(value: string): string {
+	const withForwardSlashes = value.replace(/\\/g, '/');
+	return process.platform === 'win32'
+		? withForwardSlashes.toLowerCase()
+		: withForwardSlashes;
+}
+
+function expandTilde(path: string): string {
+	const home = process.env.HOME || process.env.USERPROFILE || '';
+	if (!home) return path;
+	if (path === '~') return home;
+	if (path.startsWith('~/')) return `${home}/${path.slice(2)}`;
+	return path;
+}
+
+function isAbsoluteLike(path: string): boolean {
+	return (
+		path.startsWith('/') || path.startsWith('~') || /^[A-Za-z]:[\\/]/.test(path)
+	);
+}
+
+function isPathInProject(path: string, projectRoot?: string): boolean {
+	if (!projectRoot || !isAbsoluteLike(path)) return false;
+	const root = resolvePath(projectRoot);
+	const target = resolvePath(expandTilde(path));
+	const rootNorm = (() => {
+		const normalized = normalizeForComparison(root);
+		if (normalized === '/') return '/';
+		return normalized.replace(/[\\/]+$/, '');
+	})();
+	const targetNorm = normalizeForComparison(target);
+	const rootWithSlash = rootNorm === '/' ? '/' : `${rootNorm}/`;
+	return targetNorm === rootNorm || targetNorm.startsWith(rootWithSlash);
+}
+
+function guardReadPath(path: string, projectRoot?: string): GuardAction {
 	if (!path) return { type: 'allow' };
 	const p = path.trim();
 
@@ -128,7 +173,10 @@ function guardReadPath(path: string): GuardAction {
 	for (const { pattern, reason } of SENSITIVE_READ_PATHS) {
 		if (pattern.test(p)) return { type: 'approve', reason };
 	}
-	if (p.startsWith('/') || p.startsWith('~')) {
+	if (isPathInProject(p, projectRoot)) {
+		return { type: 'allow' };
+	}
+	if (isAbsoluteLike(p)) {
 		return { type: 'approve', reason: 'Reading path outside project root' };
 	}
 	return { type: 'allow' };
