@@ -298,7 +298,8 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 					if (cache?.promptCacheRetention)
 						parsed.prompt_cache_retention = cache.promptCacheRetention;
 					const requestUrl = getRequestUrl(input);
-					const isAnthropicRoute = requestUrl?.pathname.endsWith('/messages') ?? false;
+					const isAnthropicRoute =
+						requestUrl?.pathname.endsWith('/messages') ?? false;
 					if (isAnthropicRoute) {
 						const cacheConfig = cache?.anthropicCaching;
 						if (cacheConfig !== false) {

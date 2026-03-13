@@ -206,7 +206,7 @@ export function registerModelsRoutes(app: Hono) {
 							reasoningText: m.reasoningText,
 							vision: m.modalities?.input?.includes('image') ?? false,
 							attachment: m.attachment ?? false,
-						free: m.cost?.input === 0 && m.cost?.output === 0,
+							free: m.cost?.input === 0 && m.cost?.output === 0,
 						})),
 					};
 				}

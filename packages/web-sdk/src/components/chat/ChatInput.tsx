@@ -88,7 +88,7 @@ export const ChatInput = memo(
 			modelName,
 			providerName,
 			authType,
-		isFreeModel,
+			isFreeModel,
 			researchContexts = [],
 			onResearchContextRemove,
 			onModelInfoClick,
@@ -601,7 +601,9 @@ export const ChatInput = memo(
 													<span className="opacity-50">(pro)</span>
 												)}
 												{isSetu && setuPlanLabel && (
-													<span className="opacity-50">({setuPlanLabel.toLowerCase()})</span>
+													<span className="opacity-50">
+														({setuPlanLabel.toLowerCase()})
+													</span>
 												)}
 												{isFreeModel && (
 													<span className="opacity-50">(free)</span>

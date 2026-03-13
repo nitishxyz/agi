@@ -446,10 +446,10 @@ export const ChatInputContainer = memo(
 						modelName={model}
 						providerName={provider}
 						authType={providerAuthType}
-					isFreeModel={modelIsFree}
+						isFreeModel={modelIsFree}
 						researchContexts={researchContexts}
-					onResearchContextRemove={handleResearchContextRemove}
-					onModelInfoClick={() => {
+						onResearchContextRemove={handleResearchContextRemove}
+						onModelInfoClick={() => {
 							setConfigFocusTarget('model');
 							setIsConfigOpen(true);
 						}}

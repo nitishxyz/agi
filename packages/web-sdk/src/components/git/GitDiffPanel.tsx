@@ -101,7 +101,9 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 					variant={showFullFile ? 'secondary' : 'ghost'}
 					size="sm"
 					onClick={() => setShowFullFile((v) => !v)}
-				title={showFullFile ? 'Show diff only (f)' : 'Show full file with diff (f)'}
+					title={
+						showFullFile ? 'Show diff only (f)' : 'Show full file with diff (f)'
+					}
 					className="flex items-center gap-1.5 text-xs h-7"
 				>
 					{showFullFile ? (

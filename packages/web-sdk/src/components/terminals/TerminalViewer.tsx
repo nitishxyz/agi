@@ -165,8 +165,7 @@ export function TerminalViewer({
 							onExitRef.current(terminalId);
 						}
 					}
-				} catch {
-				}
+				} catch {}
 			};
 
 			const run = async () => {
@@ -203,7 +202,10 @@ export function TerminalViewer({
 				if (sseAbortRef.current === controller) {
 					sseAbortRef.current = null;
 				}
-				if (!controller.signal.aborted && retryCountRef.current < SSE_MAX_RETRIES) {
+				if (
+					!controller.signal.aborted &&
+					retryCountRef.current < SSE_MAX_RETRIES
+				) {
 					retryCountRef.current++;
 					retryTimerRef.current = setTimeout(() => {
 						if (termRef.current) {
@@ -415,11 +417,11 @@ export function TerminalViewer({
 				clearTimeout(retryTimerRef.current);
 				retryTimerRef.current = null;
 			}
-		if (sseAbortRef.current) {
-			sseAbortRef.current.abort();
-			sseAbortRef.current = null;
-		}
-		if (resizeObserver) {
+			if (sseAbortRef.current) {
+				sseAbortRef.current.abort();
+				sseAbortRef.current = null;
+			}
+			if (resizeObserver) {
 				resizeObserver.disconnect();
 			}
 			if (term) {
