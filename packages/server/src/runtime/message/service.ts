@@ -130,7 +130,14 @@ export async function dispatchAssistantMessage(
 	publish({
 		type: 'message.created',
 		sessionId,
-		payload: { id: userMessageId, role: 'user', agent, provider, model },
+		payload: {
+			id: userMessageId,
+			role: 'user',
+			agent,
+			provider,
+			model,
+			content: String(content),
+		},
 	});
 
 	const assistantMessageId = crypto.randomUUID();

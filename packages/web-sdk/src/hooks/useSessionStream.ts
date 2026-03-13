@@ -728,6 +728,30 @@ export function useSessionStream(
 							typeof payload?.provider === 'string' ? payload.provider : '';
 						const model =
 							typeof payload?.model === 'string' ? payload.model : '';
+								const content =
+									typeof payload?.content === 'string' ? payload.content : null;
+								const userParts: MessagePart[] =
+									role === 'user' && content
+										? [
+												{
+													id: `${id}-text`,
+													messageId: id,
+													index: 0,
+													stepIndex: null,
+													type: 'text',
+													content: JSON.stringify({ text: content }),
+													contentJson: { text: content },
+													agent,
+													provider,
+													model,
+													startedAt: Date.now(),
+													completedAt: Date.now(),
+													toolName: null,
+													toolCallId: null,
+													toolDurationMs: null,
+												},
+											]
+										: [];
 						queryClient.setQueryData<Message[]>(
 							['messages', sessionId],
 							(oldMessages) => {
@@ -737,7 +761,7 @@ export function useSessionStream(
 									id,
 									sessionId,
 									role: role as Message['role'],
-									status: 'pending',
+											status: role === 'user' ? 'complete' : 'pending',
 									agent,
 									provider,
 									model,
@@ -748,7 +772,7 @@ export function useSessionStream(
 									completionTokens: null,
 									totalTokens: null,
 									error: null,
-									parts: [],
+											parts: userParts,
 								};
 								const next = [...oldMessages, newMessage];
 								next.sort((a, b) => a.createdAt - b.createdAt);
