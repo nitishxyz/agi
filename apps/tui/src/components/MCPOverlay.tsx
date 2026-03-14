@@ -76,11 +76,11 @@ async function copyToClipboard(text: string): Promise<void> {
 			: process.platform === 'win32'
 				? 'clip'
 				: 'xclip -selection clipboard';
-	const proc = Bun.spawn([
-		'sh',
-		'-c',
-		`printf '%s' ${JSON.stringify(text)} | ${cmd}`,
-	]);
+	const proc = Bun.spawn(['sh', '-c', cmd], {
+		stdin: 'pipe',
+	});
+	proc.stdin.write(text);
+	proc.stdin.end();
 	await proc.exited;
 }
 
