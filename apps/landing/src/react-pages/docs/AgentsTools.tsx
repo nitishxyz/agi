@@ -1,69 +1,69 @@
 import { CodeBlock } from '../../components/CodeBlock';
 import { DocPage } from '../../components/DocPage';
+
 export function AgentsTools() {
 	return (
 		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Agents & Tools</h1>
 			<p className="text-otto-dim text-sm mb-8">
-				Built-in agents, tools reference, and customization.
+				Built-in agents, current toolsets, MCP tools, and customization.
 			</p>
 
-			<h2>Agents</h2>
+			<h2>Built-in agents</h2>
 			<p>
-				otto ships with four built-in agents. Each has a system prompt and
-				curated toolset.
+				otto currently ships with four built-in agents: <code>build</code>,{' '}
+				<code>plan</code>, <code>general</code>, and <code>research</code>.
+			</p>
+			<p>
+				All built-in agents also receive <code>progress_update</code>,{' '}
+				<code>finish</code>, and <code>skill</code>.
 			</p>
 
 			<h3>build</h3>
+			<p>Implementation agent for code changes and fixes.</p>
 			<p>
-				Code generation, bug fixes, feature implementation. Most capable agent
-				with full filesystem and shell access.
+				<strong>Tools:</strong> read, write, ls, tree, bash, update_todos,
+				glob, ripgrep, git_status, terminal, apply_patch, websearch
 			</p>
-			<p>
-				<strong>Tools:</strong> read, write, ls, tree, bash, update_todos, glob,
-				ripgrep, git_status, terminal, apply_patch, websearch
-			</p>
-			<CodeBlock>{`otto ask "create an auth component" --agent build
-otto ask "fix the failing test" --agent build`}</CodeBlock>
+			<CodeBlock>{`otto "create an auth component" --agent build
+otto "fix the failing test" --agent build`}</CodeBlock>
 
 			<h3>plan</h3>
+			<p>Planning and analysis agent.</p>
 			<p>
-				Architecture planning and code analysis. Read-only — cannot modify files
-				or run commands.
+				<strong>Tools:</strong> read, ls, tree, ripgrep, update_todos,
+				websearch
 			</p>
-			<p>
-				<strong>Tools:</strong> read, ls, tree, ripgrep, update_todos, websearch
-			</p>
-			<CodeBlock>{`otto ask "design the API architecture" --agent plan
-otto ask "review the dependency graph" --agent plan`}</CodeBlock>
+			<CodeBlock>{`otto "design the API architecture" --agent plan
+otto "review the dependency graph" --agent plan`}</CodeBlock>
 
 			<h3>general</h3>
-			<p>General-purpose assistant for mixed tasks.</p>
+			<p>Broad mixed-purpose assistant.</p>
 			<p>
 				<strong>Tools:</strong> read, write, ls, tree, bash, ripgrep, glob,
 				websearch, update_todos
 			</p>
-			<CodeBlock>{`otto ask "explain how this module works" --agent general`}</CodeBlock>
+			<CodeBlock>{`otto "explain how this module works" --agent general`}</CodeBlock>
 
 			<h3>research</h3>
 			<p>
-				Deep research across sessions and the web. Can query past sessions for
+				Research-oriented agent that can inspect prior sessions and related
 				context.
 			</p>
 			<p>
 				<strong>Tools:</strong> read, ls, tree, ripgrep, websearch,
-				update_todos, query_sessions, query_messages, search_history
+				update_todos, query_sessions, query_messages, get_session_context,
+				search_history, get_parent_session, present_action
 			</p>
-			<CodeBlock>{`otto ask "research how auth is implemented" --agent research`}</CodeBlock>
+			<CodeBlock>{`otto "research how auth is implemented" --agent research`}</CodeBlock>
 
+			<h2>Built-in tools</h2>
 			<p>
-				All agents also receive: <code>progress_update</code>,{' '}
-				<code>finish</code>, <code>skill</code>.
+				The lists below describe the overall built-in tool universe. Each agent
+				only receives the subset assigned to its preset or config overrides.
 			</p>
 
-			<h2>Tools</h2>
-
-			<h3>File System</h3>
+			<h3>File system</h3>
 			<table>
 				<thead>
 					<tr>
@@ -73,39 +73,37 @@ otto ask "review the dependency graph" --agent plan`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td>
-							<code>read</code>
-						</td>
-						<td>Read file contents. Supports line ranges.</td>
+						<td><code>read</code></td>
+						<td>Read file contents, optionally by line range.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>write</code>
-						</td>
-						<td>Write content to a file. Creates if it doesn't exist.</td>
+						<td><code>write</code></td>
+						<td>Write or create a file.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>ls</code>
-						</td>
-						<td>List directory contents (non-recursive).</td>
+						<td><code>ls</code></td>
+						<td>List a directory.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>tree</code>
-						</td>
-						<td>Render directory tree with configurable depth.</td>
+						<td><code>tree</code></td>
+						<td>Render a directory tree.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>glob</code>
-						</td>
-						<td>Find files matching glob patterns.</td>
+						<td><code>pwd</code></td>
+						<td>Return the current working directory.</td>
+					</tr>
+					<tr>
+						<td><code>cd</code></td>
+						<td>Change the working directory for the tool runtime.</td>
+					</tr>
+					<tr>
+						<td><code>glob</code></td>
+						<td>Find files by glob pattern.</td>
 					</tr>
 				</tbody>
 			</table>
 
-			<h3>Search</h3>
+			<h3>Search and web</h3>
 			<table>
 				<thead>
 					<tr>
@@ -115,21 +113,11 @@ otto ask "review the dependency graph" --agent plan`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td>
-							<code>grep</code>
-						</td>
-						<td>Search file contents with regex.</td>
+						<td><code>ripgrep</code></td>
+						<td>Fast regex/code search.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>ripgrep</code>
-						</td>
-						<td>Fast regex search using rg.</td>
-					</tr>
-					<tr>
-						<td>
-							<code>websearch</code>
-						</td>
+						<td><code>websearch</code></td>
 						<td>Search the web or fetch URL content.</td>
 					</tr>
 				</tbody>
@@ -145,21 +133,13 @@ otto ask "review the dependency graph" --agent plan`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td>
-							<code>edit</code>
-						</td>
-						<td>Structured file editing: replace, insert, delete.</td>
-					</tr>
-					<tr>
-						<td>
-							<code>apply_patch</code>
-						</td>
-						<td>Apply unified diff patches with fuzzy matching.</td>
+						<td><code>apply_patch</code></td>
+						<td>Apply enveloped or unified diff patches.</td>
 					</tr>
 				</tbody>
 			</table>
 
-			<h3>Shell</h3>
+			<h3>Shell and runtime</h3>
 			<table>
 				<thead>
 					<tr>
@@ -169,15 +149,11 @@ otto ask "review the dependency graph" --agent plan`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td>
-							<code>bash</code>
-						</td>
-						<td>Execute shell commands. Returns stdout, stderr, exit code.</td>
+						<td><code>bash</code></td>
+						<td>Execute shell commands.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>terminal</code>
-						</td>
+						<td><code>terminal</code></td>
 						<td>Persistent terminal sessions via bun-pty.</td>
 					</tr>
 				</tbody>
@@ -193,119 +169,144 @@ otto ask "review the dependency graph" --agent plan`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td>
-							<code>git_status</code>
-						</td>
+						<td><code>git_status</code></td>
 						<td>Git working tree status.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>git_diff</code>
-						</td>
-						<td>Git diff (staged or all changes).</td>
+						<td><code>git_diff</code></td>
+						<td>Git diff.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>git_commit</code>
-						</td>
+						<td><code>git_commit</code></td>
 						<td>Create a git commit.</td>
 					</tr>
 				</tbody>
 			</table>
 
-			<h2>Agent Configuration</h2>
-
-			<h3>Per-Project</h3>
-			<p>
-				Create <code>.otto/agents.json</code> in your project root:
-			</p>
-			<CodeBlock>{`{
-  "build": {
-    "tools": ["read", "write", "bash", "git_status", "ripgrep"],
-    "prompt": ".otto/agents/build/agent.md"
-  },
-  "custom-agent": {
-    "tools": ["read", "ls", "tree", "ripgrep"],
-    "prompt": ".otto/agents/custom-agent/agent.md"
-  }
-}`}</CodeBlock>
-
-			<h3>Options</h3>
+			<h3>Agent control and research</h3>
 			<table>
 				<thead>
 					<tr>
-						<th>Field</th>
+						<th>Tool</th>
 						<th>Description</th>
 					</tr>
 				</thead>
 				<tbody>
 					<tr>
-						<td>
-							<code>tools</code>
-						</td>
-						<td>Override the default tool list.</td>
+						<td><code>update_todos</code></td>
+						<td>Track a visible task list.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>appendTools</code>
-						</td>
-						<td>Add tools to the default list.</td>
+						<td><code>progress_update</code></td>
+						<td>Emit short status/progress updates.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>prompt</code>
-						</td>
-						<td>Path to a custom system prompt file.</td>
+						<td><code>finish</code></td>
+						<td>Signal task completion.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>provider</code>
-						</td>
-						<td>Override provider for this agent.</td>
+						<td><code>skill</code></td>
+						<td>Load specialized instructions from a skill bundle.</td>
 					</tr>
 					<tr>
-						<td>
-							<code>model</code>
-						</td>
-						<td>Override model for this agent.</td>
+						<td><code>query_sessions</code></td>
+						<td>Search sessions.</td>
+					</tr>
+					<tr>
+						<td><code>query_messages</code></td>
+						<td>Search messages.</td>
+					</tr>
+					<tr>
+						<td><code>get_session_context</code></td>
+						<td>Load a session context snapshot.</td>
+					</tr>
+					<tr>
+						<td><code>search_history</code></td>
+						<td>Search historical activity.</td>
+					</tr>
+					<tr>
+						<td><code>get_parent_session</code></td>
+						<td>Resolve parent session linkage.</td>
+					</tr>
+					<tr>
+						<td><code>present_action</code></td>
+						<td>Present research findings/action links.</td>
 					</tr>
 				</tbody>
 			</table>
 
+			<h2>Agent Configuration</h2>
+			<p>
+				Use <code>.otto/agents.json</code> or{' '}
+				<code>~/.config/otto/agents.json</code>.
+			</p>
+			<CodeBlock>{`{
+  "build": {
+    "appendTools": ["git_diff", "glob"]
+  },
+  "reviewer": {
+    "tools": ["read", "ls", "tree", "ripgrep", "update_todos"],
+    "prompt": ".otto/agents/reviewer.md"
+  }
+}`}</CodeBlock>
+			<p>
+				Prompt files are typically stored at <code>.otto/agents/{'{name}'}.md</code>{' '}
+			or <code>.otto/agents/{'{name}'}.txt</code>.
+			</p>
+
 			<h2>Custom Tools</h2>
 			<p>
-				Add project-specific tools in <code>.otto/tools/</code>:
+				Custom tools are discovered from plugin folders like{' '}
+				<code>.otto/tools/{'{tool-name}'}/tool.js</code> and{' '}
+				<code>tool.mjs</code>.
 			</p>
-			<CodeBlock>{`// .otto/tools/deploy.ts
-import { tool } from "@ottocode/sdk";
-import { z } from "zod";
-
-export default tool({
-  name: "deploy",
-  description: "Deploy the application",
-  parameters: z.object({
-    environment: z.enum(["staging", "production"]),
-  }),
-  execute: async ({ environment }) => {
-    return { success: true, environment };
+			<CodeBlock>{`export default {
+  name: 'file_size',
+  description: 'Return the byte size for a file path',
+  parameters: {
+    path: {
+      type: 'string',
+      description: 'Path to inspect'
+    }
   },
-});`}</CodeBlock>
+  async execute({ input, fs }) {
+    const content = await fs.readFile(input.path, 'utf8');
+    return { bytes: Buffer.byteLength(content, 'utf8') };
+  }
+};`}</CodeBlock>
+
+			<h2>MCP Tools</h2>
+			<p>
+				Running MCP servers expose tools named like <code>server__tool</code>.
+				Those tools come from the connected server and are separate from the
+				built-in agent presets.
+			</p>
+			<ul>
+				<li>
+					<code>github__create_issue</code>
+				</li>
+				<li>
+					<code>linear__list_issues</code>
+				</li>
+				<li>
+					<code>helius__getBalance</code>
+				</li>
+			</ul>
 
 			<h2>Skills</h2>
 			<p>
-				Skills are markdown files that provide specialized instructions to
-				agents, loaded via the <code>skill</code> tool.
+				The <code>skill</code> tool loads markdown instruction bundles on
+				demand.
 			</p>
-			<p>Defined at three levels:</p>
 			<ul>
 				<li>
-					<strong>Project:</strong> <code>.otto/skills/</code>
+					<strong>Built-in</strong> bundled skills
 				</li>
 				<li>
-					<strong>Global:</strong> <code>~/.config/otto/skills/</code>
+					<strong>Project</strong>: <code>.otto/skills/</code>
 				</li>
 				<li>
-					<strong>Built-in:</strong> bundled with otto
+					<strong>Global</strong>: <code>~/.config/otto/skills/</code>
 				</li>
 			</ul>
 			<CodeBlock>{`otto skills                    # list available skills`}</CodeBlock>

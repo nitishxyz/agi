@@ -16,7 +16,7 @@ When otto needs a value, it checks in this order:
 5. Built-in defaults
 ```
 
-Auth secrets are a special case: they are stored in a secure OS-specific path, not in `~/.config/otto/auth.json`.
+Auth secrets are a special case: they are stored in a secure OS-specific path, not in the global config directory.
 
 ## Directory layout
 

@@ -207,7 +207,7 @@ Global config lives under `~/.config/otto/`.
 
 Project config lives under `.otto/`.
 
-Secrets do **not** live in `~/.config/otto/auth.json` anymore. Auth is stored in secure OS-specific locations:
+Secrets do **not** live in the global config directory anymore. Auth is stored in secure OS-specific locations:
 
 | Platform | Secure auth path |
 |---|---|

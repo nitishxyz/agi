@@ -466,7 +466,7 @@ Add `GET /v1/info` to `@ottocode/server`:
 ```json
 {
   "name": "otto",
-  "version": "0.1.161",
+  "version": "0.x.y",
   "project": "/Users/dev/my-app",
   "uptime": 3600
 }

@@ -2,741 +2,372 @@
 
 [← Back to README](../README.md) • [Docs Index](./index.md)
 
-This guide covers development workflows for all components of the ottocode project: **Server**, **CLI**, **Web SDK**, and **Web App**.
+This guide covers the current development workflow for the otto monorepo.
 
-## Table of Contents
+## Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Getting Started](#getting-started)
-3. [Project Overview](#project-overview)
-4. [Development Workflows](#development-workflows)
-   - [Server Development](#server-development)
-   - [CLI Development](#cli-development)
-   - [Web SDK Development](#web-sdk-development)
-   - [Web App Development](#web-app-development)
-5. [Testing](#testing)
-6. [Building](#building)
-7. [Common Tasks](#common-tasks)
-8. [Troubleshooting](#troubleshooting)
+2. [Repo overview](#repo-overview)
+3. [Getting started](#getting-started)
+4. [Core development commands](#core-development-commands)
+5. [Server development](#server-development)
+6. [CLI development](#cli-development)
+7. [Web and web-sdk development](#web-and-web-sdk-development)
+8. [Database workflow](#database-workflow)
+9. [API/OpenAPI workflow](#apiopenapi-workflow)
+10. [Infrastructure](#infrastructure)
+11. [Testing and validation](#testing-and-validation)
+12. [Troubleshooting](#troubleshooting)
 
 ## Prerequisites
 
-### Required Tools
+Required:
 
-- **Bun** v1.0+ (primary runtime and package manager)
-- **Node.js** 18+ (for npm compatibility)
-- **SQLite3** (included with most systems)
-- **Git** (version control)
+- [Bun](https://bun.sh)
+- Git
+- platform-specific tooling for the surface you are working on
+  - Tauri tooling for desktop/launcher work
+  - mobile toolchain for `apps/mobile`
 
-### Installation
+Repository conventions:
 
-```bash
-# Install Bun (if not already installed)
-curl -fsSL https://bun.sh/install | bash
+- use Bun for installs, scripts, builds, and tests
+- use Biome via `bun lint`
+- use workspace imports (`@ottocode/...`) across packages
+- keep changes focused and modular
 
-# Verify installation
-bun --version
+## Repo overview
+
+Current workspace layout:
+
+```text
+otto/
+├── apps/
+│   ├── cli/
+│   ├── desktop/
+│   ├── intro-video/
+│   ├── landing/
+│   ├── launcher/
+│   ├── mobile/
+│   ├── preview-api/
+│   ├── preview-web/
+│   ├── tui/
+│   └── web/
+├── packages/
+│   ├── acp/
+│   ├── ai-sdk/
+│   ├── api/
+│   ├── database/
+│   ├── install/
+│   ├── openclaw-setu/
+│   ├── sdk/
+│   ├── server/
+│   ├── web-sdk/
+│   └── web-ui/
+├── infra/
+├── functions/
+│   └── og/
+├── scripts/
+├── tests/
+└── docs/
 ```
 
-## Getting Started
+Important package roles:
 
-### 1. Clone and Install
+- `@ottocode/sdk` — providers, auth, config, prompts, built-in tools
+- `@ottocode/server` — Hono server and runtime
+- `@ottocode/api` — generated client from OpenAPI
+- `@ottocode/database` — SQLite + Drizzle ORM
+- `@ottocode/web-sdk` — React hooks/components
+- `@ottocode/web-ui` — prebuilt browser UI assets
+
+## Getting started
 
 ```bash
-# Clone the repository
 git clone https://github.com/nitishxyz/otto.git
 cd otto
-
-# Install all dependencies (uses Bun workspaces)
 bun install
 ```
 
-This installs dependencies for all packages and applications in the monorepo.
-
-### 2. Verify Setup
+Basic validation:
 
 ```bash
-# Run linter
 bun lint
-
-# Run type checking
 bun run typecheck
-
-# Run tests
 bun test
 ```
 
-## Project Overview
-
-The ottocode is organized as a **Bun workspace monorepo**:
-
-```
-otto/
-├── apps/
-│   ├── cli/              # CLI application (main binary)
-│   └── web/              # Web interface (React + Vite)
-├── packages/
-│   ├── api/              # Type-safe API client
-│   ├── database/         # SQLite + Drizzle ORM
-│   ├── install/          # npm installer package
-│   ├── sdk/              # Core SDK
-│   ├── server/           # HTTP server (Hono)
-│   ├── web-sdk/           # React hooks/components
-│   └── web-ui/           # Web UI components (pre-built)
-└── docs/                 # Documentation
-```
-
-**Key Points:**
-
-- **Monorepo**: All packages share a single `node_modules` via Bun workspaces
-- **Workspace Protocol**: Packages reference each other via `workspace:*`
-- **TypeScript**: All code is TypeScript with strict mode enabled
-- **No Build Step**: Most packages use `.ts` files directly (except web)
-
-## Development Workflows
-
-### Server Development
-
-The server package (`@ottocode/server`) provides an HTTP API for ottocode.
-
-#### Running the Server
+## Core development commands
 
 ```bash
-# From workspace root
+bun lint
+bun test
+bun run typecheck
+bun run compile
+```
+
+Useful workspace commands:
+
+```bash
+bun run cli
+bun run dev:cli
+bun run dev:server
+bun run dev:web
+bun run dev:desktop
+bun run --filter @ottocode/tui dev
+bun run --filter @ottocode/sdk dev
+bun run --filter @ottocode/server dev
+```
+
+## Server development
+
+The server package is `@ottocode/server`.
+
+Run it with:
+
+```bash
 bun run dev:server
 
-# Or from packages/server
+# or
 cd packages/server
 bun run dev
 ```
 
-The server will start on `http://localhost:9100` by default.
+### Current server shape
 
-#### Server Structure
+Relevant areas:
 
-```
-packages/server/
-├── src/
-│   ├── routes/          # API route handlers
-│   │   ├── ask.ts       # /api/ask endpoint
-│   │   ├── sessions.ts  # Session management
-│   │   ├── models.ts    # Model listing
-│   │   └── ...
-│   ├── runtime/         # Runtime services
-│   │   ├── ask-service.ts
-│   │   └── agent-registry.ts
-│   ├── events/          # Event system
-│   └── index.ts         # Server factory
-└── package.json
-```
-
-#### Key Files
-
-- **`src/index.ts`**: Main server factory (`createServer`, `createApp`)
-- **`src/routes/ask.ts`**: Core `/api/ask` endpoint with SSE streaming
-- **`src/runtime/ask-service.ts`**: Business logic for AI interactions
-
-#### Making Changes
-
-1. **Add a new route:**
-
-```typescript
-// packages/server/src/routes/my-feature.ts
-import { Hono } from 'hono';
-
-const app = new Hono();
-
-app.get('/my-feature', async (c) => {
-  return c.json({ message: 'Hello from my feature!' });
-});
-
-export default app;
+```text
+packages/server/src/
+├── index.ts
+├── openapi/
+│   ├── spec.ts
+│   └── paths/
+├── routes/
+│   ├── ask.ts
+│   ├── auth.ts
+│   ├── branch.ts
+│   ├── doctor.ts
+│   ├── files.ts
+│   ├── mcp.ts
+│   ├── provider-usage.ts
+│   ├── research.ts
+│   ├── root.ts
+│   ├── session-files.ts
+│   ├── session-messages.ts
+│   ├── session-stream.ts
+│   ├── sessions.ts
+│   ├── setu.ts
+│   ├── skills.ts
+│   ├── terminals.ts
+│   └── tunnel.ts
+└── runtime/
+    ├── agent/
+    ├── ask/
+    ├── message/
+    ├── prompt/
+    ├── session/
+    ├── stream/
+    └── tools/
 ```
 
-2. **Register the route:**
+### Current API shape
 
-```typescript
-// packages/server/src/index.ts
-import myFeature from './routes/my-feature';
+The server exposes:
 
-app.route('/api', myFeature);
-```
+- `/`
+- `/openapi.json`
+- `/v1/*`
 
-3. **Test the endpoint:**
+Examples:
+
+- `POST /v1/ask`
+- `GET /v1/server/info`
+- `GET /v1/sessions`
+- `GET /v1/sessions/{id}/stream`
+
+### Making server changes
+
+Recommended order:
+
+1. update route handlers under `packages/server/src/routes/`
+2. update `packages/server/src/openapi/spec.ts`
+3. regenerate the client:
 
 ```bash
-curl http://localhost:9100/api/my-feature
+bun run --filter @ottocode/api generate
 ```
 
-#### Hot Reload
+4. update any consuming clients using `@ottocode/api`
 
-The server uses `bun run dev` which automatically reloads on file changes.
+## CLI development
 
----
+The CLI lives in `apps/cli`.
 
-### CLI Development
-
-The CLI application (`@ottocode/cli`) is the main user-facing interface.
-
-#### Running the CLI
+Run one-shot and command flows from source:
 
 ```bash
-# From workspace root
-bun run cli ask "your prompt here"
+bun run cli ask "hello"
+bun run cli --version
+```
 
-# Or from apps/cli
+Or use the app-local dev script:
+
+```bash
 cd apps/cli
-bun run dev ask "your prompt"
+bun run dev ask "hello"
 ```
 
-#### CLI Structure
+Current CLI responsibilities include:
 
-```
-apps/cli/
-├── src/
-│   ├── ask/             # Ask mode implementation
-│   ├── commands/        # CLI commands
-│   │   ├── setup.ts
-│   │   ├── serve.ts
-│   │   ├── sessions.ts
-│   │   └── ...
-│   ├── ui/              # Terminal UI components
-│   └── index.ts         # CLI entry point
-├── index.ts             # Main entry (imports src/index.ts)
-└── package.json
-```
+- one-shot ask flow
+- starting the local server
+- TUI startup
+- auth/setup
+- sessions/models/agents/tools/skills commands
+- MCP commands
+- scaffold/doctor/share/setu/web flows
 
-#### Key Commands
+Important areas:
 
-- **`otto setup`**: Configure providers and credentials
-- **`otto serve`**: Start HTTP server with web UI
-- **`otto agents`**: List available agents
-- **`otto models`**: List available models
-- **`otto sessions`**: Manage conversation sessions
-
-#### Making Changes
-
-1. **Add a new command:**
-
-```typescript
-// apps/cli/src/commands/my-command.ts
-import { intro, outro } from '@clack/prompts';
-
-export async function myCommand() {
-  intro('My Command');
-  
-  // Your logic here
-  
-  outro('Done!');
-}
+```text
+apps/cli/src/
+├── ask/
+├── commands/
+├── cli.ts
+├── custom-commands.ts
+├── middleware/
+├── scaffold.ts
+└── ui.ts
 ```
 
-2. **Register the command:**
+## Web and web-sdk development
 
-```typescript
-// apps/cli/src/index.ts
-import { myCommand } from './commands/my-command';
+### Web app
 
-if (args.includes('my-command')) {
-  await myCommand();
-  process.exit(0);
-}
-```
-
-3. **Test the command:**
+Run the browser app with:
 
 ```bash
-bun run cli run my-command
-```
-
-#### Building the Binary
-
-```bash
-# Build for your platform
-cd apps/cli
-bun run build
-
-# Output: apps/cli/dist/otto (self-contained binary)
-```
-
-The binary includes:
-- All dependencies bundled
-- Bun runtime embedded
-- ~61MB total size
-
----
-
-### Web SDK Development
-
-The web SDK (`@ottocode/web-sdk`) provides React hooks and components for building web UIs.
-
-#### Running Development
-
-The web SDK is used by the web app, so develop it in context:
-
-```bash
-# Start the web app (which uses web-sdk)
-bun run dev:web
-```
-
-#### Web SDK Structure
-
-```
-packages/web-sdk/
-├── src/
-│   ├── components/      # React components
-│   │   ├── Chat.tsx
-│   │   ├── SessionList.tsx
-│   │   └── ...
-│   ├── hooks/           # React hooks
-│   │   ├── useChat.ts
-│   │   ├── useSessions.ts
-│   │   └── ...
-│   ├── lib/             # Utilities
-│   │   ├── api.ts       # API client
-│   │   └── ...
-│   └── index.ts         # Exports
-└── package.json
-```
-
-#### Key Hooks
-
-- **`useChat()`**: Real-time chat with SSE streaming
-- **`useSessions()`**: Session management
-- **`useModels()`**: Available models
-- **`useAgents()`**: Available agents
-
-#### Making Changes
-
-1. **Add a new hook:**
-
-```typescript
-// packages/web-sdk/src/hooks/useMyFeature.ts
-import { useState, useEffect } from 'react';
-import { api } from '../lib/api';
-
-export function useMyFeature() {
-  const [data, setData] = useState(null);
-  
-  useEffect(() => {
-    api.get('/my-feature').then(setData);
-  }, []);
-  
-  return data;
-}
-```
-
-2. **Export the hook:**
-
-```typescript
-// packages/web-sdk/src/index.ts
-export { useMyFeature } from './hooks/useMyFeature';
-```
-
-3. **Use in web app:**
-
-```tsx
-// apps/web/src/App.tsx
-import { useMyFeature } from '@ottocode/web-sdk';
-
-function App() {
-  const data = useMyFeature();
-  return <div>{JSON.stringify(data)}</div>;
-}
-```
-
----
-
-### Web App Development
-
-The web app (`apps/web`) is a React + Vite application that provides the browser UI.
-
-#### Running the Web App
-
-**Option 1: Standalone Development Server**
-
-```bash
-# From workspace root
 bun run dev:web
 
-# Or from apps/web
+# or
 cd apps/web
 bun run dev
 ```
 
-This starts Vite dev server on `http://localhost:5173` with hot reload.
+This starts the Vite dev server.
 
-**Option 2: Full Stack (Server + Web UI)**
+### web-sdk
 
-```bash
-# Start the CLI server (serves both API and web UI)
-cd apps/cli
-bun run dev serve
-```
+`@ottocode/web-sdk` is usually developed in context through `apps/web`, since the web app is its main consumer.
 
-This starts both the API server and serves the web UI on `http://localhost:9100`.
+### web-ui
 
-#### Web App Structure
+`@ottocode/web-ui` contains the prebuilt static assets and embedding helpers. If the web frontend changes, rebuild/regenerate the packaged assets through the repo build flow.
 
-```
-apps/web/
-├── src/
-│   ├── components/      # React components
-│   │   ├── ChatInterface.tsx
-│   │   ├── SessionSidebar.tsx
-│   │   └── ...
-│   ├── assets/          # Static assets
-│   ├── App.tsx          # Main app component
-│   ├── main.tsx         # Entry point
-│   └── index.css        # Global styles
-├── public/              # Public assets
-├── index.html           # HTML template
-├── vite.config.ts       # Vite configuration
-├── tailwind.config.js   # Tailwind CSS config
-└── package.json
-```
+## Database workflow
 
-#### Key Technologies
-
-- **React 19**: UI framework
-- **Vite**: Build tool and dev server
-- **TailwindCSS**: Utility-first CSS
-- **TypeScript**: Type safety
-- **@ottocode/web-sdk**: API integration
-
-#### Making Changes
-
-1. **Add a new component:**
-
-```tsx
-// apps/web/src/components/MyFeature.tsx
-export function MyFeature() {
-  return (
-    <div className="p-4 bg-gray-100 rounded">
-      <h2 className="text-xl font-bold">My Feature</h2>
-      <p>Feature content here</p>
-    </div>
-  );
-}
-```
-
-2. **Use in App:**
-
-```tsx
-// apps/web/src/App.tsx
-import { MyFeature } from './components/MyFeature';
-
-function App() {
-  return (
-    <div>
-      <MyFeature />
-    </div>
-  );
-}
-```
-
-3. **Hot reload**: Changes appear instantly in browser
-
-#### Building for Production
+Useful commands:
 
 ```bash
-# Build the web app
-cd apps/web
-bun run build
-
-# Output: apps/web/dist/ (static files)
-```
-
-The build is automatically copied to `packages/web-ui/dist/web-assets/` for embedding.
-
-#### Web UI Package
-
-The `@ottocode/web-ui` package contains the **pre-built** web app for embedding:
-
-```bash
-# Build web app and copy to web-ui package
-bun run scripts/build-web.ts
-```
-
-This is run automatically before building the CLI binary.
-
----
-
-## Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-bun test
-
-# Run specific test file
-bun test tests/agents.test.ts
-
-# Run tests matching pattern
-bun test --pattern "config"
-
-# Watch mode (re-run on changes)
-bun test --watch
-```
-
-### Test Structure
-
-```
-tests/
-├── agents.test.ts
-├── ask-route.test.ts
-├── builtin-tools.test.ts
-├── config.test.ts
-└── ...
-```
-
-### Writing Tests
-
-```typescript
-// tests/my-feature.test.ts
-import { describe, test, expect } from 'bun:test';
-import { myFunction } from '../packages/sdk/src/my-feature';
-
-describe('MyFeature', () => {
-  test('should do something', () => {
-    const result = myFunction('input');
-    expect(result).toBe('expected output');
-  });
-});
-```
-
----
-
-## Building
-
-### Build Everything
-
-```bash
-# Build all packages and apps
-bun run build:all
-
-# Build only packages
-bun run build:packages
-
-# Build only apps
-bun run build:apps
-```
-
-### Build CLI Binary
-
-```bash
-# Build for your platform
-bun run build
-
-# Cross-compile for other platforms
-bun run build:bin:darwin-arm64   # macOS ARM64
-bun run build:bin:darwin-x64     # macOS x64
-bun run build:bin:linux-x64      # Linux x64
-bun run build:bin:linux-arm64    # Linux ARM64
-```
-
-Binaries are output to `dist/` directory.
-
-### Build Web App
-
-```bash
-# Build web app and copy to web-ui package
-bun run scripts/build-web.ts
-```
-
----
-
-## Common Tasks
-
-### Database Tasks
-
-```bash
-# Generate migrations (after schema changes)
 bun run db:generate
-
-# Reset database (development only!)
 bun run db:reset
 ```
 
-#### Making Schema Changes
+When changing schema:
 
-1. **Edit schema:**
+1. edit schema files under `packages/database/src/schema/`
+2. generate migrations with Drizzle
+3. update `packages/database/src/migrations-bundled.ts`
+4. test the migration locally
 
-```typescript
-// packages/database/src/schema/my-table.ts
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+Do not hand-author migration files.
 
-export const myTable = sqliteTable('my_table', {
-  id: integer('id').primaryKey(),
-  name: text('name').notNull(),
-});
-```
+## API/OpenAPI workflow
 
-2. **Export schema:**
+The OpenAPI source of truth lives in:
 
-```typescript
-// packages/database/src/schema/index.ts
-export * from './my-table';
-```
+- `packages/server/src/openapi/spec.ts`
 
-3. **Generate migration:**
+The generated artifacts live in:
 
-```bash
-bunx drizzle-kit generate
-```
+- `packages/api/openapi.json`
+- `packages/api/src/generated/`
 
-4. **Update migrations bundle:**
-
-```typescript
-// packages/database/src/migrations-bundled.ts
-import migration4 from '../drizzle/0004_my_migration.sql';
-
-export const migrations = [
-  // ... existing migrations
-  { id: 4, sql: migration4 },
-];
-```
-
-### Update Provider Catalog
+Regenerate after API changes:
 
 ```bash
-# Fetch latest models from providers
-bun run catalog:update
+bun run --filter @ottocode/api generate
 ```
 
-### Version Bumping
+Typecheck the generated client if needed:
 
 ```bash
-# Bump version across all packages
-bun run version:bump
+bun run --filter @ottocode/api typecheck
 ```
 
-### Linting and Formatting
+## Infrastructure
+
+`sst.config.ts` currently wires these modules:
+
+- `infra/script`
+- `infra/landing`
+- `infra/preview-api`
+- `infra/preview-web`
+- `infra/og`
+
+Common commands:
 
 ```bash
-# Check code quality
+bun sst dev
+bun sst deploy --stage prod
+```
+
+## Testing and validation
+
+Run the full repo checks:
+
+```bash
 bun lint
-
-# Auto-fix issues
-bun lint --write
+bun run typecheck
+bun test
 ```
 
----
+Targeted checks you will use often:
+
+```bash
+bun run --filter @ottocode/server typecheck
+bun run --filter @ottocode/sdk typecheck
+bun run --filter @ottocode/api typecheck
+bun run --filter landing typecheck
+```
 
 ## Troubleshooting
 
-### Common Issues
+### Port already in use
 
-#### Port Already in Use
+If a local server port is occupied, restart using a different port or stop the conflicting process.
+
+### Regenerated artifacts out of sync
+
+If API or web asset files look stale:
 
 ```bash
-# Server won't start (port 9100 in use)
-Error: listen EADDRINUSE: address already in use :::9100
-
-# Solution: Kill the process
-lsof -ti:9100 | xargs kill -9
+bun run --filter @ottocode/api generate
 ```
 
-#### Database Lock Error
+Then rerun typechecks.
+
+### Dependency or workspace issues
 
 ```bash
-# Database is locked
-Error: database is locked
-
-# Solution: Reset the database
-bun run db:reset
-```
-
-#### Module Not Found
-
-```bash
-# Cannot find module '@ottocode/sdk'
-Error: Cannot find module '@ottocode/sdk'
-
-# Solution: Reinstall dependencies
-rm -rf node_modules
+rm -rf node_modules bun.lock
 bun install
 ```
 
-#### Build Failures
+### Before opening a PR
 
-```bash
-# Binary build fails
-Error: failed to compile
-
-# Solution: Clear cache and rebuild
-rm -rf apps/cli/dist
-bun run build
-```
-
-### Development Tips
-
-1. **Use workspace scripts**: Run scripts from root with `bun run`
-2. **Hot reload**: Most packages support hot reload in dev mode
-3. **Type checking**: Run `bun run typecheck` frequently
-4. **Test early**: Write tests as you develop features
-5. **Follow AGENTS.md**: Read [AGENTS.md](../AGENTS.md) for conventions
-
-### Getting Help
-
-- **Documentation**: Check [docs/](./index.md) for guides
-- **Architecture**: See [architecture.md](./architecture.md) for system design
-- **Issues**: Search [GitHub issues](https://github.com/nitishxyz/otto/issues)
-- **Contributing**: Read [AGENTS.md](../AGENTS.md) for guidelines
-
----
-
-## Development Checklist
-
-When working on features:
-
-- [ ] Read [AGENTS.md](../AGENTS.md) for conventions
-- [ ] Create feature branch from `main`
-- [ ] Write code following existing patterns
-- [ ] Add tests for new functionality
-- [ ] Run `bun lint` and fix issues
-- [ ] Run `bun run typecheck` and fix errors
-- [ ] Run `bun test` and ensure all pass
-- [ ] Test manually (CLI, server, web UI)
-- [ ] Update documentation if needed
-- [ ] Commit with conventional commit message
-- [ ] Create pull request
-
----
-
-## Quick Reference
-
-### Workspace Scripts
-
-| Script | Description |
-|--------|-------------|
-| `bun lint` | Run Biome linter |
-| `bun run typecheck` | Type check all packages |
-| `bun test` | Run all tests |
-| `bun run cli` | Run CLI in dev mode |
-| `bun run dev:server` | Start server in dev mode |
-| `bun run dev:web` | Start web app in dev mode |
-| `bun run build` | Build CLI binary |
-| `bun run db:generate` | Generate DB migrations |
-| `bun run db:reset` | Reset database |
-
-### Package-Specific Scripts
-
-| Package | Script | Description |
-|---------|--------|-------------|
-| `apps/cli` | `bun run dev` | Run CLI directly |
-| `apps/cli` | `bun run build` | Build binary |
-| `apps/web` | `bun run dev` | Vite dev server |
-| `apps/web` | `bun run build` | Build static files |
-| `packages/server` | `bun run dev` | Run server |
-
-### Ports
-
-- **CLI Server**: `9100` (default)
-- **Web Dev Server**: `5173` (Vite default)
-- **Custom**: Set via `--port` flag
-
----
-
-**Happy Coding! 🚀**
+- run lint, typecheck, and relevant tests
+- update docs when behavior changed
+- keep changes focused
+- follow `AGENTS.md`

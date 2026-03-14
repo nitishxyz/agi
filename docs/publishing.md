@@ -1,378 +1,181 @@
 # Publishing Guide
 
-This document describes how to publish the ottocode and SDK packages.
+This document describes the current release and npm publishing flow for the otto monorepo.
 
-## Packages
+## Current publishing reality
 
-### `@ottocode/install`
+There are two different publishing tracks in the repo:
 
-npm installer package that downloads the ottocode binary.
+1. **Main synchronized release track**
+   - versioned together with the root/package workspace version
+   - handled by `scripts/prepare-publish.ts`
+   - published from the tag workflow
+2. **Standalone package tracks**
+   - managed by dedicated workflows and publish flags
+   - versioned/published independently
 
-- **Location:** `packages/install/`
-- **Package name:** `@ottocode/install`
-- **Purpose:** Simplify global installation via npm/bun
-- **Publishes:** npm only (no binaries)
+## Main synchronized release track
 
-### `@ottocode/sdk`
+` scripts/prepare-publish.ts ` currently prepares these packages for publish by replacing `workspace:*` dependencies with concrete versions:
 
-The core SDK for building AI agents and tools.
+- `packages/api` → `@ottocode/api`
+- `packages/sdk` → `@ottocode/sdk`
+- `packages/web-ui` → `@ottocode/web-ui`
+- `packages/web-sdk` → `@ottocode/web-sdk`
+- `packages/install` → `@ottocode/install`
+- `packages/database` → `@ottocode/database`
+- `packages/server` → `@ottocode/server`
 
-- **Location:** `packages/sdk/`
-- **Package name:** `@ottocode/sdk`
-- **Purpose:** Library for developers building custom agents
-- **Publishes:** npm only
+It also collects version information for:
 
-## Publishing Methods
+- `packages/ai-sdk` → `@ottocode/ai-sdk`
 
-### Method 1: Automatic Release (Recommended)
+### Packages published in the tag workflow
 
-Push to `main` branch triggers automatic release:
+`.github/workflows/publish-from-tag.yml` publishes these npm packages:
+
+- `@ottocode/install`
+- `@ottocode/api`
+- `@ottocode/sdk`
+- `@ottocode/web-sdk`
+- `@ottocode/web-ui`
+- `@ottocode/database`
+- `@ottocode/server`
+
+It also builds and attaches CLI binaries to the GitHub release.
+
+## Standalone package tracks
+
+These have dedicated publish workflows:
+
+- `.github/workflows/publish-ai-sdk.yml` → `@ottocode/ai-sdk`
+- `.github/workflows/publish-openclaw-setu.yml` → `@ottocode/openclaw-setu`
+
+These are controlled via `publish.env` flags rather than the main tag workflow.
+
+## Packages present but not part of the main tag publish flow
+
+- `@ottocode/acp` — present in the repo, but not currently published by `publish-from-tag.yml`
+- `@ottocode/ai-sdk` — separate workflow, not part of the main synchronized tag publish flow
+- `@ottocode/openclaw-setu` — separate workflow, not part of the main synchronized tag publish flow
+
+## Release workflows
+
+### `release.yml`
+
+Main branch release automation.
+
+What it does depends on flags in `publish.env`:
+
+- checks publish flags for CLI / desktop / launcher
+- bumps versions when needed
+- builds CLI binaries
+- builds desktop / launcher artifacts when enabled
+- creates tags/releases for those surfaces
+
+For the CLI path, it synchronizes versions across files including:
+
+- root `package.json`
+- `apps/cli/package.json`
+- `packages/install/package.json`
+- `packages/api/package.json`
+- `packages/sdk/package.json`
+- `packages/web-ui/package.json`
+- `packages/web-sdk/package.json`
+- `packages/database/package.json`
+- `packages/server/package.json`
+
+### `publish-from-tag.yml`
+
+Manual workflow-dispatch publishing from a tag like `v0.1.231`.
+
+It:
+
+1. checks out the tag
+2. builds platform binaries for the CLI
+3. creates a GitHub release
+4. verifies synced package versions
+5. runs `bun run scripts/prepare-publish.ts`
+6. publishes the main synchronized npm packages listed above
+
+### `publish-ai-sdk.yml`
+
+Standalone workflow for `@ottocode/ai-sdk`.
+
+Behavior:
+
+- guarded by `PUBLISH_AI_SDK=true` in `publish.env`
+- checks npm for an existing published version
+- bumps patch if needed
+- publishes to npm
+- resets the publish flag and commits the version change
+
+### `publish-openclaw-setu.yml`
+
+Standalone workflow for `@ottocode/openclaw-setu`.
+
+Behavior mirrors `publish-ai-sdk.yml`, but uses `PUBLISH_OPENCLAW_SETU=true`.
+
+## Versioning model
+
+### Synchronized packages
+
+These should share the same version during the main release flow:
+
+- root `package.json`
+- `apps/cli/package.json`
+- `packages/install/package.json`
+- `packages/api/package.json`
+- `packages/sdk/package.json`
+- `packages/web-ui/package.json`
+- `packages/web-sdk/package.json`
+- `packages/database/package.json`
+- `packages/server/package.json`
+
+### Separately versioned packages
+
+These have their own publish/version path:
+
+- `packages/ai-sdk/package.json`
+- `packages/openclaw-setu/package.json`
+
+## Manual release commands
+
+### Prepare the API/client artifacts
+
+If server routes changed:
 
 ```bash
-git push origin main
+bun run --filter @ottocode/api generate
 ```
 
-**What happens:**
-
-1. Checks install version in `packages/install/package.json`
-2. If tag exists, auto-bumps patch version
-3. Updates version across all packages (sync)
-4. Builds binaries for all platforms:
-   - macOS (x64, ARM64)
-   - Linux (x64, ARM64)
-   - Windows (x64)
-5. Creates GitHub release with binaries
-6. Publishes `@ottocode/install` to npm
-7. Publishes `@ottocode/sdk` to npm
-
-**Workflow:** `.github/workflows/release-binaries.yml`
-
----
-
-### Method 2: Manual Tag Release
-
-Publish a specific git tag:
+### Replace workspace dependencies before publishing
 
 ```bash
-# 1. Update version in package.json files
-# 2. Commit and create tag
-git tag v0.1.29
-git push origin v0.1.29
-
-# 3. Trigger workflow in GitHub Actions UI:
-#    - Go to Actions > "Publish From Tag"
-#    - Click "Run workflow"
-#    - Enter tag: v0.1.29
+bun run scripts/prepare-publish.ts
 ```
 
-**What happens:**
-
-1. Checks out the specific tag
-2. Builds binaries for all platforms
-3. Creates GitHub release with binaries
-4. Publishes `@ottocode/install` and `@ottocode/sdk` to npm
-
-**Workflow:** `.github/workflows/publish-from-tag.yml`
-
----
-
-## Version Management
-
-### Version Sync
-
-Versions are automatically synchronized across packages by the `scripts/bump-version.ts` script:
-
-- `packages/install/package.json` (installer version - source of truth for publishing)
-- `apps/cli/package.json` (CLI version - kept in sync but not published)
-- `packages/sdk/package.json` (SDK version)
-- `README.md` badge version
-- `docs/getting-started.md` pinned install version
-
-**Important:** The CI will sync all package versions automatically.
-
-### Version Bumping
-
-**Automatic (via CI):**
+### Build/check before publishing
 
 ```bash
-# Push to main - CI auto-bumps if tag exists
-git push origin main
+bun install
+bun lint
+bun test
+bun run typecheck
 ```
 
-The CI workflow will:
+## Required secrets
 
-1. Check if current version tag exists
-2. If exists, bump patch version (0.1.28 → 0.1.29)
-3. Update all package.json files
-4. Create commit with `[skip ci]`
-5. Create new tag
-6. Trigger release workflow
+Repository workflows require:
 
-**Manual:**
+- `NPM_TOKEN`
+- `GITHUB_TOKEN` (provided by GitHub Actions for release jobs)
+- Apple signing / notarization secrets for macOS artifact signing where applicable
 
-```bash
-# Run version bump script
-bun run scripts/bump-version.ts 0.1.29
+## Practical guidance
 
-# Or manually update package.json files
-vim apps/cli/package.json            # Update "version"
-vim packages/install/package.json    # Update "version"
-vim packages/sdk/package.json        # Update "version"
-
-# Commit and tag
-git add .
-git commit -m "chore: bump version to 0.1.29"
-git tag v0.1.29
-git push origin main --tags
-```
-
----
-
-## GitHub Actions Secrets
-
-Required secrets in repository settings:
-
-- **`NPM_TOKEN`** - npm publish token
-  - Create at https://www.npmjs.com/settings/[username]/tokens
-  - Type: "Automation" token
-  - Scope: Read and Publish
-
----
-
-## Build Scripts
-
-### CLI Build Scripts (apps/cli/)
-
-```bash
-# Local build
-bun run build                    # Current platform
-
-# Platform-specific builds
-bun run build:darwin-arm64       # macOS ARM64
-bun run build:darwin-x64         # macOS x64
-bun run build:linux-x64          # Linux x64
-bun run build:linux-arm64        # Linux ARM64
-bun run build:windows-x64        # Windows x64
-```
-
-### Output Location
-
-- All binaries: `apps/cli/dist/`
-- Default: `dist/otto`
-- Platform-specific: `dist/otto-{os}-{arch}`
-
----
-
-## Publishing Workflow Details
-
-### Binary Build Process
-
-1. **Install dependencies:**
-
-   ```bash
-   bun install
-   ```
-
-2. **Build for each platform:**
-
-   ```bash
-   cd apps/cli
-   bun run build:{platform}
-   ```
-
-3. **Upload artifacts:**
-   - Artifacts stored in GitHub Actions
-   - Downloaded and attached to GitHub release
-
-### npm Publish Process
-
-1. **Configure npm authentication:**
-
-   ```bash
-   echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
-   ```
-
-2. **Publish installer:**
-
-   ```bash
-   cd packages/install
-   bun publish --access public --tag latest
-   ```
-
-3. **Publish SDK:**
-   ```bash
-   cd packages/sdk
-   bun publish --access public --tag latest
-   ```
-
----
-
-## Verification
-
-After publishing, verify:
-
-### 1. GitHub Release
-
-- Go to: https://github.com/nitishxyz/otto/releases
-- Check: All platform binaries attached
-- Test: Download and run binary
-
-### 2. npm Packages
-
-**Installer:**
-
-```bash
-npm view @ottocode/install
-npm install -g @ottocode/install
-otto --version
-```
-
-**SDK:**
-
-```bash
-npm view @ottocode/sdk
-npm install @ottocode/sdk
-```
-
----
-
-## Troubleshooting
-
-### Build Fails
-
-**Check:**
-
-1. All packages compile: `bun run build:all`
-2. TypeScript errors: `bun lint`
-3. Dependencies installed: `bun install`
-
-### npm Publish Fails
-
-**Check:**
-
-1. `NPM_TOKEN` secret is set
-2. Version doesn't already exist on npm
-3. Package.json has correct `name` and `version`
-4. All package versions are synchronized
-
-### Binary Doesn't Work
-
-**Check:**
-
-1. Build output includes all 684 modules
-2. Binary is executable: `chmod +x apps/cli/dist/otto`
-3. Test locally first: `cd apps/cli && bun run build`
-
-### Version Sync Issues
-
-**Check:**
-
-1. All package.json files have matching versions
-2. Run version sync script: `bun run scripts/bump-version.ts`
-3. Check git tags: `git tag -l`
-
----
-
-## Release Checklist
-
-Before releasing:
-
-- [ ] Update CHANGELOG (if exists)
-- [ ] Test CLI locally: `cd apps/cli && bun run dev`
-- [ ] Test build: `cd apps/cli && bun run build`
-- [ ] Test binary: `./apps/cli/dist/otto --version`
-- [ ] Verify version sync across all packages
-- [ ] Run tests: `bun test`
-- [ ] Commit all changes
-- [ ] Push to main or create tag
-
----
-
-## Package Structure
-
-```
-otto/
-├── apps/
-│   ├── cli/
-│   │   ├── dist/              # Build output
-│   │   ├── package.json       # CLI version, bin entry
-│   │   └── index.ts          # CLI entry point
-│   └── web/
-│       └── ...               # Web application
-├── packages/
-│   ├── install/
-│   │   ├── start.js          # Postinstall script
-│   │   ├── package.json      # Installer config
-│   │   └── README.md         # Installer docs
-│   └── sdk/
-│       ├── src/              # SDK source
-│       └── package.json      # SDK version, exports
-└── .github/
-    └── workflows/
-        ├── release-binaries.yml    # Auto-release on push
-        └── publish-from-tag.yml    # Manual tag release
-```
-
----
-
-## Installation Flow
-
-### User installs via npm
-
-```
-User: npm install -g @ottocode/install
-  ↓
-npm: Download @ottocode/install package
-  ↓
-npm: Run postinstall (packages/install/start.js)
-  ↓
-Script: Detect platform (darwin-arm64, linux-x64, etc.)
-  ↓
-Script: Download binary from https://install.ottocode.io
-  ↓
-Script: Install to /usr/local/bin or ~/.local/bin
-  ↓
-User: otto --version ✓
-```
-
-### Installer Package Benefits
-
-1. **Standard npm workflow**: Familiar to developers
-2. **Automatic updates**: `npm update -g @ottocode/install`
-3. **Cross-platform**: Works on all platforms
-4. **Small package size**: ~560 bytes (downloads binary separately)
-5. **PATH management**: Handles installation directory automatically
-
----
-
-## Post-Release
-
-After successful release:
-
-1. **Announce release** (if needed)
-2. **Update documentation** (if needed)
-3. **Test all installation methods:**
-
-   ```bash
-   # Test npm install
-   npm install -g @ottocode/install@latest
-   otto --version
-
-   # Test curl install
-   curl -fsSL https://install.ottocode.io | sh
-   otto --version
-   ```
-
-4. **Monitor for issues** in GitHub Issues
-
----
-
-## Summary
-
-- **Two packages published to npm:** `@ottocode/install` (installer), `@ottocode/sdk` (library)
-- **Binaries published to GitHub releases:** Platform-specific CLI binaries
-- **Push to main** → Auto-release all packages with version sync
-- **Manual tag** → Release specific version
-- **All platforms supported:** macOS, Linux, Windows (x64, ARM64)
-- **Automated via GitHub Actions** with version synchronization
-- **npm installer package** provides easiest installation experience
+- use the main synchronized flow for the core otto packages
+- use the dedicated workflows for `@ottocode/ai-sdk` and `@ottocode/openclaw-setu`
+- do not assume every public package in the repo is published by the same workflow
+- if you change server APIs, regenerate `@ottocode/api` before tagging/publishing
+- if you add a new public package, update both the docs and the relevant workflow/prepare script

@@ -1,30 +1,58 @@
 import { CodeBlock } from '../../components/CodeBlock';
 import { DocPage } from '../../components/DocPage';
+
 export function ApiReference() {
 	return (
 		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">API Reference</h1>
 			<p className="text-otto-dim text-sm mb-8">
-				REST endpoints and SSE streaming.
+				Versioned HTTP routes, generated OpenAPI, and SSE streaming.
 			</p>
 
-			<h2>Overview</h2>
+			<h2>Source of truth</h2>
+			<p>Use these in order:</p>
+			<ol>
+				<li>
+					<code>packages/api/openapi.json</code>
+				</li>
+				<li>
+					<code>GET /openapi.json</code>
+				</li>
+				<li>
+					<code>@ottocode/api</code>
+				</li>
+			</ol>
 			<p>
-				otto exposes a local HTTP API via Hono. The server supports both REST
-				endpoints and Server-Sent Events (SSE) for streaming.
-			</p>
-			<p>
-				Base URL: <code>http://localhost:{'<port>'}</code>
-			</p>
-			<p>
-				For first-party clients (web, desktop, tui), prefer the generated{' '}
-				<code>@ottocode/api</code> SDK over direct <code>fetch</code> calls.
+				Operational routes live under <code>/v1/*</code>.
 			</p>
 
-			<h2>Ask (Streaming)</h2>
-			<h3>POST /api/ask</h3>
-			<p>Send a prompt and stream the response via SSE.</p>
-			<CodeBlock>{`POST /api/ask
+			<h2>Base routes</h2>
+			<ul>
+				<li>
+					<code>GET /</code> — root response
+				</li>
+				<li>
+					<code>GET /openapi.json</code> — generated OpenAPI spec
+				</li>
+				<li>
+					<code>GET /v1/server/info</code> — server/runtime metadata
+				</li>
+			</ul>
+
+			<h2>Current route groups</h2>
+			<p>
+				The generated spec currently includes groups such as <code>ask</code>,{' '}
+				<code>auth</code>, <code>config</code>, <code>doctor</code>,{' '}
+				<code>files</code>, <code>git</code>, <code>mcp</code>,{' '}
+				<code>provider-usage</code>, <code>research</code>,{' '}
+				<code>sessions</code>, <code>setu</code>, <code>shares</code>,{' '}
+				<code>skills</code>, <code>terminals</code>, and <code>tunnel</code>.
+			</p>
+
+			<h2>Representative routes</h2>
+
+			<h3>Ask</h3>
+			<CodeBlock>{`POST /v1/ask
 Content-Type: application/json
 
 {
@@ -34,113 +62,149 @@ Content-Type: application/json
   "provider": "anthropic",
   "model": "claude-sonnet-4"
 }`}</CodeBlock>
-			<p>Returns an SSE stream with events:</p>
+
+			<h3>Sessions</h3>
 			<ul>
 				<li>
-					<code>text-delta</code> — text chunk
+					<code>GET /v1/sessions</code>
 				</li>
 				<li>
-					<code>tool-call</code> — tool invocation
+					<code>POST /v1/sessions</code>
 				</li>
 				<li>
-					<code>tool-result</code> — tool execution result
+					<code>GET /v1/sessions/{'{sessionId}'}</code>
 				</li>
 				<li>
-					<code>finish</code> — stream complete
+					<code>POST /v1/sessions/{'{id}'}/messages</code>
 				</li>
 				<li>
-					<code>error</code> — error occurred
+					<code>GET /v1/sessions/{'{id}'}/stream</code>
 				</li>
 			</ul>
 
-			<h2>Sessions</h2>
+			<h3>Config</h3>
+			<ul>
+				<li>
+					<code>GET /v1/config</code>
+				</li>
+				<li>
+					<code>GET /v1/config/defaults</code>
+				</li>
+				<li>
+					<code>GET /v1/config/providers</code>
+				</li>
+				<li>
+					<code>GET /v1/config/models</code>
+				</li>
+				<li>
+					<code>GET /v1/config/agents</code>
+				</li>
+			</ul>
 
-			<h3>GET /api/sessions</h3>
-			<p>List all sessions.</p>
-			<CodeBlock>{`GET /api/sessions?limit=20&offset=0`}</CodeBlock>
+			<h3>Files</h3>
+			<ul>
+				<li>
+					<code>GET /v1/files</code>
+				</li>
+				<li>
+					<code>POST /v1/files/read</code>
+				</li>
+				<li>
+					<code>POST /v1/files/tree</code>
+				</li>
+			</ul>
 
-			<h3>GET /api/sessions/:id</h3>
-			<p>Get a specific session with messages.</p>
+			<h3>Git</h3>
+			<ul>
+				<li>
+					<code>GET /v1/git/status</code>
+				</li>
+				<li>
+					<code>POST /v1/git/diff</code>
+				</li>
+				<li>
+					<code>POST /v1/git/commit</code>
+				</li>
+			</ul>
 
-			<h3>DELETE /api/sessions/:id</h3>
-			<p>Delete a session.</p>
+			<h3>Skills</h3>
+			<ul>
+				<li>
+					<code>GET /v1/skills</code>
+				</li>
+				<li>
+					<code>GET /v1/skills/{'{name}'}</code>
+				</li>
+				<li>
+					<code>POST /v1/skills/validate</code>
+				</li>
+			</ul>
 
-			<h2>Messages</h2>
-
-			<h3>GET /api/sessions/:id/messages</h3>
-			<p>Get messages for a session.</p>
-
-			<h2>Configuration</h2>
-
-			<h3>GET /api/config</h3>
-			<p>Get current configuration.</p>
-
-			<h3>GET /api/models</h3>
-			<p>List available models for a provider.</p>
-
-			<h3>GET /api/agents</h3>
-			<p>List available agents.</p>
-
-			<h2>Git</h2>
-
-			<h3>GET /api/git/status</h3>
-			<p>Get git status for the current working directory.</p>
-
-			<h3>GET /api/git/diff</h3>
-			<p>Get git diff.</p>
-
-			<h2>Files</h2>
-
-			<h3>GET /api/files</h3>
-			<p>List files in a directory.</p>
-
-			<h3>GET /api/files/:path</h3>
-			<p>Read file contents.</p>
-
-			<h2>Auth</h2>
-
-			<h3>GET /api/auth/providers</h3>
-			<p>List configured providers and their auth status.</p>
-
-			<h2>Health</h2>
-
-			<h3>GET /health</h3>
+			<h2>SSE streaming</h2>
 			<p>
-				Health check endpoint. Returns <code>200 OK</code>.
+				Streaming is used for ask/session workflows, especially{' '}
+				<code>GET /v1/sessions/{'{id}'}/stream</code>.
 			</p>
+			<p>Common event types include:</p>
+			<ul>
+				<li>
+					<code>assistant.delta</code>
+				</li>
+				<li>
+					<code>assistant</code>
+				</li>
+				<li>
+					<code>tool.call</code>
+				</li>
+				<li>
+					<code>tool.result</code>
+				</li>
+				<li>
+					<code>tool.approval.required</code>
+				</li>
+				<li>
+					<code>finish-step</code>
+				</li>
+				<li>
+					<code>usage</code>
+				</li>
+				<li>
+					<code>error</code>
+				</li>
+			</ul>
 
-			<h2>OpenAPI</h2>
-			<p>
-				Full OpenAPI spec available at <code>/openapi.json</code>.
-			</p>
-
-			<h3>Updating the API contract</h3>
+			<h2>Updating the API contract</h2>
 			<ol>
 				<li>
-					Add/update route methods in <code>packages/server/src/routes/</code>
+					Add/update routes in <code>packages/server/src/routes/</code>
 				</li>
 				<li>
 					Update <code>packages/server/src/openapi/spec.ts</code>
 				</li>
 				<li>
-					Regenerate OpenAPI JSON and SDK with{' '}
+					Regenerate the API package with{' '}
 					<code>bun run --filter @ottocode/api generate</code>
 				</li>
 				<li>
-					Consume the new methods from <code>@ottocode/api</code> in client apps
+					Use the regenerated methods from <code>@ottocode/api</code>
 				</li>
 			</ol>
 
-			<h2>TypeScript Client</h2>
-			<p>Use the generated type-safe client:</p>
-			<CodeBlock>{`import { createClient } from "@ottocode/api";
+			<h2>Type-safe client</h2>
+			<CodeBlock>{`import { ask, client, listSessions } from "@ottocode/api";
 
-const client = createClient({
-  baseUrl: "http://localhost:9100",
+client.setConfig({
+  baseURL: "http://localhost:3000",
 });
 
-const sessions = await client.getSessions();
-const models = await client.getModels({ provider: "anthropic" });`}</CodeBlock>
+const response = await ask({
+  body: {
+    prompt: "Hello, AI!",
+    agent: "build",
+  },
+});
+
+const sessions = await listSessions();`}</CodeBlock>
 		</DocPage>
 	);
 }
