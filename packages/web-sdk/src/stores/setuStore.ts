@@ -1,5 +1,12 @@
 import { create } from 'zustand';
 
+interface SetuUsageWindow {
+	limit: number | null;
+	used: number;
+	remaining: number | null;
+	percentUsed: number;
+}
+
 interface SetuSubscription {
 	active: boolean;
 	tierId?: string;
@@ -7,6 +14,12 @@ interface SetuSubscription {
 	creditsIncluded?: number;
 	creditsUsed?: number;
 	creditsRemaining?: number;
+	creditsWeeklyLimit?: number | null;
+	creditsFiveHourLimit?: number | null;
+	usageWindows?: {
+		weekly: SetuUsageWindow;
+		fiveHour: SetuUsageWindow;
+	};
 	periodStart?: string;
 	periodEnd?: string;
 }

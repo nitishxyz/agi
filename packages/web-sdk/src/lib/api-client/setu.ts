@@ -45,6 +45,22 @@ export const setuMixin = {
 			creditsIncluded?: number;
 			creditsUsed?: number;
 			creditsRemaining?: number;
+			creditsWeeklyLimit?: number | null;
+			creditsFiveHourLimit?: number | null;
+		usageWindows?: {
+				weekly: {
+					limit: number | null;
+					used: number;
+					remaining: number | null;
+					percentUsed: number;
+				};
+				fiveHour: {
+					limit: number | null;
+					used: number;
+					remaining: number | null;
+					percentUsed: number;
+				};
+			};
 			periodStart?: string;
 			periodEnd?: string;
 		} | null;

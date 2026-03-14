@@ -447,35 +447,24 @@ function SetuSubscriptionInfo() {
 
 	if (!subscription?.active) return null;
 
-	const formatCredits = (value: number) => {
-		if (value >= 10) return Math.floor(value).toString();
-		if (value >= 1) return value.toFixed(1);
-		return value.toFixed(2);
-	};
-
 	return (
 		<>
 			<SettingRow label="Plan" value={subscription.tierName ?? 'GO'} />
-			{subscription.creditsIncluded !== undefined &&
-				subscription.creditsUsed !== undefined && (
-					<div className="space-y-1">
-						<SettingRow
-							label="Used"
-							value={`${formatCredits(subscription.creditsUsed)} / ${formatCredits(subscription.creditsIncluded)}`}
-						/>
-						<div className="w-full bg-muted rounded-full h-1.5">
-							<div
-								className="bg-emerald-500 h-1.5 rounded-full transition-all"
-								style={{
-									width: `${Math.min(100, (subscription.creditsUsed / subscription.creditsIncluded) * 100)}%`,
-								}}
-							/>
-						</div>
-					</div>
-				)}
+			{subscription.usageWindows && (
+				<>
+					<SettingRow
+						label="5h"
+						value={`${Math.round(subscription.usageWindows.fiveHour.percentUsed)}%`}
+					/>
+					<SettingRow
+						label="Week"
+						value={`${Math.round(subscription.usageWindows.weekly.percentUsed)}%`}
+					/>
+				</>
+			)}
 			{payg && payg.effectiveSpendableUsd > 0 && (
 				<SettingRow
-					label="PAYG Balance"
+				label="Credits"
 					value={`$${payg.effectiveSpendableUsd.toFixed(2)}`}
 				/>
 			)}

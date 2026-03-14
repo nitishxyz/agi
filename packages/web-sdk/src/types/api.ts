@@ -350,7 +350,7 @@ export interface UsageWindow {
 }
 
 export interface ProviderUsageResponse {
-	provider: 'anthropic' | 'openai';
+	provider: string;
 	primaryWindow: UsageWindow | null;
 	secondaryWindow: UsageWindow | null;
 	limitReached: boolean;

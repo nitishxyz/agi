@@ -75,13 +75,29 @@ export async function fetchBalance(
 				monthly_remaining_usd: number | null;
 				cap_remaining_usd: number | null;
 			} | null;
-			subscription?: {
+		subscription?: {
 				active: boolean;
 				tier_id?: string;
 				tier_name?: string;
 				credits_included?: number;
 				credits_used?: number;
 				credits_remaining?: number;
+				credits_weekly_limit?: number | null;
+				credits_five_hour_limit?: number | null;
+				usage_windows?: {
+					weekly: {
+						limit: number | null;
+						used: number;
+						remaining: number | null;
+						percent_used: number;
+					};
+					five_hour: {
+						limit: number | null;
+						used: number;
+						remaining: number | null;
+						percent_used: number;
+					};
+				};
 				period_start?: string;
 				period_end?: string;
 			} | null;
@@ -131,6 +147,24 @@ export async function fetchBalance(
 						creditsIncluded: data.subscription.credits_included,
 						creditsUsed: data.subscription.credits_used,
 						creditsRemaining: data.subscription.credits_remaining,
+						creditsWeeklyLimit: data.subscription.credits_weekly_limit,
+						creditsFiveHourLimit: data.subscription.credits_five_hour_limit,
+						usageWindows: data.subscription.usage_windows
+							? {
+									weekly: {
+										limit: data.subscription.usage_windows.weekly.limit,
+										used: data.subscription.usage_windows.weekly.used,
+										remaining: data.subscription.usage_windows.weekly.remaining,
+										percentUsed: data.subscription.usage_windows.weekly.percent_used,
+									},
+									fiveHour: {
+										limit: data.subscription.usage_windows.five_hour.limit,
+										used: data.subscription.usage_windows.five_hour.used,
+										remaining: data.subscription.usage_windows.five_hour.remaining,
+										percentUsed: data.subscription.usage_windows.five_hour.percent_used,
+									},
+								}
+							: undefined,
 						periodStart: data.subscription.period_start,
 						periodEnd: data.subscription.period_end,
 					}

@@ -23,6 +23,8 @@ import { UsageRing } from '../common/UsageRing';
 import { UsageModal } from '../common/UsageModal';
 import { useProviderUsage } from '../../hooks/useProviderUsage';
 import { useAllModels } from '../../hooks/useConfig';
+import { useSetuBalance } from '../../hooks/useSetuBalance';
+import { useUsageStore } from '../../stores/usageStore';
 import { EditableTitle } from './EditableTitle';
 
 interface LeanHeaderProps {
@@ -98,6 +100,9 @@ export function LeanHeader({
 		session.provider,
 		providerAuthType,
 	);
+	const isSetu = session.provider === 'setu';
+	useSetuBalance(isSetu ? 'setu' : undefined);
+	const setuUsage = useUsageStore((s) => s.usage['setu']);
 
 	return (
 		<>
@@ -165,6 +170,10 @@ export function LeanHeader({
 
 						{isOAuthProvider && usage && (
 							<UsageRing usage={usage} provider={session.provider} />
+						)}
+
+						{isSetu && setuUsage && (
+							<UsageRing usage={setuUsage} provider="setu" />
 						)}
 
 						<div className="flex items-center gap-3">
