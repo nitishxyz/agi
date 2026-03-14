@@ -417,13 +417,13 @@ export const ChatInput = memo(
 								INSERT
 							</div>
 						)}
-					{sessionId && (
-						<div className="pointer-events-auto w-3/4 mx-auto relative z-0">
-							<InputApprovalBar sessionId={sessionId} />
-						</div>
-					)}
-					<div
-						className={`relative z-10 flex flex-col rounded-3xl p-1 transition-all touch-manipulation ${
+						{sessionId && (
+							<div className="pointer-events-auto w-3/4 mx-auto relative z-0">
+								<InputApprovalBar sessionId={sessionId} />
+							</div>
+						)}
+						<div
+							className={`relative z-10 flex flex-col rounded-3xl p-1 transition-all touch-manipulation ${
 								isPlanMode
 									? 'bg-slate-100 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-700 focus-within:border-slate-400 dark:focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-300 dark:focus-within:ring-slate-700'
 									: 'bg-card border border-border focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40'
