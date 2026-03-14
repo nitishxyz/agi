@@ -27,6 +27,7 @@ import { useToastStore } from '../../stores/toastStore';
 import { apiClient } from '../../lib/api-client';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
+import { InputApprovalBar } from './InputApprovalBar';
 
 interface ChatInputContainerProps {
 	sessionId: string;
