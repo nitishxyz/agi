@@ -2,48 +2,55 @@
 
 [← Back to README](../README.md) · [Docs Index](./index.md)
 
-otto is a **Bun workspace monorepo** with 7 apps, 7 packages, and SST infrastructure.
+otto is a Bun workspace monorepo with multiple product surfaces sharing one local-first runtime.
 
 ---
 
-## How It Works
+## High-level flow
 
-otto is a local-first AI coding assistant. The core flow:
+1. The CLI starts a local Hono server and, by default, launches the TUI.
+2. The server persists sessions/messages, resolves providers, prepares tools, and streams model output.
+3. Clients such as the TUI, web UI, desktop app, and embedded consumers talk to the same HTTP API.
+4. Shared packages provide auth, config, providers, prompts, API generation, and web assets.
 
-1. **CLI binary** starts a local HTTP server (Hono) and launches the interactive TUI by default
-2. **Server** manages sessions, persists messages to SQLite, and streams AI responses via SSE
-3. **SDK** handles provider resolution, tool execution, agent prompts, and authentication
-4. **Web UI**, **desktop app**, and **TUI app** are clients that talk to the local server API
-
-The CLI binary is self-contained — built with `bun build --compile`, it bundles the server, database, web UI assets, and all tools into a single executable.
+The compiled CLI bundles the server, database, and web UI assets into a single executable.
 
 ---
 
-## Project Structure
+## Workspace layout
 
-```
+```text
 otto/
 ├── apps/
-│   ├── cli/              # CLI binary (Commander, bun build --compile)
-│   ├── tui/              # Interactive TUI client (OpenTUI + React)
-│   ├── web/              # Web UI client (React + Vite + TanStack)
-│   ├── desktop/          # Desktop app (Tauri v2, embeds CLI binary + web UI)
-│   ├── setu/             # AI provider proxy with Solana payments (Hono)
-│   ├── preview-api/      # Session sharing API (Hono + Cloudflare D1)
-│   └── preview-web/      # Public session viewer (Astro)
+│   ├── cli/
+│   ├── desktop/
+│   ├── intro-video/
+│   ├── landing/
+│   ├── launcher/
+│   ├── mobile/
+│   ├── preview-api/
+│   ├── preview-web/
+│   ├── tui/
+│   └── web/
 ├── packages/
-│   ├── sdk/              # Core SDK: tools, agents, auth, config, providers, prompts
-│   ├── server/           # HTTP API server (Hono): routes, SSE, agent runtime
-│   ├── database/         # SQLite + Drizzle ORM (local persistence)
-│   ├── api/              # Type-safe API client (generated from OpenAPI)
-│   ├── web-sdk/          # React components, hooks, stores
-│   ├── web-ui/           # Pre-built static web UI assets (embedded in binary)
-│   └── install/          # npm installer package
-├── infra/                # SST infrastructure (AWS + Cloudflare)
-├── tests/                # bun:test suites
-├── scripts/              # Build and utility scripts
-├── docs/                 # Documentation
-└── examples/             # Example integrations
+│   ├── acp/
+│   ├── ai-sdk/
+│   ├── api/
+│   ├── database/
+│   ├── install/
+│   ├── openclaw-setu/
+│   ├── sdk/
+│   ├── server/
+│   ├── web-sdk/
+│   └── web-ui/
+├── infra/
+├── functions/
+│   └── og/
+├── examples/
+├── tests/
+├── scripts/
+├── reference/
+└── docs/
 ```
 
 ---
@@ -52,71 +59,58 @@ otto/
 
 ### `apps/cli`
 
-Main CLI application. Compiles to a self-contained binary via `bun build --compile`.
+Main CLI binary.
 
-- **Framework:** Commander for argument parsing
-- **Dependencies:** `@ottocode/sdk`, `@ottocode/server`, `@ottocode/database`
-- **Binary size:** ~61MB
-- **Distribution:** GitHub releases + install script (not published to npm as a package)
-
-When run with no arguments, it starts the local API server and launches the TUI. With arguments, it runs the specified command or one-shot prompt.
-
-Key behaviors:
-- `otto` → start interactive TUI
-- `otto --web` → start server + web UI in browser
-- `otto "prompt"` → one-shot question via local server
-- `otto serve` → start API server + web UI explicitly
-- `otto setup` → interactive provider configuration
+- Commander-based CLI
+- starts the local API server
+- launches the TUI by default
+- can also run `serve`, auth flows, scaffolding, sessions, tools, MCP, and more
 
 ### `apps/tui`
 
-Interactive terminal UI client used by the CLI's default launch flow.
+Terminal UI client for the otto API.
 
-- **Stack:** OpenTUI + React
-- **Dependencies:** `@ottocode/api`
-- **Command:** `otto` (default) or `bun run --filter @ottocode/tui dev` (from source)
+- OpenTUI + React
+- consumes `@ottocode/api`
+- default user experience for `otto`
 
 ### `apps/web`
 
-Web UI that acts as a client to the otto server. Not a standalone app — it needs the server running.
+Browser client for the otto API.
 
-- **Stack:** React 19, Vite, TanStack Router + Query, Tailwind CSS, Zustand
-- **Dependencies:** `@ottocode/web-sdk`
-- **Features:** Real-time chat via SSE, session management, syntax highlighting, terminal rendering (Ghostty), dark theme
-
-During build, the web app is compiled to static assets and bundled into `@ottocode/web-ui` for embedding in the CLI binary.
+- React + Vite
+- built into static assets that are packaged by `@ottocode/web-ui`
 
 ### `apps/desktop`
 
-Desktop application that embeds the CLI binary and web UI via Tauri.
+Desktop wrapper around the local otto workflow.
 
-- **Stack:** Tauri v2, React, Vite, Tailwind CSS
-- **Dependencies:** `@ottocode/web-sdk`
-- **Platforms:** macOS (dmg, app), Linux (AppImage), Windows (msi)
+- Tauri v2
+- embeds the CLI binary and web UI assets
 
-The desktop app is an optional interface that embeds the CLI binary and web UI for native desktop workflows.
+### `apps/launcher`
 
-### `apps/setu`
+Launcher-oriented desktop surface for discovering/running local services and ports.
 
-AI provider proxy service with Solana wallet authentication and USDC payments (x402 protocol).
+### `apps/mobile`
 
-- **Stack:** Hono, AI SDK v6, Drizzle ORM + Neon Postgres
-- **Deployment:** Cloudflare Worker → `setu.ottocode.io`
-- **Features:** Proxies OpenAI/Anthropic requests, wallet-based auth, balance tracking, Polar.sh top-ups
+Mobile client workspace.
+
+### `apps/landing`
+
+Marketing/docs site workspace.
+
+### `apps/intro-video`
+
+Video generation workspace for intro/marketing assets.
 
 ### `apps/preview-api`
 
-API for sharing sessions publicly.
-
-- **Stack:** Hono, Drizzle ORM + Cloudflare D1
-- **Deployment:** Cloudflare Worker → `api.share.ottocode.io`
+Session sharing backend.
 
 ### `apps/preview-web`
 
-Public-facing site for viewing shared sessions.
-
-- **Stack:** Astro, React, TanStack Query, Tailwind CSS
-- **Deployment:** AWS (Astro SSR via Lambda + CloudFront) → `share.ottocode.io`
+Public session viewer frontend.
 
 ---
 
@@ -124,255 +118,208 @@ Public-facing site for viewing shared sessions.
 
 ### `@ottocode/sdk`
 
-Core SDK containing all fundamental logic. Tree-shakable — bundlers only include what you use.
+Core reusable runtime pieces:
 
-**Submodules:**
-- `agent/` — Agent type definitions
-- `auth/` — OAuth flows (Anthropic, OpenAI), wallet auth (Solana), API key management
-- `config/` — Configuration loading (global + project), path resolution
-- `core/` — Built-in tools (15+), streaming, terminal management (bun-pty), provider clients
-- `prompts/` — System prompts for agents and providers
-- `providers/` — Provider catalog, client factories, model resolution, pricing
-- `skills/` — Skill loader, parser, validator
-- `types/` — Shared TypeScript types
-
-**Subpath exports:** Individual tools (`@ottocode/sdk/tools/builtin/bash`, etc.) and prompts.
+- provider catalog + auth helpers
+- config/path utilities
+- prompt assets
+- built-in tools and tool discovery
+- terminal manager
+- MCP and skill loading primitives
 
 ### `@ottocode/server`
 
-HTTP API server built on Hono.
+Hono server runtime.
 
-- **Routes:** ask (SSE streaming), sessions, messages, files, auth, git, terminals, config, research, setu, branch, session-approval, session-files, session-stream, OpenAPI spec
-- **Runtime:** Agent registry, ask service, session/message management, prompt composition, provider resolution, tool adapter, stream management
-- **Events:** Event bus for real-time session updates
-- **Exports:** `createApp`, `createEmbeddedApp`, `createStandaloneApp`, `BUILTIN_AGENTS`, `BUILTIN_TOOLS`
+Key responsibilities:
+
+- route registration under `/v1/*`
+- session/message orchestration
+- SSE streaming
+- agent resolution and prompt composition
+- tool execution and approvals
+- OpenAPI generation
+
+Exports include:
+
+- `createApp`
+- `createStandaloneApp`
+- `createEmbeddedApp`
+- `BUILTIN_AGENTS`
+- `BUILTIN_TOOLS`
 
 ### `@ottocode/database`
 
-SQLite persistence with Drizzle ORM.
+SQLite + Drizzle ORM local persistence.
 
-- **Schema:** sessions, messages, messageParts, artifacts
-- **Features:** Auto-migrations on startup, bundled migration SQL files
-- **Exports:** `getDb`, `ensureDb`, `closeDb`, `resetDb`, schema types
+- sessions/messages/artifacts schema
+- bundled migrations
+- DB bootstrap helpers
 
 ### `@ottocode/api`
 
-Type-safe API client generated from the server's OpenAPI spec.
+Generated API client package.
 
-- **Generated with:** `@hey-api/openapi-ts`
-- **HTTP client:** Axios
-- **SSE support:** `eventsource-parser`
-- Standalone — no workspace dependencies
+- generated from `packages/server/src/openapi/spec.ts`
+- publishes `packages/api/openapi.json`
+- intended client for first-party consumers
 
 ### `@ottocode/web-sdk`
 
-Reusable React components, hooks, and utilities for building otto web interfaces.
-
-- **Components:** Chat UI, terminal rendering (Ghostty), code highlighting, QR codes
-- **Hooks:** API interactions, streaming, state management
-- **Stores:** Zustand-based state
-- **Peer deps:** React 18/19, TanStack Query, Zustand, lucide-react, react-markdown
+Reusable React hooks, stores, and UI components for otto-style web interfaces.
 
 ### `@ottocode/web-ui`
 
-Pre-built static web UI assets for embedding in the CLI binary.
-
-- Compiles `apps/web` and bundles as static assets
-- Served by the CLI binary when you run `otto serve`
+Prebuilt static web assets and `serveWebUI()` helper for embedding the browser UI.
 
 ### `@ottocode/install`
 
-Lightweight npm installer package.
+Install helper package that downloads the correct binary release.
 
-- Postinstall script detects platform, downloads binary from GitHub releases
-- Falls back to `install.ottocode.io` curl install
+### `@ottocode/acp`
 
----
+ACP adapter for editor/client integrations.
 
-## Dependency Graph
+### `@ottocode/ai-sdk`
 
-```
-Level 0 (no deps)    install, api, web-ui
-Level 1              sdk (auth, config, providers, prompts, tools)
-Level 2              database (depends on sdk for path resolution)
-Level 3              server (depends on sdk, database)
-Level 4              web-sdk (depends on api, sdk)
-Level 5              cli (depends on sdk, server, database)
-```
+Companion package/versioning surface for AI SDK-related integration.
 
-```
-                ┌──────────┐
-                │ install  │
-                └──────────┘
-                     │ (downloads binary)
-                     ▼
-                ┌──────────┐
-                │   cli    │
-                └────┬─────┘
-                     │
-     ┌───────────────┼──────────────┐
-     │               │              │
-┌────▼────┐    ┌────▼────┐   ┌────▼─────┐
-│ server  │    │   sdk   │   │ database │
-└────┬────┘    └─────────┘   └──────────┘
-     │
-┌────▼────┐
-│   api   │
-└────┬────┘
-     │
-┌────▼────┐
-│ web-sdk │
-└─────────┘
-```
+### `@ottocode/openclaw-setu`
+
+Setu integration package for OpenClaw workflows.
 
 ---
 
-## Infrastructure (SST)
+## API shape
 
-All infrastructure is defined as code using [SST](https://sst.dev) with AWS and Cloudflare providers.
+The server currently exposes:
 
-**Entry point:** `sst.config.ts` → imports from `infra/` modules.
+- `/`
+- `/openapi.json`
+- `/v1/*`
 
-### Resources
+Major route groups include:
 
-| Resource | SST Component | Platform | Domain |
-|---|---|---|---|
-| Setu | `sst.cloudflare.Worker` | Cloudflare Workers | `setu.ottocode.io` |
-| Preview API | `sst.cloudflare.Worker` | Cloudflare Workers + D1 | `api.share.ottocode.io` |
-| Preview Web | `sst.aws.Astro` | AWS (Lambda + CloudFront) | `share.ottocode.io` |
-| Install Script | `sst.cloudflare.Worker` | Cloudflare Workers | `install.ottocode.io` |
-| OG Image | `sst.aws.Function` | AWS Lambda (Node.js 20) | (function URL) |
-| Drizzle Studio | `sst.x.DevCommand` | Local (dev only) | — |
+- `ask`
+- `auth`
+- `config`
+- `doctor`
+- `files`
+- `git`
+- `mcp`
+- `provider-usage`
+- `research`
+- `sessions`
+- `setu`
+- `shares`
+- `skills`
+- `terminals`
+- `tunnel`
 
-### Secrets
+When the API changes:
 
-Managed via `sst secret set <name> <value>`:
-
-- `DatabaseUrl` — Neon Postgres connection string (for Setu)
-- `OpenAiApiKey`, `AnthropicApiKey`, `GoogleAiApiKey`, `MoonshotAiApiKey`
-- `PlatformWallet` — Solana wallet for x402 payments
-- `PolarAccessToken`, `PolarWebhookSecret`, `PolarProductId` — Polar.sh integration
-
-### Infra Modules
-
-```
-infra/
-├── secrets.ts        # SST secret declarations
-├── domains.ts        # Domain resolution (stage-aware: prod vs dev)
-├── setu.ts           # Setu Cloudflare Worker
-├── preview-api.ts    # Preview API Worker + D1
-├── preview-web.ts    # Preview Web (Astro on AWS)
-├── og.ts             # OG image Lambda function
-├── script.ts         # Install script Worker
-├── orm.ts            # Drizzle Studio dev command
-├── utils.ts          # Shared utilities
-└── handlers/
-    └── install-worker.ts
-```
-
-### Stage-Aware Domains
-
-- **prod:** `setu.ottocode.io`, `share.ottocode.io`
-- **dev:** `dev.setu.ottocode.io`, `dev.share.ottocode.io`
+1. update route handlers in `packages/server/src/routes/`
+2. update `packages/server/src/openapi/spec.ts`
+3. regenerate the client with:
 
 ```bash
-bun sst dev                    # local development with live infra
-bun sst deploy --stage prod    # deploy to production
-bun sst secret set <name> <value>
+bun run --filter @ottocode/api generate
 ```
 
 ---
 
-## Agents
+## Built-in agents
 
-Four built-in agents with embedded prompts:
+The server exports built-in presets that align with runtime defaults:
 
-| Agent | Default Tools |
-|---|---|
-| `build` | read, write, ls, tree, bash, update_todos, glob, ripgrep, git_status, terminal, apply_patch, websearch |
-| `plan` | read, ls, tree, ripgrep, update_todos, websearch |
-| `general` | read, write, ls, tree, bash, ripgrep, glob, websearch, update_todos |
-| `research` | read, ls, tree, ripgrep, websearch, update_todos, query_sessions, query_messages, get_session_context, search_history, get_parent_session, present_action |
+- `build`
+- `plan`
+- `general`
+- `research`
 
-All agents also get: `progress_update`, `finish`, `skill`.
+Prompt overrides can come from:
 
-Agent config can be overridden via `.otto/agents.json` (project) or `~/.config/otto/agents.json` (global).
-
----
-
-## Built-in Tools
-
-| Tool | Description |
-|---|---|
-| `read` | Read files |
-| `write` | Write files |
-| `ls` | List directory contents |
-| `tree` | Directory tree view |
-| `glob` | Find files by pattern |
-| `grep` | Search file contents |
-| `ripgrep` | Fast regex search (uses embedded or system rg binary) |
-| `bash` | Execute shell commands |
-| `terminal` | Persistent terminal sessions (via bun-pty) |
-| `edit` | Structured file editing (replace, insert, delete) |
-| `apply_patch` | Apply unified diff patches with fuzzy matching |
-| `git_status` | Git working tree status |
-| `git_diff` | Git diff |
-| `git_commit` | Create git commits |
-| `websearch` | Web search and URL fetching |
-| `progress_update` | Progress updates to user |
-| `finish` | Signal task completion |
-| `update_todos` | Task list management |
-| `skill` | Load skills for specialized instructions |
+- `.otto/agents/<name>.md`
+- `.otto/agents/<name>.txt`
+- `~/.config/otto/agents/<name>.md`
+- `~/.config/otto/agents/<name>.txt`
+- `.otto/agents.json`
+- `~/.config/otto/agents.json`
 
 ---
 
-## Providers
+## Built-in tools
 
-7+ providers via AI SDK v6:
+Core built-ins include:
 
-| Provider | Client | Auth |
-|---|---|---|
-| Anthropic | `@ai-sdk/anthropic` | API key / OAuth |
-| OpenAI | `@ai-sdk/openai` | API key |
-| Google | `@ai-sdk/google` | API key |
-| OpenRouter | `@openrouter/ai-sdk-provider` | API key |
-| OpenCode | `@ai-sdk/openai-compatible` | Anthropic OAuth |
-| Setu | Custom client | Solana wallet |
-| Moonshot | Custom client | API key |
-| Zai / Zai-Coding | Custom client | API key |
+- note: this is the overall built-in tool universe, not the tool list granted to every agent
 
-Provider catalog is auto-generated: `bun run catalog:update`
+- file tools: `read`, `write`, `ls`, `tree`, `pwd`, `cd`, `glob`
+- search/web: `ripgrep`, `websearch`
+- editing: `apply_patch`
+- runtime: `bash`, `terminal`
+- git: `git_status`, `git_diff`, `git_commit`
+- agent control: `update_todos`, `progress_update`, `finish`, `skill`
+- research helpers: `query_sessions`, `query_messages`, `get_session_context`, `search_history`, `get_parent_session`, `present_action`
+
+Custom tools are loaded from project/global tool directories as `tool.js` or `tool.mjs` plugins.
 
 ---
 
-## Key Conventions
+## Config and auth paths
 
-### Imports
+### Config
 
-- **Workspace packages:** `@ottocode/package-name`
-- **Local:** `./file.ts` or `../file.ts`
-- **Never:** `@/` path aliases
+- global config dir: `~/.config/otto/`
+- project dir: `.otto/`
 
-### Config Files
+### Secure auth
 
-- **Global config:** `~/.config/otto/config.json`
-- **Global auth:** `~/Library/Application Support/otto/auth.json` (macOS)
-- **Project config:** `.otto/config.json`
-- **Project agents:** `.otto/agents.json`
-- **Project database:** `.otto/otto.sqlite`
+- macOS: `~/Library/Application Support/otto/auth.json`
+- Linux: `$XDG_STATE_HOME/otto/auth.json` or `~/.local/state/otto/auth.json`
+- Windows: `%APPDATA%/otto/auth.json`
 
-### TypeScript
+### Secure OAuth storage
 
-- All packages extend `tsconfig.base.json`
-- `"type": "module"` everywhere
-- Strict mode enabled
+- macOS: `~/Library/Application Support/otto/oauth/`
+- Linux: `$XDG_STATE_HOME/otto/oauth/` or `~/.local/state/otto/oauth/`
+- Windows: `%APPDATA%/otto/oauth/`
 
-### Bun Workspace
+---
 
-```json
-{
-  "workspaces": ["packages/*", "apps/*", "examples/*"]
-}
+## Dependency guidance
+
+Within the monorepo, follow the package layering documented in `AGENTS.md`:
+
+- level 0: `database`, `install`
+- level 1: `sdk`
+- level 2: `api`
+- level 3: `server`
+- level 4: `web-sdk`
+- level 5: CLI / app consumers
+
+Use workspace imports like `@ottocode/server` across packages and relative imports only within the same package.
+
+---
+
+## Infrastructure
+
+SST currently imports these modules from `sst.config.ts`:
+
+- `infra/script`
+- `infra/landing`
+- `infra/preview-api`
+- `infra/preview-web`
+- `infra/og`
+
+Notable top-level infra-related areas:
+
+- `infra/` — SST definitions
+- `functions/og` — OG rendering function code
+
+Example commands:
+
+```bash
+bun sst dev
+bun sst deploy --stage prod
 ```
-
-Packages linked via `workspace:*` protocol.

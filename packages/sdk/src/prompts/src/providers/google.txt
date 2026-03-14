@@ -269,6 +269,4 @@ File (10 spaces):           - os: linux
 
 **If Patch Fails:**
 - Read file AGAIN, copy context character-by-character
-- After 2 failures: switch to `edit` tool — it uses fuzzy matching (oldString/newString) and tolerates whitespace/indentation mismatches
-- For multiple edits to the same file, use `multiedit` with an array of `{oldString, newString}` pairs
-- If `edit` also fails: use `write` tool to rewrite the entire file instead
+- After repeated failures: use `write` tool to rewrite the entire file only when a full rewrite is appropriate

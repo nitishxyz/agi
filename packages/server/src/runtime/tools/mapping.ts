@@ -36,10 +36,8 @@ export const CANONICAL_TO_PASCAL: Record<string, string> = {
 	git_diff: 'GitDiff',
 	git_commit: 'GitCommit',
 
-	// Patch/edit
+	// Patch
 	apply_patch: 'ApplyPatch',
-	edit: 'Edit',
-	multiedit: 'MultiEdit',
 
 	// Task management
 	update_todos: 'UpdateTodos',
@@ -76,10 +74,8 @@ export const PASCAL_TO_CANONICAL: Record<string, string> = {
 	GitDiff: 'git_diff',
 	GitCommit: 'git_commit',
 
-	// Patch/edit
+	// Patch
 	ApplyPatch: 'apply_patch',
-	Edit: 'edit',
-	MultiEdit: 'multiedit',
 
 	// Task management
 	UpdateTodos: 'update_todos',

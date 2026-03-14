@@ -40,7 +40,7 @@ export const sessionFilesPaths = {
 															path: { type: 'string' },
 															operation: {
 																type: 'string',
-																enum: ['write', 'patch', 'edit', 'create'],
+																enum: ['write', 'patch', 'create'],
 															},
 															timestamp: { type: 'integer' },
 															toolCallId: { type: 'string' },

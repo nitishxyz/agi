@@ -234,8 +234,6 @@ export {
 	OTTOCODE_BOT_EMAIL,
 	OTTOCODE_CO_AUTHOR,
 } from './core/src/tools/builtin/git-identity.ts';
-export { buildEditTool } from './core/src/index.ts';
-export { buildMultiEditTool } from './core/src/index.ts';
 
 // Terminals
 export { TerminalManager } from './core/src/index.ts';

@@ -38,7 +38,6 @@ type ResultRenderer = (ctx: RendererContext) => string;
 const callRenderers: Record<string, CallRenderer> = {
 	read: renderReadCall,
 	write: renderWriteCall,
-	edit: renderWriteCall,
 	apply_patch: renderPatchCall,
 	bash: renderBashCall,
 	terminal: renderTerminalCall,
@@ -60,7 +59,6 @@ const callRenderers: Record<string, CallRenderer> = {
 const resultRenderers: Record<string, ResultRenderer> = {
 	read: renderReadResult,
 	write: renderWriteResult,
-	edit: renderWriteResult,
 	apply_patch: renderPatchResult,
 	bash: renderBashResult,
 	terminal: renderTerminalResult,

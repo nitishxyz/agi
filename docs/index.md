@@ -2,139 +2,105 @@
 
 [← Back to README](../README.md)
 
-## Getting Started
+## Getting started
 
-- **[Installation & Quick Start](getting-started.md)** — Install otto and get running
-- **[Usage Guide](usage.md)** — Core commands and workflows
-- **[Configuration](configuration.md)** — Settings and project configuration
+- [Installation & Quick Start](getting-started.md)
+- [Usage Guide](usage.md)
+- [Configuration](configuration.md)
+- [Environment Variables](environment.md)
 
-## Features
+## Core features
 
-- **[Agents & Tools](agents-tools.md)** — Built-in agents and tools reference
-- **[MCP Servers](mcp.md)** — Connect to external MCP servers (GitHub, Linear, Helius, etc.)
-- **[Customization](customization.md)** — Custom commands, tools, and agents
-- **[Environment](environment.md)** — Environment variables and flags
-- **[API Reference](api.md)** — REST endpoints and SSE events
+- [Agents & Tools](agents-tools.md)
+- [MCP Servers](mcp.md)
+- [Customization](customization.md)
+- [API Reference](api.md)
+- [Troubleshooting](troubleshooting.md)
 
-## Architecture & Development
+## Architecture & development
 
-- **[Architecture](architecture.md)** — Monorepo structure, packages, infra (SST)
-- **[Development Guide](development-guide.md)** — Dev workflows for server, CLI, web SDK, and web app
-- **[Publishing](publishing.md)** — Release workflow and version management
-- **[Contributing](../AGENTS.md)** — Contribution guidelines
+- [Architecture](architecture.md)
+- [Development](development.md)
+- [Development Guide](development-guide.md)
+- [Publishing](publishing.md)
+- [Contributing](../AGENTS.md)
 
 ## Advanced
 
-- **[Embedding Guide](embedding-guide.md)** — Embed otto in your own applications
-
-## Reference
-
-- **[Troubleshooting](troubleshooting.md)** — Common issues and solutions
-- **[Keyboard Shortcuts](keyboard-shortcuts.md)** — Web UI shortcuts
-- **[License](license.md)** — MIT License
+- [Embedding Guide](embedding-guide.md)
+- [Keyboard Shortcuts](keyboard-shortcuts.md)
+- [License](license.md)
 
 ---
 
-## Quick Reference
+## Quick reference
 
 ### Install
 
 ```bash
 curl -fsSL https://install.ottocode.io | sh
-
-# Or via npm/bun
 bun install -g @ottocode/install
-
-# From source
-git clone https://github.com/nitishxyz/otto.git
-cd otto && bun install && bun run compile
 ```
 
-### Key Commands
+### Common commands
 
 ```bash
-otto                          # start interactive TUI (default)
-otto --web                    # start server + web UI
-otto "your question"          # one-shot question
-otto --agent build "task"     # use specific agent
-otto --last "follow up"       # continue last session
-otto serve                    # start HTTP server + web UI
-otto setup                    # configure providers
-otto agents                   # list agents
-otto models                   # list models
-otto sessions                 # list sessions
-otto doctor                   # diagnostics
+otto
+otto --web
+otto "fix this bug"
+otto "plan this refactor" --agent plan
+otto "research this subsystem" --agent research
+otto serve
+otto setup
+otto doctor
 ```
 
-### Project Layout
+### Workspace layout
 
-```
+```text
 otto/
 ├── apps/
-│   ├── cli/          # CLI binary (Commander, bun build --compile)
-│   ├── tui/          # Interactive TUI client (OpenTUI + React)
-│   ├── web/          # Web UI (React + Vite + TanStack)
-│   ├── desktop/      # Desktop app (Tauri v2)
-│   ├── setu/         # AI provider proxy (Cloudflare Worker)
-│   ├── preview-api/  # Session sharing API (Cloudflare Worker + D1)
-│   └── preview-web/  # Public session viewer (Astro, AWS)
+│   ├── cli/
+│   ├── desktop/
+│   ├── intro-video/
+│   ├── landing/
+│   ├── launcher/
+│   ├── mobile/
+│   ├── preview-api/
+│   ├── preview-web/
+│   ├── tui/
+│   └── web/
 ├── packages/
-│   ├── sdk/          # Core SDK (tools, agents, auth, providers)
-│   ├── server/       # HTTP server (Hono)
-│   ├── database/     # SQLite + Drizzle ORM
-│   ├── api/          # Type-safe API client
-│   ├── web-sdk/      # React components and hooks
-│   ├── web-ui/       # Pre-built web UI assets
-│   └── install/      # npm installer
-├── infra/            # SST (AWS + Cloudflare)
-├── tests/            # bun:test suites
-├── scripts/          # Build and utility scripts
-└── docs/             # Documentation (you are here)
+│   ├── acp/
+│   ├── ai-sdk/
+│   ├── api/
+│   ├── database/
+│   ├── install/
+│   ├── openclaw-setu/
+│   ├── sdk/
+│   ├── server/
+│   ├── web-sdk/
+│   └── web-ui/
+├── infra/
+├── functions/
+│   └── og/
+├── examples/
+├── tests/
+├── scripts/
+├── reference/
+└── docs/
 ```
 
-### SDK Usage
+### API shape
 
-```typescript
-import { generateText, resolveModel, discoverProjectTools } from '@ottocode/sdk';
+- `/` — root route
+- `/openapi.json` — OpenAPI source of truth
+- `/v1/*` — operational API routes
 
-const model = await resolveModel('anthropic', 'claude-sonnet-4');
-const tools = await discoverProjectTools(process.cwd());
+### Current SST modules
 
-const result = await generateText({
-  model,
-  prompt: 'List all TypeScript files',
-  tools: Object.fromEntries(tools.map(t => [t.name, t.tool])),
-  maxSteps: 10
-});
-```
-
----
-
-## By Audience
-
-### For Users
-
-1. [Getting Started](getting-started.md)
-2. [Usage Guide](usage.md)
-3. [Configuration](configuration.md)
-4. [Agents & Tools](agents-tools.md)
-5. [MCP Servers](mcp.md)
-6. [Troubleshooting](troubleshooting.md)
-
-### For Developers (building with otto SDK)
-
-1. [SDK README](../packages/sdk/README.md)
-2. [Embedding Guide](embedding-guide.md)
-3. [API Reference](api.md)
-4. [Architecture](architecture.md)
-
-### For Contributors
-
-1. [Contributing Guidelines](../AGENTS.md)
-2. [Development Guide](development-guide.md)
-3. [Architecture](architecture.md)
-4. [Publishing](publishing.md)
-
----
-
-[GitHub](https://github.com/nitishxyz/otto) · [Issues](https://github.com/nitishxyz/otto/issues) · [npm](https://www.npmjs.com/package/@ottocode/install)
+- `infra/script`
+- `infra/landing`
+- `infra/preview-api`
+- `infra/preview-web`
+- `infra/og`

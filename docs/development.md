@@ -2,13 +2,14 @@
 
 [← Back to README](../README.md) · [Docs Index](./index.md)
 
-For the full development guide covering all components, see [Development Guide](development-guide.md).
+For deeper workflows and package-specific details, see [Development Guide](development-guide.md).
 
 ## Prerequisites
 
-- [Bun](https://bun.sh) v1.0+
+- [Bun](https://bun.sh)
+- platform tooling required by the app you are working on (for example Tauri/mobile toolchains)
 
-## Quick Start
+## Setup
 
 ```bash
 git clone https://github.com/nitishxyz/otto.git
@@ -16,59 +17,83 @@ cd otto
 bun install
 ```
 
-## Commands
+## Core commands
 
 ```bash
-bun run cli ask "hello"        # run CLI from source
-bun test                       # run all tests
-bun lint                       # lint (Biome)
-bun run typecheck              # type check all packages
-bun run compile                # build standalone binary
+bun lint
+bun test
+bun run typecheck
+bun run compile
 ```
 
-## Dev Servers
+## Useful app/package dev commands
 
 ```bash
-bun run dev:cli                # CLI dev mode
-bun run dev:web                # Web UI (Vite dev server on :5173)
-bun run dev:desktop            # Desktop app (Tauri)
-bun sst dev                    # SST dev (setu, preview-api, preview-web)
+bun run dev:cli
+bun run --filter @ottocode/tui dev
+bun run dev:web
+bun run dev:desktop
+bun run --filter @ottocode/server dev
+bun run --filter @ottocode/sdk dev
 ```
 
-## Testing
+## SST / infra
+
+Current `sst.config.ts` wires:
+
+- `infra/script`
+- `infra/landing`
+- `infra/preview-api`
+- `infra/preview-web`
+- `infra/og`
+
+Commands:
 
 ```bash
-bun test                       # all tests
-bun test tests/agents.test.ts  # specific file
-bun test --pattern "config"    # pattern match
-bun test --watch               # watch mode
+bun sst dev
+bun sst deploy --stage prod
 ```
 
-Tests use `bun:test` and live in `tests/`.
-
-## Database
+## Database workflow
 
 ```bash
-bun run db:generate            # generate Drizzle migrations
-bun run db:reset               # reset local database
+bun run db:generate
+bun run db:reset
 ```
 
-See [Development Guide](development-guide.md) for schema change workflow.
+For schema changes:
 
-## Build
+1. update schema files under `packages/database/src/schema/`
+2. generate migrations with Drizzle
+3. update `packages/database/src/migrations-bundled.ts`
+4. test the migration locally
+
+## API workflow
+
+When changing server APIs:
+
+1. update `packages/server/src/routes/`
+2. update `packages/server/src/openapi/spec.ts`
+3. regenerate the client:
 
 ```bash
-bun run compile                        # build for current platform
-bun run build:bin:darwin-arm64         # macOS ARM64
-bun run build:bin:darwin-x64           # macOS x64
-bun run build:bin:linux-x64            # Linux x64
-bun run build:bin:linux-arm64          # Linux ARM64
+bun run --filter @ottocode/api generate
 ```
 
-## Other
+## Build targets
 
 ```bash
-bun run catalog:update         # update provider model catalog
-bun run version:bump           # bump version across all packages
-bun lint --write               # auto-fix lint issues
+bun run build:bin:darwin-arm64
+bun run build:bin:darwin-x64
+bun run build:bin:linux-x64
+bun run build:bin:linux-arm64
+bun run build:bin:windows-x64
 ```
+
+## Repo conventions
+
+- use Bun for everything
+- use Biome via `bun lint`
+- use workspace imports for cross-package references
+- keep changes focused and modular
+- write tests for behavior changes

@@ -128,7 +128,7 @@ import { apiClient, SSEClient } from '@ottocode/web-sdk/lib';
 const sessions = await apiClient.getSessions();
 
 // Use the SSE client for streaming
-const sseClient = new SSEClient('/api/sessions/123/stream');
+const sseClient = new SSEClient('/v1/sessions/123/stream');
 sseClient.onMessage((data) => console.log(data));
 ```
 

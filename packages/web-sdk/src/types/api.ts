@@ -239,7 +239,7 @@ export interface GitRemoteInfo {
 
 export interface SessionFileOperation {
 	path: string;
-	operation: 'write' | 'patch' | 'edit' | 'create';
+	operation: 'write' | 'patch' | 'create';
 	timestamp: number;
 	toolCallId: string;
 	toolName: string;

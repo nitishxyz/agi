@@ -269,10 +269,6 @@ export const MessagePartItem = memo(
 					return (
 						<FileEdit className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
 					);
-				if (toolName === 'edit')
-					return (
-						<FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-300" />
-					);
 				if (toolName === 'ls')
 					return <List className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />;
 				if (toolName === 'tree')

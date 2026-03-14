@@ -42,7 +42,6 @@ function extractApprovalPreview(
 			if (typeof args.cmd === 'string') return `$ ${truncate(args.cmd, 80)}`;
 			break;
 		case 'write':
-		case 'edit':
 			if (typeof args.path === 'string') return args.path;
 			if (typeof args.filePath === 'string') return args.filePath;
 			break;

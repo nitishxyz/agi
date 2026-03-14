@@ -37,8 +37,6 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 - `read`: Read file contents (supports line ranges)
 - `write`: Write complete file contents
 - `apply_patch`: Apply unified diff patches (RECOMMENDED for targeted edits)
-- `edit`: Fuzzy string replacement (oldString → newString) — use when `apply_patch` fails
-- `multiedit`: Batch multiple `edit` operations on a single file
 
 **Version Control**:
 - `git_status`, `git_diff`
@@ -167,13 +165,6 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 - Lines starting with ` ` (space) are context (kept unchanged)
 - Lines starting with `@@` are optional hints/comments (not parsed as context)
 
-**Using the `edit` Tool** (Recommended Fallback When Patch Fails):
-- Parameters: `filePath`, `oldString`, `newString`, `replaceAll` (optional)
-- Uses 9 fuzzy matching strategies: trims whitespace, normalizes indentation, anchors on first/last lines
-- Much more forgiving than `apply_patch` — handles trailing commas, whitespace differences, indentation mismatches
-- For multiple edits to the same file, use `multiedit` with an array of `{oldString, newString}` pairs
-- To create a new file: use empty `oldString` with `newString` as the file contents
-
 **Using the `write` Tool** (Last Resort):
 - Use for creating NEW files
 - Use when replacing >70% of a file's content (almost complete rewrite)
@@ -296,7 +287,7 @@ When a patch fails, do NOT retry the same approach. Instead:
 2. **Re-read the exact lines** you need (use startLine/endLine)
 3. **Copy context verbatim** from the fresh read output
 4. **Patch only one contiguous block** per hunk
-5. If it fails twice more, switch to `edit` tool (fuzzy matching)
+5. If it still fails repeatedly, only then consider a full-file `write` when the rewrite is justified
 
 **Pre-Flight Checklist (EVERY call):**
 Before calling `apply_patch`, verify ALL of these:
@@ -364,7 +355,7 @@ Small, surgical, one contiguous region. This pattern succeeds reliably.
 *** Begin Patch
 *** Update File: src/capture.ts
 @@ after MUTATING_TOOLS constant
- const MUTATING_TOOLS = new Set(['write', 'apply_patch', 'edit']);
+ const MUTATING_TOOLS = new Set(['write', 'apply_patch']);
  
 +const RETRYABLE_ERRORS = new Set([
 +	'ECONNREFUSED',
@@ -402,8 +393,7 @@ Two non-adjacent edits, one patch call, tabs preserved.
 - Step 1: Read file AGAIN with `read` tool (use startLine/endLine to get just the relevant section)
 - Step 2: Copy context lines VERBATIM from fresh read — do NOT retype from memory
 - Step 3: Reduce the patch to the MINIMUM change (2-3 context lines, one contiguous block)
-- After 2+ failures: switch to `edit` tool — it uses fuzzy matching and tolerates whitespace/indentation mismatches
-- If `edit` also fails: use `write` tool to rewrite the entire file instead
+- After repeated failures: use `write` tool to rewrite the entire file only when a full rewrite is warranted
 
 ## Validating Your Work
 

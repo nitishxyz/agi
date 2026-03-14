@@ -2,7 +2,6 @@ import { useState } from 'react';
 import type { ContentJson } from './types';
 import { ReadRenderer } from './ReadRenderer';
 import { WriteRenderer } from './WriteRenderer';
-import { EditRenderer } from './EditRenderer';
 import { BashRenderer } from './BashRenderer';
 import { GitStatusRenderer } from './GitStatusRenderer';
 import { GitDiffRenderer } from './GitDiffRenderer';
@@ -43,7 +42,6 @@ interface ToolResultRendererProps {
 const TOOL_NAME_ALIASES: Record<string, string> = {
 	Read: 'read',
 	Write: 'write',
-	Edit: 'edit',
 	Ls: 'ls',
 	Tree: 'tree',
 	Cd: 'cd',
@@ -80,7 +78,6 @@ function normalizeToolName(name: string): string {
 const COMPACT_DETAIL_TOOL_NAMES = new Set([
 	'bash',
 	'write',
-	'edit',
 	'apply_patch',
 	'terminal',
 ]);
@@ -120,8 +117,6 @@ export function ToolResultRenderer({
 			return <ReadRenderer {...props} />;
 		case 'write':
 			return <WriteRenderer {...props} />;
-		case 'edit':
-			return <EditRenderer {...props} />;
 		case 'bash':
 			return <BashRenderer {...props} />;
 		case 'git_status':

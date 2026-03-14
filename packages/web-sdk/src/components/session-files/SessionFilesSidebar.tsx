@@ -2,7 +2,6 @@ import { memo, useMemo } from 'react';
 import {
 	ChevronRight,
 	FilePen,
-	FileCode,
 	FilePlus,
 	FileEdit,
 	RefreshCw,
@@ -29,8 +28,6 @@ function getOperationIcon(operation: string) {
 			return <FilePlus className="w-3 h-3 text-green-500" />;
 		case 'patch':
 			return <FileEdit className="w-3 h-3 text-blue-500" />;
-		case 'edit':
-			return <FileCode className="w-3 h-3 text-yellow-500" />;
 		default:
 			return <FilePen className="w-3 h-3 text-muted-foreground" />;
 	}

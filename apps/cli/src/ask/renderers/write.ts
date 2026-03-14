@@ -10,7 +10,7 @@ export function renderWriteCall(ctx: RendererContext): string {
 			: typeof args.filePath === 'string'
 				? args.filePath
 				: '';
-	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark(ctx.toolName === 'edit' ? 'edit' : 'write')} ${c.fgDimmed(path)}`;
+	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark('write')} ${c.fgDimmed(path)}`;
 }
 
 export function renderWriteResult(ctx: RendererContext): string {
@@ -20,7 +20,7 @@ export function renderWriteResult(ctx: RendererContext): string {
 		| undefined;
 	const path = typeof result.path === 'string' ? result.path : '';
 	const time = formatMs(ctx.durationMs);
-	const name = ctx.toolName === 'edit' ? 'edit' : 'write';
+	const name = 'write';
 
 	if (ctx.error) {
 		return `  ${c.red(ICONS.cross)} ${c.fgDark(name)} ${c.red(ctx.error)} ${c.fgDimmed(time)}`;

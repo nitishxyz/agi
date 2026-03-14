@@ -60,7 +60,6 @@ function normalizeToolTarget(
 	const keyMap: Record<string, string[]> = {
 		read: ['path'],
 		write: ['path'],
-		edit: ['path'],
 		apply_patch: ['path'],
 		glob: ['pattern'],
 		grep: ['query', 'pattern'],

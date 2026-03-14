@@ -37,8 +37,6 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 - `read`: Read file contents (supports line ranges)
 - `write`: Write complete file contents
 - `apply_patch`: Apply unified diff patches (RECOMMENDED for targeted edits)
-- `edit`: Fuzzy string replacement (oldString → newString) — use when `apply_patch` fails
-- `multiedit`: Batch multiple `edit` operations on a single file
 
 **Version Control**:
 - `git_status`, `git_diff`
@@ -167,13 +165,6 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 - Lines starting with ` ` (space) are context (kept unchanged)
 - Lines starting with `@@` are optional hints/comments (not parsed as context)
 
-**Using the `edit` Tool** (Recommended Fallback When Patch Fails):
-- Parameters: `filePath`, `oldString`, `newString`, `replaceAll` (optional)
-- Uses 9 fuzzy matching strategies: trims whitespace, normalizes indentation, anchors on first/last lines
-- Much more forgiving than `apply_patch` — handles trailing commas, whitespace differences, indentation mismatches
-- For multiple edits to the same file, use `multiedit` with an array of `{oldString, newString}` pairs
-- To create a new file: use empty `oldString` with `newString` as the file contents
-
 **Using the `write` Tool** (Last Resort):
 - Use for creating NEW files
 - Use when replacing >70% of a file's content (almost complete rewrite)
@@ -300,7 +291,7 @@ GLM's reasoning can cause it to "reconstruct" code from training data rather tha
 
 When patching files that contain markdown code fences (` ``` `), the fence characters can interfere with the `*** End Patch` marker detection, causing the entire patch to fail.
 
-**Rule: When patching files that contain ` ``` ` (like README.md), prefer patching them in a SEPARATE `apply_patch` call from other files, or use the `edit` tool instead.**
+**Rule: When patching files that contain ` ``` ` (like README.md), prefer patching them in a SEPARATE `apply_patch` call from other files. If patching remains too fragile, consider a full-file `write` only when the rewrite is justified.**
 
 ### Pitfall 4: Indentation Mismatch
 
@@ -338,10 +329,10 @@ Before calling `apply_patch`, verify ALL of these:
 ### Escalation Strategy When Patch Fails:
 
 1. **First failure**: Read the file AGAIN. Copy context character-by-character. Pay special attention to blank lines.
-2. **Second failure**: Switch to the `edit` tool — it uses fuzzy matching (oldString/newString) and tolerates whitespace/indentation mismatches. For multiple edits, use `multiedit`.
-3. **Third failure**: Use the `write` tool to rewrite the entire file.
+2. **Second failure**: Re-read the exact target lines and simplify the patch further.
+3. **Third failure**: Use the `write` tool to rewrite the entire file only if a full-file rewrite is warranted.
 
-**For Markdown files (README.md, docs, etc.)**: Consider using `edit` as the primary tool instead of `apply_patch`. Markdown files have many blank lines and code fences that make patch context matching fragile.
+**For Markdown files (README.md, docs, etc.)**: Keep patches small and isolated. Markdown files have many blank lines and code fences that make patch context matching fragile.
 
 ## YAML Files — Extra Caution Required
 - YAML uses spaces ONLY (never tabs) — verify exact space count

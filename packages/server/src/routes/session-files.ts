@@ -9,15 +9,13 @@ import { logger } from '@ottocode/sdk';
 const FILE_EDIT_TOOLS = [
 	'Write',
 	'ApplyPatch',
-	'Edit',
 	'write',
 	'apply_patch',
-	'edit',
 ];
 
 interface FileOperation {
 	path: string;
-	operation: 'write' | 'patch' | 'edit' | 'create';
+	operation: 'write' | 'patch' | 'create';
 	timestamp: number;
 	toolCallId: string;
 	toolName: string;
@@ -69,7 +67,7 @@ function extractFilePathFromToolCall(
 
 	const name = toolName.toLowerCase();
 
-	if (name === 'write' || name === 'edit') {
+	if (name === 'write') {
 		if (args && typeof args.path === 'string') return args.path;
 		if (typeof c.path === 'string') return c.path;
 	}
@@ -219,11 +217,10 @@ function extractDataFromToolResult(
 
 function getOperationType(
 	toolName: string,
-): 'write' | 'patch' | 'edit' | 'create' {
+): 'write' | 'patch' | 'create' {
 	const name = toolName.toLowerCase();
 	if (name === 'write') return 'write';
 	if (name === 'applypatch' || name === 'apply_patch') return 'patch';
-	if (name === 'edit') return 'edit';
 	return 'write';
 }
 

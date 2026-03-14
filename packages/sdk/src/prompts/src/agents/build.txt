@@ -202,15 +202,7 @@ Key points:
 ## When Patch Fails
 - Error means context didn't match or file changed
 - Solution: Read the file AGAIN, copy context character-by-character
-- After 2 consecutive failures on the same file: switch to the `edit` tool instead — it uses fuzzy matching (oldString/newString) and tolerates whitespace/indentation mismatches
-- If `edit` also fails, use `write` tool to rewrite the entire file
-
-## Using the `edit` Tool (Recommended Fallback)
-- Parameters: `filePath`, `oldString`, `newString`, `replaceAll` (optional)
-- Uses 9 fuzzy matching strategies: trims whitespace, normalizes indentation, anchors on first/last lines, etc.
-- Much more forgiving than `apply_patch` — handles trailing commas, whitespace differences, indentation mismatches
-- For multiple edits to the same file, use `multiedit` with an array of `{oldString, newString}` pairs
-- To create a new file: use empty `oldString` with `newString` as the file contents
+- After repeated failures on the same file: use `write` only if a full-file rewrite is the safer option
 
 ## Using the `write` Tool (Last Resort)
 - Use for creating NEW files

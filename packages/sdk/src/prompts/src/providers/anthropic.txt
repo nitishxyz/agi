@@ -262,9 +262,7 @@ File (10 spaces):           - os: linux
 - Don't retry with same context - read file AGAIN first
 - Check that context lines exist exactly as written
 - Verify indentation matches (spaces vs tabs)
-- If failing 2+ times, switch to the `edit` tool — it uses fuzzy matching (oldString/newString) and tolerates whitespace/indentation mismatches
-- For multiple edits to the same file, use `multiedit` with an array of `{oldString, newString}` pairs
-- If `edit` also fails, use `write` tool to rewrite the entire file instead
+- If failing repeatedly, use `write` tool to rewrite the entire file only when a full rewrite is the safest option
 
 # Code References
 

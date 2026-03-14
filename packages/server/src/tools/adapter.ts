@@ -138,7 +138,7 @@ export function adaptTools(
 
 	// Anthropic allows max 4 cache_control blocks
 	// Cache only the most frequently used tools: read, write, bash
-	const cacheableTools = new Set(['read', 'write', 'bash', 'edit']);
+	const cacheableTools = new Set(['read', 'write', 'bash']);
 	let cachedToolCount = 0;
 
 	for (const { name: canonicalName, tool } of tools) {

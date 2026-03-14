@@ -60,7 +60,6 @@ export const TOOL_COLORS: Record<string, (s: string) => string> = {
 	git_diff: c.blue,
 
 	write: c.green,
-	edit: c.green,
 	apply_patch: c.green,
 	git_commit: c.green,
 

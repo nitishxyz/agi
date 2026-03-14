@@ -4,213 +4,194 @@
 
 ---
 
-## Agents
+## Built-in agents
 
-otto ships with four built-in agents. Each agent has a system prompt and a curated set of tools.
+The server runtime currently exports these built-in presets:
 
-### build
+- `build`
+- `plan`
+- `general`
+- `research`
 
-Code generation, bug fixes, feature implementation. The most capable agent with full filesystem and shell access.
+All of them also include the control tools `progress_update`, `finish`, and `skill`.
 
-**Tools:** read, write, ls, tree, bash, update_todos, glob, ripgrep, git_status, terminal, apply_patch, websearch
+### `build`
 
-```bash
-otto "create an auth component" --agent build
-otto "fix the failing test" --agent build
-```
+Default implementation agent for code changes.
 
-### plan
+Common tools:
 
-Architecture planning and code analysis. Read-only — cannot modify files or run commands.
+- `read`, `write`, `ls`, `tree`, `bash`
+- `glob`, `ripgrep`
+- `git_status`, `terminal`
+- `apply_patch`, `update_todos`, `websearch`
 
-**Tools:** read, ls, tree, ripgrep, update_todos, websearch
+### `plan`
 
-```bash
-otto "design the API architecture" --agent plan
-otto "review the dependency graph" --agent plan
-```
+Planning/analysis agent.
 
-### general
+Common tools:
 
-General-purpose assistant for mixed tasks.
+- `read`, `ls`, `tree`
+- `ripgrep`
+- `update_todos`, `websearch`
 
-**Tools:** read, write, ls, tree, bash, ripgrep, glob, websearch, update_todos
+### `general`
 
-```bash
-otto "explain how this module works" --agent general
-```
+Broad mixed-purpose agent.
 
-### research
+Common tools:
 
-Deep research across sessions and the web. Can query past sessions for context.
+- `read`, `write`, `ls`, `tree`, `bash`
+- `glob`, `ripgrep`
+- `update_todos`, `websearch`
 
-**Tools:** read, ls, tree, ripgrep, websearch, update_todos, query_sessions, query_messages, get_session_context, search_history, get_parent_session, present_action
+### `research`
 
-```bash
-otto "research how auth is implemented across the codebase" --agent research
-```
+Research-oriented agent that can inspect prior sessions and related context.
 
-All agents also receive: `progress_update`, `finish`, `skill`.
+Common tools:
+
+- `read`, `ls`, `tree`, `ripgrep`, `websearch`
+- `update_todos`
+- `query_sessions`, `query_messages`, `get_session_context`
+- `search_history`, `get_parent_session`, `present_action`
 
 ---
 
-## Tools
+## Built-in tools
 
-### File System
+The lists below describe the overall built-in tool surface. Individual agents
+only receive the subset defined by their preset or config overrides.
 
-| Tool | Description |
-|---|---|
-| `read` | Read file contents. Supports line ranges and multiple file types. |
-| `write` | Write content to a file. Creates the file if it doesn't exist. |
-| `ls` | List directory contents (non-recursive). |
-| `tree` | Render a directory tree with configurable depth. |
-| `glob` | Find files matching glob patterns (e.g., `**/*.ts`). |
-
-### Search
+### File system
 
 | Tool | Description |
 |---|---|
-| `grep` | Search file contents with regex. Returns grouped results. |
-| `ripgrep` | Fast regex search using rg. Supports include globs and case-insensitive search. |
-| `websearch` | Search the web or fetch content from a URL. |
+| `read` | Read files, optionally by line range |
+| `write` | Write or create a file |
+| `ls` | List a directory |
+| `tree` | Render a directory tree |
+| `pwd` | Return the current working directory |
+| `cd` | Change the current working directory for the tool runtime |
+| `glob` | Find files by glob pattern |
+
+### Search and web
+
+| Tool | Description |
+|---|---|
+| `ripgrep` | Fast regex/code search |
+| `websearch` | Web search or URL fetch |
 
 ### Editing
 
 | Tool | Description |
 |---|---|
-| `edit` | Structured file editing with operations: replace, insert-before, insert-after, delete. |
-| `apply_patch` | Apply unified diff patches with fuzzy matching. Supports enveloped patch format. |
+| `apply_patch` | Apply diff/enveloped patches |
 
-### Shell
+### Shell and runtime
 
 | Tool | Description |
 |---|---|
-| `bash` | Execute a shell command. Returns stdout, stderr, and exit code. |
-| `terminal` | Manage persistent terminal sessions. Start, read, write, interrupt, list, kill. Uses bun-pty for PTY support. |
+| `bash` | One-shot shell command execution |
+| `terminal` | Persistent terminal lifecycle management |
 
 ### Git
 
 | Tool | Description |
 |---|---|
-| `git_status` | Show git status in porcelain format. |
-| `git_diff` | Show git diff (staged or all changes). |
-| `git_commit` | Create a git commit with a message. |
+| `git_status` | Working tree summary |
+| `git_diff` | Diff output |
+| `git_commit` | Commit creation |
 
-### Agent
-
-| Tool | Description |
-|---|---|
-| `progress_update` | Emit a progress update to the user (short status message with optional percentage). |
-| `finish` | Signal task completion. |
-| `update_todos` | Create and manage a task list displayed to the user. |
-| `skill` | Load a skill by name to get specialized instructions. |
-
-### Research (research agent only)
+### Agent control
 
 | Tool | Description |
 |---|---|
-| `query_sessions` | Search past sessions by content. |
-| `query_messages` | Search messages across sessions. |
-| `get_session_context` | Get full context from a specific session. |
-| `search_history` | Search conversation history. |
-| `get_parent_session` | Get the parent session for context. |
-| `present_action` | Present research findings to the user. |
+| `update_todos` | Track a visible task list |
+| `progress_update` | Emit short status/progress updates |
+| `finish` | Signal task completion |
+| `skill` | Load specialized instructions from a skill bundle |
+
+### Research helpers
+
+| Tool | Description |
+|---|---|
+| `query_sessions` | Search sessions |
+| `query_messages` | Search messages |
+| `get_session_context` | Load a session context snapshot |
+| `search_history` | Search historical activity |
+| `get_parent_session` | Resolve parent session linkage |
+| `present_action` | Present research findings/action links |
 
 ---
 
-## Agent Configuration
+## Agent overrides
 
-### Per-Project
+Use either:
 
-Create `.otto/agents.json` in your project root:
+- `.otto/agents.json`
+- `~/.config/otto/agents.json`
+
+Example:
 
 ```json
 {
   "build": {
-    "tools": ["read", "write", "bash", "git_status", "git_diff", "ripgrep"],
-    "prompt": ".otto/agents/build/agent.md"
+    "appendTools": ["git_diff", "glob"]
   },
-  "custom-agent": {
-    "tools": ["read", "ls", "tree", "ripgrep"],
-    "prompt": ".otto/agents/custom-agent/agent.md"
+  "reviewer": {
+    "tools": ["read", "ls", "tree", "ripgrep", "update_todos"],
+    "prompt": ".otto/agents/reviewer.md"
   }
 }
 ```
 
-### Global
+Prompt files are typically stored at:
 
-Create `~/.config/otto/agents.json` for global agent overrides.
+- `.otto/agents/<name>.md`
+- `.otto/agents/<name>.txt`
+- `~/.config/otto/agents/<name>.md`
+- `~/.config/otto/agents/<name>.txt`
 
-### Options
+## Custom tools
 
-| Field | Description |
-|---|---|
-| `tools` | Override the default tool list for the agent. |
-| `appendTools` | Add tools to the default list (instead of replacing). |
-| `prompt` | Path to a custom system prompt file. |
-| `provider` | Override the provider for this agent. |
-| `model` | Override the model for this agent. |
+Project or global custom tools are discovered from plugin folders:
 
----
+- `.otto/tools/<tool-name>/tool.js`
+- `.otto/tools/<tool-name>/tool.mjs`
+- `~/.config/otto/tools/<tool-name>/tool.js`
+- `~/.config/otto/tools/<tool-name>/tool.mjs`
 
-## Custom Tools
+See [Customization](./customization.md) for the plugin descriptor format.
 
-Add project-specific tools in `.otto/tools/`:
+## MCP tools
 
-```typescript
-// .otto/tools/deploy.ts
-import { tool } from "@ottocode/sdk";
-import { z } from "zod";
+Running MCP servers expose tools named like `server__tool` and make them available at runtime.
 
-export default tool({
-  name: "deploy",
-  description: "Deploy the application",
-  parameters: z.object({
-    environment: z.enum(["staging", "production"]),
-  }),
-  execute: async ({ environment }) => {
-    // your deployment logic
-    return { success: true, environment };
-  },
-});
-```
+These tools are separate from the built-in per-agent tool presets and come from
+the connected MCP server itself.
 
-Custom tools are automatically discovered and made available to agents.
+Examples:
 
----
+- `github__create_issue`
+- `linear__list_issues`
+- `helius__getBalance`
 
-## MCP Tools
-
-MCP (Model Context Protocol) servers provide additional tools from external sources. When an MCP server is started, its tools are automatically available to all agents.
-
-MCP tools use the naming convention `servername__toolname`:
-
-| Example Tool | Server | Description |
-|---|---|---|
-| `helius__getBalance` | helius | Get SOL balance for a wallet |
-| `github__create_issue` | github | Create a GitHub issue |
-| `linear__list_issues` | linear | List Linear issues |
-
-MCP tools bypass the per-agent tool allowlist — any running MCP server's tools are available to every agent.
-
-```bash
-otto mcp list                  # list configured servers
-otto mcp add helius --command npx --args -y helius-mcp@latest
-```
-
-See [MCP Servers](./mcp.md) for setup, transports, and OAuth.
-
----
+See [MCP Servers](./mcp.md) for transport and OAuth setup.
 
 ## Skills
 
-Skills are markdown files that provide specialized instructions to agents on demand, loaded via the `skill` tool.
+The `skill` tool loads markdown instruction bundles on demand.
 
-Skills can be defined at three levels:
-- **Project:** `.otto/skills/`
-- **Global:** `~/.config/otto/skills/`
-- **Built-in:** bundled with otto
+Skill sources:
+
+- built-in bundled skills
+- `.otto/skills/`
+- `~/.config/otto/skills/`
+
+You can inspect available skills with:
 
 ```bash
-otto skills                    # list available skills
+otto skills
 ```

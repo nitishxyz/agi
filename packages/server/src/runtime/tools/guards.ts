@@ -24,8 +24,6 @@ export function guardToolCall(
 		case 'read':
 			return guardReadPath(String(a.path ?? ''), context.projectRoot);
 		case 'write':
-		case 'edit':
-		case 'multiedit':
 			return guardWritePath(toolName, a);
 		default:
 			return { type: 'allow' };

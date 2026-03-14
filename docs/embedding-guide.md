@@ -1,537 +1,202 @@
-# Embedding otto - Complete Guide
+# Embedding otto
 
 [← Back to README](../README.md) • [Docs Index](./index.md)
 
-This guide shows how to embed otto into your own applications with full TypeScript autocomplete support.
+Use otto's server and UI packages inside your own Bun/Node application.
 
-## Overview
+## Main packages
 
-otto can be embedded in any Node.js/Bun application without requiring users to:
-- Install ottocode separately
-- Create auth.json or config files
-- Set up `.otto/` directory structure
+- `@ottocode/server` — embedded Hono app and built-in agent/tool metadata
+- `@ottocode/web-ui` — prebuilt web UI assets and `serveWebUI()`
+- `@ottocode/api` — generated client if you want to talk to an otto server externally
+- `@ottocode/sdk` — lower-level runtime utilities
 
-The parent application controls everything: authentication, configuration, and agent setup.
+## Minimal embedded server
 
-## Quick Start
+```ts
+import { createEmbeddedApp } from '@ottocode/server';
 
-```typescript
-import { createEmbeddedApp, BUILTIN_AGENTS } from '@ottocode/server';
-import { serveWebUI } from '@ottocode/web-ui';
-
-const ottoApp = createEmbeddedApp({
+const app = createEmbeddedApp({
   provider: 'openai',
-  model: 'gpt-4',
-  apiKey: process.env.OPENAI_API_KEY || '',
-  agent: 'build', // Use built-in agent
+  model: 'gpt-4o',
+  apiKey: process.env.OPENAI_API_KEY,
+  agent: 'build',
 });
 
-// Serve the web UI
 Bun.serve({
   port: 3456,
-  fetch: ottoApp.fetch,
-  idleTimeout: 240, // Prevent SSE timeout
+  idleTimeout: 240,
+  fetch: app.fetch,
 });
 ```
 
-## Built-in Agents
+## Embedded server + web UI
 
-otto ships with 3 built-in agents with full TypeScript autocomplete:
+```ts
+import { createEmbeddedApp } from '@ottocode/server';
+import { serveWebUI } from '@ottocode/web-ui';
 
-```typescript
-import { BUILTIN_AGENTS, type BuiltinAgent } from '@ottocode/server';
+const api = createEmbeddedApp({
+  provider: 'anthropic',
+  model: 'claude-sonnet-4',
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  agent: 'build',
+});
 
-// Available agents: 'build' | 'plan' | 'general'
-const agentName: BuiltinAgent = 'build';
+const web = serveWebUI({ prefix: '/ui' });
 
-// Access agent configuration
-console.log(BUILTIN_AGENTS.build.prompt);
-console.log(BUILTIN_AGENTS.build.tools);
+Bun.serve({
+  port: 3456,
+  idleTimeout: 240,
+  async fetch(req) {
+    return (await web(req)) ?? api.fetch(req);
+  },
+});
 ```
 
-### Agent Presets
+That gives you:
 
-- **`build`** - Full-featured development agent
-  - Tools: read, write, ls, tree, bash, git, grep, ripgrep, patch, websearch
-  - Best for: Building features, making code changes
+- API routes on `/`, `/openapi.json`, and `/v1/*`
+- browser UI on `/ui`
 
-- **`plan`** - Planning and analysis agent
-  - Tools: read, ls, tree, ripgrep, update_plan, websearch
-  - Best for: Architecture planning, code analysis
+## Built-in agents
 
-- **`general`** - General purpose assistant
-  - Tools: read, write, ls, tree, bash, ripgrep, websearch, update_plan
-  - Best for: Mixed tasks, conversational coding
+`@ottocode/server` exports the current built-in presets:
 
-## Built-in Tools
+```ts
+import { BUILTIN_AGENTS, type BuiltinAgent } from '@ottocode/server';
 
-All available tools with autocomplete:
+const agent: BuiltinAgent = 'research';
+console.log(Object.keys(BUILTIN_AGENTS));
+// ['build', 'plan', 'general', 'research']
+```
 
-```typescript
+Typical uses:
+
+- `build` — implementation and code changes
+- `plan` — architecture/planning
+- `general` — mixed workflows
+- `research` — research across sessions/history/web
+
+## Built-in tools
+
+```ts
 import { BUILTIN_TOOLS, type BuiltinTool } from '@ottocode/server';
 
-// BUILTIN_TOOLS = [
-//   'read', 'write', 'ls', 'tree', 'bash', 'grep', 'ripgrep',
-//   'git_status', 'git_diff', 'git_commit', 'apply_patch',
-//   'update_plan', 'edit', 'websearch', 'progress_update', 'finish'
-// ]
-
-// Get safe tools (no write/bash)
-const safeTools = BUILTIN_TOOLS.filter(
-  tool => !['bash', 'write'].includes(tool)
+const safeTools: BuiltinTool[] = BUILTIN_TOOLS.filter(
+  (tool) => !['bash', 'write', 'git_commit'].includes(tool),
 );
 ```
 
-## Configuration Options
+`BUILTIN_TOOLS` is the full exported built-in tool universe. A given agent does
+**not** automatically receive all of them — use `BUILTIN_AGENTS.<agent>.tools`
+to see the actual default tool list for that preset.
 
-### Hybrid Fallback Architecture
+Current exported tool names include file, search, patch, git, terminal, control, and research helpers such as:
 
-otto uses a **three-tier fallback system** for configuration and authentication:
+- `read`, `write`, `ls`, `tree`, `pwd`, `cd`, `glob`
+- `ripgrep`, `websearch`
+- `apply_patch`
+- `bash`, `terminal`
+- `git_status`, `git_diff`, `git_commit`
+- `update_todos`, `progress_update`, `finish`, `skill`
+- `query_sessions`, `query_messages`, `get_session_context`, `search_history`, `get_parent_session`, `present_action`
 
-1. **Injected config** (highest priority) - Passed to `createEmbeddedApp()`
-2. **Environment variables** - `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.
-3. **Config files** (fallback) - `~/.config/otto/auth.json`, `.otto/config.json`
+## Config fallback model
 
-This allows otto to work in **any environment**:
-- Fully embedded (no files needed)
-- CI/CD (env vars only)
-- Traditional CLI (config files)
-- Hybrid (mix of all three)
+Embedded otto still follows the normal resolution order:
 
-### Configuration Types
+1. injected config (`createEmbeddedApp({...})`)
+2. environment variables
+3. project config (`.otto/...`)
+4. global config (`~/.config/otto/...`)
+5. built-in defaults
 
-```typescript
-// Optional configuration - all fields are optional!
-type EmbeddedAppConfig = {
-  // Provider and model (falls back to env/files if not provided)
-  provider?: 'openai' | 'anthropic' | 'google' | 'openrouter' | 'opencode';
-  model?: string;
-  apiKey?: string;
-  
-  // Default agent to use
-  agent?: string;
-  
-  // Multi-provider auth (optional)
-  auth?: Record<string, { apiKey: string }>;
-  
-  // Custom agents (optional)
-  agents?: Record<string, AgentConfigEntry>;
-  
-  // Default settings (optional)
-  defaults?: {
-    provider?: string;
-    model?: string;
-    agent?: string;
-  };
+Auth secrets use secure OS-specific storage when they are not injected:
+
+| Platform | Auth path |
+|---|---|
+| macOS | `~/Library/Application Support/otto/auth.json` |
+| Linux | `$XDG_STATE_HOME/otto/auth.json` or `~/.local/state/otto/auth.json` |
+| Windows | `%APPDATA%/otto/auth.json` |
+
+## Embedded config shape
+
+```ts
+import type { EmbeddedAppConfig } from '@ottocode/server';
+
+const config: EmbeddedAppConfig = {
+  provider: 'openai',
+  model: 'gpt-4o',
+  apiKey: process.env.OPENAI_API_KEY,
+  agent: 'build',
+  defaults: {
+    provider: 'openai',
+    model: 'gpt-4o',
+    agent: 'build',
+    toolApproval: 'auto',
+  },
+  corsOrigins: ['https://myapp.example.com'],
 };
 ```
 
-## Network Access & Proxies
+Useful fields:
 
-The server supports access from:
-- **Localhost**: `http://localhost:*` and `http://127.0.0.1:*`
-- **Local network**: `192.168.x.x`, `10.x.x.x`, `172.16-31.x.x`
-- **Custom origins**: Configure via `corsOrigins` for Tailscale, reverse proxies, etc.
+- `provider`, `model`, `apiKey`
+- `agent`
+- `auth` for multi-provider injected auth
+- `agents` for agent overrides
+- `defaults` for fallback defaults
+- `corsOrigins` for reverse proxies, custom domains, or Tailscale-style deployments
 
-### Tailscale / Proxy Configuration
+## Customizing built-in agents
 
-```typescript
-import { createEmbeddedApp } from '@ottocode/server';
-
-const app = createEmbeddedApp({
-  corsOrigins: [
-    'https://myapp.ts.net',           // Tailscale domain
-    'https://otto.example.com',        // Custom domain
-    'https://subdomain.ngrok.io'      // ngrok tunnel
-  ]
-});
-
-Bun.serve({
-  port: 9100,
-  fetch: app.fetch
-});
-```
-
-The Web UI auto-detects the server URL, so accessing via `https://myapp.ts.net/ui` will connect to `https://myapp.ts.net/v1/*`.
-
-## Usage Examples
-
-### 1. Full Injection (No Files or Env Vars)
-
-```typescript
-const app = createEmbeddedApp({
-  provider: 'openai',
-  model: 'gpt-4',
-  apiKey: 'sk-...', // Hardcoded or from your vault
-  agent: 'build',
-});
-```
-
-### 2. Environment Variables Only
-
-```typescript
-// Set env vars: OPENAI_API_KEY=sk-...
-const app = createEmbeddedApp({
-  provider: 'openai',
-  model: 'gpt-4',
-  // apiKey omitted - falls back to env var
-  agent: 'build',
-});
-```
-
-### 3. Fallback to Config Files
-
-```typescript
-// Uses ~/.config/otto/auth.json and .otto/config.json
-const app = createEmbeddedApp({
-  // All fields omitted - uses file config
-});
-```
-
-### 4. Hybrid Mode (Mix of All)
-
-```typescript
-// Uses injected provider, but falls back to env/files for API key
-const app = createEmbeddedApp({
-  provider: 'openai', // Injected
-  // model and apiKey fall back to env or files
-  agent: 'build',
-});
-```
-
-### 5. Customize Built-in Agent
-
-```typescript
-import { BUILTIN_AGENTS } from '@ottocode/server';
+```ts
+import { BUILTIN_AGENTS, createEmbeddedApp } from '@ottocode/server';
 
 const app = createEmbeddedApp({
-  provider: 'openai',
-  model: 'gpt-4',
-  apiKey: process.env.OPENAI_API_KEY || '',
+  provider: 'anthropic',
+  model: 'claude-sonnet-4',
+  apiKey: process.env.ANTHROPIC_API_KEY,
   agent: 'general',
   agents: {
     general: {
-      ...BUILTIN_AGENTS.general, // Extend built-in
-      tools: ['read', 'ls', 'tree', 'websearch'], // Limit tools
-    }
-  }
-});
-```
-
-### 6. Create Custom Agent
-
-```typescript
-const app = createEmbeddedApp({
-  provider: 'anthropic',
-  model: 'claude-3-5-sonnet-20241022',
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-  agent: 'reviewer',
-  agents: {
-    reviewer: {
-      prompt: 'You are a code reviewer. Find bugs and suggest improvements.',
-      tools: ['read', 'tree', 'grep', 'ripgrep'],
-      provider: 'anthropic',
-      model: 'claude-3-5-sonnet-20241022',
-    }
-  }
-});
-```
-
-### 7. Multi-Agent Setup
-
-```typescript
-const app = createEmbeddedApp({
-  provider: 'openai',
-  model: 'gpt-4',
-  apiKey: process.env.OPENAI_API_KEY || '',
-  agent: 'general',
-  
-  // Multiple providers
-  auth: {
-    openai: { apiKey: process.env.OPENAI_API_KEY || '' },
-    anthropic: { apiKey: process.env.ANTHROPIC_API_KEY || '' },
-  },
-  
-  // Multiple agents
-  agents: {
-    build: BUILTIN_AGENTS.build,
-    plan: BUILTIN_AGENTS.plan,
-    
-    // Custom agent with different provider
-    architect: {
-      prompt: BUILTIN_AGENTS.plan.prompt,
-      tools: BUILTIN_AGENTS.plan.tools,
-      provider: 'anthropic', // Override provider
-      model: 'claude-3-5-sonnet-20241022',
-    },
-    
-    // Safe agent (read-only)
-    safe: {
-      prompt: BUILTIN_AGENTS.general.prompt,
-      tools: ['read', 'ls', 'tree', 'websearch', 'ripgrep'],
+      ...BUILTIN_AGENTS.general,
+      tools: ['read', 'ls', 'tree', 'ripgrep', 'update_todos', 'websearch'],
     },
   },
-  
-  defaults: {
-    provider: 'openai',
-    model: 'gpt-4',
-    agent: 'general',
-  }
 });
 ```
 
-### 8. Embed in Existing App
+## Project and global overrides still work
 
-```typescript
-import { Hono } from 'hono';
-import { createEmbeddedApp } from '@ottocode/server';
-import { serveWebUI } from '@ottocode/web-ui';
+If you do not inject everything explicitly, embedded otto can still read:
 
-const parentApp = new Hono();
+- `.otto/config.json`
+- `.otto/agents.json`
+- `.otto/agents/<name>.md`
+- `~/.config/otto/config.json`
+- `~/.config/otto/agents.json`
 
-// Your existing routes
-parentApp.get('/', (c) => c.text('My App'));
+Custom tools can still be discovered from:
 
-// Embed otto
-const ottoApp = createEmbeddedApp({
-  provider: 'openai',
-  model: 'gpt-4-turbo',
-  apiKey: process.env.OPENAI_API_KEY || '',
-  agent: 'build',
-});
+- `.otto/tools/<tool-name>/tool.js`
+- `.otto/tools/<tool-name>/tool.mjs`
+- `~/.config/otto/tools/<tool-name>/tool.js`
+- `~/.config/otto/tools/<tool-name>/tool.mjs`
 
-// Mount otto routes under /ai
-parentApp.route('/ai', ottoApp);
+## API routing expectations
 
-// Serve Web UI
-const uiHandler = serveWebUI({ 
-  prefix: '/ai/ui',
-  serverUrl: '/ai'
-});
+Your embedded server should expose the same route layout as the standalone runtime:
 
-parentApp.all('/ai/ui/*', async (c) => {
-  const response = await uiHandler(c.req.raw);
-  return response || c.notFound();
-});
+- `/`
+- `/openapi.json`
+- `/v1/*`
 
-Bun.serve({
-  port: 3000,
-  fetch: parentApp.fetch,
-  idleTimeout: 240, // Important for SSE!
-});
-```
+If you mount behind a reverse proxy, keep `/v1/*` reachable or rewrite consistently for your client.
 
-## Agent Configuration
+## Client guidance
 
-### AgentConfigEntry
-
-```typescript
-type AgentConfigEntry = {
-  // Agent system prompt (required for custom agents)
-  prompt?: string;
-  
-  // Allowed tools (overrides defaults)
-  tools?: string[];
-  
-  // Tools to add to defaults
-  appendTools?: string[];
-  
-  // Override provider for this agent
-  provider?: string;
-  
-  // Override model for this agent
-  model?: string;
-};
-```
-
-## Web UI Integration
-
-### Serving the Web UI
-
-```typescript
-import { serveWebUI } from '@ottocode/web-ui';
-
-// Option 1: Standalone
-const uiHandler = serveWebUI({ 
-  prefix: '/ui',
-  serverUrl: '/api'
-});
-
-Bun.serve({
-  port: 3456,
-  fetch: async (req) => {
-    const url = new URL(req.url);
-    if (url.pathname.startsWith('/ui')) {
-      const response = await uiHandler(req);
-      if (response) return response;
-    }
-    return ottoApp.fetch(req);
-  }
-});
-
-// Option 2: With Hono
-const handler = serveWebUI({ 
-  prefix: '/ui',
-  serverUrl: '/api'
-});
-
-app.all('/ui/*', async (c) => {
-  const response = await handler(c.req.raw);
-  return response || c.notFound();
-});
-```
-
-### Important Server Configuration
-
-Always set `idleTimeout` when using SSE (Server-Sent Events):
-
-```typescript
-Bun.serve({
-  port: 3456,
-  fetch: app.fetch,
-  idleTimeout: 240, // 4 minutes - prevents SSE timeout
-});
-```
-
-## TypeScript Autocomplete
-
-The embedded API provides full TypeScript autocomplete:
-
-```typescript
-import { 
-  createEmbeddedApp,
-  BUILTIN_AGENTS,
-  BUILTIN_TOOLS,
-  type BuiltinAgent,
-  type BuiltinTool 
-} from '@ottocode/server';
-
-// Autocomplete for agent names
-const agent: BuiltinAgent = 'build'; // ← Suggests: 'build' | 'plan' | 'general'
-
-// Autocomplete for tool names
-const tools: BuiltinTool[] = ['read', 'write']; // ← Suggests all 16 tools
-
-// Extend built-in agents with autocomplete
-const customAgent = {
-  ...BUILTIN_AGENTS.build, // ← Autocomplete for .build, .plan, .general
-  tools: ['read', 'bash'], // ← Autocomplete for tool names
-};
-```
-
-## Use Cases
-
-### VSCode Extension
-```typescript
-// Use VSCode's API key storage
-const apiKey = await vscode.workspace.getConfiguration('ai').get('apiKey');
-
-const ottoApp = createEmbeddedApp({
-  provider: 'openai',
-  model: 'gpt-4',
-  apiKey,
-  agent: 'build',
-});
-```
-
-### Electron App
-```typescript
-import { app } from 'electron';
-
-const ottoApp = createEmbeddedApp({
-  provider: 'anthropic',
-  model: 'claude-3-5-sonnet-20241022',
-  apiKey: await keytar.getPassword('myapp', 'anthropic'),
-  agent: 'general',
-});
-```
-
-### SaaS Platform
-```typescript
-// Per-user API keys from database
-const user = await db.users.findOne(userId);
-
-const ottoApp = createEmbeddedApp({
-  provider: user.aiProvider,
-  model: user.aiModel,
-  apiKey: decrypt(user.encryptedApiKey),
-  agent: user.preferredAgent || 'general',
-});
-```
-
-## Fallback Priority
-
-When otto needs a configuration value, it checks in this order:
-
-```
-1. Injected config (createEmbeddedApp({ ... }))
-   ↓ if not found
-2. Environment variables (OPENAI_API_KEY, etc.)
-   ↓ if not found
-3. Config files (~/.config/otto/auth.json, .otto/config.json)
-   ↓ if not found
-4. Built-in defaults
-```
-
-### Example Scenarios
-
-| Scenario | Injected | Env Vars | Files | Result |
-|----------|----------|----------|-------|--------|
-| **Full Injection** | ✅ All | ❌ None | ❌ None | Uses injected config |
-| **Env Only** | ❌ None | ✅ API keys | ❌ None | Uses env vars |
-| **CLI Mode** | ❌ None | ❌ None | ✅ All | Uses config files |
-| **Hybrid** | ✅ Provider | ✅ API key | ✅ Model | Uses all three! |
-
-## Deployment Modes
-
-### Mode 1: Fully Embedded (No Files)
-Best for: SaaS platforms, VSCode extensions, Electron apps
-
-```typescript
-const app = createEmbeddedApp({
-  provider: 'openai',
-  model: 'gpt-4',
-  apiKey: await getFromVault(),
-  agent: 'build',
-});
-```
-
-### Mode 2: Environment Variables (CI/CD)
-Best for: GitHub Actions, Docker, serverless
-
-```typescript
-// Set: OPENAI_API_KEY=sk-...
-const app = createEmbeddedApp({
-  provider: 'openai',
-  model: 'gpt-4',
-  // Falls back to env var
-});
-```
-
-### Mode 3: Traditional CLI (Config Files)
-Best for: Desktop development, local usage
-
-```typescript
-// Uses ~/.config/otto/auth.json
-const app = createEmbeddedApp({});
-```
-
-## Next Steps
-
-- See [examples/embedded-with-autocomplete.ts](../examples/embedded-with-autocomplete.ts) for complete examples
-- Review [Architecture](./architecture.md) for system design
-- Check [API Reference](./api-reference.md) for detailed API docs
-
-## Troubleshooting
-
-### SSE Timeout Errors
-Set `idleTimeout: 240` in `Bun.serve()` options.
-
-### Tools Not Working
-Ensure tools are listed in agent's `tools` array and are valid built-in tool names.
-
-### Agent Not Loading
-Check that custom agent has a `prompt` field or extends a built-in agent.
-
-### API Key Issues
-Verify API key is valid and provider name matches: `'openai'`, `'anthropic'`, `'google'`, etc.
+- prefer `@ottocode/api` if you are calling an otto server from another process
+- use `serveWebUI()` when you want the browser UI without rebuilding the frontend yourself
+- set `idleTimeout` high enough for SSE streaming workloads

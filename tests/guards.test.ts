@@ -192,18 +192,6 @@ describe('guardToolCall', () => {
 		});
 	});
 
-	describe('edit/multiedit — same write guards', () => {
-		test('requires approval for .env via edit', () => {
-			expect(guardToolCall('edit', { filePath: '.env' }).type).toBe('approve');
-		});
-
-		test('allows normal edit', () => {
-			expect(guardToolCall('edit', { filePath: 'src/app.ts' }).type).toBe(
-				'allow',
-			);
-		});
-	});
-
 	describe('other tools — always allowed', () => {
 		test('allows unknown tools', () => {
 			expect(guardToolCall('ls', {}).type).toBe('allow');

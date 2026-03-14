@@ -21,8 +21,6 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 - `read`: Read file contents (supports line ranges)
 - `write`: Write complete file contents
 - `apply_patch`: Apply unified diff patches (RECOMMENDED for targeted edits)
-- `edit`: Fuzzy string replacement (oldString → newString) — use when `apply_patch` fails
-- `multiedit`: Batch multiple `edit` operations on a single file
 
 **Version Control**:
 - `git_status`, `git_diff`
@@ -77,13 +75,6 @@ You have access to a rich set of specialized tools optimized for coding tasks:
 +line to add                  ← Add this line
  more context                 ← More context (space prefix)
 ```
-
-**Using the `edit` Tool** (Recommended Fallback When Patch Fails):
-- Parameters: `filePath`, `oldString`, `newString`, `replaceAll` (optional)
-- Uses 9 fuzzy matching strategies: trims whitespace, normalizes indentation, anchors on first/last lines
-- Much more forgiving than `apply_patch` — handles trailing commas, whitespace differences, indentation mismatches
-- For multiple edits to the same file, use `multiedit` with an array of `{oldString, newString}` pairs
-- To create a new file: use empty `oldString` with `newString` as the file contents
 
 **Using the `write` Tool** (Last Resort):
 - Use for creating NEW files
@@ -474,8 +465,7 @@ File (10 spaces):           - os: linux
 
 **If Patch Fails:**
 - Read file AGAIN, copy context character-by-character
-- After 2 failures: switch to `edit` tool — it uses fuzzy matching and tolerates whitespace/indentation mismatches
-- If `edit` also fails: use `write` tool to rewrite the entire file instead
+- After repeated failures: use `write` tool to rewrite the entire file only if a full-file rewrite is justified
 
 ## `update_todos`
 

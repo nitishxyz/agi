@@ -13,7 +13,7 @@ const READ_ONLY_TOOLS = new Set([
 	'git_status',
 ]);
 
-const MUTATING_TOOLS = new Set(['write', 'apply_patch', 'edit']);
+const MUTATING_TOOLS = new Set(['write', 'apply_patch']);
 
 export async function runAskStreamCapture(
 	prompt: string,

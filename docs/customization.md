@@ -2,11 +2,18 @@
 
 [← Back to README](../README.md) • [Docs Index](./index.md)
 
-## Custom Commands
+Customize otto with project-local `.otto/` files or global `~/.config/otto/` files.
 
-Create reusable commands for common workflows in your project.
+## Custom commands
 
-### Example: Commit Command
+Command manifests are discovered from:
+
+- `.otto/commands/*.json`
+- `~/.config/otto/commands/*.json`
+
+A command can optionally load a sibling prompt file like `commit.md` or `commit.txt`.
+
+### Example
 
 Create `.otto/commands/commit.json`:
 
@@ -28,30 +35,122 @@ Usage:
 
 ```bash
 otto commit
+otto commit "focus on the auth refactor"
 ```
 
-## Custom Tools
+Supported manifest fields:
 
-Tools must implement the AITool interface and export as default.
+| Field | Meaning |
+|---|---|
+| `name` | Command name |
+| `description` | Help/interactive description |
+| `agent` | Agent used for the command |
+| `prompt` | Inline prompt |
+| `promptPath` | Relative or absolute prompt file path |
+| `promptTemplate` | Prompt template, typically using `{input}` |
+| `defaults` | Default `provider`, `model`, or `agent` |
+| `confirm` | Confirmation policy/message |
+| `interactive` | Prompt for input if none was supplied |
 
-### Example: Custom Tool Implementation
+## Custom tools
 
-Create `.otto/tools/file-size/tool.ts`:
+Custom tools are plugin folders discovered from:
 
-```typescript
-import { z } from 'zod';
-import type { AITool, ToolContext } from '../../../src/ai/types';
+- `.otto/tools/<tool-name>/tool.js`
+- `.otto/tools/<tool-name>/tool.mjs`
+- `~/.config/otto/tools/<tool-name>/tool.js`
+- `~/.config/otto/tools/<tool-name>/tool.mjs`
 
-const tool: AITool<{ path: string }, { size: number }> = {
-  name: 'file-size',
-  description: 'Get file size at a path',
-  parameters: z.object({ path: z.string() }),
-  async execute({ path }, ctx: ToolContext) {
-    const fs = await import('node:fs/promises');
-    const stat = await fs.stat(path);
-    return { size: stat.size };
-  }
+The loader expects a descriptor object or a factory function returning one.
+
+### Descriptor shape
+
+```ts
+{
+  name?: string;
+  description?: string;
+  parameters?: Record<string, {
+    type: 'string' | 'number' | 'boolean';
+    description?: string;
+    default?: string | number | boolean;
+    enum?: string[];
+    optional?: boolean;
+  }>;
+  execute?: (args) => unknown | Promise<unknown>;
+  run?: (args) => unknown | Promise<unknown>;
+  handler?: (args) => unknown | Promise<unknown>;
+  setup?: (context) => unknown | Promise<unknown>;
+  onInit?: (context) => unknown | Promise<unknown>;
+}
+```
+
+`execute`, `run`, or `handler` can be used as the entrypoint.
+
+### Example tool
+
+Create `.otto/tools/file-size/tool.js`:
+
+```js
+export default {
+  name: 'file_size',
+  description: 'Get the byte size of a file',
+  parameters: {
+    path: {
+      type: 'string',
+      description: 'Path to inspect',
+    },
+  },
+  async execute({ input, fs }) {
+    const content = await fs.readFile(input.path, 'utf8');
+    return { bytes: Buffer.byteLength(content, 'utf8') };
+  },
 };
-
-export default tool;
 ```
+
+### Helper context
+
+Tool executors receive helpers including:
+
+- `input` — validated input object
+- `project` / `projectRoot`
+- `directory` / `worktree`
+- `exec()` / `run()` — run a command
+- ``$`` — template-string command helper
+- `fs.readFile()` / `fs.writeFile()` / `fs.exists()`
+- `env` — environment variables
+- `context` — tool/plugin metadata including `toolDir`
+
+## Custom agents
+
+Agent config lives in:
+
+- `.otto/agents.json`
+- `~/.config/otto/agents.json`
+
+Prompt files typically live at:
+
+- `.otto/agents/<name>.md`
+- `~/.config/otto/agents/<name>.md`
+
+Example:
+
+```json
+{
+  "reviewer": {
+    "tools": ["read", "ls", "tree", "ripgrep", "update_todos"],
+    "prompt": ".otto/agents/reviewer.md",
+    "provider": "anthropic",
+    "model": "claude-sonnet-4"
+  }
+}
+```
+
+## Skills
+
+Skills are markdown-based instruction bundles discovered from:
+
+- `.otto/skills/`
+- `~/.config/otto/skills/`
+- built-in bundled skills
+
+Use `otto skills` to inspect them, or the `skill` tool from the runtime.

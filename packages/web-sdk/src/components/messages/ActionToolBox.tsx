@@ -73,11 +73,6 @@ const TOOL_CONFIG: Record<
 		color: 'text-purple-600 dark:text-purple-300',
 		label: 'Patching',
 	},
-	edit: {
-		Icon: FileEdit,
-		color: 'text-purple-600 dark:text-purple-300',
-		label: 'Editing',
-	},
 	terminal: {
 		Icon: Terminal,
 		color: 'text-amber-600 dark:text-amber-300',
@@ -95,7 +90,6 @@ function getTargetFromArgs(
 		return cmd.length > 80 ? `${cmd.slice(0, 77)}…` : cmd;
 	}
 	if (toolName === 'write') return String(args.path || '');
-	if (toolName === 'edit') return String(args.filePath || args.file || '');
 	if (toolName === 'apply_patch') {
 		const patch = String(args.patch || '');
 		return getPatchTarget(patch) || '';
@@ -110,7 +104,7 @@ function getTargetFromStream(toolName: string, raw: string): string {
 			return cmd.length > 80 ? `${cmd.slice(0, 77)}…` : cmd;
 		}
 	}
-	if (toolName === 'write' || toolName === 'edit') {
+	if (toolName === 'write') {
 		return (
 			extractJsonStringField(raw, 'path') ||
 			extractJsonStringField(raw, 'filePath')
@@ -403,11 +397,6 @@ function getContentFromArgs(
 	if (toolName === 'bash') return String(args.cmd || '');
 	if (toolName === 'write') return String(args.content || '');
 	if (toolName === 'apply_patch') return String(args.patch || '');
-	if (toolName === 'edit') {
-		const oldStr = String(args.oldString || '');
-		const newStr = String(args.newString || '');
-		return oldStr && newStr ? `- ${oldStr}\n+ ${newStr}` : newStr || '';
-	}
 	return '';
 }
 
@@ -442,9 +431,5 @@ function getContentFromStream(toolName: string, raw: string): string {
 	if (toolName === 'bash') return extractJsonStringField(raw, 'cmd');
 	if (toolName === 'write') return extractJsonStringField(raw, 'content');
 	if (toolName === 'apply_patch') return extractJsonStringField(raw, 'patch');
-	if (toolName === 'edit') {
-		const newStr = extractJsonStringField(raw, 'newString');
-		return newStr || extractJsonStringField(raw, 'oldString');
-	}
 	return '';
 }

@@ -2,58 +2,154 @@
 
 [← Back to README](../README.md) • [Docs Index](./index.md)
 
-otto uses a flexible configuration system with three priority levels:
+otto resolves configuration from injected settings, environment variables, global config, and project config.
 
-1. **Injected config** (for embedded mode) - Highest priority
-2. **Environment variables** - Middle priority  
-3. **Config files** (`.otto/` directory) - Fallback
+## Resolution order
 
-This allows otto to work in CLI mode, embedded applications, CI/CD, and hybrid environments.
+When otto needs a value, it checks in this order:
 
-## Configuration Priority
-
-When otto needs a configuration value, it checks in this order:
-
-```
-1. Injected config (createEmbeddedApp({ ... }))
-   ↓ if not found
-2. Environment variables (OPENAI_API_KEY, OTTO_PROVIDER, etc.)
-   ↓ if not found  
-3. Config files (~/.config/otto/auth.json, .otto/config.json)
-   ↓ if not found
-4. Built-in defaults
+```text
+1. Injected config (for embedded/server integrations)
+2. Environment variables
+3. Project config (.otto/...)
+4. Global config (~/.config/otto/...)
+5. Built-in defaults
 ```
 
-## Directory Structure
+Auth secrets are a special case: they are stored in a secure OS-specific path, not in `~/.config/otto/auth.json`.
 
+## Directory layout
+
+### Global config directory
+
+```text
+~/.config/otto/
+├── config.json
+├── agents.json
+├── agents/
+├── commands/
+├── tools/
+└── skills/
 ```
-~/.config/otto/           # Global configuration
-├── auth.json            # API keys (secure, 0600 permissions)
-└── config.json          # Global defaults
 
-.otto/                    # Project-specific configuration
-├── otto.sqlite           # Local conversation history database
-├── config.json          # Project configuration
-├── agents.json          # Agent customizations
-├── agents/              # Custom agent prompts
-│   └── <agent-name>/
-│       └── agent.md     # Agent system prompt
-├── commands/            # Custom command definitions
-│   ├── <command>.json   # Command configuration
-│   └── <command>.md     # Command prompt template
-├── tools/               # Custom tool implementations
+### Secure auth + OAuth storage
+
+| Platform | Auth path | OAuth directory |
+|---|---|---|
+| macOS | `~/Library/Application Support/otto/auth.json` | `~/Library/Application Support/otto/oauth/` |
+| Linux | `$XDG_STATE_HOME/otto/auth.json` or `~/.local/state/otto/auth.json` | `$XDG_STATE_HOME/otto/oauth/` or `~/.local/state/otto/oauth/` |
+| Windows | `%APPDATA%/otto/auth.json` | `%APPDATA%/otto/oauth/` |
+
+### Project directory
+
+```text
+.otto/
+├── otto.sqlite
+├── config.json
+├── agents.json
+├── agents/
+│   ├── <name>.md
+│   └── <name>.txt
+├── commands/
+│   ├── <command>.json
+│   ├── <command>.md
+│   └── <command>.txt
+├── tools/
 │   └── <tool-name>/
-│       ├── tool.ts      # Tool implementation
-│       └── prompt.txt   # Tool context (optional)
-└── artifacts/           # Large outputs and file artifacts
-    └── <uuid>/          # Artifact storage
+│       ├── tool.js
+│       └── tool.mjs
+└── skills/
 ```
 
-## Configuration Files
+Notes:
 
-### Global Auth: `~/.config/otto/auth.json`
+- the CLI scaffolder writes agent prompts as `.otto/agents/<name>.md`
+- command prompts can live next to the JSON manifest as `<command>.md` or `<command>.txt`
+- the runtime still accepts some legacy nested agent prompt paths, but the flat layout above is the current default
 
-API keys stored securely (file permissions: 0600):
+## Global files
+
+### `~/.config/otto/config.json`
+
+User-wide defaults.
+
+```json
+{
+  "defaults": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-4",
+    "agent": "build"
+  }
+}
+```
+
+### `~/.config/otto/agents.json`
+
+Global agent overrides.
+
+```json
+{
+  "build": {
+    "appendTools": ["git_diff"],
+    "prompt": "agents/build.md"
+  }
+}
+```
+
+`prompt` can be inline text, a relative path from the config directory, or an absolute path.
+
+## Project files
+
+### `.otto/config.json`
+
+Project-level defaults and provider preferences.
+
+```json
+{
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "agent": "build"
+  },
+  "providers": {
+    "openai": { "enabled": true },
+    "anthropic": { "enabled": true },
+    "google": { "enabled": false }
+  }
+}
+```
+
+### `.otto/agents.json`
+
+Per-project agent overrides.
+
+```json
+{
+  "build": {
+    "appendTools": ["git_diff", "glob"]
+  },
+  "reviewer": {
+    "tools": ["read", "ls", "tree", "ripgrep", "update_todos"],
+    "prompt": ".otto/agents/reviewer.md",
+    "provider": "anthropic",
+    "model": "claude-sonnet-4"
+  }
+}
+```
+
+Supported fields:
+
+| Field | Meaning |
+|---|---|
+| `tools` | Replace the default tool list |
+| `appendTools` | Add to the default tool list |
+| `prompt` | Inline prompt text or prompt file path |
+| `provider` | Per-agent provider override |
+| `model` | Per-agent model override |
+
+### Auth file shape
+
+Secure auth storage uses provider entries like:
 
 ```json
 {
@@ -68,96 +164,45 @@ API keys stored securely (file permissions: 0600):
 }
 ```
 
-### Global Config: `~/.config/otto/config.json`
+Most users should prefer `otto setup` or `otto auth login` instead of editing auth files manually.
 
-User-wide defaults:
+## Environment variables
 
-```json
-{
-  "defaults": {
-    "provider": "anthropic",
-    "model": "claude-3-5-sonnet-20241022",
-    "agent": "general"
-  }
-}
-```
-
-### Project Config: `.otto/config.json`
-
-Project-specific overrides:
-
-```json
-{
-  "defaults": {
-    "provider": "openai",
-    "model": "gpt-4",
-    "agent": "build"
-  },
-  "providers": {
-    "openai": { "enabled": true },
-    "anthropic": { "enabled": true },
-    "google": { "enabled": false }
-  }
-}
-```
-
-### Agent Customization: `.otto/agents.json`
-
-```json
-{
-  "build": {
-    "tools": ["read", "write", "bash", "git_*"],
-    "prompt": ".otto/agents/build/agent.md"
-  },
-  "test": {
-    "tools": ["read", "bash"],
-    "appendTools": ["progress_update"]
-  }
-}
-```
-
-## Environment Variables
-
-otto reads these environment variables (falls back to files if not set):
+Common provider variables:
 
 ```bash
-# Provider API keys
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=...
+ANTHROPIC_API_KEY=...
 GOOGLE_GENERATIVE_AI_API_KEY=...
 OPENROUTER_API_KEY=...
 OPENCODE_API_KEY=...
-
-# Optional: Default provider/model/agent
-OTTO_PROVIDER=openai
-OTTO_MODEL=gpt-4
-OTTO_AGENT=build
+SETU_PRIVATE_KEY=...
+MOONSHOT_API_KEY=...
+MINIMAX_API_KEY=...
+ZAI_API_KEY=...
+ZAI_CODING_API_KEY=...
 ```
 
-## Embedded Mode
+See [environment.md](./environment.md) for the verified list.
 
-When embedding otto in your application, inject config directly:
+## Embedded mode
 
-```typescript
+Embedded integrations can inject config directly:
+
+```ts
 import { createEmbeddedApp } from '@ottocode/server';
 
 const app = createEmbeddedApp({
   provider: 'openai',
-  model: 'gpt-4',
-  apiKey: 'sk-...', // Or read from your vault
+  model: 'gpt-4o',
+  apiKey: process.env.OPENAI_API_KEY,
   agent: 'build',
 });
 ```
 
-See [Embedding Guide](./embedding-guide.md) for full details.
+## MCP configuration
 
-## MCP Server Configuration
-
-MCP (Model Context Protocol) servers extend the agent with external tools.
-
-### Project Config
-
-Add to `.otto/config.json`:
+Configure MCP servers in either project or global config:
 
 ```json
 {
@@ -179,21 +224,4 @@ Add to `.otto/config.json`:
 }
 ```
 
-### Global Config
-
-Add to `~/.config/otto/config.json` to make servers available in all projects.
-
-### OAuth Tokens
-
-OAuth credentials are stored in `~/.config/otto/oauth/<server-name>.json` with `0600` permissions. Tokens refresh automatically.
-
-See [MCP Servers](./mcp.md) for full details.
-
-## Configuration Scenarios
-
-| Mode | Injected | Env Vars | Files | Use Case |
-|------|----------|----------|-------|----------|
-| **CLI** | ❌ | ❌ | ✅ | Desktop development |
-| **CI/CD** | ❌ | ✅ | ❌ | GitHub Actions, Docker |
-| **Embedded** | ✅ | ❌ | ❌ | VSCode extension, SaaS |
-| **Hybrid** | ✅ Partial | ✅ API keys | ✅ Defaults | Mix of all |
+OAuth tokens for remote MCP servers are stored in the secure OAuth directory shown above.
