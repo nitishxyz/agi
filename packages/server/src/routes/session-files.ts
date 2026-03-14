@@ -6,12 +6,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { serializeError } from '../runtime/errors/api-error.ts';
 import { logger } from '@ottocode/sdk';
 
-const FILE_EDIT_TOOLS = [
-	'Write',
-	'ApplyPatch',
-	'write',
-	'apply_patch',
-];
+const FILE_EDIT_TOOLS = ['Write', 'ApplyPatch', 'write', 'apply_patch'];
 
 interface FileOperation {
 	path: string;
@@ -215,9 +210,7 @@ function extractDataFromToolResult(
 	return { patch, writeContent, artifact };
 }
 
-function getOperationType(
-	toolName: string,
-): 'write' | 'patch' | 'create' {
+function getOperationType(toolName: string): 'write' | 'patch' | 'create' {
 	const name = toolName.toLowerCase();
 	if (name === 'write') return 'write';
 	if (name === 'applypatch' || name === 'apply_patch') return 'patch';

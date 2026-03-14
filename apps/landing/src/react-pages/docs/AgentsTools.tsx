@@ -22,8 +22,8 @@ export function AgentsTools() {
 			<h3>build</h3>
 			<p>Implementation agent for code changes and fixes.</p>
 			<p>
-				<strong>Tools:</strong> read, write, ls, tree, bash, update_todos,
-				glob, ripgrep, git_status, terminal, apply_patch, websearch
+				<strong>Tools:</strong> read, write, ls, tree, bash, update_todos, glob,
+				ripgrep, git_status, terminal, apply_patch, websearch
 			</p>
 			<CodeBlock>{`otto "create an auth component" --agent build
 otto "fix the failing test" --agent build`}</CodeBlock>
@@ -31,8 +31,7 @@ otto "fix the failing test" --agent build`}</CodeBlock>
 			<h3>plan</h3>
 			<p>Planning and analysis agent.</p>
 			<p>
-				<strong>Tools:</strong> read, ls, tree, ripgrep, update_todos,
-				websearch
+				<strong>Tools:</strong> read, ls, tree, ripgrep, update_todos, websearch
 			</p>
 			<CodeBlock>{`otto "design the API architecture" --agent plan
 otto "review the dependency graph" --agent plan`}</CodeBlock>
@@ -73,31 +72,45 @@ otto "review the dependency graph" --agent plan`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td><code>read</code></td>
+						<td>
+							<code>read</code>
+						</td>
 						<td>Read file contents, optionally by line range.</td>
 					</tr>
 					<tr>
-						<td><code>write</code></td>
+						<td>
+							<code>write</code>
+						</td>
 						<td>Write or create a file.</td>
 					</tr>
 					<tr>
-						<td><code>ls</code></td>
+						<td>
+							<code>ls</code>
+						</td>
 						<td>List a directory.</td>
 					</tr>
 					<tr>
-						<td><code>tree</code></td>
+						<td>
+							<code>tree</code>
+						</td>
 						<td>Render a directory tree.</td>
 					</tr>
 					<tr>
-						<td><code>pwd</code></td>
+						<td>
+							<code>pwd</code>
+						</td>
 						<td>Return the current working directory.</td>
 					</tr>
 					<tr>
-						<td><code>cd</code></td>
+						<td>
+							<code>cd</code>
+						</td>
 						<td>Change the working directory for the tool runtime.</td>
 					</tr>
 					<tr>
-						<td><code>glob</code></td>
+						<td>
+							<code>glob</code>
+						</td>
 						<td>Find files by glob pattern.</td>
 					</tr>
 				</tbody>
@@ -113,11 +126,15 @@ otto "review the dependency graph" --agent plan`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td><code>ripgrep</code></td>
+						<td>
+							<code>ripgrep</code>
+						</td>
 						<td>Fast regex/code search.</td>
 					</tr>
 					<tr>
-						<td><code>websearch</code></td>
+						<td>
+							<code>websearch</code>
+						</td>
 						<td>Search the web or fetch URL content.</td>
 					</tr>
 				</tbody>
@@ -133,7 +150,9 @@ otto "review the dependency graph" --agent plan`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td><code>apply_patch</code></td>
+						<td>
+							<code>apply_patch</code>
+						</td>
 						<td>Apply enveloped or unified diff patches.</td>
 					</tr>
 				</tbody>
@@ -149,11 +168,15 @@ otto "review the dependency graph" --agent plan`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td><code>bash</code></td>
+						<td>
+							<code>bash</code>
+						</td>
 						<td>Execute shell commands.</td>
 					</tr>
 					<tr>
-						<td><code>terminal</code></td>
+						<td>
+							<code>terminal</code>
+						</td>
 						<td>Persistent terminal sessions via bun-pty.</td>
 					</tr>
 				</tbody>
@@ -169,15 +192,21 @@ otto "review the dependency graph" --agent plan`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td><code>git_status</code></td>
+						<td>
+							<code>git_status</code>
+						</td>
 						<td>Git working tree status.</td>
 					</tr>
 					<tr>
-						<td><code>git_diff</code></td>
+						<td>
+							<code>git_diff</code>
+						</td>
 						<td>Git diff.</td>
 					</tr>
 					<tr>
-						<td><code>git_commit</code></td>
+						<td>
+							<code>git_commit</code>
+						</td>
 						<td>Create a git commit.</td>
 					</tr>
 				</tbody>
@@ -193,43 +222,63 @@ otto "review the dependency graph" --agent plan`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td><code>update_todos</code></td>
+						<td>
+							<code>update_todos</code>
+						</td>
 						<td>Track a visible task list.</td>
 					</tr>
 					<tr>
-						<td><code>progress_update</code></td>
+						<td>
+							<code>progress_update</code>
+						</td>
 						<td>Emit short status/progress updates.</td>
 					</tr>
 					<tr>
-						<td><code>finish</code></td>
+						<td>
+							<code>finish</code>
+						</td>
 						<td>Signal task completion.</td>
 					</tr>
 					<tr>
-						<td><code>skill</code></td>
+						<td>
+							<code>skill</code>
+						</td>
 						<td>Load specialized instructions from a skill bundle.</td>
 					</tr>
 					<tr>
-						<td><code>query_sessions</code></td>
+						<td>
+							<code>query_sessions</code>
+						</td>
 						<td>Search sessions.</td>
 					</tr>
 					<tr>
-						<td><code>query_messages</code></td>
+						<td>
+							<code>query_messages</code>
+						</td>
 						<td>Search messages.</td>
 					</tr>
 					<tr>
-						<td><code>get_session_context</code></td>
+						<td>
+							<code>get_session_context</code>
+						</td>
 						<td>Load a session context snapshot.</td>
 					</tr>
 					<tr>
-						<td><code>search_history</code></td>
+						<td>
+							<code>search_history</code>
+						</td>
 						<td>Search historical activity.</td>
 					</tr>
 					<tr>
-						<td><code>get_parent_session</code></td>
+						<td>
+							<code>get_parent_session</code>
+						</td>
 						<td>Resolve parent session linkage.</td>
 					</tr>
 					<tr>
-						<td><code>present_action</code></td>
+						<td>
+							<code>present_action</code>
+						</td>
 						<td>Present research findings/action links.</td>
 					</tr>
 				</tbody>
@@ -250,8 +299,9 @@ otto "review the dependency graph" --agent plan`}</CodeBlock>
   }
 }`}</CodeBlock>
 			<p>
-				Prompt files are typically stored at <code>.otto/agents/{'{name}'}.md</code>{' '}
-			or <code>.otto/agents/{'{name}'}.txt</code>.
+				Prompt files are typically stored at{' '}
+				<code>.otto/agents/{'{name}'}.md</code> or{' '}
+				<code>.otto/agents/{'{name}'}.txt</code>.
 			</p>
 
 			<h2>Custom Tools</h2>

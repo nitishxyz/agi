@@ -464,7 +464,7 @@ function SetuSubscriptionInfo() {
 			)}
 			{payg && payg.effectiveSpendableUsd > 0 && (
 				<SettingRow
-				label="Credits"
+					label="Credits"
 					value={`$${payg.effectiveSpendableUsd.toFixed(2)}`}
 				/>
 			)}

@@ -85,8 +85,7 @@ export function useSetuBalance(providerName: string | undefined) {
 		setUsage,
 	]);
 
-	const needsUsageWindows =
-		subscription?.active && !subscription.usageWindows;
+	const needsUsageWindows = subscription?.active && !subscription.usageWindows;
 
 	useEffect(() => {
 		if (

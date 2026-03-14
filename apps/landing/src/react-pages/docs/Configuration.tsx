@@ -153,9 +153,7 @@ ZAI_API_KEY=...
 ZAI_CODING_API_KEY=...`}</CodeBlock>
 
 			<h2>MCP Configuration</h2>
-			<p>
-				MCP servers can be configured in either project or global config.
-			</p>
+			<p>MCP servers can be configured in either project or global config.</p>
 			<CodeBlock>{`{
   "mcp": {
     "servers": [

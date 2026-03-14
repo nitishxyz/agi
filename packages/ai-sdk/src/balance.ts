@@ -75,7 +75,7 @@ export async function fetchBalance(
 				monthly_remaining_usd: number | null;
 				cap_remaining_usd: number | null;
 			} | null;
-		subscription?: {
+			subscription?: {
 				active: boolean;
 				tier_id?: string;
 				tier_name?: string;
@@ -155,13 +155,16 @@ export async function fetchBalance(
 										limit: data.subscription.usage_windows.weekly.limit,
 										used: data.subscription.usage_windows.weekly.used,
 										remaining: data.subscription.usage_windows.weekly.remaining,
-										percentUsed: data.subscription.usage_windows.weekly.percent_used,
+										percentUsed:
+											data.subscription.usage_windows.weekly.percent_used,
 									},
 									fiveHour: {
 										limit: data.subscription.usage_windows.five_hour.limit,
 										used: data.subscription.usage_windows.five_hour.used,
-										remaining: data.subscription.usage_windows.five_hour.remaining,
-										percentUsed: data.subscription.usage_windows.five_hour.percent_used,
+										remaining:
+											data.subscription.usage_windows.five_hour.remaining,
+										percentUsed:
+											data.subscription.usage_windows.five_hour.percent_used,
 									},
 								}
 							: undefined,
