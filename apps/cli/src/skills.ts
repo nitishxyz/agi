@@ -51,7 +51,7 @@ export async function runSkillsList(opts: SkillsOptions): Promise<void> {
 		console.log('');
 		console.log(
 			colors.dim(
-				'Create skills in .otto/skills/<name>/SKILL.md or ~/.config/otto/skills/<name>/SKILL.md',
+				'Create skills in .otto/skills/<name>/SKILL.md, .agents/skills/<name>/SKILL.md, ~/.config/otto/skills/<name>/SKILL.md, or ~/.agents/skills/<name>/SKILL.md',
 			),
 		);
 		return;

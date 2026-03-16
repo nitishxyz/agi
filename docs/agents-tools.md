@@ -188,7 +188,14 @@ Skill sources:
 
 - built-in bundled skills
 - `.otto/skills/`
+- `.agents/skills/`
 - `~/.config/otto/skills/`
+- `~/.agents/skills/`
+
+Compatibility aliases also supported:
+
+- `.agenst/skills/`
+- `~/.agenst/skills/`
 
 You can inspect available skills with:
 

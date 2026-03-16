@@ -11,17 +11,20 @@ import {
 
 describe('Skills', () => {
 	let tempDir: string;
+	const originalHome = process.env.HOME;
 
 	beforeEach(async () => {
 		tempDir = join(tmpdir(), `otto-skills-test-${Date.now()}`);
 		await fs.mkdir(tempDir, { recursive: true });
 		clearSkillCache();
+		process.env.HOME = originalHome;
 	});
 
 	afterEach(async () => {
 		try {
 			await fs.rm(tempDir, { recursive: true, force: true });
 		} catch {}
+		process.env.HOME = originalHome;
 	});
 
 	describe('validateSkillName', () => {
@@ -157,6 +160,50 @@ Test content.
 			expect(testSkill?.scope).toBe('cwd');
 		});
 
+		test('discovers skills from .agents/skills/', async () => {
+			const skillDir = join(tempDir, '.agents/skills/agents-skill');
+			await fs.mkdir(skillDir, { recursive: true });
+			await fs.writeFile(
+				join(skillDir, 'SKILL.md'),
+				`---
+name: agents-skill
+description: Agents compatible skill
+---
+
+Content.
+`,
+			);
+
+			const skills = await discoverSkills(tempDir);
+
+			const agentsSkill = skills.find((s) => s.name === 'agents-skill');
+			expect(agentsSkill).toBeDefined();
+			expect(agentsSkill?.name).toBe('agents-skill');
+			expect(agentsSkill?.scope).toBe('cwd');
+		});
+
+		test('discovers skills from .agenst/skills/ for compatibility', async () => {
+			const skillDir = join(tempDir, '.agenst/skills/agenst-skill');
+			await fs.mkdir(skillDir, { recursive: true });
+			await fs.writeFile(
+				join(skillDir, 'SKILL.md'),
+				`---
+name: agenst-skill
+description: Compatibility skill
+---
+
+Content.
+`,
+			);
+
+			const skills = await discoverSkills(tempDir);
+
+			const agenstSkill = skills.find((s) => s.name === 'agenst-skill');
+			expect(agenstSkill).toBeDefined();
+			expect(agenstSkill?.name).toBe('agenst-skill');
+			expect(agenstSkill?.scope).toBe('cwd');
+		});
+
 		test('discovers skills from .claude/skills/', async () => {
 			const skillDir = join(tempDir, '.claude/skills/claude-skill');
 			await fs.mkdir(skillDir, { recursive: true });
@@ -219,6 +266,51 @@ Project content.
 			const sharedSkill = skills.find((s) => s.name === 'shared-skill');
 			expect(sharedSkill).toBeDefined();
 			expect(sharedSkill?.description).toBe('Project version');
+		});
+
+		test('prefers project .agents skills over home .agents skills', async () => {
+			const homeDir = join(tempDir, 'home');
+			const globalSkillDir = join(
+				homeDir,
+				'.agents/skills/shared-agents-skill',
+			);
+			const projectSkillDir = join(
+				tempDir,
+				'project/.agents/skills/shared-agents-skill',
+			);
+
+			await fs.mkdir(globalSkillDir, { recursive: true });
+			await fs.mkdir(projectSkillDir, { recursive: true });
+
+			await fs.writeFile(
+				join(globalSkillDir, 'SKILL.md'),
+				`---
+name: shared-agents-skill
+description: Home agents version
+---
+
+Global content.
+`,
+			);
+
+			await fs.writeFile(
+				join(projectSkillDir, 'SKILL.md'),
+				`---
+name: shared-agents-skill
+description: Project agents version
+---
+
+Project content.
+`,
+			);
+
+			process.env.HOME = homeDir;
+			const projectRoot = join(tempDir, 'project');
+			const skills = await discoverSkills(projectRoot);
+
+			const sharedSkill = skills.find((s) => s.name === 'shared-agents-skill');
+			expect(sharedSkill).toBeDefined();
+			expect(sharedSkill?.description).toBe('Project agents version');
 		});
 
 		test('does not find project skills in empty temp dir', async () => {

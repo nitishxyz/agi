@@ -163,11 +163,11 @@ export const SkillsSidebar = memo(function SkillsSidebar() {
 							<p className="text-xs text-muted-foreground max-w-[220px]">
 								Create skills in{' '}
 								<code className="text-[10px] bg-muted px-1 rounded">
-									.otto/skills/
+									.otto/skills/ or .agents/skills/
 								</code>{' '}
 								or{' '}
 								<code className="text-[10px] bg-muted px-1 rounded">
-									~/.config/otto/skills/
+									~/.config/otto/skills/ or ~/.agents/skills/
 								</code>
 							</p>
 						</div>

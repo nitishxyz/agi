@@ -353,10 +353,16 @@ otto "review the dependency graph" --agent plan`}</CodeBlock>
 					<strong>Built-in</strong> bundled skills
 				</li>
 				<li>
-					<strong>Project</strong>: <code>.otto/skills/</code>
+					<strong>Project</strong>: <code>.otto/skills/</code> or{' '}
+					<code>.agents/skills/</code>
 				</li>
 				<li>
-					<strong>Global</strong>: <code>~/.config/otto/skills/</code>
+					<strong>Global</strong>: <code>~/.config/otto/skills/</code> or{' '}
+					<code>~/.agents/skills/</code>
+				</li>
+				<li>
+					<strong>Compatibility</strong>: <code>.agenst/skills/</code> or{' '}
+					<code>~/.agenst/skills/</code>
 				</li>
 			</ul>
 			<CodeBlock>{`otto skills                    # list available skills`}</CodeBlock>

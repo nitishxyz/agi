@@ -150,7 +150,11 @@ Example:
 Skills are markdown-based instruction bundles discovered from:
 
 - `.otto/skills/`
+- `.agents/skills/`
 - `~/.config/otto/skills/`
+- `~/.agents/skills/`
 - built-in bundled skills
+
+Compatibility aliases are also supported at `.agenst/skills/` and `~/.agenst/skills/`.
 
 Use `otto skills` to inspect them, or the `skill` tool from the runtime.

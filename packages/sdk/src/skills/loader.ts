@@ -14,6 +14,8 @@ const skillCache = new Map<string, SkillDefinition>();
 
 const SKILL_DIRS = [
 	'.otto/skills',
+	'.agents/skills',
+	'.agenst/skills',
 	'.claude/skills',
 	'.opencode/skills',
 	'.codex/skills',
@@ -53,6 +55,8 @@ export async function discoverSkills(
 
 	const globalDirs = [
 		join(getGlobalConfigDir(), 'skills'),
+		join(home, '.agents/skills'),
+		join(home, '.agenst/skills'),
 		join(home, '.claude/skills'),
 		join(home, '.config/opencode/skills'),
 		join(home, '.codex/skills'),
