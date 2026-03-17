@@ -79,8 +79,7 @@ export async function runSessionLoop(sessionId: string) {
 
 		try {
 			await runAssistant(job);
-		} catch {
-		}
+		} catch {}
 	}
 
 	setRunning(sessionId, false);
@@ -259,8 +258,7 @@ async function runAssistant(opts: RunOpts) {
 			try {
 				const name = (evt.payload as { name?: string } | undefined)?.name;
 				if (name === 'finish') _finishObserved = true;
-			} catch {
-			}
+			} catch {}
 		}
 	});
 
@@ -590,11 +588,9 @@ async function runAssistant(opts: RunOpts) {
 
 				try {
 					await completeAssistantMessage({}, opts, db);
-				} catch {
-				}
+				} catch {}
 				return;
-			} catch {
-			}
+			} catch {}
 		}
 		publish({
 			type: 'error',
@@ -616,15 +612,13 @@ async function runAssistant(opts: RunOpts) {
 				db,
 			);
 			await completeAssistantMessage({}, opts, db);
-		} catch {
-		}
+		} catch {}
 		throw err;
 	} finally {
 		if (dump) {
 			try {
 				await dump.flush(cfg.projectRoot);
-			} catch {
-			}
+			} catch {}
 		}
 	}
 }

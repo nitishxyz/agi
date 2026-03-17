@@ -381,8 +381,9 @@ describe('oauth codex text guard', () => {
 			.orderBy(asc(messageParts.index));
 
 		expect(
-			compactedParts.find((part) => part.id === 'assistant-compaction-tool-call')
-				?.compactedAt,
+			compactedParts.find(
+				(part) => part.id === 'assistant-compaction-tool-call',
+			)?.compactedAt,
 		).toBeTruthy();
 		expect(
 			compactedParts.find(

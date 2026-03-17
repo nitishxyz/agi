@@ -44,8 +44,7 @@ export function createStepFinishHandler(
 					.set({ completedAt: finishedAt })
 					.where(eq(messageParts.id, currentPartId));
 			}
-		} catch {
-		}
+		} catch {}
 
 		if (step.usage) {
 			try {
@@ -55,8 +54,7 @@ export function createStepFinishHandler(
 					opts,
 					db,
 				);
-			} catch {
-			}
+			} catch {}
 
 			try {
 				await updateMessageTokensIncrementalFn(
@@ -65,8 +63,7 @@ export function createStepFinishHandler(
 					opts,
 					db,
 				);
-			} catch {
-			}
+			} catch {}
 		}
 
 		try {
@@ -87,15 +84,13 @@ export function createStepFinishHandler(
 					payload: { stepIndex, ...step.usage },
 				});
 			}
-		} catch {
-		}
+		} catch {}
 
 		try {
 			const newStepIndex = incrementStepIndex();
 			sharedCtx.stepIndex = newStepIndex;
 			updateCurrentPartId(null);
 			updateAccumulated('');
-		} catch {
-		}
+		} catch {}
 	};
 }

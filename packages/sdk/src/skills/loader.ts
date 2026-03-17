@@ -201,8 +201,7 @@ async function loadSkillsFromDir(
 			void dirName;
 
 			skills.set(skill.metadata.name, skill);
-		} catch {
-		}
+		} catch {}
 	}
 }
 

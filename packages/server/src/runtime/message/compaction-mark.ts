@@ -94,8 +94,7 @@ export async function markSessionCompacted(
 
 		for (const part of eligibleParts) {
 			if (!part.toolCallId) continue;
-			const bucket =
-				part.type === 'tool_call' ? callsById : resultsById;
+			const bucket = part.type === 'tool_call' ? callsById : resultsById;
 			const items = bucket.get(part.toolCallId) ?? [];
 			items.push(part);
 			bucket.set(part.toolCallId, items);
@@ -145,8 +144,7 @@ export async function markSessionCompacted(
 						.update(messageParts)
 						.set({ compactedAt })
 						.where(eq(messageParts.id, partId));
-				} catch {
-				}
+				} catch {}
 			}
 		}
 

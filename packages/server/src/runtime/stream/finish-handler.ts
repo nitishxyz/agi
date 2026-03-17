@@ -23,8 +23,7 @@ export function createFinishHandler(
 	return async (fin: FinishEvent) => {
 		try {
 			await completeAssistantMessageFn(fin, opts, db);
-		} catch {
-		}
+		} catch {}
 
 		if (opts.isCompactCommand && fin.finishReason !== 'error') {
 			const assistantParts = await db
@@ -44,8 +43,7 @@ export function createFinishHandler(
 						opts.assistantMessageId,
 					);
 					void result;
-				} catch {
-				}
+				} catch {}
 			}
 		}
 

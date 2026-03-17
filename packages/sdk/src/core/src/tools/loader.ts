@@ -179,8 +179,7 @@ export async function discoverProjectTools(
 				try {
 					const plugin = await loadPlugin(absPath, folder, projectRoot);
 					if (plugin) tools.set(plugin.name, plugin.tool);
-				} catch {
-				}
+				} catch {}
 			}
 		}
 		// Fallback: manual directory scan

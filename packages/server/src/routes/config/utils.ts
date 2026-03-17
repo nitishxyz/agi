@@ -83,8 +83,7 @@ export async function discoverAllAgents(
 				agentSet.add(agentName);
 			}
 		}
-	} catch {
-	}
+	} catch {}
 
 	try {
 		const localAgentsPath = join(projectRoot, '.otto', 'agents');
@@ -97,8 +96,7 @@ export async function discoverAllAgents(
 				}
 			}
 		}
-	} catch {
-	}
+	} catch {}
 
 	try {
 		const globalAgentsPath = getGlobalAgentsDir();
@@ -111,8 +109,7 @@ export async function discoverAllAgents(
 				}
 			}
 		}
-	} catch {
-	}
+	} catch {}
 
 	return Array.from(agentSet).sort();
 }

@@ -170,7 +170,6 @@ export function createErrorHandler(
 			errorType === 'invalid_request_error';
 
 		if (isPromptTooLong && !opts.isCompactCommand) {
-
 			const retries = opts.compactionRetries ?? 0;
 			if (retries >= 2) {
 			} else {
@@ -236,8 +235,7 @@ export function createErrorHandler(
 						const pruneResult = await pruneSession(db, opts.sessionId);
 						compactionSucceeded = pruneResult.pruned > 0;
 					}
-				} catch {
-				}
+				} catch {}
 
 				await db
 					.update(messages)

@@ -255,6 +255,5 @@ async function _logPendingToolParts(
 			} catch {}
 		}
 		void pendingCalls;
-	} catch {
-	}
+	} catch {}
 }

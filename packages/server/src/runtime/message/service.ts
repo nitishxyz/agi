@@ -326,8 +326,7 @@ Output ONLY the title, nothing else.`;
 				});
 				modelTitle = (out?.text || '').trim();
 			}
-		} catch {
-		}
+		} catch {}
 
 		if (!modelTitle) {
 			return;
@@ -349,8 +348,7 @@ Output ONLY the title, nothing else.`;
 			sessionId,
 			payload: { id: sessionId, title: sanitized },
 		});
-	} catch {
-	}
+	} catch {}
 }
 
 function sanitizeTitle(raw: string): string {
@@ -382,8 +380,7 @@ async function touchSessionLastActive(args: {
 			.set({ lastActiveAt: Date.now() })
 			.where(eq(sessions.id, sessionId))
 			.run();
-	} catch {
-	}
+	} catch {}
 }
 
 export async function triggerDeferredTitleGeneration(args: {
@@ -428,6 +425,5 @@ export async function triggerDeferredTitleGeneration(args: {
 			return;
 		}
 		enqueueSessionTitle({ cfg, db, sessionId, content });
-	} catch {
-	}
+	} catch {}
 }
