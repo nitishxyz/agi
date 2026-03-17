@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { mergeProviderOptions } from '../packages/server/src/runtime/agent/runner-setup.ts';
+import { buildCodexProviderOptions } from '../packages/server/src/runtime/provider/oauth-adapter.ts';
 
 describe('mergeProviderOptions', () => {
 	test('preserves existing nested OpenAI OAuth instructions', () => {
@@ -60,6 +61,18 @@ describe('mergeProviderOptions', () => {
 				reasoning: {
 					effort: 'medium',
 				},
+			},
+		});
+	});
+
+	test('uses composed prompt as OpenAI OAuth instructions', () => {
+		const result = buildCodexProviderOptions('Full composed prompt here');
+
+		expect(result).toEqual({
+			openai: {
+				store: false,
+				instructions: 'Full composed prompt here',
+				parallelToolCalls: false,
 			},
 		});
 	});

@@ -88,11 +88,11 @@ export function detectOAuth(
 const CODEX_INSTRUCTIONS =
 	'You are a coding agent. Follow all developer messages. Use tools to complete tasks.';
 
-export function buildCodexProviderOptions() {
+export function buildCodexProviderOptions(instructions?: string) {
 	return {
 		openai: {
 			store: false as const,
-			instructions: CODEX_INSTRUCTIONS,
+			instructions: instructions?.trim() || CODEX_INSTRUCTIONS,
 			parallelToolCalls: false,
 		},
 	};
@@ -145,7 +145,7 @@ export function adaptSimpleCall(
 					content: input.userContent,
 				},
 			],
-			providerOptions: buildCodexProviderOptions(),
+			providerOptions: buildCodexProviderOptions(input.instructions),
 			forceStream: true,
 		};
 	}
@@ -229,9 +229,9 @@ export function adaptRunnerCall(
 		return {
 			system: '',
 			systemComponents: composed.components,
-			additionalSystemMessages: [{ role: 'system', content: composed.prompt }],
+			additionalSystemMessages: [],
 			maxOutputTokens: undefined,
-			providerOptions: buildCodexProviderOptions(),
+			providerOptions: buildCodexProviderOptions(composed.prompt),
 		};
 	}
 

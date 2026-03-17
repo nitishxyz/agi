@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { getDb } from '@ottocode/database';
 import { messageParts, messages, sessions } from '@ottocode/database/schema';
+import { asc, eq } from 'drizzle-orm';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,6 +10,7 @@ import {
 	createOauthCodexTextGuardState,
 	stripCodexPseudoToolText,
 } from '../packages/server/src/runtime/stream/text-guard.ts';
+import { markSessionCompacted } from '../packages/server/src/runtime/message/compaction-mark.ts';
 import { buildHistoryMessages } from '../packages/server/src/runtime/message/history-builder.ts';
 
 describe('oauth codex text guard', () => {
@@ -267,6 +269,135 @@ describe('oauth codex text guard', () => {
 			{
 				role: 'assistant',
 				content: [{ type: 'text', text: 'I read README.' }],
+			},
+		]);
+	});
+
+	test('compacts tool call/result pairs together so history does not synthesize errors', async () => {
+		const projectRoot = mkdtempSync(join(tmpdir(), 'otto-history-compaction-'));
+		const db = await getDb(projectRoot);
+		const now = Date.now();
+		const largeText = 'x'.repeat(120_000);
+
+		await db.insert(sessions).values({
+			id: 'session-compaction-test',
+			agent: 'build',
+			provider: 'openai',
+			model: 'gpt-5.3-codex',
+			projectPath: projectRoot,
+			createdAt: now,
+			lastActiveAt: now,
+		});
+
+		await db.insert(messages).values([
+			{
+				id: 'assistant-compaction-msg',
+				sessionId: 'session-compaction-test',
+				role: 'assistant',
+				status: 'complete',
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+				createdAt: now,
+			},
+			{
+				id: 'compact-cutoff-msg',
+				sessionId: 'session-compaction-test',
+				role: 'assistant',
+				status: 'complete',
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+				createdAt: now + 1,
+			},
+		]);
+
+		await db.insert(messageParts).values([
+			{
+				id: 'assistant-compaction-text',
+				messageId: 'assistant-compaction-msg',
+				index: 0,
+				type: 'text',
+				content: JSON.stringify({ text: 'Working through the repo.' }),
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+			},
+			{
+				id: 'assistant-compaction-tool-call',
+				messageId: 'assistant-compaction-msg',
+				index: 1,
+				type: 'tool_call',
+				content: JSON.stringify({
+					name: 'read',
+					callId: 'call-compaction-read',
+					args: { path: largeText },
+				}),
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+				toolName: 'read',
+				toolCallId: 'call-compaction-read',
+			},
+			{
+				id: 'assistant-compaction-tool-result',
+				messageId: 'assistant-compaction-msg',
+				index: 2,
+				type: 'tool_result',
+				content: JSON.stringify({
+					name: 'read',
+					callId: 'call-compaction-read',
+					result: { ok: true, content: largeText },
+				}),
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+				toolName: 'read',
+				toolCallId: 'call-compaction-read',
+			},
+			{
+				id: 'assistant-compaction-after-text',
+				messageId: 'assistant-compaction-msg',
+				index: 3,
+				type: 'text',
+				content: JSON.stringify({ text: 'Done reading.' }),
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+			},
+		]);
+
+		const compacted = await markSessionCompacted(
+			db,
+			'session-compaction-test',
+			'compact-cutoff-msg',
+		);
+		expect(compacted.compacted).toBe(2);
+
+		const compactedParts = await db
+			.select()
+			.from(messageParts)
+			.where(eq(messageParts.messageId, 'assistant-compaction-msg'))
+			.orderBy(asc(messageParts.index));
+
+		expect(
+			compactedParts.find((part) => part.id === 'assistant-compaction-tool-call')
+				?.compactedAt,
+		).toBeTruthy();
+		expect(
+			compactedParts.find(
+				(part) => part.id === 'assistant-compaction-tool-result',
+			)?.compactedAt,
+		).toBeTruthy();
+
+		const history = await buildHistoryMessages(db, 'session-compaction-test');
+		expect(history).toEqual([
+			{
+				role: 'assistant',
+				content: [
+					{ type: 'text', text: 'Working through the repo.' },
+					{ type: 'text', text: 'Done reading.' },
+				],
 			},
 		]);
 	});

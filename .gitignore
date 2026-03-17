@@ -54,3 +54,4 @@ apps/cli/src/web-dist
 capture
 .claude
 vendor
+tmp

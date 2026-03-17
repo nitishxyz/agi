@@ -6,6 +6,19 @@ import { estimateTokens, PRUNE_PROTECT } from './compaction-limits.ts';
 
 const PROTECTED_TOOLS = ['skill'];
 
+type PartInfo = {
+	id: string;
+	tokens: number;
+	toolCallId: string | null;
+	type: 'tool_call' | 'tool_result';
+	index: number;
+};
+
+type CompactUnit = {
+	partIds: string[];
+	tokens: number;
+};
+
 export async function markSessionCompacted(
 	db: Awaited<ReturnType<typeof getDb>>,
 	sessionId: string,
@@ -37,8 +50,7 @@ export async function markSessionCompacted(
 		)
 		.orderBy(asc(messages.createdAt));
 
-	type PartInfo = { id: string; tokens: number };
-	const allToolParts: PartInfo[] = [];
+	const allCompactUnits: CompactUnit[] = [];
 	let totalToolTokens = 0;
 
 	for (const msg of oldMessages) {
@@ -47,6 +59,8 @@ export async function markSessionCompacted(
 			.from(messageParts)
 			.where(eq(messageParts.messageId, msg.id))
 			.orderBy(asc(messageParts.index));
+
+		const eligibleParts: PartInfo[] = [];
 
 		for (const part of parts) {
 			if (part.type !== 'tool_call' && part.type !== 'tool_result') continue;
@@ -69,43 +83,91 @@ export async function markSessionCompacted(
 
 			const tokens = estimateTokens(contentStr);
 			totalToolTokens += tokens;
-			allToolParts.push({ id: part.id, tokens });
+			eligibleParts.push({
+				id: part.id,
+				tokens,
+				toolCallId: part.toolCallId,
+				type: part.type,
+				index: part.index,
+			});
+		}
+
+		const pairedCallIds = new Set<string>();
+		const callsById = new Map<string, PartInfo[]>();
+		const resultsById = new Map<string, PartInfo[]>();
+
+		for (const part of eligibleParts) {
+			if (!part.toolCallId) continue;
+			const bucket =
+				part.type === 'tool_call' ? callsById : resultsById;
+			const items = bucket.get(part.toolCallId) ?? [];
+			items.push(part);
+			bucket.set(part.toolCallId, items);
+		}
+
+		for (const [toolCallId, callParts] of callsById) {
+			const resultParts = resultsById.get(toolCallId);
+			if (!resultParts?.length) continue;
+
+			const pairParts = [...callParts, ...resultParts].sort(
+				(a, b) => a.index - b.index,
+			);
+			pairedCallIds.add(toolCallId);
+			allCompactUnits.push({
+				partIds: pairParts.map((part) => part.id),
+				tokens: pairParts.reduce((sum, part) => sum + part.tokens, 0),
+			});
+		}
+
+		for (const part of eligibleParts) {
+			if (part.toolCallId && pairedCallIds.has(part.toolCallId)) continue;
+			allCompactUnits.push({
+				partIds: [part.id],
+				tokens: part.tokens,
+			});
 		}
 	}
 
 	const tokensToFree = Math.max(0, totalToolTokens - PRUNE_PROTECT);
 
-	const toCompact: PartInfo[] = [];
+	const toCompact: CompactUnit[] = [];
 	let freedTokens = 0;
 
-	for (const part of allToolParts) {
+	for (const unit of allCompactUnits) {
 		if (freedTokens >= tokensToFree) break;
-		freedTokens += part.tokens;
-		toCompact.push(part);
+		freedTokens += unit.tokens;
+		toCompact.push(unit);
 	}
 
 	debugLog(
-		`[compaction] Found ${toCompact.length} parts to compact (oldest first), saving ~${freedTokens} tokens`,
+		`[compaction] Found ${toCompact.length} tool units to compact (oldest first), saving ~${freedTokens} tokens`,
 	);
 
 	if (toCompact.length > 0) {
 		const compactedAt = Date.now();
 
-		for (const part of toCompact) {
-			try {
-				await db
-					.update(messageParts)
-					.set({ compactedAt })
-					.where(eq(messageParts.id, part.id));
-			} catch (err) {
-				debugLog(
-					`[compaction] Failed to mark part ${part.id}: ${err instanceof Error ? err.message : String(err)}`,
-				);
+		for (const unit of toCompact) {
+			for (const partId of unit.partIds) {
+				try {
+					await db
+						.update(messageParts)
+						.set({ compactedAt })
+						.where(eq(messageParts.id, partId));
+				} catch (err) {
+					debugLog(
+						`[compaction] Failed to mark part ${partId}: ${err instanceof Error ? err.message : String(err)}`,
+					);
+				}
 			}
 		}
 
-		debugLog(`[compaction] Marked ${toCompact.length} parts as compacted`);
+		const compactedParts = toCompact.reduce(
+			(sum, unit) => sum + unit.partIds.length,
+			0,
+		);
+		debugLog(`[compaction] Marked ${compactedParts} parts as compacted`);
+		return { compacted: compactedParts, saved: freedTokens };
 	}
 
-	return { compacted: toCompact.length, saved: freedTokens };
+	return { compacted: 0, saved: freedTokens };
 }

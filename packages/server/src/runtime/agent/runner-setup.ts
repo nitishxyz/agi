@@ -161,6 +161,19 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 			length: system.length,
 		})}`,
 	);
+	if (oauth.isOpenAIOAuth) {
+		const openAIOptions = adapted.providerOptions.openai as
+			| Record<string, unknown>
+			| undefined;
+		const instructions =
+			typeof openAIOptions?.instructions === 'string'
+				? openAIOptions.instructions
+				: '';
+		const preview = instructions.replace(/\s+/g, ' ').trim().slice(0, 240);
+		debugLog(
+			`[system][OpenAI OAuth] instructions length=${instructions.length} preview=${preview || 'none'}`,
+		);
+	}
 
 	if (opts.isCompactCommand && opts.compactionContext) {
 		debugLog('[RUNNER] Injecting compaction context for /compact command');

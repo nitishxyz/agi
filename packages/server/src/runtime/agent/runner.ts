@@ -1,12 +1,11 @@
-import { hasToolCall, stepCountIs, streamText } from 'ai';
-import { messages, messageParts, sessions } from '@ottocode/database/schema';
+import { hasToolCall, streamText } from 'ai';
+import { messageParts } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish, subscribe } from '../../events/bus.ts';
 import { debugLog, time } from '../debug/index.ts';
 import { toErrorPayload } from '../errors/handling.ts';
 import {
 	type RunOpts,
-	enqueueAssistantRun,
 	setRunning,
 	dequeueJob,
 	cleanupSession,
@@ -41,7 +40,6 @@ import {
 	createOauthCodexTextGuardState,
 	consumeOauthCodexTextDelta,
 } from '../stream/text-guard.ts';
-import { decideOauthCodexContinuation } from './oauth-codex-continuation.ts';
 import { createTurnDumpCollector } from '../debug/turn-dump.ts';
 
 export {
@@ -364,10 +362,12 @@ async function runAssistant(opts: RunOpts) {
 	const onFinish = createFinishHandler(opts, db, completeAssistantMessage);
 	const isCopilotResponsesApi =
 		opts.provider === 'copilot' && !opts.model.startsWith('gpt-5-mini');
-	const stopWhenCondition =
-		isOpenAIOAuth || isCopilotResponsesApi
-			? stepCountIs(20)
-			: hasToolCall('finish');
+	const stopWhenCondition = isCopilotResponsesApi
+		? undefined
+		: hasToolCall('finish');
+	debugLog(
+		`[RUNNER] stopWhen configured: ${stopWhenCondition ? 'finish-tool' : 'provider-default'} (provider=${opts.provider}, isOpenAIOAuth=${isOpenAIOAuth}, isCopilotResponsesApi=${isCopilotResponsesApi})`,
+	);
 
 	try {
 		const result = streamText({
@@ -582,8 +582,13 @@ async function runAssistant(opts: RunOpts) {
 		}
 
 		debugLog(
-			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}, trailingAssistantTextAfterTool=${_trailingAssistantTextAfterTool}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}`,
+			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}, trailingAssistantTextAfterTool=${_trailingAssistantTextAfterTool}, endedWithToolActivity=${_endedWithToolActivity}, lastToolName=${_lastToolName ?? 'none'}, abortedByUser=${_abortedByUser}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}, latestAssistantTextLength=${latestAssistantText.length}`,
 		);
+		if (isOpenAIOAuth) {
+			debugLog(
+				`[RUNNER][OpenAI OAuth] stream-end diagnostics: finishSeen=${_finishObserved}, firstToolSeen=${fs}, trailingAssistantTextAfterTool=${_trailingAssistantTextAfterTool}, endedWithToolActivity=${_endedWithToolActivity}, lastToolName=${_lastToolName ?? 'none'}, droppedPseudoToolText=${oauthTextGuard?.dropped ?? false}, finishReason=${streamFinishReason ?? 'undefined'}, rawFinishReason=${streamRawFinishReason ?? 'undefined'}`,
+			);
+		}
 
 		if (dump) {
 			const finalTextSnapshot = latestAssistantText || accumulated;
@@ -602,95 +607,9 @@ async function runAssistant(opts: RunOpts) {
 			});
 		}
 
-		const MAX_CONTINUATIONS = 6;
-		const continuationCount = opts.continuationCount ?? 0;
-		const continuationDecision = decideOauthCodexContinuation({
-			provider: opts.provider,
-			isOpenAIOAuth,
-			finishObserved: _finishObserved,
-			abortedByUser: _abortedByUser,
-			continuationCount,
-			maxContinuations: MAX_CONTINUATIONS,
-			finishReason: streamFinishReason,
-			rawFinishReason: streamRawFinishReason,
-			firstToolSeen: fs,
-			hasTrailingAssistantText: _trailingAssistantTextAfterTool,
-			endedWithToolActivity: _endedWithToolActivity,
-			lastToolName: _lastToolName,
-			droppedPseudoToolText: oauthTextGuard?.dropped ?? false,
-			lastAssistantText: latestAssistantText,
-		});
-
-		if (continuationDecision.shouldContinue) {
-			const sessRows = await db
-				.select()
-				.from(sessions)
-				.where(eq(sessions.id, opts.sessionId))
-				.limit(1);
-			const sessionInputTokens = Number(sessRows[0]?.totalInputTokens ?? 0);
-			const MAX_SESSION_INPUT_TOKENS = 800_000;
-			if (sessionInputTokens > MAX_SESSION_INPUT_TOKENS) {
-				debugLog(
-					`[RUNNER] Token budget exceeded (${sessionInputTokens} > ${MAX_SESSION_INPUT_TOKENS}), stopping continuation.`,
-				);
-			} else {
-				debugLog(
-					`[RUNNER] WARNING: Stream ended without finish. reason=${continuationDecision.reason ?? 'unknown'}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}, firstToolSeen=${fs}. Auto-continuing.`,
-				);
-
-				debugLog(
-					`[RUNNER] Auto-continuing (${continuationCount + 1}/${MAX_CONTINUATIONS})...`,
-				);
-
-				try {
-					await completeAssistantMessage({}, opts, db);
-				} catch (err) {
-					debugLog(
-						`[RUNNER] completeAssistantMessage failed before continuation: ${err instanceof Error ? err.message : String(err)}`,
-					);
-				}
-
-				const continuationMessageId = crypto.randomUUID();
-				await db.insert(messages).values({
-					id: continuationMessageId,
-					sessionId: opts.sessionId,
-					role: 'assistant',
-					status: 'pending',
-					agent: opts.agent,
-					provider: opts.provider,
-					model: opts.model,
-					createdAt: Date.now(),
-				});
-
-				publish({
-					type: 'message.created',
-					sessionId: opts.sessionId,
-					payload: {
-						id: continuationMessageId,
-						role: 'assistant',
-						agent: opts.agent,
-						provider: opts.provider,
-						model: opts.model,
-					},
-				});
-
-				enqueueAssistantRun(
-					{
-						...opts,
-						assistantMessageId: continuationMessageId,
-						continuationCount: continuationCount + 1,
-					},
-					runSessionLoop,
-				);
-				return;
-			}
-		}
-		if (
-			continuationDecision.reason === 'max-continuations-reached' &&
-			!_finishObserved
-		) {
+		if (isOpenAIOAuth && !_finishObserved) {
 			debugLog(
-				`[RUNNER] Max continuations (${MAX_CONTINUATIONS}) reached, stopping.`,
+				`[RUNNER][OpenAI OAuth] Stream ended without finish. Manual auto-continuation is disabled; rely on provider-native continuation via previous_response_id.`,
 			);
 		}
 	} catch (err) {

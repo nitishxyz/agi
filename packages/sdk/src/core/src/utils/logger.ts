@@ -1,3 +1,5 @@
+import { appendFileSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { isDebugEnabled, isTraceEnabled } from './debug.ts';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -8,13 +10,45 @@ function safeHasMeta(
 	return Boolean(meta && Object.keys(meta).length);
 }
 
+function getDebugLogFilePath(): string | undefined {
+	const raw = process.env.OTTO_DEBUG_FILE?.trim();
+	return raw ? raw : undefined;
+}
+
+function serializeLogMeta(meta?: Record<string, unknown>): string {
+	if (!safeHasMeta(meta)) return '';
+	try {
+		return ` ${JSON.stringify(meta)}`;
+	} catch {
+		return ' [unserializable-meta]';
+	}
+}
+
+function writeLogLine(line: string, meta?: Record<string, unknown>) {
+	const suffix = serializeLogMeta(meta);
+	const fullLine = `${new Date().toISOString()} ${line}${suffix}`;
+	const logFile = getDebugLogFilePath();
+
+	if (logFile) {
+		try {
+			mkdirSync(dirname(logFile), { recursive: true });
+			appendFileSync(logFile, `${fullLine}\n`, 'utf-8');
+		} catch {
+			// ignore file logging errors
+		}
+	}
+
+	return fullLine;
+}
+
 export function debug(message: string, meta?: Record<string, unknown>): void {
 	if (!isDebugEnabled()) return;
 	try {
+		const line = writeLogLine(`[debug] ${message}`, meta);
 		if (safeHasMeta(meta)) {
-			console.log(`[debug] ${message}`, meta);
+			console.log(line, meta);
 		} else {
-			console.log(`[debug] ${message}`);
+			console.log(line);
 		}
 	} catch {
 		// ignore logging errors
@@ -24,10 +58,11 @@ export function debug(message: string, meta?: Record<string, unknown>): void {
 export function info(message: string, meta?: Record<string, unknown>): void {
 	if (!isDebugEnabled() && !isTraceEnabled()) return;
 	try {
+		const line = writeLogLine(`[info] ${message}`, meta);
 		if (safeHasMeta(meta)) {
-			console.log(`[info] ${message}`, meta);
+			console.log(line, meta);
 		} else {
-			console.log(`[info] ${message}`);
+			console.log(line);
 		}
 	} catch {
 		// ignore logging errors
@@ -36,10 +71,11 @@ export function info(message: string, meta?: Record<string, unknown>): void {
 
 export function warn(message: string, meta?: Record<string, unknown>): void {
 	try {
+		const line = writeLogLine(`[warn] ${message}`, meta);
 		if (safeHasMeta(meta)) {
-			console.warn(`[warn] ${message}`, meta);
+			console.warn(line, meta);
 		} else {
-			console.warn(`[warn] ${message}`);
+			console.warn(line);
 		}
 	} catch {
 		// ignore logging errors
@@ -91,9 +127,11 @@ export function error(
 		}
 
 		if (safeHasMeta(logMeta)) {
-			console.error(`[error] ${message}`, logMeta);
+			const line = writeLogLine(`[error] ${message}`, logMeta);
+			console.error(line, logMeta);
 		} else {
-			console.error(`[error] ${message}`);
+			const line = writeLogLine(`[error] ${message}`);
+			console.error(line);
 		}
 	} catch (logErr) {
 		try {
@@ -136,7 +174,10 @@ export function time(label: string): Timer {
 			finished = true;
 			const duration = nowMs() - start;
 			try {
-				const base = `[timing] ${label} ${duration.toFixed(1)}ms`;
+				const base = writeLogLine(
+					`[timing] ${label} ${duration.toFixed(1)}ms`,
+					meta,
+				);
 				if (safeHasMeta(meta)) {
 					console.log(base, meta);
 				} else {
