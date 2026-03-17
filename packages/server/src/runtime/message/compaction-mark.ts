@@ -1,7 +1,6 @@
 import type { getDb } from '@ottocode/database';
 import { messages, messageParts } from '@ottocode/database/schema';
 import { eq, asc, and, lt } from 'drizzle-orm';
-import { debugLog } from '../debug/index.ts';
 import { estimateTokens, PRUNE_PROTECT } from './compaction-limits.ts';
 
 const PROTECTED_TOOLS = ['skill'];
@@ -24,8 +23,6 @@ export async function markSessionCompacted(
 	sessionId: string,
 	compactMessageId: string,
 ): Promise<{ compacted: number; saved: number }> {
-	debugLog(`[compaction] Marking session ${sessionId} as compacted`);
-
 	const compactMsg = await db
 		.select()
 		.from(messages)
@@ -33,7 +30,6 @@ export async function markSessionCompacted(
 		.limit(1);
 
 	if (!compactMsg.length) {
-		debugLog('[compaction] Compact message not found');
 		return { compacted: 0, saved: 0 };
 	}
 
@@ -139,10 +135,6 @@ export async function markSessionCompacted(
 		toCompact.push(unit);
 	}
 
-	debugLog(
-		`[compaction] Found ${toCompact.length} tool units to compact (oldest first), saving ~${freedTokens} tokens`,
-	);
-
 	if (toCompact.length > 0) {
 		const compactedAt = Date.now();
 
@@ -153,10 +145,7 @@ export async function markSessionCompacted(
 						.update(messageParts)
 						.set({ compactedAt })
 						.where(eq(messageParts.id, partId));
-				} catch (err) {
-					debugLog(
-						`[compaction] Failed to mark part ${partId}: ${err instanceof Error ? err.message : String(err)}`,
-					);
+				} catch {
 				}
 			}
 		}
@@ -165,7 +154,6 @@ export async function markSessionCompacted(
 			(sum, unit) => sum + unit.partIds.length,
 			0,
 		);
-		debugLog(`[compaction] Marked ${compactedParts} parts as compacted`);
 		return { compacted: compactedParts, saved: freedTokens };
 	}
 

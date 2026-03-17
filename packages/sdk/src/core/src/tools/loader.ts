@@ -179,9 +179,7 @@ export async function discoverProjectTools(
 				try {
 					const plugin = await loadPlugin(absPath, folder, projectRoot);
 					if (plugin) tools.set(plugin.name, plugin.tool);
-				} catch (err) {
-					if (process.env.OTTO_DEBUG_TOOLS === '1')
-						console.error('Failed to load tool', absPath, err);
+				} catch {
 				}
 			}
 		}

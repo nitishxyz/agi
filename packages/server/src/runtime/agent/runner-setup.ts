@@ -11,7 +11,7 @@ import { discoverProjectTools } from '@ottocode/sdk';
 import type { Tool } from 'ai';
 import { adaptTools } from '../../tools/adapter.ts';
 import { buildDatabaseTools } from '../../tools/database/index.ts';
-import { debugLog, time } from '../debug/index.ts';
+import { time } from '../debug/index.ts';
 import { isDevtoolsEnabled } from '../debug/state.ts';
 import { buildHistoryMessages } from '../message/history-builder.ts';
 import { getMaxOutputTokens } from '../utils/token.ts';
@@ -87,7 +87,6 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const historyTimer = time('runner:buildHistory');
 	let history: Awaited<ReturnType<typeof buildHistoryMessages>>;
 	if (opts.isCompactCommand && opts.compactionContext) {
-		debugLog('[RUNNER] Using minimal history for /compact command');
 		history = [];
 	} else {
 		history = await buildHistoryMessages(
@@ -104,33 +103,13 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		.where(eq(sessions.id, opts.sessionId))
 		.limit(1);
 	const contextSummary = sessionRows[0]?.contextSummary ?? undefined;
-	if (contextSummary) {
-		debugLog(
-			`[RUNNER] Using context summary from compaction (${contextSummary.length} chars)`,
-		);
-	}
 
 	const isFirstMessage = !history.some((m) => m.role === 'assistant');
-
-	debugLog(`[RUNNER] isFirstMessage: ${isFirstMessage}`);
-	debugLog(`[RUNNER] userContext provided: ${opts.userContext ? 'YES' : 'NO'}`);
-	if (opts.userContext) {
-		debugLog(
-			`[RUNNER] userContext value: ${opts.userContext.substring(0, 100)}${opts.userContext.length > 100 ? '...' : ''}`,
-		);
-	}
 
 	const systemTimer = time('runner:composeSystemPrompt');
 	const { getAuth } = await import('@ottocode/sdk');
 	const auth = await getAuth(opts.provider, cfg.projectRoot);
 	const oauth = detectOAuth(opts.provider, auth);
-
-	debugLog(
-		`[RUNNER] needsSpoof (OAuth): ${oauth.needsSpoof}, isOpenAIOAuth: ${oauth.isOpenAIOAuth}`,
-	);
-	debugLog(
-		`[RUNNER] spoofPrompt: ${oauth.spoofPrompt ? `present (${opts.provider})` : 'none'}`,
-	);
 
 	const composed = await composeSystemPrompt({
 		provider: opts.provider,
@@ -155,28 +134,8 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const { system } = adapted;
 	const { systemComponents, additionalSystemMessages } = adapted;
 	systemTimer.end();
-	debugLog(
-		`[system] summary: ${JSON.stringify({
-			components: systemComponents,
-			length: system.length,
-		})}`,
-	);
-	if (oauth.isOpenAIOAuth) {
-		const openAIOptions = adapted.providerOptions.openai as
-			| Record<string, unknown>
-			| undefined;
-		const instructions =
-			typeof openAIOptions?.instructions === 'string'
-				? openAIOptions.instructions
-				: '';
-		const preview = instructions.replace(/\s+/g, ' ').trim().slice(0, 240);
-		debugLog(
-			`[system][OpenAI OAuth] instructions length=${instructions.length} preview=${preview || 'none'}`,
-		);
-	}
 
 	if (opts.isCompactCommand && opts.compactionContext) {
-		debugLog('[RUNNER] Injecting compaction context for /compact command');
 		const compactPrompt = getCompactionSystemPrompt();
 		additionalSystemMessages.push({
 			role: 'system',
@@ -201,9 +160,6 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		for (const dt of dbTools) {
 			discovered.tools.push(dt);
 		}
-		debugLog(
-			`[tools] Added ${dbTools.length} database tools for research agent (parent: ${parentSessionId ?? 'none'})`,
-		);
 	}
 
 	toolsTimer.end({
@@ -213,12 +169,6 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const gated = allTools.filter(
 		(tool) => allowedNames.has(tool.name) || tool.name === 'load_mcp_tools',
 	);
-	debugLog(
-		`[tools] ${gated.length} gated tools, ${Object.keys(mcpToolsRecord).length} lazy MCP tools`,
-	);
-
-	debugLog(`[RUNNER] About to create model with provider: ${opts.provider}`);
-	debugLog(`[RUNNER] About to create model ID: ${opts.model}`);
 
 	const model = await resolveModel(opts.provider, opts.model, cfg, {
 		sessionId: opts.sessionId,
@@ -231,12 +181,8 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 				middleware: devToolsMiddleware(),
 			})
 		: model;
-	debugLog(
-		`[RUNNER] Model created: ${JSON.stringify({ id: model.modelId, provider: model.provider })}`,
-	);
 
 	const maxOutputTokens = adapted.maxOutputTokens;
-	debugLog(`[RUNNER] maxOutputTokens for ${opts.model}: ${maxOutputTokens}`);
 
 	const { sharedCtx, firstToolTimer, firstToolSeen } = await setupToolContext(
 		opts,
@@ -266,12 +212,6 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	});
 	mergeProviderOptions(providerOptions, reasoningConfig.providerOptions);
 	effectiveMaxOutputTokens = reasoningConfig.effectiveMaxOutputTokens;
-	debugLog(
-		`[RUNNER] reasoning enabled for ${opts.provider}/${opts.model}: ${reasoningConfig.enabled}, level: ${opts.reasoningLevel ?? 'default'}`,
-	);
-	debugLog(
-		`[RUNNER] final providerOptions: ${JSON.stringify(providerOptions)}`,
-	);
 
 	return {
 		cfg,

@@ -5,7 +5,6 @@ import { streamText } from 'ai';
 import { resolveModel } from '../provider/index.ts';
 import { getAuth } from '@ottocode/sdk';
 import { loadConfig } from '@ottocode/sdk';
-import { debugLog } from '../debug/index.ts';
 import { getModelLimits } from './compaction-limits.ts';
 import { buildCompactionContext } from './compaction-context.ts';
 import { getCompactionSystemPrompt } from './compaction-detect.ts';
@@ -29,16 +28,11 @@ export async function performAutoCompaction(
 	error?: string;
 	compactMessageId?: string;
 }> {
-	debugLog(`[compaction] Starting auto-compaction for session ${sessionId}`);
-
 	try {
 		const limits = getModelLimits(provider, modelId);
 		const contextTokenLimit = limits
 			? Math.max(Math.floor(limits.context * 0.5), 15000)
 			: 15000;
-		debugLog(
-			`[compaction] Model ${modelId} context limit: ${limits?.context ?? 'unknown'}, using ${contextTokenLimit} tokens for compaction`,
-		);
 
 		const context = await buildCompactionContext(
 			db,
@@ -46,24 +40,16 @@ export async function performAutoCompaction(
 			contextTokenLimit,
 		);
 		if (!context || context.length < 100) {
-			debugLog('[compaction] Not enough context to compact');
 			return { success: false, error: 'Not enough context to compact' };
 		}
 
 		const cfg = await loadConfig();
-		debugLog(
-			`[compaction] Using session model ${provider}/${modelId} for auto-compaction`,
-		);
 
 		const auth = await getAuth(
 			provider as Parameters<typeof getAuth>[0],
 			cfg.projectRoot,
 		);
 		const oauth = detectOAuth(provider, auth);
-
-		debugLog(
-			`[compaction] OAuth: needsSpoof=${oauth.needsSpoof}, isOpenAIOAuth=${oauth.isOpenAIOAuth}`,
-		);
 
 		const model = await resolveModel(
 			provider as Parameters<typeof resolveModel>[0],
@@ -130,25 +116,19 @@ export async function performAutoCompaction(
 			.where(eq(messageParts.id, compactPartId));
 
 		if (!summary || summary.length < 50) {
-			debugLog('[compaction] Failed to generate summary');
 			return { success: false, error: 'Failed to generate summary' };
 		}
-
-		debugLog(`[compaction] Generated summary: ${summary.slice(0, 100)}...`);
 
 		const compactResult = await markSessionCompacted(
 			db,
 			sessionId,
 			assistantMessageId,
 		);
-		debugLog(
-			`[compaction] Marked ${compactResult.compacted} parts as compacted, saved ~${compactResult.saved} tokens`,
-		);
+		void compactResult;
 
 		return { success: true, summary, compactMessageId: assistantMessageId };
 	} catch (err) {
 		const errorMsg = err instanceof Error ? err.message : String(err);
-		debugLog(`[compaction] Auto-compaction failed: ${errorMsg}`);
 		return { success: false, error: errorMsg };
 	}
 }

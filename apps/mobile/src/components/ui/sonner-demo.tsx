@@ -57,9 +57,6 @@ export const SonnerDemo: React.FC = () => {
 				size: 18,
 			},
 			duration: 5000,
-			onPress: () => {
-				console.log('Custom sonner pressed!');
-			},
 		});
 	};
 

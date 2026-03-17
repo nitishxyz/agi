@@ -1,4 +1,3 @@
-import { debugLog } from './debug.ts';
 import {
 	getModelFamily,
 	getModelInfo,
@@ -91,9 +90,6 @@ export async function providerBasePrompt(
 			const modelText = await readIfExists(modelPath);
 			if (!modelText) continue;
 			const promptType = `model:${sanitized}`;
-			debugLog(
-				`[provider] prompt: ${promptType} (${modelText.length} chars) from ${modelPath}`,
-			);
 			return { prompt: modelText, resolvedType: promptType };
 		}
 	}
@@ -101,9 +97,6 @@ export async function providerBasePrompt(
 	for (const providerPath of providerPaths) {
 		const providerText = await readIfExists(providerPath);
 		if (!providerText) continue;
-		debugLog(
-			`[provider] prompt: custom:${id} (${providerText.length} chars) from ${providerPath}`,
-		);
 		return { prompt: providerText, resolvedType: `custom:${id}` };
 	}
 
@@ -112,49 +105,37 @@ export async function providerBasePrompt(
 		if (info?.ownedBy) {
 			const family = getModelFamily(id, modelId);
 			const result = promptForFamily(family);
-			debugLog(
-				`[provider] prompt: ownedBy:${info.ownedBy} (via ${id}/${modelId}, ${result.length} chars)`,
-			);
 			return { prompt: result, resolvedType: family ?? info.ownedBy };
 		}
 
 		const family = getModelFamily(id, modelId);
 		if (family) {
 			const result = promptForFamily(family);
-			debugLog(
-				`[provider] prompt: family:${family} (via ${id}/${modelId}, ${result.length} chars)`,
-			);
 			return { prompt: result, resolvedType: family };
 		}
 	}
 
 	if (id === 'openai') {
 		const result = PROVIDER_OPENAI.trim();
-		debugLog(`[provider] prompt: openai (${result.length} chars)`);
 		return { prompt: result, resolvedType: 'openai' };
 	}
 	if (id === 'anthropic') {
 		const result = PROVIDER_ANTHROPIC.trim();
-		debugLog(`[provider] prompt: anthropic (${result.length} chars)`);
 		return { prompt: result, resolvedType: 'anthropic' };
 	}
 	if (id === 'google') {
 		const result = PROVIDER_GOOGLE.trim();
-		debugLog(`[provider] prompt: google (${result.length} chars)`);
 		return { prompt: result, resolvedType: 'google' };
 	}
 	if (id === 'moonshot') {
 		const result = PROVIDER_MOONSHOT.trim();
-		debugLog(`[provider] prompt: moonshot (${result.length} chars)`);
 		return { prompt: result, resolvedType: 'moonshot' };
 	}
 	if (id === 'zai' || id === 'zai-coding') {
 		const result = PROVIDER_GLM.trim();
-		debugLog(`[provider] prompt: glm (${result.length} chars)`);
 		return { prompt: result, resolvedType: 'glm' };
 	}
 
 	const result = PROVIDER_DEFAULT.trim();
-	debugLog(`[provider] prompt: default (${result.length} chars)`);
 	return { prompt: result, resolvedType: 'default' };
 }

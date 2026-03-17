@@ -18,7 +18,6 @@ import {
 	requestApproval,
 } from '../runtime/tools/approval.ts';
 import { guardToolCall } from '../runtime/tools/guards.ts';
-import { debugLog } from '../runtime/debug/index.ts';
 
 export type { ToolAdapterContext } from '../runtime/tools/context.ts';
 
@@ -63,17 +62,9 @@ function extractToolCallId(options: unknown): string | undefined {
 const DEFAULT_TRACED_TOOL_INPUTS = new Set(['write', 'apply_patch']);
 
 function shouldTraceToolInput(name: string): boolean {
-	const raw = process.env.OTTO_DEBUG_TOOL_INPUT?.trim();
-	if (!raw) return false;
-	const normalized = raw.toLowerCase();
-	if (['1', 'true', 'yes', 'on', 'all'].includes(normalized)) {
-		return DEFAULT_TRACED_TOOL_INPUTS.has(name);
-	}
-	const tokens = raw
-		.split(/[\s,]+/)
-		.map((token) => token.trim().toLowerCase())
-		.filter(Boolean);
-	return tokens.includes('all') || tokens.includes(name.toLowerCase());
+	void DEFAULT_TRACED_TOOL_INPUTS;
+	void name;
+	return false;
 }
 
 function summarizeTraceValue(value: unknown, max = 160): string {
@@ -239,9 +230,7 @@ export function adaptTools(
 					stepIndex: ctx.stepIndex,
 				});
 				if (shouldTraceToolInput(name)) {
-					debugLog(
-						`[TOOL_INPUT_TRACE][adapter] onInputStart tool=${name} callId=${sdkCallId ?? queue[queue.length - 1]?.callId ?? 'unknown'} step=${ctx.stepIndex}`,
-					);
+					void (sdkCallId ?? queue[queue.length - 1]?.callId ?? 'unknown');
 				}
 				if (typeof base.onInputStart === 'function')
 					// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
@@ -254,9 +243,8 @@ export function adaptTools(
 				const queue = pendingCalls.get(name);
 				const meta = queue?.length ? queue[queue.length - 1] : undefined;
 				if (shouldTraceToolInput(name)) {
-					debugLog(
-						`[TOOL_INPUT_TRACE][adapter] onInputDelta tool=${name} callId=${sdkCallId ?? meta?.callId ?? 'unknown'} step=${meta?.stepIndex ?? ctx.stepIndex} delta=${summarizeTraceValue(delta ?? '')}`,
-					);
+					void (sdkCallId ?? meta?.callId ?? 'unknown');
+					void summarizeTraceValue(delta ?? '');
 				}
 				// Stream tool argument deltas as events if needed
 				publish({
@@ -297,9 +285,8 @@ export function adaptTools(
 				const callPartId = crypto.randomUUID();
 				const startTs = meta.startTs;
 				if (shouldTraceToolInput(name)) {
-					debugLog(
-						`[TOOL_INPUT_TRACE][adapter] onInputAvailable tool=${name} callId=${callId} step=${ctx.stepIndex} input=${summarizeTraceValue(args)}`,
-					);
+					void callId;
+					void summarizeTraceValue(args);
 				}
 
 				if (

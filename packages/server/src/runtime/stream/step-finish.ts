@@ -6,7 +6,6 @@ import type { RunOpts } from '../session/queue.ts';
 import type { ToolAdapterContext } from '../../tools/adapter.ts';
 import type { UsageData, ProviderMetadata } from '../session/db-operations.ts';
 import type { StepFinishEvent } from './types.ts';
-import { debugLog } from '../debug/index.ts';
 
 export function createStepFinishHandler(
 	opts: RunOpts,
@@ -45,10 +44,7 @@ export function createStepFinishHandler(
 					.set({ completedAt: finishedAt })
 					.where(eq(messageParts.id, currentPartId));
 			}
-		} catch (err) {
-			debugLog(
-				`[step-finish] Failed to update part completedAt: ${err instanceof Error ? err.message : String(err)}`,
-			);
+		} catch {
 		}
 
 		if (step.usage) {
@@ -59,10 +55,7 @@ export function createStepFinishHandler(
 					opts,
 					db,
 				);
-			} catch (err) {
-				debugLog(
-					`[step-finish] Failed to update session tokens: ${err instanceof Error ? err.message : String(err)}`,
-				);
+			} catch {
 			}
 
 			try {
@@ -72,10 +65,7 @@ export function createStepFinishHandler(
 					opts,
 					db,
 				);
-			} catch (err) {
-				debugLog(
-					`[step-finish] Failed to update message tokens: ${err instanceof Error ? err.message : String(err)}`,
-				);
+			} catch {
 			}
 		}
 
@@ -97,10 +87,7 @@ export function createStepFinishHandler(
 					payload: { stepIndex, ...step.usage },
 				});
 			}
-		} catch (err) {
-			debugLog(
-				`[step-finish] Failed to publish finish-step: ${err instanceof Error ? err.message : String(err)}`,
-			);
+		} catch {
 		}
 
 		try {
@@ -108,10 +95,7 @@ export function createStepFinishHandler(
 			sharedCtx.stepIndex = newStepIndex;
 			updateCurrentPartId(null);
 			updateAccumulated('');
-		} catch (err) {
-			debugLog(
-				`[step-finish] Failed to increment step: ${err instanceof Error ? err.message : String(err)}`,
-			);
+		} catch {
 		}
 	};
 }

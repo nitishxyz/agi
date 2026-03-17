@@ -198,19 +198,10 @@ async function loadSkillsFromDir(
 			const skill = parseSkillFile(content, filePath, scope);
 
 			const dirName = dirname(filePath).split(/[\\/]/).pop();
-			if (dirName !== skill.metadata.name) {
-				if (process.env.OTTO_DEBUG === '1') {
-					console.warn(
-						`Skill name '${skill.metadata.name}' doesn't match directory '${dirName}' in ${filePath}`,
-					);
-				}
-			}
+			void dirName;
 
 			skills.set(skill.metadata.name, skill);
-		} catch (err) {
-			if (process.env.OTTO_DEBUG === '1') {
-				console.error(`Failed to load skill from ${filePath}:`, err);
-			}
+		} catch {
 		}
 	}
 }

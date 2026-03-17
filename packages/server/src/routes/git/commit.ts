@@ -10,7 +10,6 @@ import { sessions } from '@ottocode/database/schema';
 import { gitCommitSchema, gitGenerateCommitMessageSchema } from './schemas.ts';
 import { validateAndGetGitRoot, parseGitStatus } from './utils.ts';
 import { resolveModel } from '../../runtime/provider/index.ts';
-import { debugLog } from '../../runtime/debug/index.ts';
 import {
 	detectOAuth,
 	adaptSimpleCall,
@@ -168,7 +167,6 @@ Commit message:`;
 			});
 
 			if (adapted.forceStream) {
-				debugLog('[COMMIT] Using streamText for OpenAI OAuth');
 				const result = streamText({
 					model,
 					system: adapted.system,
@@ -180,7 +178,6 @@ Commit message:`;
 					text += chunk;
 				}
 				const message = text.trim();
-				debugLog(`[COMMIT] OAuth result: "${message.slice(0, 80)}..."`);
 				return c.json({ status: 'ok', data: { message } });
 			}
 

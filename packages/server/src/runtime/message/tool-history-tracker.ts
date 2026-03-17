@@ -1,5 +1,3 @@
-import { debugLog } from '../debug/index.ts';
-
 type ToolResultPart = {
 	type: string;
 	state?: string;
@@ -61,7 +59,6 @@ export class ToolHistoryTracker {
 			.callProviderMetadata;
 		delete (entry.part as { providerMetadata?: unknown }).providerMetadata;
 		entry.summarized = true;
-		debugLog(`[history] summarized tool output -> ${entry.summary}`);
 	}
 }
 

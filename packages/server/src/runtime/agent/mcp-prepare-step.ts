@@ -1,5 +1,4 @@
 import type { Tool } from 'ai';
-import { debugLog } from '../debug/index.ts';
 
 export interface MCPPrepareStepState {
 	mcpToolsRecord: Record<string, Tool>;
@@ -57,12 +56,7 @@ export function buildPrepareStep(state: MCPPrepareStepState) {
 		}
 
 		const activeTools = [...state.baseToolNames, ...state.loadedMCPTools];
-
-		if (state.loadedMCPTools.size > 0) {
-			debugLog(
-				`[MCP prepareStep] step=${stepNumber}, active MCP tools: ${[...state.loadedMCPTools].join(', ')}`,
-			);
-		}
+		void stepNumber;
 
 		return { activeTools };
 	};

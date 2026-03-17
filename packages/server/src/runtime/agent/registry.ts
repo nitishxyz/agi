@@ -1,5 +1,4 @@
 import { getGlobalAgentsJsonPath, getGlobalAgentsDir } from '@ottocode/sdk';
-import { debugLog } from '../debug/index.ts';
 import type { ProviderName } from '@ottocode/sdk';
 import { catalog } from '@ottocode/sdk';
 // Embed default agent prompts; only user overrides read from disk.
@@ -334,13 +333,7 @@ export async function resolveAgentConfig(
 	const deduped = Array.from(new Set([...tools, ...baseToolSet]));
 	const provider = normalizeProvider(entry?.provider);
 	const model = normalizeModel(entry?.model);
-	debugLog(`[agent] ${name} prompt source: ${promptSource}`);
-	debugLog(
-		`[agent] ${name} prompt summary: ${JSON.stringify({
-			length: prompt.length,
-			lines: prompt.split('\n').length,
-		})}`,
-	);
+	void promptSource;
 	return {
 		name,
 		prompt,

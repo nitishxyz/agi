@@ -41,9 +41,7 @@ export function useServer() {
 				setError(null);
 
 				// Always start a fresh server for this project
-				console.log('[otto] Starting server for project:', projectPath);
 				const info = await tauriBridge.startServer(projectPath, port);
-				console.log('[otto] Server info returned:', info);
 
 				const ready = await waitForServer(info.port);
 				if (ready) {
@@ -75,9 +73,7 @@ export function useServer() {
 				setLoading(true);
 				setError(null);
 
-				console.log('[otto] Starting web server for remote API:', apiUrl);
 				const info = await tauriBridge.startWebServer(apiUrl, name, port);
-				console.log('[otto] Web server info returned:', info);
 
 				const ready = await waitForServer(info.port);
 				if (ready) {
@@ -103,11 +99,6 @@ export function useServer() {
 	const stopServer = useCallback(async () => {
 		const currentServer = serverRef.current;
 		if (!currentServer) return;
-		console.log(
-			'[otto] Stopping server:',
-			currentServer.pid,
-			currentServer.projectPath,
-		);
 		try {
 			await tauriBridge.stopServer(currentServer.pid);
 		} catch (err) {

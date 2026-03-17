@@ -29,11 +29,6 @@ class NetworkErrorHandler {
 			this.activeNetworkErrorToast ||
 			now - this.lastNetworkErrorTime < this.TOAST_COOLDOWN
 		) {
-			console.log(
-				`🔇 Network error suppressed (cooldown active): ${
-					context || 'Unknown context'
-				}`,
-			);
 			return;
 		}
 

@@ -22,8 +22,10 @@ bun run db:reset
 otto doctor
 ```
 
-### Debug mode
+### Need more diagnostics?
+
+Use the built-in checks first:
+
 ```bash
-# Enable debug output
-DEBUG_OTTO=1 otto "<your prompt>"
+otto doctor
 ```

@@ -37,9 +37,7 @@ export function useUpdate() {
 
 	const checkForUpdate = useCallback(async () => {
 		try {
-			console.log('[otto] Checking for updates...');
 			const result = await invoke<UpdateInfo | null>('check_for_update');
-			console.log('[otto] Update check result:', result);
 			if (result) {
 				setState((s) => ({
 					...s,

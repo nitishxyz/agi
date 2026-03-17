@@ -244,7 +244,7 @@ const GorhomPopupSheet = forwardRef<GorhomPopupSheetRef, GorhomPopupSheetProps>(
 
 		// Handle sheet changes
 		const handleSheetChanges = useCallback((index: number) => {
-			console.log('handleSheetChanges', index);
+			void index;
 		}, []);
 
 		const renderContainerComponent = useCallback(

@@ -1,7 +1,6 @@
 import type { getDb } from '@ottocode/database';
 import { messages, messageParts } from '@ottocode/database/schema';
 import { eq, desc } from 'drizzle-orm';
-import { debugLog } from '../debug/index.ts';
 import { estimateTokens, PRUNE_PROTECT } from './compaction-limits.ts';
 
 const PROTECTED_TOOLS = ['skill'];
@@ -10,8 +9,6 @@ export async function pruneSession(
 	db: Awaited<ReturnType<typeof getDb>>,
 	sessionId: string,
 ): Promise<{ pruned: number; saved: number }> {
-	debugLog(`[compaction] Auto-pruning session ${sessionId}`);
-
 	const allMessages = await db
 		.select()
 		.from(messages)

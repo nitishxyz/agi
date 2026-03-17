@@ -7,7 +7,6 @@ import { toErrorPayload } from '../errors/handling.ts';
 import type { RunOpts } from '../session/queue.ts';
 import type { ToolAdapterContext } from '../../tools/adapter.ts';
 import { pruneSession, performAutoCompaction } from '../message/compaction.ts';
-import { debugLog } from '../debug/index.ts';
 import { enqueueAssistantRun } from '../session/queue.ts';
 import { clearPendingTopup } from '../topup/manager.ts';
 
@@ -77,7 +76,6 @@ export function createErrorHandler(
 
 		// Handle fiat payment selected - this is not an error, just a signal to pause
 		if (isFiatSelected) {
-			debugLog('[stream-handlers] Fiat payment selected, pausing request');
 			clearPendingTopup(opts.sessionId);
 
 			// Add a helpful message part telling user to complete payment
@@ -171,20 +169,10 @@ export function createErrorHandler(
 			errorCode === 'context_length_exceeded' ||
 			errorType === 'invalid_request_error';
 
-		debugLog(
-			`[stream-handlers] isPromptTooLong: ${isPromptTooLong}, errorCode: ${errorCode}, errorType: ${errorType}`,
-		);
-
 		if (isPromptTooLong && !opts.isCompactCommand) {
-			debugLog(
-				'[stream-handlers] Prompt too long detected, auto-compacting...',
-			);
 
 			const retries = opts.compactionRetries ?? 0;
 			if (retries >= 2) {
-				debugLog(
-					'[stream-handlers] Compaction retry limit reached, surfacing error',
-				);
 			} else {
 				await db
 					.update(messages)
@@ -243,24 +231,12 @@ export function createErrorHandler(
 						opts.model,
 					);
 					if (compactResult.success) {
-						debugLog(
-							`[stream-handlers] Auto-compaction succeeded: ${compactResult.summary?.slice(0, 100)}...`,
-						);
 						compactionSucceeded = true;
 					} else {
-						debugLog(
-							`[stream-handlers] Auto-compaction failed: ${compactResult.error}, falling back to prune`,
-						);
 						const pruneResult = await pruneSession(db, opts.sessionId);
-						debugLog(
-							`[stream-handlers] Fallback pruned ${pruneResult.pruned} parts, saved ~${pruneResult.saved} tokens`,
-						);
 						compactionSucceeded = pruneResult.pruned > 0;
 					}
-				} catch (compactErr) {
-					debugLog(
-						`[stream-handlers] Auto-compact error: ${compactErr instanceof Error ? compactErr.message : String(compactErr)}`,
-					);
+				} catch {
 				}
 
 				await db
@@ -278,7 +254,6 @@ export function createErrorHandler(
 				});
 
 				if (compactionSucceeded && retryCallback) {
-					debugLog('[stream-handlers] Triggering retry after compaction...');
 					const retryMessageId = crypto.randomUUID();
 					await db.insert(messages).values({
 						id: retryMessageId,
@@ -315,9 +290,6 @@ export function createErrorHandler(
 				}
 
 				if (compactionSucceeded) {
-					debugLog(
-						'[stream-handlers] No retryCallback provided, cannot auto-retry',
-					);
 					return;
 				}
 			}

@@ -1,5 +1,4 @@
 import { catalog } from '@ottocode/sdk';
-import { debugLog } from '../debug/index.ts';
 import type { ProviderName } from '../provider/index.ts';
 
 /**
@@ -16,23 +15,15 @@ export function getMaxOutputTokens(
 	try {
 		const providerCatalog = catalog[provider];
 		if (!providerCatalog) {
-			debugLog(`[maxOutputTokens] No catalog found for provider: ${provider}`);
 			return undefined;
 		}
 		const modelInfo = providerCatalog.models.find((m) => m.id === modelId);
 		if (!modelInfo) {
-			debugLog(
-				`[maxOutputTokens] No model info found for: ${modelId} in provider: ${provider}`,
-			);
 			return undefined;
 		}
 		const outputLimit = modelInfo.limit?.output;
-		debugLog(
-			`[maxOutputTokens] Provider: ${provider}, Model: ${modelId}, Limit: ${outputLimit}`,
-		);
 		return outputLimit;
-	} catch (err) {
-		debugLog(`[maxOutputTokens] Error looking up limit: ${err}`);
+	} catch {
 		return undefined;
 	}
 }

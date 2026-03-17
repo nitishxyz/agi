@@ -56,18 +56,8 @@ export function Workspace({
 		if (startedRef.current) return;
 		startedRef.current = true;
 		if (isRemote && project.remoteUrl) {
-			console.log(
-				'[otto] Workspace mounting for remote API:',
-				project.remoteUrl,
-				project.name,
-			);
 			startWebServer(project.remoteUrl, project.name);
 		} else {
-			console.log(
-				'[otto] Workspace mounting for project:',
-				project.path,
-				project.name,
-			);
 			startServer(project.path);
 		}
 	}, [

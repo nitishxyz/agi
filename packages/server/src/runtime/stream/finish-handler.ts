@@ -5,7 +5,6 @@ import { publish } from '../../events/bus.ts';
 import { estimateModelCostUsd } from '@ottocode/sdk';
 import type { RunOpts } from '../session/queue.ts';
 import { markSessionCompacted } from '../message/compaction.ts';
-import { debugLog } from '../debug/index.ts';
 import type { FinishEvent } from './types.ts';
 import {
 	normalizeUsage,
@@ -24,10 +23,7 @@ export function createFinishHandler(
 	return async (fin: FinishEvent) => {
 		try {
 			await completeAssistantMessageFn(fin, opts, db);
-		} catch (err) {
-			debugLog(
-				`[finish-handler] completeAssistantMessage failed: ${err instanceof Error ? err.message : String(err)}`,
-			);
+		} catch {
 		}
 
 		if (opts.isCompactCommand && fin.finishReason !== 'error') {
@@ -40,26 +36,15 @@ export function createFinishHandler(
 			);
 
 			if (!hasTextContent) {
-				debugLog(
-					'[stream-handlers] /compact finished but no summary generated, skipping compaction marking',
-				);
 			} else {
 				try {
-					debugLog(
-						`[stream-handlers] /compact complete, marking session compacted`,
-					);
 					const result = await markSessionCompacted(
 						db,
 						opts.sessionId,
 						opts.assistantMessageId,
 					);
-					debugLog(
-						`[stream-handlers] Compacted ${result.compacted} parts, saved ~${result.saved} tokens`,
-					);
-				} catch (err) {
-					debugLog(
-						`[stream-handlers] Compaction failed: ${err instanceof Error ? err.message : String(err)}`,
-					);
+					void result;
+				} catch {
 				}
 			}
 		}

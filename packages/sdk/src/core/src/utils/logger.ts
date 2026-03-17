@@ -11,8 +11,7 @@ function safeHasMeta(
 }
 
 function getDebugLogFilePath(): string | undefined {
-	const raw = process.env.OTTO_DEBUG_FILE?.trim();
-	return raw ? raw : undefined;
+	return undefined;
 }
 
 function serializeLogMeta(meta?: Record<string, unknown>): string {

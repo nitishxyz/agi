@@ -12,7 +12,6 @@ import {
 	type ProviderId,
 	type ReasoningLevel,
 } from '@ottocode/sdk';
-import { debugLog } from '../debug/index.ts';
 import { isCompactCommand, buildCompactionContext } from './compaction.ts';
 import { detectOAuth, adaptSimpleCall } from '../provider/oauth-adapter.ts';
 
@@ -58,10 +57,6 @@ export async function dispatchAssistantMessage(
 		images,
 		files,
 	} = options;
-
-	debugLog(
-		`[MESSAGE_SERVICE] dispatchAssistantMessage called with userContext: ${userContext ? `${userContext.substring(0, 50)}...` : 'NONE'}`,
-	);
 
 	const sessionId = session.id;
 	const now = Date.now();
@@ -163,15 +158,10 @@ export async function dispatchAssistantMessage(
 		},
 	});
 
-	debugLog(
-		`[MESSAGE_SERVICE] Enqueuing assistant run with userContext: ${userContext ? `${userContext.substring(0, 50)}...` : 'NONE'}`,
-	);
-
 	const isCompact = isCompactCommand(content);
 	let compactionContext: string | undefined;
 
 	if (isCompact) {
-		debugLog('[MESSAGE_SERVICE] Detected /compact command, building context');
 		const { getModelLimits } = await import('./compaction.ts');
 		const limits = getModelLimits(provider, model);
 		const contextTokenLimit = limits
@@ -181,9 +171,6 @@ export async function dispatchAssistantMessage(
 			db,
 			sessionId,
 			contextTokenLimit,
-		);
-		debugLog(
-			`[message-service] /compact context length: ${compactionContext.length}, limit: ${contextTokenLimit} tokens`,
 		);
 	}
 
@@ -249,9 +236,7 @@ function scheduleSessionTitle(args: {
 		titlePending.delete(sessionId);
 		try {
 			await generateSessionTitle({ cfg, db, sessionId, content });
-		} catch (err) {
-			debugLog('[TITLE_GEN] Title generation error:');
-			debugLog(err);
+		} catch {
 		} finally {
 			titleInFlight.delete(sessionId);
 			titleActiveCount--;
@@ -288,33 +273,23 @@ async function generateSessionTitle(args: {
 			.where(eq(sessions.id, sessionId));
 
 		if (!existingSession.length) {
-			debugLog('[TITLE_GEN] Session not found, aborting');
 			return;
 		}
 
 		const sess = existingSession[0];
 		if (sess.title && sess.title !== 'New Session') {
-			debugLog('[TITLE_GEN] Session already has a title, skipping');
 			return;
 		}
 
 		const provider = (sess.provider ?? cfg.defaults.provider) as ProviderId;
 		const modelName = sess.model ?? cfg.defaults.model;
 
-		debugLog('[TITLE_GEN] Generating title for session');
-		debugLog(`[TITLE_GEN] Provider: ${provider}, Model: ${modelName}`);
-
 		const { getAuth } = await import('@ottocode/sdk');
 		const auth = await getAuth(provider, cfg.projectRoot);
 		const oauth = detectOAuth(provider, auth);
 
 		const titleModel = getFastModelForAuth(provider, auth?.type) ?? modelName;
-		debugLog(`[TITLE_GEN] Using title model: ${titleModel}`);
 		const model = await resolveModel(provider, titleModel, cfg);
-
-		debugLog(
-			`[TITLE_GEN] oauth: needsSpoof=${oauth.needsSpoof}, isOpenAIOAuth=${oauth.isOpenAIOAuth}`,
-		);
 
 		const promptText = String(content ?? '').slice(0, 2000);
 
@@ -330,10 +305,6 @@ Output ONLY the title, nothing else.`;
 			userContent: promptText,
 		});
 
-		debugLog(
-			`[TITLE_GEN] mode=${adapted.forceStream ? 'openai-oauth' : oauth.needsSpoof ? 'spoof' : 'api-key'}`,
-		);
-
 		let modelTitle = '';
 		try {
 			if (adapted.forceStream || oauth.needsSpoof) {
@@ -348,7 +319,6 @@ Output ONLY the title, nothing else.`;
 				}
 				modelTitle = modelTitle.trim();
 			} else {
-				debugLog('[TITLE_GEN] Using generateText...');
 				const out = await generateText({
 					model,
 					system: adapted.system,
@@ -356,24 +326,16 @@ Output ONLY the title, nothing else.`;
 				});
 				modelTitle = (out?.text || '').trim();
 			}
-
-			debugLog('[TITLE_GEN] Raw response from model:');
-			debugLog(`[TITLE_GEN] "${modelTitle}"`);
-		} catch (err) {
-			debugLog('[TITLE_GEN] Error generating title:');
-			debugLog(err);
+		} catch {
 		}
 
 		if (!modelTitle) {
-			debugLog('[TITLE_GEN] No title returned, aborting');
 			return;
 		}
 
 		const sanitized = sanitizeTitle(modelTitle);
-		debugLog(`[TITLE_GEN] After sanitization: "${sanitized}"`);
 
 		if (!sanitized || sanitized === 'New Session') {
-			debugLog('[TITLE_GEN] Sanitized title is empty or default, aborting');
 			return;
 		}
 
@@ -382,16 +344,12 @@ Output ONLY the title, nothing else.`;
 			.set({ title: sanitized, lastActiveAt: Date.now() })
 			.where(eq(sessions.id, sessionId));
 
-		debugLog(`[TITLE_GEN] Setting final title: "${sanitized}"`);
-
 		publish({
 			type: 'session.updated',
 			sessionId,
 			payload: { id: sessionId, title: sanitized },
 		});
-	} catch (err) {
-		debugLog('[TITLE_GEN] Error in generateSessionTitle:');
-		debugLog(err);
+	} catch {
 	}
 }
 
@@ -424,8 +382,7 @@ async function touchSessionLastActive(args: {
 			.set({ lastActiveAt: Date.now() })
 			.where(eq(sessions.id, sessionId))
 			.run();
-	} catch (err) {
-		debugLog('[touchSessionLastActive] Error:', err);
+	} catch {
 	}
 }
 
@@ -445,9 +402,6 @@ export async function triggerDeferredTitleGeneration(args: {
 			.limit(1);
 
 		if (!userMessages.length || userMessages[0].role !== 'user') {
-			debugLog(
-				'[TITLE_GEN] No user message found for deferred title generation',
-			);
 			return;
 		}
 
@@ -459,9 +413,6 @@ export async function triggerDeferredTitleGeneration(args: {
 			.limit(1);
 
 		if (!parts.length) {
-			debugLog(
-				'[TITLE_GEN] No message parts found for deferred title generation',
-			);
 			return;
 		}
 
@@ -470,19 +421,13 @@ export async function triggerDeferredTitleGeneration(args: {
 			const parsed = JSON.parse(parts[0].content ?? '{}');
 			content = String(parsed.text ?? '');
 		} catch {
-			debugLog('[TITLE_GEN] Failed to parse message part content');
 			return;
 		}
 
 		if (!content) {
-			debugLog('[TITLE_GEN] Empty content for deferred title generation');
 			return;
 		}
-
-		debugLog('[TITLE_GEN] Triggering deferred title generation');
 		enqueueSessionTitle({ cfg, db, sessionId, content });
-	} catch (err) {
-		debugLog('[TITLE_GEN] Error in triggerDeferredTitleGeneration:');
-		debugLog(err);
+	} catch {
 	}
 }

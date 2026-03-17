@@ -18,9 +18,7 @@ export function registerTerminalsRoutes(
 
 	app.post('/v1/terminals', async (c) => {
 		try {
-			logger.debug('POST /v1/terminals called');
 			const body = await c.req.json();
-			logger.debug('Creating terminal request received', body);
 			const { command, args, purpose, cwd, title } = body;
 
 			if (!command || !purpose) {
@@ -36,13 +34,6 @@ export function registerTerminalsRoutes(
 			}
 			const resolvedCwd = cwd || process.cwd();
 
-			logger.debug('Creating terminal', {
-				command: resolvedCommand,
-				args,
-				purpose,
-				cwd: resolvedCwd,
-			});
-
 			const terminal = terminalManager.create({
 				command: resolvedCommand,
 				args: args || [],
@@ -51,8 +42,6 @@ export function registerTerminalsRoutes(
 				createdBy: 'user',
 				title,
 			});
-
-			logger.debug('Terminal created successfully', { id: terminal.id });
 
 			return c.json({
 				terminalId: terminal.id,
@@ -80,25 +69,18 @@ export function registerTerminalsRoutes(
 
 	const handleTerminalOutput = async (c: Context) => {
 		const id = c.req.param('id');
-		logger.debug('SSE client connecting to terminal', { id });
 		const terminal = terminalManager.get(id);
 
 		if (!terminal) {
-			logger.debug('SSE terminal not found', { id });
 			return c.json({ error: 'Terminal not found' }, 404);
 		}
 
 		const activeTerminal = terminal;
 
 		return streamSSE(c, async (stream) => {
-			logger.debug('SSE stream started for terminal', { id });
 			const skipHistory = c.req.query('skipHistory') === 'true';
 			if (!skipHistory) {
 				const history = activeTerminal.read();
-				logger.debug('SSE sending terminal history', {
-					id,
-					lines: history.length,
-				});
 				for (const line of history) {
 					await stream.write(
 						`data: ${JSON.stringify({ type: 'data', line })}\n\n`,
@@ -155,9 +137,6 @@ export function registerTerminalsRoutes(
 			}
 
 			function onAbort() {
-				logger.debug('SSE client disconnected from terminal', {
-					id: activeTerminal.id,
-				});
 				stream.close();
 				finish();
 			}

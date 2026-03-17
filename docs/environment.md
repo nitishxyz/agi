@@ -35,20 +35,6 @@ OTTO_PORT=9100    # TUI client default API port override
 HOST=0.0.0.0      # used by some dev/build flows
 ```
 
-## otto debug flags
-
-```bash
-OTTO_DEBUG=1              # enable debug logging
-DEBUG_OTTO=1              # alternate debug flag
-OTTO_DEBUG_TIMING=1       # include timing-oriented debug output
-OTTO_DEBUG_DUMP=1         # dump debug turn data
-OTTO_DEBUG_TOOL_INPUT=1   # log tool input payloads
-OTTO_DEBUG_TOOLS=1        # log custom tool/plugin loading issues
-OTTO_DEVTOOLS=1           # enable AI SDK devtools integration
-OTTO_TRACE=1              # trace-oriented runtime flag
-TRACE_OTTO=1              # alternate trace flag
-```
-
 ## Web and app-specific variables
 
 These are used by specific apps rather than the shared server runtime:
@@ -72,7 +58,6 @@ OTUI_TREE_SITTER_WORKER_PATH=...
 ```bash
 APPLE_SIGNING_IDENTITY=...
 CLOUDFLARE_ACCOUNT_ID=...
-DEBUG_OTTO_WEB_ASSETS=1
 BUN_PTY_LIB=...
 ```
 

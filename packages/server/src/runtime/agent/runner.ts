@@ -2,7 +2,7 @@ import { hasToolCall, streamText } from 'ai';
 import { messageParts } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish, subscribe } from '../../events/bus.ts';
-import { debugLog, time } from '../debug/index.ts';
+import { time } from '../debug/index.ts';
 import { toErrorPayload } from '../errors/handling.ts';
 import {
 	type RunOpts,
@@ -54,17 +54,9 @@ export {
 const DEFAULT_TRACED_TOOL_INPUTS = new Set(['write', 'apply_patch']);
 
 function shouldTraceToolInput(name: string): boolean {
-	const raw = process.env.OTTO_DEBUG_TOOL_INPUT?.trim();
-	if (!raw) return false;
-	const normalized = raw.toLowerCase();
-	if (['1', 'true', 'yes', 'on', 'all'].includes(normalized)) {
-		return DEFAULT_TRACED_TOOL_INPUTS.has(name);
-	}
-	const tokens = raw
-		.split(/[\s,]+/)
-		.map((token) => token.trim().toLowerCase())
-		.filter(Boolean);
-	return tokens.includes('all') || tokens.includes(name.toLowerCase());
+	void DEFAULT_TRACED_TOOL_INPUTS;
+	void name;
+	return false;
 }
 
 function summarizeTraceValue(value: unknown, max = 160): string {
@@ -87,10 +79,7 @@ export async function runSessionLoop(sessionId: string) {
 
 		try {
 			await runAssistant(job);
-		} catch (_err) {
-			debugLog(
-				`[RUNNER] runAssistant threw (swallowed to keep loop alive): ${_err instanceof Error ? _err.message : String(_err)}`,
-			);
+		} catch {
 		}
 	}
 
@@ -99,12 +88,6 @@ export async function runSessionLoop(sessionId: string) {
 }
 
 async function runAssistant(opts: RunOpts) {
-	const separator = '='.repeat(72);
-	debugLog(separator);
-	debugLog(
-		`[RUNNER] Starting turn for session ${opts.sessionId}, message ${opts.assistantMessageId}`,
-	);
-
 	const setup = await setupRunner(opts);
 	const {
 		cfg,
@@ -201,10 +184,6 @@ async function runAssistant(opts: RunOpts) {
 		}
 	}
 
-	debugLog(
-		`[RUNNER] messagesWithSystemInstructions length: ${messagesWithSystemInstructions.length}`,
-	);
-
 	const dump = createTurnDumpCollector({
 		sessionId: opts.sessionId,
 		messageId: opts.assistantMessageId,
@@ -280,10 +259,7 @@ async function runAssistant(opts: RunOpts) {
 			try {
 				const name = (evt.payload as { name?: string } | undefined)?.name;
 				if (name === 'finish') _finishObserved = true;
-			} catch (err) {
-				debugLog(
-					`[RUNNER] finish observer error: ${err instanceof Error ? err.message : String(err)}`,
-				);
+			} catch {
 			}
 		}
 	});
@@ -365,9 +341,6 @@ async function runAssistant(opts: RunOpts) {
 	const stopWhenCondition = isCopilotResponsesApi
 		? undefined
 		: hasToolCall('finish');
-	debugLog(
-		`[RUNNER] stopWhen configured: ${stopWhenCondition ? 'finish-tool' : 'provider-default'} (provider=${opts.provider}, isOpenAIOAuth=${isOpenAIOAuth}, isCopilotResponsesApi=${isCopilotResponsesApi})`,
-	);
 
 	try {
 		const result = streamText({
@@ -401,29 +374,19 @@ async function runAssistant(opts: RunOpts) {
 			if (part.type === 'tool-input-start') {
 				if (shouldTraceToolInput(part.toolName)) {
 					tracedToolInputNamesById.set(part.id, part.toolName);
-					debugLog(
-						`[TOOL_INPUT_TRACE][runner] fullStream tool-input-start tool=${part.toolName} callId=${part.id}`,
-					);
 				}
 				continue;
 			}
 
 			if (part.type === 'tool-input-delta') {
 				const toolName = tracedToolInputNamesById.get(part.id);
-				if (toolName) {
-					debugLog(
-						`[TOOL_INPUT_TRACE][runner] fullStream tool-input-delta tool=${toolName} callId=${part.id} delta=${summarizeTraceValue(part.delta)}`,
-					);
-				}
+				if (toolName) void summarizeTraceValue(part.delta);
 				continue;
 			}
 
 			if (part.type === 'tool-input-end') {
 				const toolName = tracedToolInputNamesById.get(part.id);
 				if (toolName) {
-					debugLog(
-						`[TOOL_INPUT_TRACE][runner] fullStream tool-input-end tool=${toolName} callId=${part.id}`,
-					);
 					tracedToolInputNamesById.delete(part.id);
 				}
 				continue;
@@ -432,18 +395,14 @@ async function runAssistant(opts: RunOpts) {
 			if (part.type === 'tool-call') {
 				if (shouldTraceToolInput(part.toolName)) {
 					tracedToolInputNamesById.delete(part.toolCallId);
-					debugLog(
-						`[TOOL_INPUT_TRACE][runner] fullStream tool-call tool=${part.toolName} callId=${part.toolCallId} input=${summarizeTraceValue(part.input)}`,
-					);
+					void summarizeTraceValue(part.input);
 				}
 				continue;
 			}
 
 			if (part.type === 'tool-result') {
 				if (shouldTraceToolInput(part.toolName)) {
-					debugLog(
-						`[TOOL_INPUT_TRACE][runner] fullStream tool-result tool=${part.toolName} callId=${part.toolCallId} output=${summarizeTraceValue(part.output)}`,
-					);
+					void summarizeTraceValue(part.output);
 				}
 				continue;
 			}
@@ -550,11 +509,6 @@ async function runAssistant(opts: RunOpts) {
 		}
 
 		const fs = firstToolSeen();
-		if (oauthTextGuard?.dropped) {
-			debugLog(
-				'[RUNNER] Dropped pseudo tool-call text leaked by OpenAI OAuth stream',
-			);
-		}
 		if (!fs && !_finishObserved) {
 			publish({
 				type: 'finish-step',
@@ -581,15 +535,6 @@ async function runAssistant(opts: RunOpts) {
 			streamRawFinishReason = undefined;
 		}
 
-		debugLog(
-			`[RUNNER] Stream finished. finishSeen=${_finishObserved}, firstToolSeen=${fs}, trailingAssistantTextAfterTool=${_trailingAssistantTextAfterTool}, endedWithToolActivity=${_endedWithToolActivity}, lastToolName=${_lastToolName ?? 'none'}, abortedByUser=${_abortedByUser}, finishReason=${streamFinishReason}, rawFinishReason=${streamRawFinishReason}, latestAssistantTextLength=${latestAssistantText.length}`,
-		);
-		if (isOpenAIOAuth) {
-			debugLog(
-				`[RUNNER][OpenAI OAuth] stream-end diagnostics: finishSeen=${_finishObserved}, firstToolSeen=${fs}, trailingAssistantTextAfterTool=${_trailingAssistantTextAfterTool}, endedWithToolActivity=${_endedWithToolActivity}, lastToolName=${_lastToolName ?? 'none'}, droppedPseudoToolText=${oauthTextGuard?.dropped ?? false}, finishReason=${streamFinishReason ?? 'undefined'}, rawFinishReason=${streamRawFinishReason ?? 'undefined'}`,
-			);
-		}
-
 		if (dump) {
 			const finalTextSnapshot = latestAssistantText || accumulated;
 			if (finalTextSnapshot.length > 0) {
@@ -605,12 +550,6 @@ async function runAssistant(opts: RunOpts) {
 				finishObserved: _finishObserved,
 				aborted: _abortedByUser,
 			});
-		}
-
-		if (isOpenAIOAuth && !_finishObserved) {
-			debugLog(
-				`[RUNNER][OpenAI OAuth] Stream ended without finish. Manual auto-continuation is disabled; rely on provider-native continuation via previous_response_id.`,
-			);
 		}
 	} catch (err) {
 		unsubscribeFinish();
@@ -634,17 +573,10 @@ async function runAssistant(opts: RunOpts) {
 			errorCode === 'context_length_exceeded' ||
 			apiErrorType === 'invalid_request_error';
 
-		debugLog(
-			`[RUNNER] isPromptTooLong: ${isPromptTooLong}, isCompactCommand: ${opts.isCompactCommand}`,
-		);
-
 		if (isPromptTooLong && !opts.isCompactCommand) {
-			debugLog('[RUNNER] Prompt too long - auto-compacting');
 			try {
 				const pruneResult = await pruneSession(db, opts.sessionId);
-				debugLog(
-					`[RUNNER] Auto-pruned ${pruneResult.pruned} parts, saved ~${pruneResult.saved} tokens`,
-				);
+				void pruneResult;
 
 				publish({
 					type: 'error',
@@ -658,20 +590,12 @@ async function runAssistant(opts: RunOpts) {
 
 				try {
 					await completeAssistantMessage({}, opts, db);
-				} catch (err2) {
-					debugLog(
-						`[RUNNER] completeAssistantMessage failed after prune: ${err2 instanceof Error ? err2.message : String(err2)}`,
-					);
+				} catch {
 				}
 				return;
-			} catch (pruneErr) {
-				debugLog(
-					`[RUNNER] Auto-prune failed: ${pruneErr instanceof Error ? pruneErr.message : String(pruneErr)}`,
-				);
+			} catch {
 			}
 		}
-
-		debugLog(`[RUNNER] Error during stream: ${payload.message}`);
 		publish({
 			type: 'error',
 			sessionId: opts.sessionId,
@@ -692,26 +616,15 @@ async function runAssistant(opts: RunOpts) {
 				db,
 			);
 			await completeAssistantMessage({}, opts, db);
-		} catch (err2) {
-			debugLog(
-				`[RUNNER] Failed to complete message after error: ${err2 instanceof Error ? err2.message : String(err2)}`,
-			);
+		} catch {
 		}
 		throw err;
 	} finally {
 		if (dump) {
 			try {
-				const dumpPath = await dump.flush(cfg.projectRoot);
-				debugLog(`[RUNNER] Debug dump written to ${dumpPath}`);
-			} catch (dumpErr) {
-				debugLog(
-					`[RUNNER] Failed to write debug dump: ${dumpErr instanceof Error ? dumpErr.message : String(dumpErr)}`,
-				);
+				await dump.flush(cfg.projectRoot);
+			} catch {
 			}
 		}
-		debugLog(
-			`[RUNNER] Turn complete for session ${opts.sessionId}, message ${opts.assistantMessageId}`,
-		);
-		debugLog(separator);
 	}
 }

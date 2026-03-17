@@ -47,8 +47,6 @@ export function registerTunnelRoutes(app: Hono) {
 				port = getServerPort() || 9100;
 			}
 
-			logger.debug('Starting tunnel on port:', port);
-
 			// Kill any stale tunnel processes first
 			await killStaleTunnels();
 
@@ -60,7 +58,6 @@ export function registerTunnelRoutes(app: Hono) {
 
 			const url = await activeTunnel.start(port, (msg) => {
 				progressMessage = msg;
-				logger.debug('Tunnel progress', { message: msg });
 			});
 
 			tunnelUrl = url;
@@ -108,8 +105,6 @@ export function registerTunnelRoutes(app: Hono) {
 			tunnelStatus = 'connected';
 			tunnelError = null;
 			progressMessage = null;
-
-			logger.debug('External tunnel registered:', url);
 
 			return c.json({
 				ok: true,

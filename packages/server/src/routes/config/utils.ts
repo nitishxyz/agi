@@ -83,10 +83,7 @@ export async function discoverAllAgents(
 				agentSet.add(agentName);
 			}
 		}
-	} catch (err) {
-		logger.debug('Failed to load agents.json', {
-			error: err instanceof Error ? err.message : String(err),
-		});
+	} catch {
 	}
 
 	try {
@@ -100,10 +97,7 @@ export async function discoverAllAgents(
 				}
 			}
 		}
-	} catch (err) {
-		logger.debug('Failed to read local agents directory', {
-			error: err instanceof Error ? err.message : String(err),
-		});
+	} catch {
 	}
 
 	try {
@@ -117,10 +111,7 @@ export async function discoverAllAgents(
 				}
 			}
 		}
-	} catch (err) {
-		logger.debug('Failed to read global agents directory', {
-			error: err instanceof Error ? err.message : String(err),
-		});
+	} catch {
 	}
 
 	return Array.from(agentSet).sort();

@@ -3,11 +3,7 @@ import { join } from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { isDebugEnabled } from './state.ts';
 
-const TRUTHY = new Set(['1', 'true', 'yes', 'on']);
-
 function isDumpEnabled(): boolean {
-	const explicit = process.env.OTTO_DEBUG_DUMP;
-	if (explicit) return TRUTHY.has(explicit.trim().toLowerCase());
 	return isDebugEnabled();
 }
 

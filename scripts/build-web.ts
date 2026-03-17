@@ -171,21 +171,12 @@ const isCompiledBundle = (() => {
 
 const WEB_DIST_PREFIX = isCompiledBundle ? './src/web-dist/' : './web-dist/';
 
-if (process.env.DEBUG_OTTO_WEB_ASSETS) {
-\tconsole.log('[web-assets] import.meta.url:', import.meta.url);
-\tconsole.log('[web-assets] isCompiledBundle:', isCompiledBundle);
-\tconsole.log('[web-assets] webDistPrefix:', WEB_DIST_PREFIX);
-}
-
 function resolveAsset(path: string) {
 \tconst specifier = WEB_DIST_PREFIX + path;
 \ttry {
 \t\tconst resolved = import.meta.resolveSync(specifier);
 \t\treturn resolved;
 \t} catch {
-\t\tif (process.env.DEBUG_OTTO_WEB_ASSETS) {
-\t\t\tconsole.warn('[web-assets] Falling back to specifier for', specifier);
-\t\t}
 \t\treturn specifier;
 \t}
 }

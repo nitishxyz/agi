@@ -8,7 +8,6 @@ import {
 import type { getDb } from '@ottocode/database';
 import { messages, messageParts } from '@ottocode/database/schema';
 import { eq, asc } from 'drizzle-orm';
-import { debugLog } from '../debug/index.ts';
 import { ToolHistoryTracker } from './tool-history-tracker.ts';
 
 /**
@@ -43,15 +42,8 @@ export async function buildHistoryMessages(
 			m.status !== 'error'
 		) {
 			if (parts.length === 0) {
-				debugLog(
-					`[buildHistoryMessages] Skipping empty assistant message ${m.id} with status ${m.status}`,
-				);
 				continue;
 			}
-
-			debugLog(
-				`[buildHistoryMessages] Including non-complete assistant message ${m.id} (status: ${m.status}) with ${parts.length} parts to preserve context`,
-			);
 		}
 
 		if (m.role === 'user') {
@@ -179,9 +171,6 @@ export async function buildHistoryMessages(
 						let result = toolResultsById.get(obj.callId);
 
 						if (!result) {
-							debugLog(
-								`[buildHistoryMessages] Synthesizing error result for incomplete tool call ${obj.name}#${obj.callId}`,
-							);
 							result = {
 								name: obj.name,
 								callId: obj.callId,
@@ -265,16 +254,7 @@ async function _logPendingToolParts(
 				}
 			} catch {}
 		}
-		if (pendingCalls.length) {
-			debugLog(
-				`[buildHistoryMessages] Pending tool calls for assistant message ${messageId}: ${pendingCalls.join(', ')}`,
-			);
-		}
-	} catch (err) {
-		debugLog(
-			`[buildHistoryMessages] Failed to inspect pending tool calls for ${messageId}: ${
-				err instanceof Error ? err.message : String(err)
-			}`,
-		);
+		void pendingCalls;
+	} catch {
 	}
 }

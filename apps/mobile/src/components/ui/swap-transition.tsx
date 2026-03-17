@@ -53,17 +53,12 @@ const SwapTransition: React.FC<SwapTransitionProps> = ({
 	};
 
 	const handleTransitionComplete = () => {
-		console.log('Animation completed, calling transition complete');
 		setShowTransition(false);
 		onTransitionComplete();
 	};
 
 	useEffect(() => {
-		console.log('SwapTransition: isSwapping changed to', isSwapping);
 		if (isSwapping) {
-			console.log(
-				'SwapTransition: Starting phase 1 - showing both cards at 50%',
-			);
 			setShowTransition(true);
 			// Phase 1: Show both cards at adjusted width to account for 8px gap
 			// Total available width = 100%, gap = 8px, so each card gets slightly less than 50%
@@ -84,17 +79,7 @@ const SwapTransition: React.FC<SwapTransitionProps> = ({
 	}, [isSwapping]);
 
 	useEffect(() => {
-		console.log(
-			'SwapTransition: Phase 2 check - isSwapping:',
-			isSwapping,
-			'showTransition:',
-			showTransition,
-		);
 		if (!isSwapping && showTransition) {
-			console.log(
-				'SwapTransition: Starting phase 2 - left card to 0%, right card to 100%',
-			);
-
 			// Hide center loading animation first
 			centerOpacity.value = withTiming(0, { duration: 200 });
 			centerScale.value = withTiming(0.8, { duration: 200 });
@@ -102,13 +87,11 @@ const SwapTransition: React.FC<SwapTransitionProps> = ({
 
 			// Phase 2: Left card disappears, right card takes full width
 			const timer = setTimeout(() => {
-				console.log('SwapTransition: Executing phase 2 animations');
 				leftCardWidth.value = withTiming(0, { duration: 400 });
 				rightCardWidth.value = withTiming(
 					100,
 					{ duration: 400 },
 					(finished) => {
-						console.log('SwapTransition: Animation finished:', finished);
 						if (finished) {
 							runOnJS(handleTransitionComplete)();
 						}

@@ -31,10 +31,7 @@ export type OpenAIOAuthConfig = {
 };
 
 function shouldDebugOpenAIOAuth() {
-	return (
-		process.env.OTTO_DEBUG === '1' ||
-		process.env.OTTO_DEBUG_OPENAI_OAUTH === '1'
-	);
+	return false;
 }
 
 function logOpenAIOAuth(message: string) {

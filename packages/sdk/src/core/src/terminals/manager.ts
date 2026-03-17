@@ -29,14 +29,6 @@ export class TerminalManager {
 		const id = this.generateId();
 
 		try {
-			logger.debug('TerminalManager: creating terminal', {
-				id,
-				command: options.command,
-				args: options.args,
-				cwd: options.cwd,
-				purpose: options.purpose,
-			});
-
 			const ptyOptions: PtyOptions = {
 				name: 'xterm-256color',
 				cols: 80,
@@ -52,10 +44,6 @@ export class TerminalManager {
 
 			const pty = spawnPty(options.command, options.args || [], ptyOptions);
 
-			logger.debug('TerminalManager: PTY created', {
-				pid: pty.pid,
-			});
-
 			const terminal = new Terminal(id, pty, options);
 
 			terminal.onExit((_exitCode) => {
@@ -67,8 +55,6 @@ export class TerminalManager {
 			});
 
 			this.terminals.set(id, terminal);
-
-			logger.debug('TerminalManager: terminal added to map', { id });
 
 			return terminal;
 		} catch (error) {

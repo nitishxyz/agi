@@ -87,7 +87,6 @@ export const SonnerItem: React.FC<SonnerItemProps> = ({
 		// Trigger haptic feedback for initial mount (only loading gets haptic on mount)
 		const triggerInitialHaptic = async () => {
 			try {
-				console.log('Initial mount haptic for type:', sonner.type);
 				if (sonner.type === 'loading') {
 					await haptics.selection();
 				}
@@ -122,7 +121,6 @@ export const SonnerItem: React.FC<SonnerItemProps> = ({
 	useEffect(() => {
 		const triggerHapticOnChange = async () => {
 			try {
-				console.log('Sonner type changed, triggering haptic for:', sonner.type);
 				switch (sonner.type) {
 					case 'success':
 						await haptics.successNotification();
@@ -154,7 +152,6 @@ export const SonnerItem: React.FC<SonnerItemProps> = ({
 	// Auto dismiss when sonner updates (for state changes)
 	useEffect(() => {
 		if (sonner.type !== 'loading' && !sonner.persistent && sonner.duration) {
-			console.log(`Setting auto-dismiss timer for ${sonner.duration}ms`);
 			const timer = setTimeout(() => {
 				handleRemove();
 			}, sonner.duration);

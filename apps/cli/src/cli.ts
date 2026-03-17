@@ -48,15 +48,9 @@ export function createCli(version: string): Command {
 			const opts = thisCommand.opts();
 			if (opts.debug) {
 				setDebugEnabled(true);
-				console.log('[debug] Debug mode enabled');
 			}
 			if (opts.trace) {
 				setTraceEnabled(true);
-				if (opts.debug) {
-					console.log(
-						'[debug] Trace mode enabled (stack traces will be shown)',
-					);
-				}
 			}
 
 			const cmdName = actionCommand.name();
@@ -112,13 +106,9 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 		const traceEnabled = argv.includes('--trace');
 		if (debugEnabled) {
 			setDebugEnabled(true);
-			console.log('[debug] Debug mode enabled');
 		}
 		if (traceEnabled) {
 			setTraceEnabled(true);
-			if (debugEnabled) {
-				console.log('[debug] Trace mode enabled');
-			}
 		}
 
 		const useWeb = argv.includes('--web');
