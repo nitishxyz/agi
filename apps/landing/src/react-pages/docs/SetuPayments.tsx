@@ -4,8 +4,8 @@ export function SetuPayments() {
 	return (
 		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Payments</h1>
-			<p className="text-otto-dim text-sm mb-8">
-				Solana wallet authentication, x402 USDC payments, and Polar credit card
+		<p className="text-otto-dim text-sm mb-8">
+				Solana wallet authentication, MPP (Micropayment Protocol) USDC payments, and Polar credit card
 				top-ups.
 			</p>
 
@@ -129,18 +129,14 @@ const imported = Keypair.fromSecretKey(bs58.decode(privateKey));`}</CodeBlock>
 
 			<hr />
 
-			<h2>x402 Payment Protocol</h2>
+			<h2>MPP Payment Protocol</h2>
 			<p>
-				Setu uses the{' '}
-				<a
-					href="https://www.x402.org"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					x402 protocol
-				</a>{' '}
-				for on-chain USDC payments. The x402 protocol extends HTTP 402 (Payment
-				Required) into a machine-readable payment flow.
+				Setu uses{' '}
+				<strong>MPP (Micropayment Protocol)</strong>{' '}
+				via <code>mppx</code> and <code>mppx-solana</code>{' '}
+				for on-chain USDC payments. MPP extends HTTP 402 (Payment
+				Required) into a machine-readable payment flow with built-in
+				transaction fee sponsorship.
 			</p>
 
 			<h3>How It Works</h3>
@@ -155,32 +151,21 @@ const imported = Keypair.fromSecretKey(bs58.decode(privateKey));`}</CodeBlock>
 				</li>
 				<li>
 					<strong>
-						402 response includes <code>accepts</code> array
+						402 response includes <code>topup</code> object
 					</strong>{' '}
-					— each entry describes a USDC payment option with amount, network,
-					asset, and destination
+					— with suggested amounts, minimum amount, and endpoint template
 				</li>
 				<li>
-					<strong>Client picks a payment option</strong> and builds a signed
-					USDC transfer transaction using the x402 SDK
+					<strong>Client picks an amount</strong> and calls{' '}
+					<code>/v1/topup/:amount</code> using an MPP-enabled fetch
 				</li>
 				<li>
-					<strong>
-						Client submits to <code>/v1/topup</code>
-					</strong>{' '}
-					with the signed transaction and the chosen payment requirement
+					<strong>MPP handles the payment challenge/response</strong> — the
+					USDC transfer is signed and submitted automatically
 				</li>
 				<li>
-					<strong>Server settles via facilitator</strong> — the payment is
-					submitted to the{' '}
-					<a
-						href="https://facilitator.payai.network"
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						x402 facilitator
-					</a>{' '}
-					which handles on-chain confirmation
+					<strong>Server verifies payment receipt</strong> and credits the
+					balance. The server sponsors transaction fees so users don't need SOL.
 				</li>
 				<li>
 					<strong>Balance is credited</strong> and the client retries the
@@ -190,107 +175,82 @@ const imported = Keypair.fromSecretKey(bs58.decode(privateKey));`}</CodeBlock>
 
 			<h3>402 Response Format</h3>
 			<CodeBlock>{`{
-  "x402Version": 1,
-  "error": {
-    "message": "Balance too low. Please top up.",
-    "type": "insufficient_balance",
-    "current_balance": "0.00",
-    "minimum_balance": "0.05",
-    "topup_required": true
-  },
-  "accepts": [
-    {
-      "scheme": "exact",
-      "network": "solana",
-      "maxAmountRequired": "5000000",
-      "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-      "payTo": "<platform-wallet>",
-      "resource": "https://api.setu.ottocode.io/v1/responses",
-      "description": "Top-up required for API access (5.00 USD)",
-      "mimeType": "application/json",
-      "maxTimeoutSeconds": 60,
-      "extra": { "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4" }
-    }
-  ]
+	"error": {
+		"message": "Balance too low. Please top up.",
+		"type": "insufficient_balance",
+		"current_balance": "0.00",
+		"minimum_balance": "0.05",
+		"topup_required": true
+	},
+	"topup": {
+		"amounts": [5, 10, 25, 50],
+		"minAmount": 5,
+		"endpoint": "/v1/topup/{amount}"
+	}
 }`}</CodeBlock>
 			<p>
-				The <code>maxAmountRequired</code> is in <strong>micro-USDC</strong> (1
-				USDC = 1,000,000). The <code>extra.feePayer</code> is the facilitator's
-				fee payer account that covers Solana transaction fees.
+				The <code>topup</code> object contains suggested USD amounts and the
+				endpoint template. The client picks an amount and calls the topup
+				endpoint using an MPP-enabled fetch.
 			</p>
 
-			<h3>Building the Payment Transaction</h3>
+			<h3>Using mppx Client</h3>
 			<p>
-				Use the <code>x402</code> npm package to create a signed payment
-				transaction:
+				Use the <code>mppx</code> and <code>mppx-solana</code> packages to
+				create an MPP-enabled fetch that handles the payment flow automatically:
 			</p>
-			<CodeBlock>{`import { createPaymentHeader } from "x402/client";
-import { svm } from "x402/shared";
-import bs58 from "bs58";
-import { Buffer } from "node:buffer";
+			<CodeBlock>{`import { Mppx } from "mppx/client";
+import { client as solanaClient } from "mppx-solana";
+import { Connection, Keypair } from "@solana/web3.js";
 
-const requirement = accepts[0]; // pick from 402 response
-
-// Create a signer from your wallet's private key
-const signer = await svm.createSignerFromBase58(
-  bs58.encode(keypair.secretKey)
+const connection = new Connection(
+	"https://api.mainnet-beta.solana.com",
+	"confirmed"
 );
+const keypair = Keypair.fromSecretKey(/* your secret key */);
 
-// Build the signed payment header
-const header = await createPaymentHeader(
-  signer,
-  1, // x402 version
-  requirement,
-  { svmConfig: { rpcUrl: "https://api.mainnet-beta.solana.com" } }
-);
+const mppx = Mppx.create({
+	methods: [
+		solanaClient({ connection, signer: keypair }),
+	],
+});
 
-// Decode the header to get the signed transaction
-const decoded = JSON.parse(
-  Buffer.from(header, "base64").toString("utf-8")
-);
-
-const paymentPayload = {
-  x402Version: 1,
-  scheme: "exact",
-  network: requirement.network,
-  payload: { transaction: decoded.payload.transaction },
-};`}</CodeBlock>
+const mppFetch = mppx.fetch;`}</CodeBlock>
 
 			<h3>Submitting the Top-up</h3>
-			<CodeBlock>{`const response = await fetch("https://api.setu.ottocode.io/v1/topup", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    ...createAuthHeaders(),
-  },
-  body: JSON.stringify({
-    paymentPayload,
-    paymentRequirement: requirement,
-  }),
-});
+			<CodeBlock>{`const response = await mppFetch(
+	"https://api.setu.ottocode.io/v1/topup/5",
+	{
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			...createAuthHeaders(),
+		},
+	}
+);
 
 const result = await response.json();
 // {
 //   success: true,
 //   amount: 5,
 //   new_balance: "5.00000000",
-//   transaction: "5Kf8mG..."
+//   amount_usd: "5.00",
+//   transaction: "mpp-1710835200000"
 // }`}</CodeBlock>
 
 			<h3>Duplicate Protection</h3>
 			<p>
-				Submitting the same signed transaction twice returns{' '}
+				Submitting the same transaction twice returns{' '}
 				<code>{'{ success: true, duplicate: true }'}</code> without
 				double-crediting. This makes retries safe.
 			</p>
 
-			<h3>Settlement Flow</h3>
+			<h3>Transaction Fee Sponsorship</h3>
 			<p>
-				The facilitator at <code>https://facilitator.payai.network/settle</code>{' '}
-				receives the signed transaction and payment requirement, submits it to
-				Solana, waits for on-chain confirmation, and returns the result. The
-				facilitator also acts as the fee payer so the user doesn't need SOL for
-				transaction fees.
+				The <code>/v1/sponsor</code> endpoint handles Solana transaction fee
+				sponsorship. The server covers transaction fees so users don't need SOL
+				for gas. This is called automatically by the <code>mppx-solana</code>{' '}
+				client when the server is configured with a sponsor keypair.
 			</p>
 
 			<hr />

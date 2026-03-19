@@ -6,7 +6,7 @@ export function AiSdkOverview() {
 			<h1 className="text-3xl font-bold mb-2">AI SDK</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				Drop-in SDK for accessing AI models through{' '}
-				<a href="/docs/setu">Setu</a> with automatic x402 payments via Solana
+				<a href="/docs/setu">Setu</a> with automatic MPP payments via Solana
 				USDC.
 			</p>
 
@@ -251,7 +251,7 @@ setu.registry.mapModel("some-model", "openai");`}</CodeBlock>
 			</div>
 
 			<h2>Low-Level: Custom Fetch</h2>
-			<p>Use the x402-aware fetch wrapper directly:</p>
+			<p>Use the MPP-aware fetch wrapper directly:</p>
 			<CodeBlock>{`const customFetch = setu.fetch();
 
 const response = await customFetch(
@@ -285,7 +285,7 @@ const balance = await fetchBalance({ privateKey });
 // Fetch on-chain USDC
 const usdc = await fetchWalletUsdcBalance({ privateKey }, "mainnet");
 
-// Create a standalone x402-aware fetch
+// Create a standalone MPP-aware fetch
 const setuFetch = createSetuFetch({
   wallet: createWalletContext({ privateKey }),
   baseURL: "https://api.setu.ottocode.io",
@@ -306,7 +306,7 @@ const setuFetch = createSetuFetch({
 					<ul>
 						<li>Inject wallet auth headers (address, nonce, signature)</li>
 						<li>Inject Anthropic cache control (if enabled)</li>
-						<li>Handle 402 responses by signing USDC payments via x402</li>
+						<li>Handle 402 responses by signing USDC payments via MPP</li>
 						<li>Sniff balance/cost info from SSE stream comments</li>
 					</ul>
 				</li>

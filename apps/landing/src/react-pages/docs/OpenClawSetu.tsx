@@ -324,7 +324,7 @@ openclaw gateway restart`}</CodeBlock>
 					ClawRouter
 				</a>{' '}
 				is another payment plugin for OpenClaw that uses USDC on Base (EVM) via
-				the x402 protocol. Setu uses USDC on Solana instead.
+				the x402 protocol. Setu uses USDC on Solana via MPP (Micropayment Protocol) instead.
 			</p>
 			<div className="overflow-x-auto">
 				<table>
@@ -355,7 +355,7 @@ openclaw gateway restart`}</CodeBlock>
 								<strong>Protocol</strong>
 							</td>
 							<td>Solana wallet signatures</td>
-							<td>x402 / EIP-712</td>
+							<td>x402</td>
 						</tr>
 						<tr>
 							<td>

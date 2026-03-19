@@ -394,7 +394,7 @@ const wallet = await setu.walletBalance("mainnet");
 console.log(setu.walletAddress);`}</CodeBlock>
 
 			<h3>Low-Level: Custom Fetch</h3>
-			<p>Use the x402-aware fetch wrapper directly for full control:</p>
+			<p>Use the MPP-aware fetch wrapper directly for full control:</p>
 			<CodeBlock>{`const customFetch = setu.fetch();
 
 const response = await customFetch(
@@ -483,9 +483,9 @@ const usdc = await fetchWalletUsdcBalance({ privateKey }, "mainnet");`}</CodeBlo
 							<td>
 								<code>/v1/topup</code>
 							</td>
-							<td>POST</td>
+							<td>ALL</td>
 							<td>Yes</td>
-							<td>Top up via x402 USDC payment</td>
+							<td>Top up via MPP USDC payment</td>
 						</tr>
 						<tr>
 							<td>
@@ -613,7 +613,7 @@ console.log(data.content[0].text);`}</CodeBlock>
 								<code>402</code>
 							</td>
 							<td>Balance below $0.05</td>
-							<td>Handle payment via x402 or Polar</td>
+							<td>Handle payment via MPP or Polar</td>
 						</tr>
 						<tr>
 							<td>

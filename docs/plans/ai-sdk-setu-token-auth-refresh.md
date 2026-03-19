@@ -1,12 +1,14 @@
 # Plan: refresh `@ottocode/ai-sdk` to match current Setu auth + request flow
 
+> **Status: COMPLETED** — The ai-sdk payment layer has been migrated from x402 to MPP (Micropayment Protocol) using `mppx` and `mppx-solana`. The Setu server has also been migrated (see `setu` repo commit `a5f5f04`). This document is retained for historical context.
+
 ## Goal
 
 Update `packages/ai-sdk` so it matches current Setu behavior:
 
 - authenticate once with a signed wallet request to `POST /v1/auth/wallet-token`
 - use `Authorization: Bearer <token>` for normal API traffic after that
-- keep x402 payment signing exactly as it works today
+- keep MPP payment signing exactly as it works today
 - do **not** keep the legacy "sign every inference request" request path inside the SDK
 
 This plan is intentionally written for a **published package**. It favors:
@@ -32,7 +34,7 @@ Current Setu server behavior relevant to the SDK:
    - a bearer token, or
    - signed wallet headers
 
-3. x402 topups still require the wallet to sign the **payment transaction**, but request auth itself can use the bearer token.
+3. MPP topups still require the wallet to sign the **payment transaction**, but request auth itself can use the bearer token.
 
 So the SDK should shift from:
 
@@ -122,7 +124,7 @@ That means the release plan must explicitly include:
    - SDK refreshes it once
    - retries the original request once on `401`
 
-4. x402 payment path remains the same for transaction signing:
+4. MPP payment path remains the same for transaction signing:
    - `signTransaction` still used for payment tx construction
    - topup API request itself uses bearer auth, not signed wallet request headers
 
@@ -160,14 +162,14 @@ So the **auth input stays stable**, but the **request auth protocol changes inte
 
 - migrate request auth from per-request signed headers → bearer token exchange
 - keep `privateKey` and external signer support
-- keep x402 payment tx signing behavior
+- keep MPP payment tx signing behavior
 - update low-level helpers (`createSetuFetch`, `fetchBalance`, payment flow)
 - update tests, README, examples, and release notes
 
 ### Out of scope
 
 - changing Setu server endpoints further
-- changing x402 payment negotiation semantics
+- changing MPP payment negotiation semantics
 - redesigning provider registry/model resolution
 - broad package restructuring unrelated to auth flow
 
@@ -321,7 +323,7 @@ New behavior:
 - change the API call to `/v1/topup` to use bearer auth
 - do **not** reintroduce signed-wallet request auth in the topup HTTP call
 
-This preserves x402 while matching Setu’s fast-path request auth.
+This preserves MPP while matching Setu’s fast-path request auth.
 
 ---
 
@@ -455,7 +457,7 @@ Update these sections:
    - replace "inject wallet auth headers into every request" with the new token flow
 
 3. **Payment section**
-   - clarify that x402 payment transaction signing still happens with the wallet
+   - clarify that MPP payment transaction signing still happens with the wallet
    - separate payment tx signing from request authentication
 
 4. **Low-level utilities**
@@ -507,7 +509,7 @@ Also use **`0.2.0`**, and note the low-level breakage in release notes.
 - add release notes with:
   - new bearer-token auth flow
   - no legacy per-request wallet-signing in SDK
-  - x402 payment flow unchanged
+  - MPP payment flow unchanged
 
 ---
 
@@ -590,7 +592,7 @@ The migration is complete when all of the following are true:
 
 - a normal `generateText()` flow signs once to obtain a token, then uses bearer auth
 - repeated requests do not sign wallet auth on every call
-- x402 auto-topup still works unchanged from the user’s perspective
+- MPP auto-topup still works unchanged from the user’s perspective
 - external signer integrations still work
 - topup/payment tx signing still works
 - expired/invalid token refreshes automatically
@@ -620,7 +622,7 @@ The AGI `ai-sdk` package is currently still on the **old Setu auth model**.
 
 The right update is:
 
-- **keep wallet signing for token exchange and x402 transaction signing**
+- **keep wallet signing for token exchange and MPP transaction signing**
 - **stop signing every normal API request**
 - **move the SDK to a cached bearer-token request path**
 

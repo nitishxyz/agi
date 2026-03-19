@@ -338,7 +338,7 @@ function FlowDiagram() {
 	);
 }
 
-function X402Mockup() {
+function MppMockup() {
 	const [phase, setPhase] = useState<
 		'request' | '402' | 'sign' | 'topup' | 'success'
 	>('request');
@@ -387,7 +387,7 @@ function X402Mockup() {
 				<div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
 				<div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
 				<span className="ml-2 text-[10px] text-otto-dim font-medium">
-					x402 payment flow
+					MPP payment flow
 				</span>
 			</div>
 			<div className="p-4 space-y-2 min-h-[200px] font-mono text-xs">
@@ -905,7 +905,7 @@ export function Setu() {
 							Two ways to pay
 						</h2>
 						<p className="text-otto-muted text-sm mb-16 max-w-lg">
-							Top up with USDC on Solana via the x402 protocol, or pay with a
+							Top up with USDC on Solana via MPP (Micropayment Protocol), or pay with a
 							credit card through Polar. Same balance, your choice.
 						</p>
 					</Reveal>
@@ -934,11 +934,11 @@ export function Setu() {
 											USDC on Solana
 										</h3>
 										<p className="text-[10px] text-otto-dim">
-											x402 protocol · instant settlement
+											MPP protocol · instant settlement
 										</p>
 									</div>
 								</div>
-								<X402Mockup />
+							<MppMockup />
 								<div className="mt-4 grid grid-cols-2 gap-3">
 									<div className="p-3 bg-otto-surface border border-otto-border rounded-lg">
 										<div className="text-[10px] text-otto-dim uppercase tracking-wider mb-1">
@@ -1189,7 +1189,7 @@ export function Setu() {
 						</h2>
 						<p className="text-otto-muted text-sm mb-10 max-w-md">
 							Works with AI SDK, otto CLI, or raw HTTP. The SDK handles wallet
-							auth and x402 payment flows automatically.
+							auth and MPP payment flows automatically.
 						</p>
 					</Reveal>
 
@@ -1406,9 +1406,9 @@ const { text } = await generateText({
 									},
 									{
 										method: 'POST',
-										path: '/v1/topup',
+										path: '/v1/topup/:amount',
 										auth: true,
-										desc: 'Top up via x402 USDC payment',
+										desc: 'Top up via MPP USDC payment',
 									},
 									{
 										method: 'POST',

@@ -46,7 +46,7 @@ Setu Router (Cloudflare Worker)
   │
   ├─ Verifies wallet signature (auth middleware)
   ├─ Checks USDC balance (balance-check middleware)
-  ├─ If balance < $0.05 → returns 402 with x402 payment options
+  ├─ If balance < $0.05 → returns 402 with MPP payment options
   │
   ├─ Routes by model:
   │   ├─ OpenAI models    → /v1/responses         → api.openai.com
@@ -818,7 +818,7 @@ Setu Router (Cloudflare Worker)
 			<h2>Client SDK</h2>
 			<p>
 				The <code>@ottocode/ai-sdk</code> package is the recommended way to
-				integrate with Setu. It handles wallet auth, x402 payments, provider
+				integrate with Setu. It handles wallet auth, MPP payments, provider
 				routing, and Anthropic prompt caching automatically.
 			</p>
 			<CodeBlock>{`bun add @ottocode/ai-sdk ai`}</CodeBlock>
