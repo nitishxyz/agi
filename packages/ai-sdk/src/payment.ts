@@ -1,23 +1,10 @@
-import bs58 from 'bs58';
-import { createPaymentHeader } from 'x402/client';
-import { svm } from 'x402/shared';
-import type { PaymentRequirements } from 'x402/types';
+import { Keypair, Connection } from '@solana/web3.js';
 import type { WalletContext } from './auth.ts';
 import type {
-	ExactPaymentRequirement,
-	PaymentPayload,
 	PaymentCallbacks,
 	FetchFunction,
 } from './types.ts';
 import type { AccessTokenManager } from './token.ts';
-import {
-	address,
-	getTransactionEncoder,
-	getTransactionDecoder,
-	type Transaction,
-	type TransactionWithLifetime,
-	type TransactionWithinSizeLimit,
-} from '@solana/kit';
 
 function simplifyPaymentError(errMsg: string): string {
 	const lower = errMsg.toLowerCase();
@@ -41,164 +28,108 @@ function simplifyPaymentError(errMsg: string): string {
 	return short.length < errMsg.length ? `${short}...` : errMsg;
 }
 
-export function pickPaymentRequirement(
-	payload: unknown,
-): ExactPaymentRequirement | null {
-	const acceptsValue =
-		typeof payload === 'object' && payload !== null
-			? (payload as { accepts?: unknown }).accepts
-			: undefined;
-	const accepts = Array.isArray(acceptsValue)
-		? (acceptsValue as ExactPaymentRequirement[])
-		: [];
-	return accepts.find((opt) => opt && opt.scheme === 'exact') ?? null;
-}
-
-function wrapCallbackAsSigner(
-	walletAddress: string,
-	callback: (transaction: Uint8Array) => Promise<Uint8Array>,
-) {
-	const encoder = getTransactionEncoder();
-	const decoder = getTransactionDecoder();
-	return {
-		address: address(walletAddress),
-		modifyAndSignTransactions: async (
-			transactions: readonly (
-				| Transaction
-				| (Transaction & TransactionWithLifetime)
-			)[],
-		): Promise<
-			readonly (Transaction &
-				TransactionWithinSizeLimit &
-				TransactionWithLifetime)[]
-		> => {
-			const results = [];
-			for (const tx of transactions) {
-				const bytes = new Uint8Array(encoder.encode(tx));
-				const signedBytes = await callback(bytes);
-				const signed = decoder.decode(signedBytes);
-				results.push(
-					signed as Transaction &
-						TransactionWithinSizeLimit &
-						TransactionWithLifetime,
-				);
-			}
-			return results;
-		},
+export interface TopupRequiredPayload {
+	error?: {
+		topup_required?: boolean;
+	};
+	topup?: {
+		amounts?: number[];
+		minAmount?: number;
+		endpoint?: string;
 	};
 }
 
-async function resolvePaymentSigner(wallet: WalletContext) {
-	if (wallet.signTransaction) {
-		return wrapCallbackAsSigner(wallet.walletAddress, wallet.signTransaction);
-	}
-	if (wallet.keypair) {
-		const privateKeyBase58 = bs58.encode(wallet.keypair.secretKey);
-		return svm.createSignerFromBase58(privateKeyBase58);
-	}
-	throw new Error(
-		'Setu: payments require either a privateKey or signer.signTransaction.',
-	);
+export function isTopupRequired(payload: unknown): payload is TopupRequiredPayload {
+	if (typeof payload !== 'object' || payload === null) return false;
+	const p = payload as TopupRequiredPayload;
+	return p.error?.topup_required === true;
 }
 
-export async function createPaymentPayload(
-	requirement: ExactPaymentRequirement,
+export function pickTopupAmount(payload: TopupRequiredPayload): number {
+	const amounts = payload.topup?.amounts;
+	if (amounts && amounts.length > 0) {
+		return amounts[0]!;
+	}
+	return payload.topup?.minAmount ?? 5;
+}
+
+function resolveKeypair(wallet: WalletContext): Keypair {
+	if (wallet.keypair) return wallet.keypair;
+	if (wallet.privateKeyBytes) return Keypair.fromSecretKey(wallet.privateKeyBytes);
+	throw new Error('Setu: payments require a privateKey for on-chain transactions.');
+}
+
+export async function createMppxFetch(
 	wallet: WalletContext,
 	rpcURL: string,
-): Promise<PaymentPayload> {
-	const signer = await resolvePaymentSigner(wallet);
-	const header = await createPaymentHeader(
-		signer,
-		1,
-		requirement as PaymentRequirements,
-		{ svmConfig: { rpcUrl: rpcURL } },
-	);
-	const decoded = JSON.parse(atob(header)) as {
-		payload: { transaction: string };
-	};
+	baseFetch: FetchFunction,
+): Promise<FetchFunction> {
+	const keypair = resolveKeypair(wallet);
+	const connection = new Connection(rpcURL, 'confirmed');
 
-	return {
-		x402Version: 1,
-		scheme: 'exact',
-		network: requirement.network,
-		payload: { transaction: decoded.payload.transaction },
-	};
+	const { Mppx } = await import('mppx/client');
+	const { client: solanaClient } = await import('mppx-solana');
+
+	const mppx = Mppx.create({
+		fetch: baseFetch as typeof globalThis.fetch,
+		methods: [
+			solanaClient({
+				connection,
+				signer: keypair,
+			}),
+		],
+		polyfill: false,
+	});
+
+	return mppx.fetch as FetchFunction;
 }
 
-interface PaymentResponse {
-	amount_usd?: number | string;
-	new_balance?: number | string;
-	amount?: number;
-	balance?: number;
-	transaction?: string;
-}
-
-export async function processSinglePayment(args: {
-	requirement: ExactPaymentRequirement;
+export async function handleTopup(args: {
+	baseURL: string;
+	amount: number;
 	wallet: WalletContext;
 	rpcURL: string;
-	baseURL: string;
 	baseFetch: FetchFunction;
 	tokenManager: AccessTokenManager;
 	callbacks: PaymentCallbacks;
-}): Promise<{ attempts: number; balance?: number | string }> {
+}): Promise<{ balance?: number }> {
 	args.callbacks.onPaymentSigning?.();
 
-	let paymentPayload: PaymentPayload;
-	try {
-		paymentPayload = await createPaymentPayload(
-			args.requirement,
-			args.wallet,
-			args.rpcURL,
-		);
-	} catch (err) {
-		const errMsg = err instanceof Error ? err.message : String(err);
-		const userMsg = `Payment failed: ${simplifyPaymentError(errMsg)}`;
-		args.callbacks.onPaymentError?.(userMsg);
-		throw new Error(`Setu: ${userMsg}`);
-	}
+	const mppxFetch = await createMppxFetch(args.wallet, args.rpcURL, args.baseFetch);
+	const topupUrl = `${args.baseURL}/v1/topup/${args.amount}`;
 
-	const sendTopupRequest = async (forceRefresh = false) => {
-		const accessToken = await args.tokenManager.getToken(forceRefresh);
-		return args.baseFetch(`${args.baseURL}/v1/topup`, {
+	try {
+		const walletHeaders = await (
+			args.wallet.buildWalletAuthHeaders ?? args.wallet.buildHeaders
+		)();
+		const response = await mppxFetch(topupUrl, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				authorization: `Bearer ${accessToken}`,
+				...walletHeaders,
 			},
-			body: JSON.stringify({
-				paymentPayload,
-				paymentRequirement: args.requirement,
-			}),
 		});
-	};
 
-	let response = await sendTopupRequest();
-	if (response.status === 401) {
-		args.tokenManager.invalidate();
-		response = await sendTopupRequest(true);
-	}
-
-	const rawBody = await response.text().catch(() => '');
-	if (!response.ok) {
-		if (
-			response.status === 400 &&
-			rawBody.toLowerCase().includes('already processed')
-		) {
-			return { attempts: 1 };
+		if (!response.ok) {
+			const rawBody = await response.text().catch(() => '');
+			if (
+				response.status === 400 &&
+				rawBody.toLowerCase().includes('already processed')
+			) {
+				return {};
+			}
+			args.callbacks.onPaymentError?.(`Topup failed: ${response.status}`);
+			throw new Error(`Setu topup failed (${response.status}): ${rawBody}`);
 		}
-		args.callbacks.onPaymentError?.(`Topup failed: ${response.status}`);
-		throw new Error(`Setu topup failed (${response.status}): ${rawBody}`);
-	}
 
-	let parsed: PaymentResponse | undefined;
-	try {
-		parsed = rawBody ? (JSON.parse(rawBody) as PaymentResponse) : undefined;
-	} catch {
-		parsed = undefined;
-	}
+		const parsed = await response.json().catch(() => ({})) as {
+			amount_usd?: number | string;
+			new_balance?: number | string;
+			amount?: number;
+			balance?: number;
+			transaction?: string;
+		};
 
-	if (parsed) {
 		const amountUsd =
 			typeof parsed.amount_usd === 'string'
 				? parseFloat(parsed.amount_usd)
@@ -207,43 +138,18 @@ export async function processSinglePayment(args: {
 			typeof parsed.new_balance === 'string'
 				? parseFloat(parsed.new_balance)
 				: (parsed.new_balance ?? parsed.balance ?? 0);
+
 		args.callbacks.onPaymentComplete?.({
 			amountUsd,
 			newBalance,
 			transactionId: parsed.transaction,
 		});
-		return { attempts: 1, balance: newBalance };
-	}
-	return { attempts: 1 };
-}
 
-export async function handlePayment(args: {
-	requirement: ExactPaymentRequirement;
-	wallet: WalletContext;
-	rpcURL: string;
-	baseURL: string;
-	baseFetch: FetchFunction;
-	tokenManager: AccessTokenManager;
-	maxAttempts: number;
-	callbacks: PaymentCallbacks;
-}): Promise<{ attemptsUsed: number }> {
-	let attempts = 0;
-	while (attempts < args.maxAttempts) {
-		const result = await processSinglePayment(args);
-		attempts += result.attempts;
-		const balanceValue =
-			typeof result.balance === 'number'
-				? result.balance
-				: result.balance != null
-					? Number(result.balance)
-					: undefined;
-		if (
-			balanceValue == null ||
-			Number.isNaN(balanceValue) ||
-			balanceValue >= 0
-		) {
-			return { attemptsUsed: attempts };
-		}
+		return { balance: newBalance };
+	} catch (err) {
+		const errMsg = err instanceof Error ? err.message : String(err);
+		const userMsg = `Payment failed: ${simplifyPaymentError(errMsg)}`;
+		args.callbacks.onPaymentError?.(userMsg);
+		throw new Error(`Setu: ${userMsg}`);
 	}
-	throw new Error(`Setu: payment failed after ${attempts} additional top-ups.`);
 }

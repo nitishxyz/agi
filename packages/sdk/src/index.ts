@@ -177,6 +177,12 @@ export {
 	getGlobalAgentsDir,
 	getGlobalToolsDir,
 	getGlobalCommandsDir,
+	getGlobalDebugDir,
+	getGlobalDebugLogPath,
+	getGlobalDebugSessionsDir,
+	getSessionDebugLogPath,
+	getSessionDebugDetailsLogPath,
+	getSessionSystemPromptPath,
 	getSecureAuthPath,
 	getSecureBaseDir,
 	getSecureOAuthDir,
@@ -187,12 +193,14 @@ export {
 	isAuthorized,
 	ensureEnv,
 	writeDefaults as setConfig,
+	readDebugConfig,
+	writeDebugConfig,
 	writeAuth,
 	removeAuth as removeConfig,
 	getOnboardingComplete,
 	setOnboardingComplete,
 } from './config/src/manager.ts';
-export type { Scope } from './config/src/manager.ts';
+export type { Scope, DebugConfig } from './config/src/manager.ts';
 
 // =======================
 // Prompts (from internal prompts module)

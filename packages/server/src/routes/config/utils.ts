@@ -9,7 +9,6 @@ import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { EmbeddedAppConfig } from '../../index.ts';
 import type { OttoConfig } from '@ottocode/sdk';
-import { logger } from '@ottocode/sdk';
 import { loadAgentsConfig } from '../../runtime/agent/registry.ts';
 
 export async function isProviderAuthorizedHybrid(

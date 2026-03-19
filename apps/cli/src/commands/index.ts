@@ -8,6 +8,7 @@ export { registerToolsCommand } from './tools.ts';
 export { registerSkillsCommand } from './skills.ts';
 export { registerScaffoldCommand } from './scaffold.ts';
 export { registerDoctorCommand } from './doctor.ts';
+export { registerDebugCommand } from './debug.ts';
 export { registerUpgradeCommand } from './upgrade.ts';
 export { registerSetuCommand } from './setu.ts';
 export { registerShareCommand } from './share.ts';

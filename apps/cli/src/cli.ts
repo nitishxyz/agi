@@ -1,5 +1,4 @@
 import { Command } from 'commander';
-import { setDebugEnabled, setTraceEnabled } from '@ottocode/server';
 import { logger } from '@ottocode/sdk';
 import {
 	registerServeCommand,
@@ -12,6 +11,7 @@ import {
 	registerSkillsCommand,
 	registerScaffoldCommand,
 	registerDoctorCommand,
+	registerDebugCommand,
 	registerUpgradeCommand,
 	registerSetuCommand,
 	registerShareCommand,
@@ -31,6 +31,7 @@ const SKIP_SERVER_COMMANDS = new Set([
 	'upgrade',
 	'help',
 	'auth',
+	'debug',
 	'web',
 ]);
 
@@ -41,18 +42,8 @@ export function createCli(version: string): Command {
 		.name('otto')
 		.description('AI-powered development assistant CLI')
 		.version(version, '-v, --version', 'Print version and exit')
-		.option('--debug', 'Enable debug logging')
-		.option('--trace', 'Enable stack traces in error logs')
 		.option('--web', 'Open Web UI instead of TUI')
-		.hook('preAction', async (thisCommand, actionCommand) => {
-			const opts = thisCommand.opts();
-			if (opts.debug) {
-				setDebugEnabled(true);
-			}
-			if (opts.trace) {
-				setTraceEnabled(true);
-			}
-
+		.hook('preAction', async (_thisCommand, actionCommand) => {
 			const cmdName = actionCommand.name();
 			if (!SKIP_SERVER_COMMANDS.has(cmdName)) {
 				await ensureServer();
@@ -69,6 +60,7 @@ export function createCli(version: string): Command {
 	registerSkillsCommand(program);
 	registerScaffoldCommand(program);
 	registerDoctorCommand(program);
+	registerDebugCommand(program);
 	registerUpgradeCommand(program, version);
 	registerSetuCommand(program);
 	registerShareCommand(program);

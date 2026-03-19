@@ -55,5 +55,7 @@ export type OttoConfig = {
 	defaults: DefaultConfig;
 	providers: ProviderSettings;
 	paths: PathConfig;
+	debugEnabled?: boolean;
+	debugScopes?: string[];
 	onboardingComplete?: boolean;
 };

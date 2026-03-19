@@ -14,8 +14,6 @@ export type {
 	BalanceUpdate,
 	BalanceResponse,
 	WalletUsdcBalance,
-	ExactPaymentRequirement,
-	PaymentPayload,
 	FetchFunction,
 	AnthropicCacheStrategy,
 	AnthropicCachePlacement,

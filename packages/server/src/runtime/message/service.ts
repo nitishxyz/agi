@@ -9,6 +9,7 @@ import { runSessionLoop } from '../agent/runner.ts';
 import { resolveModel } from '../provider/index.ts';
 import {
 	getFastModelForAuth,
+	logger,
 	type ProviderId,
 	type ReasoningLevel,
 } from '@ottocode/sdk';
@@ -61,6 +62,14 @@ export async function dispatchAssistantMessage(
 	const sessionId = session.id;
 	const now = Date.now();
 	const userMessageId = crypto.randomUUID();
+	logger.debug('[agent] dispatching assistant message', {
+		sessionId,
+		agent,
+		provider,
+		model,
+		oneShot: Boolean(oneShot),
+		hasUserContext: Boolean(userContext),
+	});
 
 	await db.insert(messages).values({
 		id: userMessageId,
@@ -194,6 +203,14 @@ export async function dispatchAssistantMessage(
 		},
 		runSessionLoop,
 	);
+	logger.debug('[agent] assistant run enqueued', {
+		sessionId,
+		assistantMessageId,
+		agent,
+		provider,
+		model,
+		isCompactCommand: isCompact,
+	});
 
 	void touchSessionLastActive({ db, sessionId });
 

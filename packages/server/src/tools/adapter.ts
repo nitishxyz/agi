@@ -2,7 +2,7 @@ import type { Tool } from 'ai';
 import { messageParts, sessions } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish } from '../events/bus.ts';
-import type { DiscoveredTool } from '@ottocode/sdk';
+import { logger, type DiscoveredTool } from '@ottocode/sdk';
 import { getCwd, setCwd, joinRelative } from '../runtime/utils/cwd.ts';
 import type {
 	ToolAdapterContext,
@@ -312,6 +312,13 @@ export function adaptTools(
 							messageId: ctx.messageId,
 						},
 					});
+				logger.debug(`[tools] call ${name}`, {
+					sessionId: ctx.sessionId,
+					messageId: ctx.messageId,
+					toolName: name,
+					callId,
+					stepIndex: ctx.stepIndex,
+				});
 					// Persist synchronously to maintain correct ordering
 					try {
 						const index = await ctx.nextIndex();
@@ -688,6 +695,13 @@ export function adaptTools(
 							type: 'tool.result',
 							sessionId: ctx.sessionId,
 							payload: { ...contentObj, stepIndex: stepIndexForEvent },
+						});
+						logger.debug(`[tools] result ${name}`, {
+							sessionId: ctx.sessionId,
+							messageId: ctx.messageId,
+							toolName: name,
+							callId,
+							stepIndex: stepIndexForEvent,
 						});
 						if (name === 'update_todos') {
 							try {

@@ -1,9 +1,15 @@
-import { loadConfig } from '@ottocode/sdk';
+import {
+	loadConfig,
+	logger,
+	getSessionSystemPromptPath,
+} from '@ottocode/sdk';
 import { wrapLanguageModel } from 'ai';
 import { devToolsMiddleware } from '@ai-sdk/devtools';
 import { getDb } from '@ottocode/database';
 import { sessions } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
+import { mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { resolveModel } from '../provider/index.ts';
 import { resolveAgentConfig } from './registry.ts';
 import { composeSystemPrompt } from '../prompt/builder.ts';
@@ -133,7 +139,76 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 
 	const { system } = adapted;
 	const { systemComponents, additionalSystemMessages } = adapted;
+	const openAIProviderOptions = adapted.providerOptions.openai as
+		| Record<string, unknown>
+		| undefined;
+	const openAIInstructions =
+		typeof openAIProviderOptions?.instructions === 'string'
+			? openAIProviderOptions.instructions
+			: '';
+	const effectiveSystemPrompt = system || openAIInstructions || composed.prompt;
+	const promptMode = oauth.isOpenAIOAuth
+		? 'openai-oauth'
+		: oauth.needsSpoof
+			? 'spoof'
+			: 'standard';
 	systemTimer.end();
+	logger.debug('[prompt] system prompt assembled', {
+		sessionId: opts.sessionId,
+		messageId: opts.assistantMessageId,
+		agent: opts.agent,
+		provider: opts.provider,
+		model: opts.model,
+		promptMode,
+		components: systemComponents,
+		systemLength: effectiveSystemPrompt.length,
+		historyMessages: history.length,
+		additionalSystemMessages: additionalSystemMessages.length,
+		isFirstMessage,
+		isOpenAIOAuth: oauth.isOpenAIOAuth,
+		needsSpoof: oauth.needsSpoof,
+	});
+	logger.debug('[prompt] detailed prompt context', {
+		sessionId: opts.sessionId,
+		messageId: opts.assistantMessageId,
+		debugDetail: true,
+		agentPromptLength: agentPrompt.length,
+		contextSummaryLength: contextSummary?.length ?? 0,
+		userContextLength: opts.userContext?.length ?? 0,
+		oneShot: Boolean(opts.oneShot),
+		guidedMode: Boolean(cfg.defaults.guidedMode),
+		isOpenAIOAuth: oauth.isOpenAIOAuth,
+		needsSpoof: oauth.needsSpoof,
+		promptMode,
+		rawSystemLength: system.length,
+		openAIInstructionsLength: openAIInstructions.length,
+		effectiveSystemPromptLength: effectiveSystemPrompt.length,
+		systemComponents,
+		additionalSystemMessageRoles: additionalSystemMessages.map(
+			(message) => message.role,
+		),
+	});
+	if (effectiveSystemPrompt) {
+		const systemPromptPath = getSessionSystemPromptPath(opts.sessionId);
+		try {
+			await mkdir(dirname(systemPromptPath), { recursive: true });
+			await Bun.write(systemPromptPath, effectiveSystemPrompt);
+			logger.debug('[prompt] wrote system prompt file', {
+				sessionId: opts.sessionId,
+				messageId: opts.assistantMessageId,
+				path: systemPromptPath,
+				debugDetail: true,
+				promptMode,
+				effectiveSystemPromptLength: effectiveSystemPrompt.length,
+			});
+		} catch (error) {
+			logger.warn('[prompt] failed to write system prompt file', {
+				sessionId: opts.sessionId,
+				messageId: opts.assistantMessageId,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
 
 	if (opts.isCompactCommand && opts.compactionContext) {
 		const compactPrompt = getCompactionSystemPrompt();

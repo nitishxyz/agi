@@ -234,6 +234,100 @@ export const configPaths = {
 			},
 		},
 	},
+	'/v1/config/debug': {
+		get: {
+			tags: ['config'],
+			operationId: 'getDebugConfig',
+			summary: 'Get debug configuration',
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									enabled: { type: 'boolean' },
+									scopes: {
+										type: 'array',
+										items: { type: 'string' },
+									},
+									logPath: { type: 'string' },
+									sessionsDir: { type: 'string' },
+									debugDir: { type: 'string' },
+								},
+								required: [
+									'enabled',
+									'scopes',
+									'logPath',
+									'sessionsDir',
+									'debugDir',
+								],
+							},
+						},
+					},
+				},
+			},
+		},
+		patch: {
+			tags: ['config'],
+			operationId: 'updateDebugConfig',
+			summary: 'Update debug configuration',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								enabled: { type: 'boolean' },
+								scopes: {
+									type: 'array',
+									items: { type: 'string' },
+								},
+							},
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: { type: 'boolean' },
+									debug: {
+										type: 'object',
+										properties: {
+											enabled: { type: 'boolean' },
+											scopes: {
+												type: 'array',
+												items: { type: 'string' },
+											},
+											logPath: { type: 'string' },
+											sessionsDir: { type: 'string' },
+											debugDir: { type: 'string' },
+										},
+										required: [
+											'enabled',
+											'scopes',
+											'logPath',
+											'sessionsDir',
+											'debugDir',
+										],
+									},
+								},
+								required: ['success', 'debug'],
+							},
+						},
+					},
+				},
+			},
+		},
+	},
 	'/v1/config/models': {
 		get: {
 			tags: ['config'],

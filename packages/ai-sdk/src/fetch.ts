@@ -6,13 +6,13 @@ import type {
 	BalanceUpdate,
 	FetchFunction,
 } from './types.ts';
-import { pickPaymentRequirement, handlePayment } from './payment.ts';
+import { isTopupRequired, pickTopupAmount, handleTopup } from './payment.ts';
 import { addAnthropicCacheControl } from './cache.ts';
 import { createAccessTokenManager } from './token.ts';
+import { fetchBalance } from './balance.ts';
 
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const DEFAULT_MAX_ATTEMPTS = 3;
-const DEFAULT_MAX_PAYMENT_ATTEMPTS = 20;
 
 interface PaymentQueueEntry {
 	promise: Promise<void>;
@@ -20,7 +20,6 @@ interface PaymentQueueEntry {
 }
 
 const paymentQueues = new Map<string, PaymentQueueEntry>();
-const globalPaymentAttempts = new Map<string, number>();
 
 async function acquirePaymentLock(walletAddress: string): Promise<() => void> {
 	const existing = paymentQueues.get(walletAddress);
@@ -188,47 +187,6 @@ async function rewriteSetuOpenRouterChatRequest(
 	}
 }
 
-async function getWalletUsdcBalance(
-	walletAddress: string,
-	rpcUrl: string,
-): Promise<number> {
-	const USDC_MINT_MAINNET = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
-	const USDC_MINT_DEVNET = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
-
-	try {
-		const usdcMint = rpcUrl.includes('devnet')
-			? USDC_MINT_DEVNET
-			: USDC_MINT_MAINNET;
-		const response = await fetch(rpcUrl, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				jsonrpc: '2.0',
-				id: 1,
-				method: 'getTokenAccountsByOwner',
-				params: [walletAddress, { mint: usdcMint }, { encoding: 'jsonParsed' }],
-			}),
-		});
-		if (!response.ok) return 0;
-		const data = (await response.json()) as {
-			result?: {
-				value?: Array<{
-					account: {
-						data: { parsed: { info: { tokenAmount: { uiAmount: number } } } };
-					};
-				}>;
-			};
-		};
-		let total = 0;
-		for (const acct of data.result?.value ?? []) {
-			total += acct.account.data.parsed.info.tokenAmount.uiAmount ?? 0;
-		}
-		return total;
-	} catch {
-		return 0;
-	}
-}
-
 export interface CreateSetuFetchOptions {
 	wallet: WalletContext;
 	baseURL: string;
@@ -263,10 +221,6 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 	} = options;
 
 	const maxAttempts = payment?.maxRequestAttempts ?? DEFAULT_MAX_ATTEMPTS;
-	const maxPaymentAttempts =
-		payment?.maxPaymentAttempts ?? DEFAULT_MAX_PAYMENT_ATTEMPTS;
-	const topupApprovalMode = payment?.topupApprovalMode ?? 'auto';
-	const autoPayThresholdUsd = payment?.autoPayThresholdUsd ?? 0;
 	const baseFetch = customFetch ?? globalThis.fetch.bind(globalThis);
 	const tokenManager = createAccessTokenManager({
 		wallet,
@@ -323,44 +277,51 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 			}
 
 			const payload = await response.json().catch(() => ({}));
-			const requirement = pickPaymentRequirement(payload);
-			if (!requirement) {
-				callbacks.onPaymentError?.('Unsupported payment requirement');
-				throw new Error('Setu: unsupported payment requirement');
+			if (!isTopupRequired(payload)) {
+				callbacks.onPaymentError?.('Unsupported 402 response from server');
+				throw new Error('Setu: unsupported 402 response');
 			}
 			if (attempt >= maxAttempts) {
 				callbacks.onPaymentError?.('Payment failed after multiple attempts');
 				throw new Error('Setu: payment failed after multiple attempts');
 			}
 
-			const currentAttempts =
-				globalPaymentAttempts.get(wallet.walletAddress) ?? 0;
-			const remainingPayments = maxPaymentAttempts - currentAttempts;
-			if (remainingPayments <= 0) {
-				callbacks.onPaymentError?.('Maximum payment attempts exceeded');
-				throw new Error('Setu: payment failed after maximum payment attempts.');
-			}
+			const topupAmount = pickTopupAmount(payload);
 
 			const releaseLock = await acquirePaymentLock(wallet.walletAddress);
 
 			try {
-				const amountUsd =
-					parseInt(requirement.maxAmountRequired, 10) / 1_000_000;
 				let walletUsdcBalance = 0;
-				if (autoPayThresholdUsd > 0) {
-					walletUsdcBalance = await getWalletUsdcBalance(
-						wallet.walletAddress,
-						rpcURL,
+				try {
+					const resp = await baseFetch(
+						`${baseURL}/v1/wallet/${wallet.walletAddress}/balances`,
 					);
-				}
+				if (resp.ok) {
+						const data = await resp.json() as {
+							balances?: Array<{
+								mint?: string;
+								balance?: number;
+								symbol?: string;
+							}>;
+						};
+						const USDC_MINTS = [
+							'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+							'4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
+						];
+						for (const token of data.balances ?? []) {
+							if (token.mint && USDC_MINTS.includes(token.mint)) {
+								walletUsdcBalance += token.balance ?? 0;
+							}
+						}
+					}
+				} catch {}
 
-				const canAutoPay =
-					autoPayThresholdUsd > 0 && walletUsdcBalance >= autoPayThresholdUsd;
+				const hasEnoughUsdc = walletUsdcBalance >= topupAmount;
 
 				const requestApproval = async () => {
 					if (!callbacks.onPaymentApproval) return;
 					const approval = await callbacks.onPaymentApproval({
-						amountUsd,
+						amountUsd: topupAmount,
 						currentBalance: walletUsdcBalance,
 					});
 					if (approval === 'cancel') {
@@ -376,36 +337,33 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 					}
 				};
 
-				if (!canAutoPay && topupApprovalMode === 'approval') {
+				if (!hasEnoughUsdc) {
 					await requestApproval();
 				}
 
-				callbacks.onPaymentRequired?.(amountUsd, walletUsdcBalance);
+				callbacks.onPaymentRequired?.(topupAmount, walletUsdcBalance);
 
-				const doPayment = async () => {
-					const outcome = await handlePayment({
-						requirement,
+				const doTopup = async () => {
+					await handleTopup({
+						baseURL,
+						amount: topupAmount,
 						wallet,
 						rpcURL,
-						baseURL,
 						baseFetch,
 						tokenManager,
-						maxAttempts: remainingPayments,
 						callbacks,
 					});
-					const newTotal = currentAttempts + outcome.attemptsUsed;
-					globalPaymentAttempts.set(wallet.walletAddress, newTotal);
 				};
 
-				if (canAutoPay) {
-					try {
-						await doPayment();
-					} catch {
+				try {
+					await doTopup();
+				} catch {
+					if (hasEnoughUsdc) {
 						await requestApproval();
-						await doPayment();
+						await doTopup();
+					} else {
+						throw new Error('Setu: topup failed');
 					}
-				} else {
-					await doPayment();
 				}
 			} finally {
 				releaseLock();

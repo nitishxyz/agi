@@ -9,6 +9,9 @@ import {
 import {
 	getGlobalConfigDir,
 	getGlobalConfigPath,
+	getGlobalDebugDir,
+	getGlobalDebugLogPath,
+	getGlobalDebugSessionsDir,
 	getLocalDataDir,
 	joinPath,
 } from './paths.ts';
@@ -19,6 +22,14 @@ import {
 } from '../../providers/src/index.ts';
 
 export type Scope = 'global' | 'local';
+
+export type DebugConfig = {
+	enabled: boolean;
+	scopes: string[];
+	logPath: string;
+	sessionsDir: string;
+	debugDir: string;
+};
 
 export async function read(projectRoot?: string) {
 	const cfg = await loadConfig(projectRoot);
@@ -103,6 +114,50 @@ export async function writeDefaults(
 		...existing,
 		defaults: { ...prevDefaults, ...updates },
 	};
+	const base = getGlobalConfigDir();
+	try {
+		const { promises: fs } = await import('node:fs');
+		await fs.mkdir(base, { recursive: true }).catch(() => {});
+	} catch {}
+	await Bun.write(globalPath, JSON.stringify(next, null, 2));
+}
+
+export async function readDebugConfig(
+	projectRoot?: string,
+): Promise<DebugConfig> {
+	const cfg = await loadConfig(projectRoot);
+	return {
+		enabled: cfg.debugEnabled === true,
+		scopes: Array.isArray(cfg.debugScopes)
+			? cfg.debugScopes.filter(
+				(scope): scope is string =>
+					typeof scope === 'string' && scope.trim().length > 0,
+				)
+			: [],
+		logPath: getGlobalDebugLogPath(),
+		sessionsDir: getGlobalDebugSessionsDir(),
+		debugDir: getGlobalDebugDir(),
+	};
+}
+
+export async function writeDebugConfig(
+	updates: Partial<{
+		enabled: boolean;
+		scopes: string[];
+	}>,
+) {
+	const globalPath = getGlobalConfigPath();
+	const existing = await readJsonFile(globalPath);
+	const next: Record<string, unknown> = { ...(existing ?? {}) };
+
+	if (updates.enabled !== undefined) {
+		next.debugEnabled = updates.enabled;
+	}
+
+	if (updates.scopes !== undefined) {
+		next.debugScopes = updates.scopes;
+	}
+
 	const base = getGlobalConfigDir();
 	try {
 		const { promises: fs } = await import('node:fs');

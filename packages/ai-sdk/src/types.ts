@@ -102,25 +102,6 @@ export interface SetuConfig {
 	middleware?: LanguageModelV3Middleware | LanguageModelV3Middleware[];
 }
 
-export interface ExactPaymentRequirement {
-	scheme: 'exact';
-	network: string;
-	maxAmountRequired: string;
-	asset: string;
-	payTo: string;
-	description?: string;
-	resource?: string;
-	extra?: Record<string, unknown>;
-	maxTimeoutSeconds?: number;
-}
-
-export interface PaymentPayload {
-	x402Version: 1;
-	scheme: 'exact';
-	network: string;
-	payload: { transaction: string };
-}
-
 export interface BalanceResponse {
 	walletAddress: string;
 	balance: number;

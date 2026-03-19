@@ -79,6 +79,30 @@ export function getGlobalCommandsDir(): string {
 	return joinPath(getGlobalConfigDir(), 'commands');
 }
 
+export function getGlobalDebugDir(): string {
+	return joinPath(getGlobalConfigDir(), 'debug');
+}
+
+export function getGlobalDebugLogPath(): string {
+	return joinPath(getGlobalDebugDir(), 'latest.log');
+}
+
+export function getGlobalDebugSessionsDir(): string {
+	return joinPath(getGlobalDebugDir(), 'sessions');
+}
+
+export function getSessionDebugLogPath(sessionId: string): string {
+	return joinPath(getGlobalDebugSessionsDir(), `${sessionId}.log`);
+}
+
+export function getSessionDebugDetailsLogPath(sessionId: string): string {
+	return joinPath(getGlobalDebugSessionsDir(), `${sessionId}.details.log`);
+}
+
+export function getSessionSystemPromptPath(sessionId: string): string {
+	return joinPath(getGlobalDebugSessionsDir(), `${sessionId}.system-prompt.txt`);
+}
+
 export function getLocalDataDir(projectRoot: string): string {
 	return joinPath(projectRoot, '.otto');
 }

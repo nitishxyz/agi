@@ -5,6 +5,7 @@ import { registerAgentsRoute } from './agents.ts';
 import { registerProvidersRoute } from './providers.ts';
 import { registerModelsRoutes } from './models.ts';
 import { registerDefaultsRoute } from './defaults.ts';
+import { registerDebugConfigRoute } from './debug.ts';
 
 export function registerConfigRoutes(app: Hono) {
 	registerCwdRoute(app);
@@ -13,4 +14,5 @@ export function registerConfigRoutes(app: Hono) {
 	registerProvidersRoute(app);
 	registerModelsRoutes(app);
 	registerDefaultsRoute(app);
+	registerDebugConfigRoute(app);
 }
