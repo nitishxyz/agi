@@ -76,21 +76,26 @@ function colorizeLine(line: string, level: LogLevel): string {
 				: level === 'warn'
 					? ANSI_YELLOW
 					: ANSI_RED;
-	const scopeMatch = line.match(/\[(debug|info|warn|error|timing)\]\s+\[([^\]]+)\]/i);
+	const scopeMatch = line.match(
+		/\[(debug|info|warn|error|timing)\]\s+\[([^\]]+)\]/i,
+	);
 	if (!scopeMatch) {
 		return `${levelColor}${line}${ANSI_RESET}`;
 	}
 	const rest = line.slice(24);
-	return `${ANSI_DIM}${line.slice(0, 24)}${ANSI_RESET}${rest.replace(
-		scopeMatch[1],
-		`${levelColor}${scopeMatch[1]}${ANSI_RESET}`,
-	).replace(
-		`[${scopeMatch[2]}]`,
-		`${ANSI_GREEN}[${scopeMatch[2]}]${ANSI_RESET}`,
-	)}`;
+	return `${ANSI_DIM}${line.slice(0, 24)}${ANSI_RESET}${rest
+		.replace(scopeMatch[1], `${levelColor}${scopeMatch[1]}${ANSI_RESET}`)
+		.replace(
+			`[${scopeMatch[2]}]`,
+			`${ANSI_GREEN}[${scopeMatch[2]}]${ANSI_RESET}`,
+		)}`;
 }
 
-function printLine(level: LogLevel, line: string, meta?: Record<string, unknown>) {
+function printLine(
+	level: LogLevel,
+	line: string,
+	meta?: Record<string, unknown>,
+) {
 	const colored = colorizeLine(line, level);
 	if (safeHasMeta(meta)) {
 		if (level === 'warn') console.warn(colored, meta);

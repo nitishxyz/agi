@@ -1,8 +1,4 @@
-import {
-	loadConfig,
-	logger,
-	getSessionSystemPromptPath,
-} from '@ottocode/sdk';
+import { loadConfig, logger, getSessionSystemPromptPath } from '@ottocode/sdk';
 import { wrapLanguageModel } from 'ai';
 import { devToolsMiddleware } from '@ai-sdk/devtools';
 import { getDb } from '@ottocode/database';

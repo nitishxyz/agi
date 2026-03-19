@@ -1,9 +1,6 @@
 import { Keypair, Connection } from '@solana/web3.js';
 import type { WalletContext } from './auth.ts';
-import type {
-	PaymentCallbacks,
-	FetchFunction,
-} from './types.ts';
+import type { PaymentCallbacks, FetchFunction } from './types.ts';
 import type { AccessTokenManager } from './token.ts';
 
 function simplifyPaymentError(errMsg: string): string {
@@ -39,7 +36,9 @@ export interface TopupRequiredPayload {
 	};
 }
 
-export function isTopupRequired(payload: unknown): payload is TopupRequiredPayload {
+export function isTopupRequired(
+	payload: unknown,
+): payload is TopupRequiredPayload {
 	if (typeof payload !== 'object' || payload === null) return false;
 	const p = payload as TopupRequiredPayload;
 	return p.error?.topup_required === true;
@@ -55,8 +54,11 @@ export function pickTopupAmount(payload: TopupRequiredPayload): number {
 
 function resolveKeypair(wallet: WalletContext): Keypair {
 	if (wallet.keypair) return wallet.keypair;
-	if (wallet.privateKeyBytes) return Keypair.fromSecretKey(wallet.privateKeyBytes);
-	throw new Error('Setu: payments require a privateKey for on-chain transactions.');
+	if (wallet.privateKeyBytes)
+		return Keypair.fromSecretKey(wallet.privateKeyBytes);
+	throw new Error(
+		'Setu: payments require a privateKey for on-chain transactions.',
+	);
 }
 
 export async function createMppxFetch(
@@ -95,7 +97,11 @@ export async function handleTopup(args: {
 }): Promise<{ balance?: number }> {
 	args.callbacks.onPaymentSigning?.();
 
-	const mppxFetch = await createMppxFetch(args.wallet, args.rpcURL, args.baseFetch);
+	const mppxFetch = await createMppxFetch(
+		args.wallet,
+		args.rpcURL,
+		args.baseFetch,
+	);
 	const topupUrl = `${args.baseURL}/v1/topup/${args.amount}`;
 
 	try {
@@ -122,7 +128,7 @@ export async function handleTopup(args: {
 			throw new Error(`Setu topup failed (${response.status}): ${rawBody}`);
 		}
 
-		const parsed = await response.json().catch(() => ({})) as {
+		const parsed = (await response.json().catch(() => ({}))) as {
 			amount_usd?: number | string;
 			new_balance?: number | string;
 			amount?: number;

@@ -100,7 +100,10 @@ export function getSessionDebugDetailsLogPath(sessionId: string): string {
 }
 
 export function getSessionSystemPromptPath(sessionId: string): string {
-	return joinPath(getGlobalDebugSessionsDir(), `${sessionId}.system-prompt.txt`);
+	return joinPath(
+		getGlobalDebugSessionsDir(),
+		`${sessionId}.system-prompt.txt`,
+	);
 }
 
 export function getLocalDataDir(projectRoot: string): string {

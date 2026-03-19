@@ -296,8 +296,8 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 					const resp = await baseFetch(
 						`${baseURL}/v1/wallet/${wallet.walletAddress}/balances`,
 					);
-				if (resp.ok) {
-						const data = await resp.json() as {
+					if (resp.ok) {
+						const data = (await resp.json()) as {
 							balances?: Array<{
 								mint?: string;
 								balance?: number;

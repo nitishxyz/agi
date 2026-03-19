@@ -312,13 +312,13 @@ export function adaptTools(
 							messageId: ctx.messageId,
 						},
 					});
-				logger.debug(`[tools] call ${name}`, {
-					sessionId: ctx.sessionId,
-					messageId: ctx.messageId,
-					toolName: name,
-					callId,
-					stepIndex: ctx.stepIndex,
-				});
+					logger.debug(`[tools] call ${name}`, {
+						sessionId: ctx.sessionId,
+						messageId: ctx.messageId,
+						toolName: name,
+						callId,
+						stepIndex: ctx.stepIndex,
+					});
 					// Persist synchronously to maintain correct ordering
 					try {
 						const index = await ctx.nextIndex();

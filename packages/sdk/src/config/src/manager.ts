@@ -130,8 +130,8 @@ export async function readDebugConfig(
 		enabled: cfg.debugEnabled === true,
 		scopes: Array.isArray(cfg.debugScopes)
 			? cfg.debugScopes.filter(
-				(scope): scope is string =>
-					typeof scope === 'string' && scope.trim().length > 0,
+					(scope): scope is string =>
+						typeof scope === 'string' && scope.trim().length > 0,
 				)
 			: [],
 		logPath: getGlobalDebugLogPath(),
