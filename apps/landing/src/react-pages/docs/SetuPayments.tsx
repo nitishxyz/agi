@@ -4,9 +4,9 @@ export function SetuPayments() {
 	return (
 		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Payments</h1>
-		<p className="text-otto-dim text-sm mb-8">
-				Solana wallet authentication, MPP (Micropayment Protocol) USDC payments, and Polar credit card
-				top-ups.
+			<p className="text-otto-dim text-sm mb-8">
+				Solana wallet authentication, MPP (Micropayment Protocol) USDC payments,
+				and Polar credit card top-ups.
 			</p>
 
 			<h2>Wallet Authentication</h2>
@@ -131,12 +131,10 @@ const imported = Keypair.fromSecretKey(bs58.decode(privateKey));`}</CodeBlock>
 
 			<h2>MPP Payment Protocol</h2>
 			<p>
-				Setu uses{' '}
-				<strong>MPP (Micropayment Protocol)</strong>{' '}
-				via <code>mppx</code> and <code>mppx-solana</code>{' '}
-				for on-chain USDC payments. MPP extends HTTP 402 (Payment
-				Required) into a machine-readable payment flow with built-in
-				transaction fee sponsorship.
+				Setu uses <strong>MPP (Micropayment Protocol)</strong> via{' '}
+				<code>mppx</code> and <code>mppx-solana</code> for on-chain USDC
+				payments. MPP extends HTTP 402 (Payment Required) into a
+				machine-readable payment flow with built-in transaction fee sponsorship.
 			</p>
 
 			<h3>How It Works</h3>
@@ -160,8 +158,8 @@ const imported = Keypair.fromSecretKey(bs58.decode(privateKey));`}</CodeBlock>
 					<code>/v1/topup/:amount</code> using an MPP-enabled fetch
 				</li>
 				<li>
-					<strong>MPP handles the payment challenge/response</strong> — the
-					USDC transfer is signed and submitted automatically
+					<strong>MPP handles the payment challenge/response</strong> — the USDC
+					transfer is signed and submitted automatically
 				</li>
 				<li>
 					<strong>Server verifies payment receipt</strong> and credits the

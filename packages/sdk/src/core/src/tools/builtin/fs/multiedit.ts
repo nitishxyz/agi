@@ -10,7 +10,9 @@ import { createToolError, type ToolResponse } from '../../error.ts';
 const multiEditSchema = z.object({
 	path: z
 		.string()
-		.describe('Relative file path within the project. Absolute paths are not allowed.'),
+		.describe(
+			'Relative file path within the project. Absolute paths are not allowed.',
+		),
 	edits: z
 		.array(
 			z.object({
@@ -34,10 +36,7 @@ export function buildMultiEditTool(projectRoot: string): {
 	const multiedit = tool({
 		description: DESCRIPTION,
 		inputSchema: multiEditSchema,
-		async execute({
-			path,
-			edits,
-		}: z.infer<typeof multiEditSchema>): Promise<
+		async execute({ path, edits }: z.infer<typeof multiEditSchema>): Promise<
 			ToolResponse<{
 				path: string;
 				editsApplied: number;
@@ -91,13 +90,19 @@ export function buildMultiEditTool(projectRoot: string): {
 
 				if (nextContent === original) {
 					return createToolError('No changes applied.', 'validation', {
-						suggestion: 'Adjust your edits so the file content actually changes',
+						suggestion:
+							'Adjust your edits so the file content actually changes',
 					});
 				}
 
 				await writeFile(abs, nextContent, 'utf-8');
 				await rememberFileWrite(projectRoot, abs);
-				const artifact = await buildWriteArtifact(path, true, original, nextContent);
+				const artifact = await buildWriteArtifact(
+					path,
+					true,
+					original,
+					nextContent,
+				);
 				return {
 					ok: true,
 					path,

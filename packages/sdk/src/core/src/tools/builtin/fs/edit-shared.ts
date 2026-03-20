@@ -38,7 +38,9 @@ export function applyStringEdit(
 		);
 	}
 	if (oldString === newString) {
-		throw new Error('No changes to apply: oldString and newString are identical.');
+		throw new Error(
+			'No changes to apply: oldString and newString are identical.',
+		);
 	}
 
 	const lineEnding = detectLineEnding(content);

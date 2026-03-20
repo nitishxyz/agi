@@ -163,9 +163,14 @@ export const AssistantMessageGroup = memo(
 				.filter(
 					(part) =>
 						part.ephemeral &&
-						['bash', 'edit', 'multiedit', 'write', 'apply_patch', 'terminal'].includes(
-							part.toolName || '',
-						),
+						[
+							'bash',
+							'edit',
+							'multiedit',
+							'write',
+							'apply_patch',
+							'terminal',
+						].includes(part.toolName || ''),
 				)
 				.map((part) => part.toolCallId)
 				.filter((callId): callId is string => Boolean(callId)),
@@ -398,9 +403,14 @@ export const AssistantMessageGroup = memo(
 						const isActionTool =
 							part.ephemeral &&
 							(part.type === 'tool_call' || part.type === 'tool_result') &&
-							['bash', 'edit', 'multiedit', 'write', 'apply_patch', 'terminal'].includes(
-								part.toolName || '',
-							);
+							[
+								'bash',
+								'edit',
+								'multiedit',
+								'write',
+								'apply_patch',
+								'terminal',
+							].includes(part.toolName || '');
 
 						if (isActionTool) {
 							return (

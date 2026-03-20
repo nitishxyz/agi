@@ -62,7 +62,11 @@ describe('edit and multiedit tools', () => {
 			newString: '\tconst label = "hi";',
 		});
 
-		expect(result).toMatchObject({ ok: true, path: 'sample.ts', occurrences: 1 });
+		expect(result).toMatchObject({
+			ok: true,
+			path: 'sample.ts',
+			occurrences: 1,
+		});
 		const updated = await Bun.file(join(projectRoot, 'sample.ts')).text();
 		expect(updated).toContain('\tconst label = "hi";');
 	});
@@ -103,7 +107,11 @@ describe('edit and multiedit tools', () => {
 			],
 		});
 
-		expect(result).toMatchObject({ ok: true, path: 'sample.ts', editsApplied: 2 });
+		expect(result).toMatchObject({
+			ok: true,
+			path: 'sample.ts',
+			editsApplied: 2,
+		});
 		const updated = await Bun.file(join(projectRoot, 'sample.ts')).text();
 		expect(updated).toContain('export function greetUser() {');
 		expect(updated).toContain('\treturn `${label}!`;');
@@ -131,6 +139,8 @@ describe('edit and multiedit tools', () => {
 		});
 
 		expect(result).toMatchObject({ ok: false });
-		expect((result as { error: string }).error).toContain('changed since it was last read');
+		expect((result as { error: string }).error).toContain(
+			'changed since it was last read',
+		);
 	});
 });

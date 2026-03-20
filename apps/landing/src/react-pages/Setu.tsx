@@ -905,8 +905,8 @@ export function Setu() {
 							Two ways to pay
 						</h2>
 						<p className="text-otto-muted text-sm mb-16 max-w-lg">
-							Top up with USDC on Solana via MPP (Micropayment Protocol), or pay with a
-							credit card through Polar. Same balance, your choice.
+							Top up with USDC on Solana via MPP (Micropayment Protocol), or pay
+							with a credit card through Polar. Same balance, your choice.
 						</p>
 					</Reveal>
 
@@ -938,7 +938,7 @@ export function Setu() {
 										</p>
 									</div>
 								</div>
-							<MppMockup />
+								<MppMockup />
 								<div className="mt-4 grid grid-cols-2 gap-3">
 									<div className="p-3 bg-otto-surface border border-otto-border rounded-lg">
 										<div className="text-[10px] text-otto-dim uppercase tracking-wider mb-1">

@@ -25,7 +25,9 @@ export function buildEditTool(projectRoot: string): {
 				.boolean()
 				.optional()
 				.default(false)
-				.describe('Replace every matching occurrence instead of requiring a unique match'),
+				.describe(
+					'Replace every matching occurrence instead of requiring a unique match',
+				),
 		}),
 		async execute({
 			path,
@@ -80,7 +82,8 @@ export function buildEditTool(projectRoot: string): {
 				);
 				if (updated.content === original) {
 					return createToolError('No changes applied.', 'validation', {
-						suggestion: 'Adjust oldString/newString so the file content actually changes',
+						suggestion:
+							'Adjust oldString/newString so the file content actually changes',
 					});
 				}
 

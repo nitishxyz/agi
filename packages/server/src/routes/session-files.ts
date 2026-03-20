@@ -198,7 +198,10 @@ function extractDataFromToolResult(
 		patch = (args?.patch as string | undefined) ?? c.patch;
 	}
 
-	if ((name === 'edit' || name === 'multiedit') && typeof c.result?.artifact?.patch === 'string') {
+	if (
+		(name === 'edit' || name === 'multiedit') &&
+		typeof c.result?.artifact?.patch === 'string'
+	) {
 		patch = c.result.artifact.patch;
 	}
 
