@@ -163,7 +163,7 @@ export const AssistantMessageGroup = memo(
 				.filter(
 					(part) =>
 						part.ephemeral &&
-						['bash', 'write', 'apply_patch', 'terminal'].includes(
+						['bash', 'edit', 'multiedit', 'write', 'apply_patch', 'terminal'].includes(
 							part.toolName || '',
 						),
 				)
@@ -398,7 +398,7 @@ export const AssistantMessageGroup = memo(
 						const isActionTool =
 							part.ephemeral &&
 							(part.type === 'tool_call' || part.type === 'tool_result') &&
-							['bash', 'write', 'apply_patch', 'terminal'].includes(
+							['bash', 'edit', 'multiedit', 'write', 'apply_patch', 'terminal'].includes(
 								part.toolName || '',
 							);
 

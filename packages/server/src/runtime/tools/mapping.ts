@@ -17,6 +17,8 @@ export type ToolNamingConvention = 'canonical' | 'claude-code';
 export const CANONICAL_TO_PASCAL: Record<string, string> = {
 	// File system operations
 	read: 'Read',
+	edit: 'Edit',
+	multiedit: 'MultiEdit',
 	write: 'Write',
 	ls: 'Ls',
 	tree: 'Tree',
@@ -55,6 +57,8 @@ export const CANONICAL_TO_PASCAL: Record<string, string> = {
 export const PASCAL_TO_CANONICAL: Record<string, string> = {
 	// File system operations
 	Read: 'read',
+	Edit: 'edit',
+	MultiEdit: 'multiedit',
 	Write: 'write',
 	Ls: 'ls',
 	Tree: 'tree',

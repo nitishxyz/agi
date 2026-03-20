@@ -1,5 +1,5 @@
 import { ChevronRight } from 'lucide-react';
-import type { RendererProps } from './types';
+import type { GenericRendererProps } from './types';
 import { DiffView } from './DiffView';
 import { formatDuration } from './utils';
 import { ToolErrorDisplay } from './ToolErrorDisplay';
@@ -25,7 +25,8 @@ export function ApplyPatchRenderer({
 	toolDurationMs,
 	isExpanded,
 	onToggle,
-}: RendererProps) {
+	toolName,
+}: GenericRendererProps) {
 	const artifact = contentJson.artifact;
 	const timeStr = formatDuration(toolDurationMs);
 
@@ -52,9 +53,18 @@ export function ApplyPatchRenderer({
 	const changes = Array.isArray(contentJson.result?.changes)
 		? (contentJson.result?.changes as ApplyPatchChange[])
 		: [];
+	const rendererToolName = toolName || contentJson.name || 'apply_patch';
+	const titleLabel = rendererToolName.replace(/_/g, ' ');
 
 	const singleFilePath =
-		files === 1 && changes.length > 0 ? changes[0].filePath : null;
+		files === 1
+			? changes[0]?.filePath ||
+				(typeof contentJson.result?.path === 'string'
+					? contentJson.result.path
+					: typeof contentJson.args?.path === 'string'
+						? contentJson.args.path
+						: null)
+			: null;
 
 	const hasError =
 		contentJson.error ||
@@ -92,7 +102,8 @@ export function ApplyPatchRenderer({
 					className={`h-3 w-3 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
 				/>
 				<span className="font-medium flex-shrink-0">
-					apply patch{hasError ? ' error' : ''}
+					{titleLabel}
+					{hasError ? ' error' : ''}
 				</span>
 				<span className="text-muted-foreground/70 flex-shrink-0">·</span>
 				{singleFilePath ? (

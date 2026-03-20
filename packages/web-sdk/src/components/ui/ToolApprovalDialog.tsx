@@ -4,6 +4,8 @@ import { Shield, Check, X, Terminal, FileEdit, GitCommit } from 'lucide-react';
 
 const TOOL_ICONS: Record<string, typeof Terminal> = {
 	bash: Terminal,
+	edit: FileEdit,
+	multiedit: FileEdit,
 	write: FileEdit,
 	apply_patch: FileEdit,
 	terminal: Terminal,

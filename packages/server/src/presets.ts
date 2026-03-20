@@ -54,6 +54,8 @@ export const BUILTIN_AGENTS = {
  */
 export const BUILTIN_TOOLS = [
 	'read',
+	'edit',
+	'multiedit',
 	'write',
 	'ls',
 	'tree',

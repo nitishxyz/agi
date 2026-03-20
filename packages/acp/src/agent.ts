@@ -463,7 +463,9 @@ export class OttoAcpAgent implements Agent {
 	): ToolCallContent[] {
 		if (result === undefined || result === null) return [];
 
-		const isWriteTool = ['write', 'apply_patch'].includes(name);
+		const isWriteTool = ['write', 'edit', 'multiedit', 'apply_patch'].includes(
+			name,
+		);
 		if (isWriteTool) {
 			return this.buildDiffContent(name, args, result, session);
 		}
@@ -629,7 +631,9 @@ export class OttoAcpAgent implements Agent {
 	): Promise<void> {
 		if (!this.clientCapabilities?.fs?.writeTextFile) return;
 
-		const isWriteTool = ['write', 'apply_patch'].includes(name);
+		const isWriteTool = ['write', 'edit', 'multiedit', 'apply_patch'].includes(
+			name,
+		);
 		if (!isWriteTool) return;
 
 		const filePaths = this.getWrittenFilePaths(name, args, result);
@@ -699,6 +703,10 @@ function formatToolTitle(
 	switch (name) {
 		case 'read':
 			return `Read ${args?.path || 'file'}`;
+		case 'edit':
+			return `Edit ${args?.path || 'file'}`;
+		case 'multiedit':
+			return `Multi-edit ${args?.path || 'file'}`;
 		case 'write':
 			return `Write ${args?.path || 'file'}`;
 		case 'apply_patch':
@@ -741,6 +749,8 @@ function getToolKind(name: string): ToolKind {
 		case 'ls':
 		case 'tree':
 			return 'read';
+		case 'edit':
+		case 'multiedit':
 		case 'write':
 		case 'apply_patch':
 			return 'edit';
@@ -801,7 +811,7 @@ function getToolLocations(
 }
 
 function isFileTool(name: string): boolean {
-	return ['read', 'write', 'ls', 'tree'].includes(name);
+	return ['read', 'edit', 'multiedit', 'write', 'ls', 'tree'].includes(name);
 }
 
 function extractPathsFromPatch(patch: string): string[] {

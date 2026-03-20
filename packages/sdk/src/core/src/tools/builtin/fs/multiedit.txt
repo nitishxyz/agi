@@ -1,0 +1,9 @@
+Apply multiple exact text replacements to a single existing file atomically.
+
+Use this when you need several edits in one file.
+
+Rules:
+- Read the file first before editing.
+- Each edit uses exact `oldString` -> `newString` replacement.
+- All edits must succeed or none are written.
+- Use `replaceAll: true` only when every occurrence should change.

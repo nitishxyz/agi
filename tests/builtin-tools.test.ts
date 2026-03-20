@@ -46,6 +46,8 @@ describe('Built-in Tools', () => {
 		const names = tools.map((t) => t.name);
 
 		expect(names).toContain('read');
+		expect(names).toContain('edit');
+		expect(names).toContain('multiedit');
 		expect(names).toContain('write');
 		expect(names).toContain('ls');
 		expect(names).toContain('tree');

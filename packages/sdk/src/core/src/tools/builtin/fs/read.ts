@@ -2,6 +2,7 @@ import { tool, type Tool } from 'ai';
 import { z } from 'zod/v3';
 import { readFile } from 'node:fs/promises';
 import { expandTilde, isAbsoluteLike, resolveSafePath } from './util.ts';
+import { rememberFileRead } from './read-tracker.ts';
 import DESCRIPTION from './read.txt' with { type: 'text' };
 import { createToolError, type ToolResponse } from '../../error.ts';
 
@@ -108,6 +109,7 @@ export function buildReadTool(projectRoot: string): {
 			try {
 				let content = await readFile(abs, 'utf-8');
 				const indent = detectIndentation(content);
+				await rememberFileRead(projectRoot, abs);
 
 				if (startLine !== undefined && endLine !== undefined) {
 					const lines = content.split('\n');

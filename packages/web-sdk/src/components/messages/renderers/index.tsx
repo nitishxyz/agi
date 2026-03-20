@@ -41,6 +41,8 @@ interface ToolResultRendererProps {
  */
 const TOOL_NAME_ALIASES: Record<string, string> = {
 	Read: 'read',
+	Edit: 'edit',
+	MultiEdit: 'multiedit',
 	Write: 'write',
 	Ls: 'ls',
 	Tree: 'tree',
@@ -77,6 +79,8 @@ function normalizeToolName(name: string): string {
 
 const COMPACT_DETAIL_TOOL_NAMES = new Set([
 	'bash',
+	'edit',
+	'multiedit',
 	'write',
 	'apply_patch',
 	'terminal',
@@ -115,6 +119,9 @@ export function ToolResultRenderer({
 	switch (normalizedName) {
 		case 'read':
 			return <ReadRenderer {...props} />;
+		case 'edit':
+		case 'multiedit':
+			return <ApplyPatchRenderer {...props} toolName={normalizedName} />;
 		case 'write':
 			return <WriteRenderer {...props} />;
 		case 'bash':

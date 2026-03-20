@@ -6,7 +6,16 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { serializeError } from '../runtime/errors/api-error.ts';
 import { logger } from '@ottocode/sdk';
 
-const FILE_EDIT_TOOLS = ['Write', 'ApplyPatch', 'write', 'apply_patch'];
+const FILE_EDIT_TOOLS = [
+	'Write',
+	'Edit',
+	'MultiEdit',
+	'ApplyPatch',
+	'write',
+	'edit',
+	'multiedit',
+	'apply_patch',
+];
 
 interface FileOperation {
 	path: string;
@@ -62,7 +71,7 @@ function extractFilePathFromToolCall(
 
 	const name = toolName.toLowerCase();
 
-	if (name === 'write') {
+	if (name === 'write' || name === 'edit' || name === 'multiedit') {
 		if (args && typeof args.path === 'string') return args.path;
 		if (typeof c.path === 'string') return c.path;
 	}
@@ -189,6 +198,10 @@ function extractDataFromToolResult(
 		patch = (args?.patch as string | undefined) ?? c.patch;
 	}
 
+	if ((name === 'edit' || name === 'multiedit') && typeof c.result?.artifact?.patch === 'string') {
+		patch = c.result.artifact.patch;
+	}
+
 	if (name === 'write') {
 		writeContent = args?.content as string | undefined;
 	}
@@ -213,6 +226,7 @@ function extractDataFromToolResult(
 function getOperationType(toolName: string): 'write' | 'patch' | 'create' {
 	const name = toolName.toLowerCase();
 	if (name === 'write') return 'write';
+	if (name === 'edit' || name === 'multiedit') return 'patch';
 	if (name === 'applypatch' || name === 'apply_patch') return 'patch';
 	return 'write';
 }

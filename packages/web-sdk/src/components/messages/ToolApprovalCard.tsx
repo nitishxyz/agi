@@ -59,6 +59,8 @@ function normalizeToolTarget(
 	if (!args) return null;
 	const keyMap: Record<string, string[]> = {
 		read: ['path'],
+		edit: ['path'],
+		multiedit: ['path'],
 		write: ['path'],
 		apply_patch: ['path'],
 		glob: ['pattern'],
@@ -173,6 +175,19 @@ export const ToolApprovalCard = memo(function ToolApprovalCard({
 							</SyntaxHighlighter>
 						</div>
 					</div>
+				</div>
+			);
+		}
+
+		if (
+			(toolName === 'edit' || toolName === 'multiedit') &&
+			(primary?.value || filePath)
+		) {
+			return (
+				<div className="ml-6 text-xs text-muted-foreground">
+					{toolName === 'multiedit'
+						? 'Multiple exact replacements will be applied atomically.'
+						: 'An exact text replacement will be applied to this file.'}
 				</div>
 			);
 		}

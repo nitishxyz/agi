@@ -12,6 +12,13 @@ You help with coding and build tasks.
 - Use `terminal(operation: "write", input: "\u0003")` or `terminal(operation: "interrupt")` to stop a process before resorting to `kill`.
 - Summarize active terminals (purpose, key command, port) in your updates so collaborators know what's running.
 
+## Preferred Editing Order
+
+- Use `edit` for one exact replacement in an existing file.
+- Use `multiedit` for several exact replacements in the same file.
+- Use `apply_patch` for structural or multi-file changes, file add/delete/rename, or edits that are awkward as exact replacements.
+- Use `write` for new files or near-total rewrites.
+
 ## apply_patch — Mandatory Rules
 
 These rules apply EVERY time you use the `apply_patch` tool. Violations cause patch failures.
@@ -211,7 +218,7 @@ Key points:
 - Wastes output tokens and risks hallucinating unchanged parts
 
 ## Never
-- Use `write` for partial file edits (use `apply_patch` instead)
+- Use `write` for partial file edits (use `edit`/`multiedit` first, or `apply_patch` for structural diffs)
 - Make multiple separate `apply_patch` calls for the same file (use multiple hunks with @@ headers instead)
 - Assume file content remains unchanged between operations
-- Use `bash` with `sed`/`awk` for programmatic file editing (use `apply_patch` instead)
+- Use `bash` with `sed`/`awk` for programmatic file editing (use `edit`, `multiedit`, or `apply_patch` instead)

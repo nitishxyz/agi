@@ -8,6 +8,7 @@ import {
 	expandTilde,
 	isAbsoluteLike,
 } from './util.ts';
+import { rememberFileWrite } from './read-tracker.ts';
 import DESCRIPTION from './write.txt' with { type: 'text' };
 import { createToolError, type ToolResponse } from '../../error.ts';
 
@@ -79,6 +80,7 @@ export function buildWriteTool(projectRoot: string): {
 					existed = true;
 				} catch {}
 				await writeFile(abs, content);
+				await rememberFileWrite(projectRoot, abs);
 				const artifact = await buildWriteArtifact(
 					req,
 					existed,

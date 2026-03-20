@@ -116,6 +116,8 @@ const baseToolSet = ['progress_update', 'finish', 'skill'] as const;
 const defaultToolExtras: Record<string, string[]> = {
 	build: [
 		'read',
+		'edit',
+		'multiedit',
 		'write',
 		'ls',
 		'tree',
@@ -131,6 +133,8 @@ const defaultToolExtras: Record<string, string[]> = {
 	plan: ['read', 'ls', 'tree', 'ripgrep', 'update_todos', 'websearch'],
 	general: [
 		'read',
+		'edit',
+		'multiedit',
 		'write',
 		'ls',
 		'tree',

@@ -59,7 +59,12 @@ function extractToolCallId(options: unknown): string | undefined {
 	return (options as { toolCallId?: string } | undefined)?.toolCallId;
 }
 
-const DEFAULT_TRACED_TOOL_INPUTS = new Set(['write', 'apply_patch']);
+const DEFAULT_TRACED_TOOL_INPUTS = new Set([
+	'write',
+	'edit',
+	'multiedit',
+	'apply_patch',
+]);
 
 function shouldTraceToolInput(name: string): boolean {
 	void DEFAULT_TRACED_TOOL_INPUTS;

@@ -1,5 +1,7 @@
 import type { Tool } from 'ai';
+import { buildEditTool } from './edit.ts';
 import { buildReadTool } from './read.ts';
+import { buildMultiEditTool } from './multiedit.ts';
 import { buildWriteTool } from './write.ts';
 import { buildLsTool } from './ls.ts';
 import { buildTreeTool } from './tree.ts';
@@ -11,6 +13,8 @@ export function buildFsTools(
 ): Array<{ name: string; tool: Tool }> {
 	const out: Array<{ name: string; tool: Tool }> = [];
 	out.push(buildReadTool(projectRoot));
+	out.push(buildEditTool(projectRoot));
+	out.push(buildMultiEditTool(projectRoot));
 	out.push(buildWriteTool(projectRoot));
 	out.push(buildLsTool(projectRoot));
 	out.push(buildTreeTool(projectRoot));

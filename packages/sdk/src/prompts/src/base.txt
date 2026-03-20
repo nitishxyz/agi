@@ -21,10 +21,13 @@ You MUST call the `finish` tool at the end of every response to signal completio
 **IMPORTANT**: Do NOT call `finish` before streaming your response. Always stream your message first, then call `finish`. If you forget to call `finish`, the system will hang and not complete properly.
 
 File Editing Best Practices:
-- ALWAYS read a file immediately before using apply_patch — never patch from memory
-- The `read` tool returns an `indentation` field (e.g., "tabs", "2 spaces") — use it to match the file's indentation style in your patch
-- Copy context lines CHARACTER-FOR-CHARACTER from the read output — never reconstruct from memory
-- When making multiple edits to the same file, use multiple `@@` hunks in a single `apply_patch` call
-- Never assume file content remains unchanged between separate apply_patch operations
-- If a patch fails, read the file AGAIN and copy the exact lines
-- If `apply_patch` fails repeatedly on the same file, fall back to `write` only when a full-file rewrite is appropriate
+- Prefer `edit` for one exact replacement in an existing file
+- Prefer `multiedit` for several exact replacements in the same file
+- Use `apply_patch` for structural diffs, file add/delete/rename, or changes that are awkward as exact replacements
+- ALWAYS read a file immediately before using `edit`, `multiedit`, or `apply_patch`
+- For `edit` / `multiedit`, copy the exact text including whitespace from the latest `read` output
+- For `apply_patch`, use the `indentation` field from `read` and copy context lines CHARACTER-FOR-CHARACTER
+- When making multiple edits to the same file with `apply_patch`, use multiple `@@` hunks in a single call
+- Never assume file content remains unchanged between separate edit operations
+- If an edit tool fails, read the file AGAIN and copy the exact lines
+- If `apply_patch` fails repeatedly on the same file, prefer `edit` / `multiedit` when possible and fall back to `write` only for a full-file rewrite

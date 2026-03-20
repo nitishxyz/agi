@@ -4,6 +4,8 @@ export type ToolApprovalMode = 'auto' | 'dangerous' | 'all';
 
 export const DANGEROUS_TOOLS = new Set([
 	'bash',
+	'edit',
+	'multiedit',
 	'write',
 	'apply_patch',
 	'terminal',
