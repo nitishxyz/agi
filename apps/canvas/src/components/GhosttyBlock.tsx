@@ -3,10 +3,10 @@ import type { Block } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
 import {
 	createGhosttyBlock,
-	destroyGhosttyBlock,
 	getGhosttyStatus,
 	inputGhosttyText,
 	isTauriRuntime,
+	setGhosttyBlockFocus,
 	updateGhosttyBlock,
 	type GhosttyStatus,
 } from '../lib/ghostty';
@@ -99,9 +99,22 @@ export function GhosttyBlock({ block, isFocused }: GhosttyBlockProps) {
 
 		return () => {
 			cancelled = true;
-			if (created) {
-				void destroyGhosttyBlock(block.id);
-			}
+		};
+	}, [block.id]);
+
+	useEffect(() => {
+		if (!created || !isFocused) {
+			return;
+		}
+
+		const timeout = window.setTimeout(() => {
+			void setGhosttyBlockFocus(block.id, true).catch((focusError) => {
+				setError(focusError instanceof Error ? focusError.message : String(focusError));
+			});
+		}, 60);
+
+		return () => {
+			window.clearTimeout(timeout);
 		};
 	}, [block.id, created, isFocused]);
 

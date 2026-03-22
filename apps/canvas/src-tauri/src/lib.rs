@@ -2,7 +2,7 @@ mod ghostty;
 
 use ghostty::{
     ghostty_create_block, ghostty_destroy_block, ghostty_input_key, ghostty_input_text,
-    ghostty_status, ghostty_update_block, GhosttyManager,
+    ghostty_set_block_focus, ghostty_status, ghostty_update_block, GhosttyManager,
 };
 use tauri::Manager;
 
@@ -19,6 +19,7 @@ pub fn run() {
             ghostty_update_block,
             ghostty_input_text,
             ghostty_input_key,
+            ghostty_set_block_focus,
             ghostty_destroy_block,
         ])
         .plugin(tauri_plugin_opener::init())

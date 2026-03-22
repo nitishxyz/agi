@@ -4,7 +4,7 @@ use std::{
 	ffi::{c_char, c_int, c_void, CString},
 	sync::{mpsc, Arc, Mutex, OnceLock},
 };
-use tauri::{AppHandle, Manager, WebviewWindow, Wry};
+use tauri::{AppHandle, Emitter, Manager, WebviewWindow, Wry};
 
 #[derive(Clone, Default)]
 pub struct GhosttyManager {
@@ -39,6 +39,25 @@ pub struct GhosttyStatus {
 	pub available: bool,
 	pub message: String,
 	pub app_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GhosttyShortcutEvent {
+	shortcut: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GhosttyCloseEvent {
+	block_id: String,
+	process_alive: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GhosttyFocusEvent {
+	block_id: String,
 }
 
 static APP_HANDLE: OnceLock<AppHandle<Wry>> = OnceLock::new();
@@ -199,6 +218,32 @@ pub fn ghostty_input_key(
 }
 
 #[tauri::command]
+pub fn ghostty_set_block_focus(
+	window: WebviewWindow,
+	manager: tauri::State<'_, GhosttyManager>,
+	block_id: String,
+	focused: bool,
+) -> Result<(), String> {
+	#[cfg(target_os = "macos")]
+	{
+		let manager = manager.inner().inner.clone();
+		window
+			.app_handle()
+			.run_on_main_thread(move || unsafe {
+				let _ = set_block_focus_inner(&manager, &block_id, focused);
+			})
+			.map_err(|error| error.to_string())?;
+		Ok(())
+	}
+
+	#[cfg(not(target_os = "macos"))]
+	{
+		let _ = (window, manager, block_id, focused);
+		Err("Ghostty blocks are currently implemented for macOS only.".into())
+	}
+}
+
+#[tauri::command]
 pub fn ghostty_destroy_block(
 	window: WebviewWindow,
 	manager: tauri::State<'_, GhosttyManager>,
@@ -253,7 +298,7 @@ mod macos {
 	use libloading::os::unix::{Library, RTLD_GLOBAL, RTLD_NOW};
 	use objc2::rc::Retained;
 	use objc2::{define_class, msg_send, MainThreadOnly};
-	use objc2_app_kit::{NSEvent, NSEventModifierFlags, NSView, NSWindowOrderingMode};
+	use objc2_app_kit::{NSEvent, NSEventModifierFlags, NSResponder, NSView, NSWindowOrderingMode};
 	use objc2_foundation::{MainThreadMarker, NSObjectProtocol, NSPoint, NSRect, NSSize};
 	use std::path::{Path, PathBuf};
 
@@ -453,6 +498,7 @@ mod macos {
 
 			#[unsafe(method(mouseDown:))]
 			fn mouse_down(&self, event: &NSEvent) {
+				unsafe { emit_focus_request(self) };
 				if let Some(window) = self.window() {
 					let _ = window.makeFirstResponder(Some(self));
 				}
@@ -473,6 +519,7 @@ mod macos {
 			fn become_first_responder(&self) -> bool {
 				let result: bool = unsafe { msg_send![super(self), becomeFirstResponder] };
 				if result {
+					unsafe { emit_focus_request(self) };
 					unsafe { focus_host_view_surface(self, true) };
 				}
 				result
@@ -495,6 +542,15 @@ mod macos {
 			#[unsafe(method(keyUp:))]
 			fn key_up(&self, event: &NSEvent) {
 				unsafe { handle_host_view_key_event(self, event, GhosttyInputAction::Release) };
+			}
+
+			#[unsafe(method(performKeyEquivalent:))]
+			fn perform_key_equivalent(&self, event: &NSEvent) -> bool {
+				if let Some(shortcut) = shortcut_for_event(event) {
+					emit_shortcut(shortcut);
+					return true.into();
+				}
+				false.into()
 			}
 		}
 	);
@@ -556,6 +612,97 @@ mod macos {
 			}
 		}
 		0
+	}
+
+	fn string_from_nsstring(value: &objc2_foundation::NSString) -> Option<String> {
+		let raw = value.UTF8String();
+		if raw.is_null() {
+			return None;
+		}
+		Some(unsafe { std::ffi::CStr::from_ptr(raw) }.to_string_lossy().to_string())
+	}
+
+	fn shortcut_for_event(event: &NSEvent) -> Option<&'static str> {
+		let flags = event.modifierFlags().intersection(NSEventModifierFlags::DeviceIndependentFlagsMask);
+		let key = event
+			.charactersIgnoringModifiers()
+			.as_deref()
+			.and_then(string_from_nsstring)?
+			.to_lowercase();
+
+		if flags.contains(NSEventModifierFlags::Command) && !flags.contains(NSEventModifierFlags::Option) {
+			return match key.as_str() {
+				"n" => Some("mod+n"),
+				"d" if flags.contains(NSEventModifierFlags::Shift) => Some("mod+shift+d"),
+				"d" => Some("mod+d"),
+				"w" => Some("mod+w"),
+				"[" => Some("mod+["),
+				"]" => Some("mod+]"),
+				"1" => Some("mod+1"),
+				"2" => Some("mod+2"),
+				"3" => Some("mod+3"),
+				"4" => Some("mod+4"),
+				"5" => Some("mod+5"),
+				"6" => Some("mod+6"),
+				"7" => Some("mod+7"),
+				"8" => Some("mod+8"),
+				"9" => Some("mod+9"),
+				"b" if flags.contains(NSEventModifierFlags::Shift) => Some("mod+shift+b"),
+				_ => None,
+			};
+		}
+
+		if flags.contains(NSEventModifierFlags::Control)
+			&& !flags.contains(NSEventModifierFlags::Command)
+			&& !flags.contains(NSEventModifierFlags::Option)
+		{
+			return match key.as_str() {
+				"h" => Some("ctrl+h"),
+				"j" => Some("ctrl+j"),
+				"k" => Some("ctrl+k"),
+				"l" => Some("ctrl+l"),
+				_ => None,
+			};
+		}
+
+		None
+	}
+
+	fn emit_shortcut(shortcut: &str) {
+		if let Some(app_handle) = APP_HANDLE.get() {
+			let _ = app_handle.emit(
+				"ghostty-native-shortcut",
+				GhosttyShortcutEvent {
+					shortcut: shortcut.to_string(),
+				},
+			);
+		}
+	}
+
+	unsafe fn emit_focus_request(host_view: &GhosttyHostView) {
+		let Some(manager) = GHOSTTY_MANAGER.get() else {
+			return;
+		};
+		let Ok(state) = manager.lock() else {
+			return;
+		};
+		let Some(runtime) = state.runtime.as_ref() else {
+			return;
+		};
+		let Some(block_id) = runtime.blocks.iter().find_map(|(block_id, block)| {
+			(block.host_view == (host_view as *const GhosttyHostView).cast::<c_void>() as usize)
+				.then(|| block_id.clone())
+		}) else {
+			return;
+		};
+		drop(state);
+
+		if let Some(app_handle) = APP_HANDLE.get() {
+			let _ = app_handle.emit(
+				"ghostty-focus-block",
+				GhosttyFocusEvent { block_id },
+			);
+		}
 	}
 
 	unsafe fn focus_host_view_surface(host_view: &GhosttyHostView, focused: bool) {
@@ -644,6 +791,12 @@ mod macos {
 		event: &NSEvent,
 		action: GhosttyInputAction,
 	) {
+		if let Some(shortcut) = shortcut_for_event(event) {
+			if matches!(action, GhosttyInputAction::Press | GhosttyInputAction::Repeat) {
+				emit_shortcut(shortcut);
+			}
+			return;
+		}
 		let Some(manager) = GHOSTTY_MANAGER.get() else {
 			return;
 		};
@@ -751,7 +904,33 @@ mod macos {
 	) {
 	}
 
-	unsafe extern "C" fn ghostty_close_surface_cb(_userdata: *mut c_void, _process_alive: bool) {}
+	unsafe extern "C" fn ghostty_close_surface_cb(userdata: *mut c_void, process_alive: bool) {
+		let Some(manager) = GHOSTTY_MANAGER.get() else {
+			return;
+		};
+		let Ok(state) = manager.lock() else {
+			return;
+		};
+		let Some(runtime) = state.runtime.as_ref() else {
+			return;
+		};
+		let Some(block_id) = runtime.blocks.iter().find_map(|(block_id, block)| {
+			(block.host_view == userdata as usize).then(|| block_id.clone())
+		}) else {
+			return;
+		};
+		drop(state);
+
+		if let Some(app_handle) = APP_HANDLE.get() {
+			let _ = app_handle.emit(
+				"ghostty-close-block",
+				GhosttyCloseEvent {
+					block_id,
+					process_alive,
+				},
+			);
+		}
+	}
 
 	unsafe fn load_symbol<T: Copy>(library: &'static Library, name: &[u8]) -> Result<T, String> {
 		let symbol = library.get::<T>(name).map_err(|error| error.to_string())?;
@@ -1131,6 +1310,36 @@ mod macos {
 		Ok(())
 	}
 
+	pub(super) unsafe fn set_block_focus_inner(
+		manager: &Arc<Mutex<GhosttyState>>,
+		block_id: &str,
+		focused: bool,
+	) -> Result<(), String> {
+		let (app_path, surface, host_view_ptr) = {
+			let state = manager.lock().map_err(|_| "Failed to lock Ghostty manager state".to_string())?;
+			let runtime = state.runtime.as_ref().ok_or_else(|| "Ghostty runtime was not initialized".to_string())?;
+			let block = runtime.blocks.get(block_id).ok_or_else(|| format!("Ghostty block {block_id} was not found"))?;
+			(runtime.app_path.clone(), block.surface, block.host_view)
+		};
+		let api = unsafe { api_for_app(Path::new(&app_path))? };
+		let host_view = unsafe { &*(host_view_ptr as *const GhosttyHostView) };
+
+		if focused {
+			if let Some(window) = host_view.window() {
+				let _ = window.makeFirstResponder(Some(host_view));
+			}
+			unsafe { (api.surface_set_focus)(surface, true) };
+		} else {
+			unsafe { (api.surface_set_focus)(surface, false) };
+			let _: bool = unsafe { msg_send![host_view, resignFirstResponder] };
+			if let Some(window) = host_view.window() {
+				let _ = window.makeFirstResponder(None::<&NSResponder>);
+			}
+		}
+
+		Ok(())
+	}
+
 	pub(super) unsafe fn destroy_block_inner(
 		manager: &Arc<Mutex<GhosttyState>>,
 		block_id: &str,
@@ -1152,7 +1361,10 @@ mod macos {
 }
 
 #[cfg(target_os = "macos")]
-use macos::{create_block_inner, destroy_block_inner, input_key_inner, input_text_inner, update_block_inner};
+use macos::{
+	create_block_inner, destroy_block_inner, input_key_inner, input_text_inner,
+	set_block_focus_inner, update_block_inner,
+};
 
 #[cfg(target_os = "macos")]
 type GhosttyApp = *mut c_void;

@@ -265,30 +265,51 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 		const source = rects.get(focusedBlockId);
 		if (!source) return;
 
-		const cx = source.x + source.w / 2;
-		const cy = source.y + source.h / 2;
+		const sourceCenterX = source.x + source.w / 2;
+		const sourceCenterY = source.y + source.h / 2;
+		const sourceRight = source.x + source.w;
+		const sourceBottom = source.y + source.h;
+		const epsilon = 0.0001;
 
 		let best: string | null = null;
-		let bestDist = Infinity;
+		let bestPrimary = Infinity;
+		let bestSecondary = Infinity;
 
 		for (const [id, r] of rects) {
 			if (id === focusedBlockId) continue;
-			const rx = r.x + r.w / 2;
-			const ry = r.y + r.h / 2;
 
-			let valid = false;
-			if (dir === 'left' && rx < cx) valid = true;
-			if (dir === 'right' && rx > cx) valid = true;
-			if (dir === 'up' && ry < cy) valid = true;
-			if (dir === 'down' && ry > cy) valid = true;
-			if (!valid) continue;
+			const overlap =
+				dir === 'left' || dir === 'right'
+					? intervalOverlap(source.y, sourceBottom, r.y, r.y + r.h)
+					: intervalOverlap(source.x, sourceRight, r.x, r.x + r.w);
+			if (overlap <= epsilon) continue;
 
-			const primaryDist = dir === 'left' || dir === 'right' ? Math.abs(rx - cx) : Math.abs(ry - cy);
-			const crossDist = dir === 'left' || dir === 'right' ? Math.abs(ry - cy) : Math.abs(rx - cx);
-			const dist = primaryDist + crossDist * 0.5;
+			let primaryGap: number | null = null;
+			if (dir === 'left' && r.x + r.w <= source.x + epsilon) {
+				primaryGap = source.x - (r.x + r.w);
+			}
+			if (dir === 'right' && r.x >= sourceRight - epsilon) {
+				primaryGap = r.x - sourceRight;
+			}
+			if (dir === 'up' && r.y + r.h <= source.y + epsilon) {
+				primaryGap = source.y - (r.y + r.h);
+			}
+			if (dir === 'down' && r.y >= sourceBottom - epsilon) {
+				primaryGap = r.y - sourceBottom;
+			}
+			if (primaryGap === null) continue;
 
-			if (dist < bestDist) {
-				bestDist = dist;
+			const secondaryDistance =
+				dir === 'left' || dir === 'right'
+					? Math.abs(r.y + r.h / 2 - sourceCenterY)
+					: Math.abs(r.x + r.w / 2 - sourceCenterX);
+
+			if (
+				primaryGap < bestPrimary ||
+				(primaryGap === bestPrimary && secondaryDistance < bestSecondary)
+			) {
+				bestPrimary = primaryGap;
+				bestSecondary = secondaryDistance;
 				best = id;
 			}
 		}
@@ -318,6 +339,10 @@ function findSibling(node: LayoutNode, blockId: string): string | null {
 }
 
 interface Rect { x: number; y: number; w: number; h: number }
+
+function intervalOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number) {
+	return Math.min(aEnd, bEnd) - Math.max(aStart, bStart);
+}
 
 function computeRects(
 	node: LayoutNode,

@@ -74,6 +74,10 @@ export async function inputGhosttyKey(
 	});
 }
 
+export async function setGhosttyBlockFocus(blockId: string, focused: boolean) {
+	return invoke('ghostty_set_block_focus', { blockId, focused });
+}
+
 export async function destroyGhosttyBlock(blockId: string) {
 	return invoke('ghostty_destroy_block', { blockId });
 }

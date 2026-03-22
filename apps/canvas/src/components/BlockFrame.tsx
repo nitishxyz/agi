@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { X, Terminal, Globe, Bot } from 'lucide-react';
 import type { Block, BlockType } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
@@ -96,11 +96,25 @@ export function BlockFrame({ block }: BlockFrameProps) {
 	const { focusedBlockId, setFocused, removeBlock } = useCanvasStore();
 	const isFocused = focusedBlockId === block.id;
 	const isPending = block.type === 'pending';
+	const pendingRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (isPending && isFocused) {
+			window.setTimeout(() => {
+				pendingRef.current?.focus();
+				window.focus();
+			}, 0);
+		}
+	}, [isFocused, isPending]);
 
 	if (isPending) {
 		return (
 			<div
-				className="flex flex-col h-full rounded-lg overflow-hidden border border-canvas-border-active border-dashed"
+				ref={pendingRef}
+				tabIndex={0}
+				className={`flex flex-col h-full rounded-lg overflow-hidden border border-dashed outline-none ${
+					isFocused ? 'border-canvas-border-active' : 'border-canvas-border'
+				}`}
 				style={{ background: 'rgba(22, 22, 26, 0.9)' }}
 				onClick={() => setFocused(block.id)}
 			>

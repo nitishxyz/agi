@@ -1,14 +1,102 @@
+import { listen } from '@tauri-apps/api/event';
+import { useEffect, useRef } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { CanvasRenderer } from '../components/CanvasRenderer';
 import { useCanvasKeybinds } from '../hooks/useCanvasKeybinds';
+import { destroyGhosttyBlock, isTauriRuntime, setGhosttyBlockFocus } from '../lib/ghostty';
+import { useCanvasStore } from '../stores/canvas-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
 
 export function App() {
 	const activeId = useWorkspaceStore((s) => s.activeId);
 	const workspaces = useWorkspaceStore((s) => s.workspaces);
 	const active = workspaces.find((w) => w.id === activeId);
+	const blocks = useCanvasStore((s) => s.blocks);
+	const focusedBlockId = useCanvasStore((s) => s.focusedBlockId);
+	const removeBlock = useCanvasStore((s) => s.removeBlock);
+	const setFocused = useCanvasStore((s) => s.setFocused);
+	const previousBlocksRef = useRef(blocks);
+	const previousFocusedBlockIdRef = useRef<string | null | undefined>(undefined);
+	const closedTerminalIdsRef = useRef<Set<string>>(new Set());
 
 	useCanvasKeybinds();
+
+	useEffect(() => {
+		if (!isTauriRuntime()) {
+			previousBlocksRef.current = blocks;
+			return;
+		}
+
+		const previousBlocks = previousBlocksRef.current;
+		for (const [blockId, block] of Object.entries(previousBlocks)) {
+			if (!blocks[blockId] && block.type === 'terminal') {
+				if (closedTerminalIdsRef.current.has(blockId)) {
+					closedTerminalIdsRef.current.delete(blockId);
+					continue;
+				}
+				void destroyGhosttyBlock(blockId);
+			}
+		}
+		previousBlocksRef.current = blocks;
+	}, [blocks]);
+
+	useEffect(() => {
+		if (!isTauriRuntime()) {
+			return;
+		}
+
+		let unlistenClose: (() => void) | undefined;
+		let unlistenFocus: (() => void) | undefined;
+
+		void listen<{ blockId: string }>('ghostty-close-block', (event) => {
+			closedTerminalIdsRef.current.add(event.payload.blockId);
+			removeBlock(event.payload.blockId);
+		}).then((dispose) => {
+			unlistenClose = dispose;
+		});
+
+		void listen<{ blockId: string }>('ghostty-focus-block', (event) => {
+			setFocused(event.payload.blockId);
+		}).then((dispose) => {
+			unlistenFocus = dispose;
+		});
+
+		return () => {
+			unlistenClose?.();
+			unlistenFocus?.();
+		};
+	}, [removeBlock, setFocused]);
+
+	useEffect(() => {
+		if (!isTauriRuntime()) {
+			previousFocusedBlockIdRef.current = focusedBlockId;
+			return;
+		}
+
+		if (previousFocusedBlockIdRef.current === undefined) {
+			previousFocusedBlockIdRef.current = focusedBlockId;
+			return;
+		}
+
+		const previousFocusedBlockId = previousFocusedBlockIdRef.current;
+		if (previousFocusedBlockId && previousFocusedBlockId !== focusedBlockId) {
+			const previousBlock = blocks[previousFocusedBlockId];
+			if (previousBlock?.type === 'terminal') {
+				void setGhosttyBlockFocus(previousFocusedBlockId, false);
+			}
+		}
+
+		if (focusedBlockId) {
+			const focusedBlock = blocks[focusedBlockId];
+			if (focusedBlock?.type === 'terminal') {
+				window.setTimeout(() => {
+					void setGhosttyBlockFocus(focusedBlockId, true);
+				}, 0);
+			}
+		}
+
+		previousFocusedBlockIdRef.current = focusedBlockId;
+	}, [blocks, focusedBlockId]);
 
 	return (
 		<div
