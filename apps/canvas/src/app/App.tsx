@@ -31,9 +31,11 @@ export function App() {
 		for (const [blockId, block] of Object.entries(previousBlocks)) {
 			if (!blocks[blockId] && block.type === 'terminal') {
 				if (closedTerminalIdsRef.current.has(blockId)) {
+					console.debug('[ghostty] block removed after native close', { blockId });
 					closedTerminalIdsRef.current.delete(blockId);
 					continue;
 				}
+				console.debug('[ghostty] destroying removed terminal block', { blockId });
 				void destroyGhosttyBlock(blockId);
 			}
 		}
@@ -49,8 +51,12 @@ export function App() {
 		let unlistenFocus: (() => void) | undefined;
 
 		void listen<{ blockId: string }>('ghostty-close-block', (event) => {
+			console.debug('[ghostty] close event received', event.payload);
 			closedTerminalIdsRef.current.add(event.payload.blockId);
 			removeBlock(event.payload.blockId);
+			window.setTimeout(() => {
+				window.focus();
+			}, 0);
 		}).then((dispose) => {
 			unlistenClose = dispose;
 		});

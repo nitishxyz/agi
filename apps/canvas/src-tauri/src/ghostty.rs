@@ -2,7 +2,10 @@ use serde::Serialize;
 use std::{
 	collections::HashMap,
 	ffi::{c_char, c_int, c_void, CString},
+	fs::OpenOptions,
+	io::Write,
 	sync::{mpsc, Arc, Mutex, OnceLock},
+	time::{SystemTime, UNIX_EPOCH},
 };
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow, Wry};
 
@@ -69,6 +72,22 @@ pub fn register_app_handle(app_handle: AppHandle<Wry>) {
 
 pub fn register_manager(manager: &GhosttyManager) {
 	let _ = GHOSTTY_MANAGER.set(manager.inner.clone());
+}
+
+fn ghostty_debug_log(message: &str) {
+	let timestamp = SystemTime::now()
+		.duration_since(UNIX_EPOCH)
+		.map(|duration| duration.as_millis())
+		.unwrap_or(0);
+	let line = format!("[{timestamp}] {message}\n");
+	eprint!("{line}");
+	if let Ok(mut file) = OpenOptions::new()
+		.create(true)
+		.append(true)
+		.open("/tmp/otto-canvas-ghostty.log")
+	{
+		let _ = file.write_all(line.as_bytes());
+	}
 }
 
 #[tauri::command]
@@ -602,6 +621,14 @@ mod macos {
 		mods
 	}
 
+	fn key_event_action(action: GhosttyInputAction, is_repeat: bool) -> GhosttyInputAction {
+		if matches!(action, GhosttyInputAction::Press) && is_repeat {
+			GhosttyInputAction::Repeat
+		} else {
+			action
+		}
+	}
+
 	fn unshifted_codepoint_from_event(event: &NSEvent) -> u32 {
 		if let Some(chars) = event.charactersIgnoringModifiers().or_else(|| event.characters()) {
 			let raw = chars.UTF8String();
@@ -705,52 +732,37 @@ mod macos {
 		}
 	}
 
+	fn lookup_block_context(host_view: &GhosttyHostView) -> Option<(String, GhosttySurface)> {
+		let manager = GHOSTTY_MANAGER.get()?;
+		let state = manager.lock().ok()?;
+		let runtime = state.runtime.as_ref()?;
+		let block = runtime.blocks.iter().find_map(|(_, block)| {
+			(block.host_view == (host_view as *const GhosttyHostView).cast::<c_void>() as usize)
+				.then_some(block)
+		})?;
+		Some((runtime.app_path.clone(), block.surface))
+	}
+
 	unsafe fn focus_host_view_surface(host_view: &GhosttyHostView, focused: bool) {
-		let Some(manager) = GHOSTTY_MANAGER.get() else {
+		let Some((app_path, surface)) = lookup_block_context(host_view) else {
 			return;
 		};
-		let Ok(state) = manager.lock() else {
+		let Ok(api) = (unsafe { api_for_app(Path::new(&app_path)) }) else {
 			return;
 		};
-		let Some(runtime) = state.runtime.as_ref() else {
-			return;
-		};
-		let Some(block) = runtime
-			.blocks
-			.iter()
-			.find_map(|(_, block)| (block.host_view == (host_view as *const GhosttyHostView).cast::<c_void>() as usize).then_some(block))
-		else {
-			return;
-		};
-		let Ok(api) = (unsafe { api_for_app(Path::new(&runtime.app_path)) }) else {
-			return;
-		};
-		unsafe { (api.surface_set_focus)(block.surface, focused) };
+		unsafe { (api.surface_set_focus)(surface, focused) };
 	}
 
 	unsafe fn handle_host_view_mouse_move(host_view: &GhosttyHostView, event: &NSEvent) {
-		let Some(manager) = GHOSTTY_MANAGER.get() else {
+		let Some((app_path, surface)) = lookup_block_context(host_view) else {
 			return;
 		};
-		let Ok(state) = manager.lock() else {
-			return;
-		};
-		let Some(runtime) = state.runtime.as_ref() else {
-			return;
-		};
-		let Some(block) = runtime
-			.blocks
-			.iter()
-			.find_map(|(_, block)| (block.host_view == (host_view as *const GhosttyHostView).cast::<c_void>() as usize).then_some(block))
-		else {
-			return;
-		};
-		let Ok(api) = (unsafe { api_for_app(Path::new(&runtime.app_path)) }) else {
+		let Ok(api) = (unsafe { api_for_app(Path::new(&app_path)) }) else {
 			return;
 		};
 		let point = view_point_for_event(host_view, event);
 		let bounds = host_view.bounds();
-		unsafe { (api.surface_mouse_pos)(block.surface, point.x, bounds.size.height - point.y, ghostty_mods_from_event(event)) };
+		unsafe { (api.surface_mouse_pos)(surface, point.x, bounds.size.height - point.y, ghostty_mods_from_event(event)) };
 	}
 
 	unsafe fn handle_host_view_mouse_button(
@@ -759,30 +771,17 @@ mod macos {
 		state_kind: GhosttyMouseState,
 		button: GhosttyMouseButton,
 	) {
-		let Some(manager) = GHOSTTY_MANAGER.get() else {
+		let Some((app_path, surface)) = lookup_block_context(host_view) else {
 			return;
 		};
-		let Ok(state) = manager.lock() else {
-			return;
-		};
-		let Some(runtime) = state.runtime.as_ref() else {
-			return;
-		};
-		let Some(block) = runtime
-			.blocks
-			.iter()
-			.find_map(|(_, block)| (block.host_view == (host_view as *const GhosttyHostView).cast::<c_void>() as usize).then_some(block))
-		else {
-			return;
-		};
-		let Ok(api) = (unsafe { api_for_app(Path::new(&runtime.app_path)) }) else {
+		let Ok(api) = (unsafe { api_for_app(Path::new(&app_path)) }) else {
 			return;
 		};
 		let point = view_point_for_event(host_view, event);
 		let bounds = host_view.bounds();
 		unsafe {
-			(api.surface_mouse_pos)(block.surface, point.x, bounds.size.height - point.y, ghostty_mods_from_event(event));
-			(api.surface_mouse_button)(block.surface, state_kind, button, ghostty_mods_from_event(event));
+			(api.surface_mouse_pos)(surface, point.x, bounds.size.height - point.y, ghostty_mods_from_event(event));
+			(api.surface_mouse_button)(surface, state_kind, button, ghostty_mods_from_event(event));
 		}
 	}
 
@@ -797,23 +796,10 @@ mod macos {
 			}
 			return;
 		}
-		let Some(manager) = GHOSTTY_MANAGER.get() else {
+		let Some((app_path, surface)) = lookup_block_context(host_view) else {
 			return;
 		};
-		let Ok(state) = manager.lock() else {
-			return;
-		};
-		let Some(runtime) = state.runtime.as_ref() else {
-			return;
-		};
-		let Some(block) = runtime
-			.blocks
-			.iter()
-			.find_map(|(_, block)| (block.host_view == (host_view as *const GhosttyHostView).cast::<c_void>() as usize).then_some(block))
-		else {
-			return;
-		};
-		let Ok(api) = (unsafe { api_for_app(Path::new(&runtime.app_path)) }) else {
+		let Ok(api) = (unsafe { api_for_app(Path::new(&app_path)) }) else {
 			return;
 		};
 
@@ -834,12 +820,19 @@ mod macos {
 				}
 			});
 
+		if matches!(key_event_action(action, event.isARepeat()), GhosttyInputAction::Press | GhosttyInputAction::Repeat)
+			&& matches!(event.keyCode(), 36 | 76)
+		{
+			ghostty_debug_log(&format!(
+				"surface_key enter keycode={} repeat={} mods={}",
+				event.keyCode(),
+				event.isARepeat(),
+				ghostty_mods_from_event(event)
+			));
+		}
+
 		let key_event = GhosttyInputKey {
-			action: if matches!(action, GhosttyInputAction::Press) && event.isARepeat() {
-				GhosttyInputAction::Repeat
-			} else {
-				action
-			},
+			action: key_event_action(action, event.isARepeat()),
 			mods: ghostty_mods_from_event(event),
 			consumed_mods: consumed_mods_from_event(event),
 			keycode: u32::from(event.keyCode()),
@@ -849,8 +842,11 @@ mod macos {
 		};
 
 		unsafe {
-			(api.surface_set_focus)(block.surface, true);
-			(api.surface_key)(block.surface, key_event);
+			(api.surface_set_focus)(surface, true);
+			(api.surface_key)(surface, key_event);
+		}
+		if matches!(event.keyCode(), 36 | 76) {
+			ghostty_debug_log("surface_key enter dispatched");
 		}
 	}
 
@@ -863,22 +859,65 @@ mod macos {
 		};
 
 		let _ = app_handle.run_on_main_thread(move || {
-			if let Ok(state) = manager.lock() {
-				if let Some(runtime) = state.runtime.as_ref() {
-					if let Some(api) = GHOSTTY_API.get() {
-						unsafe { (api.app_tick)(runtime.app) };
-					}
-				}
+			let app = manager
+				.lock()
+				.ok()
+				.and_then(|state| state.runtime.as_ref().map(|runtime| runtime.app));
+			if let (Some(api), Some(app)) = (GHOSTTY_API.get(), app) {
+				ghostty_debug_log("wakeup_cb app_tick");
+				unsafe { (api.app_tick)(app) };
+				ghostty_debug_log("wakeup_cb app_tick done");
 			}
 		});
 	}
 
 	unsafe extern "C" fn ghostty_action_cb(
 		_app: GhosttyApp,
-		_target: GhosttyTarget,
-		_action: GhosttyAction,
+		target: GhosttyTarget,
+		action: GhosttyAction,
 	) -> bool {
-		false
+		const GHOSTTY_ACTION_SHOW_CHILD_EXITED: i32 = 54;
+		ghostty_debug_log(&format!("action_cb tag={}", action.tag));
+		if action.tag != GHOSTTY_ACTION_SHOW_CHILD_EXITED {
+			return false;
+		}
+
+		let Some(manager) = GHOSTTY_MANAGER.get().cloned() else {
+			return false;
+		};
+		let Some(app_handle) = APP_HANDLE.get().cloned() else {
+			return false;
+		};
+		let surface = unsafe { target.target.surface };
+		let Ok(state) = manager.lock() else {
+			return false;
+		};
+		let Some(runtime) = state.runtime.as_ref() else {
+			return false;
+		};
+		let Some((block_id, host_view_ptr)) = runtime.blocks.iter().find_map(|(block_id, block)| {
+			(block.surface == surface).then(|| (block_id.clone(), block.host_view))
+		}) else {
+			ghostty_debug_log("action_cb child-exit surface not found");
+			return false;
+		};
+		drop(state);
+		ghostty_debug_log(&format!("action_cb show_child_exited block_id={block_id}"));
+
+		let app_handle_for_emit = app_handle.clone();
+		let _ = app_handle.run_on_main_thread(move || unsafe {
+			ghostty_debug_log(&format!("action_cb main_thread block_id={block_id}"));
+			close_block_after_child_exit_inner(host_view_ptr);
+			ghostty_debug_log(&format!("action_cb emit_close block_id={block_id}"));
+			let _ = app_handle_for_emit.emit(
+				"ghostty-close-block",
+				GhosttyCloseEvent {
+					block_id,
+					process_alive: false,
+				},
+			);
+		});
+		true
 	}
 
 	unsafe extern "C" fn ghostty_read_clipboard_cb(
@@ -905,31 +944,44 @@ mod macos {
 	}
 
 	unsafe extern "C" fn ghostty_close_surface_cb(userdata: *mut c_void, process_alive: bool) {
-		let Some(manager) = GHOSTTY_MANAGER.get() else {
+		ghostty_debug_log(&format!("close_surface_cb process_alive={process_alive}"));
+		let Some(manager) = GHOSTTY_MANAGER.get().cloned() else {
+			return;
+		};
+		let Some(app_handle) = APP_HANDLE.get().cloned() else {
 			return;
 		};
 		let Ok(state) = manager.lock() else {
+			ghostty_debug_log("close_surface_cb failed_lock");
 			return;
 		};
+		ghostty_debug_log("close_surface_cb locked");
 		let Some(runtime) = state.runtime.as_ref() else {
 			return;
 		};
 		let Some(block_id) = runtime.blocks.iter().find_map(|(block_id, block)| {
 			(block.host_view == userdata as usize).then(|| block_id.clone())
 		}) else {
+			ghostty_debug_log("close_surface_cb host view not found");
 			return;
 		};
 		drop(state);
+		ghostty_debug_log(&format!("close_surface_cb block_id={block_id}"));
 
-		if let Some(app_handle) = APP_HANDLE.get() {
-			let _ = app_handle.emit(
+		let app_handle_for_emit = app_handle.clone();
+		let host_view_ptr = userdata as usize;
+		let _ = app_handle.run_on_main_thread(move || unsafe {
+			ghostty_debug_log(&format!("close_surface_cb main_thread block_id={block_id}"));
+			close_block_after_child_exit_inner(host_view_ptr);
+			ghostty_debug_log(&format!("close_surface_cb emit_close block_id={block_id}"));
+			let _ = app_handle_for_emit.emit(
 				"ghostty-close-block",
 				GhosttyCloseEvent {
 					block_id,
 					process_alive,
 				},
 			);
-		}
+		});
 	}
 
 	unsafe fn load_symbol<T: Copy>(library: &'static Library, name: &[u8]) -> Result<T, String> {
@@ -1338,6 +1390,16 @@ mod macos {
 		}
 
 		Ok(())
+	}
+
+	pub(super) unsafe fn close_block_after_child_exit_inner(host_view_ptr: usize) {
+		ghostty_debug_log(&format!("close_block_after_child_exit_inner start host_view_ptr={host_view_ptr}"));
+		let host_view = unsafe { &*(host_view_ptr as *const GhosttyHostView) };
+		ghostty_debug_log("close_block_after_child_exit_inner setHidden");
+		host_view.setHidden(true);
+		ghostty_debug_log("close_block_after_child_exit_inner removeFromSuperview");
+		host_view.removeFromSuperview();
+		ghostty_debug_log("close_block_after_child_exit_inner done");
 	}
 
 	pub(super) unsafe fn destroy_block_inner(

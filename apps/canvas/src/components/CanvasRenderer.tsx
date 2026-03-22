@@ -1,7 +1,7 @@
 import type { LayoutNode } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
 import { BlockFrame } from './BlockFrame';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface LayoutProps {
 	node: LayoutNode;
@@ -84,10 +84,24 @@ function LayoutRenderer({ node }: LayoutProps) {
 
 export function CanvasRenderer() {
 	const layout = useCanvasStore((s) => s.layout);
+	const emptyStateRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!layout) {
+			window.setTimeout(() => {
+				window.focus();
+				emptyStateRef.current?.focus();
+			}, 0);
+		}
+	}, [layout]);
 
 	if (!layout) {
 		return (
-			<div className="flex-1 flex items-center justify-center h-full">
+			<div
+				ref={emptyStateRef}
+				tabIndex={0}
+				className="flex-1 flex items-center justify-center h-full outline-none"
+			>
 				<div className="text-center space-y-3">
 					<p className="text-[13px] text-canvas-text-dim">No blocks yet</p>
 					<p className="text-[11px] text-canvas-text-muted">
