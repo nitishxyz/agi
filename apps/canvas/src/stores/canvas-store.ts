@@ -161,7 +161,7 @@ function collectBlockIds(node: LayoutNode): string[] {
 }
 
 const LABELS: Record<BlockType, string> = {
-	terminal: 'Terminal',
+	terminal: 'Ghostty',
 	browser: 'Browser',
 	otto: 'Otto',
 	pending: 'New Block',

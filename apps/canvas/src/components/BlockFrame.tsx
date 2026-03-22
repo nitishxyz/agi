@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { X, Terminal, Globe, Bot } from 'lucide-react';
 import type { Block, BlockType } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
+import { GhosttyBlock } from './GhosttyBlock';
 
 const BLOCK_ICONS = {
 	terminal: Terminal,
@@ -10,7 +11,7 @@ const BLOCK_ICONS = {
 } as const;
 
 const PICKER_OPTIONS: { key: string; type: BlockType; label: string; icon: typeof Terminal }[] = [
-	{ key: '1', type: 'terminal', label: 'Terminal', icon: Terminal },
+	{ key: '1', type: 'terminal', label: 'Ghostty', icon: Terminal },
 	{ key: '2', type: 'browser', label: 'Browser', icon: Globe },
 	{ key: '3', type: 'otto', label: 'Otto', icon: Bot },
 ];
@@ -67,6 +68,30 @@ function PendingPicker({ blockId }: { blockId: string }) {
 	);
 }
 
+function PlaceholderBlock({ icon: Icon, label }: { icon: typeof Terminal; label: string }) {
+	return (
+		<div className="flex h-full w-full items-center justify-center bg-[rgba(22,22,26,0.9)]">
+			<div className="text-center space-y-2">
+				<Icon size={28} className="mx-auto text-canvas-text-muted" strokeWidth={1} />
+				<p className="text-[11px] text-canvas-text-muted">{label}</p>
+			</div>
+		</div>
+	);
+}
+
+function renderBlockContent(block: Block, isFocused: boolean) {
+	switch (block.type) {
+		case 'terminal':
+			return <GhosttyBlock block={block} isFocused={isFocused} />;
+		case 'browser':
+			return <PlaceholderBlock icon={Globe} label="browser block" />;
+		case 'otto':
+			return <PlaceholderBlock icon={Bot} label="otto block" />;
+		default:
+			return null;
+	}
+}
+
 export function BlockFrame({ block }: BlockFrameProps) {
 	const { focusedBlockId, setFocused, removeBlock } = useCanvasStore();
 	const isFocused = focusedBlockId === block.id;
@@ -93,10 +118,12 @@ export function BlockFrame({ block }: BlockFrameProps) {
 					? 'border-canvas-border-active shadow-[0_0_0_1px_rgba(99,102,241,0.2)]'
 					: 'border-canvas-border'
 			}`}
-			style={{ background: 'rgba(22, 22, 26, 0.9)' }}
 			onClick={() => setFocused(block.id)}
 		>
-			<div className="flex items-center justify-between h-8 px-3 border-b border-canvas-border flex-shrink-0">
+			<div
+				className="flex items-center justify-between h-8 px-3 border-b border-canvas-border flex-shrink-0"
+				style={{ background: 'rgba(22, 22, 26, 0.9)' }}
+			>
 				<div className="flex items-center gap-2">
 					<Icon size={12} className="text-canvas-text-muted" />
 					<span className="text-[11px] font-medium text-canvas-text-dim">
@@ -114,12 +141,7 @@ export function BlockFrame({ block }: BlockFrameProps) {
 				</button>
 			</div>
 
-			<div className="flex-1 flex items-center justify-center">
-				<div className="text-center space-y-2">
-					<Icon size={28} className="mx-auto text-canvas-text-muted" strokeWidth={1} />
-					<p className="text-[11px] text-canvas-text-muted">{block.type} block</p>
-				</div>
-			</div>
+			<div className="flex-1 min-h-0">{renderBlockContent(block, isFocused)}</div>
 		</div>
 	);
 }

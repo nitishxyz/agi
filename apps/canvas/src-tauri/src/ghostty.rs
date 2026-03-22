@@ -1,0 +1,1162 @@
+use serde::Serialize;
+use std::{
+	collections::HashMap,
+	ffi::{c_char, c_int, c_void, CString},
+	sync::{mpsc, Arc, Mutex, OnceLock},
+};
+use tauri::{AppHandle, Manager, WebviewWindow, Wry};
+
+#[derive(Clone, Default)]
+pub struct GhosttyManager {
+	inner: Arc<Mutex<GhosttyState>>,
+}
+
+#[derive(Default)]
+struct GhosttyState {
+	runtime: Option<GhosttyRuntime>,
+}
+
+struct GhosttyRuntime {
+	app_path: String,
+	_resources_dir: String,
+	app: GhosttyApp,
+	_config: GhosttyConfig,
+	blocks: HashMap<String, GhosttyBlock>,
+}
+
+struct GhosttyBlock {
+	surface: GhosttySurface,
+	host_view: usize,
+}
+
+unsafe impl Send for GhosttyState {}
+unsafe impl Send for GhosttyRuntime {}
+unsafe impl Send for GhosttyBlock {}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GhosttyStatus {
+	pub available: bool,
+	pub message: String,
+	pub app_path: Option<String>,
+}
+
+static APP_HANDLE: OnceLock<AppHandle<Wry>> = OnceLock::new();
+static GHOSTTY_MANAGER: OnceLock<Arc<Mutex<GhosttyState>>> = OnceLock::new();
+
+pub fn register_app_handle(app_handle: AppHandle<Wry>) {
+	let _ = APP_HANDLE.set(app_handle);
+}
+
+pub fn register_manager(manager: &GhosttyManager) {
+	let _ = GHOSTTY_MANAGER.set(manager.inner.clone());
+}
+
+#[tauri::command]
+pub fn ghostty_status(manager: tauri::State<'_, GhosttyManager>) -> Result<GhosttyStatus, String> {
+	#[cfg(target_os = "macos")]
+	{
+		let Some(app_handle) = APP_HANDLE.get() else {
+			return Err("Canvas app handle is not ready yet".into());
+		};
+		let manager = manager.inner().clone();
+		run_on_main_thread_sync(app_handle, move || manager.status())
+	}
+
+	#[cfg(not(target_os = "macos"))]
+	{
+		let _ = manager;
+		Ok(GhosttyStatus {
+			available: false,
+			message: "Ghostty blocks are currently implemented for macOS only.".into(),
+			app_path: None,
+		})
+	}
+}
+
+#[tauri::command]
+pub fn ghostty_create_block(
+	window: WebviewWindow,
+	manager: tauri::State<'_, GhosttyManager>,
+	block_id: String,
+	cwd: Option<String>,
+	command: Option<String>,
+) -> Result<(), String> {
+	#[cfg(target_os = "macos")]
+	{
+		let manager = manager.inner().inner.clone();
+		let app_handle = window.app_handle().clone();
+		let window = window.clone();
+		run_on_main_thread_sync(&app_handle, move || unsafe {
+			create_block_inner(&window, &manager, &block_id, cwd.as_deref(), command.as_deref())
+		})
+	}
+
+	#[cfg(not(target_os = "macos"))]
+	{
+		let _ = (window, manager, block_id, cwd, command);
+		Err("Ghostty blocks are currently implemented for macOS only.".into())
+	}
+}
+
+#[tauri::command]
+pub fn ghostty_update_block(
+	window: WebviewWindow,
+	manager: tauri::State<'_, GhosttyManager>,
+	block_id: String,
+	x: f64,
+	y: f64,
+	width: f64,
+	height: f64,
+	viewport_height: f64,
+	scale_factor: f64,
+	focused: bool,
+) -> Result<(), String> {
+	#[cfg(target_os = "macos")]
+	{
+		let manager = manager.inner().inner.clone();
+		let app_handle = window.app_handle().clone();
+		let window = window.clone();
+		run_on_main_thread_sync(&app_handle, move || unsafe {
+			update_block_inner(
+				&window,
+				&manager,
+				&block_id,
+				x,
+				y,
+				width,
+				height,
+				viewport_height,
+				scale_factor,
+				focused,
+			)
+		})
+	}
+
+	#[cfg(not(target_os = "macos"))]
+	{
+		let _ = (window, manager, block_id, x, y, width, height, viewport_height, scale_factor, focused);
+		Err("Ghostty blocks are currently implemented for macOS only.".into())
+	}
+}
+
+#[tauri::command]
+pub fn ghostty_input_text(
+	window: WebviewWindow,
+	manager: tauri::State<'_, GhosttyManager>,
+	block_id: String,
+	text: String,
+) -> Result<(), String> {
+	#[cfg(target_os = "macos")]
+	{
+		let manager = manager.inner().inner.clone();
+		let app_handle = window.app_handle().clone();
+		run_on_main_thread_sync(&app_handle, move || unsafe {
+			input_text_inner(&manager, &block_id, &text)
+		})
+	}
+
+	#[cfg(not(target_os = "macos"))]
+	{
+		let _ = (window, manager, block_id, text);
+		Err("Ghostty blocks are currently implemented for macOS only.".into())
+	}
+}
+
+#[tauri::command]
+pub fn ghostty_input_key(
+	window: WebviewWindow,
+	manager: tauri::State<'_, GhosttyManager>,
+	block_id: String,
+	keycode: u32,
+	mods: i32,
+	text: Option<String>,
+	composing: Option<bool>,
+	action: Option<String>,
+) -> Result<(), String> {
+	#[cfg(target_os = "macos")]
+	{
+		let manager = manager.inner().inner.clone();
+		let app_handle = window.app_handle().clone();
+		run_on_main_thread_sync(&app_handle, move || unsafe {
+			input_key_inner(
+				&manager,
+				&block_id,
+				keycode,
+				mods,
+				text.as_deref(),
+				composing.unwrap_or(false),
+				action.as_deref().unwrap_or("press"),
+			)
+		})
+	}
+
+	#[cfg(not(target_os = "macos"))]
+	{
+		let _ = (window, manager, block_id, keycode, mods, text, composing, action);
+		Err("Ghostty blocks are currently implemented for macOS only.".into())
+	}
+}
+
+#[tauri::command]
+pub fn ghostty_destroy_block(
+	window: WebviewWindow,
+	manager: tauri::State<'_, GhosttyManager>,
+	block_id: String,
+) -> Result<(), String> {
+	#[cfg(target_os = "macos")]
+	{
+		let manager = manager.inner().inner.clone();
+		run_on_main_thread_sync(&window.app_handle(), move || unsafe {
+			destroy_block_inner(&manager, &block_id)
+		})
+	}
+
+	#[cfg(not(target_os = "macos"))]
+	{
+		let _ = (window, manager, block_id);
+		Err("Ghostty blocks are currently implemented for macOS only.".into())
+	}
+}
+
+impl GhosttyManager {
+	#[cfg(target_os = "macos")]
+	fn status(&self) -> Result<GhosttyStatus, String> {
+		let _ = self;
+		let app_path = crate::ghostty::macos::find_ghostty_app_path()?;
+		let _ = crate::ghostty::macos::ghostty_resources_dir(&app_path)?;
+		let _ = crate::ghostty::macos::ghostty_frameworks_dir(&app_path)?;
+		Ok(GhosttyStatus {
+			available: true,
+			message: format!("Using local Ghostty app at {}", app_path.display()),
+			app_path: Some(app_path.display().to_string()),
+		})
+	}
+}
+
+fn run_on_main_thread_sync<T: Send + 'static>(
+	app_handle: &AppHandle<Wry>,
+	task: impl FnOnce() -> Result<T, String> + Send + 'static,
+) -> Result<T, String> {
+	let (tx, rx) = mpsc::sync_channel(1);
+	app_handle
+		.run_on_main_thread(move || {
+			let _ = tx.send(task());
+		})
+		.map_err(|error| error.to_string())?;
+	rx.recv().map_err(|_| "Main-thread Ghostty task was cancelled".to_string())?
+}
+
+#[cfg(target_os = "macos")]
+mod macos {
+	use super::*;
+	use libloading::os::unix::{Library, RTLD_GLOBAL, RTLD_NOW};
+	use objc2::rc::Retained;
+	use objc2::{define_class, msg_send, MainThreadOnly};
+	use objc2_app_kit::{NSEvent, NSEventModifierFlags, NSView, NSWindowOrderingMode};
+	use objc2_foundation::{MainThreadMarker, NSObjectProtocol, NSPoint, NSRect, NSSize};
+	use std::path::{Path, PathBuf};
+
+	type GhosttyApp = *mut c_void;
+	type GhosttyConfig = *mut c_void;
+	type GhosttySurface = *mut c_void;
+
+	#[allow(dead_code)]
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	enum GhosttyPlatform {
+		Invalid = 0,
+		Macos = 1,
+		Ios = 2,
+	}
+
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	struct GhosttyPlatformMacos {
+		nsview: *mut c_void,
+	}
+
+	#[repr(C)]
+	union GhosttyPlatformUnion {
+		macos: GhosttyPlatformMacos,
+	}
+
+	#[repr(C)]
+	struct GhosttyEnvVar {
+		key: *const c_char,
+		value: *const c_char,
+	}
+
+	#[allow(dead_code)]
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	enum GhosttySurfaceContext {
+		Window = 0,
+		Tab = 1,
+		Split = 2,
+	}
+
+	#[allow(dead_code)]
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	enum GhosttyInputAction {
+		Release = 0,
+		Press = 1,
+		Repeat = 2,
+	}
+
+	#[allow(dead_code)]
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	enum GhosttyMouseState {
+		Release = 0,
+		Press = 1,
+	}
+
+	#[allow(dead_code)]
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	enum GhosttyMouseButton {
+		Unknown = 0,
+		Left = 1,
+		Right = 2,
+		Middle = 3,
+	}
+
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	struct GhosttyInputKey {
+		action: GhosttyInputAction,
+		mods: i32,
+		consumed_mods: i32,
+		keycode: u32,
+		text: *const c_char,
+		unshifted_codepoint: u32,
+		composing: bool,
+	}
+
+	#[allow(dead_code)]
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	enum GhosttyClipboard {
+		Standard = 0,
+		Selection = 1,
+	}
+
+	#[allow(dead_code)]
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	enum GhosttyClipboardRequest {
+		Paste = 0,
+		Osc52Read = 1,
+		Osc52Write = 2,
+	}
+
+	#[allow(dead_code)]
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	enum GhosttyTargetTag {
+		App = 0,
+		Surface = 1,
+	}
+
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	union GhosttyTargetUnion {
+		surface: GhosttySurface,
+	}
+
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	struct GhosttyTarget {
+		tag: GhosttyTargetTag,
+		target: GhosttyTargetUnion,
+	}
+
+	#[repr(C)]
+	#[derive(Clone, Copy)]
+	struct GhosttyAction {
+		tag: i32,
+		payload: [u8; 16],
+	}
+
+	#[repr(C)]
+	struct GhosttyRuntimeConfig {
+		userdata: *mut c_void,
+		supports_selection_clipboard: bool,
+		wakeup_cb: Option<unsafe extern "C" fn(*mut c_void)>,
+		action_cb: Option<unsafe extern "C" fn(GhosttyApp, GhosttyTarget, GhosttyAction) -> bool>,
+		read_clipboard_cb: Option<unsafe extern "C" fn(*mut c_void, GhosttyClipboard, *mut c_void)>,
+		confirm_read_clipboard_cb: Option<
+			unsafe extern "C" fn(*mut c_void, *const c_char, *mut c_void, GhosttyClipboardRequest),
+		>,
+		write_clipboard_cb: Option<unsafe extern "C" fn(*mut c_void, *const c_char, GhosttyClipboard, bool)>,
+		close_surface_cb: Option<unsafe extern "C" fn(*mut c_void, bool)>,
+	}
+
+	#[repr(C)]
+	struct GhosttySurfaceConfig {
+		platform_tag: GhosttyPlatform,
+		platform: GhosttyPlatformUnion,
+		userdata: *mut c_void,
+		scale_factor: f64,
+		font_size: f32,
+		working_directory: *const c_char,
+		command: *const c_char,
+		env_vars: *mut GhosttyEnvVar,
+		env_var_count: usize,
+		initial_input: *const c_char,
+		wait_after_command: bool,
+		context: GhosttySurfaceContext,
+	}
+
+	struct GhosttyApi {
+		init: unsafe extern "C" fn(usize, *mut *mut c_char) -> c_int,
+		config_new: unsafe extern "C" fn() -> GhosttyConfig,
+		config_load_default_files: unsafe extern "C" fn(GhosttyConfig),
+		config_load_recursive_files: unsafe extern "C" fn(GhosttyConfig),
+		config_finalize: unsafe extern "C" fn(GhosttyConfig),
+		app_new: unsafe extern "C" fn(*const GhosttyRuntimeConfig, GhosttyConfig) -> GhosttyApp,
+		app_tick: unsafe extern "C" fn(GhosttyApp),
+		surface_config_new: unsafe extern "C" fn() -> GhosttySurfaceConfig,
+		surface_new: unsafe extern "C" fn(GhosttyApp, *mut GhosttySurfaceConfig) -> GhosttySurface,
+		surface_free: unsafe extern "C" fn(GhosttySurface),
+		surface_set_content_scale: unsafe extern "C" fn(GhosttySurface, f64, f64),
+		surface_set_size: unsafe extern "C" fn(GhosttySurface, u32, u32),
+		surface_set_focus: unsafe extern "C" fn(GhosttySurface, bool),
+		surface_text: unsafe extern "C" fn(GhosttySurface, *const c_char, usize),
+		surface_key: unsafe extern "C" fn(GhosttySurface, GhosttyInputKey) -> bool,
+		surface_mouse_button: unsafe extern "C" fn(GhosttySurface, GhosttyMouseState, GhosttyMouseButton, i32) -> bool,
+		surface_mouse_pos: unsafe extern "C" fn(GhosttySurface, f64, f64, i32),
+		surface_binding_action: unsafe extern "C" fn(GhosttySurface, *const c_char, usize) -> bool,
+	}
+
+	static GHOSTTY_API: OnceLock<GhosttyApi> = OnceLock::new();
+
+	define_class!(
+		#[unsafe(super = NSView)]
+		#[thread_kind = MainThreadOnly]
+		struct GhosttyHostView;
+
+		unsafe impl NSObjectProtocol for GhosttyHostView {}
+
+		impl GhosttyHostView {
+			#[unsafe(method(acceptsFirstResponder))]
+			fn accepts_first_responder(&self) -> bool {
+				true
+			}
+
+			#[unsafe(method(acceptsFirstMouse:))]
+			fn accepts_first_mouse(&self, _event: Option<&NSEvent>) -> bool {
+				true
+			}
+
+			#[unsafe(method(mouseDown:))]
+			fn mouse_down(&self, event: &NSEvent) {
+				if let Some(window) = self.window() {
+					let _ = window.makeFirstResponder(Some(self));
+				}
+				unsafe { handle_host_view_mouse_button(self, event, GhosttyMouseState::Press, GhosttyMouseButton::Left) };
+			}
+
+			#[unsafe(method(mouseUp:))]
+			fn mouse_up(&self, event: &NSEvent) {
+				unsafe { handle_host_view_mouse_button(self, event, GhosttyMouseState::Release, GhosttyMouseButton::Left) };
+			}
+
+			#[unsafe(method(mouseDragged:))]
+			fn mouse_dragged(&self, event: &NSEvent) {
+				unsafe { handle_host_view_mouse_move(self, event) };
+			}
+
+			#[unsafe(method(becomeFirstResponder))]
+			fn become_first_responder(&self) -> bool {
+				let result: bool = unsafe { msg_send![super(self), becomeFirstResponder] };
+				if result {
+					unsafe { focus_host_view_surface(self, true) };
+				}
+				result
+			}
+
+			#[unsafe(method(resignFirstResponder))]
+			fn resign_first_responder(&self) -> bool {
+				let result: bool = unsafe { msg_send![super(self), resignFirstResponder] };
+				if result {
+					unsafe { focus_host_view_surface(self, false) };
+				}
+				result
+			}
+
+			#[unsafe(method(keyDown:))]
+			fn key_down(&self, event: &NSEvent) {
+				unsafe { handle_host_view_key_event(self, event, GhosttyInputAction::Press) };
+			}
+
+			#[unsafe(method(keyUp:))]
+			fn key_up(&self, event: &NSEvent) {
+				unsafe { handle_host_view_key_event(self, event, GhosttyInputAction::Release) };
+			}
+		}
+	);
+
+	impl GhosttyHostView {
+		fn new(mtm: MainThreadMarker, frame: NSRect) -> Retained<Self> {
+			unsafe { msg_send![Self::alloc(mtm), initWithFrame: frame] }
+		}
+	}
+
+	fn ghostty_mods_from_event(event: &NSEvent) -> i32 {
+		let flags = event.modifierFlags();
+		let mut mods = 0;
+		if flags.contains(NSEventModifierFlags::Shift) {
+			mods |= 1 << 0;
+		}
+		if flags.contains(NSEventModifierFlags::Control) {
+			mods |= 1 << 1;
+		}
+		if flags.contains(NSEventModifierFlags::Option) {
+			mods |= 1 << 2;
+		}
+		if flags.contains(NSEventModifierFlags::Command) {
+			mods |= 1 << 3;
+		}
+		mods
+	}
+
+	fn scale_factor_for_view(view: &NSView) -> f64 {
+		view
+			.window()
+			.map(|window| window.backingScaleFactor())
+			.unwrap_or(2.0)
+	}
+
+	fn view_point_for_event(view: &NSView, event: &NSEvent) -> NSPoint {
+		view.convertPoint_fromView(event.locationInWindow(), None)
+	}
+
+	fn consumed_mods_from_event(event: &NSEvent) -> i32 {
+		let flags = event.modifierFlags();
+		let mut mods = 0;
+		if flags.contains(NSEventModifierFlags::Shift) {
+			mods |= 1 << 0;
+		}
+		if flags.contains(NSEventModifierFlags::Option) {
+			mods |= 1 << 2;
+		}
+		mods
+	}
+
+	fn unshifted_codepoint_from_event(event: &NSEvent) -> u32 {
+		if let Some(chars) = event.charactersIgnoringModifiers().or_else(|| event.characters()) {
+			let raw = chars.UTF8String();
+			if !raw.is_null() {
+				if let Some(ch) = unsafe { std::ffi::CStr::from_ptr(raw) }.to_string_lossy().chars().next() {
+					return ch as u32;
+				}
+			}
+		}
+		0
+	}
+
+	unsafe fn focus_host_view_surface(host_view: &GhosttyHostView, focused: bool) {
+		let Some(manager) = GHOSTTY_MANAGER.get() else {
+			return;
+		};
+		let Ok(state) = manager.lock() else {
+			return;
+		};
+		let Some(runtime) = state.runtime.as_ref() else {
+			return;
+		};
+		let Some(block) = runtime
+			.blocks
+			.iter()
+			.find_map(|(_, block)| (block.host_view == (host_view as *const GhosttyHostView).cast::<c_void>() as usize).then_some(block))
+		else {
+			return;
+		};
+		let Ok(api) = (unsafe { api_for_app(Path::new(&runtime.app_path)) }) else {
+			return;
+		};
+		unsafe { (api.surface_set_focus)(block.surface, focused) };
+	}
+
+	unsafe fn handle_host_view_mouse_move(host_view: &GhosttyHostView, event: &NSEvent) {
+		let Some(manager) = GHOSTTY_MANAGER.get() else {
+			return;
+		};
+		let Ok(state) = manager.lock() else {
+			return;
+		};
+		let Some(runtime) = state.runtime.as_ref() else {
+			return;
+		};
+		let Some(block) = runtime
+			.blocks
+			.iter()
+			.find_map(|(_, block)| (block.host_view == (host_view as *const GhosttyHostView).cast::<c_void>() as usize).then_some(block))
+		else {
+			return;
+		};
+		let Ok(api) = (unsafe { api_for_app(Path::new(&runtime.app_path)) }) else {
+			return;
+		};
+		let point = view_point_for_event(host_view, event);
+		let bounds = host_view.bounds();
+		unsafe { (api.surface_mouse_pos)(block.surface, point.x, bounds.size.height - point.y, ghostty_mods_from_event(event)) };
+	}
+
+	unsafe fn handle_host_view_mouse_button(
+		host_view: &GhosttyHostView,
+		event: &NSEvent,
+		state_kind: GhosttyMouseState,
+		button: GhosttyMouseButton,
+	) {
+		let Some(manager) = GHOSTTY_MANAGER.get() else {
+			return;
+		};
+		let Ok(state) = manager.lock() else {
+			return;
+		};
+		let Some(runtime) = state.runtime.as_ref() else {
+			return;
+		};
+		let Some(block) = runtime
+			.blocks
+			.iter()
+			.find_map(|(_, block)| (block.host_view == (host_view as *const GhosttyHostView).cast::<c_void>() as usize).then_some(block))
+		else {
+			return;
+		};
+		let Ok(api) = (unsafe { api_for_app(Path::new(&runtime.app_path)) }) else {
+			return;
+		};
+		let point = view_point_for_event(host_view, event);
+		let bounds = host_view.bounds();
+		unsafe {
+			(api.surface_mouse_pos)(block.surface, point.x, bounds.size.height - point.y, ghostty_mods_from_event(event));
+			(api.surface_mouse_button)(block.surface, state_kind, button, ghostty_mods_from_event(event));
+		}
+	}
+
+	unsafe fn handle_host_view_key_event(
+		host_view: &GhosttyHostView,
+		event: &NSEvent,
+		action: GhosttyInputAction,
+	) {
+		let Some(manager) = GHOSTTY_MANAGER.get() else {
+			return;
+		};
+		let Ok(state) = manager.lock() else {
+			return;
+		};
+		let Some(runtime) = state.runtime.as_ref() else {
+			return;
+		};
+		let Some(block) = runtime
+			.blocks
+			.iter()
+			.find_map(|(_, block)| (block.host_view == (host_view as *const GhosttyHostView).cast::<c_void>() as usize).then_some(block))
+		else {
+			return;
+		};
+		let Ok(api) = (unsafe { api_for_app(Path::new(&runtime.app_path)) }) else {
+			return;
+		};
+
+		let text = event
+			.characters()
+			.and_then(|chars| {
+				let raw = chars.UTF8String();
+				if raw.is_null() {
+					return None;
+				}
+				let value = unsafe { std::ffi::CStr::from_ptr(raw) }
+					.to_string_lossy()
+					.to_string();
+				if value.is_empty() || event.modifierFlags().contains(NSEventModifierFlags::Command) {
+					None
+				} else {
+					CString::new(value).ok()
+				}
+			});
+
+		let key_event = GhosttyInputKey {
+			action: if matches!(action, GhosttyInputAction::Press) && event.isARepeat() {
+				GhosttyInputAction::Repeat
+			} else {
+				action
+			},
+			mods: ghostty_mods_from_event(event),
+			consumed_mods: consumed_mods_from_event(event),
+			keycode: u32::from(event.keyCode()),
+			text: text.as_ref().map_or(std::ptr::null(), |value| value.as_ptr()),
+			unshifted_codepoint: unshifted_codepoint_from_event(event),
+			composing: false,
+		};
+
+		unsafe {
+			(api.surface_set_focus)(block.surface, true);
+			(api.surface_key)(block.surface, key_event);
+		}
+	}
+
+	unsafe extern "C" fn ghostty_wakeup_cb(_userdata: *mut c_void) {
+		let Some(app_handle) = APP_HANDLE.get().cloned() else {
+			return;
+		};
+		let Some(manager) = GHOSTTY_MANAGER.get().cloned() else {
+			return;
+		};
+
+		let _ = app_handle.run_on_main_thread(move || {
+			if let Ok(state) = manager.lock() {
+				if let Some(runtime) = state.runtime.as_ref() {
+					if let Some(api) = GHOSTTY_API.get() {
+						unsafe { (api.app_tick)(runtime.app) };
+					}
+				}
+			}
+		});
+	}
+
+	unsafe extern "C" fn ghostty_action_cb(
+		_app: GhosttyApp,
+		_target: GhosttyTarget,
+		_action: GhosttyAction,
+	) -> bool {
+		false
+	}
+
+	unsafe extern "C" fn ghostty_read_clipboard_cb(
+		_userdata: *mut c_void,
+		_location: GhosttyClipboard,
+		_state: *mut c_void,
+	) {
+	}
+
+	unsafe extern "C" fn ghostty_confirm_read_clipboard_cb(
+		_userdata: *mut c_void,
+		_string: *const c_char,
+		_state: *mut c_void,
+		_request: GhosttyClipboardRequest,
+	) {
+	}
+
+	unsafe extern "C" fn ghostty_write_clipboard_cb(
+		_userdata: *mut c_void,
+		_content: *const c_char,
+		_location: GhosttyClipboard,
+		_confirm: bool,
+	) {
+	}
+
+	unsafe extern "C" fn ghostty_close_surface_cb(_userdata: *mut c_void, _process_alive: bool) {}
+
+	unsafe fn load_symbol<T: Copy>(library: &'static Library, name: &[u8]) -> Result<T, String> {
+		let symbol = library.get::<T>(name).map_err(|error| error.to_string())?;
+		Ok(*symbol)
+	}
+
+	pub(super) fn find_ghostty_app_path() -> Result<PathBuf, String> {
+		if let Ok(path) = std::env::var("OTTO_CANVAS_GHOSTTY_APP") {
+			let path = PathBuf::from(path);
+			if path.exists() {
+				return Ok(path);
+			}
+		}
+
+		let default = PathBuf::from("/Applications/Ghostty.app/Contents/MacOS/ghostty");
+		if default.exists() {
+			return Ok(default);
+		}
+
+		Err("Ghostty.app was not found. Install Ghostty to /Applications or set OTTO_CANVAS_GHOSTTY_APP.".into())
+	}
+
+	pub(super) fn ghostty_resources_dir(app_path: &Path) -> Result<PathBuf, String> {
+		let resources = app_path
+			.parent()
+			.and_then(Path::parent)
+			.map(|path| path.join("Resources"))
+			.ok_or_else(|| "Failed to resolve Ghostty resources directory".to_string())?;
+		if resources.exists() {
+			Ok(resources)
+		} else {
+			Err(format!("Ghostty resources directory not found at {}", resources.display()))
+		}
+	}
+
+	pub(super) fn ghostty_frameworks_dir(app_path: &Path) -> Result<PathBuf, String> {
+		let frameworks = app_path
+			.parent()
+			.and_then(Path::parent)
+			.map(|path| path.join("Frameworks"))
+			.ok_or_else(|| "Failed to resolve Ghostty frameworks directory".to_string())?;
+		if frameworks.exists() {
+			Ok(frameworks)
+		} else {
+			Err(format!("Ghostty frameworks directory not found at {}", frameworks.display()))
+		}
+	}
+
+	fn prepend_env_path(key: &str, value: &Path) {
+		let mut combined = value.as_os_str().to_os_string();
+		if let Some(existing) = std::env::var_os(key) {
+			if !existing.is_empty() {
+				combined.push(":");
+				combined.push(existing);
+			}
+		}
+		std::env::set_var(key, combined);
+	}
+
+	unsafe fn preload_ghostty_dependencies(frameworks_dir: &Path) -> Result<(), String> {
+		prepend_env_path("DYLD_FRAMEWORK_PATH", frameworks_dir);
+		prepend_env_path("DYLD_FALLBACK_FRAMEWORK_PATH", frameworks_dir);
+
+		let sparkle = frameworks_dir.join("Sparkle.framework/Versions/B/Sparkle");
+		if sparkle.exists() {
+			let _ = Box::leak(Box::new(
+				unsafe { Library::open(Some(&sparkle), RTLD_NOW | RTLD_GLOBAL) }
+					.map_err(|error| error.to_string())?,
+			));
+		}
+
+		Ok(())
+	}
+
+	unsafe fn api_for_app(app_path: &Path) -> Result<&'static GhosttyApi, String> {
+		if let Some(api) = GHOSTTY_API.get() {
+			return Ok(api);
+		}
+
+		let frameworks_dir = ghostty_frameworks_dir(app_path)?;
+		unsafe { preload_ghostty_dependencies(&frameworks_dir)? };
+		let library = Box::leak(Box::new(
+			unsafe { Library::open(Some(app_path), RTLD_NOW | RTLD_GLOBAL) }
+				.map_err(|error| error.to_string())?,
+		));
+		let api = GhosttyApi {
+			init: unsafe { load_symbol(library, b"ghostty_init\0")? },
+			config_new: unsafe { load_symbol(library, b"ghostty_config_new\0")? },
+			config_load_default_files: unsafe {
+				load_symbol(library, b"ghostty_config_load_default_files\0")?
+			},
+			config_load_recursive_files: unsafe {
+				load_symbol(library, b"ghostty_config_load_recursive_files\0")?
+			},
+			config_finalize: unsafe { load_symbol(library, b"ghostty_config_finalize\0")? },
+			app_new: unsafe { load_symbol(library, b"ghostty_app_new\0")? },
+			app_tick: unsafe { load_symbol(library, b"ghostty_app_tick\0")? },
+			surface_config_new: unsafe { load_symbol(library, b"ghostty_surface_config_new\0")? },
+			surface_new: unsafe { load_symbol(library, b"ghostty_surface_new\0")? },
+			surface_free: unsafe { load_symbol(library, b"ghostty_surface_free\0")? },
+			surface_set_content_scale: unsafe {
+				load_symbol(library, b"ghostty_surface_set_content_scale\0")?
+			},
+			surface_set_size: unsafe { load_symbol(library, b"ghostty_surface_set_size\0")? },
+			surface_set_focus: unsafe { load_symbol(library, b"ghostty_surface_set_focus\0")? },
+			surface_text: unsafe { load_symbol(library, b"ghostty_surface_text\0")? },
+			surface_key: unsafe { load_symbol(library, b"ghostty_surface_key\0")? },
+			surface_mouse_button: unsafe { load_symbol(library, b"ghostty_surface_mouse_button\0")? },
+			surface_mouse_pos: unsafe { load_symbol(library, b"ghostty_surface_mouse_pos\0")? },
+			surface_binding_action: unsafe { load_symbol(library, b"ghostty_surface_binding_action\0")? },
+		};
+		let _ = GHOSTTY_API.set(api);
+		GHOSTTY_API
+			.get()
+			.ok_or_else(|| "Failed to cache Ghostty API bindings".to_string())
+	}
+
+	pub(super) unsafe fn init_runtime(state: &mut GhosttyState) -> Result<(), String> {
+		if state.runtime.is_some() {
+			return Ok(());
+		}
+
+		let app_path = find_ghostty_app_path()?;
+		let resources_dir = ghostty_resources_dir(&app_path)?;
+		std::env::set_var("GHOSTTY_RESOURCES_DIR", &resources_dir);
+
+		let api = unsafe { api_for_app(&app_path)? };
+		let mut argv_storage = std::env::args_os()
+			.map(|arg| CString::new(arg.to_string_lossy().as_bytes()).map_err(|_| "Process argv contained a null byte".to_string()))
+			.collect::<Result<Vec<_>, _>>()?;
+		if argv_storage.is_empty() {
+			argv_storage.push(CString::new("otto-canvas").expect("static string is valid"));
+		}
+		let mut argv = argv_storage
+			.iter_mut()
+			.map(|arg| arg.as_ptr() as *mut c_char)
+			.collect::<Vec<_>>();
+		if unsafe { (api.init)(argv.len(), argv.as_mut_ptr()) } != 0 {
+			return Err("ghostty_init failed".into());
+		}
+
+		let config = unsafe { (api.config_new)() };
+		if config.is_null() {
+			return Err("ghostty_config_new returned a null pointer".into());
+		}
+		unsafe {
+			(api.config_load_default_files)(config);
+			(api.config_load_recursive_files)(config);
+			(api.config_finalize)(config);
+		}
+
+		let runtime_userdata = APP_HANDLE
+			.get()
+			.map(|handle| handle as *const AppHandle<Wry> as *mut c_void)
+			.unwrap_or_else(|| std::ptr::dangling_mut::<c_void>());
+
+		let runtime_config = GhosttyRuntimeConfig {
+			userdata: runtime_userdata,
+			supports_selection_clipboard: true,
+			wakeup_cb: Some(ghostty_wakeup_cb),
+			action_cb: Some(ghostty_action_cb),
+			read_clipboard_cb: Some(ghostty_read_clipboard_cb),
+			confirm_read_clipboard_cb: Some(ghostty_confirm_read_clipboard_cb),
+			write_clipboard_cb: Some(ghostty_write_clipboard_cb),
+			close_surface_cb: Some(ghostty_close_surface_cb),
+		};
+
+		let app = unsafe { (api.app_new)(&runtime_config, config) };
+		if app.is_null() {
+			return Err("ghostty_app_new returned a null pointer".into());
+		}
+
+		state.runtime = Some(GhosttyRuntime {
+			app_path: app_path.display().to_string(),
+			_resources_dir: resources_dir.display().to_string(),
+			app,
+			_config: config,
+			blocks: HashMap::new(),
+		});
+
+		Ok(())
+	}
+
+	pub(super) unsafe fn create_block_inner(
+		window: &WebviewWindow,
+		manager: &Arc<Mutex<GhosttyState>>,
+		block_id: &str,
+		cwd: Option<&str>,
+		command: Option<&str>,
+	) -> Result<(), String> {
+		let mtm = MainThreadMarker::new().ok_or_else(|| "Ghostty block creation must run on the main thread".to_string())?;
+		let mut state = manager.lock().map_err(|_| "Failed to lock Ghostty manager state".to_string())?;
+		unsafe { init_runtime(&mut state)? };
+		let runtime = state.runtime.as_mut().ok_or_else(|| "Ghostty runtime was not initialized".to_string())?;
+
+		if runtime.blocks.contains_key(block_id) {
+			return Ok(());
+		}
+
+		let api = unsafe { api_for_app(Path::new(&runtime.app_path))? };
+		let webview_ptr = window.ns_view().map_err(|error| error.to_string())?;
+		let webview = unsafe { &*(webview_ptr.cast::<NSView>()) };
+		let parent = unsafe { webview.superview() }
+			.ok_or_else(|| "Failed to get the Canvas webview parent view".to_string())?;
+
+		let host_view = GhosttyHostView::new(mtm, NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(0.0, 0.0)));
+		host_view.setHidden(true);
+		parent.addSubview_positioned_relativeTo(&host_view, NSWindowOrderingMode::Above, Some(webview));
+
+		let cwd_value = cwd
+			.map(ToOwned::to_owned)
+			.or_else(|| std::env::current_dir().ok().map(|path| path.display().to_string()))
+			.or_else(|| dirs::home_dir().map(|path| path.display().to_string()));
+		let cwd_cstring = cwd_value
+			.as_deref()
+			.map(CString::new)
+			.transpose()
+			.map_err(|_| "Working directory contained a null byte".to_string())?;
+		let command_cstring = command
+			.map(CString::new)
+			.transpose()
+			.map_err(|_| "Command contained a null byte".to_string())?;
+		let terminfo_dir = Path::new(&runtime._resources_dir).join("terminfo");
+		let env_storage = [
+			("GHOSTTY_RESOURCES_DIR", runtime._resources_dir.as_str()),
+			("TERMINFO", terminfo_dir.to_string_lossy().as_ref()),
+			("TERM", "xterm-ghostty"),
+			("COLORTERM", "truecolor"),
+		]
+		.into_iter()
+		.map(|(key, value)| {
+			Ok::<_, String>((
+				CString::new(key).map_err(|_| format!("Env var key contained a null byte: {key}"))?,
+				CString::new(value).map_err(|_| format!("Env var value contained a null byte: {key}"))?,
+			))
+		})
+		.collect::<Result<Vec<_>, _>>()?;
+		let mut env_vars = env_storage
+			.iter()
+			.map(|(key, value)| GhosttyEnvVar {
+				key: key.as_ptr(),
+				value: value.as_ptr(),
+			})
+			.collect::<Vec<_>>();
+
+		let mut surface_config = unsafe { (api.surface_config_new)() };
+		surface_config.platform_tag = GhosttyPlatform::Macos;
+		surface_config.platform = GhosttyPlatformUnion {
+			macos: GhosttyPlatformMacos {
+				nsview: (&*host_view as *const GhosttyHostView).cast_mut().cast(),
+			},
+		};
+		surface_config.userdata = (&*host_view as *const GhosttyHostView).cast_mut().cast();
+		surface_config.scale_factor = scale_factor_for_view(&host_view);
+		surface_config.font_size = 12.0;
+		surface_config.working_directory = cwd_cstring.as_ref().map_or(std::ptr::null(), |value| value.as_ptr());
+		surface_config.command = command_cstring.as_ref().map_or(std::ptr::null(), |value| value.as_ptr());
+		surface_config.env_vars = env_vars.as_mut_ptr();
+		surface_config.env_var_count = env_vars.len();
+		surface_config.initial_input = std::ptr::null();
+		surface_config.wait_after_command = false;
+		surface_config.context = GhosttySurfaceContext::Window;
+
+		let surface = unsafe { (api.surface_new)(runtime.app, &mut surface_config) };
+		if surface.is_null() {
+			host_view.removeFromSuperview();
+			return Err("ghostty_surface_new returned a null pointer".into());
+		}
+
+		let font_action = CString::new("set_font_size:12").expect("static string is valid");
+		unsafe {
+			(api.surface_binding_action)(surface, font_action.as_ptr(), font_action.as_bytes().len());
+		}
+
+		runtime.blocks.insert(
+			block_id.to_string(),
+			GhosttyBlock {
+				surface,
+				host_view: Retained::into_raw(host_view) as usize,
+			},
+		);
+
+		Ok(())
+	}
+
+	pub(super) unsafe fn update_block_inner(
+		window: &WebviewWindow,
+		manager: &Arc<Mutex<GhosttyState>>,
+		block_id: &str,
+		x: f64,
+		y: f64,
+		width: f64,
+		height: f64,
+		viewport_height: f64,
+		scale_factor: f64,
+		focused: bool,
+	) -> Result<(), String> {
+		let _ = window;
+		let state = manager.lock().map_err(|_| "Failed to lock Ghostty manager state".to_string())?;
+		let runtime = state.runtime.as_ref().ok_or_else(|| "Ghostty runtime was not initialized".to_string())?;
+		let block = runtime.blocks.get(block_id).ok_or_else(|| format!("Ghostty block {block_id} was not found"))?;
+		let api = unsafe { api_for_app(Path::new(&runtime.app_path))? };
+		let host_view = unsafe { &*(block.host_view as *const GhosttyHostView) };
+
+		let native_y = (viewport_height - y - height).max(0.0);
+		host_view.setFrame(NSRect::new(
+			NSPoint::new(x.max(0.0), native_y),
+			NSSize::new(width.max(0.0), height.max(0.0)),
+		));
+		host_view.setHidden(width < 1.0 || height < 1.0);
+
+		unsafe {
+			(api.surface_set_content_scale)(block.surface, scale_factor, scale_factor);
+			(api.surface_set_size)(
+				block.surface,
+				(width.max(0.0) * scale_factor).round() as u32,
+				(height.max(0.0) * scale_factor).round() as u32,
+			);
+		}
+		let _ = focused;
+
+		Ok(())
+	}
+
+	pub(super) unsafe fn input_text_inner(
+		manager: &Arc<Mutex<GhosttyState>>,
+		block_id: &str,
+		text: &str,
+	) -> Result<(), String> {
+		if text.is_empty() {
+			return Ok(());
+		}
+
+		let state = manager.lock().map_err(|_| "Failed to lock Ghostty manager state".to_string())?;
+		let runtime = state.runtime.as_ref().ok_or_else(|| "Ghostty runtime was not initialized".to_string())?;
+		let block = runtime.blocks.get(block_id).ok_or_else(|| format!("Ghostty block {block_id} was not found"))?;
+		let api = unsafe { api_for_app(Path::new(&runtime.app_path))? };
+		let text = CString::new(text).map_err(|_| "Input contained a null byte".to_string())?;
+		unsafe { (api.surface_text)(block.surface, text.as_ptr(), text.as_bytes().len()) };
+		Ok(())
+	}
+
+	pub(super) unsafe fn input_key_inner(
+		manager: &Arc<Mutex<GhosttyState>>,
+		block_id: &str,
+		keycode: u32,
+		mods: i32,
+		text: Option<&str>,
+		composing: bool,
+		action: &str,
+	) -> Result<(), String> {
+		let state = manager.lock().map_err(|_| "Failed to lock Ghostty manager state".to_string())?;
+		let runtime = state.runtime.as_ref().ok_or_else(|| "Ghostty runtime was not initialized".to_string())?;
+		let block = runtime.blocks.get(block_id).ok_or_else(|| format!("Ghostty block {block_id} was not found"))?;
+		let api = unsafe { api_for_app(Path::new(&runtime.app_path))? };
+		let text = text
+			.map(CString::new)
+			.transpose()
+			.map_err(|_| "Key text contained a null byte".to_string())?;
+		let action = match action {
+			"repeat" => GhosttyInputAction::Repeat,
+			"release" => GhosttyInputAction::Release,
+			_ => GhosttyInputAction::Press,
+		};
+		let event = GhosttyInputKey {
+			action,
+			mods,
+			consumed_mods: 0,
+			keycode,
+			text: text.as_ref().map_or(std::ptr::null(), |value| value.as_ptr()),
+			unshifted_codepoint: 0,
+			composing,
+		};
+		unsafe {
+			(api.surface_key)(block.surface, event);
+		}
+		Ok(())
+	}
+
+	pub(super) unsafe fn destroy_block_inner(
+		manager: &Arc<Mutex<GhosttyState>>,
+		block_id: &str,
+	) -> Result<(), String> {
+		let mut state = manager.lock().map_err(|_| "Failed to lock Ghostty manager state".to_string())?;
+		let runtime = state.runtime.as_mut().ok_or_else(|| "Ghostty runtime was not initialized".to_string())?;
+		let Some(block) = runtime.blocks.remove(block_id) else {
+			return Ok(());
+		};
+		let api = unsafe { api_for_app(Path::new(&runtime.app_path))? };
+
+		unsafe { (api.surface_free)(block.surface) };
+		let host_view = unsafe { Retained::from_raw(block.host_view as *mut GhosttyHostView) }
+			.ok_or_else(|| "Ghostty host view pointer was invalid".to_string())?;
+		host_view.removeFromSuperview();
+		drop(host_view);
+		Ok(())
+	}
+}
+
+#[cfg(target_os = "macos")]
+use macos::{create_block_inner, destroy_block_inner, input_key_inner, input_text_inner, update_block_inner};
+
+#[cfg(target_os = "macos")]
+type GhosttyApp = *mut c_void;
+#[cfg(target_os = "macos")]
+type GhosttyConfig = *mut c_void;
+#[cfg(target_os = "macos")]
+type GhosttySurface = *mut c_void;
