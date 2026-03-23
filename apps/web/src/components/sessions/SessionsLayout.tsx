@@ -5,6 +5,7 @@ import {
 	SessionListContainer,
 	MessageThreadContainer,
 	ChatInputContainer,
+	NewSessionLanding,
 	type ChatInputContainerRef,
 	Toaster,
 } from '@ottocode/web-sdk/components';
@@ -59,23 +60,21 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 		}, 100);
 	}, []);
 
-	const handleNewSession = useCallback(async () => {
-		try {
-			const session = await createSession.mutateAsync({
-				agent: config?.defaults.agent || 'general',
-				provider: config?.defaults.provider,
-				model: config?.defaults.model,
-			});
+	const handleNewSession = useCallback(() => {
+		navigate({ to: '/sessions' });
+	}, [navigate]);
+
+	const handleSessionCreated = useCallback(
+		(newSessionId: string) => {
 			navigate({
 				to: '/sessions/$sessionId',
-				params: { sessionId: session.id },
+				params: { sessionId: newSessionId },
 				replace: false,
 			});
 			focusInput();
-		} catch (error) {
-			console.error('Failed to create session:', error);
-		}
-	}, [createSession, config, navigate, focusInput]);
+		},
+		[navigate, focusInput],
+	);
 
 	const handleDeleteSession = useCallback(() => {
 		navigate({ to: '/sessions' });
@@ -186,9 +185,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 	const mainContent = useMemo(() => {
 		if (!sessionId) {
 			return (
-				<div className="flex-1 flex items-center justify-center text-muted-foreground">
-					Select a session or create a new one to start
-				</div>
+				<NewSessionLanding onSessionCreated={handleSessionCreated} />
 			);
 		}
 
@@ -206,7 +203,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 				/>
 			</>
 		);
-	}, [sessionId, handleNewSession, handleSelectSession, handleDeleteSession]);
+	}, [sessionId, handleNewSession, handleSelectSession, handleDeleteSession, handleSessionCreated]);
 
 	return (
 		<>

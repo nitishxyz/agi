@@ -543,12 +543,12 @@ export const ChatInput = memo(
 							</div>
 						</div>
 
-						{(reasoningEnabled ||
-							visionEnabled ||
-							modelName ||
-							providerName ||
-							authType ||
-							agent) && (
+						<div className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+							(reasoningEnabled || visionEnabled || modelName || providerName || authType || agent)
+								? 'grid-rows-[1fr]'
+								: 'grid-rows-[0fr]'
+						}`}>
+							<div className="overflow-hidden">
 							<div className="grid grid-cols-[auto_1fr_auto] items-center mt-1 px-3">
 								<div
 									className="justify-self-start flex-shrink-0 relative"
@@ -636,7 +636,8 @@ export const ChatInput = memo(
 									)}
 								</div>
 							</div>
-						)}
+							</div>
+						</div>
 
 						{showFileMention && !filesLoading && (
 							<FileMentionPopup

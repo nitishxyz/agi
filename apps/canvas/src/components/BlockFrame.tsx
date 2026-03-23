@@ -5,6 +5,7 @@ import type { Block, BlockType } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
 import { BrowserBlock } from './BrowserBlock';
 import { GhosttyBlock } from './GhosttyBlock';
+import { OttoBlock } from './OttoBlock';
 
 const BLOCK_ICONS = {
 	terminal: Terminal,
@@ -70,17 +71,6 @@ function PendingPicker({ blockId }: { blockId: string }) {
 	);
 }
 
-function PlaceholderBlock({ icon: Icon, label }: { icon: typeof Terminal; label: string }) {
-	return (
-		<div className="flex h-full w-full items-center justify-center bg-[rgba(22,22,26,0.9)]">
-			<div className="text-center space-y-2">
-				<Icon size={28} className="mx-auto text-canvas-text-muted" strokeWidth={1} />
-				<p className="text-[11px] text-canvas-text-muted">{label}</p>
-			</div>
-		</div>
-	);
-}
-
 function renderBlockContent(block: Block, isFocused: boolean) {
 	switch (block.type) {
 		case 'terminal':
@@ -88,7 +78,7 @@ function renderBlockContent(block: Block, isFocused: boolean) {
 		case 'browser':
 			return <BrowserBlock block={block} />;
 		case 'otto':
-			return <PlaceholderBlock icon={Bot} label="otto block" />;
+			return <OttoBlock block={block} isFocused={isFocused} />;
 		default:
 			return null;
 	}

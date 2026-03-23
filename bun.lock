@@ -43,7 +43,9 @@
       "name": "@ottocode/canvas",
       "version": "0.1.0",
       "dependencies": {
+        "@ottocode/web-sdk": "workspace:*",
         "@tanstack/react-hotkeys": "^0.5.1",
+        "@tanstack/react-query": "^5.90.2",
         "@tauri-apps/api": "^2.9.1",
         "@tauri-apps/plugin-fs": "^2",
         "@tauri-apps/plugin-opener": "^2",
@@ -52,6 +54,9 @@
         "lucide-react": "^0.563.0",
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
+        "react-markdown": "^10.1.0",
+        "react-syntax-highlighter": "^15.6.6",
+        "remark-gfm": "^4.0.1",
         "zustand": "^5.0.11",
       },
       "devDependencies": {
@@ -68,7 +73,7 @@
     },
     "apps/cli": {
       "name": "@ottocode/cli",
-      "version": "0.1.236",
+      "version": "0.1.237",
       "bin": {
         "otto": "./dist/otto",
       },
@@ -95,7 +100,7 @@
     },
     "apps/desktop": {
       "name": "@ottocode/desktop",
-      "version": "0.1.75",
+      "version": "0.1.76",
       "dependencies": {
         "@ottocode/web-sdk": "workspace:*",
         "@tanstack/react-query": "^5.90.2",
@@ -453,7 +458,7 @@
     },
     "packages/api": {
       "name": "@ottocode/api",
-      "version": "0.1.236",
+      "version": "0.1.237",
       "dependencies": {
         "axios": "^1.7.9",
         "eventsource-parser": "^2.0.1",
@@ -466,7 +471,7 @@
     },
     "packages/database": {
       "name": "@ottocode/database",
-      "version": "0.1.236",
+      "version": "0.1.237",
       "dependencies": {
         "@ottocode/sdk": "workspace:*",
         "drizzle-orm": "^0.44.5",
@@ -479,7 +484,7 @@
     },
     "packages/install": {
       "name": "@ottocode/install",
-      "version": "0.1.236",
+      "version": "0.1.237",
       "bin": {
         "otto": "./start.js",
       },
@@ -502,7 +507,7 @@
     },
     "packages/sdk": {
       "name": "@ottocode/sdk",
-      "version": "0.1.236",
+      "version": "0.1.237",
       "dependencies": {
         "@ai-sdk/anthropic": "^3.0.0",
         "@ai-sdk/google": "^3.0.0",
@@ -533,7 +538,7 @@
     },
     "packages/server": {
       "name": "@ottocode/server",
-      "version": "0.1.236",
+      "version": "0.1.237",
       "dependencies": {
         "@ottocode/database": "workspace:*",
         "@ottocode/sdk": "workspace:*",
@@ -548,7 +553,7 @@
     },
     "packages/web-sdk": {
       "name": "@ottocode/web-sdk",
-      "version": "0.1.236",
+      "version": "0.1.237",
       "dependencies": {
         "@ottocode/api": "workspace:*",
         "@ottocode/sdk": "workspace:*",
@@ -586,7 +591,7 @@
     },
     "packages/web-ui": {
       "name": "@ottocode/web-ui",
-      "version": "0.1.236",
+      "version": "0.1.237",
       "dependencies": {
         "express": "^5.1.0",
       },
