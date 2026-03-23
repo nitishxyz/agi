@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Terminal, Globe, Bot } from 'lucide-react';
 import type { Block, BlockType } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
+import { BrowserBlock } from './BrowserBlock';
 import { GhosttyBlock } from './GhosttyBlock';
 
 const BLOCK_ICONS = {
@@ -84,7 +85,7 @@ function renderBlockContent(block: Block, isFocused: boolean) {
 		case 'terminal':
 			return <GhosttyBlock block={block} isFocused={isFocused} />;
 		case 'browser':
-			return <PlaceholderBlock icon={Globe} label="browser block" />;
+			return <BrowserBlock block={block} />;
 		case 'otto':
 			return <PlaceholderBlock icon={Bot} label="otto block" />;
 		default:

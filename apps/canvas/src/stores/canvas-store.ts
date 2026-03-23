@@ -7,6 +7,7 @@ export interface Block {
 	id: string;
 	type: BlockType;
 	label: string;
+	url?: string;
 }
 
 export interface SplitNode {
@@ -32,6 +33,7 @@ interface CanvasState {
 	setFocused: (id: string) => void;
 	addBlock: (type: BlockType, label?: string, direction?: SplitDirection) => void;
 	convertBlock: (id: string, type: BlockType) => void;
+	setBlockUrl: (id: string, url: string) => void;
 	removeBlock: (id: string) => void;
 	setSplitRatio: (splitId: string, ratio: number) => void;
 	focusNext: () => void;
@@ -180,6 +182,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 			id,
 			type,
 			label: label ?? LABELS[type],
+			url: type === 'browser' ? '' : undefined,
 		};
 		const { layout, focusedBlockId } = get();
 		set({
@@ -195,7 +198,23 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 		set({
 			blocks: {
 				...get().blocks,
-				[id]: { ...block, type, label: LABELS[type] },
+				[id]: {
+					...block,
+					type,
+					label: LABELS[type],
+					url: type === 'browser' ? block.url ?? '' : undefined,
+				},
+			},
+		});
+	},
+
+	setBlockUrl: (id, url) => {
+		const block = get().blocks[id];
+		if (!block) return;
+		set({
+			blocks: {
+				...get().blocks,
+				[id]: { ...block, url },
 			},
 		});
 	},
