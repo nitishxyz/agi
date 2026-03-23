@@ -93,6 +93,7 @@ interface ConfigModalProps {
 	onProviderChange: (provider: string) => void;
 	onModelChange: (model: string) => void;
 	onModelSelectorChange?: (provider: string, model: string) => void;
+	modalPosition?: 'fixed' | 'absolute';
 }
 
 export function ConfigModal({
@@ -108,6 +109,7 @@ export function ConfigModal({
 	onProviderChange,
 	onModelChange,
 	onModelSelectorChange,
+	modalPosition = 'fixed',
 }: ConfigModalProps) {
 	const { data: config, isLoading: configLoading } = useConfig();
 	const updateDefaults = useUpdateDefaults();
@@ -155,6 +157,7 @@ export function ConfigModal({
 			closeOnEscape={true}
 			closeOnBackdropClick={true}
 			maxWidth="lg"
+			position={modalPosition}
 		>
 			{configLoading ? (
 				<div className="text-center text-muted-foreground py-8">

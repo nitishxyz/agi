@@ -2,7 +2,7 @@ import { useHotkeys } from '@tanstack/react-hotkeys';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { isTauriRuntime } from '../lib/ghostty';
 import { useCanvasStore } from '../stores/canvas-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
@@ -41,6 +41,13 @@ export function useCanvasKeybinds() {
 	const focusDirection = useCanvasStore((s) => s.focusDirection);
 	const toggleSidebar = useWorkspaceStore((s) => s.toggleSidebar);
 	const lastShortcutAtRef = useRef<Record<string, number>>({});
+
+	const removeFocusedBlock = useCallback(() => {
+		const { focusedBlockId: currentFocusedBlockId, removeBlock: removeCurrentBlock } =
+			useCanvasStore.getState();
+		if (!currentFocusedBlockId) return;
+		removeCurrentBlock(currentFocusedBlockId);
+	}, []);
 
 	const runShortcut = (shortcut: string, callback: () => void) => {
 		const now = Date.now();
@@ -123,9 +130,7 @@ export function useCanvasKeybinds() {
 					});
 					break;
 				case 'mod+w':
-					runShortcut('mod+w', () => {
-						if (focusedBlockId) removeBlock(focusedBlockId);
-					});
+					runShortcut('mod+w', removeFocusedBlock);
 					break;
 				case 'mod+]':
 					runShortcut('mod+]', () => focusNext());
@@ -193,6 +198,7 @@ export function useCanvasKeybinds() {
 		focusPrev,
 		focusedBlockId,
 		removeBlock,
+		removeFocusedBlock,
 		toggleSidebar,
 	]);
 
@@ -236,9 +242,7 @@ export function useCanvasKeybinds() {
 					});
 					break;
 				case 'mod+w':
-					runShortcut('mod+w', () => {
-						if (focusedBlockId) removeBlock(focusedBlockId);
-					});
+					runShortcut('mod+w', removeFocusedBlock);
 					break;
 				case 'mod+]':
 					runShortcut('mod+]', () => focusNext());
@@ -303,6 +307,7 @@ export function useCanvasKeybinds() {
 		focusPrev,
 		focusedBlockId,
 		removeBlock,
+		removeFocusedBlock,
 		toggleSidebar,
 	]);
 
@@ -311,7 +316,7 @@ export function useCanvasKeybinds() {
 		{ hotkey: 'Mod+D', callback: () => runShortcut('mod+d', () => { addBlock('pending', undefined, 'horizontal'); focusCanvasWebview(); }) },
 		{ hotkey: 'Mod+Shift+D', callback: () => runShortcut('mod+shift+d', () => { addBlock('pending', undefined, 'vertical'); focusCanvasWebview(); }) },
 
-		{ hotkey: 'Mod+W', callback: () => runShortcut('mod+w', () => { if (focusedBlockId) removeBlock(focusedBlockId); }) },
+		{ hotkey: 'Mod+W', callback: () => runShortcut('mod+w', removeFocusedBlock) },
 
 		{ hotkey: 'Mod+]', callback: () => runShortcut('mod+]', () => focusNext()) },
 		{ hotkey: 'Mod+[', callback: () => runShortcut('mod+[', () => focusPrev()) },

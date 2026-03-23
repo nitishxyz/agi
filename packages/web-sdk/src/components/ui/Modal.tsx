@@ -10,6 +10,7 @@ interface ModalProps {
 	closeOnBackdropClick?: boolean;
 	closeOnEscape?: boolean;
 	maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+	position?: 'fixed' | 'absolute';
 }
 
 const maxWidthClasses = {
@@ -29,6 +30,7 @@ export function Modal({
 	closeOnBackdropClick = true,
 	closeOnEscape = true,
 	maxWidth = 'md',
+	position = 'fixed',
 }: ModalProps) {
 	useEffect(() => {
 		if (!isOpen || !closeOnEscape) return;
@@ -68,12 +70,15 @@ export function Modal({
 		}
 	};
 
+	const overlayPositionClass = position === 'absolute' ? 'absolute' : 'fixed';
+
 	return (
 		<>
 			{/* Backdrop */}
 			<button
 				type="button"
-				className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] cursor-default"
+				data-native-overlay-root="true"
+				className={`${overlayPositionClass} inset-0 bg-black/50 backdrop-blur-sm z-[9999] cursor-default`}
 				onClick={handleBackdropClick}
 				onKeyDown={(e) => {
 					if (e.key === 'Enter' || e.key === ' ') {
@@ -87,7 +92,8 @@ export function Modal({
 
 			{/* Modal Container */}
 			<div
-				className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full ${maxWidthClasses[maxWidth]} px-4`}
+				data-native-overlay-root="true"
+				className={`${overlayPositionClass} top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full ${maxWidthClasses[maxWidth]} px-4`}
 			>
 				<div className="bg-background border border-border rounded-lg shadow-lg">
 					{/* Header */}

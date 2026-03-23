@@ -1,11 +1,12 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { LoaderCircle } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
 	ChatInputContainer,
-	configureApiClient,
 	MessageThreadContainer,
 	NewSessionLanding,
+	type ChatInputContainerRef,
+	type NewSessionLandingRef,
 } from '@ottocode/web-sdk';
 import type { Block } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
@@ -15,39 +16,6 @@ import { useWorkspaceStore } from '../stores/workspace-store';
 interface OttoBlockProps {
 	block: Block;
 	isFocused: boolean;
-}
-
-interface OttoWindow extends Window {
-	OTTO_SERVER_URL?: string;
-}
-
-function OttoRuntimeBoundary({
-	runtimeUrl,
-	children,
-}: {
-	runtimeUrl: string;
-	children: ReactNode;
-}) {
-	const queryClient = useMemo(
-		() =>
-			new QueryClient({
-				defaultOptions: {
-					queries: {
-						refetchOnWindowFocus: false,
-						retry: 1,
-						staleTime: 10_000,
-					},
-				},
-			}),
-		[runtimeUrl],
-	);
-
-	if (typeof window !== 'undefined') {
-		(window as OttoWindow).OTTO_SERVER_URL = runtimeUrl;
-		configureApiClient();
-	}
-
-	return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
 function OttoRuntimeState({
@@ -72,7 +40,7 @@ function OttoRuntimeState({
 	);
 }
 
-export function OttoBlock({ block }: OttoBlockProps) {
+export function OttoBlock({ block, isFocused }: OttoBlockProps) {
 	const [sessionId, setSessionId] = useState<string | null>(block.sessionId ?? null);
 	const activeWorkspaceId = useWorkspaceStore((s) => s.activeId);
 	const runtime = useWorkspaceRuntimeStore((s) =>
@@ -81,10 +49,40 @@ export function OttoBlock({ block }: OttoBlockProps) {
 	const setFocused = useCanvasStore((s) => s.setFocused);
 	const setBlockSessionId = useCanvasStore((s) => s.setBlockSessionId);
 	const containerRef = useRef<HTMLDivElement>(null);
+	const chatInputRef = useRef<ChatInputContainerRef>(null);
+	const landingRef = useRef<NewSessionLandingRef>(null);
 
 	useEffect(() => {
 		setSessionId(block.sessionId ?? null);
 	}, [block.sessionId]);
+
+	useEffect(() => {
+		if (!isFocused) return;
+
+		const focusInput = () => {
+			void getCurrentWebview().setFocus().catch(() => undefined);
+			containerRef.current?.focus();
+			if (sessionId && runtime?.status === 'ready') {
+				chatInputRef.current?.focus();
+			} else {
+				landingRef.current?.focus();
+			}
+			const focusTarget = containerRef.current?.querySelector<HTMLElement>(
+				'textarea, input, [contenteditable="true"], [contenteditable=""]',
+			);
+			focusTarget?.focus();
+		};
+
+		const timeouts = [0, 30, 120, 260, 500].map((delay) =>
+			window.setTimeout(focusInput, delay),
+		);
+
+		return () => {
+			for (const timeout of timeouts) {
+				window.clearTimeout(timeout);
+			}
+		};
+	}, [isFocused, runtime?.status, sessionId]);
 
 	const handleSessionCreated = useCallback(
 		(id: string) => {
@@ -110,8 +108,11 @@ export function OttoBlock({ block }: OttoBlockProps) {
 	return (
 		<div
 			ref={containerRef}
-			className="dark relative flex h-full w-full flex-col overflow-hidden"
+			tabIndex={-1}
+			className="dark relative flex h-full w-full flex-col overflow-hidden outline-none"
 			style={{ background: 'hsl(var(--background))' }}
+			onMouseDownCapture={() => setFocused(block.id)}
+			onFocusCapture={() => setFocused(block.id)}
 			onClick={() => setFocused(block.id)}
 		>
 			{!activeWorkspaceId ? (
@@ -130,30 +131,30 @@ export function OttoBlock({ block }: OttoBlockProps) {
 					title="Otto runtime unavailable"
 					description={runtime.error ?? 'Failed to start the workspace Otto runtime.'}
 				/>
-			) : (
-				<OttoRuntimeBoundary runtimeUrl={runtime.url}>
-					{sessionId ? (
-						<>
-							<div className="relative flex-1 min-h-0">
-								<MessageThreadContainer
-									sessionId={sessionId}
-									onSelectSession={handleSelectSession}
-								/>
-							</div>
-							<div className="flex-shrink-0 border-t border-border px-2 pb-2">
-								<ChatInputContainer
-									sessionId={sessionId}
-									onNewSession={handleNewSession}
-								/>
-							</div>
-						</>
-					) : (
-						<NewSessionLanding
-							onSessionCreated={handleSessionCreated}
-							compact
+			) : sessionId ? (
+				<>
+					<div className="relative flex-1 min-h-0">
+						<MessageThreadContainer
+							sessionId={sessionId}
+							onSelectSession={handleSelectSession}
 						/>
-					)}
-				</OttoRuntimeBoundary>
+					</div>
+					<div className="flex-shrink-0 border-t border-border px-2 pb-2">
+						<ChatInputContainer
+							ref={chatInputRef}
+							sessionId={sessionId}
+							onNewSession={handleNewSession}
+							modalPosition="absolute"
+						/>
+					</div>
+				</>
+			) : (
+				<NewSessionLanding
+					ref={landingRef}
+					onSessionCreated={handleSessionCreated}
+					compact
+					modalPosition="absolute"
+				/>
 			)}
 		</div>
 	);

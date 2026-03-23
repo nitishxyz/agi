@@ -133,7 +133,10 @@ export function Sidebar() {
 			</div>
 
 			{isCreateOpen && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+				<div
+					data-native-overlay-root="true"
+					className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+				>
 					<div className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[rgba(18,18,22,0.96)] p-4 shadow-2xl backdrop-blur-xl">
 						<div className="mb-4 flex items-start justify-between gap-4">
 							<div className="space-y-1">

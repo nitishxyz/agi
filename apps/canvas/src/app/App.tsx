@@ -1,7 +1,8 @@
 import { listen } from '@tauri-apps/api/event';
 import { useEffect } from 'react';
-import { Sidebar } from '../components/Sidebar';
 import { CanvasRenderer } from '../components/CanvasRenderer';
+import { OttoWorkspaceBoundary } from '../components/OttoWorkspaceBoundary';
+import { Sidebar } from '../components/Sidebar';
 import { useCanvasKeybinds } from '../hooks/useCanvasKeybinds';
 import { useCanvasNativeBlockManager } from '../hooks/useCanvasNativeBlockManager';
 import { isTauriRuntime } from '../lib/ghostty';
@@ -123,7 +124,9 @@ export function App() {
 						className="h-full overflow-hidden rounded-xl border border-white/[0.08] backdrop-blur-xl"
 						style={{ background: 'rgba(14, 14, 16, 0.65)' }}
 					>
-						<CanvasRenderer />
+						<OttoWorkspaceBoundary>
+							<CanvasRenderer />
+						</OttoWorkspaceBoundary>
 					</div>
 				</div>
 			</div>

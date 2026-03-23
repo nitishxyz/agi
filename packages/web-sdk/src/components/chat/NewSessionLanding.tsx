@@ -22,6 +22,7 @@ interface NewSessionLandingProps {
 	onSessionCreated: (sessionId: string) => void;
 	wordmark?: React.ReactNode;
 	compact?: boolean;
+	modalPosition?: 'fixed' | 'absolute';
 }
 
 export interface NewSessionLandingRef {
@@ -30,7 +31,10 @@ export interface NewSessionLandingRef {
 
 export const NewSessionLanding = memo(
 	forwardRef<NewSessionLandingRef, NewSessionLandingProps>(
-		function NewSessionLanding({ onSessionCreated, wordmark, compact }, ref) {
+		function NewSessionLanding(
+			{ onSessionCreated, wordmark, compact, modalPosition },
+			ref,
+		) {
 			const { data: config } = useConfig();
 			const { data: allModels } = useAllModels();
 			const queryClient = useQueryClient();
@@ -139,6 +143,19 @@ export const NewSessionLanding = memo(
 				setIsConfigOpen(false);
 				setConfigFocusTarget(null);
 			}, []);
+
+			const handleCommand = useCallback(
+				(commandId: string) => {
+					if (commandId === 'models') {
+						setConfigFocusTarget('model');
+						setIsConfigOpen(true);
+					} else if (commandId === 'agents') {
+						setConfigFocusTarget('agent');
+						setIsConfigOpen(true);
+					}
+				},
+				[],
+			);
 
 			const handleSend = useCallback(
 				async (content: string) => {
@@ -252,6 +269,7 @@ export const NewSessionLanding = memo(
 						onProviderChange={handleProviderChange}
 						onModelChange={handleModelChange}
 						onModelSelectorChange={handleModelSelectorChange}
+						modalPosition={modalPosition}
 					/>
 					<div
 						className={`w-full ${compact ? 'max-w-xl' : 'max-w-2xl'}`}
@@ -263,6 +281,7 @@ export const NewSessionLanding = memo(
 							<ChatInput
 								ref={chatInputRef}
 								onSend={handleSend}
+								onCommand={handleCommand}
 								disabled={sending}
 								sessionId={undefined}
 								images={images}

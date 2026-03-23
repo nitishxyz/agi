@@ -3,7 +3,7 @@ import { useTheme } from '../theme.ts';
 import { DiffView } from './DiffView.tsx';
 import type { MessagePart } from '../types.ts';
 
-const DIFF_TOOLS = new Set(['write', 'edit', 'apply_patch']);
+const DIFF_TOOLS = new Set(['write', 'edit', 'multiedit', 'apply_patch']);
 
 interface ToolCallItemProps {
 	part: MessagePart;

@@ -1,10 +1,13 @@
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs::{read_to_string, OpenOptions};
-use std::net::TcpListener;
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, State, Wry};
 
 #[derive(Clone, Debug, Serialize)]
@@ -93,6 +96,12 @@ fn get_binary_path(app: &AppHandle<Wry>) -> PathBuf {
     PathBuf::from("otto")
 }
 
+fn loopback_port_available(port: u16) -> bool {
+    let ipv4_available = TcpListener::bind(("127.0.0.1", port)).is_ok();
+    let ipv6_available = TcpListener::bind(("::1", port)).is_ok();
+    ipv4_available && ipv6_available
+}
+
 fn find_available_port(tracked_ports: &[u16]) -> u16 {
     let base = 19100u16;
 
@@ -104,7 +113,7 @@ fn find_available_port(tracked_ports: &[u16]) -> u16 {
         if tracked_ports.contains(&port) {
             continue;
         }
-        if TcpListener::bind(("127.0.0.1", port)).is_ok() {
+        if loopback_port_available(port) {
             return port;
         }
     }
@@ -118,6 +127,86 @@ fn current_tracked_ports(manager: &WorkspaceRuntimeManager) -> Vec<u16> {
     } else {
         Vec::new()
     }
+}
+
+fn runtime_http_ready(port: u16) -> bool {
+    for host in ["localhost", "127.0.0.1", "::1"] {
+        let mut stream = match TcpStream::connect((host, port)) {
+            Ok(stream) => stream,
+            Err(_) => continue,
+        };
+
+        let _ = stream.set_read_timeout(Some(Duration::from_millis(500)));
+        let _ = stream.set_write_timeout(Some(Duration::from_millis(500)));
+
+        if stream
+            .write_all(
+                format!(
+                    "GET /openapi.json HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
+                    host
+                )
+                .as_bytes(),
+            )
+            .is_err()
+        {
+            continue;
+        }
+
+        let mut response = String::new();
+        if stream.read_to_string(&mut response).is_err() {
+            continue;
+        }
+
+        if response.starts_with("HTTP/1.1 200") || response.starts_with("HTTP/1.0 200") {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn strip_ansi(text: &str) -> String {
+    let mut output = String::with_capacity(text.len());
+    let mut chars = text.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '\u{1b}' {
+            if matches!(chars.peek(), Some('[')) {
+                let _ = chars.next();
+                while let Some(next) = chars.next() {
+                    if ('@'..='~').contains(&next) {
+                        break;
+                    }
+                }
+                continue;
+            }
+            continue;
+        }
+        output.push(ch);
+    }
+
+    output
+}
+
+fn runtime_log_ready(log_path: &str) -> bool {
+    let content = match read_to_string(log_path) {
+        Ok(content) => content,
+        Err(_) => return false,
+    };
+    let stripped = strip_ansi(&content);
+    stripped.contains("Press Ctrl+C to stop")
+        || (stripped.contains("API") && stripped.contains("Web UI"))
+}
+
+fn wait_for_runtime_ready(port: u16, log_path: &str, timeout: Duration) -> bool {
+    let start = Instant::now();
+    while start.elapsed() < timeout {
+        if runtime_http_ready(port) || runtime_log_ready(log_path) {
+            return true;
+        }
+        sleep(Duration::from_millis(250));
+    }
+    false
 }
 
 fn cleanup_dead_runtime_locked(
@@ -215,7 +304,7 @@ pub fn workspace_start_runtime(
         project_path,
         pid: child.id(),
         port,
-        url: format!("http://127.0.0.1:{}", port),
+        url: format!("http://localhost:{}", port),
         log_path,
     };
 
@@ -231,14 +320,29 @@ pub fn workspace_start_runtime(
         .lock()
         .map_err(|_| "Failed to lock runtime manager".to_string())?
         .insert(
-            workspace_id,
+            workspace_id.clone(),
             WorkspaceRuntimeEntry {
                 child,
                 info: info.clone(),
             },
         );
 
-    Ok(info)
+    if wait_for_runtime_ready(port, &info.log_path, Duration::from_secs(30)) {
+        eprintln!(
+            "[canvas] otto runtime ready workspace={} url={}",
+            info.workspace_id,
+            info.url
+        );
+        return Ok(info);
+    }
+
+    eprintln!(
+        "[canvas] otto runtime readiness timed out workspace={} url={} log={}",
+        info.workspace_id,
+        info.url,
+        info.log_path
+    );
+    Err("Timed out waiting for otto workspace runtime to become ready.".to_string())
 }
 
 #[tauri::command]
@@ -275,8 +379,9 @@ pub fn workspace_stop_runtime(
 pub fn workspace_read_runtime_log(log_path: String) -> Result<String, String> {
     let content = read_to_string(&log_path)
         .map_err(|error| format!("Failed to read runtime log {}: {}", log_path, error))?;
+    let stripped = strip_ansi(&content);
 
-    let lines: Vec<&str> = content.lines().collect();
+    let lines: Vec<&str> = stripped.lines().collect();
     let start = lines.len().saturating_sub(80);
     Ok(lines[start..].join("\n"))
 }

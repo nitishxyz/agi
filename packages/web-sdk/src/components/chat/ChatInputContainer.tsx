@@ -34,6 +34,7 @@ interface ChatInputContainerProps {
 	userContext?: string;
 	onNewSession?: () => void;
 	onDeleteSession?: () => void;
+	modalPosition?: 'fixed' | 'absolute';
 }
 
 export interface ChatInputContainerRef {
@@ -43,7 +44,7 @@ export interface ChatInputContainerRef {
 export const ChatInputContainer = memo(
 	forwardRef<ChatInputContainerRef, ChatInputContainerProps>(
 		function ChatInputContainer(
-			{ sessionId, userContext, onNewSession, onDeleteSession },
+			{ sessionId, userContext, onNewSession, onDeleteSession, modalPosition },
 			ref,
 		) {
 			const session = useSession(sessionId);
@@ -422,6 +423,7 @@ export const ChatInputContainer = memo(
 						onProviderChange={handleProviderChange}
 						onModelChange={handleModelChange}
 						onModelSelectorChange={handleModelSelectorChange}
+						modalPosition={modalPosition}
 					/>
 					<ChatInput
 						ref={chatInputRef}

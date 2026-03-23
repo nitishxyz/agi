@@ -2,6 +2,12 @@ import type { RendererContext } from './types.ts';
 import { renderReadCall, renderReadResult } from './read.ts';
 import { renderWriteCall, renderWriteResult } from './write.ts';
 import { renderPatchCall, renderPatchResult } from './patch.ts';
+import {
+	renderEditCall,
+	renderEditResult,
+	renderMultiEditCall,
+	renderMultiEditResult,
+} from './edit.ts';
 import { renderBashCall, renderBashResult } from './bash.ts';
 import { renderSearchCall, renderSearchResult } from './search.ts';
 import { renderTreeCall, renderTreeResult } from './tree.ts';
@@ -39,6 +45,8 @@ const callRenderers: Record<string, CallRenderer> = {
 	read: renderReadCall,
 	write: renderWriteCall,
 	apply_patch: renderPatchCall,
+	edit: renderEditCall,
+	multiedit: renderMultiEditCall,
 	bash: renderBashCall,
 	terminal: renderTerminalCall,
 	ripgrep: renderSearchCall,
@@ -60,6 +68,8 @@ const resultRenderers: Record<string, ResultRenderer> = {
 	read: renderReadResult,
 	write: renderWriteResult,
 	apply_patch: renderPatchResult,
+	edit: renderEditResult,
+	multiedit: renderMultiEditResult,
 	bash: renderBashResult,
 	terminal: renderTerminalResult,
 	ripgrep: renderSearchResult,

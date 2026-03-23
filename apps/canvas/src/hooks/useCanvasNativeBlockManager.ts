@@ -83,6 +83,21 @@ function getBoundsSnapshot(element: HTMLElement, focused: boolean): BoundsSnapsh
 	};
 }
 
+function getHiddenBoundsSnapshot(bounds: BoundsSnapshot): BoundsSnapshot {
+	return {
+		...bounds,
+		x: -10000,
+		y: -10000,
+		width: 1,
+		height: 1,
+		focused: false,
+	};
+}
+
+function hasActiveNativeOverlayRoot() {
+	return document.querySelector('[data-native-overlay-root="true"]') !== null;
+}
+
 async function focusMainCanvasSurface() {
 	await getCurrentWindow().setFocus().catch(() => undefined);
 	await getCurrentWebview().setFocus().catch(() => undefined);
@@ -117,6 +132,7 @@ export function useCanvasNativeBlockManager() {
 	const ghosttyEntriesRef = useRef(new Map<string, GhosttyRuntimeEntry>());
 	const browserEntriesRef = useRef(new Map<string, BrowserRuntimeEntry>());
 	const sceneVersionRef = useRef(0);
+	const overlayActiveRef = useRef(false);
 
 	useEffect(() => {
 		blocksRef.current = blocks;
@@ -184,7 +200,11 @@ export function useCanvasNativeBlockManager() {
 			}
 		};
 
-		const syncGhosttyBlock = async (block: Block, focused: boolean) => {
+		const syncGhosttyBlock = async (
+			block: Block,
+			focused: boolean,
+			overlayActive: boolean,
+		) => {
 			const status = ghosttyStatusRef.current;
 			if (!status?.available) return;
 
@@ -223,7 +243,11 @@ export function useCanvasNativeBlockManager() {
 			const host = getNativeBlockHost(block.id);
 			if (!host || host.kind !== 'terminal') return;
 
-			const nextBounds = getBoundsSnapshot(host.element, focused);
+			const visibleFocused = overlayActive ? false : focused;
+			const measuredBounds = getBoundsSnapshot(host.element, visibleFocused);
+			const nextBounds = overlayActive
+				? getHiddenBoundsSnapshot(measuredBounds)
+				: measuredBounds;
 			const boundsChanged = !areBoundsEqual(entry.lastBounds, nextBounds);
 			const sceneChanged = entry.lastSceneVersion !== sceneVersionRef.current;
 			if (boundsChanged || sceneChanged) {
@@ -413,10 +437,11 @@ export function useCanvasNativeBlockManager() {
 				await destroyBrowserEntry(blockId);
 			}
 
+			const overlayActive = overlayActiveRef.current;
 			for (const block of activeBlocks) {
 				const focused = focusedBlockIdRef.current === block.id;
 				if (block.type === 'terminal') {
-					await syncGhosttyBlock(block, focused);
+					await syncGhosttyBlock(block, focused, overlayActive);
 					continue;
 				}
 				await syncBrowserBlock(block, focused);
@@ -425,6 +450,11 @@ export function useCanvasNativeBlockManager() {
 
 		const tick = async () => {
 			if (disposed) return;
+			const overlayActive = hasActiveNativeOverlayRoot();
+			if (overlayActiveRef.current !== overlayActive) {
+				overlayActiveRef.current = overlayActive;
+				sceneVersionRef.current += 1;
+			}
 			await syncAll();
 			if (disposed) return;
 			frame = window.requestAnimationFrame(() => {

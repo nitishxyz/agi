@@ -38,6 +38,13 @@ interface WorkspaceRuntimeStore {
 
 const pendingStarts = new Map<string, Promise<WorkspaceRuntimeState>>();
 
+async function ensureRuntimeReachable(info: WorkspaceRuntimeInfo) {
+	await waitForWorkspaceRuntime(info.url, {
+		attempts: 80,
+		delayMs: 250,
+	});
+}
+
 function fromRuntimeInfo(
 	info: WorkspaceRuntimeInfo,
 	status: WorkspaceRuntimeStatus,
@@ -62,8 +69,27 @@ export const useWorkspaceRuntimeStore = create<WorkspaceRuntimeStore>((set, get)
 
 	ensureStarted: async (input) => {
 		const existing = get().runtimes[input.workspaceId];
-		if (existing?.status === 'ready' || existing?.status === 'starting') {
-			if (existing.status === 'ready') return existing;
+		if (existing?.status === 'ready' && existing.url) {
+			try {
+				await waitForWorkspaceRuntime(existing.url, {
+					attempts: 2,
+					delayMs: 150,
+				});
+				return existing;
+			} catch {
+				set((state) => ({
+					runtimes: {
+						...state.runtimes,
+						[input.workspaceId]: {
+							...existing,
+							status: 'starting',
+							error: null,
+						},
+					},
+				}));
+			}
+		}
+		if (existing?.status === 'starting') {
 			const pending = pendingStarts.get(input.workspaceId);
 			if (pending) return pending;
 		}
@@ -83,10 +109,17 @@ export const useWorkspaceRuntimeStore = create<WorkspaceRuntimeStore>((set, get)
 			}));
 
 			try {
-				const info =
-					(await getWorkspaceRuntime(input.workspaceId)) ??
-					(await startWorkspaceRuntime(input));
-				await waitForWorkspaceRuntime(info.url, { attempts: 120, delayMs: 250 });
+				let info = await getWorkspaceRuntime(input.workspaceId);
+				if (info) {
+					try {
+						await ensureRuntimeReachable(info);
+					} catch {
+						await stopWorkspaceRuntime(input.workspaceId).catch(() => undefined);
+						info = null;
+					}
+				}
+				info ??= await startWorkspaceRuntime(input);
+				await ensureRuntimeReachable(info);
 				const next = fromRuntimeInfo(info, 'ready');
 				set((state) => ({
 					runtimes: {
@@ -150,6 +183,7 @@ export const useWorkspaceRuntimeStore = create<WorkspaceRuntimeStore>((set, get)
 			}));
 			return null;
 		}
+		await ensureRuntimeReachable(info);
 		const next = fromRuntimeInfo(info, 'ready');
 		set((state) => ({
 			runtimes: {
