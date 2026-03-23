@@ -1,5 +1,7 @@
 import { useHotkeys } from '@tanstack/react-hotkeys';
+import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { useEffect, useRef } from 'react';
 import { isTauriRuntime } from '../lib/ghostty';
 import { useCanvasStore } from '../stores/canvas-store';
@@ -29,6 +31,8 @@ function shortcutFromEvent(event: KeyboardEvent): string | null {
 
 export function useCanvasKeybinds() {
 	const addBlock = useCanvasStore((s) => s.addBlock);
+	const blocks = useCanvasStore((s) => s.blocks);
+	const convertBlock = useCanvasStore((s) => s.convertBlock);
 	const removeBlock = useCanvasStore((s) => s.removeBlock);
 	const focusedBlockId = useCanvasStore((s) => s.focusedBlockId);
 	const focusNext = useCanvasStore((s) => s.focusNext);
@@ -48,6 +52,33 @@ export function useCanvasKeybinds() {
 		callback();
 	};
 
+	const focusCanvasWebview = () => {
+		void getCurrentWebview().setFocus().catch(() => undefined);
+	};
+
+	const handlePendingSelection = (key: '1' | '2' | '3' | 'escape') => {
+		if (!focusedBlockId) return false;
+		const block = blocks[focusedBlockId];
+		if (!block || block.type !== 'pending') return false;
+
+		if (key === 'escape') {
+			removeBlock(focusedBlockId);
+			focusCanvasWebview();
+			return true;
+		}
+
+		const type = key === '1' ? 'terminal' : key === '2' ? 'browser' : 'otto';
+		convertBlock(focusedBlockId, type);
+		focusCanvasWebview();
+		return true;
+	};
+
+	useEffect(() => {
+		if (!isTauriRuntime()) return;
+		const enabled = !!focusedBlockId && blocks[focusedBlockId]?.type === 'pending';
+		void invoke('canvas_set_pending_shortcut_mode', { enabled }).catch(() => undefined);
+	}, [blocks, focusedBlockId]);
+
 	useEffect(() => {
 		if (!isTauriRuntime()) {
 			return;
@@ -55,15 +86,41 @@ export function useCanvasKeybinds() {
 
 		let unlisten: (() => void) | undefined;
 		void listen<{ shortcut: string }>('ghostty-native-shortcut', (event) => {
+			if (event.payload.shortcut === 'plain+1') {
+				handlePendingSelection('1');
+				return;
+			}
+			if (event.payload.shortcut === 'plain+2') {
+				handlePendingSelection('2');
+				return;
+			}
+			if (event.payload.shortcut === 'plain+3') {
+				handlePendingSelection('3');
+				return;
+			}
+			if (event.payload.shortcut === 'escape') {
+				handlePendingSelection('escape');
+				return;
+			}
+
 			switch (event.payload.shortcut) {
 				case 'mod+n':
-					runShortcut('mod+n', () => addBlock('pending'));
+					runShortcut('mod+n', () => {
+						addBlock('pending');
+						focusCanvasWebview();
+					});
 					break;
 				case 'mod+d':
-					runShortcut('mod+d', () => addBlock('pending', undefined, 'horizontal'));
+					runShortcut('mod+d', () => {
+						addBlock('pending', undefined, 'horizontal');
+						focusCanvasWebview();
+					});
 					break;
 				case 'mod+shift+d':
-					runShortcut('mod+shift+d', () => addBlock('pending', undefined, 'vertical'));
+					runShortcut('mod+shift+d', () => {
+						addBlock('pending', undefined, 'vertical');
+						focusCanvasWebview();
+					});
 					break;
 				case 'mod+w':
 					runShortcut('mod+w', () => {
@@ -128,6 +185,8 @@ export function useCanvasKeybinds() {
 		};
 	}, [
 		addBlock,
+		blocks,
+		convertBlock,
 		focusByIndex,
 		focusDirection,
 		focusNext,
@@ -139,6 +198,19 @@ export function useCanvasKeybinds() {
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
+			if (!event.metaKey && !event.ctrlKey && !event.altKey) {
+				if (event.key === '1' || event.key === '2' || event.key === '3') {
+					if (handlePendingSelection(event.key as '1' | '2' | '3')) {
+						event.preventDefault();
+					}
+					return;
+				}
+				if (event.key === 'Escape' && handlePendingSelection('escape')) {
+					event.preventDefault();
+					return;
+				}
+			}
+
 			const shortcut = shortcutFromEvent(event);
 			if (!shortcut) return;
 
@@ -146,13 +218,22 @@ export function useCanvasKeybinds() {
 
 			switch (shortcut) {
 				case 'mod+n':
-					runShortcut('mod+n', () => addBlock('pending'));
+					runShortcut('mod+n', () => {
+						addBlock('pending');
+						focusCanvasWebview();
+					});
 					break;
 				case 'mod+d':
-					runShortcut('mod+d', () => addBlock('pending', undefined, 'horizontal'));
+					runShortcut('mod+d', () => {
+						addBlock('pending', undefined, 'horizontal');
+						focusCanvasWebview();
+					});
 					break;
 				case 'mod+shift+d':
-					runShortcut('mod+shift+d', () => addBlock('pending', undefined, 'vertical'));
+					runShortcut('mod+shift+d', () => {
+						addBlock('pending', undefined, 'vertical');
+						focusCanvasWebview();
+					});
 					break;
 				case 'mod+w':
 					runShortcut('mod+w', () => {
@@ -214,6 +295,8 @@ export function useCanvasKeybinds() {
 		return () => window.removeEventListener('keydown', onKeyDown, true);
 	}, [
 		addBlock,
+		blocks,
+		convertBlock,
 		focusByIndex,
 		focusDirection,
 		focusNext,
@@ -224,9 +307,9 @@ export function useCanvasKeybinds() {
 	]);
 
 	useHotkeys([
-		{ hotkey: 'Mod+N', callback: () => runShortcut('mod+n', () => addBlock('pending')) },
-		{ hotkey: 'Mod+D', callback: () => runShortcut('mod+d', () => addBlock('pending', undefined, 'horizontal')) },
-		{ hotkey: 'Mod+Shift+D', callback: () => runShortcut('mod+shift+d', () => addBlock('pending', undefined, 'vertical')) },
+		{ hotkey: 'Mod+N', callback: () => runShortcut('mod+n', () => { addBlock('pending'); focusCanvasWebview(); }) },
+		{ hotkey: 'Mod+D', callback: () => runShortcut('mod+d', () => { addBlock('pending', undefined, 'horizontal'); focusCanvasWebview(); }) },
+		{ hotkey: 'Mod+Shift+D', callback: () => runShortcut('mod+shift+d', () => { addBlock('pending', undefined, 'vertical'); focusCanvasWebview(); }) },
 
 		{ hotkey: 'Mod+W', callback: () => runShortcut('mod+w', () => { if (focusedBlockId) removeBlock(focusedBlockId); }) },
 

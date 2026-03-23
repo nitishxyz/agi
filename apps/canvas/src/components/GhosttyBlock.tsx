@@ -1,177 +1,87 @@
+import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Block } from '../stores/canvas-store';
-import { useCanvasStore } from '../stores/canvas-store';
 import {
-	createGhosttyBlock,
 	getGhosttyStatus,
 	inputGhosttyText,
-	isTauriRuntime,
-	setGhosttyBlockFocus,
-	updateGhosttyBlock,
 	type GhosttyStatus,
 } from '../lib/ghostty';
+import {
+	useNativeBlockHost,
+	useNativeBlockRuntime,
+} from '../lib/native-block-runtime';
+import type { Block } from '../stores/canvas-store';
+import { useCanvasStore } from '../stores/canvas-store';
 
 interface GhosttyBlockProps {
 	block: Block;
 	isFocused: boolean;
 }
 
-interface BoundsSnapshot {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-	viewportHeight: number;
-	scaleFactor: number;
-	focused: boolean;
-}
-
-
-function areBoundsEqual(a: BoundsSnapshot | null, b: BoundsSnapshot) {
-	if (!a) return false;
-	return (
-		Math.abs(a.x - b.x) < 0.5 &&
-		Math.abs(a.y - b.y) < 0.5 &&
-		Math.abs(a.width - b.width) < 0.5 &&
-		Math.abs(a.height - b.height) < 0.5 &&
-		a.viewportHeight === b.viewportHeight &&
-		Math.abs(a.scaleFactor - b.scaleFactor) < 0.01 &&
-		a.focused === b.focused
+export function GhosttyBlock({ block }: GhosttyBlockProps) {
+	const runtimeHostRef = useNativeBlockHost(block.id, 'terminal');
+	const elementRef = useRef<HTMLDivElement | null>(null);
+	const hostRef = useCallback(
+		(node: HTMLDivElement | null) => {
+			elementRef.current = node;
+			runtimeHostRef(node);
+		},
+		[runtimeHostRef],
 	);
-}
-
-function getBoundsSnapshot(element: HTMLDivElement, focused: boolean): BoundsSnapshot {
-	const rect = element.getBoundingClientRect();
-	return {
-		x: rect.left,
-		y: rect.top,
-		width: rect.width,
-		height: rect.height,
-		viewportHeight: window.innerHeight,
-		scaleFactor: window.devicePixelRatio || 1,
-		focused,
-	};
-}
-
-export function GhosttyBlock({ block, isFocused }: GhosttyBlockProps) {
-	const hostRef = useRef<HTMLDivElement>(null);
-	const lastBoundsRef = useRef<BoundsSnapshot | null>(null);
-	const [status, setStatus] = useState<GhosttyStatus | null>(null);
-	const [created, setCreated] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+	const runtime = useNativeBlockRuntime(block.id);
 	const setFocused = useCanvasStore((s) => s.setFocused);
+	const [status, setStatus] = useState<GhosttyStatus | null>(null);
+	const [statusError, setStatusError] = useState<string | null>(null);
 
 	const unavailableMessage = useMemo(() => {
-		if (error) return error;
+		if (runtime.error) return runtime.error;
+		if (statusError) return statusError;
 		if (!status) return 'Checking local Ghostty installation…';
 		if (!status.available) return status.message;
 		return null;
-	}, [error, status]);
+	}, [runtime.error, status, statusError]);
 
 	useEffect(() => {
 		let cancelled = false;
 
-		getGhosttyStatus()
-			.then(async (nextStatus) => {
+		void getGhosttyStatus()
+			.then((nextStatus) => {
 				if (cancelled) return;
 				setStatus(nextStatus);
-				if (!nextStatus.available || !isTauriRuntime()) {
-					return;
-				}
-
-				await createGhosttyBlock(block.id).catch((createError) => {
-					throw createError;
-				});
-				if (hostRef.current) {
-					const nextBounds = getBoundsSnapshot(hostRef.current, isFocused);
-					lastBoundsRef.current = nextBounds;
-					await updateGhosttyBlock(block.id, nextBounds);
-				}
-				if (!cancelled) {
-					setCreated(true);
-				}
 			})
-			.catch((nextError) => {
-				if (!cancelled) {
-					setError(nextError instanceof Error ? nextError.message : String(nextError));
-				}
+			.catch((error) => {
+				if (cancelled) return;
+				setStatusError(error instanceof Error ? error.message : String(error));
 			});
 
 		return () => {
 			cancelled = true;
 		};
-	}, [block.id]);
-
-	useEffect(() => {
-		if (!created || !isFocused) {
-			return;
-		}
-
-		const timeout = window.setTimeout(() => {
-			void setGhosttyBlockFocus(block.id, true).catch((focusError) => {
-				setError(focusError instanceof Error ? focusError.message : String(focusError));
-			});
-		}, 60);
-
-		return () => {
-			window.clearTimeout(timeout);
-		};
-	}, [block.id, created, isFocused]);
-
-	useEffect(() => {
-		if (!created || !hostRef.current) {
-			return;
-		}
-
-		let frame = 0;
-		let active = true;
-
-		const tick = () => {
-			if (!active || !hostRef.current) {
-				return;
-			}
-
-			const nextBounds = getBoundsSnapshot(hostRef.current, isFocused);
-
-			if (!areBoundsEqual(lastBoundsRef.current, nextBounds)) {
-				lastBoundsRef.current = nextBounds;
-				void updateGhosttyBlock(block.id, nextBounds).catch((updateError) => {
-					setError(updateError instanceof Error ? updateError.message : String(updateError));
-				});
-			}
-
-			frame = window.requestAnimationFrame(tick);
-		};
-
-		frame = window.requestAnimationFrame(tick);
-
-		return () => {
-			active = false;
-			window.cancelAnimationFrame(frame);
-		};
-	}, [block.id, created, isFocused]);
+	}, []);
 
 	const sendText = useCallback(
 		(text: string) => {
-			if (!created || !text) return;
-			void inputGhosttyText(block.id, text).catch((inputError) => {
-				setError(inputError instanceof Error ? inputError.message : String(inputError));
+			if (!text) return;
+			void inputGhosttyText(block.id, text).catch((error) => {
+				setStatusError(error instanceof Error ? error.message : String(error));
 			});
 		},
-		[block.id, created],
+		[block.id],
 	);
-
 
 	return (
 		<div className="relative h-full w-full overflow-hidden bg-transparent">
 			<div
 				ref={hostRef}
+				data-native-block-host="terminal"
+				data-block-id={block.id}
 				tabIndex={0}
 				className="h-full w-full outline-none"
 				onFocus={() => setFocused(block.id)}
-				onMouseDown={() => {
+				onMouseDown={(event) => {
+					event.stopPropagation();
 					setFocused(block.id);
-					hostRef.current?.focus();
+					void getCurrentWebview().setFocus().catch(() => undefined);
+					elementRef.current?.focus();
 				}}
 				onPaste={(event) => {
 					const text = event.clipboardData.getData('text/plain');
@@ -184,9 +94,13 @@ export function GhosttyBlock({ block, isFocused }: GhosttyBlockProps) {
 
 			{unavailableMessage && (
 				<div className="absolute inset-0 flex items-center justify-center bg-[#09090b] px-6 text-center">
-					<div className="space-y-2 max-w-[340px]">
-						<p className="text-[12px] font-medium text-canvas-text-dim">Ghostty block unavailable</p>
-						<p className="text-[11px] leading-5 text-canvas-text-muted">{unavailableMessage}</p>
+					<div className="max-w-[340px] space-y-2">
+						<p className="text-[12px] font-medium text-canvas-text-dim">
+							Ghostty block unavailable
+						</p>
+						<p className="text-[11px] leading-5 text-canvas-text-muted">
+							{unavailableMessage}
+						</p>
 					</div>
 				</div>
 			)}

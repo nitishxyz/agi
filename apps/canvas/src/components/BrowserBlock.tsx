@@ -1,5 +1,4 @@
 import { openUrl as openExternalUrl } from '@tauri-apps/plugin-opener';
-import type { Webview } from '@tauri-apps/api/webview';
 import {
 	ArrowLeft,
 	ArrowRight,
@@ -7,16 +6,13 @@ import {
 	Globe,
 	LoaderCircle,
 	RotateCw,
-	X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import {
-	createBrowserWebview,
-	destroyBrowserWebview,
-	getBrowserUserAgent,
-	updateBrowserWebviewBounds,
-} from '../lib/browser-webview';
 import { isTauriRuntime } from '../lib/ghostty';
+import {
+	useNativeBlockHost,
+	useNativeBlockRuntime,
+} from '../lib/native-block-runtime';
 import type { Block } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
 
@@ -26,8 +22,6 @@ const QUICK_LINKS = [
 	'http://localhost:8000',
 	'http://localhost:8080',
 ] as const;
-
-const MIN_LOADING_UI_MS = 900;
 
 function normalizeBrowserUrl(value: string) {
 	const trimmed = value.trim();
@@ -86,7 +80,7 @@ function BrowserEmptyState({ onNavigate }: { onNavigate: (url: string) => void }
 						Open a preview, docs page, or dashboard
 					</p>
 					<p className="text-[11px] text-canvas-text-muted">
-						Browser blocks are native Tauri child webviews. Localhost previews and normal sites should load directly here.
+						Browser blocks render in a native macOS web view hosted alongside Ghostty blocks.
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center justify-center gap-2">
@@ -105,7 +99,15 @@ function BrowserEmptyState({ onNavigate }: { onNavigate: (url: string) => void }
 	);
 }
 
-function BrowserUnavailable({ title, message, url }: { title: string; message: string; url?: string }) {
+function BrowserUnavailable({
+	title,
+	message,
+	url,
+}: {
+	title: string;
+	message: string;
+	url?: string;
+}) {
 	return (
 		<div className="flex h-full items-center justify-center px-6">
 			<div className="max-w-md space-y-4 text-center">
@@ -130,62 +132,25 @@ function BrowserUnavailable({ title, message, url }: { title: string; message: s
 }
 
 export function BrowserBlock({ block }: { block: Block }) {
-	const nativeContainerRef = useRef<HTMLDivElement>(null);
-	const nativeWebviewRef = useRef<Webview | null>(null);
-	const historyRef = useRef<string[]>(block.url ? [block.url] : []);
-	const loadingStartedAtRef = useRef<number>(0);
-	const loadingGenerationRef = useRef(0);
-	const loadingTimerRef = useRef<number | null>(null);
+	const hostRef = useNativeBlockHost(block.id, 'browser');
+	const runtime = useNativeBlockRuntime(block.id);
 	const setBlockUrl = useCanvasStore((s) => s.setBlockUrl);
+	const reloadBlock = useCanvasStore((s) => s.reloadBlock);
 	const [draftUrl, setDraftUrl] = useState(block.url ?? '');
-	const [refreshKey, setRefreshKey] = useState(0);
-	const [isLoading, setIsLoading] = useState(false);
-	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [historyIndex, setHistoryIndex] = useState(block.url ? 0 : -1);
+	const historyRef = useRef<string[]>(block.url ? [block.url] : []);
 	const nativeMode = isTauriRuntime();
 
 	useEffect(() => {
 		setDraftUrl(block.url ?? '');
 	}, [block.url]);
 
-	const clearLoadingTimer = useCallback(() => {
-		if (loadingTimerRef.current !== null) {
-			window.clearTimeout(loadingTimerRef.current);
-			loadingTimerRef.current = null;
-		}
-	}, []);
-
-	const beginLoading = useCallback(() => {
-		clearLoadingTimer();
-		loadingStartedAtRef.current = Date.now();
-		setIsLoading(true);
-	}, [clearLoadingTimer]);
-
-	const finishLoading = useCallback(
-		(generation: number) => {
-			if (generation !== loadingGenerationRef.current) return;
-			const elapsed = Date.now() - loadingStartedAtRef.current;
-			const remaining = Math.max(0, MIN_LOADING_UI_MS - elapsed);
-
-			clearLoadingTimer();
-			loadingTimerRef.current = window.setTimeout(() => {
-				if (generation !== loadingGenerationRef.current) return;
-				loadingTimerRef.current = null;
-				setIsLoading(false);
-			}, remaining);
-		},
-		[clearLoadingTimer],
-	);
-
 	const navigate = useCallback(
 		(value: string, options?: { record?: boolean }) => {
 			const nextUrl = normalizeBrowserUrl(value);
 			if (!nextUrl) return;
 
-			beginLoading();
 			setDraftUrl(nextUrl);
-			setErrorMessage(null);
-
 			if (options?.record !== false) {
 				const current = historyIndex >= 0 ? historyRef.current[historyIndex] : null;
 				if (current !== nextUrl) {
@@ -198,7 +163,7 @@ export function BrowserBlock({ block }: { block: Block }) {
 
 			setBlockUrl(block.id, nextUrl);
 		},
-		[beginLoading, block.id, historyIndex, setBlockUrl],
+		[block.id, historyIndex, setBlockUrl],
 	);
 
 	const goHistory = useCallback(
@@ -212,144 +177,10 @@ export function BrowserBlock({ block }: { block: Block }) {
 		[historyIndex, navigate],
 	);
 
-	const stopLoading = useCallback(() => {
-		loadingGenerationRef.current += 1;
-		clearLoadingTimer();
-		const current = nativeWebviewRef.current;
-		if (!current) {
-			setIsLoading(false);
-			return;
-		}
-		nativeWebviewRef.current = null;
-		setIsLoading(false);
-		setErrorMessage('Loading stopped. Press reload to try again.');
-		void current.close().catch((error) => {
-			console.debug('[browser] failed to stop child webview', error);
-		});
-	}, [clearLoadingTimer]);
-
-	const syncNativeBounds = useCallback(async () => {
-		if (!nativeWebviewRef.current || !nativeContainerRef.current) return;
-
-		const rect = nativeContainerRef.current.getBoundingClientRect();
-		if (rect.width < 1 || rect.height < 1) return;
-
-		await updateBrowserWebviewBounds(nativeWebviewRef.current, {
-			x: rect.left,
-			y: rect.top,
-			width: rect.width,
-			height: rect.height,
-		}).catch((error) => {
-			console.debug('[browser] failed to update child webview bounds', error);
-		});
-	}, []);
-
-	useEffect(() => {
-		if (!nativeMode || !block.url) return;
-
-		const element = nativeContainerRef.current;
-		if (!element) return;
-
-		const sync = () => {
-			void syncNativeBounds();
-		};
-
-		sync();
-
-		const observer = new ResizeObserver(sync);
-		observer.observe(element);
-		window.addEventListener('resize', sync);
-
-		return () => {
-			observer.disconnect();
-			window.removeEventListener('resize', sync);
-		};
-	}, [block.url, nativeMode, syncNativeBounds]);
-
-	useEffect(() => {
-		if (!nativeMode) return;
-
-		if (!block.url) {
-			loadingGenerationRef.current += 1;
-			clearLoadingTimer();
-			setIsLoading(false);
-			setErrorMessage(null);
-			void destroyBrowserWebview(block.id);
-			return;
-		}
-
-		const generation = ++loadingGenerationRef.current;
-		const currentUrl = block.url;
-		let cancelled = false;
-		beginLoading();
-		setErrorMessage(null);
-
-		const createNativeView = async () => {
-			const element = nativeContainerRef.current;
-			if (!element) {
-				window.requestAnimationFrame(() => {
-					void createNativeView();
-				});
-				return;
-			}
-
-			const rect = element.getBoundingClientRect();
-			if (rect.width < 1 || rect.height < 1) {
-				window.requestAnimationFrame(() => {
-					void createNativeView();
-				});
-				return;
-			}
-
-			try {
-				const webview = await createBrowserWebview(
-					block.id,
-					currentUrl,
-					{
-						x: rect.left,
-						y: rect.top,
-						width: rect.width,
-						height: rect.height,
-					},
-					false,
-					getBrowserUserAgent(window.navigator.userAgent),
-				);
-
-				if (cancelled) {
-					await webview.close().catch(() => undefined);
-					return;
-				}
-
-				nativeWebviewRef.current = webview;
-				finishLoading(generation);
-				setErrorMessage(null);
-			} catch (error) {
-				if (cancelled) return;
-				console.debug('[browser] failed to create child webview', error);
-				finishLoading(generation);
-				setErrorMessage(
-					error instanceof Error
-						? error.message
-						: 'Failed to create native browser webview.',
-				);
-			}
-		};
-
-		void createNativeView();
-
-		return () => {
-			cancelled = true;
-			clearLoadingTimer();
-			nativeWebviewRef.current = null;
-			void destroyBrowserWebview(block.id);
-		};
-	}, [beginLoading, block.id, block.url, clearLoadingTimer, finishLoading, nativeMode, refreshKey]);
-
-	useEffect(() => {
-		return () => {
-			clearLoadingTimer();
-		};
-	}, [clearLoadingTimer]);
+	const reload = useCallback(() => {
+		if (!block.url) return;
+		reloadBlock(block.id);
+	}, [block.id, block.url, reloadBlock]);
 
 	return (
 		<div className="flex h-full w-full flex-col bg-[rgba(10,10,12,0.92)]">
@@ -369,17 +200,11 @@ export function BrowserBlock({ block }: { block: Block }) {
 					<ArrowRight size={13} />
 				</IconButton>
 				<IconButton
-					onClick={() => {
-						if (isLoading) {
-							stopLoading();
-							return;
-						}
-						setRefreshKey((value) => value + 1);
-					}}
-					title={isLoading ? 'Stop loading' : 'Reload'}
-					disabled={!block.url}
+					onClick={reload}
+					title="Reload"
+					disabled={!block.url || runtime.loading}
 				>
-					{isLoading ? <X size={13} /> : <RotateCw size={13} />}
+					<RotateCw size={13} />
 				</IconButton>
 				<form
 					className="flex-1"
@@ -411,7 +236,7 @@ export function BrowserBlock({ block }: { block: Block }) {
 			</div>
 
 			<div className="relative flex-1 min-h-0 bg-white">
-				{isLoading && (
+				{runtime.loading && (
 					<>
 						<div className="absolute inset-x-0 top-0 h-[2px] bg-black/5" />
 						<div className="absolute left-0 top-0 h-[2px] w-1/3 animate-[browser-load_1.15s_ease-in-out_infinite] bg-canvas-accent" />
@@ -425,17 +250,22 @@ export function BrowserBlock({ block }: { block: Block }) {
 				{!nativeMode ? (
 					<BrowserUnavailable
 						title="Browser blocks require the Canvas desktop runtime"
-						message="This block is native-only. apps/canvas renders browser content through a Tauri child webview, with no iframe fallback. Tauri uses system webviews; see the Tauri webview versions reference for platform differences."
+						message="This block is native-only. apps/canvas renders browser content through a native platform web view."
 						url={block.url}
 					/>
 				) : !block.url ? (
 					<BrowserEmptyState onNavigate={(url) => void navigate(url)} />
 				) : (
-					<div ref={nativeContainerRef} className="h-full w-full">
-						{errorMessage && (
+					<div
+						ref={hostRef}
+						data-native-block-host="browser"
+						data-block-id={block.id}
+						className="h-full w-full"
+					>
+						{runtime.error && (
 							<BrowserUnavailable
 								title="Browser block unavailable"
-								message={errorMessage}
+								message={runtime.error}
 								url={block.url}
 							/>
 						)}

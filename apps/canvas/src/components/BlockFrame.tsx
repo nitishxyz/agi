@@ -1,3 +1,4 @@
+import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { useEffect, useRef } from 'react';
 import { X, Terminal, Globe, Bot } from 'lucide-react';
 import type { Block, BlockType } from '../stores/canvas-store';
@@ -102,6 +103,7 @@ export function BlockFrame({ block }: BlockFrameProps) {
 	useEffect(() => {
 		if (isPending && isFocused) {
 			window.setTimeout(() => {
+				void getCurrentWebview().setFocus().catch(() => undefined);
 				pendingRef.current?.focus();
 				window.focus();
 			}, 0);
