@@ -1,7 +1,8 @@
+import { useCallback, useEffect, useRef } from 'react';
 import type { LayoutNode } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
+import { useWorkspaceStore } from '../stores/workspace-store';
 import { BlockFrame } from './BlockFrame';
-import { useCallback, useEffect, useRef } from 'react';
 
 interface LayoutProps {
 	node: LayoutNode;
@@ -84,6 +85,7 @@ function LayoutRenderer({ node }: LayoutProps) {
 
 export function CanvasRenderer() {
 	const layout = useCanvasStore((s) => s.layout);
+	const activeWorkspaceId = useWorkspaceStore((s) => s.activeId);
 	const emptyStateRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -96,17 +98,25 @@ export function CanvasRenderer() {
 	}, [layout]);
 
 	if (!layout) {
+		const title = activeWorkspaceId ? 'No blocks yet' : 'No workspace open';
+		const description =
+			'Use the + button in the sidebar to create a workspace linked to a local project path.';
+
 		return (
 			<div
 				ref={emptyStateRef}
 				tabIndex={0}
-				className="flex-1 flex items-center justify-center h-full outline-none"
+				className="flex h-full flex-1 items-center justify-center outline-none"
 			>
-				<div className="text-center space-y-3">
-					<p className="text-[13px] text-canvas-text-dim">No blocks yet</p>
-					<p className="text-[11px] text-canvas-text-muted">
-						Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-canvas-text-dim text-[10px]">Ctrl+Shift+N</kbd> to add a block
-					</p>
+				<div className="space-y-3 text-center">
+					<p className="text-[13px] text-canvas-text-dim">{title}</p>
+					{activeWorkspaceId ? (
+						<p className="text-[11px] text-canvas-text-muted">
+							Press <kbd className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-canvas-text-dim">Ctrl+Shift+N</kbd> to add a block
+						</p>
+					) : (
+						<p className="max-w-sm text-[11px] text-canvas-text-muted">{description}</p>
+					)}
 				</div>
 			</div>
 		);

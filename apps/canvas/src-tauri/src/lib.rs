@@ -1,5 +1,6 @@
 mod browser;
 mod ghostty;
+mod runtime;
 
 use browser::{
     browser_create_block, browser_destroy_block, browser_navigate_block, browser_reload_block,
@@ -10,6 +11,10 @@ use ghostty::{
     ghostty_input_key, ghostty_input_text, ghostty_set_block_focus, ghostty_status,
     ghostty_update_block, GhosttyManager,
 };
+use runtime::{
+    workspace_get_runtime, workspace_list_runtimes, workspace_read_runtime_log,
+    workspace_start_runtime, workspace_stop_runtime, WorkspaceRuntimeManager,
+};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -17,10 +22,12 @@ pub fn run() {
     let ghostty_manager = GhosttyManager::default();
     let ghostty_manager_for_setup = ghostty_manager.clone();
     let browser_manager = BrowserManager::default();
+    let runtime_manager = WorkspaceRuntimeManager::default();
 
     tauri::Builder::default()
         .manage(ghostty_manager)
         .manage(browser_manager)
+        .manage(runtime_manager)
         .invoke_handler(tauri::generate_handler![
             ghostty_status,
             canvas_set_pending_shortcut_mode,
@@ -35,8 +42,14 @@ pub fn run() {
             browser_navigate_block,
             browser_reload_block,
             browser_destroy_block,
+            workspace_start_runtime,
+            workspace_get_runtime,
+            workspace_stop_runtime,
+            workspace_read_runtime_log,
+            workspace_list_runtimes,
         ])
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())

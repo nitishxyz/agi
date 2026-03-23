@@ -10,6 +10,7 @@
 		"core:window:allow-is-fullscreen",
 		"core:webview:default",
 		"opener:default",
+		"dialog:default",
 		"fs:default",
 		"shell:default",
 		"process:default"

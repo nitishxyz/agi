@@ -24,6 +24,7 @@ import {
 } from '../lib/ghostty';
 import type { Block } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
+import { useWorkspaceStore } from '../stores/workspace-store';
 
 interface BoundsSnapshot {
 	x: number;
@@ -106,8 +107,12 @@ function scheduleGhosttyFocus(blockId: string) {
 export function useCanvasNativeBlockManager() {
 	const blocks = useCanvasStore((s) => s.blocks);
 	const focusedBlockId = useCanvasStore((s) => s.focusedBlockId);
+	const activeWorkspaceId = useWorkspaceStore((s) => s.activeId);
+	const environments = useWorkspaceStore((s) => s.environments);
+	const workspaces = useWorkspaceStore((s) => s.workspaces);
 	const blocksRef = useRef(blocks);
 	const focusedBlockIdRef = useRef(focusedBlockId);
+	const activeEnvironmentPathRef = useRef<string | null>(null);
 	const ghosttyStatusRef = useRef<GhosttyStatus | null>(null);
 	const ghosttyEntriesRef = useRef(new Map<string, GhosttyRuntimeEntry>());
 	const browserEntriesRef = useRef(new Map<string, BrowserRuntimeEntry>());
@@ -120,6 +125,13 @@ export function useCanvasNativeBlockManager() {
 	useEffect(() => {
 		focusedBlockIdRef.current = focusedBlockId;
 	}, [focusedBlockId]);
+
+	useEffect(() => {
+		const activeWorkspace = workspaces.find((workspace) => workspace.id === activeWorkspaceId);
+		activeEnvironmentPathRef.current = activeWorkspace
+			? environments[activeWorkspace.primaryEnvironmentId]?.path ?? null
+			: null;
+	}, [activeWorkspaceId, environments, workspaces]);
 
 	useEffect(() => {
 		if (!isTauriRuntime()) return;
@@ -191,7 +203,10 @@ export function useCanvasNativeBlockManager() {
 			if (!entry.created && !entry.creating) {
 				entry.creating = true;
 				try {
-					await createGhosttyBlock(block.id);
+					await createGhosttyBlock(
+						block.id,
+						activeEnvironmentPathRef.current ?? undefined,
+					);
 					entry.created = true;
 					setNativeBlockRuntimeState(block.id, { error: null });
 				} catch (error) {

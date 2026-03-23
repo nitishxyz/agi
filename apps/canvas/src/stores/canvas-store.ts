@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { useWorkspaceStore } from './workspace-store';
 
 export type BlockType = 'terminal' | 'browser' | 'otto' | 'pending';
 export type SplitDirection = 'horizontal' | 'vertical';
@@ -9,6 +11,7 @@ export interface Block {
 	label: string;
 	url?: string;
 	reloadToken?: number;
+	sessionId?: string;
 }
 
 export interface SplitNode {
@@ -27,14 +30,26 @@ export interface LeafNode {
 
 export type LayoutNode = SplitNode | LeafNode;
 
-interface CanvasState {
+export interface WorkspaceCanvasState {
 	blocks: Record<string, Block>;
 	layout: LayoutNode | null;
 	focusedBlockId: string | null;
+	updatedAt: number;
+}
+
+interface CanvasState {
+	activeWorkspaceId: string | null;
+	workspaceStates: Record<string, WorkspaceCanvasState>;
+	blocks: Record<string, Block>;
+	layout: LayoutNode | null;
+	focusedBlockId: string | null;
+	activateWorkspace: (workspaceId: string | null) => void;
+	deleteWorkspaceState: (workspaceId: string) => void;
 	setFocused: (id: string) => void;
 	addBlock: (type: BlockType, label?: string, direction?: SplitDirection) => void;
 	convertBlock: (id: string, type: BlockType) => void;
 	setBlockUrl: (id: string, url: string) => void;
+	setBlockSessionId: (id: string, sessionId: string | null) => void;
 	reloadBlock: (id: string) => void;
 	removeBlock: (id: string) => void;
 	setSplitRatio: (splitId: string, ratio: number) => void;
@@ -46,6 +61,24 @@ interface CanvasState {
 
 function generateId() {
 	return crypto.randomUUID().slice(0, 8);
+}
+
+function createEmptyWorkspaceState(): WorkspaceCanvasState {
+	return {
+		blocks: {},
+		layout: null,
+		focusedBlockId: null,
+		updatedAt: Date.now(),
+	};
+}
+
+function finalizeWorkspaceState(
+	state: Omit<WorkspaceCanvasState, 'updatedAt'>,
+): WorkspaceCanvasState {
+	return {
+		...state,
+		updatedAt: Date.now(),
+	};
 }
 
 function getParentDirection(node: LayoutNode, targetId: string): SplitDirection | null {
@@ -126,10 +159,7 @@ function splitAtLeaf(
 	};
 }
 
-function removeFromLayout(
-	node: LayoutNode,
-	blockId: string,
-): LayoutNode | null {
+function removeFromLayout(node: LayoutNode, blockId: string): LayoutNode | null {
 	if (node.kind === 'leaf') {
 		return node.blockId === blockId ? null : node;
 	}
@@ -171,189 +201,403 @@ const LABELS: Record<BlockType, string> = {
 	pending: 'New Block',
 };
 
-export const useCanvasStore = create<CanvasState>((set, get) => ({
-	blocks: {},
-	layout: null,
-	focusedBlockId: null,
+function resolveWorkspaceState(
+	workspaceStates: Record<string, WorkspaceCanvasState>,
+	workspaceId: string,
+) {
+	return workspaceStates[workspaceId] ?? createEmptyWorkspaceState();
+}
 
-	setFocused: (id) => set({ focusedBlockId: id }),
+export const useCanvasStore = create<CanvasState>()(
+	persist(
+		(set, get) => ({
+			activeWorkspaceId: null,
+			workspaceStates: {},
+			blocks: {},
+			layout: null,
+			focusedBlockId: null,
 
-	addBlock: (type, label, direction) => {
-		const id = generateId();
-		const block: Block = {
-			id,
-			type,
-			label: label ?? LABELS[type],
-			url: type === 'browser' ? '' : undefined,
-			reloadToken: type === 'browser' ? 0 : undefined,
-		};
-		const { layout, focusedBlockId } = get();
-		set({
-			blocks: { ...get().blocks, [id]: block },
-			layout: insertBlock(layout, focusedBlockId, id, direction),
-			focusedBlockId: id,
-		});
-	},
+			activateWorkspace: (workspaceId) => {
+				if (!workspaceId) {
+					set({
+						activeWorkspaceId: null,
+						blocks: {},
+						layout: null,
+						focusedBlockId: null,
+					});
+					return;
+				}
 
-	convertBlock: (id, type) => {
-		const block = get().blocks[id];
-		if (!block) return;
-		set({
-			blocks: {
-				...get().blocks,
-				[id]: {
-					...block,
+				const workspaceState = resolveWorkspaceState(get().workspaceStates, workspaceId);
+				set((state) => ({
+					activeWorkspaceId: workspaceId,
+					blocks: workspaceState.blocks,
+					layout: workspaceState.layout,
+					focusedBlockId: workspaceState.focusedBlockId,
+					workspaceStates: state.workspaceStates[workspaceId]
+						? state.workspaceStates
+						: { ...state.workspaceStates, [workspaceId]: workspaceState },
+				}));
+			},
+
+			deleteWorkspaceState: (workspaceId) => {
+				set((state) => {
+					const nextStates = { ...state.workspaceStates };
+					delete nextStates[workspaceId];
+					if (state.activeWorkspaceId !== workspaceId) {
+						return { workspaceStates: nextStates };
+					}
+					return {
+						workspaceStates: nextStates,
+						activeWorkspaceId: null,
+						blocks: {},
+						layout: null,
+						focusedBlockId: null,
+					};
+				});
+			},
+
+			setFocused: (id) => {
+				const { activeWorkspaceId, blocks, layout, workspaceStates } = get();
+				if (!activeWorkspaceId) return;
+				const nextState = finalizeWorkspaceState({
+					blocks,
+					layout,
+					focusedBlockId: id,
+				});
+				set({
+					focusedBlockId: id,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
+			},
+
+			addBlock: (type, label, direction) => {
+				const { activeWorkspaceId, layout, focusedBlockId, blocks, workspaceStates } = get();
+				if (!activeWorkspaceId) return;
+				const id = generateId();
+				const block: Block = {
+					id,
 					type,
-					label: LABELS[type],
-					url: type === 'browser' ? block.url ?? '' : undefined,
-					reloadToken: type === 'browser' ? block.reloadToken ?? 0 : undefined,
-				},
+					label: label ?? LABELS[type],
+					url: type === 'browser' ? '' : undefined,
+					reloadToken: type === 'browser' ? 0 : undefined,
+				};
+				const nextState = finalizeWorkspaceState({
+					blocks: { ...blocks, [id]: block },
+					layout: insertBlock(layout, focusedBlockId, id, direction),
+					focusedBlockId: id,
+				});
+				set({
+					blocks: nextState.blocks,
+					layout: nextState.layout,
+					focusedBlockId: nextState.focusedBlockId,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
 			},
-		});
-	},
 
-	setBlockUrl: (id, url) => {
-		const block = get().blocks[id];
-		if (!block) return;
-		set({
-			blocks: {
-				...get().blocks,
-				[id]: { ...block, url },
+			convertBlock: (id, type) => {
+				const { activeWorkspaceId, blocks, layout, focusedBlockId, workspaceStates } = get();
+				const block = blocks[id];
+				if (!activeWorkspaceId || !block) return;
+				const nextState = finalizeWorkspaceState({
+					blocks: {
+						...blocks,
+						[id]: {
+							...block,
+							type,
+							label: LABELS[type],
+							url: type === 'browser' ? block.url ?? '' : undefined,
+							reloadToken: type === 'browser' ? block.reloadToken ?? 0 : undefined,
+							sessionId: type === 'otto' ? block.sessionId : undefined,
+						},
+					},
+					layout,
+					focusedBlockId,
+				});
+				set({
+					blocks: nextState.blocks,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
 			},
-		});
-	},
 
-	reloadBlock: (id) => {
-		const block = get().blocks[id];
-		if (!block || block.type !== 'browser') return;
-		set({
-			blocks: {
-				...get().blocks,
-				[id]: {
-					...block,
-					reloadToken: (block.reloadToken ?? 0) + 1,
-				},
+			setBlockUrl: (id, url) => {
+				const { activeWorkspaceId, blocks, layout, focusedBlockId, workspaceStates } = get();
+				const block = blocks[id];
+				if (!activeWorkspaceId || !block) return;
+				const nextState = finalizeWorkspaceState({
+					blocks: {
+						...blocks,
+						[id]: { ...block, url },
+					},
+					layout,
+					focusedBlockId,
+				});
+				set({
+					blocks: nextState.blocks,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
 			},
-		});
-	},
 
-	removeBlock: (id) => {
-		const { blocks, layout } = get();
+			setBlockSessionId: (id, sessionId) => {
+				const { activeWorkspaceId, blocks, layout, focusedBlockId, workspaceStates } = get();
+				const block = blocks[id];
+				if (!activeWorkspaceId || !block) return;
+				const nextState = finalizeWorkspaceState({
+					blocks: {
+						...blocks,
+						[id]: {
+							...block,
+							sessionId: sessionId ?? undefined,
+						},
+					},
+					layout,
+					focusedBlockId,
+				});
+				set({
+					blocks: nextState.blocks,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
+			},
 
-		let nextFocus: string | null = null;
-		if (layout) {
-			nextFocus = findSibling(layout, id);
-		}
+			reloadBlock: (id) => {
+				const { activeWorkspaceId, blocks, layout, focusedBlockId, workspaceStates } = get();
+				const block = blocks[id];
+				if (!activeWorkspaceId || !block || block.type !== 'browser') return;
+				const nextState = finalizeWorkspaceState({
+					blocks: {
+						...blocks,
+						[id]: {
+							...block,
+							reloadToken: (block.reloadToken ?? 0) + 1,
+						},
+					},
+					layout,
+					focusedBlockId,
+				});
+				set({
+					blocks: nextState.blocks,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
+			},
 
-		const newBlocks = { ...blocks };
-		delete newBlocks[id];
-		const newLayout = layout ? removeFromLayout(layout, id) : null;
-		const remaining = newLayout ? collectBlockIds(newLayout) : [];
+			removeBlock: (id) => {
+				const { activeWorkspaceId, blocks, layout, workspaceStates } = get();
+				if (!activeWorkspaceId) return;
 
-		if (!nextFocus || !remaining.includes(nextFocus)) {
-			nextFocus = remaining[0] ?? null;
-		}
+				let nextFocus: string | null = null;
+				if (layout) {
+					nextFocus = findSibling(layout, id);
+				}
 
-		set({
-			blocks: newBlocks,
-			layout: newLayout,
-			focusedBlockId: nextFocus,
-		});
-	},
+				const nextBlocks = { ...blocks };
+				delete nextBlocks[id];
+				const nextLayout = layout ? removeFromLayout(layout, id) : null;
+				const remaining = nextLayout ? collectBlockIds(nextLayout) : [];
 
-	setSplitRatio: (splitId, ratio) => {
-		const { layout } = get();
-		if (layout) {
-			set({ layout: updateSplitRatio(layout, splitId, ratio) });
-		}
-	},
+				if (!nextFocus || !remaining.includes(nextFocus)) {
+					nextFocus = remaining[0] ?? null;
+				}
 
-	focusNext: () => {
-		const { layout, focusedBlockId } = get();
-		if (!layout) return;
-		const ids = collectBlockIds(layout);
-		if (ids.length === 0) return;
-		const idx = focusedBlockId ? ids.indexOf(focusedBlockId) : -1;
-		set({ focusedBlockId: ids[(idx + 1) % ids.length] });
-	},
+				const nextState = finalizeWorkspaceState({
+					blocks: nextBlocks,
+					layout: nextLayout,
+					focusedBlockId: nextFocus,
+				});
+				set({
+					blocks: nextState.blocks,
+					layout: nextState.layout,
+					focusedBlockId: nextState.focusedBlockId,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
+			},
 
-	focusPrev: () => {
-		const { layout, focusedBlockId } = get();
-		if (!layout) return;
-		const ids = collectBlockIds(layout);
-		if (ids.length === 0) return;
-		const idx = focusedBlockId ? ids.indexOf(focusedBlockId) : 1;
-		set({ focusedBlockId: ids[(idx - 1 + ids.length) % ids.length] });
-	},
+			setSplitRatio: (splitId, ratio) => {
+				const { activeWorkspaceId, blocks, layout, focusedBlockId, workspaceStates } = get();
+				if (!activeWorkspaceId || !layout) return;
+				const nextState = finalizeWorkspaceState({
+					blocks,
+					layout: updateSplitRatio(layout, splitId, ratio),
+					focusedBlockId,
+				});
+				set({
+					layout: nextState.layout,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
+			},
 
-	focusByIndex: (index) => {
-		const { layout } = get();
-		if (!layout) return;
-		const ids = collectBlockIds(layout);
-		if (index < ids.length) {
-			set({ focusedBlockId: ids[index] });
-		}
-	},
+			focusNext: () => {
+				const { activeWorkspaceId, blocks, layout, focusedBlockId, workspaceStates } = get();
+				if (!activeWorkspaceId || !layout) return;
+				const ids = collectBlockIds(layout);
+				if (ids.length === 0) return;
+				const nextState = finalizeWorkspaceState({
+					blocks,
+					layout,
+					focusedBlockId: ids[(ids.indexOf(focusedBlockId ?? '') + 1 + ids.length) % ids.length],
+				});
+				set({
+					focusedBlockId: nextState.focusedBlockId,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
+			},
 
-	focusDirection: (dir) => {
-		const { layout, focusedBlockId } = get();
-		if (!layout || !focusedBlockId) return;
-		const rects = computeRects(layout, 0, 0, 1, 1);
-		const source = rects.get(focusedBlockId);
-		if (!source) return;
+			focusPrev: () => {
+				const { activeWorkspaceId, blocks, layout, focusedBlockId, workspaceStates } = get();
+				if (!activeWorkspaceId || !layout) return;
+				const ids = collectBlockIds(layout);
+				if (ids.length === 0) return;
+				const idx = focusedBlockId ? ids.indexOf(focusedBlockId) : 0;
+				const nextState = finalizeWorkspaceState({
+					blocks,
+					layout,
+					focusedBlockId: ids[(idx - 1 + ids.length) % ids.length],
+				});
+				set({
+					focusedBlockId: nextState.focusedBlockId,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
+			},
 
-		const sourceCenterX = source.x + source.w / 2;
-		const sourceCenterY = source.y + source.h / 2;
-		const sourceRight = source.x + source.w;
-		const sourceBottom = source.y + source.h;
-		const epsilon = 0.0001;
+			focusByIndex: (index) => {
+				const { activeWorkspaceId, blocks, layout, workspaceStates } = get();
+				if (!activeWorkspaceId || !layout) return;
+				const ids = collectBlockIds(layout);
+				if (index >= ids.length) return;
+				const nextState = finalizeWorkspaceState({
+					blocks,
+					layout,
+					focusedBlockId: ids[index],
+				});
+				set({
+					focusedBlockId: nextState.focusedBlockId,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
+			},
 
-		let best: string | null = null;
-		let bestPrimary = Infinity;
-		let bestSecondary = Infinity;
+			focusDirection: (dir) => {
+				const { activeWorkspaceId, blocks, layout, focusedBlockId, workspaceStates } = get();
+				if (!activeWorkspaceId || !layout || !focusedBlockId) return;
+				const rects = computeRects(layout, 0, 0, 1, 1);
+				const source = rects.get(focusedBlockId);
+				if (!source) return;
 
-		for (const [id, r] of rects) {
-			if (id === focusedBlockId) continue;
+				const sourceCenterX = source.x + source.w / 2;
+				const sourceCenterY = source.y + source.h / 2;
+				const sourceRight = source.x + source.w;
+				const sourceBottom = source.y + source.h;
+				const epsilon = 0.0001;
 
-			const overlap =
-				dir === 'left' || dir === 'right'
-					? intervalOverlap(source.y, sourceBottom, r.y, r.y + r.h)
-					: intervalOverlap(source.x, sourceRight, r.x, r.x + r.w);
-			if (overlap <= epsilon) continue;
+				let best: string | null = null;
+				let bestPrimary = Infinity;
+				let bestSecondary = Infinity;
 
-			let primaryGap: number | null = null;
-			if (dir === 'left' && r.x + r.w <= source.x + epsilon) {
-				primaryGap = source.x - (r.x + r.w);
-			}
-			if (dir === 'right' && r.x >= sourceRight - epsilon) {
-				primaryGap = r.x - sourceRight;
-			}
-			if (dir === 'up' && r.y + r.h <= source.y + epsilon) {
-				primaryGap = source.y - (r.y + r.h);
-			}
-			if (dir === 'down' && r.y >= sourceBottom - epsilon) {
-				primaryGap = r.y - sourceBottom;
-			}
-			if (primaryGap === null) continue;
+				for (const [id, rect] of rects) {
+					if (id === focusedBlockId) continue;
 
-			const secondaryDistance =
-				dir === 'left' || dir === 'right'
-					? Math.abs(r.y + r.h / 2 - sourceCenterY)
-					: Math.abs(r.x + r.w / 2 - sourceCenterX);
+					const overlap =
+						dir === 'left' || dir === 'right'
+							? intervalOverlap(source.y, sourceBottom, rect.y, rect.y + rect.h)
+							: intervalOverlap(source.x, sourceRight, rect.x, rect.x + rect.w);
+					if (overlap <= epsilon) continue;
 
-			if (
-				primaryGap < bestPrimary ||
-				(primaryGap === bestPrimary && secondaryDistance < bestSecondary)
-			) {
-				bestPrimary = primaryGap;
-				bestSecondary = secondaryDistance;
-				best = id;
-			}
-		}
+					let primaryGap: number | null = null;
+					if (dir === 'left' && rect.x + rect.w <= source.x + epsilon) {
+						primaryGap = source.x - (rect.x + rect.w);
+					}
+					if (dir === 'right' && rect.x >= sourceRight - epsilon) {
+						primaryGap = rect.x - sourceRight;
+					}
+					if (dir === 'up' && rect.y + rect.h <= source.y + epsilon) {
+						primaryGap = source.y - (rect.y + rect.h);
+					}
+					if (dir === 'down' && rect.y >= sourceBottom - epsilon) {
+						primaryGap = rect.y - sourceBottom;
+					}
+					if (primaryGap === null) continue;
 
-		if (best) set({ focusedBlockId: best });
-	},
-}));
+					const secondaryDistance =
+						dir === 'left' || dir === 'right'
+							? Math.abs(rect.y + rect.h / 2 - sourceCenterY)
+							: Math.abs(rect.x + rect.w / 2 - sourceCenterX);
+
+					if (
+						primaryGap < bestPrimary ||
+						(primaryGap === bestPrimary && secondaryDistance < bestSecondary)
+					) {
+						bestPrimary = primaryGap;
+						bestSecondary = secondaryDistance;
+						best = id;
+					}
+				}
+
+				if (!best) return;
+				const nextState = finalizeWorkspaceState({
+					blocks,
+					layout,
+					focusedBlockId: best,
+				});
+				set({
+					focusedBlockId: nextState.focusedBlockId,
+					workspaceStates: {
+						...workspaceStates,
+						[activeWorkspaceId]: nextState,
+					},
+				});
+			},
+		}),
+		{
+			name: 'otto-canvas-layouts',
+			version: 2,
+			migrate: (persistedState) => {
+				const state = persistedState as Partial<CanvasState> | undefined;
+				if (!state?.workspaceStates) {
+					return { workspaceStates: {} };
+				}
+				return { workspaceStates: state.workspaceStates };
+			},
+			partialize: (state) => ({
+				workspaceStates: state.workspaceStates,
+			}),
+			onRehydrateStorage: () => () => {
+				const activeWorkspaceId = useWorkspaceStore.getState().activeId;
+				useCanvasStore.getState().activateWorkspace(activeWorkspaceId);
+			},
+		},
+	),
+);
 
 function findSibling(node: LayoutNode, blockId: string): string | null {
 	if (node.kind === 'leaf') return null;
@@ -375,7 +619,12 @@ function findSibling(node: LayoutNode, blockId: string): string | null {
 	return null;
 }
 
-interface Rect { x: number; y: number; w: number; h: number }
+interface Rect {
+	x: number;
+	y: number;
+	w: number;
+	h: number;
+}
 
 function intervalOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number) {
 	return Math.min(aEnd, bEnd) - Math.max(aStart, bStart);
@@ -383,7 +632,10 @@ function intervalOverlap(aStart: number, aEnd: number, bStart: number, bEnd: num
 
 function computeRects(
 	node: LayoutNode,
-	x: number, y: number, w: number, h: number,
+	x: number,
+	y: number,
+	w: number,
+	h: number,
 ): Map<string, Rect> {
 	const map = new Map<string, Rect>();
 	if (node.kind === 'leaf') {
@@ -394,13 +646,15 @@ function computeRects(
 	if (node.direction === 'horizontal') {
 		const w1 = w * node.ratio;
 		const w2 = w - w1;
-		for (const [k, v] of computeRects(node.first, x, y, w1, h)) map.set(k, v);
-		for (const [k, v] of computeRects(node.second, x + w1, y, w2, h)) map.set(k, v);
+		for (const [key, value] of computeRects(node.first, x, y, w1, h)) map.set(key, value);
+		for (const [key, value] of computeRects(node.second, x + w1, y, w2, h))
+			map.set(key, value);
 	} else {
 		const h1 = h * node.ratio;
 		const h2 = h - h1;
-		for (const [k, v] of computeRects(node.first, x, y, w, h1)) map.set(k, v);
-		for (const [k, v] of computeRects(node.second, x, y + h1, w, h2)) map.set(k, v);
+		for (const [key, value] of computeRects(node.first, x, y, w, h1)) map.set(key, value);
+		for (const [key, value] of computeRects(node.second, x, y + h1, w, h2))
+			map.set(key, value);
 	}
 
 	return map;
