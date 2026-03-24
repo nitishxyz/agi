@@ -239,15 +239,37 @@ fn runtime_log_ready(log_path: &str) -> bool {
         || (stripped.contains("API") && stripped.contains("Web UI"))
 }
 
-fn wait_for_runtime_ready(port: u16, log_path: &str, timeout: Duration) -> bool {
+fn wait_for_runtime_ready(
+    port: u16,
+    log_path: &str,
+    timeout: Duration,
+    manager: &WorkspaceRuntimeManager,
+    workspace_id: &str,
+) -> Result<bool, String> {
     let start = Instant::now();
     while start.elapsed() < timeout {
         if runtime_http_ready(port) || runtime_log_ready(log_path) {
-            return true;
+            return Ok(true);
+        }
+        if let Ok(mut runtimes) = manager.inner.lock() {
+            if let Some(entry) = runtimes.get_mut(workspace_id) {
+                match entry.child.try_wait() {
+                    Ok(Some(status)) => {
+                        let code = status.code().unwrap_or(-1);
+                        runtimes.remove(workspace_id);
+                        return Err(format!(
+                            "Otto runtime process exited immediately with code {}",
+                            code
+                        ));
+                    }
+                    Ok(None) => {}
+                    Err(_) => {}
+                }
+            }
         }
         sleep(Duration::from_millis(250));
     }
-    false
+    Ok(false)
 }
 
 fn cleanup_dead_runtime_locked(
@@ -378,22 +400,33 @@ pub fn workspace_start_runtime(
             },
         );
 
-    if wait_for_runtime_ready(port, &info.log_path, Duration::from_secs(30)) {
-        eprintln!(
-            "[canvas] otto runtime ready workspace={} url={}",
-            info.workspace_id,
-            info.url
-        );
-        return Ok(info);
+    match wait_for_runtime_ready(port, &info.log_path, Duration::from_secs(30), manager.inner(), &workspace_id) {
+        Ok(true) => {
+            eprintln!(
+                "[canvas] otto runtime ready workspace={} url={}",
+                info.workspace_id,
+                info.url
+            );
+            Ok(info)
+        }
+        Ok(false) => {
+            eprintln!(
+                "[canvas] otto runtime readiness timed out workspace={} url={} log={}",
+                info.workspace_id,
+                info.url,
+                info.log_path
+            );
+            Err("Timed out waiting for otto workspace runtime to become ready.".to_string())
+        }
+        Err(error) => {
+            eprintln!(
+                "[canvas] otto runtime failed workspace={} error={}",
+                info.workspace_id,
+                error
+            );
+            Err(error)
+        }
     }
-
-    eprintln!(
-        "[canvas] otto runtime readiness timed out workspace={} url={} log={}",
-        info.workspace_id,
-        info.url,
-        info.log_path
-    );
-    Err("Timed out waiting for otto workspace runtime to become ready.".to_string())
 }
 
 #[tauri::command]
