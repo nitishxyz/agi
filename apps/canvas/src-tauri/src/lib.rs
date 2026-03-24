@@ -2,6 +2,7 @@ mod browser;
 mod debug_log;
 mod ghostty;
 mod runtime;
+mod workspace_file;
 
 use browser::{
     browser_create_block, browser_destroy_block, browser_navigate_block, browser_reload_block,
@@ -18,6 +19,7 @@ use runtime::{
     workspace_start_runtime, workspace_stop_runtime, WorkspaceRuntimeManager,
 };
 use tauri::Manager;
+use workspace_file::{workspace_file_exists, workspace_file_read, workspace_file_write};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -50,6 +52,9 @@ pub fn run() {
             workspace_stop_runtime,
             workspace_read_runtime_log,
             workspace_list_runtimes,
+            workspace_file_exists,
+            workspace_file_read,
+            workspace_file_write,
         ])
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())

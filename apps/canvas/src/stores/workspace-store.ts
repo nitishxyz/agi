@@ -25,6 +25,31 @@ export interface Environment {
 	updatedAt: number;
 }
 
+export interface WorkspaceEnsureStep {
+	id: string;
+	label: string;
+	run: string;
+	cwd?: string;
+	when?: {
+		pathExists?: string;
+		pathMissing?: string;
+		commandExists?: string;
+	};
+}
+
+export interface WorkspaceStartupStep {
+	id: string;
+	label: string;
+	run: string;
+	cwd?: string;
+	policy: 'manual' | 'onOpen';
+}
+
+export interface WorkspaceAutomationConfig {
+	ensure: WorkspaceEnsureStep[];
+	startup: WorkspaceStartupStep[];
+}
+
 interface CreateWorkspaceInput {
 	name?: string;
 	path: string;
@@ -33,14 +58,17 @@ interface CreateWorkspaceInput {
 interface WorkspaceState {
 	workspaces: Workspace[];
 	environments: Record<string, Environment>;
+	workspaceAutomation: Record<string, WorkspaceAutomationConfig>;
 	activeId: string | null;
 	sidebarCollapsed: boolean;
 	setActive: (id: string) => void;
 	addWorkspace: (input: CreateWorkspaceInput) => string;
 	removeWorkspace: (id: string) => void;
+	setWorkspaceAutomation: (workspaceId: string, config: WorkspaceAutomationConfig) => void;
 	toggleSidebar: () => void;
 	getActiveWorkspace: () => Workspace | null;
 	getWorkspaceEnvironment: (workspaceId: string) => Environment | null;
+	getWorkspaceAutomation: (workspaceId: string) => WorkspaceAutomationConfig;
 }
 
 const COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6'];
@@ -55,11 +83,19 @@ function getNameFromPath(path: string) {
 	return parts[parts.length - 1] || 'workspace';
 }
 
+function createDefaultWorkspaceAutomation(): WorkspaceAutomationConfig {
+	return {
+		ensure: [],
+		startup: [],
+	};
+}
+
 export const useWorkspaceStore = create<WorkspaceState>()(
 	persist(
 		(set, get) => ({
 			workspaces: [],
 			environments: {},
+			workspaceAutomation: {},
 			activeId: null,
 			sidebarCollapsed: false,
 
@@ -114,6 +150,10 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 						...state.environments,
 						[environmentId]: nextEnvironment,
 					},
+					workspaceAutomation: {
+						...state.workspaceAutomation,
+						[id]: createDefaultWorkspaceAutomation(),
+					},
 					activeId: id,
 				}));
 
@@ -124,19 +164,33 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 				set((state) => {
 					const filtered = state.workspaces.filter((workspace) => workspace.id !== id);
 					const nextEnvironments = { ...state.environments };
+					const nextAutomation = { ...state.workspaceAutomation };
 					for (const environment of Object.values(state.environments)) {
 						if (environment.workspaceId === id) {
 							delete nextEnvironments[environment.id];
 						}
 					}
+					delete nextAutomation[id];
 					return {
 						workspaces: filtered,
 						environments: nextEnvironments,
+						workspaceAutomation: nextAutomation,
 						activeId:
 							state.activeId === id ? (filtered[0]?.id ?? null) : state.activeId,
 					};
 				});
 			},
+
+			setWorkspaceAutomation: (workspaceId, config) =>
+				set((state) => ({
+					workspaceAutomation: {
+						...state.workspaceAutomation,
+						[workspaceId]: {
+							ensure: config.ensure,
+							startup: config.startup,
+						},
+					},
+				})),
 
 			toggleSidebar: () =>
 				set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
@@ -151,16 +205,20 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 				if (!workspace) return null;
 				return get().environments[workspace.primaryEnvironmentId] ?? null;
 			},
+
+			getWorkspaceAutomation: (workspaceId) =>
+				get().workspaceAutomation[workspaceId] ?? createDefaultWorkspaceAutomation(),
 		}),
 		{
 			name: 'otto-canvas-workspaces',
-			version: 2,
+			version: 3,
 			migrate: (persistedState) => {
 				const state = persistedState as Partial<WorkspaceState> | undefined;
 				if (!state?.workspaces || !state.environments) {
 					return {
 						workspaces: [],
 						environments: {},
+						workspaceAutomation: {},
 						activeId: null,
 						sidebarCollapsed: false,
 					};
@@ -168,6 +226,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 				return {
 					workspaces: state.workspaces,
 					environments: state.environments,
+					workspaceAutomation: state.workspaceAutomation ?? {},
 					activeId: state.activeId ?? null,
 					sidebarCollapsed: state.sidebarCollapsed ?? false,
 				};
@@ -175,6 +234,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 			partialize: (state) => ({
 				workspaces: state.workspaces,
 				environments: state.environments,
+				workspaceAutomation: state.workspaceAutomation,
 				activeId: state.activeId,
 				sidebarCollapsed: state.sidebarCollapsed,
 			}),

@@ -93,6 +93,7 @@ interface CanvasState {
 	layout: LayoutNode | null;
 	focusedBlockId: string | null;
 	activateWorkspace: (workspaceId: string | null) => void;
+	replaceWorkspaceState: (workspaceId: string, workspaceState: WorkspaceSurfaceState) => void;
 	deleteWorkspaceState: (workspaceId: string) => void;
 	setActiveTab: (tabId: string) => void;
 	openCreateTab: () => void;
@@ -680,6 +681,11 @@ export const useCanvasStore = create<CanvasState>()(
 						? state.workspaceStates
 						: { ...state.workspaceStates, [workspaceId]: workspaceState },
 				}));
+			},
+
+			replaceWorkspaceState: (workspaceId, workspaceState) => {
+				const nextState = ensureTabSelection(normalizeWorkspaceState(workspaceState));
+				set((state) => applyWorkspaceState(state, workspaceId, nextState));
 			},
 
 			deleteWorkspaceState: (workspaceId) => {

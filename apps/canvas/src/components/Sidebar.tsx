@@ -1,10 +1,11 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { FolderOpen, Plus, X } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { FolderOpen, Plus, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCommandSurfaceDefinition, getPrimitiveDefinition } from '../lib/primitive-registry';
 import { getSidebarGroupedTabs, getSidebarOrderedTabs } from '../lib/sidebar-tab-order';
 import type { WorkspaceTabState } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
+import type { Workspace } from '../stores/workspace-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
 
 function getInitials(name: string): string {
@@ -44,6 +45,7 @@ export function Sidebar() {
 	const activeId = useWorkspaceStore((state) => state.activeId);
 	const setActive = useWorkspaceStore((state) => state.setActive);
 	const addWorkspace = useWorkspaceStore((state) => state.addWorkspace);
+	const removeWorkspace = useWorkspaceStore((state) => state.removeWorkspace);
 	const tabs = useCanvasStore((state) => state.tabs);
 	const tabOrder = useCanvasStore((state) => state.tabOrder);
 	const activeTabId = useCanvasStore((state) => state.activeTabId);
@@ -54,6 +56,11 @@ export function Sidebar() {
 	const [draftPath, setDraftPath] = useState('');
 	const [draftName, setDraftName] = useState('');
 	const [error, setError] = useState<string | null>(null);
+	const [workspaceMenu, setWorkspaceMenu] = useState<{
+		workspace: Workspace;
+		x: number;
+		y: number;
+	} | null>(null);
 
 	const suggestedName = useMemo(() => {
 		if (!draftPath.trim()) return '';
@@ -86,6 +93,22 @@ export function Sidebar() {
 		setDraftName('');
 		setError(null);
 	}, []);
+
+	useEffect(() => {
+		if (!workspaceMenu) return;
+		const closeMenu = () => setWorkspaceMenu(null);
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				setWorkspaceMenu(null);
+			}
+		};
+		window.addEventListener('mousedown', closeMenu);
+		window.addEventListener('keydown', handleKeyDown);
+		return () => {
+			window.removeEventListener('mousedown', closeMenu);
+			window.removeEventListener('keydown', handleKeyDown);
+		};
+	}, [workspaceMenu]);
 
 	const handlePickProjectPath = useCallback(async () => {
 		try {
@@ -121,6 +144,14 @@ export function Sidebar() {
 		}
 	}, [addWorkspace, draftName, draftPath, resetCreateWorkspaceState]);
 
+	const handleDeleteWorkspace = useCallback(
+		(workspaceId: string) => {
+			removeWorkspace(workspaceId);
+			setWorkspaceMenu(null);
+		},
+		[removeWorkspace],
+	);
+
 	return (
 		<>
 			<div className="flex h-full w-[272px] flex-shrink-0 flex-col overflow-hidden pt-1">
@@ -144,6 +175,15 @@ export function Sidebar() {
 										/>
 										<button
 											onClick={() => setActive(workspace.id)}
+											onContextMenu={(event) => {
+												event.preventDefault();
+												event.stopPropagation();
+												setWorkspaceMenu({
+													workspace,
+													x: event.clientX,
+													y: event.clientY,
+												});
+											}}
 											className="group relative"
 											title={
 												environment
@@ -354,6 +394,28 @@ export function Sidebar() {
 					</div>
 				</div>
 			)}
+
+			{workspaceMenu ? (
+				<div
+					className="fixed z-50 min-w-[180px] rounded-xl border border-white/[0.08] bg-[rgba(18,18,22,0.98)] p-1 shadow-2xl backdrop-blur-xl"
+					style={{ left: workspaceMenu.x, top: workspaceMenu.y }}
+					onMouseDown={(event) => event.stopPropagation()}
+					onContextMenu={(event) => event.preventDefault()}
+				>
+					<div className="border-b border-white/[0.06] px-2.5 py-2">
+						<p className="truncate text-[11px] font-medium text-canvas-text">
+							{workspaceMenu.workspace.name}
+						</p>
+					</div>
+					<button
+						onClick={() => handleDeleteWorkspace(workspaceMenu.workspace.id)}
+						className="mt-1 flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200"
+					>
+						<Trash2 size={13} />
+						Delete workspace
+					</button>
+				</div>
+			) : null}
 		</>
 	);
 }
