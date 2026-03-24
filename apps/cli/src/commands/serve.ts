@@ -6,7 +6,11 @@ import {
 	logger,
 	printQRCode,
 } from '@ottocode/sdk';
-import { createApp as createServer, setServerPort } from '@ottocode/server';
+import {
+	createApp as createServer,
+	setServerPort,
+	bunWebSocket,
+} from '@ottocode/server';
 import { getDb } from '@ottocode/database';
 import { createWebServer } from '../web-server.ts';
 import { colors } from '../ui.ts';
@@ -33,6 +37,7 @@ export async function startApiServer(opts: {
 		hostname: 'localhost',
 		fetch: app.fetch,
 		idleTimeout: 240,
+		websocket: bunWebSocket,
 	});
 
 	const serverPort = agiServer.port ?? requestedPort;
@@ -90,6 +95,7 @@ export async function handleServe(opts: ServeOptions, version: string) {
 		hostname,
 		fetch: app.fetch,
 		idleTimeout: 240,
+		websocket: bunWebSocket,
 	});
 
 	const displayHost = opts.network ? getLocalIP() : 'localhost';

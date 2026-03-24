@@ -1,4 +1,4 @@
-import { createApp } from '@ottocode/server';
+import { createApp, bunWebSocket } from '@ottocode/server';
 import { client } from '@ottocode/api';
 
 let currentServer: ReturnType<typeof Bun.serve> | null = null;
@@ -7,7 +7,12 @@ let configured = false;
 export async function startEphemeralServer(): Promise<string> {
 	if (currentServer) return `http://localhost:${currentServer.port}`;
 	const app = createApp();
-	currentServer = Bun.serve({ port: 0, fetch: app.fetch, idleTimeout: 240 });
+	currentServer = Bun.serve({
+		port: 0,
+		fetch: app.fetch,
+		idleTimeout: 240,
+		websocket: bunWebSocket,
+	});
 	const url = `http://localhost:${currentServer.port}`;
 	configureClient(url);
 	return url;

@@ -3,6 +3,7 @@ import type { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import type { TerminalManager } from '@ottocode/sdk';
 import { logger } from '@ottocode/sdk';
+import { upgradeWebSocket } from '../ws.ts';
 
 export function registerTerminalsRoutes(
 	app: Hono,
@@ -66,6 +67,99 @@ export function registerTerminalsRoutes(
 
 		return c.json({ terminal: terminal.toJSON() });
 	});
+
+	app.get(
+		'/v1/terminals/:id/ws',
+		upgradeWebSocket((c) => {
+			const id = c.req.param('id');
+
+			let onData: ((data: string) => void) | null = null;
+			let onExit: ((exitCode: number) => void) | null = null;
+
+			return {
+				onOpen(_event, ws) {
+					const terminal = terminalManager.get(id);
+					if (!terminal) {
+						ws.close(4004, 'Terminal not found');
+						return;
+					}
+
+					const history = terminal.read();
+					for (const chunk of history) {
+						ws.send(chunk);
+					}
+
+					onData = (data: string) => {
+						try {
+							ws.send(data);
+						} catch {
+							// ws may be closed
+						}
+					};
+
+					onExit = (exitCode: number) => {
+						try {
+							ws.send(JSON.stringify({ type: 'exit', exitCode }));
+							ws.close(1000, 'Process exited');
+						} catch {
+							// ws may already be closed
+						}
+					};
+
+					terminal.onData(onData);
+					terminal.onExit(onExit);
+
+					if (terminal.status === 'exited') {
+						onExit(terminal.exitCode ?? 0);
+					}
+				},
+				onMessage(event, _ws) {
+					const terminal = terminalManager.get(id);
+					if (!terminal) return;
+
+					const raw = event.data;
+					const message =
+						typeof raw === 'string'
+							? raw
+							: raw instanceof ArrayBuffer
+								? new TextDecoder().decode(raw)
+								: String(raw);
+
+					if (message.startsWith('{')) {
+						try {
+							const msg = JSON.parse(message);
+							if (msg.type === 'resize' && msg.cols > 0 && msg.rows > 0) {
+								terminal.resize(msg.cols, msg.rows);
+								return;
+							}
+						} catch {
+							// not JSON, treat as input
+						}
+					}
+
+					terminal.write(message);
+				},
+				onClose() {
+					const terminal = terminalManager.get(id);
+					if (terminal) {
+						if (onData) terminal.removeDataListener(onData);
+						if (onExit) terminal.removeExitListener(onExit);
+					}
+					onData = null;
+					onExit = null;
+				},
+				onError() {
+					const terminal = terminalManager.get(id);
+					if (terminal) {
+						if (onData) terminal.removeDataListener(onData);
+						if (onExit) terminal.removeExitListener(onExit);
+					}
+					onData = null;
+					onExit = null;
+				},
+			};
+		}),
+	);
 
 	const handleTerminalOutput = async (c: Context) => {
 		const id = c.req.param('id');

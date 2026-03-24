@@ -305,3 +305,6 @@ export { logger } from '@ottocode/sdk';
 
 // Export server state management
 export { setServerPort, getServerPort, getServerInfo } from './state.ts';
+
+// Export WebSocket handler for Bun.serve()
+export { websocket as bunWebSocket } from './ws.ts';

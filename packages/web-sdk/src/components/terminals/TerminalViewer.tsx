@@ -4,8 +4,8 @@ import { getRuntimeApiBaseUrl } from '../../lib/config';
 import { client } from '@ottocode/api';
 
 const FONT_FAMILY = '"JetBrainsMono NFM", monospace';
-const SSE_RECONNECT_DELAY = 1500;
-const SSE_MAX_RETRIES = 5;
+const WS_RECONNECT_DELAY = 1500;
+const WS_MAX_RETRIES = 5;
 const CURSOR_BLINK_RESUME_DELAY = 600;
 
 function resolveBackgroundColor(): string {
@@ -89,6 +89,10 @@ function resolveApiBaseUrl(): string {
 	return getRuntimeApiBaseUrl();
 }
 
+function httpToWs(url: string): string {
+	return url.replace(/^http/, 'ws');
+}
+
 interface TerminalViewerProps {
 	terminalId: string;
 	isActive: boolean;
@@ -103,16 +107,16 @@ export function TerminalViewer({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const termRef = useRef<Terminal | null>(null);
 	const fitAddonRef = useRef<FitAddon | null>(null);
-	const sseAbortRef = useRef<AbortController | null>(null);
+	const wsRef = useRef<WebSocket | null>(null);
 	const retryCountRef = useRef(0);
 	const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const hasReceivedDataRef = useRef(false);
 	const [ready, setReady] = useState(false);
 	const onExitRef = useRef(onExit);
 	onExitRef.current = onExit;
 	const blinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const userScrolledRef = useRef(false);
 	const bgColorRef = useRef('#121216');
+	const disposedRef = useRef(false);
 	const focusHandlersRef = useRef<{
 		focusin: () => void;
 		focusout: () => void;
@@ -128,93 +132,88 @@ export function TerminalViewer({
 		}
 	}, []);
 
-	const connectSSE = useCallback(
-		(term: Terminal, baseUrl: string, skipHistory: boolean) => {
-			if (sseAbortRef.current) {
-				sseAbortRef.current.abort();
-				sseAbortRef.current = null;
+	const connectWebSocket = useCallback(
+		(term: Terminal, baseUrl: string) => {
+			if (wsRef.current) {
+				wsRef.current.close();
+				wsRef.current = null;
 			}
 
-			const url = `${baseUrl}/v1/terminals/${terminalId}/output${skipHistory ? '?skipHistory=true' : ''}`;
-			const isTunnel =
-				!baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1');
-			const controller = new AbortController();
-			sseAbortRef.current = controller;
+			const wsBaseUrl = httpToWs(baseUrl);
+			const wsUrl = `${wsBaseUrl}/v1/terminals/${terminalId}/ws`;
+			const ws = new WebSocket(wsUrl);
+			wsRef.current = ws;
 
 			let gotFirstData = false;
 
-			const handleMessage = (raw: string) => {
-				try {
-					const data = JSON.parse(raw);
-					if (data.type === 'data') {
-						const savedY = userScrolledRef.current ? term.getViewportY() : 0;
-						term.write(data.line);
-						if (userScrolledRef.current && savedY > 0) {
-							term.scrollToLine(savedY);
-						}
-						hasReceivedDataRef.current = true;
-						if (!gotFirstData) {
-							gotFirstData = true;
-							setTimeout(() => setReady(true), 200);
-						}
-					} else if (data.type === 'exit') {
-						term.write(
-							`\r\n\x1b[33m[Process exited with code ${data.exitCode}]\x1b[0m\r\n`,
-						);
-						if (onExitRef.current) {
-							onExitRef.current(terminalId);
-						}
-					}
-				} catch {}
+			ws.onopen = () => {
+				retryCountRef.current = 0;
+				if (term.cols && term.rows) {
+					ws.send(
+						JSON.stringify({
+							type: 'resize',
+							cols: term.cols,
+							rows: term.rows,
+						}),
+					);
+				}
 			};
 
-			const run = async () => {
-				try {
-					const response = await fetch(url, {
-						method: isTunnel ? 'POST' : 'GET',
-						headers: { Accept: 'text/event-stream' },
-						signal: controller.signal,
-					});
-					if (!response.ok || !response.body) return;
-					retryCountRef.current = 0;
-					const reader = response.body.getReader();
-					const decoder = new TextDecoder();
-					let buffer = '';
-					while (true) {
-						const { done, value } = await reader.read();
-						if (done) break;
-						buffer += decoder.decode(value, { stream: true });
-						let idx = buffer.indexOf('\n\n');
-						while (idx !== -1) {
-							const raw = buffer.slice(0, idx);
-							buffer = buffer.slice(idx + 2);
-							for (const line of raw.split('\n')) {
-								if (line.startsWith('data: ')) {
-									handleMessage(line.slice(6));
-								}
+			ws.onmessage = (event) => {
+				const message =
+					typeof event.data === 'string' ? event.data : '';
+
+				if (message.startsWith('{')) {
+					try {
+						const data = JSON.parse(message);
+						if (data.type === 'exit') {
+							term.write(
+								`\r\n\x1b[33m[Process exited with code ${data.exitCode}]\x1b[0m\r\n`,
+							);
+							if (onExitRef.current) {
+								onExitRef.current(terminalId);
 							}
-							idx = buffer.indexOf('\n\n');
+							return;
 						}
+					} catch {
+						// not JSON control message, write as terminal data
 					}
-				} catch (error) {
-					if (error instanceof Error && error.name === 'AbortError') return;
 				}
-				if (sseAbortRef.current === controller) {
-					sseAbortRef.current = null;
+
+				const savedY = userScrolledRef.current
+					? term.getViewportY()
+					: 0;
+				term.write(message);
+				if (userScrolledRef.current && savedY > 0) {
+					term.scrollToLine(savedY);
+				}
+
+				if (!gotFirstData) {
+					gotFirstData = true;
+					setTimeout(() => setReady(true), 200);
+				}
+			};
+
+			ws.onerror = () => {
+				// error handling done in onclose
+			};
+
+			ws.onclose = () => {
+				if (wsRef.current === ws) {
+					wsRef.current = null;
 				}
 				if (
-					!controller.signal.aborted &&
-					retryCountRef.current < SSE_MAX_RETRIES
+					!disposedRef.current &&
+					retryCountRef.current < WS_MAX_RETRIES
 				) {
 					retryCountRef.current++;
 					retryTimerRef.current = setTimeout(() => {
-						if (termRef.current) {
-							connectSSE(termRef.current, baseUrl, true);
+						if (termRef.current && !disposedRef.current) {
+							connectWebSocket(termRef.current, baseUrl);
 						}
-					}, SSE_RECONNECT_DELAY);
+					}, WS_RECONNECT_DELAY);
 				}
 			};
-			void run();
 		},
 		[terminalId],
 	);
@@ -223,17 +222,17 @@ export function TerminalViewer({
 		if (!containerRef.current || !terminalId) return;
 
 		let disposed = false;
+		disposedRef.current = false;
 		let term: Terminal | null = null;
 		let fitAddon: FitAddon | null = null;
 		let resizeObserver: ResizeObserver | null = null;
 
 		setReady(false);
 		retryCountRef.current = 0;
-		hasReceivedDataRef.current = false;
 
-		if (sseAbortRef.current) {
-			sseAbortRef.current.abort();
-			sseAbortRef.current = null;
+		if (wsRef.current) {
+			wsRef.current.close();
+			wsRef.current = null;
 		}
 		if (retryTimerRef.current) {
 			clearTimeout(retryTimerRef.current);
@@ -341,30 +340,20 @@ export function TerminalViewer({
 
 			const baseUrl = resolveApiBaseUrl();
 
-			const sendResize = (cols: number, rows: number) => {
-				fetch(`${baseUrl}/v1/terminals/${terminalId}/resize`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ cols, rows }),
-				}).catch(() => {});
-			};
-
-			if (term) {
-				sendResize(term.cols, term.rows);
-			}
-
-			connectSSE(term, baseUrl, false);
+			connectWebSocket(term, baseUrl);
 
 			term.onData((data) => {
-				fetch(`${baseUrl}/v1/terminals/${terminalId}/input`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ input: data }),
-				}).catch(() => {});
+				if (wsRef.current?.readyState === WebSocket.OPEN) {
+					wsRef.current.send(data);
+				}
 			});
 
 			term.onResize(({ cols, rows }) => {
-				sendResize(cols, rows);
+				if (wsRef.current?.readyState === WebSocket.OPEN) {
+					wsRef.current.send(
+						JSON.stringify({ type: 'resize', cols, rows }),
+					);
+				}
 			});
 
 			term.onScroll(() => {
@@ -398,6 +387,7 @@ export function TerminalViewer({
 
 		return () => {
 			disposed = true;
+			disposedRef.current = true;
 			if (containerRef.current && focusHandlersRef.current) {
 				containerRef.current.removeEventListener(
 					'focusin',
@@ -417,9 +407,9 @@ export function TerminalViewer({
 				clearTimeout(retryTimerRef.current);
 				retryTimerRef.current = null;
 			}
-			if (sseAbortRef.current) {
-				sseAbortRef.current.abort();
-				sseAbortRef.current = null;
+			if (wsRef.current) {
+				wsRef.current.close();
+				wsRef.current = null;
 			}
 			if (resizeObserver) {
 				resizeObserver.disconnect();
@@ -430,7 +420,7 @@ export function TerminalViewer({
 			termRef.current = null;
 			fitAddonRef.current = null;
 		};
-	}, [terminalId, connectSSE]);
+	}, [terminalId, connectWebSocket]);
 
 	useEffect(() => {
 		const term = termRef.current;
