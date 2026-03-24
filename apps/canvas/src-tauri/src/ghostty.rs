@@ -803,6 +803,8 @@ mod macos {
 				Some("5") if pending_mode => Some(("plain+5", true)),
 				Some("6") if pending_mode => Some(("plain+6", true)),
 				Some("7") if pending_mode => Some(("plain+7", true)),
+				Some("8") if pending_mode => Some(("plain+8", true)),
+				Some("9") if pending_mode => Some(("plain+9", true)),
 				_ => {
 					if pending_mode && event.keyCode() == 53 {
 						Some(("escape", true))

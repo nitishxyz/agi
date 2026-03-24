@@ -1,9 +1,10 @@
-import { Bot, Code2, Globe, Play, Terminal, type LucideIcon } from 'lucide-react';
+import { Globe, Play, type LucideIcon } from 'lucide-react';
+import { ClaudeIcon, GhosttyIcon, OpenAIIcon, OpenCodeIcon, OttoIcon } from '../components/icons/BrandIcons';
 
 export const PRIMITIVE_BLOCK_TYPES = ['terminal', 'browser', 'otto', 'command'] as const;
 export type PrimitiveBlockType = (typeof PRIMITIVE_BLOCK_TYPES)[number];
 export type PrimitiveTabKind = PrimitiveBlockType;
-export const COMMAND_PRESET_IDS = ['claude-code', 'codex'] as const;
+export const COMMAND_PRESET_IDS = ['claude-code', 'codex', 'otto-tui', 'opencode'] as const;
 export type CommandPresetId = (typeof COMMAND_PRESET_IDS)[number];
 export type SidebarPrimitiveGroup = 'agents' | 'browsers' | 'terminal' | 'commands';
 
@@ -11,7 +12,7 @@ export interface PrimitiveDefinition {
 	kind: PrimitiveBlockType;
 	label: string;
 	description: string;
-	icon: LucideIcon;
+	icon: LucideIcon | React.ComponentType<{ size?: number | string; className?: string; strokeWidth?: number }>;
 	sidebarDescription: string;
 	sidebarGroup: SidebarPrimitiveGroup;
 	blockShortcut: string;
@@ -23,7 +24,7 @@ export interface CommandPresetDefinition {
 	id: CommandPresetId;
 	label: string;
 	description: string;
-	icon: LucideIcon;
+	icon: LucideIcon | React.ComponentType<{ size?: number | string; className?: string; strokeWidth?: number }>;
 	command: string;
 	blockShortcut: string;
 	tabShortcut: string;
@@ -35,7 +36,7 @@ export interface CreationOption {
 	key: string;
 	label: string;
 	description: string;
-	icon: LucideIcon;
+	icon: LucideIcon | React.ComponentType<{ size?: number | string; className?: string; strokeWidth?: number }>;
 	value:
 		| { kind: 'primitive'; primitive: PrimitiveBlockType }
 		| { kind: 'preset'; preset: CommandPresetId };
@@ -46,7 +47,7 @@ export const PRIMITIVE_DEFINITIONS: Record<PrimitiveBlockType, PrimitiveDefiniti
 		kind: 'terminal',
 		label: 'Ghostty',
 		description: 'A focused terminal or command surface.',
-		icon: Terminal,
+		icon: GhosttyIcon,
 		sidebarDescription: 'Focused terminal surface',
 		sidebarGroup: 'terminal',
 		blockShortcut: '1',
@@ -68,7 +69,7 @@ export const PRIMITIVE_DEFINITIONS: Record<PrimitiveBlockType, PrimitiveDefiniti
 		kind: 'otto',
 		label: 'Otto',
 		description: 'A focused Otto block as its own tab.',
-		icon: Bot,
+		icon: OttoIcon,
 		sidebarDescription: 'Focused agent surface',
 		sidebarGroup: 'agents',
 		blockShortcut: '3',
@@ -81,8 +82,8 @@ export const PRIMITIVE_DEFINITIONS: Record<PrimitiveBlockType, PrimitiveDefiniti
 		icon: Play,
 		sidebarDescription: 'Focused command surface',
 		sidebarGroup: 'commands',
-		blockShortcut: '4',
-		tabShortcut: '5',
+		blockShortcut: '8',
+		tabShortcut: '9',
 		nativeHostKind: 'terminal',
 	},
 };
@@ -92,10 +93,10 @@ export const COMMAND_PRESET_DEFINITIONS: Record<CommandPresetId, CommandPresetDe
 		id: 'claude-code',
 		label: 'Claude Code',
 		description: 'Launch Claude Code inside a Ghostty-backed surface.',
-		icon: Bot,
+		icon: ClaudeIcon,
 		command: 'claude',
-		blockShortcut: '5',
-		tabShortcut: '6',
+		blockShortcut: '4',
+		tabShortcut: '5',
 		sidebarDescription: 'Claude Code command surface',
 		sidebarGroup: 'agents',
 	},
@@ -103,16 +104,40 @@ export const COMMAND_PRESET_DEFINITIONS: Record<CommandPresetId, CommandPresetDe
 		id: 'codex',
 		label: 'Codex',
 		description: 'Launch Codex inside a Ghostty-backed surface.',
-		icon: Code2,
+		icon: OpenAIIcon,
 		command: 'codex',
+		blockShortcut: '5',
+		tabShortcut: '6',
+		sidebarDescription: 'Codex command surface',
+		sidebarGroup: 'agents',
+	},
+	'otto-tui': {
+		id: 'otto-tui',
+		label: 'Otto TUI',
+		description: 'Launch the Otto terminal UI inside a Ghostty-backed surface.',
+		icon: OttoIcon,
+		command: 'otto',
 		blockShortcut: '6',
 		tabShortcut: '7',
-		sidebarDescription: 'Codex command surface',
+		sidebarDescription: 'Otto terminal UI surface',
+		sidebarGroup: 'agents',
+	},
+	opencode: {
+		id: 'opencode',
+		label: 'OpenCode',
+		description: 'Launch OpenCode inside a Ghostty-backed surface.',
+		icon: OpenCodeIcon,
+		command: 'opencode',
+		blockShortcut: '7',
+		tabShortcut: '8',
+		sidebarDescription: 'OpenCode command surface',
 		sidebarGroup: 'agents',
 	},
 };
 
-const primitiveBlockOptions = PRIMITIVE_BLOCK_TYPES.map((kind): CreationOption => {
+const NON_COMMAND_BLOCK_TYPES = (['terminal', 'browser', 'otto'] as const);
+
+const primitiveBlockOptions = NON_COMMAND_BLOCK_TYPES.map((kind): CreationOption => {
 	const primitive = PRIMITIVE_DEFINITIONS[kind];
 	return {
 		key: primitive.blockShortcut,
@@ -134,12 +159,21 @@ const presetBlockOptions = COMMAND_PRESET_IDS.map((presetId): CreationOption => 
 	};
 });
 
+const commandBlockOption: CreationOption = {
+	key: PRIMITIVE_DEFINITIONS.command.blockShortcut,
+	label: PRIMITIVE_DEFINITIONS.command.label,
+	icon: PRIMITIVE_DEFINITIONS.command.icon,
+	description: PRIMITIVE_DEFINITIONS.command.description,
+	value: { kind: 'primitive', primitive: 'command' },
+};
+
 export const BLOCK_PRIMITIVE_OPTIONS: CreationOption[] = [
 	...primitiveBlockOptions,
 	...presetBlockOptions,
+	commandBlockOption,
 ];
 
-const primitiveTabOptions = PRIMITIVE_BLOCK_TYPES.map((kind): CreationOption => {
+const primitiveTabOptions = NON_COMMAND_BLOCK_TYPES.map((kind): CreationOption => {
 	const primitive = PRIMITIVE_DEFINITIONS[kind];
 	return {
 		key: primitive.tabShortcut,
@@ -161,9 +195,18 @@ const presetTabOptions = COMMAND_PRESET_IDS.map((presetId): CreationOption => {
 	};
 });
 
+const commandTabOption: CreationOption = {
+	key: PRIMITIVE_DEFINITIONS.command.tabShortcut,
+	label: PRIMITIVE_DEFINITIONS.command.label,
+	icon: PRIMITIVE_DEFINITIONS.command.icon,
+	description: PRIMITIVE_DEFINITIONS.command.description,
+	value: { kind: 'primitive', primitive: 'command' },
+};
+
 export const TAB_PRIMITIVE_OPTIONS: CreationOption[] = [
 	...primitiveTabOptions,
 	...presetTabOptions,
+	commandTabOption,
 ];
 
 export function getPrimitiveDefinition(kind: PrimitiveBlockType) {

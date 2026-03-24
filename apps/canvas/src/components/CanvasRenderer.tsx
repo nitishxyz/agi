@@ -35,7 +35,7 @@ const TAB_OPTIONS: {
 		value: { kind: 'canvas' },
 		label: 'Canvas',
 		description: 'A multi-block surface for split layouts.',
-		renderIcon: () => <span className="text-[15px] leading-none">▣</span>,
+		renderIcon: () => <span className="text-[22px] leading-none">▣</span>,
 		shortcut: '1',
 	},
 	...TAB_PRIMITIVE_OPTIONS.map((option) => ({
@@ -44,7 +44,7 @@ const TAB_OPTIONS: {
 		description: option.description,
 		renderIcon: () => {
 			const Icon = option.icon;
-			return <Icon size={16} strokeWidth={1.75} />;
+		return <Icon size={20} strokeWidth={1.5} />;
 		},
 		shortcut: option.key,
 	})),
@@ -185,10 +185,13 @@ function PendingTabSurface({ isActive }: { isActive: boolean }) {
 			className="flex h-full w-full rounded-lg border border-dashed border-canvas-border-active bg-[rgba(22,22,26,0.9)] outline-none"
 		>
 			<PendingSelectionGrid
+				title="a tab"
+				subtitle="Open a new canvas or launch a full surface directly from here."
 				options={TAB_OPTIONS.map((option) => ({
 					key: option.shortcut,
 					value: option.value,
 					label: option.label,
+					description: option.description,
 					renderIcon: option.renderIcon,
 				}))}
 				onSelect={(value) => {

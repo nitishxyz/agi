@@ -26,17 +26,19 @@ function PendingPicker({ blockId }: { blockId: string }) {
 
 	return (
 		<PendingSelectionGrid
-			options={BLOCK_PRIMITIVE_OPTIONS.map(({ key, value, label, icon: Icon }) => ({
+			title="a block"
+			subtitle="Choose a tool to place in this canvas. The picker stays usable even in tighter splits."
+			options={BLOCK_PRIMITIVE_OPTIONS.map(({ key, value, label, description, icon: Icon }) => ({
 				key,
 				value,
 				label,
-				renderIcon: () => (
-					<Icon
-						size={22}
-						className="text-canvas-text-muted transition-colors group-hover:text-canvas-text-dim"
-						strokeWidth={1.5}
-					/>
-				),
+				description,
+			renderIcon: () => (
+				<Icon
+					size={20}
+					strokeWidth={1.5}
+				/>
+			),
 			}))}
 			onSelect={(value) => {
 				if (value.kind === 'primitive') {

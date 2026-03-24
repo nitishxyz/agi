@@ -27,7 +27,7 @@ function getTabGlyph(tab: WorkspaceTabState) {
 		tab.block.type === 'command'
 			? getCommandSurfaceDefinition(tab.block.presetId).icon
 			: getPrimitiveDefinition(tab.block.type as Exclude<typeof tab.block.type, 'pending'>).icon;
-	return <Icon size={12} strokeWidth={1.75} />;
+	return <Icon size={16} strokeWidth={1.75} />;
 }
 
 function getTabDescription(tab: WorkspaceTabState) {

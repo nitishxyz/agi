@@ -49,7 +49,7 @@ export function useCanvasKeybinds() {
 	const lastShortcutAtRef = useRef<Record<string, number>>({});
 	const latestExecuteShortcutRef = useRef<(shortcut: string) => void>(() => undefined);
 	const latestHandlePendingSelectionRef = useRef<
-		(key: '1' | '2' | '3' | '4' | '5' | '6' | '7' | 'escape') => boolean
+		(key: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'escape') => boolean
 	>(() => false);
 
 	const removeFocusedBlock = useCallback(() => {
@@ -128,7 +128,9 @@ export function useCanvasKeybinds() {
 		[debugLog, setActiveTab],
 	);
 
-	const handlePendingBlockSelection = (key: '1' | '2' | '3' | '4' | '5' | '6' | 'escape') => {
+	const handlePendingBlockSelection = (
+		key: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'escape',
+	) => {
 		if (!focusedBlockId) return false;
 		const block = blocks[focusedBlockId];
 		if (!block || block.type !== 'pending') return false;
@@ -139,13 +141,23 @@ export function useCanvasKeybinds() {
 			return true;
 		}
 
-		if (key === '5') {
+		if (key === '4') {
 			convertBlockToPreset(focusedBlockId, 'claude-code');
 			focusCanvasWebview();
 			return true;
 		}
-		if (key === '6') {
+		if (key === '5') {
 			convertBlockToPreset(focusedBlockId, 'codex');
+			focusCanvasWebview();
+			return true;
+		}
+		if (key === '6') {
+			convertBlockToPreset(focusedBlockId, 'otto-tui');
+			focusCanvasWebview();
+			return true;
+		}
+		if (key === '7') {
+			convertBlockToPreset(focusedBlockId, 'opencode');
 			focusCanvasWebview();
 			return true;
 		}
@@ -164,7 +176,7 @@ export function useCanvasKeybinds() {
 	};
 
 	const handlePendingTabSelection = useCallback(
-		(key: '1' | '2' | '3' | '4' | '5' | '6' | '7' | 'escape') => {
+		(key: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'escape') => {
 			if (!activeTabId || activeTabKind !== 'pending') return false;
 			const activeTab = tabs[activeTabId];
 			if (!activeTab || activeTab.kind !== 'pending') return false;
@@ -175,13 +187,23 @@ export function useCanvasKeybinds() {
 				return true;
 			}
 
-			if (key === '6') {
+		if (key === '5') {
 				createPresetTab('claude-code');
 				focusCanvasWebview();
 				return true;
 			}
-			if (key === '7') {
+			if (key === '6') {
 				createPresetTab('codex');
+				focusCanvasWebview();
+				return true;
+			}
+			if (key === '7') {
+				createPresetTab('otto-tui');
+				focusCanvasWebview();
+				return true;
+			}
+			if (key === '8') {
+				createPresetTab('opencode');
 				focusCanvasWebview();
 				return true;
 			}
@@ -204,9 +226,9 @@ export function useCanvasKeybinds() {
 	);
 
 	const handlePendingSelection = useCallback(
-		(key: '1' | '2' | '3' | '4' | '5' | '6' | '7' | 'escape') =>
+		(key: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'escape') =>
 			handlePendingTabSelection(key) ||
-			(key === '7' ? false : handlePendingBlockSelection(key)),
+			((key === '9') ? false : handlePendingBlockSelection(key)),
 		[handlePendingTabSelection],
 	);
 
@@ -417,6 +439,14 @@ export function useCanvasKeybinds() {
 				latestHandlePendingSelectionRef.current('7');
 				return;
 			}
+			if (shortcut === 'plain+8') {
+				latestHandlePendingSelectionRef.current('8');
+				return;
+			}
+			if (shortcut === 'plain+9') {
+				latestHandlePendingSelectionRef.current('9');
+				return;
+			}
 			if (shortcut === 'escape') {
 				latestHandlePendingSelectionRef.current('escape');
 				return;
@@ -445,8 +475,8 @@ export function useCanvasKeybinds() {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (!event.metaKey && !event.ctrlKey && !event.altKey) {
-				if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4' || event.key === '5' || event.key === '6' || event.key === '7') {
-					if (handlePendingSelection(event.key as '1' | '2' | '3' | '4' | '5' | '6' | '7')) {
+				if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4' || event.key === '5' || event.key === '6' || event.key === '7' || event.key === '8' || event.key === '9') {
+					if (handlePendingSelection(event.key as '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9')) {
 						event.preventDefault();
 					}
 					return;
