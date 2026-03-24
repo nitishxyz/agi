@@ -1,5 +1,4 @@
-import { getCurrentWebview } from '@tauri-apps/api/webview';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
 	getGhosttyStatus,
 	inputGhosttyText,
@@ -19,14 +18,6 @@ interface GhosttyBlockProps {
 
 export function GhosttyBlock({ block }: GhosttyBlockProps) {
 	const runtimeHostRef = useNativeBlockHost(block.id, 'terminal');
-	const elementRef = useRef<HTMLDivElement | null>(null);
-	const hostRef = useCallback(
-		(node: HTMLDivElement | null) => {
-			elementRef.current = node;
-			runtimeHostRef(node);
-		},
-		[runtimeHostRef],
-	);
 	const runtime = useNativeBlockRuntime(block.id);
 	const setFocused = useCanvasStore((s) => s.setFocused);
 	const [status, setStatus] = useState<GhosttyStatus | null>(null);
@@ -71,7 +62,7 @@ export function GhosttyBlock({ block }: GhosttyBlockProps) {
 	return (
 		<div className="relative h-full w-full overflow-hidden bg-transparent">
 			<div
-				ref={hostRef}
+				ref={runtimeHostRef}
 				data-native-block-host="terminal"
 				data-block-id={block.id}
 				tabIndex={0}
@@ -80,8 +71,6 @@ export function GhosttyBlock({ block }: GhosttyBlockProps) {
 				onMouseDown={(event) => {
 					event.stopPropagation();
 					setFocused(block.id);
-					void getCurrentWebview().setFocus().catch(() => undefined);
-					elementRef.current?.focus();
 				}}
 				onPaste={(event) => {
 					const text = event.clipboardData.getData('text/plain');

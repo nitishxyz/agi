@@ -1,4 +1,5 @@
 import { getCurrentWebview } from '@tauri-apps/api/webview';
+import { useQueryClient } from '@tanstack/react-query';
 import { LoaderCircle } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -42,6 +43,7 @@ function OttoRuntimeState({
 
 export function OttoBlock({ block, isFocused, workspaceId }: OttoBlockProps) {
 	const [sessionId, setSessionId] = useState<string | null>(block.sessionId ?? null);
+	const queryClient = useQueryClient();
 	const runtime = useWorkspaceRuntimeStore((s) =>
 		workspaceId ? s.runtimes[workspaceId] ?? null : null,
 	);
@@ -54,6 +56,12 @@ export function OttoBlock({ block, isFocused, workspaceId }: OttoBlockProps) {
 	useEffect(() => {
 		setSessionId(block.sessionId ?? null);
 	}, [block.sessionId]);
+
+	useEffect(() => {
+		if (!sessionId || runtime?.status !== 'ready') return;
+		void queryClient.invalidateQueries({ queryKey: ['sessions'] });
+		void queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+	}, [queryClient, runtime?.status, sessionId, workspaceId]);
 
 	useEffect(() => {
 		if (!isFocused) return;
@@ -108,7 +116,7 @@ export function OttoBlock({ block, isFocused, workspaceId }: OttoBlockProps) {
 		<div
 			ref={containerRef}
 			tabIndex={-1}
-			className="dark relative flex h-full w-full flex-col overflow-hidden outline-none"
+			className="dark relative flex h-full w-full select-text flex-col overflow-hidden outline-none"
 			style={{ background: 'hsl(var(--background))' }}
 			onMouseDownCapture={() => setFocused(block.id)}
 			onFocusCapture={() => setFocused(block.id)}

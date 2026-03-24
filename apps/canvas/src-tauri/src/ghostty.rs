@@ -358,9 +358,10 @@ mod macos {
 	use objc2::rc::Retained;
 	use objc2::{define_class, msg_send, MainThreadOnly};
 	use objc2_app_kit::{
-		NSEvent, NSEventMask, NSEventModifierFlags, NSResponder, NSView, NSWindowOrderingMode,
+		NSEvent, NSEventMask, NSEventModifierFlags, NSPasteboard, NSPasteboardTypeString,
+		NSResponder, NSView, NSWindowOrderingMode,
 	};
-	use objc2_foundation::{MainThreadMarker, NSObjectProtocol, NSPoint, NSRect, NSSize};
+	use objc2_foundation::{MainThreadMarker, NSObjectProtocol, NSPoint, NSRect, NSSize, NSString};
 	use std::path::{Path, PathBuf};
 
 	type GhosttyApp = *mut c_void;
@@ -534,6 +535,7 @@ mod macos {
 		surface_key: unsafe extern "C" fn(GhosttySurface, GhosttyInputKey) -> bool,
 		surface_mouse_button: unsafe extern "C" fn(GhosttySurface, GhosttyMouseState, GhosttyMouseButton, i32) -> bool,
 		surface_mouse_pos: unsafe extern "C" fn(GhosttySurface, f64, f64, i32),
+		surface_mouse_scroll: unsafe extern "C" fn(GhosttySurface, f64, f64, i32),
 		surface_binding_action: unsafe extern "C" fn(GhosttySurface, *const c_char, usize) -> bool,
 	}
 
@@ -576,6 +578,32 @@ mod macos {
 				unsafe { handle_host_view_mouse_move(self, event) };
 			}
 
+			#[unsafe(method(scrollWheel:))]
+			fn scroll_wheel(&self, event: &NSEvent) {
+				unsafe { handle_host_view_mouse_scroll(self, event) };
+			}
+
+			#[unsafe(method(copy:))]
+			fn copy(&self, _sender: Option<&NSResponder>) {
+				unsafe {
+					let _ = perform_host_view_action(self, "copy_to_clipboard");
+				}
+			}
+
+			#[unsafe(method(paste:))]
+			fn paste(&self, _sender: Option<&NSResponder>) {
+				unsafe {
+					let _ = paste_host_view_from_clipboard(self);
+				}
+			}
+
+			#[unsafe(method(selectAll:))]
+			fn select_all(&self, _sender: Option<&NSResponder>) {
+				unsafe {
+					let _ = perform_host_view_action(self, "select_all");
+				}
+			}
+
 			#[unsafe(method(becomeFirstResponder))]
 			fn become_first_responder(&self) -> bool {
 				let result: bool = unsafe { msg_send![super(self), becomeFirstResponder] };
@@ -606,8 +634,8 @@ mod macos {
 			}
 
 			#[unsafe(method(performKeyEquivalent:))]
-			fn perform_key_equivalent(&self, _event: &NSEvent) -> bool {
-				false.into()
+			fn perform_key_equivalent(&self, event: &NSEvent) -> bool {
+				unsafe { perform_host_view_key_equivalent(self, event) }.into()
 			}
 		}
 	);
@@ -756,13 +784,7 @@ mod macos {
 					}, true));
 				}
 			}
-			return match key.as_deref() {
-				Some("h") => Some(("ctrl+h", true)),
-				Some("j") => Some(("ctrl+j", true)),
-				Some("k") => Some(("ctrl+k", true)),
-				Some("l") => Some(("ctrl+l", true)),
-				_ => None,
-			};
+			return None;
 		}
 
 		if !flags.contains(NSEventModifierFlags::Command)
@@ -917,6 +939,81 @@ mod macos {
 		}
 	}
 
+	unsafe fn handle_host_view_mouse_scroll(host_view: &GhosttyHostView, event: &NSEvent) {
+		let Some((app_path, surface)) = lookup_block_context(host_view) else {
+			return;
+		};
+		let Ok(api) = (unsafe { api_for_app(Path::new(&app_path)) }) else {
+			return;
+		};
+		unsafe {
+			(api.surface_mouse_scroll)(
+				surface,
+				event.deltaX(),
+				event.deltaY(),
+				ghostty_mods_from_event(event),
+			);
+		}
+	}
+
+	unsafe fn perform_host_view_action(host_view: &GhosttyHostView, action: &str) -> bool {
+		let Some((app_path, surface)) = lookup_block_context(host_view) else {
+			return false;
+		};
+		let Ok(api) = (unsafe { api_for_app(Path::new(&app_path)) }) else {
+			return false;
+		};
+		let Ok(action) = CString::new(action) else {
+			return false;
+		};
+		unsafe { (api.surface_binding_action)(surface, action.as_ptr(), action.as_bytes().len()) }
+	}
+
+	unsafe fn paste_host_view_from_clipboard(host_view: &GhosttyHostView) -> bool {
+		let Some((app_path, surface)) = lookup_block_context(host_view) else {
+			return false;
+		};
+		let Ok(api) = (unsafe { api_for_app(Path::new(&app_path)) }) else {
+			return false;
+		};
+		let pasteboard = NSPasteboard::generalPasteboard();
+		let Some(text) = pasteboard.stringForType(NSPasteboardTypeString) else {
+			return false;
+		};
+		let Some(value) = string_from_nsstring(&text) else {
+			return false;
+		};
+		let Ok(value) = CString::new(value) else {
+			return false;
+		};
+		unsafe { (api.surface_text)(surface, value.as_ptr(), value.as_bytes().len()) };
+		true
+	}
+
+	unsafe fn perform_host_view_key_equivalent(host_view: &GhosttyHostView, event: &NSEvent) -> bool {
+		let flags = event
+			.modifierFlags()
+			.intersection(NSEventModifierFlags::DeviceIndependentFlagsMask);
+		if !flags.contains(NSEventModifierFlags::Command)
+			|| flags.contains(NSEventModifierFlags::Control)
+			|| flags.contains(NSEventModifierFlags::Option)
+		{
+			return false;
+		}
+		let key = event
+			.charactersIgnoringModifiers()
+			.as_deref()
+			.and_then(string_from_nsstring)
+			.map(|value| value.to_lowercase());
+		match key.as_deref() {
+			Some("c") => unsafe { perform_host_view_action(host_view, "copy_to_clipboard") },
+			Some("v") => unsafe { paste_host_view_from_clipboard(host_view) },
+			Some("a") => unsafe { perform_host_view_action(host_view, "select_all") },
+			Some("x") => unsafe { perform_host_view_action(host_view, "copy_to_clipboard") },
+			_ => false,
+		}
+	}
+
 	unsafe fn handle_host_view_key_event(
 		host_view: &GhosttyHostView,
 		event: &NSEvent,
@@ -1067,6 +1164,16 @@ mod macos {
 		_location: GhosttyClipboard,
 		_confirm: bool,
 	) {
+		if _content.is_null() {
+			return;
+		}
+		let Ok(content) = unsafe { std::ffi::CStr::from_ptr(_content) }.to_str() else {
+			return;
+		};
+		let pasteboard = NSPasteboard::generalPasteboard();
+		let content = NSString::from_str(content);
+		let _ = pasteboard.clearContents();
+		let _ = pasteboard.setString_forType(&content, NSPasteboardTypeString);
 	}
 
 	unsafe extern "C" fn ghostty_close_surface_cb(userdata: *mut c_void, process_alive: bool) {
@@ -1218,6 +1325,7 @@ mod macos {
 			surface_key: unsafe { load_symbol(library, b"ghostty_surface_key\0")? },
 			surface_mouse_button: unsafe { load_symbol(library, b"ghostty_surface_mouse_button\0")? },
 			surface_mouse_pos: unsafe { load_symbol(library, b"ghostty_surface_mouse_pos\0")? },
+			surface_mouse_scroll: unsafe { load_symbol(library, b"ghostty_surface_mouse_scroll\0")? },
 			surface_binding_action: unsafe { load_symbol(library, b"ghostty_surface_binding_action\0")? },
 		};
 		let _ = GHOSTTY_API.set(api);

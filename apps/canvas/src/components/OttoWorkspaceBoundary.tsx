@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { configureApiClient } from '@ottocode/web-sdk';
 import { useWorkspaceRuntimeStore } from '../stores/workspace-runtime-store';
 
@@ -22,11 +22,10 @@ export function OttoWorkspaceBoundary({
 
 	const runtimeUrl = runtime?.status === 'ready' ? runtime.url : undefined;
 
-	useEffect(() => {
-		if (typeof window === 'undefined' || !isActive) return;
+	if (typeof window !== 'undefined' && isActive) {
 		(window as OttoWindow).OTTO_SERVER_URL = runtimeUrl;
 		configureApiClient();
-	}, [isActive, runtimeUrl]);
+	}
 
 	const queryClient = useMemo(
 		() =>
@@ -41,10 +40,6 @@ export function OttoWorkspaceBoundary({
 			}),
 		[workspaceId],
 	);
-
-	if (!isActive || !runtimeUrl) {
-		return <>{children}</>;
-	}
 
 	return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

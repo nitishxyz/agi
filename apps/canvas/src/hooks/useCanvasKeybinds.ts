@@ -8,6 +8,23 @@ import { getSidebarOrderedTabs } from '../lib/sidebar-tab-order';
 import { useCanvasStore } from '../stores/canvas-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
 
+function isEditableShortcutTarget(target: EventTarget | null) {
+	if (!(target instanceof HTMLElement)) return false;
+	if (target.isContentEditable) return true;
+	if (
+		target instanceof HTMLInputElement ||
+		target instanceof HTMLTextAreaElement ||
+		target instanceof HTMLSelectElement
+	) {
+		return true;
+	}
+	return Boolean(
+		target.closest(
+			'input, textarea, select, [contenteditable="true"], [contenteditable=""], [role="textbox"]',
+		),
+	);
+}
+
 export function useCanvasKeybinds() {
 	const addBlock = useCanvasStore((s) => s.addBlock);
 	const blocks = useCanvasStore((s) => s.blocks);
@@ -62,6 +79,10 @@ export function useCanvasKeybinds() {
 	const focusCanvasWebview = () => {
 		void getCurrentWebview().setFocus().catch(() => undefined);
 	};
+
+	const shouldBypassCanvasShortcut = useCallback((event: KeyboardEvent) => {
+		return isEditableShortcutTarget(event.target);
+	}, []);
 
 	const createBlockOrOpenTab = useCallback(() => {
 		if (useCanvasStore.getState().activeTabKind === 'canvas') {
@@ -321,36 +342,36 @@ export function useCanvasKeybinds() {
 
 	useHotkeys(
 		[
-			{ hotkey: 'Mod+N', callback: () => executeShortcut('mod+n') },
-			{ hotkey: 'Mod+T', callback: () => executeShortcut('mod+t') },
-			{ hotkey: 'Mod+D', callback: () => executeShortcut('mod+d') },
-			{ hotkey: 'Mod+Shift+D', callback: () => executeShortcut('mod+shift+d') },
-			{ hotkey: 'Mod+W', callback: () => executeShortcut('mod+w') },
-			{ hotkey: 'Mod+[', callback: () => executeShortcut('mod+[') },
-			{ hotkey: 'Mod+]', callback: () => executeShortcut('mod+]') },
-			{ hotkey: 'Mod+1', callback: () => executeShortcut('mod+1') },
-			{ hotkey: 'Mod+2', callback: () => executeShortcut('mod+2') },
-			{ hotkey: 'Mod+3', callback: () => executeShortcut('mod+3') },
-			{ hotkey: 'Mod+4', callback: () => executeShortcut('mod+4') },
-			{ hotkey: 'Mod+5', callback: () => executeShortcut('mod+5') },
-			{ hotkey: 'Mod+6', callback: () => executeShortcut('mod+6') },
-			{ hotkey: 'Mod+7', callback: () => executeShortcut('mod+7') },
-			{ hotkey: 'Mod+8', callback: () => executeShortcut('mod+8') },
-			{ hotkey: 'Mod+9', callback: () => executeShortcut('mod+9') },
-			{ hotkey: 'Control+Shift+1', callback: () => executeShortcut('ctrl+shift+1') },
-			{ hotkey: 'Control+Shift+2', callback: () => executeShortcut('ctrl+shift+2') },
-			{ hotkey: 'Control+Shift+3', callback: () => executeShortcut('ctrl+shift+3') },
-			{ hotkey: 'Control+Shift+4', callback: () => executeShortcut('ctrl+shift+4') },
-			{ hotkey: 'Control+Shift+5', callback: () => executeShortcut('ctrl+shift+5') },
-			{ hotkey: 'Control+Shift+6', callback: () => executeShortcut('ctrl+shift+6') },
-			{ hotkey: 'Control+Shift+7', callback: () => executeShortcut('ctrl+shift+7') },
-			{ hotkey: 'Control+Shift+8', callback: () => executeShortcut('ctrl+shift+8') },
-			{ hotkey: 'Control+Shift+9', callback: () => executeShortcut('ctrl+shift+9') },
-			{ hotkey: 'Control+H', callback: () => executeShortcut('ctrl+h') },
-			{ hotkey: 'Control+J', callback: () => executeShortcut('ctrl+j') },
-			{ hotkey: 'Control+K', callback: () => executeShortcut('ctrl+k') },
-			{ hotkey: 'Control+L', callback: () => executeShortcut('ctrl+l') },
-			{ hotkey: 'Mod+Shift+B', callback: () => executeShortcut('mod+shift+b') },
+			{ hotkey: 'Mod+N', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+n') },
+			{ hotkey: 'Mod+T', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+t') },
+			{ hotkey: 'Mod+D', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+d') },
+			{ hotkey: 'Mod+Shift+D', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+shift+d') },
+			{ hotkey: 'Mod+W', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+w') },
+			{ hotkey: 'Mod+[', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+[') },
+			{ hotkey: 'Mod+]', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+]') },
+			{ hotkey: 'Mod+1', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+1') },
+			{ hotkey: 'Mod+2', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+2') },
+			{ hotkey: 'Mod+3', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+3') },
+			{ hotkey: 'Mod+4', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+4') },
+			{ hotkey: 'Mod+5', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+5') },
+			{ hotkey: 'Mod+6', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+6') },
+			{ hotkey: 'Mod+7', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+7') },
+			{ hotkey: 'Mod+8', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+8') },
+			{ hotkey: 'Mod+9', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+9') },
+			{ hotkey: 'Control+Shift+1', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+1') },
+			{ hotkey: 'Control+Shift+2', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+2') },
+			{ hotkey: 'Control+Shift+3', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+3') },
+			{ hotkey: 'Control+Shift+4', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+4') },
+			{ hotkey: 'Control+Shift+5', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+5') },
+			{ hotkey: 'Control+Shift+6', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+6') },
+			{ hotkey: 'Control+Shift+7', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+7') },
+			{ hotkey: 'Control+Shift+8', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+8') },
+			{ hotkey: 'Control+Shift+9', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+9') },
+			{ hotkey: 'Control+H', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+h') },
+			{ hotkey: 'Control+J', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+j') },
+			{ hotkey: 'Control+K', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+k') },
+			{ hotkey: 'Control+L', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+l') },
+			{ hotkey: 'Mod+Shift+B', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+shift+b') },
 		],
 		{ conflictBehavior: 'replace' },
 	);
