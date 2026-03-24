@@ -25,6 +25,55 @@ function getTabGlyph(tab: WorkspaceTabState) {
 	return <Terminal size={12} strokeWidth={1.75} />;
 }
 
+function getTabDescription(tab: WorkspaceTabState) {
+	if (tab.kind === 'canvas') return 'Split layouts and mixed blocks';
+	if (tab.kind === 'pending') return 'Choose what to open next';
+	if (tab.block.type === 'browser') return 'Focused browser surface';
+	if (tab.block.type === 'otto') return 'Focused agent surface';
+	return 'Focused terminal surface';
+}
+
+type SidebarGroupId = 'drafts' | 'agents' | 'browsers' | 'terminal' | 'commands' | 'canvas';
+
+interface SidebarGroupDefinition {
+	id: SidebarGroupId;
+	label: string;
+	matches: (tab: WorkspaceTabState) => boolean;
+}
+
+const SIDEBAR_GROUPS: SidebarGroupDefinition[] = [
+	{
+		id: 'drafts',
+		label: 'Drafts',
+		matches: (tab) => tab.kind === 'pending',
+	},
+	{
+		id: 'agents',
+		label: 'Agents',
+		matches: (tab) => tab.kind === 'block' && tab.block.type === 'otto',
+	},
+	{
+		id: 'browsers',
+		label: 'Browsers',
+		matches: (tab) => tab.kind === 'block' && tab.block.type === 'browser',
+	},
+	{
+		id: 'terminal',
+		label: 'Terminal',
+		matches: (tab) => tab.kind === 'block' && tab.block.type === 'terminal',
+	},
+	{
+		id: 'commands',
+		label: 'Commands',
+		matches: () => false,
+	},
+	{
+		id: 'canvas',
+		label: 'Canvas',
+		matches: (tab) => tab.kind === 'canvas',
+	},
+];
+
 export function Sidebar() {
 	const workspaces = useWorkspaceStore((state) => state.workspaces);
 	const environments = useWorkspaceStore((state) => state.environments);
@@ -53,6 +102,15 @@ export function Sidebar() {
 				.map((tabId) => tabs[tabId])
 				.filter((tab): tab is WorkspaceTabState => Boolean(tab)),
 		[tabOrder, tabs],
+	);
+
+	const groupedTabs = useMemo(
+		() =>
+			SIDEBAR_GROUPS.map((group) => ({
+				...group,
+				tabs: orderedTabs.filter((tab) => group.matches(tab)),
+			})).filter((group) => group.tabs.length > 0),
+		[orderedTabs],
 	);
 
 	const resetCreateWorkspaceState = useCallback(() => {
@@ -98,132 +156,139 @@ export function Sidebar() {
 
 	return (
 		<>
-			<div className="flex h-full w-[284px] flex-shrink-0 flex-col overflow-hidden">
-				<div className="flex h-[48px] flex-shrink-0">
+			<div className="flex h-full w-[288px] flex-shrink-0 flex-col overflow-hidden pt-1">
+				<div className="flex h-[36px] flex-shrink-0">
 					<div className="w-[68px] flex-shrink-0" data-tauri-drag-region />
-					<div className="flex min-w-0 flex-1 items-center gap-3 px-3">
-						<div className="min-w-0 flex-1" data-tauri-drag-region>
-							<p className="truncate text-[11px] font-medium text-white/80">
-								{activeId ? 'Workspace tabs' : 'Tabs'}
-							</p>
-							<p className="truncate text-[10px] text-white/50">
-								{activeId ? '⌘N block · ⌘T tab' : 'Create or select a workspace'}
-							</p>
-						</div>
-						<button
-							onClick={openCreateTab}
-							disabled={!activeId}
-							className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-sm border border-white/[0.12] bg-white/[0.08] text-white/70 transition-colors hover:bg-white/[0.14] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-							title="Create tab"
-						>
-							<Plus size={14} strokeWidth={1.75} />
-						</button>
-					</div>
+					<div className="flex min-w-0 flex-1" data-tauri-drag-region />
 				</div>
 
 				<div className="flex min-h-0 flex-1 overflow-hidden">
 					<div className="flex h-full w-[68px] flex-shrink-0 flex-col items-center">
-
 						<div className="flex w-full flex-1 flex-col items-center gap-2 overflow-y-auto py-3">
-						{workspaces.map((workspace) => {
-							const isActive = workspace.id === activeId;
-							const environment = environments[workspace.primaryEnvironmentId];
-							return (
-								<div key={workspace.id} className="group relative flex w-full items-center justify-center">
-									<div
-										className={`absolute left-0 w-[4px] rounded-r-full transition-all duration-200 ${
-											isActive ? 'h-[20px] bg-white' : 'h-0 bg-white/40 group-hover:h-[8px]'
-										}`}
-									/>
-									<button
-										onClick={() => setActive(workspace.id)}
-										className="group relative"
-										title={
-											environment
-												? `${workspace.name}\n${environment.path}`
-												: workspace.name
-										}
-									>
+							{workspaces.map((workspace) => {
+								const isActive = workspace.id === activeId;
+								const environment = environments[workspace.primaryEnvironmentId];
+								return (
+									<div key={workspace.id} className="group relative flex w-full items-center justify-center">
 										<div
-											className={`flex h-[44px] w-[44px] items-center justify-center text-[14px] font-bold transition-all duration-200 ${
-												isActive
-													? 'rounded-[10px]'
-													: 'rounded-[10px] group-hover:rounded-[10px]'
+											className={`absolute left-0 w-[4px] rounded-r-full transition-all duration-200 ${
+												isActive ? 'h-[20px] bg-white' : 'h-0 bg-white/40 group-hover:h-[8px]'
 											}`}
-											style={{ backgroundColor: workspace.color }}
+										/>
+										<button
+											onClick={() => setActive(workspace.id)}
+											className="group relative"
+											title={
+												environment
+													? `${workspace.name}\n${environment.path}`
+													: workspace.name
+											}
 										>
-											<span className="select-none text-white">
-												{getInitials(workspace.name)}
-											</span>
-										</div>
-									</button>
+											<div
+												className={`flex h-[44px] w-[44px] items-center justify-center rounded-[10px] text-[14px] font-bold transition-all duration-200 ${
+													isActive ? '' : 'group-hover:rounded-[10px]'
+												}`}
+												style={{ backgroundColor: workspace.color }}
+											>
+												<span className="select-none text-white">
+													{getInitials(workspace.name)}
+												</span>
+											</div>
+										</button>
+									</div>
+								);
+							})}
+
+							<div className="mx-auto my-1 h-[1px] w-[36px] flex-shrink-0 bg-white/[0.08]" />
+
+							<button
+								onClick={() => setIsCreateWorkspaceOpen(true)}
+								className="group"
+								title="Add a workspace"
+							>
+								<div className="flex h-[44px] w-[44px] items-center justify-center rounded-[10px] bg-white/[0.10] text-white/60 transition-all duration-200 group-hover:bg-green-400/15 group-hover:text-green-400">
+									<Plus size={20} strokeWidth={1.5} />
 								</div>
-							);
-						})}
-
-						<div className="mx-auto my-1 h-[1px] w-[36px] flex-shrink-0 bg-white/[0.08]" />
-
-						<button
-							onClick={() => setIsCreateWorkspaceOpen(true)}
-							className="group"
-							title="Add a workspace"
-						>
-							<div className="flex h-[44px] w-[44px] items-center justify-center rounded-[10px] bg-white/[0.10] text-white/60 transition-all duration-200 group-hover:bg-green-400/15 group-hover:text-green-400">
-								<Plus size={20} strokeWidth={1.5} />
-							</div>
-						</button>
-					</div>
+							</button>
+						</div>
 					</div>
 
 					<div className="flex min-w-0 flex-1 flex-col">
-					<div className="flex-1 overflow-y-auto p-2">
 						{activeId ? (
-							<div className="space-y-1.5">
-								{orderedTabs.map((tab) => {
-									const isActive = tab.id === activeTabId;
-								return (
+							<>
+								<div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
+									<div className="space-y-3">
+										{groupedTabs.map((group) => (
+											<section key={group.id} className="space-y-1.5">
+												<div className="flex items-center justify-between px-1">
+													<p className="text-[10px] uppercase tracking-[0.14em] text-white/32">
+														{group.label}
+													</p>
+													<span className="text-[9px] text-white/24">{group.tabs.length}</span>
+												</div>
+
+												<div className="space-y-1">
+													{group.tabs.map((tab) => {
+															const isActive = tab.id === activeTabId;
+															return (
+																<button
+																	key={tab.id}
+																	onClick={() => setActiveTab(tab.id)}
+																	className={`group flex w-full items-center gap-2.5 rounded-xl border px-2.5 py-2 text-left transition-colors ${
+																		isActive
+																			? 'border-white/[0.12] bg-white/[0.10]'
+																			: 'border-transparent bg-white/[0.04] hover:border-white/[0.08] hover:bg-white/[0.07]'
+																	}`}
+																>
+																	<div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.08] text-white/65">
+																		{getTabGlyph(tab)}
+																	</div>
+																	<div className="min-w-0 flex-1">
+																		<p className="truncate text-[11px] font-medium text-white/82">
+																			{tab.title}
+																		</p>
+																		<p className="truncate text-[10px] text-white/45">
+																			{getTabDescription(tab)}
+																		</p>
+																	</div>
+																	<div
+																		role="button"
+																		tabIndex={0}
+																		onClick={(event) => {
+																			event.stopPropagation();
+																			removeTab(tab.id);
+																		}}
+																		onKeyDown={(event) => {
+																			if (event.key === 'Enter') {
+																				event.stopPropagation();
+																				removeTab(tab.id);
+																			}
+																		}}
+																		className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-white/45 opacity-0 transition-all hover:bg-white/[0.08] hover:text-white group-hover:opacity-100"
+																		title="Close tab"
+																	>
+																		<X size={12} strokeWidth={1.75} />
+																	</div>
+																</button>
+															);
+													})}
+												</div>
+											</section>
+										))}
+									</div>
+								</div>
+
+								<div className="border-t border-white/[0.06] p-2">
 									<button
-										key={tab.id}
-										onClick={() => setActiveTab(tab.id)}
-										className={`group flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors ${
-											isActive
-												? 'border-white/[0.12] bg-white/[0.10]'
-												: 'border-transparent bg-white/[0.04] hover:border-white/[0.10] hover:bg-white/[0.07]'
-										}`}
+										onClick={openCreateTab}
+										className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.10] bg-white/[0.05] px-3 py-2 text-[11px] font-medium text-white/75 transition-colors hover:bg-white/[0.09] hover:text-white"
+										title="Create tab"
 									>
-										<div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-white/[0.12] bg-white/[0.08] text-white/60">
-											{getTabGlyph(tab)}
-										</div>
-										<div className="min-w-0 flex-1">
-											<p className="truncate text-[11px] font-medium text-white/80">
-												{tab.title}
-											</p>
-											<p className="truncate text-[10px] text-white/50">
-												{tab.kind === 'canvas'
-													? 'Multi-block canvas'
-													: tab.kind === 'pending'
-														? 'Choose what to open in this tab'
-													: tab.block.type === 'browser'
-														? 'Focused browser tab'
-														: tab.block.type === 'otto'
-															? 'Focused Otto tab'
-															: 'Focused Ghostty tab'}
-											</p>
-										</div>
-										<div
-											role="button"
-											tabIndex={0}
-											onClick={(e) => { e.stopPropagation(); removeTab(tab.id); }}
-											onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); removeTab(tab.id); } }}
-											className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-sm text-white/50 opacity-0 transition-all hover:bg-white/[0.08] hover:text-white group-hover:opacity-100"
-											title="Close tab"
-										>
-											<X size={12} strokeWidth={1.75} />
-										</div>
+										<Plus size={14} strokeWidth={1.75} />
+										New tab
 									</button>
-								);
-								})}
-							</div>
+								</div>
+							</>
 						) : (
 							<div className="flex h-full items-center justify-center px-4 text-center">
 								<p className="max-w-[180px] text-[11px] leading-5 text-canvas-text-muted">
@@ -233,7 +298,6 @@ export function Sidebar() {
 						)}
 					</div>
 				</div>
-			</div>
 			</div>
 
 			{isCreateWorkspaceOpen && (
@@ -313,7 +377,6 @@ export function Sidebar() {
 					</div>
 				</div>
 			)}
-
 		</>
 	);
 }

@@ -23,7 +23,6 @@ export function App() {
 	const deleteWorkspaceState = useCanvasStore((s) => s.deleteWorkspaceState);
 	const activeTabId = useCanvasStore((s) => s.activeTabId);
 	const tabs = useCanvasStore((s) => s.tabs);
-	const activeTabKind = useCanvasStore((s) => s.activeTabKind);
 	const runtimes = useWorkspaceRuntimeStore((s) => s.runtimes);
 	const ensureRuntimeStarted = useWorkspaceRuntimeStore((s) => s.ensureStarted);
 	const stopRuntime = useWorkspaceRuntimeStore((s) => s.stopRuntime);
@@ -95,46 +94,32 @@ export function App() {
 		>
 			<Sidebar />
 
-			<div className="flex min-w-0 flex-1 flex-col">
+			<div className="flex min-w-0 flex-1 flex-col pt-1">
 				<div
-					className="h-[48px] flex items-center flex-shrink-0"
+					className="flex h-[36px] flex-shrink-0 items-center px-3"
 					data-tauri-drag-region
 				>
-					<div className="flex items-center gap-3 pl-4">
-						{active ? (
-							<div className="min-w-0">
-								<span className="block truncate text-[13px] font-semibold text-canvas-text">
-									{active.name}
+					{active ? (
+						<div className="flex min-w-0 items-center gap-2">
+							<span className="truncate text-[12px] font-semibold tracking-[-0.01em] text-canvas-text">
+								{active.name}
+							</span>
+							{activeTab ? (
+								<span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] text-canvas-text-muted">
+									{activeTab.title}
 								</span>
-								{activeTab ? (
-									<span className="block truncate text-[10px] text-canvas-text-muted">
-										{activeTab.title}
-										{activeEnvironment ? ` · ${activeEnvironment.path}` : ''}
-									</span>
-								) : activeEnvironment ? (
-									<span className="block truncate text-[10px] text-canvas-text-muted">
-										{activeEnvironment.path}
-									</span>
-								) : null}
-							</div>
-						) : (
-							<span className="text-[13px] font-semibold text-canvas-text-dim">
-								Open a workspace
-							</span>
-						)}
-					</div>
-					<div className="ml-auto flex items-center gap-2 pr-3">
-						{activeTab && (
-							<span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-canvas-text-muted">
-								{activeTabKind === 'canvas'
-									? 'Canvas tab'
-									: activeTabKind === 'pending'
-										? 'New tab'
-										: 'Block tab'}
-							</span>
-						)}
-						<span className="text-[11px] text-canvas-text-muted">⌘⇧N</span>
-					</div>
+							) : null}
+							{activeEnvironment ? (
+								<span className="truncate text-[11px] text-canvas-text-muted">
+									{activeEnvironment.path}
+								</span>
+							) : null}
+						</div>
+					) : (
+						<span className="text-[12px] font-medium text-canvas-text-dim">
+							Open a workspace
+						</span>
+					)}
 				</div>
 
 				<div className="min-h-0 flex-1 pr-1 pb-1">
