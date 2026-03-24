@@ -43,11 +43,6 @@ interface SidebarGroupDefinition {
 
 const SIDEBAR_GROUPS: SidebarGroupDefinition[] = [
 	{
-		id: 'drafts',
-		label: 'Drafts',
-		matches: (tab) => tab.kind === 'pending',
-	},
-	{
 		id: 'agents',
 		label: 'Agents',
 		matches: (tab) => tab.kind === 'block' && tab.block.type === 'otto',
@@ -71,6 +66,11 @@ const SIDEBAR_GROUPS: SidebarGroupDefinition[] = [
 		id: 'canvas',
 		label: 'Canvas',
 		matches: (tab) => tab.kind === 'canvas',
+	},
+	{
+		id: 'drafts',
+		label: 'Drafts',
+		matches: (tab) => tab.kind === 'pending',
 	},
 ];
 
@@ -102,6 +102,14 @@ export function Sidebar() {
 				.map((tabId) => tabs[tabId])
 				.filter((tab): tab is WorkspaceTabState => Boolean(tab)),
 		[tabOrder, tabs],
+	);
+
+	const tabShortcutMap = useMemo(
+		() =>
+			new Map(
+				orderedTabs.slice(0, 9).map((tab, index) => [tab.id, index + 1]),
+			),
+		[orderedTabs],
 	);
 
 	const groupedTabs = useMemo(
@@ -230,6 +238,7 @@ export function Sidebar() {
 												<div className="space-y-1">
 													{group.tabs.map((tab) => {
 															const isActive = tab.id === activeTabId;
+															const shortcut = tabShortcutMap.get(tab.id);
 															return (
 																<button
 																	key={tab.id}
@@ -251,23 +260,32 @@ export function Sidebar() {
 																			{getTabDescription(tab)}
 																		</p>
 																	</div>
-																	<div
-																		role="button"
-																		tabIndex={0}
-																		onClick={(event) => {
-																			event.stopPropagation();
-																			removeTab(tab.id);
-																		}}
-																		onKeyDown={(event) => {
-																			if (event.key === 'Enter') {
+																	<div className="relative flex h-7 w-10 flex-shrink-0 items-center justify-end">
+																		{shortcut ? (
+																			<div className="pointer-events-none absolute inset-y-0 right-0 flex items-center transition-opacity group-hover:opacity-0">
+																				<div className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[9px] leading-none text-white/42">
+																					⌘{shortcut}
+																				</div>
+																			</div>
+																		) : null}
+																		<div
+																			role="button"
+																			tabIndex={0}
+																			onClick={(event) => {
 																				event.stopPropagation();
 																				removeTab(tab.id);
-																			}
-																		}}
-																		className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-white/45 opacity-0 transition-all hover:bg-white/[0.08] hover:text-white group-hover:opacity-100"
-																		title="Close tab"
-																	>
-																		<X size={12} strokeWidth={1.75} />
+																			}}
+																			onKeyDown={(event) => {
+																				if (event.key === 'Enter') {
+																					event.stopPropagation();
+																					removeTab(tab.id);
+																				}
+																			}}
+																			className="absolute inset-y-0 right-0 flex h-7 w-7 items-center justify-center rounded-md text-white/45 opacity-0 transition-all hover:bg-white/[0.08] hover:text-white group-hover:opacity-100"
+																			title="Close tab"
+																		>
+																			<X size={12} strokeWidth={1.75} />
+																		</div>
 																	</div>
 																</button>
 															);

@@ -1,6 +1,7 @@
+import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
 	createBrowserWebview,
 	destroyBrowserWebview,
@@ -162,6 +163,24 @@ function scheduleGhosttyFocus(blockId: string) {
 	}
 }
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+	let timeoutId: number | undefined;
+	try {
+		return await Promise.race([
+			promise,
+			new Promise<T>((_, reject) => {
+				timeoutId = window.setTimeout(() => {
+					reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+				}, timeoutMs);
+			}),
+		]);
+	} finally {
+		if (timeoutId !== undefined) {
+			window.clearTimeout(timeoutId);
+		}
+	}
+}
+
 export function useCanvasNativeBlockManager() {
 	const blocks = useCanvasStore((s) => s.blocks);
 	const workspaceStates = useCanvasStore((s) => s.workspaceStates);
@@ -169,6 +188,12 @@ export function useCanvasNativeBlockManager() {
 	const activeWorkspaceId = useWorkspaceStore((s) => s.activeId);
 	const environments = useWorkspaceStore((s) => s.environments);
 	const workspaces = useWorkspaceStore((s) => s.workspaces);
+	const debugLog = useCallback((message: string) => {
+		void invoke('canvas_debug_log', {
+			component: 'native-block-manager',
+			message,
+		}).catch(() => undefined);
+	}, []);
 	const blocksRef = useRef(blocks);
 	const focusedBlockIdRef = useRef(focusedBlockId);
 	const activeEnvironmentPathRef = useRef<string | null>(null);
@@ -259,6 +284,9 @@ export function useCanvasNativeBlockManager() {
 			focused: boolean,
 			visible: boolean,
 		) => {
+			debugLog(
+				`syncGhosttyBlock start workspaceId=${activeWorkspaceIdRef.current ?? 'null'} blockId=${block.id} visible=${visible} focused=${focused}`,
+			);
 			const status = ghosttyStatusRef.current;
 			if (!status?.available) return;
 
@@ -278,19 +306,27 @@ export function useCanvasNativeBlockManager() {
 
 			if (!entry.created && !entry.creating && visible) {
 				entry.creating = true;
+				debugLog(`syncGhosttyBlock create start blockId=${block.id}`);
 				try {
-					await createGhosttyBlock(
-						block.id,
-						activeEnvironmentPathRef.current ?? undefined,
+					await withTimeout(
+						createGhosttyBlock(
+							block.id,
+							activeEnvironmentPathRef.current ?? undefined,
+						),
+						5000,
+						`createGhosttyBlock ${block.id}`,
 					);
 					entry.created = true;
+					debugLog(`syncGhosttyBlock create success blockId=${block.id}`);
 					setNativeBlockRuntimeState(block.id, { error: null });
 				} catch (error) {
+					debugLog(`syncGhosttyBlock create error blockId=${block.id} error=${formatError(error)}`);
 					setNativeBlockRuntimeState(block.id, {
 						error: formatError(error),
 					});
 				} finally {
 					entry.creating = false;
+					debugLog(`syncGhosttyBlock create finish blockId=${block.id} created=${entry.created}`);
 				}
 			}
 
@@ -304,11 +340,19 @@ export function useCanvasNativeBlockManager() {
 				if (hiddenChanged || entry.lastFocused) {
 					entry.lastHidden = true;
 					entry.lastFocused = false;
-					await updateGhosttyBlock(block.id, {
-						...hiddenBounds,
-						hidden: true,
-					}).catch(() => undefined);
-					await setGhosttyBlockFocus(block.id, false).catch(() => undefined);
+					void withTimeout(
+						updateGhosttyBlock(block.id, {
+							...hiddenBounds,
+							hidden: true,
+						}),
+						300,
+						`hideGhosttyBlock ${block.id}`,
+					).catch((error) => {
+						debugLog(`syncGhosttyBlock hide timeout blockId=${block.id} error=${formatError(error)}`);
+					});
+					void withTimeout(setGhosttyBlockFocus(block.id, false), 300, `blurGhosttyBlock ${block.id}`).catch((error) => {
+						debugLog(`syncGhosttyBlock blur timeout blockId=${block.id} error=${formatError(error)}`);
+					});
 				}
 				return;
 			}
@@ -322,11 +366,19 @@ export function useCanvasNativeBlockManager() {
 				if (hiddenChanged || entry.lastFocused) {
 					entry.lastHidden = true;
 					entry.lastFocused = false;
-					await updateGhosttyBlock(block.id, {
-						...hiddenBounds,
-						hidden: true,
-					}).catch(() => undefined);
-					await setGhosttyBlockFocus(block.id, false).catch(() => undefined);
+					void withTimeout(
+						updateGhosttyBlock(block.id, {
+							...hiddenBounds,
+							hidden: true,
+						}),
+						300,
+						`hideGhosttyBlock ${block.id}`,
+					).catch((error) => {
+						debugLog(`syncGhosttyBlock hide timeout blockId=${block.id} error=${formatError(error)}`);
+					});
+					void withTimeout(setGhosttyBlockFocus(block.id, false), 300, `blurGhosttyBlock ${block.id}`).catch((error) => {
+						debugLog(`syncGhosttyBlock blur timeout blockId=${block.id} error=${formatError(error)}`);
+					});
 				}
 				return;
 			}
@@ -339,15 +391,24 @@ export function useCanvasNativeBlockManager() {
 			const sceneChanged = entry.lastSceneVersion !== sceneVersionRef.current;
 			if (boundsChanged || sceneChanged || wasHidden) {
 				entry.lastBounds = nextBounds;
-				await updateGhosttyBlock(block.id, {
-					...nextBounds,
-					hidden: false,
-				})
+				debugLog(
+					`syncGhosttyBlock update start blockId=${block.id} boundsChanged=${boundsChanged} sceneChanged=${sceneChanged} wasHidden=${wasHidden}`,
+				);
+				await withTimeout(
+					updateGhosttyBlock(block.id, {
+						...nextBounds,
+						hidden: false,
+					}),
+					500,
+					`showGhosttyBlock ${block.id}`,
+				)
 					.then(() => {
+						debugLog(`syncGhosttyBlock update success blockId=${block.id}`);
 						entry.lastSceneVersion = sceneVersionRef.current;
 						setNativeBlockRuntimeState(block.id, { error: null });
 					})
 					.catch((error) => {
+						debugLog(`syncGhosttyBlock update error blockId=${block.id} error=${formatError(error)}`);
 						setNativeBlockRuntimeState(block.id, {
 							error: formatError(error),
 						});
@@ -356,17 +417,20 @@ export function useCanvasNativeBlockManager() {
 
 			if (entry.lastFocused !== focused || (focused && (boundsChanged || sceneChanged))) {
 				entry.lastFocused = focused;
+				debugLog(`syncGhosttyBlock focus start blockId=${block.id} focused=${focused}`);
 				if (focused) {
 					await focusMainCanvasSurface();
 					focusHostElement(host.element);
 				}
-				await setGhosttyBlockFocus(block.id, focused)
+				await withTimeout(setGhosttyBlockFocus(block.id, focused), 500, `focusGhosttyBlock ${block.id}`)
 					.then(() => {
+						debugLog(`syncGhosttyBlock focus success blockId=${block.id} focused=${focused}`);
 						if (focused) {
 							scheduleGhosttyFocus(block.id);
 						}
 					})
 					.catch((error) => {
+						debugLog(`syncGhosttyBlock focus error blockId=${block.id} focused=${focused} error=${formatError(error)}`);
 						setNativeBlockRuntimeState(block.id, {
 							error: formatError(error),
 						});
@@ -618,5 +682,5 @@ export function useCanvasNativeBlockManager() {
 				void destroyBrowserEntry(blockId);
 			}
 		};
-	}, []);
+	}, [debugLog]);
 }

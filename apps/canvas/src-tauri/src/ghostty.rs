@@ -1,11 +1,9 @@
+use crate::debug_log::debug_log;
 use serde::Serialize;
 use std::{
 	collections::HashMap,
 	ffi::{c_char, c_int, c_void, CString},
-	fs::OpenOptions,
-	io::Write,
 	sync::{mpsc, Arc, Mutex, OnceLock},
-	time::{SystemTime, UNIX_EPOCH},
 };
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow, Wry};
 
@@ -94,19 +92,7 @@ pub fn register_native_shortcut_monitor() {
 }
 
 fn ghostty_debug_log(message: &str) {
-	let timestamp = SystemTime::now()
-		.duration_since(UNIX_EPOCH)
-		.map(|duration| duration.as_millis())
-		.unwrap_or(0);
-	let line = format!("[{timestamp}] {message}\n");
-	eprint!("{line}");
-	if let Ok(mut file) = OpenOptions::new()
-		.create(true)
-		.append(true)
-		.open("/tmp/otto-canvas-ghostty.log")
-	{
-		let _ = file.write_all(line.as_bytes());
-	}
+	debug_log("ghostty", message);
 }
 
 #[tauri::command]
@@ -154,13 +140,17 @@ pub fn ghostty_create_block(
 	cwd: Option<String>,
 	command: Option<String>,
 ) -> Result<(), String> {
+	ghostty_debug_log(&format!("ghostty_create_block start block_id={block_id}"));
 	#[cfg(target_os = "macos")]
 	{
 		let manager = manager.inner().inner.clone();
 		let window = main_canvas_window(&app_handle)?;
-		run_on_main_thread_sync(&app_handle, move || unsafe {
+		let log_block_id = block_id.clone();
+		let result = run_on_main_thread_sync(&app_handle, move || unsafe {
 			create_block_inner(&window, &manager, &block_id, cwd.as_deref(), command.as_deref())
-		})
+		});
+		ghostty_debug_log(&format!("ghostty_create_block finish block_id={log_block_id} ok={}", result.is_ok()));
+		result
 	}
 
 	#[cfg(not(target_os = "macos"))]
@@ -184,25 +174,41 @@ pub fn ghostty_update_block(
 	focused: bool,
 	hidden: Option<bool>,
 ) -> Result<(), String> {
+	ghostty_debug_log(&format!(
+		"ghostty_update_block start block_id={block_id} focused={focused} hidden={}",
+		hidden.unwrap_or(false)
+	));
 	#[cfg(target_os = "macos")]
 	{
 		let manager = manager.inner().inner.clone();
 		let window = main_canvas_window(&app_handle)?;
-		run_on_main_thread_sync(&app_handle, move || unsafe {
-			update_block_inner(
-				&window,
-				&manager,
-				&block_id,
-				x,
-				y,
-				width,
-				height,
-				viewport_height,
-				scale_factor,
-				focused,
-					hidden.unwrap_or(false),
-			)
-		})
+		let hidden_flag = hidden.unwrap_or(false);
+		let log_block_id = block_id.clone();
+		let scheduled_block_id = block_id.clone();
+		let app_handle = app_handle.clone();
+		tauri::async_runtime::spawn(async move {
+			let _ = app_handle.run_on_main_thread(move || unsafe {
+				let result = update_block_inner(
+					&window,
+					&manager,
+					&block_id,
+					x,
+					y,
+					width,
+					height,
+					viewport_height,
+					scale_factor,
+					focused,
+					hidden_flag,
+				);
+				ghostty_debug_log(&format!(
+					"ghostty_update_block inner_finish block_id={log_block_id} ok={}",
+					result.is_ok()
+				));
+			});
+		});
+		ghostty_debug_log(&format!("ghostty_update_block scheduled block_id={scheduled_block_id}"));
+		Ok(())
 	}
 
 	#[cfg(not(target_os = "macos"))]
@@ -275,14 +281,17 @@ pub fn ghostty_set_block_focus(
 	block_id: String,
 	focused: bool,
 ) -> Result<(), String> {
+	ghostty_debug_log(&format!("ghostty_set_block_focus start block_id={block_id} focused={focused}"));
 	#[cfg(target_os = "macos")]
 	{
 		let manager = manager.inner().inner.clone();
+		let log_block_id = block_id.clone();
 		app_handle
 			.run_on_main_thread(move || unsafe {
 				let _ = set_block_focus_inner(&manager, &block_id, focused);
 			})
 			.map_err(|error| error.to_string())?;
+		ghostty_debug_log(&format!("ghostty_set_block_focus finish block_id={log_block_id} focused={focused}"));
 		Ok(())
 	}
 
@@ -598,11 +607,7 @@ mod macos {
 			}
 
 			#[unsafe(method(performKeyEquivalent:))]
-			fn perform_key_equivalent(&self, event: &NSEvent) -> bool {
-				if let Some((shortcut, swallow)) = shortcut_for_event(event) {
-					emit_shortcut(shortcut);
-					return swallow.into();
-				}
+			fn perform_key_equivalent(&self, _event: &NSEvent) -> bool {
 				false.into()
 			}
 		}
@@ -688,28 +693,46 @@ mod macos {
 		let key = event
 			.charactersIgnoringModifiers()
 			.as_deref()
-			.and_then(string_from_nsstring)?
-			.to_lowercase();
+			.and_then(string_from_nsstring)
+			.map(|value| value.to_lowercase());
+		let key_code = event.keyCode();
+		let digit_shortcut = match key_code {
+			18 => Some("1"),
+			19 => Some("2"),
+			20 => Some("3"),
+			21 => Some("4"),
+			23 => Some("5"),
+			22 => Some("6"),
+			26 => Some("7"),
+			28 => Some("8"),
+			25 => Some("9"),
+			_ => key.as_deref().filter(|value| matches!(*value, "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9")),
+		};
 
 		if flags.contains(NSEventModifierFlags::Command) && !flags.contains(NSEventModifierFlags::Option) {
-			return match key.as_str() {
-				"n" => Some(("mod+n", true)),
-				"t" => Some(("mod+t", true)),
-				"d" if flags.contains(NSEventModifierFlags::Shift) => Some(("mod+shift+d", true)),
-				"d" => Some(("mod+d", true)),
-				"w" => Some(("mod+w", true)),
-				"[" => Some(("mod+[", true)),
-				"]" => Some(("mod+]", true)),
-				"1" => Some(("mod+1", true)),
-				"2" => Some(("mod+2", true)),
-				"3" => Some(("mod+3", true)),
-				"4" => Some(("mod+4", true)),
-				"5" => Some(("mod+5", true)),
-				"6" => Some(("mod+6", true)),
-				"7" => Some(("mod+7", true)),
-				"8" => Some(("mod+8", true)),
-				"9" => Some(("mod+9", true)),
-				"b" if flags.contains(NSEventModifierFlags::Shift) => Some(("mod+shift+b", true)),
+			if let Some(digit) = digit_shortcut {
+				return Some((match digit {
+					"1" => "mod+1",
+					"2" => "mod+2",
+					"3" => "mod+3",
+					"4" => "mod+4",
+					"5" => "mod+5",
+					"6" => "mod+6",
+					"7" => "mod+7",
+					"8" => "mod+8",
+					"9" => "mod+9",
+					_ => unreachable!(),
+				}, true));
+			}
+			return match key.as_deref() {
+				Some("n") => Some(("mod+n", true)),
+				Some("t") => Some(("mod+t", true)),
+				Some("d") if flags.contains(NSEventModifierFlags::Shift) => Some(("mod+shift+d", true)),
+				Some("d") => Some(("mod+d", true)),
+				Some("w") => Some(("mod+w", true)),
+				Some("[") => Some(("mod+[", true)),
+				Some("]") => Some(("mod+]", true)),
+				Some("b") if flags.contains(NSEventModifierFlags::Shift) => Some(("mod+shift+b", true)),
 				_ => None,
 			};
 		}
@@ -718,11 +741,27 @@ mod macos {
 			&& !flags.contains(NSEventModifierFlags::Command)
 			&& !flags.contains(NSEventModifierFlags::Option)
 		{
-			return match key.as_str() {
-				"h" => Some(("ctrl+h", true)),
-				"j" => Some(("ctrl+j", true)),
-				"k" => Some(("ctrl+k", true)),
-				"l" => Some(("ctrl+l", true)),
+			if flags.contains(NSEventModifierFlags::Shift) {
+				if let Some(digit) = digit_shortcut {
+					return Some((match digit {
+						"1" => "ctrl+shift+1",
+						"2" => "ctrl+shift+2",
+						"3" => "ctrl+shift+3",
+						"4" => "ctrl+shift+4",
+						"5" => "ctrl+shift+5",
+						"6" => "ctrl+shift+6",
+						"7" => "ctrl+shift+7",
+						"8" => "ctrl+shift+8",
+						"9" => "ctrl+shift+9",
+						_ => unreachable!(),
+					}, true));
+				}
+			}
+			return match key.as_deref() {
+				Some("h") => Some(("ctrl+h", true)),
+				Some("j") => Some(("ctrl+j", true)),
+				Some("k") => Some(("ctrl+k", true)),
+				Some("l") => Some(("ctrl+l", true)),
 				_ => None,
 			};
 		}
@@ -735,11 +774,11 @@ mod macos {
 				.get()
 				.and_then(|value| value.lock().ok().map(|enabled| *enabled))
 				.unwrap_or(false);
-			return match key.as_str() {
-				"1" if pending_mode => Some(("plain+1", true)),
-				"2" if pending_mode => Some(("plain+2", true)),
-				"3" if pending_mode => Some(("plain+3", true)),
-				"4" if pending_mode => Some(("plain+4", true)),
+			return match digit_shortcut {
+				Some("1") if pending_mode => Some(("plain+1", true)),
+				Some("2") if pending_mode => Some(("plain+2", true)),
+				Some("3") if pending_mode => Some(("plain+3", true)),
+				Some("4") if pending_mode => Some(("plain+4", true)),
 				_ => {
 					if pending_mode && event.keyCode() == 53 {
 						Some(("escape", true))
@@ -754,6 +793,7 @@ mod macos {
 	}
 
 	fn emit_shortcut(shortcut: &str) {
+		ghostty_debug_log(&format!("emit_shortcut shortcut={shortcut}"));
 		if let Some(app_handle) = APP_HANDLE.get() {
 			let _ = app_handle.emit(
 				"ghostty-native-shortcut",
@@ -768,8 +808,10 @@ mod macos {
 
 	pub(super) fn register_native_shortcut_monitor() {
 		if SHORTCUT_MONITOR_INSTALLED.get().is_some() {
+			ghostty_debug_log("register_native_shortcut_monitor skipped already_installed");
 			return;
 		}
+		ghostty_debug_log("register_native_shortcut_monitor install");
 
 		let block = RcBlock::new(|event_ptr: std::ptr::NonNull<NSEvent>| -> *mut NSEvent {
 			let event = unsafe { event_ptr.as_ref() };
@@ -785,9 +827,12 @@ mod macos {
 			NSEvent::addLocalMonitorForEventsMatchingMask_handler(NSEventMask::KeyDown, &block)
 		};
 		if monitor.is_some() {
+			ghostty_debug_log("register_native_shortcut_monitor installed");
 			let _ = SHORTCUT_MONITOR_INSTALLED.set(());
 			let _ = Box::leak(Box::new(block));
 			let _ = Box::leak(Box::new(monitor));
+		} else {
+			ghostty_debug_log("register_native_shortcut_monitor failed_to_install");
 		}
 	}
 
@@ -875,14 +920,6 @@ mod macos {
 		event: &NSEvent,
 		action: GhosttyInputAction,
 	) {
-		if let Some((shortcut, swallow)) = shortcut_for_event(event) {
-			if swallow {
-				if matches!(action, GhosttyInputAction::Press | GhosttyInputAction::Repeat) {
-					emit_shortcut(shortcut);
-				}
-				return;
-			}
-		}
 		let Some((app_path, surface)) = lookup_block_context(host_view) else {
 			return;
 		};

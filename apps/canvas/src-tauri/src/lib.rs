@@ -1,4 +1,5 @@
 mod browser;
+mod debug_log;
 mod ghostty;
 mod runtime;
 
@@ -6,6 +7,7 @@ use browser::{
     browser_create_block, browser_destroy_block, browser_navigate_block, browser_reload_block,
     browser_update_block, BrowserManager,
 };
+use debug_log::{canvas_debug_log, debug_log, install_panic_hook};
 use ghostty::{
     canvas_set_pending_shortcut_mode, ghostty_create_block, ghostty_destroy_block,
     ghostty_input_key, ghostty_input_text, ghostty_set_block_focus, ghostty_status,
@@ -30,6 +32,7 @@ pub fn run() {
         .manage(runtime_manager)
         .invoke_handler(tauri::generate_handler![
             ghostty_status,
+            canvas_debug_log,
             canvas_set_pending_shortcut_mode,
             ghostty_create_block,
             ghostty_update_block,
@@ -54,13 +57,19 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
         .setup(move |app| {
+            install_panic_hook();
+            debug_log("app", "setup start");
             ghostty::register_app_handle(app.handle().clone());
             ghostty::register_manager(&ghostty_manager_for_setup);
 
             let window = app.get_webview_window("main").unwrap();
+            debug_log("app", format!("main window ready label={}", window.label()));
             ghostty::register_main_canvas_window_label(window.label().to_string());
             #[cfg(target_os = "macos")]
-            ghostty::register_native_shortcut_monitor();
+            {
+                debug_log("app", "register native shortcut monitor");
+                ghostty::register_native_shortcut_monitor();
+            }
 
             #[cfg(target_os = "macos")]
             window_vibrancy::apply_vibrancy(
@@ -75,6 +84,7 @@ pub fn run() {
             window_vibrancy::apply_blur(&window, Some((10, 10, 10, 200)))
                 .expect("failed to apply blur");
 
+            debug_log("app", "setup complete");
             Ok(())
         })
         .run(tauri::generate_context!())
