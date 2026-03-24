@@ -21,11 +21,15 @@ export function App() {
 	const activateWorkspace = useCanvasStore((s) => s.activateWorkspace);
 	const workspaceStates = useCanvasStore((s) => s.workspaceStates);
 	const deleteWorkspaceState = useCanvasStore((s) => s.deleteWorkspaceState);
+	const activeTabId = useCanvasStore((s) => s.activeTabId);
+	const tabs = useCanvasStore((s) => s.tabs);
+	const activeTabKind = useCanvasStore((s) => s.activeTabKind);
 	const runtimes = useWorkspaceRuntimeStore((s) => s.runtimes);
 	const ensureRuntimeStarted = useWorkspaceRuntimeStore((s) => s.ensureStarted);
 	const stopRuntime = useWorkspaceRuntimeStore((s) => s.stopRuntime);
 	const removeBlock = useCanvasStore((s) => s.removeBlock);
 	const setFocused = useCanvasStore((s) => s.setFocused);
+	const activeTab = activeTabId ? tabs[activeTabId] ?? null : null;
 
 	useCanvasKeybinds();
 	useCanvasNativeBlockManager();
@@ -102,11 +106,16 @@ export function App() {
 								<span className="block truncate text-[13px] font-semibold text-canvas-text">
 									{active.name}
 								</span>
-								{activeEnvironment && (
+								{activeTab ? (
+									<span className="block truncate text-[10px] text-canvas-text-muted">
+										{activeTab.title}
+										{activeEnvironment ? ` · ${activeEnvironment.path}` : ''}
+									</span>
+								) : activeEnvironment ? (
 									<span className="block truncate text-[10px] text-canvas-text-muted">
 										{activeEnvironment.path}
 									</span>
-								)}
+								) : null}
 							</div>
 						) : (
 							<span className="text-[13px] font-semibold text-canvas-text-dim">
@@ -115,6 +124,15 @@ export function App() {
 						)}
 					</div>
 					<div className="ml-auto flex items-center gap-2 pr-3">
+						{activeTab && (
+							<span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-canvas-text-muted">
+								{activeTabKind === 'canvas'
+									? 'Canvas tab'
+									: activeTabKind === 'pending'
+										? 'New tab'
+										: 'Block tab'}
+							</span>
+						)}
 						<span className="text-[11px] text-canvas-text-muted">⌘⇧N</span>
 					</div>
 				</div>

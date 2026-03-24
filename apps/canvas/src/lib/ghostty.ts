@@ -46,6 +46,7 @@ export async function updateGhosttyBlock(
 		viewportHeight: number;
 		scaleFactor: number;
 		focused: boolean;
+		hidden?: boolean;
 	},
 ) {
 	return invoke('ghostty_update_block', {

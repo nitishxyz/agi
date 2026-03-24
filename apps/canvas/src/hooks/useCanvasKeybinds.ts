@@ -1,4 +1,3 @@
-import { useHotkeys } from '@tanstack/react-hotkeys';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
@@ -10,6 +9,7 @@ import { useWorkspaceStore } from '../stores/workspace-store';
 function shortcutFromEvent(event: KeyboardEvent): string | null {
 	if (event.metaKey && !event.altKey) {
 		if (event.key.toLowerCase() === 'n') return 'mod+n';
+		if (event.key.toLowerCase() === 't') return 'mod+t';
 		if (event.key.toLowerCase() === 'd' && event.shiftKey) return 'mod+shift+d';
 		if (event.key.toLowerCase() === 'd') return 'mod+d';
 		if (event.key.toLowerCase() === 'w') return 'mod+w';
@@ -32,13 +32,19 @@ function shortcutFromEvent(event: KeyboardEvent): string | null {
 export function useCanvasKeybinds() {
 	const addBlock = useCanvasStore((s) => s.addBlock);
 	const blocks = useCanvasStore((s) => s.blocks);
+	const tabs = useCanvasStore((s) => s.tabs);
 	const convertBlock = useCanvasStore((s) => s.convertBlock);
 	const removeBlock = useCanvasStore((s) => s.removeBlock);
+	const createTab = useCanvasStore((s) => s.createTab);
+	const closeCreateTab = useCanvasStore((s) => s.closeCreateTab);
+	const activeTabId = useCanvasStore((s) => s.activeTabId);
 	const focusedBlockId = useCanvasStore((s) => s.focusedBlockId);
+	const activeTabKind = useCanvasStore((s) => s.activeTabKind);
 	const focusNext = useCanvasStore((s) => s.focusNext);
 	const focusPrev = useCanvasStore((s) => s.focusPrev);
 	const focusByIndex = useCanvasStore((s) => s.focusByIndex);
 	const focusDirection = useCanvasStore((s) => s.focusDirection);
+	const openCreateTab = useCanvasStore((s) => s.openCreateTab);
 	const toggleSidebar = useWorkspaceStore((s) => s.toggleSidebar);
 	const lastShortcutAtRef = useRef<Record<string, number>>({});
 
@@ -63,7 +69,22 @@ export function useCanvasKeybinds() {
 		void getCurrentWebview().setFocus().catch(() => undefined);
 	};
 
-	const handlePendingSelection = (key: '1' | '2' | '3' | 'escape') => {
+	const createBlockOrOpenTab = useCallback(() => {
+		if (useCanvasStore.getState().activeTabKind === 'canvas') {
+			addBlock('pending');
+			focusCanvasWebview();
+			return;
+		}
+		focusCanvasWebview();
+		openCreateTab();
+	}, [addBlock, openCreateTab]);
+
+	const openTabCreator = useCallback(() => {
+		focusCanvasWebview();
+		openCreateTab();
+	}, [openCreateTab]);
+
+	const handlePendingBlockSelection = (key: '1' | '2' | '3' | 'escape') => {
 		if (!focusedBlockId) return false;
 		const block = blocks[focusedBlockId];
 		if (!block || block.type !== 'pending') return false;
@@ -80,11 +101,134 @@ export function useCanvasKeybinds() {
 		return true;
 	};
 
+	const handlePendingTabSelection = useCallback(
+		(key: '1' | '2' | '3' | '4' | 'escape') => {
+			if (!activeTabId || activeTabKind !== 'pending') return false;
+			const activeTab = tabs[activeTabId];
+			if (!activeTab || activeTab.kind !== 'pending') return false;
+
+			if (key === 'escape') {
+				closeCreateTab();
+				focusCanvasWebview();
+				return true;
+			}
+
+			const kind =
+				key === '1'
+					? 'canvas'
+					: key === '2'
+						? 'terminal'
+						: key === '3'
+							? 'browser'
+							: 'otto';
+			createTab(kind);
+			focusCanvasWebview();
+			return true;
+		},
+		[activeTabId, activeTabKind, closeCreateTab, createTab, tabs],
+	);
+
+	const handlePendingSelection = useCallback(
+		(key: '1' | '2' | '3' | '4' | 'escape') =>
+			handlePendingTabSelection(key) ||
+			(key === '4' ? false : handlePendingBlockSelection(key)),
+		[handlePendingTabSelection],
+	);
+
+	const executeShortcut = useCallback(
+		(shortcut: string) => {
+			switch (shortcut) {
+				case 'mod+n':
+					runShortcut('mod+n', createBlockOrOpenTab);
+					break;
+				case 'mod+t':
+					runShortcut('mod+t', openTabCreator);
+					break;
+				case 'mod+d':
+					runShortcut('mod+d', () => {
+						addBlock('pending', undefined, 'horizontal');
+						focusCanvasWebview();
+					});
+					break;
+				case 'mod+shift+d':
+					runShortcut('mod+shift+d', () => {
+						addBlock('pending', undefined, 'vertical');
+						focusCanvasWebview();
+					});
+					break;
+				case 'mod+w':
+					runShortcut('mod+w', removeFocusedBlock);
+					break;
+				case 'mod+]':
+					runShortcut('mod+]', () => focusNext());
+					break;
+				case 'mod+[':
+					runShortcut('mod+[', () => focusPrev());
+					break;
+				case 'mod+1':
+					runShortcut('mod+1', () => focusByIndex(0));
+					break;
+				case 'mod+2':
+					runShortcut('mod+2', () => focusByIndex(1));
+					break;
+				case 'mod+3':
+					runShortcut('mod+3', () => focusByIndex(2));
+					break;
+				case 'mod+4':
+					runShortcut('mod+4', () => focusByIndex(3));
+					break;
+				case 'mod+5':
+					runShortcut('mod+5', () => focusByIndex(4));
+					break;
+				case 'mod+6':
+					runShortcut('mod+6', () => focusByIndex(5));
+					break;
+				case 'mod+7':
+					runShortcut('mod+7', () => focusByIndex(6));
+					break;
+				case 'mod+8':
+					runShortcut('mod+8', () => focusByIndex(7));
+					break;
+				case 'mod+9':
+					runShortcut('mod+9', () => focusByIndex(8));
+					break;
+				case 'ctrl+h':
+					runShortcut('ctrl+h', () => focusDirection('left'));
+					break;
+				case 'ctrl+j':
+					runShortcut('ctrl+j', () => focusDirection('down'));
+					break;
+				case 'ctrl+k':
+					runShortcut('ctrl+k', () => focusDirection('up'));
+					break;
+				case 'ctrl+l':
+					runShortcut('ctrl+l', () => focusDirection('right'));
+					break;
+				case 'mod+shift+b':
+					runShortcut('mod+shift+b', () => toggleSidebar());
+					break;
+			}
+		},
+		[
+			addBlock,
+			createBlockOrOpenTab,
+			focusByIndex,
+			focusDirection,
+			focusNext,
+			focusPrev,
+			openTabCreator,
+			removeFocusedBlock,
+			toggleSidebar,
+		],
+	);
+
 	useEffect(() => {
 		if (!isTauriRuntime()) return;
-		const enabled = !!focusedBlockId && blocks[focusedBlockId]?.type === 'pending';
+		const enabled =
+			(activeTabKind === 'pending') ||
+			(!!focusedBlockId && blocks[focusedBlockId]?.type === 'pending');
 		void invoke('canvas_set_pending_shortcut_mode', { enabled }).catch(() => undefined);
-	}, [blocks, focusedBlockId]);
+	}, [activeTabKind, blocks, focusedBlockId]);
 
 	useEffect(() => {
 		if (!isTauriRuntime()) {
@@ -105,82 +249,15 @@ export function useCanvasKeybinds() {
 				handlePendingSelection('3');
 				return;
 			}
+			if (event.payload.shortcut === 'plain+4') {
+				handlePendingSelection('4');
+				return;
+			}
 			if (event.payload.shortcut === 'escape') {
 				handlePendingSelection('escape');
 				return;
 			}
-
-			switch (event.payload.shortcut) {
-				case 'mod+n':
-					runShortcut('mod+n', () => {
-						addBlock('pending');
-						focusCanvasWebview();
-					});
-					break;
-				case 'mod+d':
-					runShortcut('mod+d', () => {
-						addBlock('pending', undefined, 'horizontal');
-						focusCanvasWebview();
-					});
-					break;
-				case 'mod+shift+d':
-					runShortcut('mod+shift+d', () => {
-						addBlock('pending', undefined, 'vertical');
-						focusCanvasWebview();
-					});
-					break;
-				case 'mod+w':
-					runShortcut('mod+w', removeFocusedBlock);
-					break;
-				case 'mod+]':
-					runShortcut('mod+]', () => focusNext());
-					break;
-				case 'mod+[':
-					runShortcut('mod+[', () => focusPrev());
-					break;
-				case 'mod+1':
-					runShortcut('mod+1', () => focusByIndex(0));
-					break;
-				case 'mod+2':
-					runShortcut('mod+2', () => focusByIndex(1));
-					break;
-				case 'mod+3':
-					runShortcut('mod+3', () => focusByIndex(2));
-					break;
-				case 'mod+4':
-					runShortcut('mod+4', () => focusByIndex(3));
-					break;
-				case 'mod+5':
-					runShortcut('mod+5', () => focusByIndex(4));
-					break;
-				case 'mod+6':
-					runShortcut('mod+6', () => focusByIndex(5));
-					break;
-				case 'mod+7':
-					runShortcut('mod+7', () => focusByIndex(6));
-					break;
-				case 'mod+8':
-					runShortcut('mod+8', () => focusByIndex(7));
-					break;
-				case 'mod+9':
-					runShortcut('mod+9', () => focusByIndex(8));
-					break;
-				case 'ctrl+h':
-					runShortcut('ctrl+h', () => focusDirection('left'));
-					break;
-				case 'ctrl+j':
-					runShortcut('ctrl+j', () => focusDirection('down'));
-					break;
-				case 'ctrl+k':
-					runShortcut('ctrl+k', () => focusDirection('up'));
-					break;
-				case 'ctrl+l':
-					runShortcut('ctrl+l', () => focusDirection('right'));
-					break;
-				case 'mod+shift+b':
-					runShortcut('mod+shift+b', () => toggleSidebar());
-					break;
-			}
+			executeShortcut(event.payload.shortcut);
 		}).then((dispose) => {
 			unlisten = dispose;
 		});
@@ -189,24 +266,15 @@ export function useCanvasKeybinds() {
 			unlisten?.();
 		};
 	}, [
-		addBlock,
-		blocks,
-		convertBlock,
-		focusByIndex,
-		focusDirection,
-		focusNext,
-		focusPrev,
-		focusedBlockId,
-		removeBlock,
-		removeFocusedBlock,
-		toggleSidebar,
+		executeShortcut,
+		handlePendingSelection,
 	]);
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (!event.metaKey && !event.ctrlKey && !event.altKey) {
-				if (event.key === '1' || event.key === '2' || event.key === '3') {
-					if (handlePendingSelection(event.key as '1' | '2' | '3')) {
+				if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4') {
+					if (handlePendingSelection(event.key as '1' | '2' | '3' | '4')) {
 						event.preventDefault();
 					}
 					return;
@@ -221,121 +289,13 @@ export function useCanvasKeybinds() {
 			if (!shortcut) return;
 
 			event.preventDefault();
-
-			switch (shortcut) {
-				case 'mod+n':
-					runShortcut('mod+n', () => {
-						addBlock('pending');
-						focusCanvasWebview();
-					});
-					break;
-				case 'mod+d':
-					runShortcut('mod+d', () => {
-						addBlock('pending', undefined, 'horizontal');
-						focusCanvasWebview();
-					});
-					break;
-				case 'mod+shift+d':
-					runShortcut('mod+shift+d', () => {
-						addBlock('pending', undefined, 'vertical');
-						focusCanvasWebview();
-					});
-					break;
-				case 'mod+w':
-					runShortcut('mod+w', removeFocusedBlock);
-					break;
-				case 'mod+]':
-					runShortcut('mod+]', () => focusNext());
-					break;
-				case 'mod+[':
-					runShortcut('mod+[', () => focusPrev());
-					break;
-				case 'mod+1':
-					runShortcut('mod+1', () => focusByIndex(0));
-					break;
-				case 'mod+2':
-					runShortcut('mod+2', () => focusByIndex(1));
-					break;
-				case 'mod+3':
-					runShortcut('mod+3', () => focusByIndex(2));
-					break;
-				case 'mod+4':
-					runShortcut('mod+4', () => focusByIndex(3));
-					break;
-				case 'mod+5':
-					runShortcut('mod+5', () => focusByIndex(4));
-					break;
-				case 'mod+6':
-					runShortcut('mod+6', () => focusByIndex(5));
-					break;
-				case 'mod+7':
-					runShortcut('mod+7', () => focusByIndex(6));
-					break;
-				case 'mod+8':
-					runShortcut('mod+8', () => focusByIndex(7));
-					break;
-				case 'mod+9':
-					runShortcut('mod+9', () => focusByIndex(8));
-					break;
-				case 'ctrl+h':
-					runShortcut('ctrl+h', () => focusDirection('left'));
-					break;
-				case 'ctrl+j':
-					runShortcut('ctrl+j', () => focusDirection('down'));
-					break;
-				case 'ctrl+k':
-					runShortcut('ctrl+k', () => focusDirection('up'));
-					break;
-				case 'ctrl+l':
-					runShortcut('ctrl+l', () => focusDirection('right'));
-					break;
-				case 'mod+shift+b':
-					runShortcut('mod+shift+b', () => toggleSidebar());
-					break;
-			}
+			executeShortcut(shortcut);
 		};
 
 		window.addEventListener('keydown', onKeyDown, true);
 		return () => window.removeEventListener('keydown', onKeyDown, true);
 	}, [
-		addBlock,
-		blocks,
-		convertBlock,
-		focusByIndex,
-		focusDirection,
-		focusNext,
-		focusPrev,
-		focusedBlockId,
-		removeBlock,
-		removeFocusedBlock,
-		toggleSidebar,
-	]);
-
-	useHotkeys([
-		{ hotkey: 'Mod+N', callback: () => runShortcut('mod+n', () => { addBlock('pending'); focusCanvasWebview(); }) },
-		{ hotkey: 'Mod+D', callback: () => runShortcut('mod+d', () => { addBlock('pending', undefined, 'horizontal'); focusCanvasWebview(); }) },
-		{ hotkey: 'Mod+Shift+D', callback: () => runShortcut('mod+shift+d', () => { addBlock('pending', undefined, 'vertical'); focusCanvasWebview(); }) },
-
-		{ hotkey: 'Mod+W', callback: () => runShortcut('mod+w', removeFocusedBlock) },
-
-		{ hotkey: 'Mod+]', callback: () => runShortcut('mod+]', () => focusNext()) },
-		{ hotkey: 'Mod+[', callback: () => runShortcut('mod+[', () => focusPrev()) },
-
-		{ hotkey: 'Mod+1', callback: () => runShortcut('mod+1', () => focusByIndex(0)) },
-		{ hotkey: 'Mod+2', callback: () => runShortcut('mod+2', () => focusByIndex(1)) },
-		{ hotkey: 'Mod+3', callback: () => runShortcut('mod+3', () => focusByIndex(2)) },
-		{ hotkey: 'Mod+4', callback: () => runShortcut('mod+4', () => focusByIndex(3)) },
-		{ hotkey: 'Mod+5', callback: () => runShortcut('mod+5', () => focusByIndex(4)) },
-		{ hotkey: 'Mod+6', callback: () => runShortcut('mod+6', () => focusByIndex(5)) },
-		{ hotkey: 'Mod+7', callback: () => runShortcut('mod+7', () => focusByIndex(6)) },
-		{ hotkey: 'Mod+8', callback: () => runShortcut('mod+8', () => focusByIndex(7)) },
-		{ hotkey: 'Mod+9', callback: () => runShortcut('mod+9', () => focusByIndex(8)) },
-
-		{ hotkey: 'Control+H', callback: () => runShortcut('ctrl+h', () => focusDirection('left')) },
-		{ hotkey: 'Control+L', callback: () => runShortcut('ctrl+l', () => focusDirection('right')) },
-		{ hotkey: 'Control+K', callback: () => runShortcut('ctrl+k', () => focusDirection('up')) },
-		{ hotkey: 'Control+J', callback: () => runShortcut('ctrl+j', () => focusDirection('down')) },
-
-		{ hotkey: 'Mod+Shift+B', callback: () => runShortcut('mod+shift+b', () => toggleSidebar()) },
+		executeShortcut,
+		handlePendingSelection,
 	]);
 }

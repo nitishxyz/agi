@@ -1,6 +1,8 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { FolderOpen, Plus, X } from 'lucide-react';
+import { Bot, FolderOpen, Globe, Plus, Terminal, X } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import type { WorkspaceTabState } from '../stores/canvas-store';
+import { useCanvasStore } from '../stores/canvas-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
 
 function getInitials(name: string): string {
@@ -15,13 +17,27 @@ function getWorkspaceNameFromPath(path: string) {
 	return parts[parts.length - 1] || 'workspace';
 }
 
+function getTabGlyph(tab: WorkspaceTabState) {
+	if (tab.kind === 'canvas') return '▣';
+	if (tab.kind === 'pending') return <Plus size={12} strokeWidth={1.75} />;
+	if (tab.block.type === 'browser') return <Globe size={12} strokeWidth={1.75} />;
+	if (tab.block.type === 'otto') return <Bot size={12} strokeWidth={1.75} />;
+	return <Terminal size={12} strokeWidth={1.75} />;
+}
+
 export function Sidebar() {
 	const workspaces = useWorkspaceStore((state) => state.workspaces);
 	const environments = useWorkspaceStore((state) => state.environments);
 	const activeId = useWorkspaceStore((state) => state.activeId);
 	const setActive = useWorkspaceStore((state) => state.setActive);
 	const addWorkspace = useWorkspaceStore((state) => state.addWorkspace);
-	const [isCreateOpen, setIsCreateOpen] = useState(false);
+	const tabs = useCanvasStore((state) => state.tabs);
+	const tabOrder = useCanvasStore((state) => state.tabOrder);
+	const activeTabId = useCanvasStore((state) => state.activeTabId);
+	const setActiveTab = useCanvasStore((state) => state.setActiveTab);
+	const openCreateTab = useCanvasStore((state) => state.openCreateTab);
+	const removeTab = useCanvasStore((state) => state.removeTab);
+	const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = useState(false);
 	const [draftPath, setDraftPath] = useState('');
 	const [draftName, setDraftName] = useState('');
 	const [error, setError] = useState<string | null>(null);
@@ -31,8 +47,16 @@ export function Sidebar() {
 		return getWorkspaceNameFromPath(draftPath);
 	}, [draftPath]);
 
-	const resetCreateState = useCallback(() => {
-		setIsCreateOpen(false);
+	const orderedTabs = useMemo(
+		() =>
+			tabOrder
+				.map((tabId) => tabs[tabId])
+				.filter((tab): tab is WorkspaceTabState => Boolean(tab)),
+		[tabOrder, tabs],
+	);
+
+	const resetCreateWorkspaceState = useCallback(() => {
+		setIsCreateWorkspaceOpen(false);
 		setDraftPath('');
 		setDraftName('');
 		setError(null);
@@ -66,73 +90,153 @@ export function Sidebar() {
 		const name = draftName.trim() || getWorkspaceNameFromPath(path);
 		try {
 			addWorkspace({ name, path });
-			resetCreateState();
+			resetCreateWorkspaceState();
 		} catch (nextError) {
 			setError(nextError instanceof Error ? nextError.message : String(nextError));
 		}
-	}, [addWorkspace, draftName, draftPath, resetCreateState]);
+	}, [addWorkspace, draftName, draftPath, resetCreateWorkspaceState]);
 
 	return (
 		<>
-			<div className="flex h-full w-[68px] flex-shrink-0 flex-col items-center">
-				<div className="h-[48px] w-full flex-shrink-0" data-tauri-drag-region />
-
-				<div className="flex w-full flex-1 flex-col items-center gap-2 overflow-y-auto py-1">
-					{workspaces.map((workspace) => {
-						const isActive = workspace.id === activeId;
-						const environment = environments[workspace.primaryEnvironmentId];
-						return (
-							<div key={workspace.id} className="relative flex w-full items-center justify-center">
-								<div
-									className={`absolute left-0 w-[4px] rounded-r-full transition-all duration-200 ${
-										isActive
-											? 'h-[20px] bg-white'
-											: 'h-0 group-hover:h-[8px] bg-white/40'
-									}`}
-								/>
-								<button
-									onClick={() => setActive(workspace.id)}
-									className="group relative"
-									title={
-										environment
-											? `${workspace.name}\n${environment.path}`
-											: workspace.name
-									}
-								>
-									<div
-										className={`flex h-[44px] w-[44px] items-center justify-center text-[14px] font-bold transition-all duration-200 ${
-											isActive
-												? 'rounded-[14px]'
-												: 'rounded-[22px] group-hover:rounded-[14px]'
-										}`}
-										style={{ backgroundColor: workspace.color }}
-									>
-										<span className="select-none text-white">
-											{getInitials(workspace.name)}
-										</span>
-									</div>
-								</button>
-							</div>
-						);
-					})}
-
-					<div className="mx-auto my-1 h-[1px] w-[36px] flex-shrink-0 bg-white/[0.08]" />
-
-					<button
-						onClick={() => setIsCreateOpen(true)}
-						className="group"
-						title="Add a workspace"
-					>
-						<div className="flex h-[44px] w-[44px] items-center justify-center rounded-[22px] bg-white/[0.06] text-canvas-text-muted transition-all duration-200 group-hover:rounded-[14px] group-hover:bg-green-400/10 group-hover:text-green-400">
-							<Plus size={20} strokeWidth={1.5} />
+			<div className="flex h-full w-[284px] flex-shrink-0 flex-col overflow-hidden">
+				<div className="flex h-[48px] flex-shrink-0">
+					<div className="w-[68px] flex-shrink-0" data-tauri-drag-region />
+					<div className="flex min-w-0 flex-1 items-center gap-3 px-3">
+						<div className="min-w-0 flex-1" data-tauri-drag-region>
+							<p className="truncate text-[11px] font-medium text-white/80">
+								{activeId ? 'Workspace tabs' : 'Tabs'}
+							</p>
+							<p className="truncate text-[10px] text-white/50">
+								{activeId ? '⌘N block · ⌘T tab' : 'Create or select a workspace'}
+							</p>
 						</div>
-					</button>
+						<button
+							onClick={openCreateTab}
+							disabled={!activeId}
+							className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-sm border border-white/[0.12] bg-white/[0.08] text-white/70 transition-colors hover:bg-white/[0.14] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+							title="Create tab"
+						>
+							<Plus size={14} strokeWidth={1.75} />
+						</button>
+					</div>
 				</div>
 
-				<div className="h-3 flex-shrink-0" />
+				<div className="flex min-h-0 flex-1 overflow-hidden">
+					<div className="flex h-full w-[68px] flex-shrink-0 flex-col items-center">
+
+						<div className="flex w-full flex-1 flex-col items-center gap-2 overflow-y-auto py-3">
+						{workspaces.map((workspace) => {
+							const isActive = workspace.id === activeId;
+							const environment = environments[workspace.primaryEnvironmentId];
+							return (
+								<div key={workspace.id} className="group relative flex w-full items-center justify-center">
+									<div
+										className={`absolute left-0 w-[4px] rounded-r-full transition-all duration-200 ${
+											isActive ? 'h-[20px] bg-white' : 'h-0 bg-white/40 group-hover:h-[8px]'
+										}`}
+									/>
+									<button
+										onClick={() => setActive(workspace.id)}
+										className="group relative"
+										title={
+											environment
+												? `${workspace.name}\n${environment.path}`
+												: workspace.name
+										}
+									>
+										<div
+											className={`flex h-[44px] w-[44px] items-center justify-center text-[14px] font-bold transition-all duration-200 ${
+												isActive
+													? 'rounded-[10px]'
+													: 'rounded-[10px] group-hover:rounded-[10px]'
+											}`}
+											style={{ backgroundColor: workspace.color }}
+										>
+											<span className="select-none text-white">
+												{getInitials(workspace.name)}
+											</span>
+										</div>
+									</button>
+								</div>
+							);
+						})}
+
+						<div className="mx-auto my-1 h-[1px] w-[36px] flex-shrink-0 bg-white/[0.08]" />
+
+						<button
+							onClick={() => setIsCreateWorkspaceOpen(true)}
+							className="group"
+							title="Add a workspace"
+						>
+							<div className="flex h-[44px] w-[44px] items-center justify-center rounded-[10px] bg-white/[0.10] text-white/60 transition-all duration-200 group-hover:bg-green-400/15 group-hover:text-green-400">
+								<Plus size={20} strokeWidth={1.5} />
+							</div>
+						</button>
+					</div>
+					</div>
+
+					<div className="flex min-w-0 flex-1 flex-col">
+					<div className="flex-1 overflow-y-auto p-2">
+						{activeId ? (
+							<div className="space-y-1.5">
+								{orderedTabs.map((tab) => {
+									const isActive = tab.id === activeTabId;
+								return (
+									<button
+										key={tab.id}
+										onClick={() => setActiveTab(tab.id)}
+										className={`group flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors ${
+											isActive
+												? 'border-white/[0.12] bg-white/[0.10]'
+												: 'border-transparent bg-white/[0.04] hover:border-white/[0.10] hover:bg-white/[0.07]'
+										}`}
+									>
+										<div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-white/[0.12] bg-white/[0.08] text-white/60">
+											{getTabGlyph(tab)}
+										</div>
+										<div className="min-w-0 flex-1">
+											<p className="truncate text-[11px] font-medium text-white/80">
+												{tab.title}
+											</p>
+											<p className="truncate text-[10px] text-white/50">
+												{tab.kind === 'canvas'
+													? 'Multi-block canvas'
+													: tab.kind === 'pending'
+														? 'Choose what to open in this tab'
+													: tab.block.type === 'browser'
+														? 'Focused browser tab'
+														: tab.block.type === 'otto'
+															? 'Focused Otto tab'
+															: 'Focused Ghostty tab'}
+											</p>
+										</div>
+										<div
+											role="button"
+											tabIndex={0}
+											onClick={(e) => { e.stopPropagation(); removeTab(tab.id); }}
+											onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); removeTab(tab.id); } }}
+											className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-sm text-white/50 opacity-0 transition-all hover:bg-white/[0.08] hover:text-white group-hover:opacity-100"
+											title="Close tab"
+										>
+											<X size={12} strokeWidth={1.75} />
+										</div>
+									</button>
+								);
+								})}
+							</div>
+						) : (
+							<div className="flex h-full items-center justify-center px-4 text-center">
+								<p className="max-w-[180px] text-[11px] leading-5 text-canvas-text-muted">
+									Create a workspace to open canvases, browsers, terminals, and Otto tabs.
+								</p>
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
 			</div>
 
-			{isCreateOpen && (
+			{isCreateWorkspaceOpen && (
 				<div
 					data-native-overlay-root="true"
 					className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
@@ -140,15 +244,13 @@ export function Sidebar() {
 					<div className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[rgba(18,18,22,0.96)] p-4 shadow-2xl backdrop-blur-xl">
 						<div className="mb-4 flex items-start justify-between gap-4">
 							<div className="space-y-1">
-								<h2 className="text-[13px] font-semibold text-canvas-text">
-									Create workspace
-								</h2>
+								<h2 className="text-[13px] font-semibold text-canvas-text">Create workspace</h2>
 								<p className="text-[11px] leading-5 text-canvas-text-muted">
-									Link this workspace to a local project path. Canvas will persist the layout for this workspace.
+									Link this workspace to a local project path. Canvas will persist tabs and layouts for this workspace.
 								</p>
 							</div>
 							<button
-								onClick={resetCreateState}
+								onClick={resetCreateWorkspaceState}
 								className="rounded-md p-1 text-canvas-text-muted transition-colors hover:bg-white/[0.06] hover:text-canvas-text"
 							>
 								<X size={14} />
@@ -190,14 +292,12 @@ export function Sidebar() {
 								/>
 							</div>
 
-							{error && (
-								<p className="text-[11px] text-red-400">{error}</p>
-							)}
+							{error && <p className="text-[11px] text-red-400">{error}</p>}
 
 							<div className="flex items-center justify-end gap-2 pt-1">
 								<button
 									type="button"
-									onClick={resetCreateState}
+									onClick={resetCreateWorkspaceState}
 									className="rounded-lg border border-white/[0.08] px-3 py-2 text-[11px] text-canvas-text-muted transition-colors hover:bg-white/[0.06] hover:text-canvas-text"
 								>
 									Cancel
@@ -213,6 +313,7 @@ export function Sidebar() {
 					</div>
 				</div>
 			)}
+
 		</>
 	);
 }

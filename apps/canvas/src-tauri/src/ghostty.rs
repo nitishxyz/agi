@@ -182,6 +182,7 @@ pub fn ghostty_update_block(
 	viewport_height: f64,
 	scale_factor: f64,
 	focused: bool,
+	hidden: Option<bool>,
 ) -> Result<(), String> {
 	#[cfg(target_os = "macos")]
 	{
@@ -199,13 +200,14 @@ pub fn ghostty_update_block(
 				viewport_height,
 				scale_factor,
 				focused,
+					hidden.unwrap_or(false),
 			)
 		})
 	}
 
 	#[cfg(not(target_os = "macos"))]
 	{
-		let _ = (app_handle, manager, block_id, x, y, width, height, viewport_height, scale_factor, focused);
+		let _ = (app_handle, manager, block_id, x, y, width, height, viewport_height, scale_factor, focused, hidden);
 		Err("Ghostty blocks are currently implemented for macOS only.".into())
 	}
 }
@@ -692,6 +694,7 @@ mod macos {
 		if flags.contains(NSEventModifierFlags::Command) && !flags.contains(NSEventModifierFlags::Option) {
 			return match key.as_str() {
 				"n" => Some(("mod+n", true)),
+				"t" => Some(("mod+t", true)),
 				"d" if flags.contains(NSEventModifierFlags::Shift) => Some(("mod+shift+d", true)),
 				"d" => Some(("mod+d", true)),
 				"w" => Some(("mod+w", true)),
@@ -736,6 +739,7 @@ mod macos {
 				"1" if pending_mode => Some(("plain+1", true)),
 				"2" if pending_mode => Some(("plain+2", true)),
 				"3" if pending_mode => Some(("plain+3", true)),
+				"4" if pending_mode => Some(("plain+4", true)),
 				_ => {
 					if pending_mode && event.keyCode() == 53 {
 						Some(("escape", true))
@@ -1362,6 +1366,7 @@ mod macos {
 		viewport_height: f64,
 		scale_factor: f64,
 		focused: bool,
+		hidden: bool,
 	) -> Result<(), String> {
 		let state = manager.lock().map_err(|_| "Failed to lock Ghostty manager state".to_string())?;
 		let runtime = state.runtime.as_ref().ok_or_else(|| "Ghostty runtime was not initialized".to_string())?;
@@ -1383,7 +1388,7 @@ mod macos {
 		let rect_in_parent = parent.convertRect_fromView(rect_in_webview, Some(webview));
 
 		host_view.setFrame(rect_in_parent);
-		host_view.setHidden(width < 1.0 || height < 1.0);
+		host_view.setHidden(hidden || width < 1.0 || height < 1.0);
 
 		let needs_reparent = host_view.superview()
 			.map_or(true, |current| !current.isEqual(Some(&*parent)));
@@ -1396,13 +1401,15 @@ mod macos {
 			);
 		}
 
-		unsafe {
-			(api.surface_set_content_scale)(block.surface, scale_factor, scale_factor);
-			(api.surface_set_size)(
-				block.surface,
-				(width.max(0.0) * scale_factor).round() as u32,
-				(height.max(0.0) * scale_factor).round() as u32,
-			);
+		if !hidden {
+			unsafe {
+				(api.surface_set_content_scale)(block.surface, scale_factor, scale_factor);
+				(api.surface_set_size)(
+					block.surface,
+					(width.max(0.0) * scale_factor).round() as u32,
+					(height.max(0.0) * scale_factor).round() as u32,
+				);
+			}
 		}
 		let _ = focused;
 

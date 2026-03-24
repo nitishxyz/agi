@@ -65,14 +65,14 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             window_vibrancy::apply_vibrancy(
                 &window,
-                window_vibrancy::NSVisualEffectMaterial::HudWindow,
+                window_vibrancy::NSVisualEffectMaterial::UltraDark,
                 None,
                 None,
             )
             .expect("failed to apply vibrancy");
 
             #[cfg(target_os = "windows")]
-            window_vibrancy::apply_blur(&window, Some((18, 18, 18, 125)))
+            window_vibrancy::apply_blur(&window, Some((10, 10, 10, 200)))
                 .expect("failed to apply blur");
 
             Ok(())

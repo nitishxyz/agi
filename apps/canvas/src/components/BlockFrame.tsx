@@ -6,6 +6,7 @@ import { useCanvasStore } from '../stores/canvas-store';
 import { BrowserBlock } from './BrowserBlock';
 import { GhosttyBlock } from './GhosttyBlock';
 import { OttoBlock } from './OttoBlock';
+import { PendingSelectionGrid } from './PendingSelectionGrid';
 
 const BLOCK_ICONS = {
 	terminal: Terminal,
@@ -25,49 +26,23 @@ interface BlockFrameProps {
 
 function PendingPicker({ blockId }: { blockId: string }) {
 	const convertBlock = useCanvasStore((s) => s.convertBlock);
-	const removeBlock = useCanvasStore((s) => s.removeBlock);
-
-	useEffect(() => {
-		const handler = (e: KeyboardEvent) => {
-			if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-			const option = PICKER_OPTIONS.find((o) => o.key === e.key);
-			if (option) {
-				e.preventDefault();
-				convertBlock(blockId, option.type);
-				return;
-			}
-
-			if (e.key === 'Escape') {
-				e.preventDefault();
-				removeBlock(blockId);
-			}
-		};
-		window.addEventListener('keydown', handler);
-		return () => window.removeEventListener('keydown', handler);
-	}, [blockId, convertBlock, removeBlock]);
 
 	return (
-		<div className="flex-1 flex items-center justify-center">
-			<div className="space-y-4">
-				<div className="flex items-center gap-3">
-					{PICKER_OPTIONS.map(({ key, type, label, icon: Icon }) => (
-						<button
-							key={type}
-							onClick={() => convertBlock(blockId, type)}
-							className="flex flex-col items-center gap-2 px-5 py-4 rounded-xl hover:bg-white/[0.06] transition-colors group"
-						>
-							<Icon size={22} className="text-canvas-text-muted group-hover:text-canvas-text-dim transition-colors" strokeWidth={1.5} />
-							<span className="text-[11px] text-canvas-text-muted group-hover:text-canvas-text-dim transition-colors">{label}</span>
-							<kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] text-canvas-text-muted">{key}</kbd>
-						</button>
-					))}
-				</div>
-				<p className="text-[10px] text-canvas-text-muted text-center">
-					press number to select · esc to cancel
-				</p>
-			</div>
-		</div>
+		<PendingSelectionGrid
+			options={PICKER_OPTIONS.map(({ key, type, label, icon: Icon }) => ({
+				key,
+				value: type,
+				label,
+				renderIcon: () => (
+					<Icon
+						size={22}
+						className="text-canvas-text-muted transition-colors group-hover:text-canvas-text-dim"
+						strokeWidth={1.5}
+					/>
+				),
+			}))}
+			onSelect={(type) => convertBlock(blockId, type)}
+		/>
 	);
 }
 
