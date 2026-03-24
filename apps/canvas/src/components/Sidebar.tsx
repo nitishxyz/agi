@@ -156,15 +156,15 @@ export function Sidebar() {
 
 	return (
 		<>
-			<div className="flex h-full w-[288px] flex-shrink-0 flex-col overflow-hidden pt-1">
+			<div className="flex h-full w-[272px] flex-shrink-0 flex-col overflow-hidden pt-1">
 				<div className="flex h-[36px] flex-shrink-0">
-					<div className="w-[68px] flex-shrink-0" data-tauri-drag-region />
+					<div className="w-[58px] flex-shrink-0" data-tauri-drag-region />
 					<div className="flex min-w-0 flex-1" data-tauri-drag-region />
 				</div>
 
 				<div className="flex min-h-0 flex-1 overflow-hidden">
-					<div className="flex h-full w-[68px] flex-shrink-0 flex-col items-center">
-						<div className="flex w-full flex-1 flex-col items-center gap-2 overflow-y-auto py-3">
+					<div className="flex h-full w-[58px] flex-shrink-0 flex-col items-center">
+						<div className="flex w-full flex-1 flex-col items-center gap-1.5 overflow-y-auto py-2.5">
 							{workspaces.map((workspace) => {
 								const isActive = workspace.id === activeId;
 								const environment = environments[workspace.primaryEnvironmentId];
@@ -185,7 +185,7 @@ export function Sidebar() {
 											}
 										>
 											<div
-												className={`flex h-[44px] w-[44px] items-center justify-center rounded-[10px] text-[14px] font-bold transition-all duration-200 ${
+												className={`flex h-[40px] w-[40px] items-center justify-center rounded-[10px] text-[13px] font-bold transition-all duration-200 ${
 													isActive ? '' : 'group-hover:rounded-[10px]'
 												}`}
 												style={{ backgroundColor: workspace.color }}
@@ -199,15 +199,15 @@ export function Sidebar() {
 								);
 							})}
 
-							<div className="mx-auto my-1 h-[1px] w-[36px] flex-shrink-0 bg-white/[0.08]" />
+							<div className="mx-auto my-1 h-[1px] w-[28px] flex-shrink-0 bg-white/[0.08]" />
 
 							<button
 								onClick={() => setIsCreateWorkspaceOpen(true)}
 								className="group"
 								title="Add a workspace"
 							>
-								<div className="flex h-[44px] w-[44px] items-center justify-center rounded-[10px] bg-white/[0.10] text-white/60 transition-all duration-200 group-hover:bg-green-400/15 group-hover:text-green-400">
-									<Plus size={20} strokeWidth={1.5} />
+								<div className="flex h-[40px] w-[40px] items-center justify-center rounded-[10px] bg-white/[0.10] text-white/60 transition-all duration-200 group-hover:bg-green-400/15 group-hover:text-green-400">
+									<Plus size={18} strokeWidth={1.5} />
 								</div>
 							</button>
 						</div>
@@ -278,10 +278,10 @@ export function Sidebar() {
 									</div>
 								</div>
 
-								<div className="border-t border-white/[0.06] p-2">
+								<div className="p-2">
 									<button
 										onClick={openCreateTab}
-										className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.10] bg-white/[0.05] px-3 py-2 text-[11px] font-medium text-white/75 transition-colors hover:bg-white/[0.09] hover:text-white"
+										className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/[0.10] bg-white/[0.05] px-3 py-2 text-[11px] font-medium text-white/75 transition-colors hover:bg-white/[0.09] hover:text-white"
 										title="Create tab"
 									>
 										<Plus size={14} strokeWidth={1.75} />

@@ -104,8 +104,8 @@ function SplitPane({
 			<div
 				className={`flex-shrink-0 ${
 					isH
-						? 'w-[3px] cursor-col-resize hover:bg-canvas-accent/30'
-						: 'h-[3px] cursor-row-resize hover:bg-canvas-accent/30'
+						? 'w-[2px] cursor-col-resize hover:bg-canvas-accent/30'
+						: 'h-[2px] cursor-row-resize hover:bg-canvas-accent/30'
 				} transition-colors duration-100`}
 				onMouseDown={handleMouseDown}
 			/>
@@ -121,7 +121,7 @@ function LayoutRenderer({ node, blocks, activeTabKind }: LayoutProps) {
 		const block = blocks[node.blockId];
 		if (!block) return null;
 		return (
-			<div className={`h-full w-full ${activeTabKind === 'block' ? '' : 'p-0.5'}`}>
+			<div className={`h-full w-full ${activeTabKind === 'block' ? 'p-1' : 'p-px'}`}>
 				<BlockFrame block={block} />
 			</div>
 		);
@@ -184,7 +184,7 @@ function TabSurface({
 
 	if (tab.kind === 'block') {
 		return (
-			<div className="flex-1 h-full">
+			<div className="flex-1 h-full p-1">
 				<div className="h-full w-full">
 					<BlockFrame block={tab.block} />
 				</div>

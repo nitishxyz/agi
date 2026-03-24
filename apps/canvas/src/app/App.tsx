@@ -100,21 +100,23 @@ export function App() {
 					data-tauri-drag-region
 				>
 					{active ? (
-						<div className="flex min-w-0 items-center gap-2">
-							<span className="truncate text-[12px] font-semibold tracking-[-0.01em] text-canvas-text">
-								{active.name}
-							</span>
+						<>
+							<div className="flex min-w-0 items-center gap-2">
+								<span className="truncate text-[12px] font-semibold tracking-[-0.01em] text-canvas-text">
+									{active.name}
+								</span>
+								{activeEnvironment ? (
+									<span className="truncate text-[11px] text-canvas-text-muted">
+										{activeEnvironment.path}
+									</span>
+								) : null}
+							</div>
 							{activeTab ? (
-								<span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] text-canvas-text-muted">
+								<span className="ml-auto rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] text-canvas-text-muted">
 									{activeTab.title}
 								</span>
 							) : null}
-							{activeEnvironment ? (
-								<span className="truncate text-[11px] text-canvas-text-muted">
-									{activeEnvironment.path}
-								</span>
-							) : null}
-						</div>
+						</>
 					) : (
 						<span className="text-[12px] font-medium text-canvas-text-dim">
 							Open a workspace
