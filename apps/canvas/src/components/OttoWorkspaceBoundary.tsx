@@ -1,25 +1,32 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { configureApiClient } from '@ottocode/web-sdk';
 import { useWorkspaceRuntimeStore } from '../stores/workspace-runtime-store';
-import { useWorkspaceStore } from '../stores/workspace-store';
 
 interface OttoWindow extends Window {
 	OTTO_SERVER_URL?: string;
 }
 
-export function OttoWorkspaceBoundary({ children }: { children: ReactNode }) {
-	const activeWorkspaceId = useWorkspaceStore((state) => state.activeId);
+export function OttoWorkspaceBoundary({
+	children,
+	workspaceId,
+	isActive,
+}: {
+	children: ReactNode;
+	workspaceId: string;
+	isActive: boolean;
+}) {
 	const runtime = useWorkspaceRuntimeStore((state) =>
-		activeWorkspaceId ? state.runtimes[activeWorkspaceId] ?? null : null,
+		workspaceId ? state.runtimes[workspaceId] ?? null : null,
 	);
 
 	const runtimeUrl = runtime?.status === 'ready' ? runtime.url : undefined;
 
-	if (typeof window !== 'undefined') {
+	useEffect(() => {
+		if (typeof window === 'undefined' || !isActive) return;
 		(window as OttoWindow).OTTO_SERVER_URL = runtimeUrl;
 		configureApiClient();
-	}
+	}, [isActive, runtimeUrl]);
 
 	const queryClient = useMemo(
 		() =>
@@ -32,10 +39,10 @@ export function OttoWorkspaceBoundary({ children }: { children: ReactNode }) {
 					},
 				},
 			}),
-		[runtimeUrl],
+		[workspaceId],
 	);
 
-	if (!runtimeUrl) {
+	if (!isActive || !runtimeUrl) {
 		return <>{children}</>;
 	}
 

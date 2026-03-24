@@ -10,12 +10,15 @@ import type {
 import { useCanvasStore } from '../stores/canvas-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
 import { BlockFrame } from './BlockFrame';
+import { OttoWorkspaceBoundary } from './OttoWorkspaceBoundary';
 import { PendingSelectionGrid } from './PendingSelectionGrid';
 
 interface LayoutProps {
 	node: LayoutNode;
 	blocks: Record<string, Block>;
 	activeTabKind: 'canvas' | 'block' | 'pending' | null;
+	workspaceIsActive: boolean;
+	workspaceId: string;
 }
 
 const TAB_OPTIONS: {
@@ -51,10 +54,14 @@ function SplitPane({
 	node,
 	blocks,
 	activeTabKind,
+	workspaceIsActive,
+	workspaceId,
 }: {
 	node: LayoutNode & { kind: 'split' };
 	blocks: Record<string, Block>;
 	activeTabKind: 'canvas' | 'block' | 'pending' | null;
+	workspaceIsActive: boolean;
+	workspaceId: string;
 }) {
 	const setSplitRatio = useCanvasStore((s) => s.setSplitRatio);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -97,7 +104,13 @@ function SplitPane({
 			className={`flex h-full w-full ${isH ? 'flex-row' : 'flex-col'}`}
 		>
 			<div style={{ [isH ? 'width' : 'height']: `${node.ratio * 100}%` }} className="min-w-0 min-h-0">
-				<LayoutRenderer node={node.first} blocks={blocks} activeTabKind={activeTabKind} />
+				<LayoutRenderer
+					node={node.first}
+					blocks={blocks}
+					activeTabKind={activeTabKind}
+					workspaceIsActive={workspaceIsActive}
+					workspaceId={workspaceId}
+				/>
 			</div>
 			<div
 				className={`flex-shrink-0 ${
@@ -108,24 +121,48 @@ function SplitPane({
 				onMouseDown={handleMouseDown}
 			/>
 			<div style={{ [isH ? 'width' : 'height']: `${(1 - node.ratio) * 100}%` }} className="min-w-0 min-h-0">
-				<LayoutRenderer node={node.second} blocks={blocks} activeTabKind={activeTabKind} />
+				<LayoutRenderer
+					node={node.second}
+					blocks={blocks}
+					activeTabKind={activeTabKind}
+					workspaceIsActive={workspaceIsActive}
+					workspaceId={workspaceId}
+				/>
 			</div>
 		</div>
 	);
 }
 
-function LayoutRenderer({ node, blocks, activeTabKind }: LayoutProps) {
+function LayoutRenderer({
+	node,
+	blocks,
+	activeTabKind,
+	workspaceIsActive,
+	workspaceId,
+}: LayoutProps) {
 	if (node.kind === 'leaf') {
 		const block = blocks[node.blockId];
 		if (!block) return null;
 		return (
 			<div className={`h-full w-full ${activeTabKind === 'block' ? 'p-1' : 'p-px'}`}>
-				<BlockFrame block={block} />
+				<BlockFrame
+					block={block}
+					workspaceIsActive={workspaceIsActive}
+					workspaceId={workspaceId}
+				/>
 			</div>
 		);
 	}
 
-	return <SplitPane node={node} blocks={blocks} activeTabKind={activeTabKind} />;
+	return (
+		<SplitPane
+			node={node}
+			blocks={blocks}
+			activeTabKind={activeTabKind}
+			workspaceIsActive={workspaceIsActive}
+			workspaceId={workspaceId}
+		/>
+	);
 }
 
 function PendingTabSurface({ isActive }: { isActive: boolean }) {
@@ -173,9 +210,13 @@ function PendingTabSurface({ isActive }: { isActive: boolean }) {
 function TabSurface({
 	tab,
 	isActive,
+	workspaceIsActive,
+	workspaceId,
 }: {
 	tab: WorkspaceTabState;
 	isActive: boolean;
+	workspaceIsActive: boolean;
+	workspaceId: string;
 }) {
 	const emptyStateRef = useRef<HTMLDivElement>(null);
 
@@ -195,7 +236,11 @@ function TabSurface({
 		return (
 			<div className="flex-1 h-full p-1">
 				<div className="h-full w-full">
-					<BlockFrame block={tab.block} />
+					<BlockFrame
+						block={tab.block}
+						workspaceIsActive={workspaceIsActive}
+						workspaceId={workspaceId}
+					/>
 				</div>
 			</div>
 		);
@@ -220,7 +265,13 @@ function TabSurface({
 
 	return (
 		<div className="flex-1 h-full p-1">
-			<LayoutRenderer node={tab.layout} blocks={tab.blocks} activeTabKind="canvas" />
+			<LayoutRenderer
+				node={tab.layout}
+				blocks={tab.blocks}
+				activeTabKind="canvas"
+				workspaceIsActive={workspaceIsActive}
+				workspaceId={workspaceId}
+			/>
 		</div>
 	);
 }
@@ -228,9 +279,11 @@ function TabSurface({
 function WorkspaceSurface({
 	workspaceState,
 	isActive,
+	workspaceId,
 }: {
 	workspaceState: WorkspaceSurfaceState;
 	isActive: boolean;
+	workspaceId: string;
 }) {
 	const effectiveActiveTabId = useMemo(() => {
 		if (
@@ -277,7 +330,12 @@ function WorkspaceSurface({
 						}
 						aria-hidden={!isActiveTab}
 					>
-						<TabSurface tab={tab} isActive={isActiveTab} />
+						<TabSurface
+							tab={tab}
+							isActive={isActiveTab}
+							workspaceIsActive={isActive}
+							workspaceId={workspaceId}
+						/>
 					</div>
 				);
 			})}
@@ -336,7 +394,13 @@ export function CanvasRenderer() {
 						}
 						aria-hidden={!isActive}
 					>
-						<WorkspaceSurface workspaceState={workspaceState} isActive={isActive} />
+						<OttoWorkspaceBoundary workspaceId={workspaceId} isActive={isActive}>
+							<WorkspaceSurface
+								workspaceState={workspaceState}
+								isActive={isActive}
+								workspaceId={workspaceId}
+							/>
+						</OttoWorkspaceBoundary>
 					</div>
 				);
 			})}

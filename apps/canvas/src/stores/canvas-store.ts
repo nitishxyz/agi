@@ -107,7 +107,7 @@ interface CanvasState {
 	convertBlock: (id: string, type: BlockType) => void;
 	convertBlockToPreset: (id: string, presetId: CommandPresetId) => void;
 	setBlockUrl: (id: string, url: string) => void;
-	setBlockSessionId: (id: string, sessionId: string | null) => void;
+	setBlockSessionId: (id: string, sessionId: string | null, workspaceId?: string) => void;
 	setCommandBlockConfig: (
 		id: string,
 		config: { label?: string | null; command: string; cwd?: string | null },
@@ -1061,10 +1061,11 @@ export const useCanvasStore = create<CanvasState>()(
 				}
 			},
 
-			setBlockSessionId: (id, sessionId) => {
+			setBlockSessionId: (id, sessionId, workspaceId) => {
 				const { activeWorkspaceId, workspaceStates } = get();
-				if (!activeWorkspaceId) return;
-				const workspaceState = resolveWorkspaceState(workspaceStates, activeWorkspaceId);
+				const targetWorkspaceId = workspaceId ?? activeWorkspaceId;
+				if (!targetWorkspaceId) return;
+				const workspaceState = resolveWorkspaceState(workspaceStates, targetWorkspaceId);
 				const canvasState = updateActiveCanvasTab(workspaceState, (tab) => {
 					const block = tab.blocks[id];
 					if (!block) return tab;
@@ -1084,7 +1085,7 @@ export const useCanvasStore = create<CanvasState>()(
 					});
 				});
 				if (canvasState !== workspaceState) {
-					set((state) => applyWorkspaceState(state, activeWorkspaceId, canvasState));
+					set((state) => applyWorkspaceState(state, targetWorkspaceId, canvasState));
 					return;
 				}
 				const blockState = updateActiveBlockTab(workspaceState, (tab) => {
@@ -1100,7 +1101,7 @@ export const useCanvasStore = create<CanvasState>()(
 					});
 				});
 				if (blockState !== workspaceState) {
-					set((state) => applyWorkspaceState(state, activeWorkspaceId, blockState));
+					set((state) => applyWorkspaceState(state, targetWorkspaceId, blockState));
 				}
 			},
 

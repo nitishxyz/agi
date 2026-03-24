@@ -2,7 +2,6 @@ import { listen } from '@tauri-apps/api/event';
 import { Upload } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CanvasRenderer } from '../components/CanvasRenderer';
-import { OttoWorkspaceBoundary } from '../components/OttoWorkspaceBoundary';
 import { Sidebar } from '../components/Sidebar';
 import { useCanvasKeybinds } from '../hooks/useCanvasKeybinds';
 import { useCanvasNativeBlockManager } from '../hooks/useCanvasNativeBlockManager';
@@ -261,9 +260,7 @@ export function App() {
 						className="h-full overflow-hidden rounded-xl border border-white/[0.08] backdrop-blur-xl"
 						style={{ background: 'rgba(14, 14, 16, 0.65)' }}
 					>
-						<OttoWorkspaceBoundary>
-							<CanvasRenderer />
-						</OttoWorkspaceBoundary>
+						<CanvasRenderer />
 					</div>
 				</div>
 			</div>

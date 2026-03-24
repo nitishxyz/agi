@@ -16,6 +16,8 @@ import { PendingSelectionGrid } from './PendingSelectionGrid';
 
 interface BlockFrameProps {
 	block: Block;
+	workspaceIsActive?: boolean;
+	workspaceId?: string;
 }
 
 function PendingPicker({ blockId }: { blockId: string }) {
@@ -47,14 +49,21 @@ function PendingPicker({ blockId }: { blockId: string }) {
 	);
 }
 
-function renderBlockContent(block: Block, isFocused: boolean) {
+function renderBlockContent(
+	block: Block,
+	isFocused: boolean,
+	workspaceIsActive: boolean,
+	workspaceId?: string,
+) {
 	switch (block.type) {
 		case 'terminal':
 			return <GhosttyBlock block={block} isFocused={isFocused} />;
 		case 'browser':
 			return <BrowserBlock block={block} />;
 		case 'otto':
-			return <OttoBlock block={block} isFocused={isFocused} />;
+			return workspaceIsActive && workspaceId ? (
+				<OttoBlock block={block} isFocused={isFocused} workspaceId={workspaceId} />
+			) : null;
 		case 'command':
 			return <CommandBlock block={block} isFocused={isFocused} />;
 		default:
@@ -62,7 +71,11 @@ function renderBlockContent(block: Block, isFocused: boolean) {
 	}
 }
 
-export function BlockFrame({ block }: BlockFrameProps) {
+export function BlockFrame({
+	block,
+	workspaceIsActive = true,
+	workspaceId,
+}: BlockFrameProps) {
 	const { focusedBlockId, setFocused, removeBlock } = useCanvasStore();
 	const isFocused = focusedBlockId === block.id;
 	const isPending = block.type === 'pending';
@@ -129,7 +142,9 @@ export function BlockFrame({ block }: BlockFrameProps) {
 				</button>
 			</div>
 
-			<div className="flex-1 min-h-0">{renderBlockContent(block, isFocused)}</div>
+			<div className="flex-1 min-h-0">
+				{renderBlockContent(block, isFocused, workspaceIsActive, workspaceId)}
+			</div>
 		</div>
 	);
 }

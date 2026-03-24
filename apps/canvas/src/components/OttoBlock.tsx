@@ -11,11 +11,11 @@ import {
 import type { Block } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
 import { useWorkspaceRuntimeStore } from '../stores/workspace-runtime-store';
-import { useWorkspaceStore } from '../stores/workspace-store';
 
 interface OttoBlockProps {
 	block: Block;
 	isFocused: boolean;
+	workspaceId: string;
 }
 
 function OttoRuntimeState({
@@ -40,11 +40,10 @@ function OttoRuntimeState({
 	);
 }
 
-export function OttoBlock({ block, isFocused }: OttoBlockProps) {
+export function OttoBlock({ block, isFocused, workspaceId }: OttoBlockProps) {
 	const [sessionId, setSessionId] = useState<string | null>(block.sessionId ?? null);
-	const activeWorkspaceId = useWorkspaceStore((s) => s.activeId);
 	const runtime = useWorkspaceRuntimeStore((s) =>
-		activeWorkspaceId ? s.runtimes[activeWorkspaceId] ?? null : null,
+		workspaceId ? s.runtimes[workspaceId] ?? null : null,
 	);
 	const setFocused = useCanvasStore((s) => s.setFocused);
 	const setBlockSessionId = useCanvasStore((s) => s.setBlockSessionId);
@@ -87,22 +86,22 @@ export function OttoBlock({ block, isFocused }: OttoBlockProps) {
 	const handleSessionCreated = useCallback(
 		(id: string) => {
 			setSessionId(id);
-			setBlockSessionId(block.id, id);
+			setBlockSessionId(block.id, id, workspaceId);
 		},
-		[block.id, setBlockSessionId],
+		[block.id, setBlockSessionId, workspaceId],
 	);
 
 	const handleNewSession = useCallback(() => {
 		setSessionId(null);
-		setBlockSessionId(block.id, null);
-	}, [block.id, setBlockSessionId]);
+		setBlockSessionId(block.id, null, workspaceId);
+	}, [block.id, setBlockSessionId, workspaceId]);
 
 	const handleSelectSession = useCallback(
 		(id: string) => {
 			setSessionId(id);
-			setBlockSessionId(block.id, id);
+			setBlockSessionId(block.id, id, workspaceId);
 		},
-		[block.id, setBlockSessionId],
+		[block.id, setBlockSessionId, workspaceId],
 	);
 
 	return (
@@ -115,7 +114,7 @@ export function OttoBlock({ block, isFocused }: OttoBlockProps) {
 			onFocusCapture={() => setFocused(block.id)}
 			onClick={() => setFocused(block.id)}
 		>
-			{!activeWorkspaceId ? (
+			{!workspaceId ? (
 				<OttoRuntimeState
 					title="No workspace selected"
 					description="Open a workspace to start an Otto runtime for this block."
