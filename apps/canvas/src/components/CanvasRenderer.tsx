@@ -1,5 +1,5 @@
-import { Bot, Globe, Terminal } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { TAB_PRIMITIVE_OPTIONS } from '../lib/primitive-registry';
 import type {
 	Block,
 	LayoutNode,
@@ -19,40 +19,32 @@ interface LayoutProps {
 }
 
 const TAB_OPTIONS: {
-	kind: WorkspaceTabKind;
+	value:
+		| { kind: 'canvas' }
+		| { kind: 'primitive'; primitive: WorkspaceTabKind }
+		| { kind: 'preset'; preset: import('../lib/primitive-registry').CommandPresetId };
 	label: string;
 	description: string;
 	renderIcon: () => ReactNode;
 	shortcut: string;
 }[] = [
 	{
-		kind: 'canvas',
+		value: { kind: 'canvas' },
 		label: 'Canvas',
 		description: 'A multi-block surface for split layouts.',
 		renderIcon: () => <span className="text-[15px] leading-none">▣</span>,
 		shortcut: '1',
 	},
-	{
-		kind: 'terminal',
-		label: 'Ghostty',
-		description: 'A focused terminal or command surface.',
-		renderIcon: () => <Terminal size={16} strokeWidth={1.75} />,
-		shortcut: '2',
-	},
-	{
-		kind: 'browser',
-		label: 'Browser',
-		description: 'A full browser preview or docs tab.',
-		renderIcon: () => <Globe size={16} strokeWidth={1.75} />,
-		shortcut: '3',
-	},
-	{
-		kind: 'otto',
-		label: 'Otto',
-		description: 'A focused Otto block as its own tab.',
-		renderIcon: () => <Bot size={16} strokeWidth={1.75} />,
-		shortcut: '4',
-	},
+	...TAB_PRIMITIVE_OPTIONS.map((option) => ({
+		value: option.value,
+		label: option.label,
+		description: option.description,
+		renderIcon: () => {
+			const Icon = option.icon;
+			return <Icon size={16} strokeWidth={1.75} />;
+		},
+		shortcut: option.key,
+	})),
 ];
 
 function SplitPane({
@@ -138,6 +130,7 @@ function LayoutRenderer({ node, blocks, activeTabKind }: LayoutProps) {
 
 function PendingTabSurface({ isActive }: { isActive: boolean }) {
 	const createTab = useCanvasStore((s) => s.createTab);
+	const createPresetTab = useCanvasStore((s) => s.createPresetTab);
 	const surfaceRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -157,11 +150,21 @@ function PendingTabSurface({ isActive }: { isActive: boolean }) {
 			<PendingSelectionGrid
 				options={TAB_OPTIONS.map((option) => ({
 					key: option.shortcut,
-					value: option.kind,
+					value: option.value,
 					label: option.label,
 					renderIcon: option.renderIcon,
 				}))}
-				onSelect={(kind) => createTab(kind)}
+				onSelect={(value) => {
+					if (value.kind === 'canvas') {
+						createTab('canvas');
+						return;
+					}
+					if (value.kind === 'primitive') {
+						createTab(value.primitive);
+						return;
+					}
+					createPresetTab(value.preset);
+				}}
 			/>
 		</div>
 	);

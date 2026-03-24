@@ -1,24 +1,18 @@
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { useEffect, useRef } from 'react';
-import { X, Terminal, Globe, Bot } from 'lucide-react';
-import type { Block, BlockType } from '../stores/canvas-store';
+import { X } from 'lucide-react';
+import {
+	BLOCK_PRIMITIVE_OPTIONS,
+	getCommandSurfaceDefinition,
+	getPrimitiveDefinition,
+} from '../lib/primitive-registry';
+import type { Block } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
 import { BrowserBlock } from './BrowserBlock';
+import { CommandBlock } from './CommandBlock';
 import { GhosttyBlock } from './GhosttyBlock';
 import { OttoBlock } from './OttoBlock';
 import { PendingSelectionGrid } from './PendingSelectionGrid';
-
-const BLOCK_ICONS = {
-	terminal: Terminal,
-	browser: Globe,
-	otto: Bot,
-} as const;
-
-const PICKER_OPTIONS: { key: string; type: BlockType; label: string; icon: typeof Terminal }[] = [
-	{ key: '1', type: 'terminal', label: 'Ghostty', icon: Terminal },
-	{ key: '2', type: 'browser', label: 'Browser', icon: Globe },
-	{ key: '3', type: 'otto', label: 'Otto', icon: Bot },
-];
 
 interface BlockFrameProps {
 	block: Block;
@@ -26,12 +20,13 @@ interface BlockFrameProps {
 
 function PendingPicker({ blockId }: { blockId: string }) {
 	const convertBlock = useCanvasStore((s) => s.convertBlock);
+	const convertBlockToPreset = useCanvasStore((s) => s.convertBlockToPreset);
 
 	return (
 		<PendingSelectionGrid
-			options={PICKER_OPTIONS.map(({ key, type, label, icon: Icon }) => ({
+			options={BLOCK_PRIMITIVE_OPTIONS.map(({ key, value, label, icon: Icon }) => ({
 				key,
-				value: type,
+				value,
 				label,
 				renderIcon: () => (
 					<Icon
@@ -41,7 +36,13 @@ function PendingPicker({ blockId }: { blockId: string }) {
 					/>
 				),
 			}))}
-			onSelect={(type) => convertBlock(blockId, type)}
+			onSelect={(value) => {
+				if (value.kind === 'primitive') {
+					convertBlock(blockId, value.primitive);
+					return;
+				}
+				convertBlockToPreset(blockId, value.preset);
+			}}
 		/>
 	);
 }
@@ -54,6 +55,8 @@ function renderBlockContent(block: Block, isFocused: boolean) {
 			return <BrowserBlock block={block} />;
 		case 'otto':
 			return <OttoBlock block={block} isFocused={isFocused} />;
+		case 'command':
+			return <CommandBlock block={block} isFocused={isFocused} />;
 		default:
 			return null;
 	}
@@ -91,7 +94,10 @@ export function BlockFrame({ block }: BlockFrameProps) {
 		);
 	}
 
-	const Icon = BLOCK_ICONS[block.type as keyof typeof BLOCK_ICONS];
+	const Icon =
+		block.type === 'command'
+			? getCommandSurfaceDefinition(block.presetId).icon
+			: getPrimitiveDefinition(block.type as Exclude<Block['type'], 'pending'>).icon;
 
 	return (
 		<div

@@ -21,9 +21,16 @@ const DEFAULT_RUNTIME_STATE: NativeBlockRuntimeState = {
 const hostEntries = new Map<string, NativeBlockHostEntry>();
 const runtimeStates = new Map<string, NativeBlockRuntimeState>();
 const listeners = new Set<() => void>();
+const hostListeners = new Set<() => void>();
 
 function emitChange() {
 	for (const listener of listeners) {
+		listener();
+	}
+}
+
+function emitHostChange() {
+	for (const listener of hostListeners) {
 		listener();
 	}
 }
@@ -32,6 +39,13 @@ function subscribe(listener: () => void) {
 	listeners.add(listener);
 	return () => {
 		listeners.delete(listener);
+	};
+}
+
+export function subscribeNativeBlockHosts(listener: () => void) {
+	hostListeners.add(listener);
+	return () => {
+		hostListeners.delete(listener);
 	};
 }
 
@@ -48,7 +62,10 @@ export function registerNativeBlockHost(
 	kind: NativeBlockKind,
 	element: HTMLElement,
 ) {
+	const current = hostEntries.get(blockId);
+	if (current && current.kind === kind && current.element === element) return;
 	hostEntries.set(blockId, { blockId, kind, element });
+	emitHostChange();
 }
 
 export function unregisterNativeBlockHost(
@@ -59,6 +76,7 @@ export function unregisterNativeBlockHost(
 	if (!current) return;
 	if (element && current.element !== element) return;
 	hostEntries.delete(blockId);
+	emitHostChange();
 }
 
 export function useNativeBlockHost(blockId: string, kind: NativeBlockKind) {

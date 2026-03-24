@@ -1,6 +1,8 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { Bot, FolderOpen, Globe, Plus, Terminal, X } from 'lucide-react';
+import { FolderOpen, Plus, X } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import { getCommandSurfaceDefinition, getPrimitiveDefinition } from '../lib/primitive-registry';
+import { getSidebarGroupedTabs, getSidebarOrderedTabs } from '../lib/sidebar-tab-order';
 import type { WorkspaceTabState } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
@@ -20,59 +22,21 @@ function getWorkspaceNameFromPath(path: string) {
 function getTabGlyph(tab: WorkspaceTabState) {
 	if (tab.kind === 'canvas') return '▣';
 	if (tab.kind === 'pending') return <Plus size={12} strokeWidth={1.75} />;
-	if (tab.block.type === 'browser') return <Globe size={12} strokeWidth={1.75} />;
-	if (tab.block.type === 'otto') return <Bot size={12} strokeWidth={1.75} />;
-	return <Terminal size={12} strokeWidth={1.75} />;
+	const Icon =
+		tab.block.type === 'command'
+			? getCommandSurfaceDefinition(tab.block.presetId).icon
+			: getPrimitiveDefinition(tab.block.type as Exclude<typeof tab.block.type, 'pending'>).icon;
+	return <Icon size={12} strokeWidth={1.75} />;
 }
 
 function getTabDescription(tab: WorkspaceTabState) {
 	if (tab.kind === 'canvas') return 'Split layouts and mixed blocks';
 	if (tab.kind === 'pending') return 'Choose what to open next';
-	if (tab.block.type === 'browser') return 'Focused browser surface';
-	if (tab.block.type === 'otto') return 'Focused agent surface';
-	return 'Focused terminal surface';
+	return tab.block.type === 'command'
+		? getCommandSurfaceDefinition(tab.block.presetId).sidebarDescription
+		: getPrimitiveDefinition(tab.block.type as Exclude<typeof tab.block.type, 'pending'>)
+			.sidebarDescription;
 }
-
-type SidebarGroupId = 'drafts' | 'agents' | 'browsers' | 'terminal' | 'commands' | 'canvas';
-
-interface SidebarGroupDefinition {
-	id: SidebarGroupId;
-	label: string;
-	matches: (tab: WorkspaceTabState) => boolean;
-}
-
-const SIDEBAR_GROUPS: SidebarGroupDefinition[] = [
-	{
-		id: 'agents',
-		label: 'Agents',
-		matches: (tab) => tab.kind === 'block' && tab.block.type === 'otto',
-	},
-	{
-		id: 'browsers',
-		label: 'Browsers',
-		matches: (tab) => tab.kind === 'block' && tab.block.type === 'browser',
-	},
-	{
-		id: 'terminal',
-		label: 'Terminal',
-		matches: (tab) => tab.kind === 'block' && tab.block.type === 'terminal',
-	},
-	{
-		id: 'commands',
-		label: 'Commands',
-		matches: () => false,
-	},
-	{
-		id: 'canvas',
-		label: 'Canvas',
-		matches: (tab) => tab.kind === 'canvas',
-	},
-	{
-		id: 'drafts',
-		label: 'Drafts',
-		matches: (tab) => tab.kind === 'pending',
-	},
-];
 
 export function Sidebar() {
 	const workspaces = useWorkspaceStore((state) => state.workspaces);
@@ -104,22 +68,17 @@ export function Sidebar() {
 		[tabOrder, tabs],
 	);
 
+	const sidebarOrderedTabs = useMemo(() => getSidebarOrderedTabs(orderedTabs), [orderedTabs]);
+
 	const tabShortcutMap = useMemo(
 		() =>
 			new Map(
-				orderedTabs.slice(0, 9).map((tab, index) => [tab.id, index + 1]),
+				sidebarOrderedTabs.slice(0, 9).map((tab, index) => [tab.id, index + 1]),
 			),
-		[orderedTabs],
+		[sidebarOrderedTabs],
 	);
 
-	const groupedTabs = useMemo(
-		() =>
-			SIDEBAR_GROUPS.map((group) => ({
-				...group,
-				tabs: orderedTabs.filter((tab) => group.matches(tab)),
-			})).filter((group) => group.tabs.length > 0),
-		[orderedTabs],
-	);
+	const groupedTabs = useMemo(() => getSidebarGroupedTabs(orderedTabs), [orderedTabs]);
 
 	const resetCreateWorkspaceState = useCallback(() => {
 		setIsCreateWorkspaceOpen(false);

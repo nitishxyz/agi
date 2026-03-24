@@ -1,4 +1,3 @@
-use crate::debug_log::debug_log;
 use serde::Serialize;
 use std::{
 	collections::HashMap,
@@ -92,7 +91,7 @@ pub fn register_native_shortcut_monitor() {
 }
 
 fn ghostty_debug_log(message: &str) {
-	debug_log("ghostty", message);
+	let _ = message;
 }
 
 #[tauri::command]
@@ -779,6 +778,9 @@ mod macos {
 				Some("2") if pending_mode => Some(("plain+2", true)),
 				Some("3") if pending_mode => Some(("plain+3", true)),
 				Some("4") if pending_mode => Some(("plain+4", true)),
+				Some("5") if pending_mode => Some(("plain+5", true)),
+				Some("6") if pending_mode => Some(("plain+6", true)),
+				Some("7") if pending_mode => Some(("plain+7", true)),
 				_ => {
 					if pending_mode && event.keyCode() == 53 {
 						Some(("escape", true))

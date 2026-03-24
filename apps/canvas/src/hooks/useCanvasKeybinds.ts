@@ -4,6 +4,7 @@ import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { useHotkeys } from '@tanstack/react-hotkeys';
 import { useCallback, useEffect, useRef } from 'react';
 import { isTauriRuntime } from '../lib/ghostty';
+import { getSidebarOrderedTabs } from '../lib/sidebar-tab-order';
 import { useCanvasStore } from '../stores/canvas-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
 
@@ -13,8 +14,10 @@ export function useCanvasKeybinds() {
 	const tabs = useCanvasStore((s) => s.tabs);
 	const tabOrder = useCanvasStore((s) => s.tabOrder);
 	const convertBlock = useCanvasStore((s) => s.convertBlock);
+	const convertBlockToPreset = useCanvasStore((s) => s.convertBlockToPreset);
 	const removeBlock = useCanvasStore((s) => s.removeBlock);
 	const createTab = useCanvasStore((s) => s.createTab);
+	const createPresetTab = useCanvasStore((s) => s.createPresetTab);
 	const closeCreateTab = useCanvasStore((s) => s.closeCreateTab);
 	const activeTabId = useCanvasStore((s) => s.activeTabId);
 	const setActiveTab = useCanvasStore((s) => s.setActiveTab);
@@ -29,7 +32,7 @@ export function useCanvasKeybinds() {
 	const lastShortcutAtRef = useRef<Record<string, number>>({});
 	const latestExecuteShortcutRef = useRef<(shortcut: string) => void>(() => undefined);
 	const latestHandlePendingSelectionRef = useRef<
-		(key: '1' | '2' | '3' | '4' | 'escape') => boolean
+		(key: '1' | '2' | '3' | '4' | '5' | '6' | '7' | 'escape') => boolean
 	>(() => false);
 
 	const removeFocusedBlock = useCallback(() => {
@@ -79,20 +82,17 @@ export function useCanvasKeybinds() {
 		(index: number) => {
 			const canvasState = useCanvasStore.getState();
 			const workspaceId = canvasState.activeWorkspaceId;
-			const currentTabOrder = canvasState.tabOrder;
 			const currentTabs = canvasState.tabs;
 			const currentActiveTabId = canvasState.activeTabId;
-			const tabId = currentTabOrder[index];
-			if (!tabId) {
+			const currentOrderedTabs = canvasState.tabOrder
+				.map((tabId) => currentTabs[tabId])
+				.filter((tab): tab is NonNullable<(typeof currentTabs)[string]> => Boolean(tab));
+			const sidebarOrderedTabs = getSidebarOrderedTabs(currentOrderedTabs);
+			const nextTab = sidebarOrderedTabs[index];
+			const tabId = nextTab?.id;
+			if (!tabId || !nextTab) {
 				debugLog(
-					`switchToTabByIndex missing-tab-id workspaceId=${workspaceId ?? 'null'} index=${index} tabOrderLength=${currentTabOrder.length}`,
-				);
-				return;
-			}
-			const nextTab = currentTabs[tabId];
-			if (!nextTab) {
-				debugLog(
-					`switchToTabByIndex missing-tab-state workspaceId=${workspaceId ?? 'null'} index=${index} tabId=${tabId} tabOrderLength=${currentTabOrder.length}`,
+					`switchToTabByIndex missing-tab-id workspaceId=${workspaceId ?? 'null'} index=${index} sidebarOrderLength=${sidebarOrderedTabs.length}`,
 				);
 				return;
 			}
@@ -107,7 +107,7 @@ export function useCanvasKeybinds() {
 		[debugLog, setActiveTab],
 	);
 
-	const handlePendingBlockSelection = (key: '1' | '2' | '3' | 'escape') => {
+	const handlePendingBlockSelection = (key: '1' | '2' | '3' | '4' | '5' | '6' | 'escape') => {
 		if (!focusedBlockId) return false;
 		const block = blocks[focusedBlockId];
 		if (!block || block.type !== 'pending') return false;
@@ -118,20 +118,49 @@ export function useCanvasKeybinds() {
 			return true;
 		}
 
-		const type = key === '1' ? 'terminal' : key === '2' ? 'browser' : 'otto';
+		if (key === '5') {
+			convertBlockToPreset(focusedBlockId, 'claude-code');
+			focusCanvasWebview();
+			return true;
+		}
+		if (key === '6') {
+			convertBlockToPreset(focusedBlockId, 'codex');
+			focusCanvasWebview();
+			return true;
+		}
+
+		const type =
+			key === '1'
+				? 'terminal'
+				: key === '2'
+					? 'browser'
+					: key === '3'
+						? 'otto'
+						: 'command';
 		convertBlock(focusedBlockId, type);
 		focusCanvasWebview();
 		return true;
 	};
 
 	const handlePendingTabSelection = useCallback(
-		(key: '1' | '2' | '3' | '4' | 'escape') => {
+		(key: '1' | '2' | '3' | '4' | '5' | '6' | '7' | 'escape') => {
 			if (!activeTabId || activeTabKind !== 'pending') return false;
 			const activeTab = tabs[activeTabId];
 			if (!activeTab || activeTab.kind !== 'pending') return false;
 
 			if (key === 'escape') {
 				closeCreateTab();
+				focusCanvasWebview();
+				return true;
+			}
+
+			if (key === '6') {
+				createPresetTab('claude-code');
+				focusCanvasWebview();
+				return true;
+			}
+			if (key === '7') {
+				createPresetTab('codex');
 				focusCanvasWebview();
 				return true;
 			}
@@ -143,18 +172,20 @@ export function useCanvasKeybinds() {
 						? 'terminal'
 						: key === '3'
 							? 'browser'
-							: 'otto';
+							: key === '4'
+								? 'otto'
+								: 'command';
 			createTab(kind);
 			focusCanvasWebview();
 			return true;
 		},
-		[activeTabId, activeTabKind, closeCreateTab, createTab, tabs],
+		[activeTabId, activeTabKind, closeCreateTab, createPresetTab, createTab, tabs],
 	);
 
 	const handlePendingSelection = useCallback(
-		(key: '1' | '2' | '3' | '4' | 'escape') =>
+		(key: '1' | '2' | '3' | '4' | '5' | '6' | '7' | 'escape') =>
 			handlePendingTabSelection(key) ||
-			(key === '4' ? false : handlePendingBlockSelection(key)),
+			(key === '7' ? false : handlePendingBlockSelection(key)),
 		[handlePendingTabSelection],
 	);
 
@@ -353,6 +384,18 @@ export function useCanvasKeybinds() {
 				latestHandlePendingSelectionRef.current('4');
 				return;
 			}
+			if (shortcut === 'plain+5') {
+				latestHandlePendingSelectionRef.current('5');
+				return;
+			}
+			if (shortcut === 'plain+6') {
+				latestHandlePendingSelectionRef.current('6');
+				return;
+			}
+			if (shortcut === 'plain+7') {
+				latestHandlePendingSelectionRef.current('7');
+				return;
+			}
 			if (shortcut === 'escape') {
 				latestHandlePendingSelectionRef.current('escape');
 				return;
@@ -381,8 +424,8 @@ export function useCanvasKeybinds() {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (!event.metaKey && !event.ctrlKey && !event.altKey) {
-				if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4') {
-					if (handlePendingSelection(event.key as '1' | '2' | '3' | '4')) {
+				if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4' || event.key === '5' || event.key === '6' || event.key === '7') {
+					if (handlePendingSelection(event.key as '1' | '2' | '3' | '4' | '5' | '6' | '7')) {
 						event.preventDefault();
 					}
 					return;

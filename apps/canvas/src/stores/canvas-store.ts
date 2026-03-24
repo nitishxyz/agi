@@ -1,10 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import {
+	getCommandPresetDefinition,
+	type CommandPresetId,
+	type PrimitiveBlockType,
+	type PrimitiveTabKind,
+} from '../lib/primitive-registry';
 import { useWorkspaceStore } from './workspace-store';
 
-export type BlockType = 'terminal' | 'browser' | 'otto' | 'pending';
+export type BlockType = PrimitiveBlockType | 'pending';
 export type SplitDirection = 'horizontal' | 'vertical';
-export type WorkspaceTabKind = 'canvas' | 'terminal' | 'browser' | 'otto';
+export type WorkspaceTabKind = 'canvas' | PrimitiveTabKind;
 export type ActiveTabKind = 'canvas' | 'block' | 'pending' | null;
 
 export interface Block {
@@ -14,6 +20,9 @@ export interface Block {
 	url?: string;
 	reloadToken?: number;
 	sessionId?: string;
+	command?: string;
+	cwd?: string;
+	presetId?: CommandPresetId;
 }
 
 export interface SplitNode {
@@ -89,12 +98,19 @@ interface CanvasState {
 	openCreateTab: () => void;
 	closeCreateTab: () => void;
 	createTab: (kind: WorkspaceTabKind, title?: string) => string | null;
+	createPresetTab: (presetId: CommandPresetId) => string | null;
 	removeTab: (tabId: string) => void;
 	setFocused: (id: string) => void;
 	addBlock: (type: BlockType, label?: string, direction?: SplitDirection) => void;
+	addPresetBlock: (presetId: CommandPresetId, direction?: SplitDirection) => void;
 	convertBlock: (id: string, type: BlockType) => void;
+	convertBlockToPreset: (id: string, presetId: CommandPresetId) => void;
 	setBlockUrl: (id: string, url: string) => void;
 	setBlockSessionId: (id: string, sessionId: string | null) => void;
+	setCommandBlockConfig: (
+		id: string,
+		config: { label?: string | null; command: string; cwd?: string | null },
+	) => void;
 	reloadBlock: (id: string) => void;
 	removeBlock: (id: string) => void;
 	setSplitRatio: (splitId: string, ratio: number) => void;
@@ -108,6 +124,7 @@ const LABELS: Record<BlockType, string> = {
 	terminal: 'Ghostty',
 	browser: 'Browser',
 	otto: 'Otto',
+	command: 'Custom command',
 	pending: 'New Block',
 };
 
@@ -116,6 +133,7 @@ const TAB_LABELS: Record<WorkspaceTabKind, string> = {
 	terminal: LABELS.terminal,
 	browser: LABELS.browser,
 	otto: LABELS.otto,
+	command: LABELS.command,
 };
 
 function generateId() {
@@ -129,6 +147,19 @@ function createBlock(type: BlockType, label?: string): Block {
 		label: label ?? LABELS[type],
 		url: type === 'browser' ? '' : undefined,
 		reloadToken: type === 'browser' ? 0 : undefined,
+		command: type === 'command' ? '' : undefined,
+		cwd: type === 'command' ? undefined : undefined,
+	};
+}
+
+function createCommandPresetBlock(presetId: CommandPresetId): Block {
+	const preset = getCommandPresetDefinition(presetId);
+	return {
+		id: generateId(),
+		type: 'command',
+		label: preset.label,
+		command: preset.command,
+		presetId,
 	};
 }
 
@@ -153,6 +184,18 @@ function createBlockTab(
 		id: generateId(),
 		kind: 'block',
 		title: title?.trim() || TAB_LABELS[kind],
+		block,
+		updatedAt: Date.now(),
+	};
+}
+
+function createCommandPresetTab(presetId: CommandPresetId): BlockWorkspaceTab {
+	const preset = getCommandPresetDefinition(presetId);
+	const block = createCommandPresetBlock(presetId);
+	return {
+		id: generateId(),
+		kind: 'block',
+		title: preset.label,
 		block,
 		updatedAt: Date.now(),
 	};
@@ -744,6 +787,42 @@ export const useCanvasStore = create<CanvasState>()(
 				return tab.id;
 			},
 
+			createPresetTab: (presetId) => {
+				const { activeWorkspaceId, workspaceStates } = get();
+				if (!activeWorkspaceId) return null;
+				const workspaceState = resolveWorkspaceState(workspaceStates, activeWorkspaceId);
+				const tab = createCommandPresetTab(presetId);
+				const activeTab = workspaceState.activeTabId
+					? workspaceState.tabs[workspaceState.activeTabId] ?? null
+					: null;
+				if (activeTab?.kind === 'pending') {
+					const nextTab = {
+						...createCommandPresetTab(presetId),
+						id: activeTab.id,
+					};
+					const nextState = finalizeWorkspaceSurfaceState({
+						tabs: {
+							...workspaceState.tabs,
+							[activeTab.id]: nextTab,
+						},
+						tabOrder: workspaceState.tabOrder,
+						activeTabId: activeTab.id,
+					});
+					set((state) => applyWorkspaceState(state, activeWorkspaceId, nextState));
+					return activeTab.id;
+				}
+				const nextState = finalizeWorkspaceSurfaceState({
+					tabs: {
+						...workspaceState.tabs,
+						[tab.id]: tab,
+					},
+					tabOrder: [...workspaceState.tabOrder, tab.id],
+					activeTabId: tab.id,
+				});
+				set((state) => applyWorkspaceState(state, activeWorkspaceId, nextState));
+				return tab.id;
+			},
+
 			removeTab: (tabId) => {
 				const { activeWorkspaceId, workspaceStates } = get();
 				if (!activeWorkspaceId) return;
@@ -804,6 +883,26 @@ export const useCanvasStore = create<CanvasState>()(
 				}
 			},
 
+			addPresetBlock: (presetId, direction) => {
+				const { activeWorkspaceId, workspaceStates } = get();
+				if (!activeWorkspaceId) return;
+				const workspaceState = resolveWorkspaceState(workspaceStates, activeWorkspaceId);
+				const nextState = updateActiveCanvasTab(workspaceState, (tab) => {
+					const block = createCommandPresetBlock(presetId);
+					return finalizeCanvasTabState({
+						id: tab.id,
+						kind: tab.kind,
+						title: tab.title,
+						blocks: { ...tab.blocks, [block.id]: block },
+						layout: insertBlock(tab.layout, tab.focusedBlockId, block.id, direction),
+						focusedBlockId: block.id,
+					});
+				});
+				if (nextState !== workspaceState) {
+					set((state) => applyWorkspaceState(state, activeWorkspaceId, nextState));
+				}
+			},
+
 			convertBlock: (id, type) => {
 				const { activeWorkspaceId, workspaceStates } = get();
 				if (!activeWorkspaceId) return;
@@ -824,6 +923,9 @@ export const useCanvasStore = create<CanvasState>()(
 								url: type === 'browser' ? block.url ?? '' : undefined,
 								reloadToken: type === 'browser' ? block.reloadToken ?? 0 : undefined,
 								sessionId: type === 'otto' ? block.sessionId : undefined,
+								command: type === 'command' ? block.command ?? '' : undefined,
+								cwd: type === 'command' ? block.cwd : undefined,
+								presetId: undefined,
 							},
 						},
 						layout: tab.layout,
@@ -847,6 +949,67 @@ export const useCanvasStore = create<CanvasState>()(
 							url: type === 'browser' ? tab.block.url ?? '' : undefined,
 							reloadToken: type === 'browser' ? tab.block.reloadToken ?? 0 : undefined,
 							sessionId: type === 'otto' ? tab.block.sessionId : undefined,
+							command: type === 'command' ? tab.block.command ?? '' : undefined,
+							cwd: type === 'command' ? tab.block.cwd : undefined,
+							presetId: undefined,
+						},
+					});
+				});
+				if (blockState !== workspaceState) {
+					set((state) => applyWorkspaceState(state, activeWorkspaceId, blockState));
+				}
+			},
+
+			convertBlockToPreset: (id, presetId) => {
+				const { activeWorkspaceId, workspaceStates } = get();
+				if (!activeWorkspaceId) return;
+				const workspaceState = resolveWorkspaceState(workspaceStates, activeWorkspaceId);
+				const preset = getCommandPresetDefinition(presetId);
+				const canvasState = updateActiveCanvasTab(workspaceState, (tab) => {
+					const block = tab.blocks[id];
+					if (!block) return tab;
+					return finalizeCanvasTabState({
+						id: tab.id,
+						kind: tab.kind,
+						title: tab.title,
+						blocks: {
+							...tab.blocks,
+							[id]: {
+								...block,
+								type: 'command',
+								label: preset.label,
+								command: preset.command,
+								cwd: block.cwd,
+								url: undefined,
+								reloadToken: undefined,
+								sessionId: undefined,
+								presetId,
+							},
+						},
+						layout: tab.layout,
+						focusedBlockId: tab.focusedBlockId,
+					});
+				});
+				if (canvasState !== workspaceState) {
+					set((state) => applyWorkspaceState(state, activeWorkspaceId, canvasState));
+					return;
+				}
+				const blockState = updateActiveBlockTab(workspaceState, (tab) => {
+					if (tab.block.id !== id) return tab;
+					return finalizeBlockTabState({
+						id: tab.id,
+						kind: tab.kind,
+						title: preset.label,
+						block: {
+							...tab.block,
+							type: 'command',
+							label: preset.label,
+							command: preset.command,
+							cwd: tab.block.cwd,
+							url: undefined,
+							reloadToken: undefined,
+							sessionId: undefined,
+							presetId,
 						},
 					});
 				});
@@ -927,6 +1090,58 @@ export const useCanvasStore = create<CanvasState>()(
 						block: {
 							...tab.block,
 							sessionId: sessionId ?? undefined,
+						},
+					});
+				});
+				if (blockState !== workspaceState) {
+					set((state) => applyWorkspaceState(state, activeWorkspaceId, blockState));
+				}
+			},
+
+			setCommandBlockConfig: (id, config) => {
+				const { activeWorkspaceId, workspaceStates } = get();
+				if (!activeWorkspaceId) return;
+				const workspaceState = resolveWorkspaceState(workspaceStates, activeWorkspaceId);
+				const nextLabel = config.label?.trim() || config.command.trim() || LABELS.command;
+				const nextCommand = config.command.trim();
+				const nextCwd = config.cwd?.trim() || undefined;
+				const canvasState = updateActiveCanvasTab(workspaceState, (tab) => {
+					const block = tab.blocks[id];
+					if (!block || block.type !== 'command') return tab;
+					return finalizeCanvasTabState({
+						id: tab.id,
+						kind: tab.kind,
+						title: tab.title,
+						blocks: {
+							...tab.blocks,
+							[id]: {
+								...block,
+								label: nextLabel,
+								command: nextCommand,
+								cwd: nextCwd,
+								presetId: undefined,
+							},
+						},
+						layout: tab.layout,
+						focusedBlockId: tab.focusedBlockId,
+					});
+				});
+				if (canvasState !== workspaceState) {
+					set((state) => applyWorkspaceState(state, activeWorkspaceId, canvasState));
+					return;
+				}
+				const blockState = updateActiveBlockTab(workspaceState, (tab) => {
+					if (tab.block.id !== id || tab.block.type !== 'command') return tab;
+					return finalizeBlockTabState({
+						id: tab.id,
+						kind: tab.kind,
+						title: nextLabel,
+						block: {
+							...tab.block,
+							label: nextLabel,
+							command: nextCommand,
+							cwd: nextCwd,
+							presetId: undefined,
 						},
 					});
 				});

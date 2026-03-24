@@ -1,7 +1,6 @@
-import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import {
 	createBrowserWebview,
 	destroyBrowserWebview,
@@ -13,6 +12,7 @@ import {
 	clearNativeBlockRuntimeState,
 	getNativeBlockHost,
 	setNativeBlockRuntimeState,
+	subscribeNativeBlockHosts,
 } from '../lib/native-block-runtime';
 import {
 	createGhosttyBlock,
@@ -44,6 +44,8 @@ interface GhosttyRuntimeEntry {
 	lastFocused: boolean;
 	lastHidden: boolean;
 	lastSceneVersion: number;
+	lastCommand: string | null;
+	lastCwd: string | null;
 }
 
 interface BrowserRuntimeEntry {
@@ -120,8 +122,8 @@ function collectWorkspaceBlocks(workspaceState: WorkspaceSurfaceState | null): B
 }
 
 function collectAllWorkspaceBlocks(workspaceStates: Record<string, WorkspaceSurfaceState>) {
-	return Object.values(workspaceStates).flatMap((workspaceState) =>
-		collectWorkspaceBlocks(workspaceState),
+	return Object.entries(workspaceStates).flatMap(([workspaceId, workspaceState]) =>
+		collectWorkspaceBlocks(workspaceState).map((block) => ({ workspaceId, block })),
 	);
 }
 
@@ -188,15 +190,8 @@ export function useCanvasNativeBlockManager() {
 	const activeWorkspaceId = useWorkspaceStore((s) => s.activeId);
 	const environments = useWorkspaceStore((s) => s.environments);
 	const workspaces = useWorkspaceStore((s) => s.workspaces);
-	const debugLog = useCallback((message: string) => {
-		void invoke('canvas_debug_log', {
-			component: 'native-block-manager',
-			message,
-		}).catch(() => undefined);
-	}, []);
-	const blocksRef = useRef(blocks);
 	const focusedBlockIdRef = useRef(focusedBlockId);
-	const activeEnvironmentPathRef = useRef<string | null>(null);
+	const workspaceEnvironmentPathsRef = useRef<Record<string, string | null>>({});
 	const ghosttyStatusRef = useRef<GhosttyStatus | null>(null);
 	const ghosttyEntriesRef = useRef(new Map<string, GhosttyRuntimeEntry>());
 	const browserEntriesRef = useRef(new Map<string, BrowserRuntimeEntry>());
@@ -204,10 +199,7 @@ export function useCanvasNativeBlockManager() {
 	const activeWorkspaceIdRef = useRef(activeWorkspaceId);
 	const sceneVersionRef = useRef(0);
 	const overlayActiveRef = useRef(false);
-
-	useEffect(() => {
-		blocksRef.current = blocks;
-	}, [blocks]);
+	const queueSyncRef = useRef<() => void>(() => undefined);
 
 	useEffect(() => {
 		workspaceStatesRef.current = workspaceStates;
@@ -222,10 +214,12 @@ export function useCanvasNativeBlockManager() {
 	}, [focusedBlockId]);
 
 	useEffect(() => {
-		const activeWorkspace = workspaces.find((workspace) => workspace.id === activeWorkspaceId);
-		activeEnvironmentPathRef.current = activeWorkspace
-			? environments[activeWorkspace.primaryEnvironmentId]?.path ?? null
-			: null;
+		workspaceEnvironmentPathsRef.current = Object.fromEntries(
+			workspaces.map((workspace) => [
+				workspace.id,
+				environments[workspace.primaryEnvironmentId]?.path ?? null,
+			]),
+		);
 	}, [activeWorkspaceId, environments, workspaces]);
 
 	useEffect(() => {
@@ -243,6 +237,7 @@ export function useCanvasNativeBlockManager() {
 			.then((status) => {
 				if (cancelled) return;
 				ghosttyStatusRef.current = status;
+				queueSyncRef.current();
 			})
 			.catch(() => {
 				if (cancelled) return;
@@ -250,6 +245,7 @@ export function useCanvasNativeBlockManager() {
 					available: false,
 					message: 'Failed to detect Ghostty availability.',
 				};
+				queueSyncRef.current();
 			});
 
 		return () => {
@@ -262,6 +258,9 @@ export function useCanvasNativeBlockManager() {
 
 		let frame = 0;
 		let disposed = false;
+		let syncQueued = false;
+		let syncInFlight = false;
+		let resyncRequested = false;
 
 		const destroyGhosttyEntry = async (blockId: string) => {
 			ghosttyEntriesRef.current.delete(blockId);
@@ -279,20 +278,52 @@ export function useCanvasNativeBlockManager() {
 			}
 		};
 
+		const runSync = () => {
+			if (disposed) return;
+			syncQueued = false;
+			if (syncInFlight) {
+				resyncRequested = true;
+				return;
+			}
+			syncInFlight = true;
+			void (async () => {
+				const overlayActive = hasActiveNativeOverlayRoot();
+				if (overlayActiveRef.current !== overlayActive) {
+					overlayActiveRef.current = overlayActive;
+					sceneVersionRef.current += 1;
+				}
+				await syncAll();
+			})().finally(() => {
+				syncInFlight = false;
+				if (resyncRequested && !disposed) {
+					resyncRequested = false;
+					scheduleSync();
+				}
+			});
+		};
+
+		const scheduleSync = () => {
+			if (disposed || syncQueued) return;
+			syncQueued = true;
+			frame = window.requestAnimationFrame(runSync);
+		};
+
+		queueSyncRef.current = scheduleSync;
+
 		const syncGhosttyBlock = async (
 			block: Block,
+			workspacePath: string | null,
 			focused: boolean,
 			visible: boolean,
 		) => {
-			debugLog(
-				`syncGhosttyBlock start workspaceId=${activeWorkspaceIdRef.current ?? 'null'} blockId=${block.id} visible=${visible} focused=${focused}`,
-			);
 			const status = ghosttyStatusRef.current;
 			if (!status?.available) return;
 
 			let entry = ghosttyEntriesRef.current.get(block.id);
+			const nextCommand = block.type === 'command' ? block.command?.trim() ?? '' : '';
+			const nextCwd = block.cwd?.trim() || workspacePath || '';
 			if (!entry) {
-				if (!visible) return;
+				if (!visible || (block.type === 'command' && !nextCommand)) return;
 				entry = {
 					created: false,
 					creating: false,
@@ -300,33 +331,47 @@ export function useCanvasNativeBlockManager() {
 					lastFocused: false,
 					lastHidden: true,
 					lastSceneVersion: -1,
+					lastCommand: null,
+					lastCwd: null,
 				};
 				ghosttyEntriesRef.current.set(block.id, entry);
 			}
 
-			if (!entry.created && !entry.creating && visible) {
+			const configChanged =
+				entry.created &&
+				(entry.lastCommand !== nextCommand || entry.lastCwd !== nextCwd);
+			if (configChanged) {
+				entry.created = false;
+				entry.creating = false;
+				entry.lastBounds = null;
+				entry.lastFocused = false;
+				entry.lastHidden = true;
+				entry.lastSceneVersion = -1;
+				await destroyGhosttyBlock(block.id).catch(() => undefined);
+			}
+
+			if (!entry.created && !entry.creating && visible && (block.type !== 'command' || !!nextCommand)) {
 				entry.creating = true;
-				debugLog(`syncGhosttyBlock create start blockId=${block.id}`);
 				try {
 					await withTimeout(
 						createGhosttyBlock(
 							block.id,
-							activeEnvironmentPathRef.current ?? undefined,
+							nextCwd || undefined,
+							block.type === 'command' ? nextCommand : undefined,
 						),
 						5000,
 						`createGhosttyBlock ${block.id}`,
 					);
 					entry.created = true;
-					debugLog(`syncGhosttyBlock create success blockId=${block.id}`);
+					entry.lastCommand = nextCommand;
+					entry.lastCwd = nextCwd;
 					setNativeBlockRuntimeState(block.id, { error: null });
 				} catch (error) {
-					debugLog(`syncGhosttyBlock create error blockId=${block.id} error=${formatError(error)}`);
 					setNativeBlockRuntimeState(block.id, {
 						error: formatError(error),
 					});
 				} finally {
 					entry.creating = false;
-					debugLog(`syncGhosttyBlock create finish blockId=${block.id} created=${entry.created}`);
 				}
 			}
 
@@ -347,12 +392,8 @@ export function useCanvasNativeBlockManager() {
 						}),
 						300,
 						`hideGhosttyBlock ${block.id}`,
-					).catch((error) => {
-						debugLog(`syncGhosttyBlock hide timeout blockId=${block.id} error=${formatError(error)}`);
-					});
-					void withTimeout(setGhosttyBlockFocus(block.id, false), 300, `blurGhosttyBlock ${block.id}`).catch((error) => {
-						debugLog(`syncGhosttyBlock blur timeout blockId=${block.id} error=${formatError(error)}`);
-					});
+					).catch(() => undefined);
+					void withTimeout(setGhosttyBlockFocus(block.id, false), 300, `blurGhosttyBlock ${block.id}`).catch(() => undefined);
 				}
 				return;
 			}
@@ -373,12 +414,8 @@ export function useCanvasNativeBlockManager() {
 						}),
 						300,
 						`hideGhosttyBlock ${block.id}`,
-					).catch((error) => {
-						debugLog(`syncGhosttyBlock hide timeout blockId=${block.id} error=${formatError(error)}`);
-					});
-					void withTimeout(setGhosttyBlockFocus(block.id, false), 300, `blurGhosttyBlock ${block.id}`).catch((error) => {
-						debugLog(`syncGhosttyBlock blur timeout blockId=${block.id} error=${formatError(error)}`);
-					});
+					).catch(() => undefined);
+					void withTimeout(setGhosttyBlockFocus(block.id, false), 300, `blurGhosttyBlock ${block.id}`).catch(() => undefined);
 				}
 				return;
 			}
@@ -391,9 +428,6 @@ export function useCanvasNativeBlockManager() {
 			const sceneChanged = entry.lastSceneVersion !== sceneVersionRef.current;
 			if (boundsChanged || sceneChanged || wasHidden) {
 				entry.lastBounds = nextBounds;
-				debugLog(
-					`syncGhosttyBlock update start blockId=${block.id} boundsChanged=${boundsChanged} sceneChanged=${sceneChanged} wasHidden=${wasHidden}`,
-				);
 				await withTimeout(
 					updateGhosttyBlock(block.id, {
 						...nextBounds,
@@ -403,12 +437,10 @@ export function useCanvasNativeBlockManager() {
 					`showGhosttyBlock ${block.id}`,
 				)
 					.then(() => {
-						debugLog(`syncGhosttyBlock update success blockId=${block.id}`);
 						entry.lastSceneVersion = sceneVersionRef.current;
 						setNativeBlockRuntimeState(block.id, { error: null });
 					})
 					.catch((error) => {
-						debugLog(`syncGhosttyBlock update error blockId=${block.id} error=${formatError(error)}`);
 						setNativeBlockRuntimeState(block.id, {
 							error: formatError(error),
 						});
@@ -417,20 +449,17 @@ export function useCanvasNativeBlockManager() {
 
 			if (entry.lastFocused !== focused || (focused && (boundsChanged || sceneChanged))) {
 				entry.lastFocused = focused;
-				debugLog(`syncGhosttyBlock focus start blockId=${block.id} focused=${focused}`);
 				if (focused) {
 					await focusMainCanvasSurface();
 					focusHostElement(host.element);
 				}
 				await withTimeout(setGhosttyBlockFocus(block.id, focused), 500, `focusGhosttyBlock ${block.id}`)
 					.then(() => {
-						debugLog(`syncGhosttyBlock focus success blockId=${block.id} focused=${focused}`);
 						if (focused) {
 							scheduleGhosttyFocus(block.id);
 						}
 					})
 					.catch((error) => {
-						debugLog(`syncGhosttyBlock focus error blockId=${block.id} focused=${focused} error=${formatError(error)}`);
 						setNativeBlockRuntimeState(block.id, {
 							error: formatError(error),
 						});
@@ -619,60 +648,74 @@ export function useCanvasNativeBlockManager() {
 			const allBlocks = collectAllWorkspaceBlocks(workspaceStatesRef.current);
 			const activeTabBlockIds = collectActiveTabBlockIds(activeWorkspaceState);
 			const nativeBlocks = allBlocks.filter(
-				(block) => block.type === 'terminal' || block.type === 'browser',
+				(entry) =>
+					entry.block.type === 'terminal' ||
+					entry.block.type === 'browser' ||
+					entry.block.type === 'command',
 			);
-			const nativeBlockIds = new Set(nativeBlocks.map((block) => block.id));
-			const currentBlockMap = new Map(nativeBlocks.map((block) => [block.id, block]));
+			const nativeBlockIds = new Set(nativeBlocks.map(({ block }) => block.id));
+			const currentBlockMap = new Map(nativeBlocks.map((entry) => [entry.block.id, entry]));
 
 			const removedGhosttyIds = Array.from(ghosttyEntriesRef.current.keys()).filter((blockId) => {
-				const block = currentBlockMap.get(blockId);
-				return !nativeBlockIds.has(blockId) || block?.type !== 'terminal';
+				const entry = currentBlockMap.get(blockId);
+				return !nativeBlockIds.has(blockId) || (entry?.block.type !== 'terminal' && entry?.block.type !== 'command');
 			});
 			for (const blockId of removedGhosttyIds) {
 				await destroyGhosttyEntry(blockId);
 			}
 
 			const removedBrowserIds = Array.from(browserEntriesRef.current.keys()).filter((blockId) => {
-				const block = currentBlockMap.get(blockId);
-				return !nativeBlockIds.has(blockId) || block?.type !== 'browser';
+				const entry = currentBlockMap.get(blockId);
+				return !nativeBlockIds.has(blockId) || entry?.block.type !== 'browser';
 			});
 			for (const blockId of removedBrowserIds) {
 				await destroyBrowserEntry(blockId);
 			}
 
 			const overlayActive = overlayActiveRef.current;
-			for (const block of nativeBlocks) {
+			for (const { workspaceId, block } of nativeBlocks) {
 				const visible = activeTabBlockIds.has(block.id) && !overlayActive;
 				const focused = visible && focusedBlockIdRef.current === block.id;
-				if (block.type === 'terminal') {
-					await syncGhosttyBlock(block, focused, visible);
+				if (block.type === 'terminal' || block.type === 'command') {
+					await syncGhosttyBlock(
+						block,
+						workspaceEnvironmentPathsRef.current[workspaceId] ?? null,
+						focused,
+						visible,
+					);
 					continue;
 				}
 				await syncBrowserBlock(block, focused, visible);
 			}
 		};
 
-		const tick = async () => {
-			if (disposed) return;
-			const overlayActive = hasActiveNativeOverlayRoot();
-			if (overlayActiveRef.current !== overlayActive) {
-				overlayActiveRef.current = overlayActive;
-				sceneVersionRef.current += 1;
-			}
-			await syncAll();
-			if (disposed) return;
-			frame = window.requestAnimationFrame(() => {
-				void tick();
-			});
+		const handleWindowChange = () => {
+			scheduleSync();
 		};
-
-		frame = window.requestAnimationFrame(() => {
-			void tick();
+		const overlayObserver = new MutationObserver(() => {
+			scheduleSync();
 		});
+		if (document.body) {
+			overlayObserver.observe(document.body, {
+				childList: true,
+				subtree: true,
+				attributes: true,
+			});
+		}
+		window.addEventListener('resize', handleWindowChange);
+		window.addEventListener('scroll', handleWindowChange, true);
+		const unsubscribeHosts = subscribeNativeBlockHosts(handleWindowChange);
+
+		scheduleSync();
 
 		return () => {
 			disposed = true;
 			window.cancelAnimationFrame(frame);
+			window.removeEventListener('resize', handleWindowChange);
+			window.removeEventListener('scroll', handleWindowChange, true);
+			overlayObserver.disconnect();
+			unsubscribeHosts();
+			queueSyncRef.current = () => undefined;
 			const ghosttyIds = Array.from(ghosttyEntriesRef.current.keys());
 			const browserIds = Array.from(browserEntriesRef.current.keys());
 			for (const blockId of ghosttyIds) {
@@ -682,5 +725,10 @@ export function useCanvasNativeBlockManager() {
 				void destroyBrowserEntry(blockId);
 			}
 		};
-	}, [debugLog]);
+	}, []);
+
+	useEffect(() => {
+		if (!isTauriRuntime()) return;
+		queueSyncRef.current();
+	}, [workspaceStates, focusedBlockId, activeWorkspaceId, environments, workspaces]);
 }

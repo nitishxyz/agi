@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 
-export interface PendingSelectionOption<TValue extends string> {
+export interface PendingSelectionOption<TValue> {
 	key: string;
 	value: TValue;
 	label: string;
 	renderIcon: () => ReactNode;
 }
 
-interface PendingSelectionGridProps<TValue extends string> {
+interface PendingSelectionGridProps<TValue> {
 	options: PendingSelectionOption<TValue>[];
 	onSelect: (value: TValue) => void;
 }
@@ -15,7 +15,7 @@ interface PendingSelectionGridProps<TValue extends string> {
 /**
  * Shared centered picker used by pending blocks and pending tabs.
  */
-export function PendingSelectionGrid<TValue extends string>({
+export function PendingSelectionGrid<TValue>({
 	options,
 	onSelect,
 }: PendingSelectionGridProps<TValue>) {
@@ -25,7 +25,7 @@ export function PendingSelectionGrid<TValue extends string>({
 				<div className="flex flex-wrap items-center justify-center gap-3">
 					{options.map((option) => (
 						<button
-							key={option.value}
+							key={`${option.key}-${option.label}`}
 							onClick={() => onSelect(option.value)}
 							className="flex min-w-[124px] flex-col items-center gap-2 rounded-xl px-5 py-4 transition-colors hover:bg-white/[0.06] group"
 						>
