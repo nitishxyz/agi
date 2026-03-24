@@ -118,6 +118,12 @@ function collectWorkspaceBlocks(workspaceState: WorkspaceSurfaceState | null): B
 	});
 }
 
+function collectAllWorkspaceBlocks(workspaceStates: Record<string, WorkspaceSurfaceState>) {
+	return Object.values(workspaceStates).flatMap((workspaceState) =>
+		collectWorkspaceBlocks(workspaceState),
+	);
+}
+
 function collectActiveTabBlockIds(workspaceState: WorkspaceSurfaceState | null) {
 	if (!workspaceState?.activeTabId) return new Set<string>();
 	const activeTab = workspaceState.tabs[workspaceState.activeTabId];
@@ -258,6 +264,7 @@ export function useCanvasNativeBlockManager() {
 
 			let entry = ghosttyEntriesRef.current.get(block.id);
 			if (!entry) {
+				if (!visible) return;
 				entry = {
 					created: false,
 					creating: false,
@@ -269,7 +276,7 @@ export function useCanvasNativeBlockManager() {
 				ghosttyEntriesRef.current.set(block.id, entry);
 			}
 
-			if (!entry.created && !entry.creating) {
+			if (!entry.created && !entry.creating && visible) {
 				entry.creating = true;
 				try {
 					await createGhosttyBlock(
@@ -542,20 +549,20 @@ export function useCanvasNativeBlockManager() {
 		};
 
 		const syncAll = async () => {
-			const workspaceState = activeWorkspaceIdRef.current
+			const activeWorkspaceState = activeWorkspaceIdRef.current
 				? workspaceStatesRef.current[activeWorkspaceIdRef.current] ?? null
 				: null;
-			const currentBlocks = collectWorkspaceBlocks(workspaceState);
-			const activeTabBlockIds = collectActiveTabBlockIds(workspaceState);
-			const activeBlocks = currentBlocks.filter(
+			const allBlocks = collectAllWorkspaceBlocks(workspaceStatesRef.current);
+			const activeTabBlockIds = collectActiveTabBlockIds(activeWorkspaceState);
+			const nativeBlocks = allBlocks.filter(
 				(block) => block.type === 'terminal' || block.type === 'browser',
 			);
-			const activeIds = new Set(activeBlocks.map((block) => block.id));
-			const currentBlockMap = new Map(activeBlocks.map((block) => [block.id, block]));
+			const nativeBlockIds = new Set(nativeBlocks.map((block) => block.id));
+			const currentBlockMap = new Map(nativeBlocks.map((block) => [block.id, block]));
 
 			const removedGhosttyIds = Array.from(ghosttyEntriesRef.current.keys()).filter((blockId) => {
 				const block = currentBlockMap.get(blockId);
-				return !activeIds.has(blockId) || block?.type !== 'terminal';
+				return !nativeBlockIds.has(blockId) || block?.type !== 'terminal';
 			});
 			for (const blockId of removedGhosttyIds) {
 				await destroyGhosttyEntry(blockId);
@@ -563,14 +570,14 @@ export function useCanvasNativeBlockManager() {
 
 			const removedBrowserIds = Array.from(browserEntriesRef.current.keys()).filter((blockId) => {
 				const block = currentBlockMap.get(blockId);
-				return !activeIds.has(blockId) || block?.type !== 'browser';
+				return !nativeBlockIds.has(blockId) || block?.type !== 'browser';
 			});
 			for (const blockId of removedBrowserIds) {
 				await destroyBrowserEntry(blockId);
 			}
 
 			const overlayActive = overlayActiveRef.current;
-			for (const block of activeBlocks) {
+			for (const block of nativeBlocks) {
 				const visible = activeTabBlockIds.has(block.id) && !overlayActive;
 				const focused = visible && focusedBlockIdRef.current === block.id;
 				if (block.type === 'terminal') {

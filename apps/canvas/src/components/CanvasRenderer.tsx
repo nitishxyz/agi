@@ -1,6 +1,12 @@
 import { Bot, Globe, Terminal } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import type { Block, LayoutNode, WorkspaceTabKind, WorkspaceTabState } from '../stores/canvas-store';
+import type {
+	Block,
+	LayoutNode,
+	WorkspaceSurfaceState,
+	WorkspaceTabKind,
+	WorkspaceTabState,
+} from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
 import { BlockFrame } from './BlockFrame';
@@ -216,13 +222,14 @@ function TabSurface({
 	);
 }
 
-export function CanvasRenderer() {
-	const activeWorkspaceId = useWorkspaceStore((s) => s.activeId);
-	const workspaceState = useCanvasStore((s) =>
-		activeWorkspaceId ? s.workspaceStates[activeWorkspaceId] ?? null : null,
-	);
+function WorkspaceSurface({
+	workspaceState,
+	isActive,
+}: {
+	workspaceState: WorkspaceSurfaceState;
+	isActive: boolean;
+}) {
 	const effectiveActiveTabId = useMemo(() => {
-		if (!workspaceState) return null;
 		if (
 			workspaceState.activeTabId &&
 			workspaceState.tabs[workspaceState.activeTabId]
@@ -233,24 +240,11 @@ export function CanvasRenderer() {
 	}, [workspaceState]);
 	const orderedTabs = useMemo(
 		() =>
-			workspaceState?.tabOrder
+			workspaceState.tabOrder
 				.map((tabId) => workspaceState.tabs[tabId])
-				.filter((tab): tab is WorkspaceTabState => Boolean(tab)) ?? [],
+				.filter((tab): tab is WorkspaceTabState => Boolean(tab)),
 		[workspaceState],
 	);
-
-	if (!activeWorkspaceId || !workspaceState) {
-		return (
-			<div className="flex h-full flex-1 items-center justify-center outline-none">
-				<div className="space-y-3 text-center">
-					<p className="text-[13px] text-canvas-text-dim">No workspace open</p>
-					<p className="max-w-sm text-[11px] text-canvas-text-muted">
-						Use the + button in the sidebar to create a workspace linked to a local project path.
-					</p>
-				</div>
-			</div>
-		);
-	}
 
 	if (orderedTabs.length === 0) {
 		return (
@@ -268,11 +262,70 @@ export function CanvasRenderer() {
 	return (
 		<div className="relative flex-1 h-full overflow-hidden">
 			{orderedTabs.map((tab) => {
-				const isActive = tab.id === effectiveActiveTabId;
+				const isActiveTab = isActive && tab.id === effectiveActiveTabId;
 				return (
 					<div
 						key={tab.id}
 						data-workspace-tab-id={tab.id}
+						className={
+							isActiveTab
+								? 'relative h-full w-full'
+								: 'pointer-events-none absolute inset-0 opacity-0'
+						}
+						aria-hidden={!isActiveTab}
+					>
+						<TabSurface tab={tab} isActive={isActiveTab} />
+					</div>
+				);
+			})}
+		</div>
+	);
+}
+
+export function CanvasRenderer() {
+	const activeWorkspaceId = useWorkspaceStore((s) => s.activeId);
+	const workspaceStates = useCanvasStore((s) => s.workspaceStates);
+	const workspaces = useWorkspaceStore((s) => s.workspaces);
+	const activeWorkspaceState = activeWorkspaceId
+		? workspaceStates[activeWorkspaceId] ?? null
+		: null;
+	const orderedWorkspaceSurfaces = useMemo(
+		() =>
+			workspaces
+				.map((workspace) => ({
+					workspaceId: workspace.id,
+					workspaceState: workspaceStates[workspace.id] ?? null,
+				}))
+				.filter(
+					(entry): entry is {
+						workspaceId: string;
+						workspaceState: WorkspaceSurfaceState;
+					} => entry.workspaceState !== null,
+				),
+		[workspaceStates, workspaces],
+	);
+
+	if (!activeWorkspaceId || !activeWorkspaceState) {
+		return (
+			<div className="flex h-full flex-1 items-center justify-center outline-none">
+				<div className="space-y-3 text-center">
+					<p className="text-[13px] text-canvas-text-dim">No workspace open</p>
+					<p className="max-w-sm text-[11px] text-canvas-text-muted">
+						Use the + button in the sidebar to create a workspace linked to a local project path.
+					</p>
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className="relative flex-1 h-full overflow-hidden">
+			{orderedWorkspaceSurfaces.map(({ workspaceId, workspaceState }) => {
+				const isActive = workspaceId === activeWorkspaceId;
+				return (
+					<div
+						key={workspaceId}
+						data-workspace-surface-id={workspaceId}
 						className={
 							isActive
 								? 'relative h-full w-full'
@@ -280,7 +333,7 @@ export function CanvasRenderer() {
 						}
 						aria-hidden={!isActive}
 					>
-						<TabSurface tab={tab} isActive={isActive} />
+						<WorkspaceSurface workspaceState={workspaceState} isActive={isActive} />
 					</div>
 				);
 			})}
