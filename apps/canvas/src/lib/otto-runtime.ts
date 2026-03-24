@@ -36,6 +36,10 @@ export async function listWorkspaceRuntimes() {
 	return invoke<WorkspaceRuntimeInfo[]>('workspace_list_runtimes');
 }
 
+export async function stopAllWorkspaceRuntimes() {
+	return invoke('workspace_stop_all_runtimes');
+}
+
 export async function waitForWorkspaceRuntime(
 	url: string,
 	options?: { attempts?: number; delayMs?: number },

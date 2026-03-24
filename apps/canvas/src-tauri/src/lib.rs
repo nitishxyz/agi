@@ -16,7 +16,8 @@ use ghostty::{
 };
 use runtime::{
     workspace_get_runtime, workspace_list_runtimes, workspace_read_runtime_log,
-    workspace_start_runtime, workspace_stop_runtime, WorkspaceRuntimeManager,
+    workspace_start_runtime, workspace_stop_all_runtimes, workspace_stop_runtime,
+    WorkspaceRuntimeManager,
 };
 use tauri::Manager;
 use workspace_file::{workspace_file_exists, workspace_file_read, workspace_file_write};
@@ -27,6 +28,7 @@ pub fn run() {
     let ghostty_manager_for_setup = ghostty_manager.clone();
     let browser_manager = BrowserManager::default();
     let runtime_manager = WorkspaceRuntimeManager::default();
+    let runtime_manager_for_exit = runtime_manager.clone();
 
     tauri::Builder::default()
         .manage(ghostty_manager)
@@ -50,6 +52,7 @@ pub fn run() {
             workspace_start_runtime,
             workspace_get_runtime,
             workspace_stop_runtime,
+            workspace_stop_all_runtimes,
             workspace_read_runtime_log,
             workspace_list_runtimes,
             workspace_file_exists,
@@ -61,6 +64,12 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
+        .on_window_event(move |_window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                debug_log("app", "window destroyed — stopping all runtimes");
+                runtime_manager_for_exit.stop_all();
+            }
+        })
         .setup(move |app| {
             install_panic_hook();
             debug_log("app", "setup start");

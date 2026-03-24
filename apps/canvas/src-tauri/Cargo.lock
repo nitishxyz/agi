@@ -2494,6 +2494,7 @@ version = "0.1.0"
 dependencies = [
  "block2",
  "dirs 5.0.1",
+ "libc",
  "libloading 0.8.9",
  "objc2",
  "objc2-app-kit",

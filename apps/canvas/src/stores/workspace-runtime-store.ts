@@ -3,6 +3,7 @@ import {
 	getWorkspaceRuntime,
 	readWorkspaceRuntimeLog,
 	startWorkspaceRuntime,
+	stopAllWorkspaceRuntimes,
 	stopWorkspaceRuntime,
 	waitForWorkspaceRuntime,
 	type WorkspaceRuntimeInfo,
@@ -34,6 +35,7 @@ interface WorkspaceRuntimeStore {
 	ensureStarted: (input: EnsureRuntimeInput) => Promise<WorkspaceRuntimeState>;
 	refreshRuntime: (workspaceId: string) => Promise<WorkspaceRuntimeState | null>;
 	stopRuntime: (workspaceId: string) => Promise<void>;
+	stopAll: () => Promise<void>;
 }
 
 const pendingStarts = new Map<string, Promise<WorkspaceRuntimeState>>();
@@ -208,5 +210,10 @@ export const useWorkspaceRuntimeStore = create<WorkspaceRuntimeStore>((set, get)
 				},
 			},
 		}));
+	},
+
+	stopAll: async () => {
+		await stopAllWorkspaceRuntimes();
+		set({ runtimes: {} });
 	},
 }));

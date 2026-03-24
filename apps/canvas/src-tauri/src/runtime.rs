@@ -10,6 +10,9 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, State, Wry};
 
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceRuntimeInfo {
@@ -32,15 +35,53 @@ pub struct WorkspaceRuntimeManager {
     inner: Arc<Mutex<HashMap<String, WorkspaceRuntimeEntry>>>,
 }
 
-impl Drop for WorkspaceRuntimeManager {
-    fn drop(&mut self) {
+fn kill_process_tree(child: &mut Child) {
+    #[cfg(unix)]
+    {
+        let pid = child.id() as i32;
+        unsafe {
+            libc::kill(-pid, libc::SIGTERM);
+        }
+        let start = Instant::now();
+        loop {
+            match child.try_wait() {
+                Ok(Some(_)) => break,
+                Ok(None) if start.elapsed() < Duration::from_secs(3) => {
+                    sleep(Duration::from_millis(50));
+                }
+                _ => {
+                    unsafe {
+                        libc::kill(-pid, libc::SIGKILL);
+                    }
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    break;
+                }
+            }
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+}
+
+impl WorkspaceRuntimeManager {
+    pub fn stop_all(&self) {
         if let Ok(mut runtimes) = self.inner.lock() {
-            for (_, entry) in runtimes.iter_mut() {
-                let _ = entry.child.kill();
-                let _ = entry.child.wait();
+            for (id, entry) in runtimes.iter_mut() {
+                eprintln!("[canvas] stopping otto runtime workspace={} pid={}", id, entry.info.pid);
+                kill_process_tree(&mut entry.child);
             }
             runtimes.clear();
         }
+    }
+}
+
+impl Drop for WorkspaceRuntimeManager {
+    fn drop(&mut self) {
+        self.stop_all();
     }
 }
 
@@ -288,13 +329,23 @@ pub fn workspace_start_runtime(
         log_path
     );
 
-    let child = Command::new(&binary)
-        .current_dir(&project_path)
+    let mut cmd = Command::new(&binary);
+    cmd.current_dir(&project_path)
         .args(["serve", "--port", &port_arg, "--no-open"])
         .env("PATH", &augmented_path)
         .env("TERM", "xterm-256color")
         .stdout(stdout)
-        .stderr(stderr)
+        .stderr(stderr);
+
+    #[cfg(unix)]
+    unsafe {
+        cmd.pre_exec(|| {
+            libc::setsid();
+            Ok(())
+        });
+    }
+
+    let child = cmd
         .spawn()
         .map_err(|error| format!("Failed to start otto runtime: {}", error))?;
 
@@ -368,8 +419,8 @@ pub fn workspace_stop_runtime(
         .map_err(|_| "Failed to lock runtime manager".to_string())?;
 
     if let Some(mut entry) = runtimes.remove(&workspace_id) {
-        let _ = entry.child.kill();
-        let _ = entry.child.wait();
+        eprintln!("[canvas] stopping otto runtime workspace={} pid={}", workspace_id, entry.info.pid);
+        kill_process_tree(&mut entry.child);
     }
 
     Ok(())
@@ -404,4 +455,12 @@ pub fn workspace_list_runtimes(
     }
 
     Ok(active)
+}
+
+#[tauri::command]
+pub fn workspace_stop_all_runtimes(
+    manager: State<'_, WorkspaceRuntimeManager>,
+) -> Result<(), String> {
+    manager.stop_all();
+    Ok(())
 }
