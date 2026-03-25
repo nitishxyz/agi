@@ -1,4 +1,5 @@
 export { HeroSection } from './HeroSection';
+export { CanvasSection } from './CanvasSection';
 export { InterfacesSection } from './InterfacesSection';
 export { EmbeddingSection } from './EmbeddingSection';
 export { AgentsSection } from './AgentsSection';

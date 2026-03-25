@@ -575,7 +575,7 @@ mod imp {
     use serde::Serialize;
     use std::{
         collections::HashMap,
-        ffi::{c_char, c_int, c_void, CString},
+        ffi::{c_char, c_int, c_void, CStr, CString},
         io, mem,
         os::fd::RawFd,
         path::Path,
@@ -2652,42 +2652,67 @@ mod imp {
         set_env("TERM", "xterm-256color");
         set_env("COLORTERM", "truecolor");
 
+        let shell_path = resolve_user_shell_path();
+        let shell = CString::new(shell_path.clone())
+            .unwrap_or_else(|_| CString::new("/bin/sh").expect("static shell path is valid"));
+        let shell_name = Path::new(&shell_path)
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or("sh");
+        let login_shell_name = CString::new(format!("-{shell_name}"))
+            .unwrap_or_else(|_| CString::new("-sh").expect("static shell name is valid"));
+
         if let Some(command) = command {
-            let shell = CString::new("/bin/sh").expect("static shell path is valid");
-            let arg0 = CString::new("sh").expect("static shell name is valid");
             let arg1 = CString::new("-lc").expect("static shell arg is valid");
             let command = CString::new(command)
                 .unwrap_or_else(|_| CString::new("").expect("empty command is valid"));
             unsafe {
                 libc::execl(
                     shell.as_ptr(),
-                    arg0.as_ptr(),
+                    login_shell_name.as_ptr(),
                     arg1.as_ptr(),
                     command.as_ptr(),
                     ptr::null::<c_char>(),
                 );
             }
         } else {
-            let shell_path = std::env::var("SHELL")
-                .ok()
-                .filter(|value| !value.is_empty())
-                .unwrap_or_else(|| "/bin/sh".to_string());
-            let shell = CString::new(shell_path.clone())
-                .unwrap_or_else(|_| CString::new("/bin/sh").expect("static shell path is valid"));
-            let shell_name = Path::new(&shell_path)
-                .file_name()
-                .and_then(|value| value.to_str())
-                .unwrap_or("sh");
-            let shell_name = CString::new(shell_name)
-                .unwrap_or_else(|_| CString::new("sh").expect("static shell name is valid"));
             unsafe {
-                libc::execl(shell.as_ptr(), shell_name.as_ptr(), ptr::null::<c_char>());
+                libc::execl(
+                    shell.as_ptr(),
+                    login_shell_name.as_ptr(),
+                    ptr::null::<c_char>(),
+                );
             }
         }
 
         unsafe {
             libc::_exit(127);
         }
+    }
+
+    fn resolve_user_shell_path() -> String {
+        if let Some(shell_path) = std::env::var("SHELL")
+            .ok()
+            .filter(|value| !value.is_empty())
+        {
+            return shell_path;
+        }
+
+        unsafe {
+            let passwd = libc::getpwuid(libc::geteuid());
+            if !passwd.is_null() {
+                let shell_ptr = (*passwd).pw_shell;
+                if !shell_ptr.is_null() {
+                    if let Ok(shell_path) = CStr::from_ptr(shell_ptr).to_str() {
+                        if !shell_path.is_empty() {
+                            return shell_path.to_string();
+                        }
+                    }
+                }
+            }
+        }
+
+        "/bin/sh".to_string()
     }
 
     fn set_env(key: &str, value: &str) {

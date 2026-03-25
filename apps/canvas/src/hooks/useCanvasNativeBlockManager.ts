@@ -65,7 +65,10 @@ function areBoundsEqual(a: BoundsSnapshot | null, b: BoundsSnapshot) {
 	);
 }
 
-function getBoundsSnapshot(element: HTMLElement, focused: boolean): BoundsSnapshot {
+function getBoundsSnapshot(
+	element: HTMLElement,
+	focused: boolean,
+): BoundsSnapshot {
 	const rect = element.getBoundingClientRect();
 	return {
 		x: rect.left,
@@ -99,7 +102,9 @@ function getDefaultHiddenBoundsSnapshot(): BoundsSnapshot {
 	};
 }
 
-function collectWorkspaceBlocks(workspaceState: WorkspaceSurfaceState | null): Block[] {
+function collectWorkspaceBlocks(
+	workspaceState: WorkspaceSurfaceState | null,
+): Block[] {
 	if (!workspaceState) return [];
 	return workspaceState.tabOrder.flatMap((tabId) => {
 		const tab = workspaceState.tabs[tabId];
@@ -110,13 +115,21 @@ function collectWorkspaceBlocks(workspaceState: WorkspaceSurfaceState | null): B
 	});
 }
 
-function collectAllWorkspaceBlocks(workspaceStates: Record<string, WorkspaceSurfaceState>) {
-	return Object.entries(workspaceStates).flatMap(([workspaceId, workspaceState]) =>
-		collectWorkspaceBlocks(workspaceState).map((block) => ({ workspaceId, block })),
+function collectAllWorkspaceBlocks(
+	workspaceStates: Record<string, WorkspaceSurfaceState>,
+) {
+	return Object.entries(workspaceStates).flatMap(
+		([workspaceId, workspaceState]) =>
+			collectWorkspaceBlocks(workspaceState).map((block) => ({
+				workspaceId,
+				block,
+			})),
 	);
 }
 
-function collectActiveTabBlockIds(workspaceState: WorkspaceSurfaceState | null) {
+function collectActiveTabBlockIds(
+	workspaceState: WorkspaceSurfaceState | null,
+) {
 	if (!workspaceState?.activeTabId) return new Set<string>();
 	const activeTab = workspaceState.tabs[workspaceState.activeTabId];
 	if (!activeTab) return new Set<string>();
@@ -134,8 +147,12 @@ function hasActiveNativeOverlayRoot() {
 }
 
 async function focusMainCanvasSurface() {
-	await getCurrentWindow().setFocus().catch(() => undefined);
-	await getCurrentWebview().setFocus().catch(() => undefined);
+	await getCurrentWindow()
+		.setFocus()
+		.catch(() => undefined);
+	await getCurrentWebview()
+		.setFocus()
+		.catch(() => undefined);
 }
 
 export function useCanvasNativeBlockManager() {
@@ -143,9 +160,13 @@ export function useCanvasNativeBlockManager() {
 	const workspaceStates = useCanvasStore((s) => s.workspaceStates);
 	const focusedBlockId = useCanvasStore((s) => s.focusedBlockId);
 	const activeWorkspaceId = useWorkspaceStore((s) => s.activeId);
+	const workspaces = useWorkspaceStore((s) => s.workspaces);
+	const environments = useWorkspaceStore((s) => s.environments);
 	const focusedBlockIdRef = useRef(focusedBlockId);
 	const workspaceStatesRef = useRef(workspaceStates);
 	const activeWorkspaceIdRef = useRef(activeWorkspaceId);
+	const workspacesRef = useRef(workspaces);
+	const environmentsRef = useRef(environments);
 	const browserEntriesRef = useRef(new Map<string, BrowserRuntimeEntry>());
 	const terminalEntriesRef = useRef(new Map<string, TerminalRuntimeEntry>());
 	const overlayActiveRef = useRef(false);
@@ -160,14 +181,26 @@ export function useCanvasNativeBlockManager() {
 	}, [activeWorkspaceId]);
 
 	useEffect(() => {
+		workspacesRef.current = workspaces;
+	}, [workspaces]);
+
+	useEffect(() => {
+		environmentsRef.current = environments;
+	}, [environments]);
+
+	useEffect(() => {
 		focusedBlockIdRef.current = focusedBlockId;
 	}, [focusedBlockId]);
 
 	useEffect(() => {
 		if (!isTauriRuntime()) return;
 		const focusedBlock = focusedBlockId ? blocks[focusedBlockId] : null;
-		if (focusedBlock?.type === 'browser' || focusedBlock?.type === 'terminal') return;
-		if (focusedBlock?.type === 'command' && (focusedBlock.command?.trim() ?? '').length > 0) {
+		if (focusedBlock?.type === 'browser' || focusedBlock?.type === 'terminal')
+			return;
+		if (
+			focusedBlock?.type === 'command' &&
+			(focusedBlock.command?.trim() ?? '').length > 0
+		) {
 			return;
 		}
 		void focusMainCanvasSurface();
@@ -200,7 +233,11 @@ export function useCanvasNativeBlockManager() {
 			}
 		};
 
-		const syncBrowserBlock = async (block: Block, focused: boolean, visible: boolean) => {
+		const syncBrowserBlock = async (
+			block: Block,
+			focused: boolean,
+			visible: boolean,
+		) => {
 			let entry = browserEntriesRef.current.get(block.id);
 			if (!entry) {
 				entry = {
@@ -241,7 +278,10 @@ export function useCanvasNativeBlockManager() {
 					const hiddenBounds = entry.lastBounds
 						? getHiddenBoundsSnapshot(entry.lastBounds)
 						: getDefaultHiddenBoundsSnapshot();
-					if (!areBoundsEqual(entry.lastBounds, hiddenBounds) || entry.lastFocused) {
+					if (
+						!areBoundsEqual(entry.lastBounds, hiddenBounds) ||
+						entry.lastFocused
+					) {
 						entry.lastBounds = hiddenBounds;
 						entry.lastFocused = false;
 						await updateBrowserWebviewBounds(block.id, {
@@ -263,7 +303,10 @@ export function useCanvasNativeBlockManager() {
 					const hiddenBounds = entry.lastBounds
 						? getHiddenBoundsSnapshot(entry.lastBounds)
 						: getDefaultHiddenBoundsSnapshot();
-					if (!areBoundsEqual(entry.lastBounds, hiddenBounds) || entry.lastFocused) {
+					if (
+						!areBoundsEqual(entry.lastBounds, hiddenBounds) ||
+						entry.lastFocused
+					) {
 						entry.lastBounds = hiddenBounds;
 						entry.lastFocused = false;
 						await updateBrowserWebviewBounds(block.id, {
@@ -287,7 +330,11 @@ export function useCanvasNativeBlockManager() {
 					error: null,
 				});
 				try {
-					await createBrowserWebview(block.id, nextUrl, window.navigator.userAgent);
+					await createBrowserWebview(
+						block.id,
+						nextUrl,
+						window.navigator.userAgent,
+					);
 					entry.created = true;
 					entry.lastUrl = nextUrl;
 					entry.lastReloadToken = nextReloadToken;
@@ -351,7 +398,10 @@ export function useCanvasNativeBlockManager() {
 					});
 			}
 
-			if (entry.lastFocused !== focused || !areBoundsEqual(entry.lastBounds, nextBounds)) {
+			if (
+				entry.lastFocused !== focused ||
+				!areBoundsEqual(entry.lastBounds, nextBounds)
+			) {
 				entry.lastFocused = focused;
 				entry.lastBounds = nextBounds;
 				await updateBrowserWebviewBounds(block.id, {
@@ -369,7 +419,12 @@ export function useCanvasNativeBlockManager() {
 			}
 		};
 
-		const syncTerminalBlock = async (block: Block, focused: boolean, visible: boolean) => {
+		const syncTerminalBlock = async (
+			workspaceId: string,
+			block: Block,
+			focused: boolean,
+			visible: boolean,
+		) => {
 			let entry = terminalEntriesRef.current.get(block.id);
 			if (!entry) {
 				entry = {
@@ -386,7 +441,10 @@ export function useCanvasNativeBlockManager() {
 					const hiddenBounds = entry.lastBounds
 						? getHiddenBoundsSnapshot(entry.lastBounds)
 						: getDefaultHiddenBoundsSnapshot();
-					if (!areBoundsEqual(entry.lastBounds, hiddenBounds) || entry.lastFocused) {
+					if (
+						!areBoundsEqual(entry.lastBounds, hiddenBounds) ||
+						entry.lastFocused
+					) {
 						entry.lastBounds = hiddenBounds;
 						entry.lastFocused = false;
 						await updateNativeTerminalBlock(block.id, {
@@ -416,8 +474,20 @@ export function useCanvasNativeBlockManager() {
 					error: null,
 				});
 				try {
-					const cwd = block.cwd?.trim() || undefined;
-					const command = block.type === 'command' ? block.command?.trim() || undefined : undefined;
+					const workspace = workspacesRef.current.find(
+						(item) => item.id === workspaceId,
+					);
+					const workspaceEnvironment = workspace
+						? (environmentsRef.current[workspace.primaryEnvironmentId] ?? null)
+						: null;
+					const cwd =
+						block.cwd?.trim() ||
+						workspaceEnvironment?.path?.trim() ||
+						undefined;
+					const command =
+						block.type === 'command'
+							? block.command?.trim() || undefined
+							: undefined;
 					await createNativeTerminalBlock(block.id, cwd, command);
 					entry.created = true;
 					entry.lastBounds = null;
@@ -438,7 +508,10 @@ export function useCanvasNativeBlockManager() {
 
 			if (!entry.created) return;
 
-			if (entry.lastFocused !== focused || !areBoundsEqual(entry.lastBounds, nextBounds)) {
+			if (
+				entry.lastFocused !== focused ||
+				!areBoundsEqual(entry.lastBounds, nextBounds)
+			) {
 				entry.lastFocused = focused;
 				entry.lastBounds = nextBounds;
 				await updateNativeTerminalBlock(block.id, {
@@ -459,21 +532,28 @@ export function useCanvasNativeBlockManager() {
 
 		const syncAll = async () => {
 			const activeWorkspaceState = activeWorkspaceIdRef.current
-				? workspaceStatesRef.current[activeWorkspaceIdRef.current] ?? null
+				? (workspaceStatesRef.current[activeWorkspaceIdRef.current] ?? null)
 				: null;
 			const allBlocks = collectAllWorkspaceBlocks(workspaceStatesRef.current);
 			const activeTabBlockIds = collectActiveTabBlockIds(activeWorkspaceState);
-			const browserBlocks = allBlocks.filter(({ block }) => block.type === 'browser');
+			const browserBlocks = allBlocks.filter(
+				({ block }) => block.type === 'browser',
+			);
 			const terminalBlocks = allBlocks.filter(
 				({ block }) =>
 					block.type === 'terminal' ||
-					(block.type === 'command' && (block.command?.trim() ?? '').length > 0),
+					(block.type === 'command' &&
+						(block.command?.trim() ?? '').length > 0),
 			);
 			const browserIds = new Set(browserBlocks.map(({ block }) => block.id));
 			const terminalIds = new Set(terminalBlocks.map(({ block }) => block.id));
-			const currentBrowserBlockMap = new Map(browserBlocks.map((entry) => [entry.block.id, entry]));
+			const currentBrowserBlockMap = new Map(
+				browserBlocks.map((entry) => [entry.block.id, entry]),
+			);
 
-			const removedBrowserIds = Array.from(browserEntriesRef.current.keys()).filter((blockId) => {
+			const removedBrowserIds = Array.from(
+				browserEntriesRef.current.keys(),
+			).filter((blockId) => {
 				const entry = currentBrowserBlockMap.get(blockId);
 				return !browserIds.has(blockId) || entry?.block.type !== 'browser';
 			});
@@ -481,9 +561,9 @@ export function useCanvasNativeBlockManager() {
 				await destroyBrowserEntry(blockId);
 			}
 
-			const removedTerminalIds = Array.from(terminalEntriesRef.current.keys()).filter(
-				(blockId) => !terminalIds.has(blockId),
-			);
+			const removedTerminalIds = Array.from(
+				terminalEntriesRef.current.keys(),
+			).filter((blockId) => !terminalIds.has(blockId));
 			for (const blockId of removedTerminalIds) {
 				await destroyTerminalEntry(blockId);
 			}
@@ -494,10 +574,10 @@ export function useCanvasNativeBlockManager() {
 				const focused = visible && focusedBlockIdRef.current === block.id;
 				await syncBrowserBlock(block, focused, visible);
 			}
-			for (const { block } of terminalBlocks) {
+			for (const { workspaceId, block } of terminalBlocks) {
 				const visible = activeTabBlockIds.has(block.id) && !overlayActive;
 				const focused = visible && focusedBlockIdRef.current === block.id;
-				await syncTerminalBlock(block, focused, visible);
+				await syncTerminalBlock(workspaceId, block, focused, visible);
 			}
 		};
 
@@ -572,6 +652,17 @@ export function useCanvasNativeBlockManager() {
 
 	useEffect(() => {
 		if (!isTauriRuntime()) return;
+		void workspaceStates;
+		void focusedBlockId;
+		void activeWorkspaceId;
+		void workspaces;
+		void environments;
 		queueSyncRef.current();
-	}, [workspaceStates, focusedBlockId, activeWorkspaceId]);
+	}, [
+		workspaceStates,
+		focusedBlockId,
+		activeWorkspaceId,
+		workspaces,
+		environments,
+	]);
 }

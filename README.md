@@ -12,16 +12,62 @@ CLI, TUI, desktop app, embeddable server, web UI, ACP adapter, and reusable SDK 
 
 ---
 
+## Otto Canvas — the primary desktop experience
+
+**Otto Canvas** is a native desktop app (Tauri + React) that gives you a persistent, tiled workspace for AI-powered development. It is the flagship way to use otto and the primary interface going forward.
+
+### What Canvas does
+
+Canvas turns your screen into a composable surface where every block is a first-class tool:
+
+| Block | What it is | Powered by |
+|---|---|---|
+| **Terminal** | Native terminal with full GPU rendering | [Ghostty](https://ghostty.org) libghostty via Tauri |
+| **Browser** | Inline web preview for localhost or any URL | Native macOS WKWebView |
+| **Otto** | AI chat with full tool access to your repo | `otto serve` runtime per workspace |
+| **Claude Code** | Launch Claude Code in a Ghostty surface | Ghostty command preset |
+| **Codex** | Launch OpenAI Codex in a Ghostty surface | Ghostty command preset |
+| **Otto TUI** | Run the otto TUI inside Canvas | Ghostty command preset |
+| **OpenCode** | Launch OpenCode in a Ghostty surface | Ghostty command preset |
+| **Custom command** | Run any shell command in a terminal block | Ghostty command preset |
+
+### Core capabilities
+
+- **Multi-workspace** — each workspace is linked to a project path; Canvas auto-starts an `otto serve` runtime per workspace
+- **Tabbed canvas with splits** — create Canvas tabs with horizontal/vertical splits, or open any block type as a standalone tab
+- **Keyboard-first** — `⌘N` add block, `⌘T` new tab, `⌘D` split right, `⌘⇧D` split down, `⌘1-9` switch tabs, `Ctrl+H/J/K/L` vim-style focus navigation
+- **Workspace file** — export/import your layout, tabs, and automation as `otto.yaml` so teammates share identical surfaces
+- **Native performance** — Ghostty terminal blocks run via libghostty with native macOS rendering; browser blocks use WKWebView — no Electron overhead
+- **Per-workspace otto runtime** — each workspace auto-launches `otto serve --no-open` so every Otto block has full tool access scoped to that project
+- **macOS vibrancy** — transparent, blur-backed window chrome via `NSVisualEffectMaterial`
+
+### Run Canvas locally
+
+```bash
+cd apps/canvas
+bun install
+bun tauri dev
+```
+
+Or build a distributable `.app` / `.dmg`:
+
+```bash
+bun tauri build
+```
+
+---
+
 ## What is otto?
 
 otto is a local-first coding assistant that runs on your machine, connects to multiple AI providers, and gives models controlled access to your repo through built-in tools like file IO, search, patching, git, terminals, web fetch, skills, and task tracking.
 
 It ships in several forms:
 
+- **Canvas** (primary) — native Tauri desktop app with tiled terminals, browsers, AI chat, and multi-agent surfaces
 - **CLI** — `otto` for interactive or one-shot usage
 - **TUI** — terminal-first interface used by the default CLI flow
 - **Web UI** — browser client for the local otto server
-- **Desktop app** — Tauri wrapper around the local workflow
+- **Desktop app** — lightweight Tauri wrapper around the web UI
 - **Embeddable server** — Hono-based API you can host inside your own app
 - **SDK packages** — auth, config, providers, tools, prompts, API client, web UI assets
 - **ACP adapter** — integrate otto with ACP-capable editors and tools
@@ -232,6 +278,7 @@ See [docs/configuration.md](docs/configuration.md) for the full layout.
 
 Current workspaces under `apps/`:
 
+- `apps/canvas` — **Otto Canvas** (primary desktop app — Tauri + Ghostty + React)
 - `apps/cli`
 - `apps/desktop`
 - `apps/intro-video`

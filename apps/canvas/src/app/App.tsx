@@ -204,7 +204,7 @@ export function App() {
 	return (
 		<div
 			className="flex h-screen w-screen"
-			style={{ background: 'transparent' }}
+			style={{ background: 'rgba(14, 14, 16, 0.82)' }}
 		>
 			<Sidebar />
 

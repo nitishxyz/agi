@@ -39,7 +39,12 @@
 	"bundle": {
 		"active": true,
 		"targets": ["dmg", "app"],
-		"resources": ["resources/fonts/*"],
+		"resources": [
+			"resources/fonts/*",
+			"resources/binaries/*",
+			"resources/ghostty/lib/*",
+			"resources/ghostty/*.txt"
+		],
 		"icon": [
 			"icons/32x32.png",
 			"icons/128x128.png",

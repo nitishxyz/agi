@@ -1,5 +1,6 @@
 import {
 	HeroSection,
+	CanvasSection,
 	InterfacesSection,
 	EmbeddingSection,
 	AgentsSection,
@@ -17,6 +18,7 @@ export function Landing() {
 	return (
 		<main className="overflow-hidden">
 			<HeroSection />
+			<CanvasSection />
 			<InterfacesSection />
 			<EmbeddingSection />
 			<AgentsSection />

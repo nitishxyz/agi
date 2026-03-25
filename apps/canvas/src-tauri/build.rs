@@ -7,6 +7,7 @@ use std::{
 fn main() {
     println!("cargo:rustc-check-cfg=cfg(otto_canvas_libghostty_vt)");
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-env-changed=OTTO_CANVAS_GHOSTTY_SOURCE_DIR");
     println!("cargo:rerun-if-env-changed=OTTO_CANVAS_LIBGHOSTTY_VT_SOURCE_DIR");
     println!("cargo:rerun-if-env-changed=OTTO_CANVAS_LIBGHOSTTY_VT_LIB_DIR");
     println!("cargo:rerun-if-env-changed=OTTO_CANVAS_LIBGHOSTTY_VT_OPTIMIZE");
@@ -20,6 +21,14 @@ fn main() {
         println!("cargo:rustc-link-search=native={}", lib_dir.display());
         println!("cargo:rustc-link-lib=dylib=ghostty-vt");
         println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib_dir.display());
+        if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+            println!(
+                "cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Resources/resources/ghostty/lib"
+            );
+            println!(
+                "cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Resources/ghostty/lib"
+            );
+        }
         println!("cargo:rustc-cfg=otto_canvas_libghostty_vt");
         println!(
             "cargo:rustc-env=OTTO_CANVAS_LIBGHOSTTY_VT_LIB_DIR={}",
@@ -37,6 +46,16 @@ fn resolve_libghostty_vt_dir() -> Option<PathBuf> {
         return Some(lib_dir);
     }
 
+    let manifest_dir = PathBuf::from(
+        env::var("CARGO_MANIFEST_DIR").expect("Cargo always sets CARGO_MANIFEST_DIR"),
+    );
+
+    let staged_lib_dir = manifest_dir.join("resources").join("ghostty").join("lib");
+    if staged_lib_dir.exists() {
+        ensure_dynamic_lib_exists(&staged_lib_dir);
+        return Some(staged_lib_dir);
+    }
+
     if let Ok(source_dir) = env::var("OTTO_CANVAS_LIBGHOSTTY_VT_SOURCE_DIR") {
         let source_dir = PathBuf::from(source_dir);
         build_libghostty_vt(&source_dir);
@@ -46,6 +65,36 @@ fn resolve_libghostty_vt_dir() -> Option<PathBuf> {
             "cargo:rustc-env=OTTO_CANVAS_LIBGHOSTTY_VT_SOURCE_DIR={}",
             source_dir.display()
         );
+        return Some(lib_dir);
+    }
+
+    if let Ok(source_dir) = env::var("OTTO_CANVAS_GHOSTTY_SOURCE_DIR") {
+        let source_dir = PathBuf::from(source_dir);
+        build_libghostty_vt(&source_dir);
+        let lib_dir = source_dir.join("zig-out").join("lib");
+        ensure_dynamic_lib_exists(&lib_dir);
+        return Some(lib_dir);
+    }
+
+    for source_dir in [
+        manifest_dir.join("..")
+            .join("..")
+            .join("..")
+            .join("vendor")
+            .join("ghostty"),
+        manifest_dir.join("..")
+            .join("..")
+            .join("..")
+            .join("tmp")
+            .join("ghostty"),
+    ] {
+        if !source_dir.join("build.zig").exists() {
+            continue;
+        }
+
+        build_libghostty_vt(&source_dir);
+        let lib_dir = source_dir.join("zig-out").join("lib");
+        ensure_dynamic_lib_exists(&lib_dir);
         return Some(lib_dir);
     }
 

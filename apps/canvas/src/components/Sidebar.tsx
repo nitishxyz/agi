@@ -161,7 +161,7 @@ export function Sidebar() {
 
 	return (
 		<>
-			<div className="flex h-full w-[272px] flex-shrink-0 flex-col overflow-hidden pt-1" style={{ background: 'rgba(14, 14, 16, 0.82)' }}>
+			<div className="flex h-full w-[272px] flex-shrink-0 flex-col overflow-hidden pt-1">
 				<div className="flex h-[36px] flex-shrink-0">
 					<div className="w-[58px] flex-shrink-0" data-tauri-drag-region />
 					<div className="flex min-w-0 flex-1" data-tauri-drag-region />

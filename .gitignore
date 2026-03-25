@@ -54,5 +54,11 @@ apps/cli/src/web-dist
 capture
 .claude
 vendor
+!vendor/
+vendor/*
+!vendor/ghostty
 tmp
 resources
+!apps/canvas/src-tauri/resources/
+apps/canvas/src-tauri/resources/*
+!apps/canvas/src-tauri/resources/entitlements.plist

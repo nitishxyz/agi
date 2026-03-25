@@ -45,7 +45,6 @@
 }
 
 html {
-	scroll-behavior: smooth;
 	scrollbar-width: thin;
 	scrollbar-color: rgb(var(--otto-scrollbar-thumb))
 		rgb(var(--otto-scrollbar-track));

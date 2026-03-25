@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { $ } from 'bun';
 import { existsSync, mkdirSync, copyFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -53,9 +54,21 @@ const rgDest = join(CLI_VENDOR, rgName);
 mkdirSync(CLI_VENDOR, { recursive: true });
 mkdirSync(GENERATED_DIR, { recursive: true });
 
+async function ensureVendorRipgrep() {
+	if (existsSync(rgSource)) {
+		return true;
+	}
+
+	console.log(
+		`Vendor ripgrep missing for ${platformKey}; downloading vendor binaries...`,
+	);
+	await $`bash ${join(ROOT, 'scripts', 'download-vendor-bins.sh')}`;
+	return existsSync(rgSource);
+}
+
 let hasRg = false;
 
-if (existsSync(rgSource)) {
+if (await ensureVendorRipgrep()) {
 	copyFileSync(rgSource, rgDest);
 	hasRg = true;
 	console.log(`Copied ${platformKey}/${rgName} to apps/cli/vendor/`);
