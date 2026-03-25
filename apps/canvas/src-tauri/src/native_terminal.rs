@@ -195,7 +195,7 @@ mod macos {
     use objc2_app_kit::{
         NSBezierPath, NSColor, NSEvent, NSEventModifierFlags, NSFont,
         NSFontAttributeName, NSForegroundColorAttributeName, NSResponder,
-        NSStringDrawing, NSView, NSWindowOrderingMode,
+        NSPasteboard, NSPasteboardTypeString, NSStringDrawing, NSView, NSWindowOrderingMode,
     };
     use objc2_core_foundation::CFURL;
     use objc2_core_text::{CTFontManagerRegisterFontsForURL, CTFontManagerScope};
@@ -206,7 +206,21 @@ mod macos {
 
     static VIEW_BLOCK_IDS: OnceLock<Mutex<HashMap<usize, String>>> = OnceLock::new();
     static BLOCK_VIEWS: OnceLock<Mutex<HashMap<String, usize>>> = OnceLock::new();
+    static BLOCK_INTERACTIONS: OnceLock<Mutex<HashMap<String, InteractionState>>> = OnceLock::new();
     static NERD_FONT_FAMILY: OnceLock<String> = OnceLock::new();
+
+    #[derive(Clone, Copy, Default)]
+    struct CellPosition {
+        col: u16,
+        row: u16,
+    }
+
+    #[derive(Clone, Copy, Default)]
+    struct InteractionState {
+        selection_anchor: Option<CellPosition>,
+        selection_focus: Option<CellPosition>,
+        pressed_button: Option<u8>,
+    }
 
     fn view_block_ids() -> &'static Mutex<HashMap<usize, String>> {
         VIEW_BLOCK_IDS.get_or_init(|| Mutex::new(HashMap::new()))
@@ -214,6 +228,10 @@ mod macos {
 
     fn block_views() -> &'static Mutex<HashMap<String, usize>> {
         BLOCK_VIEWS.get_or_init(|| Mutex::new(HashMap::new()))
+    }
+
+    fn block_interactions() -> &'static Mutex<HashMap<String, InteractionState>> {
+        BLOCK_INTERACTIONS.get_or_init(|| Mutex::new(HashMap::new()))
     }
 
     define_class!(
@@ -250,10 +268,57 @@ mod macos {
             }
 
             #[unsafe(method(mouseDown:))]
-            fn mouse_down(&self, _event: &NSEvent) {
+            fn mouse_down(&self, event: &NSEvent) {
                 if let Some(window) = self.window() {
                     let _ = window.makeFirstResponder(Some(self));
                 }
+                handle_mouse_button(self, event, 1, true);
+            }
+
+            #[unsafe(method(mouseUp:))]
+            fn mouse_up(&self, event: &NSEvent) {
+                handle_mouse_button(self, event, 1, false);
+            }
+
+            #[unsafe(method(mouseDragged:))]
+            fn mouse_dragged(&self, event: &NSEvent) {
+                handle_mouse_motion(self, event);
+            }
+
+            #[unsafe(method(rightMouseDown:))]
+            fn right_mouse_down(&self, event: &NSEvent) {
+                if let Some(window) = self.window() {
+                    let _ = window.makeFirstResponder(Some(self));
+                }
+                handle_mouse_button(self, event, 2, true);
+            }
+
+            #[unsafe(method(rightMouseUp:))]
+            fn right_mouse_up(&self, event: &NSEvent) {
+                handle_mouse_button(self, event, 2, false);
+            }
+
+            #[unsafe(method(rightMouseDragged:))]
+            fn right_mouse_dragged(&self, event: &NSEvent) {
+                handle_mouse_motion(self, event);
+            }
+
+            #[unsafe(method(otherMouseDown:))]
+            fn other_mouse_down(&self, event: &NSEvent) {
+                if let Some(window) = self.window() {
+                    let _ = window.makeFirstResponder(Some(self));
+                }
+                handle_mouse_button(self, event, 3, true);
+            }
+
+            #[unsafe(method(otherMouseUp:))]
+            fn other_mouse_up(&self, event: &NSEvent) {
+                handle_mouse_button(self, event, 3, false);
+            }
+
+            #[unsafe(method(otherMouseDragged:))]
+            fn other_mouse_dragged(&self, event: &NSEvent) {
+                handle_mouse_motion(self, event);
             }
 
             #[unsafe(method(scrollWheel:))]
@@ -277,50 +342,28 @@ mod macos {
 
             #[unsafe(method(keyDown:))]
             fn key_down(&self, event: &NSEvent) {
-                if event.modifierFlags().contains(NSEventModifierFlags::Command) {
-                    return;
-                }
-                let Some(block_id) = block_id_for_view(self) else {
-                    return;
-                };
-
-                let sequence = match event.keyCode() {
-                    36 => Some("\r"),
-                    48 => Some("\t"),
-                    51 => Some("\u{7f}"),
-                    53 => Some("\u{1b}"),
-                    115 => Some("\u{1b}[H"),
-                    116 => Some("\u{1b}[5~"),
-                    117 => Some("\u{1b}[3~"),
-                    119 => Some("\u{1b}[F"),
-                    121 => Some("\u{1b}[6~"),
-                    123 => Some("\u{1b}[D"),
-                    124 => Some("\u{1b}[C"),
-                    125 => Some("\u{1b}[B"),
-                    126 => Some("\u{1b}[A"),
-                    _ => None,
-                };
-
-                if let Some(sequence) = sequence {
-                    let _ = crate::ghostty_vt::send_text_registered_session(&block_id, sequence);
-                    return;
-                }
-
-                if let Some(chars) = event.characters() {
-                    if let Some(text) = string_from_nsstring(&chars) {
-                        let _ = crate::ghostty_vt::send_text_registered_session(&block_id, &text);
-                    }
-                }
+                handle_key_down(self, event);
             }
 
             #[unsafe(method(copy:))]
-            fn copy(&self, _sender: Option<&NSResponder>) {}
+            fn copy(&self, _sender: Option<&NSResponder>) {
+                let _ = copy_selection_to_clipboard(self);
+            }
 
             #[unsafe(method(paste:))]
-            fn paste(&self, _sender: Option<&NSResponder>) {}
+            fn paste(&self, _sender: Option<&NSResponder>) {
+                let _ = paste_from_clipboard(self);
+            }
 
             #[unsafe(method(selectAll:))]
-            fn select_all(&self, _sender: Option<&NSResponder>) {}
+            fn select_all(&self, _sender: Option<&NSResponder>) {
+                let _ = select_all(self);
+            }
+
+            #[unsafe(method(performKeyEquivalent:))]
+            fn perform_key_equivalent(&self, event: &NSEvent) -> bool {
+                perform_key_equivalent(self, event)
+            }
 
             #[unsafe(method(drawRect:))]
             fn draw_rect(&self, _dirty_rect: NSRect) {
@@ -340,6 +383,342 @@ mod macos {
             .lock()
             .ok()
             .and_then(|map| map.get(&(view as *const _ as usize)).cloned())
+    }
+
+    fn normalized_selection_range(
+        anchor: CellPosition,
+        focus: CellPosition,
+    ) -> (CellPosition, CellPosition) {
+        if (anchor.row, anchor.col) <= (focus.row, focus.col) {
+            (anchor, focus)
+        } else {
+            (focus, anchor)
+        }
+    }
+
+    fn selection_range_for_block(block_id: &str) -> Option<(CellPosition, CellPosition)> {
+        let interactions = block_interactions().lock().ok()?;
+        let state = interactions.get(block_id)?;
+        Some(normalized_selection_range(
+            state.selection_anchor?,
+            state.selection_focus?,
+        ))
+    }
+
+    fn cell_is_selected(
+        selection: Option<(CellPosition, CellPosition)>,
+        row: usize,
+        col: usize,
+    ) -> bool {
+        let Some((start, end)) = selection else {
+            return false;
+        };
+        let row = row as u16;
+        let col = col as u16;
+        if row < start.row || row > end.row {
+            return false;
+        }
+        if start.row == end.row {
+            return row == start.row && col >= start.col && col <= end.col;
+        }
+        if row == start.row {
+            return col >= start.col;
+        }
+        if row == end.row {
+            return col <= end.col;
+        }
+        true
+    }
+
+    fn selection_background_color(default_fg: &crate::ghostty_vt::GhosttyVtRgb) -> Retained<NSColor> {
+        NSColor::colorWithSRGBRed_green_blue_alpha(
+            f64::from(default_fg.r) / 255.0,
+            f64::from(default_fg.g) / 255.0,
+            f64::from(default_fg.b) / 255.0,
+            0.24,
+        )
+    }
+
+    fn point_to_cell(snapshot: &crate::ghostty_vt::GhosttyVtSnapshot, point: NSPoint) -> CellPosition {
+        let (_, cell_width, cell_height, _) = terminal_font_metrics();
+        let max_col = snapshot.cols.saturating_sub(1);
+        let max_row = snapshot.rows.saturating_sub(1);
+        let col = (((point.x - TERMINAL_PADDING_X).max(0.0)) / cell_width).floor() as u16;
+        let row = (((point.y - TERMINAL_PADDING_Y).max(0.0)) / cell_height).floor() as u16;
+        CellPosition {
+            col: col.min(max_col),
+            row: row.min(max_row),
+        }
+    }
+
+    fn selected_text(snapshot: &crate::ghostty_vt::GhosttyVtSnapshot, block_id: &str) -> Option<String> {
+        let (start, end) = selection_range_for_block(block_id)?;
+        let mut lines = Vec::new();
+        for row_index in start.row..=end.row {
+            let row = snapshot.rows_data.get(row_index as usize)?;
+            let start_col = if row_index == start.row { start.col } else { 0 };
+            let end_col = if row_index == end.row {
+                end.col
+            } else {
+                row.cells.len().saturating_sub(1) as u16
+            };
+            let mut line = String::new();
+            for col_index in start_col..=end_col {
+                let Some(cell) = row.cells.get(col_index as usize) else {
+                    continue;
+                };
+                if cell.invisible || cell.text.is_empty() {
+                    line.push(' ');
+                } else {
+                    line.push_str(&cell.text);
+                }
+            }
+            lines.push(line.trim_end_matches(' ').to_string());
+        }
+        Some(lines.join("\n"))
+    }
+
+    fn write_text_to_clipboard(text: &str) -> bool {
+        let pasteboard = NSPasteboard::generalPasteboard();
+        let _ = pasteboard.clearContents();
+        let pasteboard_type = unsafe { NSPasteboardTypeString };
+        pasteboard.setString_forType(&NSString::from_str(text), pasteboard_type)
+    }
+
+    fn copy_selection_to_clipboard(view: &NativeTerminalHostView) -> bool {
+        let Some(block_id) = block_id_for_view(view) else {
+            return false;
+        };
+        let Ok(snapshot) = crate::ghostty_vt::snapshot_registered_session(&block_id) else {
+            return false;
+        };
+        let Some(text) = selected_text(&snapshot, &block_id) else {
+            return false;
+        };
+        if text.is_empty() {
+            return false;
+        }
+        write_text_to_clipboard(&text)
+    }
+
+    fn paste_from_clipboard(view: &NativeTerminalHostView) -> bool {
+        let Some(block_id) = block_id_for_view(view) else {
+            return false;
+        };
+        let pasteboard = NSPasteboard::generalPasteboard();
+        let pasteboard_type = unsafe { NSPasteboardTypeString };
+        let Some(text) = pasteboard.stringForType(pasteboard_type) else {
+            return false;
+        };
+        let Some(value) = string_from_nsstring(&text) else {
+            return false;
+        };
+        crate::ghostty_vt::send_text_registered_session(&block_id, &value).is_ok()
+    }
+
+    fn select_all(view: &NativeTerminalHostView) -> bool {
+        let Some(block_id) = block_id_for_view(view) else {
+            return false;
+        };
+        let Ok(snapshot) = crate::ghostty_vt::snapshot_registered_session(&block_id) else {
+            return false;
+        };
+        let last_row = snapshot.rows.saturating_sub(1);
+        let last_col = snapshot.cols.saturating_sub(1);
+        if let Ok(mut interactions) = block_interactions().lock() {
+            interactions.insert(
+                block_id,
+                InteractionState {
+                    selection_anchor: Some(CellPosition { col: 0, row: 0 }),
+                    selection_focus: Some(CellPosition {
+                        col: last_col,
+                        row: last_row,
+                    }),
+                    pressed_button: None,
+                },
+            );
+        }
+        view.setNeedsDisplay(true);
+        true
+    }
+
+    fn perform_key_equivalent(view: &NativeTerminalHostView, event: &NSEvent) -> bool {
+        let flags = event
+            .modifierFlags()
+            .intersection(NSEventModifierFlags::DeviceIndependentFlagsMask);
+        if !flags.contains(NSEventModifierFlags::Command)
+            || flags.contains(NSEventModifierFlags::Control)
+            || flags.contains(NSEventModifierFlags::Option)
+        {
+            return false;
+        }
+        let key = event
+            .charactersIgnoringModifiers()
+            .as_deref()
+            .and_then(string_from_nsstring)
+            .map(|value| value.to_lowercase());
+        match key.as_deref() {
+            Some("c") | Some("x") => copy_selection_to_clipboard(view),
+            Some("v") => paste_from_clipboard(view),
+            Some("a") => select_all(view),
+            _ => false,
+        }
+    }
+
+    fn dom_special_key(key_code: u16) -> Option<(&'static str, &'static str)> {
+        match key_code {
+            36 => Some(("Enter", "Enter")),
+            48 => Some(("Tab", "Tab")),
+            51 => Some(("Backspace", "Backspace")),
+            53 => Some(("Escape", "Escape")),
+            115 => Some(("Home", "Home")),
+            116 => Some(("PageUp", "PageUp")),
+            117 => Some(("Delete", "Delete")),
+            119 => Some(("End", "End")),
+            121 => Some(("PageDown", "PageDown")),
+            123 => Some(("ArrowLeft", "ArrowLeft")),
+            124 => Some(("ArrowRight", "ArrowRight")),
+            125 => Some(("ArrowDown", "ArrowDown")),
+            126 => Some(("ArrowUp", "ArrowUp")),
+            _ => None,
+        }
+    }
+
+    fn handle_key_down(view: &NativeTerminalHostView, event: &NSEvent) {
+        let Some(block_id) = block_id_for_view(view) else {
+            return;
+        };
+        let flags = event
+            .modifierFlags()
+            .intersection(NSEventModifierFlags::DeviceIndependentFlagsMask);
+
+        if flags.contains(NSEventModifierFlags::Command) {
+            let sequence = match event.keyCode() {
+                51 => Some("\u{15}"),
+                117 => Some("\u{0b}"),
+                _ => None,
+            };
+            if let Some(sequence) = sequence {
+                let _ = crate::ghostty_vt::send_text_registered_session(&block_id, sequence);
+            }
+            return;
+        }
+
+        if let Some((code, key)) = dom_special_key(event.keyCode()) {
+            let _ = crate::ghostty_vt::input_key_registered_session(
+                &block_id,
+                code,
+                key,
+                None,
+                flags.contains(NSEventModifierFlags::Control),
+                flags.contains(NSEventModifierFlags::Option),
+                flags.contains(NSEventModifierFlags::Shift),
+                false,
+                event.isARepeat(),
+            );
+            return;
+        }
+
+        if let Some(chars) = event.characters() {
+            if let Some(text) = string_from_nsstring(&chars) {
+                let _ = crate::ghostty_vt::send_text_registered_session(&block_id, &text);
+            }
+        }
+    }
+
+    fn handle_mouse_button(view: &NativeTerminalHostView, event: &NSEvent, button: u8, pressed: bool) {
+        let Some(block_id) = block_id_for_view(view) else {
+            return;
+        };
+        let point = view.convertPoint_fromView(event.locationInWindow(), None);
+        let bounds = view.bounds();
+        let handled = crate::ghostty_vt::mouse_button_registered_session(
+            &block_id,
+            point.x,
+            point.y,
+            bounds.size.width,
+            bounds.size.height,
+            button,
+            pressed,
+            mods_from_event(event),
+        )
+        .unwrap_or(false);
+
+        if let Ok(mut interactions) = block_interactions().lock() {
+            let state = interactions.entry(block_id.clone()).or_default();
+            if handled {
+                state.pressed_button = if pressed { Some(button) } else { None };
+                if pressed {
+                    state.selection_anchor = None;
+                    state.selection_focus = None;
+                }
+                view.setNeedsDisplay(true);
+                return;
+            }
+
+            if button != 1 {
+                state.pressed_button = if pressed { Some(button) } else { None };
+                return;
+            }
+
+            let Ok(snapshot) = crate::ghostty_vt::snapshot_registered_session(&block_id) else {
+                state.pressed_button = if pressed { Some(button) } else { None };
+                return;
+            };
+            let cell = point_to_cell(&snapshot, point);
+            if pressed {
+                state.selection_anchor = Some(cell);
+                state.selection_focus = Some(cell);
+                state.pressed_button = Some(button);
+            } else {
+                if state.selection_anchor.is_some() {
+                    state.selection_focus = Some(cell);
+                }
+                state.pressed_button = None;
+            }
+        }
+
+        view.setNeedsDisplay(true);
+    }
+
+    fn handle_mouse_motion(view: &NativeTerminalHostView, event: &NSEvent) {
+        let Some(block_id) = block_id_for_view(view) else {
+            return;
+        };
+        let pressed_button = block_interactions()
+            .lock()
+            .ok()
+            .and_then(|map| map.get(&block_id).and_then(|state| state.pressed_button));
+        let point = view.convertPoint_fromView(event.locationInWindow(), None);
+        let bounds = view.bounds();
+        let handled = crate::ghostty_vt::mouse_motion_registered_session(
+            &block_id,
+            point.x,
+            point.y,
+            bounds.size.width,
+            bounds.size.height,
+            pressed_button,
+            mods_from_event(event),
+        )
+        .unwrap_or(false);
+        if handled {
+            return;
+        }
+
+        if pressed_button != Some(1) {
+            return;
+        }
+        let Ok(snapshot) = crate::ghostty_vt::snapshot_registered_session(&block_id) else {
+            return;
+        };
+        let cell = point_to_cell(&snapshot, point);
+        if let Ok(mut interactions) = block_interactions().lock() {
+            let state = interactions.entry(block_id).or_default();
+            if state.selection_anchor.is_some() {
+                state.selection_focus = Some(cell);
+            }
+        }
+        view.setNeedsDisplay(true);
     }
 
     pub(super) fn request_redraw(app_handle: &AppHandle<Wry>, block_id: &str) {
@@ -606,6 +985,8 @@ mod macos {
         let (font, cell_width, cell_height, baseline_offset) = terminal_font_metrics();
         let origin_x = TERMINAL_PADDING_X;
         let origin_y = TERMINAL_PADDING_Y;
+        let selection = selection_range_for_block(&block_id);
+        let selection_bg = selection_background_color(&default_fg);
 
         for (row_index, row) in snapshot.rows_data.iter().enumerate() {
             for (cell_index, cell) in row.cells.iter().enumerate() {
@@ -630,6 +1011,10 @@ mod macos {
                 let bg_color = nscolor_from_rgb(&bg_rgb);
                 if cell.bg.is_some() || (is_cursor && snapshot.cursor.shape == "block") {
                     bg_color.setFill();
+                    NSBezierPath::fillRect(cell_rect);
+                }
+                if cell_is_selected(selection, row_index, cell_index) {
+                    selection_bg.setFill();
                     NSBezierPath::fillRect(cell_rect);
                 }
             }
@@ -785,6 +1170,10 @@ mod macos {
             .lock()
             .map_err(|_| "Failed to lock native terminal block lookup table".to_string())?
             .insert(block_id.to_string(), host_view_ptr);
+        block_interactions()
+            .lock()
+            .map_err(|_| "Failed to lock native terminal interaction table".to_string())?
+            .insert(block_id.to_string(), InteractionState::default());
 
         let visible = Arc::new(AtomicBool::new(false));
 
@@ -898,6 +1287,10 @@ mod macos {
         block_views()
             .lock()
             .map_err(|_| "Failed to lock native terminal block lookup table".to_string())?
+            .remove(block_id);
+        block_interactions()
+            .lock()
+            .map_err(|_| "Failed to lock native terminal interaction table".to_string())?
             .remove(block_id);
 
         let host_view = Retained::from_raw(block.host_view as *mut NativeTerminalHostView)

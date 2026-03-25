@@ -231,6 +231,32 @@ pub(crate) fn send_text_registered_session(session_id: &str, text: &str) -> Resu
     imp::ghostty_vt_send_text_in_map(registered_manager()?, session_id, text)
 }
 
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn input_key_registered_session(
+    session_id: &str,
+    code: &str,
+    key: &str,
+    text: Option<&str>,
+    ctrl: bool,
+    alt: bool,
+    shift: bool,
+    meta: bool,
+    repeat: bool,
+) -> Result<(), String> {
+    imp::ghostty_vt_input_key_in_map(
+        registered_manager()?,
+        session_id,
+        code,
+        key,
+        text,
+        ctrl,
+        alt,
+        shift,
+        meta,
+        repeat,
+    )
+}
+
 pub(crate) fn scroll_registered_session(session_id: &str, delta: i64) -> Result<(), String> {
     imp::ghostty_vt_scroll_viewport_in_map(registered_manager()?, session_id, delta)
 }
@@ -241,6 +267,52 @@ pub(crate) fn snapshot_registered_session(session_id: &str) -> Result<GhosttyVtS
 
 pub(crate) fn destroy_registered_session(session_id: &str) -> Result<(), String> {
     imp::ghostty_vt_destroy_session_in_map(registered_manager()?, session_id)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn mouse_button_registered_session(
+    session_id: &str,
+    x_px: f64,
+    y_px: f64,
+    width_px: f64,
+    height_px: f64,
+    button: u8,
+    pressed: bool,
+    mods: u16,
+) -> Result<bool, String> {
+    imp::ghostty_vt_mouse_button_in_map(
+        registered_manager()?,
+        session_id,
+        x_px,
+        y_px,
+        width_px,
+        height_px,
+        button,
+        pressed,
+        mods,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn mouse_motion_registered_session(
+    session_id: &str,
+    x_px: f64,
+    y_px: f64,
+    width_px: f64,
+    height_px: f64,
+    pressed_button: Option<u8>,
+    mods: u16,
+) -> Result<bool, String> {
+    imp::ghostty_vt_mouse_motion_in_map(
+        registered_manager()?,
+        session_id,
+        x_px,
+        y_px,
+        width_px,
+        height_px,
+        pressed_button,
+        mods,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -344,6 +416,25 @@ mod imp {
         Err(UNAVAILABLE_MESSAGE.to_string())
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub fn ghostty_vt_input_key_in_map(
+        sessions: &Arc<Mutex<HashMap<String, Arc<SessionHandle>>>>,
+        session_id: &str,
+        code: &str,
+        key: &str,
+        text: Option<&str>,
+        ctrl: bool,
+        alt: bool,
+        shift: bool,
+        meta: bool,
+        repeat: bool,
+    ) -> Result<(), String> {
+        let _ = (
+            sessions, session_id, code, key, text, ctrl, alt, shift, meta, repeat,
+        );
+        Err(UNAVAILABLE_MESSAGE.to_string())
+    }
+
     pub fn ghostty_vt_scroll_viewport(
         manager: &GhosttyVtManager,
         session_id: &str,
@@ -429,6 +520,39 @@ mod imp {
     }
 
     #[allow(clippy::too_many_arguments)]
+    pub fn ghostty_vt_mouse_button_in_map(
+        sessions: &Arc<Mutex<HashMap<String, Arc<SessionHandle>>>>,
+        session_id: &str,
+        x_px: f64,
+        y_px: f64,
+        width_px: f64,
+        height_px: f64,
+        button: u8,
+        pressed: bool,
+        mods: u16,
+    ) -> Result<bool, String> {
+        let _ = (
+            sessions, session_id, x_px, y_px, width_px, height_px, button, pressed, mods,
+        );
+        Err(UNAVAILABLE_MESSAGE.to_string())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn ghostty_vt_mouse_motion_in_map(
+        sessions: &Arc<Mutex<HashMap<String, Arc<SessionHandle>>>>,
+        session_id: &str,
+        x_px: f64,
+        y_px: f64,
+        width_px: f64,
+        height_px: f64,
+        pressed_button: Option<u8>,
+        mods: u16,
+    ) -> Result<bool, String> {
+        let _ = (sessions, session_id, x_px, y_px, width_px, height_px, pressed_button, mods);
+        Err(UNAVAILABLE_MESSAGE.to_string())
+    }
+
+    #[allow(clippy::too_many_arguments)]
     pub fn ghostty_vt_mouse_scroll_in_map(
         sessions: &Arc<Mutex<HashMap<String, Arc<SessionHandle>>>>,
         session_id: &str,
@@ -496,6 +620,11 @@ mod imp {
     const GHOSTTY_MOUSE_ENCODER_OPT_TRACK_LAST_CELL: i32 = 4;
     const GHOSTTY_MOUSE_ACTION_PRESS: i32 = 0;
     const GHOSTTY_MOUSE_ACTION_RELEASE: i32 = 1;
+    const GHOSTTY_MOUSE_ACTION_MOTION: i32 = 2;
+    const GHOSTTY_MOUSE_BUTTON_UNKNOWN: i32 = 0;
+    const GHOSTTY_MOUSE_BUTTON_LEFT: i32 = 1;
+    const GHOSTTY_MOUSE_BUTTON_RIGHT: i32 = 2;
+    const GHOSTTY_MOUSE_BUTTON_MIDDLE: i32 = 3;
     const GHOSTTY_MOUSE_BUTTON_FOUR: i32 = 4;
     const GHOSTTY_MOUSE_BUTTON_FIVE: i32 = 5;
     const GHOSTTY_MODS_SHIFT: u16 = 1 << 0;
@@ -810,6 +939,7 @@ mod imp {
         fn ghostty_mouse_event_free(event: GhosttyMouseEvent);
         fn ghostty_mouse_event_set_action(event: GhosttyMouseEvent, action: c_int);
         fn ghostty_mouse_event_set_button(event: GhosttyMouseEvent, button: c_int);
+        fn ghostty_mouse_event_clear_button(event: GhosttyMouseEvent);
         fn ghostty_mouse_event_set_mods(event: GhosttyMouseEvent, mods: u16);
         fn ghostty_mouse_event_set_position(event: GhosttyMouseEvent, position: GhosttyMousePosition);
         fn ghostty_free(allocator: *const GhosttyAllocator, ptr: *mut u8, len: usize);
@@ -894,7 +1024,34 @@ mod imp {
         meta: bool,
         repeat: bool,
     ) -> Result<(), String> {
-        let session = lookup_session(&manager.inner, session_id)?;
+        ghostty_vt_input_key_in_map(
+            &manager.inner,
+            session_id,
+            code,
+            key,
+            text,
+            ctrl,
+            alt,
+            shift,
+            meta,
+            repeat,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn ghostty_vt_input_key_in_map(
+        sessions: &Arc<Mutex<HashMap<String, Arc<SessionHandle>>>>,
+        session_id: &str,
+        code: &str,
+        key: &str,
+        text: Option<&str>,
+        ctrl: bool,
+        alt: bool,
+        shift: bool,
+        meta: bool,
+        repeat: bool,
+    ) -> Result<(), String> {
+        let session = lookup_session(sessions, session_id)?;
         session.input_key(code, key, text, ctrl, alt, shift, meta, repeat)
     }
 
@@ -995,6 +1152,37 @@ mod imp {
         }
 
         Ok(())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn ghostty_vt_mouse_button_in_map(
+        sessions: &Arc<Mutex<HashMap<String, Arc<SessionHandle>>>>,
+        session_id: &str,
+        x_px: f64,
+        y_px: f64,
+        width_px: f64,
+        height_px: f64,
+        button: u8,
+        pressed: bool,
+        mods: u16,
+    ) -> Result<bool, String> {
+        let session = lookup_session(sessions, session_id)?;
+        session.mouse_button(x_px, y_px, width_px, height_px, button, pressed, mods)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn ghostty_vt_mouse_motion_in_map(
+        sessions: &Arc<Mutex<HashMap<String, Arc<SessionHandle>>>>,
+        session_id: &str,
+        x_px: f64,
+        y_px: f64,
+        width_px: f64,
+        height_px: f64,
+        pressed_button: Option<u8>,
+        mods: u16,
+    ) -> Result<bool, String> {
+        let session = lookup_session(sessions, session_id)?;
+        session.mouse_motion(x_px, y_px, width_px, height_px, pressed_button, mods)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1531,6 +1719,172 @@ mod imp {
             }
             self.emit_updated();
             Ok(())
+        }
+
+        fn encode_mouse_event(
+            &self,
+            action: i32,
+            button: Option<i32>,
+            any_button_pressed: bool,
+            x_px: f64,
+            y_px: f64,
+            width_px: f64,
+            height_px: f64,
+            mods: u16,
+        ) -> Result<bool, String> {
+            let geometry = *self
+                .geometry
+                .lock()
+                .map_err(|_| "Failed to lock libghostty-vt session geometry".to_string())?;
+            let terminal = self
+                .terminal
+                .lock()
+                .map_err(|_| "Failed to lock libghostty-vt terminal state".to_string())?;
+
+            let mut mouse_tracking = false;
+            let _ = unsafe {
+                ghostty_terminal_get(
+                    terminal.handle,
+                    GHOSTTY_TERMINAL_DATA_MOUSE_TRACKING,
+                    (&mut mouse_tracking as *mut bool).cast(),
+                )
+            };
+            if !mouse_tracking {
+                return Ok(false);
+            }
+
+            unsafe {
+                ghostty_mouse_encoder_setopt_from_terminal(terminal.mouse_encoder, terminal.handle);
+            }
+            let enc_size = GhosttyMouseEncoderSize {
+                size: mem::size_of::<GhosttyMouseEncoderSize>(),
+                screen_width: width_px.max(1.0).round() as u32,
+                screen_height: height_px.max(1.0).round() as u32,
+                cell_width: geometry.cell_width_px.max(1),
+                cell_height: geometry.cell_height_px.max(1),
+                padding_top: 0,
+                padding_bottom: 0,
+                padding_right: 0,
+                padding_left: 0,
+            };
+            let track_cell = true;
+            unsafe {
+                ghostty_mouse_encoder_setopt(
+                    terminal.mouse_encoder,
+                    GHOSTTY_MOUSE_ENCODER_OPT_SIZE,
+                    (&enc_size as *const GhosttyMouseEncoderSize).cast(),
+                );
+                ghostty_mouse_encoder_setopt(
+                    terminal.mouse_encoder,
+                    GHOSTTY_MOUSE_ENCODER_OPT_ANY_BUTTON_PRESSED,
+                    (&any_button_pressed as *const bool).cast(),
+                );
+                ghostty_mouse_encoder_setopt(
+                    terminal.mouse_encoder,
+                    GHOSTTY_MOUSE_ENCODER_OPT_TRACK_LAST_CELL,
+                    (&track_cell as *const bool).cast(),
+                );
+                ghostty_mouse_event_set_mods(terminal.mouse_event, mods);
+                ghostty_mouse_event_set_position(
+                    terminal.mouse_event,
+                    GhosttyMousePosition {
+                        x: x_px as f32,
+                        y: y_px as f32,
+                    },
+                );
+                ghostty_mouse_event_set_action(terminal.mouse_event, action);
+                match button {
+                    Some(button) => ghostty_mouse_event_set_button(terminal.mouse_event, button),
+                    None => ghostty_mouse_event_clear_button(terminal.mouse_event),
+                }
+            }
+
+            let fd = self.pty_fd.load(Ordering::SeqCst);
+            if fd < 0 {
+                return Ok(true);
+            }
+
+            let mut buffer = [0_u8; 128];
+            let mut written = 0;
+            let result = unsafe {
+                ghostty_mouse_encoder_encode(
+                    terminal.mouse_encoder,
+                    terminal.mouse_event,
+                    buffer.as_mut_ptr().cast::<c_char>(),
+                    buffer.len(),
+                    &mut written,
+                )
+            };
+            if result == GHOSTTY_SUCCESS && written > 0 {
+                write_best_effort(fd, &buffer[..written]);
+            }
+
+            Ok(true)
+        }
+
+        #[allow(clippy::too_many_arguments)]
+        fn mouse_button(
+            &self,
+            x_px: f64,
+            y_px: f64,
+            width_px: f64,
+            height_px: f64,
+            button: u8,
+            pressed: bool,
+            mods: u16,
+        ) -> Result<bool, String> {
+            let button = match button {
+                1 => GHOSTTY_MOUSE_BUTTON_LEFT,
+                2 => GHOSTTY_MOUSE_BUTTON_RIGHT,
+                3 => GHOSTTY_MOUSE_BUTTON_MIDDLE,
+                _ => GHOSTTY_MOUSE_BUTTON_UNKNOWN,
+            };
+            if button == GHOSTTY_MOUSE_BUTTON_UNKNOWN {
+                return Ok(false);
+            }
+            self.encode_mouse_event(
+                if pressed {
+                    GHOSTTY_MOUSE_ACTION_PRESS
+                } else {
+                    GHOSTTY_MOUSE_ACTION_RELEASE
+                },
+                Some(button),
+                pressed,
+                x_px,
+                y_px,
+                width_px,
+                height_px,
+                mods,
+            )
+        }
+
+        #[allow(clippy::too_many_arguments)]
+        fn mouse_motion(
+            &self,
+            x_px: f64,
+            y_px: f64,
+            width_px: f64,
+            height_px: f64,
+            pressed_button: Option<u8>,
+            mods: u16,
+        ) -> Result<bool, String> {
+            let button = match pressed_button {
+                Some(1) => Some(GHOSTTY_MOUSE_BUTTON_LEFT),
+                Some(2) => Some(GHOSTTY_MOUSE_BUTTON_RIGHT),
+                Some(3) => Some(GHOSTTY_MOUSE_BUTTON_MIDDLE),
+                Some(_) => Some(GHOSTTY_MOUSE_BUTTON_UNKNOWN),
+                None => None,
+            };
+            self.encode_mouse_event(
+                GHOSTTY_MOUSE_ACTION_MOTION,
+                button.filter(|value| *value != GHOSTTY_MOUSE_BUTTON_UNKNOWN),
+                pressed_button.is_some(),
+                x_px,
+                y_px,
+                width_px,
+                height_px,
+                mods,
+            )
         }
 
         fn mouse_scroll(
