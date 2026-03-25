@@ -1,16 +1,18 @@
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { useQueryClient } from '@tanstack/react-query';
 import { LoaderCircle } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
 	ChatInputContainer,
 	MessageThreadContainer,
 	NewSessionLanding,
+	useMessages,
 	type ChatInputContainerRef,
 	type NewSessionLandingRef,
 } from '@ottocode/web-sdk';
 import type { Block } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
+import { useTabActivityStore } from '../stores/tab-activity-store';
 import { useWorkspaceRuntimeStore } from '../stores/workspace-runtime-store';
 
 interface OttoBlockProps {
@@ -52,6 +54,28 @@ export function OttoBlock({ block, isFocused, workspaceId }: OttoBlockProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const chatInputRef = useRef<ChatInputContainerRef>(null);
 	const landingRef = useRef<NewSessionLandingRef>(null);
+
+	const setActivityStatus = useTabActivityStore((s) => s.setStatus);
+
+	const isOttoLoading = !runtime || runtime.status === 'starting' || runtime.status === 'stopped';
+	const { data: messages = [] } = useMessages(
+		sessionId ?? undefined,
+		{ enabled: !!sessionId && runtime?.status === 'ready' },
+	);
+	const isGenerating = useMemo(
+		() => messages.some((m) => m.role === 'assistant' && m.status === 'pending'),
+		[messages],
+	);
+
+	useEffect(() => {
+		if (isOttoLoading) {
+			setActivityStatus(block.id, 'loading', 'Starting Otto runtime…');
+		} else if (isGenerating) {
+			setActivityStatus(block.id, 'busy', 'Generating…');
+		} else {
+			setActivityStatus(block.id, 'idle');
+		}
+	}, [block.id, isOttoLoading, isGenerating, setActivityStatus]);
 
 	useEffect(() => {
 		setSessionId(block.sessionId ?? null);

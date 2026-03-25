@@ -21,6 +21,7 @@ import {
 import { loadNerdFont, NERD_FONT_FAMILY } from '../lib/nerd-font';
 import type { Block } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
+import { useTabActivityStore } from '../stores/tab-activity-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
 
 interface GhosttyBlockProps {
@@ -166,6 +167,58 @@ export function GhosttyBlock({ block, isFocused }: GhosttyBlockProps) {
 	const resolvedCwd = block.cwd?.trim() || activeEnvironment?.path || undefined;
 	const startupCommand =
 		block.type === 'command' ? block.command?.trim() || undefined : undefined;
+	const setActivityStatus = useTabActivityStore((s) => s.setStatus);
+	const activityRef = useRef<{
+		timestamps: number[];
+		idleTimer: number | null;
+		isBusy: boolean;
+	}>({ timestamps: [], idleTimer: null, isBusy: false });
+
+	useEffect(() => {
+		if (!isTauriRuntime()) return;
+		let unlisten: (() => void) | undefined;
+		const BURST_THRESHOLD = 6;
+		const BURST_WINDOW_MS = 800;
+		const IDLE_DELAY_MS = 2000;
+
+		const onUpdate = () => {
+			const ctx = activityRef.current;
+			const now = Date.now();
+			ctx.timestamps.push(now);
+			const cutoff = now - BURST_WINDOW_MS;
+			ctx.timestamps = ctx.timestamps.filter((t) => t > cutoff);
+
+			if (ctx.idleTimer !== null) {
+				window.clearTimeout(ctx.idleTimer);
+			}
+			ctx.idleTimer = window.setTimeout(() => {
+				ctx.idleTimer = null;
+				ctx.isBusy = false;
+				ctx.timestamps = [];
+				setActivityStatus(block.id, 'idle');
+			}, IDLE_DELAY_MS);
+
+			if (ctx.timestamps.length >= BURST_THRESHOLD && !ctx.isBusy) {
+				ctx.isBusy = true;
+				setActivityStatus(block.id, 'busy', 'Running…');
+			}
+		};
+
+		void listen<{ sessionId: string }>('ghostty-vt-updated', (event) => {
+			if (event.payload.sessionId === block.id) onUpdate();
+		}).then((dispose) => {
+			unlisten = dispose;
+		});
+		return () => {
+			unlisten?.();
+			const ctx = activityRef.current;
+			if (ctx.idleTimer !== null) {
+				window.clearTimeout(ctx.idleTimer);
+			}
+			ctx.isBusy = false;
+			setActivityStatus(block.id, 'idle');
+		};
+	}, [block.id, setActivityStatus]);
 
 	const refreshSnapshot = useCallback(async () => {
 		const nextSnapshot = await snapshotGhosttyVtSession(block.id);

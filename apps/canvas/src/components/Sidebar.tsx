@@ -5,6 +5,7 @@ import { getCommandSurfaceDefinition, getPrimitiveDefinition } from '../lib/prim
 import { getSidebarGroupedTabs, getSidebarOrderedTabs } from '../lib/sidebar-tab-order';
 import type { WorkspaceTabState } from '../stores/canvas-store';
 import { useCanvasStore } from '../stores/canvas-store';
+import { useTabActivityStore } from '../stores/tab-activity-store';
 import type { Workspace } from '../stores/workspace-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
 
@@ -39,6 +40,11 @@ function getTabDescription(tab: WorkspaceTabState) {
 			.sidebarDescription;
 }
 
+function getTabBlockId(tab: WorkspaceTabState): string | null {
+	if (tab.kind === 'block') return tab.block.id;
+	return null;
+}
+
 export function Sidebar() {
 	const workspaces = useWorkspaceStore((state) => state.workspaces);
 	const environments = useWorkspaceStore((state) => state.environments);
@@ -52,6 +58,7 @@ export function Sidebar() {
 	const setActiveTab = useCanvasStore((state) => state.setActiveTab);
 	const openCreateTab = useCanvasStore((state) => state.openCreateTab);
 	const removeTab = useCanvasStore((state) => state.removeTab);
+	const activityEntries = useTabActivityStore((state) => state.entries);
 	const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = useState(false);
 	const [draftPath, setDraftPath] = useState('');
 	const [draftName, setDraftName] = useState('');
@@ -154,7 +161,7 @@ export function Sidebar() {
 
 	return (
 		<>
-			<div className="flex h-full w-[272px] flex-shrink-0 flex-col overflow-hidden pt-1">
+			<div className="flex h-full w-[272px] flex-shrink-0 flex-col overflow-hidden pt-1" style={{ background: 'rgba(14, 14, 16, 0.82)' }}>
 				<div className="flex h-[36px] flex-shrink-0">
 					<div className="w-[58px] flex-shrink-0" data-tauri-drag-region />
 					<div className="flex min-w-0 flex-1" data-tauri-drag-region />
@@ -238,6 +245,9 @@ export function Sidebar() {
 													{group.tabs.map((tab) => {
 															const isActive = tab.id === activeTabId;
 															const shortcut = tabShortcutMap.get(tab.id);
+															const blockId = getTabBlockId(tab);
+															const activity = blockId ? activityEntries[blockId] : undefined;
+															const isTabActive = activity?.status === 'loading' || activity?.status === 'busy';
 															return (
 																<button
 																	key={tab.id}
@@ -248,15 +258,22 @@ export function Sidebar() {
 																			: 'border-transparent bg-white/[0.04] hover:border-white/[0.08] hover:bg-white/[0.07]'
 																	}`}
 																>
-																	<div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.08] text-white/65">
+																<div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.08] text-white/65">
 																		{getTabGlyph(tab)}
 																	</div>
 																	<div className="min-w-0 flex-1">
-																		<p className="truncate text-[11px] font-medium text-white/82">
-																			{tab.title}
-																		</p>
-																		<p className="truncate text-[10px] text-white/45">
-																			{getTabDescription(tab)}
+																		<div className="flex items-center gap-1.5">
+																			<p className="truncate text-[11px] font-medium text-white/82">
+																				{tab.title}
+																			</p>
+																			{isTabActive ? (
+																				<span className="h-1.5 w-1.5 flex-shrink-0 animate-pulse rounded-full bg-canvas-accent" />
+																			) : null}
+																		</div>
+																	<p className="truncate text-[10px] text-white/45">
+																			{isTabActive ? (
+																				<span className="text-canvas-accent/70">{activity.message ?? 'Working…'}</span>
+																			) : getTabDescription(tab)}
 																		</p>
 																	</div>
 																	<div className="relative flex h-7 w-10 flex-shrink-0 items-center justify-end">

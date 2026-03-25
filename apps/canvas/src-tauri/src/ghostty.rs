@@ -73,6 +73,12 @@ pub fn register_manager(manager: &GhosttyManager) {
     let _ = GHOSTTY_MANAGER.set(manager.inner.clone());
 }
 
+pub fn emit_block_focus_event(block_id: String) {
+    if let Some(app_handle) = APP_HANDLE.get() {
+        let _ = app_handle.emit("ghostty-focus-block", GhosttyFocusEvent { block_id });
+    }
+}
+
 pub fn register_main_canvas_window_label(label: String) {
     let _ = MAIN_WEBVIEW_WINDOW_LABEL.set(label);
 }
@@ -854,7 +860,13 @@ mod macos {
                     ));
                 }
             }
-            return None;
+            return match key_code {
+                4 => Some(("ctrl+h", true)),
+                38 => Some(("ctrl+j", true)),
+                40 => Some(("ctrl+k", true)),
+                37 => Some(("ctrl+l", true)),
+                _ => None,
+            };
         }
 
         if !flags.contains(NSEventModifierFlags::Command)

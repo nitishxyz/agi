@@ -259,7 +259,13 @@ mod macos {
 
             #[unsafe(method(becomeFirstResponder))]
             fn become_first_responder(&self) -> bool {
-                unsafe { msg_send![super(self), becomeFirstResponder] }
+                let result: bool = unsafe { msg_send![super(self), becomeFirstResponder] };
+                if result {
+                    if let Some(block_id) = block_id_for_view(self) {
+                        crate::ghostty::emit_block_focus_event(block_id);
+                    }
+                }
+                result
             }
 
             #[unsafe(method(resignFirstResponder))]
@@ -269,6 +275,9 @@ mod macos {
 
             #[unsafe(method(mouseDown:))]
             fn mouse_down(&self, event: &NSEvent) {
+                if let Some(block_id) = block_id_for_view(self) {
+                    crate::ghostty::emit_block_focus_event(block_id);
+                }
                 if let Some(window) = self.window() {
                     let _ = window.makeFirstResponder(Some(self));
                 }
@@ -287,6 +296,9 @@ mod macos {
 
             #[unsafe(method(rightMouseDown:))]
             fn right_mouse_down(&self, event: &NSEvent) {
+                if let Some(block_id) = block_id_for_view(self) {
+                    crate::ghostty::emit_block_focus_event(block_id);
+                }
                 if let Some(window) = self.window() {
                     let _ = window.makeFirstResponder(Some(self));
                 }
@@ -305,6 +317,9 @@ mod macos {
 
             #[unsafe(method(otherMouseDown:))]
             fn other_mouse_down(&self, event: &NSEvent) {
+                if let Some(block_id) = block_id_for_view(self) {
+                    crate::ghostty::emit_block_focus_event(block_id);
+                }
                 if let Some(window) = self.window() {
                     let _ = window.makeFirstResponder(Some(self));
                 }
@@ -678,25 +693,20 @@ mod macos {
             && !flags.contains(NSEventModifierFlags::Command)
             && !flags.contains(NSEventModifierFlags::Option)
         {
-            let key = event
-                .charactersIgnoringModifiers()
-                .as_deref()
-                .and_then(string_from_nsstring)
-                .map(|value| value.to_lowercase());
-            match key.as_deref() {
-                Some("h") => {
+            match event.keyCode() {
+                4 => {
                     crate::ghostty::emit_native_shortcut("ctrl+h");
                     return;
                 }
-                Some("j") => {
+                38 => {
                     crate::ghostty::emit_native_shortcut("ctrl+j");
                     return;
                 }
-                Some("k") => {
+                40 => {
                     crate::ghostty::emit_native_shortcut("ctrl+k");
                     return;
                 }
-                Some("l") => {
+                37 => {
                     crate::ghostty::emit_native_shortcut("ctrl+l");
                     return;
                 }

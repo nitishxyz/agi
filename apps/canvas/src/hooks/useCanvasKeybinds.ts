@@ -323,16 +323,48 @@ export function useCanvasKeybinds() {
 					runShortcut('ctrl+shift+9', () => focusByIndex(8));
 					break;
 				case 'ctrl+h':
-					runShortcut('ctrl+h', () => focusDirection('left'));
+					runShortcut('ctrl+h', () => {
+						const s = useCanvasStore.getState();
+						if (s.activeTabKind === 'canvas' && s.layout) {
+							focusDirection('left');
+						} else {
+							const idx = s.tabOrder.indexOf(s.activeTabId ?? '');
+							if (idx > 0) setActiveTab(s.tabOrder[idx - 1]);
+						}
+					});
 					break;
 				case 'ctrl+j':
-					runShortcut('ctrl+j', () => focusDirection('down'));
+					runShortcut('ctrl+j', () => {
+						const s = useCanvasStore.getState();
+						if (s.activeTabKind === 'canvas' && s.layout) {
+							focusDirection('down');
+						} else {
+							const idx = s.tabOrder.indexOf(s.activeTabId ?? '');
+							if (idx < s.tabOrder.length - 1) setActiveTab(s.tabOrder[idx + 1]);
+						}
+					});
 					break;
 				case 'ctrl+k':
-					runShortcut('ctrl+k', () => focusDirection('up'));
+					runShortcut('ctrl+k', () => {
+						const s = useCanvasStore.getState();
+						if (s.activeTabKind === 'canvas' && s.layout) {
+							focusDirection('up');
+						} else {
+							const idx = s.tabOrder.indexOf(s.activeTabId ?? '');
+							if (idx > 0) setActiveTab(s.tabOrder[idx - 1]);
+						}
+					});
 					break;
 				case 'ctrl+l':
-					runShortcut('ctrl+l', () => focusDirection('right'));
+					runShortcut('ctrl+l', () => {
+						const s = useCanvasStore.getState();
+						if (s.activeTabKind === 'canvas' && s.layout) {
+							focusDirection('right');
+						} else {
+							const idx = s.tabOrder.indexOf(s.activeTabId ?? '');
+							if (idx < s.tabOrder.length - 1) setActiveTab(s.tabOrder[idx + 1]);
+						}
+					});
 					break;
 				case 'mod+shift+b':
 					runShortcut('mod+shift+b', () => toggleSidebar());
@@ -349,6 +381,7 @@ export function useCanvasKeybinds() {
 			focusPrev,
 			openTabCreator,
 			removeFocusedBlock,
+			setActiveTab,
 			switchToTabByIndex,
 			toggleSidebar,
 		],
