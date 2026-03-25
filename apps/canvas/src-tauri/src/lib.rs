@@ -1,6 +1,8 @@
 mod browser;
 mod debug_log;
 mod ghostty;
+mod ghostty_vt;
+mod native_terminal;
 mod runtime;
 mod workspace_file;
 
@@ -13,6 +15,15 @@ use ghostty::{
     canvas_set_pending_shortcut_mode, ghostty_create_block, ghostty_destroy_block,
     ghostty_input_key, ghostty_input_text, ghostty_set_block_focus, ghostty_status,
     ghostty_update_block, GhosttyManager,
+};
+use ghostty_vt::{
+    ghostty_vt_create_session, ghostty_vt_destroy_session, ghostty_vt_input_key,
+    ghostty_vt_resize_session, ghostty_vt_scroll_viewport, ghostty_vt_send_text,
+    ghostty_vt_snapshot_session, ghostty_vt_status, GhosttyVtManager,
+};
+use native_terminal::{
+    native_terminal_create_block, native_terminal_destroy_block, native_terminal_status,
+    native_terminal_update_block, NativeTerminalManager,
 };
 use runtime::{
     workspace_get_runtime, workspace_list_runtimes, workspace_read_runtime_log,
@@ -27,15 +38,22 @@ pub fn run() {
     let ghostty_manager = GhosttyManager::default();
     let ghostty_manager_for_setup = ghostty_manager.clone();
     let browser_manager = BrowserManager::default();
+    let ghostty_vt_manager = GhosttyVtManager::default();
+    let ghostty_vt_manager_for_setup = ghostty_vt_manager.clone();
+    let native_terminal_manager = NativeTerminalManager::default();
     let runtime_manager = WorkspaceRuntimeManager::default();
     let runtime_manager_for_exit = runtime_manager.clone();
 
     tauri::Builder::default()
         .manage(ghostty_manager)
         .manage(browser_manager)
+        .manage(ghostty_vt_manager)
+        .manage(native_terminal_manager)
         .manage(runtime_manager)
         .invoke_handler(tauri::generate_handler![
             ghostty_status,
+            ghostty_vt_status,
+            native_terminal_status,
             canvas_debug_log,
             canvas_set_pending_shortcut_mode,
             ghostty_create_block,
@@ -44,6 +62,16 @@ pub fn run() {
             ghostty_input_key,
             ghostty_set_block_focus,
             ghostty_destroy_block,
+            ghostty_vt_create_session,
+            ghostty_vt_resize_session,
+            ghostty_vt_send_text,
+            ghostty_vt_input_key,
+            ghostty_vt_scroll_viewport,
+            ghostty_vt_snapshot_session,
+            ghostty_vt_destroy_session,
+            native_terminal_create_block,
+            native_terminal_update_block,
+            native_terminal_destroy_block,
             browser_create_block,
             browser_update_block,
             browser_navigate_block,
@@ -75,6 +103,7 @@ pub fn run() {
             debug_log("app", "setup start");
             ghostty::register_app_handle(app.handle().clone());
             ghostty::register_manager(&ghostty_manager_for_setup);
+            ghostty_vt::register_manager(&ghostty_vt_manager_for_setup);
 
             let window = app.get_webview_window("main").unwrap();
             debug_log("app", format!("main window ready label={}", window.label()));

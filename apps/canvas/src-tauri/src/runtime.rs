@@ -71,7 +71,10 @@ impl WorkspaceRuntimeManager {
     pub fn stop_all(&self) {
         if let Ok(mut runtimes) = self.inner.lock() {
             for (id, entry) in runtimes.iter_mut() {
-                eprintln!("[canvas] stopping otto runtime workspace={} pid={}", id, entry.info.pid);
+                eprintln!(
+                    "[canvas] stopping otto runtime workspace={} pid={}",
+                    id, entry.info.pid
+                );
                 kill_process_tree(&mut entry.child);
             }
             runtimes.clear();
@@ -114,7 +117,11 @@ fn get_binary_path(app: &AppHandle<Wry>) -> PathBuf {
 
     if let Ok(exe_path) = std::env::current_exe() {
         if let Some(parent) = exe_path.parent() {
-            candidates.push(parent.join("../Resources/resources/binaries").join(&binary_name));
+            candidates.push(
+                parent
+                    .join("../Resources/resources/binaries")
+                    .join(&binary_name),
+            );
             candidates.push(parent.join("../Resources/binaries").join(&binary_name));
             candidates.push(parent.join("../Resources").join(&binary_name));
         }
@@ -383,9 +390,7 @@ pub fn workspace_start_runtime(
 
     eprintln!(
         "[canvas] otto runtime spawned workspace={} pid={} url={}",
-        info.workspace_id,
-        info.pid,
-        info.url
+        info.workspace_id, info.pid, info.url
     );
 
     manager
@@ -400,29 +405,31 @@ pub fn workspace_start_runtime(
             },
         );
 
-    match wait_for_runtime_ready(port, &info.log_path, Duration::from_secs(30), manager.inner(), &workspace_id) {
+    match wait_for_runtime_ready(
+        port,
+        &info.log_path,
+        Duration::from_secs(30),
+        manager.inner(),
+        &workspace_id,
+    ) {
         Ok(true) => {
             eprintln!(
                 "[canvas] otto runtime ready workspace={} url={}",
-                info.workspace_id,
-                info.url
+                info.workspace_id, info.url
             );
             Ok(info)
         }
         Ok(false) => {
             eprintln!(
                 "[canvas] otto runtime readiness timed out workspace={} url={} log={}",
-                info.workspace_id,
-                info.url,
-                info.log_path
+                info.workspace_id, info.url, info.log_path
             );
             Err("Timed out waiting for otto workspace runtime to become ready.".to_string())
         }
         Err(error) => {
             eprintln!(
                 "[canvas] otto runtime failed workspace={} error={}",
-                info.workspace_id,
-                error
+                info.workspace_id, error
             );
             Err(error)
         }
@@ -452,7 +459,10 @@ pub fn workspace_stop_runtime(
         .map_err(|_| "Failed to lock runtime manager".to_string())?;
 
     if let Some(mut entry) = runtimes.remove(&workspace_id) {
-        eprintln!("[canvas] stopping otto runtime workspace={} pid={}", workspace_id, entry.info.pid);
+        eprintln!(
+            "[canvas] stopping otto runtime workspace={} pid={}",
+            workspace_id, entry.info.pid
+        );
         kill_process_tree(&mut entry.child);
     }
 

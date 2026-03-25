@@ -73,7 +73,7 @@ export function CommandBlock({ block, isFocused }: CommandBlockProps) {
 					<div>
 						<p className="text-[13px] font-medium text-canvas-text-dim">Configure command</p>
 						<p className="mt-1 text-[11px] leading-5 text-canvas-text-muted">
-							Launch a custom command in a Ghostty-backed block or tab.
+							Launch a custom command in a libghostty-vt terminal block or tab.
 						</p>
 					</div>
 				</div>
