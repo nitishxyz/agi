@@ -1186,6 +1186,12 @@ mod imp {
         session_id: String,
     }
 
+    #[derive(Clone, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct GhosttyVtCloseEvent {
+        block_id: String,
+    }
+
     struct TerminalState {
         handle: GhosttyTerminal,
         render_state: GhosttyRenderState,
@@ -1520,6 +1526,12 @@ mod imp {
             self.process_alive.store(false, Ordering::SeqCst);
             self.close_pty();
             self.reap_child(true);
+            let _ = self.app_handle.emit(
+                "ghostty-close-block",
+                GhosttyVtCloseEvent {
+                    block_id: self.session_id.clone(),
+                },
+            );
             self.emit_updated();
         }
 

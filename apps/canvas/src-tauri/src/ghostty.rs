@@ -77,6 +77,14 @@ pub fn register_main_canvas_window_label(label: String) {
     let _ = MAIN_WEBVIEW_WINDOW_LABEL.set(label);
 }
 
+pub fn emit_native_shortcut(shortcut: &str) {
+    #[cfg(target_os = "macos")]
+    macos::emit_shortcut(shortcut);
+
+    #[cfg(not(target_os = "macos"))]
+    let _ = shortcut;
+}
+
 #[tauri::command]
 pub fn canvas_set_pending_shortcut_mode(enabled: bool) {
     let mode = PENDING_SHORTCUT_MODE.get_or_init(|| Mutex::new(false));
@@ -880,7 +888,7 @@ mod macos {
         None
     }
 
-    fn emit_shortcut(shortcut: &str) {
+    pub(super) fn emit_shortcut(shortcut: &str) {
         ghostty_debug_log(&format!("emit_shortcut shortcut={shortcut}"));
         if let Some(app_handle) = APP_HANDLE.get() {
             let _ = app_handle.emit(

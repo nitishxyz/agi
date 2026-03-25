@@ -413,6 +413,9 @@ mod macos {
         let Some((start, end)) = selection else {
             return false;
         };
+        if start.row == end.row && start.col == end.col {
+            return false;
+        }
         let row = row as u16;
         let col = col as u16;
         if row < start.row || row > end.row {
@@ -483,6 +486,15 @@ mod macos {
         let _ = pasteboard.clearContents();
         let pasteboard_type = unsafe { NSPasteboardTypeString };
         pasteboard.setString_forType(&NSString::from_str(text), pasteboard_type)
+    }
+
+    fn clear_selection_for_block(block_id: &str) {
+        if let Ok(mut interactions) = block_interactions().lock() {
+            if let Some(state) = interactions.get_mut(block_id) {
+                state.selection_anchor = None;
+                state.selection_focus = None;
+            }
+        }
     }
 
     fn copy_selection_to_clipboard(view: &NativeTerminalHostView) -> bool {
@@ -561,6 +573,74 @@ mod macos {
             Some("c") | Some("x") => copy_selection_to_clipboard(view),
             Some("v") => paste_from_clipboard(view),
             Some("a") => select_all(view),
+            Some("n") => {
+                crate::ghostty::emit_native_shortcut("mod+n");
+                true
+            }
+            Some("t") => {
+                crate::ghostty::emit_native_shortcut("mod+t");
+                true
+            }
+            Some("d") if flags.contains(NSEventModifierFlags::Shift) => {
+                crate::ghostty::emit_native_shortcut("mod+shift+d");
+                true
+            }
+            Some("d") => {
+                crate::ghostty::emit_native_shortcut("mod+d");
+                true
+            }
+            Some("w") => {
+                crate::ghostty::emit_native_shortcut("mod+w");
+                true
+            }
+            Some("[") => {
+                crate::ghostty::emit_native_shortcut("mod+[");
+                true
+            }
+            Some("]") => {
+                crate::ghostty::emit_native_shortcut("mod+]");
+                true
+            }
+            Some("b") if flags.contains(NSEventModifierFlags::Shift) => {
+                crate::ghostty::emit_native_shortcut("mod+shift+b");
+                true
+            }
+            Some("1") => {
+                crate::ghostty::emit_native_shortcut("mod+1");
+                true
+            }
+            Some("2") => {
+                crate::ghostty::emit_native_shortcut("mod+2");
+                true
+            }
+            Some("3") => {
+                crate::ghostty::emit_native_shortcut("mod+3");
+                true
+            }
+            Some("4") => {
+                crate::ghostty::emit_native_shortcut("mod+4");
+                true
+            }
+            Some("5") => {
+                crate::ghostty::emit_native_shortcut("mod+5");
+                true
+            }
+            Some("6") => {
+                crate::ghostty::emit_native_shortcut("mod+6");
+                true
+            }
+            Some("7") => {
+                crate::ghostty::emit_native_shortcut("mod+7");
+                true
+            }
+            Some("8") => {
+                crate::ghostty::emit_native_shortcut("mod+8");
+                true
+            }
+            Some("9") => {
+                crate::ghostty::emit_native_shortcut("mod+9");
+                true
+            }
             _ => false,
         }
     }
@@ -588,9 +668,41 @@ mod macos {
         let Some(block_id) = block_id_for_view(view) else {
             return;
         };
+        clear_selection_for_block(&block_id);
+        view.setNeedsDisplay(true);
         let flags = event
             .modifierFlags()
             .intersection(NSEventModifierFlags::DeviceIndependentFlagsMask);
+
+        if flags.contains(NSEventModifierFlags::Control)
+            && !flags.contains(NSEventModifierFlags::Command)
+            && !flags.contains(NSEventModifierFlags::Option)
+        {
+            let key = event
+                .charactersIgnoringModifiers()
+                .as_deref()
+                .and_then(string_from_nsstring)
+                .map(|value| value.to_lowercase());
+            match key.as_deref() {
+                Some("h") => {
+                    crate::ghostty::emit_native_shortcut("ctrl+h");
+                    return;
+                }
+                Some("j") => {
+                    crate::ghostty::emit_native_shortcut("ctrl+j");
+                    return;
+                }
+                Some("k") => {
+                    crate::ghostty::emit_native_shortcut("ctrl+k");
+                    return;
+                }
+                Some("l") => {
+                    crate::ghostty::emit_native_shortcut("ctrl+l");
+                    return;
+                }
+                _ => {}
+            }
+        }
 
         if flags.contains(NSEventModifierFlags::Command) {
             let sequence = match event.keyCode() {
@@ -643,6 +755,10 @@ mod macos {
             mods_from_event(event),
         )
         .unwrap_or(false);
+
+        if handled {
+            clear_selection_for_block(&block_id);
+        }
 
         if let Ok(mut interactions) = block_interactions().lock() {
             let state = interactions.entry(block_id.clone()).or_default();
@@ -701,6 +817,9 @@ mod macos {
             mods_from_event(event),
         )
         .unwrap_or(false);
+        if handled {
+            clear_selection_for_block(&block_id);
+        }
         if handled {
             return;
         }

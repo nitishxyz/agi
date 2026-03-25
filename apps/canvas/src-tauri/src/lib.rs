@@ -117,7 +117,7 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             window_vibrancy::apply_vibrancy(
                 &window,
-                window_vibrancy::NSVisualEffectMaterial::UltraDark,
+                window_vibrancy::NSVisualEffectMaterial::HudWindow,
                 None,
                 None,
             )
