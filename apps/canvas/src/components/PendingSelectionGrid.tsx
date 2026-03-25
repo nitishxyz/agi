@@ -25,6 +25,7 @@ export function PendingSelectionGrid<TValue>({
 				<div className="grid grid-cols-5 gap-1.5">
 					{options.map((option) => (
 						<button
+							type="button"
 							key={`${option.key}-${option.label}`}
 							onClick={() => onSelect(option.value)}
 							className="group relative flex w-[110px] flex-col items-center gap-2 rounded-xl px-2 pb-3 pt-4 transition-all hover:bg-white/[0.06]"

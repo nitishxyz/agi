@@ -480,15 +480,13 @@ export function useCanvasNativeBlockManager() {
 					const workspaceEnvironment = workspace
 						? (environmentsRef.current[workspace.primaryEnvironmentId] ?? null)
 						: null;
-					const cwd =
-						block.cwd?.trim() ||
-						workspaceEnvironment?.path?.trim() ||
-						undefined;
+					const workspaceRoot = workspaceEnvironment?.path?.trim() || undefined;
+					const cwd = block.cwd?.trim() || undefined;
 					const command =
 						block.type === 'command'
 							? block.command?.trim() || undefined
 							: undefined;
-					await createNativeTerminalBlock(block.id, cwd, command);
+					await createNativeTerminalBlock(block.id, cwd, workspaceRoot, command);
 					entry.created = true;
 					entry.lastBounds = null;
 					entry.lastFocused = false;

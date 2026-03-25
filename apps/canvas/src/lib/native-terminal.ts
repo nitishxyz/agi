@@ -23,11 +23,13 @@ export async function getNativeTerminalStatus() {
 export async function createNativeTerminalBlock(
 	blockId: string,
 	cwd?: string,
+	workspaceRoot?: string,
 	command?: string,
 ) {
 	return invoke('native_terminal_create_block', {
 		blockId,
 		cwd,
+		workspaceRoot,
 		command,
 	});
 }

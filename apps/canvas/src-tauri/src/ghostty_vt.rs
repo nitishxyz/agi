@@ -97,6 +97,7 @@ pub fn ghostty_vt_create_session(
     manager: tauri::State<'_, GhosttyVtManager>,
     session_id: String,
     cwd: Option<String>,
+    workspace_root: Option<String>,
     command: Option<String>,
     cols: Option<u16>,
     rows: Option<u16>,
@@ -106,6 +107,7 @@ pub fn ghostty_vt_create_session(
         manager.inner(),
         &session_id,
         cwd.as_deref(),
+        workspace_root.as_deref(),
         command.as_deref(),
         cols,
         rows,
@@ -196,6 +198,7 @@ pub(crate) fn create_registered_session(
     app_handle: &tauri::AppHandle,
     session_id: &str,
     cwd: Option<&str>,
+    workspace_root: Option<&str>,
     command: Option<&str>,
     cols: u16,
     rows: u16,
@@ -205,6 +208,7 @@ pub(crate) fn create_registered_session(
         registered_manager()?,
         session_id,
         cwd,
+        workspace_root,
         command,
         cols,
         rows,
@@ -358,11 +362,21 @@ mod imp {
         manager: &GhosttyVtManager,
         session_id: &str,
         cwd: Option<&str>,
+        workspace_root: Option<&str>,
         command: Option<&str>,
         cols: Option<u16>,
         rows: Option<u16>,
     ) -> Result<(), String> {
-        let _ = (app_handle, manager, session_id, cwd, command, cols, rows);
+        let _ = (
+            app_handle,
+            manager,
+            session_id,
+            cwd,
+            workspace_root,
+            command,
+            cols,
+            rows,
+        );
         Err(UNAVAILABLE_MESSAGE.to_string())
     }
 
@@ -578,7 +592,8 @@ mod imp {
         ffi::{c_char, c_int, c_void, CStr, CString},
         io, mem,
         os::fd::RawFd,
-        path::Path,
+        path::{Path, PathBuf},
+        process::Command,
         ptr, slice,
         sync::{
             atomic::{AtomicBool, AtomicI32, Ordering},
@@ -919,6 +934,7 @@ mod imp {
         manager: &GhosttyVtManager,
         session_id: &str,
         cwd: Option<&str>,
+        workspace_root: Option<&str>,
         command: Option<&str>,
         cols: Option<u16>,
         rows: Option<u16>,
@@ -928,6 +944,7 @@ mod imp {
             &manager.inner,
             session_id,
             cwd,
+            workspace_root,
             command,
             cols.unwrap_or(DEFAULT_COLS).max(1),
             rows.unwrap_or(DEFAULT_ROWS).max(1),
@@ -1031,6 +1048,7 @@ mod imp {
         sessions: &Arc<Mutex<HashMap<String, Arc<SessionHandle>>>>,
         session_id: &str,
         cwd: Option<&str>,
+        workspace_root: Option<&str>,
         command: Option<&str>,
         cols: u16,
         rows: u16,
@@ -1042,9 +1060,42 @@ mod imp {
             return Ok(());
         }
 
-        let session = GhosttyVtSession::spawn(app_handle.clone(), session_id, cwd, command, cols, rows)?;
+        let resolved_cwd = resolve_session_cwd(cwd, workspace_root);
+        let session = GhosttyVtSession::spawn(
+            app_handle.clone(),
+            session_id,
+            resolved_cwd.as_deref(),
+            command,
+            cols,
+            rows,
+        )?;
         sessions.insert(session_id.to_string(), session);
         Ok(())
+    }
+
+    fn resolve_session_cwd(cwd: Option<&str>, workspace_root: Option<&str>) -> Option<String> {
+        let cwd = cwd.and_then(|value| {
+            let trimmed = value.trim();
+            (!trimmed.is_empty()).then_some(trimmed)
+        });
+        let workspace_root = workspace_root.and_then(|value| {
+            let trimmed = value.trim();
+            (!trimmed.is_empty()).then_some(trimmed)
+        });
+
+        match (cwd, workspace_root) {
+            (Some(cwd), Some(workspace_root)) => {
+                let cwd_path = Path::new(cwd);
+                if cwd_path.is_absolute() {
+                    Some(cwd_path.to_string_lossy().into_owned())
+                } else {
+                    Some(Path::new(workspace_root).join(cwd_path).to_string_lossy().into_owned())
+                }
+            }
+            (Some(cwd), None) => Some(cwd.to_string()),
+            (None, Some(workspace_root)) => Some(workspace_root.to_string()),
+            (None, None) => None,
+        }
     }
 
     pub fn ghostty_vt_resize_session_in_map(
@@ -2406,7 +2457,7 @@ mod imp {
     fn scroll_steps_from_delta(delta_y: f64, precise: bool) -> i64 {
         let magnitude = delta_y.abs();
         let steps = if precise {
-            (magnitude / 10.0).round() as i64
+            (magnitude / 24.0).round() as i64
         } else {
             magnitude.round() as i64
         };
@@ -2599,6 +2650,8 @@ mod imp {
         command: Option<&str>,
         geometry: SessionGeometry,
     ) -> Result<(RawFd, libc::pid_t), String> {
+        let shell_path = resolve_user_shell_path();
+        let login_shell_path = resolve_login_shell_path(&shell_path);
         let mut pty_fd = -1;
         let mut winsize = libc::winsize {
             ws_row: geometry.rows,
@@ -2614,7 +2667,7 @@ mod imp {
         }
 
         if child_pid == 0 {
-            run_shell_child(cwd, command);
+            run_shell_child(cwd, command, &shell_path, login_shell_path.as_deref());
         }
 
         let flags = unsafe { libc::fcntl(pty_fd, libc::F_GETFL) };
@@ -2640,7 +2693,12 @@ mod imp {
         Ok((pty_fd, child_pid))
     }
 
-    fn run_shell_child(cwd: Option<&str>, command: Option<&str>) -> ! {
+    fn run_shell_child(
+        cwd: Option<&str>,
+        command: Option<&str>,
+        shell_path: &str,
+        login_shell_path: Option<&str>,
+    ) -> ! {
         if let Some(cwd) = cwd {
             if let Ok(cwd) = CString::new(cwd) {
                 unsafe {
@@ -2649,11 +2707,9 @@ mod imp {
             }
         }
 
-        set_env("TERM", "xterm-256color");
-        set_env("COLORTERM", "truecolor");
+        configure_shell_environment(login_shell_path);
 
-        let shell_path = resolve_user_shell_path();
-        let shell = CString::new(shell_path.clone())
+        let shell = CString::new(shell_path)
             .unwrap_or_else(|_| CString::new("/bin/sh").expect("static shell path is valid"));
         let shell_name = Path::new(&shell_path)
             .file_name()
@@ -2688,6 +2744,91 @@ mod imp {
         unsafe {
             libc::_exit(127);
         }
+    }
+
+    fn configure_shell_environment(login_shell_path: Option<&str>) {
+        set_env("TERM", "xterm-256color");
+        set_env("COLORTERM", "truecolor");
+
+        let path_entries = resolve_bundled_binary_dirs();
+        prepend_env_path_list("PATH", &path_entries, login_shell_path);
+    }
+
+    fn resolve_bundled_binary_dirs() -> Vec<PathBuf> {
+        let mut candidates = Vec::new();
+
+        if let Ok(resource_dir) = std::env::var("OTTO_RESOURCES_DIR") {
+            let resource_dir = PathBuf::from(resource_dir);
+            candidates.push(resource_dir.join("resources/binaries"));
+            candidates.push(resource_dir.join("binaries"));
+        }
+
+        if let Ok(exe_path) = std::env::current_exe() {
+            if let Some(parent) = exe_path.parent() {
+                candidates.push(parent.join("../Resources/resources/binaries"));
+                candidates.push(parent.join("../Resources/binaries"));
+            }
+        }
+
+        if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
+            candidates.push(PathBuf::from(manifest_dir).join("resources/binaries"));
+        }
+
+        candidates
+            .into_iter()
+            .filter(|path| path.exists())
+            .collect()
+    }
+
+    fn prepend_env_path_list(key: &str, paths: &[PathBuf], existing_path: Option<&str>) {
+        let mut values = Vec::new();
+
+        for path in paths {
+            if let Some(value) = path.to_str() {
+                if !value.is_empty() {
+                    values.push(value.to_string());
+                }
+            }
+        }
+
+        if let Some(existing_path) = existing_path.filter(|value| !value.is_empty()) {
+            values.push(existing_path.to_string());
+        } else if let Some(existing) = std::env::var(key).ok().filter(|value| !value.is_empty()) {
+            values.push(existing);
+        }
+
+        if !values.is_empty() {
+            set_env(key, &values.join(":"));
+        }
+    }
+
+    fn resolve_login_shell_path(shell_path: &str) -> Option<String> {
+        resolve_shell_path(shell_path, &["-i", "-l", "-c"])
+            .or_else(|| resolve_shell_path(shell_path, &["-l", "-c"]))
+    }
+
+    fn resolve_shell_path(shell_path: &str, shell_args: &[&str]) -> Option<String> {
+        const START_MARKER: &str = "__OTTO_CANVAS_PATH_START__";
+        const END_MARKER: &str = "__OTTO_CANVAS_PATH_END__";
+
+        let output = Command::new(shell_path)
+            .args(shell_args)
+            .arg(format!(
+                "printf '%s%s%s' '{START_MARKER}' \"$PATH\" '{END_MARKER}'"
+            ))
+            .output()
+            .ok()?;
+        if !output.status.success() {
+            return None;
+        }
+        let stdout = String::from_utf8(output.stdout).ok()?;
+        let start = stdout.rfind(START_MARKER)? + START_MARKER.len();
+        let end = stdout[start..].find(END_MARKER)? + start;
+        let path = stdout[start..end].trim();
+        if path.is_empty() {
+            return None;
+        }
+        Some(path.to_string())
     }
 
     fn resolve_user_shell_path() -> String {

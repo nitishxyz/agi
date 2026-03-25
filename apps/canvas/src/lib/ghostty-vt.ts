@@ -58,6 +58,7 @@ export async function createGhosttyVtSession(
 	sessionId: string,
 	payload?: {
 		cwd?: string;
+		workspaceRoot?: string;
 		command?: string;
 		cols?: number;
 		rows?: number;
@@ -66,6 +67,7 @@ export async function createGhosttyVtSession(
 	return invoke('ghostty_vt_create_session', {
 		sessionId,
 		cwd: payload?.cwd,
+		workspaceRoot: payload?.workspaceRoot,
 		command: payload?.command,
 		cols: payload?.cols,
 		rows: payload?.rows,

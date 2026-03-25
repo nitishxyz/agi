@@ -322,47 +322,35 @@ export function useCanvasKeybinds() {
 				case 'ctrl+shift+9':
 					runShortcut('ctrl+shift+9', () => focusByIndex(8));
 					break;
-				case 'ctrl+h':
-					runShortcut('ctrl+h', () => {
+				case 'meta+h':
+					runShortcut('meta+h', () => {
 						const s = useCanvasStore.getState();
 						if (s.activeTabKind === 'canvas' && s.layout) {
 							focusDirection('left');
-						} else {
-							const idx = s.tabOrder.indexOf(s.activeTabId ?? '');
-							if (idx > 0) setActiveTab(s.tabOrder[idx - 1]);
 						}
 					});
 					break;
-				case 'ctrl+j':
-					runShortcut('ctrl+j', () => {
+				case 'meta+j':
+					runShortcut('meta+j', () => {
 						const s = useCanvasStore.getState();
 						if (s.activeTabKind === 'canvas' && s.layout) {
 							focusDirection('down');
-						} else {
-							const idx = s.tabOrder.indexOf(s.activeTabId ?? '');
-							if (idx < s.tabOrder.length - 1) setActiveTab(s.tabOrder[idx + 1]);
 						}
 					});
 					break;
-				case 'ctrl+k':
-					runShortcut('ctrl+k', () => {
+				case 'meta+k':
+					runShortcut('meta+k', () => {
 						const s = useCanvasStore.getState();
 						if (s.activeTabKind === 'canvas' && s.layout) {
 							focusDirection('up');
-						} else {
-							const idx = s.tabOrder.indexOf(s.activeTabId ?? '');
-							if (idx > 0) setActiveTab(s.tabOrder[idx - 1]);
 						}
 					});
 					break;
-				case 'ctrl+l':
-					runShortcut('ctrl+l', () => {
+				case 'meta+l':
+					runShortcut('meta+l', () => {
 						const s = useCanvasStore.getState();
 						if (s.activeTabKind === 'canvas' && s.layout) {
 							focusDirection('right');
-						} else {
-							const idx = s.tabOrder.indexOf(s.activeTabId ?? '');
-							if (idx < s.tabOrder.length - 1) setActiveTab(s.tabOrder[idx + 1]);
 						}
 					});
 					break;
@@ -422,10 +410,10 @@ export function useCanvasKeybinds() {
 			{ hotkey: 'Control+Shift+7', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+7') },
 			{ hotkey: 'Control+Shift+8', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+8') },
 			{ hotkey: 'Control+Shift+9', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+shift+9') },
-			{ hotkey: 'Control+H', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+h') },
-			{ hotkey: 'Control+J', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+j') },
-			{ hotkey: 'Control+K', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+k') },
-			{ hotkey: 'Control+L', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('ctrl+l') },
+			{ hotkey: 'Meta+H', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('meta+h') },
+			{ hotkey: 'Meta+J', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('meta+j') },
+			{ hotkey: 'Meta+K', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('meta+k') },
+			{ hotkey: 'Meta+L', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('meta+l') },
 			{ hotkey: 'Mod+Shift+B', callback: (event) => !shouldBypassCanvasShortcut(event) && executeShortcut('mod+shift+b') },
 		],
 		{ conflictBehavior: 'replace' },

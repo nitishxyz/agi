@@ -25,7 +25,10 @@ const TAB_OPTIONS: {
 	value:
 		| { kind: 'canvas' }
 		| { kind: 'primitive'; primitive: WorkspaceTabKind }
-		| { kind: 'preset'; preset: import('../lib/primitive-registry').CommandPresetId };
+		| {
+				kind: 'preset';
+				preset: import('../lib/primitive-registry').CommandPresetId;
+		  };
 	label: string;
 	description: string;
 	renderIcon: () => ReactNode;
@@ -44,7 +47,7 @@ const TAB_OPTIONS: {
 		description: option.description,
 		renderIcon: () => {
 			const Icon = option.icon;
-		return <Icon size={20} strokeWidth={1.5} />;
+			return <Icon size={20} strokeWidth={1.5} />;
 		},
 		shortcut: option.key,
 	})),
@@ -103,7 +106,10 @@ function SplitPane({
 			ref={containerRef}
 			className={`flex h-full w-full ${isH ? 'flex-row' : 'flex-col'}`}
 		>
-			<div style={{ [isH ? 'width' : 'height']: `${node.ratio * 100}%` }} className="min-w-0 min-h-0">
+			<div
+				style={{ [isH ? 'width' : 'height']: `${node.ratio * 100}%` }}
+				className="min-w-0 min-h-0"
+			>
 				<LayoutRenderer
 					node={node.first}
 					blocks={blocks}
@@ -120,7 +126,10 @@ function SplitPane({
 				} transition-colors duration-100`}
 				onMouseDown={handleMouseDown}
 			/>
-			<div style={{ [isH ? 'width' : 'height']: `${(1 - node.ratio) * 100}%` }} className="min-w-0 min-h-0">
+			<div
+				style={{ [isH ? 'width' : 'height']: `${(1 - node.ratio) * 100}%` }}
+				className="min-w-0 min-h-0"
+			>
 				<LayoutRenderer
 					node={node.second}
 					blocks={blocks}
@@ -144,7 +153,9 @@ function LayoutRenderer({
 		const block = blocks[node.blockId];
 		if (!block) return null;
 		return (
-			<div className={`h-full w-full ${activeTabKind === 'block' ? 'p-1' : 'p-px'}`}>
+			<div
+				className={`h-full w-full ${activeTabKind === 'block' ? 'p-1' : 'p-px'}`}
+			>
 				<BlockFrame
 					block={block}
 					workspaceIsActive={workspaceIsActive}
@@ -168,6 +179,7 @@ function LayoutRenderer({
 function PendingTabSurface({ isActive }: { isActive: boolean }) {
 	const createTab = useCanvasStore((s) => s.createTab);
 	const createPresetTab = useCanvasStore((s) => s.createPresetTab);
+	const closeCreateTab = useCanvasStore((s) => s.closeCreateTab);
 	const surfaceRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -178,11 +190,44 @@ function PendingTabSurface({ isActive }: { isActive: boolean }) {
 		}, 0);
 	}, [isActive]);
 
+	const selectPendingTabOption = useCallback(
+		(key: string) => {
+			if (key === 'Escape') {
+				closeCreateTab();
+				return;
+			}
+			const option = TAB_OPTIONS.find(
+				(candidate) => candidate.shortcut === key,
+			);
+			if (!option) return;
+			const value = option.value;
+			if (value.kind === 'canvas') {
+				createTab('canvas');
+				return;
+			}
+			if (value.kind === 'primitive') {
+				createTab(value.primitive);
+				return;
+			}
+			createPresetTab(value.preset);
+		},
+		[closeCreateTab, createPresetTab, createTab],
+	);
+
 	return (
 		<div
 			ref={surfaceRef}
+			role="button"
 			tabIndex={isActive ? 0 : -1}
 			className="flex h-full w-full rounded-lg border border-dashed border-canvas-border-active bg-[rgba(22,22,26,0.9)] outline-none"
+			onKeyDown={(event) => {
+				if (event.metaKey || event.ctrlKey || event.altKey) return;
+				if (/^[1-9]$/.test(event.key) || event.key === 'Escape') {
+					event.preventDefault();
+					event.stopPropagation();
+					selectPendingTabOption(event.key);
+				}
+			}}
 		>
 			<PendingSelectionGrid
 				title="a tab"
@@ -259,7 +304,11 @@ function TabSurface({
 				<div className="space-y-3 text-center">
 					<p className="text-[13px] text-canvas-text-dim">No blocks yet</p>
 					<p className="text-[11px] text-canvas-text-muted">
-						Press <kbd className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-canvas-text-dim">⌘N</kbd> to add a block
+						Press{' '}
+						<kbd className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-canvas-text-dim">
+							⌘N
+						</kbd>{' '}
+						to add a block
 					</p>
 				</div>
 			</div>
@@ -295,7 +344,10 @@ function WorkspaceSurface({
 		) {
 			return workspaceState.activeTabId;
 		}
-		return workspaceState.tabOrder.find((tabId) => workspaceState.tabs[tabId]) ?? null;
+		return (
+			workspaceState.tabOrder.find((tabId) => workspaceState.tabs[tabId]) ??
+			null
+		);
 	}, [workspaceState]);
 	const orderedTabs = useMemo(
 		() =>
@@ -311,7 +363,11 @@ function WorkspaceSurface({
 				<div className="space-y-3 text-center">
 					<p className="text-[13px] text-canvas-text-dim">No tabs yet</p>
 					<p className="text-[11px] text-canvas-text-muted">
-						Press <kbd className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-canvas-text-dim">⌘T</kbd> to create a tab
+						Press{' '}
+						<kbd className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-canvas-text-dim">
+							⌘T
+						</kbd>{' '}
+						to create a tab
 					</p>
 				</div>
 			</div>
@@ -351,7 +407,7 @@ export function CanvasRenderer() {
 	const workspaceStates = useCanvasStore((s) => s.workspaceStates);
 	const workspaces = useWorkspaceStore((s) => s.workspaces);
 	const activeWorkspaceState = activeWorkspaceId
-		? workspaceStates[activeWorkspaceId] ?? null
+		? (workspaceStates[activeWorkspaceId] ?? null)
 		: null;
 	const orderedWorkspaceSurfaces = useMemo(
 		() =>
@@ -361,7 +417,9 @@ export function CanvasRenderer() {
 					workspaceState: workspaceStates[workspace.id] ?? null,
 				}))
 				.filter(
-					(entry): entry is {
+					(
+						entry,
+					): entry is {
 						workspaceId: string;
 						workspaceState: WorkspaceSurfaceState;
 					} => entry.workspaceState !== null,
@@ -375,7 +433,8 @@ export function CanvasRenderer() {
 				<div className="space-y-3 text-center">
 					<p className="text-[13px] text-canvas-text-dim">No workspace open</p>
 					<p className="max-w-sm text-[11px] text-canvas-text-muted">
-						Use the + button in the sidebar to create a workspace linked to a local project path.
+						Use the + button in the sidebar to create a workspace linked to a
+						local project path.
 					</p>
 				</div>
 			</div>
@@ -397,7 +456,10 @@ export function CanvasRenderer() {
 						}
 						aria-hidden={!isActive}
 					>
-						<OttoWorkspaceBoundary workspaceId={workspaceId} isActive={isActive}>
+						<OttoWorkspaceBoundary
+							workspaceId={workspaceId}
+							isActive={isActive}
+						>
 							<WorkspaceSurface
 								workspaceState={workspaceState}
 								isActive={isActive}

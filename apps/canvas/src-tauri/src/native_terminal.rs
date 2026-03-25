@@ -74,6 +74,7 @@ pub fn native_terminal_create_block(
     manager: tauri::State<'_, NativeTerminalManager>,
     block_id: String,
     cwd: Option<String>,
+    workspace_root: Option<String>,
     command: Option<String>,
 ) -> Result<(), String> {
     #[cfg(target_os = "macos")]
@@ -88,6 +89,7 @@ pub fn native_terminal_create_block(
                 &manager,
                 &block_id,
                 cwd,
+                workspace_root,
                 command,
             )
         })
@@ -95,7 +97,7 @@ pub fn native_terminal_create_block(
 
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = (app_handle, manager, block_id, cwd, command);
+        let _ = (app_handle, manager, block_id, cwd, workspace_root, command);
         Err("Native terminal surfaces are currently implemented for macOS only.".into())
     }
 }
@@ -616,6 +618,22 @@ mod macos {
                 crate::ghostty::emit_native_shortcut("mod+]");
                 true
             }
+            Some("h") => {
+                crate::ghostty::emit_native_shortcut("meta+h");
+                true
+            }
+            Some("j") => {
+                crate::ghostty::emit_native_shortcut("meta+j");
+                true
+            }
+            Some("k") => {
+                crate::ghostty::emit_native_shortcut("meta+k");
+                true
+            }
+            Some("l") => {
+                crate::ghostty::emit_native_shortcut("meta+l");
+                true
+            }
             Some("b") if flags.contains(NSEventModifierFlags::Shift) => {
                 crate::ghostty::emit_native_shortcut("mod+shift+b");
                 true
@@ -688,31 +706,6 @@ mod macos {
         let flags = event
             .modifierFlags()
             .intersection(NSEventModifierFlags::DeviceIndependentFlagsMask);
-
-        if flags.contains(NSEventModifierFlags::Control)
-            && !flags.contains(NSEventModifierFlags::Command)
-            && !flags.contains(NSEventModifierFlags::Option)
-        {
-            match event.keyCode() {
-                4 => {
-                    crate::ghostty::emit_native_shortcut("ctrl+h");
-                    return;
-                }
-                38 => {
-                    crate::ghostty::emit_native_shortcut("ctrl+j");
-                    return;
-                }
-                40 => {
-                    crate::ghostty::emit_native_shortcut("ctrl+k");
-                    return;
-                }
-                37 => {
-                    crate::ghostty::emit_native_shortcut("ctrl+l");
-                    return;
-                }
-                _ => {}
-            }
-        }
 
         if flags.contains(NSEventModifierFlags::Command) {
             let sequence = match event.keyCode() {
@@ -964,8 +957,8 @@ mod macos {
             .max(max_adv.width)
             .ceil()
             .max(f64::from(DEFAULT_CELL_WIDTH_PX));
-        let cell_height = (line_height + 2.0).max(f64::from(DEFAULT_CELL_HEIGHT_PX));
-        let text_offset_y = ((cell_height - line_height) / 2.0).max(0.0);
+        let cell_height = (line_height + 4.0).ceil().max(f64::from(DEFAULT_CELL_HEIGHT_PX));
+        let text_offset_y = ((cell_height - line_height) / 2.0).floor().max(1.0);
         (font, cell_width, cell_height, text_offset_y)
     }
 
@@ -1350,6 +1343,7 @@ mod macos {
         manager: &Arc<Mutex<NativeTerminalState>>,
         block_id: &str,
         cwd: Option<String>,
+        workspace_root: Option<String>,
         command: Option<String>,
     ) -> Result<(), String> {
         let mtm = MainThreadMarker::new().ok_or_else(|| {
@@ -1386,6 +1380,7 @@ mod macos {
             app_handle,
             block_id,
             cwd.as_deref(),
+            workspace_root.as_deref(),
             command.as_deref(),
             DEFAULT_COLS,
             DEFAULT_ROWS,

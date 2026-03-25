@@ -40,7 +40,7 @@ export function CommandBlock({ block, isFocused }: CommandBlockProps) {
 	}, [block.command, isFocused]);
 
 	const helperText = useMemo(() => {
-		if (cwd.trim()) return `Runs in ${cwd.trim()}`;
+		if (cwd.trim()) return `Runs in ${cwd.trim()} (relative paths resolve from the workspace root)`;
 		return 'Runs in the current workspace root unless you override the working directory.';
 	}, [cwd]);
 

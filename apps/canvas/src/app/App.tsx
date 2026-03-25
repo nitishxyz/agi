@@ -53,7 +53,6 @@ export function App() {
 	const runtimes = useWorkspaceRuntimeStore((s) => s.runtimes);
 	const ensureRuntimeStarted = useWorkspaceRuntimeStore((s) => s.ensureStarted);
 	const stopRuntime = useWorkspaceRuntimeStore((s) => s.stopRuntime);
-	const removeBlock = useCanvasStore((s) => s.removeBlock);
 	const setFocused = useCanvasStore((s) => s.setFocused);
 	const activeTab = activeTabId ? tabs[activeTabId] ?? null : null;
 	const [workspaceFileExistsState, setWorkspaceFileExistsState] = useState(false);
@@ -180,8 +179,7 @@ export function App() {
 		let unlistenClose: (() => void) | undefined;
 		let unlistenFocus: (() => void) | undefined;
 
-		void listen<{ blockId: string }>('ghostty-close-block', (event) => {
-			removeBlock(event.payload.blockId);
+		void listen<{ blockId: string }>('ghostty-close-block', (_event) => {
 			window.setTimeout(() => {
 				window.focus();
 			}, 0);
@@ -199,7 +197,7 @@ export function App() {
 			unlistenClose?.();
 			unlistenFocus?.();
 		};
-	}, [removeBlock, setFocused]);
+	}, [setFocused]);
 
 	return (
 		<div

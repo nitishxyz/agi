@@ -164,7 +164,8 @@ export function GhosttyBlock({ block, isFocused }: GhosttyBlockProps) {
 	const [ready, setReady] = useState(false);
 	const [fontReady, setFontReady] = useState(false);
 	const [loading, setLoading] = useState(true);
-	const resolvedCwd = block.cwd?.trim() || activeEnvironment?.path || undefined;
+	const cwdOverride = block.cwd?.trim() || undefined;
+	const workspaceRoot = activeEnvironment?.path?.trim() || undefined;
 	const startupCommand =
 		block.type === 'command' ? block.command?.trim() || undefined : undefined;
 	const setActivityStatus = useTabActivityStore((s) => s.setStatus);
@@ -294,7 +295,8 @@ export function GhosttyBlock({ block, isFocused }: GhosttyBlockProps) {
 			try {
 				await destroyGhosttyVtSession(block.id).catch(() => undefined);
 				await createGhosttyVtSession(block.id, {
-					cwd: resolvedCwd,
+					cwd: cwdOverride,
+					workspaceRoot,
 					command: startupCommand,
 					cols: DEFAULT_COLS,
 					rows: DEFAULT_ROWS,
@@ -326,7 +328,15 @@ export function GhosttyBlock({ block, isFocused }: GhosttyBlockProps) {
 			}
 			void destroyGhosttyVtSession(block.id).catch(() => undefined);
 		};
-	}, [block.id, nativeMode, resolvedCwd, scheduleRefresh, startupCommand, status?.available]);
+	}, [
+		block.id,
+		cwdOverride,
+		nativeMode,
+		scheduleRefresh,
+		startupCommand,
+		status?.available,
+		workspaceRoot,
+	]);
 
 	useEffect(() => {
 		if (nativeMode || !ready) return;

@@ -1,5 +1,5 @@
 import { getCurrentWebview } from '@tauri-apps/api/webview';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import {
 	BLOCK_PRIMITIVE_OPTIONS,
@@ -28,18 +28,15 @@ function PendingPicker({ blockId }: { blockId: string }) {
 		<PendingSelectionGrid
 			title="a block"
 			subtitle="Choose a tool to place in this canvas. The picker stays usable even in tighter splits."
-			options={BLOCK_PRIMITIVE_OPTIONS.map(({ key, value, label, description, icon: Icon }) => ({
-				key,
-				value,
-				label,
-				description,
-			renderIcon: () => (
-				<Icon
-					size={20}
-					strokeWidth={1.5}
-				/>
-			),
-			}))}
+			options={BLOCK_PRIMITIVE_OPTIONS.map(
+				({ key, value, label, description, icon: Icon }) => ({
+					key,
+					value,
+					label,
+					description,
+					renderIcon: () => <Icon size={20} strokeWidth={1.5} />,
+				}),
+			)}
 			onSelect={(value) => {
 				if (value.kind === 'primitive') {
 					convertBlock(blockId, value.primitive);
@@ -64,7 +61,11 @@ function renderBlockContent(
 			return <BrowserBlock block={block} />;
 		case 'otto':
 			return workspaceIsActive && workspaceId ? (
-				<OttoBlock block={block} isFocused={isFocused} workspaceId={workspaceId} />
+				<OttoBlock
+					block={block}
+					isFocused={isFocused}
+					workspaceId={workspaceId}
+				/>
 			) : null;
 		case 'command':
 			return <CommandBlock block={block} isFocused={isFocused} />;
@@ -79,6 +80,8 @@ export function BlockFrame({
 	workspaceId,
 }: BlockFrameProps) {
 	const { focusedBlockId, setFocused, removeBlock } = useCanvasStore();
+	const convertBlock = useCanvasStore((s) => s.convertBlock);
+	const convertBlockToPreset = useCanvasStore((s) => s.convertBlockToPreset);
 	const isFocused = focusedBlockId === block.id;
 	const isPending = block.type === 'pending';
 	const pendingRef = useRef<HTMLDivElement>(null);
@@ -86,23 +89,49 @@ export function BlockFrame({
 	useEffect(() => {
 		if (isPending && isFocused) {
 			window.setTimeout(() => {
-				void getCurrentWebview().setFocus().catch(() => undefined);
+				void getCurrentWebview()
+					.setFocus()
+					.catch(() => undefined);
 				pendingRef.current?.focus();
 				window.focus();
 			}, 0);
 		}
 	}, [isFocused, isPending]);
 
+	const selectPendingBlockOption = useCallback(
+		(key: string) => {
+			const option = BLOCK_PRIMITIVE_OPTIONS.find(
+				(candidate) => candidate.key === key,
+			);
+			if (!option) return;
+			if (option.value.kind === 'primitive') {
+				convertBlock(block.id, option.value.primitive);
+				return;
+			}
+			convertBlockToPreset(block.id, option.value.preset);
+		},
+		[block.id, convertBlock, convertBlockToPreset],
+	);
+
 	if (isPending) {
 		return (
 			<div
 				ref={pendingRef}
+				role="button"
 				tabIndex={0}
 				className={`flex flex-col h-full rounded-lg overflow-hidden border border-dashed outline-none ${
 					isFocused ? 'border-canvas-border-active' : 'border-canvas-border'
 				}`}
 				style={{ background: 'rgba(22, 22, 26, 0.9)' }}
 				onClick={() => setFocused(block.id)}
+				onKeyDown={(event) => {
+					if (event.metaKey || event.ctrlKey || event.altKey) return;
+					if (/^[1-9]$/.test(event.key)) {
+						event.preventDefault();
+						event.stopPropagation();
+						selectPendingBlockOption(event.key);
+					}
+				}}
 			>
 				<PendingPicker blockId={block.id} />
 			</div>
@@ -112,7 +141,8 @@ export function BlockFrame({
 	const Icon =
 		block.type === 'command'
 			? getCommandSurfaceDefinition(block.presetId).icon
-			: getPrimitiveDefinition(block.type as Exclude<Block['type'], 'pending'>).icon;
+			: getPrimitiveDefinition(block.type as Exclude<Block['type'], 'pending'>)
+					.icon;
 
 	return (
 		<div
@@ -134,6 +164,7 @@ export function BlockFrame({
 					</span>
 				</div>
 				<button
+					type="button"
 					onClick={(e) => {
 						e.stopPropagation();
 						removeBlock(block.id);

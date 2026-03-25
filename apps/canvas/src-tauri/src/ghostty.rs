@@ -830,6 +830,10 @@ mod macos {
                 Some("w") => Some(("mod+w", true)),
                 Some("[") => Some(("mod+[", true)),
                 Some("]") => Some(("mod+]", true)),
+                Some("h") => Some(("meta+h", true)),
+                Some("j") => Some(("meta+j", true)),
+                Some("k") => Some(("meta+k", true)),
+                Some("l") => Some(("meta+l", true)),
                 Some("b") if flags.contains(NSEventModifierFlags::Shift) => {
                     Some(("mod+shift+b", true))
                 }
@@ -860,13 +864,7 @@ mod macos {
                     ));
                 }
             }
-            return match key_code {
-                4 => Some(("ctrl+h", true)),
-                38 => Some(("ctrl+j", true)),
-                40 => Some(("ctrl+k", true)),
-                37 => Some(("ctrl+l", true)),
-                _ => None,
-            };
+            return None;
         }
 
         if !flags.contains(NSEventModifierFlags::Command)

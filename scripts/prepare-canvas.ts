@@ -200,6 +200,10 @@ async function buildCanvasCli(platform: PlatformKey) {
 	const config = PLATFORM_TARGETS[platform];
 	const outputPath = join(CLI_DIR, 'dist', config.binaryName);
 	const stagedBinaryPath = join(CANVAS_BINARIES_DIR, config.binaryName);
+	const commandAliasPath = join(
+		CANVAS_BINARIES_DIR,
+		config.isWindows ? 'otto.exe' : 'otto',
+	);
 
 	console.log(`\n📦 Building embedded canvas CLI for ${platform}...`);
 	mkdirSync(CANVAS_BINARIES_DIR, { recursive: true });
@@ -209,11 +213,14 @@ async function buildCanvasCli(platform: PlatformKey) {
 	await $`cd ${CLI_DIR} && mkdir -p dist && bun build --compile --minify --target=${config.bunTarget} ./index.ts --outfile ${outputPath}`;
 
 	copyFileSync(outputPath, stagedBinaryPath);
+	copyFileSync(outputPath, commandAliasPath);
 	if (!config.isWindows) {
 		await $`chmod +x ${stagedBinaryPath}`;
+		await $`chmod +x ${commandAliasPath}`;
 	}
 
 	console.log(`   ✅ staged ${stagedBinaryPath}`);
+	console.log(`   ✅ staged ${commandAliasPath}`);
 }
 
 function ghosttyDylibName(): string {
