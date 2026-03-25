@@ -430,11 +430,11 @@ mod macos {
         true
     }
 
-    fn selection_background_color(default_fg: &crate::ghostty_vt::GhosttyVtRgb) -> Retained<NSColor> {
+    fn selection_background_color(selection: crate::ghostty_vt::GhosttyVtRgb) -> Retained<NSColor> {
         NSColor::colorWithSRGBRed_green_blue_alpha(
-            f64::from(default_fg.r) / 255.0,
-            f64::from(default_fg.g) / 255.0,
-            f64::from(default_fg.b) / 255.0,
+            f64::from(selection.r) / 255.0,
+            f64::from(selection.g) / 255.0,
+            f64::from(selection.b) / 255.0,
             0.24,
         )
     }
@@ -840,6 +840,75 @@ mod macos {
         (font, cell_width, cell_height, text_offset_y)
     }
 
+    #[derive(Clone, Copy)]
+    struct OttoTerminalTheme {
+        background: crate::ghostty_vt::GhosttyVtRgb,
+        foreground: crate::ghostty_vt::GhosttyVtRgb,
+        cursor: crate::ghostty_vt::GhosttyVtRgb,
+        selection: crate::ghostty_vt::GhosttyVtRgb,
+        ansi_palette: [crate::ghostty_vt::GhosttyVtRgb; 16],
+    }
+
+    fn otto_terminal_theme() -> OttoTerminalTheme {
+        OttoTerminalTheme {
+            background: crate::ghostty_vt::GhosttyVtRgb { r: 6, g: 7, b: 8 },
+            foreground: crate::ghostty_vt::GhosttyVtRgb {
+                r: 216,
+                g: 247,
+                b: 255,
+            },
+            cursor: crate::ghostty_vt::GhosttyVtRgb {
+                r: 100,
+                g: 217,
+                b: 255,
+            },
+            selection: crate::ghostty_vt::GhosttyVtRgb {
+                r: 100,
+                g: 217,
+                b: 255,
+            },
+            ansi_palette: [
+                crate::ghostty_vt::GhosttyVtRgb { r: 17, g: 19, b: 24 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 255, g: 122, b: 144 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 139, g: 212, b: 156 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 245, g: 200, b: 106 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 100, g: 217, b: 255 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 212, g: 165, b: 255 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 141, g: 232, b: 255 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 216, g: 247, b: 255 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 61, g: 68, b: 79 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 255, g: 150, b: 168 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 171, g: 231, b: 184 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 255, g: 220, b: 133 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 131, g: 226, b: 255 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 226, g: 190, b: 255 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 170, g: 241, b: 255 },
+                crate::ghostty_vt::GhosttyVtRgb { r: 240, g: 251, b: 255 },
+            ],
+        }
+    }
+
+    fn apply_terminal_theme(
+        color: crate::ghostty_vt::GhosttyVtRgb,
+        default_fg: crate::ghostty_vt::GhosttyVtRgb,
+        default_bg: crate::ghostty_vt::GhosttyVtRgb,
+        ansi_palette: &[crate::ghostty_vt::GhosttyVtRgb],
+        theme: OttoTerminalTheme,
+    ) -> crate::ghostty_vt::GhosttyVtRgb {
+        if color == default_bg {
+            return theme.background;
+        }
+        if color == default_fg {
+            return theme.foreground;
+        }
+        if let Some(index) = ansi_palette.iter().position(|candidate| *candidate == color) {
+            if let Some(mapped) = theme.ansi_palette.get(index) {
+                return *mapped;
+            }
+        }
+        color
+    }
+
     fn nscolor_from_rgb(rgb: &crate::ghostty_vt::GhosttyVtRgb) -> Retained<NSColor> {
         NSColor::colorWithSRGBRed_green_blue_alpha(
             f64::from(rgb.r) / 255.0,
@@ -961,20 +1030,28 @@ mod macos {
         };
 
         let snapshot = crate::ghostty_vt::snapshot_registered_session(&block_id).ok();
+        let theme = otto_terminal_theme();
         let default_bg = snapshot
             .as_ref()
-            .map(|snap| snap.default_bg.clone())
-            .unwrap_or(crate::ghostty_vt::GhosttyVtRgb { r: 6, g: 7, b: 8 });
+            .map(|snap| snap.default_bg)
+            .unwrap_or(theme.background);
         let default_fg = snapshot
             .as_ref()
-            .map(|snap| snap.default_fg.clone())
-            .unwrap_or(crate::ghostty_vt::GhosttyVtRgb {
-                r: 216,
-                g: 247,
-                b: 255,
-            });
+            .map(|snap| snap.default_fg)
+            .unwrap_or(theme.foreground);
+        let ansi_palette = snapshot
+            .as_ref()
+            .map(|snap| snap.ansi_palette.clone())
+            .unwrap_or_else(|| theme.ansi_palette.to_vec());
+        let themed_default_bg = apply_terminal_theme(
+            default_bg,
+            default_fg,
+            default_bg,
+            &ansi_palette,
+            theme,
+        );
 
-        let bg = nscolor_from_rgb(&default_bg);
+        let bg = nscolor_from_rgb(&themed_default_bg);
         bg.setFill();
         NSBezierPath::fillRect(bounds);
 
@@ -986,7 +1063,7 @@ mod macos {
         let origin_x = TERMINAL_PADDING_X;
         let origin_y = TERMINAL_PADDING_Y;
         let selection = selection_range_for_block(&block_id);
-        let selection_bg = selection_background_color(&default_fg);
+        let selection_bg = selection_background_color(theme.selection);
 
         for (row_index, row) in snapshot.rows_data.iter().enumerate() {
             for (cell_index, cell) in row.cells.iter().enumerate() {
@@ -1001,8 +1078,20 @@ mod macos {
                     && snapshot.cursor.x == Some(cell_index as u16)
                     && snapshot.cursor.y == Some(row_index as u16);
 
-                let mut fg_rgb = cell.fg.clone().unwrap_or_else(|| default_fg.clone());
-                let mut bg_rgb = cell.bg.clone().unwrap_or_else(|| default_bg.clone());
+                let mut fg_rgb = apply_terminal_theme(
+                    cell.fg.unwrap_or(default_fg),
+                    default_fg,
+                    default_bg,
+                    &ansi_palette,
+                    theme,
+                );
+                let mut bg_rgb = apply_terminal_theme(
+                    cell.bg.unwrap_or(default_bg),
+                    default_fg,
+                    default_bg,
+                    &ansi_palette,
+                    theme,
+                );
 
                 if is_cursor && snapshot.cursor.shape == "block" {
                     std::mem::swap(&mut fg_rgb, &mut bg_rgb);
@@ -1031,8 +1120,20 @@ mod macos {
                     && snapshot.cursor.x == Some(cell_index as u16)
                     && snapshot.cursor.y == Some(row_index as u16);
 
-                let mut fg_rgb = cell.fg.clone().unwrap_or_else(|| default_fg.clone());
-                let mut bg_rgb = cell.bg.clone().unwrap_or_else(|| default_bg.clone());
+                let mut fg_rgb = apply_terminal_theme(
+                    cell.fg.unwrap_or(default_fg),
+                    default_fg,
+                    default_bg,
+                    &ansi_palette,
+                    theme,
+                );
+                let mut bg_rgb = apply_terminal_theme(
+                    cell.bg.unwrap_or(default_bg),
+                    default_fg,
+                    default_bg,
+                    &ansi_palette,
+                    theme,
+                );
 
                 if is_cursor && snapshot.cursor.shape == "block" {
                     std::mem::swap(&mut fg_rgb, &mut bg_rgb);
@@ -1087,7 +1188,7 @@ mod macos {
                     ),
                     NSSize::new(cell_width.max(2.0), cell_height.max(2.0)),
                 );
-                let cursor_color = nscolor_from_rgb(&default_fg);
+                let cursor_color = nscolor_from_rgb(&theme.cursor);
                 cursor_color.setFill();
                 match snapshot.cursor.shape.as_str() {
                     "bar" => NSBezierPath::fillRect(NSRect::new(

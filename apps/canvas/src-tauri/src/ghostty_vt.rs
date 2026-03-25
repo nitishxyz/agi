@@ -32,7 +32,7 @@ pub struct GhosttyVtStatus {
     pub lib_dir: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GhosttyVtRgb {
     pub r: u8,
@@ -80,6 +80,7 @@ pub struct GhosttyVtSnapshot {
     pub rows_data: Vec<GhosttyVtRow>,
     pub default_fg: GhosttyVtRgb,
     pub default_bg: GhosttyVtRgb,
+    pub ansi_palette: Vec<GhosttyVtRgb>,
     pub cursor: GhosttyVtCursor,
     pub process_alive: bool,
     pub exit_status: Option<i32>,
@@ -255,10 +256,6 @@ pub(crate) fn input_key_registered_session(
         meta,
         repeat,
     )
-}
-
-pub(crate) fn scroll_registered_session(session_id: &str, delta: i64) -> Result<(), String> {
-    imp::ghostty_vt_scroll_viewport_in_map(registered_manager()?, session_id, delta)
 }
 
 pub(crate) fn snapshot_registered_session(session_id: &str) -> Result<GhosttyVtSnapshot, String> {
@@ -598,7 +595,6 @@ mod imp {
     const GHOSTTY_TERMINAL_OPT_SIZE: i32 = 6;
     const GHOSTTY_TERMINAL_OPT_DEVICE_ATTRIBUTES: i32 = 8;
     const GHOSTTY_SCROLL_VIEWPORT_DELTA: i32 = 2;
-    const GHOSTTY_FORMATTER_FORMAT_PLAIN: i32 = 0;
     const GHOSTTY_RENDER_STATE_DATA_ROW_ITERATOR: i32 = 4;
     const GHOSTTY_RENDER_STATE_DATA_CURSOR_VISUAL_STYLE: i32 = 10;
     const GHOSTTY_RENDER_STATE_DATA_CURSOR_VISIBLE: i32 = 11;
@@ -640,7 +636,6 @@ mod imp {
 
     type GhosttyResult = i32;
     type GhosttyTerminal = *mut c_void;
-    type GhosttyFormatter = *mut c_void;
     type GhosttyRenderState = *mut c_void;
     type GhosttyRenderStateRowIterator = *mut c_void;
     type GhosttyRenderStateRowCells = *mut c_void;
@@ -736,38 +731,6 @@ mod imp {
     }
 
     #[repr(C)]
-    struct GhosttyFormatterScreenExtra {
-        size: usize,
-        cursor: bool,
-        style: bool,
-        hyperlink: bool,
-        protection: bool,
-        kitty_keyboard: bool,
-        charsets: bool,
-    }
-
-    #[repr(C)]
-    struct GhosttyFormatterTerminalExtra {
-        size: usize,
-        palette: bool,
-        modes: bool,
-        scrolling_region: bool,
-        tabstops: bool,
-        pwd: bool,
-        keyboard: bool,
-        screen: GhosttyFormatterScreenExtra,
-    }
-
-    #[repr(C)]
-    struct GhosttyFormatterTerminalOptions {
-        size: usize,
-        emit: i32,
-        unwrap: bool,
-        trim: bool,
-        extra: GhosttyFormatterTerminalExtra,
-    }
-
-    #[repr(C)]
     struct GhosttySizeReportSize {
         rows: u16,
         columns: u16,
@@ -831,19 +794,6 @@ mod imp {
             terminal: GhosttyTerminal,
             behavior: GhosttyTerminalScrollViewport,
         );
-        fn ghostty_formatter_terminal_new(
-            allocator: *const GhosttyAllocator,
-            formatter: *mut GhosttyFormatter,
-            terminal: GhosttyTerminal,
-            options: GhosttyFormatterTerminalOptions,
-        ) -> GhosttyResult;
-        fn ghostty_formatter_format_alloc(
-            formatter: GhosttyFormatter,
-            allocator: *const GhosttyAllocator,
-            out_ptr: *mut *mut u8,
-            out_len: *mut usize,
-        ) -> GhosttyResult;
-        fn ghostty_formatter_free(formatter: GhosttyFormatter);
         fn ghostty_render_state_new(
             allocator: *const GhosttyAllocator,
             state: *mut GhosttyRenderState,
@@ -942,7 +892,6 @@ mod imp {
         fn ghostty_mouse_event_clear_button(event: GhosttyMouseEvent);
         fn ghostty_mouse_event_set_mods(event: GhosttyMouseEvent, mods: u16);
         fn ghostty_mouse_event_set_position(event: GhosttyMouseEvent, position: GhosttyMousePosition);
-        fn ghostty_free(allocator: *const GhosttyAllocator, ptr: *mut u8, len: usize);
     }
 
     pub fn ghostty_vt_status() -> Result<GhosttyVtStatus, String> {
@@ -2089,6 +2038,7 @@ mod imp {
                 rows_data: render_snapshot.rows_data,
                 default_fg: render_snapshot.default_fg,
                 default_bg: render_snapshot.default_bg,
+                ansi_palette: render_snapshot.ansi_palette,
                 cursor: render_snapshot.cursor,
                 process_alive: self.process_alive.load(Ordering::SeqCst),
                 exit_status: self.exit_status(),
@@ -2165,6 +2115,7 @@ mod imp {
         rows_data: Vec<GhosttyVtRow>,
         default_fg: GhosttyVtRgb,
         default_bg: GhosttyVtRgb,
+        ansi_palette: Vec<GhosttyVtRgb>,
         cursor: GhosttyVtCursor,
     }
 
@@ -2355,6 +2306,13 @@ mod imp {
                 rows_data,
                 default_fg: serialize_rgb(colors.foreground),
                 default_bg: serialize_rgb(colors.background),
+                ansi_palette: colors
+                    .palette
+                    .iter()
+                    .take(16)
+                    .copied()
+                    .map(serialize_rgb)
+                    .collect(),
                 cursor: GhosttyVtCursor {
                     visible: cursor_visible && cursor_has_value,
                     blinking: cursor_blinking,
@@ -2593,33 +2551,6 @@ mod imp {
             "F11" => 131,
             "F12" => 132,
             _ => 0,
-        }
-    }
-
-    fn formatter_options() -> GhosttyFormatterTerminalOptions {
-        GhosttyFormatterTerminalOptions {
-            size: mem::size_of::<GhosttyFormatterTerminalOptions>(),
-            emit: GHOSTTY_FORMATTER_FORMAT_PLAIN,
-            unwrap: false,
-            trim: true,
-            extra: GhosttyFormatterTerminalExtra {
-                size: mem::size_of::<GhosttyFormatterTerminalExtra>(),
-                palette: false,
-                modes: false,
-                scrolling_region: false,
-                tabstops: false,
-                pwd: false,
-                keyboard: false,
-                screen: GhosttyFormatterScreenExtra {
-                    size: mem::size_of::<GhosttyFormatterScreenExtra>(),
-                    cursor: false,
-                    style: false,
-                    hyperlink: false,
-                    protection: false,
-                    kitty_keyboard: false,
-                    charsets: false,
-                },
-            },
         }
     }
 
