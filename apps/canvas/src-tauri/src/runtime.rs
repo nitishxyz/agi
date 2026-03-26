@@ -68,6 +68,10 @@ fn kill_process_tree(child: &mut Child) {
 }
 
 impl WorkspaceRuntimeManager {
+    pub fn runtime_count(&self) -> usize {
+        self.inner.lock().ok().map(|runtimes| runtimes.len()).unwrap_or(0)
+    }
+
     pub fn stop_all(&self) {
         if let Ok(mut runtimes) = self.inner.lock() {
             for (id, entry) in runtimes.iter_mut() {

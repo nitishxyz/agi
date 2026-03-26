@@ -191,6 +191,7 @@ function extractProgressInfo(
 }
 
 const SHIMMER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+const SHIMMER_INTERVAL_MS = 250;
 
 function StreamingIndicator({
 	progressPart,
@@ -199,10 +200,11 @@ function StreamingIndicator({
 }) {
 	const { colors } = useTheme();
 	const [frame, setFrame] = useState(0);
+
 	useEffect(() => {
 		const id = setInterval(
 			() => setFrame((f) => (f + 1) % SHIMMER_FRAMES.length),
-			80,
+			SHIMMER_INTERVAL_MS,
 		);
 		return () => clearInterval(id);
 	}, []);

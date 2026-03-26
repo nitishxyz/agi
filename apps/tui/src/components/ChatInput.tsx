@@ -28,7 +28,7 @@ interface ChatInputProps {
 	onPlanModeToggle?: (isPlanMode: boolean) => void;
 }
 
-const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+const ACTIVE_STATUS_ICON = '•';
 const MAX_FILE_RESULTS = 15;
 const INPUT_MIN_HEIGHT = 2;
 const INPUT_MAX_HEIGHT = 8;
@@ -97,8 +97,6 @@ export function ChatInput({
 	commandMatchesRef.current = commandMatches;
 	selectedIdxRef.current = selectedIdx;
 
-	const [spinnerIdx, setSpinnerIdx] = useState(0);
-
 	const [files, setFiles] = useState<string[]>([]);
 	const [showFileMention, setShowFileMention] = useState(false);
 	const [mentionQuery, setMentionQuery] = useState('');
@@ -150,16 +148,6 @@ export function ChatInput({
 			}
 		});
 	}, []);
-
-	const isAnimating = isStreaming || status.type === 'loading';
-	useEffect(() => {
-		if (!isAnimating) return;
-		const interval = setInterval(
-			() => setSpinnerIdx((i) => (i + 1) % SPINNER.length),
-			80,
-		);
-		return () => clearInterval(interval);
-	}, [isAnimating]);
 
 	const checkForMention = useCallback((text: string, cursorOffset: number) => {
 		const textBeforeCursor = text.slice(0, cursorOffset);
@@ -541,7 +529,7 @@ export function ChatInput({
 							{isStreaming && status.type === 'idle' && (
 								<box style={{ flexDirection: 'row', gap: 1 }}>
 									<text fg={colors.streamDot}>
-										{SPINNER[spinnerIdx]} generating
+										{ACTIVE_STATUS_ICON} generating
 									</text>
 									{escHint && (
 										<text fg={colors.yellow}>press Esc again to stop</text>
@@ -550,7 +538,7 @@ export function ChatInput({
 							)}
 							{status.type === 'loading' && (
 								<text fg={colors.blue}>
-									{SPINNER[spinnerIdx]} {status.label}
+									{ACTIVE_STATUS_ICON} {status.label}
 								</text>
 							)}
 							{status.type === 'success' && (

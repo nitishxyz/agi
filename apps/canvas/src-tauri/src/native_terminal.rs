@@ -176,6 +176,48 @@ pub fn native_terminal_destroy_block(
     }
 }
 
+impl NativeTerminalManager {
+    pub fn block_count(&self) -> usize {
+        self.inner
+            .lock()
+            .ok()
+            .map(|state| state.blocks.len())
+            .unwrap_or(0)
+    }
+
+    pub fn destroy_all(&self, app_handle: &AppHandle<Wry>) -> Result<(), String> {
+        #[cfg(target_os = "macos")]
+        {
+            let block_ids = {
+                let state = self
+                    .inner
+                    .lock()
+                    .map_err(|_| "Failed to lock NativeTerminal manager state".to_string())?;
+                state.blocks.keys().cloned().collect::<Vec<_>>()
+            };
+
+            if block_ids.is_empty() {
+                return Ok(());
+            }
+
+            let manager = self.inner.clone();
+            let app_handle = app_handle.clone();
+            return crate::ghostty::run_on_main_thread_sync(&app_handle, move || unsafe {
+                for block_id in block_ids {
+                    macos::destroy_block_inner(&manager, &block_id)?;
+                }
+                Ok(())
+            });
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            let _ = app_handle;
+            Ok(())
+        }
+    }
+}
+
 pub(crate) fn request_redraw(app_handle: &AppHandle<Wry>, block_id: &str) {
     #[cfg(target_os = "macos")]
     {

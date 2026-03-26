@@ -6,6 +6,9 @@ use std::{
 };
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow, Wry};
 
+#[cfg(target_os = "macos")]
+use objc2_foundation::MainThreadMarker;
+
 #[derive(Clone, Default)]
 pub struct GhosttyManager {
     inner: Arc<Mutex<GhosttyState>>,
@@ -366,6 +369,14 @@ pub fn ghostty_destroy_block(
 }
 
 impl GhosttyManager {
+    pub fn block_count(&self) -> usize {
+        self.inner
+            .lock()
+            .ok()
+            .and_then(|state| state.runtime.as_ref().map(|runtime| runtime.blocks.len()))
+            .unwrap_or(0)
+    }
+
     #[cfg(target_os = "macos")]
     fn status(&self) -> Result<GhosttyStatus, String> {
         let _ = self;
@@ -378,12 +389,53 @@ impl GhosttyManager {
             app_path: Some(app_path.display().to_string()),
         })
     }
+
+    pub fn destroy_all(&self, app_handle: &AppHandle<Wry>) -> Result<(), String> {
+        #[cfg(target_os = "macos")]
+        {
+            let block_ids = {
+                let state = self
+                    .inner
+                    .lock()
+                    .map_err(|_| "Failed to lock Ghostty manager state".to_string())?;
+                state
+                    .runtime
+                    .as_ref()
+                    .map(|runtime| runtime.blocks.keys().cloned().collect::<Vec<_>>())
+                    .unwrap_or_default()
+            };
+
+            if block_ids.is_empty() {
+                return Ok(());
+            }
+
+            let manager = self.inner.clone();
+            let app_handle = app_handle.clone();
+            return crate::ghostty::run_on_main_thread_sync(&app_handle, move || unsafe {
+                for block_id in block_ids {
+                    macos::destroy_block_inner(&manager, &block_id)?;
+                }
+                Ok(())
+            });
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            let _ = app_handle;
+            Ok(())
+        }
+    }
 }
 
 pub(crate) fn run_on_main_thread_sync<T: Send + 'static>(
     app_handle: &AppHandle<Wry>,
     task: impl FnOnce() -> Result<T, String> + Send + 'static,
 ) -> Result<T, String> {
+    #[cfg(target_os = "macos")]
+    if MainThreadMarker::new().is_some() {
+        return task();
+    }
+
     let (tx, rx) = mpsc::sync_channel(1);
     app_handle
         .run_on_main_thread(move || {

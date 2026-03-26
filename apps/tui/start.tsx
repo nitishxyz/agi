@@ -21,7 +21,7 @@ export async function startTui(
 	const renderer = await createCliRenderer({
 		exitOnCtrlC: false,
 		useAlternateScreen: true,
-		targetFps: 30,
+		targetFps: 12,
 	});
 
 	let exiting = false;

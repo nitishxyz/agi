@@ -1,4 +1,5 @@
 mod browser;
+mod cleanup;
 mod debug_log;
 mod ghostty;
 mod ghostty_vt;
@@ -10,6 +11,7 @@ use browser::{
     browser_create_block, browser_destroy_block, browser_navigate_block, browser_reload_block,
     browser_update_block, BrowserManager,
 };
+use cleanup::AppCleanupService;
 use debug_log::{canvas_debug_log, debug_log, install_panic_hook};
 use ghostty::{
     canvas_set_pending_shortcut_mode, ghostty_create_block, ghostty_destroy_block,
@@ -42,9 +44,15 @@ pub fn run() {
     let ghostty_vt_manager_for_setup = ghostty_vt_manager.clone();
     let native_terminal_manager = NativeTerminalManager::default();
     let runtime_manager = WorkspaceRuntimeManager::default();
-    let runtime_manager_for_exit = runtime_manager.clone();
+    let cleanup_service = AppCleanupService::new(
+        ghostty_manager.clone(),
+        ghostty_vt_manager.clone(),
+        native_terminal_manager.clone(),
+        runtime_manager.clone(),
+    );
+    let cleanup_service_for_events = cleanup_service.clone();
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .manage(ghostty_manager)
         .manage(browser_manager)
         .manage(ghostty_vt_manager)
@@ -92,12 +100,6 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
-        .on_window_event(move |_window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
-                debug_log("app", "window destroyed — stopping all runtimes");
-                runtime_manager_for_exit.stop_all();
-            }
-        })
         .setup(move |app| {
             install_panic_hook();
             debug_log("app", "setup start");
@@ -130,6 +132,35 @@ pub fn run() {
             debug_log("app", "setup complete");
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(move |app_handle, event| match event {
+        tauri::RunEvent::ExitRequested { .. } => {
+            debug_log("app", "exit requested — cleaning up block processes");
+            cleanup_service_for_events.cleanup(app_handle, "exit-requested");
+        }
+        tauri::RunEvent::Exit => {
+            debug_log("app", "event loop exit — cleaning up block processes");
+            cleanup_service_for_events.cleanup(app_handle, "exit");
+        }
+        tauri::RunEvent::WindowEvent { label, event, .. } => {
+            if label != "main" {
+                return;
+            }
+
+            match event {
+                tauri::WindowEvent::CloseRequested { .. } => {
+                    debug_log("app", "main window close requested — cleaning up block processes");
+                    cleanup_service_for_events.cleanup(app_handle, "main-window-close-requested");
+                }
+                tauri::WindowEvent::Destroyed => {
+                    debug_log("app", "main window destroyed — cleaning up block processes");
+                    cleanup_service_for_events.cleanup(app_handle, "main-window-destroyed");
+                }
+                _ => {}
+            }
+        }
+        _ => {}
+    });
 }

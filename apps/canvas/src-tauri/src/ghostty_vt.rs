@@ -10,6 +10,16 @@ pub struct GhosttyVtManager {
     inner: Arc<Mutex<HashMap<String, Arc<imp::SessionHandle>>>>,
 }
 
+impl GhosttyVtManager {
+    pub fn session_count(&self) -> usize {
+        self.inner.lock().ok().map(|sessions| sessions.len()).unwrap_or(0)
+    }
+
+    pub fn stop_all(&self) -> Result<(), String> {
+        imp::ghostty_vt_destroy_all_sessions_in_map(&self.inner)
+    }
+}
+
 static REGISTERED_MANAGER: OnceLock<Arc<Mutex<HashMap<String, Arc<imp::SessionHandle>>>>> =
     OnceLock::new();
 
@@ -530,6 +540,13 @@ mod imp {
         Err(UNAVAILABLE_MESSAGE.to_string())
     }
 
+    pub fn ghostty_vt_destroy_all_sessions_in_map(
+        sessions: &Arc<Mutex<HashMap<String, Arc<SessionHandle>>>>,
+    ) -> Result<(), String> {
+        let _ = sessions;
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn ghostty_vt_mouse_button_in_map(
         sessions: &Arc<Mutex<HashMap<String, Arc<SessionHandle>>>>,
@@ -600,6 +617,7 @@ mod imp {
             Arc, Mutex,
         },
         thread::{self, JoinHandle},
+        time::{Duration, Instant},
     };
     use tauri::{AppHandle, Emitter};
 
@@ -1148,6 +1166,23 @@ mod imp {
         };
 
         if let Some(session) = session {
+            session.stop()?;
+        }
+
+        Ok(())
+    }
+
+    pub fn ghostty_vt_destroy_all_sessions_in_map(
+        sessions: &Arc<Mutex<HashMap<String, Arc<SessionHandle>>>>,
+    ) -> Result<(), String> {
+        let sessions = {
+            let mut sessions = sessions
+                .lock()
+                .map_err(|_| "Failed to lock libghostty-vt session map".to_string())?;
+            mem::take(&mut *sessions)
+        };
+
+        for (_, session) in sessions {
             session.stop()?;
         }
 
@@ -2109,11 +2144,7 @@ mod imp {
         }
 
         fn stop(&self) -> Result<(), String> {
-            if self.process_alive.swap(false, Ordering::SeqCst) {
-                unsafe {
-                    libc::kill(self.child_pid, libc::SIGHUP);
-                }
-            }
+            self.terminate_process_group();
             self.close_pty();
 
             if let Some(handle) = self
@@ -2130,6 +2161,37 @@ mod imp {
             Ok(())
         }
 
+        fn terminate_process_group(&self) {
+            if !self.process_alive.swap(false, Ordering::SeqCst) {
+                return;
+            }
+
+            unsafe {
+                libc::kill(-self.child_pid, libc::SIGTERM);
+                libc::kill(self.child_pid, libc::SIGTERM);
+            }
+
+            let start = Instant::now();
+            loop {
+                let mut status = 0;
+                let wait_result = unsafe { libc::waitpid(self.child_pid, &mut status, libc::WNOHANG) };
+                if wait_result == self.child_pid {
+                    self.record_child_exit(status);
+                    return;
+                }
+
+                if wait_result < 0 || start.elapsed() >= Duration::from_secs(3) {
+                    unsafe {
+                        libc::kill(-self.child_pid, libc::SIGKILL);
+                        libc::kill(self.child_pid, libc::SIGKILL);
+                    }
+                    return;
+                }
+
+                thread::sleep(Duration::from_millis(50));
+            }
+        }
+
         fn close_pty(&self) {
             let fd = self.pty_fd.swap(-1, Ordering::SeqCst);
             if fd >= 0 {
@@ -2144,6 +2206,18 @@ mod imp {
             (exit_status != EXIT_STATUS_RUNNING).then_some(exit_status)
         }
 
+        fn record_child_exit(&self, status: c_int) {
+            let exit_status = if libc::WIFEXITED(status) {
+                libc::WEXITSTATUS(status)
+            } else if libc::WIFSIGNALED(status) {
+                128 + libc::WTERMSIG(status)
+            } else {
+                0
+            };
+            self.exit_status.store(exit_status, Ordering::SeqCst);
+            self.child_reaped.store(true, Ordering::SeqCst);
+        }
+
         fn reap_child(&self, blocking: bool) {
             if self.child_reaped.load(Ordering::SeqCst) {
                 return;
@@ -2156,15 +2230,7 @@ mod imp {
                 return;
             }
 
-            let exit_status = if libc::WIFEXITED(status) {
-                libc::WEXITSTATUS(status)
-            } else if libc::WIFSIGNALED(status) {
-                128 + libc::WTERMSIG(status)
-            } else {
-                0
-            };
-            self.exit_status.store(exit_status, Ordering::SeqCst);
-            self.child_reaped.store(true, Ordering::SeqCst);
+            self.record_child_exit(status);
         }
     }
 
