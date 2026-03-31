@@ -1,4 +1,5 @@
-import { memo, useMemo, useState, useEffect } from 'react';
+import { memo, useMemo } from 'react';
+import { TinySpinner } from './TinySpinner.tsx';
 import { useTheme } from '../theme.ts';
 import { ToolCallItem } from './ToolCallItem.tsx';
 import { InlineApproval } from './InlineApproval.tsx';
@@ -190,8 +191,6 @@ function extractProgressInfo(
 	return null;
 }
 
-const SHIMMER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-const SHIMMER_INTERVAL_MS = 250;
 
 function StreamingIndicator({
 	progressPart,
@@ -199,29 +198,15 @@ function StreamingIndicator({
 	progressPart: MessagePart | null;
 }) {
 	const { colors } = useTheme();
-	const [frame, setFrame] = useState(0);
-
-	useEffect(() => {
-		const id = setInterval(
-			() => setFrame((f) => (f + 1) % SHIMMER_FRAMES.length),
-			SHIMMER_INTERVAL_MS,
-		);
-		return () => clearInterval(id);
-	}, []);
-
-	const spinner = SHIMMER_FRAMES[frame];
 
 	if (progressPart) {
 		const info = extractProgressInfo(progressPart);
 		if (info) {
 			return (
-				<box style={{ flexDirection: 'row', height: 1, marginTop: 1 }}>
-					<text style={{ flexShrink: 0 }} fg={colors.purple}>
-						{spinner}
-					</text>
+				<box style={{ flexDirection: 'row', gap: 1, height: 1, marginTop: 1 }}>
+					<TinySpinner fg={colors.purple} />
 					{info.stage?.trim() && (
 						<text style={{ flexShrink: 0 }} fg={colors.fgDark}>
-							{' '}
 							[{info.stage}]
 						</text>
 					)}
@@ -229,12 +214,10 @@ function StreamingIndicator({
 						style={{ flexShrink: 1, overflow: 'hidden' }}
 						fg={colors.purple}
 					>
-						{' '}
 						{info.message}
 					</text>
 					{info.pct !== undefined && (
 						<text style={{ flexShrink: 0 }} fg={colors.fgDark}>
-							{' '}
 							{info.pct}%
 						</text>
 					)}
@@ -245,7 +228,7 @@ function StreamingIndicator({
 
 	return (
 		<box style={{ flexDirection: 'row', gap: 1, height: 1, marginTop: 1 }}>
-			<text fg={colors.purple}>{spinner}</text>
+			<TinySpinner fg={colors.purple} />
 			<text fg={colors.fgDark}>thinking…</text>
 		</box>
 	);

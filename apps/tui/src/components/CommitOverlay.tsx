@@ -211,19 +211,7 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 	});
 
 	const totalChanges = staged.length + unstaged.length + untracked.length;
-	const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-	const [spinnerIdx, setSpinnerIdx] = useState(0);
-	const isSpinning =
-		phase === 'generating' || phase === 'committing' || phase === 'loading';
 
-	useEffect(() => {
-		if (!isSpinning) return;
-		const iv = setInterval(
-			() => setSpinnerIdx((i) => (i + 1) % SPINNER.length),
-			80,
-		);
-		return () => clearInterval(iv);
-	}, [isSpinning]);
 
 	const statusColor = (s: string) => {
 		if (s === 'added' || s === 'untracked') return colors.green;
@@ -256,7 +244,10 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 			title=" Commit "
 		>
 			{phase === 'loading' && (
-				<text fg={colors.blue}>{SPINNER[spinnerIdx]} Loading git status…</text>
+				<box style={{ flexDirection: 'row', gap: 1 }}>
+					<spinner name="dots" color={colors.blue} />
+					<text fg={colors.blue}>Loading git status…</text>
+				</box>
 			)}
 
 			{phase === 'done' && (
@@ -336,9 +327,10 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 						<box style={{ flexDirection: 'row', gap: 1 }}>
 							<text fg={colors.fgDimmed}>Commit message:</text>
 							{statusText && (
-								<text fg={colors.yellow}>
-									{SPINNER[spinnerIdx]} {statusText}
-								</text>
+								<box style={{ flexDirection: 'row', gap: 1 }}>
+									<spinner name="dots" color={colors.yellow} />
+									<text fg={colors.yellow}>{statusText}</text>
+								</box>
 							)}
 						</box>
 						<box

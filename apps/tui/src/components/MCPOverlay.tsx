@@ -84,7 +84,6 @@ async function copyToClipboard(text: string): Promise<void> {
 	await proc.exited;
 }
 
-const SPIN_CHARS = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 export function MCPOverlay({ onClose }: MCPOverlayProps) {
 	const { colors } = useTheme();
@@ -117,16 +116,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 	const copilotDeviceRef = useRef(copilotDevice);
 	copilotDeviceRef.current = copilotDevice;
 	const pollerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-	const [spinFrame, setSpinFrame] = useState(0);
 
-	useEffect(() => {
-		if (!loading && busyServers.size === 0 && !copilotDevice) return;
-		const t = setInterval(
-			() => setSpinFrame((f) => (f + 1) % SPIN_CHARS.length),
-			80,
-		);
-		return () => clearInterval(t);
-	}, [loading, busyServers.size, copilotDevice]);
 
 	const fetchServers = useCallback(async () => {
 		try {
@@ -733,7 +723,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 
 			{loading && servers.length === 0 && (
 				<box style={{ flexDirection: 'row', gap: 1 }}>
-					<text fg={colors.blue}>{SPIN_CHARS[spinFrame]}</text>
+					<spinner name="dots" color={colors.blue} />
 					<text fg={colors.fgDark}>Loading servers…</text>
 				</box>
 			)}
@@ -769,7 +759,7 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 								}}
 							>
 								{isBusy ? (
-									<text fg={colors.yellow}>{SPIN_CHARS[spinFrame]} </text>
+									<box style={{ flexDirection: 'row' }}><spinner name="dots" color={colors.yellow} /><text> </text></box>
 								) : server.connected ? (
 									<text fg={colors.green}>● </text>
 								) : server.authRequired && !server.authenticated ? (

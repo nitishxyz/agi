@@ -38,6 +38,20 @@ function parseYamlFrontmatter(
 	let currentKey: string | null = null;
 	let currentIndent = 0;
 	let nestedObject: Record<string, string> | null = null;
+	let multiLineStr: string[] | null = null;
+
+	function flushPending() {
+		if (currentKey) {
+			if (multiLineStr) {
+				result[currentKey] = multiLineStr.join(' ');
+				multiLineStr = null;
+			} else if (nestedObject) {
+				result[currentKey] = nestedObject;
+				nestedObject = null;
+			}
+			currentKey = null;
+		}
+	}
 
 	for (const line of lines) {
 		if (!line.trim()) continue;
@@ -45,24 +59,33 @@ function parseYamlFrontmatter(
 		const indent = line.search(/\S/);
 		const trimmed = line.trim();
 
-		if (indent === 0 || (indent <= currentIndent && nestedObject)) {
-			if (nestedObject && currentKey) {
-				result[currentKey] = nestedObject;
-				nestedObject = null;
-				currentKey = null;
-			}
+		if (indent === 0 || (indent <= currentIndent && (nestedObject || multiLineStr))) {
+			flushPending();
+		}
+
+		if (indent > 0 && multiLineStr) {
+			multiLineStr.push(trimmed);
+			continue;
 		}
 
 		const colonIdx = trimmed.indexOf(':');
+
+		if (indent > 0 && nestedObject) {
+			if (colonIdx === -1) {
+				multiLineStr = [trimmed];
+				nestedObject = null;
+				continue;
+			}
+			const key = trimmed.slice(0, colonIdx).trim();
+			const value = trimmed.slice(colonIdx + 1).trim();
+			nestedObject[key] = parseYamlValue(value);
+			continue;
+		}
+
 		if (colonIdx === -1) continue;
 
 		const key = trimmed.slice(0, colonIdx).trim();
 		const value = trimmed.slice(colonIdx + 1).trim();
-
-		if (indent > 0 && nestedObject) {
-			nestedObject[key] = parseYamlValue(value);
-			continue;
-		}
 
 		if (!value) {
 			currentKey = normalizeKey(key);
@@ -74,9 +97,7 @@ function parseYamlFrontmatter(
 		result[normalizeKey(key)] = parseYamlValue(value);
 	}
 
-	if (nestedObject && currentKey) {
-		result[currentKey] = nestedObject;
-	}
+	flushPending();
 
 	return result;
 }

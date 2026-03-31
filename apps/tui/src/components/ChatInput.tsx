@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Fuse from 'fuse.js';
 import { listFiles } from '@ottocode/api';
 import { useTheme } from '../theme.ts';
+import { TinySpinner } from './TinySpinner.tsx';
 import { COMMANDS } from '../commands.ts';
 import type { StatusIndicator } from '../stores/overlay.ts';
 import { useFileAttachments, isFilePath } from '../hooks/useFileAttachments.ts';
@@ -28,7 +29,6 @@ interface ChatInputProps {
 	onPlanModeToggle?: (isPlanMode: boolean) => void;
 }
 
-const ACTIVE_STATUS_ICON = '•';
 const MAX_FILE_RESULTS = 15;
 const INPUT_MIN_HEIGHT = 2;
 const INPUT_MAX_HEIGHT = 8;
@@ -528,18 +528,18 @@ export function ChatInput({
 						<box style={{ flexDirection: 'row' }}>
 							{isStreaming && status.type === 'idle' && (
 								<box style={{ flexDirection: 'row', gap: 1 }}>
-									<text fg={colors.streamDot}>
-										{ACTIVE_STATUS_ICON} generating
-									</text>
+									<TinySpinner fg={colors.streamDot} />
+									<text fg={colors.streamDot}>generating</text>
 									{escHint && (
 										<text fg={colors.yellow}>press Esc again to stop</text>
 									)}
 								</box>
 							)}
 							{status.type === 'loading' && (
-								<text fg={colors.blue}>
-									{ACTIVE_STATUS_ICON} {status.label}
-								</text>
+								<box style={{ flexDirection: 'row', gap: 1 }}>
+									<TinySpinner fg={colors.blue} />
+									<text fg={colors.blue}>{status.label}</text>
+								</box>
 							)}
 							{status.type === 'success' && (
 								<text fg={colors.green}>✓ {status.label}</text>
