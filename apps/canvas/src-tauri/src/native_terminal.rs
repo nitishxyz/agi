@@ -164,9 +164,11 @@ pub fn native_terminal_destroy_block(
     #[cfg(target_os = "macos")]
     {
         let manager = manager.inner().inner.clone();
+        let block_id_for_detach = block_id.clone();
         crate::ghostty::run_on_main_thread_sync(&app_handle, move || unsafe {
-            macos::destroy_block_inner(&manager, &block_id)
-        })
+            macos::detach_block_view_inner(&manager, &block_id_for_detach)
+        })?;
+        crate::ghostty_vt::destroy_registered_session(&block_id)
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -202,12 +204,19 @@ impl NativeTerminalManager {
 
             let manager = self.inner.clone();
             let app_handle = app_handle.clone();
-            return crate::ghostty::run_on_main_thread_sync(&app_handle, move || unsafe {
-                for block_id in block_ids {
-                    macos::destroy_block_inner(&manager, &block_id)?;
+            let block_ids_for_detach = block_ids.clone();
+            crate::ghostty::run_on_main_thread_sync(&app_handle, move || unsafe {
+                for block_id in block_ids_for_detach {
+                    macos::detach_block_view_inner(&manager, &block_id)?;
                 }
                 Ok(())
-            });
+            })?;
+
+            for block_id in block_ids {
+                crate::ghostty_vt::destroy_registered_session(&block_id)?;
+            }
+
+            return Ok(());
         }
 
         #[cfg(not(target_os = "macos"))]
@@ -1531,7 +1540,7 @@ mod macos {
         Ok(())
     }
 
-    pub(super) unsafe fn destroy_block_inner(
+    pub(super) unsafe fn detach_block_view_inner(
         manager: &Arc<Mutex<NativeTerminalState>>,
         block_id: &str,
     ) -> Result<(), String> {
@@ -1565,7 +1574,6 @@ mod macos {
         host_view.removeFromSuperview();
         drop(host_view);
 
-        crate::ghostty_vt::destroy_registered_session(block_id)?;
         Ok(())
     }
 

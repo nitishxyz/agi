@@ -114,6 +114,7 @@ interface CanvasState {
 	) => void;
 	reloadBlock: (id: string) => void;
 	removeBlock: (id: string) => void;
+	closeBlockSurfaceById: (id: string) => void;
 	setSplitRatio: (splitId: string, ratio: number) => void;
 	focusNext: () => void;
 	focusPrev: () => void;
@@ -554,6 +555,67 @@ function applyWorkspaceState(
 		...nextState,
 		...deriveActiveSurface(workspaceState),
 	};
+}
+
+function closeBlockSurfaceInWorkspace(
+	workspaceState: WorkspaceSurfaceState,
+	blockId: string,
+): WorkspaceSurfaceState {
+	const normalizedState = normalizeWorkspaceState(workspaceState);
+
+	for (const tabId of normalizedState.tabOrder) {
+		const tab = normalizedState.tabs[tabId];
+		if (!tab) continue;
+
+		if (tab.kind === 'block' && tab.block.id === blockId) {
+			const nextTabs = { ...normalizedState.tabs };
+			delete nextTabs[tab.id];
+			const nextOrder = normalizedState.tabOrder.filter((id) => id !== tab.id);
+			return ensureTabSelection(
+				finalizeWorkspaceSurfaceState({
+					tabs: nextTabs,
+					tabOrder: nextOrder,
+					activeTabId:
+						normalizedState.activeTabId === tab.id
+							? (nextOrder[nextOrder.length - 1] ?? null)
+							: normalizedState.activeTabId,
+				}),
+			);
+		}
+
+		if (tab.kind !== 'canvas' || !tab.blocks[blockId]) continue;
+
+		let nextFocus: string | null = null;
+		if (tab.layout) {
+			nextFocus = findSibling(tab.layout, blockId);
+		}
+
+		const nextBlocks = { ...tab.blocks };
+		delete nextBlocks[blockId];
+		const nextLayout = tab.layout ? removeFromLayout(tab.layout, blockId) : null;
+		const remaining = nextLayout ? collectBlockIds(nextLayout) : [];
+		if (!nextFocus || !remaining.includes(nextFocus)) {
+			nextFocus = remaining[0] ?? null;
+		}
+
+		return finalizeWorkspaceSurfaceState({
+			tabs: {
+				...normalizedState.tabs,
+				[tab.id]: finalizeCanvasTabState({
+					id: tab.id,
+					kind: tab.kind,
+					title: tab.title,
+					blocks: nextBlocks,
+					layout: nextLayout,
+					focusedBlockId: nextFocus,
+				}),
+			},
+			tabOrder: normalizedState.tabOrder,
+			activeTabId: normalizedState.activeTabId,
+		});
+	}
+
+	return workspaceState;
 }
 
 function ensureTabSelection(workspaceState: WorkspaceSurfaceState): WorkspaceSurfaceState {
@@ -1240,6 +1302,19 @@ export const useCanvasStore = create<CanvasState>()(
 					}),
 				);
 				set((state) => applyWorkspaceState(state, activeWorkspaceId, nextState));
+			},
+
+			closeBlockSurfaceById: (id) => {
+				set((state) => {
+					for (const [workspaceId, workspaceState] of Object.entries(state.workspaceStates)) {
+						const nextWorkspaceState = closeBlockSurfaceInWorkspace(workspaceState, id);
+						if (nextWorkspaceState === workspaceState) continue;
+
+						return applyWorkspaceState(state, workspaceId, nextWorkspaceState);
+					}
+
+					return state;
+				});
 			},
 
 			setSplitRatio: (splitId, ratio) => {

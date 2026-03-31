@@ -556,14 +556,14 @@ export function useCanvasNativeBlockManager() {
 				return !browserIds.has(blockId) || entry?.block.type !== 'browser';
 			});
 			for (const blockId of removedBrowserIds) {
-				await destroyBrowserEntry(blockId);
+				void destroyBrowserEntry(blockId);
 			}
 
 			const removedTerminalIds = Array.from(
 				terminalEntriesRef.current.keys(),
 			).filter((blockId) => !terminalIds.has(blockId));
 			for (const blockId of removedTerminalIds) {
-				await destroyTerminalEntry(blockId);
+				void destroyTerminalEntry(blockId);
 			}
 
 			const overlayActive = overlayActiveRef.current;

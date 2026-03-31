@@ -79,7 +79,9 @@ export function BlockFrame({
 	workspaceIsActive = true,
 	workspaceId,
 }: BlockFrameProps) {
-	const { focusedBlockId, setFocused, removeBlock } = useCanvasStore();
+	const focusedBlockId = useCanvasStore((s) => s.focusedBlockId);
+	const setFocused = useCanvasStore((s) => s.setFocused);
+	const removeBlock = useCanvasStore((s) => s.removeBlock);
 	const convertBlock = useCanvasStore((s) => s.convertBlock);
 	const convertBlockToPreset = useCanvasStore((s) => s.convertBlockToPreset);
 	const isFocused = focusedBlockId === block.id;

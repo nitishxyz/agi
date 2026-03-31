@@ -1256,6 +1256,7 @@ mod imp {
         session_id: String,
         terminal: Mutex<TerminalState>,
         geometry: Arc<Mutex<SessionGeometry>>,
+        scroll_remainder: Mutex<f64>,
         #[allow(dead_code)]
         callbacks: Box<CallbackContext>,
         reader_thread: Mutex<Option<JoinHandle<()>>>,
@@ -1547,6 +1548,7 @@ mod imp {
                     mouse_event,
                 }),
                 geometry,
+                scroll_remainder: Mutex::new(0.0),
                 callbacks,
                 reader_thread: Mutex::new(None),
                 pty_fd: AtomicI32::new(pty_fd),
@@ -1962,7 +1964,16 @@ mod imp {
                 )
             };
 
-            let steps = scroll_steps_from_delta(delta_y, precise);
+            let mut scroll_remainder = self
+                .scroll_remainder
+                .lock()
+                .map_err(|_| "Failed to lock libghostty-vt scroll remainder".to_string())?;
+            let steps = scroll_steps_from_delta(delta_y, precise, &mut scroll_remainder);
+            drop(scroll_remainder);
+            if steps == 0 {
+                return Ok(());
+            }
+
             if mouse_tracking {
                 unsafe {
                     ghostty_mouse_encoder_setopt_from_terminal(terminal.mouse_encoder, terminal.handle);
@@ -2520,14 +2531,18 @@ mod imp {
             .collect()
     }
 
-    fn scroll_steps_from_delta(delta_y: f64, precise: bool) -> i64 {
-        let magnitude = delta_y.abs();
-        let steps = if precise {
-            (magnitude / 24.0).round() as i64
+    fn scroll_steps_from_delta(delta_y: f64, precise: bool, remainder: &mut f64) -> i64 {
+        let normalized_delta = if precise { delta_y / 32.0 } else { delta_y };
+        *remainder += normalized_delta;
+
+        let steps = if *remainder > 0.0 {
+            remainder.floor() as i64
         } else {
-            magnitude.round() as i64
+            remainder.ceil() as i64
         };
-        steps.max(1)
+
+        *remainder -= steps as f64;
+        steps.abs()
     }
 
     fn cursor_shape_name(shape: i32) -> &'static str {

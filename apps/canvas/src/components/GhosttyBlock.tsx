@@ -42,6 +42,18 @@ function estimateRows(height: number) {
 	return Math.max(1, Math.floor(height / DEFAULT_CELL_HEIGHT_PX));
 }
 
+function getScrollDelta(event: React.WheelEvent<HTMLDivElement>) {
+	const direction = Math.sign(event.deltaY);
+	if (direction === 0) return 0;
+	if (event.deltaMode === 1) {
+		return direction * Math.min(3, Math.max(1, Math.round(Math.abs(event.deltaY) / 2)));
+	}
+	if (event.deltaMode === 2) {
+		return direction * 8;
+	}
+	return direction * Math.min(2, Math.max(1, Math.round(Math.abs(event.deltaY) / 80)));
+}
+
 function rgbToCss(color?: GhosttyVtRgb | null) {
 	if (!color) return 'transparent';
 	return `rgb(${color.r} ${color.g} ${color.b})`;
@@ -506,7 +518,8 @@ export function GhosttyBlock({ block, isFocused }: GhosttyBlockProps) {
 				onWheel={(event) => {
 					event.preventDefault();
 					event.stopPropagation();
-					const delta = event.deltaY > 0 ? 3 : -3;
+					const delta = getScrollDelta(event);
+					if (delta === 0) return;
 					void scrollGhosttyVtViewport(block.id, delta)
 						.then(() => scheduleRefresh(0))
 						.catch(() => undefined);
