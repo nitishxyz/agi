@@ -8,7 +8,7 @@ export type Scope = 'global' | 'local';
 /**
  * Default settings for the CLI
  */
-export type ToolApprovalMode = 'auto' | 'dangerous' | 'all';
+export type ToolApprovalMode = 'auto' | 'dangerous' | 'all' | 'yolo';
 export type ReasoningLevel =
 	| 'minimal'
 	| 'low'

@@ -16,7 +16,7 @@ export function registerDefaultsRoute(app: Hono) {
 				agent?: string;
 				provider?: string;
 				model?: string;
-				toolApproval?: 'auto' | 'dangerous' | 'all';
+				toolApproval?: 'auto' | 'dangerous' | 'all' | 'yolo';
 				guidedMode?: boolean;
 				reasoningText?: boolean;
 				reasoningLevel?: ReasoningLevel;
@@ -30,7 +30,7 @@ export function registerDefaultsRoute(app: Hono) {
 				agent: string;
 				provider: ProviderId;
 				model: string;
-				toolApproval: 'auto' | 'dangerous' | 'all';
+				toolApproval: 'auto' | 'dangerous' | 'all' | 'yolo';
 				guidedMode: boolean;
 				reasoningText: boolean;
 				reasoningLevel: ReasoningLevel;

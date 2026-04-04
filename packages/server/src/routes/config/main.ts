@@ -58,7 +58,7 @@ export function registerMainConfigRoute(app: Hono) {
 					undefined,
 					embeddedConfig?.defaults?.toolApproval,
 					cfg.defaults.toolApproval,
-				) as 'auto' | 'dangerous' | 'all',
+				) as 'auto' | 'dangerous' | 'all' | 'yolo',
 				guidedMode: cfg.defaults.guidedMode ?? false,
 				reasoningText: cfg.defaults.reasoningText ?? true,
 				reasoningLevel: cfg.defaults.reasoningLevel ?? 'high',

@@ -26,6 +26,7 @@ export const COMMAND_ALIASES: Record<string, string> = {
 	m: 'models',
 	p: 'mcp',
 	u: 'usage',
+	a: 'approvals',
 };
 
 export function resolveCommand(name: string): string {
@@ -52,6 +53,11 @@ export const COMMANDS = [
 	},
 	{ name: 'sessions', alias: '/s', description: 'List and switch sessions' },
 	{ name: 'theme', alias: '/t', description: 'Switch color theme' },
+	{
+		name: 'approvals',
+		alias: '/a',
+		description: 'Configure tool approval mode',
+	},
 	{ name: 'usage', alias: '/u', description: 'Show OAuth provider usage' },
 	{ name: 'clear', alias: '', description: 'Reload messages' },
 	{ name: 'exit', alias: '/q', description: 'Exit TUI' },

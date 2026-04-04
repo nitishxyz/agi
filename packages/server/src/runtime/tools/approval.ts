@@ -1,6 +1,6 @@
 import { publish } from '../../events/bus.ts';
 
-export type ToolApprovalMode = 'auto' | 'dangerous' | 'all';
+export type ToolApprovalMode = 'auto' | 'dangerous' | 'all' | 'yolo';
 
 export const DANGEROUS_TOOLS = new Set([
 	'bash',
@@ -36,10 +36,14 @@ export function requiresApproval(
 	mode: ToolApprovalMode,
 ): boolean {
 	if (SAFE_TOOLS.has(toolName)) return false;
-	if (mode === 'auto') return false;
+	if (mode === 'auto' || mode === 'yolo') return false;
 	if (mode === 'all') return true;
 	if (mode === 'dangerous') return DANGEROUS_TOOLS.has(toolName);
 	return false;
+}
+
+export function skipsGuardApproval(mode?: ToolApprovalMode): boolean {
+	return mode === 'yolo';
 }
 
 export async function requestApproval(

@@ -18,7 +18,7 @@ interface ConfigData {
 		agent: string;
 		provider: string;
 		model: string;
-		toolApproval?: 'auto' | 'dangerous' | 'all';
+		toolApproval?: 'auto' | 'dangerous' | 'all' | 'yolo';
 		guidedMode?: boolean;
 		fullWidthContent?: boolean;
 	};
@@ -49,7 +49,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 		authStatus.defaults.agent || 'build',
 	);
 	const [selectedApproval, setSelectedApproval] = useState<
-		'auto' | 'dangerous' | 'all'
+		'auto' | 'dangerous' | 'all' | 'yolo'
 	>(authStatus.defaults.toolApproval || 'dangerous');
 	const [guidedMode, setGuidedMode] = useState(false);
 	const hasUserChangedProvider = useRef(false);
@@ -275,7 +275,11 @@ export const DefaultsStep = memo(function DefaultsStep({
 									value={selectedApproval}
 									onChange={(e) =>
 										setSelectedApproval(
-											e.target.value as 'auto' | 'dangerous' | 'all',
+											e.target.value as
+												| 'auto'
+												| 'dangerous'
+												| 'all'
+												| 'yolo',
 										)
 									}
 									className="w-full px-4 py-3 bg-card border border-border rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:border-ring transition-colors"
@@ -284,12 +288,16 @@ export const DefaultsStep = memo(function DefaultsStep({
 									<option value="dangerous">
 										Dangerous - approve writes only
 									</option>
+									<option value="yolo">
+										YOLO - skip approvals except hard safety blocks
+									</option>
 									<option value="all">All - approve every tool</option>
 								</select>
 								<ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
 							</div>
 							<p className="mt-2 text-sm text-muted-foreground">
-								Controls when tool executions need approval
+								Controls when tool executions need approval. YOLO still blocks
+								extreme destructive commands.
 							</p>
 						</div>
 

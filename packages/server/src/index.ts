@@ -190,7 +190,7 @@ export type EmbeddedAppConfig = {
 		provider?: ProviderId;
 		model?: string;
 		agent?: string;
-		toolApproval?: 'auto' | 'dangerous' | 'all';
+		toolApproval?: 'auto' | 'dangerous' | 'all' | 'yolo';
 		fullWidthContent?: boolean;
 	};
 	/** Additional CORS origins for proxies/Tailscale (e.g., ['https://myapp.ts.net', 'https://example.com']) */

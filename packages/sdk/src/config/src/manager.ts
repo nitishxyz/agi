@@ -74,7 +74,7 @@ export async function writeDefaults(
 		agent: string;
 		provider: ProviderId;
 		model: string;
-		toolApproval: 'auto' | 'dangerous' | 'all';
+		toolApproval: 'auto' | 'dangerous' | 'all' | 'yolo';
 		guidedMode: boolean;
 		reasoningText: boolean;
 		reasoningLevel: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';

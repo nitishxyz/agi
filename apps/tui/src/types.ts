@@ -77,6 +77,7 @@ export type Overlay =
 	| 'commit'
 	| 'help'
 	| 'theme'
+	| 'approvals'
 	| 'mcp'
 	| 'usage';
 

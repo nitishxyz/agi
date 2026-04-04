@@ -15,7 +15,7 @@ export const configMixin = {
 			agent: string;
 			provider: string;
 			model: string;
-			toolApproval?: 'auto' | 'dangerous' | 'all';
+			toolApproval?: 'auto' | 'dangerous' | 'all' | 'yolo';
 			guidedMode?: boolean;
 			reasoningText?: boolean;
 			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
@@ -57,7 +57,7 @@ export const configMixin = {
 		agent?: string;
 		provider?: string;
 		model?: string;
-		toolApproval?: 'auto' | 'dangerous' | 'all';
+		toolApproval?: 'auto' | 'dangerous' | 'all' | 'yolo';
 		guidedMode?: boolean;
 		reasoningText?: boolean;
 		reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
@@ -69,7 +69,7 @@ export const configMixin = {
 			agent: string;
 			provider: string;
 			model: string;
-			toolApproval?: 'auto' | 'dangerous' | 'all';
+			toolApproval?: 'auto' | 'dangerous' | 'all' | 'yolo';
 			guidedMode?: boolean;
 			reasoningText?: boolean;
 			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';

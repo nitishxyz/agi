@@ -8,6 +8,7 @@ interface Config {
 		agent: string;
 		provider: string;
 		model: string;
+		toolApproval?: 'auto' | 'dangerous' | 'all' | 'yolo';
 		reasoningText?: boolean;
 		reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 		theme?: string;
@@ -22,6 +23,7 @@ export function useConfig() {
 			agent: 'build',
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-20250514',
+			toolApproval: 'auto',
 			reasoningText: true,
 			reasoningLevel: 'high',
 		},
@@ -43,6 +45,7 @@ export function useConfig() {
 			provider?: string;
 			model?: string;
 			agent?: string;
+			toolApproval?: 'auto' | 'dangerous' | 'all' | 'yolo';
 			reasoningText?: boolean;
 			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 			theme?: string;

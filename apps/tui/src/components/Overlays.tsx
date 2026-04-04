@@ -5,6 +5,7 @@ import { ModelsOverlay } from './ModelsOverlay.tsx';
 import { CommitOverlay } from './CommitOverlay.tsx';
 import { HelpOverlay } from './HelpOverlay.tsx';
 import { ThemeOverlay } from './ThemeOverlay.tsx';
+import { ApprovalsOverlay } from './ApprovalsOverlay.tsx';
 import { MCPOverlay } from './MCPOverlay.tsx';
 import { UsageOverlay } from './UsageOverlay.tsx';
 import type { Session } from '../types.ts';
@@ -19,6 +20,10 @@ interface OverlaysProps {
 	model: string;
 	onModelSelect: (provider: string, model: string) => void;
 	onThemeSave: (name: string) => void;
+	approvalMode: 'auto' | 'dangerous' | 'all' | 'yolo';
+	onApprovalModeSave: (
+		mode: 'auto' | 'dangerous' | 'all' | 'yolo',
+	) => void | Promise<void>;
 }
 
 export const Overlays = memo(function Overlays({
@@ -31,6 +36,8 @@ export const Overlays = memo(function Overlays({
 	model,
 	onModelSelect,
 	onThemeSave,
+	approvalMode,
+	onApprovalModeSave,
 }: OverlaysProps) {
 	const overlay = useOverlayStore((s) => s.overlay);
 	const setOverlay = useOverlayStore((s) => s.setOverlay);
@@ -77,6 +84,14 @@ export const Overlays = memo(function Overlays({
 			return <HelpOverlay onClose={handleClose} />;
 		case 'theme':
 			return <ThemeOverlay onClose={handleClose} onSave={onThemeSave} />;
+		case 'approvals':
+			return (
+				<ApprovalsOverlay
+					currentMode={approvalMode}
+					onClose={handleClose}
+					onSave={onApprovalModeSave}
+				/>
+			);
 		case 'mcp':
 			return <MCPOverlay onClose={handleClose} />;
 		case 'usage':

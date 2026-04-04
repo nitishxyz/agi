@@ -16,6 +16,7 @@ import {
 import {
 	requiresApproval,
 	requestApproval,
+	skipsGuardApproval,
 } from '../runtime/tools/approval.ts';
 import { guardToolCall } from '../runtime/tools/guards.ts';
 
@@ -398,7 +399,11 @@ export function adaptTools(
 				if (guard.type === 'block') {
 					meta.blocked = true;
 					meta.blockReason = guard.reason;
-				} else if (guard.type === 'approve' && !meta.approvalPromise) {
+				} else if (
+					guard.type === 'approve' &&
+					!meta.approvalPromise &&
+					!skipsGuardApproval(ctx.toolApprovalMode)
+				) {
 					meta.approvalPromise = requestApproval(
 						ctx.sessionId,
 						ctx.messageId,

@@ -21,7 +21,7 @@ export interface AuthStatus {
 		agent: string;
 		provider: string;
 		model: string;
-		toolApproval?: 'auto' | 'dangerous' | 'all';
+		toolApproval?: 'auto' | 'dangerous' | 'all' | 'yolo';
 	};
 }
 

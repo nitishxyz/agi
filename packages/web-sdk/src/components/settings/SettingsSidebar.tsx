@@ -368,11 +368,12 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 							options={[
 								{ id: 'auto', label: 'Auto (no approval)' },
 								{ id: 'dangerous', label: 'Dangerous only' },
+								{ id: 'yolo', label: 'YOLO (hard blocks only)' },
 								{ id: 'all', label: 'All tools' },
 							]}
 							onChange={(value) =>
 								updateDefaults.mutate({
-									toolApproval: value as 'auto' | 'dangerous' | 'all',
+									toolApproval: value as 'auto' | 'dangerous' | 'all' | 'yolo',
 									scope: 'global',
 								})
 							}

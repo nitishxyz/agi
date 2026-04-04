@@ -232,6 +232,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				case 'theme':
 					setOverlay('theme');
 					break;
+				case 'approvals':
+					setOverlay('approvals');
+					break;
 				case 'usage':
 					setOverlay('usage');
 					break;
@@ -496,6 +499,12 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		[updateDefaults],
 	);
 
+	const handleApprovalModeSave = useCallback(
+		(mode: 'auto' | 'dangerous' | 'all' | 'yolo') =>
+			updateDefaults({ toolApproval: mode }),
+		[updateDefaults],
+	);
+
 	return (
 		<box
 			style={{
@@ -555,6 +564,8 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				model={model}
 				onModelSelect={handleModelSelect}
 				onThemeSave={handleThemeSave}
+				approvalMode={config.defaults.toolApproval ?? 'auto'}
+				onApprovalModeSave={handleApprovalModeSave}
 			/>
 		</box>
 	);
