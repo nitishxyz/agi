@@ -106,26 +106,17 @@ export const NewSessionLanding = memo(
 				return () => clearTimeout(timer);
 			}, []);
 
-			const handleAgentChange = useCallback(
-				(value: string) => {
-					setAgent(value);
-				},
-				[],
-			);
+			const handleAgentChange = useCallback((value: string) => {
+				setAgent(value);
+			}, []);
 
-			const handleProviderChange = useCallback(
-				(value: string) => {
-					setProvider(value);
-				},
-				[],
-			);
+			const handleProviderChange = useCallback((value: string) => {
+				setProvider(value);
+			}, []);
 
-			const handleModelChange = useCallback(
-				(value: string) => {
-					setModel(value);
-				},
-				[],
-			);
+			const handleModelChange = useCallback((value: string) => {
+				setModel(value);
+			}, []);
 
 			const handleModelSelectorChange = useCallback(
 				(newProvider: string, newModel: string) => {
@@ -144,18 +135,15 @@ export const NewSessionLanding = memo(
 				setConfigFocusTarget(null);
 			}, []);
 
-			const handleCommand = useCallback(
-				(commandId: string) => {
-					if (commandId === 'models') {
-						setConfigFocusTarget('model');
-						setIsConfigOpen(true);
-					} else if (commandId === 'agents') {
-						setConfigFocusTarget('agent');
-						setIsConfigOpen(true);
-					}
-				},
-				[],
-			);
+			const handleCommand = useCallback((commandId: string) => {
+				if (commandId === 'models') {
+					setConfigFocusTarget('model');
+					setIsConfigOpen(true);
+				} else if (commandId === 'agents') {
+					setConfigFocusTarget('agent');
+					setIsConfigOpen(true);
+				}
+			}, []);
 
 			const handleSend = useCallback(
 				async (content: string) => {
@@ -253,9 +241,12 @@ export const NewSessionLanding = memo(
 			);
 
 			return (
-				<div className={`flex-1 flex flex-col items-center justify-center px-4 transition-opacity duration-250 ease-out ${
-					transitioning ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
-				}`} style={{ transitionProperty: 'opacity, transform' }}>
+				<div
+					className={`flex-1 flex flex-col items-center justify-center px-4 transition-opacity duration-250 ease-out ${
+						transitioning ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
+					}`}
+					style={{ transitionProperty: 'opacity, transform' }}
+				>
 					<ConfigModal
 						isOpen={isConfigOpen}
 						onClose={handleCloseConfig}
@@ -271,9 +262,7 @@ export const NewSessionLanding = memo(
 						onModelSelectorChange={handleModelSelectorChange}
 						modalPosition={modalPosition}
 					/>
-					<div
-						className={`w-full ${compact ? 'max-w-xl' : 'max-w-2xl'}`}
-					>
+					<div className={`w-full ${compact ? 'max-w-xl' : 'max-w-2xl'}`}>
 						<div className="flex justify-center mb-6">
 							{wordmark || defaultWordmark}
 						</div>

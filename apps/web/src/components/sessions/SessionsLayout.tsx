@@ -184,9 +184,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 
 	const mainContent = useMemo(() => {
 		if (!sessionId) {
-			return (
-				<NewSessionLanding onSessionCreated={handleSessionCreated} />
-			);
+			return <NewSessionLanding onSessionCreated={handleSessionCreated} />;
 		}
 
 		return (
@@ -203,7 +201,13 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 				/>
 			</>
 		);
-	}, [sessionId, handleNewSession, handleSelectSession, handleDeleteSession, handleSessionCreated]);
+	}, [
+		sessionId,
+		handleNewSession,
+		handleSelectSession,
+		handleDeleteSession,
+		handleSessionCreated,
+	]);
 
 	return (
 		<>

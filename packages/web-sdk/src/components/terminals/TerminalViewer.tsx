@@ -160,8 +160,7 @@ export function TerminalViewer({
 			};
 
 			ws.onmessage = (event) => {
-				const message =
-					typeof event.data === 'string' ? event.data : '';
+				const message = typeof event.data === 'string' ? event.data : '';
 
 				if (message.startsWith('{')) {
 					try {
@@ -180,9 +179,7 @@ export function TerminalViewer({
 					}
 				}
 
-				const savedY = userScrolledRef.current
-					? term.getViewportY()
-					: 0;
+				const savedY = userScrolledRef.current ? term.getViewportY() : 0;
 				term.write(message);
 				if (userScrolledRef.current && savedY > 0) {
 					term.scrollToLine(savedY);
@@ -202,10 +199,7 @@ export function TerminalViewer({
 				if (wsRef.current === ws) {
 					wsRef.current = null;
 				}
-				if (
-					!disposedRef.current &&
-					retryCountRef.current < WS_MAX_RETRIES
-				) {
+				if (!disposedRef.current && retryCountRef.current < WS_MAX_RETRIES) {
 					retryCountRef.current++;
 					retryTimerRef.current = setTimeout(() => {
 						if (termRef.current && !disposedRef.current) {
@@ -350,9 +344,7 @@ export function TerminalViewer({
 
 			term.onResize(({ cols, rows }) => {
 				if (wsRef.current?.readyState === WebSocket.OPEN) {
-					wsRef.current.send(
-						JSON.stringify({ type: 'resize', cols, rows }),
-					);
+					wsRef.current.send(JSON.stringify({ type: 'resize', cols, rows }));
 				}
 			});
 

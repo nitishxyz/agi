@@ -275,11 +275,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 									value={selectedApproval}
 									onChange={(e) =>
 										setSelectedApproval(
-											e.target.value as
-												| 'auto'
-												| 'dangerous'
-												| 'all'
-												| 'yolo',
+											e.target.value as 'auto' | 'dangerous' | 'all' | 'yolo',
 										)
 									}
 									className="w-full px-4 py-3 bg-card border border-border rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:border-ring transition-colors"

@@ -84,7 +84,6 @@ async function copyToClipboard(text: string): Promise<void> {
 	await proc.exited;
 }
 
-
 export function MCPOverlay({ onClose }: MCPOverlayProps) {
 	const { colors } = useTheme();
 	const [servers, setServers] = useState<MCPServerInfo[]>([]);
@@ -116,7 +115,6 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 	const copilotDeviceRef = useRef(copilotDevice);
 	copilotDeviceRef.current = copilotDevice;
 	const pollerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
 
 	const fetchServers = useCallback(async () => {
 		try {
@@ -759,7 +757,10 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 								}}
 							>
 								{isBusy ? (
-									<box style={{ flexDirection: 'row' }}><spinner name="dots" color={colors.yellow} /><text> </text></box>
+									<box style={{ flexDirection: 'row' }}>
+										<spinner name="dots" color={colors.yellow} />
+										<text> </text>
+									</box>
 								) : server.connected ? (
 									<text fg={colors.green}>● </text>
 								) : server.authRequired && !server.authenticated ? (

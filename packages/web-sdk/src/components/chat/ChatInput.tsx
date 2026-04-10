@@ -543,99 +543,105 @@ export const ChatInput = memo(
 							</div>
 						</div>
 
-						<div className={`grid transition-[grid-template-rows] duration-200 ease-out ${
-							(reasoningEnabled || visionEnabled || modelName || providerName || authType || agent)
-								? 'grid-rows-[1fr]'
-								: 'grid-rows-[0fr]'
-						}`}>
+						<div
+							className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+								reasoningEnabled ||
+								visionEnabled ||
+								modelName ||
+								providerName ||
+								authType ||
+								agent
+									? 'grid-rows-[1fr]'
+									: 'grid-rows-[0fr]'
+							}`}
+						>
 							<div className="overflow-hidden">
-							<div className="grid grid-cols-[auto_1fr_auto] items-center mt-1 px-3">
-								<div
-									className="justify-self-start flex-shrink-0 relative"
-									ref={agentDropdownRef}
-								>
-									{agent && agents.length > 0 && (
-										<button
-											type="button"
-											onClick={() => setShowAgentDropdown(!showAgentDropdown)}
-											className="text-[10px] text-muted-foreground flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer"
-										>
-											<span className="uppercase font-medium">{agent}</span>
-											<ChevronUp
-												className={`h-2.5 w-2.5 transition-transform ${showAgentDropdown ? 'rotate-180' : ''}`}
-											/>
-										</button>
-									)}
-									{showAgentDropdown && (
-										<div className="absolute bottom-full left-0 mb-1 min-w-[120px] bg-popover border border-border rounded-md shadow-lg overflow-hidden z-50">
-											{agents.map((a) => (
-												<button
-													key={a}
-													type="button"
-													onClick={() => {
-														onAgentChange?.(a);
-														setShowAgentDropdown(false);
-													}}
-													className={`w-full text-left px-3 py-1.5 text-xs transition-colors hover:bg-accent ${a === agent ? 'text-foreground font-medium bg-accent/50' : 'text-muted-foreground'}`}
-												>
-													{a}
-												</button>
-											))}
-										</div>
-									)}
-								</div>
-								<div className="justify-self-center">
-									{(providerName || modelName || authType) && (
-										<div className="text-[10px] text-muted-foreground flex items-center gap-1 px-2 py-0.5">
+								<div className="grid grid-cols-[auto_1fr_auto] items-center mt-1 px-3">
+									<div
+										className="justify-self-start flex-shrink-0 relative"
+										ref={agentDropdownRef}
+									>
+										{agent && agents.length > 0 && (
 											<button
 												type="button"
-												onClick={onModelInfoClick}
-												className="flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer"
+												onClick={() => setShowAgentDropdown(!showAgentDropdown)}
+												className="text-[10px] text-muted-foreground flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer"
 											>
-												{providerName && (
-													<>
-														<ProviderLogo
-															provider={providerName}
-															size={12}
-															className="opacity-70"
-														/>
-														<span className="opacity-40">/</span>
-													</>
-												)}
-												{modelName && <span>{modelName}</span>}
-												{authType && authType === 'oauth' && (
-													<span className="opacity-50">(pro)</span>
-												)}
-												{isSetu && setuPlanLabel && (
-													<span className="opacity-50">
-														({setuPlanLabel.toLowerCase()})
-													</span>
-												)}
-												{isFreeModel && (
-													<span className="opacity-50">(free)</span>
-												)}
+												<span className="uppercase font-medium">{agent}</span>
+												<ChevronUp
+													className={`h-2.5 w-2.5 transition-transform ${showAgentDropdown ? 'rotate-180' : ''}`}
+												/>
 											</button>
-										</div>
-									)}
+										)}
+										{showAgentDropdown && (
+											<div className="absolute bottom-full left-0 mb-1 min-w-[120px] bg-popover border border-border rounded-md shadow-lg overflow-hidden z-50">
+												{agents.map((a) => (
+													<button
+														key={a}
+														type="button"
+														onClick={() => {
+															onAgentChange?.(a);
+															setShowAgentDropdown(false);
+														}}
+														className={`w-full text-left px-3 py-1.5 text-xs transition-colors hover:bg-accent ${a === agent ? 'text-foreground font-medium bg-accent/50' : 'text-muted-foreground'}`}
+													>
+														{a}
+													</button>
+												))}
+											</div>
+										)}
+									</div>
+									<div className="justify-self-center">
+										{(providerName || modelName || authType) && (
+											<div className="text-[10px] text-muted-foreground flex items-center gap-1 px-2 py-0.5">
+												<button
+													type="button"
+													onClick={onModelInfoClick}
+													className="flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer"
+												>
+													{providerName && (
+														<>
+															<ProviderLogo
+																provider={providerName}
+																size={12}
+																className="opacity-70"
+															/>
+															<span className="opacity-40">/</span>
+														</>
+													)}
+													{modelName && <span>{modelName}</span>}
+													{authType && authType === 'oauth' && (
+														<span className="opacity-50">(pro)</span>
+													)}
+													{isSetu && setuPlanLabel && (
+														<span className="opacity-50">
+															({setuPlanLabel.toLowerCase()})
+														</span>
+													)}
+													{isFreeModel && (
+														<span className="opacity-50">(free)</span>
+													)}
+												</button>
+											</div>
+										)}
+									</div>
+									<div className="justify-self-end flex-shrink-0 flex items-center gap-2">
+										{reasoningEnabled && (
+											<span className="text-[10px] text-indigo-600 dark:text-indigo-300 flex items-center gap-1 w-[52px] justify-center">
+												<Brain className="h-3 w-3 flex-shrink-0" />
+												{(
+													configData?.defaults?.reasoningLevel ?? 'high'
+												).replace('xhigh', 'x-high')}
+											</span>
+										)}
+										{visionEnabled && (
+											<span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+												<ImageIcon className="h-3 w-3" />
+												images
+											</span>
+										)}
+									</div>
 								</div>
-								<div className="justify-self-end flex-shrink-0 flex items-center gap-2">
-									{reasoningEnabled && (
-										<span className="text-[10px] text-indigo-600 dark:text-indigo-300 flex items-center gap-1 w-[52px] justify-center">
-											<Brain className="h-3 w-3 flex-shrink-0" />
-											{(configData?.defaults?.reasoningLevel ?? 'high').replace(
-												'xhigh',
-												'x-high',
-											)}
-										</span>
-									)}
-									{visionEnabled && (
-										<span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-											<ImageIcon className="h-3 w-3" />
-											images
-										</span>
-									)}
-								</div>
-							</div>
 							</div>
 						</div>
 

@@ -191,7 +191,6 @@ function extractProgressInfo(
 	return null;
 }
 
-
 function StreamingIndicator({
 	progressPart,
 }: {

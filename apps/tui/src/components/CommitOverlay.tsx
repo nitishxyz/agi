@@ -212,7 +212,6 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 
 	const totalChanges = staged.length + unstaged.length + untracked.length;
 
-
 	const statusColor = (s: string) => {
 		if (s === 'added' || s === 'untracked') return colors.green;
 		if (s === 'deleted') return colors.red;

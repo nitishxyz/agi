@@ -57,7 +57,15 @@ const CAPABILITIES = [
 		title: 'Multi-workspace',
 		desc: 'Each workspace is linked to a project path. Canvas auto-starts an otto serve runtime per workspace.',
 		icon: (
-			<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+			<svg
+				className="w-5 h-5"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			>
 				<rect width="7" height="7" x="3" y="3" rx="1" />
 				<rect width="7" height="7" x="14" y="3" rx="1" />
 				<rect width="7" height="7" x="14" y="14" rx="1" />
@@ -69,7 +77,15 @@ const CAPABILITIES = [
 		title: 'Splits & tabs',
 		desc: 'Horizontal and vertical splits within canvas tabs. Open any block type as a standalone tab.',
 		icon: (
-			<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+			<svg
+				className="w-5 h-5"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			>
 				<rect width="18" height="18" x="3" y="3" rx="2" />
 				<line x1="12" x2="12" y1="3" y2="21" />
 			</svg>
@@ -79,7 +95,15 @@ const CAPABILITIES = [
 		title: 'Keyboard-first',
 		desc: '⌘N add block · ⌘T new tab · ⌘D split right · ⌘⇧D split down · ⌘1-9 switch tabs · Ctrl+HJKL vim navigation.',
 		icon: (
-			<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+			<svg
+				className="w-5 h-5"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			>
 				<rect width="20" height="16" x="2" y="4" rx="2" />
 				<path d="M6 8h.001" />
 				<path d="M10 8h.001" />
@@ -96,7 +120,15 @@ const CAPABILITIES = [
 		title: 'Workspace file',
 		desc: 'Export your layout, tabs, and automation as otto.yaml. Share identical surfaces with your team.',
 		icon: (
-			<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+			<svg
+				className="w-5 h-5"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			>
 				<path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4" />
 				<path d="M14 2v4a2 2 0 0 0 2 2h4" />
 				<path d="M2 15h10" />
@@ -108,7 +140,15 @@ const CAPABILITIES = [
 		title: 'Native performance',
 		desc: 'Ghostty terminals with GPU rendering. WKWebView browser blocks. No Electron overhead.',
 		icon: (
-			<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+			<svg
+				className="w-5 h-5"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			>
 				<path d="m13 2-2 2.5h3L12 7" />
 				<path d="M10 14v-3" />
 				<path d="M14 14v-3" />
@@ -121,7 +161,15 @@ const CAPABILITIES = [
 		title: 'macOS vibrancy',
 		desc: 'Transparent blur-backed window chrome via NSVisualEffectMaterial. Feels like part of the OS.',
 		icon: (
-			<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+			<svg
+				className="w-5 h-5"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			>
 				<path d="M12 3v14" />
 				<path d="M5 10h14" />
 				<path d="M5 21h14" />
@@ -173,7 +221,15 @@ function CanvasMockup() {
 					)}
 					{step >= 2 && (
 						<div className="w-9 h-9 rounded-[10px] bg-otto-border/50 flex items-center justify-center text-otto-dim animate-fade-in">
-							<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+							<svg
+								className="w-4 h-4"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							>
 								<line x1="12" x2="12" y1="5" y2="19" />
 								<line x1="5" x2="19" y1="12" y2="12" />
 							</svg>
@@ -184,8 +240,12 @@ function CanvasMockup() {
 				<div className="flex-1 flex flex-col">
 					{step >= 1 && (
 						<div className="flex items-center gap-2 h-8 px-3 border-b border-otto-border animate-fade-in">
-							<span className="text-[11px] font-medium text-otto-text">agi</span>
-							<span className="text-[10px] text-otto-dim truncate">/Users/dev/agi</span>
+							<span className="text-[11px] font-medium text-otto-text">
+								agi
+							</span>
+							<span className="text-[10px] text-otto-dim truncate">
+								/Users/dev/agi
+							</span>
 						</div>
 					)}
 
@@ -193,7 +253,15 @@ function CanvasMockup() {
 						{step >= 2 && (
 							<div className="flex-1 border-r border-otto-border flex flex-col animate-fade-in">
 								<div className="h-7 border-b border-otto-border flex items-center px-3 gap-1.5">
-									<svg className="w-3 h-3 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<svg
+										className="w-3 h-3 text-emerald-400"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									>
 										<polyline points="4 17 10 11 4 5" />
 										<line x1="12" x2="20" y1="19" y2="19" />
 									</svg>
@@ -216,7 +284,15 @@ function CanvasMockup() {
 						{step >= 3 && (
 							<div className="flex-1 flex flex-col animate-fade-in">
 								<div className="h-7 border-b border-otto-border flex items-center px-3 gap-1.5">
-									<svg className="w-3 h-3 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<svg
+										className="w-3 h-3 text-violet-400"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									>
 										<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
 									</svg>
 									<span className="text-[10px] text-otto-dim">Otto</span>
@@ -231,7 +307,15 @@ function CanvasMockup() {
 											</div>
 											<div className="flex items-center gap-2">
 												<div className="w-6 h-6 rounded-full bg-violet-500/20 flex-shrink-0 flex items-center justify-center">
-													<svg className="w-3.5 h-3.5 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+													<svg
+														className="w-3.5 h-3.5 text-violet-400"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														strokeWidth="2"
+														strokeLinecap="round"
+														strokeLinejoin="round"
+													>
 														<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
 													</svg>
 												</div>
@@ -278,7 +362,9 @@ export function CanvasSection() {
 						One native surface.
 					</h2>
 					<p className="text-otto-muted text-sm sm:text-base mb-12 max-w-xl leading-relaxed">
-						Canvas is a native desktop app that gives you a persistent, tiled workspace for AI-powered development. Terminals, browsers, AI agents, and coding tools — all in composable blocks.
+						Canvas is a native desktop app that gives you a persistent, tiled
+						workspace for AI-powered development. Terminals, browsers, AI
+						agents, and coding tools — all in composable blocks.
 					</p>
 				</Reveal>
 
@@ -298,7 +384,9 @@ export function CanvasSection() {
 										<span className={`text-sm font-semibold ${block.color}`}>
 											{block.label}
 										</span>
-										<span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${block.bg} ${block.border} border ${block.color}`}>
+										<span
+											className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${block.bg} ${block.border} border ${block.color}`}
+										>
 											{block.tech}
 										</span>
 									</div>
@@ -320,9 +408,7 @@ export function CanvasSection() {
 							<Reveal key={cap.title} delay={i * 60}>
 								<div className="bg-otto-bg p-6 h-full">
 									<div className="flex items-center gap-3 mb-3">
-										<div className="text-otto-muted">
-											{cap.icon}
-										</div>
+										<div className="text-otto-muted">{cap.icon}</div>
 										<h4 className="text-sm font-semibold text-otto-text">
 											{cap.title}
 										</h4>
