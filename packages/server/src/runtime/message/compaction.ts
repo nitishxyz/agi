@@ -3,6 +3,7 @@ export {
 	estimateTokens,
 	type ModelLimits,
 	getModelLimits,
+	shouldAutoCompactBeforeOverflow,
 	isCompacted,
 	COMPACTED_PLACEHOLDER,
 } from './compaction-limits.ts';

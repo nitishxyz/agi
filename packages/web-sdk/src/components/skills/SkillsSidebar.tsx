@@ -8,6 +8,7 @@ import {
 	Globe,
 	FileText,
 	FileCode,
+	RefreshCw,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useSkillsStore } from '../../stores/skillsStore';
@@ -48,7 +49,7 @@ export const SkillsSidebar = memo(function SkillsSidebar() {
 	const openViewer = useSkillsStore((s) => s.openViewer);
 	const viewingFile = useSkillsStore((s) => s.viewingFile);
 
-	const { isLoading } = useSkills();
+	const { isLoading, isFetching, refetch } = useSkills();
 	const { data: skillDetail } = useSkillDetail(selectedSkill);
 	const { data: skillFilesData } = useSkillFiles(selectedSkill);
 	const skillFiles = skillFilesData?.files ?? [];
@@ -212,6 +213,27 @@ export const SkillsSidebar = memo(function SkillsSidebar() {
 					)}
 				</div>
 			)}
+
+			<div className="h-12 px-4 border-t border-border text-xs text-muted-foreground flex items-center justify-between gap-2">
+				<div className="flex items-center gap-2 min-w-0 flex-1">
+					<Sparkles className="w-3 h-3 flex-shrink-0" />
+					<span className="truncate">
+						{skills.length} {skills.length === 1 ? 'skill' : 'skills'}
+					</span>
+				</div>
+				<Button
+					variant="ghost"
+					size="icon"
+					onClick={() => refetch()}
+					title="Refresh skills"
+					className="h-6 w-6 flex-shrink-0"
+					disabled={isFetching}
+				>
+					<RefreshCw
+						className={`w-3 h-3 ${isFetching ? 'animate-spin' : ''}`}
+					/>
+				</Button>
+			</div>
 		</div>
 	);
 });

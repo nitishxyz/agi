@@ -74,6 +74,7 @@ export async function discoverSkills(
 	let current = cwd;
 	const visited = new Set<string>();
 	while (current && !visited.has(current)) {
+		if (repoRoot && !current.startsWith(repoRoot)) break;
 		visited.add(current);
 		const scope: SkillScope =
 			current === cwd ? 'cwd' : current === repoRoot ? 'repo' : 'parent';
@@ -82,7 +83,6 @@ export async function discoverSkills(
 		}
 		const parent = dirname(current);
 		if (parent === current) break;
-		if (repoRoot && !current.startsWith(repoRoot)) break;
 		current = parent;
 	}
 

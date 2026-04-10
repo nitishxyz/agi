@@ -179,6 +179,10 @@ export const configPaths = {
 								provider: { type: 'string' },
 								model: { type: 'string' },
 								fullWidthContent: { type: 'boolean' },
+								autoCompactThresholdTokens: {
+									type: 'integer',
+									nullable: true,
+								},
 								reasoningText: { type: 'boolean' },
 								reasoningLevel: {
 									type: 'string',
@@ -210,6 +214,10 @@ export const configPaths = {
 											provider: { type: 'string' },
 											model: { type: 'string' },
 											fullWidthContent: { type: 'boolean' },
+											autoCompactThresholdTokens: {
+												type: 'integer',
+												nullable: true,
+											},
 											reasoningText: { type: 'boolean' },
 											reasoningLevel: {
 												type: 'string',

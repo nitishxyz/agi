@@ -69,6 +69,12 @@ export function registerMainConfigRoute(app: Hono) {
 						embeddedConfig?.defaults?.fullWidthContent,
 						cfg.defaults.fullWidthContent,
 					) ?? false,
+				autoCompactThresholdTokens:
+					getDefault(
+						undefined,
+						embeddedConfig?.defaults?.autoCompactThresholdTokens,
+						cfg.defaults.autoCompactThresholdTokens,
+					) ?? null,
 			};
 
 			return c.json({

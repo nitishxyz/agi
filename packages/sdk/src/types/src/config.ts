@@ -27,6 +27,7 @@ export type DefaultConfig = {
 	reasoningLevel?: ReasoningLevel;
 	theme?: string;
 	fullWidthContent?: boolean;
+	autoCompactThresholdTokens?: number | null;
 };
 
 export type ProviderSettings = Record<

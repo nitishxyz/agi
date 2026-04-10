@@ -90,6 +90,55 @@ Content here.
 			expect(skill.scope).toBe('user');
 		});
 
+		test('parses block scalar descriptions and inline metadata objects', () => {
+			const content = `---
+name: colosseum-copilot
+description: |
+	Research Solana/crypto startup opportunities using builder project history, crypto archives,
+	investor theses, and market signals.
+license: Proprietary
+metadata: {"category":"copilot","author":"colosseum"}
+---
+
+Content here.
+`;
+			const skill = parseSkillFile(content, '/path/to/SKILL.md', 'user');
+
+			expect(skill.metadata.name).toBe('colosseum-copilot');
+			expect(skill.metadata.description).toContain(
+				'Research Solana/crypto startup opportunities',
+			);
+			expect(skill.metadata.description).toContain('investor theses');
+			expect(skill.metadata.metadata?.category).toBe('copilot');
+			expect(skill.metadata.metadata?.author).toBe('colosseum');
+		});
+
+		test('parses indented multiline descriptions without block scalar markers', () => {
+			const content = `---
+name: vercel-react-native-skills
+description:
+	React Native and Expo best practices for building performant mobile apps. Use
+	when building React Native components, optimizing list performance,
+	implementing animations, or working with native modules.
+license: MIT
+metadata:
+	author: vercel
+---
+
+Content here.
+`;
+			const skill = parseSkillFile(content, '/path/to/SKILL.md', 'user');
+
+			expect(skill.metadata.name).toBe('vercel-react-native-skills');
+			expect(skill.metadata.description).toContain(
+				'React Native and Expo best practices for building performant mobile apps.',
+			);
+			expect(skill.metadata.description).toContain(
+				'optimizing list performance',
+			);
+			expect(skill.metadata.metadata?.author).toBe('vercel');
+		});
+
 		test('throws on missing frontmatter', () => {
 			const content = `# No frontmatter
 Just content.
@@ -311,6 +360,108 @@ Project content.
 			const sharedSkill = skills.find((s) => s.name === 'shared-agents-skill');
 			expect(sharedSkill).toBeDefined();
 			expect(sharedSkill?.description).toBe('Project agents version');
+		});
+
+		test('discovers global .agents skills with block scalar metadata', async () => {
+			const homeDir = join(tempDir, 'home');
+			const globalSkillDir = join(homeDir, '.agents/skills/colosseum-copilot');
+
+			await fs.mkdir(globalSkillDir, { recursive: true });
+			await fs.writeFile(
+				join(globalSkillDir, 'SKILL.md'),
+				`---
+name: colosseum-copilot
+description: |
+  Research Solana/crypto startup opportunities using builder project history, crypto archives,
+  investor theses, and market signals.
+license: Proprietary
+metadata: {"category":"copilot","author":"colosseum"}
+---
+
+Content.
+`,
+			);
+
+			process.env.HOME = homeDir;
+			const skills = await discoverSkills(tempDir);
+
+			const skill = skills.find((s) => s.name === 'colosseum-copilot');
+			expect(skill).toBeDefined();
+			expect(skill?.scope).toBe('user');
+			expect(skill?.description).toContain(
+				'Research Solana/crypto startup opportunities',
+			);
+		});
+
+		test('discovers global .agents skills with indented multiline descriptions', async () => {
+			const homeDir = join(tempDir, 'home');
+			const globalSkillDir = join(
+				homeDir,
+				'.agents/skills/vercel-react-native-skills',
+			);
+
+			await fs.mkdir(globalSkillDir, { recursive: true });
+			await fs.writeFile(
+				join(globalSkillDir, 'SKILL.md'),
+				`---
+name: vercel-react-native-skills
+description:
+	React Native and Expo best practices for building performant mobile apps. Use
+	when building React Native components, optimizing list performance,
+	implementing animations, or working with native modules.
+license: MIT
+metadata:
+	author: vercel
+---
+
+Content.
+`,
+			);
+
+			process.env.HOME = homeDir;
+			const skills = await discoverSkills(tempDir);
+
+			const skill = skills.find((s) => s.name === 'vercel-react-native-skills');
+			expect(skill).toBeDefined();
+			expect(skill?.scope).toBe('user');
+			expect(skill?.description).toContain('optimizing list performance');
+		});
+
+		test('keeps home .agents skills scoped as user when repoRoot is provided', async () => {
+			const homeDir = join(tempDir, 'home');
+			const projectRoot = join(tempDir, 'project');
+			const globalSkillDir = join(homeDir, '.agents/skills/home-copilot');
+			const projectSkillDir = join(projectRoot, '.otto/skills/project-skill');
+
+			await fs.mkdir(globalSkillDir, { recursive: true });
+			await fs.mkdir(projectSkillDir, { recursive: true });
+			await fs.writeFile(
+				join(globalSkillDir, 'SKILL.md'),
+				`---
+name: home-copilot
+description: Home skill
+---
+
+Content.
+`,
+			);
+			await fs.writeFile(
+				join(projectSkillDir, 'SKILL.md'),
+				`---
+name: project-skill
+description: Project skill
+---
+
+Content.
+`,
+			);
+
+			process.env.HOME = homeDir;
+			const skills = await discoverSkills(projectRoot, projectRoot);
+
+			const homeSkill = skills.find((s) => s.name === 'home-copilot');
+			expect(homeSkill).toBeDefined();
+			expect(homeSkill?.scope).toBe('user');
 		});
 
 		test('does not find project skills in empty temp dir', async () => {

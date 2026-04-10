@@ -12,6 +12,7 @@ export type RunOpts = {
 	projectRoot: string;
 	oneShot?: boolean;
 	userContext?: string;
+	estimatedInputTokens?: number;
 	reasoningText?: boolean;
 	reasoningLevel?: ReasoningLevel;
 	abortSignal?: AbortSignal;

@@ -20,6 +20,7 @@ export const configMixin = {
 			reasoningText?: boolean;
 			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 			fullWidthContent?: boolean;
+			autoCompactThresholdTokens?: number | null;
 		};
 	}> {
 		const response = await apiGetConfig();
@@ -62,6 +63,7 @@ export const configMixin = {
 		reasoningText?: boolean;
 		reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 		fullWidthContent?: boolean;
+		autoCompactThresholdTokens?: number | null;
 		scope?: 'global' | 'local';
 	}): Promise<{
 		success: boolean;
@@ -74,6 +76,7 @@ export const configMixin = {
 			reasoningText?: boolean;
 			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 			fullWidthContent?: boolean;
+			autoCompactThresholdTokens?: number | null;
 		};
 	}> {
 		const response = await apiUpdateDefaults({

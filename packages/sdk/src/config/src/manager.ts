@@ -79,6 +79,7 @@ export async function writeDefaults(
 		reasoningText: boolean;
 		reasoningLevel: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 		theme: string;
+		autoCompactThresholdTokens: number | null;
 	}>,
 	projectRoot?: string,
 ) {

@@ -1,4 +1,4 @@
-import { memo, useState, useMemo, useCallback } from 'react';
+import { memo, useState, useMemo, useCallback, useEffect } from 'react';
 import {
 	Settings,
 	ChevronRight,
@@ -176,6 +176,97 @@ const SelectRow = memo(function SelectRow({
 	);
 });
 
+interface NumberInputRowProps {
+	label: string;
+	value: number | null | undefined;
+	onCommit: (value: number | null) => void;
+	placeholder?: string;
+	hint?: string;
+	disabled?: boolean;
+}
+
+const NumberInputRow = memo(function NumberInputRow({
+	label,
+	value,
+	onCommit,
+	placeholder,
+	hint,
+	disabled,
+}: NumberInputRowProps) {
+	const [draft, setDraft] = useState(
+		value !== null && value !== undefined ? String(value) : '',
+	);
+
+	useEffect(() => {
+		setDraft(value !== null && value !== undefined ? String(value) : '');
+	}, [value]);
+
+	const persistedValue =
+		value !== null && value !== undefined ? String(value) : '';
+	const trimmedDraft = draft.trim();
+	const parsedDraft = trimmedDraft
+		? Number(trimmedDraft.replaceAll(',', ''))
+		: null;
+	const normalizedDraft =
+		parsedDraft !== null && Number.isFinite(parsedDraft) && parsedDraft > 0
+			? String(Math.floor(parsedDraft))
+			: trimmedDraft === ''
+				? ''
+				: null;
+	const hasChanges =
+		normalizedDraft !== null && normalizedDraft !== persistedValue;
+
+	const commit = useCallback(() => {
+		if (normalizedDraft === null || normalizedDraft === persistedValue) {
+			return;
+		}
+
+		setDraft(normalizedDraft);
+		onCommit(normalizedDraft === '' ? null : Number(normalizedDraft));
+	}, [normalizedDraft, onCommit, persistedValue]);
+
+	return (
+		<div className="space-y-1.5">
+			<div className="flex min-w-0 items-center justify-between gap-3 text-sm">
+				<span className="min-w-0 flex-1 truncate whitespace-nowrap text-muted-foreground">
+					{label}
+				</span>
+				<div className="flex shrink-0 items-center gap-1 rounded border border-border bg-muted px-2 py-1 text-xs font-mono transition-colors focus-within:border-primary">
+					<input
+						type="text"
+						inputMode="numeric"
+						value={draft}
+						onChange={(event) => setDraft(event.target.value)}
+						onKeyDown={(event) => {
+							if (event.key === 'Enter') {
+								event.preventDefault();
+								commit();
+							}
+							if (event.key === 'Escape') {
+								setDraft(persistedValue);
+								event.currentTarget.blur();
+							}
+						}}
+						placeholder={placeholder}
+						disabled={disabled}
+						className="w-24 bg-transparent text-right outline-none placeholder:text-muted-foreground/70 disabled:opacity-50"
+					/>
+					<button
+						type="button"
+						onClick={commit}
+						disabled={disabled || !hasChanges}
+						className="inline-flex items-center justify-center text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+						aria-label={`Save ${label}`}
+					>
+						<Check className="h-4 w-4" />
+					</button>
+				</div>
+			</div>
+			{hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+		</div>
+	);
+});
+
 export const SettingsSidebar = memo(function SettingsSidebar() {
 	const isExpanded = useSettingsStore((state) => state.isExpanded);
 	const collapseSidebar = useSettingsStore((state) => state.collapseSidebar);
@@ -326,6 +417,18 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 							onChange={(checked) =>
 								updatePreferences({ fullWidthContent: checked })
 							}
+						/>
+						<NumberInputRow
+							label="Auto Compact"
+							value={config?.defaults?.autoCompactThresholdTokens}
+							onCommit={(value) =>
+								updateDefaults.mutate({
+									autoCompactThresholdTokens: value,
+									scope: 'global',
+								})
+							}
+							placeholder="Tokens"
+							disabled={updateDefaults.isPending}
 						/>
 						<ToggleRow
 							label="Show Reasoning"

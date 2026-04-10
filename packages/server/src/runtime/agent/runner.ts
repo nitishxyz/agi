@@ -1,5 +1,6 @@
 import { hasToolCall, streamText } from 'ai';
-import { messageParts } from '@ottocode/database/schema';
+import type { getDb } from '@ottocode/database';
+import { messageParts, sessions } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
 import { publish, subscribe } from '../../events/bus.ts';
 import { time } from '../debug/index.ts';
@@ -22,7 +23,11 @@ import {
 	createAbortHandler,
 	createFinishHandler,
 } from '../stream/handlers.ts';
-import { pruneSession } from '../message/compaction.ts';
+import {
+	pruneSession,
+	getModelLimits,
+	shouldAutoCompactBeforeOverflow,
+} from '../message/compaction.ts';
 import { triggerDeferredTitleGeneration } from '../message/service.ts';
 import { setupRunner } from './runner-setup.ts';
 import {
@@ -73,6 +78,28 @@ function summarizeTraceValue(value: unknown, max = 160): string {
 	} catch {}
 	const fallback = String(value);
 	return fallback.length > max ? `${fallback.slice(0, max)}…` : fallback;
+}
+
+async function shouldPreemptivelyAutoCompact(
+	db: Awaited<ReturnType<typeof getDb>>,
+	opts: RunOpts,
+	threshold: number | null | undefined,
+): Promise<boolean> {
+	const limits = getModelLimits(opts.provider, opts.model);
+	const sessionRows = await db
+		.select({ currentContextTokens: sessions.currentContextTokens })
+		.from(sessions)
+		.where(eq(sessions.id, opts.sessionId))
+		.limit(1);
+
+	return shouldAutoCompactBeforeOverflow({
+		autoCompactThresholdTokens: threshold,
+		modelContextWindow: limits?.context ?? null,
+		currentContextTokens: sessionRows[0]?.currentContextTokens ?? 0,
+		estimatedInputTokens: opts.estimatedInputTokens ?? 0,
+		isCompactCommand: opts.isCompactCommand,
+		compactionRetries: opts.compactionRetries,
+	});
 }
 
 export async function runSessionLoop(sessionId: string) {
@@ -331,6 +358,22 @@ async function runAssistant(opts: RunOpts) {
 		sharedCtx,
 		runSessionLoop,
 	);
+
+	if (
+		await shouldPreemptivelyAutoCompact(
+			db,
+			opts,
+			cfg.defaults.autoCompactThresholdTokens,
+		)
+	) {
+		const autoCompactError = Object.assign(
+			new Error('Configured auto-compaction threshold reached'),
+			{ code: 'context_length_exceeded' },
+		);
+		await onError(autoCompactError);
+		unsubscribeFinish();
+		return;
+	}
 
 	const baseOnAbort = createAbortHandler(opts, db, getStepIndex, sharedCtx);
 	const onAbort = async (event: Parameters<typeof baseOnAbort>[0]) => {

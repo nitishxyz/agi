@@ -35,71 +35,219 @@ function parseYamlFrontmatter(
 ): Record<string, unknown> {
 	const result: Record<string, unknown> = {};
 	const lines = yaml.split('\n');
-	let currentKey: string | null = null;
-	let currentIndent = 0;
-	let nestedObject: Record<string, string> | null = null;
-	let multiLineStr: string[] | null = null;
+	let index = 0;
 
-	function flushPending() {
-		if (currentKey) {
-			if (multiLineStr) {
-				result[currentKey] = multiLineStr.join(' ');
-				multiLineStr = null;
-			} else if (nestedObject) {
-				result[currentKey] = nestedObject;
-				nestedObject = null;
-			}
-			currentKey = null;
+	while (index < lines.length) {
+		const line = lines[index];
+		if (!line || !line.trim()) {
+			index += 1;
+			continue;
 		}
-	}
-
-	for (const line of lines) {
-		if (!line.trim()) continue;
 
 		const indent = line.search(/\S/);
+		if (indent > 0) {
+			index += 1;
+			continue;
+		}
+
 		const trimmed = line.trim();
-
-		if (indent === 0 || (indent <= currentIndent && (nestedObject || multiLineStr))) {
-			flushPending();
-		}
-
-		if (indent > 0 && multiLineStr) {
-			multiLineStr.push(trimmed);
-			continue;
-		}
-
 		const colonIdx = trimmed.indexOf(':');
-
-		if (indent > 0 && nestedObject) {
-			if (colonIdx === -1) {
-				multiLineStr = [trimmed];
-				nestedObject = null;
-				continue;
-			}
-			const key = trimmed.slice(0, colonIdx).trim();
-			const value = trimmed.slice(colonIdx + 1).trim();
-			nestedObject[key] = parseYamlValue(value);
+		if (colonIdx === -1) {
+			index += 1;
 			continue;
 		}
 
-		if (colonIdx === -1) continue;
-
-		const key = trimmed.slice(0, colonIdx).trim();
+		const key = normalizeKey(trimmed.slice(0, colonIdx).trim());
 		const value = trimmed.slice(colonIdx + 1).trim();
 
-		if (!value) {
-			currentKey = normalizeKey(key);
-			currentIndent = indent;
-			nestedObject = {};
+		if (value === '|' || value === '>') {
+			const { content, nextIndex } = readBlockScalar(
+				lines,
+				index + 1,
+				indent,
+				value,
+			);
+			result[key] = content;
+			index = nextIndex;
 			continue;
 		}
 
-		result[normalizeKey(key)] = parseYamlValue(value);
+		if (!value) {
+			const { content, nextIndex } = readIndentedValue(
+				lines,
+				index + 1,
+				indent,
+			);
+			result[key] = content;
+			index = nextIndex;
+			continue;
+		}
+
+		result[key] = parseYamlValue(value);
+		index += 1;
 	}
 
-	flushPending();
-
 	return result;
+}
+
+function readIndentedValue(
+	lines: string[],
+	startIndex: number,
+	parentIndent: number,
+): { content: Record<string, string> | string; nextIndex: number } {
+	for (let index = startIndex; index < lines.length; index += 1) {
+		const line = lines[index];
+		if (!line || !line.trim()) continue;
+
+		const indent = line.search(/\S/);
+		if (indent <= parentIndent) {
+			return { content: '', nextIndex: index };
+		}
+
+		if (isNestedObjectLine(line.trim())) {
+			return readNestedObject(lines, startIndex, parentIndent);
+		}
+
+		return readIndentedScalar(lines, startIndex, parentIndent);
+	}
+
+	return { content: '', nextIndex: lines.length };
+}
+
+function readNestedObject(
+	lines: string[],
+	startIndex: number,
+	parentIndent: number,
+): { content: Record<string, string>; nextIndex: number } {
+	const result: Record<string, string> = {};
+	let index = startIndex;
+
+	while (index < lines.length) {
+		const line = lines[index];
+		if (!line || !line.trim()) {
+			index += 1;
+			continue;
+		}
+
+		const indent = line.search(/\S/);
+		if (indent <= parentIndent) break;
+
+		const trimmed = line.trim();
+		const colonIdx = trimmed.indexOf(':');
+		if (colonIdx === -1) {
+			index += 1;
+			continue;
+		}
+
+		const key = normalizeKey(trimmed.slice(0, colonIdx).trim());
+		const value = trimmed.slice(colonIdx + 1).trim();
+
+		if (value === '|' || value === '>') {
+			const block = readBlockScalar(lines, index + 1, indent, value);
+			result[key] = block.content;
+			index = block.nextIndex;
+			continue;
+		}
+
+		result[key] = String(parseYamlValue(value));
+		index += 1;
+	}
+
+	return { content: result, nextIndex: index };
+}
+
+function readIndentedScalar(
+	lines: string[],
+	startIndex: number,
+	parentIndent: number,
+): { content: string; nextIndex: number } {
+	const scalarLines: string[] = [];
+	let index = startIndex;
+	let contentIndent: number | null = null;
+
+	while (index < lines.length) {
+		const line = lines[index];
+		if (!line) {
+			scalarLines.push('');
+			index += 1;
+			continue;
+		}
+
+		if (!line.trim()) {
+			scalarLines.push('');
+			index += 1;
+			continue;
+		}
+
+		const indent = line.search(/\S/);
+		if (indent <= parentIndent) break;
+
+		contentIndent ??= indent;
+		scalarLines.push(line.slice(contentIndent));
+		index += 1;
+	}
+
+	return { content: foldBlockScalar(scalarLines), nextIndex: index };
+}
+
+function readBlockScalar(
+	lines: string[],
+	startIndex: number,
+	parentIndent: number,
+	style: '|' | '>',
+): { content: string; nextIndex: number } {
+	const blockLines: string[] = [];
+	let index = startIndex;
+	let contentIndent: number | null = null;
+
+	while (index < lines.length) {
+		const line = lines[index];
+		if (!line) {
+			blockLines.push('');
+			index += 1;
+			continue;
+		}
+
+		if (!line.trim()) {
+			blockLines.push('');
+			index += 1;
+			continue;
+		}
+
+		const indent = line.search(/\S/);
+		if (indent <= parentIndent) break;
+
+		contentIndent ??= indent;
+		blockLines.push(line.slice(contentIndent));
+		index += 1;
+	}
+
+	const content =
+		style === '>' ? foldBlockScalar(blockLines) : blockLines.join('\n').trim();
+	return { content, nextIndex: index };
+}
+
+function foldBlockScalar(lines: string[]): string {
+	const segments: string[] = [];
+	let current = '';
+
+	for (const line of lines) {
+		if (!line.trim()) {
+			if (current) {
+				segments.push(current.trim());
+				current = '';
+			}
+			continue;
+		}
+
+		current = current ? `${current} ${line.trim()}` : line.trim();
+	}
+
+	if (current) {
+		segments.push(current.trim());
+	}
+
+	return segments.join('\n');
 }
 
 function normalizeKey(key: string): string {
@@ -107,13 +255,29 @@ function normalizeKey(key: string): string {
 	return key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
 }
 
-function parseYamlValue(value: string): string {
+function isNestedObjectLine(line: string): boolean {
+	return /^[A-Za-z0-9_-]+\s*:/.test(line);
+}
+
+function parseYamlValue(value: string): unknown {
 	if (
 		(value.startsWith('"') && value.endsWith('"')) ||
 		(value.startsWith("'") && value.endsWith("'"))
 	) {
 		return value.slice(1, -1);
 	}
+
+	if (
+		(value.startsWith('{') && value.endsWith('}')) ||
+		(value.startsWith('[') && value.endsWith(']'))
+	) {
+		try {
+			return JSON.parse(value) as unknown;
+		} catch {
+			return value;
+		}
+	}
+
 	return value;
 }
 

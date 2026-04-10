@@ -22,6 +22,7 @@ export function registerDefaultsRoute(app: Hono) {
 				reasoningLevel?: ReasoningLevel;
 				theme?: string;
 				fullWidthContent?: boolean;
+				autoCompactThresholdTokens?: number | null;
 				scope?: 'global' | 'local';
 			}>();
 
@@ -36,6 +37,7 @@ export function registerDefaultsRoute(app: Hono) {
 				reasoningLevel: ReasoningLevel;
 				theme: string;
 				fullWidthContent: boolean;
+				autoCompactThresholdTokens: number | null;
 			}> = {};
 
 			if (body.agent) updates.agent = body.agent;
@@ -49,6 +51,14 @@ export function registerDefaultsRoute(app: Hono) {
 			if (body.theme) updates.theme = body.theme;
 			if (body.fullWidthContent !== undefined)
 				updates.fullWidthContent = body.fullWidthContent;
+			if (body.autoCompactThresholdTokens !== undefined) {
+				const threshold = body.autoCompactThresholdTokens;
+				if (threshold === null) {
+					updates.autoCompactThresholdTokens = null;
+				} else if (Number.isFinite(threshold) && threshold > 0) {
+					updates.autoCompactThresholdTokens = Math.floor(threshold);
+				}
+			}
 
 			await setConfig(scope, updates, projectRoot);
 

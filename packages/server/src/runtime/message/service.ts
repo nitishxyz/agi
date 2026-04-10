@@ -13,7 +13,11 @@ import {
 	type ProviderId,
 	type ReasoningLevel,
 } from '@ottocode/sdk';
-import { isCompactCommand, buildCompactionContext } from './compaction.ts';
+import {
+	isCompactCommand,
+	buildCompactionContext,
+	estimateTokens,
+} from './compaction.ts';
 import { detectOAuth, adaptSimpleCall } from '../provider/oauth-adapter.ts';
 
 type SessionRow = typeof sessions.$inferSelect;
@@ -168,6 +172,13 @@ export async function dispatchAssistantMessage(
 	});
 
 	const isCompact = isCompactCommand(content);
+	const estimatedInputTokens =
+		estimateTokens(content) +
+		estimateTokens(userContext ?? '') +
+		(files?.reduce(
+			(total, file) => total + estimateTokens(file.textContent ?? ''),
+			0,
+		) ?? 0);
 	let compactionContext: string | undefined;
 
 	if (isCompact) {
@@ -195,6 +206,7 @@ export async function dispatchAssistantMessage(
 			projectRoot: cfg.projectRoot,
 			oneShot: Boolean(oneShot),
 			userContext,
+			estimatedInputTokens,
 			reasoningText,
 			reasoningLevel,
 			isCompactCommand: isCompact,

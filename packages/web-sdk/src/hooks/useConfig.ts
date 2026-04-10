@@ -39,6 +39,7 @@ export function useUpdateDefaults() {
 			reasoningText?: boolean;
 			reasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'max' | 'xhigh';
 			fullWidthContent?: boolean;
+			autoCompactThresholdTokens?: number | null;
 			scope?: 'global' | 'local';
 		}) => apiClient.updateDefaults(data),
 		onMutate: async (data) => {

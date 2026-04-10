@@ -12,6 +12,46 @@ export interface ModelLimits {
 	output: number;
 }
 
+export function shouldAutoCompactBeforeOverflow(args: {
+	autoCompactThresholdTokens?: number | null;
+	modelContextWindow?: number | null;
+	currentContextTokens?: number | null;
+	estimatedInputTokens?: number | null;
+	isCompactCommand?: boolean;
+	compactionRetries?: number;
+}): boolean {
+	const threshold = Number(args.autoCompactThresholdTokens ?? 0);
+	if (!Number.isFinite(threshold) || threshold <= 0) {
+		return false;
+	}
+	if (args.isCompactCommand) {
+		return false;
+	}
+	if ((args.compactionRetries ?? 0) > 0) {
+		return false;
+	}
+
+	const modelContextWindow = Number(args.modelContextWindow ?? 0);
+	if (!Number.isFinite(modelContextWindow) || modelContextWindow <= threshold) {
+		return false;
+	}
+
+	const currentContextTokens = Math.max(
+		0,
+		Math.floor(Number(args.currentContextTokens ?? 0)),
+	);
+	if (currentContextTokens <= 0) {
+		return false;
+	}
+
+	const estimatedInputTokens = Math.max(
+		0,
+		Math.floor(Number(args.estimatedInputTokens ?? 0)),
+	);
+
+	return currentContextTokens + estimatedInputTokens >= threshold;
+}
+
 export function getModelLimits(
 	provider: string,
 	model: string,

@@ -192,6 +192,7 @@ export type EmbeddedAppConfig = {
 		agent?: string;
 		toolApproval?: 'auto' | 'dangerous' | 'all' | 'yolo';
 		fullWidthContent?: boolean;
+		autoCompactThresholdTokens?: number | null;
 	};
 	/** Additional CORS origins for proxies/Tailscale (e.g., ['https://myapp.ts.net', 'https://example.com']) */
 	corsOrigins?: string[];

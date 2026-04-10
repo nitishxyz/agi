@@ -36,6 +36,7 @@ const DEFAULTS: {
 		reasoningText: true,
 		reasoningLevel: 'high',
 		fullWidthContent: true,
+		autoCompactThresholdTokens: null,
 	},
 	providers: DEFAULT_PROVIDER_SETTINGS,
 };

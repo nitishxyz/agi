@@ -197,6 +197,7 @@ export const schemas = {
 					provider: { $ref: '#/components/schemas/Provider' },
 					model: { type: 'string' },
 					fullWidthContent: { type: 'boolean' },
+					autoCompactThresholdTokens: { type: 'integer', nullable: true },
 					reasoningText: { type: 'boolean' },
 					reasoningLevel: {
 						type: 'string',
