@@ -74,7 +74,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
         if: matrix.enabled
         with:
-          bun-version: latest
+          bun-version: 1.3.11
 
       - name: Install dependencies
         if: matrix.enabled
@@ -175,7 +175,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
         if: matrix.enabled
         with:
-          bun-version: latest
+          bun-version: 1.3.11
 
       - name: Setup Rust
         if: matrix.enabled
@@ -363,7 +363,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
         if: matrix.enabled
         with:
-          bun-version: latest
+          bun-version: 1.3.11
 
       - name: Setup Rust
         if: matrix.enabled
@@ -497,7 +497,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
         if: matrix.enabled
         with:
-          bun-version: latest
+          bun-version: 1.3.11
 
       - name: Setup Rust
         if: matrix.enabled
