@@ -183,10 +183,10 @@ jobs:
         include:
           - os: darwin
             arch: x64
-            runner: macos-latest
+            runner: macos-13
           - os: darwin
             arch: arm64
-            runner: macos-latest
+            runner: macos-14
           - os: linux
             arch: x64
             runner: ubuntu-latest
@@ -281,6 +281,7 @@ jobs:
           security import "$CERTIFICATE_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
       - name: Sign macOS binary
         if: matrix.os == 'darwin'
@@ -288,6 +289,10 @@ jobs:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
           BINARY="apps/cli/dist/otto-${{ matrix.os }}-${{ matrix.arch }}"
+          echo "Runner architecture: $(uname -m)"
+          bun --version
+          file "$BINARY"
+          codesign -dvvv "$BINARY" || true
           echo "Signing $BINARY with hardened runtime..."
           codesign --force --options runtime --timestamp \
             --sign "$APPLE_SIGNING_IDENTITY" \
@@ -309,10 +314,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - platform: macos-14
             target: aarch64-apple-darwin
             name: macOS-arm64
-          - platform: macos-latest
+          - platform: macos-13
             target: x86_64-apple-darwin
             name: macOS-x64
           - platform: ubuntu-22.04
@@ -538,11 +543,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - platform: macos-14
             target: aarch64-apple-darwin
             name: macOS-arm64
             cli_platform: darwin-arm64
-          - platform: macos-latest
+          - platform: macos-13
             target: x86_64-apple-darwin
             name: macOS-x64
             cli_platform: darwin-x64
@@ -675,10 +680,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - platform: macos-14
             target: aarch64-apple-darwin
             name: macOS-arm64
-          - platform: macos-latest
+          - platform: macos-13
             target: x86_64-apple-darwin
             name: macOS-x64
           - platform: ubuntu-22.04

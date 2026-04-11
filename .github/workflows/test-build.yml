@@ -45,11 +45,11 @@ jobs:
         include:
           - os: darwin
             arch: x64
-            runner: macos-latest
+            runner: macos-13
             enabled: ${{ inputs.platform_macos }}
           - os: darwin
             arch: arm64
-            runner: macos-latest
+            runner: macos-14
             enabled: ${{ inputs.platform_macos }}
           - os: linux
             arch: x64
@@ -139,12 +139,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - platform: macos-14
             target: aarch64-apple-darwin
             name: macOS-arm64
             cli_platform: darwin-arm64
             enabled: ${{ inputs.platform_macos }}
-          - platform: macos-latest
+          - platform: macos-13
             target: x86_64-apple-darwin
             name: macOS-x64
             cli_platform: darwin-x64
@@ -269,6 +269,7 @@ jobs:
           security import "$CERTIFICATE_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
       - name: Sign bundled CLI binary
         if: matrix.enabled && startsWith(matrix.platform, 'macos')
@@ -277,6 +278,10 @@ jobs:
         run: |
           for bin in apps/desktop/src-tauri/resources/binaries/*; do
             if [ -f "$bin" ]; then
+              echo "Runner architecture: $(uname -m)"
+              bun --version
+              file "$bin"
+              codesign -dvvv "$bin" || true
               echo "Signing $bin with hardened runtime..."
               codesign --force --options runtime --timestamp \
                 --sign "$APPLE_SIGNING_IDENTITY" \
@@ -335,12 +340,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - platform: macos-14
             target: aarch64-apple-darwin
             name: macOS-arm64
             cli_platform: darwin-arm64
             enabled: ${{ inputs.platform_macos }}
-          - platform: macos-latest
+          - platform: macos-13
             target: x86_64-apple-darwin
             name: macOS-x64
             cli_platform: darwin-x64
@@ -461,11 +466,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - platform: macos-14
             target: aarch64-apple-darwin
             name: macOS-arm64
             enabled: ${{ inputs.platform_macos }}
-          - platform: macos-latest
+          - platform: macos-13
             target: x86_64-apple-darwin
             name: macOS-x64
             enabled: ${{ inputs.platform_macos }}
