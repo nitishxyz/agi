@@ -45,7 +45,7 @@ jobs:
         include:
           - os: darwin
             arch: x64
-            runner: macos-13
+            runner: macos-15-intel
             enabled: ${{ inputs.platform_macos }}
           - os: darwin
             arch: arm64
@@ -144,7 +144,7 @@ jobs:
             name: macOS-arm64
             cli_platform: darwin-arm64
             enabled: ${{ inputs.platform_macos }}
-          - platform: macos-13
+          - platform: macos-15-intel
             target: x86_64-apple-darwin
             name: macOS-x64
             cli_platform: darwin-x64
@@ -345,7 +345,7 @@ jobs:
             name: macOS-arm64
             cli_platform: darwin-arm64
             enabled: ${{ inputs.platform_macos }}
-          - platform: macos-13
+          - platform: macos-15-intel
             target: x86_64-apple-darwin
             name: macOS-x64
             cli_platform: darwin-x64
@@ -470,7 +470,7 @@ jobs:
             target: aarch64-apple-darwin
             name: macOS-arm64
             enabled: ${{ inputs.platform_macos }}
-          - platform: macos-13
+          - platform: macos-15-intel
             target: x86_64-apple-darwin
             name: macOS-x64
             enabled: ${{ inputs.platform_macos }}
