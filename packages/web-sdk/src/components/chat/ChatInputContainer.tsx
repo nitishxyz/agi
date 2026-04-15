@@ -27,7 +27,6 @@ import { useToastStore } from '../../stores/toastStore';
 import { apiClient } from '../../lib/api-client';
 import { ChatInput } from './ChatInput';
 import { ConfigModal } from './ConfigModal';
-import { InputApprovalBar } from './InputApprovalBar';
 
 interface ChatInputContainerProps {
 	sessionId: string;
@@ -271,6 +270,8 @@ export const ChatInputContainer = memo(
 						openCommitModalForSession(sessionId);
 					} else if (commandId === 'compact') {
 						handleSendMessage('/compact');
+					} else if (commandId === 'init') {
+						handleSendMessage('/init');
 					} else if (commandId === 'delete') {
 						deleteSession.mutate(sessionId, {
 							onSuccess: () => {

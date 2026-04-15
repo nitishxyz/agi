@@ -7,6 +7,9 @@ import AGENT_PLAN from '@ottocode/sdk/prompts/agents/plan.txt' with {
 import AGENT_GENERAL from '@ottocode/sdk/prompts/agents/general.txt' with {
 	type: 'text',
 };
+import AGENT_INIT from '@ottocode/sdk/prompts/agents/init.txt' with {
+	type: 'text',
+};
 import AGENT_RESEARCH from '@ottocode/sdk/prompts/agents/research.txt' with {
 	type: 'text',
 };
@@ -35,6 +38,10 @@ export const BUILTIN_AGENTS = {
 	general: {
 		prompt: AGENT_GENERAL,
 		tools: defaultToolsForAgent('general'),
+	},
+	init: {
+		prompt: AGENT_INIT,
+		tools: defaultToolsForAgent('init'),
 	},
 	research: {
 		prompt: AGENT_RESEARCH,

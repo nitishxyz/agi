@@ -72,7 +72,7 @@ export async function getAuthTypeForProvider(
 export async function discoverAllAgents(
 	projectRoot: string,
 ): Promise<string[]> {
-	const builtInAgents = ['general', 'build', 'plan'];
+	const builtInAgents = ['general', 'build', 'plan', 'init'];
 	const agentSet = new Set<string>(builtInAgents);
 
 	try {

@@ -17,7 +17,7 @@ export function registerAgentsRoute(app: Hono) {
 			if (embeddedConfig) {
 				const agents = embeddedConfig.agents
 					? Object.keys(embeddedConfig.agents)
-					: ['general', 'build', 'plan'];
+					: ['general', 'build', 'plan', 'init'];
 				return c.json({
 					agents,
 					default: getDefault(

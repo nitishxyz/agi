@@ -33,6 +33,10 @@ import { useVimMode } from '../../hooks/useVimMode';
 import { useFileMention } from '../../hooks/useFileMention';
 import { useCommandSuggestions } from '../../hooks/useCommandSuggestions';
 import { createChatInputKeyHandler } from './ChatInputKeyHandler';
+import {
+	findExactCommand,
+	shouldSendSlashCommandAsMessage,
+} from '../../lib/commands';
 import { useSetuStore } from '../../stores/setuStore';
 import type { FileAttachment } from '../../hooks/useFileUpload';
 import { InputApprovalBar } from './InputApprovalBar';
@@ -166,6 +170,7 @@ export const ChatInput = memo(
 			checkForCommand,
 		} = useCommandSuggestions({
 			onCommand,
+			onSendCommandMessage: onSend,
 			updatePreferences,
 			updateReasoningText: (enabled: boolean) =>
 				updateDefaultsMutation.mutate({
@@ -237,27 +242,47 @@ export const ChatInput = memo(
 		);
 
 		const handleSend = useCallback(() => {
-			if (!message.trim() || disabled) return;
+			const trimmedMessage = message.trim();
+			if (!trimmedMessage || disabled) return;
+
+			const resetComposer = () => {
+				setMessage('');
+				setShowFileMention(false);
+				setShowCommandSuggestions(false);
+				setCurrentFileToSelect(undefined);
+				setCurrentCommandToSelect(undefined);
+
+				if (textareaRef.current) {
+					textareaRef.current.style.height = 'auto';
+				}
+
+				if (preferences.vimMode) {
+					setVimMode('normal');
+				}
+
+				textareaRef.current?.focus();
+			};
+
+			const exactCommand = findExactCommand(trimmedMessage);
+			if (exactCommand) {
+				if (shouldSendSlashCommandAsMessage(exactCommand.id)) {
+					onSend(exactCommand.label);
+					resetComposer();
+					return;
+				}
+				if (onCommand) {
+					onCommand(exactCommand.id);
+					resetComposer();
+					return;
+				}
+			}
 
 			onSend(message);
-			setMessage('');
-			setShowFileMention(false);
-			setShowCommandSuggestions(false);
-			setCurrentFileToSelect(undefined);
-			setCurrentCommandToSelect(undefined);
-
-			if (textareaRef.current) {
-				textareaRef.current.style.height = 'auto';
-			}
-
-			if (preferences.vimMode) {
-				setVimMode('normal');
-			}
-
-			textareaRef.current?.focus();
+			resetComposer();
 		}, [
 			message,
 			disabled,
+			onCommand,
 			onSend,
 			preferences.vimMode,
 			setShowFileMention,

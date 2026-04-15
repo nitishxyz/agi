@@ -14,6 +14,10 @@ import AGENT_PLAN from '@ottocode/sdk/prompts/agents/plan.txt' with {
 import AGENT_GENERAL from '@ottocode/sdk/prompts/agents/general.txt' with {
 	type: 'text',
 };
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import AGENT_INIT from '@ottocode/sdk/prompts/agents/init.txt' with {
+	type: 'text',
+};
 import AGENT_RESEARCH from '@ottocode/sdk/prompts/agents/research.txt' with {
 	type: 'text',
 };
@@ -143,6 +147,22 @@ const defaultToolExtras: Record<string, string[]> = {
 		'glob',
 		'websearch',
 		'update_todos',
+	],
+	init: [
+		'read',
+		'edit',
+		'multiedit',
+		'write',
+		'ls',
+		'tree',
+		'bash',
+		'update_todos',
+		'glob',
+		'ripgrep',
+		'git_status',
+		'terminal',
+		'apply_patch',
+		'websearch',
 	],
 	git: ['git_status', 'git_diff', 'git_commit', 'read', 'ls'],
 	commit: ['git_status', 'git_diff', 'git_commit', 'read', 'ls'],
@@ -308,6 +328,7 @@ export async function resolveAgentConfig(
 			if (n === 'build') return AGENT_BUILD;
 			if (n === 'plan') return AGENT_PLAN;
 			if (n === 'general') return AGENT_GENERAL;
+			if (n === 'init') return AGENT_INIT;
 			if (n === 'research') return AGENT_RESEARCH;
 			return undefined;
 		};

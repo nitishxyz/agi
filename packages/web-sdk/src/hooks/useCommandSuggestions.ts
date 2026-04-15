@@ -1,8 +1,13 @@
 import { useState, useCallback } from 'react';
 import { apiClient } from '../lib/api-client';
+import {
+	getCommandLabel,
+	shouldSendSlashCommandAsMessage,
+} from '../lib/commands';
 
 interface UseCommandSuggestionsOptions {
 	onCommand?: (commandId: string) => void;
+	onSendCommandMessage?: (message: string) => void | Promise<void>;
 	updatePreferences: (prefs: { vimMode?: boolean }) => void;
 	updateReasoningText: (enabled: boolean) => void;
 	vimModeEnabled: boolean;
@@ -29,6 +34,7 @@ interface UseCommandSuggestionsReturn {
 
 export function useCommandSuggestions({
 	onCommand,
+	onSendCommandMessage,
 	updatePreferences,
 	updateReasoningText,
 	vimModeEnabled,
@@ -82,6 +88,14 @@ export function useCommandSuggestions({
 				resetInput();
 				return;
 			}
+			if (shouldSendSlashCommandAsMessage(commandId)) {
+				const label = getCommandLabel(commandId);
+				if (label && onSendCommandMessage) {
+					await onSendCommandMessage(label);
+					resetInput();
+					return;
+				}
+			}
 			if (onCommand) {
 				onCommand(commandId);
 			}
@@ -89,6 +103,7 @@ export function useCommandSuggestions({
 		},
 		[
 			onCommand,
+			onSendCommandMessage,
 			vimModeEnabled,
 			reasoningEnabled,
 			updatePreferences,

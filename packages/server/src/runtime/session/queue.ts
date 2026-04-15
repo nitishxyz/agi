@@ -16,8 +16,17 @@ export type RunOpts = {
 	reasoningText?: boolean;
 	reasoningLevel?: ReasoningLevel;
 	abortSignal?: AbortSignal;
+	/**
+	 * Omits prior session history from prompt assembly only. The run still emits
+	 * events, tool calls, and persisted message parts in the current session.
+	 */
+	omitHistory?: boolean;
 	isCompactCommand?: boolean;
 	compactionContext?: string;
+	additionalPromptMessages?: Array<{
+		role: 'system' | 'user';
+		content: string;
+	}>;
 	toolApprovalMode?: ToolApprovalMode;
 	compactionRetries?: number;
 	continuationCount?: number;

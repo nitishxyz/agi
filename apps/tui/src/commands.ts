@@ -44,6 +44,11 @@ export const COMMANDS = [
 	{ name: 'commit', alias: '', description: 'Open commit overlay' },
 	{ name: 'push', alias: '', description: 'Push commits to remote' },
 	{ name: 'compact', alias: '', description: 'Compact conversation history' },
+	{
+		name: 'init',
+		alias: '',
+		description: 'Generate AGENTS.md and .agents docs from the repo structure',
+	},
 	{ name: 'delete', alias: '', description: 'Delete current session' },
 	{ name: 'share', alias: '', description: 'Share session publicly' },
 	{

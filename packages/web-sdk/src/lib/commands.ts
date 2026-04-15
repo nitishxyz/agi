@@ -13,6 +13,7 @@ import {
 	Trash2,
 	Share2,
 	RefreshCw,
+	FileText,
 } from 'lucide-react';
 
 export interface Command {
@@ -94,6 +95,13 @@ export const COMMANDS: Command[] = [
 		icon: Minimize2,
 	},
 	{
+		id: 'init',
+		label: '/init',
+		description:
+			'Generate AGENTS.md and .agents docs from the real repo structure',
+		icon: FileText,
+	},
+	{
 		id: 'branch',
 		label: '/branch',
 		description: 'Branch session from last message',
@@ -126,6 +134,24 @@ export function getCommandDescription(
 	return typeof cmd.description === 'function'
 		? cmd.description(state)
 		: cmd.description;
+}
+
+export function findExactCommand(input: string): Command | undefined {
+	const normalized = input.trim().toLowerCase();
+	if (!normalized.startsWith('/')) return undefined;
+	return COMMANDS.find(
+		(cmd) =>
+			cmd.label.toLowerCase() === normalized ||
+			`/${cmd.id}`.toLowerCase() === normalized,
+	);
+}
+
+export function shouldSendSlashCommandAsMessage(commandId: string): boolean {
+	return commandId === 'compact' || commandId === 'init';
+}
+
+export function getCommandLabel(commandId: string): string | undefined {
+	return COMMANDS.find((cmd) => cmd.id === commandId)?.label;
 }
 
 export function filterCommands(query: string, state: CommandState): Command[] {

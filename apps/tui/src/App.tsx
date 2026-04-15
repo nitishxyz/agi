@@ -256,6 +256,11 @@ export function App({ onQuit }: { onQuit: () => void }) {
 						await sendMessage(activeSession.id, '/compact');
 					}
 					break;
+				case 'init':
+					if (activeSession) {
+						await sendMessage(activeSession.id, '/init');
+					}
+					break;
 				case 'stop':
 					if (activeSession) {
 						await abortSession(activeSession.id);

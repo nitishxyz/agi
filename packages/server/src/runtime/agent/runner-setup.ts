@@ -88,7 +88,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 
 	const historyTimer = time('runner:buildHistory');
 	let history: Awaited<ReturnType<typeof buildHistoryMessages>>;
-	if (opts.isCompactCommand && opts.compactionContext) {
+	if (opts.omitHistory || (opts.isCompactCommand && opts.compactionContext)) {
 		history = [];
 	} else {
 		history = await buildHistoryMessages(
@@ -216,6 +216,10 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 			role: 'user',
 			content: `Please summarize this conversation:\n\n<conversation-to-summarize>\n${opts.compactionContext}\n</conversation-to-summarize>`,
 		});
+	}
+
+	if (opts.additionalPromptMessages?.length) {
+		additionalSystemMessages.push(...opts.additionalPromptMessages);
 	}
 
 	const toolsTimer = time('runner:discoverTools');

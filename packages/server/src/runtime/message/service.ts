@@ -13,12 +13,9 @@ import {
 	type ProviderId,
 	type ReasoningLevel,
 } from '@ottocode/sdk';
-import {
-	isCompactCommand,
-	buildCompactionContext,
-	estimateTokens,
-} from './compaction.ts';
+import { estimateTokens } from './compaction.ts';
 import { detectOAuth, adaptSimpleCall } from '../provider/oauth-adapter.ts';
+import { prepareBuiltinCommand } from '../commands/builtins.ts';
 
 type SessionRow = typeof sessions.$inferSelect;
 
@@ -65,14 +62,25 @@ export async function dispatchAssistantMessage(
 
 	const sessionId = session.id;
 	const now = Date.now();
+	const builtinCommand = await prepareBuiltinCommand({
+		cfg,
+		db,
+		sessionId,
+		provider,
+		model,
+		content,
+	});
+	const effectiveAgent = builtinCommand?.agent ?? agent;
+	const effectiveOneShot = builtinCommand?.oneShot ?? oneShot;
 	const userMessageId = crypto.randomUUID();
 	logger.debug('[agent] dispatching assistant message', {
 		sessionId,
-		agent,
+		agent: effectiveAgent,
 		provider,
 		model,
-		oneShot: Boolean(oneShot),
+		oneShot: Boolean(effectiveOneShot),
 		hasUserContext: Boolean(userContext),
+		builtinCommand: builtinCommand?.id,
 	});
 
 	await db.insert(messages).values({
@@ -80,7 +88,7 @@ export async function dispatchAssistantMessage(
 		sessionId,
 		role: 'user',
 		status: 'complete',
-		agent,
+		agent: effectiveAgent,
 		provider,
 		model,
 		createdAt: now,
@@ -91,7 +99,7 @@ export async function dispatchAssistantMessage(
 		index: 0,
 		type: 'text',
 		content: JSON.stringify({ text: String(content) }),
-		agent,
+		agent: effectiveAgent,
 		provider,
 		model,
 	});
@@ -105,7 +113,7 @@ export async function dispatchAssistantMessage(
 				index: i + 1,
 				type: 'image',
 				content: JSON.stringify({ data: img.data, mediaType: img.mediaType }),
-				agent,
+				agent: effectiveAgent,
 				provider,
 				model,
 			});
@@ -128,7 +136,7 @@ export async function dispatchAssistantMessage(
 					mediaType: file.mediaType,
 					textContent: file.textContent,
 				}),
-				agent,
+				agent: effectiveAgent,
 				provider,
 				model,
 			});
@@ -141,7 +149,7 @@ export async function dispatchAssistantMessage(
 		payload: {
 			id: userMessageId,
 			role: 'user',
-			agent,
+			agent: effectiveAgent,
 			provider,
 			model,
 			content: String(content),
@@ -154,7 +162,7 @@ export async function dispatchAssistantMessage(
 		sessionId,
 		role: 'assistant',
 		status: 'pending',
-		agent,
+		agent: effectiveAgent,
 		provider,
 		model,
 		createdAt: Date.now(),
@@ -165,34 +173,23 @@ export async function dispatchAssistantMessage(
 		payload: {
 			id: assistantMessageId,
 			role: 'assistant',
-			agent,
+			agent: effectiveAgent,
 			provider,
 			model,
 		},
 	});
 
-	const isCompact = isCompactCommand(content);
+	const commandPromptText =
+		builtinCommand?.additionalPromptMessages
+			?.map((message) => message.content)
+			.join('\n\n') ?? content;
 	const estimatedInputTokens =
-		estimateTokens(content) +
+		estimateTokens(commandPromptText) +
 		estimateTokens(userContext ?? '') +
 		(files?.reduce(
 			(total, file) => total + estimateTokens(file.textContent ?? ''),
 			0,
 		) ?? 0);
-	let compactionContext: string | undefined;
-
-	if (isCompact) {
-		const { getModelLimits } = await import('./compaction.ts');
-		const limits = getModelLimits(provider, model);
-		const contextTokenLimit = limits
-			? Math.max(Math.floor(limits.context * 0.5), 15000)
-			: 15000;
-		compactionContext = await buildCompactionContext(
-			db,
-			sessionId,
-			contextTokenLimit,
-		);
-	}
 
 	const toolApprovalMode = cfg.defaults.toolApproval ?? 'dangerous';
 
@@ -200,17 +197,19 @@ export async function dispatchAssistantMessage(
 		{
 			sessionId,
 			assistantMessageId,
-			agent,
+			agent: effectiveAgent,
 			provider,
 			model,
 			projectRoot: cfg.projectRoot,
-			oneShot: Boolean(oneShot),
+			oneShot: Boolean(effectiveOneShot),
 			userContext,
 			estimatedInputTokens,
 			reasoningText,
 			reasoningLevel,
-			isCompactCommand: isCompact,
-			compactionContext,
+			omitHistory: builtinCommand?.omitHistory,
+			isCompactCommand: builtinCommand?.isCompactCommand,
+			compactionContext: builtinCommand?.compactionContext,
+			additionalPromptMessages: builtinCommand?.additionalPromptMessages,
 			toolApprovalMode,
 		},
 		runSessionLoop,
@@ -218,10 +217,11 @@ export async function dispatchAssistantMessage(
 	logger.debug('[agent] assistant run enqueued', {
 		sessionId,
 		assistantMessageId,
-		agent,
+		agent: effectiveAgent,
 		provider,
 		model,
-		isCompactCommand: isCompact,
+		builtinCommand: builtinCommand?.id,
+		isCompactCommand: builtinCommand?.isCompactCommand,
 	});
 
 	void touchSessionLastActive({ db, sessionId });

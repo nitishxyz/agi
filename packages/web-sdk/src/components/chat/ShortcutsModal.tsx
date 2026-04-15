@@ -220,6 +220,10 @@ const SLASH_COMMANDS = [
 		command: '/compact',
 		description: 'Compact conversation to reduce context size',
 	},
+	{
+		command: '/init',
+		description: 'Generate AGENTS.md and focused .agents docs for the repo',
+	},
 ];
 
 function groupShortcutsByCategory(shortcuts: ShortcutItem[]) {
