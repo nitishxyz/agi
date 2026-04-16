@@ -1532,5 +1532,5 @@ export const setuCatalog: SetuCatalog = {
 		},
 	],
 	providers: ['anthropic', 'google', 'minimax', 'moonshot', 'openai', 'zai'],
-	lastUpdated: '2026-04-13',
+	lastUpdated: '2026-04-16',
 } as const satisfies SetuCatalog;

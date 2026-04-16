@@ -1768,6 +1768,33 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'claude-opus-4-7',
+				ownedBy: 'anthropic',
+				label: 'Claude Opus 4.7',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2026-01',
+				releaseDate: '2026-04-16',
+				lastUpdated: '2026-04-16',
+				openWeights: false,
+				cost: {
+					input: 5,
+					output: 25,
+					cacheRead: 0.5,
+					cacheWrite: 6.25,
+				},
+				limit: {
+					context: 1000000,
+					output: 128000,
+				},
+			},
+			{
 				id: 'claude-sonnet-4-0',
 				ownedBy: 'anthropic',
 				label: 'Claude Sonnet 4 (latest)',
@@ -3176,30 +3203,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
-				id: 'arcee-ai/trinity-mini:free',
-				label: 'Trinity Mini',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoningText: false,
-				attachment: false,
-				temperature: true,
-				knowledge: '2025-06',
-				releaseDate: '2026-01-28',
-				lastUpdated: '2026-01-28',
-				openWeights: true,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 131072,
-					output: 131072,
-				},
-			},
-			{
 				id: 'black-forest-labs/flux.2-flex',
 				label: 'FLUX.2 Flex',
 				modalities: {
@@ -4221,30 +4224,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
-				id: 'inception/mercury',
-				label: 'Mercury',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoningText: false,
-				attachment: false,
-				temperature: true,
-				releaseDate: '2025-06-26',
-				lastUpdated: '2025-06-26',
-				openWeights: false,
-				cost: {
-					input: 0.25,
-					output: 0.75,
-					cacheRead: 0.025,
-				},
-				limit: {
-					context: 128000,
-					output: 32000,
-				},
-			},
-			{
 				id: 'inception/mercury-2',
 				label: 'Mercury 2',
 				modalities: {
@@ -4269,18 +4248,18 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
-				id: 'inception/mercury-coder',
-				label: 'Mercury Coder',
+				id: 'inception/mercury-edit-2',
+				label: 'Mercury Edit 2',
 				modalities: {
 					input: ['text'],
 					output: ['text'],
 				},
-				toolCall: true,
-				reasoningText: false,
+				toolCall: false,
+				reasoningText: true,
 				attachment: false,
 				temperature: true,
-				releaseDate: '2025-04-30',
-				lastUpdated: '2025-04-30',
+				releaseDate: '2026-03-30',
+				lastUpdated: '2026-03-30',
 				openWeights: false,
 				cost: {
 					input: 0.25,
@@ -4289,7 +4268,7 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 				limit: {
 					context: 128000,
-					output: 32000,
+					output: 8192,
 				},
 			},
 			{
@@ -4924,31 +4903,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 262144,
 					output: 262144,
-				},
-			},
-			{
-				id: 'moonshotai/kimi-k2:free',
-				ownedBy: 'moonshot',
-				label: 'Kimi K2 (free)',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoningText: false,
-				attachment: false,
-				temperature: true,
-				knowledge: '2025-04',
-				releaseDate: '2025-07-11',
-				lastUpdated: '2025-07-11',
-				openWeights: true,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 32800,
-					output: 32800,
 				},
 			},
 			{
@@ -5982,6 +5936,29 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
+				id: 'openrouter/elephant-alpha',
+				label: 'Elephant (free)',
+				modalities: {
+					input: ['text'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: false,
+				temperature: true,
+				releaseDate: '2026-04-13',
+				lastUpdated: '2026-04-13',
+				openWeights: false,
+				cost: {
+					input: 0,
+					output: 0,
+				},
+				limit: {
+					context: 262144,
+					output: 32768,
+				},
+			},
+			{
 				id: 'openrouter/free',
 				label: 'Free Models Router',
 				modalities: {
@@ -6174,30 +6151,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
-				id: 'qwen/qwen3-4b:free',
-				label: 'Qwen3 4B (free)',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoningText: true,
-				attachment: false,
-				temperature: true,
-				knowledge: '2025-04',
-				releaseDate: '2025-04-30',
-				lastUpdated: '2025-07-23',
-				openWeights: true,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 40960,
-					output: 40960,
-				},
-			},
-			{
 				id: 'qwen/qwen3-coder',
 				label: 'Qwen3 Coder',
 				modalities: {
@@ -6294,30 +6247,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				},
 			},
 			{
-				id: 'qwen/qwen3-coder:free',
-				label: 'Qwen3 Coder 480B A35B Instruct (free)',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoningText: false,
-				attachment: false,
-				temperature: true,
-				knowledge: '2025-04',
-				releaseDate: '2025-07-23',
-				lastUpdated: '2025-07-23',
-				openWeights: true,
-				cost: {
-					input: 0,
-					output: 0,
-				},
-				limit: {
-					context: 262144,
-					output: 66536,
-				},
-			},
-			{
 				id: 'qwen/qwen3-max',
 				label: 'Qwen3 Max',
 				modalities: {
@@ -6358,30 +6287,6 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				cost: {
 					input: 0.14,
 					output: 1.4,
-				},
-				limit: {
-					context: 262144,
-					output: 262144,
-				},
-			},
-			{
-				id: 'qwen/qwen3-next-80b-a3b-instruct:free',
-				label: 'Qwen3 Next 80B A3B Instruct (free)',
-				modalities: {
-					input: ['text'],
-					output: ['text'],
-				},
-				toolCall: true,
-				reasoningText: false,
-				attachment: false,
-				temperature: true,
-				knowledge: '2025-04',
-				releaseDate: '2025-09-11',
-				lastUpdated: '2025-09-11',
-				openWeights: true,
-				cost: {
-					input: 0,
-					output: 0,
 				},
 				limit: {
 					context: 262144,
@@ -7394,6 +7299,36 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				knowledge: '2025-08-31',
 				releaseDate: '2026-02-05',
 				lastUpdated: '2026-02-05',
+				openWeights: false,
+				cost: {
+					input: 5,
+					output: 25,
+					cacheRead: 0.5,
+					cacheWrite: 6.25,
+				},
+				limit: {
+					context: 1000000,
+					output: 128000,
+				},
+				provider: {
+					npm: '@ai-sdk/anthropic',
+				},
+			},
+			{
+				id: 'claude-opus-4-7',
+				ownedBy: 'anthropic',
+				label: 'Claude Opus 4.7',
+				modalities: {
+					input: ['text', 'image', 'pdf'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2026-01',
+				releaseDate: '2026-04-16',
+				lastUpdated: '2026-04-16',
 				openWeights: false,
 				cost: {
 					input: 5,
@@ -8539,6 +8474,64 @@ export const catalog: Partial<Record<ProviderId, ProviderCatalogEntry>> = {
 				limit: {
 					context: 262144,
 					output: 65536,
+				},
+			},
+			{
+				id: 'qwen3.5-plus',
+				label: 'Qwen3.5 Plus',
+				modalities: {
+					input: ['text', 'image', 'video'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2026-02-16',
+				lastUpdated: '2026-02-16',
+				openWeights: false,
+				cost: {
+					input: 0.2,
+					output: 1.2,
+					cacheRead: 0.02,
+					cacheWrite: 0.25,
+				},
+				limit: {
+					context: 262144,
+					output: 65536,
+				},
+				provider: {
+					npm: '@ai-sdk/alibaba',
+				},
+			},
+			{
+				id: 'qwen3.6-plus',
+				label: 'Qwen3.6 Plus',
+				modalities: {
+					input: ['text', 'image', 'video'],
+					output: ['text'],
+				},
+				toolCall: true,
+				reasoningText: true,
+				attachment: true,
+				temperature: true,
+				knowledge: '2025-04',
+				releaseDate: '2026-04-02',
+				lastUpdated: '2026-04-02',
+				openWeights: false,
+				cost: {
+					input: 0.5,
+					output: 3,
+					cacheRead: 0.05,
+					cacheWrite: 0.625,
+				},
+				limit: {
+					context: 262144,
+					output: 65536,
+				},
+				provider: {
+					npm: '@ai-sdk/alibaba',
 				},
 			},
 			{
