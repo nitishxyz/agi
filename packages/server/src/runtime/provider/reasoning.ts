@@ -134,6 +134,8 @@ function buildSharedProviderOptions(
 function usesAdaptiveAnthropicThinking(model: string): boolean {
 	const lower = model.toLowerCase();
 	return (
+		lower.includes('claude-opus-4-7') ||
+		lower.includes('claude-opus-4.7') ||
 		lower.includes('claude-opus-4-6') ||
 		lower.includes('claude-opus-4.6') ||
 		lower.includes('claude-sonnet-4-6') ||

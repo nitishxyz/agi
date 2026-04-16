@@ -41,7 +41,7 @@ const DUMMY_API_KEY = 'setu-proxy-handles-auth';
 const MODEL_ALIASES: Array<{ id: string; alias: string }> = [
 	{ id: 'claude-sonnet-4-6', alias: 'sonnet-4.6' },
 	{ id: 'claude-sonnet-4-5', alias: 'sonnet-4.5' },
-	{ id: 'claude-opus-4-6', alias: 'opus' },
+	{ id: 'claude-opus-4-7', alias: 'opus' },
 	{ id: 'claude-3-5-haiku-20241022', alias: 'haiku' },
 	{ id: 'gpt-5.1-codex', alias: 'codex' },
 	{ id: 'gpt-5', alias: 'gpt5' },
@@ -139,6 +139,15 @@ export function getDefaultModels(): SetuModelConfig[] {
 			input: ['text', 'image'],
 			contextWindow: 200000,
 			maxTokens: 64000,
+		},
+		{
+			id: 'claude-opus-4-7',
+			name: 'Claude Opus 4.7 (anthropic, via Setu)',
+			api: 'anthropic-messages',
+			reasoning: true,
+			input: ['text', 'image'],
+			contextWindow: 1000000,
+			maxTokens: 128000,
 		},
 		{
 			id: 'claude-opus-4-6',

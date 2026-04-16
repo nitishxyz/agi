@@ -35,6 +35,25 @@ describe('buildReasoningConfig', () => {
 		expect(result.effectiveMaxOutputTokens).toBe(4000);
 	});
 
+	test('uses adaptive Anthropic thinking for Claude 4.7 models', () => {
+		const result = buildReasoningConfig({
+			provider: 'anthropic',
+			model: 'claude-opus-4-7',
+			reasoningText: true,
+			reasoningLevel: 'max',
+			maxOutputTokens: 4000,
+		});
+
+		expect(result.enabled).toBe(true);
+		expect(result.providerOptions).toEqual({
+			anthropic: {
+				thinking: { type: 'adaptive' },
+				effort: 'max',
+			},
+		});
+		expect(result.effectiveMaxOutputTokens).toBe(4000);
+	});
+
 	test('uses OpenRouter request-level reasoning options', () => {
 		const result = buildReasoningConfig({
 			provider: 'openrouter',
