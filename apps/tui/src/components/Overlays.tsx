@@ -8,6 +8,7 @@ import { ThemeOverlay } from './ThemeOverlay.tsx';
 import { ApprovalsOverlay } from './ApprovalsOverlay.tsx';
 import { MCPOverlay } from './MCPOverlay.tsx';
 import { UsageOverlay } from './UsageOverlay.tsx';
+import { AgentsOverlay } from './AgentsOverlay.tsx';
 import type { Session } from '../types.ts';
 
 interface OverlaysProps {
@@ -24,6 +25,8 @@ interface OverlaysProps {
 	onApprovalModeSave: (
 		mode: 'auto' | 'dangerous' | 'all' | 'yolo',
 	) => void | Promise<void>;
+	currentAgent: string;
+	onAgentSelect: (agent: string) => void | Promise<void>;
 }
 
 export const Overlays = memo(function Overlays({
@@ -38,6 +41,8 @@ export const Overlays = memo(function Overlays({
 	onThemeSave,
 	approvalMode,
 	onApprovalModeSave,
+	currentAgent,
+	onAgentSelect,
 }: OverlaysProps) {
 	const overlay = useOverlayStore((s) => s.overlay);
 	const setOverlay = useOverlayStore((s) => s.setOverlay);
@@ -94,6 +99,14 @@ export const Overlays = memo(function Overlays({
 			);
 		case 'mcp':
 			return <MCPOverlay onClose={handleClose} />;
+		case 'agents':
+			return (
+				<AgentsOverlay
+					currentAgent={currentAgent}
+					onClose={handleClose}
+					onSelect={onAgentSelect}
+				/>
+			);
 		case 'usage':
 			return <UsageOverlay currentProvider={provider} onClose={handleClose} />;
 		default:

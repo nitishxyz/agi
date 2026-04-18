@@ -40,7 +40,7 @@ const PREFERRED_FAST_MODELS: Partial<Record<ProviderId, string[]>> = {
 };
 
 const PREFERRED_FAST_MODELS_OAUTH: Partial<Record<ProviderId, string[]>> = {
-	openai: ['gpt-5.1-codex-mini'],
+	openai: ['gpt-5.4-mini'],
 	anthropic: ['claude-haiku-4-5'],
 };
 

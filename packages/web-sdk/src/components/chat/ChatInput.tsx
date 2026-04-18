@@ -580,7 +580,11 @@ export const ChatInput = memo(
 									: 'grid-rows-[0fr]'
 							}`}
 						>
-							<div className="overflow-hidden">
+							<div
+								className={
+									showAgentDropdown ? 'overflow-visible' : 'overflow-hidden'
+								}
+							>
 								<div className="grid grid-cols-[auto_1fr_auto] items-center mt-1 px-3">
 									<div
 										className="justify-self-start flex-shrink-0 relative"

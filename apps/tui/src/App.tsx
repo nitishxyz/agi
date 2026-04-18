@@ -190,6 +190,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				case 'models':
 					setOverlay('models');
 					break;
+				case 'agents':
+					setOverlay('agents');
+					break;
 				case 'commit':
 					setOverlay('commit');
 					break;
@@ -510,6 +513,19 @@ export function App({ onQuit }: { onQuit: () => void }) {
 		[updateDefaults],
 	);
 
+	const handleAgentSelect = useCallback(
+		async (agent: string) => {
+			if (activeSession) {
+				await updateSessionPrefs(activeSession.id, { agent });
+			} else {
+				const s = await createSession();
+				if (s) await updateSessionPrefs(s.id, { agent });
+			}
+			showStatus({ type: 'success', label: `agent: ${agent}` }, 2000);
+		},
+		[activeSession, updateSessionPrefs, createSession, showStatus],
+	);
+
 	return (
 		<box
 			style={{
@@ -571,6 +587,8 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				onThemeSave={handleThemeSave}
 				approvalMode={config.defaults.toolApproval ?? 'auto'}
 				onApprovalModeSave={handleApprovalModeSave}
+				currentAgent={currentAgent}
+				onAgentSelect={handleAgentSelect}
 			/>
 		</box>
 	);

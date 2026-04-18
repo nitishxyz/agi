@@ -25,9 +25,13 @@ import { registerProviderUsageRoutes } from './routes/provider-usage.ts';
 import { registerDoctorRoutes } from './routes/doctor.ts';
 import { registerSkillsRoutes } from './routes/skills.ts';
 import type { AgentConfigEntry } from './runtime/agent/registry.ts';
+import { installAiSdkWarningHandler } from './runtime/ai-sdk-warnings.ts';
 
 const globalTerminalManager = new TerminalManager();
 setTerminalManager(globalTerminalManager);
+
+// Suppress noisy AI SDK provider warnings unless debug mode is enabled.
+installAiSdkWarningHandler();
 
 function initApp() {
 	const app = new Hono();

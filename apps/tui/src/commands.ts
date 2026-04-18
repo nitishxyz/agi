@@ -27,6 +27,8 @@ export const COMMAND_ALIASES: Record<string, string> = {
 	p: 'mcp',
 	u: 'usage',
 	a: 'approvals',
+	g: 'agents',
+	agent: 'agents',
 };
 
 export function resolveCommand(name: string): string {
@@ -36,6 +38,11 @@ export function resolveCommand(name: string): string {
 export const COMMANDS = [
 	{ name: 'mcp', alias: '/p', description: 'Manage MCP servers' },
 	{ name: 'models', alias: '/m', description: 'Open model selector' },
+	{
+		name: 'agents',
+		alias: '/g',
+		description: 'Switch agent (build, plan, general, …)',
+	},
 	{ name: 'new', alias: '', description: 'Create a new session' },
 	{ name: 'stop', alias: '/x', description: 'Stop current generation' },
 	{ name: 'help', alias: '/?', description: 'Show this help' },

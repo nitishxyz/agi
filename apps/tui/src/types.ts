@@ -79,6 +79,7 @@ export type Overlay =
 	| 'theme'
 	| 'approvals'
 	| 'mcp'
+	| 'agents'
 	| 'usage';
 
 export interface AppState {
