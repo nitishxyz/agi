@@ -938,7 +938,7 @@ jobs:
             PKG_NAME=$(jq -r .name "$pkg/package.json")
             echo "Publishing ${PKG_NAME}@${VERSION} to npm..."
             cd "$pkg"
-            bun publish --access public --tag latest
+            npm publish --access public --tag latest
             cd "$GITHUB_WORKSPACE"
           done
 
