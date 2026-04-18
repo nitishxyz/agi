@@ -203,7 +203,9 @@ function shouldSkipSentence(sentence: string): boolean {
 }
 
 export function summarizeDescription(raw: string): string {
-	const text = String(raw ?? '').replace(/\s+/g, ' ').trim();
+	const text = String(raw ?? '')
+		.replace(/\s+/g, ' ')
+		.trim();
 	if (!text) return '';
 
 	// Split into sentences, keeping terminal punctuation.
