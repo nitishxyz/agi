@@ -1,78 +1,32 @@
+<div align="center">
+
 # otto
 
-AI-powered coding assistant for local-first development workflows.
+**A local-first AI coding platform.**
 
-CLI, TUI, desktop app, embeddable server, web UI, ACP adapter, and reusable SDK packages — all in one Bun monorepo.
+One runtime. Many surfaces. Your agents, your tools, your repo — on your machine.
 
 [![Version](https://img.shields.io/badge/version-0.1.231-blue)](https://github.com/nitishxyz/otto)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Runtime](https://img.shields.io/badge/runtime-Bun-orange)](https://bun.sh)
 [![AI SDK](https://img.shields.io/badge/AI%20SDK-v6-purple)](https://sdk.vercel.ai)
-[![Bun](https://img.shields.io/badge/runtime-Bun-orange)](https://bun.sh)
-[![SST](https://img.shields.io/badge/infra-SST-blue)](https://sst.dev)
+
+[Install](#install) · [Surfaces](#surfaces) · [Agents & Tools](#agents) · [Embedding](#embedding) · [Docs](docs/index.md)
+
+</div>
 
 ---
 
-## Otto Canvas — the primary desktop experience
+## What is otto
 
-**Otto Canvas** is a native desktop app (Tauri + React) that gives you a persistent, tiled workspace for AI-powered development. It is the flagship way to use otto and the primary interface going forward.
+otto is a local-first coding platform built around a single runtime — `otto serve` — that gives AI models controlled access to your repo through built-in tools: file IO, search, patching, git, terminals, web fetch, skills, MCP, and task tracking.
 
-### What Canvas does
+You pick the surface. The runtime, agents, tools, sessions, and providers stay the same across all of them.
 
-Canvas turns your screen into a composable surface where every block is a first-class tool:
-
-| Block | What it is | Powered by |
-|---|---|---|
-| **Terminal** | Native terminal with full GPU rendering | [Ghostty](https://ghostty.org) libghostty via Tauri |
-| **Browser** | Inline web preview for localhost or any URL | Native macOS WKWebView |
-| **Otto** | AI chat with full tool access to your repo | `otto serve` runtime per workspace |
-| **Claude Code** | Launch Claude Code in a Ghostty surface | Ghostty command preset |
-| **Codex** | Launch OpenAI Codex in a Ghostty surface | Ghostty command preset |
-| **Otto TUI** | Run the otto TUI inside Canvas | Ghostty command preset |
-| **OpenCode** | Launch OpenCode in a Ghostty surface | Ghostty command preset |
-| **Custom command** | Run any shell command in a terminal block | Ghostty command preset |
-
-### Core capabilities
-
-- **Multi-workspace** — each workspace is linked to a project path; Canvas auto-starts an `otto serve` runtime per workspace
-- **Tabbed canvas with splits** — create Canvas tabs with horizontal/vertical splits, or open any block type as a standalone tab
-- **Keyboard-first** — `⌘N` add block, `⌘T` new tab, `⌘D` split right, `⌘⇧D` split down, `⌘1-9` switch tabs, `Ctrl+H/J/K/L` vim-style focus navigation
-- **Workspace file** — export/import your layout, tabs, and automation as `otto.yaml` so teammates share identical surfaces
-- **Native performance** — Ghostty terminal blocks run via libghostty with native macOS rendering; browser blocks use WKWebView — no Electron overhead
-- **Per-workspace otto runtime** — each workspace auto-launches `otto serve --no-open` so every Otto block has full tool access scoped to that project
-- **macOS vibrancy** — transparent, blur-backed window chrome via `NSVisualEffectMaterial`
-
-### Run Canvas locally
-
-```bash
-cd apps/canvas
-bun install
-bun tauri dev
-```
-
-Or build a distributable `.app` / `.dmg`:
-
-```bash
-bun tauri build
-```
-
----
-
-## What is otto?
-
-otto is a local-first coding assistant that runs on your machine, connects to multiple AI providers, and gives models controlled access to your repo through built-in tools like file IO, search, patching, git, terminals, web fetch, skills, and task tracking.
-
-It ships in several forms:
-
-- **Canvas** (primary) — native Tauri desktop app with tiled terminals, browsers, AI chat, and multi-agent surfaces
-- **CLI** — `otto` for interactive or one-shot usage
-- **TUI** — terminal-first interface used by the default CLI flow
-- **Web UI** — browser client for the local otto server
-- **Desktop app** — lightweight Tauri wrapper around the web UI
-- **Embeddable server** — Hono-based API you can host inside your own app
-- **SDK packages** — auth, config, providers, tools, prompts, API client, web UI assets
-- **ACP adapter** — integrate otto with ACP-capable editors and tools
-
-The compiled CLI bundles the server, database, web UI assets, and runtime into a single executable.
+- **Local-first.** Your code, your machine, your keys. Secrets live in OS-secure stores, not config files.
+- **Multi-provider.** Anthropic, OpenAI, Google, OpenRouter, OpenCode, Setu, Moonshot, Minimax, Z.AI — swap at runtime.
+- **Extensible.** Custom tools, MCP servers, skills, and agent presets, per-project or global.
+- **Open.** MIT-licensed, Bun monorepo, OpenAPI spec, embeddable server.
 
 ---
 
@@ -82,116 +36,127 @@ The compiled CLI bundles the server, database, web UI assets, and runtime into a
 curl -fsSL https://install.ottocode.io | sh
 ```
 
-Or install the npm helper package with Bun:
+Or via Bun:
 
 ```bash
 bun install -g @ottocode/install
 ```
 
-That downloads the correct prebuilt binary for your platform.
+Then:
+
+```bash
+otto           # interactive TUI
+otto --web     # web UI in your browser
+otto serve     # run the API + web UI
+```
 
 ---
 
-## Quick usage
+## Surfaces
+
+otto ships in multiple forms. Pick whichever fits the moment — they all share the same runtime, sessions, and config.
+
+| Surface | What it's for |
+|---|---|
+| **CLI** | One-shot prompts, scripts, CI, and terminal workflows |
+| **TUI** | Full interactive session inside your terminal (default `otto`) |
+| **Web UI** | Browser client for the local otto server |
+| **Desktop** | Lightweight Tauri wrapper around the web UI |
+| **Canvas** | Native tiled workspace — terminals, browsers, agents, side-by-side |
+| **Server** | Embeddable Hono-based API you host in your own app |
+| **SDK** | Auth, config, providers, tools, prompts, API client as packages |
+| **ACP adapter** | Integrate otto with ACP-capable editors and tools |
+
+### CLI
 
 ```bash
-otto                           # start interactive TUI (default)
-otto --web                     # start local API + web UI and open browser
-otto "explain this stack trace"
+otto                                  # interactive TUI (default)
+otto "explain this stack trace"       # one-shot prompt
 otto "write tests" --agent build
 otto "review the architecture" --agent plan
 otto "research this codebase" --agent research
-otto --last "continue"
-otto serve                     # run API + web UI explicitly
-otto serve --port 3000         # API on :3000, web UI on :3001
-otto serve --network           # bind API/web UI for LAN access
+otto --last "continue"                # resume last session
+otto --web                            # start API + web UI and open browser
+otto serve --port 3000                # API on :3000, web UI on :3001
+otto serve --network                  # bind for LAN access
 ```
 
-Useful companion commands:
+Companion commands:
 
 ```bash
-otto setup
-otto auth login
-otto auth list
-otto doctor
-otto sessions
-otto models
-otto agents
-otto tools
-otto mcp list
-otto scaffold
+otto setup          otto auth login      otto auth list
+otto doctor         otto sessions        otto models
+otto agents         otto tools           otto skills
+otto mcp list       otto scaffold
 ```
 
----
+### Canvas
 
-## Providers
+Canvas is otto's native tiled workspace — a Tauri + React desktop app where each pane is a first-class block.
 
-otto supports multiple providers through AI SDK v6 and first-party adapters.
-
-Common environment variables:
-
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-export OPENAI_API_KEY="sk-..."
-export GOOGLE_GENERATIVE_AI_API_KEY="..."
-export OPENROUTER_API_KEY="..."
-export OPENCODE_API_KEY="..."
-export SETU_PRIVATE_KEY="..."      # Solana wallet private key (base58)
-export MOONSHOT_API_KEY="..."
-export MINIMAX_API_KEY="..."
-export ZAI_API_KEY="..."
-export ZAI_CODING_API_KEY="..."
-```
-
-See [docs/environment.md](docs/environment.md) for the verified env var list.
-
----
-
-## Built-in agents
-
-Current exported presets from `@ottocode/server`:
-
-| Agent | Purpose | Default tool profile |
+| Block | What it does | Powered by |
 |---|---|---|
-| `build` | code changes, fixes, implementation | full patch/search/shell flow |
-| `plan` | analysis and planning | mostly read/search/task tools |
-| `general` | mixed-purpose assistant | broad default workspace tools |
-| `research` | cross-session and web research | read/search/web + research DB tools |
+| **Terminal** | GPU-rendered native terminal | [Ghostty](https://ghostty.org) (libghostty) |
+| **Browser** | Inline preview for localhost or any URL | macOS WKWebView |
+| **Otto** | AI chat with full tool access to your repo | `otto serve` runtime |
+| **Claude Code** | Claude Code in a Ghostty surface | Ghostty preset |
+| **Codex** | OpenAI Codex in a Ghostty surface | Ghostty preset |
+| **Otto TUI** | Run the otto TUI inside Canvas | Ghostty preset |
+| **OpenCode** | OpenCode in a Ghostty surface | Ghostty preset |
+| **Custom command** | Any shell command as a terminal block | Ghostty preset |
 
-All runtime agents also include `progress_update`, `finish`, and `skill`.
+- **Multi-workspace** — each workspace binds to a project path and launches its own `otto serve` runtime
+- **Tabs & splits** — `⌘N` add block · `⌘T` new tab · `⌘D` split right · `⌘⇧D` split down · `⌘1-9` switch · `Ctrl+H/J/K/L` vim nav
+- **Shareable layouts** — export tabs, splits, and presets as `otto.yaml`
+- **Native performance** — libghostty + WKWebView, no Electron
 
-Project/global overrides live in:
+Run locally:
 
-- `.otto/agents.json`
-- `~/.config/otto/agents.json`
+```bash
+cd apps/canvas
+bun install
+bun tauri dev       # dev mode
+bun tauri build     # .app / .dmg
+```
 
-Prompt files scaffold to flat paths like `.otto/agents/<name>.md`.
+> Canvas currently targets macOS. Linux and Windows support is on the roadmap.
 
 ---
 
-## Built-in tools
+## Agents
 
-Core runtime tool surface includes:
+Built-in presets from `@ottocode/server`:
 
-> This is the full built-in tool universe. Individual agents only get the
-> subset they need via their preset or config overrides.
+| Agent | Purpose | Tool profile |
+|---|---|---|
+| `build` | Code changes, fixes, implementation | Full patch/search/shell |
+| `plan` | Analysis and planning | Read/search/task |
+| `research` | Cross-session and web research | Read/search/web + research DB |
+| `general` | Mixed-purpose assistant | Broad workspace default |
+
+All agents include `progress_update`, `finish`, and `skill`.
+
+Override per-project in `.otto/agents.json` or globally in `~/.config/otto/agents.json`. Prompt files live at `.otto/agents/<name>.md`.
+
+---
+
+## Tools
+
+The built-in tool surface available to agents:
 
 | Category | Tools |
 |---|---|
-| File system | `read`, `write`, `ls`, `tree`, `pwd`, `cd`, `glob` |
-| Search | `ripgrep`, `websearch` |
-| Editing | `apply_patch` |
-| Shell/runtime | `bash`, `terminal` |
-| Git | `git_status`, `git_diff`, `git_commit` |
-| Agent control | `update_todos`, `progress_update`, `finish`, `skill` |
-| Research | `query_sessions`, `query_messages`, `get_session_context`, `search_history`, `get_parent_session`, `present_action` |
+| **File system** | `read` · `write` · `ls` · `tree` · `pwd` · `cd` · `glob` |
+| **Search** | `ripgrep` · `websearch` |
+| **Editing** | `apply_patch` |
+| **Shell** | `bash` · `terminal` |
+| **Git** | `git_status` · `git_diff` · `git_commit` |
+| **Agent control** | `update_todos` · `progress_update` · `finish` · `skill` |
+| **Research** | `query_sessions` · `query_messages` · `get_session_context` · `search_history` · `get_parent_session` · `present_action` |
 
-### MCP
+### MCP servers
 
-otto supports MCP servers over stdio, HTTP, and SSE.
-
-Started MCP servers expose tools like `server__tool` at runtime. Those tools are
-separate from the built-in agent presets and come from the connected MCP server.
+otto speaks MCP over stdio, HTTP, and SSE. Tools register as `server__tool`.
 
 ```bash
 otto mcp add helius --command npx --args -y helius-mcp@latest
@@ -204,25 +169,14 @@ See [docs/mcp.md](docs/mcp.md).
 
 ### Custom tools
 
-Custom tools are plugin folders discovered from either:
-
-- `.otto/tools/<tool-name>/tool.js`
-- `.otto/tools/<tool-name>/tool.mjs`
-- `~/.config/otto/tools/<tool-name>/tool.js`
-- `~/.config/otto/tools/<tool-name>/tool.mjs`
-
-Example:
+Drop a plugin in `.otto/tools/<name>/tool.js`:
 
 ```js
-// .otto/tools/file-size/tool.js
 export default {
   name: 'file_size',
   description: 'Return the byte size for a file path',
   parameters: {
-    path: {
-      type: 'string',
-      description: 'Path to inspect',
-    },
+    path: { type: 'string', description: 'Path to inspect' },
   },
   async execute({ input, fs }) {
     const content = await fs.readFile(input.path, 'utf8');
@@ -235,107 +189,56 @@ See [docs/customization.md](docs/customization.md).
 
 ### Skills
 
-The `skill` tool loads markdown instruction bundles on demand.
+Load markdown instruction bundles on demand with the `skill` tool. Sources:
 
-Skill sources:
+- Built-in bundled skills
+- `.otto/skills/` · `.agents/skills/`
+- `~/.config/otto/skills/` · `~/.agents/skills/`
 
-- built-in bundled skills
-- `.otto/skills/`
-- `.agents/skills/`
-- `~/.config/otto/skills/`
-- `~/.agents/skills/`
+Run `otto skills` to list what's available.
 
-Compatibility aliases also supported:
+---
 
-- `.agenst/skills/`
-- `~/.agenst/skills/`
+## Providers
 
-Use `otto skills` to inspect available skills.
+Set environment variables for the providers you want:
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+export OPENAI_API_KEY="sk-..."
+export GOOGLE_GENERATIVE_AI_API_KEY="..."
+export OPENROUTER_API_KEY="..."
+export OPENCODE_API_KEY="..."
+export SETU_PRIVATE_KEY="..."          # Solana wallet (base58)
+export MOONSHOT_API_KEY="..."
+export MINIMAX_API_KEY="..."
+export ZAI_API_KEY="..."
+export ZAI_CODING_API_KEY="..."
+```
+
+Full list: [docs/environment.md](docs/environment.md).
 
 ---
 
 ## Configuration
 
-Global config lives under `~/.config/otto/`.
-
-Project config lives under `.otto/`.
-
-Secrets do **not** live in the global config directory anymore. Auth is stored in secure OS-specific locations:
-
-| Platform | Secure auth path |
+| Scope | Path |
 |---|---|
-| macOS | `~/Library/Application Support/otto/auth.json` |
-| Linux | `$XDG_STATE_HOME/otto/auth.json` or `~/.local/state/otto/auth.json` |
-| Windows | `%APPDATA%/otto/auth.json` |
+| Global config | `~/.config/otto/` |
+| Project config | `.otto/` |
+| Auth (macOS) | `~/Library/Application Support/otto/auth.json` |
+| Auth (Linux) | `$XDG_STATE_HOME/otto/auth.json` |
+| Auth (Windows) | `%APPDATA%/otto/auth.json` |
 
-See [docs/configuration.md](docs/configuration.md) for the full layout.
+Secrets are stored in OS-secure locations — never in the config directory.
 
----
-
-## Repository shape
-
-### Apps
-
-Current workspaces under `apps/`:
-
-- `apps/canvas` — **Otto Canvas** (primary desktop app — Tauri + Ghostty + React)
-- `apps/cli`
-- `apps/desktop`
-- `apps/intro-video`
-- `apps/landing`
-- `apps/launcher`
-- `apps/mobile`
-- `apps/preview-api`
-- `apps/preview-web`
-- `apps/tui`
-- `apps/web`
-
-### Packages
-
-Current workspaces under `packages/`:
-
-- `@ottocode/acp`
-- `@ottocode/ai-sdk`
-- `@ottocode/api`
-- `@ottocode/database`
-- `@ottocode/install`
-- `@ottocode/openclaw-setu`
-- `@ottocode/sdk`
-- `@ottocode/server`
-- `@ottocode/web-sdk`
-- `@ottocode/web-ui`
-
-### Infra
-
-SST currently wires these modules from `infra/`:
-
-- `infra/script`
-- `infra/landing`
-- `infra/preview-api`
-- `infra/preview-web`
-- `infra/og`
-
-See [docs/architecture.md](docs/architecture.md).
-
----
-
-## API
-
-The server exposes:
-
-- `/` — root text response
-- `/openapi.json` — generated OpenAPI document
-- `/v1/*` — operational API routes
-
-Example route groups include `ask`, `auth`, `config`, `doctor`, `files`, `git`, `mcp`, `provider-usage`, `research`, `sessions`, `setu`, `shares`, `skills`, `terminals`, and `tunnel`.
-
-See [docs/api.md](docs/api.md). `packages/api/openapi.json` is the source of truth for clients.
+See [docs/configuration.md](docs/configuration.md).
 
 ---
 
 ## Embedding
 
-Use the server directly:
+Run the otto server inside your own app:
 
 ```ts
 import { createEmbeddedApp } from '@ottocode/server';
@@ -361,6 +264,33 @@ Bun.serve({
 
 See [docs/embedding-guide.md](docs/embedding-guide.md).
 
+### API
+
+The server exposes:
+
+- `/` — root text response
+- `/openapi.json` — generated OpenAPI document (source of truth for clients)
+- `/v1/*` — operational routes: `ask`, `auth`, `config`, `doctor`, `files`, `git`, `mcp`, `provider-usage`, `research`, `sessions`, `setu`, `shares`, `skills`, `terminals`, `tunnel`
+
+See [docs/api.md](docs/api.md).
+
+---
+
+## Repository
+
+A single Bun monorepo.
+
+**Apps** (`apps/`)
+`canvas` · `cli` · `desktop` · `intro-video` · `landing` · `launcher` · `mobile` · `preview-api` · `preview-web` · `tui` · `web`
+
+**Packages** (`packages/`)
+`@ottocode/acp` · `@ottocode/ai-sdk` · `@ottocode/api` · `@ottocode/database` · `@ottocode/install` · `@ottocode/openclaw-setu` · `@ottocode/sdk` · `@ottocode/server` · `@ottocode/web-sdk` · `@ottocode/web-ui`
+
+**Infra** (`infra/`) — SST modules
+`script` · `landing` · `preview-api` · `preview-web` · `og`
+
+See [docs/architecture.md](docs/architecture.md).
+
 ---
 
 ## Development
@@ -375,7 +305,7 @@ bun run typecheck
 bun run compile
 ```
 
-Useful dev commands:
+Common dev commands:
 
 ```bash
 bun run dev:cli
@@ -385,7 +315,7 @@ bun run dev:desktop
 bun sst dev
 ```
 
-See [docs/development.md](docs/development.md) and [docs/development-guide.md](docs/development-guide.md).
+See [docs/development.md](docs/development.md).
 
 ---
 
@@ -406,15 +336,13 @@ See [docs/development.md](docs/development.md) and [docs/development-guide.md](d
 
 ## Contributing
 
-See [AGENTS.md](AGENTS.md).
+Conventions in [AGENTS.md](AGENTS.md). In short:
 
-Key repo conventions:
-
-- Bun for installs, scripts, builds, and tests
-- Biome for lint/format checks
+- Bun for everything (install, run, build, test)
+- Biome for lint and format
 - `bun:test` for tests
 - TypeScript strict mode
-- minimal focused changes
+- Small, focused PRs
 
 ---
 
