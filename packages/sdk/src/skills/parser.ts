@@ -60,12 +60,16 @@ function parseYamlFrontmatter(
 		const key = normalizeKey(trimmed.slice(0, colonIdx).trim());
 		const value = trimmed.slice(colonIdx + 1).trim();
 
-		if (value === '|' || value === '>') {
+		// Handle YAML block scalars with optional chomping/indentation indicators:
+		// `|`, `>`, `|-`, `>-`, `|+`, `>+`, `|2`, `>2-`, etc.
+		const blockScalarMatch = value.match(/^([|>])[-+]?\d*[-+]?$/);
+		if (blockScalarMatch) {
+			const style = blockScalarMatch[1] as '|' | '>';
 			const { content, nextIndex } = readBlockScalar(
 				lines,
 				index + 1,
 				indent,
-				value,
+				style,
 			);
 			result[key] = content;
 			index = nextIndex;
@@ -142,8 +146,10 @@ function readNestedObject(
 		const key = normalizeKey(trimmed.slice(0, colonIdx).trim());
 		const value = trimmed.slice(colonIdx + 1).trim();
 
-		if (value === '|' || value === '>') {
-			const block = readBlockScalar(lines, index + 1, indent, value);
+		const blockScalarMatch = value.match(/^([|>])[-+]?\d*[-+]?$/);
+		if (blockScalarMatch) {
+			const style = blockScalarMatch[1] as '|' | '>';
+			const block = readBlockScalar(lines, index + 1, indent, style);
 			result[key] = block.content;
 			index = block.nextIndex;
 			continue;

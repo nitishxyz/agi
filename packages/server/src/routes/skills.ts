@@ -17,8 +17,18 @@ export function registerSkillsRoutes(app: Hono) {
 			const projectRoot = c.req.query('project') || process.cwd();
 			const repoRoot = (await findGitRoot(projectRoot)) ?? projectRoot;
 			const skills = await discoverSkills(projectRoot, repoRoot);
+			// Dedupe by name (same skill may exist in multiple source dirs like
+			// ~/.claude/skills and ~/.codex/skills). `discoverSkills` already
+			// dedupes via its internal Map, but be defensive here for UI consistency.
+			const seen = new Set<string>();
+			const unique = skills.filter((s) => {
+				const key = s.name.trim();
+				if (!key || seen.has(key)) return false;
+				seen.add(key);
+				return true;
+			});
 			return c.json({
-				skills: skills.map((s) => ({
+				skills: unique.map((s) => ({
 					name: s.name,
 					description: s.description,
 					scope: s.scope,

@@ -153,7 +153,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		oneShot: opts.oneShot,
 		guidedMode: cfg.defaults.guidedMode,
 		spoofPrompt: undefined,
-		includeProjectTree: isFirstMessage,
+		includeProjectTree: false,
 		userContext: opts.userContext,
 		contextSummary,
 		isOpenAIOAuth: oauth.isOpenAIOAuth,
@@ -346,25 +346,4 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		isOpenAIOAuth: oauth.isOpenAIOAuth,
 		mcpToolsRecord,
 	};
-}
-
-export function buildMessages(
-	additionalSystemMessages: Array<{ role: string; content: string }>,
-	history: Array<{ role: string; content: string | Array<unknown> }>,
-	isFirstMessage: boolean,
-): Array<{ role: string; content: string | Array<unknown> }> {
-	const messagesWithSystemInstructions: Array<{
-		role: string;
-		content: string | Array<unknown>;
-	}> = [...additionalSystemMessages, ...history];
-
-	if (!isFirstMessage) {
-		messagesWithSystemInstructions.push({
-			role: 'user',
-			content:
-				'SYSTEM REMINDER: You are continuing an existing session. When you have completed the task, you MUST stream a text summary of what you did to the user, and THEN call the `finish` tool. Do not call `finish` without a summary.',
-		});
-	}
-
-	return messagesWithSystemInstructions;
 }
