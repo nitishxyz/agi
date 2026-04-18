@@ -1,4 +1,9 @@
-import { loadConfig, logger, getSessionSystemPromptPath } from '@ottocode/sdk';
+import {
+	loadConfig,
+	logger,
+	getSessionSystemPromptPath,
+	getModelFamily,
+} from '@ottocode/sdk';
 import { wrapLanguageModel } from 'ai';
 import { devToolsMiddleware } from '@ai-sdk/devtools';
 import { getDb } from '@ottocode/database';
@@ -72,6 +77,33 @@ export function mergeProviderOptions(
 	}
 
 	return base;
+}
+
+const EDITING_TOOL_NAMES = ['edit', 'multiedit', 'write', 'apply_patch'];
+const MODEL_FAMILY_EDIT_TOOL_POLICY_AGENTS = new Set([
+	'build',
+	'general',
+	'init',
+]);
+
+export function applyModelFamilyEditToolPolicy(
+	agent: string,
+	tools: string[],
+	provider: RunOpts['provider'],
+	model: string,
+): string[] {
+	if (!MODEL_FAMILY_EDIT_TOOL_POLICY_AGENTS.has(agent)) return tools;
+
+	const family = getModelFamily(provider, model);
+	const next = tools.filter(
+		(toolName) => !EDITING_TOOL_NAMES.includes(toolName),
+	);
+	const preferredEditingTools =
+		family === 'anthropic' || family === 'openai'
+			? ['write', 'apply_patch']
+			: ['write', 'edit', 'multiedit'];
+
+	return Array.from(new Set([...next, ...preferredEditingTools]));
 }
 
 export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
@@ -240,7 +272,13 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	toolsTimer.end({
 		count: allTools.length + Object.keys(mcpToolsRecord).length,
 	});
-	const allowedNames = new Set([...(agentCfg.tools || []), 'finish']);
+	const allowedToolNames = applyModelFamilyEditToolPolicy(
+		agentCfg.name,
+		agentCfg.tools || [],
+		opts.provider,
+		opts.model,
+	);
+	const allowedNames = new Set([...allowedToolNames, 'finish']);
 	const gated = allTools.filter(
 		(tool) => allowedNames.has(tool.name) || tool.name === 'load_mcp_tools',
 	);

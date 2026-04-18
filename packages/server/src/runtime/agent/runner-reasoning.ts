@@ -9,6 +9,10 @@ export type ReasoningState = {
 	partId: string;
 	text: string;
 	providerMetadata?: unknown;
+	persisted: boolean;
+	opts: RunOpts;
+	sharedCtx: ToolAdapterContext;
+	getStepIndex: () => number;
 };
 
 export function serializeReasoningContent(state: ReasoningState): string {
@@ -23,7 +27,7 @@ export async function handleReasoningStart(
 	reasoningId: string,
 	providerMetadata: unknown,
 	opts: RunOpts,
-	db: Awaited<ReturnType<typeof getDb>>,
+	_db: Awaited<ReturnType<typeof getDb>>,
 	sharedCtx: ToolAdapterContext,
 	getStepIndex: () => number,
 	reasoningStates: Map<string, ReasoningState>,
@@ -33,21 +37,33 @@ export async function handleReasoningStart(
 		partId: reasoningPartId,
 		text: '',
 		providerMetadata,
+		persisted: false,
+		opts,
+		sharedCtx,
+		getStepIndex,
 	};
 	reasoningStates.set(reasoningId, state);
+}
+
+async function persistReasoningPart(
+	state: ReasoningState,
+	db: Awaited<ReturnType<typeof getDb>>,
+): Promise<void> {
+	if (state.persisted) return;
 	try {
 		await db.insert(messageParts).values({
-			id: reasoningPartId,
-			messageId: opts.assistantMessageId,
-			index: await sharedCtx.nextIndex(),
-			stepIndex: getStepIndex(),
+			id: state.partId,
+			messageId: state.opts.assistantMessageId,
+			index: await state.sharedCtx.nextIndex(),
+			stepIndex: state.getStepIndex(),
 			type: 'reasoning',
 			content: serializeReasoningContent(state),
-			agent: opts.agent,
-			provider: opts.provider,
-			model: opts.model,
+			agent: state.opts.agent,
+			provider: state.opts.provider,
+			model: state.opts.model,
 			startedAt: Date.now(),
 		});
+		state.persisted = true;
 	} catch {}
 }
 
@@ -66,6 +82,14 @@ export async function handleReasoningDelta(
 	if (providerMetadata != null) {
 		state.providerMetadata = providerMetadata;
 	}
+
+	// Skip empty-text updates (e.g. Anthropic signature_delta from adaptive
+	// thinking emits reasoning-delta with `text: ""`). Publishing/persisting
+	// these would create an empty reasoning placeholder shown as `{"text":""}`.
+	if (!text) return;
+
+	await persistReasoningPart(state, db);
+
 	publish({
 		type: 'reasoning.delta',
 		sessionId: opts.sessionId,
@@ -92,9 +116,11 @@ export async function handleReasoningEnd(
 	const state = reasoningStates.get(reasoningId);
 	if (!state) return;
 	if (!state.text || state.text.trim() === '') {
-		try {
-			await db.delete(messageParts).where(eq(messageParts.id, state.partId));
-		} catch {}
+		if (state.persisted) {
+			try {
+				await db.delete(messageParts).where(eq(messageParts.id, state.partId));
+			} catch {}
+		}
 		reasoningStates.delete(reasoningId);
 		return;
 	}
