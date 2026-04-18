@@ -110,6 +110,10 @@ export const NewSessionLanding = memo(
 				setAgent(value);
 			}, []);
 
+			const handlePlanModeToggle = useCallback((isPlanMode: boolean) => {
+				setAgent(isPlanMode ? 'plan' : 'build');
+			}, []);
+
 			const handleProviderChange = useCallback((value: string) => {
 				setProvider(value);
 			}, []);
@@ -296,6 +300,8 @@ export const NewSessionLanding = memo(
 								agent={agent}
 								agents={config?.agents}
 								onAgentChange={handleAgentChange}
+								onPlanModeToggle={handlePlanModeToggle}
+								isPlanMode={agent === 'plan'}
 							/>
 						</div>
 					</div>
