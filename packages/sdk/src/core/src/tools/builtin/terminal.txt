@@ -65,7 +65,7 @@
 - Status checks: git status, ls, ps
 - One-off commands: mkdir, rm, curl
 - Quick scripts: bun run build, git commit
-- File operations: cat, grep, sed
+- File operations: cat, sed, awk
 - Short-lived commands with immediate output
 
 ## Example Workflow

@@ -189,13 +189,13 @@ async function runAssistant(opts: RunOpts) {
 			messagesWithSystemInstructions.push({
 				role: 'system',
 				content:
-					'SYSTEM REMINDER: You are continuing an existing session. Continue executing directly, use tools as needed, and provide a concise final summary when complete.',
+					'[system-reminder] Continuing an existing session. Execute directly, use tools as needed, and call `finish` at the end. For simple questions, your answer IS the response — do not add a "Summary:" recap.',
 			});
 		} else {
 			messagesWithSystemInstructions.push({
 				role: 'user',
 				content:
-					'SYSTEM REMINDER: You are continuing an existing session. When you have completed the task, you MUST stream a text summary of what you did to the user, and THEN call the `finish` tool. Do not call `finish` without a summary.',
+					'<system-reminder>Continuing an existing session. Answer or complete the work directly, then call `finish`. For simple questions, your answer IS the response — do NOT add a labeled "Summary:" line or recap trivial replies.</system-reminder>',
 			});
 		}
 	}
@@ -204,13 +204,13 @@ async function runAssistant(opts: RunOpts) {
 			messagesWithSystemInstructions.push({
 				role: 'system',
 				content:
-					'SYSTEM REMINDER: Your previous response stopped mid-task. Continue immediately from where you left off and finish the actual implementation, not just a plan update.',
+					'[system-reminder] Your previous response stopped mid-task. Resume from where you left off and complete the actual work — not a plan-only update.',
 			});
 		} else {
 			messagesWithSystemInstructions.push({
 				role: 'user',
 				content:
-					'SYSTEM REMINDER: Your previous response stopped before calling `finish`. Continue executing immediately from where you left off, avoid plan-only updates, and call `finish` only after streaming the final user summary.',
+					'<system-reminder>Your previous response stopped before calling `finish`. Resume from where you left off, do the actual work (no plan-only updates), then stream a summary and call `finish`.</system-reminder>',
 			});
 		}
 	}

@@ -1,7 +1,12 @@
 - Search files using ripgrep (rg) with regex patterns
 - Returns a flat list of matches with `file`, `line`, and `text`
 - Supports include globs and case-insensitive search
+- Respects `.gitignore` by default
 
-Usage tips:
-- Use the Grep tool for a friendly summary grouped by file
-- Use the Glob tool first to limit the search set if needed
+This is the only content-search tool available. Use it for any text search across the codebase.
+
+## Usage tips
+
+- Narrow the search set with `glob` first if the pattern may match too broadly.
+- Batch independent searches (e.g. multiple function names) in a single turn for parallel execution.
+- Use `ignoreCase: true` for case-insensitive matching; pass `glob` patterns (e.g. `["*.ts"]`) to limit file types.

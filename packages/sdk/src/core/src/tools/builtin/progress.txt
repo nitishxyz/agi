@@ -2,6 +2,23 @@
 - Supports optional `pct` (0–100) and `stage` indicators
 - Lightweight; intended for immediate UI display
 
-Usage tips:
-- Keep messages short (<= 200 chars) and informative
-- Use multiple updates during long-running tasks
+## When to call
+
+Emit a progress update at each major phase so the user can see what's happening:
+
+1. **planning** — "Analyzing codebase structure"
+2. **discovering** — "Found 3 relevant files to modify"
+3. **preparing** — "Reading dependencies and types"
+4. **writing** — "Applying changes to 3 components"
+5. **verifying** — "Running tests and type checks"
+
+## Guidelines
+
+- Keep messages ≤ 80 characters and actionable.
+- Be specific but concise — name files or steps when possible.
+- Update at natural phase transitions, not every tool call. 4–6 updates per task is a good target.
+- Do NOT spam. One update per distinct phase of work.
+
+## Stages
+
+Use a stage that matches the work: `planning`, `discovering`, `generating`, `preparing`, `writing`, `verifying`.

@@ -1,10 +1,15 @@
-Call this tool AFTER you have completed all your work AND streamed your final summary/response to the user.
+Signal the end of your turn. Call this as the LAST action of every response, after your text/work has finished streaming.
 
-This signals the end of your turn and that you are done with the current request.
+## How it works
 
-**CRITICAL**: You MUST always call this tool when you are completely finished. The workflow is:
-1. Perform all necessary tool calls (read files, make changes, etc.)
-2. Stream your final text response/summary to the user
-3. Call the finish tool to signal completion
+Your text response IS the final answer. `finish` is just the end-of-turn signal — it does NOT produce visible output to the user.
 
-Do NOT call finish before streaming your response. Do NOT forget to call finish after responding.
+- For questions and conversational replies: answer directly, then call `finish`. No separate summary.
+- For substantive work (edits, multi-tool runs): briefly describe the outcome, then call `finish`.
+
+## Never
+
+- NEVER add a "Summary:" label (or "Result:", "Done:", etc.) to your response. The direct answer is the response.
+- NEVER recap trivial single-sentence answers. "15" or "Yes" is a complete reply on its own.
+- NEVER call `finish` before your text finishes streaming.
+- NEVER forget to call `finish` — without it the system hangs waiting for more output.

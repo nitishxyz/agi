@@ -38,14 +38,123 @@ For multiple edits in the same file, use **one** `*** Update File:` block with m
 
 ---
 
-## Rules that prevent failures
+## Mandatory Rules (violations cause failures)
 
-1. Patch must start with `*** Begin Patch` and end with `*** End Patch`.
-2. Paths must be relative to project root.
-3. In `Update File`, `-` lines must match file content exactly.
-4. Include real context lines (prefix with a single space ` `).
-5. `@@` lines are only hints; they do not replace real context.
-6. Do not make separate `apply_patch` calls for the same file in one task.
+**1. Read Before Patch — NO EXCEPTIONS.** Call `read` on the target file in THIS turn, immediately before creating the patch. Never patch from memory or earlier context. If you read a file 3+ tool calls ago, read it AGAIN.
+
+**2. Copy Context Verbatim.** Context lines (space prefix) must be CHARACTER-FOR-CHARACTER from `read` output. Never reconstruct or "fix" them. If a variable is misspelled in the file, keep it misspelled in the patch. The file is the source of truth, not training data.
+
+**3. Match Indentation Exactly.** The `read` tool returns an `indentation` field (e.g. `"tabs"`, `"2 spaces"`). Use it:
+- File uses tabs → patch uses tabs.
+- File uses 2 spaces → patch uses 2 spaces (not 4, not tabs).
+
+**4. Include Sufficient Context.** Minimum 2 context lines before AND after each change (3+ for YAML). A single context line is fragile — it may match multiple locations.
+
+**5. Markers Required.** Every patch MUST start with `*** Begin Patch` and end with `*** End Patch`. Use `*** Update File:`, `*** Add File:`, or `*** Delete File:`.
+
+**6. One `apply_patch` Call Per File.** For multiple edits in the same file, use multiple `@@` hunks in ONE call. Never make separate `apply_patch` calls for the same file in one turn.
+
+### Pre-Flight Checklist
+Before every `apply_patch` call, verify:
+- [ ] File was read with `read` tool in THIS turn (not earlier).
+- [ ] Context lines copied exactly from the `read` output.
+- [ ] Indentation matches the file's `indentation` field.
+- [ ] Wrapped in `*** Begin Patch` / `*** End Patch`.
+- [ ] `-` removal lines match the file EXACTLY.
+
+---
+
+## Concrete WRONG vs RIGHT
+
+### Indentation mismatch (the #1 silent killer)
+
+File content (uses TABS):
+```
+→const port = 3000;
+→const host = "localhost";
+```
+
+❌ WRONG — spaces instead of tabs:
+```
+*** Begin Patch
+*** Update File: config.ts
+  const port = 3000;
+-  const host = "localhost";
++  const host = "0.0.0.0";
+*** End Patch
+```
+
+✅ RIGHT — tabs match the file:
+```
+*** Begin Patch
+*** Update File: config.ts
+ →const port = 3000;
+-→const host = "localhost";
++→const host = "0.0.0.0";
+*** End Patch
+```
+
+### Reconstructed vs verbatim context
+
+File content (uses TABS):
+```
+const READ_ONLY = new Set([
+→'read',
+→'ls',
+]);
+```
+
+❌ WRONG — reconstructed from memory with spaces:
+```
+ const READ_ONLY = new Set([
+   'read',
+   'ls',
++  'glob',
+ ]);
+```
+
+✅ RIGHT — copied exactly from read output:
+```
+ const READ_ONLY = new Set([
+ →'read',
+ →'ls',
++→'glob',
+ ]);
+```
+
+### YAML — space count matters
+
+YAML uses spaces ONLY (never tabs). Count the exact spaces from `read`.
+
+File content (10-space indent):
+```
+          - os: linux
+            arch: arm64
+            runner: ubuntu-latest
+```
+
+❌ WRONG — guessed 8 spaces.
+✅ RIGHT — exact 10 spaces matching file.
+
+### Multi-hunk patch (multiple edits, one call)
+
+```text
+*** Begin Patch
+*** Update File: src/app.ts
+@@ imports section
+ import { foo } from "./foo";
++import { bar } from "./bar";
+ import { baz } from "./baz";
+@@ function section
+ function init() {
+-  const port = 3000;
++  const port = 8080;
+   return port;
+ }
+*** End Patch
+```
+
+Note: `@@` lines are OPTIONAL hints — context lines (space prefix) are what the tool uses to locate hunks.
 
 ---
 
@@ -57,11 +166,11 @@ For multiple edits in the same file, use **one** `*** Update File:` block with m
 
 ---
 
-## Common errors
+## When Patch Fails
 
-- **Missing end marker** → add `*** End Patch`.
-- **Failed to find expected lines** → re-read the file and rebuild patch with exact context.
-- **Ambiguous update** → provide longer context or use `*** Replace in:` mode.
+- Error means context didn't match or the file changed.
+- **Solution**: Read the file AGAIN, copy context character-by-character, rebuild.
+- After repeated failures on the same file: fall back to the `write` tool ONLY if a full-file rewrite is the safer option. Never use `write` for targeted edits.
 
 ---
 
