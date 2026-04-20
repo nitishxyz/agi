@@ -8,7 +8,7 @@ export type ProviderId =
 	| 'openrouter'
 	| 'opencode'
 	| 'copilot'
-	| 'setu'
+	| 'ottorouter'
 	| 'zai'
 	| 'zai-coding'
 	| 'moonshot'

@@ -206,7 +206,7 @@ Level 5              cli (depends on sdk, server, database)`}</CodeBlock>
 					<tr>
 						<td>Setu</td>
 						<td>Cloudflare Worker</td>
-						<td>setu.ottocode.io</td>
+						<td>ottorouter.org</td>
 					</tr>
 					<tr>
 						<td>Preview API</td>

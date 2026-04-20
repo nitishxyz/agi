@@ -96,7 +96,7 @@ describe('provider base prompts', () => {
 	describe('aggregate provider family detection (setu)', () => {
 		it('detects openai family for setu gpt models', async () => {
 			const result = await providerBasePrompt(
-				'setu',
+				'ottorouter',
 				'gpt-5-nano',
 				process.cwd(),
 			);
@@ -106,7 +106,7 @@ describe('provider base prompts', () => {
 
 		it('detects anthropic family for setu claude models', async () => {
 			const result = await providerBasePrompt(
-				'setu',
+				'ottorouter',
 				'claude-3-5-haiku-latest',
 				process.cwd(),
 			);
@@ -116,7 +116,7 @@ describe('provider base prompts', () => {
 
 		it('detects moonshot family for setu kimi models', async () => {
 			const result = await providerBasePrompt(
-				'setu',
+				'ottorouter',
 				'kimi-k2.5',
 				process.cwd(),
 			);
@@ -126,7 +126,7 @@ describe('provider base prompts', () => {
 
 		it('detects moonshot family for kimi-k2-thinking via setu', async () => {
 			const result = await providerBasePrompt(
-				'setu',
+				'ottorouter',
 				'kimi-k2-thinking',
 				process.cwd(),
 			);
@@ -181,33 +181,35 @@ describe('provider base prompts', () => {
 			expect(getModelFamily('moonshot', 'kimi-k2.5')).toBe('moonshot');
 		});
 
-		it('reads ownedBy from catalog for setu models', () => {
-			const setuEntry = catalog.setu;
-			expect(setuEntry).toBeDefined();
+		it('reads ownedBy from catalog for ottorouter models', () => {
+			const ottorouterEntry = catalog.ottorouter;
+			expect(ottorouterEntry).toBeDefined();
 
-			const kimiModel = setuEntry?.models.find((m) => m.id.includes('kimi'));
+			const kimiModel = ottorouterEntry?.models.find((m) =>
+				m.id.includes('kimi'),
+			);
 			if (kimiModel) {
 				expect(kimiModel.ownedBy).toBe('moonshot');
-				expect(getModelFamily('setu', kimiModel.id)).toBe('moonshot');
+				expect(getModelFamily('ottorouter', kimiModel.id)).toBe('moonshot');
 			}
 
-			const claudeModel = setuEntry?.models.find((m) =>
+			const claudeModel = ottorouterEntry?.models.find((m) =>
 				m.id.startsWith('claude'),
 			);
 			if (claudeModel) {
 				expect(claudeModel.ownedBy).toBe('anthropic');
-				expect(getModelFamily('setu', claudeModel.id)).toBe('anthropic');
+				expect(getModelFamily('ottorouter', claudeModel.id)).toBe('anthropic');
 			}
 
-			const gptModel = setuEntry?.models.find(
+			const gptModel = ottorouterEntry?.models.find(
 				(m) => m.id.startsWith('gpt') || m.id.startsWith('codex'),
 			);
 			if (gptModel) {
 				expect(gptModel.ownedBy).toBe('openai');
-				expect(getModelFamily('setu', gptModel.id)).toBe('openai');
+				expect(getModelFamily('ottorouter', gptModel.id)).toBe('openai');
 			}
 
-			const openrouterModel = setuEntry?.models.find(
+			const openrouterModel = ottorouterEntry?.models.find(
 				(m) => m.id === 'healer-alpha',
 			);
 			if (openrouterModel) {
@@ -215,7 +217,7 @@ describe('provider base prompts', () => {
 				expect(openrouterModel.provider?.npm).toBe(
 					'@openrouter/ai-sdk-provider',
 				);
-				expect(getModelFamily('setu', openrouterModel.id)).toBe(
+				expect(getModelFamily('ottorouter', openrouterModel.id)).toBe(
 					'openai-compatible',
 				);
 			}
@@ -255,27 +257,29 @@ describe('provider base prompts', () => {
 			expect(getUnderlyingProviderKey('moonshot', 'kimi-k2')).toBe('moonshot');
 		});
 
-		it('maps setu models via ownedBy', () => {
-			expect(getUnderlyingProviderKey('setu', 'claude-3-5-haiku-latest')).toBe(
-				'anthropic',
-			);
-			expect(getUnderlyingProviderKey('setu', 'codex-mini-latest')).toBe(
+		it('maps ottorouter models via ownedBy', () => {
+			expect(
+				getUnderlyingProviderKey('ottorouter', 'claude-3-5-haiku-latest'),
+			).toBe('anthropic');
+			expect(getUnderlyingProviderKey('ottorouter', 'codex-mini-latest')).toBe(
 				'openai',
 			);
-			expect(getUnderlyingProviderKey('setu', 'kimi-k2.5')).toBe('moonshot');
-			expect(getUnderlyingProviderKey('setu', 'healer-alpha')).toBe(
+			expect(getUnderlyingProviderKey('ottorouter', 'kimi-k2.5')).toBe(
+				'moonshot',
+			);
+			expect(getUnderlyingProviderKey('ottorouter', 'healer-alpha')).toBe(
 				'openai-compatible',
 			);
 		});
 	});
 
 	describe('catalog ownedBy field is properly set', () => {
-		it('setu models have ownedBy field', () => {
-			const setuEntry = catalog.setu;
-			expect(setuEntry).toBeDefined();
-			expect(setuEntry?.models.length).toBeGreaterThan(0);
+		it('ottorouter models have ownedBy field', () => {
+			const ottorouterEntry = catalog.ottorouter;
+			expect(ottorouterEntry).toBeDefined();
+			expect(ottorouterEntry?.models.length).toBeGreaterThan(0);
 
-			for (const model of setuEntry?.models || []) {
+			for (const model of ottorouterEntry?.models || []) {
 				expect(model.ownedBy).toBeDefined();
 				expect([
 					'openai',

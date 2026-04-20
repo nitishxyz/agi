@@ -3,37 +3,38 @@ import { log } from '@clack/prompts';
 import qrcode from 'qrcode-terminal';
 import { box, colors } from '../ui.ts';
 import {
-	getSetuBalance,
-	getSetuWallet,
-	getSetuUsdcBalance,
+	getOttoRouterBalance,
+	getOttoRouterWallet,
+	getOttoRouterUsdcBalance,
 } from '@ottocode/api';
 
-export function registerSetuCommand(program: Command) {
+export function registerOttoRouterCommand(program: Command) {
 	program
-		.command('setu')
-		.description('Manage Setu wallet and view balance')
-		.option('--login', 'Login/setup Setu wallet')
+		.command('ottorouter')
+		.description('Manage OttoRouter wallet and view balance')
+		.option('--login', 'Login/setup OttoRouter wallet')
 		.action(async (options) => {
 			const { runAuth } = await import('../auth.ts');
 
 			if (options.login) {
-				await runAuth(['login', 'setu']);
+				await runAuth(['login', 'ottorouter']);
 				return;
 			}
 
 			console.log('');
-			console.log(colors.bold('  Setu Wallet'));
+			console.log(colors.bold('  OttoRouter Wallet'));
 			console.log('');
 
-			const { data: walletData, error: walletError } = await getSetuWallet();
+			const { data: walletData, error: walletError } =
+				await getOttoRouterWallet();
 
 			if (walletError || !walletData) {
-				log.warn('No Setu wallet configured.');
+				log.warn('No OttoRouter wallet configured.');
 				console.log(
-					`  Run ${colors.cyan('otto setu --login')} to setup your wallet.`,
+					`  Run ${colors.cyan('otto ottorouter --login')} to setup your wallet.`,
 				);
 				console.log(
-					`  Or set ${colors.cyan('SETU_PRIVATE_KEY')} environment variable.`,
+					`  Or set ${colors.cyan('OTTOROUTER_PRIVATE_KEY')} environment variable.`,
 				);
 				console.log('');
 				return;
@@ -44,13 +45,14 @@ export function registerSetuCommand(program: Command) {
 				publicKey?: string;
 				network?: string;
 				rpcUrl?: string;
+				ottorouterUrl?: string;
 				setuUrl?: string;
 			};
 
 			if (!wallet.configured || !wallet.publicKey) {
-				log.warn('No Setu wallet configured.');
+				log.warn('No OttoRouter wallet configured.');
 				console.log(
-					`  Run ${colors.cyan('otto setu --login')} to setup your wallet.`,
+					`  Run ${colors.cyan('otto ottorouter --login')} to setup your wallet.`,
 				);
 				console.log('');
 				return;
@@ -59,7 +61,7 @@ export function registerSetuCommand(program: Command) {
 			const publicKey = wallet.publicKey;
 			const network = wallet.network ?? 'unknown';
 			const rpcUrl = wallet.rpcUrl ?? '';
-			const setuUrl = wallet.setuUrl ?? '';
+			const ottorouterUrl = wallet.ottorouterUrl ?? wallet.setuUrl ?? '';
 
 			const networkLabel =
 				network === 'mainnet'
@@ -72,7 +74,7 @@ export function registerSetuCommand(program: Command) {
 				`Public Key: ${colors.cyan(publicKey)}`,
 				`Network:    ${networkLabel}`,
 				`RPC:        ${colors.dim(rpcUrl)}`,
-				`Setu:   ${colors.dim(setuUrl)}`,
+				`OttoRouter: ${colors.dim(ottorouterUrl)}`,
 			];
 
 			box('Wallet', walletLines);
@@ -85,8 +87,8 @@ export function registerSetuCommand(program: Command) {
 
 			console.log(colors.dim('  Fetching balances...'));
 			const [balanceResult, usdcResult] = await Promise.all([
-				getSetuBalance(),
-				getSetuUsdcBalance(),
+				getOttoRouterBalance(),
+				getOttoRouterUsdcBalance(),
 			]);
 
 			const usdcData = usdcResult.data as {
@@ -156,7 +158,7 @@ export function registerSetuCommand(program: Command) {
 					);
 				}
 
-				box('Setu Account', accountLines);
+				box('OttoRouter Account', accountLines);
 
 				if (balanceData.subscription?.active) {
 					const sub = balanceData.subscription;
@@ -207,7 +209,7 @@ export function registerSetuCommand(program: Command) {
 					box('Spending Limits', limLines);
 				}
 			} else {
-				log.warn('Could not fetch Setu account balance.');
+				log.warn('Could not fetch OttoRouter account balance.');
 			}
 
 			console.log('');

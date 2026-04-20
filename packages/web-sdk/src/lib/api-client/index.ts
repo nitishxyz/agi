@@ -4,7 +4,7 @@ import { configMixin } from './config';
 import { filesMixin } from './files';
 import { branchesMixin } from './branches';
 import { approvalMixin } from './approval';
-import { setuMixin } from './setu';
+import { ottorouterMixin } from './ottorouter';
 import { authMixin } from './auth';
 import { skillsMixin } from './skills';
 
@@ -62,23 +62,23 @@ class ApiClient {
 	approveToolCall = approvalMixin.approveToolCall;
 	getPendingApprovals = approvalMixin.getPendingApprovals;
 
-	getSetuBalance = setuMixin.getSetuBalance;
-	getSetuWallet = setuMixin.getSetuWallet;
-	getSetuUsdcBalance = setuMixin.getSetuUsdcBalance;
-	getPolarTopupEstimate = setuMixin.getPolarTopupEstimate;
-	createPolarCheckout = setuMixin.createPolarCheckout;
-	selectTopupMethod = setuMixin.selectTopupMethod;
-	cancelTopup = setuMixin.cancelTopup;
-	getPendingTopup = setuMixin.getPendingTopup;
-	getPolarTopupStatus = setuMixin.getPolarTopupStatus;
-	getRazorpayTopupEstimate = setuMixin.getRazorpayTopupEstimate;
-	createRazorpayOrder = setuMixin.createRazorpayOrder;
-	verifyRazorpayPayment = setuMixin.verifyRazorpayPayment;
+	getOttoRouterBalance = ottorouterMixin.getOttoRouterBalance;
+	getOttoRouterWallet = ottorouterMixin.getOttoRouterWallet;
+	getOttoRouterUsdcBalance = ottorouterMixin.getOttoRouterUsdcBalance;
+	getPolarTopupEstimate = ottorouterMixin.getPolarTopupEstimate;
+	createPolarCheckout = ottorouterMixin.createPolarCheckout;
+	selectTopupMethod = ottorouterMixin.selectTopupMethod;
+	cancelTopup = ottorouterMixin.cancelTopup;
+	getPendingTopup = ottorouterMixin.getPendingTopup;
+	getPolarTopupStatus = ottorouterMixin.getPolarTopupStatus;
+	getRazorpayTopupEstimate = ottorouterMixin.getRazorpayTopupEstimate;
+	createRazorpayOrder = ottorouterMixin.createRazorpayOrder;
+	verifyRazorpayPayment = ottorouterMixin.verifyRazorpayPayment;
 
 	getAuthStatus = authMixin.getAuthStatus;
-	setupSetuWallet = authMixin.setupSetuWallet;
-	importSetuWallet = authMixin.importSetuWallet;
-	exportSetuWallet = authMixin.exportSetuWallet;
+	setupOttoRouterWallet = authMixin.setupOttoRouterWallet;
+	importOttoRouterWallet = authMixin.importOttoRouterWallet;
+	exportOttoRouterWallet = authMixin.exportOttoRouterWallet;
 	addProvider = authMixin.addProvider;
 	removeProvider = authMixin.removeProvider;
 	completeOnboarding = authMixin.completeOnboarding;

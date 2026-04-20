@@ -3,7 +3,7 @@ import type {
 	ProviderConfig,
 	ProviderApiFormat,
 } from '../types.ts';
-import { setuCatalog } from '../catalog.ts';
+import { ottorouterCatalog } from '../catalog.ts';
 
 const OWNER_API_FORMAT: Record<string, ProviderApiFormat> = {
 	openai: 'openai-responses',
@@ -51,7 +51,7 @@ export class ProviderRegistry {
 			}
 		}
 
-		const entry = setuCatalog.models.find((m) => m.id === modelId);
+		const entry = ottorouterCatalog.models.find((m) => m.id === modelId);
 		if (entry) {
 			const providerId = entry.owned_by as ProviderId;
 			const apiFormat = OWNER_API_FORMAT[providerId] ?? 'openai-chat';

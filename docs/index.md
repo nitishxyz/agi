@@ -76,7 +76,7 @@ otto/
 │   ├── api/
 │   ├── database/
 │   ├── install/
-│   ├── openclaw-setu/
+│   ├── openclaw-ottorouter/
 │   ├── sdk/
 │   ├── server/
 │   ├── web-sdk/

@@ -43,7 +43,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 
-	const [selectedProvider, setSelectedProvider] = useState('setu');
+	const [selectedProvider, setSelectedProvider] = useState('ottorouter');
 	const [selectedModel, setSelectedModel] = useState('kimi-k2.5');
 	const [selectedAgent, setSelectedAgent] = useState(
 		authStatus.defaults.agent || 'build',
@@ -68,10 +68,10 @@ export const DefaultsStep = memo(function DefaultsStep({
 				]);
 				setConfig(configData);
 				setAllModels(modelsData);
-				const cfgProvider = configData?.defaults?.provider || 'setu';
+				const cfgProvider = configData?.defaults?.provider || 'ottorouter';
 				const cfgModel = configData?.defaults?.model || 'kimi-k2.5';
 				const providerHasModels = modelsData?.[cfgProvider]?.models?.length > 0;
-				const resolvedProvider = providerHasModels ? cfgProvider : 'setu';
+				const resolvedProvider = providerHasModels ? cfgProvider : 'ottorouter';
 				const resolvedModel =
 					providerHasModels &&
 					modelsData[cfgProvider].models.some(
@@ -145,9 +145,9 @@ export const DefaultsStep = memo(function DefaultsStep({
 
 	const availableProviders = config?.providers.filter(
 		(p) =>
-			(authStatus.providers[p]?.configured || p === 'setu') &&
+			(authStatus.providers[p]?.configured || p === 'ottorouter') &&
 			allModels?.[p]?.models?.length > 0,
-	) || ['setu'];
+	) || ['ottorouter'];
 
 	const currentProviderModels = allModels?.[selectedProvider]?.models || [];
 
@@ -156,7 +156,7 @@ export const DefaultsStep = memo(function DefaultsStep({
 			{!hideHeader && (
 				<div className="flex items-center justify-between px-6 py-4 border-b border-border">
 					<div className="flex items-center gap-3">
-						<ProviderLogo provider="setu" size={24} />
+						<ProviderLogo provider="ottorouter" size={24} />
 						<span className="font-semibold text-foreground">otto</span>
 					</div>
 					<div className="flex items-center gap-2 text-sm text-muted-foreground">

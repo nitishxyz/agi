@@ -18,16 +18,16 @@ export function AiSdkCaching() {
 			</p>
 
 			<CodeBlock>{`// Default: auto caching (1 system + 1 message breakpoint)
-createSetu({ auth });
+createOttoRouter({ auth });
 
 // Disable completely
-createSetu({ auth, cache: { anthropicCaching: false } });
+createOttoRouter({ auth, cache: { anthropicCaching: false } });
 
 // Manual: SDK won't inject cache_control — set it yourself in messages
-createSetu({ auth, cache: { anthropicCaching: { strategy: "manual" } } });
+createOttoRouter({ auth, cache: { anthropicCaching: { strategy: "manual" } } });
 
 // Custom breakpoint count and placement
-createSetu({
+createOttoRouter({
   auth,
   cache: {
     anthropicCaching: {
@@ -40,7 +40,7 @@ createSetu({
 });
 
 // Full custom transform
-createSetu({
+createOttoRouter({
   auth,
   cache: {
     anthropicCaching: {
@@ -135,7 +135,7 @@ createSetu({
 
 			<h2>Setu Server-Side Caching</h2>
 			<p>Provider-agnostic caching at the Setu proxy layer:</p>
-			<CodeBlock>{`createSetu({
+			<CodeBlock>{`createOttoRouter({
   auth,
   cache: {
     promptCacheKey: "my-session-123",

@@ -11,7 +11,7 @@ import { ProductMockup } from './scenes/ProductMockup';
 import { Interfaces } from './scenes/Interfaces';
 import { Providers } from './scenes/Providers';
 import { Tools } from './scenes/Tools';
-import { Setu } from './scenes/Setu';
+import { OttoRouter } from './scenes/OttoRouter';
 import { LocalFirst } from './scenes/LocalFirst';
 import { OpenSource } from './scenes/OpenSource';
 import { CTA } from './scenes/CTA';
@@ -154,7 +154,12 @@ export const IntroVideo: React.FC = () => {
 			enter: 'slide-left',
 			exit: 'scale',
 		},
-		{ component: <Setu />, duration: 195, enter: 'scale', exit: 'push-up' },
+		{
+			component: <OttoRouter />,
+			duration: 195,
+			enter: 'scale',
+			exit: 'push-up',
+		},
 		{
 			component: <LocalFirst />,
 			duration: 195,

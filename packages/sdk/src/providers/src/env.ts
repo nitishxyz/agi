@@ -7,7 +7,7 @@ const ENV_VARS: Record<ProviderId, string> = {
 	openrouter: 'OPENROUTER_API_KEY',
 	opencode: 'OPENCODE_API_KEY',
 	copilot: 'GITHUB_TOKEN',
-	setu: 'SETU_PRIVATE_KEY',
+	ottorouter: 'OTTOROUTER_PRIVATE_KEY',
 	zai: 'ZAI_API_KEY',
 	'zai-coding': 'ZAI_CODING_API_KEY',
 	moonshot: 'MOONSHOT_API_KEY',

@@ -1,5 +1,5 @@
 {
-	"name": "@ottocode/ai-sdk",
+	"name": "@ottorouter/ai-sdk",
 	"version": "0.2.0",
 	"type": "module",
 	"exports": {

@@ -1,6 +1,6 @@
 import type { Hono } from 'hono';
 import {
-	fetchSetuBalance,
+	fetchOttoRouterBalance,
 	getPublicKeyFromPrivate,
 	getAuth,
 	loadConfig,
@@ -18,23 +18,23 @@ import {
 	type TopupMethod,
 } from '../runtime/topup/manager.ts';
 
-const SETU_BASE_URL =
-	process.env.SETU_BASE_URL || 'https://api.setu.ottocode.io';
+const OTTOROUTER_BASE_URL =
+	process.env.OTTOROUTER_BASE_URL || 'https://api.ottorouter.org';
 
-function getSetuBaseUrl(): string {
-	return SETU_BASE_URL.endsWith('/')
-		? SETU_BASE_URL.slice(0, -1)
-		: SETU_BASE_URL;
+function getOttoRouterBaseUrl(): string {
+	return OTTOROUTER_BASE_URL.endsWith('/')
+		? OTTOROUTER_BASE_URL.slice(0, -1)
+		: OTTOROUTER_BASE_URL;
 }
 
-async function getSetuPrivateKey(): Promise<string | null> {
-	if (process.env.SETU_PRIVATE_KEY) {
-		return process.env.SETU_PRIVATE_KEY;
+async function getOttoRouterPrivateKey(): Promise<string | null> {
+	if (process.env.OTTOROUTER_PRIVATE_KEY) {
+		return process.env.OTTOROUTER_PRIVATE_KEY;
 	}
 
 	try {
 		const cfg = await loadConfig(process.cwd());
-		const auth = await getAuth('setu', cfg.projectRoot);
+		const auth = await getAuth('ottorouter', cfg.projectRoot);
 		if (auth?.type === 'wallet' && auth.secret) {
 			return auth.secret;
 		}
@@ -62,33 +62,36 @@ function buildWalletHeaders(privateKey: string): Record<string, string> {
 	};
 }
 
-export function registerSetuRoutes(app: Hono) {
-	app.get('/v1/setu/balance', async (c) => {
+export function registerOttoRouterRoutes(app: Hono) {
+	app.get('/v1/ottorouter/balance', async (c) => {
 		try {
-			const privateKey = await getSetuPrivateKey();
+			const privateKey = await getOttoRouterPrivateKey();
 			if (!privateKey) {
-				return c.json({ error: 'Setu wallet not configured' }, 401);
+				return c.json({ error: 'OttoRouter wallet not configured' }, 401);
 			}
 
-			const balance = await fetchSetuBalance({ privateKey });
+			const balance = await fetchOttoRouterBalance({ privateKey });
 			if (!balance) {
-				return c.json({ error: 'Failed to fetch balance from Setu' }, 502);
+				return c.json(
+					{ error: 'Failed to fetch balance from OttoRouter' },
+					502,
+				);
 			}
 
 			return c.json(balance);
 		} catch (error) {
-			logger.error('Failed to fetch Setu balance', error);
+			logger.error('Failed to fetch OttoRouter balance', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}
 	});
 
-	app.get('/v1/setu/wallet', async (c) => {
+	app.get('/v1/ottorouter/wallet', async (c) => {
 		try {
-			const privateKey = await getSetuPrivateKey();
+			const privateKey = await getOttoRouterPrivateKey();
 			if (!privateKey) {
 				return c.json(
-					{ error: 'Setu wallet not configured', configured: false },
+					{ error: 'OttoRouter wallet not configured', configured: false },
 					200,
 				);
 			}
@@ -103,17 +106,17 @@ export function registerSetuRoutes(app: Hono) {
 				publicKey,
 			});
 		} catch (error) {
-			logger.error('Failed to get Setu wallet info', error);
+			logger.error('Failed to get OttoRouter wallet info', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}
 	});
 
-	app.get('/v1/setu/usdc-balance', async (c) => {
+	app.get('/v1/ottorouter/usdc-balance', async (c) => {
 		try {
-			const privateKey = await getSetuPrivateKey();
+			const privateKey = await getOttoRouterPrivateKey();
 			if (!privateKey) {
-				return c.json({ error: 'Setu wallet not configured' }, 401);
+				return c.json({ error: 'OttoRouter wallet not configured' }, 401);
 			}
 
 			const publicKey = getPublicKeyFromPrivate(privateKey);
@@ -121,7 +124,7 @@ export function registerSetuRoutes(app: Hono) {
 				return c.json({ error: 'Invalid private key' }, 400);
 			}
 
-			const baseUrl = getSetuBaseUrl();
+			const baseUrl = getOttoRouterBaseUrl();
 			const response = await fetch(
 				`${baseUrl}/v1/wallet/${publicKey}/balances?limit=100&showNative=false&showNfts=false&showZeroBalance=false`,
 				{
@@ -161,14 +164,14 @@ export function registerSetuRoutes(app: Hono) {
 		}
 	});
 
-	app.get('/v1/setu/topup/polar/estimate', async (c) => {
+	app.get('/v1/ottorouter/topup/polar/estimate', async (c) => {
 		try {
 			const amount = c.req.query('amount');
 			if (!amount) {
 				return c.json({ error: 'Missing amount parameter' }, 400);
 			}
 
-			const baseUrl = getSetuBaseUrl();
+			const baseUrl = getOttoRouterBaseUrl();
 			const response = await fetch(
 				`${baseUrl}/v1/topup/polar/estimate?amount=${amount}`,
 				{
@@ -190,11 +193,11 @@ export function registerSetuRoutes(app: Hono) {
 		}
 	});
 
-	app.post('/v1/setu/topup/polar', async (c) => {
+	app.post('/v1/ottorouter/topup/polar', async (c) => {
 		try {
-			const privateKey = await getSetuPrivateKey();
+			const privateKey = await getOttoRouterPrivateKey();
 			if (!privateKey) {
-				return c.json({ error: 'Setu wallet not configured' }, 401);
+				return c.json({ error: 'OttoRouter wallet not configured' }, 401);
 			}
 
 			const body = await c.req.json();
@@ -212,7 +215,7 @@ export function registerSetuRoutes(app: Hono) {
 			}
 
 			const walletHeaders = buildWalletHeaders(privateKey);
-			const baseUrl = getSetuBaseUrl();
+			const baseUrl = getOttoRouterBaseUrl();
 
 			const response = await fetch(`${baseUrl}/v1/topup/polar`, {
 				method: 'POST',
@@ -236,7 +239,7 @@ export function registerSetuRoutes(app: Hono) {
 		}
 	});
 
-	app.post('/v1/setu/topup/select', async (c) => {
+	app.post('/v1/ottorouter/topup/select', async (c) => {
 		try {
 			const body = await c.req.json();
 			const { sessionId, method } = body as {
@@ -264,7 +267,7 @@ export function registerSetuRoutes(app: Hono) {
 			}
 
 			publish({
-				type: 'setu.topup.method_selected',
+				type: 'ottorouter.topup.method_selected',
 				sessionId,
 				payload: { method },
 			});
@@ -277,7 +280,7 @@ export function registerSetuRoutes(app: Hono) {
 		}
 	});
 
-	app.post('/v1/setu/topup/cancel', async (c) => {
+	app.post('/v1/ottorouter/topup/cancel', async (c) => {
 		try {
 			const body = await c.req.json();
 			const { sessionId, reason } = body as {
@@ -301,7 +304,7 @@ export function registerSetuRoutes(app: Hono) {
 			}
 
 			publish({
-				type: 'setu.topup.cancelled',
+				type: 'ottorouter.topup.cancelled',
 				sessionId,
 				payload: { reason: reason ?? 'User cancelled' },
 			});
@@ -314,7 +317,7 @@ export function registerSetuRoutes(app: Hono) {
 		}
 	});
 
-	app.get('/v1/setu/topup/pending', async (c) => {
+	app.get('/v1/ottorouter/topup/pending', async (c) => {
 		try {
 			const sessionId = c.req.query('sessionId');
 			if (!sessionId) {
@@ -341,14 +344,14 @@ export function registerSetuRoutes(app: Hono) {
 		}
 	});
 
-	app.get('/v1/setu/topup/polar/status', async (c) => {
+	app.get('/v1/ottorouter/topup/polar/status', async (c) => {
 		try {
 			const checkoutId = c.req.query('checkoutId');
 			if (!checkoutId) {
 				return c.json({ error: 'Missing checkoutId parameter' }, 400);
 			}
 
-			const baseUrl = getSetuBaseUrl();
+			const baseUrl = getOttoRouterBaseUrl();
 			const response = await fetch(
 				`${baseUrl}/v1/topup/polar/status?checkoutId=${checkoutId}`,
 				{
@@ -370,14 +373,14 @@ export function registerSetuRoutes(app: Hono) {
 		}
 	});
 
-	app.get('/v1/setu/topup/razorpay/estimate', async (c) => {
+	app.get('/v1/ottorouter/topup/razorpay/estimate', async (c) => {
 		try {
 			const amount = c.req.query('amount');
 			if (!amount) {
 				return c.json({ error: 'Missing amount parameter' }, 400);
 			}
 
-			const baseUrl = getSetuBaseUrl();
+			const baseUrl = getOttoRouterBaseUrl();
 			const response = await fetch(
 				`${baseUrl}/v1/topup/razorpay/estimate?amount=${amount}`,
 				{
@@ -399,11 +402,11 @@ export function registerSetuRoutes(app: Hono) {
 		}
 	});
 
-	app.post('/v1/setu/topup/razorpay', async (c) => {
+	app.post('/v1/ottorouter/topup/razorpay', async (c) => {
 		try {
-			const privateKey = await getSetuPrivateKey();
+			const privateKey = await getOttoRouterPrivateKey();
 			if (!privateKey) {
-				return c.json({ error: 'Setu wallet not configured' }, 401);
+				return c.json({ error: 'OttoRouter wallet not configured' }, 401);
 			}
 
 			const body = await c.req.json();
@@ -414,7 +417,7 @@ export function registerSetuRoutes(app: Hono) {
 			}
 
 			const walletHeaders = buildWalletHeaders(privateKey);
-			const baseUrl = getSetuBaseUrl();
+			const baseUrl = getOttoRouterBaseUrl();
 
 			const response = await fetch(`${baseUrl}/v1/topup/razorpay`, {
 				method: 'POST',
@@ -438,11 +441,11 @@ export function registerSetuRoutes(app: Hono) {
 		}
 	});
 
-	app.post('/v1/setu/topup/razorpay/verify', async (c) => {
+	app.post('/v1/ottorouter/topup/razorpay/verify', async (c) => {
 		try {
-			const privateKey = await getSetuPrivateKey();
+			const privateKey = await getOttoRouterPrivateKey();
 			if (!privateKey) {
-				return c.json({ error: 'Setu wallet not configured' }, 401);
+				return c.json({ error: 'OttoRouter wallet not configured' }, 401);
 			}
 
 			const body = await c.req.json();
@@ -458,7 +461,7 @@ export function registerSetuRoutes(app: Hono) {
 			}
 
 			const walletHeaders = buildWalletHeaders(privateKey);
-			const baseUrl = getSetuBaseUrl();
+			const baseUrl = getOttoRouterBaseUrl();
 
 			const response = await fetch(`${baseUrl}/v1/topup/razorpay/verify`, {
 				method: 'POST',

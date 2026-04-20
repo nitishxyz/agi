@@ -9,7 +9,6 @@ import type {
 import { isTopupRequired, pickTopupAmount, handleTopup } from './payment.ts';
 import { addAnthropicCacheControl } from './cache.ts';
 import { createAccessTokenManager } from './token.ts';
-import { fetchBalance } from './balance.ts';
 
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const DEFAULT_MAX_ATTEMPTS = 3;
@@ -47,12 +46,12 @@ async function acquirePaymentLock(walletAddress: string): Promise<() => void> {
 	};
 }
 
-function tryParseSetuComment(
+function tryParseOttoRouterComment(
 	line: string,
 	onBalanceUpdate: (update: BalanceUpdate) => void,
 ) {
 	const trimmed = line.replace(/\r$/, '');
-	if (!trimmed.startsWith(': setu ')) return;
+	if (!trimmed.startsWith(': ottorouter ')) return;
 	try {
 		const data = JSON.parse(trimmed.slice(7));
 		onBalanceUpdate({
@@ -97,13 +96,13 @@ function wrapResponseWithBalanceSniffing(
 				while (nlIndex !== -1) {
 					const line = partial.slice(0, nlIndex);
 					partial = partial.slice(nlIndex + 1);
-					tryParseSetuComment(line, onBalanceUpdate);
+					tryParseOttoRouterComment(line, onBalanceUpdate);
 					nlIndex = partial.indexOf('\n');
 				}
 			},
 			flush() {
 				if (partial.trim()) {
-					tryParseSetuComment(partial, onBalanceUpdate);
+					tryParseOttoRouterComment(partial, onBalanceUpdate);
 				}
 			},
 		});
@@ -123,13 +122,13 @@ function getRequestUrl(input: string | URL | Request): URL | null {
 		if (input instanceof Request) {
 			return new URL(input.url);
 		}
-		return new URL(input.toString(), 'https://setu.local');
+		return new URL(input.toString(), 'https://ottorouter.local');
 	} catch {
 		return null;
 	}
 }
 
-async function rewriteSetuOpenRouterChatRequest(
+async function rewriteOttoRouterOpenRouterChatRequest(
 	input: string | URL | Request,
 	init?: RequestInit,
 ): Promise<{ input: string | URL | Request; init?: RequestInit }> {
@@ -187,7 +186,7 @@ async function rewriteSetuOpenRouterChatRequest(
 	}
 }
 
-export interface CreateSetuFetchOptions {
+export interface CreateOttoRouterFetchOptions {
 	wallet: WalletContext;
 	baseURL: string;
 	fetch?: FetchFunction;
@@ -197,11 +196,11 @@ export interface CreateSetuFetchOptions {
 	payment?: PaymentOptions;
 }
 
-export function createSetuOpenRouterFetch(
+export function createOttoRouterOpenRouterFetch(
 	baseFetch: FetchFunction,
 ): FetchFunction {
 	return async (input, init) => {
-		const rewrittenRequest = await rewriteSetuOpenRouterChatRequest(
+		const rewrittenRequest = await rewriteOttoRouterOpenRouterChatRequest(
 			input,
 			init,
 		);
@@ -209,7 +208,7 @@ export function createSetuOpenRouterFetch(
 	};
 }
 
-export function createSetuFetch(options: CreateSetuFetchOptions) {
+export function createOttoRouterFetch(options: CreateOttoRouterFetchOptions) {
 	const {
 		wallet,
 		baseURL,
@@ -279,11 +278,11 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 			const payload = await response.json().catch(() => ({}));
 			if (!isTopupRequired(payload)) {
 				callbacks.onPaymentError?.('Unsupported 402 response from server');
-				throw new Error('Setu: unsupported 402 response');
+				throw new Error('OttoRouter: unsupported 402 response');
 			}
 			if (attempt >= maxAttempts) {
 				callbacks.onPaymentError?.('Payment failed after multiple attempts');
-				throw new Error('Setu: payment failed after multiple attempts');
+				throw new Error('OttoRouter: payment failed after multiple attempts');
 			}
 
 			const topupAmount = pickTopupAmount(payload);
@@ -326,13 +325,15 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 					});
 					if (approval === 'cancel') {
 						callbacks.onPaymentError?.('Payment cancelled by user');
-						throw new Error('Setu: payment cancelled by user');
+						throw new Error('OttoRouter: payment cancelled by user');
 					}
 					if (approval === 'fiat') {
-						const err = new Error('Setu: fiat payment selected') as Error & {
+						const err = new Error(
+							'OttoRouter: fiat payment selected',
+						) as Error & {
 							code: string;
 						};
-						err.code = 'SETU_FIAT_SELECTED';
+						err.code = 'OTTOROUTER_FIAT_SELECTED';
 						throw err;
 					}
 				};
@@ -362,7 +363,7 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 						await requestApproval();
 						await doTopup();
 					} else {
-						throw new Error('Setu: topup failed');
+						throw new Error('OttoRouter: topup failed');
 					}
 				}
 			} finally {
@@ -370,6 +371,6 @@ export function createSetuFetch(options: CreateSetuFetchOptions) {
 			}
 		}
 
-		throw new Error('Setu: max attempts exceeded');
+		throw new Error('OttoRouter: max attempts exceeded');
 	};
 }

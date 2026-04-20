@@ -37,7 +37,7 @@ import {
 	findExactCommand,
 	shouldSendSlashCommandAsMessage,
 } from '../../lib/commands';
-import { useSetuStore } from '../../stores/setuStore';
+import { useOttoRouterStore } from '../../stores/ottorouterStore';
 import type { FileAttachment } from '../../hooks/useFileUpload';
 import { InputApprovalBar } from './InputApprovalBar';
 
@@ -117,8 +117,8 @@ export const ChatInput = memo(
 		const files = filesData?.files || [];
 		const changedFiles = filesData?.changedFiles || [];
 
-		const setuSubscription = useSetuStore((s) => s.subscription);
-		const isSetu = providerName === 'setu';
+		const setuSubscription = useOttoRouterStore((s) => s.subscription);
+		const isSetu = providerName === 'ottorouter';
 		const setuPlanLabel = useMemo(() => {
 			if (!isSetu) return null;
 			if (setuSubscription?.active) {

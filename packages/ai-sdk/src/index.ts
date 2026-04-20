@@ -1,9 +1,9 @@
-export { createSetu } from './setu.ts';
-export type { SetuInstance, SetuProvider } from './setu.ts';
+export { createOttoRouter } from './ottorouter.ts';
+export type { OttoRouterInstance, OttoRouterProvider } from './ottorouter.ts';
 
 export type {
-	SetuConfig,
-	SetuAuth,
+	OttoRouterConfig,
+	OttoRouterAuth,
 	ExternalSigner,
 	ProviderId,
 	ProviderApiFormat,
@@ -23,8 +23,11 @@ export type {
 export { ProviderRegistry } from './providers/registry.ts';
 export { createModel } from './providers/factory.ts';
 
-export { createSetuFetch, createSetuOpenRouterFetch } from './fetch.ts';
-export type { CreateSetuFetchOptions } from './fetch.ts';
+export {
+	createOttoRouterFetch,
+	createOttoRouterOpenRouterFetch,
+} from './fetch.ts';
+export type { CreateOttoRouterFetchOptions } from './fetch.ts';
 
 export { fetchBalance, fetchWalletUsdcBalance } from './balance.ts';
 export { getPublicKeyFromPrivate, createWalletContext } from './auth.ts';
@@ -34,5 +37,8 @@ export { addAnthropicCacheControl } from './cache.ts';
 export { generateWallet, importWallet, isValidPrivateKey } from './wallet.ts';
 export type { WalletInfo } from './wallet.ts';
 
-export { setuCatalog } from './catalog.ts';
-export type { SetuModelCatalogEntry, SetuCatalog } from './catalog.ts';
+export { ottorouterCatalog } from './catalog.ts';
+export type {
+	OttoRouterModelCatalogEntry,
+	OttoRouterCatalog,
+} from './catalog.ts';

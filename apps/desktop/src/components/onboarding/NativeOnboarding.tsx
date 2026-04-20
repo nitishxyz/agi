@@ -6,7 +6,11 @@ import { handleTitleBarDrag } from '../../utils/title-bar';
 import { tauriOnboarding } from '../../lib/tauri-onboarding';
 import { SetuLoader } from '../SetuLoader';
 import { WindowControls } from '../WindowControls';
-import { OnboardingModal, SetuTopupModal, Toaster } from '@ottocode/web-sdk';
+import {
+	OnboardingModal,
+	OttoRouterTopupModal,
+	Toaster,
+} from '@ottocode/web-sdk';
 import { configureApiClient } from '@ottocode/web-sdk/lib';
 import { useOnboardingStore } from '@ottocode/web-sdk/stores';
 import { useAuthStatus } from '@ottocode/web-sdk/hooks';
@@ -221,7 +225,7 @@ export function NativeOnboarding({ onComplete }: NativeOnboardingProps) {
 					</div>
 				)}
 			</div>
-			<SetuTopupModal />
+			<OttoRouterTopupModal />
 			<Toaster />
 		</>
 	);

@@ -37,10 +37,10 @@ export function AiSdkOverview() {
 npm install @ottocode/ai-sdk ai`}</CodeBlock>
 
 			<h2>Quick Start</h2>
-			<CodeBlock>{`import { createSetu } from "@ottocode/ai-sdk";
+			<CodeBlock>{`import { createOttoRouter } from "@ottocode/ai-sdk";
 import { generateText } from "ai";
 
-const setu = createSetu({
+const setu = createOttoRouter({
   auth: { privateKey: process.env.SOLANA_PRIVATE_KEY! },
 });
 
@@ -57,7 +57,7 @@ console.log(text);`}</CodeBlock>
 				browser wallets, hardware wallets, or any custom signing logic.
 				Framework-agnostic — just provide callbacks for signing.
 			</p>
-			<CodeBlock>{`const setu = createSetu({
+			<CodeBlock>{`const setu = createOttoRouter({
 	auth: {
 		signer: {
 			walletAddress: "YOUR_SOLANA_PUBLIC_KEY",
@@ -190,7 +190,7 @@ console.log(setu.walletAddress);`}</CodeBlock>
 			<h2>Custom Providers</h2>
 			<p>Register providers at init or runtime:</p>
 			<CodeBlock>{`// At init
-const setu = createSetu({
+const setu = createOttoRouter({
   auth,
   providers: [
     { id: "my-provider", apiFormat: "openai-chat", modelPrefix: "myp-" },
@@ -255,7 +255,7 @@ setu.registry.mapModel("some-model", "openai");`}</CodeBlock>
 			<CodeBlock>{`const customFetch = setu.fetch();
 
 const response = await customFetch(
-  "https://api.setu.ottocode.io/v1/messages",
+  "https://api.ottorouter.org/v1/messages",
   {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -273,7 +273,7 @@ const response = await customFetch(
   fetchWalletUsdcBalance,
   getPublicKeyFromPrivate,
   addAnthropicCacheControl,
-  createSetuFetch,
+  createOttoRouterFetch,
 } from "@ottocode/ai-sdk";
 
 // Get wallet address from private key
@@ -286,9 +286,9 @@ const balance = await fetchBalance({ privateKey });
 const usdc = await fetchWalletUsdcBalance({ privateKey }, "mainnet");
 
 // Create a standalone MPP-aware fetch
-const setuFetch = createSetuFetch({
+const ottorouterFetch = createOttoRouterFetch({
   wallet: createWalletContext({ privateKey }),
-  baseURL: "https://api.setu.ottocode.io",
+  baseURL: "https://api.ottorouter.org",
 });`}</CodeBlock>
 
 			<h2>How It Works</h2>

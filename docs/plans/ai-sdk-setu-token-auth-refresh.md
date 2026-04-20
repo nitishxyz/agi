@@ -60,7 +60,7 @@ Current files:
 Current flow:
 
 - `createWalletContext()` builds fresh signed wallet headers
-- `createSetuFetch()` injects wallet headers into every API request
+- `createOttoRouterFetch()` injects wallet headers into every API request
 - `fetchBalance()` also signs every balance request
 - `processSinglePayment()` signs the topup request itself with wallet headers
 
@@ -90,7 +90,7 @@ That is no longer the desired client behavior.
 
 - `createWalletContext`
 - `WalletContext`
-- `createSetuFetch`
+- `createOttoRouterFetch`
 
 Today `WalletContext` is built around `buildHeaders()`, which encodes the legacy auth model. That makes this refactor partly a **public API design** task, not just an internal code change.
 
@@ -133,7 +133,7 @@ That means the release plan must explicitly include:
 Users should still be able to initialize the SDK with the same high-level auth input:
 
 ```ts
-createSetu({
+createOttoRouter({
   auth: { privateKey: '...' }
 })
 ```
@@ -141,7 +141,7 @@ createSetu({
 or
 
 ```ts
-createSetu({
+createOttoRouter({
   auth: {
     signer: {
       walletAddress,
@@ -163,7 +163,7 @@ So the **auth input stays stable**, but the **request auth protocol changes inte
 - migrate request auth from per-request signed headers → bearer token exchange
 - keep `privateKey` and external signer support
 - keep MPP payment tx signing behavior
-- update low-level helpers (`createSetuFetch`, `fetchBalance`, payment flow)
+- update low-level helpers (`createOttoRouterFetch`, `fetchBalance`, payment flow)
 - update tests, README, examples, and release notes
 
 ### Out of scope
@@ -339,11 +339,11 @@ This preserves MPP while matching Setu’s fast-path request auth.
 
 #### Keep stable
 
-- `SetuAuth`
+- `OttoRouterAuth`
 - `ExternalSigner`
-- `SetuConfig`
-- `createSetu()`
-- `createSetuFetch()`
+- `OttoRouterConfig`
+- `createOttoRouter()`
+- `createOttoRouterFetch()`
 
 #### Add
 
@@ -565,7 +565,7 @@ If you want to do it in one pass, that is also manageable, but splitting it this
 - use bearer token for `/v1/topup`
 
 ### `packages/ai-sdk/src/setu.ts`
-- wire token-aware fetch/auth context into `createSetu()`
+- wire token-aware fetch/auth context into `createOttoRouter()`
 
 ### `packages/ai-sdk/src/types.ts`
 - adjust low-level types if needed

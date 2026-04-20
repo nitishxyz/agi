@@ -17,7 +17,7 @@ import { registerSessionFilesRoutes } from './routes/session-files.ts';
 import { registerBranchRoutes } from './routes/branch.ts';
 import { registerResearchRoutes } from './routes/research.ts';
 import { registerSessionApprovalRoute } from './routes/session-approval.ts';
-import { registerSetuRoutes } from './routes/setu.ts';
+import { registerOttoRouterRoutes } from './routes/ottorouter.ts';
 import { registerAuthRoutes } from './routes/auth.ts';
 import { registerTunnelRoutes } from './routes/tunnel.ts';
 import { registerMCPRoutes } from './routes/mcp.ts';
@@ -81,7 +81,7 @@ function initApp() {
 	registerSessionFilesRoutes(app);
 	registerBranchRoutes(app);
 	registerResearchRoutes(app);
-	registerSetuRoutes(app);
+	registerOttoRouterRoutes(app);
 	registerAuthRoutes(app);
 	registerTunnelRoutes(app);
 	registerMCPRoutes(app);
@@ -156,7 +156,7 @@ export function createStandaloneApp(_config?: StandaloneAppConfig) {
 	registerSessionFilesRoutes(honoApp);
 	registerBranchRoutes(honoApp);
 	registerResearchRoutes(honoApp);
-	registerSetuRoutes(honoApp);
+	registerOttoRouterRoutes(honoApp);
 	registerAuthRoutes(honoApp);
 	registerTunnelRoutes(honoApp);
 	registerMCPRoutes(honoApp);
@@ -267,7 +267,7 @@ export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
 	registerSessionFilesRoutes(honoApp);
 	registerBranchRoutes(honoApp);
 	registerResearchRoutes(honoApp);
-	registerSetuRoutes(honoApp);
+	registerOttoRouterRoutes(honoApp);
 	registerAuthRoutes(honoApp);
 	registerTunnelRoutes(honoApp);
 	registerMCPRoutes(honoApp);

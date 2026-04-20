@@ -1,8 +1,8 @@
 import {
 	getAuthStatus as apiGetAuthStatus,
-	setupSetuWallet as apiSetupSetuWallet,
-	importSetuWallet as apiImportSetuWallet,
-	exportSetuWallet as apiExportSetuWallet,
+	setupOttoRouterWallet as apiSetupSetuWallet,
+	importOttoRouterWallet as apiImportSetuWallet,
+	exportOttoRouterWallet as apiExportSetuWallet,
 	addProviderApiKey as apiAddProviderApiKey,
 	removeProvider as apiRemoveProvider,
 	completeOnboarding as apiCompleteOnboarding,
@@ -22,7 +22,7 @@ import { extractErrorMessage, getBaseUrl } from './utils';
 export const authMixin = {
 	async getAuthStatus(): Promise<{
 		onboardingComplete: boolean;
-		setu: { configured: boolean; publicKey?: string };
+		ottorouter: { configured: boolean; publicKey?: string };
 		providers: Record<
 			string,
 			{
@@ -49,7 +49,7 @@ export const authMixin = {
 		return response.data as any;
 	},
 
-	async setupSetuWallet(): Promise<{
+	async setupOttoRouterWallet(): Promise<{
 		success: boolean;
 		publicKey: string;
 		isNew: boolean;
@@ -60,7 +60,7 @@ export const authMixin = {
 		return response.data as any;
 	},
 
-	async importSetuWallet(privateKey: string): Promise<{
+	async importOttoRouterWallet(privateKey: string): Promise<{
 		success: boolean;
 		publicKey: string;
 	}> {
@@ -72,7 +72,7 @@ export const authMixin = {
 		return response.data as any;
 	},
 
-	async exportSetuWallet(): Promise<{
+	async exportOttoRouterWallet(): Promise<{
 		success: boolean;
 		publicKey: string;
 		privateKey: string;

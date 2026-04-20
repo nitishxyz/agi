@@ -5,7 +5,7 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
 	catalog,
-	createSetuModel,
+	createOttoRouterModel,
 	createOpenAIOAuthModel,
 } from '../../../providers/src/index.ts';
 import { createCopilotModel } from '../../../providers/src/copilot-client.ts';
@@ -35,7 +35,7 @@ export type ProviderName =
 	| 'openrouter'
 	| 'opencode'
 	| 'copilot'
-	| 'setu'
+	| 'ottorouter'
 	| 'zai'
 	| 'zai-coding'
 	| 'moonshot';
@@ -163,16 +163,17 @@ export async function resolveModel(
 		);
 	}
 
-	if (provider === 'setu') {
-		const privateKey = config.apiKey || process.env.SETU_PRIVATE_KEY || '';
+	if (provider === 'ottorouter') {
+		const privateKey =
+			config.apiKey || process.env.OTTOROUTER_PRIVATE_KEY || '';
 		if (!privateKey) {
 			throw new Error(
-				'Setu provider requires SETU_PRIVATE_KEY (base58 Solana secret).',
+				'OttoRouter provider requires OTTOROUTER_PRIVATE_KEY (base58 Solana secret).',
 			);
 		}
-		const baseURL = config.baseURL || process.env.SETU_BASE_URL;
-		const rpcURL = process.env.SETU_SOLANA_RPC_URL;
-		return createSetuModel(
+		const baseURL = config.baseURL || process.env.OTTOROUTER_BASE_URL;
+		const rpcURL = process.env.OTTOROUTER_SOLANA_RPC_URL;
+		return createOttoRouterModel(
 			model,
 			{ privateKey },
 			{

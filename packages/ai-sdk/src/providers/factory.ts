@@ -6,7 +6,7 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { wrapLanguageModel } from 'ai';
 import type { LanguageModelV3Middleware } from '@ai-sdk/provider';
 import type { ProviderApiFormat, ProviderId, FetchFunction } from '../types.ts';
-import { createSetuOpenRouterFetch } from '../fetch.ts';
+import { createOttoRouterOpenRouterFetch } from '../fetch.ts';
 
 export function createModel(
 	modelId: string,
@@ -28,7 +28,7 @@ export function createModel(
 		case 'anthropic-messages': {
 			const provider = createAnthropic({
 				baseURL,
-				apiKey: 'setu-wallet-auth',
+				apiKey: 'ottorouter-wallet-auth',
 				fetch: customFetch as unknown as typeof globalThis.fetch,
 			});
 			return applyMiddleware(provider(modelId));
@@ -37,7 +37,7 @@ export function createModel(
 		case 'google-native': {
 			const provider = createGoogleGenerativeAI({
 				baseURL,
-				apiKey: 'setu-wallet-auth',
+				apiKey: 'ottorouter-wallet-auth',
 				fetch: customFetch as unknown as typeof globalThis.fetch,
 			});
 			return applyMiddleware(provider(modelId));
@@ -46,9 +46,9 @@ export function createModel(
 		case 'openrouter-chat': {
 			const provider = createOpenRouter({
 				baseURL,
-				apiKey: 'setu-wallet-auth',
+				apiKey: 'ottorouter-wallet-auth',
 				compatibility: 'strict',
-				fetch: createSetuOpenRouterFetch(
+				fetch: createOttoRouterOpenRouterFetch(
 					customFetch,
 				) as unknown as typeof globalThis.fetch,
 			});
@@ -57,9 +57,9 @@ export function createModel(
 
 		case 'openai-chat': {
 			const provider = createOpenAICompatible({
-				name: `setu-${providerId}`,
+				name: `ottorouter-${providerId}`,
 				baseURL,
-				headers: { Authorization: 'Bearer setu-wallet-auth' },
+				headers: { Authorization: 'Bearer ottorouter-wallet-auth' },
 				fetch: customFetch as unknown as typeof globalThis.fetch,
 			});
 			return applyMiddleware(provider(modelId));
@@ -67,7 +67,7 @@ export function createModel(
 		default: {
 			const provider = createOpenAI({
 				baseURL,
-				apiKey: 'setu-wallet-auth',
+				apiKey: 'ottorouter-wallet-auth',
 				fetch: customFetch as unknown as typeof globalThis.fetch,
 			});
 			return applyMiddleware(provider.responses(modelId));

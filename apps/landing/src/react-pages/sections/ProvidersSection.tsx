@@ -39,8 +39,8 @@ const PROVIDERS = [
 		auth: ['OAuth'],
 	},
 	{
-		id: 'setu',
-		name: 'Setu',
+		id: 'ottorouter',
+		name: 'OttoRouter',
 		models: 'USDC pay-per-use proxy',
 		auth: ['Solana wallet'],
 	},

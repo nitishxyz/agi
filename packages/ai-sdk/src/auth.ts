@@ -1,7 +1,7 @@
 import { Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
-import type { SetuAuth } from './types.ts';
+import type { OttoRouterAuth } from './types.ts';
 
 export interface WalletContext {
 	walletAddress: string;
@@ -17,7 +17,7 @@ export interface WalletContext {
 	signTransaction?: (transaction: Uint8Array) => Promise<Uint8Array>;
 }
 
-export function createWalletContext(auth: SetuAuth): WalletContext {
+export function createWalletContext(auth: OttoRouterAuth): WalletContext {
 	if (auth.signer) {
 		const {
 			walletAddress,
@@ -42,7 +42,7 @@ export function createWalletContext(auth: SetuAuth): WalletContext {
 	}
 
 	if (!auth.privateKey) {
-		throw new Error('Setu: either privateKey or signer is required.');
+		throw new Error('OttoRouter: either privateKey or signer is required.');
 	}
 
 	const privateKeyBytes = bs58.decode(auth.privateKey);

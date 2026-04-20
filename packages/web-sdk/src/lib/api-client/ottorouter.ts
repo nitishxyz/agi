@@ -1,7 +1,7 @@
 import {
-	getSetuBalance as apiGetSetuBalance,
-	getSetuWallet as apiGetSetuWallet,
-	getSetuUsdcBalance as apiGetSetuUsdcBalance,
+	getOttoRouterBalance as apiGetSetuBalance,
+	getOttoRouterWallet as apiGetSetuWallet,
+	getOttoRouterUsdcBalance as apiGetSetuUsdcBalance,
 	createPolarCheckout as apiCreatePolarCheckout,
 	getPolarTopupEstimate as apiGetPolarTopupEstimate,
 	getPolarTopupStatus as apiGetPolarTopupStatus,
@@ -14,8 +14,8 @@ import {
 } from '@ottocode/api';
 import { extractErrorMessage } from './utils';
 
-export const setuMixin = {
-	async getSetuBalance(): Promise<{
+export const ottorouterMixin = {
+	async getOttoRouterBalance(): Promise<{
 		walletAddress: string;
 		balance: number;
 		totalSpent: number;
@@ -75,7 +75,7 @@ export const setuMixin = {
 		}
 	},
 
-	async getSetuWallet(): Promise<{
+	async getOttoRouterWallet(): Promise<{
 		configured: boolean;
 		publicKey?: string;
 		error?: string;
@@ -90,7 +90,9 @@ export const setuMixin = {
 		}
 	},
 
-	async getSetuUsdcBalance(network: 'mainnet' | 'devnet' = 'mainnet'): Promise<{
+	async getOttoRouterUsdcBalance(
+		network: 'mainnet' | 'devnet' = 'mainnet',
+	): Promise<{
 		walletAddress: string;
 		usdcBalance: number;
 		network: 'mainnet' | 'devnet';

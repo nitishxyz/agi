@@ -34,7 +34,7 @@ export interface ExternalSigner {
 	signTransaction?: (transaction: Uint8Array) => Promise<Uint8Array>;
 }
 
-export interface SetuAuth {
+export interface OttoRouterAuth {
 	privateKey?: string;
 	signer?: ExternalSigner;
 }
@@ -89,8 +89,8 @@ export interface PaymentOptions {
 	maxPaymentAttempts?: number;
 }
 
-export interface SetuConfig {
-	auth: SetuAuth;
+export interface OttoRouterConfig {
+	auth: OttoRouterAuth;
 	baseURL?: string;
 	fetch?: FetchFunction;
 	rpcURL?: string;

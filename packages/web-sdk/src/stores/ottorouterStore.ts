@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 
-interface SetuUsageWindow {
+interface OttoRouterUsageWindow {
 	limit: number | null;
 	used: number;
 	remaining: number | null;
 	percentUsed: number;
 }
 
-interface SetuSubscription {
+interface OttoRouterSubscription {
 	active: boolean;
 	tierId?: string;
 	tierName?: string;
@@ -17,21 +17,21 @@ interface SetuSubscription {
 	creditsWeeklyLimit?: number | null;
 	creditsFiveHourLimit?: number | null;
 	usageWindows?: {
-		weekly: SetuUsageWindow;
-		fiveHour: SetuUsageWindow;
+		weekly: OttoRouterUsageWindow;
+		fiveHour: OttoRouterUsageWindow;
 	};
 	periodStart?: string;
 	periodEnd?: string;
 }
 
-interface SetuPayg {
+interface OttoRouterPayg {
 	walletBalanceUsd: number;
 	accountBalanceUsd: number;
 	rawPoolUsd: number;
 	effectiveSpendableUsd: number;
 }
 
-interface SetuLimits {
+interface OttoRouterLimits {
 	enabled: boolean;
 	dailyLimitUsd: number | null;
 	dailySpentUsd: number;
@@ -42,7 +42,7 @@ interface SetuLimits {
 	capRemainingUsd: number | null;
 }
 
-interface SetuState {
+interface OttoRouterState {
 	balance: number | null;
 	usdcBalance: number | null;
 	network: 'mainnet' | 'devnet';
@@ -52,9 +52,9 @@ interface SetuState {
 	isLoading: boolean;
 	isTopupModalOpen: boolean;
 	scope: 'wallet' | 'account' | null;
-	payg: SetuPayg | null;
-	subscription: SetuSubscription | null;
-	limits: SetuLimits | null;
+	payg: OttoRouterPayg | null;
+	subscription: OttoRouterSubscription | null;
+	limits: OttoRouterLimits | null;
 	setBalance: (balance: number | null) => void;
 	setUsdcBalance: (usdcBalance: number | null) => void;
 	setNetwork: (network: 'mainnet' | 'devnet') => void;
@@ -65,12 +65,12 @@ interface SetuState {
 	openTopupModal: () => void;
 	closeTopupModal: () => void;
 	setScope: (scope: 'wallet' | 'account' | null) => void;
-	setPayg: (payg: SetuPayg | null) => void;
-	setSubscription: (subscription: SetuSubscription | null) => void;
-	setLimits: (limits: SetuLimits | null) => void;
+	setPayg: (payg: OttoRouterPayg | null) => void;
+	setSubscription: (subscription: OttoRouterSubscription | null) => void;
+	setLimits: (limits: OttoRouterLimits | null) => void;
 }
 
-export const useSetuStore = create<SetuState>((set) => ({
+export const useOttoRouterStore = create<OttoRouterState>((set) => ({
 	balance: null,
 	usdcBalance: null,
 	network: 'mainnet',

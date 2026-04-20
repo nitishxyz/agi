@@ -15,7 +15,7 @@ export interface ProviderInfo {
 
 export interface AuthStatus {
 	onboardingComplete: boolean;
-	setu: { configured: boolean; publicKey?: string };
+	ottorouter: { configured: boolean; publicKey?: string };
 	providers: Record<string, ProviderInfo>;
 	defaults: {
 		agent: string;

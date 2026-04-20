@@ -47,7 +47,8 @@ export function isTopupRequired(
 export function pickTopupAmount(payload: TopupRequiredPayload): number {
 	const amounts = payload.topup?.amounts;
 	if (amounts && amounts.length > 0) {
-		return amounts[0]!;
+		const firstAmount = amounts[0];
+		if (firstAmount !== undefined) return firstAmount;
 	}
 	return payload.topup?.minAmount ?? 5;
 }
@@ -57,7 +58,7 @@ function resolveKeypair(wallet: WalletContext): Keypair {
 	if (wallet.privateKeyBytes)
 		return Keypair.fromSecretKey(wallet.privateKeyBytes);
 	throw new Error(
-		'Setu: payments require a privateKey for on-chain transactions.',
+		'OttoRouter: payments require a privateKey for on-chain transactions.',
 	);
 }
 
@@ -125,7 +126,9 @@ export async function handleTopup(args: {
 				return {};
 			}
 			args.callbacks.onPaymentError?.(`Topup failed: ${response.status}`);
-			throw new Error(`Setu topup failed (${response.status}): ${rawBody}`);
+			throw new Error(
+				`OttoRouter topup failed (${response.status}): ${rawBody}`,
+			);
 		}
 
 		const parsed = (await response.json().catch(() => ({}))) as {
@@ -156,6 +159,6 @@ export async function handleTopup(args: {
 		const errMsg = err instanceof Error ? err.message : String(err);
 		const userMsg = `Payment failed: ${simplifyPaymentError(errMsg)}`;
 		args.callbacks.onPaymentError?.(userMsg);
-		throw new Error(`Setu: ${userMsg}`);
+		throw new Error(`OttoRouter: ${userMsg}`);
 	}
 }

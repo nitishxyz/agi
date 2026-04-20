@@ -73,7 +73,7 @@ describe('buildReasoningConfig', () => {
 
 	test('uses OpenRouter request-level reasoning options for Setu OpenRouter-backed models', () => {
 		const result = buildReasoningConfig({
-			provider: 'setu',
+			provider: 'ottorouter',
 			model: 'healer-alpha',
 			reasoningText: true,
 			reasoningLevel: 'medium',

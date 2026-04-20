@@ -1,6 +1,6 @@
 import {
-	createSetu,
-	type SetuPaymentCallbacks,
+	createOttoRouter,
+	type OttoRouterPaymentCallbacks,
 	getAuth,
 	loadConfig,
 } from '@ottocode/sdk';
@@ -14,19 +14,19 @@ import {
 
 const MIN_TOPUP_USD = 5;
 
-export interface ResolveSetuModelOptions {
+export interface ResolveOttoRouterModelOptions {
 	messageId?: string;
 	topupApprovalMode?: 'auto' | 'approval';
 	autoPayThresholdUsd?: number;
 }
 
-async function getSetuPrivateKey(): Promise<string> {
-	if (process.env.SETU_PRIVATE_KEY) {
-		return process.env.SETU_PRIVATE_KEY;
+async function getOttoRouterPrivateKey(): Promise<string> {
+	if (process.env.OTTOROUTER_PRIVATE_KEY) {
+		return process.env.OTTOROUTER_PRIVATE_KEY;
 	}
 	try {
 		const cfg = await loadConfig(process.cwd());
-		const auth = await getAuth('setu', cfg.projectRoot);
+		const auth = await getAuth('ottorouter', cfg.projectRoot);
 		if (auth?.type === 'wallet' && auth.secret) {
 			return auth.secret;
 		}
@@ -34,58 +34,58 @@ async function getSetuPrivateKey(): Promise<string> {
 	return '';
 }
 
-export async function resolveSetuModel(
+export async function resolveOttoRouterModel(
 	model: string,
 	sessionId?: string,
-	options: ResolveSetuModelOptions = {},
+	options: ResolveOttoRouterModelOptions = {},
 ) {
-	const privateKey = await getSetuPrivateKey();
+	const privateKey = await getOttoRouterPrivateKey();
 	if (!privateKey) {
 		throw new Error(
-			'Setu provider requires SETU_PRIVATE_KEY (base58 Solana secret).',
+			'OttoRouter provider requires OTTOROUTER_PRIVATE_KEY (base58 Solana secret).',
 		);
 	}
-	const baseURL = process.env.SETU_BASE_URL;
-	const rpcURL = process.env.SETU_SOLANA_RPC_URL;
+	const baseURL = process.env.OTTOROUTER_BASE_URL;
+	const rpcURL = process.env.OTTOROUTER_SOLANA_RPC_URL;
 	const {
 		messageId,
 		topupApprovalMode = 'approval',
 		autoPayThresholdUsd = MIN_TOPUP_USD,
 	} = options;
 
-	const callbacks: SetuPaymentCallbacks = sessionId
+	const callbacks: OttoRouterPaymentCallbacks = sessionId
 		? {
 				onPaymentRequired: (amountUsd, currentBalance) => {
 					publish({
-						type: 'setu.payment.required',
+						type: 'ottorouter.payment.required',
 						sessionId,
 						payload: { amountUsd, currentBalance },
 					});
 				},
 				onPaymentSigning: () => {
 					publish({
-						type: 'setu.payment.signing',
+						type: 'ottorouter.payment.signing',
 						sessionId,
 						payload: {},
 					});
 				},
 				onPaymentComplete: (data) => {
 					publish({
-						type: 'setu.payment.complete',
+						type: 'ottorouter.payment.complete',
 						sessionId,
 						payload: data,
 					});
 				},
 				onPaymentError: (error) => {
 					publish({
-						type: 'setu.payment.error',
+						type: 'ottorouter.payment.error',
 						sessionId,
 						payload: { error },
 					});
 				},
 				onBalanceUpdate: (update) => {
 					publish({
-						type: 'setu.balance.updated',
+						type: 'ottorouter.balance.updated',
 						sessionId,
 						payload: update,
 					});
@@ -97,7 +97,7 @@ export async function resolveSetuModel(
 					);
 
 					publish({
-						type: 'setu.topup.required',
+						type: 'ottorouter.topup.required',
 						sessionId,
 						payload: {
 							messageId,
@@ -118,7 +118,7 @@ export async function resolveSetuModel(
 			}
 		: {};
 
-	const setu = createSetu({
+	const ottorouter = createOttoRouter({
 		auth: { privateKey },
 		baseURL,
 		rpcURL,
@@ -130,5 +130,5 @@ export async function resolveSetuModel(
 		},
 	});
 
-	return setu.model(model);
+	return ottorouter.model(model);
 }

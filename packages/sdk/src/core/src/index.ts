@@ -105,7 +105,12 @@ export {
 // Logging & Debug
 // =======================
 export { logger, debug, info, warn, error, time } from './utils/logger.ts';
-export { isDebugEnabled, isTraceEnabled } from './utils/debug.ts';
+export {
+	isDebugEnabled,
+	isTraceEnabled,
+	setDebugEnabled,
+	setTraceEnabled,
+} from './utils/debug.ts';
 
 // =======================
 // MCP (Model Context Protocol)

@@ -86,8 +86,8 @@ export {
 	generateWallet,
 	importWallet,
 	isValidPrivateKey,
-	getSetuWallet,
-	ensureSetuWallet,
+	getOttoRouterWallet,
+	ensureOttoRouterWallet,
 	type WalletInfo,
 } from './wallet.ts';
 

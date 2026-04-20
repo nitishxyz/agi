@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-CLI="$ROOT/packages/openclaw-setu/src/cli.ts"
+CLI="$ROOT/packages/openclaw/src/cli.ts"
 
-echo "=== openclaw-setu Local Test ==="
+echo "=== openclaw Local Test ==="
 echo ""
 
 # Step 1: Generate wallet (won't overwrite if exists)

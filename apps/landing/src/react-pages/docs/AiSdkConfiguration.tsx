@@ -8,8 +8,8 @@ export function AiSdkConfiguration() {
 				Full configuration reference for <code>@ottocode/ai-sdk</code>.
 			</p>
 
-			<h2>createSetu Options</h2>
-			<CodeBlock>{`const setu = createSetu({
+			<h2>createOttoRouter Options</h2>
+			<CodeBlock>{`const setu = createOttoRouter({
   // Auth: private key (default) or external signer
   auth: { privateKey: "..." },
   // OR use an external signer:
@@ -21,8 +21,8 @@ export function AiSdkConfiguration() {
   //   },
   // },
 
-  // Optional: Setu API base URL (default: https://api.setu.ottocode.io)
-  baseURL: "https://api.setu.ottocode.io",
+  // Optional: Setu API base URL (default: https://api.ottorouter.org)
+  baseURL: "https://api.ottorouter.org",
 
   // Optional: Solana RPC URL (default: https://api.mainnet-beta.solana.com)
   rpcURL: "https://api.mainnet-beta.solana.com",
@@ -46,7 +46,7 @@ export function AiSdkConfiguration() {
 });`}</CodeBlock>
 
 			<h2>Payment Options</h2>
-			<CodeBlock>{`const setu = createSetu({
+			<CodeBlock>{`const setu = createOttoRouter({
   auth: { privateKey: "..." },
   payment: {
     // "auto" (default) — pay automatically
@@ -66,7 +66,7 @@ export function AiSdkConfiguration() {
 
 			<h2>Payment Callbacks</h2>
 			<p>Monitor and control the payment lifecycle:</p>
-			<CodeBlock>{`const setu = createSetu({
+			<CodeBlock>{`const setu = createOttoRouter({
   auth: { privateKey: "..." },
   callbacks: {
     onPaymentRequired: (amountUsd, currentBalance) => {
@@ -171,7 +171,7 @@ export function AiSdkConfiguration() {
 					<tbody>
 						<tr>
 							<td>
-								<code>SETU_PRIVATE_KEY</code>
+								<code>OTTOROUTER_PRIVATE_KEY</code>
 							</td>
 							<td>Yes*</td>
 							<td>
@@ -181,17 +181,17 @@ export function AiSdkConfiguration() {
 						</tr>
 						<tr>
 							<td>
-								<code>SETU_BASE_URL</code>
+								<code>OTTOROUTER_BASE_URL</code>
 							</td>
 							<td>No</td>
 							<td>
 								Override API URL (default:{' '}
-								<code>https://api.setu.ottocode.io</code>)
+								<code>https://api.ottorouter.org</code>)
 							</td>
 						</tr>
 						<tr>
 							<td>
-								<code>SETU_SOLANA_RPC_URL</code>
+								<code>OTTOROUTER_SOLANA_RPC_URL</code>
 							</td>
 							<td>No</td>
 							<td>
@@ -209,10 +209,10 @@ export function AiSdkConfiguration() {
 otto auth login setu
 
 # Or set the private key directly
-export SETU_PRIVATE_KEY="your-base58-private-key"
+export OTTOROUTER_PRIVATE_KEY="your-base58-private-key"
 
 # Use Setu as default provider
-otto setup  # select "setu"
+otto setup  # select "ottorouter"
 
 # Or per-request
 otto ask "hello" --provider setu --model claude-sonnet-4-20250514`}</CodeBlock>

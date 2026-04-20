@@ -1,9 +1,9 @@
-export const setuPaths = {
-	'/v1/setu/balance': {
+export const ottorouterPaths = {
+	'/v1/ottorouter/balance': {
 		get: {
-			tags: ['setu'],
-			operationId: 'getSetuBalance',
-			summary: 'Get Setu account balance',
+			tags: ['ottorouter'],
+			operationId: 'getOttoRouterBalance',
+			summary: 'Get OttoRouter account balance',
 			description:
 				'Returns wallet balance, subscription, account info, limits, and usage data',
 			responses: {
@@ -82,7 +82,7 @@ export const setuPaths = {
 					},
 				},
 				502: {
-					description: 'Failed to fetch balance from Setu',
+					description: 'Failed to fetch balance from OttoRouter',
 					content: {
 						'application/json': {
 							schema: {
@@ -96,11 +96,11 @@ export const setuPaths = {
 			},
 		},
 	},
-	'/v1/setu/wallet': {
+	'/v1/ottorouter/wallet': {
 		get: {
-			tags: ['setu'],
-			operationId: 'getSetuWallet',
-			summary: 'Get Setu wallet info',
+			tags: ['ottorouter'],
+			operationId: 'getOttoRouterWallet',
+			summary: 'Get OttoRouter wallet info',
 			description:
 				'Returns whether the wallet is configured and its public key',
 			responses: {
@@ -123,10 +123,10 @@ export const setuPaths = {
 			},
 		},
 	},
-	'/v1/setu/usdc-balance': {
+	'/v1/ottorouter/usdc-balance': {
 		get: {
-			tags: ['setu'],
-			operationId: 'getSetuUsdcBalance',
+			tags: ['ottorouter'],
+			operationId: 'getOttoRouterUsdcBalance',
 			summary: 'Get USDC token balance',
 			description:
 				'Fetches USDC balance from Solana blockchain for the configured wallet',
@@ -189,9 +189,9 @@ export const setuPaths = {
 			},
 		},
 	},
-	'/v1/setu/topup/polar': {
+	'/v1/ottorouter/topup/polar': {
 		post: {
-			tags: ['setu'],
+			tags: ['ottorouter'],
 			operationId: 'createPolarCheckout',
 			summary: 'Create a Polar checkout for topping up',
 			requestBody: {
@@ -233,9 +233,9 @@ export const setuPaths = {
 			},
 		},
 	},
-	'/v1/setu/topup/select': {
+	'/v1/ottorouter/topup/select': {
 		post: {
-			tags: ['setu'],
+			tags: ['ottorouter'],
 			operationId: 'selectTopupMethod',
 			summary: 'Select topup method for pending request',
 			requestBody: {
@@ -287,9 +287,9 @@ export const setuPaths = {
 			},
 		},
 	},
-	'/v1/setu/topup/cancel': {
+	'/v1/ottorouter/topup/cancel': {
 		post: {
-			tags: ['setu'],
+			tags: ['ottorouter'],
 			operationId: 'cancelTopup',
 			summary: 'Cancel pending topup',
 			requestBody: {
@@ -337,9 +337,9 @@ export const setuPaths = {
 			},
 		},
 	},
-	'/v1/setu/topup/pending': {
+	'/v1/ottorouter/topup/pending': {
 		get: {
-			tags: ['setu'],
+			tags: ['ottorouter'],
 			operationId: 'getPendingTopup',
 			summary: 'Get pending topup for a session',
 			parameters: [
@@ -373,9 +373,9 @@ export const setuPaths = {
 			},
 		},
 	},
-	'/v1/setu/topup/polar/estimate': {
+	'/v1/ottorouter/topup/polar/estimate': {
 		get: {
-			tags: ['setu'],
+			tags: ['ottorouter'],
 			operationId: 'getPolarTopupEstimate',
 			summary: 'Get estimated fees for a Polar topup',
 			parameters: [
@@ -414,9 +414,9 @@ export const setuPaths = {
 			},
 		},
 	},
-	'/v1/setu/topup/polar/status': {
+	'/v1/ottorouter/topup/polar/status': {
 		get: {
-			tags: ['setu'],
+			tags: ['ottorouter'],
 			operationId: 'getPolarTopupStatus',
 			summary: 'Get status of a Polar checkout',
 			parameters: [
@@ -447,9 +447,9 @@ export const setuPaths = {
 			},
 		},
 	},
-	'/v1/setu/topup/razorpay/estimate': {
+	'/v1/ottorouter/topup/razorpay/estimate': {
 		get: {
-			tags: ['setu'],
+			tags: ['ottorouter'],
 			operationId: 'getRazorpayTopupEstimate',
 			summary: 'Get estimated fees for a Razorpay topup',
 			parameters: [
@@ -482,9 +482,9 @@ export const setuPaths = {
 			},
 		},
 	},
-	'/v1/setu/topup/razorpay': {
+	'/v1/ottorouter/topup/razorpay': {
 		post: {
-			tags: ['setu'],
+			tags: ['ottorouter'],
 			operationId: 'createRazorpayOrder',
 			summary: 'Create a Razorpay order for topping up',
 			requestBody: {
@@ -535,9 +535,9 @@ export const setuPaths = {
 			},
 		},
 	},
-	'/v1/setu/topup/razorpay/verify': {
+	'/v1/ottorouter/topup/razorpay/verify': {
 		post: {
-			tags: ['setu'],
+			tags: ['ottorouter'],
 			operationId: 'verifyRazorpayPayment',
 			summary: 'Verify Razorpay payment and credit balance',
 			requestBody: {

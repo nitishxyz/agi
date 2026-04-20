@@ -5,7 +5,7 @@ import { useSessions } from '../../hooks/useSessions';
 import { usePreferences } from '../../hooks/usePreferences';
 import { MessageThread } from './MessageThread';
 import { useToolApprovalShortcuts } from '../../hooks/useToolApprovalShortcuts';
-import { SetuTopupModal } from '../settings/SetuTopupModal';
+import { OttoRouterTopupModal } from '../settings/OttoRouterTopupModal';
 
 interface MessageThreadContainerProps {
 	sessionId: string;
@@ -54,7 +54,7 @@ export const MessageThreadContainer = memo(function MessageThreadContainer({
 				compact={preferences.compactThread}
 				onSelectSession={onSelectSession}
 			/>
-			<SetuTopupModal />
+			<OttoRouterTopupModal />
 		</>
 	);
 });

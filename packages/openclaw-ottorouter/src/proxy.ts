@@ -1,8 +1,8 @@
-import { createSetuFetch, createWalletContext } from '@ottocode/ai-sdk';
+import { createOttoRouterFetch, createWalletContext } from '@ottocode/ai-sdk';
 import { loadWallet } from './wallet.ts';
 
 const DEFAULT_PORT = 8403;
-const DEFAULT_BASE_URL = 'https://api.setu.ottocode.io';
+const DEFAULT_BASE_URL = 'https://api.ottorouter.org';
 
 export interface ProxyOptions {
 	port?: number;
@@ -22,17 +22,17 @@ export function createProxy(options: ProxyOptions = {}) {
 	const wallet = loadWallet();
 	if (!wallet) {
 		throw new Error(
-			'No wallet found. Run `openclaw-setu setup` or `openclaw-setu wallet generate` first.',
+			'No wallet found. Run `openclaw setup` or `openclaw wallet generate` first.',
 		);
 	}
 
 	const log = verbose
-		? (msg: string) => console.log(`[setu-proxy] ${msg}`)
+		? (msg: string) => console.log(`[ottorouter-proxy] ${msg}`)
 		: (_msg: string) => {};
 
 	const walletCtx = createWalletContext({ privateKey: wallet.privateKey });
 
-	const setuFetch = createSetuFetch({
+	const ottorouterFetch = createOttoRouterFetch({
 		wallet: walletCtx,
 		baseURL,
 		callbacks: {
@@ -45,7 +45,7 @@ export function createProxy(options: ProxyOptions = {}) {
 				);
 			},
 			onPaymentError: (error) => {
-				console.error(`[setu-proxy] Payment error: ${error}`);
+				console.error(`[ottorouter-proxy] Payment error: ${error}`);
 			},
 			onBalanceUpdate: (update) => {
 				log(
@@ -67,13 +67,13 @@ export function createProxy(options: ProxyOptions = {}) {
 				return Response.json({
 					status: 'ok',
 					wallet: wallet.publicKey,
-					provider: 'setu',
+					provider: 'ottorouter',
 				});
 			}
 
 			if (pathname === '/v1/models') {
 				log('GET /v1/models');
-				const resp = await setuFetch(`${proxyBaseURL}/v1/models`, {
+				const resp = await ottorouterFetch(`${proxyBaseURL}/v1/models`, {
 					method: 'GET',
 					headers: { 'Content-Type': 'application/json' },
 				});
@@ -94,7 +94,7 @@ export function createProxy(options: ProxyOptions = {}) {
 			if (!isCompletions && !isResponses && !isMessages) {
 				const targetURL = `${proxyBaseURL}${pathname}`;
 				log(`Proxying ${req.method} ${pathname}`);
-				const resp = await setuFetch(targetURL, {
+				const resp = await ottorouterFetch(targetURL, {
 					method: req.method,
 					headers: { 'Content-Type': 'application/json' },
 					body: req.method !== 'GET' ? await req.text() : undefined,
@@ -127,7 +127,7 @@ export function createProxy(options: ProxyOptions = {}) {
 			log(`POST ${endpoint} model=${model} stream=${stream}`);
 
 			const targetURL = `${proxyBaseURL}${endpoint}`;
-			const resp = await setuFetch(targetURL, {
+			const resp = await ottorouterFetch(targetURL, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body,

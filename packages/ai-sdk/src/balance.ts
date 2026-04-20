@@ -1,11 +1,15 @@
 import bs58 from 'bs58';
 import { Keypair } from '@solana/web3.js';
-import type { SetuAuth, BalanceResponse, WalletUsdcBalance } from './types.ts';
+import type {
+	OttoRouterAuth,
+	BalanceResponse,
+	WalletUsdcBalance,
+} from './types.ts';
 import type { WalletContext } from './auth.ts';
 import { createWalletContext } from './auth.ts';
 import { createAccessTokenManager } from './token.ts';
 
-const DEFAULT_BASE_URL = 'https://api.setu.ottocode.io';
+const DEFAULT_BASE_URL = 'https://api.ottorouter.org';
 const DEFAULT_RPC_URL = 'https://api.mainnet-beta.solana.com';
 const USDC_MINT_MAINNET = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 const USDC_MINT_DEVNET = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
@@ -26,7 +30,7 @@ function isWalletContext(input: unknown): input is WalletContext {
 }
 
 export async function fetchBalance(
-	walletOrAuth: WalletContext | SetuAuth,
+	walletOrAuth: WalletContext | OttoRouterAuth,
 	baseURL?: string,
 ): Promise<BalanceResponse | null> {
 	try {
@@ -181,7 +185,7 @@ export async function fetchBalance(
 }
 
 type WalletUsdcBalanceInput =
-	| Required<Pick<SetuAuth, 'privateKey'>>
+	| Required<Pick<OttoRouterAuth, 'privateKey'>>
 	| { walletAddress: string };
 
 function resolveWalletAddress(input: WalletUsdcBalanceInput): string {

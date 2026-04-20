@@ -20,7 +20,7 @@ const PROVIDERS: ProviderId[] = [
 	'google',
 	'openrouter',
 	'opencode',
-	'setu',
+	'ottorouter',
 ];
 
 function providerEnvVar(p: ProviderId): string | null {
@@ -28,7 +28,7 @@ function providerEnvVar(p: ProviderId): string | null {
 	if (p === 'anthropic') return 'ANTHROPIC_API_KEY';
 	if (p === 'google') return 'GOOGLE_GENERATIVE_AI_API_KEY';
 	if (p === 'opencode') return 'OPENCODE_API_KEY';
-	if (p === 'setu') return 'SETU_PRIVATE_KEY';
+	if (p === 'ottorouter') return 'OTTOROUTER_PRIVATE_KEY';
 	return null;
 }
 

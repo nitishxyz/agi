@@ -4,8 +4,8 @@ import {
 	getAuth,
 	setAuth,
 	removeAuth,
-	ensureSetuWallet,
-	getSetuWallet,
+	ensureOttoRouterWallet,
+	getOttoRouterWallet,
 	importWallet,
 	loadConfig,
 	catalog,
@@ -223,7 +223,7 @@ export function registerAuthRoutes(app: Hono) {
 			const auth = await getAllAuth(projectRoot);
 			const cfg = await loadConfig(projectRoot);
 			const onboardingComplete = await getOnboardingComplete(projectRoot);
-			const setuWallet = await getSetuWallet(projectRoot);
+			const ottorouterWallet = await getOttoRouterWallet(projectRoot);
 			const ghImportCapability = getGhImportCapability();
 
 			const providers: Record<
@@ -269,10 +269,10 @@ export function registerAuthRoutes(app: Hono) {
 
 			return c.json({
 				onboardingComplete,
-				setu: setuWallet
+				ottorouter: ottorouterWallet
 					? {
 							configured: true,
-							publicKey: setuWallet.publicKey,
+							publicKey: ottorouterWallet.publicKey,
 						}
 					: {
 							configured: false,
@@ -287,11 +287,11 @@ export function registerAuthRoutes(app: Hono) {
 		}
 	});
 
-	app.post('/v1/auth/setu/setup', async (c) => {
+	app.post('/v1/auth/ottorouter/setup', async (c) => {
 		try {
 			const projectRoot = process.cwd();
-			const existing = await getSetuWallet(projectRoot);
-			const wallet = await ensureSetuWallet(projectRoot);
+			const existing = await getOttoRouterWallet(projectRoot);
+			const wallet = await ensureOttoRouterWallet(projectRoot);
 
 			return c.json({
 				success: true,
@@ -299,13 +299,13 @@ export function registerAuthRoutes(app: Hono) {
 				isNew: !existing,
 			});
 		} catch (error) {
-			logger.error('Failed to setup Setu wallet', error);
+			logger.error('Failed to setup OttoRouter wallet', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}
 	});
 
-	app.post('/v1/auth/setu/import', async (c) => {
+	app.post('/v1/auth/ottorouter/import', async (c) => {
 		try {
 			const { privateKey } = await c.req.json<{ privateKey: string }>();
 
@@ -316,7 +316,7 @@ export function registerAuthRoutes(app: Hono) {
 			try {
 				const wallet = importWallet(privateKey);
 				await setAuth(
-					'setu',
+					'ottorouter',
 					{ type: 'wallet', secret: privateKey },
 					undefined,
 					'global',
@@ -330,19 +330,19 @@ export function registerAuthRoutes(app: Hono) {
 				return c.json({ error: 'Invalid private key format' }, 400);
 			}
 		} catch (error) {
-			logger.error('Failed to import Setu wallet', error);
+			logger.error('Failed to import OttoRouter wallet', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}
 	});
 
-	app.get('/v1/auth/setu/export', async (c) => {
+	app.get('/v1/auth/ottorouter/export', async (c) => {
 		try {
 			const projectRoot = process.cwd();
-			const wallet = await getSetuWallet(projectRoot);
+			const wallet = await getOttoRouterWallet(projectRoot);
 
 			if (!wallet) {
-				return c.json({ error: 'Setu wallet not configured' }, 404);
+				return c.json({ error: 'OttoRouter wallet not configured' }, 404);
 			}
 
 			return c.json({
@@ -351,7 +351,7 @@ export function registerAuthRoutes(app: Hono) {
 				privateKey: wallet.privateKey,
 			});
 		} catch (error) {
-			logger.error('Failed to export Setu wallet', error);
+			logger.error('Failed to export OttoRouter wallet', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}

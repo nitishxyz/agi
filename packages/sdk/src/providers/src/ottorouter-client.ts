@@ -1,29 +1,29 @@
 import {
-	createSetu,
+	createOttoRouter,
 	fetchBalance,
 	fetchWalletUsdcBalance,
 	getPublicKeyFromPrivate as _getPublicKeyFromPrivate,
-	type SetuConfig,
+	type OttoRouterConfig,
 	type PaymentCallbacks,
 	type BalanceUpdate,
 	type BalanceResponse,
 	type WalletUsdcBalance,
-	type SetuAuth as _SetuAuth,
-	type SetuInstance,
-} from '@ottocode/ai-sdk';
+	type OttoRouterAuth as _OttoRouterAuth,
+	type OttoRouterInstance,
+} from '@ottorouter/ai-sdk';
 import type { LanguageModelV3Middleware } from '@ai-sdk/provider';
 
-export type SetuBalanceUpdate = BalanceUpdate;
+export type OttoRouterBalanceUpdate = BalanceUpdate;
 
-export type SetuPaymentCallbacks = PaymentCallbacks;
+export type OttoRouterPaymentCallbacks = PaymentCallbacks;
 
-export type SetuProviderOptions = {
+export type OttoRouterProviderOptions = {
 	baseURL?: string;
 	rpcURL?: string;
 	network?: string;
 	maxRequestAttempts?: number;
 	maxPaymentAttempts?: number;
-	callbacks?: SetuPaymentCallbacks;
+	callbacks?: OttoRouterPaymentCallbacks;
 	providerNpm?: string;
 	promptCacheKey?: string;
 	promptCacheRetention?: 'in_memory' | '24h';
@@ -32,33 +32,33 @@ export type SetuProviderOptions = {
 	middleware?: LanguageModelV3Middleware | LanguageModelV3Middleware[];
 };
 
-export type SetuAuth = _SetuAuth;
+export type OttoRouterAuth = _OttoRouterAuth;
 
-export type SetuBalanceResponse = BalanceResponse;
+export type OttoRouterBalanceResponse = BalanceResponse;
 
 export type SolanaUsdcBalanceResponse = WalletUsdcBalance;
 
-export function createSetuFetch(
-	auth: SetuAuth,
-	options: SetuProviderOptions = {},
+export function createOttoRouterFetch(
+	auth: OttoRouterAuth,
+	options: OttoRouterProviderOptions = {},
 ): typeof fetch {
-	const setu = createSetu(buildSetuConfig(auth, options));
-	return setu.fetch() as typeof fetch;
+	const ottorouter = createOttoRouter(buildOttoRouterConfig(auth, options));
+	return ottorouter.fetch() as typeof fetch;
 }
 
-export function createSetuModel(
+export function createOttoRouterModel(
 	model: string,
-	auth: SetuAuth,
-	options: SetuProviderOptions = {},
+	auth: OttoRouterAuth,
+	options: OttoRouterProviderOptions = {},
 ) {
-	const setu = createSetu(buildSetuConfig(auth, options));
-	return setu.model(model);
+	const ottorouter = createOttoRouter(buildOttoRouterConfig(auth, options));
+	return ottorouter.model(model);
 }
 
-function buildSetuConfig(
-	auth: SetuAuth,
-	options: SetuProviderOptions = {},
-): SetuConfig {
+function buildOttoRouterConfig(
+	auth: OttoRouterAuth,
+	options: OttoRouterProviderOptions = {},
+): OttoRouterConfig {
 	return {
 		auth,
 		baseURL: options.baseURL,
@@ -78,10 +78,10 @@ function buildSetuConfig(
 	};
 }
 
-export async function fetchSetuBalance(
-	auth: SetuAuth,
+export async function fetchOttoRouterBalance(
+	auth: OttoRouterAuth,
 	baseURL?: string,
-): Promise<SetuBalanceResponse | null> {
+): Promise<OttoRouterBalanceResponse | null> {
 	return fetchBalance(auth, baseURL);
 }
 
@@ -90,7 +90,7 @@ export function getPublicKeyFromPrivate(privateKey: string): string | null {
 }
 
 export async function fetchSolanaUsdcBalance(
-	auth: SetuAuth,
+	auth: OttoRouterAuth,
 	network: 'mainnet' | 'devnet' = 'mainnet',
 ): Promise<SolanaUsdcBalanceResponse | null> {
 	if (auth.privateKey) {
@@ -105,4 +105,4 @@ export async function fetchSolanaUsdcBalance(
 	return null;
 }
 
-export { createSetu, type SetuInstance };
+export { createOttoRouter, type OttoRouterInstance };

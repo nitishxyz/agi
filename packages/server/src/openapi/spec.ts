@@ -13,7 +13,7 @@ import { sessionApprovalPaths } from './paths/session-approval';
 import { sessionExtrasPaths } from './paths/session-extras';
 import { sessionFilesPaths } from './paths/session-files';
 import { sessionsPaths } from './paths/sessions';
-import { setuPaths } from './paths/setu';
+import { ottorouterPaths } from './paths/ottorouter';
 import { skillsPaths } from './paths/skills';
 import { streamPaths } from './paths/stream';
 import { terminalsPath } from './paths/terminals';
@@ -38,7 +38,7 @@ export function getOpenAPISpec() {
 			{ name: 'files' },
 			{ name: 'git' },
 			{ name: 'terminals' },
-			{ name: 'setu' },
+			{ name: 'ottorouter' },
 			{ name: 'auth' },
 			{ name: 'mcp' },
 			{ name: 'tunnel' },
@@ -59,7 +59,7 @@ export function getOpenAPISpec() {
 			...sessionExtrasPaths,
 			...sessionFilesPaths,
 			...sessionsPaths,
-			...setuPaths,
+			...ottorouterPaths,
 			...skillsPaths,
 			...streamPaths,
 			...terminalsPath,

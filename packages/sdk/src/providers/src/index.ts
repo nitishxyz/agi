@@ -25,22 +25,22 @@ export { validateProviderModel } from './validate.ts';
 export { estimateModelCostUsd } from './pricing.ts';
 export { providerEnvVar, readEnvKey, setEnvKey } from './env.ts';
 export {
-	createSetu,
-	createSetuFetch,
-	createSetuModel,
-	fetchSetuBalance,
+	createOttoRouter,
+	createOttoRouterFetch,
+	createOttoRouterModel,
+	fetchOttoRouterBalance,
 	getPublicKeyFromPrivate,
 	fetchSolanaUsdcBalance,
-} from './setu-client.ts';
+} from './ottorouter-client.ts';
 export type {
-	SetuAuth,
-	SetuInstance,
-	SetuProviderOptions,
-	SetuPaymentCallbacks,
-	SetuBalanceUpdate,
-	SetuBalanceResponse,
+	OttoRouterAuth,
+	OttoRouterInstance,
+	OttoRouterProviderOptions,
+	OttoRouterPaymentCallbacks,
+	OttoRouterBalanceUpdate,
+	OttoRouterBalanceResponse,
 	SolanaUsdcBalanceResponse,
-} from './setu-client.ts';
+} from './ottorouter-client.ts';
 export {
 	createOpenAIOAuthFetch,
 	createOpenAIOAuthModel,

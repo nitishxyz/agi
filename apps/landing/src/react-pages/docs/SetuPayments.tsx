@@ -67,7 +67,7 @@ import bs58 from "bs58";
 import { Keypair } from "@solana/web3.js";
 
 // Load wallet from base58 private key
-const privateKeyBytes = bs58.decode(process.env.SETU_PRIVATE_KEY);
+const privateKeyBytes = bs58.decode(process.env.OTTOROUTER_PRIVATE_KEY);
 const keypair = Keypair.fromSecretKey(privateKeyBytes);
 
 function createAuthHeaders() {
@@ -111,10 +111,10 @@ function createAuthHeaders() {
 
 			<h3>Wallet Key Format</h3>
 			<p>
-				The <code>SETU_PRIVATE_KEY</code> is a base58-encoded Solana secret key
-				(64 bytes when decoded). The first 32 bytes are the private scalar and
-				the last 32 bytes are the public key. This is the standard Solana
-				keypair format.
+				The <code>OTTOROUTER_PRIVATE_KEY</code> is a base58-encoded Solana
+				secret key (64 bytes when decoded). The first 32 bytes are the private
+				scalar and the last 32 bytes are the public key. This is the standard
+				Solana keypair format.
 			</p>
 			<CodeBlock>{`# Generate a new wallet
 import { Keypair } from "@solana/web3.js";
@@ -217,7 +217,7 @@ const mppFetch = mppx.fetch;`}</CodeBlock>
 
 			<h3>Submitting the Top-up</h3>
 			<CodeBlock>{`const response = await mppFetch(
-	"https://api.setu.ottocode.io/v1/topup/5",
+	"https://api.ottorouter.org/v1/topup/5",
 	{
 		method: "POST",
 		headers: {

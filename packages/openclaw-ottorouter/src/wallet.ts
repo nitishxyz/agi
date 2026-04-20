@@ -10,7 +10,7 @@ import {
 } from '@ottocode/ai-sdk';
 import type { WalletInfo } from '@ottocode/ai-sdk';
 
-const WALLET_DIR = join(homedir(), '.openclaw', 'setu');
+const WALLET_DIR = join(homedir(), '.openclaw', 'ottorouter');
 const WALLET_KEY_PATH = join(WALLET_DIR, 'wallet.key');
 
 export function getWalletKeyPath(): string {
@@ -55,21 +55,25 @@ export function exportWalletKey(): string | null {
 	}
 }
 
-export async function getSetuBalance(privateKey: string): Promise<{
-	setu: { balance: number; totalSpent: number; requestCount: number } | null;
+export async function getOttoRouterBalance(privateKey: string): Promise<{
+	ottorouter: {
+		balance: number;
+		totalSpent: number;
+		requestCount: number;
+	} | null;
 	wallet: { usdcBalance: number; network: string } | null;
 }> {
-	const [setu, wallet] = await Promise.all([
+	const [ottorouter, wallet] = await Promise.all([
 		fetchBalance({ privateKey }),
 		fetchWalletUsdcBalance({ privateKey }),
 	]);
 
 	return {
-		setu: setu
+		ottorouter: ottorouter
 			? {
-					balance: setu.balance,
-					totalSpent: setu.totalSpent,
-					requestCount: setu.requestCount,
+					balance: ottorouter.balance,
+					totalSpent: ottorouter.totalSpent,
+					requestCount: ottorouter.requestCount,
 				}
 			: null,
 		wallet: wallet

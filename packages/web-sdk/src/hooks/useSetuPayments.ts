@@ -2,14 +2,14 @@ import { useEffect, useRef } from 'react';
 import { SSEClient } from '../lib/sse-client';
 import { apiClient } from '../lib/api-client';
 import { toast, useToastStore } from '../stores/toastStore';
-import { useSetuStore } from '../stores/setuStore';
+import { useOttoRouterStore } from '../stores/ottorouterStore';
 import { useTopupApprovalStore } from '../stores/topupApprovalStore';
 
 export function useSetuPayments(sessionId: string | undefined) {
 	const clientRef = useRef<SSEClient | null>(null);
 	const loadingToastIdRef = useRef<string | null>(null);
-	const setBalance = useSetuStore((s) => s.setBalance);
-	const setPaymentPending = useSetuStore((s) => s.setPaymentPending);
+	const setBalance = useOttoRouterStore((s) => s.setBalance);
+	const setPaymentPending = useOttoRouterStore((s) => s.setPaymentPending);
 	const removeToast = useToastStore((s) => s.removeToast);
 	const updateToast = useToastStore((s) => s.updateToast);
 	const setPendingTopup = useTopupApprovalStore((s) => s.setPendingTopup);
@@ -28,7 +28,7 @@ export function useSetuPayments(sessionId: string | undefined) {
 			const payload = event.payload as Record<string, unknown> | undefined;
 
 			switch (event.type) {
-				case 'setu.topup.required': {
+				case 'ottorouter.topup.required': {
 					const amountUsd =
 						typeof payload?.amountUsd === 'number' ? payload.amountUsd : 0;
 					const currentBalance =
@@ -55,7 +55,7 @@ export function useSetuPayments(sessionId: string | undefined) {
 					break;
 				}
 
-				case 'setu.topup.method_selected': {
+				case 'ottorouter.topup.method_selected': {
 					const method = payload?.method;
 					if (method === 'crypto') {
 						setPaymentPending(true);
@@ -66,7 +66,7 @@ export function useSetuPayments(sessionId: string | undefined) {
 					break;
 				}
 
-				case 'setu.topup.cancelled': {
+				case 'ottorouter.topup.cancelled': {
 					clearPendingTopup();
 					const reason =
 						typeof payload?.reason === 'string'
@@ -76,7 +76,7 @@ export function useSetuPayments(sessionId: string | undefined) {
 					break;
 				}
 
-				case 'setu.payment.required': {
+				case 'ottorouter.payment.required': {
 					const amountUsd =
 						typeof payload?.amountUsd === 'number' ? payload.amountUsd : 0;
 					setPaymentPending(true);
@@ -88,7 +88,7 @@ export function useSetuPayments(sessionId: string | undefined) {
 					break;
 				}
 
-				case 'setu.payment.signing': {
+				case 'ottorouter.payment.signing': {
 					if (loadingToastIdRef.current) {
 						updateToast(loadingToastIdRef.current, {
 							message: '✍️ Signing transaction...',
@@ -101,7 +101,7 @@ export function useSetuPayments(sessionId: string | undefined) {
 					break;
 				}
 
-				case 'setu.payment.complete': {
+				case 'ottorouter.payment.complete': {
 					clearPendingTopup();
 					const rawAmount = payload?.amountUsd;
 					const rawBalance = payload?.newBalance;
@@ -139,7 +139,7 @@ export function useSetuPayments(sessionId: string | undefined) {
 					break;
 				}
 
-				case 'setu.fiat.checkout_created': {
+				case 'ottorouter.fiat.checkout_created': {
 					clearPendingTopup();
 					setPaymentPending(false);
 					if (loadingToastIdRef.current) {
@@ -152,7 +152,7 @@ export function useSetuPayments(sessionId: string | undefined) {
 					break;
 				}
 
-				case 'setu.balance.updated': {
+				case 'ottorouter.balance.updated': {
 					const rawBalance = payload?.balanceRemaining;
 					const newBalance =
 						typeof rawBalance === 'number'
@@ -166,7 +166,7 @@ export function useSetuPayments(sessionId: string | undefined) {
 					break;
 				}
 
-				case 'setu.payment.error': {
+				case 'ottorouter.payment.error': {
 					clearPendingTopup();
 					const error =
 						typeof payload?.error === 'string'

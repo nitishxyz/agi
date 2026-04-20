@@ -26,9 +26,9 @@ import {
 	useUpdateDefaults,
 } from '../../hooks/useConfig';
 import { usePreferences } from '../../hooks/usePreferences';
-import { useSetuStore } from '../../stores/setuStore';
-import { SetuTopupModal } from './SetuTopupModal';
-import { useSetuBalance } from '../../hooks/useSetuBalance';
+import { useOttoRouterStore } from '../../stores/ottorouterStore';
+import { OttoRouterTopupModal } from './OttoRouterTopupModal';
+import { useOttoRouterBalance } from '../../hooks/useOttoRouterBalance';
 import { useTopupCallback } from '../../hooks/useTopupCallback';
 import { usePanelWidthStore } from '../../stores/panelWidthStore';
 import { ResizeHandle } from '../ui/ResizeHandle';
@@ -278,18 +278,18 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 	const { data: allModels } = useAllModels();
 	const { preferences, updatePreferences } = usePreferences();
 	const updateDefaults = useUpdateDefaults();
-	const setuBalance = useSetuStore((s) => s.balance);
-	const setuWallet = useSetuStore((s) => s.walletAddress);
-	const setuUsdcBalance = useSetuStore((s) => s.usdcBalance);
-	const setuLoading = useSetuStore((s) => s.isLoading);
-	const openTopupModal = useSetuStore((s) => s.openTopupModal);
+	const ottorouterBalance = useOttoRouterStore((s) => s.balance);
+	const ottorouterWallet = useOttoRouterStore((s) => s.walletAddress);
+	const ottorouterUsdcBalance = useOttoRouterStore((s) => s.usdcBalance);
+	const ottorouterLoading = useOttoRouterStore((s) => s.isLoading);
+	const openTopupModal = useOttoRouterStore((s) => s.openTopupModal);
 
 	// Handle topup success callback from Polar checkout redirect
 	useTopupCallback();
 
-	const hasSetu = config?.providers?.includes('setu');
-	const { fetchBalance: refreshSetuBalance } = useSetuBalance(
-		hasSetu ? 'setu' : undefined,
+	const hasSetu = config?.providers?.includes('ottorouter');
+	const { fetchBalance: refreshSetuBalance } = useOttoRouterBalance(
+		hasSetu ? 'ottorouter' : undefined,
 	);
 
 	const setOnboardingOpen = useOnboardingStore((s) => s.setOpen);
@@ -298,7 +298,7 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 	const { fetchAuthStatus } = useAuthStatus();
 
 	const exportSetuPrivateKey = useCallback(async () => {
-		return await apiClient.exportSetuWallet();
+		return await apiClient.exportOttoRouterWallet();
 	}, []);
 
 	const providerOptions = useMemo(() => {
@@ -526,19 +526,19 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 						</div>
 					</SettingsSection>
 
-					{config?.providers?.includes('setu') && (
+					{config?.providers?.includes('ottorouter') && (
 						<SetuWalletSection
-							setuWallet={setuWallet}
-							setuBalance={setuBalance}
-							setuUsdcBalance={setuUsdcBalance}
-							setuLoading={setuLoading}
+							ottorouterWallet={ottorouterWallet}
+							ottorouterBalance={ottorouterBalance}
+							ottorouterUsdcBalance={ottorouterUsdcBalance}
+							ottorouterLoading={ottorouterLoading}
 							refreshSetuBalance={refreshSetuBalance}
 							openTopupModal={openTopupModal}
 							onExportPrivateKey={exportSetuPrivateKey}
 						/>
 					)}
 
-					<SetuTopupModal />
+					<OttoRouterTopupModal />
 				</div>
 			</div>
 		</div>
@@ -546,8 +546,8 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 });
 
 function SetuSubscriptionInfo() {
-	const subscription = useSetuStore((s) => s.subscription);
-	const payg = useSetuStore((s) => s.payg);
+	const subscription = useOttoRouterStore((s) => s.subscription);
+	const payg = useOttoRouterStore((s) => s.payg);
 
 	if (!subscription?.active) return null;
 
@@ -589,10 +589,10 @@ function SetuSubscriptionInfo() {
 }
 
 interface SetuWalletSectionProps {
-	setuWallet: string | null;
-	setuBalance: number | null;
-	setuUsdcBalance: number | null;
-	setuLoading: boolean;
+	ottorouterWallet: string | null;
+	ottorouterBalance: number | null;
+	ottorouterUsdcBalance: number | null;
+	ottorouterLoading: boolean;
 	refreshSetuBalance: () => void;
 	openTopupModal: () => void;
 	onExportPrivateKey: () => Promise<{
@@ -603,15 +603,17 @@ interface SetuWalletSectionProps {
 }
 
 const SetuWalletSection = memo(function SetuWalletSection({
-	setuWallet,
-	setuBalance,
-	setuUsdcBalance,
-	setuLoading,
+	ottorouterWallet,
+	ottorouterBalance,
+	ottorouterUsdcBalance,
+	ottorouterLoading,
 	refreshSetuBalance,
 	openTopupModal,
 	onExportPrivateKey,
 }: SetuWalletSectionProps) {
-	const hasActiveSubscription = useSetuStore((s) => !!s.subscription?.active);
+	const hasActiveSubscription = useOttoRouterStore(
+		(s) => !!s.subscription?.active,
+	);
 	const [copied, setCopied] = useState(false);
 	const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 	const [exportPrivateKey, setExportPrivateKey] = useState<string | null>(null);
@@ -622,11 +624,11 @@ const SetuWalletSection = memo(function SetuWalletSection({
 	const [privateKeyCopied, setPrivateKeyCopied] = useState(false);
 
 	const handleCopy = useCallback(async () => {
-		if (!setuWallet) return;
-		await navigator.clipboard.writeText(setuWallet);
+		if (!ottorouterWallet) return;
+		await navigator.clipboard.writeText(ottorouterWallet);
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
-	}, [setuWallet]);
+	}, [ottorouterWallet]);
 
 	const handleOpenExportPrivateKey = async () => {
 		setIsExportModalOpen(true);
@@ -676,7 +678,7 @@ const SetuWalletSection = memo(function SetuWalletSection({
 		return `${balance.toFixed(2)} USDC`;
 	};
 
-	const isLoaded = setuWallet !== null;
+	const isLoaded = ottorouterWallet !== null;
 
 	return (
 		<SettingsSection
@@ -686,12 +688,12 @@ const SetuWalletSection = memo(function SetuWalletSection({
 				<button
 					type="button"
 					onClick={refreshSetuBalance}
-					disabled={setuLoading}
+					disabled={ottorouterLoading}
 					className="p-1 hover:bg-muted rounded transition-colors disabled:opacity-50"
 					title="Refresh balances"
 				>
 					<RefreshCw
-						className={`w-3.5 h-3.5 text-muted-foreground ${setuLoading ? 'animate-spin' : ''}`}
+						className={`w-3.5 h-3.5 text-muted-foreground ${ottorouterLoading ? 'animate-spin' : ''}`}
 					/>
 				</button>
 			}
@@ -701,7 +703,7 @@ const SetuWalletSection = memo(function SetuWalletSection({
 					<div className="flex justify-center pb-3">
 						<div className="p-2 bg-white rounded-lg">
 							<QRCodeSVG
-								value={setuWallet}
+								value={ottorouterWallet}
 								size={120}
 								level="M"
 								includeMargin={false}
@@ -716,7 +718,7 @@ const SetuWalletSection = memo(function SetuWalletSection({
 							className="flex items-center gap-1.5 font-mono text-foreground hover:text-muted-foreground transition-colors"
 							title="Copy address"
 						>
-							{truncateWallet(setuWallet)}
+							{truncateWallet(ottorouterWallet)}
 							{copied ? (
 								<Check className="w-3 h-3 text-green-500" />
 							) : (
@@ -727,10 +729,13 @@ const SetuWalletSection = memo(function SetuWalletSection({
 					<SetuSubscriptionInfo />
 					{!hasActiveSubscription && (
 						<>
-							<SettingRow label="Balance" value={formatBalance(setuBalance)} />
+							<SettingRow
+								label="Balance"
+								value={formatBalance(ottorouterBalance)}
+							/>
 							<SettingRow
 								label="USDC"
-								value={formatUsdcBalance(setuUsdcBalance)}
+								value={formatUsdcBalance(ottorouterUsdcBalance)}
 							/>
 						</>
 					)}

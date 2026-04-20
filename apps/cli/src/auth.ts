@@ -63,10 +63,10 @@ const PROVIDER_LINKS: Record<
 		url: 'https://opencode.ai',
 		env: 'OPENCODE_API_KEY',
 	},
-	setu: {
-		name: 'Setu',
-		url: 'https://setu.ottocode.io',
-		env: 'SETU_PRIVATE_KEY',
+	ottorouter: {
+		name: 'OttoRouter',
+		url: 'https://dash.ottorouter.org',
+		env: 'OTTOROUTER_PRIVATE_KEY',
 	},
 	zai: {
 		name: 'Z.AI (GLM)',
@@ -285,7 +285,7 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 				{ value: 'openrouter', label: PROVIDER_LINKS.openrouter.name },
 				{ value: 'opencode', label: PROVIDER_LINKS.opencode.name },
 				{ value: 'copilot', label: PROVIDER_LINKS.copilot.name },
-				{ value: 'setu', label: PROVIDER_LINKS.setu.name },
+				{ value: 'ottorouter', label: PROVIDER_LINKS.ottorouter.name },
 				{ value: 'zai', label: PROVIDER_LINKS.zai.name },
 				{ value: 'zai-coding', label: PROVIDER_LINKS['zai-coding'].name },
 				{ value: 'moonshot', label: PROVIDER_LINKS.moonshot.name },
@@ -306,7 +306,7 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 		return runAuthLoginOpenAI(cfg, wantLocal);
 	}
 
-	if (provider === 'setu') {
+	if (provider === 'ottorouter') {
 		return runAuthLoginSetu(cfg, wantLocal);
 	}
 
@@ -653,7 +653,7 @@ async function runAuthLoginSetu(
 		log.info('Generated new Solana wallet');
 	} else {
 		const key = await password({
-			message: `Paste ${PROVIDER_LINKS.setu.env} (base58 private key)`,
+			message: `Paste ${PROVIDER_LINKS.ottorouter.env} (base58 private key)`,
 			validate: (v) =>
 				v && String(v).trim().length > 0
 					? undefined
@@ -676,7 +676,7 @@ async function runAuthLoginSetu(
 	}
 
 	await setAuth(
-		'setu',
+		'ottorouter',
 		{ type: 'wallet', secret: privateKeyBase58 },
 		cfg.projectRoot,
 		'global',
@@ -685,11 +685,11 @@ async function runAuthLoginSetu(
 		log.warn(
 			'Local credential storage is disabled; saved to secure global location.',
 		);
-	await ensureGlobalConfigDefaults('setu');
+	await ensureGlobalConfigDefaults('ottorouter');
 	log.success('Saved');
 	console.log(`  Wallet Public Key: ${colors.cyan(publicKey)}`);
 	console.log(
-		`  Tip: you can also set ${PROVIDER_LINKS.setu.env} in your environment.`,
+		`  Tip: you can also set ${PROVIDER_LINKS.ottorouter.env} in your environment.`,
 	);
 	outro('Done');
 	return true;
@@ -877,7 +877,7 @@ async function ensureGlobalConfigDefaults(provider: ProviderId) {
 			openrouter: { enabled: provider === 'openrouter' },
 			opencode: { enabled: provider === 'opencode' },
 			copilot: { enabled: provider === 'copilot' },
-			setu: { enabled: provider === 'setu' },
+			ottorouter: { enabled: provider === 'ottorouter' },
 			zai: { enabled: provider === 'zai' },
 			'zai-coding': { enabled: provider === 'zai-coding' },
 			moonshot: { enabled: provider === 'moonshot' },

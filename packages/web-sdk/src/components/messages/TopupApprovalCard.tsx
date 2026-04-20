@@ -3,7 +3,7 @@ import { Wallet, CreditCard, AlertCircle, Loader2, X } from 'lucide-react';
 import type { PendingTopupApproval } from '../../stores/topupApprovalStore';
 import { apiClient } from '../../lib/api-client';
 import { toast } from '../../stores/toastStore';
-import { useSetuStore } from '../../stores/setuStore';
+import { useOttoRouterStore } from '../../stores/ottorouterStore';
 
 interface TopupApprovalCardProps {
 	pendingTopup: PendingTopupApproval;
@@ -20,8 +20,8 @@ export const TopupApprovalCard = memo(function TopupApprovalCard({
 	const [selectedMethod, setSelectedMethod] = useState<
 		'crypto' | 'fiat' | null
 	>(null);
-	const openTopupModal = useSetuStore((s) => s.openTopupModal);
-	const hasGoPlan = useSetuStore((s) => !!s.subscription?.active);
+	const openTopupModal = useOttoRouterStore((s) => s.openTopupModal);
+	const hasGoPlan = useOttoRouterStore((s) => !!s.subscription?.active);
 
 	const handleSelectCrypto = async () => {
 		setSelectedMethod('crypto');

@@ -1,6 +1,6 @@
 {
-	"id": "openclaw-setu",
-	"name": "Setu",
+	"id": "openclaw",
+	"name": "OttoRouter",
 	"description": "Pay for AI with Solana USDC — 30+ models, no API keys, just a wallet.",
 	"configSchema": {
 		"type": "object",
@@ -11,7 +11,7 @@
 			},
 			"baseURL": {
 				"type": "string",
-				"description": "Setu API base URL (default: https://api.setu.ottocode.io)"
+				"description": "OttoRouter API base URL (default: https://api.ottorouter.org)"
 			}
 		}
 	},

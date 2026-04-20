@@ -1,4 +1,4 @@
-# @ottocode/openclaw-setu
+# @ottocode/openclaw
 
 Setu provider plugin for [OpenClaw](https://github.com/openclaw/openclaw) — pay for AI with Solana USDC.
 
@@ -7,7 +7,7 @@ No API keys. No accounts. Just a Solana wallet with USDC.
 ## How It Works
 
 ```
-OpenClaw → localhost:8403 (Setu proxy) → api.setu.ottocode.io → LLM provider
+OpenClaw → localhost:8403 (Setu proxy) → api.ottorouter.org → LLM provider
 ```
 
 1. Auto-generates a Solana wallet (or import your own)
@@ -21,18 +21,18 @@ No project installation needed — this is a global tool.
 
 ```bash
 # Option 1: Zero-install with bunx (recommended)
-bunx @ottocode/openclaw-setu setup
+bunx @ottocode/openclaw setup
 
 # Option 2: Global install
-bun install -g @ottocode/openclaw-setu
-openclaw-setu setup
+bun install -g @ottocode/openclaw
+openclaw setup
 ```
 
 ```bash
 # Fund your wallet with USDC on Solana (address shown during setup)
 
 # Start the proxy
-bunx @ottocode/openclaw-setu start
+bunx @ottocode/openclaw start
 
 # Restart OpenClaw
 openclaw gateway restart
@@ -41,20 +41,20 @@ openclaw gateway restart
 ## CLI Commands
 
 ```
-openclaw-setu setup              Interactive setup (wallet + config)
-openclaw-setu start              Start the local proxy server
+openclaw setup              Interactive setup (wallet + config)
+openclaw start              Start the local proxy server
 
-openclaw-setu wallet generate    Generate a new Solana wallet
-openclaw-setu wallet import      Import an existing private key
-openclaw-setu wallet export      Export your private key
-openclaw-setu wallet info        Show wallet address and balances
+openclaw wallet generate    Generate a new Solana wallet
+openclaw wallet import      Import an existing private key
+openclaw wallet export      Export your private key
+openclaw wallet info        Show wallet address and balances
 
-openclaw-setu config inject      Inject Setu provider into openclaw.json
-openclaw-setu config remove      Remove Setu provider from openclaw.json
-openclaw-setu config status      Check if Setu is configured
+openclaw config inject      Inject Setu provider into openclaw.json
+openclaw config remove      Remove Setu provider from openclaw.json
+openclaw config status      Check if Setu is configured
 ```
 
-All commands work with `bunx @ottocode/openclaw-setu <command>` (no install required).
+All commands work with `bunx @ottocode/openclaw <command>` (no install required).
 
 ## As an OpenClaw Plugin
 
@@ -71,8 +71,8 @@ If OpenClaw loads the plugin automatically (via `openclaw.extensions` in package
 
 ## Environment Variables
 
-- `SETU_PROXY_PORT` — Proxy port (default: 8403)
-- `SETU_PRIVATE_KEY` — Alternative to wallet file
+- `OTTOROUTER_PROXY_PORT` — Proxy port (default: 8403)
+- `OTTOROUTER_PRIVATE_KEY` — Alternative to wallet file
 
 ## How is this different from ClawRouter?
 

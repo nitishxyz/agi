@@ -4,7 +4,7 @@ import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 import { createWalletContext } from '../src/auth.ts';
 import { fetchBalance } from '../src/balance.ts';
-import { createSetuFetch } from '../src/fetch.ts';
+import { createOttoRouterFetch } from '../src/fetch.ts';
 
 function createSignerWallet() {
 	const keypair = Keypair.generate();
@@ -30,11 +30,11 @@ afterEach(() => {
 });
 
 describe('bearer auth request flow', () => {
-	test('createSetuFetch attaches bearer auth and shares one token exchange', async () => {
+	test('createOttoRouterFetch attaches bearer auth and shares one token exchange', async () => {
 		const { wallet } = createSignerWallet();
 		const requests: Array<{ url: string; headers: Headers }> = [];
 		let tokenExchangeCount = 0;
-		const setuFetch = createSetuFetch({
+		const ottorouterFetch = createOttoRouterFetch({
 			wallet,
 			baseURL: 'https://setu.test',
 			fetch: async (input, init) => {
@@ -53,9 +53,9 @@ describe('bearer auth request flow', () => {
 		});
 
 		await Promise.all([
-			setuFetch('https://setu.test/v1/messages', { method: 'POST' }),
-			setuFetch('https://setu.test/v1/messages', { method: 'POST' }),
-			setuFetch('https://setu.test/v1/messages', { method: 'POST' }),
+			ottorouterFetch('https://setu.test/v1/messages', { method: 'POST' }),
+			ottorouterFetch('https://setu.test/v1/messages', { method: 'POST' }),
+			ottorouterFetch('https://setu.test/v1/messages', { method: 'POST' }),
 		]);
 
 		expect(tokenExchangeCount).toBe(1);
@@ -71,11 +71,11 @@ describe('bearer auth request flow', () => {
 		}
 	});
 
-	test('createSetuFetch refreshes and retries once on 401', async () => {
+	test('createOttoRouterFetch refreshes and retries once on 401', async () => {
 		const { wallet } = createSignerWallet();
 		let tokenExchangeCount = 0;
 		let apiCount = 0;
-		const setuFetch = createSetuFetch({
+		const ottorouterFetch = createOttoRouterFetch({
 			wallet,
 			baseURL: 'https://setu.test',
 			fetch: async (input, init) => {
@@ -96,7 +96,7 @@ describe('bearer auth request flow', () => {
 			},
 		});
 
-		const response = await setuFetch('https://setu.test/v1/messages', {
+		const response = await ottorouterFetch('https://setu.test/v1/messages', {
 			method: 'POST',
 		});
 

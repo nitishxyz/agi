@@ -6,7 +6,7 @@ import type {
 import {
 	loadWallet,
 	ensureWallet,
-	getSetuBalance,
+	getOttoRouterBalance,
 	getWalletKeyPath,
 } from './wallet.ts';
 import {
@@ -25,8 +25,8 @@ function getPort(api: OpenClawPluginApi): number {
 }
 
 const plugin: OpenClawPluginDefinition = {
-	id: 'openclaw-setu',
-	name: 'Setu',
+	id: 'openclaw',
+	name: 'OttoRouter',
 	description: 'Pay for AI with Solana USDC — no API keys, just a wallet.',
 	version: '0.1.0',
 
@@ -47,7 +47,7 @@ const plugin: OpenClawPluginDefinition = {
 			api.config.models.providers = {};
 		}
 		const providerConfig = buildProviderConfig(port);
-		api.config.models.providers.setu = {
+		api.config.models.providers.ottorouter = {
 			baseUrl: providerConfig.baseUrl,
 			api: providerConfig.api,
 			apiKey: providerConfig.apiKey,
@@ -61,18 +61,18 @@ const plugin: OpenClawPluginDefinition = {
 		if (!defaults.model) defaults.model = {};
 		const model = defaults.model as Record<string, unknown>;
 		if (!model.primary) {
-			model.primary = 'setu/claude-sonnet-4-6';
+			model.primary = 'ottorouter/claude-sonnet-4-6';
 		}
 
 		api.registerProvider({
-			id: 'setu',
+			id: 'ottorouter',
 			label: 'Setu (Solana USDC)',
-			aliases: ['setu-solana'],
-			envVars: ['SETU_PRIVATE_KEY'],
+			aliases: ['ottorouter-solana'],
+			envVars: ['OTTOROUTER_PRIVATE_KEY'],
 			models: buildProviderConfig(port),
 			auth: [
 				{
-					id: 'setu-wallet',
+					id: 'ottorouter-wallet',
 					label: 'Solana Wallet',
 					hint: 'Generate or import a Solana wallet — pay per token with USDC',
 					kind: 'custom',
@@ -81,27 +81,29 @@ const plugin: OpenClawPluginDefinition = {
 
 						if (existing) {
 							ctx.prompter.note(
-								`Existing Setu wallet found: ${existing.publicKey}`,
+								`Existing OttoRouter wallet found: ${existing.publicKey}`,
 							);
 							return {
 								profiles: [
 									{
-										profileId: 'setu-wallet',
+										profileId: 'ottorouter-wallet',
 										credential: {
-											apiKey: 'setu-proxy-handles-auth',
+											apiKey: 'ottorouter-proxy-handles-auth',
 											type: 'wallet',
 											walletAddress: existing.publicKey,
 										},
 									},
 								],
 								configPatch: {
-									models: { providers: { setu: buildProviderConfig(port) } },
+									models: {
+										providers: { ottorouter: buildProviderConfig(port) },
+									},
 								},
-								defaultModel: `setu/claude-sonnet-4-6`,
+								defaultModel: `ottorouter/claude-sonnet-4-6`,
 								notes: [
 									`Wallet: ${existing.publicKey}`,
 									`Fund with USDC on Solana to start using.`,
-									`Run \`openclaw-setu start\` to start the proxy.`,
+									`Run \`openclaw start\` to start the proxy.`,
 								],
 							};
 						}
@@ -133,23 +135,25 @@ const plugin: OpenClawPluginDefinition = {
 						return {
 							profiles: [
 								{
-									profileId: 'setu-wallet',
+									profileId: 'ottorouter-wallet',
 									credential: {
-										apiKey: 'setu-proxy-handles-auth',
+										apiKey: 'ottorouter-proxy-handles-auth',
 										type: 'wallet',
 										walletAddress: finalWallet.publicKey,
 									},
 								},
 							],
 							configPatch: {
-								models: { providers: { setu: buildProviderConfig(port) } },
+								models: {
+									providers: { ottorouter: buildProviderConfig(port) },
+								},
 							},
-							defaultModel: `setu/claude-sonnet-4-6`,
+							defaultModel: `ottorouter/claude-sonnet-4-6`,
 							notes: [
 								`Wallet generated: ${finalWallet.publicKey}`,
 								`Key stored at: ${getWalletKeyPath()}`,
 								`Fund with USDC on Solana: ${finalWallet.publicKey}`,
-								`Run \`openclaw-setu start\` to start the proxy.`,
+								`Run \`openclaw start\` to start the proxy.`,
 							],
 						};
 					},
@@ -159,21 +163,27 @@ const plugin: OpenClawPluginDefinition = {
 
 		const walletCmd: OpenClawPluginCommandDefinition = {
 			name: 'wallet',
-			description: 'Show your Setu wallet address and balances',
+			description: 'Show your OttoRouter wallet address and balances',
 			requireAuth: true,
 			async handler() {
 				const wallet = loadWallet();
 				if (!wallet) {
-					return { text: 'No Setu wallet found. Run `openclaw-setu setup`.' };
+					return {
+						text: 'No OttoRouter wallet found. Run `openclaw setup`.',
+					};
 				}
 
-				const balances = await getSetuBalance(wallet.privateKey);
+				const balances = await getOttoRouterBalance(wallet.privateKey);
 				const lines = [`Wallet: ${wallet.publicKey}`];
 
-				if (balances.setu) {
-					lines.push(`Setu Balance: $${balances.setu.balance.toFixed(4)}`);
-					lines.push(`Total Spent: $${balances.setu.totalSpent.toFixed(4)}`);
-					lines.push(`Requests: ${balances.setu.requestCount}`);
+				if (balances.ottorouter) {
+					lines.push(
+						`OttoRouter Balance: $${balances.ottorouter.balance.toFixed(4)}`,
+					);
+					lines.push(
+						`Total Spent: $${balances.ottorouter.totalSpent.toFixed(4)}`,
+					);
+					lines.push(`Requests: ${balances.ottorouter.requestCount}`);
 				}
 				if (balances.wallet) {
 					lines.push(
@@ -188,8 +198,8 @@ const plugin: OpenClawPluginDefinition = {
 		api.registerCommand(walletCmd);
 
 		const statusCmd: OpenClawPluginCommandDefinition = {
-			name: 'setu-status',
-			description: 'Check Setu plugin configuration status',
+			name: 'ottorouter-status',
+			description: 'Check OttoRouter plugin configuration status',
 			async handler() {
 				const wallet = loadWallet();
 				const configured = isConfigured();
@@ -205,27 +215,31 @@ const plugin: OpenClawPluginDefinition = {
 		api.registerCommand(statusCmd);
 
 		api.registerService({
-			id: 'setu-proxy',
+			id: 'ottorouter-proxy',
 			async start() {
 				if (typeof globalThis.Bun === 'undefined') {
 					api.logger.info(
-						'Setu: Run `openclaw-setu start` to start the proxy (requires Bun).',
+						'OttoRouter: Run `openclaw start` to start the proxy (requires Bun).',
 					);
 					return;
 				}
 				const wallet = loadWallet();
 				if (!wallet) {
 					api.logger.warn(
-						'Setu: No wallet found. Run `openclaw-setu setup` first.',
+						'OttoRouter: No wallet found. Run `openclaw setup` first.',
 					);
 					return;
 				}
 				try {
 					const { createProxy } = await import('./proxy.ts');
 					createProxy({ port, verbose: false });
-					api.logger.info(`Setu proxy running on http://localhost:${port}`);
+					api.logger.info(
+						`OttoRouter proxy running on http://localhost:${port}`,
+					);
 				} catch (err) {
-					api.logger.error(`Setu proxy failed: ${(err as Error).message}`);
+					api.logger.error(
+						`OttoRouter proxy failed: ${(err as Error).message}`,
+					);
 				}
 			},
 		});

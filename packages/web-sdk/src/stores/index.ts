@@ -7,7 +7,7 @@ export * from './queueStore';
 export * from './researchStore';
 export * from './pendingResearchStore';
 export * from './toastStore';
-export * from './setuStore';
+export * from './ottorouterStore';
 export * from './settingsStore';
 export * from './toolApprovalStore';
 export * from './topupApprovalStore';

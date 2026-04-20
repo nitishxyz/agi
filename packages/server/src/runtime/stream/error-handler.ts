@@ -28,7 +28,7 @@ export function createErrorHandler(
 			| undefined;
 		const causeError = errObj?.cause as Record<string, unknown> | undefined;
 
-		// Check for SETU_FIAT_SELECTED code specifically (not string matching)
+		// Check for OTTOROUTER_FIAT_SELECTED code specifically (not string matching)
 		const errorCode =
 			(errObj?.code as string) ??
 			((errObj?.error as Record<string, unknown>)?.code as string) ??
@@ -72,7 +72,7 @@ export function createErrorHandler(
 			(causeError?.message as string) ??
 			'';
 
-		const isFiatSelected = errorCode === 'SETU_FIAT_SELECTED';
+		const isFiatSelected = errorCode === 'OTTOROUTER_FIAT_SELECTED';
 
 		// Handle fiat payment selected - this is not an error, just a signal to pause
 		if (isFiatSelected) {
@@ -140,7 +140,7 @@ export function createErrorHandler(
 
 			// Emit a special event so UI knows to show topup modal
 			publish({
-				type: 'setu.fiat.checkout_created',
+				type: 'ottorouter.fiat.checkout_created',
 				sessionId: opts.sessionId,
 				payload: {
 					messageId: opts.assistantMessageId,

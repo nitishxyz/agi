@@ -1,4 +1,7 @@
-import { setuCatalog, type SetuModelCatalogEntry } from '@ottocode/ai-sdk';
+import {
+	ottorouterCatalog,
+	type OttoRouterModelCatalogEntry,
+} from '@ottorouter/ai-sdk';
 import type {
 	ModelInfo,
 	ModelOwner,
@@ -8,7 +11,7 @@ import type {
 
 type CatalogMap = Partial<Record<ProviderId, ProviderCatalogEntry>>;
 
-const SETU_ID: ProviderId = 'setu';
+const OTTOROUTER_ID: ProviderId = 'ottorouter';
 
 const OWNER_NPM: Record<ModelOwner, string> = {
 	openai: '@ai-sdk/openai',
@@ -21,7 +24,7 @@ const OWNER_NPM: Record<ModelOwner, string> = {
 	minimax: '@ai-sdk/anthropic',
 };
 
-function convertSetuModel(m: SetuModelCatalogEntry): ModelInfo {
+function convertOttoRouterModel(m: OttoRouterModelCatalogEntry): ModelInfo {
 	const ownedBy = m.owned_by as ModelOwner;
 	return {
 		id: m.id,
@@ -52,12 +55,12 @@ function convertSetuModel(m: SetuModelCatalogEntry): ModelInfo {
 	};
 }
 
-function buildSetuEntry(): ProviderCatalogEntry | null {
-	const setuModels = setuCatalog.models.map(convertSetuModel);
+function buildOttoRouterEntry(): ProviderCatalogEntry | null {
+	const ottorouterModels = ottorouterCatalog.models.map(convertOttoRouterModel);
 
-	if (!setuModels.length) return null;
+	if (!ottorouterModels.length) return null;
 
-	setuModels.sort((a, b) => {
+	ottorouterModels.sort((a, b) => {
 		const ownerA = a.ownedBy ?? '';
 		const ownerB = b.ownedBy ?? '';
 		if (ownerA === ownerB) {
@@ -69,31 +72,31 @@ function buildSetuEntry(): ProviderCatalogEntry | null {
 	});
 
 	const defaultModelId = 'gpt-5-codex';
-	const defaultIdx = setuModels.findIndex((m) => m.id === defaultModelId);
+	const defaultIdx = ottorouterModels.findIndex((m) => m.id === defaultModelId);
 	if (defaultIdx > 0) {
-		const [picked] = setuModels.splice(defaultIdx, 1);
-		setuModels.unshift(picked);
+		const [picked] = ottorouterModels.splice(defaultIdx, 1);
+		ottorouterModels.unshift(picked);
 	}
 
 	return {
-		id: SETU_ID,
-		label: 'Setu',
-		env: ['SETU_PRIVATE_KEY'],
-		api: 'https://setu.ottocode.io/v1',
-		doc: 'https://setu.ottocode.io/docs',
-		models: setuModels,
+		id: OTTOROUTER_ID,
+		label: 'OttoRouter',
+		env: ['OTTOROUTER_PRIVATE_KEY'],
+		api: 'https://api.ottorouter.org/v1',
+		doc: 'https://ottorouter.org/docs',
+		models: ottorouterModels,
 	};
 }
 
 export function mergeManualCatalog(
 	base: CatalogMap,
 ): Record<ProviderId, ProviderCatalogEntry> {
-	const manualEntry = buildSetuEntry();
+	const manualEntry = buildOttoRouterEntry();
 	const merged: Record<ProviderId, ProviderCatalogEntry> = {
 		...(base as Record<ProviderId, ProviderCatalogEntry>),
 	};
 	if (manualEntry) {
-		merged[SETU_ID] = manualEntry;
+		merged[OTTOROUTER_ID] = manualEntry;
 	}
 	return merged;
 }

@@ -137,7 +137,7 @@ async function processAskRequest(
 				openrouter: { enabled: true },
 				opencode: { enabled: true },
 				copilot: { enabled: true },
-				setu: { enabled: true },
+				ottorouter: { enabled: true },
 				zai: { enabled: true },
 				'zai-coding': { enabled: true },
 				moonshot: { enabled: true },

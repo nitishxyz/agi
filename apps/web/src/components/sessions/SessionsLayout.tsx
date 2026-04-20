@@ -21,12 +21,12 @@ import { apiClient } from '@ottocode/web-sdk/lib';
 import {
 	useGitStatus,
 	useStageFiles,
+	useOttoRouterBalance,
 	useSetuPayments,
 	useUnstageFiles,
 	useRestoreFiles,
 	useDeleteFiles,
 	useSessions,
-	useSetuBalance,
 } from '@ottocode/web-sdk/hooks';
 
 interface SessionsLayoutProps {
@@ -52,7 +52,7 @@ export function SessionsLayout({ sessionId }: SessionsLayoutProps) {
 
 	useWorkingDirectory();
 	useSetuPayments(sessionId);
-	useSetuBalance(config?.defaults?.provider);
+	useOttoRouterBalance(config?.defaults?.provider);
 
 	const focusInput = useCallback(() => {
 		setTimeout(() => {

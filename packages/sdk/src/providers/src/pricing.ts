@@ -76,7 +76,7 @@ const pricingTable: Record<ProviderName, PricingEntry[]> = {
 	opencode: [
 		// Pricing from catalog entries; leave empty here
 	],
-	setu: [
+	ottorouter: [
 		// Pricing from catalog entries; leave empty here
 	],
 	zai: [

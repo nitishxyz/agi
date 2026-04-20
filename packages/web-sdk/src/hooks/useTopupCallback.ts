@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useToastStore, toast } from '../stores/toastStore';
-import { useSetuStore } from '../stores/setuStore';
+import { useOttoRouterStore } from '../stores/ottorouterStore';
 import { apiClient } from '../lib/api-client';
 
 const STORAGE_KEY = 'pendingPolarCheckout';
@@ -8,7 +8,7 @@ const STORAGE_KEY = 'pendingPolarCheckout';
 export function useTopupCallback() {
 	const hasHandled = useRef(false);
 	const loadingToastId = useRef<string | null>(null);
-	const setBalance = useSetuStore((s) => s.setBalance);
+	const setBalance = useOttoRouterStore((s) => s.setBalance);
 	const removeToast = useToastStore((s) => s.removeToast);
 
 	useEffect(() => {
@@ -53,7 +53,7 @@ export function useTopupCallback() {
 						localStorage.removeItem(STORAGE_KEY);
 						dismissLoading();
 
-						const balanceData = await apiClient.getSetuBalance();
+						const balanceData = await apiClient.getOttoRouterBalance();
 						if (balanceData?.balance !== undefined) {
 							setBalance(balanceData.balance);
 						}

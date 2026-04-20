@@ -3,7 +3,7 @@ import { Outlet, createRootRoute } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import {
 	OnboardingModal,
-	SetuTopupModal,
+	OttoRouterTopupModal,
 	useAuthStatus,
 } from '@ottocode/web-sdk';
 
@@ -22,7 +22,7 @@ function RootComponent() {
 		<>
 			<Outlet />
 			<OnboardingModal />
-			<SetuTopupModal />
+			<OttoRouterTopupModal />
 			{import.meta.env.DEV ? (
 				<TanStackRouterDevtools position="bottom-right" />
 			) : null}

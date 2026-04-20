@@ -10,7 +10,7 @@ export { registerScaffoldCommand } from './scaffold.ts';
 export { registerDoctorCommand } from './doctor.ts';
 export { registerDebugCommand } from './debug.ts';
 export { registerUpgradeCommand } from './upgrade.ts';
-export { registerSetuCommand } from './setu.ts';
+export { registerOttoRouterCommand } from './ottorouter.ts';
 export { registerShareCommand } from './share.ts';
 export { registerMCPCommand } from './mcp.ts';
 export { registerWebCommand } from './web.ts';

@@ -13,8 +13,8 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { ProviderLogo } from '../../common/ProviderLogo';
 import type { AuthStatus } from '../../../stores/onboardingStore';
-import { useSetuStore } from '../../../stores/setuStore';
-import { useSetuBalance } from '../../../hooks/useSetuBalance';
+import { useOttoRouterStore } from '../../../stores/ottorouterStore';
+import { useOttoRouterBalance } from '../../../hooks/useOttoRouterBalance';
 import { openUrl } from '../../../lib/open-url';
 
 interface ProviderSetupStepProps {
@@ -164,17 +164,17 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	const copilotCancelledRef = useRef(false);
 	const copilotPollFnRef = useRef(onPollCopilotDeviceFlow);
 	copilotPollFnRef.current = onPollCopilotDeviceFlow;
-	const balance = useSetuStore((s) => s.balance);
-	const usdcBalance = useSetuStore((s) => s.usdcBalance);
-	const payg = useSetuStore((s) => s.payg);
-	const subscription = useSetuStore((s) => s.subscription);
-	const isBalanceLoading = useSetuStore((s) => s.isLoading);
+	const balance = useOttoRouterStore((s) => s.balance);
+	const usdcBalance = useOttoRouterStore((s) => s.usdcBalance);
+	const payg = useOttoRouterStore((s) => s.payg);
+	const subscription = useOttoRouterStore((s) => s.subscription);
+	const isBalanceLoading = useOttoRouterStore((s) => s.isLoading);
 	const apiKeyInputRef = useRef<HTMLInputElement>(null);
 	const oauthCodeInputRef = useRef<HTMLInputElement>(null);
 	const importPrivateKeyRef = useRef<HTMLTextAreaElement>(null);
-	const isTopupModalOpen = useSetuStore((s) => s.isTopupModalOpen);
+	const isTopupModalOpen = useOttoRouterStore((s) => s.isTopupModalOpen);
 	const prevTopupModalOpen = useRef(false);
-	const { fetchBalance } = useSetuBalance('setu');
+	const { fetchBalance } = useOttoRouterBalance('ottorouter');
 	const effectivePayg = payg?.effectiveSpendableUsd ?? balance ?? 0;
 	const setuStatusLabel = subscription?.active
 		? `GO ${(subscription.creditsRemaining ?? 0).toFixed(1)} credits`
@@ -190,11 +190,11 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	}, [isTopupModalOpen, fetchBalance]);
 
 	useEffect(() => {
-		if (!authStatus.setu.configured && !isSettingUp) {
+		if (!authStatus.ottorouter.configured && !isSettingUp) {
 			setIsSettingUp(true);
 			onSetupWallet().finally(() => setIsSettingUp(false));
 		}
-	}, [authStatus.setu.configured, onSetupWallet, isSettingUp]);
+	}, [authStatus.ottorouter.configured, onSetupWallet, isSettingUp]);
 
 	useEffect(() => {
 		if (addingProvider && apiKeyInputRef.current) {
@@ -258,8 +258,8 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	}, [copilotPolling, copilotDevice]);
 
 	const handleCopy = async () => {
-		if (authStatus.setu.publicKey) {
-			await navigator.clipboard.writeText(authStatus.setu.publicKey);
+		if (authStatus.ottorouter.publicKey) {
+			await navigator.clipboard.writeText(authStatus.ottorouter.publicKey);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		}
@@ -487,10 +487,10 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	};
 
 	const configuredProviders = Object.entries(authStatus.providers).filter(
-		([id, info]) => info.configured && id !== 'setu',
+		([id, info]) => info.configured && id !== 'ottorouter',
 	);
 	const unconfiguredProviders = Object.entries(authStatus.providers).filter(
-		([id, info]) => !info.configured && id !== 'setu',
+		([id, info]) => !info.configured && id !== 'ottorouter',
 	);
 
 	return (
@@ -498,7 +498,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 			{!hideHeader && (
 				<div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border">
 					<div className="flex items-center gap-3">
-						<ProviderLogo provider="setu" size={24} />
+						<ProviderLogo provider="ottorouter" size={24} />
 						<span className="font-semibold text-foreground">otto</span>
 					</div>
 					{!manageMode && (
@@ -531,11 +531,12 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 						{/* Left Column - Wallet */}
 						<div>
 							<div className="bg-card rounded-2xl border border-border p-5">
-								{authStatus.setu.configured && authStatus.setu.publicKey ? (
+								{authStatus.ottorouter.configured &&
+								authStatus.ottorouter.publicKey ? (
 									<div className="flex flex-col h-full">
 										{/* Setu Default Provider Badge */}
 										<div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
-											<ProviderLogo provider="setu" size={16} />
+											<ProviderLogo provider="ottorouter" size={16} />
 											<span className="text-sm font-medium text-green-600 dark:text-green-400">
 												Setu
 											</span>
@@ -547,7 +548,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 										<div className="flex justify-center py-4 mt-4">
 											<div className="bg-white p-2 rounded-lg">
 												<QRCodeSVG
-													value={authStatus.setu.publicKey}
+													value={authStatus.ottorouter.publicKey}
 													size={140}
 													level="M"
 												/>
@@ -560,7 +561,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 												onClick={handleCopy}
 												className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-lg text-xs font-mono text-muted-foreground transition-colors"
 											>
-												{truncateAddress(authStatus.setu.publicKey)}
+												{truncateAddress(authStatus.ottorouter.publicKey)}
 												{copied ? (
 													<Check className="w-3.5 h-3.5 text-green-500" />
 												) : (
@@ -699,7 +700,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 														</button>
 													</div>
 												) : (
-													id !== 'setu' && (
+													id !== 'ottorouter' && (
 														<button
 															type="button"
 															onClick={() => handleRemoveProvider(id)}
@@ -850,7 +851,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 				<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
 					<div className="bg-background border border-border rounded-xl w-full max-w-lg mx-6 shadow-2xl">
 						<div className="flex items-center gap-3 p-6 border-b border-border">
-							<ProviderLogo provider="setu" size={24} />
+							<ProviderLogo provider="ottorouter" size={24} />
 							<h3 className="text-lg font-semibold">Import Setu Wallet</h3>
 						</div>
 						<div className="p-6">

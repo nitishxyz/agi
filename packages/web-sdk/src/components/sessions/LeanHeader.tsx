@@ -23,7 +23,7 @@ import { UsageRing } from '../common/UsageRing';
 import { UsageModal } from '../common/UsageModal';
 import { useProviderUsage } from '../../hooks/useProviderUsage';
 import { useAllModels } from '../../hooks/useConfig';
-import { useSetuBalance } from '../../hooks/useSetuBalance';
+import { useOttoRouterBalance } from '../../hooks/useOttoRouterBalance';
 import { useUsageStore } from '../../stores/usageStore';
 import { EditableTitle } from './EditableTitle';
 
@@ -100,9 +100,9 @@ export function LeanHeader({
 		session.provider,
 		providerAuthType,
 	);
-	const isSetu = session.provider === 'setu';
-	useSetuBalance(isSetu ? 'setu' : undefined);
-	const setuUsage = useUsageStore((s) => s.usage['setu']);
+	const isSetu = session.provider === 'ottorouter';
+	useOttoRouterBalance(isSetu ? 'ottorouter' : undefined);
+	const setuUsage = useUsageStore((s) => s.usage.ottorouter);
 
 	return (
 		<>
@@ -173,7 +173,7 @@ export function LeanHeader({
 						)}
 
 						{isSetu && setuUsage && (
-							<UsageRing usage={setuUsage} provider="setu" />
+							<UsageRing usage={setuUsage} provider="ottorouter" />
 						)}
 
 						<div className="flex items-center gap-3">

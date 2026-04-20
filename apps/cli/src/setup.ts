@@ -22,7 +22,7 @@ export async function runSetup(projectRoot?: string) {
 			{ value: 'google', label: 'Google (Gemini)' },
 			{ value: 'openrouter', label: 'OpenRouter' },
 			{ value: 'opencode', label: 'OpenCode' },
-			{ value: 'setu', label: 'Setu' },
+			{ value: 'ottorouter', label: 'OttoRouter' },
 			{ value: 'zai', label: 'Z.AI (GLM)' },
 			{ value: 'zai-coding', label: 'Z.AI Coding Plan' },
 			{ value: 'moonshot', label: 'Moonshot AI (Kimi)' },
@@ -41,7 +41,7 @@ export async function runSetup(projectRoot?: string) {
 		openrouter: { enabled: false },
 		opencode: { enabled: false },
 		copilot: { enabled: false },
-		setu: { enabled: false },
+		ottorouter: { enabled: false },
 		zai: { enabled: false },
 		'zai-coding': { enabled: false },
 		moonshot: { enabled: false },
@@ -63,8 +63,8 @@ export async function runSetup(projectRoot?: string) {
 							? 'OPENROUTER_API_KEY'
 							: p === 'opencode'
 								? 'OPENCODE_API_KEY'
-								: p === 'setu'
-									? 'SETU_PRIVATE_KEY'
+								: p === 'ottorouter'
+									? 'OTTOROUTER_PRIVATE_KEY'
 									: p === 'zai'
 										? 'ZAI_API_KEY'
 										: p === 'zai-coding'
@@ -128,8 +128,8 @@ export async function runSetup(projectRoot?: string) {
 			google: providers.google,
 			openrouter: providers.openrouter,
 			opencode: providers.opencode,
-			setu: providers.setu,
 			copilot: providers.copilot,
+			ottorouter: providers.ottorouter,
 			zai: providers.zai,
 			'zai-coding': providers['zai-coding'],
 			moonshot: providers.moonshot,

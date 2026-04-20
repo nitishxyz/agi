@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { logger } from '@ottocode/sdk';
+import { logger, setDebugEnabled, setTraceEnabled } from '@ottocode/sdk';
 import {
 	registerServeCommand,
 	registerAskCommand,
@@ -13,7 +13,7 @@ import {
 	registerDoctorCommand,
 	registerDebugCommand,
 	registerUpgradeCommand,
-	registerSetuCommand,
+	registerOttoRouterCommand,
 	registerShareCommand,
 	registerMCPCommand,
 	registerWebCommand,
@@ -62,7 +62,7 @@ export function createCli(version: string): Command {
 	registerDoctorCommand(program);
 	registerDebugCommand(program);
 	registerUpgradeCommand(program, version);
-	registerSetuCommand(program);
+	registerOttoRouterCommand(program);
 	registerShareCommand(program);
 	registerMCPCommand(program);
 	registerWebCommand(program, version);

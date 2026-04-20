@@ -19,7 +19,7 @@ const SetuBolt: React.FC<{ size: number; color: string }> = ({
 
 const PROVIDERS = ['Anthropic', 'OpenAI', 'Google', 'DeepSeek'];
 
-export const Setu: React.FC = () => {
+export const OttoRouter: React.FC = () => {
 	const frame = useCurrentFrame();
 	const { fps } = useVideoConfig();
 
@@ -270,7 +270,7 @@ export const Setu: React.FC = () => {
 						marginTop: 8,
 					}}
 				>
-					ottocode.io/setu
+					ottorouter.org
 				</div>
 			</div>
 		</AbsoluteFill>

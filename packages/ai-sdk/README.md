@@ -17,10 +17,10 @@ npm install @ottocode/ai-sdk ai
 ## Quick Start
 
 ```ts
-import { createSetu } from '@ottocode/ai-sdk';
+import { createOttoRouter } from '@ottocode/ai-sdk';
 import { generateText } from 'ai';
 
-const setu = createSetu({
+const setu = createOttoRouter({
   auth: { privateKey: process.env.SOLANA_PRIVATE_KEY! },
 });
 
@@ -68,12 +68,12 @@ const model = setu.provider('anthropic', 'anthropic-messages').model('claude-son
 ## Configuration
 
 ```ts
-const setu = createSetu({
+const setu = createOttoRouter({
   // Required: Solana wallet private key (base58)
   auth: { privateKey: '...' },
 
-  // Optional: Setu API base URL (default: https://api.setu.ottocode.io)
-  baseURL: 'https://api.setu.ottocode.io',
+  // Optional: Setu API base URL (default: https://api.ottorouter.org)
+  baseURL: 'https://api.ottorouter.org',
 
   // Optional: Solana RPC URL (default: https://api.mainnet-beta.solana.com)
   rpcURL: 'https://api.mainnet-beta.solana.com',
@@ -110,7 +110,7 @@ Monitor and control the payment lifecycle:
 Request authentication and payment signing are separate: bearer auth is used for normal Setu HTTP requests, while your wallet still signs the x402 payment transaction during topups.
 
 ```ts
-const setu = createSetu({
+const setu = createOttoRouter({
   auth: { privateKey: '...' },
   callbacks: {
     // Called when a 402 is received and payment is needed
@@ -150,7 +150,7 @@ const setu = createSetu({
 ## Payment Options
 
 ```ts
-const setu = createSetu({
+const setu = createOttoRouter({
   auth: { privateKey: '...' },
   payment: {
     // 'auto' (default) — pay automatically
@@ -177,16 +177,16 @@ By default, the SDK automatically injects `cache_control: { type: 'ephemeral' }`
 
 ```ts
 // Default: auto caching (1 system + 1 message breakpoint)
-createSetu({ auth });
+createOttoRouter({ auth });
 
 // Disable completely
-createSetu({ auth, cache: { anthropicCaching: false } });
+createOttoRouter({ auth, cache: { anthropicCaching: false } });
 
 // Manual: SDK won't inject cache_control — set it yourself in messages
-createSetu({ auth, cache: { anthropicCaching: { strategy: 'manual' } } });
+createOttoRouter({ auth, cache: { anthropicCaching: { strategy: 'manual' } } });
 
 // Custom breakpoint count and placement
-createSetu({
+createOttoRouter({
   auth,
   cache: {
     anthropicCaching: {
@@ -199,7 +199,7 @@ createSetu({
 });
 
 // Full custom transform
-createSetu({
+createOttoRouter({
   auth,
   cache: {
     anthropicCaching: {
@@ -227,7 +227,7 @@ createSetu({
 Provider-agnostic caching at the Setu proxy layer:
 
 ```ts
-createSetu({
+createOttoRouter({
   auth,
   cache: {
     promptCacheKey: 'my-session-123',
@@ -262,7 +262,7 @@ Register providers at init or runtime:
 
 ```ts
 // At init
-const setu = createSetu({
+const setu = createOttoRouter({
   auth,
   providers: [
     { id: 'my-provider', apiFormat: 'openai-chat', modelPrefix: 'myp-' },
@@ -298,7 +298,7 @@ Use the x402-aware fetch wrapper directly:
 ```ts
 const customFetch = setu.fetch();
 
-const response = await customFetch('https://api.setu.ottocode.io/v1/messages', {
+const response = await customFetch('https://api.ottorouter.org/v1/messages', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ model: 'claude-sonnet-4-20250514', messages: [...] }),
@@ -313,7 +313,7 @@ import {
   fetchWalletUsdcBalance,
   getPublicKeyFromPrivate,
   addAnthropicCacheControl,
-  createSetuFetch,
+  createOttoRouterFetch,
   createWalletContext,
 } from '@ottocode/ai-sdk';
 
@@ -327,13 +327,13 @@ const balance = await fetchBalance({ privateKey });
 const usdc = await fetchWalletUsdcBalance({ privateKey }, 'mainnet');
 
 // Create a standalone x402-aware fetch
-const setuFetch = createSetuFetch({
+const ottorouterFetch = createOttoRouterFetch({
   wallet: createWalletContext({ privateKey }),
-  baseURL: 'https://api.setu.ottocode.io',
+  baseURL: 'https://api.ottorouter.org',
 });
 ```
 
-`createWalletContext()` remains available for advanced usage. Its wallet headers are now intended for token exchange only; regular API traffic should go through `createSetu()`, `setu.fetch()`, `createSetuFetch()`, or `fetchBalance()` so bearer auth refresh is handled automatically.
+`createWalletContext()` remains available for advanced usage. Its wallet headers are now intended for token exchange only; regular API traffic should go through `createOttoRouter()`, `setu.fetch()`, `createOttoRouterFetch()`, or `fetchBalance()` so bearer auth refresh is handled automatically.
 
 ## How It Works
 

@@ -1,4 +1,4 @@
-name: Publish @ottocode/openclaw-setu
+name: Publish @ottorouter/openclaw
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: publish-openclaw-setu
+  group: publish-openclaw-ottorouter
   cancel-in-progress: false
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
         run: |
           if [ -f publish.env ]; then
             source publish.env
-            echo "publish=${PUBLISH_OPENCLAW_SETU:-false}" >> "$GITHUB_OUTPUT"
+            echo "publish=${PUBLISH_OPENCLAW_OTTOROUTER:-false}" >> "$GITHUB_OUTPUT"
           else
             echo "publish=false" >> "$GITHUB_OUTPUT"
           fi
@@ -45,7 +45,7 @@ jobs:
 
       - name: Type check
         if: steps.check.outputs.publish == 'true'
-        run: bunx tsc --noEmit -p packages/openclaw-setu/tsconfig.json
+        run: bunx tsc --noEmit -p packages/openclaw-ottorouter/tsconfig.json
 
       - name: Configure npm auth
         if: steps.check.outputs.publish == 'true'
@@ -68,8 +68,8 @@ jobs:
         if: steps.check.outputs.publish == 'true'
         id: version
         run: |
-          CURRENT=$(jq -r '.version' packages/openclaw-setu/package.json)
-          PUBLISHED=$(npm view @ottocode/openclaw-setu version 2>/dev/null || echo "0.0.0")
+          CURRENT=$(jq -r '.version' packages/openclaw-ottorouter/package.json)
+          PUBLISHED=$(npm view @ottorouter/openclaw version 2>/dev/null || echo "0.0.0")
           echo "current=${CURRENT}" >> "$GITHUB_OUTPUT"
           echo "published=${PUBLISHED}" >> "$GITHUB_OUTPUT"
           if [ "$CURRENT" = "$PUBLISHED" ]; then
@@ -86,14 +86,14 @@ jobs:
       - name: Bump version
         if: steps.check.outputs.publish == 'true' && steps.version.outputs.bump == 'true'
         run: |
-          cd packages/openclaw-setu
+          cd packages/openclaw-ottorouter
           jq --arg v "${{ steps.version.outputs.next }}" '.version = $v' package.json > package.json.tmp
           mv package.json.tmp package.json
 
       - name: Publish to npm
         if: steps.check.outputs.publish == 'true'
         run: |
-          cd packages/openclaw-setu
+          cd packages/openclaw-ottorouter
           npm publish --access public
 
       - name: Reset publish flag and commit
@@ -101,10 +101,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          sed -i 's/PUBLISH_OPENCLAW_SETU=true/PUBLISH_OPENCLAW_SETU=false/' publish.env
-          git add publish.env packages/openclaw-setu/package.json
+          sed -i 's/PUBLISH_OPENCLAW_OTTOROUTER=true/PUBLISH_OPENCLAW_OTTOROUTER=false/' publish.env
+          git add publish.env packages/openclaw-ottorouter/package.json
           NEXT="${{ steps.version.outputs.next }}"
-          git commit -m "chore: release @ottocode/openclaw-setu v${NEXT}" -m "[skip ci]"
+          git commit -m "chore: release @ottorouter/openclaw v${NEXT}" -m "[skip ci]"
           for i in 1 2 3 4 5; do
             git pull --rebase origin main && git push && break
             echo "Push failed (attempt $i), retrying in 5s..."

@@ -7,7 +7,7 @@ import {
 	RefreshCw,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { useSetuStore } from '../../stores/setuStore';
+import { useOttoRouterStore } from '../../stores/ottorouterStore';
 import { apiClient } from '../../lib/api-client';
 import { toast } from '../../stores/toastStore';
 import { StatusIndicator } from '../common/StatusIndicator';
@@ -110,13 +110,13 @@ function RazorpayIcon({ className = 'w-5 h-5' }: { className?: string }) {
 	);
 }
 
-export const SetuTopupModal = memo(function SetuTopupModal() {
-	const isOpen = useSetuStore((s) => s.isTopupModalOpen);
-	const closeModal = useSetuStore((s) => s.closeTopupModal);
-	const balance = useSetuStore((s) => s.balance);
-	const setBalance = useSetuStore((s) => s.setBalance);
-	const usdcBalance = useSetuStore((s) => s.usdcBalance);
-	const subscription = useSetuStore((s) => s.subscription);
+export const OttoRouterTopupModal = memo(function OttoRouterTopupModal() {
+	const isOpen = useOttoRouterStore((s) => s.isTopupModalOpen);
+	const closeModal = useOttoRouterStore((s) => s.closeTopupModal);
+	const balance = useOttoRouterStore((s) => s.balance);
+	const setBalance = useOttoRouterStore((s) => s.setBalance);
+	const usdcBalance = useOttoRouterStore((s) => s.usdcBalance);
+	const subscription = useOttoRouterStore((s) => s.subscription);
 
 	const [view, setView] = useState<ModalView>('amount');
 	const [gateway, setGateway] = useState<PaymentGateway>('polar');
@@ -211,7 +211,7 @@ export const SetuTopupModal = memo(function SetuTopupModal() {
 						setConfirmedAmount(status.amountUsd);
 						localStorage.removeItem('pendingPolarCheckout');
 
-						const balanceData = await apiClient.getSetuBalance();
+						const balanceData = await apiClient.getOttoRouterBalance();
 						if (balanceData?.balance !== undefined) {
 							setBalance(balanceData.balance);
 						}
@@ -318,7 +318,7 @@ export const SetuTopupModal = memo(function SetuTopupModal() {
 
 						if (result.success) {
 							setConfirmedAmount(result.credited);
-							const balanceData = await apiClient.getSetuBalance();
+							const balanceData = await apiClient.getOttoRouterBalance();
 							if (balanceData?.balance !== undefined) {
 								setBalance(balanceData.balance);
 							}
@@ -379,7 +379,7 @@ export const SetuTopupModal = memo(function SetuTopupModal() {
 				setConfirmedAmount(status.amountUsd);
 				localStorage.removeItem('pendingPolarCheckout');
 
-				const balanceData = await apiClient.getSetuBalance();
+				const balanceData = await apiClient.getOttoRouterBalance();
 				if (balanceData?.balance !== undefined) {
 					setBalance(balanceData.balance);
 				}
@@ -388,7 +388,7 @@ export const SetuTopupModal = memo(function SetuTopupModal() {
 				toast.error('Payment not confirmed yet. Keep waiting or try again.');
 			}
 		} catch (err) {
-			console.error('[SetuTopupModal] Check failed:', err);
+			console.error('[OttoRouterTopupModal] Check failed:', err);
 			toast.error('Failed to check payment status');
 		} finally {
 			setIsManualChecking(false);

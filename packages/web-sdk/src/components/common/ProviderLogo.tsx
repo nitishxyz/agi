@@ -25,7 +25,7 @@ const providerLogos: Record<string, string> = {
 	xai: xaiLogo,
 	zai: zaiLogo,
 	'zai-coding': zaiLogo,
-	setu: setuLogo,
+	ottorouter: setuLogo,
 	minimax: minimaxLogo,
 	opencode: opencodeLogo,
 	copilot: copilotLogo,

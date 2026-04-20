@@ -13,12 +13,12 @@ import type { ModelApi } from './types.ts';
 const OPENCLAW_DIR = join(homedir(), '.openclaw');
 const OPENCLAW_CONFIG_PATH = join(OPENCLAW_DIR, 'openclaw.json');
 
-const PROVIDER_KEY = 'setu';
+const PROVIDER_KEY = 'ottorouter';
 const DEFAULT_PROXY_PORT = 8403;
-const DEFAULT_BASE_URL = 'https://api.setu.ottocode.io';
-const SETU_PROXY_PORT_PATTERN = /[:/]8403/;
+const DEFAULT_BASE_URL = 'https://api.ottorouter.org';
+const OTTOROUTER_PROXY_PORT_PATTERN = /[:/]8403/;
 
-export interface SetuModelConfig {
+export interface OttoRouterModelConfig {
 	id: string;
 	name: string;
 	api?: ModelApi;
@@ -28,15 +28,15 @@ export interface SetuModelConfig {
 	maxTokens?: number;
 }
 
-export interface SetuProviderConfig {
+export interface OttoRouterProviderConfig {
 	baseUrl: string;
 	apiKey: string;
 	api: ModelApi;
 	authHeader: boolean;
-	models: SetuModelConfig[];
+	models: OttoRouterModelConfig[];
 }
 
-const DUMMY_API_KEY = 'setu-proxy-handles-auth';
+const DUMMY_API_KEY = 'ottorouter-proxy-handles-auth';
 
 const MODEL_ALIASES: Array<{ id: string; alias: string }> = [
 	{ id: 'claude-sonnet-4-6', alias: 'sonnet-4.6' },
@@ -83,7 +83,7 @@ interface CatalogModel {
 }
 
 function displayName(id: string, owner: string): string {
-	return `${id} (${owner}, via Setu)`;
+	return `${id} (${owner}, via OttoRouter)`;
 }
 
 function apiForOwner(owner: string): ModelApi {
@@ -101,7 +101,7 @@ function apiForOwner(owner: string): ModelApi {
 
 export async function fetchModelsFromCatalog(
 	baseURL: string = DEFAULT_BASE_URL,
-): Promise<SetuModelConfig[]> {
+): Promise<OttoRouterModelConfig[]> {
 	try {
 		const resp = await fetch(`${baseURL}/v1/models`);
 		if (!resp.ok) return getDefaultModels();
@@ -120,11 +120,11 @@ export async function fetchModelsFromCatalog(
 	}
 }
 
-export function getDefaultModels(): SetuModelConfig[] {
+export function getDefaultModels(): OttoRouterModelConfig[] {
 	return [
 		{
 			id: 'claude-sonnet-4-6',
-			name: 'Claude Sonnet 4.6 (anthropic, via Setu)',
+			name: 'Claude Sonnet 4.6 (anthropic, via OttoRouter)',
 			api: 'anthropic-messages',
 			reasoning: false,
 			input: ['text', 'image'],
@@ -133,7 +133,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'claude-sonnet-4-5',
-			name: 'Claude Sonnet 4.5 (anthropic, via Setu)',
+			name: 'Claude Sonnet 4.5 (anthropic, via OttoRouter)',
 			api: 'anthropic-messages',
 			reasoning: false,
 			input: ['text', 'image'],
@@ -142,7 +142,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'claude-opus-4-7',
-			name: 'Claude Opus 4.7 (anthropic, via Setu)',
+			name: 'Claude Opus 4.7 (anthropic, via OttoRouter)',
 			api: 'anthropic-messages',
 			reasoning: true,
 			input: ['text', 'image'],
@@ -151,7 +151,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'claude-opus-4-6',
-			name: 'Claude Opus 4.6 (anthropic, via Setu)',
+			name: 'Claude Opus 4.6 (anthropic, via OttoRouter)',
 			api: 'anthropic-messages',
 			reasoning: false,
 			input: ['text', 'image'],
@@ -160,7 +160,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'claude-3-5-haiku-20241022',
-			name: 'Claude 3.5 Haiku (anthropic, via Setu)',
+			name: 'Claude 3.5 Haiku (anthropic, via OttoRouter)',
 			api: 'anthropic-messages',
 			reasoning: false,
 			input: ['text', 'image'],
@@ -169,7 +169,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'gpt-5.1-codex',
-			name: 'GPT-5.1 Codex (openai, via Setu)',
+			name: 'GPT-5.1 Codex (openai, via OttoRouter)',
 			api: 'openai-responses',
 			reasoning: false,
 			input: ['text', 'image'],
@@ -178,7 +178,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'gpt-5',
-			name: 'GPT-5 (openai, via Setu)',
+			name: 'GPT-5 (openai, via OttoRouter)',
 			api: 'openai-responses',
 			reasoning: false,
 			input: ['text', 'image'],
@@ -187,7 +187,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'gpt-5-mini',
-			name: 'GPT-5 Mini (openai, via Setu)',
+			name: 'GPT-5 Mini (openai, via OttoRouter)',
 			api: 'openai-responses',
 			reasoning: false,
 			input: ['text', 'image'],
@@ -196,7 +196,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'codex-mini-latest',
-			name: 'Codex Mini (openai, via Setu)',
+			name: 'Codex Mini (openai, via OttoRouter)',
 			api: 'openai-responses',
 			reasoning: false,
 			input: ['text'],
@@ -205,7 +205,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'gemini-3-pro-preview',
-			name: 'Gemini 3 Pro (google, via Setu)',
+			name: 'Gemini 3 Pro (google, via OttoRouter)',
 			api: 'openai-completions',
 			reasoning: false,
 			input: ['text', 'image'],
@@ -214,7 +214,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'gemini-3-flash-preview',
-			name: 'Gemini 3 Flash (google, via Setu)',
+			name: 'Gemini 3 Flash (google, via OttoRouter)',
 			api: 'openai-completions',
 			reasoning: false,
 			input: ['text', 'image'],
@@ -223,7 +223,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'kimi-k2.5',
-			name: 'Kimi K2.5 (moonshot, via Setu)',
+			name: 'Kimi K2.5 (moonshot, via OttoRouter)',
 			api: 'openai-completions',
 			reasoning: false,
 			input: ['text'],
@@ -232,7 +232,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'glm-5',
-			name: 'GLM-5 (zai, via Setu)',
+			name: 'GLM-5 (zai, via OttoRouter)',
 			api: 'openai-completions',
 			reasoning: false,
 			input: ['text'],
@@ -241,7 +241,7 @@ export function getDefaultModels(): SetuModelConfig[] {
 		},
 		{
 			id: 'MiniMax-M2.5',
-			name: 'MiniMax M2.5 (minimax, via Setu)',
+			name: 'MiniMax M2.5 (minimax, via OttoRouter)',
 			api: 'anthropic-messages',
 			reasoning: false,
 			input: ['text'],
@@ -253,10 +253,10 @@ export function getDefaultModels(): SetuModelConfig[] {
 
 export function buildProviderConfig(
 	port: number = DEFAULT_PROXY_PORT,
-): SetuProviderConfig {
+): OttoRouterProviderConfig {
 	return {
 		baseUrl: `http://localhost:${port}/v1`,
-		apiKey: 'setu-proxy-handles-auth',
+		apiKey: 'ottorouter-proxy-handles-auth',
 		api: 'openai-completions',
 		authHeader: false,
 		models: getDefaultModels(),
@@ -266,11 +266,11 @@ export function buildProviderConfig(
 export async function buildProviderConfigWithCatalog(
 	port: number = DEFAULT_PROXY_PORT,
 	baseURL: string = DEFAULT_BASE_URL,
-): Promise<SetuProviderConfig> {
+): Promise<OttoRouterProviderConfig> {
 	const models = await fetchModelsFromCatalog(baseURL);
 	return {
 		baseUrl: `http://localhost:${port}/v1`,
-		apiKey: 'setu-proxy-handles-auth',
+		apiKey: 'ottorouter-proxy-handles-auth',
 		api: 'openai-completions',
 		authHeader: false,
 		models,
@@ -288,9 +288,10 @@ function removeConflictingCustomProviders(
 		const p = providers[key] as Record<string, unknown> | undefined;
 		if (!p?.baseUrl) continue;
 		const baseUrl = String(p.baseUrl);
-		const pointsToSetuProxy =
-			baseUrl.includes(`:${port}`) || SETU_PROXY_PORT_PATTERN.test(baseUrl);
-		if (pointsToSetuProxy) {
+		const pointsToOttoRouterProxy =
+			baseUrl.includes(`:${port}`) ||
+			OTTOROUTER_PROXY_PORT_PATTERN.test(baseUrl);
+		if (pointsToOttoRouterProxy) {
 			delete providers[key];
 			removed.push(key);
 		}
@@ -311,7 +312,7 @@ function migrateDefaultModel(
 	for (const oldKey of removedKeys) {
 		if (primary.startsWith(`${oldKey}/`)) {
 			const modelId = primary.slice(oldKey.length + 1);
-			model.primary = `setu/${modelId}`;
+			model.primary = `ottorouter/${modelId}`;
 			break;
 		}
 	}
@@ -395,7 +396,7 @@ export function injectConfig(port: number = DEFAULT_PROXY_PORT): void {
 	const model = defaults.model as Record<string, unknown>;
 
 	if (!model.primary) {
-		model.primary = 'setu/claude-sonnet-4-6';
+		model.primary = 'ottorouter/claude-sonnet-4-6';
 		needsWrite = true;
 	}
 
@@ -405,7 +406,7 @@ export function injectConfig(port: number = DEFAULT_PROXY_PORT): void {
 	}
 	const allowlist = defaults.models as Record<string, unknown>;
 	for (const m of MODEL_ALIASES) {
-		const fullId = `setu/${m.id}`;
+		const fullId = `ottorouter/${m.id}`;
 		const entry = allowlist[fullId] as Record<string, unknown> | undefined;
 		if (!entry) {
 			allowlist[fullId] = { alias: m.alias };
@@ -472,12 +473,12 @@ export function injectAuthProfile(): void {
 			}
 		}
 
-		const profileKey = 'setu:default';
+		const profileKey = 'ottorouter:default';
 		if (store.profiles[profileKey]) continue;
 
 		store.profiles[profileKey] = {
 			type: 'api_key',
-			provider: 'setu',
+			provider: 'ottorouter',
 			key: DUMMY_API_KEY,
 		};
 

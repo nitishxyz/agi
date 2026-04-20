@@ -71,7 +71,7 @@ export function resolveUsageProvider(
 	model: string,
 ): ProviderId {
 	if (
-		provider !== 'setu' &&
+		provider !== 'ottorouter' &&
 		provider !== 'openrouter' &&
 		provider !== 'opencode'
 	) {

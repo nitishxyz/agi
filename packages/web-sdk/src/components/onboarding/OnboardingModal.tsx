@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { ProviderSetupStep } from './steps/ProviderSetupStep';
 import { DefaultsStep } from './steps/DefaultsStep';
 import { useOnboardingStore } from '../../stores/onboardingStore';
-import { useSetuStore } from '../../stores/setuStore';
+import { useOttoRouterStore } from '../../stores/ottorouterStore';
 import { useAuthStatus } from '../../hooks/useAuthStatus';
 
 interface OnboardingModalProps {
@@ -19,7 +19,7 @@ export const OnboardingModal = memo(function OnboardingModal({
 	const nextStep = useOnboardingStore((s) => s.nextStep);
 	const prevStep = useOnboardingStore((s) => s.prevStep);
 	const reset = useOnboardingStore((s) => s.reset);
-	const openTopupModal = useSetuStore((s) => s.openTopupModal);
+	const openTopupModal = useOttoRouterStore((s) => s.openTopupModal);
 
 	const {
 		setupWallet,

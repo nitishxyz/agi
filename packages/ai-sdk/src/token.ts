@@ -94,7 +94,7 @@ async function exchangeWalletToken(
 	if (!response.ok) {
 		const body = await response.text().catch(() => '');
 		throw new Error(
-			`Setu: wallet token exchange failed (${response.status})${body ? `: ${body}` : ''}`,
+			`OttoRouter: wallet token exchange failed (${response.status})${body ? `: ${body}` : ''}`,
 		);
 	}
 
@@ -102,7 +102,7 @@ async function exchangeWalletToken(
 	const token = payload.accessToken ?? payload.access_token ?? payload.token;
 	if (!token) {
 		throw new Error(
-			'Setu: wallet token exchange response missing access token.',
+			'OttoRouter: wallet token exchange response missing access token.',
 		);
 	}
 

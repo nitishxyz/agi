@@ -1,32 +1,35 @@
 import type {
-	SetuConfig,
+	OttoRouterConfig,
 	ProviderId,
 	ProviderApiFormat,
 	FetchFunction,
 	BalanceResponse,
 	WalletUsdcBalance,
-	SetuAuth,
+	OttoRouterAuth,
 } from './types.ts';
 import { createWalletContext } from './auth.ts';
 import type { WalletContext } from './auth.ts';
-import { createSetuFetch } from './fetch.ts';
+import { createOttoRouterFetch } from './fetch.ts';
 import { ProviderRegistry } from './providers/registry.ts';
 import { createModel } from './providers/factory.ts';
 import { fetchBalance, fetchWalletUsdcBalance } from './balance.ts';
 
-const DEFAULT_BASE_URL = 'https://api.setu.ottocode.io';
+const DEFAULT_BASE_URL = 'https://api.ottorouter.org';
 
 function trimTrailingSlash(url: string) {
 	return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
-export interface SetuProvider {
+export interface OttoRouterProvider {
 	model(modelId: string): ReturnType<typeof createModel>;
 }
 
-export interface SetuInstance {
+export interface OttoRouterInstance {
 	model(modelId: string): ReturnType<typeof createModel>;
-	provider(providerId: ProviderId, apiFormat?: ProviderApiFormat): SetuProvider;
+	provider(
+		providerId: ProviderId,
+		apiFormat?: ProviderApiFormat,
+	): OttoRouterProvider;
 	fetch(): FetchFunction;
 	balance(): Promise<BalanceResponse | null>;
 	walletBalance(
@@ -36,30 +39,30 @@ export interface SetuInstance {
 	registry: ProviderRegistry;
 }
 
-function resolveAuth(auth: SetuAuth): {
-	auth: SetuAuth;
+function resolveAuth(auth: OttoRouterAuth): {
+	auth: OttoRouterAuth;
 	wallet: WalletContext;
 } {
 	if (auth.signer) {
 		return { auth, wallet: createWalletContext(auth) };
 	}
 
-	const privateKey = auth.privateKey || process.env.SETU_PRIVATE_KEY;
+	const privateKey = auth.privateKey || process.env.OTTOROUTER_PRIVATE_KEY;
 	if (!privateKey) {
 		throw new Error(
-			'Setu: either privateKey (or SETU_PRIVATE_KEY env) or signer is required.',
+			'OttoRouter: either privateKey (or OTTOROUTER_PRIVATE_KEY env) or signer is required.',
 		);
 	}
 	const resolvedAuth = { ...auth, privateKey };
 	return { auth: resolvedAuth, wallet: createWalletContext(resolvedAuth) };
 }
 
-export function createSetu(config: SetuConfig): SetuInstance {
+export function createOttoRouter(config: OttoRouterConfig): OttoRouterInstance {
 	const baseURL = trimTrailingSlash(config.baseURL ?? DEFAULT_BASE_URL);
 	const { auth: resolvedAuth, wallet } = resolveAuth(config.auth);
 	const registry = new ProviderRegistry(config.providers, config.modelMap);
 
-	const setuFetch = createSetuFetch({
+	const ottorouterFetch = createOttoRouterFetch({
 		wallet,
 		baseURL,
 		fetch: config.fetch,
@@ -76,7 +79,7 @@ export function createSetu(config: SetuConfig): SetuInstance {
 			const resolved = registry.resolve(modelId);
 			if (!resolved) {
 				throw new Error(
-					`Setu: unknown model "${modelId}". Register it via providers or modelMap config.`,
+					`OttoRouter: unknown model "${modelId}". Register it via providers or modelMap config.`,
 				);
 			}
 			return createModel(
@@ -84,7 +87,7 @@ export function createSetu(config: SetuConfig): SetuInstance {
 				resolved.apiFormat,
 				resolved.providerId,
 				modelBaseURL,
-				setuFetch,
+				ottorouterFetch,
 				config.middleware,
 			);
 		},
@@ -92,7 +95,7 @@ export function createSetu(config: SetuConfig): SetuInstance {
 		provider(
 			providerId: ProviderId,
 			apiFormat?: ProviderApiFormat,
-		): SetuProvider {
+		): OttoRouterProvider {
 			return {
 				model(modelId: string) {
 					const resolved = registry.resolve(modelId);
@@ -102,7 +105,7 @@ export function createSetu(config: SetuConfig): SetuInstance {
 						format,
 						providerId,
 						modelBaseURL,
-						setuFetch,
+						ottorouterFetch,
 						config.middleware,
 					);
 				},
@@ -110,7 +113,7 @@ export function createSetu(config: SetuConfig): SetuInstance {
 		},
 
 		fetch(): FetchFunction {
-			return setuFetch;
+			return ottorouterFetch;
 		},
 
 		async balance() {
@@ -124,7 +127,7 @@ export function createSetu(config: SetuConfig): SetuInstance {
 			}
 			if (resolvedAuth.privateKey) {
 				return fetchWalletUsdcBalance(
-					resolvedAuth as Required<Pick<SetuAuth, 'privateKey'>>,
+					resolvedAuth as Required<Pick<OttoRouterAuth, 'privateKey'>>,
 					network,
 				);
 			}

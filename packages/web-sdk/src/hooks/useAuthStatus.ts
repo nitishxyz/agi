@@ -46,7 +46,7 @@ export function useAuthStatus() {
 			const needsOnboarding =
 				!status.onboardingComplete ||
 				!hasAnyProvider ||
-				!status.setu.configured;
+				!status.ottorouter.configured;
 			if (needsOnboarding) {
 				setOpen(true);
 			}
@@ -58,7 +58,7 @@ export function useAuthStatus() {
 		setLoading(true);
 		setError(null);
 		try {
-			const result = await apiClient.setupSetuWallet();
+			const result = await apiClient.setupOttoRouterWallet();
 			await fetchAuthStatus();
 			return result;
 		} catch (err) {
@@ -75,7 +75,7 @@ export function useAuthStatus() {
 			setLoading(true);
 			setError(null);
 			try {
-				const result = await apiClient.importSetuWallet(privateKey);
+				const result = await apiClient.importOttoRouterWallet(privateKey);
 				await fetchAuthStatus();
 				return result;
 			} catch (err) {

@@ -3,7 +3,10 @@ import { getAnthropicInstance } from './anthropic.ts';
 import { resolveOpenAIModel } from './openai.ts';
 import { resolveGoogleModel } from './google.ts';
 import { resolveOpenRouterModel } from './openrouter.ts';
-import { resolveSetuModel, type ResolveSetuModelOptions } from './setu.ts';
+import {
+	resolveOttoRouterModel,
+	type ResolveOttoRouterModelOptions,
+} from './ottorouter.ts';
 import { getZaiInstance, getZaiCodingInstance } from './zai.ts';
 import { resolveOpencodeModel } from './opencode.ts';
 import { getMoonshotInstance } from './moonshot.ts';
@@ -20,8 +23,8 @@ export async function resolveModel(
 		systemPrompt?: string;
 		sessionId?: string;
 		messageId?: string;
-		topupApprovalMode?: ResolveSetuModelOptions['topupApprovalMode'];
-		autoPayThresholdUsd?: ResolveSetuModelOptions['autoPayThresholdUsd'];
+		topupApprovalMode?: ResolveOttoRouterModelOptions['topupApprovalMode'];
+		autoPayThresholdUsd?: ResolveOttoRouterModelOptions['autoPayThresholdUsd'];
 	},
 ) {
 	if (provider === 'openai') {
@@ -43,8 +46,8 @@ export async function resolveModel(
 	if (provider === 'copilot') {
 		return resolveCopilotModel(model, cfg);
 	}
-	if (provider === 'setu') {
-		return await resolveSetuModel(model, options?.sessionId, {
+	if (provider === 'ottorouter') {
+		return await resolveOttoRouterModel(model, options?.sessionId, {
 			messageId: options?.messageId,
 			topupApprovalMode: options?.topupApprovalMode,
 			autoPayThresholdUsd: options?.autoPayThresholdUsd,

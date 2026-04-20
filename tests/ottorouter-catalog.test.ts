@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'bun:test';
 import { catalog, providerIds } from '@ottocode/sdk';
 
-describe('setu catalog entry', () => {
-	it('adds setu to providerIds', () => {
-		expect(providerIds).toContain('setu');
+describe('ottorouter catalog entry', () => {
+	it('adds ottorouter to providerIds', () => {
+		expect(providerIds).toContain('ottorouter');
 	});
 
-	it('sources models from setuCatalog with gpt-5-codex default', () => {
-		const entry = catalog.setu;
+	it('sources models from ottorouterCatalog with gpt-5-codex default', () => {
+		const entry = catalog.ottorouter;
 		expect(entry).toBeDefined();
 		expect(entry?.models.length).toBeGreaterThan(0);
 		expect(entry?.models[0]?.id).toBe('gpt-5-codex');
@@ -27,15 +27,15 @@ describe('setu catalog entry', () => {
 		);
 	});
 
-	it('assigns the OpenRouter SDK binding to OpenRouter-backed Setu models', () => {
-		const entry = catalog.setu;
+	it('assigns the OpenRouter SDK binding to OpenRouter-backed OttoRouter models', () => {
+		const entry = catalog.ottorouter;
 		const model = entry?.models.find((m) => m.id === 'healer-alpha');
 		expect(model?.ownedBy).toBe('openrouter');
 		expect(model?.provider?.npm).toBe('@openrouter/ai-sdk-provider');
 	});
 
-	it('has cost and limit from setu API', () => {
-		const entry = catalog.setu;
+	it('has cost and limit from ottorouter API', () => {
+		const entry = catalog.ottorouter;
 		const model = entry?.models.find((m) => m.id === 'gpt-5-codex');
 		expect(model?.cost?.input).toBeGreaterThan(0);
 		expect(model?.cost?.output).toBeGreaterThan(0);
@@ -44,7 +44,7 @@ describe('setu catalog entry', () => {
 	});
 
 	it('every model has ownedBy set', () => {
-		const entry = catalog.setu;
+		const entry = catalog.ottorouter;
 		for (const model of entry?.models ?? []) {
 			expect(model.ownedBy).toBeDefined();
 		}

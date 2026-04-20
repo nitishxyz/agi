@@ -15,7 +15,7 @@ export const authPaths = {
 								type: 'object',
 								properties: {
 									onboardingComplete: { type: 'boolean' },
-									setu: {
+									ottorouter: {
 										type: 'object',
 										properties: {
 											configured: { type: 'boolean' },
@@ -65,7 +65,7 @@ export const authPaths = {
 										},
 									},
 								},
-								required: ['onboardingComplete', 'setu', 'providers'],
+								required: ['onboardingComplete', 'ottorouter', 'providers'],
 							},
 						},
 					},
@@ -73,11 +73,11 @@ export const authPaths = {
 			},
 		},
 	},
-	'/v1/auth/setu/setup': {
+	'/v1/auth/ottorouter/setup': {
 		post: {
 			tags: ['auth'],
-			operationId: 'setupSetuWallet',
-			summary: 'Setup or ensure Setu wallet',
+			operationId: 'setupOttoRouterWallet',
+			summary: 'Setup or ensure OttoRouter wallet',
 			responses: {
 				200: {
 					description: 'OK',
@@ -98,11 +98,11 @@ export const authPaths = {
 			},
 		},
 	},
-	'/v1/auth/setu/import': {
+	'/v1/auth/ottorouter/import': {
 		post: {
 			tags: ['auth'],
-			operationId: 'importSetuWallet',
-			summary: 'Import Setu wallet from private key',
+			operationId: 'importOttoRouterWallet',
+			summary: 'Import OttoRouter wallet from private key',
 			requestBody: {
 				required: true,
 				content: {
@@ -137,11 +137,11 @@ export const authPaths = {
 			},
 		},
 	},
-	'/v1/auth/setu/export': {
+	'/v1/auth/ottorouter/export': {
 		get: {
 			tags: ['auth'],
-			operationId: 'exportSetuWallet',
-			summary: 'Export Setu wallet private key',
+			operationId: 'exportOttoRouterWallet',
+			summary: 'Export OttoRouter wallet private key',
 			responses: {
 				200: {
 					description: 'OK',

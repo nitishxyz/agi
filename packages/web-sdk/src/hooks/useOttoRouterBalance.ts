@@ -1,34 +1,34 @@
 import { useEffect, useCallback } from 'react';
 import { apiClient } from '../lib/api-client';
-import { useSetuStore } from '../stores/setuStore';
+import { useOttoRouterStore } from '../stores/ottorouterStore';
 import { useUsageStore } from '../stores/usageStore';
 
-export function useSetuBalance(providerName: string | undefined) {
-	const setBalance = useSetuStore((s) => s.setBalance);
-	const setUsdcBalance = useSetuStore((s) => s.setUsdcBalance);
-	const setWalletAddress = useSetuStore((s) => s.setWalletAddress);
-	const setLoading = useSetuStore((s) => s.setLoading);
-	const setScope = useSetuStore((s) => s.setScope);
-	const setPayg = useSetuStore((s) => s.setPayg);
-	const setSubscription = useSetuStore((s) => s.setSubscription);
-	const setLimits = useSetuStore((s) => s.setLimits);
+export function useOttoRouterBalance(providerName: string | undefined) {
+	const setBalance = useOttoRouterStore((s) => s.setBalance);
+	const setUsdcBalance = useOttoRouterStore((s) => s.setUsdcBalance);
+	const setWalletAddress = useOttoRouterStore((s) => s.setWalletAddress);
+	const setLoading = useOttoRouterStore((s) => s.setLoading);
+	const setScope = useOttoRouterStore((s) => s.setScope);
+	const setPayg = useOttoRouterStore((s) => s.setPayg);
+	const setSubscription = useOttoRouterStore((s) => s.setSubscription);
+	const setLimits = useOttoRouterStore((s) => s.setLimits);
 	const setUsage = useUsageStore((s) => s.setUsage);
-	const balance = useSetuStore((s) => s.balance);
-	const usdcBalance = useSetuStore((s) => s.usdcBalance);
-	const subscription = useSetuStore((s) => s.subscription);
-	const network = useSetuStore((s) => s.network);
+	const balance = useOttoRouterStore((s) => s.balance);
+	const usdcBalance = useOttoRouterStore((s) => s.usdcBalance);
+	const subscription = useOttoRouterStore((s) => s.subscription);
+	const network = useOttoRouterStore((s) => s.network);
 
 	const fetchBalance = useCallback(async () => {
-		if (providerName !== 'setu') {
+		if (providerName !== 'ottorouter') {
 			return;
 		}
 
 		setLoading(true);
 		try {
 			const [setuData, usdcData, walletData] = await Promise.all([
-				apiClient.getSetuBalance(),
-				apiClient.getSetuUsdcBalance(network),
-				apiClient.getSetuWallet(),
+				apiClient.getOttoRouterBalance(),
+				apiClient.getOttoRouterUsdcBalance(network),
+				apiClient.getOttoRouterWallet(),
 			]);
 
 			if (setuData) {
@@ -41,8 +41,8 @@ export function useSetuBalance(providerName: string | undefined) {
 
 				const sub = setuData.subscription;
 				if (sub?.active && sub.usageWindows) {
-					setUsage('setu', {
-						provider: 'setu',
+					setUsage('ottorouter', {
+						provider: 'ottorouter',
 						primaryWindow: {
 							usedPercent: sub.usageWindows.fiveHour.percentUsed,
 							windowSeconds: 18000,
@@ -89,7 +89,7 @@ export function useSetuBalance(providerName: string | undefined) {
 
 	useEffect(() => {
 		if (
-			providerName === 'setu' &&
+			providerName === 'ottorouter' &&
 			(balance === null || usdcBalance === null || needsUsageWindows)
 		) {
 			fetchBalance();

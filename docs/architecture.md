@@ -38,7 +38,7 @@ otto/
 │   ├── api/
 │   ├── database/
 │   ├── install/
-│   ├── openclaw-setu/
+│   ├── openclaw-ottorouter/
 │   ├── sdk/
 │   ├── server/
 │   ├── web-sdk/
@@ -184,7 +184,7 @@ ACP adapter for editor/client integrations.
 
 Companion package/versioning surface for AI SDK-related integration.
 
-### `@ottocode/openclaw-setu`
+### `@ottocode/openclaw`
 
 Setu integration package for OpenClaw workflows.
 

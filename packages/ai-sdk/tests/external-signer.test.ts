@@ -3,14 +3,14 @@ import { Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 import { createWalletContext } from '../src/auth.ts';
-import type { SetuAuth } from '../src/types.ts';
+import type { OttoRouterAuth } from '../src/types.ts';
 
 describe('createWalletContext', () => {
 	const keypair = Keypair.generate();
 	const privateKey = bs58.encode(keypair.secretKey);
 
 	test('private key mode creates keypair and privateKeyBytes', () => {
-		const auth: SetuAuth = { privateKey };
+		const auth: OttoRouterAuth = { privateKey };
 		const ctx = createWalletContext(auth);
 
 		expect(ctx.walletAddress).toBe(keypair.publicKey.toBase58());
@@ -27,7 +27,7 @@ describe('createWalletContext', () => {
 
 	test('external signer mode uses signNonce', async () => {
 		const walletAddress = keypair.publicKey.toBase58();
-		const auth: SetuAuth = {
+		const auth: OttoRouterAuth = {
 			signer: {
 				walletAddress,
 				signNonce: (nonce: string) => {
@@ -53,7 +53,7 @@ describe('createWalletContext', () => {
 	test('external signer with signTransaction callback passes through', () => {
 		const walletAddress = keypair.publicKey.toBase58();
 		const mockSign = async (tx: Uint8Array) => tx;
-		const auth: SetuAuth = {
+		const auth: OttoRouterAuth = {
 			signer: {
 				walletAddress,
 				signNonce: () => 'test-sig',
@@ -67,7 +67,7 @@ describe('createWalletContext', () => {
 
 	test('external signer with async signNonce', async () => {
 		const walletAddress = keypair.publicKey.toBase58();
-		const auth: SetuAuth = {
+		const auth: OttoRouterAuth = {
 			signer: {
 				walletAddress,
 				signNonce: async (nonce: string) => {
@@ -87,7 +87,7 @@ describe('createWalletContext', () => {
 
 	test('throws without privateKey or signer', () => {
 		expect(() => createWalletContext({})).toThrow(
-			'Setu: either privateKey or signer is required.',
+			'OttoRouter: either privateKey or signer is required.',
 		);
 	});
 

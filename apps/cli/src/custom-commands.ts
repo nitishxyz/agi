@@ -17,7 +17,7 @@ export type CommandManifest = {
 			| 'google'
 			| 'openrouter'
 			| 'opencode'
-			| 'setu';
+			| 'ottorouter';
 		model?: string;
 		agent?: string;
 	};
@@ -191,7 +191,7 @@ export async function runDiscoveredCommand(
 					| 'google'
 					| 'openrouter'
 					| 'opencode'
-					| 'setu')
+					| 'ottorouter')
 			: undefined) || cmd.defaults?.provider;
 	const model =
 		(modelFlagIdx >= 0 ? argv[modelFlagIdx + 1] : undefined) ||

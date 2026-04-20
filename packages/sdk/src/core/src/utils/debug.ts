@@ -6,6 +6,9 @@ type DebugSettings = {
 	debugScopes?: unknown;
 };
 
+let debugEnabledOverride: boolean | undefined;
+let traceEnabledOverride: boolean | undefined;
+
 function readDebugSettings(): DebugSettings {
 	try {
 		const raw = readFileSync(getGlobalConfigPath(), 'utf-8');
@@ -17,11 +20,21 @@ function readDebugSettings(): DebugSettings {
 }
 
 export function isDebugEnabled(): boolean {
+	if (debugEnabledOverride !== undefined) return debugEnabledOverride;
 	return readDebugSettings().debugEnabled === true;
 }
 
 export function isTraceEnabled(): boolean {
+	if (traceEnabledOverride !== undefined) return traceEnabledOverride;
 	return false;
+}
+
+export function setDebugEnabled(enabled: boolean): void {
+	debugEnabledOverride = enabled;
+}
+
+export function setTraceEnabled(enabled: boolean): void {
+	traceEnabledOverride = enabled;
 }
 
 export function getDebugScopes(): string[] {

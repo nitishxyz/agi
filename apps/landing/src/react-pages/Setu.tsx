@@ -616,7 +616,7 @@ function HeroMockup() {
 						<line x1="8" y1="12" x2="16" y2="12" />
 					</svg>
 					<span className="text-otto-text font-medium truncate text-xs">
-						api.setu.ottocode.io
+						api.ottorouter.org
 					</span>
 				</div>
 				<div className="flex-shrink-0 flex items-center gap-3 sm:gap-5 text-xs text-otto-muted">
@@ -1196,11 +1196,11 @@ export function Setu() {
 					<Reveal delay={80}>
 						<TerminalBlock
 							title="ai-sdk"
-							copyText={`import { createSetu } from "@ottocode/ai-sdk";
+							copyText={`import { createOttoRouter } from "@ottocode/ai-sdk";
 import { generateText } from "ai";
 
-const setu = createSetu({
-		auth: { privateKey: process.env.SETU_PRIVATE_KEY! },
+const setu = createOttoRouter({
+		auth: { privateKey: process.env.OTTOROUTER_PRIVATE_KEY! },
 });
 
 const { text } = await generateText({
@@ -1211,7 +1211,7 @@ const { text } = await generateText({
 							<span className="text-purple-700 dark:text-purple-400">
 								import
 							</span>
-							<span className="text-otto-text"> {'{ createSetu }'} </span>
+							<span className="text-otto-text"> {'{ createOttoRouter }'} </span>
 							<span className="text-purple-700 dark:text-purple-400">from</span>
 							<span className="text-green-700 dark:text-green-400">
 								{' '}
@@ -1234,7 +1234,7 @@ const { text } = await generateText({
 							<span className="text-blue-700 dark:text-blue-400"> setu </span>
 							<span className="text-otto-text">= </span>
 							<span className="text-yellow-700 dark:text-yellow-300">
-								createSetu
+								createOttoRouter
 							</span>
 							<span className="text-otto-text">(</span>
 							<span className="text-otto-text">{'{'}</span>
@@ -1243,7 +1243,7 @@ const { text } = await generateText({
 								{'  '}auth: {'{ '}privateKey: process.env.
 							</span>
 							<span className="text-blue-700 dark:text-blue-400">
-								SETU_PRIVATE_KEY
+								OTTOROUTER_PRIVATE_KEY
 							</span>
 							<span className="text-otto-text">! {'}'}</span>
 							<span className="text-otto-dim">,</span>
@@ -1472,7 +1472,7 @@ const { text } = await generateText({
 									Base URL
 								</h3>
 								<code className="text-xs text-otto-muted">
-									https://api.setu.ottocode.io
+									https://api.ottorouter.org
 								</code>
 							</div>
 							<a

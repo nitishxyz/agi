@@ -19,11 +19,11 @@ export function OpenClawSetu() {
 
 			<h2>How It Works</h2>
 			<p>
-				The <code>@ottocode/openclaw-setu</code> plugin runs a local proxy that
+				The <code>@ottocode/openclaw</code> plugin runs a local proxy that
 				handles Solana wallet signing transparently. OpenClaw talks to the proxy
 				like any other OpenAI-compatible provider.
 			</p>
-			<CodeBlock>{`OpenClaw → localhost:8403 (Setu proxy) → api.setu.ottocode.io → LLM provider`}</CodeBlock>
+			<CodeBlock>{`OpenClaw → localhost:8403 (Setu proxy) → api.ottorouter.org → LLM provider`}</CodeBlock>
 			<ol>
 				<li>
 					The plugin auto-generates a Solana wallet (or you import your own)
@@ -41,10 +41,10 @@ export function OpenClawSetu() {
 			<h2>Quick Start</h2>
 			<p>Two commands to get started:</p>
 			<CodeBlock>{`# Install the plugin
-bun add @ottocode/openclaw-setu
+bun add @ottocode/openclaw
 
 # Interactive setup — generates wallet, injects config
-bunx openclaw-setu setup`}</CodeBlock>
+bunx openclaw setup`}</CodeBlock>
 			<p>The setup wizard will:</p>
 			<ul>
 				<li>
@@ -64,7 +64,7 @@ bunx openclaw-setu setup`}</CodeBlock>
 			<CodeBlock>{`# Fund your wallet with USDC on Solana (address shown during setup)
 
 # Start the local proxy
-bunx openclaw-setu start
+bunx openclaw start
 
 # Restart OpenClaw to pick up the new provider
 openclaw gateway restart`}</CodeBlock>
@@ -162,7 +162,7 @@ openclaw gateway restart`}</CodeBlock>
 			<p className="text-otto-dim text-sm">
 				Full catalog: 18 Anthropic models, 18 OpenAI models, 2 Google, 6
 				Moonshot, 3 Z.AI, 2 MiniMax. Run{' '}
-				<code>curl https://api.setu.ottocode.io/v1/models</code> to see all
+				<code>curl https://api.ottorouter.org/v1/models</code> to see all
 				available models with pricing.
 			</p>
 
@@ -186,19 +186,19 @@ openclaw gateway restart`}</CodeBlock>
 					<tbody>
 						<tr>
 							<td>
-								<code>openclaw-setu setup</code>
+								<code>openclaw setup</code>
 							</td>
 							<td>Interactive setup — wallet generation + config injection</td>
 						</tr>
 						<tr>
 							<td>
-								<code>openclaw-setu start</code>
+								<code>openclaw start</code>
 							</td>
 							<td>Start the local proxy server (port 8403)</td>
 						</tr>
 						<tr>
 							<td>
-								<code>openclaw-setu start -v</code>
+								<code>openclaw start -v</code>
 							</td>
 							<td>Start with verbose logging (shows per-request costs)</td>
 						</tr>
@@ -218,25 +218,25 @@ openclaw gateway restart`}</CodeBlock>
 					<tbody>
 						<tr>
 							<td>
-								<code>openclaw-setu wallet generate</code>
+								<code>openclaw wallet generate</code>
 							</td>
 							<td>Generate a new Solana wallet</td>
 						</tr>
 						<tr>
 							<td>
-								<code>openclaw-setu wallet import</code>
+								<code>openclaw wallet import</code>
 							</td>
 							<td>Import an existing private key (base58)</td>
 						</tr>
 						<tr>
 							<td>
-								<code>openclaw-setu wallet export</code>
+								<code>openclaw wallet export</code>
 							</td>
 							<td>Print your private key</td>
 						</tr>
 						<tr>
 							<td>
-								<code>openclaw-setu wallet info</code>
+								<code>openclaw wallet info</code>
 							</td>
 							<td>
 								Show wallet address, Setu balance, and on-chain USDC balance
@@ -258,7 +258,7 @@ openclaw gateway restart`}</CodeBlock>
 					<tbody>
 						<tr>
 							<td>
-								<code>openclaw-setu config inject</code>
+								<code>openclaw config inject</code>
 							</td>
 							<td>
 								Add Setu provider to <code>openclaw.json</code>
@@ -266,7 +266,7 @@ openclaw gateway restart`}</CodeBlock>
 						</tr>
 						<tr>
 							<td>
-								<code>openclaw-setu config remove</code>
+								<code>openclaw config remove</code>
 							</td>
 							<td>
 								Remove Setu provider from <code>openclaw.json</code>
@@ -274,7 +274,7 @@ openclaw gateway restart`}</CodeBlock>
 						</tr>
 						<tr>
 							<td>
-								<code>openclaw-setu config status</code>
+								<code>openclaw config status</code>
 							</td>
 							<td>Check if Setu is configured</td>
 						</tr>
@@ -400,11 +400,11 @@ openclaw gateway restart`}</CodeBlock>
 otto auth login setu  # if not already set up
 
 # Import into OpenClaw plugin
-openclaw-setu wallet import
+openclaw wallet import
 # Paste your base58 private key when prompted`}</CodeBlock>
 			<p>
-				Or set the <code>SETU_PRIVATE_KEY</code> environment variable — the
-				plugin checks it as a fallback.
+				Or set the <code>OTTOROUTER_PRIVATE_KEY</code> environment variable —
+				the plugin checks it as a fallback.
 			</p>
 
 			<hr />
@@ -422,14 +422,14 @@ openclaw-setu wallet import
 					<tbody>
 						<tr>
 							<td>
-								<code>SETU_PROXY_PORT</code>
+								<code>OTTOROUTER_PROXY_PORT</code>
 							</td>
 							<td>8403</td>
 							<td>Local proxy port</td>
 						</tr>
 						<tr>
 							<td>
-								<code>SETU_PRIVATE_KEY</code>
+								<code>OTTOROUTER_PRIVATE_KEY</code>
 							</td>
 							<td>—</td>
 							<td>Alternative to wallet file (base58 Solana private key)</td>
@@ -444,30 +444,30 @@ openclaw-setu wallet import
 
 			<h3>Proxy won't start</h3>
 			<p>
-				Make sure you've run <code>openclaw-setu setup</code> first. The proxy
-				needs a wallet to sign requests.
+				Make sure you've run <code>openclaw setup</code> first. The proxy needs
+				a wallet to sign requests.
 			</p>
 
 			<h3>402 Payment Required errors</h3>
 			<p>Your Setu balance is low. Fund your wallet with USDC on Solana:</p>
 			<CodeBlock>{`# Check your balance and wallet address
-openclaw-setu wallet info
+openclaw wallet info
 
 # Send USDC to the wallet address shown`}</CodeBlock>
 
 			<h3>Models not showing in OpenClaw</h3>
 			<p>Verify the config was injected, then restart the gateway:</p>
-			<CodeBlock>{`openclaw-setu config status
+			<CodeBlock>{`openclaw config status
 openclaw gateway restart`}</CodeBlock>
 
 			<h3>Port conflict</h3>
 			<p>If port 8403 is in use, set a custom port:</p>
-			<CodeBlock>{`SETU_PROXY_PORT=8404 openclaw-setu start`}</CodeBlock>
+			<CodeBlock>{`OTTOROUTER_PROXY_PORT=8404 openclaw start`}</CodeBlock>
 			<p>
 				Then re-inject the config to update the port in{' '}
 				<code>openclaw.json</code>:
 			</p>
-			<CodeBlock>{`SETU_PROXY_PORT=8404 openclaw-setu config inject`}</CodeBlock>
+			<CodeBlock>{`OTTOROUTER_PROXY_PORT=8404 openclaw config inject`}</CodeBlock>
 		</DocPage>
 	);
 }

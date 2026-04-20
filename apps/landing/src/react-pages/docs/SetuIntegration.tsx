@@ -27,15 +27,15 @@ npm install @ottocode/ai-sdk ai`}</CodeBlock>
 
 			<h3>Quick Start</h3>
 			<p>
-				Create a Setu instance with <code>createSetu()</code> and call{' '}
+				Create a Setu instance with <code>createOttoRouter()</code> and call{' '}
 				<code>setu.model()</code> to get an ai-sdk compatible model. The SDK
 				auto-resolves which provider to use based on the model name.
 			</p>
-			<CodeBlock>{`import { createSetu } from "@ottocode/ai-sdk";
+			<CodeBlock>{`import { createOttoRouter } from "@ottocode/ai-sdk";
 import { generateText } from "ai";
 
-const setu = createSetu({
-  auth: { privateKey: process.env.SETU_PRIVATE_KEY! },
+const setu = createOttoRouter({
+  auth: { privateKey: process.env.OTTOROUTER_PRIVATE_KEY! },
 });
 
 const { text } = await generateText({
@@ -166,16 +166,16 @@ const { text } = await generateText({
 				cached token costs. You can customize or disable this:
 			</p>
 			<CodeBlock>{`// Default: auto caching (1 system + 1 message breakpoint)
-createSetu({ auth });
+createOttoRouter({ auth });
 
 // Disable completely
-createSetu({ auth, cache: { anthropicCaching: false } });
+createOttoRouter({ auth, cache: { anthropicCaching: false } });
 
 // Manual: SDK won't inject cache_control — set it yourself
-createSetu({ auth, cache: { anthropicCaching: { strategy: "manual" } } });
+createOttoRouter({ auth, cache: { anthropicCaching: { strategy: "manual" } } });
 
 // Custom breakpoint count
-createSetu({
+createOttoRouter({
   auth,
   cache: {
     anthropicCaching: {
@@ -198,12 +198,12 @@ createSetu({
 });`}</CodeBlock>
 
 			<h3>Configuration</h3>
-			<CodeBlock>{`const setu = createSetu({
+			<CodeBlock>{`const setu = createOttoRouter({
   // Required: Solana wallet private key (base58)
   auth: { privateKey: "..." },
 
-  // Optional: Setu API base URL (default: https://api.setu.ottocode.io)
-  baseURL: "https://api.setu.ottocode.io",
+  // Optional: Setu API base URL (default: https://api.ottorouter.org)
+  baseURL: "https://api.ottorouter.org",
 
   // Optional: Solana RPC URL (default: https://api.mainnet-beta.solana.com)
   rpcURL: "https://api.mainnet-beta.solana.com",
@@ -237,10 +237,10 @@ createSetu({
 				signing. The SDK builds transactions and hands you raw bytes — you sign
 				them however you want. Works with any wallet, framework, or HSM.
 			</p>
-			<CodeBlock>{`import { createSetu } from "@ottocode/ai-sdk";
+			<CodeBlock>{`import { createOttoRouter } from "@ottocode/ai-sdk";
 import { generateText } from "ai";
 
-const setu = createSetu({
+const setu = createOttoRouter({
 	auth: {
 		signer: {
 			walletAddress: "YOUR_SOLANA_PUBLIC_KEY",
@@ -264,7 +264,7 @@ const { text } = await generateText({
 });`}</CodeBlock>
 
 			<h4>With Phantom / Wallet Adapter</h4>
-			<CodeBlock>{`const setu = createSetu({
+			<CodeBlock>{`const setu = createOttoRouter({
 	auth: {
 		signer: {
 			walletAddress: wallet.publicKey.toBase58(),
@@ -288,7 +288,7 @@ const { text } = await generateText({
 				can omit <code>signTransaction</code>. Payments will throw a clear error
 				if attempted:
 			</p>
-			<CodeBlock>{`const setu = createSetu({
+			<CodeBlock>{`const setu = createOttoRouter({
 	auth: {
 		signer: {
 			walletAddress: "YOUR_SOLANA_PUBLIC_KEY",
@@ -300,7 +300,7 @@ const { text } = await generateText({
 });`}</CodeBlock>
 
 			<h3>Payment Callbacks</h3>
-			<CodeBlock>{`const setu = createSetu({
+			<CodeBlock>{`const setu = createOttoRouter({
   auth: { privateKey: "..." },
   callbacks: {
     onPaymentRequired: (amountUsd, currentBalance) => {
@@ -398,7 +398,7 @@ console.log(setu.walletAddress);`}</CodeBlock>
 			<CodeBlock>{`const customFetch = setu.fetch();
 
 const response = await customFetch(
-  "https://api.setu.ottocode.io/v1/messages",
+  "https://api.ottorouter.org/v1/messages",
   {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -416,7 +416,7 @@ const response = await customFetch(
   fetchWalletUsdcBalance,
   getPublicKeyFromPrivate,
   addAnthropicCacheControl,
-  createSetuFetch,
+  createOttoRouterFetch,
 } from "@ottocode/ai-sdk";
 
 // Get wallet address from private key
@@ -545,7 +545,7 @@ import bs58 from "bs58";
 import { Keypair } from "@solana/web3.js";
 
 const keypair = Keypair.fromSecretKey(
-  bs58.decode(process.env.SETU_PRIVATE_KEY)
+  bs58.decode(process.env.OTTOROUTER_PRIVATE_KEY)
 );
 
 const nonce = Date.now().toString();
@@ -555,7 +555,7 @@ const signature = nacl.sign.detached(
 );
 
 const response = await fetch(
-  "https://api.setu.ottocode.io/v1/messages",
+  "https://api.ottorouter.org/v1/messages",
   {
     method: "POST",
     headers: {
@@ -657,7 +657,7 @@ console.log(data.content[0].text);`}</CodeBlock>
 					<tbody>
 						<tr>
 							<td>
-								<code>SETU_PRIVATE_KEY</code>
+								<code>OTTOROUTER_PRIVATE_KEY</code>
 							</td>
 							<td>Yes*</td>
 							<td>
@@ -667,17 +667,17 @@ console.log(data.content[0].text);`}</CodeBlock>
 						</tr>
 						<tr>
 							<td>
-								<code>SETU_BASE_URL</code>
+								<code>OTTOROUTER_BASE_URL</code>
 							</td>
 							<td>No</td>
 							<td>
 								Override API URL (default:{' '}
-								<code>https://api.setu.ottocode.io</code>)
+								<code>https://api.ottorouter.org</code>)
 							</td>
 						</tr>
 						<tr>
 							<td>
-								<code>SETU_SOLANA_RPC_URL</code>
+								<code>OTTOROUTER_SOLANA_RPC_URL</code>
 							</td>
 							<td>No</td>
 							<td>
@@ -697,17 +697,17 @@ console.log(data.content[0].text);`}</CodeBlock>
 otto auth login setu
 
 # Or set the private key directly
-export SETU_PRIVATE_KEY="your-base58-private-key"
+export OTTOROUTER_PRIVATE_KEY="your-base58-private-key"
 
 # Use Setu as default provider
-otto setup  # select "setu"
+otto setup  # select "ottorouter"
 
 # Or per-request
 otto ask "hello" --provider setu --model claude-sonnet-4-6`}</CodeBlock>
 			<p>
 				otto uses <code>@ottocode/ai-sdk</code> under the hood via{' '}
-				<code>createSetu()</code>, handling all wallet auth and payment flows
-				transparently.
+				<code>createOttoRouter()</code>, handling all wallet auth and payment
+				flows transparently.
 			</p>
 		</DocPage>
 	);

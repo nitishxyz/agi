@@ -16,7 +16,7 @@ const DEFAULT_PROVIDER_SETTINGS: OttoConfig['providers'] = {
 	openrouter: { enabled: false },
 	opencode: { enabled: false },
 	copilot: { enabled: false },
-	setu: { enabled: true },
+	ottorouter: { enabled: true },
 	zai: { enabled: false },
 	'zai-coding': { enabled: false },
 	moonshot: { enabled: false },
@@ -29,7 +29,7 @@ const DEFAULTS: {
 } = {
 	defaults: {
 		agent: 'build',
-		provider: 'setu',
+		provider: 'ottorouter',
 		model: 'kimi-k2.5',
 		toolApproval: 'auto',
 		guidedMode: false,

@@ -63,20 +63,20 @@ export {
 	setEnvKey,
 } from './providers/src/index.ts';
 export {
-	createSetu,
-	createSetuFetch,
-	createSetuModel,
-	fetchSetuBalance,
+	createOttoRouter,
+	createOttoRouterFetch,
+	createOttoRouterModel,
+	fetchOttoRouterBalance,
 	getPublicKeyFromPrivate,
 	fetchSolanaUsdcBalance,
 } from './providers/src/index.ts';
 export type {
-	SetuAuth,
-	SetuInstance,
-	SetuProviderOptions,
-	SetuPaymentCallbacks,
-	SetuBalanceUpdate,
-	SetuBalanceResponse,
+	OttoRouterAuth,
+	OttoRouterInstance,
+	OttoRouterProviderOptions,
+	OttoRouterPaymentCallbacks,
+	OttoRouterBalanceUpdate,
+	OttoRouterBalanceResponse,
 	SolanaUsdcBalanceResponse,
 } from './providers/src/index.ts';
 export {
@@ -150,8 +150,8 @@ export {
 	generateWallet,
 	importWallet,
 	isValidPrivateKey,
-	getSetuWallet,
-	ensureSetuWallet,
+	getOttoRouterWallet,
+	ensureOttoRouterWallet,
 } from './auth/src/index.ts';
 export type { WalletInfo } from './auth/src/index.ts';
 export {
@@ -290,6 +290,8 @@ export {
 	time,
 	isDebugEnabled,
 	isTraceEnabled,
+	setDebugEnabled,
+	setTraceEnabled,
 } from './core/src/index.ts';
 
 // Schema Validation

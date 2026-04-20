@@ -34,25 +34,25 @@ export function isValidPrivateKey(privateKey: string): boolean {
 	}
 }
 
-export async function getSetuWallet(
+export async function getOttoRouterWallet(
 	projectRoot?: string,
 ): Promise<WalletInfo | null> {
-	const auth = await getAuth('setu', projectRoot);
+	const auth = await getAuth('ottorouter', projectRoot);
 	if (auth?.type === 'wallet' && auth.secret) {
 		return importWallet(auth.secret);
 	}
 	return null;
 }
 
-export async function ensureSetuWallet(
+export async function ensureOttoRouterWallet(
 	projectRoot?: string,
 ): Promise<WalletInfo> {
-	const existing = await getSetuWallet(projectRoot);
+	const existing = await getOttoRouterWallet(projectRoot);
 	if (existing) return existing;
 
 	const wallet = generateWallet();
 	await setAuth(
-		'setu',
+		'ottorouter',
 		{ type: 'wallet', secret: wallet.privateKey },
 		projectRoot,
 		'global',

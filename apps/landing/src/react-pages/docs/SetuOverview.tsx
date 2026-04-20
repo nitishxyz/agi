@@ -810,7 +810,7 @@ Setu Router (Cloudflare Worker)
 			</div>
 
 			<h2>Base URL</h2>
-			<CodeBlock>{`https://api.setu.ottocode.io`}</CodeBlock>
+			<CodeBlock>{`https://api.ottorouter.org`}</CodeBlock>
 			<p>
 				All endpoints are prefixed with <code>/v1</code>.
 			</p>

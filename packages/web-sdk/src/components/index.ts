@@ -69,7 +69,7 @@ export * from './research/ResearchSidebarToggle';
 // Settings Components
 export * from './settings/SettingsSidebar';
 export * from './settings/SettingsSidebarToggle';
-export * from './settings/SetuTopupModal';
+export * from './settings/OttoRouterTopupModal';
 
 // Tunnel Components
 export * from './tunnel/TunnelSidebar';

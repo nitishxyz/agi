@@ -6,7 +6,7 @@ import {
 	ensureWallet,
 	exportWalletKey,
 	getWalletKeyPath,
-	getSetuBalance,
+	getOttoRouterBalance,
 } from './wallet.ts';
 import {
 	injectConfig,
@@ -33,28 +33,28 @@ function prompt(question: string): Promise<string> {
 
 function printHelp() {
 	console.log(`
-openclaw-setu — Pay for AI with Solana USDC
+openclaw — Pay for AI with Solana USDC
 
 Usage:
-  openclaw-setu setup              Interactive setup (wallet + config)
-  openclaw-setu start              Start the local proxy server
-  openclaw-setu stop               Stop (placeholder — use Ctrl+C)
+  openclaw setup              Interactive setup (wallet + config)
+  openclaw start              Start the local proxy server
+  openclaw stop               Stop (placeholder — use Ctrl+C)
 
-  openclaw-setu wallet generate    Generate a new Solana wallet
-  openclaw-setu wallet import      Import an existing private key
-  openclaw-setu wallet export      Export your private key
-  openclaw-setu wallet info        Show wallet address and balances
+  openclaw wallet generate    Generate a new Solana wallet
+  openclaw wallet import      Import an existing private key
+  openclaw wallet export      Export your private key
+  openclaw wallet info        Show wallet address and balances
 
-  openclaw-setu config inject      Inject Setu provider into openclaw.json
-  openclaw-setu config remove      Remove Setu provider from openclaw.json
-  openclaw-setu config status      Check if Setu is configured
+  openclaw config inject      Inject OttoRouter provider into openclaw.json
+  openclaw config remove      Remove OttoRouter provider from openclaw.json
+  openclaw config status      Check if OttoRouter is configured
 
-  openclaw-setu help               Show this help
+  openclaw help               Show this help
 `);
 }
 
 async function cmdSetup() {
-	console.log('\n  Setu — Pay for AI with Solana USDC\n');
+	console.log('\n  OttoRouter — Pay for AI with Solana USDC\n');
 
 	const existing = loadWallet();
 	let wallet = existing;
@@ -114,7 +114,7 @@ async function cmdSetup() {
        ${wallet.publicKey}
 
     2. Start the proxy:
-       openclaw-setu start
+       openclaw start
 
     3. Restart OpenClaw:
        openclaw gateway restart
@@ -153,7 +153,7 @@ async function cmdWalletImport() {
 function cmdWalletExport() {
 	const key = exportWalletKey();
 	if (!key) {
-		console.error('No wallet found. Run `openclaw-setu setup` first.');
+		console.error('No wallet found. Run `openclaw setup` first.');
 		process.exit(1);
 	}
 	console.log(key);
@@ -162,7 +162,7 @@ function cmdWalletExport() {
 async function cmdWalletInfo() {
 	const wallet = loadWallet();
 	if (!wallet) {
-		console.error('No wallet found. Run `openclaw-setu setup` first.');
+		console.error('No wallet found. Run `openclaw setup` first.');
 		process.exit(1);
 	}
 
@@ -170,15 +170,17 @@ async function cmdWalletInfo() {
 	console.log(`Key path: ${getWalletKeyPath()}`);
 
 	console.log('\nFetching balances...');
-	const balances = await getSetuBalance(wallet.privateKey);
+	const balances = await getOttoRouterBalance(wallet.privateKey);
 
-	if (balances.setu) {
-		console.log(`\nSetu Balance: $${balances.setu.balance.toFixed(4)}`);
-		console.log(`Total Spent:  $${balances.setu.totalSpent.toFixed(4)}`);
-		console.log(`Requests:     ${balances.setu.requestCount}`);
+	if (balances.ottorouter) {
+		console.log(
+			`\nOttoRouter Balance: $${balances.ottorouter.balance.toFixed(4)}`,
+		);
+		console.log(`Total Spent:  $${balances.ottorouter.totalSpent.toFixed(4)}`);
+		console.log(`Requests:     ${balances.ottorouter.requestCount}`);
 	} else {
 		console.log(
-			'\nSetu Balance: (not available — wallet may not be registered yet)',
+			'\nOttoRouter Balance: (not available — wallet may not be registered yet)',
 		);
 	}
 
@@ -191,30 +193,30 @@ async function cmdWalletInfo() {
 
 async function cmdConfigInject() {
 	await injectConfig();
-	console.log(`Setu provider injected into ${getConfigPath()}`);
+	console.log(`OttoRouter provider injected into ${getConfigPath()}`);
 }
 
 function cmdConfigRemove() {
 	removeConfig();
-	console.log(`Setu provider removed from ${getConfigPath()}`);
+	console.log(`OttoRouter provider removed from ${getConfigPath()}`);
 }
 
 function cmdConfigStatus() {
 	if (isConfigured()) {
-		console.log(`Setu is configured in ${getConfigPath()}`);
+		console.log(`OttoRouter is configured in ${getConfigPath()}`);
 	} else {
-		console.log('Setu is not configured. Run `openclaw-setu setup`.');
+		console.log('OttoRouter is not configured. Run `openclaw setup`.');
 	}
 }
 
 function cmdStart() {
-	const port = parseInt(process.env.SETU_PROXY_PORT ?? '8403', 10);
+	const port = parseInt(process.env.OTTOROUTER_PROXY_PORT ?? '8403', 10);
 	const verbose =
 		process.argv.includes('--verbose') || process.argv.includes('-v');
 
 	try {
 		const { wallet } = createProxy({ port, verbose });
-		console.log(`\nSetu proxy running on http://localhost:${port}`);
+		console.log(`\nOttoRouter proxy running on http://localhost:${port}`);
 		console.log(`Wallet: ${wallet.publicKey}`);
 		console.log(`\nPress Ctrl+C to stop.\n`);
 	} catch (err) {
