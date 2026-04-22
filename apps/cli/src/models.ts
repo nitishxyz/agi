@@ -76,10 +76,13 @@ export async function runModels(
 	const modelsResponse = modelsData as {
 		models: ModelOption[];
 		default?: string;
+		allowAnyModel?: boolean;
+		label?: string;
 	};
 	const models = modelsResponse?.models ?? [];
+	const allowAnyModel = modelsResponse?.allowAnyModel === true;
 
-	if (!models.length) {
+	if (!models.length && !allowAnyModel) {
 		log.error('No models available for this provider.');
 		return outro('');
 	}
@@ -138,6 +141,12 @@ export async function runModels(
 		value: m.id,
 		label: m.label ? `${m.label} (${m.id})` : m.id,
 	}));
+	if (allowAnyModel) {
+		options.unshift({
+			value: '__custom__',
+			label: 'Enter a custom model id',
+		});
+	}
 	const initial = options.some((o) => o.value === defaults.model)
 		? (defaults.model as string)
 		: undefined;
@@ -190,17 +199,33 @@ export async function runModels(
 		}
 	}
 
-	const model = (await pagedSelect(options, 'Model', 6, initial)) as
-		| string
-		| symbol;
+	const model = (await pagedSelect(
+		options,
+		`Model for ${modelsResponse?.label || String(provider)}`,
+		6,
+		initial,
+	)) as string | symbol;
 	if (isCancel(model)) return cancel('Cancelled');
+
+	const resolvedModel =
+		model === '__custom__'
+			? await text({
+					message: `Enter model id for ${String(provider)}`,
+					initialValue: defaults.model,
+				})
+			: model;
+	if (isCancel(resolvedModel)) return cancel('Cancelled');
+	if (!String(resolvedModel).trim()) {
+		log.error('Model id is required.');
+		return outro('');
+	}
 
 	const targetLocal = !!opts.local;
 
 	await updateDefaults({
 		body: {
 			provider: String(provider),
-			model: String(model),
+			model: String(resolvedModel),
 			scope: targetLocal ? 'local' : 'global',
 		},
 		query: { project: projectRoot },
@@ -209,7 +234,7 @@ export async function runModels(
 	log.success(
 		`Set default (${targetLocal ? 'local' : 'global'}) provider=${String(
 			provider,
-		)} model=${String(model)}`,
+		)} model=${String(resolvedModel)}`,
 	);
 	outro('Done');
 }

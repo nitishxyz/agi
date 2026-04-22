@@ -1,15 +1,19 @@
 import { catalog } from './catalog-merged.ts';
 import type {
+	BuiltInProviderId,
 	ProviderId,
 	ModelInfo,
 	ModelOwner,
 } from '../../types/src/index.ts';
 import { filterModelsForAuthType } from './oauth-models.ts';
 
-export const providerIds = Object.keys(catalog) as ProviderId[];
+export const providerIds = Object.keys(catalog) as BuiltInProviderId[];
 
-export function isProviderId(value: unknown): value is ProviderId {
-	return typeof value === 'string' && providerIds.includes(value as ProviderId);
+export function isProviderId(value: unknown): value is BuiltInProviderId {
+	return (
+		typeof value === 'string' &&
+		providerIds.includes(value as BuiltInProviderId)
+	);
 }
 
 export function defaultModelFor(provider: ProviderId): string | undefined {
@@ -203,6 +207,7 @@ export function getUnderlyingProviderKey(
 	if (npm === '@ai-sdk/google') return 'google';
 	if (npm === '@ai-sdk/openai-compatible') return 'openai-compatible';
 	if (npm === '@openrouter/ai-sdk-provider') return 'openai-compatible';
+	if (provider === 'ottorouter') return 'openai-compatible';
 	return null;
 }
 

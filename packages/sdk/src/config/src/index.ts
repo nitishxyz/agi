@@ -129,6 +129,8 @@ export {
 	isAuthorized,
 	ensureEnv,
 	writeDefaults,
+	writeProviderSettings,
+	removeProviderSettings,
 	writeAuth,
 	removeAuth,
 } from './manager.ts';

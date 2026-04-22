@@ -1,6 +1,9 @@
 // Provider types
 export type {
+	BuiltInProviderId,
 	ProviderId,
+	ProviderCompatibility,
+	ProviderPromptFamily,
 	ProviderFamily,
 	ModelOwner,
 	ModelInfo,
@@ -16,6 +19,7 @@ export type {
 	Scope,
 	DefaultConfig,
 	PathConfig,
+	ProviderSettingsEntry,
 	ProviderSettings,
 	OttoConfig,
 	ToolApprovalMode,

@@ -3,15 +3,15 @@ import {
 	type OttoRouterModelCatalogEntry,
 } from '@ottorouter/ai-sdk';
 import type {
+	BuiltInProviderId,
 	ModelInfo,
 	ModelOwner,
 	ProviderCatalogEntry,
-	ProviderId,
 } from '../../types/src/index.ts';
 
-type CatalogMap = Partial<Record<ProviderId, ProviderCatalogEntry>>;
+type CatalogMap = Partial<Record<BuiltInProviderId, ProviderCatalogEntry>>;
 
-const OTTOROUTER_ID: ProviderId = 'ottorouter';
+const OTTOROUTER_ID: BuiltInProviderId = 'ottorouter';
 
 const OWNER_NPM: Record<ModelOwner, string> = {
 	openai: '@ai-sdk/openai',
@@ -90,10 +90,10 @@ function buildOttoRouterEntry(): ProviderCatalogEntry | null {
 
 export function mergeManualCatalog(
 	base: CatalogMap,
-): Record<ProviderId, ProviderCatalogEntry> {
+): Record<BuiltInProviderId, ProviderCatalogEntry> {
 	const manualEntry = buildOttoRouterEntry();
-	const merged: Record<ProviderId, ProviderCatalogEntry> = {
-		...(base as Record<ProviderId, ProviderCatalogEntry>),
+	const merged: Record<BuiltInProviderId, ProviderCatalogEntry> = {
+		...(base as Record<BuiltInProviderId, ProviderCatalogEntry>),
 	};
 	if (manualEntry) {
 		merged[OTTOROUTER_ID] = manualEntry;

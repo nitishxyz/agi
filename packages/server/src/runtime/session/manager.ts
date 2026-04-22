@@ -29,7 +29,7 @@ export async function createSession({
 	model,
 	title,
 }: CreateSessionInput): Promise<SessionRow> {
-	validateProviderModel(provider, model);
+	validateProviderModel(provider, model, cfg);
 	const authorized = await isProviderAuthorized(cfg, provider);
 	if (!authorized) {
 		throw new Error(

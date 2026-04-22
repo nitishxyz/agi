@@ -7,6 +7,7 @@ import {
 	discoverAllAgents,
 	getAuthorizedProviders,
 	getDefault,
+	getProviderDetails,
 } from './utils.ts';
 
 export function registerMainConfigRoute(app: Hono) {
@@ -37,6 +38,7 @@ export function registerMainConfigRoute(app: Hono) {
 				embeddedConfig,
 				cfg,
 			);
+			const providerDetails = await getProviderDetails(embeddedConfig, cfg);
 
 			const defaults = {
 				agent: getDefault(
@@ -80,6 +82,7 @@ export function registerMainConfigRoute(app: Hono) {
 			return c.json({
 				agents: allAgents,
 				providers: authorizedProviders,
+				providerDetails,
 				defaults,
 			});
 		} catch (error) {

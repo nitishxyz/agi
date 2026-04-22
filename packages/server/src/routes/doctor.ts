@@ -2,7 +2,10 @@ import type { Hono } from 'hono';
 import { readdir } from 'node:fs/promises';
 import {
 	readConfig,
-	isAuthorized,
+	isProviderAuthorized,
+	getConfiguredProviderApiKey,
+	getConfiguredProviderEnvVar,
+	getConfiguredProviderIds,
 	buildFsTools,
 	buildGitTools,
 	getSecureAuthPath,
@@ -11,26 +14,7 @@ import {
 	getGlobalCommandsDir,
 	logger,
 } from '@ottocode/sdk';
-import type { ProviderId } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
-
-const PROVIDERS: ProviderId[] = [
-	'openai',
-	'anthropic',
-	'google',
-	'openrouter',
-	'opencode',
-	'ottorouter',
-];
-
-function providerEnvVar(p: ProviderId): string | null {
-	if (p === 'openai') return 'OPENAI_API_KEY';
-	if (p === 'anthropic') return 'ANTHROPIC_API_KEY';
-	if (p === 'google') return 'GOOGLE_GENERATIVE_AI_API_KEY';
-	if (p === 'opencode') return 'OPENCODE_API_KEY';
-	if (p === 'ottorouter') return 'OTTOROUTER_PRIVATE_KEY';
-	return null;
-}
 
 async function fileExists(path: string | null): Promise<boolean> {
 	if (!path) return false;
@@ -66,11 +50,14 @@ export function registerDoctorRoutes(app: Hono) {
 		try {
 			const projectRoot = c.req.query('project') || process.cwd();
 			const { cfg, auth } = await readConfig(projectRoot);
+			const configuredProviders = getConfiguredProviderIds(cfg, {
+				includeDisabled: true,
+			});
 
 			const providers = await Promise.all(
-				PROVIDERS.map(async (id) => {
-					const ok = await isAuthorized(id, projectRoot);
-					const envVar = providerEnvVar(id);
+				configuredProviders.map(async (id) => {
+					const ok = await isProviderAuthorized(cfg, id);
+					const envVar = getConfiguredProviderEnvVar(cfg, id) ?? null;
 					const envConfigured = envVar ? !!process.env[envVar] : false;
 
 					const globalAuthPath = getSecureAuthPath();
@@ -104,7 +91,8 @@ export function registerDoctorRoutes(app: Hono) {
 						envConfigured ||
 						hasGlobalAuth ||
 						cfg.defaults.provider === id ||
-						hasStoredSecret;
+						hasStoredSecret ||
+						Boolean(getConfiguredProviderApiKey(cfg, id));
 
 					return { id, ok, configured, sources };
 				}),
@@ -114,9 +102,9 @@ export function registerDoctorRoutes(app: Hono) {
 				agent: cfg.defaults.agent,
 				provider: cfg.defaults.provider,
 				model: cfg.defaults.model,
-				providerAuthorized: await isAuthorized(
-					cfg.defaults.provider as ProviderId,
-					projectRoot,
+				providerAuthorized: await isProviderAuthorized(
+					cfg,
+					cfg.defaults.provider,
 				),
 			};
 

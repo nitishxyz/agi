@@ -6,6 +6,7 @@ import {
 	type ProviderId,
 	type AuthInfo,
 } from '../../auth/src/index.ts';
+import type { ProviderSettingsEntry } from '../../types/src/index.ts';
 import {
 	getGlobalConfigDir,
 	getGlobalConfigPath,
@@ -83,30 +84,8 @@ export async function writeDefaults(
 	}>,
 	projectRoot?: string,
 ) {
-	const root = projectRoot ? String(projectRoot) : process.cwd();
-
-	if (scope === 'local') {
-		const localDir = getLocalDataDir(root);
-		const localPath = joinPath(localDir, 'config.json');
-		const existing = await readJsonFile(localPath);
-		const prevDefaults =
-			existing && typeof existing.defaults === 'object'
-				? (existing.defaults as Record<string, unknown>)
-				: {};
-		const next = {
-			...existing,
-			defaults: { ...prevDefaults, ...updates },
-		};
-		try {
-			const { promises: fs } = await import('node:fs');
-			await fs.mkdir(localDir, { recursive: true }).catch(() => {});
-		} catch {}
-		await Bun.write(localPath, JSON.stringify(next, null, 2));
-		return;
-	}
-
-	const globalPath = getGlobalConfigPath();
-	const existing = await readJsonFile(globalPath);
+	const filePath = getConfigFilePath(scope, projectRoot);
+	const existing = await readJsonFile(filePath);
 	const prevDefaults =
 		existing && typeof existing.defaults === 'object'
 			? (existing.defaults as Record<string, unknown>)
@@ -115,12 +94,53 @@ export async function writeDefaults(
 		...existing,
 		defaults: { ...prevDefaults, ...updates },
 	};
-	const base = getGlobalConfigDir();
-	try {
-		const { promises: fs } = await import('node:fs');
-		await fs.mkdir(base, { recursive: true }).catch(() => {});
-	} catch {}
-	await Bun.write(globalPath, JSON.stringify(next, null, 2));
+	await writeConfigFile(filePath, next);
+}
+
+/**
+ * Persist provider settings for a built-in or custom provider entry.
+ */
+export async function writeProviderSettings(
+	scope: Scope,
+	provider: string,
+	updates: ProviderSettingsEntry,
+	projectRoot?: string,
+) {
+	const filePath = getConfigFilePath(scope, projectRoot);
+	const existing = await readJsonFile(filePath);
+	const prevProviders =
+		existing && typeof existing.providers === 'object'
+			? (existing.providers as Record<string, unknown>)
+			: {};
+	const previousEntry =
+		prevProviders[provider] && typeof prevProviders[provider] === 'object'
+			? (prevProviders[provider] as Record<string, unknown>)
+			: {};
+	const next = {
+		...existing,
+		providers: {
+			...prevProviders,
+			[provider]: { ...previousEntry, ...updates },
+		},
+	};
+	await writeConfigFile(filePath, next);
+}
+
+/**
+ * Remove a provider override or custom provider entry from config.
+ */
+export async function removeProviderSettings(
+	scope: Scope,
+	provider: string,
+	projectRoot?: string,
+) {
+	const filePath = getConfigFilePath(scope, projectRoot);
+	const existing = await readJsonFile(filePath);
+	if (!existing || typeof existing.providers !== 'object') return;
+	const providers = { ...(existing.providers as Record<string, unknown>) };
+	delete providers[provider];
+	const next = { ...existing, providers };
+	await writeConfigFile(filePath, next);
 }
 
 export async function readDebugConfig(
@@ -181,6 +201,30 @@ async function readJsonFile(
 	} catch {
 		return undefined;
 	}
+}
+
+function getConfigFilePath(scope: Scope, projectRoot?: string): string {
+	const root = projectRoot ? String(projectRoot) : process.cwd();
+	if (scope === 'local') {
+		const localDir = getLocalDataDir(root);
+		return joinPath(localDir, 'config.json');
+	}
+	return getGlobalConfigPath();
+}
+
+async function writeConfigFile(
+	filePath: string,
+	value: Record<string, unknown>,
+) {
+	const base =
+		filePath === getGlobalConfigPath()
+			? getGlobalConfigDir()
+			: filePath.slice(0, Math.max(0, filePath.lastIndexOf('/')));
+	try {
+		const { promises: fs } = await import('node:fs');
+		await fs.mkdir(base, { recursive: true }).catch(() => {});
+	} catch {}
+	await Bun.write(filePath, JSON.stringify(value, null, 2));
 }
 
 export async function writeAuth(

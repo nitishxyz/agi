@@ -91,9 +91,123 @@ export const configPaths = {
 										type: 'array',
 										items: { $ref: '#/components/schemas/Provider' },
 									},
+									details: {
+										type: 'array',
+										items: { $ref: '#/components/schemas/ProviderDetail' },
+									},
 									default: { $ref: '#/components/schemas/Provider' },
 								},
-								required: ['providers', 'default'],
+								required: ['providers', 'details', 'default'],
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	'/v1/config/providers/{provider}': {
+		put: {
+			tags: ['config'],
+			operationId: 'updateProviderSettings',
+			summary: 'Create or update provider settings',
+			parameters: [
+				projectQueryParam(),
+				{
+					in: 'path',
+					name: 'provider',
+					required: true,
+					schema: { $ref: '#/components/schemas/Provider' },
+				},
+			],
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								enabled: { type: 'boolean' },
+								custom: { type: 'boolean' },
+								label: { type: 'string' },
+								compatibility: { type: 'string' },
+								family: { type: 'string' },
+								baseURL: { type: 'string', nullable: true },
+								apiKey: { type: 'string', nullable: true },
+								apiKeyEnv: { type: 'string', nullable: true },
+								models: {
+									type: 'array',
+									items: { type: 'string' },
+								},
+								allowAnyModel: { type: 'boolean' },
+								scope: {
+									type: 'string',
+									enum: ['global', 'local'],
+								},
+							},
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: { type: 'boolean' },
+									provider: { $ref: '#/components/schemas/Provider' },
+									details: {
+										type: 'array',
+										items: { $ref: '#/components/schemas/ProviderDetail' },
+									},
+								},
+								required: ['success', 'provider', 'details'],
+							},
+						},
+					},
+				},
+			},
+		},
+		delete: {
+			tags: ['config'],
+			operationId: 'deleteProviderSettings',
+			summary: 'Delete provider override or custom provider entry',
+			parameters: [
+				projectQueryParam(),
+				{
+					in: 'query',
+					name: 'scope',
+					required: false,
+					schema: {
+						type: 'string',
+						enum: ['global', 'local'],
+					},
+				},
+				{
+					in: 'path',
+					name: 'provider',
+					required: true,
+					schema: { $ref: '#/components/schemas/Provider' },
+				},
+			],
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: { type: 'boolean' },
+									provider: { $ref: '#/components/schemas/Provider' },
+									details: {
+										type: 'array',
+										items: { $ref: '#/components/schemas/ProviderDetail' },
+									},
+								},
+								required: ['success', 'provider', 'details'],
 							},
 						},
 					},
@@ -128,8 +242,10 @@ export const configPaths = {
 										items: { $ref: '#/components/schemas/Model' },
 									},
 									default: { type: 'string', nullable: true },
+									allowAnyModel: { type: 'boolean' },
+									label: { type: 'string' },
 								},
-								required: ['models'],
+								required: ['models', 'allowAnyModel', 'label'],
 							},
 						},
 					},

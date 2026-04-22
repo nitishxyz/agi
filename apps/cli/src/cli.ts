@@ -6,6 +6,7 @@ import {
 	registerSessionsCommand,
 	registerAuthCommand,
 	registerModelsCommand,
+	registerProvidersCommand,
 	registerAgentsCommand,
 	registerToolsCommand,
 	registerSkillsCommand,
@@ -31,6 +32,7 @@ const SKIP_SERVER_COMMANDS = new Set([
 	'upgrade',
 	'help',
 	'auth',
+	'providers',
 	'debug',
 	'web',
 	'ask',
@@ -65,6 +67,7 @@ export function createCli(version: string): Command {
 	registerSessionsCommand(program);
 	registerAuthCommand(program);
 	registerModelsCommand(program);
+	registerProvidersCommand(program);
 	registerAgentsCommand(program);
 	registerToolsCommand(program);
 	registerSkillsCommand(program);

@@ -1,4 +1,9 @@
-import type { ProviderId } from './provider';
+import type {
+	ModelInfo,
+	ProviderCompatibility,
+	ProviderId,
+	ProviderPromptFamily,
+} from './provider';
 
 /**
  * Configuration scope - where settings are stored
@@ -30,13 +35,23 @@ export type DefaultConfig = {
 	autoCompactThresholdTokens?: number | null;
 };
 
-export type ProviderSettings = Record<
-	ProviderId,
-	{
-		enabled: boolean;
-		apiKey?: string;
-	}
->;
+export type ProviderSettingsEntry = {
+	enabled: boolean;
+	apiKey?: string;
+	apiKeyEnv?: string;
+	baseURL?: string;
+	label?: string;
+	custom?: boolean;
+	compatibility?: ProviderCompatibility;
+	family?: ProviderPromptFamily;
+	models?: Array<string | ModelInfo>;
+	allowAnyModel?: boolean;
+	modelDiscovery?: {
+		type: 'openai-models' | 'ollama';
+	};
+};
+
+export type ProviderSettings = Record<string, ProviderSettingsEntry>;
 
 /**
  * Path configuration

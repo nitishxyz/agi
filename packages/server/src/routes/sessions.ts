@@ -10,7 +10,7 @@ import {
 } from '@ottocode/database/schema';
 import { desc, eq, and, ne, inArray, or } from 'drizzle-orm';
 import type { ProviderId } from '@ottocode/sdk';
-import { isProviderId, catalog } from '@ottocode/sdk';
+import { hasConfiguredProvider, validateProviderModel } from '@ottocode/sdk';
 import { resolveAgentConfig } from '../runtime/agent/registry.ts';
 import { createSession as createSessionRow } from '../runtime/session/manager.ts';
 import { serializeError } from '../runtime/errors/api-error.ts';
@@ -79,9 +79,9 @@ export function registerSessionsRoutes(app: Hono) {
 		const providerCandidate =
 			typeof body.provider === 'string' ? body.provider : undefined;
 		const provider: ProviderId = (() => {
-			if (providerCandidate && isProviderId(providerCandidate))
+			if (providerCandidate && hasConfiguredProvider(cfg, providerCandidate))
 				return providerCandidate;
-			if (agentCfg.provider && isProviderId(agentCfg.provider))
+			if (hasConfiguredProvider(cfg, agentCfg.provider))
 				return agentCfg.provider;
 			return cfg.defaults.provider;
 		})();
@@ -208,7 +208,7 @@ export function registerSessionsRoutes(app: Hono) {
 			// Validate provider if provided
 			if (typeof body.provider === 'string') {
 				const providerName = body.provider.trim();
-				if (providerName && isProviderId(providerName)) {
+				if (providerName && hasConfiguredProvider(cfg, providerName)) {
 					updates.provider = providerName;
 				} else if (providerName) {
 					return c.json({ error: `Invalid provider: ${providerName}` }, 400);
@@ -221,21 +221,15 @@ export function registerSessionsRoutes(app: Hono) {
 				if (modelName) {
 					const targetProvider = (updates.provider ||
 						existingSession.provider) as ProviderId;
-
-					// Check if model exists for the provider
-					const providerCatalog = catalog[targetProvider];
-					if (providerCatalog) {
-						const modelExists = providerCatalog.models.some(
-							(m) => m.id === modelName,
+					try {
+						validateProviderModel(targetProvider, modelName, cfg);
+					} catch {
+						return c.json(
+							{
+								error: `Model "${modelName}" not found for provider "${targetProvider}"`,
+							},
+							400,
 						);
-						if (!modelExists) {
-							return c.json(
-								{
-									error: `Model "${modelName}" not found for provider "${targetProvider}"`,
-								},
-								400,
-							);
-						}
 					}
 
 					updates.model = modelName;

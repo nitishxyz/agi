@@ -16,7 +16,7 @@ import {
 	validateProviderModel,
 	isProviderAuthorized,
 	ensureProviderEnv,
-	isProviderId,
+	hasConfiguredProvider,
 	providerEnvVar,
 	type ProviderId,
 	type ReasoningLevel,
@@ -204,20 +204,22 @@ async function processAskRequest(
 				name: agentName,
 				prompt: request.agentPrompt,
 				tools: request.tools ?? ['progress_update', 'finish'],
-				provider: isProviderId(request.provider)
-					? (request.provider as ProviderId)
-					: undefined,
+				provider:
+					typeof request.provider === 'string' &&
+					hasConfiguredProvider(cfg, request.provider)
+						? request.provider
+						: undefined,
 				model: request.model,
 			}
 		: await resolveAgentConfig(cfg.projectRoot, agentName);
 	agentTimer.end({ agent: agentName });
-	const agentProviderDefault = isProviderId(agentCfg.provider)
+	const agentProviderDefault = hasConfiguredProvider(cfg, agentCfg.provider)
 		? agentCfg.provider
 		: cfg.defaults.provider;
 	const agentModelDefault = agentCfg.model ?? cfg.defaults.model;
 
-	const explicitProvider = isProviderId(request.provider)
-		? (request.provider as ProviderId)
+	const explicitProvider = hasConfiguredProvider(cfg, request.provider)
+		? request.provider
 		: undefined;
 
 	let providerSelection: ProviderSelection;
@@ -265,8 +267,8 @@ async function processAskRequest(
 		providerForMessage = providerSelection.provider;
 		modelForMessage = providerSelection.model;
 	} else if (session.provider && session.model) {
-		const sessionProvider = isProviderId(session.provider)
-			? (session.provider as ProviderId)
+		const sessionProvider = hasConfiguredProvider(cfg, session.provider)
+			? session.provider
 			: agentProviderDefault;
 		providerForMessage = sessionProvider;
 		modelForMessage = session.model;
@@ -302,7 +304,7 @@ async function processAskRequest(
 		} as SessionRow;
 	}
 
-	validateProviderModel(providerForMessage, modelForMessage);
+	validateProviderModel(providerForMessage, modelForMessage, cfg);
 
 	if (!request.skipFileConfig && !request.config && !request.credentials) {
 		await ensureProviderEnv(cfg, providerForMessage);

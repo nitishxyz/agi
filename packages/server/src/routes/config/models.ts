@@ -2,6 +2,9 @@ import type { Hono } from 'hono';
 import {
 	loadConfig,
 	catalog,
+	getConfiguredProviderModels,
+	getProviderDefinition,
+	providerAllowsAnyModel,
 	getAuth,
 	logger,
 	readEnvKey,
@@ -104,7 +107,8 @@ export function registerModelsRoutes(app: Hono) {
 			}
 
 			const providerCatalog = catalog[provider];
-			if (!providerCatalog) {
+			const providerDefinition = getProviderDefinition(cfg, provider);
+			if (!providerDefinition) {
 				logger.warn('Provider not found in catalog', { provider });
 				return c.json({ error: 'Provider not found' }, 404);
 			}
@@ -114,11 +118,9 @@ export function registerModelsRoutes(app: Hono) {
 				provider,
 				projectRoot,
 			);
-			const filteredModels = filterModelsForAuthType(
-				provider,
-				providerCatalog.models,
-				authType,
-			);
+			const filteredModels = providerCatalog
+				? filterModelsForAuthType(provider, providerCatalog.models, authType)
+				: getConfiguredProviderModels(cfg, provider);
 			const copilotAllowedModels =
 				provider === 'copilot'
 					? await getAuthorizedCopilotModels(projectRoot)
@@ -145,6 +147,8 @@ export function registerModelsRoutes(app: Hono) {
 					embeddedConfig?.defaults?.model,
 					cfg.defaults.model,
 				),
+				allowAnyModel: providerAllowsAnyModel(cfg, provider),
+				label: providerDefinition.label,
 			});
 		} catch (error) {
 			logger.error('Failed to get provider models', error);
@@ -185,19 +189,22 @@ export function registerModelsRoutes(app: Hono) {
 
 			for (const provider of authorizedProviders) {
 				const providerCatalog = catalog[provider];
-				if (providerCatalog) {
+				const providerDefinition = getProviderDefinition(cfg, provider);
+				if (providerDefinition) {
 					const authType = await getAuthTypeForProvider(
 						embeddedConfig,
 						provider,
 						projectRoot,
 					);
-					const filteredModels = filterModelsForAuthType(
-						provider,
-						providerCatalog.models,
-						authType,
-					);
+					const filteredModels = providerCatalog
+						? filterModelsForAuthType(
+								provider,
+								providerCatalog.models,
+								authType,
+							)
+						: getConfiguredProviderModels(cfg, provider);
 					modelsMap[provider] = {
-						label: providerCatalog.label || provider,
+						label: providerDefinition.label,
 						authType,
 						models: filteredModels.map((m) => ({
 							id: m.id,

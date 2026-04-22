@@ -1,8 +1,10 @@
 import {
 	loadConfig,
 	logger,
+	getConfiguredProviderFamily,
 	getSessionSystemPromptPath,
 	getModelFamily,
+	type OttoConfig,
 } from '@ottocode/sdk';
 import { wrapLanguageModel } from 'ai';
 import { devToolsMiddleware } from '@ai-sdk/devtools';
@@ -91,10 +93,13 @@ export function applyModelFamilyEditToolPolicy(
 	tools: string[],
 	provider: RunOpts['provider'],
 	model: string,
+	cfg?: OttoConfig,
 ): string[] {
 	if (!MODEL_FAMILY_EDIT_TOOL_POLICY_AGENTS.has(agent)) return tools;
 
-	const family = getModelFamily(provider, model);
+	const family = cfg
+		? getConfiguredProviderFamily(cfg, provider, model)
+		: getModelFamily(provider, model);
 	const next = tools.filter(
 		(toolName) => !EDITING_TOOL_NAMES.includes(toolName),
 	);
@@ -148,6 +153,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const composed = await composeSystemPrompt({
 		provider: opts.provider,
 		model: opts.model,
+		promptFamily: getConfiguredProviderFamily(cfg, opts.provider, opts.model),
 		projectRoot: cfg.projectRoot,
 		agentPrompt,
 		oneShot: opts.oneShot,
@@ -286,6 +292,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const model = await resolveModel(opts.provider, opts.model, cfg, {
 		sessionId: opts.sessionId,
 		messageId: opts.assistantMessageId,
+		reasoningText: opts.reasoningText,
 	});
 	const wrappedModel = isDevtoolsEnabled()
 		? wrapLanguageModel({
@@ -317,6 +324,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	}
 
 	const reasoningConfig = buildReasoningConfig({
+		cfg,
 		provider: opts.provider,
 		model: opts.model,
 		reasoningText: opts.reasoningText,

@@ -1,7 +1,7 @@
 /**
- * Provider identifiers for supported AI providers
+ * Built-in provider identifiers supported directly by otto.
  */
-export type ProviderId =
+export type BuiltInProviderId =
 	| 'openai'
 	| 'anthropic'
 	| 'google'
@@ -13,6 +13,35 @@ export type ProviderId =
 	| 'zai-coding'
 	| 'moonshot'
 	| 'minimax';
+
+/**
+ * Provider identifiers may be built-in or custom/config-defined.
+ */
+export type ProviderId = BuiltInProviderId | (string & {});
+
+/**
+ * Compatibility protocol used to instantiate a provider client.
+ */
+export type ProviderCompatibility =
+	| 'openai'
+	| 'anthropic'
+	| 'google'
+	| 'openrouter'
+	| 'ollama'
+	| 'openai-compatible';
+
+/**
+ * Prompt/behavior family used for prompts and provider-specific behavior.
+ */
+export type ProviderPromptFamily =
+	| 'default'
+	| 'anthropic'
+	| 'openai'
+	| 'google'
+	| 'moonshot'
+	| 'minimax'
+	| 'glm'
+	| 'openai-compatible';
 
 /**
  * Provider family for prompt selection
@@ -78,7 +107,7 @@ export type ModelInfo = {
 };
 
 export type ProviderCatalogEntry = {
-	id: ProviderId;
+	id: BuiltInProviderId;
 	label?: string;
 	env?: string[];
 	npm?: string;

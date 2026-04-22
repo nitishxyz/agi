@@ -2,6 +2,7 @@ import type { Hono } from 'hono';
 import {
 	setConfig,
 	loadConfig,
+	hasConfiguredProvider,
 	type ProviderId,
 	type ReasoningLevel,
 } from '@ottocode/sdk';
@@ -12,6 +13,7 @@ export function registerDefaultsRoute(app: Hono) {
 	app.patch('/v1/config/defaults', async (c) => {
 		try {
 			const projectRoot = c.req.query('project') || process.cwd();
+			const cfg = await loadConfig(projectRoot);
 			const body = await c.req.json<{
 				agent?: string;
 				provider?: string;
@@ -41,7 +43,12 @@ export function registerDefaultsRoute(app: Hono) {
 			}> = {};
 
 			if (body.agent) updates.agent = body.agent;
-			if (body.provider) updates.provider = body.provider as ProviderId;
+			if (body.provider) {
+				if (!hasConfiguredProvider(cfg, body.provider)) {
+					return c.json({ error: `Invalid provider: ${body.provider}` }, 400);
+				}
+				updates.provider = body.provider as ProviderId;
+			}
 			if (body.model) updates.model = body.model;
 			if (body.toolApproval) updates.toolApproval = body.toolApproval;
 			if (body.guidedMode !== undefined) updates.guidedMode = body.guidedMode;
@@ -62,11 +69,11 @@ export function registerDefaultsRoute(app: Hono) {
 
 			await setConfig(scope, updates, projectRoot);
 
-			const cfg = await loadConfig(projectRoot);
+			const nextCfg = await loadConfig(projectRoot);
 
 			return c.json({
 				success: true,
-				defaults: cfg.defaults,
+				defaults: nextCfg.defaults,
 			});
 		} catch (error) {
 			logger.error('Failed to update defaults', error);

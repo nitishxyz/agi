@@ -1,9 +1,37 @@
-import { providerIds } from '@ottocode/sdk';
-
 export const schemas = {
 	Provider: {
 		type: 'string',
-		enum: providerIds,
+		description: 'Built-in or custom provider identifier',
+	},
+	ProviderDetail: {
+		type: 'object',
+		properties: {
+			id: { $ref: '#/components/schemas/Provider' },
+			label: { type: 'string' },
+			source: { type: 'string', enum: ['built-in', 'custom'] },
+			enabled: { type: 'boolean' },
+			authorized: { type: 'boolean' },
+			custom: { type: 'boolean' },
+			compatibility: { type: 'string', nullable: true },
+			family: { type: 'string', nullable: true },
+			baseURL: { type: 'string', nullable: true },
+			apiKeyEnv: { type: 'string', nullable: true },
+			hasApiKey: { type: 'boolean' },
+			allowAnyModel: { type: 'boolean' },
+			modelCount: { type: 'integer' },
+			authType: { type: 'string', nullable: true },
+		},
+		required: [
+			'id',
+			'label',
+			'source',
+			'enabled',
+			'authorized',
+			'custom',
+			'hasApiKey',
+			'allowAnyModel',
+			'modelCount',
+		],
 	},
 	AskResponse: {
 		type: 'object',
@@ -189,6 +217,10 @@ export const schemas = {
 			providers: {
 				type: 'array',
 				items: { $ref: '#/components/schemas/Provider' },
+			},
+			providerDetails: {
+				type: 'array',
+				items: { $ref: '#/components/schemas/ProviderDetail' },
 			},
 			defaults: {
 				type: 'object',

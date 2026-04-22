@@ -3,6 +3,7 @@ import {
 	getModelInfo,
 	isProviderId,
 } from '../../providers/src/utils.ts';
+import type { ProviderPromptFamily } from '../../types/src/index.ts';
 import type { UnderlyingProviderKey } from '../../providers/src/utils.ts';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import PROVIDER_OPENAI from './providers/openai.txt' with { type: 'text' };
@@ -37,6 +38,14 @@ function sanitizeModelId(modelId: string): string {
 
 function promptForFamily(family: UnderlyingProviderKey): string {
 	if (!family) return PROVIDER_DEFAULT.trim();
+	return (FAMILY_PROMPTS[family] ?? PROVIDER_DEFAULT).trim();
+}
+
+function promptForCustomFamily(
+	family: ProviderPromptFamily | undefined,
+): string {
+	if (!family || family === 'default') return PROVIDER_DEFAULT.trim();
+	if (family === 'openai-compatible') return PROVIDER_DEFAULT.trim();
 	return (FAMILY_PROMPTS[family] ?? PROVIDER_DEFAULT).trim();
 }
 
@@ -76,6 +85,7 @@ export async function providerBasePrompt(
 	provider: string,
 	modelId: string | undefined,
 	projectRoot: string,
+	customFamily?: ProviderPromptFamily,
 ): Promise<ProviderPromptResult> {
 	const id = String(provider || '').toLowerCase();
 	const { modelPaths, providerPaths } = getPromptOverridePaths({
@@ -98,6 +108,11 @@ export async function providerBasePrompt(
 		const providerText = await readIfExists(providerPath);
 		if (!providerText) continue;
 		return { prompt: providerText, resolvedType: `custom:${id}` };
+	}
+
+	if (!isProviderId(id) && customFamily) {
+		const result = promptForCustomFamily(customFamily);
+		return { prompt: result, resolvedType: customFamily };
 	}
 
 	if (isProviderId(id) && modelId) {

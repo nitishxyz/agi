@@ -29,6 +29,7 @@ export type ComposedSystemPrompt = {
 export async function composeSystemPrompt(options: {
 	provider: string;
 	model?: string;
+	promptFamily?: import('@ottocode/sdk').ProviderPromptFamily | null;
 	projectRoot: string;
 	agentPrompt: string;
 	oneShot?: boolean;
@@ -68,6 +69,7 @@ export async function composeSystemPrompt(options: {
 			options.provider,
 			options.model,
 			options.projectRoot,
+			options.promptFamily ?? undefined,
 		);
 		const baseInstructions = (BASE_PROMPT || '').trim();
 		const agentInstructions = options.agentPrompt.trim();

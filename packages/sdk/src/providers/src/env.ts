@@ -1,6 +1,6 @@
-import type { ProviderId } from '../../types/src/index.ts';
+import type { BuiltInProviderId, ProviderId } from '../../types/src/index.ts';
 
-const ENV_VARS: Record<ProviderId, string> = {
+const ENV_VARS: Record<BuiltInProviderId, string> = {
 	openai: 'OPENAI_API_KEY',
 	anthropic: 'ANTHROPIC_API_KEY',
 	google: 'GOOGLE_GENERATIVE_AI_API_KEY',
@@ -14,11 +14,14 @@ const ENV_VARS: Record<ProviderId, string> = {
 	minimax: 'MINIMAX_API_KEY',
 };
 
-export function providerEnvVar(provider: ProviderId): string {
-	return ENV_VARS[provider];
+export function providerEnvVar(provider: ProviderId): string | undefined {
+	return ENV_VARS[provider as BuiltInProviderId];
 }
 
 export function readEnvKey(provider: ProviderId): string | undefined {
+	if (!(provider in ENV_VARS) && provider !== 'copilot') {
+		return undefined;
+	}
 	if (provider === 'copilot') {
 		const copilotToken =
 			process.env.COPILOT_GITHUB_TOKEN ??
@@ -28,13 +31,14 @@ export function readEnvKey(provider: ProviderId): string | undefined {
 	}
 
 	const key = providerEnvVar(provider);
+	if (!key) return undefined;
 	const value = process.env[key];
 	return value?.length ? value : undefined;
 }
 
 export function setEnvKey(provider: ProviderId, value: string | undefined) {
 	const key = providerEnvVar(provider);
-	if (value) {
+	if (key && value) {
 		process.env[key] = value;
 	}
 }

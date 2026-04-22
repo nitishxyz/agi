@@ -1,7 +1,7 @@
 import type { Hono } from 'hono';
 import { loadConfig } from '@ottocode/sdk';
 import { getDb } from '@ottocode/database';
-import { isProviderId, logger } from '@ottocode/sdk';
+import { hasConfiguredProvider, logger } from '@ottocode/sdk';
 import {
 	createBranch,
 	listBranches,
@@ -28,7 +28,8 @@ export function registerBranchRoutes(app: Hono) {
 			}
 
 			const provider =
-				typeof body.provider === 'string' && isProviderId(body.provider)
+				typeof body.provider === 'string' &&
+				hasConfiguredProvider(cfg, body.provider)
 					? body.provider
 					: undefined;
 

@@ -4,7 +4,7 @@ import { getDb } from '@ottocode/database';
 import { sessions, messages, messageParts } from '@ottocode/database/schema';
 import { desc, eq, and, asc, count } from 'drizzle-orm';
 import type { ProviderId } from '@ottocode/sdk';
-import { isProviderId } from '@ottocode/sdk';
+import { hasConfiguredProvider } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
 import { logger } from '@ottocode/sdk';
 import { publish } from '../events/bus.ts';
@@ -89,7 +89,7 @@ export function registerResearchRoutes(app: Hono) {
 		const providerCandidate =
 			typeof body.provider === 'string' ? body.provider : undefined;
 		const provider: ProviderId = (() => {
-			if (providerCandidate && isProviderId(providerCandidate))
+			if (providerCandidate && hasConfiguredProvider(cfg, providerCandidate))
 				return providerCandidate;
 			return parent.provider as ProviderId;
 		})();
@@ -278,7 +278,7 @@ export function registerResearchRoutes(app: Hono) {
 		const providerCandidate =
 			typeof body.provider === 'string' ? body.provider : undefined;
 		const provider: ProviderId = (() => {
-			if (providerCandidate && isProviderId(providerCandidate))
+			if (providerCandidate && hasConfiguredProvider(cfg, providerCandidate))
 				return providerCandidate;
 			return cfg.defaults.provider;
 		})();

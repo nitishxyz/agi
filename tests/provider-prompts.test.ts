@@ -20,6 +20,17 @@ describe('provider base prompts', () => {
 		expect(result.resolvedType).toBe('default');
 	});
 
+	it('supports default prompt family for custom providers', async () => {
+		const result = await providerBasePrompt(
+			'my-ollama',
+			'qwen2.5-coder:14b',
+			process.cwd(),
+			'default',
+		);
+		expect(result.prompt.length).toBeGreaterThan(0);
+		expect(result.resolvedType).toBe('default');
+	});
+
 	it('loads project provider prompt overrides from .otto/prompts/providers', async () => {
 		const projectRoot = await mkdtemp(join(tmpdir(), 'otto-provider-prompt-'));
 		try {

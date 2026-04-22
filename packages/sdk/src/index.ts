@@ -14,7 +14,10 @@
 // =======================
 // Provider types
 export type {
+	BuiltInProviderId,
 	ProviderId,
+	ProviderCompatibility,
+	ProviderPromptFamily,
 	ModelOwner,
 	ModelInfo,
 	ModelProviderBinding,
@@ -28,6 +31,7 @@ export type { ApiAuth, OAuth, AuthInfo, AuthFile } from './types/src/index.ts';
 export type {
 	DefaultConfig,
 	PathConfig,
+	ProviderSettingsEntry,
 	OttoConfig,
 	ReasoningLevel,
 } from './types/src/index.ts';
@@ -51,6 +55,29 @@ export {
 	modelSupportsReasoning,
 } from './providers/src/index.ts';
 export type { UnderlyingProviderKey } from './providers/src/index.ts';
+export {
+	discoverOllamaModels,
+	normalizeOllamaBaseURL,
+} from './providers/src/index.ts';
+export type {
+	DiscoverOllamaOptions,
+	DiscoverOllamaResult,
+} from './providers/src/index.ts';
+export {
+	isBuiltInProviderId,
+	getProviderSettings,
+	getProviderDefinition,
+	hasConfiguredProvider,
+	getConfiguredProviderIds,
+	getConfiguredProviderModels,
+	getConfiguredProviderDefaultModel,
+	providerAllowsAnyModel,
+	hasConfiguredModel,
+	getConfiguredProviderFamily,
+	getConfiguredProviderEnvVar,
+	getConfiguredProviderApiKey,
+} from './providers/src/index.ts';
+export type { ResolvedProviderDefinition } from './providers/src/index.ts';
 export {
 	isProviderAuthorized,
 	ensureProviderEnv,
@@ -193,6 +220,8 @@ export {
 	isAuthorized,
 	ensureEnv,
 	writeDefaults as setConfig,
+	writeProviderSettings,
+	removeProviderSettings,
 	readDebugConfig,
 	writeDebugConfig,
 	writeAuth,

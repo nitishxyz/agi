@@ -1,7 +1,10 @@
 export { isProviderAuthorized, ensureProviderEnv } from './authorization.ts';
 export { catalog } from './catalog-merged.ts';
 export type {
+	BuiltInProviderId,
 	ProviderId,
+	ProviderCompatibility,
+	ProviderPromptFamily,
 	ModelInfo,
 	ModelProviderBinding,
 	ProviderCatalogEntry,
@@ -21,6 +24,29 @@ export {
 	modelSupportsReasoning,
 } from './utils.ts';
 export type { UnderlyingProviderKey } from './utils.ts';
+export {
+	discoverOllamaModels,
+	normalizeOllamaBaseURL,
+} from './ollama-discovery.ts';
+export type {
+	DiscoverOllamaOptions,
+	DiscoverOllamaResult,
+} from './ollama-discovery.ts';
+export {
+	isBuiltInProviderId,
+	getProviderSettings,
+	getProviderDefinition,
+	hasConfiguredProvider,
+	getConfiguredProviderIds,
+	getConfiguredProviderModels,
+	getConfiguredProviderDefaultModel,
+	providerAllowsAnyModel,
+	hasConfiguredModel,
+	getConfiguredProviderFamily,
+	getConfiguredProviderEnvVar,
+	getConfiguredProviderApiKey,
+} from './registry.ts';
+export type { ResolvedProviderDefinition } from './registry.ts';
 export { validateProviderModel } from './validate.ts';
 export { estimateModelCostUsd } from './pricing.ts';
 export { providerEnvVar, readEnvKey, setEnvKey } from './env.ts';

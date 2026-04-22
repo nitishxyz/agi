@@ -119,6 +119,61 @@ Project-level defaults and provider preferences.
 }
 ```
 
+Provider entries may also include richer settings such as custom base URLs,
+explicit API key env vars, static model lists, and custom declarative providers.
+
+Example custom provider:
+
+```json
+{
+  "defaults": {
+    "provider": "my-ollama",
+    "model": "qwen2.5-coder:14b"
+  },
+  "providers": {
+    "my-ollama": {
+      "enabled": true,
+      "custom": true,
+      "label": "Local Ollama",
+      "compatibility": "ollama",
+      "family": "default",
+      "baseURL": "http://127.0.0.1:11434",
+      "apiKeyEnv": "OLLAMA_API_KEY",
+      "modelDiscovery": { "type": "ollama" },
+      "allowAnyModel": false
+    }
+  }
+}
+```
+
+For `compatibility: "ollama"`, use the canonical Ollama base URL without
+`/api` or `/api/chat`. The provider add flow can auto-discover models and
+capabilities from Ollama using `/api/tags` and `/api/show`.
+
+Supported provider fields:
+
+| Field | Meaning |
+|---|---|
+| `enabled` | Whether the provider is selectable |
+| `custom` | Marks a provider as config-defined rather than built-in |
+| `label` | Human-readable provider name |
+| `compatibility` | Transport/protocol mode: `openai`, `anthropic`, `google`, `openrouter`, `openai-compatible`, or `ollama` |
+| `family` | Prompt/behavior family, typically `default`, `openai`, `anthropic`, `google`, `moonshot`, `glm`, or `minimax` |
+| `baseURL` | Override the upstream endpoint |
+| `apiKey` | Inline API key (prefer env vars when possible) |
+| `apiKeyEnv` | Environment variable to read the API key from |
+| `models` | Static allowed models as IDs or full metadata objects |
+| `allowAnyModel` | Accept arbitrary model IDs instead of enforcing `models` |
+| `modelDiscovery` | Optional discovery mode such as `ollama` |
+
+CLI helpers:
+
+```bash
+otto providers list
+otto providers add
+otto providers remove my-ollama
+```
+
 ### `.otto/agents.json`
 
 Per-project agent overrides.

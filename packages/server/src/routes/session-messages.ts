@@ -132,7 +132,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 			// Validate model capabilities if tools are allowed for this agent
 			const wantsToolCalls = true; // agent toolset may be non-empty
 			try {
-				validateProviderModel(provider, modelName, { wantsToolCalls });
+				validateProviderModel(provider, modelName, cfg, { wantsToolCalls });
 			} catch (err) {
 				logger.error('Model validation failed', err, { provider, modelName });
 				const message = err instanceof Error ? err.message : String(err);

@@ -1,11 +1,11 @@
 import type { OttoConfig } from '@ottocode/sdk';
 import {
-	catalog,
 	type ProviderId,
 	isProviderAuthorized,
-	providerIds,
-	defaultModelFor,
-	hasModel,
+	getConfiguredProviderIds,
+	getConfiguredProviderDefaultModel,
+	hasConfiguredModel,
+	hasConfiguredProvider,
 } from '@ottocode/sdk';
 
 const FALLBACK_ORDER: ProviderId[] = [
@@ -59,6 +59,7 @@ export async function selectProviderAndModel(
 	}
 
 	const model = resolveModelForProvider({
+		cfg,
 		provider,
 		explicitModel,
 		agentModelDefault,
@@ -81,9 +82,10 @@ async function pickAuthorizedProvider(args: {
 	const candidates = uniqueProviders([
 		candidate,
 		...FALLBACK_ORDER,
-		...providerIds,
+		...getConfiguredProviderIds(cfg),
 	]);
 	for (const provider of candidates) {
+		if (!hasConfiguredProvider(cfg, provider)) continue;
 		const ok = await isProviderAuthorized(cfg, provider);
 		if (ok) return provider;
 	}
@@ -94,7 +96,6 @@ function uniqueProviders(list: ProviderId[]): ProviderId[] {
 	const seen = new Set<ProviderId>();
 	const ordered: ProviderId[] = [];
 	for (const provider of list) {
-		if (!providerIds.includes(provider)) continue;
 		if (seen.has(provider)) continue;
 		seen.add(provider);
 		ordered.push(provider);
@@ -103,16 +104,17 @@ function uniqueProviders(list: ProviderId[]): ProviderId[] {
 }
 
 function resolveModelForProvider(args: {
+	cfg: OttoConfig;
 	provider: ProviderId;
 	explicitModel?: string;
 	agentModelDefault: string;
 }): string {
-	const { provider, explicitModel, agentModelDefault } = args;
-	if (explicitModel && hasModel(provider, explicitModel)) return explicitModel;
-	if (hasModel(provider, agentModelDefault)) return agentModelDefault;
-	return (
-		defaultModelFor(provider) ??
-		catalog[provider]?.models?.[0]?.id ??
-		agentModelDefault
-	);
+	const { cfg, provider, explicitModel, agentModelDefault } = args;
+	if (explicitModel && hasConfiguredModel(cfg, provider, explicitModel)) {
+		return explicitModel;
+	}
+	if (hasConfiguredModel(cfg, provider, agentModelDefault)) {
+		return agentModelDefault;
+	}
+	return getConfiguredProviderDefaultModel(cfg, provider) ?? agentModelDefault;
 }

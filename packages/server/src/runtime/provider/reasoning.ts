@@ -1,8 +1,11 @@
 import {
 	catalog,
+	getConfiguredProviderFamily,
+	getProviderDefinition,
 	getModelNpmBinding,
 	getUnderlyingProviderKey,
 	modelSupportsReasoning,
+	type OttoConfig,
 	type ProviderId,
 	type ReasoningLevel,
 } from '@ottocode/sdk';
@@ -108,11 +111,16 @@ function toCamelCaseKey(value: string): string {
 		.join('');
 }
 
-function getOpenAICompatibleProviderOptionKeys(provider: ProviderId): string[] {
+function getOpenAICompatibleProviderOptionKeys(
+	provider: ProviderId,
+	cfg?: OttoConfig,
+): string[] {
+	const definition = cfg ? getProviderDefinition(cfg, provider) : undefined;
 	const entry = catalog[provider];
 	const keys = new Set<string>(['openaiCompatible', toCamelCaseKey(provider)]);
-	if (entry?.label) {
-		keys.add(toCamelCaseKey(entry.label));
+	const label = definition?.label ?? entry?.label;
+	if (label) {
+		keys.add(toCamelCaseKey(label));
 	}
 	return Array.from(keys).filter(Boolean);
 }
@@ -120,8 +128,9 @@ function getOpenAICompatibleProviderOptionKeys(provider: ProviderId): string[] {
 function buildSharedProviderOptions(
 	provider: ProviderId,
 	options: Record<string, unknown>,
+	cfg?: OttoConfig,
 ): Record<string, unknown> {
-	const keys = getOpenAICompatibleProviderOptionKeys(provider);
+	const keys = getOpenAICompatibleProviderOptionKeys(provider, cfg);
 	return Object.fromEntries(keys.map((key) => [key, options]));
 }
 
@@ -140,13 +149,26 @@ function usesAdaptiveAnthropicThinking(model: string): boolean {
 function getReasoningProviderTarget(
 	provider: ProviderId,
 	model: string,
+	cfg?: OttoConfig,
 ):
 	| 'anthropic'
 	| 'openai'
 	| 'google'
+	| 'ollama'
 	| 'openai-compatible'
 	| 'openrouter'
 	| null {
+	const definition = cfg ? getProviderDefinition(cfg, provider) : undefined;
+	if (definition?.source === 'custom') {
+		if (definition.compatibility === 'anthropic') return 'anthropic';
+		if (definition.compatibility === 'openai') return 'openai';
+		if (definition.compatibility === 'google') return 'google';
+		if (definition.compatibility === 'ollama') return 'ollama';
+		if (definition.compatibility === 'openrouter') return 'openrouter';
+		return 'openai-compatible';
+	}
+
+	if (provider === 'ottorouter') return 'openrouter';
 	if (provider === 'openrouter') return 'openrouter';
 	if (
 		provider === 'moonshot' ||
@@ -169,19 +191,39 @@ function getReasoningProviderTarget(
 	if (underlyingProvider === 'openai') return 'openai';
 	if (underlyingProvider === 'google') return 'google';
 	if (underlyingProvider === 'openai-compatible') return 'openai-compatible';
+
+	const family = cfg ? getConfiguredProviderFamily(cfg, provider, model) : null;
+	if (family === 'anthropic') return 'anthropic';
+	if (family === 'openai') return 'openai';
+	if (family === 'google') return 'google';
+	if (family === 'openai-compatible') return 'openai-compatible';
 	return null;
 }
 
 export function buildReasoningConfig(args: {
+	cfg?: OttoConfig;
 	provider: ProviderId;
 	model: string;
 	reasoningText?: boolean;
 	reasoningLevel?: ReasoningLevel;
 	maxOutputTokens: number | undefined;
 }): ReasoningConfigResult {
-	const { provider, model, reasoningText, reasoningLevel, maxOutputTokens } =
-		args;
-	if (!reasoningText || !modelSupportsReasoning(provider, model)) {
+	const {
+		cfg,
+		provider,
+		model,
+		reasoningText,
+		reasoningLevel,
+		maxOutputTokens,
+	} = args;
+	const definition = cfg ? getProviderDefinition(cfg, provider) : undefined;
+	const supportsReasoning =
+		definition?.source === 'custom'
+			? true
+			: provider === 'ottorouter'
+				? true
+				: modelSupportsReasoning(provider, model);
+	if (!reasoningText || !supportsReasoning) {
 		return {
 			providerOptions: {},
 			effectiveMaxOutputTokens: maxOutputTokens,
@@ -189,7 +231,7 @@ export function buildReasoningConfig(args: {
 		};
 	}
 
-	const reasoningTarget = getReasoningProviderTarget(provider, model);
+	const reasoningTarget = getReasoningProviderTarget(provider, model, cfg);
 	if (reasoningTarget === 'anthropic') {
 		if (usesAdaptiveAnthropicThinking(model)) {
 			return {
@@ -257,6 +299,18 @@ export function buildReasoningConfig(args: {
 		};
 	}
 
+	if (reasoningTarget === 'ollama') {
+		return {
+			providerOptions: {
+				ollama: {
+					think: true,
+				},
+			},
+			effectiveMaxOutputTokens: maxOutputTokens,
+			enabled: true,
+		};
+	}
+
 	if (reasoningTarget === 'openrouter') {
 		return {
 			providerOptions: {
@@ -271,9 +325,13 @@ export function buildReasoningConfig(args: {
 
 	if (reasoningTarget === 'openai-compatible') {
 		return {
-			providerOptions: buildSharedProviderOptions(provider, {
-				reasoningEffort: normalizeReasoningLevel(reasoningLevel),
-			}),
+			providerOptions: buildSharedProviderOptions(
+				provider,
+				{
+					reasoningEffort: normalizeReasoningLevel(reasoningLevel),
+				},
+				cfg,
+			),
 			effectiveMaxOutputTokens: maxOutputTokens,
 			enabled: true,
 		};
