@@ -1,6 +1,6 @@
 # AI Agent Guidelines
 
-This document provides guidelines for AI agents working on the Otto mobile app.
+This document provides guidelines for AI agents working on the StackForge mobile app.
 
 ## Key Points
 
@@ -20,6 +20,6 @@ This document provides guidelines for AI agents working on the Otto mobile app.
 
 Uses React Native Unistyles. Check `src/utils/unistyles.ts` for theme configuration.
 
-## Architecture
+## Authentication
 
-This is a thin client for the ottocode server. Auth is handled via the server's API using bearer tokens. See `src/services/api/client.ts`.
+Uses Better Auth for email OTP authentication. See `src/hooks/use-auth.ts` and `src/lib/auth-client.ts`.

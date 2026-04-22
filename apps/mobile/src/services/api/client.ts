@@ -1,67 +1,57 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+import { authClient, API_URL } from "@/lib/auth-client";
 
-let getAuthTokenFn: (() => Promise<string | null>) | null = null;
-
-export function setAuthTokenGetter(getter: () => Promise<string | null>) {
-	getAuthTokenFn = getter;
-}
-
-export function clearAuthTokenGetter() {
-	getAuthTokenFn = null;
-}
-
-export async function getAuthToken(): Promise<string | null> {
-	if (!getAuthTokenFn) return null;
-	return getAuthTokenFn();
-}
-
+/**
+ * Make an authenticated API request using the Better Auth session cookie.
+ */
 export async function apiRequest<T>(
-	path: string,
-	options: RequestInit = {},
+  path: string,
+  options: RequestInit = {}
 ): Promise<T> {
-	const token = await getAuthToken();
+  const cookie = authClient.getCookie();
 
-	const url = `${API_URL}${path}`;
-	const headers: HeadersInit = {
-		'Content-Type': 'application/json',
-		...(token ? { Authorization: `Bearer ${token}` } : {}),
-		...options.headers,
-	};
+  if (!cookie) {
+    throw new Error("Not authenticated. Please sign in again.");
+  }
 
-	const response = await fetch(url, {
-		...options,
-		headers,
-	});
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: cookie,
+      ...options.headers,
+    },
+    credentials: "omit",
+  });
 
-	if (!response.ok) {
-		const error = await response.json().catch(() => ({}));
-		throw new Error(error.error || `Request failed: ${response.statusText}`);
-	}
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || `Request failed: ${response.statusText}`);
+  }
 
-	return response.json();
+  return response.json();
 }
 
+/**
+ * Make an unauthenticated API request.
+ */
 export async function publicApiRequest<T>(
-	path: string,
-	options: RequestInit = {},
+  path: string,
+  options: RequestInit = {}
 ): Promise<T> {
-	const url = `${API_URL}${path}`;
-	const headers: HeadersInit = {
-		'Content-Type': 'application/json',
-		...options.headers,
-	};
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
-	const response = await fetch(url, {
-		...options,
-		headers,
-	});
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || `Request failed: ${response.statusText}`);
+  }
 
-	if (!response.ok) {
-		const error = await response.json().catch(() => ({}));
-		throw new Error(error.error || `Request failed: ${response.statusText}`);
-	}
-
-	return response.json();
+  return response.json();
 }
 
 export { API_URL };

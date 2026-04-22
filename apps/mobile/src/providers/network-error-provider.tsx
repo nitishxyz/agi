@@ -1,13 +1,13 @@
-import type React from 'react';
-import { useNetworkErrorHandler } from '@/utils/network-error-handler';
+import React from "react";
+import { useNetworkErrorHandler } from "@/utils/network-error-handler";
 
 export const NetworkErrorProvider = ({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }) => {
-	// This will set up the toast handler for the network error handler
-	useNetworkErrorHandler();
+  // This will set up the toast handler for the network error handler
+  useNetworkErrorHandler();
 
-	return <>{children}</>;
+  return <>{children}</>;
 };

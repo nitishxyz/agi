@@ -45,7 +45,7 @@ export const RouteCard = ({
   routeInfo?: SwapRouteInfo;
 }) {
   const { styles } = useUnistyles(stylesheet);
-  const payUrl = process.env.EXPO_PUBLIC_PAY_URL || "http://localhost:3000";
+  const payUrl = process.env.EXPO_PUBLIC_PAY_URL || "https://stackforge.xyz";
 
   const handleShare = () => {
     // Navigate to the route share route

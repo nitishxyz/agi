@@ -1,5 +1,5 @@
-import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
-import type { wallets, users } from './schema';
+import { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import { wallets, users } from "./schema";
 
 export type Wallet = InferSelectModel<typeof wallets>;
 export type NewWallet = InferInsertModel<typeof wallets>;

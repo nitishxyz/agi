@@ -1,43 +1,54 @@
 {
-	"cli": {
-		"version": ">= 16.3.0",
-		"appVersionSource": "remote"
-	},
-	"build": {
-		"development": {
-			"developmentClient": true,
-			"distribution": "internal",
-			"env": {
-				"EXPO_PUBLIC_ENV": "dev",
-				"EXPO_PUBLIC_API_URL": "http://localhost:3000"
-			}
-		},
-		"preview": {
-			"distribution": "internal",
-			"channel": "preview",
-			"env": {
-				"EXPO_PUBLIC_ENV": "beta",
-				"EXPO_PUBLIC_API_URL": "http://localhost:3000"
-			}
-		},
-		"beta": {
-			"autoIncrement": "buildNumber",
-			"channel": "beta",
-			"env": {
-				"EXPO_PUBLIC_ENV": "beta",
-				"EXPO_PUBLIC_API_URL": "http://localhost:3000"
-			}
-		},
-		"production": {
-			"autoIncrement": "buildNumber",
-			"channel": "production",
-			"env": {
-				"EXPO_PUBLIC_ENV": "prod",
-				"EXPO_PUBLIC_API_URL": "http://localhost:3000"
-			}
-		}
-	},
-	"submit": {
-		"production": {}
-	}
+  "cli": {
+    "version": ">= 16.3.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "sim": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "dev",
+        "EXPO_PUBLIC_API_URL": "https://api.stackforge.xyz"
+      }
+    },
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENV": "dev",
+        "EXPO_PUBLIC_API_URL": "https://api.stackforge.xyz"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_ENV": "beta",
+        "EXPO_PUBLIC_API_URL": "https://beta.api.stackforge.xyz"
+      }
+    },
+    "beta": {
+      "autoIncrement": true,
+      "channel": "beta",
+      "env": {
+        "EXPO_PUBLIC_ENV": "beta",
+        "EXPO_PUBLIC_API_URL": "https://beta.api.stackforge.xyz"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_ENV": "prod",
+        "EXPO_PUBLIC_API_URL": "https://api.stackforge.xyz"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
 }

@@ -1,6 +1,6 @@
 // Attach the polyfill as a Global function
-import structuredClone from '@ungap/structured-clone';
+import structuredClone from "@ungap/structured-clone";
 if (globalThis.structuredClone === undefined) {
-	// @ts-expect-error
-	globalThis.structuredClone = structuredClone;
+  // @ts-ignore
+  globalThis.structuredClone = structuredClone;
 }
