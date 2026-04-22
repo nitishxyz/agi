@@ -68,7 +68,7 @@ export const GitDiffPanel = memo(function GitDiffPanel() {
 
 		document.addEventListener('keydown', handleEscape);
 		return () => document.removeEventListener('keydown', handleEscape);
-	}, [isDiffOpen, closeDiff, setShowFullFile]);
+	}, [isDiffOpen, closeDiff]);
 
 	if (!isDiffOpen || !selectedFile) return null;
 

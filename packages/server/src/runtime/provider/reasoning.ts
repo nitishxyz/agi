@@ -35,7 +35,6 @@ function toAnthropicEffort(
 		case 'max':
 		case 'xhigh':
 			return 'max';
-		case 'high':
 		default:
 			return 'high';
 	}
@@ -54,7 +53,6 @@ function toOpenAIEffort(
 		case 'max':
 		case 'xhigh':
 			return 'xhigh';
-		case 'high':
 		default:
 			return 'high';
 	}
@@ -70,9 +68,6 @@ function toGoogleThinkingLevel(
 			return 'low';
 		case 'medium':
 			return 'medium';
-		case 'max':
-		case 'xhigh':
-		case 'high':
 		default:
 			return 'high';
 	}
@@ -95,7 +90,6 @@ function toThinkingBudget(
 		case 'max':
 		case 'xhigh':
 			return Math.min(24000, cap);
-		case 'high':
 		default:
 			return Math.min(16000, cap);
 	}

@@ -206,7 +206,7 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 			return;
 		}
 		const el = contentMeasureRef.current;
-		if (!el) return;
+		if (!el || el.textContent !== displayContent) return;
 		const nextHeight = Math.min(el.scrollHeight, MAX_SCROLL_H - 12);
 		setContentHeight((prev) => (prev === nextHeight ? prev : nextHeight));
 	}, [displayContent, hasDisplayContent]);
@@ -219,9 +219,9 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 		};
 	}, []);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: auto-scroll on content change
 	useEffect(() => {
 		const el = scrollRef.current;
+
 		if (!el || hoveredRef.current) return;
 		const nextLength = displayContent.length;
 		const naturalHeight = contentMeasureRef.current?.scrollHeight ?? 0;
@@ -340,9 +340,10 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 						>
 							{displayContent && (
 								<div className="pt-1.5">
-									<div
+									<section
 										ref={scrollRef}
 										className="overflow-y-auto"
+										aria-label={`${config.label} content`}
 										style={{
 											height: `${contentHeight}px`,
 											maskImage:
@@ -363,7 +364,7 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 										>
 											{displayContent}
 										</pre>
-									</div>
+									</section>
 								</div>
 							)}
 						</div>

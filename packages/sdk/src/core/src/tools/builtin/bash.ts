@@ -60,9 +60,9 @@ export function buildBashTool(projectRoot: string): {
 	name: string;
 	tool: Tool;
 } {
-	// biome-ignore lint/suspicious/noExplicitAny: AI SDK tool typings do not model async-iterable execute results yet.
 	const bash = tool({
 		description: DESCRIPTION,
+
 		inputSchema: z
 			.object({
 				cmd: z.string().describe('Shell command to run (bash -c <cmd>)'),
@@ -261,6 +261,6 @@ export function buildBashTool(projectRoot: string): {
 
 			return stream();
 		},
-	} as any);
+	}) as unknown as Tool;
 	return { name: 'bash', tool: bash };
 }

@@ -45,7 +45,7 @@ export function useProviderUsage(
 	fetchRef.current = fetchUsage;
 
 	useEffect(() => {
-		if (!isOAuthProvider) return;
+		if (!provider || !isOAuthProvider) return;
 
 		fetchRef.current();
 

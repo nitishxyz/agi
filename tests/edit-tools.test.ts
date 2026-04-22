@@ -34,6 +34,8 @@ afterAll(async () => {
 	await rm(testDir, { recursive: true, force: true });
 });
 
+const interpolatedReturnLine = '\treturn `' + '$' + '{label}!' + '`;';
+
 describe('edit and multiedit tools', () => {
 	it('requires read before edit', async () => {
 		const { tools } = await discoverProjectTools(projectRoot);
@@ -102,7 +104,7 @@ describe('edit and multiedit tools', () => {
 				},
 				{
 					oldString: '\treturn label;',
-					newString: '\treturn `${label}!`;',
+					newString: interpolatedReturnLine,
 				},
 			],
 		});
@@ -114,7 +116,7 @@ describe('edit and multiedit tools', () => {
 		});
 		const updated = await Bun.file(join(projectRoot, 'sample.ts')).text();
 		expect(updated).toContain('export function greetUser() {');
-		expect(updated).toContain('\treturn `${label}!`;');
+		expect(updated).toContain(interpolatedReturnLine);
 	});
 
 	it('rejects stale edits when file changes after read', async () => {
@@ -127,7 +129,7 @@ describe('edit and multiedit tools', () => {
 			[
 				'export function greetUser() {',
 				'\tconst label = "bonjour";',
-				'\treturn `${label}!`;',
+				interpolatedReturnLine,
 				'}',
 			].join('\n'),
 		);
