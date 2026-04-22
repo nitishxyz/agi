@@ -1,6 +1,9 @@
 import {
+	getAllAuth,
+	getOnboardingComplete,
 	loadConfig,
 	isProviderAuthorized,
+	setOnboardingComplete,
 	type ProviderId,
 } from '@ottocode/sdk';
 import { runAuth } from '../auth.ts';
@@ -9,9 +12,17 @@ export type WithAuthOptions = {
 	project?: string;
 };
 
+function isCiAuthMode(): boolean {
+	return process.env.OTTO_CI_MODE === '1' || Boolean(process.env.CI);
+}
+
 export async function ensureAuth(projectRoot: string): Promise<boolean> {
 	let cfg = await loadConfig(projectRoot);
+	const storedAuth = await getAllAuth(projectRoot);
+	const hasStoredAuth = Object.values(storedAuth).some(Boolean);
+	let onboardingComplete = await getOnboardingComplete(projectRoot);
 	const defaultProvider = cfg.defaults.provider as ProviderId;
+	const ciAuthMode = isCiAuthMode();
 
 	const checkAny = async (
 		config: Awaited<ReturnType<typeof loadConfig>>,
@@ -30,6 +41,31 @@ export async function ensureAuth(projectRoot: string): Promise<boolean> {
 		return statuses.some(Boolean);
 	};
 
+	if (ciAuthMode) {
+		return (
+			(await isProviderAuthorized(cfg, defaultProvider)) ||
+			(await checkAny(cfg))
+		);
+	}
+
+	if (hasStoredAuth && !onboardingComplete) {
+		await setOnboardingComplete(projectRoot);
+		onboardingComplete = true;
+	}
+
+	if (!hasStoredAuth && !onboardingComplete) {
+		const authSuccess = await runAuth(['login']);
+		if (!authSuccess) {
+			return false;
+		}
+		await setOnboardingComplete(projectRoot);
+		cfg = await loadConfig(projectRoot);
+		return (
+			(await isProviderAuthorized(cfg, defaultProvider)) ||
+			(await checkAny(cfg))
+		);
+	}
+
 	const defaultAuthorized = await isProviderAuthorized(cfg, defaultProvider);
 	if (defaultAuthorized) return true;
 	if (await checkAny(cfg)) return true;
@@ -38,6 +74,7 @@ export async function ensureAuth(projectRoot: string): Promise<boolean> {
 	if (!authSuccess) {
 		return false;
 	}
+	await setOnboardingComplete(projectRoot);
 
 	cfg = await loadConfig(projectRoot);
 	return (

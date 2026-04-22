@@ -20,13 +20,44 @@ export interface StartServerResult {
 	stop: () => Promise<void>;
 }
 
+function createProjectStorageError(
+	projectRoot: string,
+	dataDir: string,
+	dbPath: string,
+	error: unknown,
+): Error {
+	const reason = error instanceof Error ? error.message : String(error);
+	return new Error(
+		[
+			`Otto could not open its local project database at ${dbPath}.`,
+			`The current project needs a writable .otto directory under ${projectRoot}.`,
+			`Make sure ${dataDir} is writable, or rerun otto from a writable directory (or pass --project <path>).`,
+			`Original error: ${reason}`,
+		].join(' '),
+	);
+}
+
+async function ensureProjectStorage(projectRoot: string) {
+	const cfg = await loadConfig(projectRoot);
+	try {
+		await getDb(cfg.projectRoot);
+	} catch (error) {
+		throw createProjectStorageError(
+			cfg.projectRoot,
+			cfg.paths.dataDir,
+			cfg.paths.dbPath,
+			error,
+		);
+	}
+	return cfg;
+}
+
 export async function startApiServer(opts: {
 	project: string;
 	port?: number;
 }): Promise<StartServerResult> {
 	const projectRoot = opts.project;
-	const cfg = await loadConfig(projectRoot);
-	await getDb(cfg.projectRoot);
+	await ensureProjectStorage(projectRoot);
 
 	const app = createServer();
 	const portEnv = process.env.PORT ? Number(process.env.PORT) : undefined;
@@ -82,8 +113,7 @@ export interface ServeOptions {
 export async function handleServe(opts: ServeOptions, version: string) {
 	const projectRoot = opts.project;
 
-	const cfg = await loadConfig(projectRoot);
-	await getDb(cfg.projectRoot);
+	await ensureProjectStorage(projectRoot);
 
 	const app = createServer();
 	const portEnv = process.env.PORT ? Number(process.env.PORT) : undefined;

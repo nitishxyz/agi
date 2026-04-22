@@ -19,6 +19,13 @@ if (argv.includes('--acp')) {
 	import('./src/cli.ts').then(({ runCli }) =>
 		runCli(argv, (PKG as { version: string }).version)
 			.then(() => process.exit(0))
-			.catch(() => process.exit(1)),
+			.catch((error) => {
+				const message =
+					error instanceof Error
+						? (error.stack ?? error.message)
+						: String(error);
+				console.error(message);
+				process.exit(1);
+			}),
 	);
 }

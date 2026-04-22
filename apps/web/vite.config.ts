@@ -18,6 +18,8 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
+			// Some transitive deps still import the pre-v2 noble/ciphers subpath.
+			'@noble/ciphers/aes': '@noble/ciphers/aes.js',
 			// Resolve workspace packages to their source instead of dist
 			'@ottocode/web-sdk': path.resolve(
 				__dirname,

@@ -12,8 +12,11 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { box, table, colors } from './ui.ts';
 import {
 	getAllAuth,
+	providerEnvVar,
+	readEnvKey,
 	setAuth,
 	removeAuth,
+	setOnboardingComplete,
 	type ProviderId,
 	authorize,
 	exchange,
@@ -170,6 +173,69 @@ function logCopilotTokenSummary(models: Set<string>) {
 	}
 }
 
+async function finalizeSuccessfulLogin(provider: ProviderId) {
+	await ensureGlobalConfigDefaults(provider);
+	await setOnboardingComplete();
+}
+
+async function maybeImportEnvCredential(
+	provider: ProviderId,
+	cfg: Awaited<ReturnType<typeof loadConfig>>,
+	wantLocal: boolean,
+): Promise<'imported' | 'continue' | 'cancelled'> {
+	const envValue = readEnvKey(provider);
+	if (!envValue) return 'continue';
+
+	const envVar = providerEnvVar(provider);
+	const choice = (await select({
+		message: `Found ${envVar} in your environment`,
+		options: [
+			{ value: 'import', label: `Import ${envVar} into Otto` },
+			{ value: 'continue', label: 'Use a different credential or auth method' },
+		],
+	})) as 'import' | 'continue' | symbol;
+
+	if (isCancel(choice)) {
+		cancel('Cancelled');
+		return 'cancelled';
+	}
+
+	if (choice !== 'import') return 'continue';
+
+	if (provider === 'ottorouter') {
+		await setAuth(
+			provider,
+			{ type: 'wallet', secret: envValue },
+			cfg.projectRoot,
+			'global',
+		);
+	} else if (provider === 'copilot') {
+		await setAuth(
+			provider,
+			{ type: 'oauth', refresh: envValue, access: envValue, expires: 0 },
+			cfg.projectRoot,
+			'global',
+		);
+	} else {
+		await setAuth(
+			provider,
+			{ type: 'api', key: envValue },
+			cfg.projectRoot,
+			'global',
+		);
+	}
+
+	if (wantLocal)
+		log.warn(
+			'Local credential storage is disabled; saved to secure global location.',
+		);
+
+	await finalizeSuccessfulLogin(provider);
+	log.success(`Imported ${envVar}`);
+	outro('Done');
+	return 'imported';
+}
+
 export async function runAuth(args: string[]) {
 	const sub = args[0];
 	if (sub === 'login') return await runAuthLogin(args.slice(1));
@@ -298,6 +364,14 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 		provider = selected as ProviderId;
 	}
 
+	const envImportResult = await maybeImportEnvCredential(
+		provider,
+		cfg,
+		wantLocal,
+	);
+	if (envImportResult === 'imported') return true;
+	if (envImportResult === 'cancelled') return false;
+
 	if (provider === 'anthropic') {
 		return runAuthLoginAnthropic(cfg, wantLocal);
 	}
@@ -335,7 +409,7 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 		log.warn(
 			'Local credential storage is disabled; saved to secure global location.',
 		);
-	await ensureGlobalConfigDefaults(provider);
+	await finalizeSuccessfulLogin(provider);
 	log.success('Saved');
 	log.info(`Tip: you can also set ${meta.env} in your environment.`);
 	outro('Done');
@@ -385,7 +459,7 @@ async function runAuthLoginOpenAI(
 				log.warn(
 					'Local credential storage is disabled; saved to secure global location.',
 				);
-			await ensureGlobalConfigDefaults('openai');
+			await finalizeSuccessfulLogin('openai');
 			log.success('Saved');
 			log.info(
 				`Tip: you can also set ${PROVIDER_LINKS.openai.env} in your environment.`,
@@ -471,7 +545,7 @@ async function runAuthLoginOpenAI(
 					'Local credential storage is disabled; saved to secure global location.',
 				);
 
-			await ensureGlobalConfigDefaults('openai');
+			await finalizeSuccessfulLogin('openai');
 			outro('Done');
 			return true;
 		} catch (error: unknown) {
@@ -531,7 +605,7 @@ async function runAuthLoginAnthropic(
 				log.warn(
 					'Local credential storage is disabled; saved to secure global location.',
 				);
-			await ensureGlobalConfigDefaults('anthropic');
+			await finalizeSuccessfulLogin('anthropic');
 			log.success('Saved');
 			log.info(
 				`Tip: you can also set ${PROVIDER_LINKS.anthropic.env} in your environment.`,
@@ -606,7 +680,7 @@ async function runAuthLoginAnthropic(
 					'Local credential storage is disabled; saved to secure global location.',
 				);
 
-			await ensureGlobalConfigDefaults('anthropic');
+			await finalizeSuccessfulLogin('anthropic');
 			outro('Done');
 			return true;
 		} catch (error: unknown) {
@@ -685,7 +759,7 @@ async function runAuthLoginSetu(
 		log.warn(
 			'Local credential storage is disabled; saved to secure global location.',
 		);
-	await ensureGlobalConfigDefaults('ottorouter');
+	await finalizeSuccessfulLogin('ottorouter');
 	log.success('Saved');
 	console.log(`  Wallet Public Key: ${colors.cyan(publicKey)}`);
 	console.log(
@@ -808,7 +882,7 @@ async function runAuthLoginCopilot(
 				'Local credential storage is disabled; saved to secure global location.',
 			);
 
-		await ensureGlobalConfigDefaults('copilot');
+		await finalizeSuccessfulLogin('copilot');
 		log.success('GitHub Copilot authorized!');
 		logCopilotTokenSummary(models.models);
 		log.info(

@@ -33,6 +33,12 @@ const SKIP_SERVER_COMMANDS = new Set([
 	'auth',
 	'debug',
 	'web',
+	'ask',
+	'run',
+	'do',
+	'a',
+	'sessions',
+	'share',
 ]);
 
 export function createCli(version: string): Command {
@@ -42,6 +48,10 @@ export function createCli(version: string): Command {
 		.name('otto')
 		.description('AI-powered development assistant CLI')
 		.version(version, '-v, --version', 'Print version and exit')
+		.option(
+			'--ci',
+			'Disable interactive auth onboarding and rely on env/stored auth',
+		)
 		.option('--web', 'Open Web UI instead of TUI')
 		.hook('preAction', async (_thisCommand, actionCommand) => {
 			const cmdName = actionCommand.name();
@@ -72,67 +82,75 @@ export function createCli(version: string): Command {
 
 export async function runCli(argv: string[], version: string): Promise<void> {
 	const program = createCli(version);
-
-	const projectIdx = argv.indexOf('--project');
-	const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
-
-	const cmd = argv.find((arg) => !arg.startsWith('-'));
-	if (cmd) {
-		const discovered = await runDiscoveredCommand(
-			cmd,
-			argv.slice(argv.indexOf(cmd) + 1),
-			projectRoot,
-		);
-		if (discovered) return;
+	const previousCiMode = process.env.OTTO_CI_MODE;
+	if (argv.includes('--ci')) {
+		process.env.OTTO_CI_MODE = '1';
 	}
+	try {
+		const projectIdx = argv.indexOf('--project');
+		const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : process.cwd();
 
-	if (
-		argv.length === 0 ||
-		(argv.every((arg) => arg.startsWith('-')) &&
-			!argv.includes('-h') &&
-			!argv.includes('--help') &&
-			!argv.includes('-v') &&
-			!argv.includes('--version'))
-	) {
-		const debugEnabled = argv.includes('--debug');
-		const traceEnabled = argv.includes('--trace');
-		if (debugEnabled) {
-			setDebugEnabled(true);
-		}
-		if (traceEnabled) {
-			setTraceEnabled(true);
-		}
-
-		const useWeb = argv.includes('--web');
-		const portFlagIndex = argv.indexOf('--port');
-		const port =
-			portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : undefined;
-
-		if (useWeb) {
-			const noOpen = argv.includes('--no-open');
-			const networkFlag = argv.includes('--network');
-			await handleServe(
-				{
-					project: projectRoot,
-					port,
-					network: networkFlag,
-					noOpen,
-					tunnel: false,
-				},
-				version,
+		const cmd = argv.find((arg) => !arg.startsWith('-'));
+		if (cmd) {
+			const discovered = await runDiscoveredCommand(
+				cmd,
+				argv.slice(argv.indexOf(cmd) + 1),
+				projectRoot,
 			);
+			if (discovered) return;
+		}
+
+		if (
+			argv.length === 0 ||
+			(argv.every((arg) => arg.startsWith('-')) &&
+				!argv.includes('-h') &&
+				!argv.includes('--help') &&
+				!argv.includes('-v') &&
+				!argv.includes('--version'))
+		) {
+			const debugEnabled = argv.includes('--debug');
+			const traceEnabled = argv.includes('--trace');
+			if (debugEnabled) {
+				setDebugEnabled(true);
+			}
+			if (traceEnabled) {
+				setTraceEnabled(true);
+			}
+
+			const useWeb = argv.includes('--web');
+			const portFlagIndex = argv.indexOf('--port');
+			const port =
+				portFlagIndex >= 0 ? Number(argv[portFlagIndex + 1]) : undefined;
+
+			if (useWeb) {
+				const noOpen = argv.includes('--no-open');
+				const networkFlag = argv.includes('--network');
+				await handleServe(
+					{
+						project: projectRoot,
+						port,
+						network: networkFlag,
+						noOpen,
+						tunnel: false,
+					},
+					version,
+				);
+				return;
+			}
+
+			if (!(await ensureAuth(projectRoot))) return;
+			const server = await startApiServer({ project: projectRoot, port });
+			await startTui(server.port, server.stop);
 			return;
 		}
 
-		const server = await startApiServer({ project: projectRoot, port });
-		if (!(await ensureAuth(projectRoot))) return;
-		await startTui(server.port, server.stop);
-		return;
-	}
-
-	try {
 		await program.parseAsync(argv, { from: 'user' });
 	} finally {
+		if (previousCiMode === undefined) {
+			delete process.env.OTTO_CI_MODE;
+		} else {
+			process.env.OTTO_CI_MODE = previousCiMode;
+		}
 		await stopEphemeralServer();
 	}
 }

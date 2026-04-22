@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { runShare } from '../share.ts';
 import { ensureAuth } from '../middleware/with-auth.ts';
+import { ensureServer } from '../ask/server.ts';
 
 export interface ShareCommandOptions {
 	project: string;
@@ -18,6 +19,7 @@ export async function handleShare(
 	opts: ShareCommandOptions,
 ) {
 	if (!(await ensureAuth(opts.project))) return;
+	await ensureServer();
 
 	await runShare({
 		project: opts.project,

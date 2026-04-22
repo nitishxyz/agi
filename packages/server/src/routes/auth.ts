@@ -16,8 +16,8 @@ import {
 	exchange,
 	authorizeWeb,
 	exchangeWeb,
-	authorizeOpenAI,
-	exchangeOpenAI,
+	authorizeOpenAIWeb,
+	exchangeOpenAIWeb,
 	authorizeCopilot,
 	pollForCopilotTokenOnce,
 	type ProviderId,
@@ -488,45 +488,23 @@ export function registerAuthRoutes(app: Hono) {
 		try {
 			const provider = c.req.param('provider');
 			const mode = c.req.query('mode') || 'max';
+			const host = c.req.header('host') || 'localhost:3000';
+			const protocol = c.req.header('x-forwarded-proto') || 'http';
 
 			let url: string;
 			let verifier: string;
 			let callbackUrl = '';
 
 			if (provider === 'anthropic') {
-				const host = c.req.header('host') || 'localhost:3000';
-				const protocol = c.req.header('x-forwarded-proto') || 'http';
 				callbackUrl = `${protocol}://${host}/v1/auth/${provider}/oauth/callback`;
 				const result = authorizeWeb(mode as 'max' | 'console', callbackUrl);
 				url = result.url;
 				verifier = result.verifier;
 			} else if (provider === 'openai') {
-				const result = await authorizeOpenAI();
+				callbackUrl = `${protocol}://${host}/v1/auth/${provider}/oauth/callback`;
+				const result = authorizeOpenAIWeb(callbackUrl);
 				url = result.url;
 				verifier = result.verifier;
-				callbackUrl = 'localhost';
-				result
-					.waitForCallback()
-					.then(async (code) => {
-						const tokens = await exchangeOpenAI(code, verifier);
-						await setAuth(
-							'openai',
-							{
-								type: 'oauth',
-								refresh: tokens.refresh,
-								access: tokens.access,
-								expires: tokens.expires,
-								accountId: tokens.accountId,
-								idToken: tokens.idToken,
-							},
-							undefined,
-							'global',
-						);
-						result.close();
-					})
-					.catch(() => {
-						result.close();
-					});
 			} else {
 				return c.json({ error: 'OAuth not supported for this provider' }, 400);
 			}
@@ -594,8 +572,24 @@ export function registerAuthRoutes(app: Hono) {
 					'global',
 				);
 			} else if (provider === 'openai') {
-				return c.html(
-					'<html><body><h1>OpenAI uses localhost callback</h1><p>This route is not used for OpenAI. Please close this window.</p><script>setTimeout(() => window.close(), 3000);</script></body></html>',
+				const tokens = await exchangeOpenAIWeb(
+					code ?? '',
+					verifier,
+					callbackUrl,
+				);
+
+				await setAuth(
+					'openai',
+					{
+						type: 'oauth',
+						refresh: tokens.refresh,
+						access: tokens.access,
+						expires: tokens.expires,
+						accountId: tokens.accountId,
+						idToken: tokens.idToken,
+					},
+					undefined,
+					'global',
 				);
 			}
 

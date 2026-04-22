@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 export interface OnboardingStatus {
 	onboardingComplete: boolean;
-	setu: { configured: boolean; publicKey?: string };
+	ottorouter: { configured: boolean; publicKey?: string };
 	providers: Record<
 		string,
 		{
