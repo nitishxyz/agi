@@ -20,6 +20,7 @@ const providerLogos: Record<string, string> = {
 	anthropic: anthropicLogo,
 	openai: openaiLogo,
 	google: googleLogo,
+	ollama: ollamaCloudLogo,
 	'ollama-cloud': ollamaCloudLogo,
 	openrouter: openrouterLogo,
 	groq: groqLogo,
@@ -44,7 +45,10 @@ export const ProviderLogo = memo(function ProviderLogo({
 	className = '',
 	size = 16,
 }: ProviderLogoProps) {
-	const logoSvg = providerLogos[provider.toLowerCase()];
+	const normalizedProvider = provider.toLowerCase();
+	const logoSvg =
+		providerLogos[normalizedProvider] ??
+		(normalizedProvider.includes('ollama') ? ollamaCloudLogo : undefined);
 
 	if (!logoSvg) {
 		return (
