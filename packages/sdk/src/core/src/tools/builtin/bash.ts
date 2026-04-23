@@ -65,7 +65,9 @@ export function buildBashTool(projectRoot: string): {
 
 		inputSchema: z
 			.object({
-				cmd: z.string().describe('Shell command to run (bash -c <cmd>)'),
+				cmd: z
+					.string()
+					.describe('Non-interactive shell command to run (bash -c <cmd>)'),
 				cwd: z
 					.string()
 					.default('.')

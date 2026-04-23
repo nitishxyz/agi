@@ -1,4 +1,4 @@
-- Manage persistent terminals for long-running processes (dev servers, watchers, build processes)
+- Manage interactive and persistent terminals (REPLs, prompts, dev servers, watchers)
 - Returns terminal information and output
 - Supports creating, reading, writing, listing, and killing terminals
 
@@ -7,7 +7,7 @@
 ### start
 - Spawns a new persistent terminal (interactive shell by default)
 - Returns terminal ID for future operations
-- Use for processes that need to stay alive (dev servers, watchers, logs)
+- Use for commands that need stdin, a TTY, interactive input, or persistence across turns
 - Before starting, call `terminal(operation: "list")` to see if a matching service is already running
 - Provide a clear `purpose` or `title` (e.g. "web dev server port 9100") so humans can recognize it
 - Parameters:
@@ -54,19 +54,22 @@
 ## When to Use Terminal vs Bash
 
 ### Use terminal for:
+- Interactive commands that need stdin or a TTY: REPLs, prompts, shells, debuggers
 - Dev servers: npm run dev, bun dev
 - File watchers: bun test --watch, nodemon
 - Build watchers: bun build --watch
 - Log tailing: tail -f logs/app.log
 - Background services: docker compose up
 - Any process that needs to stay alive and produce continuous output
+- Any process you need to read from or write to across turns
 
 ### Use bash for:
 - Status checks: git status, ls, ps
 - One-off commands: mkdir, rm, curl
 - Quick scripts: bun run build, git commit
 - File operations: cat, sed, awk
-- Short-lived commands with immediate output
+- Non-interactive long-running commands that finish on their own (set an appropriate timeout)
+- Any command that does not need stdin, a TTY, or follow-up interaction
 
 ## Example Workflow
 
