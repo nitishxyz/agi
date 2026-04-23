@@ -882,6 +882,32 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					},
 				},
 				{
+					id: 'gpt-5.5',
+					ownedBy: 'openai',
+					label: 'GPT-5.5',
+					modalities: {
+						input: ['text', 'image', 'pdf'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: true,
+					temperature: false,
+					knowledge: '2025-12-01',
+					releaseDate: '2026-04-23',
+					lastUpdated: '2026-04-23',
+					openWeights: false,
+					cost: {
+						input: 5,
+						output: 30,
+						cacheRead: 0.5,
+					},
+					limit: {
+						context: 1050000,
+						output: 130000,
+					},
+				},
+				{
 					id: 'gpt-image-1',
 					ownedBy: 'openai',
 					label: 'gpt-image-1',
@@ -2813,7 +2839,7 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					},
 				},
 				{
-					id: 'gemma-4-26b-it',
+					id: 'gemma-4-26b-a4b-it',
 					ownedBy: 'google',
 					label: 'Gemma 4 26B',
 					modalities: {
@@ -4935,6 +4961,31 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					},
 				},
 				{
+					id: 'moonshotai/kimi-k2.6',
+					ownedBy: 'moonshot',
+					label: 'Kimi K2.6',
+					modalities: {
+						input: ['text', 'image'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: true,
+					temperature: true,
+					releaseDate: '2026-04-20',
+					lastUpdated: '2026-04-20',
+					openWeights: true,
+					cost: {
+						input: 0.95,
+						output: 4,
+						cacheRead: 0.16,
+					},
+					limit: {
+						context: 262144,
+						output: 262144,
+					},
+				},
+				{
 					id: 'nousresearch/hermes-3-llama-3.1-405b:free',
 					label: 'Hermes 3 405B Instruct (free)',
 					modalities: {
@@ -5707,9 +5758,9 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					lastUpdated: '2026-03-17',
 					openWeights: false,
 					cost: {
-						input: 7.5e-7,
-						output: 0.0000045,
-						cacheRead: 7.5e-8,
+						input: 0.75,
+						output: 4.5,
+						cacheRead: 0.075,
 					},
 					limit: {
 						context: 400000,
@@ -5733,9 +5784,9 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					lastUpdated: '2026-03-17',
 					openWeights: false,
 					cost: {
-						input: 2e-7,
-						output: 0.00000125,
-						cacheRead: 2e-8,
+						input: 0.2,
+						output: 1.25,
+						cacheRead: 0.02,
 					},
 					limit: {
 						context: 400000,
@@ -8142,6 +8193,31 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					},
 				},
 				{
+					id: 'hy3-preview-free',
+					label: 'Hy3 preview Free',
+					modalities: {
+						input: ['text'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: false,
+					temperature: true,
+					knowledge: '2025-06',
+					releaseDate: '2026-04-20',
+					lastUpdated: '2026-04-20',
+					openWeights: true,
+					cost: {
+						input: 0,
+						output: 0,
+						cacheRead: 0,
+					},
+					limit: {
+						context: 256000,
+						output: 64000,
+					},
+				},
+				{
 					id: 'kimi-k2',
 					ownedBy: 'moonshot',
 					label: 'Kimi K2',
@@ -8243,6 +8319,56 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					limit: {
 						context: 262144,
 						output: 262144,
+					},
+				},
+				{
+					id: 'kimi-k2.6',
+					ownedBy: 'moonshot',
+					label: 'Kimi K2.6',
+					modalities: {
+						input: ['text', 'image', 'video'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: true,
+					temperature: true,
+					knowledge: '2024-10',
+					releaseDate: '2026-04-21',
+					lastUpdated: '2026-04-21',
+					openWeights: true,
+					cost: {
+						input: 0.95,
+						output: 4,
+						cacheRead: 0.16,
+					},
+					limit: {
+						context: 262144,
+						output: 65536,
+					},
+				},
+				{
+					id: 'ling-2.6-flash-free',
+					label: 'Ling 2.6 Flash Free',
+					modalities: {
+						input: ['text'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: false,
+					attachment: false,
+					temperature: true,
+					knowledge: '2025-06',
+					releaseDate: '2026-04-21',
+					lastUpdated: '2026-04-21',
+					openWeights: true,
+					cost: {
+						input: 0,
+						output: 0,
+					},
+					limit: {
+						context: 262100,
+						output: 32800,
 					},
 				},
 				{
@@ -8431,6 +8557,32 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					},
 				},
 				{
+					id: 'minimax-m2.7',
+					ownedBy: 'minimax',
+					label: 'MiniMax M2.7',
+					modalities: {
+						input: ['text'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: false,
+					temperature: true,
+					knowledge: '2025-01',
+					releaseDate: '2026-03-18',
+					lastUpdated: '2026-03-18',
+					openWeights: true,
+					cost: {
+						input: 0.3,
+						output: 1.2,
+						cacheRead: 0.06,
+					},
+					limit: {
+						context: 204800,
+						output: 131072,
+					},
+				},
+				{
 					id: 'nemotron-3-super-free',
 					label: 'Nemotron 3 Super Free',
 					modalities: {
@@ -8505,7 +8657,7 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 						output: 65536,
 					},
 					provider: {
-						npm: '@ai-sdk/alibaba',
+						npm: '@ai-sdk/anthropic',
 					},
 				},
 				{
@@ -8534,7 +8686,7 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 						output: 65536,
 					},
 					provider: {
-						npm: '@ai-sdk/alibaba',
+						npm: '@ai-sdk/anthropic',
 					},
 				},
 				{
@@ -9452,6 +9604,32 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 						input: 0.6,
 						output: 3,
 						cacheRead: 0.1,
+					},
+					limit: {
+						context: 262144,
+						output: 262144,
+					},
+				},
+				{
+					id: 'kimi-k2.6',
+					ownedBy: 'moonshot',
+					label: 'Kimi K2.6',
+					modalities: {
+						input: ['text', 'image', 'video'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: true,
+					temperature: true,
+					knowledge: '2025-01',
+					releaseDate: '2026-04-21',
+					lastUpdated: '2026-04-21',
+					openWeights: true,
+					cost: {
+						input: 0.95,
+						output: 4,
+						cacheRead: 0.16,
 					},
 					limit: {
 						context: 262144,
