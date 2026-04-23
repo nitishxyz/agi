@@ -159,11 +159,6 @@ jobs:
             name: Linux-arm64
             cli_platform: linux-arm64
             enabled: ${{ inputs.platform_linux }}
-          - platform: windows-latest
-            target: x86_64-pc-windows-msvc
-            name: Windows-x64
-            cli_platform: windows-x64
-            enabled: ${{ inputs.platform_windows }}
     steps:
       - name: Skip if platform disabled
         if: matrix.enabled != true
@@ -212,7 +207,6 @@ jobs:
             x86_64-apple-darwin)   RG_TARGET="x86_64-apple-darwin" ;;
             x86_64-unknown-linux-gnu)  RG_TARGET="x86_64-unknown-linux-musl" ;;
             aarch64-unknown-linux-gnu) RG_TARGET="aarch64-unknown-linux-gnu" ;;
-            x86_64-pc-windows-msvc)    RG_TARGET="x86_64-pc-windows-msvc" ;;
             *) echo "Unknown target: ${{ matrix.target }}"; exit 1 ;;
           esac
           VENDOR_DST="vendor/bin/${PLATFORM}"
@@ -236,18 +230,14 @@ jobs:
         run: |
           set -euo pipefail
           PLATFORM="${{ matrix.cli_platform }}"
-          EXT=""
-          if [[ "$PLATFORM" == windows-* ]]; then EXT=".exe"; fi
           cd apps/cli
           bun run ../../scripts/build-web.ts
           bun run ../../scripts/prepare-embedded-bins.ts "${PLATFORM}"
           mkdir -p dist
-          bun build --compile --minify --target="bun-${PLATFORM}" ./index.ts --outfile "dist/otto-${PLATFORM}${EXT}"
+          bun build --compile --minify --target="bun-${PLATFORM}" ./index.ts --outfile "dist/otto-${PLATFORM}"
           mkdir -p ../desktop/src-tauri/resources/binaries
-          cp "dist/otto-${PLATFORM}${EXT}" "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}${EXT}"
-          if [[ "$PLATFORM" != windows-* ]]; then
-            chmod +x "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}"
-          fi
+          cp "dist/otto-${PLATFORM}" "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}"
+          chmod +x "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}"
 
       - name: Import Apple Certificate
         if: matrix.enabled && startsWith(matrix.platform, 'macos')
@@ -301,8 +291,6 @@ jobs:
           command: |
             if [[ "${{ matrix.target }}" == *"linux"* ]]; then
               cd apps/desktop && npm run tauri build -- --target ${{ matrix.target }} --bundles deb
-            elif [[ "${{ matrix.target }}" == *"windows"* ]]; then
-              cd apps/desktop && npm run tauri build -- --target ${{ matrix.target }} --bundles msi,nsis
             else
               cd apps/desktop && npm run tauri build -- --target ${{ matrix.target }}
             fi
@@ -328,8 +316,6 @@ jobs:
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
-            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
-            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
           if-no-files-found: ignore
 
   test-build-canvas:

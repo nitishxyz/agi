@@ -326,9 +326,6 @@ jobs:
           - platform: ubuntu-22.04-arm
             target: aarch64-unknown-linux-gnu
             name: Linux-arm64
-          - platform: windows-latest
-            target: x86_64-pc-windows-msvc
-            name: Windows-x64
     steps:
       - uses: actions/checkout@v4
 
@@ -389,26 +386,15 @@ jobs:
               PLATFORM="linux-arm64"
               RG_TARGET="aarch64-unknown-linux-gnu"
               ;;
-            x86_64-pc-windows-msvc)
-              PLATFORM="windows-x64"
-              RG_TARGET="x86_64-pc-windows-msvc"
-              ;;
             *) echo "Unknown target: ${{ matrix.target }}"; exit 1 ;;
           esac
           VENDOR_DST="vendor/bin/${PLATFORM}"
           mkdir -p "$VENDOR_DST"
           ARCHIVE="ripgrep-${RIPGREP_VERSION}-${RG_TARGET}"
-          if [[ "$PLATFORM" == windows-* ]]; then
-            URL="https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/${ARCHIVE}.zip"
-            curl -fsSL "$URL" -o /tmp/rg.zip
-            unzip -q /tmp/rg.zip -d /tmp
-            cp "/tmp/${ARCHIVE}/rg.exe" "$VENDOR_DST/rg.exe"
-          else
-            URL="https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/${ARCHIVE}.tar.gz"
-            curl -fsSL "$URL" | tar -xz -C /tmp
-            cp "/tmp/${ARCHIVE}/rg" "$VENDOR_DST/rg"
-            chmod +x "$VENDOR_DST/rg"
-          fi
+          URL="https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/${ARCHIVE}.tar.gz"
+          curl -fsSL "$URL" | tar -xz -C /tmp
+          cp "/tmp/${ARCHIVE}/rg" "$VENDOR_DST/rg"
+          chmod +x "$VENDOR_DST/rg"
           echo "Downloaded rg to ${VENDOR_DST}"
 
       - name: Build CLI binary for desktop
@@ -420,21 +406,16 @@ jobs:
             x86_64-apple-darwin)  PLATFORM="darwin-x64" ;;
             x86_64-unknown-linux-gnu) PLATFORM="linux-x64" ;;
             aarch64-unknown-linux-gnu) PLATFORM="linux-arm64" ;;
-            x86_64-pc-windows-msvc) PLATFORM="windows-x64" ;;
             *) echo "Unknown target: ${{ matrix.target }}"; exit 1 ;;
           esac
           cd apps/cli
           bun run ../../scripts/build-web.ts
           bun run ../../scripts/prepare-embedded-bins.ts "${PLATFORM}"
           mkdir -p dist
-          EXT=""
-          if [[ "$PLATFORM" == windows-* ]]; then EXT=".exe"; fi
-          bun build --compile --minify --target="bun-${PLATFORM}" ./index.ts --outfile "dist/otto-${PLATFORM}${EXT}"
+          bun build --compile --minify --target="bun-${PLATFORM}" ./index.ts --outfile "dist/otto-${PLATFORM}"
           mkdir -p ../desktop/src-tauri/resources/binaries
-          cp "dist/otto-${PLATFORM}${EXT}" "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}${EXT}"
-          if [[ "$PLATFORM" != windows-* ]]; then
-            chmod +x "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}"
-          fi
+          cp "dist/otto-${PLATFORM}" "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}"
+          chmod +x "../desktop/src-tauri/resources/binaries/otto-${PLATFORM}"
           echo "Built CLI with embedded rg and copied to desktop resources"
 
       - name: Import Apple Certificate
@@ -484,8 +465,6 @@ jobs:
           command: |
             if [[ "${{ matrix.target }}" == *"linux"* ]]; then
               cd apps/desktop && npm run tauri build -- --target ${{ matrix.target }} --bundles deb
-            elif [[ "${{ matrix.target }}" == *"windows"* ]]; then
-              cd apps/desktop && npm run tauri build -- --target ${{ matrix.target }} --bundles msi,nsis
             else
               cd apps/desktop && npm run tauri build -- --target ${{ matrix.target }}
             fi
@@ -528,10 +507,6 @@ jobs:
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz.sig
             apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
-            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
-            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi.sig
-            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
-            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe.sig
           if-no-files-found: ignore
 
   build-canvas:
@@ -982,7 +957,6 @@ jobs:
           DARWIN_X64_SIG=""
           LINUX_X64_SIG=""
           LINUX_ARM64_SIG=""
-          WINDOWS_X64_SIG=""
 
           for f in ./release/*.app.tar.gz.sig; do
             [ -f "$f" ] || continue
@@ -1011,25 +985,11 @@ jobs:
             esac
           done
 
-          for f in ./release/*.msi.sig; do
-            [ -f "$f" ] || continue
-            name=$(basename "$f")
-            sig=$(cat "$f")
-            WINDOWS_X64_SIG="$sig"
-          done
-
-          for f in ./release/*.nsis*.exe.sig ./release/*-setup*.exe.sig; do
-            [ -f "$f" ] || continue
-            name=$(basename "$f")
-            sig=$(cat "$f")
-            [ -z "$WINDOWS_X64_SIG" ] && WINDOWS_X64_SIG="$sig"
-          done
 
           DARWIN_AARCH64_URL=""
           DARWIN_X64_URL=""
           LINUX_X64_URL=""
           LINUX_ARM64_URL=""
-          WINDOWS_X64_URL=""
           for f in ./release/*.app.tar.gz; do
             [ -f "$f" ] || continue
             name=$(basename "$f")
@@ -1057,13 +1017,6 @@ jobs:
             esac
           done
 
-          for f in ./release/*.msi; do
-            [ -f "$f" ] || continue
-            name=$(basename "$f")
-            [[ "$name" == *.sig ]] && continue
-            url="${BASE_URL}/${name}"
-            WINDOWS_X64_URL="$url"
-          done
 
           PLATFORMS=""
           add_platform() {
@@ -1076,7 +1029,6 @@ jobs:
           add_platform "darwin-x86_64" "$DARWIN_X64_SIG" "$DARWIN_X64_URL"
           add_platform "linux-x86_64" "$LINUX_X64_SIG" "$LINUX_X64_URL"
           add_platform "linux-aarch64" "$LINUX_ARM64_SIG" "$LINUX_ARM64_URL"
-          add_platform "windows-x86_64" "$WINDOWS_X64_SIG" "$WINDOWS_X64_URL"
 
           cat > ./release/latest.json <<EOF
           {
@@ -1114,7 +1066,6 @@ jobs:
             - **macOS (Intel)**: OTTO_${{ needs.bump-version.outputs.desktop_version }}_x64.dmg
             - **Linux (x64)**: otto_${{ needs.bump-version.outputs.desktop_version }}_amd64.deb
             - **Linux (ARM64)**: otto_${{ needs.bump-version.outputs.desktop_version }}_arm64.deb
-            - **Windows (x64)**: otto_${{ needs.bump-version.outputs.desktop_version }}_x64-setup.msi
 
             ### Installation
 
@@ -1123,7 +1074,6 @@ jobs:
 
             **Linux**: Download the .deb and install with `sudo dpkg -i otto_*.deb`.
 
-            **Windows**: Download the .msi installer and run it, or use the .exe NSIS installer.
           files: ./release/*
           draft: false
           prerelease: false
