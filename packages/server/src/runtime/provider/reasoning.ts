@@ -170,6 +170,7 @@ function getReasoningProviderTarget(
 
 	if (provider === 'ottorouter') return 'openrouter';
 	if (provider === 'openrouter') return 'openrouter';
+	if (definition?.compatibility === 'ollama') return 'ollama';
 	if (
 		provider === 'moonshot' ||
 		provider === 'zai' ||
@@ -183,6 +184,7 @@ function getReasoningProviderTarget(
 	if (npmBinding === '@ai-sdk/anthropic') return 'anthropic';
 	if (npmBinding === '@ai-sdk/openai') return 'openai';
 	if (npmBinding === '@ai-sdk/google') return 'google';
+	if (npmBinding === 'ai-sdk-ollama') return 'ollama';
 	if (npmBinding === '@ai-sdk/openai-compatible') return 'openai-compatible';
 	if (npmBinding === '@openrouter/ai-sdk-provider') return 'openrouter';
 
@@ -218,11 +220,13 @@ export function buildReasoningConfig(args: {
 	} = args;
 	const definition = cfg ? getProviderDefinition(cfg, provider) : undefined;
 	const supportsReasoning =
-		definition?.source === 'custom'
+		definition?.compatibility === 'ollama'
 			? true
-			: provider === 'ottorouter'
+			: definition?.source === 'custom'
 				? true
-				: modelSupportsReasoning(provider, model);
+				: provider === 'ottorouter'
+					? true
+					: modelSupportsReasoning(provider, model);
 	if (!reasoningText || !supportsReasoning) {
 		return {
 			providerOptions: {},

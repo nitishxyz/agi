@@ -20,6 +20,7 @@ export async function runSetup(projectRoot?: string) {
 			{ value: 'openai', label: 'OpenAI' },
 			{ value: 'anthropic', label: 'Anthropic' },
 			{ value: 'google', label: 'Google (Gemini)' },
+			{ value: 'ollama-cloud', label: 'Ollama Cloud' },
 			{ value: 'openrouter', label: 'OpenRouter' },
 			{ value: 'opencode', label: 'OpenCode' },
 			{ value: 'ottorouter', label: 'OttoRouter' },
@@ -38,6 +39,7 @@ export async function runSetup(projectRoot?: string) {
 		openai: { enabled: false },
 		anthropic: { enabled: false },
 		google: { enabled: false },
+		'ollama-cloud': { enabled: false },
 		openrouter: { enabled: false },
 		opencode: { enabled: false },
 		copilot: { enabled: false },
@@ -59,19 +61,21 @@ export async function runSetup(projectRoot?: string) {
 					? 'ANTHROPIC_API_KEY'
 					: p === 'google'
 						? 'GOOGLE_GENERATIVE_AI_API_KEY'
-						: p === 'openrouter'
-							? 'OPENROUTER_API_KEY'
-							: p === 'opencode'
-								? 'OPENCODE_API_KEY'
-								: p === 'ottorouter'
-									? 'OTTOROUTER_PRIVATE_KEY'
-									: p === 'zai'
-										? 'ZAI_API_KEY'
-										: p === 'zai-coding'
-											? 'ZAI_CODING_API_KEY'
-											: p === 'moonshot'
-												? 'MOONSHOT_API_KEY'
-												: 'MINIMAX_API_KEY';
+						: p === 'ollama-cloud'
+							? 'OLLAMA_API_KEY'
+							: p === 'openrouter'
+								? 'OPENROUTER_API_KEY'
+								: p === 'opencode'
+									? 'OPENCODE_API_KEY'
+									: p === 'ottorouter'
+										? 'OTTOROUTER_PRIVATE_KEY'
+										: p === 'zai'
+											? 'ZAI_API_KEY'
+											: p === 'zai-coding'
+												? 'ZAI_CODING_API_KEY'
+												: p === 'moonshot'
+													? 'MOONSHOT_API_KEY'
+													: 'MINIMAX_API_KEY';
 		const key = await text({
 			message: `Enter ${keyLabel} (leave empty to skip)`,
 			initialValue: '',
@@ -93,14 +97,21 @@ export async function runSetup(projectRoot?: string) {
 
 	// Choose default model from catalog for that provider
 	const models = catalog[defaultProvider as ProviderId]?.models ?? [];
-	const defaultModel = (await select({
-		message: `Default model for ${String(defaultProvider)}:`,
-		options: models.map((m) => ({
-			value: m.id,
-			label: m.label ? `${m.label} (${m.id})` : m.id,
-		})),
-		initialValue: cfg.defaults.model,
-	})) as string | symbol;
+	const defaultModel =
+		models.length > 0
+			? ((await select({
+					message: `Default model for ${String(defaultProvider)}:`,
+					options: models.map((m) => ({
+						value: m.id,
+						label: m.label ? `${m.label} (${m.id})` : m.id,
+					})),
+					initialValue: cfg.defaults.model,
+				})) as string | symbol)
+			: ((await text({
+					message: `Default model for ${String(defaultProvider)}:`,
+					placeholder: 'e.g. gpt-oss:120b',
+					initialValue: cfg.defaults.model,
+				})) as string | symbol);
 	if (isCancel(defaultModel)) return cancel('Setup cancelled');
 
 	// Choose default agent
@@ -126,6 +137,7 @@ export async function runSetup(projectRoot?: string) {
 			openai: providers.openai,
 			anthropic: providers.anthropic,
 			google: providers.google,
+			'ollama-cloud': providers['ollama-cloud'],
 			openrouter: providers.openrouter,
 			opencode: providers.opencode,
 			copilot: providers.copilot,

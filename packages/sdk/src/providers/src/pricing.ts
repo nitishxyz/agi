@@ -70,6 +70,9 @@ const pricingTable: Record<ProviderName, PricingEntry[]> = {
 			outputPerMillion: 10.5,
 		},
 	],
+	'ollama-cloud': [
+		// Pricing can vary by your Ollama Cloud model/account; leave undefined here
+	],
 	openrouter: [
 		// Prefer catalog pricing; keep empty to defer to catalog or undefined
 	],

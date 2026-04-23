@@ -50,6 +50,13 @@ export async function resolveModel(
 	if (provider === 'google') {
 		return resolveGoogleModel(model, cfg);
 	}
+	if (provider === 'ollama-cloud') {
+		const definition = getProviderDefinition(cfg, provider);
+		if (!definition) {
+			throw new Error(`Unsupported provider: ${provider}`);
+		}
+		return resolveCustomConfiguredModel(definition, cfg, model, options);
+	}
 	if (provider === 'openrouter') {
 		return resolveOpenRouterModel(model);
 	}
@@ -106,7 +113,9 @@ function resolveCustomConfiguredModel(
 	},
 ) {
 	const apiKey = getConfiguredProviderApiKey(cfg, definition.id) || '';
-	const baseURL = definition.baseURL;
+	const baseURL =
+		definition.baseURL ||
+		(definition.id === 'ollama-cloud' ? 'https://ollama.com' : undefined);
 
 	if (!baseURL) {
 		throw new Error(

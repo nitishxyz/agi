@@ -527,6 +527,7 @@
         "@ottorouter/ai-sdk": "workspace:*",
         "@solana/web3.js": "^1.98.0",
         "ai": "^6.0.0",
+        "ai-sdk-ollama": "^3.8.3",
         "bs58": "^6.0.0",
         "bun-pty": "^0.3.2",
         "diff": "^8.0.2",

@@ -1,5 +1,6 @@
 import type { Hono } from 'hono';
 import {
+	discoverOllamaModels,
 	loadConfig,
 	catalog,
 	getConfiguredProviderModels,
@@ -8,6 +9,7 @@ import {
 	getAuth,
 	logger,
 	readEnvKey,
+	type ModelInfo,
 	type ProviderId,
 	filterModelsForAuthType,
 } from '@ottocode/sdk';
@@ -82,6 +84,39 @@ async function getAuthorizedCopilotModels(
 	return successful ? merged : null;
 }
 
+async function discoverProviderModels(args: {
+	provider: ProviderId;
+	providerDefinition: NonNullable<ReturnType<typeof getProviderDefinition>>;
+	projectRoot: string;
+}): Promise<ModelInfo[] | null> {
+	const { provider, providerDefinition, projectRoot } = args;
+	if (
+		providerDefinition.compatibility !== 'ollama' ||
+		!providerDefinition.baseURL
+	) {
+		return null;
+	}
+
+	try {
+		const auth = await getAuth(provider, projectRoot);
+		const apiKey =
+			auth?.type === 'api'
+				? auth.key
+				: (readEnvKey(provider) ?? providerDefinition.apiKey);
+		const discovered = await discoverOllamaModels({
+			baseURL: providerDefinition.baseURL,
+			apiKey,
+		});
+		return discovered.models;
+	} catch (error) {
+		logger.warn('Failed to discover Ollama models', {
+			provider,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return null;
+	}
+}
+
 export function registerModelsRoutes(app: Hono) {
 	app.get('/v1/config/providers/:provider/models', async (c) => {
 		try {
@@ -106,7 +141,7 @@ export function registerModelsRoutes(app: Hono) {
 				return c.json({ error: 'Provider not authorized' }, 403);
 			}
 
-			const providerCatalog = catalog[provider];
+			const providerCatalog = catalog[provider as keyof typeof catalog];
 			const providerDefinition = getProviderDefinition(cfg, provider);
 			if (!providerDefinition) {
 				logger.warn('Provider not found in catalog', { provider });
@@ -118,9 +153,16 @@ export function registerModelsRoutes(app: Hono) {
 				provider,
 				projectRoot,
 			);
-			const filteredModels = providerCatalog
-				? filterModelsForAuthType(provider, providerCatalog.models, authType)
-				: getConfiguredProviderModels(cfg, provider);
+			const discoveredModels = await discoverProviderModels({
+				provider,
+				providerDefinition,
+				projectRoot,
+			});
+			const filteredModels =
+				discoveredModels ??
+				(providerCatalog
+					? filterModelsForAuthType(provider, providerCatalog.models, authType)
+					: getConfiguredProviderModels(cfg, provider));
 			const copilotAllowedModels =
 				provider === 'copilot'
 					? await getAuthorizedCopilotModels(projectRoot)
@@ -188,7 +230,7 @@ export function registerModelsRoutes(app: Hono) {
 			> = {};
 
 			for (const provider of authorizedProviders) {
-				const providerCatalog = catalog[provider];
+				const providerCatalog = catalog[provider as keyof typeof catalog];
 				const providerDefinition = getProviderDefinition(cfg, provider);
 				if (providerDefinition) {
 					const authType = await getAuthTypeForProvider(
@@ -196,13 +238,20 @@ export function registerModelsRoutes(app: Hono) {
 						provider,
 						projectRoot,
 					);
-					const filteredModels = providerCatalog
-						? filterModelsForAuthType(
-								provider,
-								providerCatalog.models,
-								authType,
-							)
-						: getConfiguredProviderModels(cfg, provider);
+					const discoveredModels = await discoverProviderModels({
+						provider,
+						providerDefinition,
+						projectRoot,
+					});
+					const filteredModels =
+						discoveredModels ??
+						(providerCatalog
+							? filterModelsForAuthType(
+									provider,
+									providerCatalog.models,
+									authType,
+								)
+							: getConfiguredProviderModels(cfg, provider));
 					modelsMap[provider] = {
 						label: providerDefinition.label,
 						authType,

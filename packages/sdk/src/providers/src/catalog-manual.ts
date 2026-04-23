@@ -11,6 +11,7 @@ import type {
 
 type CatalogMap = Partial<Record<BuiltInProviderId, ProviderCatalogEntry>>;
 
+const OLLAMA_CLOUD_ID: BuiltInProviderId = 'ollama-cloud';
 const OTTOROUTER_ID: BuiltInProviderId = 'ottorouter';
 
 const OWNER_NPM: Record<ModelOwner, string> = {
@@ -88,13 +89,27 @@ function buildOttoRouterEntry(): ProviderCatalogEntry | null {
 	};
 }
 
+function buildOllamaCloudEntry(): ProviderCatalogEntry {
+	return {
+		id: OLLAMA_CLOUD_ID,
+		label: 'Ollama Cloud',
+		env: ['OLLAMA_API_KEY'],
+		npm: 'ai-sdk-ollama',
+		api: 'https://ollama.com',
+		doc: 'https://docs.ollama.com/cloud',
+		models: [],
+	};
+}
+
 export function mergeManualCatalog(
 	base: CatalogMap,
 ): Record<BuiltInProviderId, ProviderCatalogEntry> {
+	const ollamaCloudEntry = buildOllamaCloudEntry();
 	const manualEntry = buildOttoRouterEntry();
 	const merged: Record<BuiltInProviderId, ProviderCatalogEntry> = {
 		...(base as Record<BuiltInProviderId, ProviderCatalogEntry>),
 	};
+	merged[OLLAMA_CLOUD_ID] = ollamaCloudEntry;
 	if (manualEntry) {
 		merged[OTTOROUTER_ID] = manualEntry;
 	}

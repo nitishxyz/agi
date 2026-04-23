@@ -5,6 +5,7 @@ export type BuiltInProviderId =
 	| 'openai'
 	| 'anthropic'
 	| 'google'
+	| 'ollama-cloud'
 	| 'openrouter'
 	| 'opencode'
 	| 'copilot'

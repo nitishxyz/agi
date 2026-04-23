@@ -1,12 +1,14 @@
 import { openai, createOpenAI } from '@ai-sdk/openai';
 import { anthropic, createAnthropic } from '@ai-sdk/anthropic';
 import { google, createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOllama } from 'ai-sdk-ollama';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
 	catalog,
 	createOttoRouterModel,
 	createOpenAIOAuthModel,
+	normalizeOllamaBaseURL,
 } from '../../../providers/src/index.ts';
 import { createCopilotModel } from '../../../providers/src/copilot-client.ts';
 import type { OAuth } from '../../../types/src/index.ts';
@@ -32,13 +34,15 @@ export type ProviderName =
 	| 'openai'
 	| 'anthropic'
 	| 'google'
+	| 'ollama-cloud'
 	| 'openrouter'
 	| 'opencode'
 	| 'copilot'
 	| 'ottorouter'
 	| 'zai'
 	| 'zai-coding'
-	| 'moonshot';
+	| 'moonshot'
+	| 'minimax';
 
 export type ModelConfig = {
 	apiKey?: string;
@@ -94,6 +98,20 @@ export async function resolveModel(
 			return instance(model);
 		}
 		return google(model);
+	}
+
+	if (provider === 'ollama-cloud') {
+		const entry = catalog[provider];
+		const apiKey = config.apiKey || process.env.OLLAMA_API_KEY || '';
+		const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
+		const baseURL = normalizeOllamaBaseURL(
+			config.baseURL || entry?.api || 'https://ollama.com',
+		);
+		const instance = createOllama({
+			baseURL,
+			headers,
+		});
+		return instance(model);
 	}
 
 	if (provider === 'openrouter') {
@@ -230,6 +248,15 @@ export async function resolveModel(
 			baseURL,
 			headers,
 		});
+		return instance(model);
+	}
+
+	if (provider === 'minimax') {
+		const entry = catalog[provider];
+		const apiKey = config.apiKey || process.env.MINIMAX_API_KEY || '';
+		const baseURL =
+			config.baseURL || entry?.api || 'https://api.minimax.io/anthropic/v1';
+		const instance = createAnthropic({ apiKey, baseURL });
 		return instance(model);
 	}
 

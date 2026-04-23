@@ -56,6 +56,11 @@ const PROVIDER_LINKS: Record<
 		url: 'https://aistudio.google.com/app/apikey',
 		env: 'GOOGLE_GENERATIVE_AI_API_KEY',
 	},
+	'ollama-cloud': {
+		name: 'Ollama Cloud',
+		url: 'https://ollama.com/settings/keys',
+		env: 'OLLAMA_API_KEY',
+	},
 	openrouter: {
 		name: 'OpenRouter',
 		url: 'https://openrouter.ai/keys',
@@ -334,9 +339,11 @@ export async function runAuthStatus(_args: string[]) {
 export async function runAuthLogin(_args: string[]): Promise<boolean> {
 	const cfg = await loadConfig(process.cwd());
 	const wantLocal = _args.includes('--local');
-	const providerArg = _args.find((arg) =>
-		(providerIds as readonly string[]).includes(arg as ProviderId),
-	) as ProviderId | undefined;
+	const providerAlias = _args.includes('ollama') ? 'ollama-cloud' : undefined;
+	const providerArg = (providerAlias ??
+		_args.find((arg) =>
+			(providerIds as readonly string[]).includes(arg as ProviderId),
+		)) as ProviderId | undefined;
 	intro('Add credential');
 	let provider: ProviderId;
 	if (providerArg) {
@@ -348,6 +355,10 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 				{ value: 'openai', label: PROVIDER_LINKS.openai.name },
 				{ value: 'anthropic', label: PROVIDER_LINKS.anthropic.name },
 				{ value: 'google', label: PROVIDER_LINKS.google.name },
+				{
+					value: 'ollama-cloud',
+					label: PROVIDER_LINKS['ollama-cloud'].name,
+				},
 				{ value: 'openrouter', label: PROVIDER_LINKS.openrouter.name },
 				{ value: 'opencode', label: PROVIDER_LINKS.opencode.name },
 				{ value: 'copilot', label: PROVIDER_LINKS.copilot.name },
@@ -355,6 +366,7 @@ export async function runAuthLogin(_args: string[]): Promise<boolean> {
 				{ value: 'zai', label: PROVIDER_LINKS.zai.name },
 				{ value: 'zai-coding', label: PROVIDER_LINKS['zai-coding'].name },
 				{ value: 'moonshot', label: PROVIDER_LINKS.moonshot.name },
+				{ value: 'minimax', label: PROVIDER_LINKS.minimax.name },
 			],
 		})) as ProviderId | symbol;
 		if (isCancel(selected)) {
@@ -939,9 +951,11 @@ async function ensureGlobalConfigDefaults(provider: ProviderId) {
 			? 'claude-3-haiku'
 			: provider === 'openai'
 				? 'gpt-4o-mini'
-				: provider === 'google'
-					? 'gemini-1.5-flash'
-					: 'anthropic/claude-3.5-sonnet');
+				: provider === 'ollama-cloud'
+					? 'gpt-oss:120b'
+					: provider === 'google'
+						? 'gemini-1.5-flash'
+						: 'anthropic/claude-3.5-sonnet');
 	const content = {
 		defaults: { agent: 'build', provider, model: defaultModel },
 		providers: {

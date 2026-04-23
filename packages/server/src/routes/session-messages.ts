@@ -1,13 +1,15 @@
 import type { Hono } from 'hono';
-import { loadConfig, type ReasoningLevel } from '@ottocode/sdk';
+import {
+	ensureProviderEnv,
+	getProviderDefinition,
+	isProviderAuthorized,
+	loadConfig,
+	type ReasoningLevel,
+	validateProviderModel,
+} from '@ottocode/sdk';
 import { getDb } from '@ottocode/database';
 import { messages, messageParts, sessions } from '@ottocode/database/schema';
 import { eq, inArray } from 'drizzle-orm';
-import {
-	validateProviderModel,
-	isProviderAuthorized,
-	ensureProviderEnv,
-} from '@ottocode/sdk';
 import { dispatchAssistantMessage } from '../runtime/message/service.ts';
 import { logger } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
@@ -150,6 +152,7 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				);
 			}
 			await ensureProviderEnv(cfg, provider);
+			const providerDefinition = getProviderDefinition(cfg, provider);
 
 			const { assistantMessageId } = await dispatchAssistantMessage({
 				cfg,
@@ -162,7 +165,9 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				oneShot: Boolean(body?.oneShot),
 				userContext,
 				reasoningText:
-					provider === 'ollama' ? (body?.reasoningText ?? false) : reasoning,
+					providerDefinition?.compatibility === 'ollama'
+						? (body?.reasoningText ?? false)
+						: reasoning,
 				reasoningLevel,
 				images,
 				files,

@@ -134,6 +134,7 @@ async function processAskRequest(
 				openai: { enabled: true },
 				anthropic: { enabled: true },
 				google: { enabled: true },
+				'ollama-cloud': { enabled: true, baseURL: 'https://ollama.com' },
 				openrouter: { enabled: true },
 				opencode: { enabled: true },
 				copilot: { enabled: true },

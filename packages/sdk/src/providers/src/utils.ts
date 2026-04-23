@@ -146,6 +146,7 @@ const DIRECT_PROVIDER_FAMILY: Partial<
 	openai: 'openai',
 	anthropic: 'anthropic',
 	google: 'google',
+	'ollama-cloud': 'openai-compatible',
 	moonshot: 'moonshot',
 	minimax: 'minimax',
 	copilot: 'openai',
@@ -205,6 +206,7 @@ export function getUnderlyingProviderKey(
 	if (npm === '@ai-sdk/anthropic') return 'anthropic';
 	if (npm === '@ai-sdk/openai') return 'openai';
 	if (npm === '@ai-sdk/google') return 'google';
+	if (npm === 'ai-sdk-ollama') return 'openai-compatible';
 	if (npm === '@ai-sdk/openai-compatible') return 'openai-compatible';
 	if (npm === '@openrouter/ai-sdk-provider') return 'openai-compatible';
 	if (provider === 'ottorouter') return 'openai-compatible';
