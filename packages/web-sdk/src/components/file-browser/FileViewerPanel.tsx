@@ -1,10 +1,12 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, type ComponentPropsWithoutRef } from 'react';
 import { X } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import {
 	prism,
 	vscDarkPlus,
 } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import remarkGfm from 'remark-gfm';
 import { useFileBrowserStore } from '../../stores/fileBrowserStore';
 import { useFileContent } from '../../hooks/useFileBrowser';
 import { Button } from '../ui/Button';
@@ -37,15 +39,26 @@ const LANGUAGE_MAP: Record<string, string> = {
 	css: 'css',
 	scss: 'scss',
 	md: 'markdown',
+	markdown: 'markdown',
+	mdx: 'markdown',
 	txt: 'plaintext',
 	svelte: 'svelte',
 	toml: 'toml',
 	lock: 'plaintext',
 };
 
+function getFileExtension(path: string): string {
+	return path.split('.').pop()?.toLowerCase() ?? '';
+}
+
 function inferLanguage(path: string): string {
-	const ext = path.split('.').pop()?.toLowerCase() ?? '';
+	const ext = getFileExtension(path);
 	return LANGUAGE_MAP[ext] ?? 'plaintext';
+}
+
+function isMarkdownFile(path: string): boolean {
+	const ext = getFileExtension(path);
+	return ext === 'md' || ext === 'markdown' || ext === 'mdx';
 }
 
 export const FileViewerPanel = memo(function FileViewerPanel() {
@@ -80,6 +93,7 @@ export const FileViewerPanel = memo(function FileViewerPanel() {
 		? vscDarkPlus
 		: prism;
 	const language = inferLanguage(selectedFile);
+	const renderMarkdown = isMarkdownFile(selectedFile);
 
 	return (
 		<div className="absolute inset-0 bg-background z-50 flex flex-col animate-in slide-in-from-left duration-300">
@@ -114,31 +128,77 @@ export const FileViewerPanel = memo(function FileViewerPanel() {
 						Loading file...
 					</div>
 				) : data ? (
-					<div className="code-with-line-numbers">
-						<SyntaxHighlighter
-							language={language}
-							style={syntaxTheme}
-							wrapLines
-							wrapLongLines
-							lineProps={() => ({
-								className: 'code-line',
-							})}
-							customStyle={{
-								margin: 0,
-								padding: '1rem',
-								background: 'transparent',
-								fontSize: '0.75rem',
-								lineHeight: '1.25rem',
-							}}
-							codeTagProps={{
-								style: {
-									flex: 1,
-								},
-							}}
-						>
-							{data.content}
-						</SyntaxHighlighter>
-					</div>
+					renderMarkdown ? (
+						<div className="p-4 text-sm text-foreground leading-6 markdown-content max-w-full overflow-x-auto">
+							<ReactMarkdown
+								remarkPlugins={[remarkGfm]}
+								components={{
+									a: ({
+										href,
+										children,
+										...props
+									}: ComponentPropsWithoutRef<'a'>) => (
+										<a
+											href={href}
+											target="_blank"
+											rel="noopener noreferrer"
+											onClick={(e) => {
+												if (window.self !== window.top && href) {
+													e.preventDefault();
+													window.parent.postMessage(
+														{
+															type: 'otto-open-url',
+															url: href,
+														},
+														'*',
+													);
+												}
+											}}
+											{...props}
+										>
+											{children}
+										</a>
+									),
+									table: ({
+										children,
+										...props
+									}: ComponentPropsWithoutRef<'table'>) => (
+										<div className="overflow-x-auto max-w-full min-w-0 my-3">
+											<table {...props}>{children}</table>
+										</div>
+									),
+								}}
+							>
+								{data.content}
+							</ReactMarkdown>
+						</div>
+					) : (
+						<div className="code-with-line-numbers">
+							<SyntaxHighlighter
+								language={language}
+								style={syntaxTheme}
+								wrapLines
+								wrapLongLines
+								lineProps={() => ({
+									className: 'code-line',
+								})}
+								customStyle={{
+									margin: 0,
+									padding: '1rem',
+									background: 'transparent',
+									fontSize: '0.75rem',
+									lineHeight: '1.25rem',
+								}}
+								codeTagProps={{
+									style: {
+										flex: 1,
+									},
+								}}
+							>
+								{data.content}
+							</SyntaxHighlighter>
+						</div>
+					)
 				) : (
 					<div className="h-full flex items-center justify-center text-muted-foreground">
 						Unable to load file
