@@ -183,6 +183,25 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	const { value: sessionRows, durationMs: loadSessionMs } =
 		await sessionRowsPromise;
 	const contextSummary = sessionRows[0]?.contextSummary ?? undefined;
+	const toolsTimer = time('runner:discoverTools');
+	const { value: discovered, durationMs: discoverToolsMs } =
+		await discoveredToolsPromise;
+	const allTools = discovered.tools;
+	const { mcpToolsRecord } = discovered;
+
+	if (opts.agent === 'research') {
+		const currentSession = sessionRows[0];
+		const parentSessionId = currentSession?.parentSessionId ?? null;
+
+		const dbTools = buildDatabaseTools(cfg.projectRoot, parentSessionId);
+		for (const dt of dbTools) {
+			discovered.tools.push(dt);
+		}
+	}
+
+	toolsTimer.end({
+		count: allTools.length + Object.keys(mcpToolsRecord).length,
+	});
 
 	const isFirstMessage = !history.some((m) => m.role === 'assistant');
 
@@ -196,6 +215,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		provider: opts.provider,
 		model: opts.model,
 		promptFamily: getConfiguredProviderFamily(cfg, opts.provider, opts.model),
+		skillSettings: cfg.skills,
 		projectRoot: cfg.projectRoot,
 		agentPrompt,
 		oneShot: opts.oneShot,
@@ -302,26 +322,6 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	if (opts.additionalPromptMessages?.length) {
 		additionalSystemMessages.push(...opts.additionalPromptMessages);
 	}
-
-	const toolsTimer = time('runner:discoverTools');
-	const { value: discovered, durationMs: discoverToolsMs } =
-		await discoveredToolsPromise;
-	const allTools = discovered.tools;
-	const { mcpToolsRecord } = discovered;
-
-	if (opts.agent === 'research') {
-		const currentSession = sessionRows[0];
-		const parentSessionId = currentSession?.parentSessionId ?? null;
-
-		const dbTools = buildDatabaseTools(cfg.projectRoot, parentSessionId);
-		for (const dt of dbTools) {
-			discovered.tools.push(dt);
-		}
-	}
-
-	toolsTimer.end({
-		count: allTools.length + Object.keys(mcpToolsRecord).length,
-	});
 	const allowedToolNames = applyModelFamilyEditToolPolicy(
 		agentCfg.name,
 		agentCfg.tools || [],

@@ -20,6 +20,7 @@ import ANTHROPIC_SPOOF_PROMPT from '@ottocode/sdk/prompts/providers/anthropicSpo
 };
 
 import { getTerminalManager } from '@ottocode/sdk';
+import { buildCapabilitySummary } from './capabilities.ts';
 
 export type ComposedSystemPrompt = {
 	prompt: string;
@@ -30,6 +31,7 @@ export async function composeSystemPrompt(options: {
 	provider: string;
 	model?: string;
 	promptFamily?: import('@ottocode/sdk').ProviderPromptFamily | null;
+	skillSettings?: import('@ottocode/sdk').OttoConfig['skills'];
 	projectRoot: string;
 	agentPrompt: string;
 	oneShot?: boolean;
@@ -126,6 +128,14 @@ export async function composeSystemPrompt(options: {
 				components.push('project-tree');
 			}
 		}
+	}
+
+	const capabilitySummary = buildCapabilitySummary({
+		skillSettings: options.skillSettings,
+	});
+	if (capabilitySummary.prompt) {
+		parts.push(capabilitySummary.prompt);
+		components.push(...capabilitySummary.components);
 	}
 
 	// Add user-provided context if present

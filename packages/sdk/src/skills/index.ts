@@ -36,6 +36,7 @@ export {
 	filterDiscoveredSkills,
 	isSkillsInitialized,
 	buildSkillTool,
+	summarizeDescription,
 	rebuildSkillDescription,
 } from './tool.ts';
 

@@ -285,6 +285,11 @@ export {
 	type ComposedSystemPrompt,
 } from './runtime/prompt/builder.ts';
 export {
+	buildCapabilitySummary,
+	type CapabilitySummaryResult,
+	type CapabilitySummaryMCPTool,
+} from './runtime/prompt/capabilities.ts';
+export {
 	AskServiceError,
 	handleAskRequest,
 	deriveStatusFromMessage,
