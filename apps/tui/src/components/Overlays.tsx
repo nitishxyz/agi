@@ -7,6 +7,7 @@ import { HelpOverlay } from './HelpOverlay.tsx';
 import { ThemeOverlay } from './ThemeOverlay.tsx';
 import { ApprovalsOverlay } from './ApprovalsOverlay.tsx';
 import { MCPOverlay } from './MCPOverlay.tsx';
+import { SkillsOverlay } from './SkillsOverlay.tsx';
 import { UsageOverlay } from './UsageOverlay.tsx';
 import { AgentsOverlay } from './AgentsOverlay.tsx';
 import type { Session } from '../types.ts';
@@ -99,6 +100,8 @@ export const Overlays = memo(function Overlays({
 			);
 		case 'mcp':
 			return <MCPOverlay onClose={handleClose} />;
+		case 'skills':
+			return <SkillsOverlay onClose={handleClose} />;
 		case 'agents':
 			return (
 				<AgentsOverlay

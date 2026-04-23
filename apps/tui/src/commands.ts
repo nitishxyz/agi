@@ -25,6 +25,7 @@ export const COMMAND_ALIASES: Record<string, string> = {
 	t: 'theme',
 	m: 'models',
 	p: 'mcp',
+	k: 'skills',
 	u: 'usage',
 	a: 'approvals',
 	g: 'agents',
@@ -36,6 +37,7 @@ export function resolveCommand(name: string): string {
 }
 
 export const COMMANDS = [
+	{ name: 'skills', alias: '/k', description: 'Manage skill toggles' },
 	{ name: 'mcp', alias: '/p', description: 'Manage MCP servers' },
 	{ name: 'models', alias: '/m', description: 'Open model selector' },
 	{

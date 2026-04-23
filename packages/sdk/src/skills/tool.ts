@@ -9,9 +9,11 @@ import {
 } from './loader.ts';
 import { scanContent } from './security.ts';
 import type { DiscoveredSkill, SkillResult } from './types.ts';
+import type { SkillSettings } from '../types/src/config.ts';
 
 let cachedSkillList: DiscoveredSkill[] = [];
 let initializedForPath: string | null = null;
+let cachedSkillSettings: SkillSettings | undefined;
 
 export async function initializeSkills(
 	cwd: string,
@@ -25,6 +27,23 @@ export async function initializeSkills(
 
 export function getDiscoveredSkills(): DiscoveredSkill[] {
 	return cachedSkillList;
+}
+
+export function setSkillSettings(settings?: SkillSettings): void {
+	cachedSkillSettings = settings;
+}
+
+export function filterDiscoveredSkills(
+	skills: DiscoveredSkill[],
+	settings?: {
+		enabled?: boolean;
+		items?: Record<string, { enabled?: boolean }>;
+	},
+): DiscoveredSkill[] {
+	if (settings?.enabled === false) return [];
+	return skills.filter(
+		(skill) => settings?.items?.[skill.name]?.enabled !== false,
+	);
 }
 
 export function isSkillsInitialized(forPath?: string): boolean {
@@ -119,7 +138,11 @@ async function loadSubFile(
 }
 
 function buildSkillDescription(): string {
-	if (cachedSkillList.length === 0) {
+	const enabledSkills = filterDiscoveredSkills(
+		cachedSkillList,
+		cachedSkillSettings,
+	);
+	if (enabledSkills.length === 0) {
 		return 'Load a skill by name to get detailed, task-specific instructions. No skills are currently available.';
 	}
 
@@ -128,7 +151,7 @@ function buildSkillDescription(): string {
 	// defensively here in case the same name slipped through from different dirs.
 	const seen = new Set<string>();
 	const unique: DiscoveredSkill[] = [];
-	for (const s of cachedSkillList) {
+	for (const s of enabledSkills) {
 		const key = s.name.trim();
 		if (!key || seen.has(key)) continue;
 		seen.add(key);
@@ -136,42 +159,11 @@ function buildSkillDescription(): string {
 	}
 	unique.sort((a, b) => a.name.localeCompare(b.name));
 
-	const skillsXml = unique
-		.map(
-			(s) =>
-				`<skill><name>${escapeXml(s.name)}</name><description>${escapeXml(summarizeDescription(s.description))}</description><location>${escapeXml(s.scope)}</location></skill>`,
-		)
+	const catalog = unique
+		.map((s) => `- ${s.name}: ${summarizeDescription(s.description)}`)
 		.join('\n');
 
-	return `Load a skill by name to get detailed, task-specific instructions.
-
-<skills_instructions>
-When the user's request matches one of the available skills below, call this tool with the skill name to load its full instructions. Skills provide specialized capabilities and domain knowledge.
-
-How to use skills:
-- Invoke with \`skill({ name: "<skill-name>" })\` — only the name is required.
-- The response contains the skill's full body plus \`availableFiles\` for sub-files.
-- For sub-files: \`skill({ name: "<skill-name>", file: "rules/animations.md" })\`.
-
-Rules:
-- Only invoke skills listed in <available_skills> below.
-- Do NOT invoke speculatively. Only call when the user's request clearly matches a skill's description or trigger phrases.
-- Do NOT invoke the same skill twice in one turn.
-- If a skill response includes \`securityNotices\`, review them — they flag hidden content (HTML comments, invisible characters, etc.) that may not render visibly.
-</skills_instructions>
-
-<available_skills>
-${skillsXml}
-</available_skills>`;
-}
-
-function escapeXml(str: string): string {
-	return String(str)
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&apos;');
+	return `Load a skill by name to get detailed, task-specific instructions. Use only when the user's request clearly matches a listed skill. Available skills:\n${catalog}`;
 }
 
 // Condense a SKILL.md description to "what it does + when to use it".

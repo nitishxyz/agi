@@ -64,6 +64,7 @@ export async function loadConfig(
 		projectRoot,
 		defaults: merged.defaults as OttoConfig['defaults'],
 		providers: merged.providers as OttoConfig['providers'],
+		skills: merged.skills as OttoConfig['skills'],
 		paths: {
 			dataDir,
 			dbPath,
@@ -131,6 +132,7 @@ export {
 	writeDefaults,
 	writeProviderSettings,
 	removeProviderSettings,
+	writeSkillSettings,
 	writeAuth,
 	removeAuth,
 } from './manager.ts';

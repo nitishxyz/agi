@@ -12,7 +12,11 @@ import { updateTodosTool } from './builtin/todos.ts';
 import { buildWebSearchTool } from './builtin/websearch.ts';
 import { buildTerminalTool } from './builtin/terminal.ts';
 import type { TerminalManager } from '../terminals/index.ts';
-import { initializeSkills, buildSkillTool } from '../../../skills/index.ts';
+import {
+	initializeSkills,
+	buildSkillTool,
+	setSkillSettings,
+} from '../../../skills/index.ts';
 import { getMCPManager } from '../mcp/index.ts';
 import {
 	getMCPToolBriefs,
@@ -104,6 +108,7 @@ type FsHelpers = {
 const pluginPatterns = ['tools/*/tool.js', 'tools/*/tool.mjs'];
 
 let globalTerminalManager: TerminalManager | null = null;
+const staticToolDiscoveryCache = new Map<string, Promise<DiscoveredTool[]>>();
 
 export function setTerminalManager(manager: TerminalManager): void {
 	globalTerminalManager = manager;
@@ -113,42 +118,141 @@ export function getTerminalManager(): TerminalManager | null {
 	return globalTerminalManager;
 }
 
+function getStaticToolDiscoveryCacheKey(
+	projectRoot: string,
+	globalConfigDir?: string,
+): string {
+	return `${projectRoot}::${globalConfigDir ?? ''}`;
+}
+
+async function discoverStaticProjectTools(
+	projectRoot: string,
+	globalConfigDir?: string,
+	skillSettings?: {
+		enabled?: boolean;
+		items?: Record<string, { enabled?: boolean }>;
+	},
+): Promise<DiscoveredTool[]> {
+	setSkillSettings(skillSettings);
+	const cacheKey = getStaticToolDiscoveryCacheKey(projectRoot, globalConfigDir);
+	const cached = staticToolDiscoveryCache.get(cacheKey);
+	if (cached) return cached;
+
+	const discoveryPromise = (async () => {
+		const tools = new Map<string, Tool>();
+		for (const { name, tool } of buildFsTools(projectRoot))
+			tools.set(name, tool);
+		for (const { name, tool } of buildGitTools(projectRoot))
+			tools.set(name, tool);
+		// Built-ins
+		tools.set('finish', finishTool);
+		tools.set('progress_update', progressUpdateTool);
+		const bash = buildBashTool(projectRoot);
+		tools.set(bash.name, bash.tool);
+		// Search
+		const rg = buildRipgrepTool(projectRoot);
+		tools.set(rg.name, rg.tool);
+		const glob = buildGlobTool(projectRoot);
+		tools.set(glob.name, glob.tool);
+		// Patch/apply
+		const ap = buildApplyPatchTool(projectRoot);
+		tools.set(ap.name, ap.tool);
+		// Todo tracking
+		tools.set('update_todos', updateTodosTool);
+		// Web search
+		const ws = buildWebSearchTool();
+		tools.set(ws.name, ws.tool);
+		// Skills
+		await initializeSkills(projectRoot);
+		const skillTool = buildSkillTool();
+		tools.set(skillTool.name, skillTool.tool);
+
+		async function loadFromBase(base: string | null | undefined) {
+			if (!base) return;
+			try {
+				await fs.readdir(base);
+			} catch {
+				return;
+			}
+			for (const pattern of pluginPatterns) {
+				const files = await fg(pattern, { cwd: base, absolute: false });
+				for (const rel of files) {
+					const match = rel.match(/^tools\/([^/]+)\/tool\.(m?js)$/);
+					if (!match || !match[1]) continue;
+					const folder = match[1];
+					const absPath = join(base, rel).replace(/\\/g, '/');
+					try {
+						const plugin = await loadPlugin(absPath, folder, projectRoot);
+						if (plugin) tools.set(plugin.name, plugin.tool);
+					} catch {}
+				}
+			}
+			// Fallback: manual directory scan
+			try {
+				const toolsDir = join(base, 'tools');
+				const entries = await fs.readdir(toolsDir).catch(() => [] as string[]);
+				for (const folder of entries) {
+					const js = join(toolsDir, folder, 'tool.js');
+					const mjs = join(toolsDir, folder, 'tool.mjs');
+					const candidate = await fs
+						.stat(js)
+						.then(() => js)
+						.catch(
+							async () =>
+								await fs
+									.stat(mjs)
+									.then(() => mjs)
+									.catch(() => null),
+						);
+					if (!candidate) continue;
+					try {
+						const plugin = await loadPlugin(
+							candidate.replace(/\\/g, '/'),
+							folder,
+							projectRoot,
+						);
+						if (plugin) tools.set(plugin.name, plugin.tool);
+					} catch {}
+				}
+			} catch {}
+		}
+
+		await loadFromBase(globalConfigDir);
+		await loadFromBase(join(projectRoot, '.otto'));
+		return Array.from(tools.entries()).map(([name, tool]) => ({ name, tool }));
+	})();
+
+	staticToolDiscoveryCache.set(cacheKey, discoveryPromise);
+	try {
+		return await discoveryPromise;
+	} catch (error) {
+		staticToolDiscoveryCache.delete(cacheKey);
+		throw error;
+	}
+}
+
 export async function discoverProjectTools(
 	projectRoot: string,
 	globalConfigDir?: string,
+	skillSettings?: {
+		enabled?: boolean;
+		items?: Record<string, { enabled?: boolean }>;
+	},
 ): Promise<DiscoverResult> {
-	const tools = new Map<string, Tool>();
-	for (const { name, tool } of buildFsTools(projectRoot)) tools.set(name, tool);
-	for (const { name, tool } of buildGitTools(projectRoot))
-		tools.set(name, tool);
-	// Built-ins
-	tools.set('finish', finishTool);
-	tools.set('progress_update', progressUpdateTool);
-	const bash = buildBashTool(projectRoot);
-	tools.set(bash.name, bash.tool);
-	// Search
-	const rg = buildRipgrepTool(projectRoot);
-	tools.set(rg.name, rg.tool);
-	const glob = buildGlobTool(projectRoot);
-	tools.set(glob.name, glob.tool);
-	// Patch/apply
-	const ap = buildApplyPatchTool(projectRoot);
-	tools.set(ap.name, ap.tool);
-	// Todo tracking
-	tools.set('update_todos', updateTodosTool);
-	// Web search
-	const ws = buildWebSearchTool();
-	tools.set(ws.name, ws.tool);
-	// Terminal (if manager is available)
+	setSkillSettings(skillSettings);
+	const staticTools = await discoverStaticProjectTools(
+		projectRoot,
+		globalConfigDir,
+		skillSettings,
+	);
+	const tools = new Map<string, Tool>(
+		staticTools.map(({ name, tool }) => [name, tool]),
+	);
+
 	if (globalTerminalManager) {
 		const term = buildTerminalTool(projectRoot, globalTerminalManager);
 		tools.set(term.name, term.tool);
 	}
-	// Skills
-	// Always reinitialize to ensure skills are discovered for the current project
-	await initializeSkills(projectRoot);
-	const skillTool = buildSkillTool();
-	tools.set(skillTool.name, skillTool.tool);
 
 	const mcpManager = getMCPManager();
 	let mcpToolsRecord: Record<string, Tool> = {};
@@ -162,58 +266,6 @@ export async function discoverProjectTools(
 		}
 	}
 
-	async function loadFromBase(base: string | null | undefined) {
-		if (!base) return;
-		try {
-			await fs.readdir(base);
-		} catch {
-			return;
-		}
-		for (const pattern of pluginPatterns) {
-			const files = await fg(pattern, { cwd: base, absolute: false });
-			for (const rel of files) {
-				const match = rel.match(/^tools\/([^/]+)\/tool\.(m?js)$/);
-				if (!match || !match[1]) continue;
-				const folder = match[1];
-				const absPath = join(base, rel).replace(/\\/g, '/');
-				try {
-					const plugin = await loadPlugin(absPath, folder, projectRoot);
-					if (plugin) tools.set(plugin.name, plugin.tool);
-				} catch {}
-			}
-		}
-		// Fallback: manual directory scan
-		try {
-			const toolsDir = join(base, 'tools');
-			const entries = await fs.readdir(toolsDir).catch(() => [] as string[]);
-			for (const folder of entries) {
-				const js = join(toolsDir, folder, 'tool.js');
-				const mjs = join(toolsDir, folder, 'tool.mjs');
-				const candidate = await fs
-					.stat(js)
-					.then(() => js)
-					.catch(
-						async () =>
-							await fs
-								.stat(mjs)
-								.then(() => mjs)
-								.catch(() => null),
-					);
-				if (!candidate) continue;
-				try {
-					const plugin = await loadPlugin(
-						candidate.replace(/\\/g, '/'),
-						folder,
-						projectRoot,
-					);
-					if (plugin) tools.set(plugin.name, plugin.tool);
-				} catch {}
-			}
-		} catch {}
-	}
-
-	await loadFromBase(globalConfigDir);
-	await loadFromBase(join(projectRoot, '.otto'));
 	return {
 		tools: Array.from(tools.entries()).map(([name, tool]) => ({ name, tool })),
 		mcpToolsRecord,

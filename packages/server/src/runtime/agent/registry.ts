@@ -115,10 +115,11 @@ function mergeAgentEntries(
 	return merged;
 }
 
-const baseToolSet = ['progress_update', 'finish', 'skill'] as const;
+const baseToolSet = ['progress_update', 'finish'] as const;
 
 const defaultToolExtras: Record<string, string[]> = {
 	build: [
+		'skill',
 		'read',
 		'edit',
 		'multiedit',
@@ -134,8 +135,9 @@ const defaultToolExtras: Record<string, string[]> = {
 		'apply_patch',
 		'websearch',
 	],
-	plan: ['read', 'ls', 'tree', 'ripgrep', 'update_todos', 'websearch'],
+	plan: ['skill', 'read', 'ls', 'tree', 'ripgrep', 'update_todos', 'websearch'],
 	general: [
+		'skill',
 		'read',
 		'edit',
 		'multiedit',
@@ -149,6 +151,7 @@ const defaultToolExtras: Record<string, string[]> = {
 		'update_todos',
 	],
 	init: [
+		'skill',
 		'read',
 		'edit',
 		'multiedit',

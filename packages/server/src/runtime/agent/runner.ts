@@ -1,4 +1,5 @@
 import { hasToolCall, streamText } from 'ai';
+import { logger } from '@ottocode/sdk';
 import type { getDb } from '@ottocode/database';
 import { messageParts, sessions } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
@@ -80,6 +81,50 @@ function summarizeTraceValue(value: unknown, max = 160): string {
 	return fallback.length > max ? `${fallback.slice(0, max)}…` : fallback;
 }
 
+function nowMs(): number {
+	const perf = globalThis.performance;
+	if (perf && typeof perf.now === 'function') return perf.now();
+	return Date.now();
+}
+
+function approximateMessageChars(
+	messages: Array<{ role: string; content: string | Array<unknown> }>,
+): number {
+	let total = 0;
+	for (const message of messages) {
+		total += message.role.length;
+		if (typeof message.content === 'string') {
+			total += message.content.length;
+			continue;
+		}
+		try {
+			total += JSON.stringify(message.content).length;
+		} catch {}
+	}
+	return total;
+}
+
+function summarizeToolShape(tools: Record<string, unknown>) {
+	const names = Object.keys(tools);
+	const entries = names.map((name) => {
+		const toolValue = tools[name];
+		let approxChars = 0;
+		try {
+			approxChars = JSON.stringify(toolValue).length;
+		} catch {}
+		return { name, approxChars };
+	});
+	entries.sort((a, b) => b.approxChars - a.approxChars);
+	return {
+		toolNames: names,
+		toolSchemaCharsApprox: entries.reduce(
+			(total, entry) => total + entry.approxChars,
+			0,
+		),
+		largestTools: entries.slice(0, 8),
+	};
+}
+
 async function shouldPreemptivelyAutoCompact(
 	db: Awaited<ReturnType<typeof getDb>>,
 	opts: RunOpts,
@@ -119,6 +164,8 @@ export async function runSessionLoop(sessionId: string) {
 }
 
 async function runAssistant(opts: RunOpts) {
+	const runStartedAt = nowMs();
+	const queueWaitMs = opts.queuedAt ? runStartedAt - opts.queuedAt : 0;
 	const setup = await setupRunner(opts);
 	const {
 		cfg,
@@ -134,6 +181,7 @@ async function runAssistant(opts: RunOpts) {
 		providerOptions,
 		isOpenAIOAuth,
 		mcpToolsRecord,
+		timings,
 	} = setup;
 	let { toolset } = setup;
 
@@ -296,6 +344,25 @@ async function runAssistant(opts: RunOpts) {
 
 	const streamStartTimer = time('runner:first-delta');
 	let firstDeltaSeen = false;
+	const logFirstOutputLatency = (kind: 'text' | 'reasoning') => {
+		if (firstDeltaSeen) return;
+		firstDeltaSeen = true;
+		const firstOutputMs = nowMs() - runStartedAt;
+		streamStartTimer.end({ kind, queueWaitMs, setupMs: timings.totalMs });
+		logger.info('[latency] first output', {
+			sessionId: opts.sessionId,
+			messageId: opts.assistantMessageId,
+			agent: opts.agent,
+			provider: opts.provider,
+			model: opts.model,
+			kind,
+			queueWaitMs,
+			firstOutputMs,
+			setupMs: timings.totalMs,
+			totalSinceEnqueueMs: queueWaitMs + firstOutputMs,
+			timings,
+		});
+	};
 
 	let currentPartId: string | null = null;
 	let accumulated = '';
@@ -387,8 +454,39 @@ async function runAssistant(opts: RunOpts) {
 	const stopWhenCondition = isCopilotResponsesApi
 		? undefined
 		: hasToolCall('finish');
+	const toolShape = summarizeToolShape(toolset as Record<string, unknown>);
+	logger.info('[latency] stream request ready', {
+		sessionId: opts.sessionId,
+		messageId: opts.assistantMessageId,
+		agent: opts.agent,
+		provider: opts.provider,
+		model: opts.model,
+		queueWaitMs,
+		setupMs: timings.totalMs,
+		messageCount: messagesWithSystemInstructions.length,
+		toolCount: Object.keys(toolset).length,
+		toolNames: toolShape.toolNames,
+		toolSchemaCharsApprox: toolShape.toolSchemaCharsApprox,
+		largestTools: toolShape.largestTools,
+		hasPrepareStep: Boolean(prepareStep),
+		providerOptionsKeys: Object.keys(providerOptions),
+		systemPromptChars: system.length,
+		messageCharsApprox: approximateMessageChars(messagesWithSystemInstructions),
+		additionalSystemMessages: additionalSystemMessages.length,
+		historyMessages: history.length,
+	});
 
 	try {
+		const streamInvocationStartedAt = nowMs();
+		logger.info('[latency] streamText invoke', {
+			sessionId: opts.sessionId,
+			messageId: opts.assistantMessageId,
+			agent: opts.agent,
+			provider: opts.provider,
+			model: opts.model,
+			queueWaitMs,
+			setupMs: timings.totalMs,
+		});
 		const result = streamText({
 			model,
 			tools: toolset,
@@ -412,10 +510,34 @@ async function runAssistant(opts: RunOpts) {
 			onFinish: onFinish as any,
 			// biome-ignore lint/suspicious/noExplicitAny: AI SDK streamText options type
 		} as any);
+		logger.info('[latency] streamText returned', {
+			sessionId: opts.sessionId,
+			messageId: opts.assistantMessageId,
+			agent: opts.agent,
+			provider: opts.provider,
+			model: opts.model,
+			invokeMs: nowMs() - streamInvocationStartedAt,
+		});
 		const tracedToolInputNamesById = new Map<string, string>();
+		let firstFullStreamPartSeen = false;
+		let firstPublishedDeltaSeen = false;
 
 		for await (const part of result.fullStream) {
 			if (!part) continue;
+			if (!firstFullStreamPartSeen) {
+				firstFullStreamPartSeen = true;
+				logger.info('[latency] first fullStream part', {
+					sessionId: opts.sessionId,
+					messageId: opts.assistantMessageId,
+					agent: opts.agent,
+					provider: opts.provider,
+					model: opts.model,
+					partType: part.type,
+					sinceRunStartMs: nowMs() - runStartedAt,
+					queueWaitMs,
+					setupMs: timings.totalMs,
+				});
+			}
 
 			if (part.type === 'tool-input-start') {
 				if (shouldTraceToolInput(part.toolName)) {
@@ -482,10 +604,7 @@ async function runAssistant(opts: RunOpts) {
 					continue;
 				}
 
-				if (!firstDeltaSeen) {
-					firstDeltaSeen = true;
-					streamStartTimer.end();
-				}
+				logFirstOutputLatency('text');
 
 				if (!currentPartId) {
 					currentPartId = crypto.randomUUID();
@@ -514,6 +633,20 @@ async function runAssistant(opts: RunOpts) {
 						delta,
 					},
 				});
+				if (!firstPublishedDeltaSeen) {
+					firstPublishedDeltaSeen = true;
+					logger.info('[latency] first published delta', {
+						sessionId: opts.sessionId,
+						messageId: opts.assistantMessageId,
+						agent: opts.agent,
+						provider: opts.provider,
+						model: opts.model,
+						sinceRunStartMs: nowMs() - runStartedAt,
+						queueWaitMs,
+						setupMs: timings.totalMs,
+						deltaPreview: delta.length > 80 ? `${delta.slice(0, 80)}…` : delta,
+					});
+				}
 				await db
 					.update(messageParts)
 					.set({ content: JSON.stringify({ text: accumulated }) })
@@ -537,6 +670,9 @@ async function runAssistant(opts: RunOpts) {
 			}
 
 			if (part.type === 'reasoning-delta') {
+				if (part.text) {
+					logFirstOutputLatency('reasoning');
+				}
 				await handleReasoningDelta(
 					part.id,
 					part.text,

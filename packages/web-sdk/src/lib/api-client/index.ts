@@ -97,6 +97,8 @@ class ApiClient {
 	getSkill = skillsMixin.getSkill;
 	getSkillFiles = skillsMixin.getSkillFiles;
 	getSkillFileContent = skillsMixin.getSkillFileContent;
+	getSkillsConfig = skillsMixin.getSkillsConfig;
+	updateSkillsConfig = skillsMixin.updateSkillsConfig;
 }
 
 export const apiClient = new ApiClient();

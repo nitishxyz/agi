@@ -187,6 +187,9 @@ export function App({ onQuit }: { onQuit: () => void }) {
 				case 'mcp':
 					setOverlay('mcp');
 					break;
+				case 'skills':
+					setOverlay('skills');
+					break;
 				case 'models':
 					setOverlay('models');
 					break;

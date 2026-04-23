@@ -7,7 +7,7 @@ import {
 } from 'ai';
 import type { getDb } from '@ottocode/database';
 import { messages, messageParts } from '@ottocode/database/schema';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, inArray } from 'drizzle-orm';
 import { ToolHistoryTracker } from './tool-history-tracker.ts';
 
 /**
@@ -24,16 +24,32 @@ export async function buildHistoryMessages(
 		.from(messages)
 		.where(eq(messages.sessionId, sessionId))
 		.orderBy(asc(messages.createdAt));
+	const messageIds = rows.map((row) => row.id);
+	const allParts = messageIds.length
+		? await db
+				.select()
+				.from(messageParts)
+				.where(inArray(messageParts.messageId, messageIds))
+				.orderBy(asc(messageParts.messageId), asc(messageParts.index))
+		: [];
+	const partsByMessageId = new Map<
+		string,
+		(typeof messageParts.$inferSelect)[]
+	>();
+	for (const part of allParts) {
+		const existing = partsByMessageId.get(part.messageId);
+		if (existing) {
+			existing.push(part);
+			continue;
+		}
+		partsByMessageId.set(part.messageId, [part]);
+	}
 
 	const history: ModelMessage[] = [];
 	const toolHistory = new ToolHistoryTracker();
 
 	for (const m of rows) {
-		const parts = await db
-			.select()
-			.from(messageParts)
-			.where(eq(messageParts.messageId, m.id))
-			.orderBy(asc(messageParts.index));
+		const parts = partsByMessageId.get(m.id) ?? [];
 
 		if (
 			m.role === 'assistant' &&

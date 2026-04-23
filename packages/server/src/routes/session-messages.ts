@@ -161,7 +161,8 @@ export function registerSessionMessagesRoutes(app: Hono) {
 				content,
 				oneShot: Boolean(body?.oneShot),
 				userContext,
-				reasoningText: reasoning,
+				reasoningText:
+					provider === 'ollama' ? (body?.reasoningText ?? false) : reasoning,
 				reasoningLevel,
 				images,
 				files,

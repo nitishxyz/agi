@@ -11,11 +11,13 @@ import {
 	RefreshCw,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { ToggleSwitch } from '../ui/ToggleSwitch';
 import { useSkillsStore } from '../../stores/skillsStore';
 import {
 	useSkills,
 	useSkillDetail,
 	useSkillFiles,
+	useUpdateSkillsConfig,
 } from '../../hooks/useSkills';
 
 const SCOPE_ICONS: Record<string, typeof FolderDot> = {
@@ -44,12 +46,16 @@ export const SkillsSidebar = memo(function SkillsSidebar() {
 	const isExpanded = useSkillsStore((s) => s.isExpanded);
 	const collapseSidebar = useSkillsStore((s) => s.collapseSidebar);
 	const skills = useSkillsStore((s) => s.skills);
+	const globalEnabled = useSkillsStore((s) => s.globalEnabled);
+	const totalCount = useSkillsStore((s) => s.totalCount);
+	const enabledCount = useSkillsStore((s) => s.enabledCount);
 	const selectedSkill = useSkillsStore((s) => s.selectedSkill);
 	const selectSkill = useSkillsStore((s) => s.selectSkill);
 	const openViewer = useSkillsStore((s) => s.openViewer);
 	const viewingFile = useSkillsStore((s) => s.viewingFile);
 
 	const { isLoading, isFetching, refetch } = useSkills();
+	const updateSkillsConfig = useUpdateSkillsConfig();
 	const { data: skillDetail } = useSkillDetail(selectedSkill);
 	const { data: skillFilesData } = useSkillFiles(selectedSkill);
 	const skillFiles = skillFilesData?.files ?? [];
@@ -73,14 +79,23 @@ export const SkillsSidebar = memo(function SkillsSidebar() {
 					<Sparkles className="w-4 h-4 text-muted-foreground" />
 					<span className="font-medium text-sm">Skills</span>
 				</div>
-				<Button
-					variant="ghost"
-					size="icon"
-					onClick={collapseSidebar}
-					title="Close sidebar"
-				>
-					<ChevronRight className="w-4 h-4" />
-				</Button>
+				<div className="flex items-center gap-1">
+					<ToggleSwitch
+						checked={globalEnabled}
+						loading={updateSkillsConfig.isPending}
+						onChange={() =>
+							updateSkillsConfig.mutate({ enabled: !globalEnabled })
+						}
+					/>
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={collapseSidebar}
+						title="Close sidebar"
+					>
+						<ChevronRight className="w-4 h-4" />
+					</Button>
+				</div>
 			</div>
 
 			{selectedSkill && skillDetail ? (
@@ -157,7 +172,7 @@ export const SkillsSidebar = memo(function SkillsSidebar() {
 						<div className="flex items-center justify-center py-8">
 							<Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
 						</div>
-					) : skills.length === 0 ? (
+					) : totalCount === 0 ? (
 						<div className="flex flex-col items-center justify-center h-full text-center p-4">
 							<Sparkles className="w-12 h-12 text-muted-foreground/30 mb-4" />
 							<h3 className="text-sm font-medium mb-2">No skills found</h3>
@@ -170,6 +185,24 @@ export const SkillsSidebar = memo(function SkillsSidebar() {
 								<code className="text-[10px] bg-muted px-1 rounded">
 									~/.config/otto/skills/ or ~/.agents/skills/
 								</code>
+							</p>
+						</div>
+					) : !globalEnabled ? (
+						<div className="flex flex-col items-center justify-center h-full text-center p-4">
+							<Sparkles className="w-12 h-12 text-muted-foreground/30 mb-4" />
+							<h3 className="text-sm font-medium mb-2">Skills are disabled</h3>
+							<p className="text-xs text-muted-foreground max-w-[220px]">
+								Turn the skills toggle on to make discovered skills available.
+							</p>
+						</div>
+					) : skills.length === 0 ? (
+						<div className="flex flex-col items-center justify-center h-full text-center p-4">
+							<Sparkles className="w-12 h-12 text-muted-foreground/30 mb-4" />
+							<h3 className="text-sm font-medium mb-2">
+								All skills are disabled
+							</h3>
+							<p className="text-xs text-muted-foreground max-w-[220px]">
+								Enable individual skills or turn all skills back on.
 							</p>
 						</div>
 					) : (
@@ -193,7 +226,7 @@ export const SkillsSidebar = memo(function SkillsSidebar() {
 													selectedSkill === skill.name ? 'bg-accent' : ''
 												}`}
 											>
-												<div className="flex items-center gap-2">
+												<div className="flex items-start gap-2">
 													<FileText className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
 													<div className="min-w-0 flex-1">
 														<div className="text-sm font-medium truncate">
@@ -203,6 +236,19 @@ export const SkillsSidebar = memo(function SkillsSidebar() {
 															{skill.description}
 														</div>
 													</div>
+													<ToggleSwitch
+														checked={skill.enabled !== false}
+														loading={updateSkillsConfig.isPending}
+														onChange={() =>
+															updateSkillsConfig.mutate({
+																items: {
+																	[skill.name]: {
+																		enabled: skill.enabled === false,
+																	},
+																},
+															})
+														}
+													/>
 												</div>
 											</button>
 										))}
@@ -218,7 +264,7 @@ export const SkillsSidebar = memo(function SkillsSidebar() {
 				<div className="flex items-center gap-2 min-w-0 flex-1">
 					<Sparkles className="w-3 h-3 flex-shrink-0" />
 					<span className="truncate">
-						{skills.length} {skills.length === 1 ? 'skill' : 'skills'}
+						{enabledCount}/{totalCount} {totalCount === 1 ? 'skill' : 'skills'}
 					</span>
 				</div>
 				<Button

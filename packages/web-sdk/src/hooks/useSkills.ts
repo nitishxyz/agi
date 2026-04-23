@@ -1,26 +1,53 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSkillsStore } from '../stores/skillsStore';
 import { useEffect } from 'react';
 import { apiClient } from '../lib/api-client';
 
 export function useSkills() {
-	const setSkills = useSkillsStore((s) => s.setSkills);
+	const setSkillsConfig = useSkillsStore((s) => s.setSkillsConfig);
 
 	const query = useQuery({
 		queryKey: ['skills'],
 		queryFn: async () => {
-			return apiClient.listSkills();
+			return apiClient.getSkillsConfig();
 		},
 		refetchInterval: 30000,
 	});
 
 	useEffect(() => {
-		if (query.data?.skills) {
-			setSkills(query.data.skills);
+		if (query.data?.items) {
+			setSkillsConfig({
+				skills: query.data.items,
+				globalEnabled: query.data.enabled,
+				totalCount: query.data.totalCount,
+				enabledCount: query.data.enabledCount,
+			});
 		}
-	}, [query.data, setSkills]);
+	}, [query.data, setSkillsConfig]);
 
 	return query;
+}
+
+export function useUpdateSkillsConfig() {
+	const queryClient = useQueryClient();
+	const setSkillsConfig = useSkillsStore((s) => s.setSkillsConfig);
+
+	return useMutation({
+		mutationFn: (input: {
+			enabled?: boolean;
+			items?: Record<string, { enabled?: boolean }>;
+			scope?: 'global' | 'local';
+		}) => apiClient.updateSkillsConfig(input),
+		onSuccess: (data) => {
+			setSkillsConfig({
+				skills: data.items,
+				globalEnabled: data.enabled,
+				totalCount: data.totalCount,
+				enabledCount: data.enabledCount,
+			});
+			queryClient.setQueryData(['skills'], data);
+		},
+	});
 }
 
 export function useSkillDetail(name: string | null) {

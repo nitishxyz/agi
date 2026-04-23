@@ -1,4 +1,6 @@
 import {
+	getSkillsConfig as apiGetSkillsConfig,
+	updateSkillsConfig as apiUpdateSkillsConfig,
 	listSkills as apiListSkills,
 	getSkill as apiGetSkill,
 	listSkillFiles as apiListSkillFiles,
@@ -11,6 +13,14 @@ export interface SkillSummary {
 	description: string;
 	scope: string;
 	path: string;
+	enabled?: boolean;
+}
+
+export interface SkillsConfigResponse {
+	enabled: boolean;
+	totalCount: number;
+	enabledCount: number;
+	items: SkillSummary[];
 }
 
 export interface SkillDetail {
@@ -58,5 +68,21 @@ export const skillsMixin = {
 		});
 		if (response.error) throw new Error(extractErrorMessage(response.error));
 		return response.data as { content: string; path: string };
+	},
+
+	async getSkillsConfig(): Promise<SkillsConfigResponse> {
+		const response = await apiGetSkillsConfig();
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		return response.data as SkillsConfigResponse;
+	},
+
+	async updateSkillsConfig(input: {
+		enabled?: boolean;
+		items?: Record<string, { enabled?: boolean }>;
+		scope?: 'global' | 'local';
+	}): Promise<SkillsConfigResponse> {
+		const response = await apiUpdateSkillsConfig({ body: input });
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		return response.data as SkillsConfigResponse;
 	},
 };

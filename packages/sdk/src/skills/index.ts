@@ -32,6 +32,8 @@ export {
 export {
 	initializeSkills,
 	getDiscoveredSkills,
+	setSkillSettings,
+	filterDiscoveredSkills,
 	isSkillsInitialized,
 	buildSkillTool,
 	rebuildSkillDescription,

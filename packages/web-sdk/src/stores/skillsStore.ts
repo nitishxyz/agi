@@ -12,11 +12,15 @@ export interface SkillInfo {
 	description: string;
 	scope: string;
 	path: string;
+	enabled?: boolean;
 }
 
 interface SkillsState {
 	isExpanded: boolean;
 	skills: SkillInfo[];
+	globalEnabled: boolean;
+	totalCount: number;
+	enabledCount: number;
 	selectedSkill: string | null;
 
 	isViewerOpen: boolean;
@@ -26,6 +30,12 @@ interface SkillsState {
 	expandSidebar: () => void;
 	collapseSidebar: () => void;
 	setSkills: (skills: SkillInfo[]) => void;
+	setSkillsConfig: (input: {
+		skills: SkillInfo[];
+		globalEnabled: boolean;
+		totalCount: number;
+		enabledCount: number;
+	}) => void;
 	selectSkill: (name: string | null) => void;
 	openViewer: (file: string | null) => void;
 	closeViewer: () => void;
@@ -34,6 +44,9 @@ interface SkillsState {
 export const useSkillsStore = create<SkillsState>((set) => ({
 	isExpanded: false,
 	skills: [],
+	globalEnabled: true,
+	totalCount: 0,
+	enabledCount: 0,
 	selectedSkill: null,
 	isViewerOpen: false,
 	viewingFile: null,
@@ -68,6 +81,8 @@ export const useSkillsStore = create<SkillsState>((set) => ({
 	collapseSidebar: () => set({ isExpanded: false }),
 
 	setSkills: (skills) => set({ skills }),
+	setSkillsConfig: ({ skills, globalEnabled, totalCount, enabledCount }) =>
+		set({ skills, globalEnabled, totalCount, enabledCount }),
 
 	selectSkill: (name) =>
 		set({ selectedSkill: name, isViewerOpen: false, viewingFile: null }),

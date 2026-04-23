@@ -1,6 +1,128 @@
 import { errorResponse, projectQueryParam } from '../helpers';
 
 export const skillsPaths = {
+	'/v1/config/skills': {
+		get: {
+			tags: ['config'],
+			operationId: 'getSkillsConfig',
+			summary: 'Get skills enable/disable config and counts',
+			parameters: [projectQueryParam()],
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									enabled: { type: 'boolean' },
+									totalCount: { type: 'number' },
+									enabledCount: { type: 'number' },
+									items: {
+										type: 'array',
+										items: {
+											type: 'object',
+											properties: {
+												name: { type: 'string' },
+												description: { type: 'string' },
+												scope: { type: 'string' },
+												path: { type: 'string' },
+												enabled: { type: 'boolean' },
+											},
+											required: [
+												'name',
+												'description',
+												'scope',
+												'path',
+												'enabled',
+											],
+										},
+									},
+								},
+								required: ['enabled', 'totalCount', 'enabledCount', 'items'],
+							},
+						},
+					},
+				},
+				500: errorResponse(),
+			},
+		},
+		put: {
+			tags: ['config'],
+			operationId: 'updateSkillsConfig',
+			summary: 'Update skills enable/disable config',
+			parameters: [projectQueryParam()],
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								enabled: { type: 'boolean' },
+								scope: { type: 'string', enum: ['global', 'local'] },
+								items: {
+									type: 'object',
+									additionalProperties: {
+										type: 'object',
+										properties: {
+											enabled: { type: 'boolean' },
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: { type: 'boolean' },
+									enabled: { type: 'boolean' },
+									totalCount: { type: 'number' },
+									enabledCount: { type: 'number' },
+									items: {
+										type: 'array',
+										items: {
+											type: 'object',
+											properties: {
+												name: { type: 'string' },
+												description: { type: 'string' },
+												scope: { type: 'string' },
+												path: { type: 'string' },
+												enabled: { type: 'boolean' },
+											},
+											required: [
+												'name',
+												'description',
+												'scope',
+												'path',
+												'enabled',
+											],
+										},
+									},
+								},
+								required: [
+									'success',
+									'enabled',
+									'totalCount',
+									'enabledCount',
+									'items',
+								],
+							},
+						},
+					},
+				},
+				500: errorResponse(),
+			},
+		},
+	},
 	'/v1/skills': {
 		get: {
 			tags: ['config'],

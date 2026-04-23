@@ -21,7 +21,7 @@ import type { Tool } from 'ai';
 import { adaptTools } from '../../tools/adapter.ts';
 import { buildDatabaseTools } from '../../tools/database/index.ts';
 import { time } from '../debug/index.ts';
-import { isDevtoolsEnabled } from '../debug/state.ts';
+import { isDebugEnabled, isDevtoolsEnabled } from '../debug/state.ts';
 import { buildHistoryMessages } from '../message/history-builder.ts';
 import { getMaxOutputTokens } from '../utils/token.ts';
 import { setupToolContext } from '../tools/setup.ts';
@@ -30,6 +30,39 @@ import { detectOAuth, adaptRunnerCall } from '../provider/oauth-adapter.ts';
 import { buildReasoningConfig } from '../provider/reasoning.ts';
 import type { RunOpts } from '../session/queue.ts';
 import type { ToolAdapterContext } from '../../tools/adapter.ts';
+
+type RunnerSetupTimings = {
+	loadConfigAndDbMs: number;
+	resolveAgentConfigMs: number;
+	buildHistoryMs: number;
+	loadSessionMs: number;
+	composeSystemPromptMs: number;
+	discoverToolsMs: number;
+	resolveModelMs: number;
+	setupToolContextMs: number;
+	buildToolsetMs: number;
+	totalMs: number;
+};
+
+type TimedResult<T> = {
+	value: T;
+	durationMs: number;
+};
+
+function nowMs(): number {
+	const perf = globalThis.performance;
+	if (perf && typeof perf.now === 'function') return perf.now();
+	return Date.now();
+}
+
+async function timePromise<T>(promise: Promise<T>): Promise<TimedResult<T>> {
+	const startedAt = nowMs();
+	const value = await promise;
+	return {
+		value,
+		durationMs: nowMs() - startedAt,
+	};
+}
 
 export interface SetupResult {
 	cfg: Awaited<ReturnType<typeof loadConfig>>;
@@ -52,6 +85,7 @@ export interface SetupResult {
 	needsSpoof: boolean;
 	isOpenAIOAuth: boolean;
 	mcpToolsRecord: Record<string, Tool>;
+	timings: RunnerSetupTimings;
 }
 
 export function mergeProviderOptions(
@@ -112,40 +146,48 @@ export function applyModelFamilyEditToolPolicy(
 }
 
 export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
+	const setupStartedAt = nowMs();
 	const cfgTimer = time('runner:loadConfig+db');
+	const loadConfigAndDbStartedAt = nowMs();
 	const cfg = await loadConfig(opts.projectRoot);
 	const db = await getDb(cfg.projectRoot);
+	const loadConfigAndDbMs = nowMs() - loadConfigAndDbStartedAt;
 	cfgTimer.end();
 
 	const agentTimer = time('runner:resolveAgentConfig');
-	const agentCfg = await resolveAgentConfig(cfg.projectRoot, opts.agent);
+	const agentCfgPromise = timePromise(
+		resolveAgentConfig(cfg.projectRoot, opts.agent),
+	);
+	const historyPromise =
+		opts.omitHistory || (opts.isCompactCommand && opts.compactionContext)
+			? Promise.resolve({ value: [], durationMs: 0 })
+			: timePromise(
+					buildHistoryMessages(db, opts.sessionId, opts.assistantMessageId),
+				);
+	const sessionRowsPromise = timePromise(
+		db.select().from(sessions).where(eq(sessions.id, opts.sessionId)).limit(1),
+	);
+	const discoveredToolsPromise = timePromise(
+		discoverProjectTools(cfg.projectRoot, undefined, cfg.skills),
+	);
+	const { value: agentCfg, durationMs: resolveAgentConfigMs } =
+		await agentCfgPromise;
 	agentTimer.end({ agent: opts.agent });
 
 	const agentPrompt = agentCfg.prompt || '';
 
 	const historyTimer = time('runner:buildHistory');
-	let history: Awaited<ReturnType<typeof buildHistoryMessages>>;
-	if (opts.omitHistory || (opts.isCompactCommand && opts.compactionContext)) {
-		history = [];
-	} else {
-		history = await buildHistoryMessages(
-			db,
-			opts.sessionId,
-			opts.assistantMessageId,
-		);
-	}
+	const { value: history, durationMs: buildHistoryMs } = await historyPromise;
 	historyTimer.end({ messages: history.length });
 
-	const sessionRows = await db
-		.select()
-		.from(sessions)
-		.where(eq(sessions.id, opts.sessionId))
-		.limit(1);
+	const { value: sessionRows, durationMs: loadSessionMs } =
+		await sessionRowsPromise;
 	const contextSummary = sessionRows[0]?.contextSummary ?? undefined;
 
 	const isFirstMessage = !history.some((m) => m.role === 'assistant');
 
 	const systemTimer = time('runner:composeSystemPrompt');
+	const composeSystemPromptStartedAt = nowMs();
 	const { getAuth } = await import('@ottocode/sdk');
 	const auth = await getAuth(opts.provider, cfg.projectRoot);
 	const oauth = detectOAuth(opts.provider, auth);
@@ -186,6 +228,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		: oauth.needsSpoof
 			? 'spoof'
 			: 'standard';
+	const composeSystemPromptMs = nowMs() - composeSystemPromptStartedAt;
 	systemTimer.end();
 	logger.debug('[prompt] system prompt assembled', {
 		sessionId: opts.sessionId,
@@ -222,7 +265,7 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 			(message) => message.role,
 		),
 	});
-	if (effectiveSystemPrompt) {
+	if (effectiveSystemPrompt && isDebugEnabled()) {
 		const systemPromptPath = getSessionSystemPromptPath(opts.sessionId);
 		try {
 			await mkdir(dirname(systemPromptPath), { recursive: true });
@@ -261,7 +304,8 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	}
 
 	const toolsTimer = time('runner:discoverTools');
-	const discovered = await discoverProjectTools(cfg.projectRoot);
+	const { value: discovered, durationMs: discoverToolsMs } =
+		await discoveredToolsPromise;
 	const allTools = discovered.tools;
 	const { mcpToolsRecord } = discovered;
 
@@ -289,11 +333,13 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		(tool) => allowedNames.has(tool.name) || tool.name === 'load_mcp_tools',
 	);
 
+	const resolveModelStartedAt = nowMs();
 	const model = await resolveModel(opts.provider, opts.model, cfg, {
 		sessionId: opts.sessionId,
 		messageId: opts.assistantMessageId,
 		reasoningText: opts.reasoningText,
 	});
+	const resolveModelMs = nowMs() - resolveModelStartedAt;
 	const wrappedModel = isDevtoolsEnabled()
 		? wrapLanguageModel({
 				// biome-ignore lint/suspicious/noExplicitAny: OpenRouter provider uses v2 spec
@@ -304,14 +350,18 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 
 	const maxOutputTokens = adapted.maxOutputTokens;
 
+	const setupToolContextStartedAt = nowMs();
 	const { sharedCtx, firstToolTimer, firstToolSeen } = await setupToolContext(
 		opts,
 		db,
 	);
+	const setupToolContextMs = nowMs() - setupToolContextStartedAt;
 
+	const buildToolsetStartedAt = nowMs();
 	const providerAuth = await getAuth(opts.provider, opts.projectRoot);
 	const authType = providerAuth?.type;
 	const toolset = adaptTools(gated, sharedCtx, opts.provider, authType);
+	const buildToolsetMs = nowMs() - buildToolsetStartedAt;
 
 	const providerOptions = { ...adapted.providerOptions };
 	let effectiveMaxOutputTokens = maxOutputTokens;
@@ -334,6 +384,32 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 	mergeProviderOptions(providerOptions, reasoningConfig.providerOptions);
 	effectiveMaxOutputTokens = reasoningConfig.effectiveMaxOutputTokens;
 
+	const timings: RunnerSetupTimings = {
+		loadConfigAndDbMs,
+		resolveAgentConfigMs,
+		buildHistoryMs,
+		loadSessionMs,
+		composeSystemPromptMs,
+		discoverToolsMs,
+		resolveModelMs,
+		setupToolContextMs,
+		buildToolsetMs,
+		totalMs: nowMs() - setupStartedAt,
+	};
+
+	logger.info('[latency] runner setup', {
+		sessionId: opts.sessionId,
+		messageId: opts.assistantMessageId,
+		agent: opts.agent,
+		provider: opts.provider,
+		model: opts.model,
+		historyMessages: history.length,
+		systemPromptChars: effectiveSystemPrompt.length,
+		additionalPromptMessages: additionalSystemMessages.length,
+		allowedToolCount: gated.length,
+		timings,
+	});
+
 	return {
 		cfg,
 		db,
@@ -353,5 +429,6 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		needsSpoof: oauth.needsSpoof,
 		isOpenAIOAuth: oauth.isOpenAIOAuth,
 		mcpToolsRecord,
+		timings,
 	};
 }

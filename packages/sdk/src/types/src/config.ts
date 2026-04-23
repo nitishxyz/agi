@@ -53,6 +53,16 @@ export type ProviderSettingsEntry = {
 
 export type ProviderSettings = Record<string, ProviderSettingsEntry>;
 
+export type SkillSettings = {
+	enabled?: boolean;
+	items?: Record<
+		string,
+		{
+			enabled?: boolean;
+		}
+	>;
+};
+
 /**
  * Path configuration
  */
@@ -70,6 +80,7 @@ export type OttoConfig = {
 	projectRoot: string;
 	defaults: DefaultConfig;
 	providers: ProviderSettings;
+	skills?: SkillSettings;
 	paths: PathConfig;
 	debugEnabled?: boolean;
 	debugScopes?: string[];

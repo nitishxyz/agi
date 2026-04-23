@@ -6,7 +6,10 @@ import {
 	type ProviderId,
 	type AuthInfo,
 } from '../../auth/src/index.ts';
-import type { ProviderSettingsEntry } from '../../types/src/index.ts';
+import type {
+	ProviderSettingsEntry,
+	SkillSettings,
+} from '../../types/src/index.ts';
 import {
 	getGlobalConfigDir,
 	getGlobalConfigPath,
@@ -140,6 +143,35 @@ export async function removeProviderSettings(
 	const providers = { ...(existing.providers as Record<string, unknown>) };
 	delete providers[provider];
 	const next = { ...existing, providers };
+	await writeConfigFile(filePath, next);
+}
+
+export async function writeSkillSettings(
+	scope: Scope,
+	updates: SkillSettings,
+	projectRoot?: string,
+) {
+	const filePath = getConfigFilePath(scope, projectRoot);
+	const existing = await readJsonFile(filePath);
+	const prevSkills =
+		existing && typeof existing.skills === 'object'
+			? (existing.skills as Record<string, unknown>)
+			: {};
+	const prevItems =
+		prevSkills.items && typeof prevSkills.items === 'object'
+			? (prevSkills.items as Record<string, unknown>)
+			: {};
+	const next = {
+		...existing,
+		skills: {
+			...prevSkills,
+			...updates,
+			items: {
+				...prevItems,
+				...(updates.items ?? {}),
+			},
+		},
+	};
 	await writeConfigFile(filePath, next);
 }
 

@@ -10,6 +10,7 @@ export type RunOpts = {
 	provider: ProviderName;
 	model: string;
 	projectRoot: string;
+	queuedAt?: number;
 	oneShot?: boolean;
 	userContext?: string;
 	estimatedInputTokens?: number;
@@ -74,7 +75,7 @@ function publishQueueState(sessionId: string) {
  * Creates an abort controller per message.
  */
 export function enqueueAssistantRun(
-	opts: Omit<RunOpts, 'abortSignal'>,
+	opts: Omit<RunOpts, 'abortSignal' | 'queuedAt'>,
 	processQueueFn: (sessionId: string) => Promise<void>,
 ) {
 	const abortController = new AbortController();
@@ -85,7 +86,11 @@ export function enqueueAssistantRun(
 		running: false,
 		currentMessageId: null,
 	};
-	state.queue.push({ ...opts, abortSignal: abortController.signal });
+	state.queue.push({
+		...opts,
+		queuedAt: globalThis.performance?.now?.() ?? Date.now(),
+		abortSignal: abortController.signal,
+	});
 	runners.set(opts.sessionId, state);
 
 	publishQueueState(opts.sessionId);

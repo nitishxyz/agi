@@ -222,6 +222,7 @@ export {
 	writeDefaults as setConfig,
 	writeProviderSettings,
 	removeProviderSettings,
+	writeSkillSettings,
 	readDebugConfig,
 	writeDebugConfig,
 	writeAuth,
@@ -368,6 +369,8 @@ export {
 export {
 	initializeSkills,
 	getDiscoveredSkills,
+	setSkillSettings,
+	filterDiscoveredSkills,
 	isSkillsInitialized,
 	buildSkillTool,
 	rebuildSkillDescription,
