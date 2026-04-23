@@ -34,10 +34,17 @@ export const configMixin = {
 			id: string;
 			label: string;
 			toolCall?: boolean;
+			reasoningText?: boolean;
+			vision?: boolean;
+			attachment?: boolean;
+			free?: boolean;
 			available?: boolean;
 			unavailableReason?: string;
 		}>;
 		default: string;
+		allowAnyModel?: boolean;
+		dynamicModels?: boolean;
+		label?: string;
 	}> {
 		const response = await apiGetProviderModels({
 			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch

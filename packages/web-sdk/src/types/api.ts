@@ -121,6 +121,8 @@ export interface ModelInfo {
 export interface ProviderModels {
 	label: string;
 	authType?: 'api' | 'oauth' | 'wallet';
+	allowAnyModel?: boolean;
+	dynamicModels?: boolean;
 	models: ModelInfo[];
 }
 

@@ -4,6 +4,7 @@ export type DiscoverOllamaOptions = {
 	baseURL: string;
 	apiKey?: string;
 	fetch?: typeof globalThis.fetch;
+	includeDetails?: boolean;
 };
 
 export type DiscoverOllamaResult = {
@@ -55,6 +56,13 @@ export async function discoverOllamaModels(
 	const ids = (tagsPayload.models ?? [])
 		.map((model) => String(model.name ?? model.model ?? '').trim())
 		.filter(Boolean);
+
+	if (options.includeDetails === false) {
+		return {
+			baseURL,
+			models: ids.map((id) => ({ id, label: id })),
+		};
+	}
 
 	const models = await Promise.all(
 		ids.map(

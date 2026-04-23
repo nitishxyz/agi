@@ -8,7 +8,9 @@ import {
 } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import Fuse from 'fuse.js';
-import { useAllModels } from '../../hooks/useConfig';
+import { useAllModels, useModels } from '../../hooks/useConfig';
+import { apiClient } from '../../lib/api-client';
+import type { AllModelsResponse, ProviderModels } from '../../types/api';
 
 interface UnifiedModelSelectorProps {
 	provider: string;
@@ -39,13 +41,108 @@ export const UnifiedModelSelector = forwardRef<
 	{ provider, model, onChange, disabled = false },
 	ref,
 ) {
-	const { data: allModels, isLoading } = useAllModels();
+	const { data: allModels } = useAllModels();
+	const { data: currentProviderModels, isLoading: isCurrentProviderLoading } =
+		useModels(provider);
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [highlightedIndex, setHighlightedIndex] = useState(0);
+	const [loadedModels, setLoadedModels] = useState<AllModelsResponse>({});
+	const [loadingProviders, setLoadingProviders] = useState<
+		Record<string, boolean>
+	>({});
+	const [hydratedProviders, setHydratedProviders] = useState<
+		Record<string, boolean>
+	>({});
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+	useEffect(() => {
+		if (!allModels) return;
+		setLoadedModels((prev) => {
+			const next: AllModelsResponse = { ...prev };
+			for (const [providerId, providerData] of Object.entries(allModels)) {
+				next[providerId] = {
+					...providerData,
+					models: hydratedProviders[providerId]
+						? (prev[providerId]?.models ?? providerData.models)
+						: providerData.models,
+				};
+			}
+			return next;
+		});
+	}, [allModels, hydratedProviders]);
+
+	const configuredProviders = useMemo(() => {
+		const providers = Object.keys(allModels ?? {});
+		if (!provider || providers.includes(provider)) {
+			return providers;
+		}
+		return [provider, ...providers];
+	}, [allModels, provider]);
+
+	useEffect(() => {
+		if (!provider || !currentProviderModels) return;
+		setLoadedModels((prev) => ({
+			...prev,
+			[provider]: {
+				...(prev[provider] ?? {}),
+				label: currentProviderModels.label || provider,
+				models: currentProviderModels.models,
+			},
+		}));
+		setHydratedProviders((prev) => ({ ...prev, [provider]: true }));
+	}, [currentProviderModels, provider]);
+
+	useEffect(() => {
+		if (!isOpen || !configuredProviders.length) return;
+
+		for (const providerId of configuredProviders) {
+			const providerData = loadedModels[providerId] ?? allModels?.[providerId];
+			if (
+				!providerData?.dynamicModels ||
+				hydratedProviders[providerId] ||
+				loadingProviders[providerId]
+			) {
+				continue;
+			}
+
+			setLoadingProviders((prev) => ({ ...prev, [providerId]: true }));
+
+			void apiClient
+				.getModels(providerId)
+				.then((data) => {
+					setLoadedModels((prev) => ({
+						...prev,
+						[providerId]: {
+							...(prev[providerId] ?? allModels?.[providerId] ?? {}),
+							label: data.label || providerId,
+							models: data.models,
+							allowAnyModel: data.allowAnyModel,
+							dynamicModels: true,
+						} satisfies ProviderModels,
+					}));
+					setHydratedProviders((prev) => ({ ...prev, [providerId]: true }));
+				})
+				.catch(() => {
+					setHydratedProviders((prev) => ({ ...prev, [providerId]: true }));
+				})
+				.finally(() => {
+					setLoadingProviders((prev) => ({
+						...prev,
+						[providerId]: false,
+					}));
+				});
+		}
+	}, [
+		allModels,
+		configuredProviders,
+		hydratedProviders,
+		isOpen,
+		loadedModels,
+		loadingProviders,
+	]);
 
 	useImperativeHandle(ref, () => ({
 		openAndFocus: () => {
@@ -54,9 +151,8 @@ export const UnifiedModelSelector = forwardRef<
 	}));
 
 	const flattenedModels = useMemo(() => {
-		if (!allModels) return [];
 		const flattened: FlattenedModel[] = [];
-		for (const [providerKey, providerData] of Object.entries(allModels)) {
+		for (const [providerKey, providerData] of Object.entries(loadedModels)) {
 			for (const modelItem of providerData.models) {
 				flattened.push({
 					providerKey,
@@ -71,7 +167,7 @@ export const UnifiedModelSelector = forwardRef<
 			}
 		}
 		return flattened;
-	}, [allModels]);
+	}, [loadedModels]);
 
 	const fuse = useMemo(() => {
 		return new Fuse(flattenedModels, {
@@ -89,8 +185,7 @@ export const UnifiedModelSelector = forwardRef<
 	}, [flattenedModels]);
 
 	const filteredModels = useMemo(() => {
-		if (!allModels) return {};
-		if (!searchQuery.trim()) return allModels;
+		if (!searchQuery.trim()) return loadedModels;
 
 		const results = fuse.search(searchQuery);
 
@@ -110,7 +205,7 @@ export const UnifiedModelSelector = forwardRef<
 			return scoreA - scoreB;
 		});
 
-		const filtered: typeof allModels = {};
+		const filtered: AllModelsResponse = {};
 
 		for (const result of sortedResults) {
 			const item = result.item;
@@ -138,7 +233,7 @@ export const UnifiedModelSelector = forwardRef<
 		}
 
 		return filtered;
-	}, [allModels, searchQuery, fuse]);
+	}, [loadedModels, searchQuery, fuse]);
 
 	const filteredFlatList = useMemo(() => {
 		const list: FlattenedModel[] = [];
@@ -251,16 +346,22 @@ export const UnifiedModelSelector = forwardRef<
 		}
 	};
 
-	const currentProviderLabel = allModels?.[provider]?.label || provider;
+	const currentProviderLabel =
+		loadedModels[provider]?.label || currentProviderModels?.label || provider;
 	const currentModelLabel =
-		allModels?.[provider]?.models.find((m) => m.id === model)?.label || model;
+		loadedModels[provider]?.models.find((m) => m.id === model)?.label ||
+		currentProviderModels?.models.find((m) => m.id === model)?.label ||
+		model;
+	const displayedProviderKeys = searchQuery.trim()
+		? Object.keys(filteredModels)
+		: configuredProviders;
 
 	return (
 		<div ref={dropdownRef} className="relative w-full">
 			<button
 				type="button"
 				onClick={() => !disabled && setIsOpen(!isOpen)}
-				disabled={disabled || isLoading}
+				disabled={disabled}
 				className="w-full flex items-center justify-between px-3 py-2 bg-[hsl(var(--secondary))] border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 			>
 				<span className="flex items-center gap-2 text-sm truncate">
@@ -276,7 +377,7 @@ export const UnifiedModelSelector = forwardRef<
 					className={`w-4 h-4 text-[hsl(var(--muted-foreground))] transition-transform ${isOpen ? 'rotate-180' : ''}`}
 				/>
 			</button>
-			{isOpen && !isLoading && allModels && (
+			{isOpen && (
 				<div className="absolute z-50 mt-1 w-full bg-[hsl(var(--popover))] border border-[hsl(var(--border))] rounded-md shadow-lg max-h-80 overflow-hidden flex flex-col">
 					<div className="p-2 border-b border-[hsl(var(--border))]">
 						<div className="relative">
@@ -294,94 +395,117 @@ export const UnifiedModelSelector = forwardRef<
 					</div>
 
 					<div className="overflow-y-auto">
-						{Object.keys(filteredModels).length === 0 ? (
+						{displayedProviderKeys.length === 0 ? (
 							<div className="p-4 text-center text-[hsl(var(--muted-foreground))] text-sm">
-								No models found
+								{isCurrentProviderLoading
+									? 'Loading models...'
+									: 'No models found'}
 							</div>
 						) : (
-							Object.entries(filteredModels).map(
-								([providerKey, providerData]) => (
+							displayedProviderKeys.map((providerKey) => {
+								const providerData = filteredModels[providerKey];
+								const isProviderLoading =
+									loadingProviders[providerKey] ||
+									(providerKey === provider &&
+										isCurrentProviderLoading &&
+										!providerData);
+
+								return (
 									<div
 										key={providerKey}
 										className="border-b border-[hsl(var(--border))] last:border-0"
 									>
 										<div className="sticky top-0 px-3 py-2 text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider bg-[hsl(var(--muted))] z-10">
-											{providerData.label}
+											{providerData?.label || providerKey}
 										</div>
 										<div>
-											{providerData.models.map((modelItem) => {
-												const isSelected =
-													providerKey === provider && modelItem.id === model;
-												const flatIndex = filteredFlatList.findIndex(
-													(item) =>
-														item.providerKey === providerKey &&
-														item.modelId === modelItem.id,
-												);
-												const isHighlighted = flatIndex === highlightedIndex;
-												const isAvailable = modelItem.available !== false;
+											{isProviderLoading ? (
+												<div className="px-4 py-2 text-sm text-[hsl(var(--muted-foreground))]">
+													Loading models...
+												</div>
+											) : providerData?.models.length ? (
+												providerData.models.map((modelItem) => {
+													const isSelected =
+														providerKey === provider && modelItem.id === model;
+													const flatIndex = filteredFlatList.findIndex(
+														(item) =>
+															item.providerKey === providerKey &&
+															item.modelId === modelItem.id,
+													);
+													const isHighlighted = flatIndex === highlightedIndex;
+													const isAvailable = modelItem.available !== false;
 
-												return (
-													<button
-														key={modelItem.id}
-														ref={(el) => {
-															if (flatIndex >= 0) {
-																itemRefs.current[flatIndex] = el;
+													return (
+														<button
+															key={modelItem.id}
+															ref={(el) => {
+																if (flatIndex >= 0) {
+																	itemRefs.current[flatIndex] = el;
+																}
+															}}
+															type="button"
+															disabled={!isAvailable}
+															title={modelItem.unavailableReason}
+															onClick={() =>
+																handleSelect(
+																	providerKey,
+																	modelItem.id,
+																	modelItem.available,
+																)
 															}
-														}}
-														type="button"
-														disabled={!isAvailable}
-														title={modelItem.unavailableReason}
-														onClick={() =>
-															handleSelect(
-																providerKey,
-																modelItem.id,
-																modelItem.available,
-															)
-														}
-														onMouseEnter={() => setHighlightedIndex(flatIndex)}
-														className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors ${
-															isHighlighted
-																? 'bg-[hsl(var(--accent))]'
-																: 'hover:bg-[hsl(var(--accent))]'
-														} ${
-															isSelected
-																? 'text-[hsl(var(--accent-foreground))] font-medium'
-																: 'text-[hsl(var(--foreground))]'
-														} ${
-															!isAvailable
-																? 'opacity-60 cursor-not-allowed'
-																: ''
-														}`}
-													>
-														<span className="truncate">{modelItem.label}</span>
-														{(!isAvailable ||
-															modelItem.toolCall ||
-															modelItem.reasoningText) && (
-															<div className="flex gap-1 ml-2 flex-shrink-0">
-																{!isAvailable && (
-																	<span className="text-[10px] px-1.5 py-0.5 bg-red-600/20 text-red-400 rounded">
-																		Unavailable
-																	</span>
-																)}
-																{modelItem.toolCall && (
-																	<span className="text-[10px] px-1.5 py-0.5 bg-green-600/20 text-green-400 rounded">
-																		Tools
-																	</span>
-																)}
-																{modelItem.reasoningText && (
-																	<span className="text-[10px] px-1.5 py-0.5 bg-purple-600/20 text-purple-400 rounded">
-																		Reasoning
-																	</span>
-																)}
-															</div>
-														)}
-													</button>
-												);
-											})}
+															onMouseEnter={() =>
+																setHighlightedIndex(flatIndex)
+															}
+															className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors ${
+																isHighlighted
+																	? 'bg-[hsl(var(--accent))]'
+																	: 'hover:bg-[hsl(var(--accent))]'
+															} ${
+																isSelected
+																	? 'text-[hsl(var(--accent-foreground))] font-medium'
+																	: 'text-[hsl(var(--foreground))]'
+															} ${
+																!isAvailable
+																	? 'opacity-60 cursor-not-allowed'
+																	: ''
+															}`}
+														>
+															<span className="truncate">
+																{modelItem.label}
+															</span>
+															{(!isAvailable ||
+																modelItem.toolCall ||
+																modelItem.reasoningText) && (
+																<div className="flex gap-1 ml-2 flex-shrink-0">
+																	{!isAvailable && (
+																		<span className="text-[10px] px-1.5 py-0.5 bg-red-600/20 text-red-400 rounded">
+																			Unavailable
+																		</span>
+																	)}
+																	{modelItem.toolCall && (
+																		<span className="text-[10px] px-1.5 py-0.5 bg-green-600/20 text-green-400 rounded">
+																			Tools
+																		</span>
+																	)}
+																	{modelItem.reasoningText && (
+																		<span className="text-[10px] px-1.5 py-0.5 bg-purple-600/20 text-purple-400 rounded">
+																			Reasoning
+																		</span>
+																	)}
+																</div>
+															)}
+														</button>
+													);
+												})
+											) : (
+												<div className="px-4 py-2 text-sm text-[hsl(var(--muted-foreground))]">
+													No models available
+												</div>
+											)}
 										</div>
 									</div>
-								),
-							)
+								);
+							})
 						)}
 					</div>
 				</div>

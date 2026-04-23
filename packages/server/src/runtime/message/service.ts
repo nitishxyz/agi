@@ -9,6 +9,7 @@ import { runSessionLoop } from '../agent/runner.ts';
 import { resolveModel } from '../provider/index.ts';
 import {
 	getFastModelForAuth,
+	getProviderDefinition,
 	logger,
 	type ProviderId,
 	type ReasoningLevel,
@@ -316,8 +317,13 @@ async function generateSessionTitle(args: {
 		const { getAuth } = await import('@ottocode/sdk');
 		const auth = await getAuth(provider, cfg.projectRoot);
 		const oauth = detectOAuth(provider, auth);
+		const providerDefinition = getProviderDefinition(cfg, provider);
 
-		const titleModel = getFastModelForAuth(provider, auth?.type) ?? modelName;
+		const titleModel =
+			providerDefinition?.source === 'custom' ||
+			providerDefinition?.compatibility === 'ollama'
+				? modelName
+				: (getFastModelForAuth(provider, auth?.type) ?? modelName);
 		const model = await resolveModel(provider, titleModel, cfg);
 
 		const promptText = String(content ?? '').slice(0, 2000);

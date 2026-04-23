@@ -4,7 +4,12 @@ import { promisify } from 'node:util';
 import { generateText, streamText } from 'ai';
 import { eq } from 'drizzle-orm';
 import type { ProviderId } from '@ottocode/sdk';
-import { loadConfig, getAuth, getFastModelForAuth } from '@ottocode/sdk';
+import {
+	loadConfig,
+	getAuth,
+	getFastModelForAuth,
+	getProviderDefinition,
+} from '@ottocode/sdk';
 import { getDb } from '@ottocode/database';
 import { sessions } from '@ottocode/database/schema';
 import { gitCommitSchema, gitGenerateCommitMessageSchema } from './schemas.ts';
@@ -108,25 +113,31 @@ export function registerCommitRoutes(app: Hono) {
 			const config = await loadConfig();
 
 			let provider = (config.defaults?.provider || 'anthropic') as ProviderId;
+			let currentModel = config.defaults?.model ?? 'claude-3-5-sonnet-20241022';
 
 			if (sessionId) {
 				const db = await getDb();
 				const [session] = await db
-					.select({ provider: sessions.provider })
+					.select({ provider: sessions.provider, model: sessions.model })
 					.from(sessions)
 					.where(eq(sessions.id, sessionId));
 				if (session?.provider) {
 					provider = session.provider as ProviderId;
 				}
+				if (session?.model) {
+					currentModel = session.model;
+				}
 			}
 
 			const auth = await getAuth(provider, config.projectRoot);
 			const oauth = detectOAuth(provider, auth);
+			const providerDefinition = getProviderDefinition(config, provider);
 
 			const modelId =
-				getFastModelForAuth(provider, auth?.type) ??
-				config.defaults?.model ??
-				'claude-3-5-sonnet-20241022';
+				providerDefinition?.source === 'custom' ||
+				providerDefinition?.compatibility === 'ollama'
+					? currentModel
+					: (getFastModelForAuth(provider, auth?.type) ?? currentModel);
 			const model = await resolveModel(provider, modelId, config);
 
 			const userPrompt = `Generate a commit message for these git changes.

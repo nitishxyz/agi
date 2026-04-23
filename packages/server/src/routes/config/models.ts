@@ -88,13 +88,13 @@ async function discoverProviderModels(args: {
 	provider: ProviderId;
 	providerDefinition: NonNullable<ReturnType<typeof getProviderDefinition>>;
 	projectRoot: string;
-}): Promise<ModelInfo[] | null> {
+}): Promise<ModelInfo[] | undefined> {
 	const { provider, providerDefinition, projectRoot } = args;
 	if (
 		providerDefinition.compatibility !== 'ollama' ||
 		!providerDefinition.baseURL
 	) {
-		return null;
+		return undefined;
 	}
 
 	try {
@@ -106,6 +106,7 @@ async function discoverProviderModels(args: {
 		const discovered = await discoverOllamaModels({
 			baseURL: providerDefinition.baseURL,
 			apiKey,
+			includeDetails: false,
 		});
 		return discovered.models;
 	} catch (error) {
@@ -113,8 +114,17 @@ async function discoverProviderModels(args: {
 			provider,
 			error: error instanceof Error ? error.message : String(error),
 		});
-		return null;
+		return [];
 	}
+}
+
+function shouldLazyLoadProviderModels(
+	providerDefinition: NonNullable<ReturnType<typeof getProviderDefinition>>,
+): boolean {
+	return (
+		providerDefinition.compatibility === 'ollama' ||
+		providerDefinition.source === 'custom'
+	);
 }
 
 export function registerModelsRoutes(app: Hono) {
@@ -159,10 +169,15 @@ export function registerModelsRoutes(app: Hono) {
 				projectRoot,
 			});
 			const filteredModels =
-				discoveredModels ??
-				(providerCatalog
-					? filterModelsForAuthType(provider, providerCatalog.models, authType)
-					: getConfiguredProviderModels(cfg, provider));
+				providerDefinition.compatibility === 'ollama'
+					? (discoveredModels ?? [])
+					: providerCatalog
+						? filterModelsForAuthType(
+								provider,
+								providerCatalog.models,
+								authType,
+							)
+						: getConfiguredProviderModels(cfg, provider);
 			const copilotAllowedModels =
 				provider === 'copilot'
 					? await getAuthorizedCopilotModels(projectRoot)
@@ -233,28 +248,27 @@ export function registerModelsRoutes(app: Hono) {
 				const providerCatalog = catalog[provider as keyof typeof catalog];
 				const providerDefinition = getProviderDefinition(cfg, provider);
 				if (providerDefinition) {
+					const dynamicModels =
+						shouldLazyLoadProviderModels(providerDefinition);
 					const authType = await getAuthTypeForProvider(
 						embeddedConfig,
 						provider,
 						projectRoot,
 					);
-					const discoveredModels = await discoverProviderModels({
-						provider,
-						providerDefinition,
-						projectRoot,
-					});
-					const filteredModels =
-						discoveredModels ??
-						(providerCatalog
+					const filteredModels = dynamicModels
+						? getConfiguredProviderModels(cfg, provider)
+						: providerCatalog
 							? filterModelsForAuthType(
 									provider,
 									providerCatalog.models,
 									authType,
 								)
-							: getConfiguredProviderModels(cfg, provider));
+							: getConfiguredProviderModels(cfg, provider);
 					modelsMap[provider] = {
 						label: providerDefinition.label,
 						authType,
+						allowAnyModel: providerDefinition.allowAnyModel,
+						dynamicModels,
 						models: filteredModels.map((m) => ({
 							id: m.id,
 							label: m.label || m.id,
