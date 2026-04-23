@@ -390,7 +390,7 @@ export class OttoAcpAgent implements Agent {
 		const name = typeof payload?.name === 'string' ? payload.name : '';
 		const delta = payload?.delta;
 
-		if (name === 'bash' && typeof delta === 'string' && delta) {
+		if (isShellTool(name) && typeof delta === 'string' && delta) {
 			await this.client.sessionUpdate({
 				sessionId: acpSessionId,
 				update: {
@@ -470,7 +470,7 @@ export class OttoAcpAgent implements Agent {
 			return this.buildDiffContent(name, args, result, session);
 		}
 
-		if (name === 'bash') {
+		if (isShellTool(name)) {
 			return this.buildBashContent(result);
 		}
 
@@ -696,6 +696,10 @@ export class OttoAcpAgent implements Agent {
 	}
 }
 
+function isShellTool(name: string): boolean {
+	return name === 'shell' || name === 'bash';
+}
+
 function formatToolTitle(
 	name: string,
 	args: Record<string, unknown> | undefined,
@@ -711,6 +715,7 @@ function formatToolTitle(
 			return `Write ${args?.path || 'file'}`;
 		case 'apply_patch':
 			return 'Apply patch';
+		case 'shell':
 		case 'bash':
 			return `Run: ${truncate(String(args?.cmd || 'command'), 60)}`;
 		case 'ripgrep':
@@ -754,6 +759,7 @@ function getToolKind(name: string): ToolKind {
 		case 'write':
 		case 'apply_patch':
 			return 'edit';
+		case 'shell':
 		case 'bash':
 		case 'terminal':
 			return 'execute';

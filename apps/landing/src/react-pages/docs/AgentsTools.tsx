@@ -22,8 +22,8 @@ export function AgentsTools() {
 			<h3>build</h3>
 			<p>Implementation agent for code changes and fixes.</p>
 			<p>
-				<strong>Tools:</strong> read, write, ls, tree, bash, update_todos, glob,
-				ripgrep, git_status, terminal, apply_patch, websearch
+				<strong>Tools:</strong> read, write, ls, tree, shell, update_todos,
+				glob, ripgrep, git_status, terminal, apply_patch, websearch
 			</p>
 			<CodeBlock>{`otto "create an auth component" --agent build
 otto "fix the failing test" --agent build`}</CodeBlock>
@@ -39,7 +39,7 @@ otto "review the dependency graph" --agent plan`}</CodeBlock>
 			<h3>general</h3>
 			<p>Broad mixed-purpose assistant.</p>
 			<p>
-				<strong>Tools:</strong> read, write, ls, tree, bash, ripgrep, glob,
+				<strong>Tools:</strong> read, write, ls, tree, shell, ripgrep, glob,
 				websearch, update_todos
 			</p>
 			<CodeBlock>{`otto "explain how this module works" --agent general`}</CodeBlock>
@@ -169,7 +169,7 @@ otto "review the dependency graph" --agent plan`}</CodeBlock>
 				<tbody>
 					<tr>
 						<td>
-							<code>bash</code>
+							<code>shell</code>
 						</td>
 						<td>Execute shell commands.</td>
 					</tr>

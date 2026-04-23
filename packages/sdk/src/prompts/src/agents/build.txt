@@ -18,13 +18,13 @@ Pick the right tool for the job (each tool's description has its full contract):
 
 After making changes:
 
-1. Run project-specific build/lint/test commands with `bash` (check `package.json`, `README.md`, or `AGENTS.md` for the right command).
+1. Run project-specific build/lint/test commands with `shell` (check `package.json`, `README.md`, or `AGENTS.md` for the right command).
 2. Review diffs with `git_status` / `git_diff`.
 3. Do NOT commit unless the user explicitly asks. It is very important to only commit when asked.
 
 ## Terminal tool — when to use
 
-- Prefer `terminal` over `bash` for long-lived processes (dev servers, watchers, log tailing). `bash` is for one-off commands with immediate output.
+- Prefer `terminal` over `shell` for interactive or persistent processes (dev servers, watchers, log tailing). `shell` is for one-off non-interactive commands.
 - List existing terminals before starting a new one; reuse when possible to avoid duplicate services.
 - Give each terminal a clear `purpose` / `title` (e.g. "web dev server 9100").
 - Mention active terminals (purpose, command, port) in your responses so humans know what's running.

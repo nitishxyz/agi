@@ -84,7 +84,7 @@ Typical uses:
 import { BUILTIN_TOOLS, type BuiltinTool } from '@ottocode/server';
 
 const safeTools: BuiltinTool[] = BUILTIN_TOOLS.filter(
-  (tool) => !['bash', 'write', 'git_commit'].includes(tool),
+  (tool) => !['shell', 'write', 'git_commit'].includes(tool),
 );
 ```
 
@@ -97,7 +97,7 @@ Current exported tool names include file, search, patch, git, terminal, control,
 - `read`, `write`, `ls`, `tree`, `pwd`, `cd`, `glob`
 - `ripgrep`, `websearch`
 - `apply_patch`
-- `bash`, `terminal`
+- `shell`, `terminal`
 - `git_status`, `git_diff`, `git_commit`
 - `update_todos`, `progress_update`, `finish`, `skill`
 - `query_sessions`, `query_messages`, `get_session_context`, `search_history`, `get_parent_session`, `present_action`

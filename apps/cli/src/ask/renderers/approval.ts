@@ -38,6 +38,7 @@ function extractApprovalPreview(
 	args: Record<string, unknown>,
 ): string {
 	switch (toolName) {
+		case 'shell':
 		case 'bash':
 			if (typeof args.cmd === 'string') return `$ ${truncate(args.cmd, 80)}`;
 			break;

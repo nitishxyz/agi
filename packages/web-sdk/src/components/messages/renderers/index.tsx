@@ -52,7 +52,9 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
 	Glob: 'glob',
 	Grep: 'ripgrep',
 
-	Bash: 'bash',
+	Shell: 'shell',
+	Bash: 'shell',
+	bash: 'shell',
 	Terminal: 'terminal',
 
 	GitStatus: 'git_status',
@@ -78,7 +80,7 @@ function normalizeToolName(name: string): string {
 }
 
 const COMPACT_DETAIL_TOOL_NAMES = new Set([
-	'bash',
+	'shell',
 	'edit',
 	'multiedit',
 	'write',
@@ -124,7 +126,7 @@ export function ToolResultRenderer({
 			return <ApplyPatchRenderer {...props} toolName={normalizedName} />;
 		case 'write':
 			return <WriteRenderer {...props} />;
-		case 'bash':
+		case 'shell':
 			return <BashRenderer {...props} />;
 		case 'git_status':
 			return <GitStatusRenderer {...props} />;

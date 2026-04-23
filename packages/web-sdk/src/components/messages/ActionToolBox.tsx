@@ -62,6 +62,7 @@ const TOOL_CONFIG: Record<
 	string,
 	{ Icon: LucideIcon; color: string; label: string }
 > = {
+	shell: { Icon: Terminal, color: 'text-muted-foreground', label: 'Running' },
 	bash: { Icon: Terminal, color: 'text-muted-foreground', label: 'Running' },
 	write: {
 		Icon: FileEdit,
@@ -90,12 +91,20 @@ const TOOL_CONFIG: Record<
 	},
 };
 
+function normalizeToolName(toolName: string): string {
+	return toolName === 'bash' ? 'shell' : toolName;
+}
+
+function isShellTool(toolName: string): boolean {
+	return normalizeToolName(toolName) === 'shell';
+}
+
 function getTargetFromArgs(
 	toolName: string,
 	args: Record<string, unknown> | undefined,
 ): string {
 	if (!args) return '';
-	if (toolName === 'bash') {
+	if (isShellTool(toolName)) {
 		const cmd = String(args.cmd || '');
 		return cmd.length > 80 ? `${cmd.slice(0, 77)}…` : cmd;
 	}
@@ -110,7 +119,7 @@ function getTargetFromArgs(
 }
 
 function getTargetFromStream(toolName: string, raw: string): string {
-	if (toolName === 'bash') {
+	if (isShellTool(toolName)) {
 		const cmd = extractJsonStringField(raw, 'cmd');
 		if (cmd) {
 			return cmd.length > 80 ? `${cmd.slice(0, 77)}…` : cmd;
@@ -158,7 +167,7 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 	const hoveredRef = useRef(false);
 	const previousContentLengthRef = useRef(0);
 	const [contentHeight, setContentHeight] = useState(0);
-	const toolName = part.toolName || '';
+	const toolName = normalizeToolName(part.toolName || '');
 	const isComplete = part.type === 'tool_result';
 	const config = TOOL_CONFIG[toolName] || {
 		Icon: Terminal,
@@ -176,14 +185,13 @@ export function ActionToolBox({ part, showLine }: ActionToolBoxProps) {
 		getTargetFromArgs(toolName, args) ||
 		getTargetFromStream(toolName, streamedInput);
 	const streamedContent = getContentFromStream(toolName, streamedInput);
-	const displayContent =
-		toolName === 'bash'
-			? streamedOutput ||
-				streamedContent ||
-				(args ? getContentFromArgs(toolName, args) : '')
-			: args
-				? getContentFromArgs(toolName, args)
-				: streamedContent;
+	const displayContent = isShellTool(toolName)
+		? streamedOutput ||
+			streamedContent ||
+			(args ? getContentFromArgs(toolName, args) : '')
+		: args
+			? getContentFromArgs(toolName, args)
+			: streamedContent;
 	const hasDisplayContent = displayContent.trim().length > 0;
 
 	useEffect(() => {
@@ -410,7 +418,7 @@ function getContentFromArgs(
 	toolName: string,
 	args: Record<string, unknown>,
 ): string {
-	if (toolName === 'bash') return String(args.cmd || '');
+	if (isShellTool(toolName)) return String(args.cmd || '');
 	if (toolName === 'write') return String(args.content || '');
 	if (toolName === 'apply_patch') return String(args.patch || '');
 	if (toolName === 'edit') return String(args.oldString || '');
@@ -446,7 +454,7 @@ function extractJsonStringField(raw: string, field: string): string {
 
 function getContentFromStream(toolName: string, raw: string): string {
 	if (!raw) return '';
-	if (toolName === 'bash') return extractJsonStringField(raw, 'cmd');
+	if (isShellTool(toolName)) return extractJsonStringField(raw, 'cmd');
 	if (toolName === 'write') return extractJsonStringField(raw, 'content');
 	if (toolName === 'apply_patch') return extractJsonStringField(raw, 'patch');
 	if (toolName === 'edit') return extractJsonStringField(raw, 'oldString');

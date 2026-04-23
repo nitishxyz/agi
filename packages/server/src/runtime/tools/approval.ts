@@ -3,6 +3,7 @@ import { publish } from '../../events/bus.ts';
 export type ToolApprovalMode = 'auto' | 'dangerous' | 'all' | 'yolo';
 
 export const DANGEROUS_TOOLS = new Set([
+	'shell',
 	'bash',
 	'edit',
 	'multiedit',

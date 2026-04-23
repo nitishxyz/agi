@@ -149,7 +149,7 @@ The built-in tool surface available to agents:
 | **File system** | `read` · `write` · `ls` · `tree` · `pwd` · `cd` · `glob` |
 | **Search** | `ripgrep` · `websearch` |
 | **Editing** | `apply_patch` |
-| **Shell** | `bash` · `terminal` |
+| **Shell** | `shell` · `terminal` |
 | **Git** | `git_status` · `git_diff` · `git_commit` |
 | **Agent control** | `update_todos` · `progress_update` · `finish` · `skill` |
 | **Research** | `query_sessions` · `query_messages` · `get_session_context` · `search_history` · `get_parent_session` · `present_action` |

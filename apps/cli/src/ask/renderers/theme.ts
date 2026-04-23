@@ -63,6 +63,7 @@ export const TOOL_COLORS: Record<string, (s: string) => string> = {
 	apply_patch: c.green,
 	git_commit: c.green,
 
+	shell: c.yellow,
 	bash: c.yellow,
 	terminal: c.yellow,
 

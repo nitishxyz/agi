@@ -4,7 +4,7 @@ const TOOL_GROUPS = [
 	{ cat: 'File', items: ['read', 'write', 'ls', 'tree', 'glob'] },
 	{ cat: 'Search', items: ['grep', 'ripgrep', 'websearch'] },
 	{ cat: 'Edit', items: ['edit', 'apply_patch'] },
-	{ cat: 'Shell', items: ['bash', 'terminal'] },
+	{ cat: 'Shell', items: ['shell', 'terminal'] },
 	{ cat: 'Git', items: ['git_status', 'git_diff', 'git_commit'] },
 	{ cat: 'Agent', items: ['progress_update', 'finish', 'update_todos'] },
 	{ cat: 'MCP', items: ['github', 'linear', 'helius', 'notion', '+ any'] },

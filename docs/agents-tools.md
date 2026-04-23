@@ -21,7 +21,7 @@ Default implementation agent for code changes.
 
 Common tools:
 
-- `read`, `write`, `ls`, `tree`, `bash`
+- `read`, `write`, `ls`, `tree`, `shell`
 - `glob`, `ripgrep`
 - `git_status`, `terminal`
 - `apply_patch`, `update_todos`, `websearch`
@@ -42,7 +42,7 @@ Broad mixed-purpose agent.
 
 Common tools:
 
-- `read`, `write`, `ls`, `tree`, `bash`
+- `read`, `write`, `ls`, `tree`, `shell`
 - `glob`, `ripgrep`
 - `update_todos`, `websearch`
 
@@ -93,7 +93,7 @@ only receive the subset defined by their preset or config overrides.
 
 | Tool | Description |
 |---|---|
-| `bash` | One-shot shell command execution |
+| `shell` | One-shot non-interactive shell command execution |
 | `terminal` | Persistent terminal lifecycle management |
 
 ### Git

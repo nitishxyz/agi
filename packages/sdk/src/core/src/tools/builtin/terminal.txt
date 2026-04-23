@@ -51,7 +51,7 @@
 - Parameters:
   - terminalId (required): Terminal ID to kill
 
-## When to Use Terminal vs Bash
+## When to Use Terminal vs Shell
 
 ### Use terminal for:
 - Interactive commands that need stdin or a TTY: REPLs, prompts, shells, debuggers
@@ -63,7 +63,7 @@
 - Any process that needs to stay alive and produce continuous output
 - Any process you need to read from or write to across turns
 
-### Use bash for:
+### Use shell for:
 - Status checks: git status, ls, ps
 - One-off commands: mkdir, rm, curl
 - Quick scripts: bun run build, git commit
@@ -86,7 +86,7 @@
 
 ## Notes
 
-- Terminals persist across multiple LLM turns (unlike bash commands)
+- Terminals persist across multiple LLM turns (unlike shell commands)
 - Maximum 10 terminals per session
 - Exited terminals auto-cleanup after 5 minutes
 - Output is buffered (last 500 lines kept)

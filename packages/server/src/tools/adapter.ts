@@ -134,8 +134,8 @@ export function adaptTools(
 	const stepStates = ctx.stepExecution.states;
 
 	// Anthropic allows max 4 cache_control blocks
-	// Cache only the most frequently used tools: read, write, bash
-	const cacheableTools = new Set(['read', 'write', 'bash']);
+	// Cache only the most frequently used tools: read, write, shell
+	const cacheableTools = new Set(['read', 'write', 'shell']);
 	let cachedToolCount = 0;
 
 	for (const { name: canonicalName, tool } of tools) {
@@ -502,7 +502,7 @@ export function adaptTools(
 							} as ToolExecuteInput;
 							// biome-ignore lint/suspicious/noExplicitAny: AI SDK types are complex
 							res = base.execute?.(nextInput, options as any);
-						} else if (name === 'bash') {
+						} else if (name === 'shell' || name === 'bash') {
 							const needsCwd =
 								!input ||
 								typeof (input as Record<string, unknown>).cwd !== 'string';

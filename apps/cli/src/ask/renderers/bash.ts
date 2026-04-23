@@ -4,7 +4,7 @@ import type { RendererContext } from './types.ts';
 export function renderBashCall(ctx: RendererContext): string {
 	const args = (ctx.args ?? {}) as Record<string, unknown>;
 	const cmd = typeof args.cmd === 'string' ? truncate(args.cmd, 60) : '';
-	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark('bash')} ${c.fgDimmed(cmd)}`;
+	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark('shell')} ${c.fgDimmed(cmd)}`;
 }
 
 export function renderBashResult(ctx: RendererContext): string {
@@ -22,7 +22,7 @@ export function renderBashResult(ctx: RendererContext): string {
 	const time = formatMs(ctx.durationMs);
 
 	if (ctx.error) {
-		return `  ${c.red(ICONS.cross)} ${c.fgDark('bash')} ${c.fgDimmed(cmd)} ${c.red(truncate(ctx.error, 60))} ${c.fgDimmed(time)}`;
+		return `  ${c.red(ICONS.cross)} ${c.fgDark('shell')} ${c.fgDimmed(cmd)} ${c.red(truncate(ctx.error, 60))} ${c.fgDimmed(time)}`;
 	}
 
 	const lines: string[] = [];
@@ -31,7 +31,7 @@ export function renderBashResult(ctx: RendererContext): string {
 			? c.green(ICONS.check)
 			: c.red(`${ICONS.cross} exit ${exitCode}`);
 	lines.push(
-		`  ${icon} ${c.fgMuted('bash')} ${c.fgDimmed(cmd)} ${c.fgDimmed(time)}`,
+		`  ${icon} ${c.fgMuted('shell')} ${c.fgDimmed(cmd)} ${c.fgDimmed(time)}`,
 	);
 
 	if (stdout) {

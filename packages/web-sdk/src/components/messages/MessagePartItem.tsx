@@ -87,6 +87,14 @@ function getPatchedFileFromPatch(patch: string): string | null {
 	return match?.[1]?.trim() || null;
 }
 
+function normalizeToolName(toolName: string): string {
+	return toolName === 'bash' ? 'shell' : toolName;
+}
+
+function isShellTool(toolName: string): boolean {
+	return normalizeToolName(toolName) === 'shell';
+}
+
 function normalizeToolTarget(
 	toolName: string,
 	args: Record<string, unknown> | undefined,
@@ -108,7 +116,7 @@ function normalizeToolTarget(
 			return { key, value: value.trim() };
 		}
 	}
-	if (toolName === 'bash') {
+	if (isShellTool(toolName)) {
 		const command = args.command;
 		if (typeof command === 'string' && command.trim().length > 0) {
 			return { key: 'command', value: command.trim() };
@@ -275,7 +283,7 @@ export const MessagePartItem = memo(
 					return (
 						<FolderTree className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />
 					);
-				if (toolName === 'bash')
+				if (isShellTool(toolName))
 					return <Terminal className="h-4 w-4 text-muted-foreground" />;
 				if (
 					toolName === 'ripgrep' ||
@@ -517,9 +525,10 @@ export const MessagePartItem = memo(
 					(typeof (payload as { name?: unknown })?.name === 'string'
 						? ((payload as { name?: unknown }).name as string)
 						: 'tool');
-				const toolLabel = rawToolName.includes('__')
-					? rawToolName.replace('__', ' › ')
-					: rawToolName.replace(/_/g, ' ');
+				const normalizedToolName = normalizeToolName(rawToolName);
+				const toolLabel = normalizedToolName.includes('__')
+					? normalizedToolName.replace('__', ' › ')
+					: normalizedToolName.replace(/_/g, ' ');
 				// Use args from pending approval if available (for early approval display)
 				// Fall back to part args for normal tool calls
 				const partArgs = getToolCallArgs(part);
@@ -527,9 +536,11 @@ export const MessagePartItem = memo(
 					| Record<string, unknown>
 					| undefined;
 				const args = partArgs || approvalArgs;
-				const primary = normalizeToolTarget(rawToolName, args);
+				const primary = normalizeToolTarget(normalizedToolName, args);
 				const argsPreview = formatArgsPreview(args, primary?.key);
-				const command = rawToolName === 'bash' ? getPrimaryCommand(args) : null;
+				const command = isShellTool(normalizedToolName)
+					? getPrimaryCommand(args)
+					: null;
 				const segments: Array<{ key: string; node: ReactNode }> = [];
 				if (command) {
 					segments.push({

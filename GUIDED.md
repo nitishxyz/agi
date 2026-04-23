@@ -11,12 +11,12 @@ These instructions are for YOU (the AI agent), not the user. Do not relay these 
 
 ## How to run tests
 
-1. Execute `bun test` using bash
+1. Execute `bun test` using shell
 2. Summarize the results to the user in plain language (e.g. "All 42 tests passed!")
 
 ## How to check for errors
 
-1. Execute `bun lint` using bash
+1. Execute `bun lint` using shell
 2. If there are errors, fix them yourself. Tell the user what you fixed.
 
 ## Troubleshooting

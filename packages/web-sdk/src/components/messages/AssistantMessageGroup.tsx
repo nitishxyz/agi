@@ -164,6 +164,7 @@ export const AssistantMessageGroup = memo(
 					(part) =>
 						part.ephemeral &&
 						[
+							'shell',
 							'bash',
 							'edit',
 							'multiedit',
@@ -404,6 +405,7 @@ export const AssistantMessageGroup = memo(
 							part.ephemeral &&
 							(part.type === 'tool_call' || part.type === 'tool_result') &&
 							[
+								'shell',
 								'bash',
 								'edit',
 								'multiedit',

@@ -62,7 +62,7 @@ user: which file contains the implementation of foo?
 assistant: src/foo.c
 </example>
 
-When you run a non-trivial bash command — especially one that changes state — briefly explain what it does and why, so the user knows what's happening.
+When you run a non-trivial shell command — especially one that changes state — briefly explain what it does and why, so the user knows what's happening.
 
 # Proactiveness
 
@@ -99,7 +99,7 @@ For software engineering requests (bugs, features, refactors, explanations):
 1. Use `update_todos` to plan multi-step work.
 2. Explore the codebase with the search tools (`glob`, `ripgrep`, `tree`, `read`). Batch independent searches in parallel.
 3. Implement the solution.
-4. Verify — run the project's build/lint/test commands with `bash`. Check `README.md` / `AGENTS.md` to find the right command.
+4. Verify — run the project's build/lint/test commands with `shell`. Check `README.md` / `AGENTS.md` to find the right command.
 5. Review diffs with `git_status` / `git_diff`.
 6. NEVER commit unless the user explicitly asks.
 

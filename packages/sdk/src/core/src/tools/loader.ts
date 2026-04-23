@@ -4,7 +4,7 @@ import { finishTool } from './builtin/finish.ts';
 import { buildFsTools } from './builtin/fs/index.ts';
 import { buildGitTools } from './builtin/git.ts';
 import { progressUpdateTool } from './builtin/progress.ts';
-import { buildBashTool } from './builtin/bash.ts';
+import { buildShellTool } from './builtin/shell.ts';
 import { buildRipgrepTool } from './builtin/ripgrep.ts';
 import { buildGlobTool } from './builtin/glob.ts';
 import { buildApplyPatchTool } from './builtin/patch.ts';
@@ -147,8 +147,8 @@ async function discoverStaticProjectTools(
 		// Built-ins
 		tools.set('finish', finishTool);
 		tools.set('progress_update', progressUpdateTool);
-		const bash = buildBashTool(projectRoot);
-		tools.set(bash.name, bash.tool);
+		const shell = buildShellTool(projectRoot);
+		tools.set(shell.name, shell.tool);
 		// Search
 		const rg = buildRipgrepTool(projectRoot);
 		tools.set(rg.name, rg.tool);

@@ -122,6 +122,14 @@ const MODEL_FAMILY_EDIT_TOOL_POLICY_AGENTS = new Set([
 	'init',
 ]);
 
+function normalizeToolName(toolName: string): string {
+	return toolName === 'bash' ? 'shell' : toolName;
+}
+
+function normalizeToolNames(toolNames: string[]): string[] {
+	return Array.from(new Set(toolNames.map(normalizeToolName)));
+}
+
 export function applyModelFamilyEditToolPolicy(
 	agent: string,
 	tools: string[],
@@ -129,6 +137,7 @@ export function applyModelFamilyEditToolPolicy(
 	model: string,
 	cfg?: OttoConfig,
 ): string[] {
+	tools = normalizeToolNames(tools);
 	if (!MODEL_FAMILY_EDIT_TOOL_POLICY_AGENTS.has(agent)) return tools;
 
 	const family = cfg
@@ -328,7 +337,10 @@ export async function setupRunner(opts: RunOpts): Promise<SetupResult> {
 		opts.provider,
 		opts.model,
 	);
-	const allowedNames = new Set([...allowedToolNames, 'finish']);
+	const allowedNames = new Set([
+		...normalizeToolNames(allowedToolNames),
+		'finish',
+	]);
 	const gated = allTools.filter(
 		(tool) => allowedNames.has(tool.name) || tool.name === 'load_mcp_tools',
 	);

@@ -30,7 +30,8 @@ export const CANONICAL_TO_PASCAL: Record<string, string> = {
 	ripgrep: 'Grep',
 
 	// Execution
-	bash: 'Bash',
+	shell: 'Shell',
+	bash: 'Shell',
 	terminal: 'Terminal',
 
 	// Git operations
@@ -70,7 +71,8 @@ export const PASCAL_TO_CANONICAL: Record<string, string> = {
 	Grep: 'ripgrep', // Maps back to ripgrep (primary search tool)
 
 	// Execution
-	Bash: 'bash',
+	Shell: 'shell',
+	Bash: 'shell',
 	Terminal: 'terminal',
 
 	// Git operations

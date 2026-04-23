@@ -257,7 +257,7 @@ Core built-ins include:
 - file tools: `read`, `write`, `ls`, `tree`, `pwd`, `cd`, `glob`
 - search/web: `ripgrep`, `websearch`
 - editing: `apply_patch`
-- runtime: `bash`, `terminal`
+- runtime: `shell`, `terminal`
 - git: `git_status`, `git_diff`, `git_commit`
 - agent control: `update_todos`, `progress_update`, `finish`, `skill`
 - research helpers: `query_sessions`, `query_messages`, `get_session_context`, `search_history`, `get_parent_session`, `present_action`

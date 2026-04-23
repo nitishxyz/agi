@@ -3,6 +3,7 @@ import { useToolApprovalStore } from '../../stores/toolApprovalStore';
 import { Shield, Check, X, Terminal, FileEdit, GitCommit } from 'lucide-react';
 
 const TOOL_ICONS: Record<string, typeof Terminal> = {
+	shell: Terminal,
 	bash: Terminal,
 	edit: FileEdit,
 	multiedit: FileEdit,

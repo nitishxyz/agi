@@ -99,19 +99,20 @@ export async function runAskStreamCapture(
 					typeof data?.error === 'string' && data.error.trim().length
 						? data.error
 						: undefined;
-				// For bash tool, only treat as error if exitCode is non-zero
-				const isBashError =
-					name === 'bash' &&
+				// For shell tool, only treat as error if exitCode is non-zero
+				const isShellError =
+					(name === 'shell' || name === 'bash') &&
 					resultObj &&
 					typeof Reflect.get(resultObj, 'exitCode') === 'number' &&
 					Reflect.get(resultObj, 'exitCode') !== 0;
 
 				const hasErrorResult =
-					isToolError(resultObj) || Boolean(topLevelError) || isBashError;
+					isToolError(resultObj) || Boolean(topLevelError) || isShellError;
 				const isReadOnly = READ_ONLY_TOOLS.has(name ?? '');
 				const shouldRenderResult =
 					name === 'tree' ||
 					MUTATING_TOOLS.has(name ?? '') ||
+					name === 'shell' ||
 					name === 'bash' ||
 					hasErrorResult ||
 					verbose ||

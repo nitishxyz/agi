@@ -68,7 +68,7 @@ export const BUILTIN_TOOLS = [
 	'tree',
 	'pwd',
 	'cd',
-	'bash',
+	'shell',
 	'terminal',
 	'ripgrep',
 	'glob',

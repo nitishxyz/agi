@@ -8,6 +8,18 @@ import { promisify } from 'node:util';
 
 const execAsync = promisify(exec);
 
+async function resolveStreamedResult(value: unknown): Promise<unknown> {
+	if (!value || typeof value !== 'object' || !(Symbol.asyncIterator in value)) {
+		return value;
+	}
+
+	let result: unknown;
+	for await (const chunk of value as AsyncIterable<{ result?: unknown }>) {
+		if (chunk.result !== undefined) result = chunk.result;
+	}
+	return result;
+}
+
 let testDir: string;
 let projectRoot: string;
 
@@ -51,7 +63,7 @@ describe('Built-in Tools', () => {
 		expect(names).toContain('write');
 		expect(names).toContain('ls');
 		expect(names).toContain('tree');
-		expect(names).toContain('bash');
+		expect(names).toContain('shell');
 		expect(names).toContain('git_status');
 		expect(names).toContain('git_diff');
 		expect(names).toContain('git_commit');
@@ -130,21 +142,25 @@ describe('Built-in Tools', () => {
 		});
 	});
 
-	describe('bash tool', () => {
+	describe('shell tool', () => {
 		it('should execute shell commands', async () => {
 			const { tools } = await discoverProjectTools(projectRoot);
-			const bashTool = tools.find((t) => t.name === 'bash');
+			const shellTool = tools.find((t) => t.name === 'shell');
 
-			const result = await bashTool?.tool.execute({ cmd: 'echo "test"' });
+			const result = await resolveStreamedResult(
+				await shellTool?.tool.execute({ cmd: 'echo "test"' }),
+			);
 			expect(result).toHaveProperty('stdout');
 			expect((result as { stdout: string }).stdout).toContain('test');
 		});
 
 		it('should handle command errors', async () => {
 			const { tools } = await discoverProjectTools(projectRoot);
-			const bashTool = tools.find((t) => t.name === 'bash');
+			const shellTool = tools.find((t) => t.name === 'shell');
 
-			const result = await bashTool?.tool.execute({ cmd: 'exit 1' });
+			const result = await resolveStreamedResult(
+				await shellTool?.tool.execute({ cmd: 'exit 1' }),
+			);
 			expect(result).toMatchObject({ ok: false });
 		});
 	});

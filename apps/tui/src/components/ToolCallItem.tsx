@@ -5,6 +5,10 @@ import type { MessagePart } from '../types.ts';
 
 const DIFF_TOOLS = new Set(['write', 'edit', 'multiedit', 'apply_patch']);
 
+function isShellTool(toolName?: string | null): boolean {
+	return toolName === 'shell' || toolName === 'bash';
+}
+
 interface ToolCallItemProps {
 	part: MessagePart;
 	isLast: boolean;
@@ -18,7 +22,7 @@ function getTarget(part: MessagePart): string | null {
 	const args = cj.args as Record<string, unknown> | undefined;
 	const source = args || cj;
 
-	if (part.toolName === 'bash') {
+	if (isShellTool(part.toolName)) {
 		const cmd = source.cmd || source.command;
 		if (typeof cmd === 'string') {
 			const trimmed = cmd.trim();

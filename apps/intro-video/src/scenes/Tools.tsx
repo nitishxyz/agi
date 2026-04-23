@@ -10,7 +10,7 @@ import { colors, font } from '../theme';
 const TOOLS = [
 	{ name: 'read', category: 'File System', color: colors.accent },
 	{ name: 'write', category: 'File System', color: colors.emerald },
-	{ name: 'bash', category: 'Shell', color: colors.muted },
+	{ name: 'shell', category: 'Shell', color: colors.muted },
 	{ name: 'terminal', category: 'Shell', color: colors.muted },
 	{ name: 'apply_patch', category: 'Editing', color: colors.purple },
 	{ name: 'ripgrep', category: 'Search', color: colors.amber },

@@ -6,12 +6,13 @@ import {
 
 describe('tool approval modes', () => {
 	test('yolo does not add baseline tool approvals', () => {
-		expect(requiresApproval('bash', 'yolo')).toBe(false);
+		expect(requiresApproval('shell', 'yolo')).toBe(false);
 		expect(requiresApproval('write', 'yolo')).toBe(false);
 		expect(requiresApproval('git_push', 'yolo')).toBe(false);
 	});
 
 	test('dangerous mode still requires approval for dangerous tools', () => {
+		expect(requiresApproval('shell', 'dangerous')).toBe(true);
 		expect(requiresApproval('bash', 'dangerous')).toBe(true);
 		expect(requiresApproval('write', 'dangerous')).toBe(true);
 		expect(requiresApproval('read', 'dangerous')).toBe(false);

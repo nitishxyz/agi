@@ -55,7 +55,7 @@ export function BashRenderer({
 	return (
 		<div className="text-xs">
 			<ToolHeader
-				toolName="bash"
+				toolName="shell"
 				isExpanded={isExpanded}
 				onToggle={onToggle}
 				isError={isError}

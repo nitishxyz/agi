@@ -110,7 +110,7 @@ const result = await generateText({
   agent: "custom",
   agents: {
     custom: {
-      tools: ["read", "write", "bash", "ripgrep"],
+      tools: ["read", "write", "shell", "ripgrep"],
       prompt: "You are a specialized code reviewer...",
     },
   },

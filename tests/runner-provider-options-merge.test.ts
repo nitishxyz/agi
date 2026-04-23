@@ -85,38 +85,56 @@ describe('applyModelFamilyEditToolPolicy', () => {
 	test('keeps only write and apply_patch for Anthropic-family build models', () => {
 		const result = applyModelFamilyEditToolPolicy(
 			'build',
-			['read', 'edit', 'multiedit', 'write', 'apply_patch', 'bash'],
+			['read', 'edit', 'multiedit', 'write', 'apply_patch', 'shell'],
 			'anthropic',
 			'claude-sonnet-4-20250514',
 		);
 
-		expect(result).toEqual(['read', 'bash', 'write', 'apply_patch']);
+		expect(result).toEqual(['read', 'shell', 'write', 'apply_patch']);
 	});
 
 	test('keeps only write and apply_patch for OpenAI-family general models', () => {
 		const result = applyModelFamilyEditToolPolicy(
 			'general',
-			['read', 'edit', 'multiedit', 'write', 'apply_patch', 'bash'],
+			['read', 'edit', 'multiedit', 'write', 'apply_patch', 'shell'],
 			'openrouter',
 			'openai/gpt-4.1',
 		);
 
-		expect(result).toEqual(['read', 'bash', 'write', 'apply_patch']);
+		expect(result).toEqual(['read', 'shell', 'write', 'apply_patch']);
 	});
 
 	test('keeps write, edit, and multiedit for non-Anthropic/OpenAI init models', () => {
 		const result = applyModelFamilyEditToolPolicy(
 			'init',
-			['read', 'edit', 'multiedit', 'write', 'apply_patch', 'bash'],
+			['read', 'edit', 'multiedit', 'write', 'apply_patch', 'shell'],
 			'google',
 			'gemini-2.5-flash',
 		);
 
-		expect(result).toEqual(['read', 'bash', 'write', 'edit', 'multiedit']);
+		expect(result).toEqual(['read', 'shell', 'write', 'edit', 'multiedit']);
+	});
+
+	test('normalizes legacy bash tool choices to shell', () => {
+		const result = applyModelFamilyEditToolPolicy(
+			'build',
+			['read', 'edit', 'multiedit', 'write', 'apply_patch', 'bash'],
+			'anthropic',
+			'claude-sonnet-4-20250514',
+		);
+
+		expect(result).toEqual(['read', 'shell', 'write', 'apply_patch']);
 	});
 
 	test('does not rewrite tool choices for agents outside the policy set', () => {
-		const tools = ['read', 'edit', 'multiedit', 'write', 'apply_patch', 'bash'];
+		const tools = [
+			'read',
+			'edit',
+			'multiedit',
+			'write',
+			'apply_patch',
+			'shell',
+		];
 		const result = applyModelFamilyEditToolPolicy(
 			'plan',
 			tools,

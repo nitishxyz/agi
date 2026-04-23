@@ -17,8 +17,9 @@ export function guardToolCall(
 	const a = (args ?? {}) as Record<string, unknown>;
 
 	switch (toolName) {
+		case 'shell':
 		case 'bash':
-			return guardBashCommand(String(a.cmd ?? ''));
+			return guardShellCommand(String(a.cmd ?? ''));
 		case 'terminal':
 			return guardTerminal(a);
 		case 'read':
@@ -30,7 +31,7 @@ export function guardToolCall(
 	}
 }
 
-function guardBashCommand(cmd: string): GuardAction {
+function guardShellCommand(cmd: string): GuardAction {
 	const n = cmd.trim();
 	if (!n) return { type: 'allow' };
 
@@ -104,7 +105,7 @@ function checkApprovalCommand(cmd: string): string | null {
 function guardTerminal(args: Record<string, unknown>): GuardAction {
 	const op = String(args.operation ?? '');
 	if (op === 'start' && typeof args.command === 'string') {
-		return guardBashCommand(args.command);
+		return guardShellCommand(args.command);
 	}
 	return { type: 'allow' };
 }

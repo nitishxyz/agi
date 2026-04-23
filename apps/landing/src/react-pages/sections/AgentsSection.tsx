@@ -5,7 +5,7 @@ const AGENTS = [
 		name: 'build',
 		color: 'text-green-700 dark:text-green-400',
 		desc: 'Code generation, bug fixes, features. Full filesystem + shell access.',
-		tools: ['read', 'write', 'bash', 'git', 'terminal', 'apply_patch'],
+		tools: ['read', 'write', 'shell', 'git', 'terminal', 'apply_patch'],
 	},
 	{
 		name: 'plan',
@@ -17,7 +17,7 @@ const AGENTS = [
 		name: 'general',
 		color: 'text-yellow-400',
 		desc: 'General-purpose assistant. Balanced toolset for everyday work.',
-		tools: ['read', 'write', 'bash', 'ripgrep', 'glob'],
+		tools: ['read', 'write', 'shell', 'ripgrep', 'glob'],
 	},
 	{
 		name: 'research',

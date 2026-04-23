@@ -52,6 +52,14 @@ function getLanguageFromPath(path: string): string {
 	return langMap[ext || ''] || 'javascript';
 }
 
+function normalizeToolName(toolName: string): string {
+	return toolName === 'bash' ? 'shell' : toolName;
+}
+
+function isShellTool(toolName: string): boolean {
+	return normalizeToolName(toolName) === 'shell';
+}
+
 function normalizeToolTarget(
 	toolName: string,
 	args: Record<string, unknown> | undefined,
@@ -66,6 +74,7 @@ function normalizeToolTarget(
 		glob: ['pattern'],
 		grep: ['query', 'pattern'],
 		ripgrep: ['query', 'pattern'],
+		shell: ['cmd', 'command'],
 		bash: ['cmd', 'command'],
 		terminal: ['command'],
 		git_commit: ['message'],
@@ -113,9 +122,12 @@ export const ToolApprovalCard = memo(function ToolApprovalCard({
 }: ToolApprovalCardProps) {
 	const [isProcessing, setIsProcessing] = useState(false);
 
-	const toolLabel = toolName.replace(/_/g, ' ');
-	const primary = normalizeToolTarget(toolName, args);
-	const command = toolName === 'bash' ? getPrimaryCommand(args) : null;
+	const normalizedToolName = normalizeToolName(toolName);
+	const toolLabel = normalizedToolName.replace(/_/g, ' ');
+	const primary = normalizeToolTarget(normalizedToolName, args);
+	const command = isShellTool(normalizedToolName)
+		? getPrimaryCommand(args)
+		: null;
 	const approvalTarget = command || primary?.value;
 
 	const filePath = typeof args?.path === 'string' ? args.path : '';
@@ -192,7 +204,7 @@ export const ToolApprovalCard = memo(function ToolApprovalCard({
 			);
 		}
 
-		if (toolName === 'bash' && args?.cmd) {
+		if (isShellTool(normalizedToolName) && args?.cmd) {
 			const cmd = String(args.cmd);
 			return (
 				<div className="ml-6 max-w-full overflow-hidden">
@@ -224,7 +236,7 @@ export const ToolApprovalCard = memo(function ToolApprovalCard({
 			<div className="flex items-center gap-2 flex-wrap">
 				<Shield className="h-4 w-4 text-amber-500 flex-shrink-0" />
 				<span className="font-medium text-foreground text-sm">{toolLabel}</span>
-				{approvalTarget && toolName !== 'bash' && (
+				{approvalTarget && !isShellTool(normalizedToolName) && (
 					<code className="text-xs font-mono text-foreground/80 bg-muted/50 px-1.5 py-0.5 rounded truncate max-w-xs">
 						{approvalTarget}
 					</code>

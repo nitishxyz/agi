@@ -186,7 +186,7 @@ For example, starting the `helius` server exposes tools like:
 - `helius__searchAssets`
 - `helius__getTransactionHistory`
 
-These tools are **automatically available to all agents** alongside built-in tools (read, write, bash, etc.). The LLM sees them in its tool list and can call them based on your prompt.
+These tools are **automatically available to all agents** alongside built-in tools (read, write, shell, etc.). The LLM sees them in its tool list and can call them based on your prompt.
 
 MCP tools bypass the per-agent tool allowlist — any started MCP server's tools are available to every agent.
 

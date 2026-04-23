@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { guardToolCall } from '../packages/server/src/runtime/tools/guards.ts';
 
 describe('guardToolCall', () => {
-	describe('bash — blocked commands', () => {
+	describe('shell — blocked commands', () => {
 		const blocked = [
 			'rm -rf /',
 			'rm -rf /*',
@@ -21,13 +21,13 @@ describe('guardToolCall', () => {
 
 		for (const cmd of blocked) {
 			test(`blocks: ${cmd}`, () => {
-				const result = guardToolCall('bash', { cmd });
+				const result = guardToolCall('shell', { cmd });
 				expect(result.type).toBe('block');
 			});
 		}
 	});
 
-	describe('bash — approval-required commands', () => {
+	describe('shell — approval-required commands', () => {
 		const needsApproval = [
 			'rm -rf ./build',
 			'rm -r node_modules',
@@ -43,13 +43,13 @@ describe('guardToolCall', () => {
 
 		for (const cmd of needsApproval) {
 			test(`requires approval: ${cmd}`, () => {
-				const result = guardToolCall('bash', { cmd });
+				const result = guardToolCall('shell', { cmd });
 				expect(result.type).toBe('approve');
 			});
 		}
 	});
 
-	describe('bash — allowed commands', () => {
+	describe('shell — allowed commands', () => {
 		const allowed = [
 			'ls -la',
 			'cat file.txt',
@@ -65,7 +65,7 @@ describe('guardToolCall', () => {
 
 		for (const cmd of allowed) {
 			test(`allows: ${cmd}`, () => {
-				const result = guardToolCall('bash', { cmd });
+				const result = guardToolCall('shell', { cmd });
 				expect(result.type).toBe('allow');
 			});
 		}

@@ -37,6 +37,10 @@
 			"import": "./src/core/src/tools/builtin/bash.ts",
 			"types": "./src/core/src/tools/builtin/bash.ts"
 		},
+		"./tools/builtin/shell": {
+			"import": "./src/core/src/tools/builtin/shell.ts",
+			"types": "./src/core/src/tools/builtin/shell.ts"
+		},
 		"./tools/builtin/finish": {
 			"import": "./src/core/src/tools/builtin/finish.ts",
 			"types": "./src/core/src/tools/builtin/finish.ts"
