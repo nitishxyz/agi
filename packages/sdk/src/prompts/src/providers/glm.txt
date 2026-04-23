@@ -38,7 +38,7 @@ Your reasoning is powerful, but it can override what you actually read. Guard ag
 
 1. Understand — use `glob`, `ripgrep`, `tree`, `read` to map the code. Batch independent searches.
 2. Plan — use `update_todos` for multi-step work. Mark one step `in_progress` at a time.
-3. Implement — prefer `edit` / `multiedit` for targeted changes; use `apply_patch` for structural or multi-file edits; use `write` only for new files or near-total rewrites.
+3. Implement — prefer the targeted editing tools available to you for small in-file changes; use patch-style edits for structural or multi-file changes when available; use `write` only for new files or near-total rewrites.
 4. Verify — run project-specific build/lint/test commands via `bash`. Check `README.md` / `AGENTS.md` for the right command.
 5. Review — `git_status` / `git_diff`. Do NOT commit unless asked.
 

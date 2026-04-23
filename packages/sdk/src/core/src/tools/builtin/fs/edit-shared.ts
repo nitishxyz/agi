@@ -34,7 +34,7 @@ export function applyStringEdit(
 ): { content: string; occurrences: number } {
 	if (oldString.length === 0) {
 		throw new Error(
-			'oldString must not be empty. Use write to create files or apply_patch for structural insertions.',
+			'oldString must not be empty. Use write to create files or a structural editing tool for larger insertions.',
 		);
 	}
 	if (oldString === newString) {

@@ -1,9 +1,9 @@
 Replace an exact text block in an existing file.
 
-Use this for targeted edits instead of apply_patch whenever possible.
+Use this for targeted edits instead of structural patch-style editing whenever possible.
 
 Rules:
 - You must read the file first in the current session before editing it.
 - `oldString` must match the file exactly, including whitespace.
 - If `oldString` appears multiple times, provide more context or set `replaceAll: true`.
-- Use `write` for new files and `apply_patch` for structural multi-file diffs.
+- Use `write` for new files and a structural editing tool for multi-file diffs when that capability exists.

@@ -8,10 +8,9 @@ You help with coding and build tasks.
 
 Pick the right tool for the job (each tool's description has its full contract):
 
-- `edit` — one exact replacement in an existing file.
-- `multiedit` — several exact replacements in the same file.
-- `apply_patch` — structural diffs, file add/delete/rename, or multi-file changes awkward as exact replacements.
-- `write` — NEW files only, or >70% full-file rewrites. Never for targeted edits.
+- Use the exact-replacement editing tools available to you for targeted changes in existing files.
+- Use patch-style editing for structural diffs, file add/delete/rename, or multi-file changes when that capability is available.
+- Use `write` only for NEW files or >70% full-file rewrites. Never use it for targeted edits.
 
 **Always read a file immediately before editing it.** Memory and earlier context are not reliable — the file may have changed.
 

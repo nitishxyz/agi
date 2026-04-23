@@ -9,4 +9,4 @@
 - Chain commands with `&&` to fail-fast.
 - For long outputs, redirect to a file and `read` it back.
 - Batch independent checks (e.g. `git status && git diff`) in parallel tool calls rather than sequential bash chains when you need results separately.
-- Never use `bash` with `sed`/`awk` for programmatic file editing — use `edit`, `multiedit`, or `apply_patch` instead.
+- Never use `bash` with `sed`/`awk` for programmatic file editing — use the dedicated file-editing tools instead.
