@@ -2,10 +2,12 @@ export { isProviderAuthorized, ensureProviderEnv } from './authorization.ts';
 export { catalog } from './catalog-merged.ts';
 export {
 	DEFAULT_REMOTE_MODEL_CATALOG_URL,
+	getCachedProviderCatalogEntry,
 	getModelCatalogCachePath,
 	mergeCachedModelCatalog,
 	normalizeModelCatalogPayload,
 	readCachedModelCatalog,
+	readCachedModelCatalogSync,
 	writeCachedModelCatalog,
 } from './model-catalog-cache.ts';
 export type {

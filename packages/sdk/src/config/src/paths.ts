@@ -110,18 +110,24 @@ export function getLocalDataDir(projectRoot: string): string {
 	return joinPath(projectRoot, '.otto');
 }
 
+async function loadFsPromises(): Promise<typeof import('node:fs/promises')> {
+	return Function('specifier', 'return import(specifier)')('node:fs/promises');
+}
+
 export async function ensureDir(dir: string) {
-	try {
-		// Attempt to create a marker file to ensure directory exists
-		await Bun.write(joinPath(dir, '.keep'), '');
-	} catch {
-		const { promises: fs } = await import('node:fs');
-		await fs.mkdir(dir, { recursive: true }).catch(() => {});
-	}
+	const { mkdir, writeFile } = await loadFsPromises();
+	await mkdir(dir, { recursive: true }).catch(() => {});
+	await writeFile(joinPath(dir, '.keep'), '').catch(() => {});
 }
 
 export async function fileExists(p: string) {
-	return await Bun.file(p).exists();
+	try {
+		const { access } = await loadFsPromises();
+		await access(p);
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 export { joinPath };

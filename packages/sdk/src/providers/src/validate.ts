@@ -1,4 +1,5 @@
 import { catalog } from './catalog-merged.ts';
+import { getCachedProviderCatalogEntry } from './model-catalog-cache.ts';
 import type { OttoConfig, ProviderId } from '../../types/src/index.ts';
 import {
 	getProviderDefinition,
@@ -51,14 +52,15 @@ export function validateProviderModel(
 	if (!catalog[p]) {
 		throw new Error(`Provider not supported: ${provider}`);
 	}
-	const entry = catalog[p].models.find((m) => m.id === model);
+	const models = getCachedProviderCatalogEntry(p)?.models ?? catalog[p].models;
+	const entry = models.find((m) => m.id === model);
 	if (!entry) {
-		const list = catalog[p].models
+		const list = models
 			.slice(0, 10)
 			.map((m) => m.id)
 			.join(', ');
 		throw new Error(
-			`Model not found for provider ${provider}: ${model}. Example models: ${list}${catalog[p].models.length > 10 ? ', ...' : ''}`,
+			`Model not found for provider ${provider}: ${model}. Example models: ${list}${models.length > 10 ? ', ...' : ''}`,
 		);
 	}
 	applyCapabilityValidation(model, entry, effectiveCap, { strict: true });

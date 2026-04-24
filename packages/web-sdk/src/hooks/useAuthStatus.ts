@@ -109,12 +109,54 @@ export function useAuthStatus() {
 		[fetchAuthStatus, setLoading, setError],
 	);
 
+	const addCustomProvider = useCallback(
+		async (data: {
+			id: string;
+			label: string;
+			baseURL: string;
+			apiKey: string;
+			compatibility: 'openai-compatible' | 'ollama';
+			models: string[];
+			allowAnyModel: boolean;
+		}) => {
+			setLoading(true);
+			setError(null);
+			try {
+				const result = await apiClient.updateProviderSettings(data.id, {
+					enabled: true,
+					custom: true,
+					label: data.label,
+					baseURL: data.baseURL,
+					apiKey: data.apiKey,
+					compatibility: data.compatibility,
+					models: data.models,
+					allowAnyModel: data.allowAnyModel,
+					scope: 'local',
+				});
+				await fetchAuthStatus();
+				return result;
+			} catch (err) {
+				const message =
+					err instanceof Error ? err.message : 'Failed to add custom provider';
+				setError(message);
+				throw err;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[fetchAuthStatus, setLoading, setError],
+	);
+
 	const removeProvider = useCallback(
 		async (provider: string) => {
 			setLoading(true);
 			setError(null);
 			try {
-				const result = await apiClient.removeProvider(provider);
+				const isCustomProvider =
+					useOnboardingStore.getState().authStatus?.providers[provider]?.custom;
+				const result = isCustomProvider
+					? await apiClient.deleteProviderSettings(provider)
+					: await apiClient.removeProvider(provider);
 				await fetchAuthStatus();
 				return result;
 			} catch (err) {
@@ -322,6 +364,7 @@ export function useAuthStatus() {
 		setupWallet,
 		importWallet,
 		addProvider,
+		addCustomProvider,
 		removeProvider,
 		completeOnboarding,
 		startOAuth,

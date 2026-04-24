@@ -1,4 +1,5 @@
 import { catalog } from './catalog-merged.ts';
+import { getCachedProviderCatalogEntry } from './model-catalog-cache.ts';
 import type {
 	BuiltInProviderId,
 	ProviderId,
@@ -17,11 +18,11 @@ export function isProviderId(value: unknown): value is BuiltInProviderId {
 }
 
 export function defaultModelFor(provider: ProviderId): string | undefined {
-	return catalog[provider]?.models?.[0]?.id;
+	return getProviderModels(provider)[0]?.id;
 }
 
 export function listModels(provider: ProviderId): string[] {
-	return (catalog[provider]?.models ?? []).map((m) => m.id);
+	return getProviderModels(provider).map((m) => m.id);
 }
 
 export function hasModel(
@@ -49,7 +50,7 @@ const PREFERRED_FAST_MODELS_OAUTH: Partial<Record<ProviderId, string[]>> = {
 };
 
 export function getFastModel(provider: ProviderId): string | undefined {
-	const providerModels = catalog[provider]?.models ?? [];
+	const providerModels = getProviderModels(provider);
 	if (!providerModels.length) return undefined;
 
 	const preferred = PREFERRED_FAST_MODELS[provider] ?? [];
@@ -70,7 +71,7 @@ export function getFastModelForAuth(
 	provider: ProviderId,
 	authType: 'api' | 'oauth' | 'wallet' | undefined,
 ): string | undefined {
-	const providerModels = catalog[provider]?.models ?? [];
+	const providerModels = getProviderModels(provider);
 	if (!providerModels.length) return undefined;
 
 	const filteredModels = filterModelsForAuthType(
@@ -106,13 +107,13 @@ export function getModelNpmBinding(
 	model: string,
 ): string | undefined {
 	const entry = catalog[provider];
-	const modelInfo = entry?.models?.find((m) => m.id === model);
+	const modelInfo = getProviderModels(provider).find((m) => m.id === model);
 	if (modelInfo?.provider?.npm) return modelInfo.provider.npm;
 	if (entry?.npm) return entry.npm;
 
 	for (const key of Object.keys(catalog) as ProviderId[]) {
 		const e = catalog[key];
-		const m = e?.models?.find((x) => x.id === model);
+		const m = getProviderModels(key).find((x) => x.id === model);
 		if (m?.provider?.npm) return m.provider.npm;
 		if (m && e?.npm) return e.npm;
 	}
@@ -234,7 +235,15 @@ export function getModelInfo(
 ): ModelInfo | undefined {
 	const entry = catalog[provider];
 	if (!entry) return undefined;
-	return entry.models?.find((m) => m.id === model);
+	return getProviderModels(provider).find((m) => m.id === model);
+}
+
+function getProviderModels(provider: ProviderId): ModelInfo[] {
+	return (
+		getCachedProviderCatalogEntry(provider)?.models ??
+		catalog[provider]?.models ??
+		[]
+	);
 }
 
 export function modelSupportsReasoning(

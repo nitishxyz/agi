@@ -104,7 +104,7 @@ function buildOllamaCloudEntry(): ProviderCatalogEntry {
 export function mergeManualCatalog(
 	base: CatalogMap,
 ): Record<BuiltInProviderId, ProviderCatalogEntry> {
-	const ollamaCloudEntry = buildOllamaCloudEntry();
+	const ollamaCloudEntry = base[OLLAMA_CLOUD_ID] ?? buildOllamaCloudEntry();
 	const manualEntry = buildOttoRouterEntry();
 	const merged: Record<BuiltInProviderId, ProviderCatalogEntry> = {
 		...(base as Record<BuiltInProviderId, ProviderCatalogEntry>),

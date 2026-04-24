@@ -27,7 +27,7 @@ import {
 } from './utils.ts';
 
 const COPILOT_MODELS_URL = 'https://api.githubcopilot.com/models';
-const REMOTE_CATALOG_REFRESH_TTL_MS = 6 * 60 * 60 * 1000;
+const REMOTE_CATALOG_REFRESH_TTL_MS = 5 * 60 * 1000;
 const PROVIDER_MODEL_REFRESH_TTL_MS = 60 * 1000;
 
 type UiModel = {
@@ -93,6 +93,10 @@ async function refreshRemoteCatalogInBackground(): Promise<void> {
 		const providers = normalizeModelCatalogPayload(await response.json());
 		if (Object.keys(providers).length > 0) {
 			await mergeCachedModelCatalog(providers);
+			logger.debug('Refreshed remote model catalog', {
+				url,
+				providers: Object.keys(providers).length,
+			});
 		}
 	} catch (error) {
 		logger.debug('Failed to refresh remote model catalog', {
@@ -210,6 +214,7 @@ async function discoverProviderModels(args: {
 }): Promise<ModelInfo[] | undefined> {
 	const { provider, providerDefinition, projectRoot } = args;
 	if (
+		providerDefinition.source !== 'custom' ||
 		providerDefinition.compatibility !== 'ollama' ||
 		!providerDefinition.baseURL
 	) {
@@ -241,8 +246,8 @@ function shouldLazyLoadProviderModels(
 	providerDefinition: NonNullable<ReturnType<typeof getProviderDefinition>>,
 ): boolean {
 	return (
-		providerDefinition.compatibility === 'ollama' ||
-		providerDefinition.source === 'custom'
+		providerDefinition.source === 'custom' &&
+		providerDefinition.compatibility === 'ollama'
 	);
 }
 
@@ -313,20 +318,15 @@ export function registerModelsRoutes(app: Hono) {
 					projectRoot,
 				});
 			}
-			const filteredModels =
-				providerDefinition.compatibility === 'ollama'
-					? getCachedOrConfiguredModels({
-							models: providerCatalog?.models,
-							cfg,
-							provider,
-						})
-					: providerCatalog
-						? filterModelsForAuthType(
-								provider,
-								providerCatalog.models,
-								authType,
-							)
-						: getConfiguredProviderModels(cfg, provider);
+			const filteredModels = shouldLazyLoadProviderModels(providerDefinition)
+				? getCachedOrConfiguredModels({
+						models: providerCatalog?.models,
+						cfg,
+						provider,
+					})
+				: providerCatalog
+					? filterModelsForAuthType(provider, providerCatalog.models, authType)
+					: getConfiguredProviderModels(cfg, provider);
 			const copilotAllowedModels =
 				provider === 'copilot'
 					? await getAuthorizedCopilotModels(projectRoot)
@@ -375,7 +375,6 @@ export function registerModelsRoutes(app: Hono) {
 			void refreshRemoteCatalogInBackground();
 
 			const modelsMap: Record<string, UiProviderModels> = {};
-			const cacheUpdates: Parameters<typeof mergeCachedModelCatalog>[0] = {};
 
 			for (const provider of authorizedProviders) {
 				const providerCatalog =
@@ -417,16 +416,7 @@ export function registerModelsRoutes(app: Hono) {
 						dynamicModels,
 						models: filteredModels.map(toUiModel),
 					};
-					cacheUpdates[provider] = {
-						id: provider,
-						label: providerDefinition.label,
-						models: filteredModels,
-					};
 				}
-			}
-
-			if (Object.keys(cacheUpdates).length > 0) {
-				void mergeCachedModelCatalog(cacheUpdates);
 			}
 
 			return c.json(modelsMap);

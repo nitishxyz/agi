@@ -9,6 +9,7 @@ import {
 	ExternalLink,
 	ArrowRight,
 	RefreshCw,
+	Plus,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ProviderLogo } from '../../common/ProviderLogo';
@@ -22,6 +23,15 @@ interface ProviderSetupStepProps {
 	onSetupWallet: () => Promise<unknown>;
 	onImportWallet: (privateKey: string) => Promise<unknown>;
 	onAddProvider: (provider: string, apiKey: string) => Promise<unknown>;
+	onAddCustomProvider: (data: {
+		id: string;
+		label: string;
+		baseURL: string;
+		apiKey: string;
+		compatibility: 'openai-compatible' | 'ollama';
+		models: string[];
+		allowAnyModel: boolean;
+	}) => Promise<unknown>;
 	onRemoveProvider: (provider: string) => Promise<unknown>;
 	onStartOAuth: (provider: string, mode?: string) => Window | null;
 	onStartOAuthManual: (
@@ -91,6 +101,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	onSetupWallet,
 	onImportWallet,
 	onAddProvider,
+	onAddCustomProvider,
 	onRemoveProvider,
 	onStartOAuth,
 	onStartOAuthManual,
@@ -117,6 +128,21 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	);
 	const [addingProvider, setAddingProvider] = useState<string | null>(null);
 	const [apiKeyInput, setApiKeyInput] = useState('');
+	const [isCustomProviderModalOpen, setIsCustomProviderModalOpen] =
+		useState(false);
+	const [customProviderId, setCustomProviderId] = useState('');
+	const [customProviderLabel, setCustomProviderLabel] = useState('');
+	const [customProviderBaseURL, setCustomProviderBaseURL] = useState('');
+	const [customProviderApiKey, setCustomProviderApiKey] = useState('');
+	const [customProviderModels, setCustomProviderModels] = useState('');
+	const [customProviderCompatibility, setCustomProviderCompatibility] =
+		useState<'openai-compatible' | 'ollama'>('openai-compatible');
+	const [customProviderAllowAnyModel, setCustomProviderAllowAnyModel] =
+		useState(true);
+	const [isAddingCustomProvider, setIsAddingCustomProvider] = useState(false);
+	const [customProviderError, setCustomProviderError] = useState<string | null>(
+		null,
+	);
 	const [removingProvider, setRemovingProvider] = useState<string | null>(null);
 	const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 	const [oauthSession, setOauthSession] = useState<{
@@ -275,6 +301,63 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 			setAddingProvider(null);
 			setApiKeyInput('');
 		} catch {}
+	};
+
+	const resetCustomProviderForm = () => {
+		setCustomProviderId('');
+		setCustomProviderLabel('');
+		setCustomProviderBaseURL('');
+		setCustomProviderApiKey('');
+		setCustomProviderModels('');
+		setCustomProviderCompatibility('openai-compatible');
+		setCustomProviderAllowAnyModel(true);
+		setCustomProviderError(null);
+	};
+
+	const handleCloseCustomProviderModal = () => {
+		if (isAddingCustomProvider) return;
+		setIsCustomProviderModalOpen(false);
+		resetCustomProviderForm();
+	};
+
+	const handleAddCustomProvider = async () => {
+		const id = customProviderId.trim();
+		const label = customProviderLabel.trim() || id;
+		const baseURL = customProviderBaseURL.trim();
+		const apiKey = customProviderApiKey.trim();
+		const models = customProviderModels
+			.split(/[\n,]/)
+			.map((model) => model.trim())
+			.filter(Boolean);
+
+		if (!id || !baseURL || !apiKey) {
+			setCustomProviderError(
+				'Provider ID, base URL, and API key are required.',
+			);
+			return;
+		}
+
+		setIsAddingCustomProvider(true);
+		setCustomProviderError(null);
+		try {
+			await onAddCustomProvider({
+				id,
+				label,
+				baseURL,
+				apiKey,
+				compatibility: customProviderCompatibility,
+				models,
+				allowAnyModel: customProviderAllowAnyModel,
+			});
+			setIsCustomProviderModalOpen(false);
+			resetCustomProviderForm();
+		} catch (err) {
+			setCustomProviderError(
+				err instanceof Error ? err.message : 'Failed to add custom provider',
+			);
+		} finally {
+			setIsAddingCustomProvider(false);
+		}
 	};
 
 	const handleRemoveProvider = async (providerId: string) => {
@@ -722,6 +805,29 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 									Add Providers
 								</h2>
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+									<button
+										type="button"
+										onClick={() => setIsCustomProviderModalOpen(true)}
+										className="flex items-center justify-between p-3 bg-card border border-dashed border-border hover:border-border/80 rounded-xl transition-colors gap-2 text-left"
+									>
+										<div className="flex items-center gap-3 min-w-0">
+											<span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted text-muted-foreground">
+												<Plus className="w-3.5 h-3.5" />
+											</span>
+											<div className="min-w-0">
+												<div className="font-medium text-foreground truncate">
+													Custom Provider
+												</div>
+												<div className="text-xs text-muted-foreground">
+													OpenAI-compatible or Ollama endpoint
+												</div>
+											</div>
+										</div>
+										<span className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground">
+											<Key className="w-3.5 h-3.5" />
+											Add
+										</span>
+									</button>
 									{unconfiguredProviders.map(([id, info]) => (
 										<div key={id}>
 											{addingProvider === id ? (
@@ -846,6 +952,151 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 					)}
 				</div>
 			</div>
+
+			{isCustomProviderModalOpen && (
+				<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+					<div className="bg-background border border-border rounded-xl w-full max-w-2xl mx-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+						<div className="flex items-center gap-3 p-6 border-b border-border">
+							<span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground">
+								<Plus className="w-4 h-4" />
+							</span>
+							<h3 className="text-lg font-semibold">Add Custom Provider</h3>
+						</div>
+						<div className="p-6 space-y-4">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								<label className="space-y-2">
+									<span className="text-sm font-medium text-foreground">
+										Provider ID
+									</span>
+									<input
+										type="text"
+										value={customProviderId}
+										onChange={(e) => setCustomProviderId(e.target.value)}
+										placeholder="my-provider"
+										className="w-full h-11 px-4 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 transition-colors font-mono text-sm"
+									/>
+								</label>
+								<label className="space-y-2">
+									<span className="text-sm font-medium text-foreground">
+										Display Name
+									</span>
+									<input
+										type="text"
+										value={customProviderLabel}
+										onChange={(e) => setCustomProviderLabel(e.target.value)}
+										placeholder="My Provider"
+										className="w-full h-11 px-4 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 transition-colors text-sm"
+									/>
+								</label>
+							</div>
+
+							<label className="space-y-2 block">
+								<span className="text-sm font-medium text-foreground">
+									Base URL
+								</span>
+								<input
+									type="url"
+									value={customProviderBaseURL}
+									onChange={(e) => setCustomProviderBaseURL(e.target.value)}
+									placeholder="https://api.example.com/v1"
+									className="w-full h-11 px-4 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 transition-colors font-mono text-sm"
+								/>
+							</label>
+
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								<label className="space-y-2">
+									<span className="text-sm font-medium text-foreground">
+										API Key
+									</span>
+									<input
+										type="password"
+										value={customProviderApiKey}
+										onChange={(e) => setCustomProviderApiKey(e.target.value)}
+										placeholder="sk-..."
+										className="w-full h-11 px-4 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 transition-colors font-mono text-sm"
+									/>
+								</label>
+								<label className="space-y-2">
+									<span className="text-sm font-medium text-foreground">
+										Compatibility
+									</span>
+									<select
+										value={customProviderCompatibility}
+										onChange={(e) =>
+											setCustomProviderCompatibility(
+												e.target.value as 'openai-compatible' | 'ollama',
+											)
+										}
+										className="w-full h-11 px-4 bg-muted/50 border border-border rounded-lg text-foreground outline-none focus:border-foreground/30 transition-colors text-sm"
+									>
+										<option value="openai-compatible">OpenAI-compatible</option>
+										<option value="ollama">Ollama</option>
+									</select>
+								</label>
+							</div>
+
+							<label className="space-y-2 block">
+								<span className="text-sm font-medium text-foreground">
+									Models
+								</span>
+								<textarea
+									value={customProviderModels}
+									onChange={(e) => setCustomProviderModels(e.target.value)}
+									placeholder="gpt-4o, claude-sonnet-4-5, llama3.3"
+									className="w-full min-h-[90px] px-4 py-3 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 transition-colors font-mono text-sm resize-y"
+								/>
+								<span className="text-xs text-muted-foreground">
+									Comma or newline separated. Leave blank to allow any model.
+								</span>
+							</label>
+
+							<label className="flex items-center gap-3 text-sm text-muted-foreground">
+								<input
+									type="checkbox"
+									checked={customProviderAllowAnyModel}
+									onChange={(e) =>
+										setCustomProviderAllowAnyModel(e.target.checked)
+									}
+									className="h-4 w-4 accent-primary"
+								/>
+								Allow entering model IDs not listed above
+							</label>
+
+							{customProviderError && (
+								<p className="text-sm text-red-500">{customProviderError}</p>
+							)}
+
+							<div className="flex gap-3 pt-2">
+								<button
+									type="button"
+									onClick={handleCloseCustomProviderModal}
+									disabled={isAddingCustomProvider}
+									className="flex-1 h-11 px-4 bg-transparent border border-border text-foreground rounded-lg font-medium hover:bg-muted/50 transition-colors disabled:opacity-50"
+								>
+									Cancel
+								</button>
+								<button
+									type="button"
+									onClick={handleAddCustomProvider}
+									disabled={
+										!customProviderId.trim() ||
+										!customProviderBaseURL.trim() ||
+										!customProviderApiKey.trim() ||
+										isAddingCustomProvider
+									}
+									className="flex-1 h-11 px-4 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+								>
+									{isAddingCustomProvider ? (
+										<Loader2 className="w-4 h-4 animate-spin" />
+									) : (
+										'Add Provider'
+									)}
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{isImportModalOpen && (
 				<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">

@@ -159,6 +159,7 @@ function pickProviders(
 		moonshot: createEmptyEntry('moonshot'),
 		minimax: createEmptyEntry('minimax'),
 		copilot: createEmptyEntry('copilot'),
+		'ollama-cloud': createEmptyEntry('ollama-cloud'),
 	};
 	for (const providerKey of Object.keys(feed)) {
 		let targetKey: BuiltInProviderId | undefined;
@@ -171,6 +172,7 @@ function pickProviders(
 				'opencode',
 				'zai',
 				'minimax',
+				'ollama-cloud',
 			].includes(providerKey)
 		) {
 			targetKey = providerKey as BuiltInProviderId;
@@ -190,7 +192,12 @@ function pickProviders(
 		if (!targetKey) continue;
 		const entry = feed[providerKey];
 		const key = targetKey;
-		const isAggregate = ['openrouter', 'opencode', 'copilot'].includes(key);
+		const isAggregate = [
+			'openrouter',
+			'opencode',
+			'copilot',
+			'ollama-cloud',
+		].includes(key);
 		const staticOwner = SINGLE_PROVIDER_OWNER[providerKey];
 		const models: ModelInfo[] = [];
 		for (const mid of Object.keys(entry.models || {})) {
@@ -215,6 +222,10 @@ function pickProviders(
 		if (npm) base.npm = npm;
 		const api = normalizeString(entry.api);
 		if (api) base.api = api;
+		if (key === 'ollama-cloud') {
+			base.npm = 'ai-sdk-ollama';
+			base.api = 'https://ollama.com';
+		}
 		const doc = normalizeString(entry.doc);
 		if (doc) base.doc = doc;
 		base.models = models;
@@ -366,18 +377,6 @@ function toTs(
 	return `${header}\n${imports}\n${body}`;
 }
 
-function buildOllamaCloudEntry(): ProviderCatalogEntry {
-	return {
-		id: 'ollama-cloud',
-		label: 'Ollama Cloud',
-		env: ['OLLAMA_API_KEY'],
-		npm: 'ai-sdk-ollama',
-		api: 'https://ollama.com',
-		doc: 'https://docs.ollama.com/cloud',
-		models: [],
-	};
-}
-
 function buildOttoRouterEntry(data: SetuApiModel[]): ProviderCatalogEntry {
 	const models: ModelInfo[] = data
 		.map((m) => {
@@ -448,7 +447,6 @@ async function writeRemoteCatalogJson(
 ) {
 	const providers: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> = {
 		...catalog,
-		'ollama-cloud': buildOllamaCloudEntry(),
 	};
 	if (ottorouterEntry) providers.ottorouter = ottorouterEntry;
 

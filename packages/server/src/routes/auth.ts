@@ -25,6 +25,7 @@ import {
 import { execFileSync, spawnSync } from 'node:child_process';
 import { logger } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
+import { getProviderDetails } from './config/utils.ts';
 
 const oauthVerifiers = new Map<
 	string,
@@ -235,6 +236,7 @@ export function registerAuthRoutes(app: Hono) {
 					supportsOAuth: boolean;
 					supportsToken?: boolean;
 					supportsGhImport?: boolean;
+					custom?: boolean;
 					modelCount: number;
 					costRange?: { min: number; max: number };
 				}
@@ -264,6 +266,19 @@ export function registerAuthRoutes(app: Hono) {
 									max: Math.max(...costs),
 								}
 							: undefined,
+				};
+			}
+
+			const providerDetails = await getProviderDetails(undefined, cfg);
+			for (const detail of providerDetails) {
+				if (!detail.custom || providers[detail.id]) continue;
+				providers[detail.id] = {
+					configured: detail.authorized,
+					type: detail.authType,
+					label: detail.label,
+					supportsOAuth: false,
+					custom: true,
+					modelCount: detail.modelCount,
 				};
 			}
 

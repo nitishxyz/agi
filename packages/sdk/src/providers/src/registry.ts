@@ -1,5 +1,6 @@
 import { catalog } from './catalog-merged.ts';
 import { providerEnvVar } from './env.ts';
+import { getCachedProviderCatalogEntry } from './model-catalog-cache.ts';
 import { getUnderlyingProviderKey, providerIds } from './utils.ts';
 import type {
 	BuiltInProviderId,
@@ -127,9 +128,13 @@ export function getProviderDefinition(
 	if (isBuiltInProviderId(provider)) {
 		const entry = catalog[provider];
 		if (!entry) return undefined;
+		const cachedEntry = getCachedProviderCatalogEntry(provider);
+		const models = cachedEntry?.models.length
+			? cachedEntry.models
+			: entry.models;
 		return {
 			id: provider,
-			label: settings?.label ?? entry.label ?? provider,
+			label: settings?.label ?? cachedEntry?.label ?? entry.label ?? provider,
 			source: 'built-in',
 			compatibility: BUILTIN_COMPATIBILITY[provider],
 			family: BUILTIN_FAMILY[provider],
@@ -137,7 +142,7 @@ export function getProviderDefinition(
 			apiKey: normalizeOptionalText(settings?.apiKey),
 			apiKeyEnv:
 				normalizeOptionalText(settings?.apiKeyEnv) ?? providerEnvVar(provider),
-			models: entry.models,
+			models,
 			allowAnyModel: provider === 'ollama-cloud',
 		};
 	}

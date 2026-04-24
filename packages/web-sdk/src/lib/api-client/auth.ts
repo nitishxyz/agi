@@ -32,6 +32,7 @@ export const authMixin = {
 				supportsOAuth: boolean;
 				supportsToken?: boolean;
 				supportsGhImport?: boolean;
+				custom?: boolean;
 				modelCount: number;
 				costRange?: { min: number; max: number };
 			}

@@ -24,6 +24,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+async function loadFsPromises(): Promise<typeof import('node:fs/promises')> {
+	return Function('specifier', 'return import(specifier)')('node:fs/promises');
+}
+
+function readFileSyncCompat(path: string): string | null {
+	try {
+		const req = Function(
+			'return typeof require === "function" ? require : null',
+		)() as ((specifier: string) => typeof import('node:fs')) | null;
+		return req?.('node:fs').readFileSync(path, 'utf8') ?? null;
+	} catch {
+		return null;
+	}
+}
+
 function normalizeProviderEntry(
 	id: string,
 	value: unknown,
@@ -57,9 +72,10 @@ export function normalizeModelCatalogPayload(
 
 export async function readCachedModelCatalog(): Promise<CachedModelCatalog | null> {
 	try {
-		const file = Bun.file(getModelCatalogCachePath());
-		if (!(await file.exists())) return null;
-		const payload = await file.json();
+		const { readFile } = await loadFsPromises();
+		const payload = JSON.parse(
+			await readFile(getModelCatalogCachePath(), 'utf8'),
+		);
 		const providers = normalizeModelCatalogPayload(payload);
 		return {
 			version: 1,
@@ -74,15 +90,39 @@ export async function readCachedModelCatalog(): Promise<CachedModelCatalog | nul
 	}
 }
 
+export function readCachedModelCatalogSync(): CachedModelCatalog | null {
+	try {
+		const text = readFileSyncCompat(getModelCatalogCachePath());
+		if (!text) return null;
+		const payload = JSON.parse(text);
+		const providers = normalizeModelCatalogPayload(payload);
+		return {
+			version: 1,
+			updatedAt:
+				isRecord(payload) && typeof payload.updatedAt === 'string'
+					? payload.updatedAt
+					: new Date(0).toISOString(),
+			providers,
+		};
+	} catch {
+		return null;
+	}
+}
+
+export function getCachedProviderCatalogEntry(
+	provider: ProviderId,
+): CachedProviderCatalogEntry | undefined {
+	return readCachedModelCatalogSync()?.providers[provider];
+}
+
 export async function writeCachedModelCatalog(
 	providers: Record<string, CachedProviderCatalogEntry>,
 ): Promise<void> {
 	const path = getModelCatalogCachePath();
 	const dir = path.slice(0, path.lastIndexOf('/'));
-	await import('node:fs/promises').then((fs) =>
-		fs.mkdir(dir, { recursive: true }),
-	);
-	await Bun.write(
+	const { mkdir, writeFile } = await loadFsPromises();
+	await mkdir(dir, { recursive: true });
+	await writeFile(
 		path,
 		JSON.stringify(
 			{

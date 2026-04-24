@@ -42,10 +42,12 @@ export type {
 export { catalog } from './providers/src/index.ts';
 export {
 	DEFAULT_REMOTE_MODEL_CATALOG_URL,
+	getCachedProviderCatalogEntry,
 	getModelCatalogCachePath,
 	mergeCachedModelCatalog,
 	normalizeModelCatalogPayload,
 	readCachedModelCatalog,
+	readCachedModelCatalogSync,
 	writeCachedModelCatalog,
 } from './providers/src/index.ts';
 export type {

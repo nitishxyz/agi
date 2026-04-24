@@ -45,6 +45,8 @@ class ApiClient {
 	getConfig = configMixin.getConfig;
 	getModels = configMixin.getModels;
 	getAllModels = configMixin.getAllModels;
+	updateProviderSettings = configMixin.updateProviderSettings;
+	deleteProviderSettings = configMixin.deleteProviderSettings;
 	updateDefaults = configMixin.updateDefaults;
 
 	listFiles = filesMixin.listFiles;

@@ -3,9 +3,19 @@ import {
 	getProviderModels as apiGetProviderModels,
 	getAllModels as apiGetAllModels,
 	updateDefaults as apiUpdateDefaults,
+	updateProviderSettings as apiUpdateProviderSettings,
+	deleteProviderSettings as apiDeleteProviderSettings,
 } from '@ottocode/api';
 import type { AllModelsResponse } from '../../types/api';
 import { extractErrorMessage } from './utils';
+
+type ProviderCompatibility =
+	| 'openai'
+	| 'anthropic'
+	| 'google'
+	| 'openrouter'
+	| 'ollama'
+	| 'openai-compatible';
 
 export const configMixin = {
 	async getConfig(): Promise<{
@@ -59,6 +69,44 @@ export const configMixin = {
 		const response = await apiGetAllModels();
 		if (response.error) throw new Error(extractErrorMessage(response.error));
 		return response.data as AllModelsResponse;
+	},
+
+	async updateProviderSettings(
+		provider: string,
+		data: {
+			enabled?: boolean;
+			custom?: boolean;
+			label?: string;
+			compatibility?: ProviderCompatibility;
+			baseURL?: string | null;
+			apiKey?: string | null;
+			models?: string[];
+			allowAnyModel?: boolean;
+			scope?: 'global' | 'local';
+		},
+	): Promise<{ success: boolean; provider: string }> {
+		const response = await apiUpdateProviderSettings({
+			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch
+			path: { provider: provider as any },
+			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch
+			body: data as any,
+		});
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure
+		return response.data as any;
+	},
+
+	async deleteProviderSettings(
+		provider: string,
+	): Promise<{ success: boolean; provider: string }> {
+		const response = await apiDeleteProviderSettings({
+			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch
+			path: { provider: provider as any },
+			query: { scope: 'local' },
+		});
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		// biome-ignore lint/suspicious/noExplicitAny: API response structure
+		return response.data as any;
 	},
 
 	async updateDefaults(data: {
