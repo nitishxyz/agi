@@ -92,7 +92,7 @@
 		"marked-terminal": "^7.3.0",
 		"opencode-anthropic-auth": "^0.0.2",
 		"satori": "^0.19.2",
-		"sst": "3.17.23",
+		"sst": "^4.12.2",
 		"tweetnacl": "^1.0.3",
 		"x402": "^1.1.0",
 		"zod": "^4.3.6"

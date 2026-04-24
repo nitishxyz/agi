@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 /* deno-fmt-ignore-file */
+/* biome-ignore-all lint: auto-generated */
 
 declare module "sst" {
   export interface Resource {
@@ -9,38 +10,22 @@ declare module "sst" {
       "type": "sst.aws.Astro"
       "url": string
     }
-    "OGCache": {
-      "namespaceId": string
-      "type": "sst.cloudflare.Kv"
-    }
+    "OGCache": import("@cloudflare/workers-types").KVNamespace
     "OGFunction": {
       "name": string
       "type": "sst.aws.Function"
       "url": string
     }
-    "OttoIo": {
-      "type": "sst.cloudflare.Worker"
-      "url": string
-    }
-    "PreviewApi": {
-      "type": "sst.cloudflare.Worker"
-      "url": string
-    }
-    "PreviewDB": {
-      "databaseId": string
-      "type": "sst.cloudflare.D1"
-    }
+    "OttoIo": import("@cloudflare/workers-types").Service
+    "PreviewApi": import("@cloudflare/workers-types").Service
+    "PreviewDB": import("@cloudflare/workers-types").D1Database
     "PreviewWeb": {
       "type": "sst.aws.Astro"
       "url": string
     }
-    "ShareStorage": {
-      "name": string
-      "type": "sst.cloudflare.Bucket"
-    }
+    "ShareStorage": import("@cloudflare/workers-types").R2Bucket
   }
 }
-/// <reference path="sst-env.d.ts" />
 
 import "sst"
 export {}

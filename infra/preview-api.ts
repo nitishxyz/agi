@@ -2,7 +2,15 @@ import { domains } from './domains';
 import { DEPLOYED_STAGES } from './utils';
 import { ogFunction } from './og';
 
-export const previewDb = new sst.cloudflare.D1('PreviewDB');
+export const previewDb = new sst.cloudflare.D1('PreviewDB', {
+	transform: {
+		database: {
+			readReplication: {
+				mode: 'disabled',
+			},
+		},
+	},
+});
 
 export const ogCache = new sst.cloudflare.Kv('OGCache');
 

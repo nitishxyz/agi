@@ -12,7 +12,7 @@
 		"drizzle-orm": "^0.44.5",
 		"hono": "^4.9.9",
 		"nanoid": "^5.0.9",
-		"sst": "3.17.23"
+		"sst": "^4.12.2"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20250109.0",
