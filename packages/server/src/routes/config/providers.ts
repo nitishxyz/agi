@@ -3,7 +3,9 @@ import {
 	loadConfig,
 	removeProviderSettings,
 	writeProviderSettings,
+	discoverOllamaModels,
 	isBuiltInProviderId,
+	type ModelInfo,
 	type ProviderCompatibility,
 	type ProviderPromptFamily,
 	type ProviderId,
@@ -31,6 +33,25 @@ type ProviderMutationBody = {
 	allowAnyModel?: boolean;
 	scope?: 'global' | 'local';
 };
+
+type ProviderDiscoveryBody = {
+	compatibility?: ProviderCompatibility;
+	baseURL?: string;
+	apiKey?: string;
+};
+
+function toDiscoveredModel(model: ModelInfo) {
+	return {
+		id: model.id,
+		label: model.label || model.id,
+		toolCall: model.toolCall,
+		reasoningText: model.reasoningText,
+		vision: model.modalities?.input?.includes('image') ?? false,
+		attachment: model.attachment ?? false,
+		contextWindow: model.limit?.context,
+		maxOutputTokens: model.limit?.output,
+	};
+}
 
 export function registerProvidersRoute(app: Hono) {
 	app.get('/v1/config/providers', async (c) => {
@@ -82,6 +103,49 @@ export function registerProvidersRoute(app: Hono) {
 			});
 		} catch (error) {
 			logger.error('Failed to get providers', error);
+			const errorResponse = serializeError(error);
+			return c.json(errorResponse, errorResponse.error.status || 500);
+		}
+	});
+
+	app.post('/v1/config/providers/discover-models', async (c) => {
+		try {
+			const embeddedConfig = (
+				c as unknown as {
+					get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
+				}
+			).get('embeddedConfig');
+			if (embeddedConfig && Object.keys(embeddedConfig).length > 0) {
+				return c.json({ error: 'Embedded config cannot be modified' }, 400);
+			}
+
+			const body = await c.req.json<ProviderDiscoveryBody>();
+			const compatibility = body.compatibility || 'openai-compatible';
+			const baseURL = body.baseURL?.trim();
+			const apiKey = body.apiKey?.trim() || undefined;
+			if (!baseURL) return c.json({ error: 'Base URL is required' }, 400);
+
+			if (compatibility !== 'ollama') {
+				return c.json({
+					models: [],
+					unsupported: true,
+					message:
+						'Model discovery is currently available for Ollama providers.',
+				});
+			}
+
+			const discovered = await discoverOllamaModels({
+				baseURL,
+				apiKey,
+				includeDetails: true,
+			});
+
+			return c.json({
+				baseURL: discovered.baseURL,
+				models: discovered.models.map(toDiscoveredModel),
+			});
+		} catch (error) {
+			logger.error('Failed to discover provider models', error);
 			const errorResponse = serializeError(error);
 			return c.json(errorResponse, errorResponse.error.status || 500);
 		}

@@ -7,7 +7,7 @@ import {
 	deleteProviderSettings as apiDeleteProviderSettings,
 } from '@ottocode/api';
 import type { AllModelsResponse } from '../../types/api';
-import { extractErrorMessage } from './utils';
+import { extractErrorMessage, getBaseUrl } from './utils';
 
 type ProviderCompatibility =
 	| 'openai'
@@ -16,6 +16,17 @@ type ProviderCompatibility =
 	| 'openrouter'
 	| 'ollama'
 	| 'openai-compatible';
+
+export type DiscoveredProviderModel = {
+	id: string;
+	label: string;
+	toolCall?: boolean;
+	reasoningText?: boolean;
+	vision?: boolean;
+	attachment?: boolean;
+	contextWindow?: number;
+	maxOutputTokens?: number;
+};
 
 export const configMixin = {
 	async getConfig(): Promise<{
@@ -48,6 +59,8 @@ export const configMixin = {
 			vision?: boolean;
 			attachment?: boolean;
 			free?: boolean;
+			contextWindow?: number;
+			maxOutputTokens?: number;
 			available?: boolean;
 			unavailableReason?: string;
 		}>;
@@ -69,6 +82,34 @@ export const configMixin = {
 		const response = await apiGetAllModels();
 		if (response.error) throw new Error(extractErrorMessage(response.error));
 		return response.data as AllModelsResponse;
+	},
+
+	async discoverProviderModels(data: {
+		compatibility: ProviderCompatibility;
+		baseURL: string;
+		apiKey?: string;
+	}): Promise<{
+		baseURL?: string;
+		models: DiscoveredProviderModel[];
+		unsupported?: boolean;
+		message?: string;
+	}> {
+		const response = await fetch(
+			`${getBaseUrl()}/v1/config/providers/discover-models`,
+			{
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify(data),
+			},
+		);
+		const payload = await response.json();
+		if (!response.ok) throw new Error(extractErrorMessage(payload));
+		return payload as {
+			baseURL?: string;
+			models: DiscoveredProviderModel[];
+			unsupported?: boolean;
+			message?: string;
+		};
 	},
 
 	async updateProviderSettings(

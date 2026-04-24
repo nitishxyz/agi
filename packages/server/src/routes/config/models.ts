@@ -38,6 +38,8 @@ type UiModel = {
 	vision?: boolean;
 	attachment?: boolean;
 	free?: boolean;
+	contextWindow?: number;
+	maxOutputTokens?: number;
 };
 
 type UiProviderModels = {
@@ -62,6 +64,8 @@ function toUiModel(model: ModelInfo): UiModel {
 		vision: model.modalities?.input?.includes('image') ?? false,
 		attachment: model.attachment ?? false,
 		free: model.cost?.input === 0 && model.cost?.output === 0,
+		contextWindow: model.limit?.context,
+		maxOutputTokens: model.limit?.output,
 	};
 }
 
@@ -230,7 +234,7 @@ async function discoverProviderModels(args: {
 		const discovered = await discoverOllamaModels({
 			baseURL: providerDefinition.baseURL,
 			apiKey,
-			includeDetails: false,
+			includeDetails: true,
 		});
 		return discovered.models;
 	} catch (error) {

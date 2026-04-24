@@ -114,6 +114,8 @@ export interface ModelInfo {
 	vision?: boolean;
 	attachment?: boolean;
 	free?: boolean;
+	contextWindow?: number;
+	maxOutputTokens?: number;
 	available?: boolean;
 	unavailableReason?: string;
 }

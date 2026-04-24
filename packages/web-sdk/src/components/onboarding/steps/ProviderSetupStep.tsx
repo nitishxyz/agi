@@ -17,6 +17,8 @@ import type { AuthStatus } from '../../../stores/onboardingStore';
 import { useOttoRouterStore } from '../../../stores/ottorouterStore';
 import { useOttoRouterBalance } from '../../../hooks/useOttoRouterBalance';
 import { openUrl } from '../../../lib/open-url';
+import { apiClient } from '../../../lib/api-client';
+import type { DiscoveredProviderModel } from '../../../lib/api-client/config';
 
 type CustomProviderCompatibility =
 	| 'openai-compatible'
@@ -37,6 +39,12 @@ const CUSTOM_PROVIDER_COMPATIBILITY_OPTIONS: Array<{
 	{ value: 'openrouter', label: 'OpenRouter' },
 	{ value: 'ollama', label: 'Ollama' },
 ];
+
+function formatTokenCount(tokens: number): string {
+	if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
+	if (tokens >= 1_000) return `${Math.round(tokens / 1_000)}K`;
+	return String(tokens);
+}
 
 interface ProviderSetupStepProps {
 	authStatus: AuthStatus;
@@ -163,6 +171,13 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	const [customProviderError, setCustomProviderError] = useState<string | null>(
 		null,
 	);
+	const [isDiscoveringCustomModels, setIsDiscoveringCustomModels] =
+		useState(false);
+	const [discoveredCustomModels, setDiscoveredCustomModels] = useState<
+		DiscoveredProviderModel[]
+	>([]);
+	const [customProviderDiscoveryMessage, setCustomProviderDiscoveryMessage] =
+		useState<string | null>(null);
 	const [removingProvider, setRemovingProvider] = useState<string | null>(null);
 	const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 	const [oauthSession, setOauthSession] = useState<{
@@ -332,12 +347,55 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 		setCustomProviderCompatibility('openai-compatible');
 		setCustomProviderAllowAnyModel(true);
 		setCustomProviderError(null);
+		setDiscoveredCustomModels([]);
+		setCustomProviderDiscoveryMessage(null);
 	};
 
 	const handleCloseCustomProviderModal = () => {
 		if (isAddingCustomProvider) return;
 		setIsCustomProviderModalOpen(false);
 		resetCustomProviderForm();
+	};
+
+	const handleDiscoverCustomProviderModels = async () => {
+		const baseURL = customProviderBaseURL.trim();
+		if (!baseURL) {
+			setCustomProviderDiscoveryMessage('Enter a base URL first.');
+			return;
+		}
+
+		setIsDiscoveringCustomModels(true);
+		setCustomProviderDiscoveryMessage(null);
+		try {
+			const result = await apiClient.discoverProviderModels({
+				compatibility: customProviderCompatibility,
+				baseURL,
+				apiKey: customProviderApiKey.trim() || undefined,
+			});
+
+			if (result.baseURL) setCustomProviderBaseURL(result.baseURL);
+			setDiscoveredCustomModels(result.models);
+			if (result.models.length > 0) {
+				setCustomProviderModels(
+					result.models.map((model) => model.id).join('\n'),
+				);
+			}
+			setCustomProviderDiscoveryMessage(
+				result.message ||
+					(result.models.length > 0
+						? `Fetched ${result.models.length} model${
+								result.models.length === 1 ? '' : 's'
+							}.`
+						: 'No models found.'),
+			);
+		} catch (err) {
+			setDiscoveredCustomModels([]);
+			setCustomProviderDiscoveryMessage(
+				err instanceof Error ? err.message : 'Failed to fetch models',
+			);
+		} finally {
+			setIsDiscoveringCustomModels(false);
+		}
 	};
 
 	const handleAddCustomProvider = async () => {
@@ -1007,6 +1065,84 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 									/>
 								</label>
 							</div>
+
+							<div className="flex items-center justify-between gap-3 p-3 bg-muted/30 border border-border rounded-lg">
+								<div className="min-w-0">
+									<div className="text-sm font-medium text-foreground">
+										Fetch models from provider
+									</div>
+									<div className="text-xs text-muted-foreground">
+										For Ollama, this reads /api/tags and /api/show to include
+										context windows.
+									</div>
+								</div>
+								<button
+									type="button"
+									onClick={handleDiscoverCustomProviderModels}
+									disabled={
+										!customProviderBaseURL.trim() || isDiscoveringCustomModels
+									}
+									className="shrink-0 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+								>
+									{isDiscoveringCustomModels && (
+										<Loader2 className="w-3.5 h-3.5 animate-spin" />
+									)}
+									Fetch Models
+								</button>
+							</div>
+
+							{customProviderDiscoveryMessage && (
+								<p className="text-xs text-muted-foreground">
+									{customProviderDiscoveryMessage}
+								</p>
+							)}
+
+							{discoveredCustomModels.length > 0 && (
+								<div className="space-y-2 max-h-44 overflow-y-auto border border-border rounded-lg p-2">
+									{discoveredCustomModels.map((model) => (
+										<div
+											key={model.id}
+											className="flex items-center justify-between gap-3 p-2 bg-card rounded-md"
+										>
+											<div className="min-w-0">
+												<div className="text-sm font-medium text-foreground truncate">
+													{model.label}
+												</div>
+												<div className="text-xs text-muted-foreground font-mono truncate">
+													{model.id}
+												</div>
+											</div>
+											<div className="flex flex-wrap justify-end gap-1 shrink-0">
+												{model.contextWindow && (
+													<span className="text-[10px] px-1.5 py-0.5 bg-blue-600/20 text-blue-400 rounded">
+														{formatTokenCount(model.contextWindow)} ctx
+													</span>
+												)}
+												{model.maxOutputTokens && (
+													<span className="text-[10px] px-1.5 py-0.5 bg-cyan-600/20 text-cyan-400 rounded">
+														{formatTokenCount(model.maxOutputTokens)} out
+													</span>
+												)}
+												{model.toolCall && (
+													<span className="text-[10px] px-1.5 py-0.5 bg-green-600/20 text-green-400 rounded">
+														Tools
+													</span>
+												)}
+												{model.reasoningText && (
+													<span className="text-[10px] px-1.5 py-0.5 bg-purple-600/20 text-purple-400 rounded">
+														Reasoning
+													</span>
+												)}
+												{model.vision && (
+													<span className="text-[10px] px-1.5 py-0.5 bg-orange-600/20 text-orange-400 rounded">
+														Vision
+													</span>
+												)}
+											</div>
+										</div>
+									))}
+								</div>
+							)}
 
 							<label className="space-y-2 block">
 								<span className="text-sm font-medium text-foreground">
