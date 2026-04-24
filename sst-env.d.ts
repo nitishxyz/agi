@@ -7,7 +7,7 @@
 declare module "sst" {
   export interface Resource {
     "Landing": {
-      "type": "sst.aws.Astro"
+      "type": "sst.cloudflare.Astro"
       "url": string
     }
     "OGCache": import("@cloudflare/workers-types").KVNamespace
@@ -20,7 +20,7 @@ declare module "sst" {
     "PreviewApi": import("@cloudflare/workers-types").Service
     "PreviewDB": import("@cloudflare/workers-types").D1Database
     "PreviewWeb": {
-      "type": "sst.aws.Astro"
+      "type": "sst.cloudflare.Astro"
       "url": string
     }
     "ShareStorage": import("@cloudflare/workers-types").R2Bucket

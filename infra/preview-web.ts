@@ -2,14 +2,9 @@ import { domains } from './domains';
 import { previewApiUrl } from './preview-api';
 import { DEPLOYED_STAGES } from './utils';
 
-export const previewWeb = new sst.aws.Astro('PreviewWeb', {
+export const previewWeb = new sst.cloudflare.Astro('PreviewWeb', {
 	path: 'apps/preview-web',
-	domain: DEPLOYED_STAGES.includes($app.stage)
-		? {
-				name: domains.previewWeb,
-				dns: sst.cloudflare.dns(),
-			}
-		: undefined,
+	domain: DEPLOYED_STAGES.includes($app.stage) ? domains.previewWeb : undefined,
 	environment: {
 		PUBLIC_API_URL: previewApiUrl,
 	},

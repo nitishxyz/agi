@@ -62,3 +62,4 @@ resources
 !apps/canvas/src-tauri/resources/
 apps/canvas/src-tauri/resources/*
 !apps/canvas/src-tauri/resources/entitlements.plist
+.wrangler

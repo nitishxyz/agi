@@ -1,5 +1,7 @@
+import { lazy, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import ChatPreview from './ChatPreview';
+
+const ChatPreview = lazy(() => import('./ChatPreview'));
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -24,7 +26,9 @@ interface ChatPreviewWrapperProps {
 export default function ChatPreviewWrapper({ data }: ChatPreviewWrapperProps) {
 	return (
 		<QueryClientProvider client={queryClient}>
-			<ChatPreview data={data} />
+			<Suspense fallback={null}>
+				<ChatPreview data={data} />
+			</Suspense>
 		</QueryClientProvider>
 	);
 }

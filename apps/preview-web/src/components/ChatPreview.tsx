@@ -1,7 +1,35 @@
 import type { FC } from 'react';
-import { AssistantMessageGroup, UserMessageGroup } from '@ottocode/web-sdk';
-import type { Message } from '@ottocode/web-sdk';
-import { estimateModelCostUsd, type ProviderId } from '@ottocode/sdk/browser';
+import { AssistantMessageGroup } from '../../../../packages/web-sdk/src/components/messages/AssistantMessageGroup';
+import { UserMessageGroup } from '../../../../packages/web-sdk/src/components/messages/UserMessageGroup';
+import type { Message } from '../../../../packages/web-sdk/src/types/api';
+
+const MODEL_COSTS: Record<string, { input: number; output: number }> = {
+	'claude-sonnet-4-20250514': { input: 3, output: 15 },
+	'claude-opus-4-20250514': { input: 15, output: 75 },
+	'claude-3-5-sonnet-20241022': { input: 3, output: 15 },
+	'claude-3-5-haiku-20241022': { input: 0.8, output: 4 },
+	'gpt-4o': { input: 2.5, output: 10 },
+	'gpt-4o-mini': { input: 0.15, output: 0.6 },
+	'gpt-4-turbo': { input: 10, output: 30 },
+	o1: { input: 15, output: 60 },
+	'o1-mini': { input: 1.1, output: 4.4 },
+	'o3-mini': { input: 1.1, output: 4.4 },
+	'gemini-2.0-flash': { input: 0.1, output: 0.4 },
+	'gemini-2.5-pro-preview-06-05': { input: 1.25, output: 10 },
+	'gemini-2.5-flash-preview-05-20': { input: 0.15, output: 0.6 },
+};
+
+function estimateCostUsd(model: string, stats: SessionStats): number {
+	const costs = MODEL_COSTS[model];
+	if (!costs) return 0;
+
+	return (
+		((stats.inputTokens + stats.cachedTokens + stats.cacheCreationTokens) /
+			1_000_000) *
+			costs.input +
+		(stats.outputTokens / 1_000_000) * costs.output
+	);
+}
 
 interface SessionStats {
 	inputTokens: number;
@@ -162,18 +190,7 @@ const ChatPreview: FC<ChatPreviewProps> = ({ data }) => {
 		? Object.entries(stats.toolCounts).sort((a, b) => b[1] - a[1])
 		: [];
 
-	const estimatedCost = stats
-		? (estimateModelCostUsd(
-				sessionData.provider as ProviderId,
-				sessionData.model,
-				{
-					inputTokens: stats.inputTokens,
-					outputTokens: stats.outputTokens,
-					cachedInputTokens: stats.cachedTokens,
-					cacheCreationInputTokens: stats.cacheCreationTokens,
-				},
-			) ?? 0)
-		: 0;
+	const estimatedCost = stats ? estimateCostUsd(sessionData.model, stats) : 0;
 
 	return (
 		<div className="min-h-screen bg-background">
