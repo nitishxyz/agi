@@ -79,6 +79,8 @@ export const NewSessionLanding = memo(
 			)?.free;
 
 			const providerAuthType = allModels?.[provider]?.authType;
+			const isCustomProvider =
+				allModels?.[provider]?.label?.includes('(custom)') ?? false;
 
 			const {
 				images,
@@ -286,6 +288,7 @@ export const NewSessionLanding = memo(
 								attachmentEnabled={modelSupportsAttachment}
 								modelName={model}
 								providerName={provider}
+								isCustomProvider={isCustomProvider}
 								authType={providerAuthType}
 								isFreeModel={modelIsFree}
 								onConfigClick={handleToggleConfig}

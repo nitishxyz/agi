@@ -134,6 +134,8 @@ export const ChatInputContainer = memo(
 			);
 
 			const providerAuthType = allModels?.[provider]?.authType;
+			const isCustomProvider =
+				allModels?.[provider]?.label?.includes('(custom)') ?? false;
 
 			useEffect(() => {
 				if (session) {
@@ -449,6 +451,7 @@ export const ChatInputContainer = memo(
 						attachmentEnabled={modelSupportsAttachment}
 						modelName={model}
 						providerName={provider}
+						isCustomProvider={isCustomProvider}
 						authType={providerAuthType}
 						isFreeModel={modelIsFree}
 						researchContexts={researchContexts}

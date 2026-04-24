@@ -59,6 +59,7 @@ interface ChatInputProps {
 	attachmentEnabled?: boolean;
 	modelName?: string;
 	providerName?: string;
+	isCustomProvider?: boolean;
 	authType?: 'api' | 'oauth' | 'wallet';
 	isFreeModel?: boolean;
 	researchContexts?: Array<{ id: string; label: string }>;
@@ -92,6 +93,7 @@ export const ChatInput = memo(
 			attachmentEnabled = false,
 			modelName,
 			providerName,
+			isCustomProvider = false,
 			authType,
 			isFreeModel,
 			researchContexts = [],
@@ -639,6 +641,9 @@ export const ChatInput = memo(
 														</>
 													)}
 													{modelName && <span>{modelName}</span>}
+													{isCustomProvider && (
+														<span className="opacity-50">(custom)</span>
+													)}
 													{authType && authType === 'oauth' && (
 														<span className="opacity-50">(pro)</span>
 													)}
