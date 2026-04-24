@@ -13,6 +13,7 @@ const SOURCE = 'https://models.dev/api.json';
 const TARGET = 'packages/sdk/src/providers/src/catalog.ts';
 const SETU_SOURCE = 'https://api.ottorouter.org/v1/models';
 const SETU_TARGET = 'packages/ai-sdk/src/catalog.ts';
+const REMOTE_CATALOG_TARGET = 'apps/landing/public/catalog/models.json';
 
 interface ProviderFeedEntry {
 	id: string;
@@ -68,6 +69,17 @@ const FAMILY_TO_OWNER: Record<string, ModelOwner> = {
 	'minimax-free': 'minimax',
 	grok: 'xai',
 	'grok-code': 'xai',
+};
+
+const OWNER_NPM: Partial<Record<ModelOwner, string>> = {
+	openai: '@ai-sdk/openai',
+	anthropic: '@ai-sdk/anthropic',
+	google: '@ai-sdk/google',
+	openrouter: '@openrouter/ai-sdk-provider',
+	xai: '@ai-sdk/xai',
+	moonshot: '@ai-sdk/openai-compatible',
+	zai: '@ai-sdk/openai-compatible',
+	minimax: '@ai-sdk/anthropic',
 };
 
 function resolveOwnedByFromFamily(
@@ -354,11 +366,117 @@ function toTs(
 	return `${header}\n${imports}\n${body}`;
 }
 
+function buildOllamaCloudEntry(): ProviderCatalogEntry {
+	return {
+		id: 'ollama-cloud',
+		label: 'Ollama Cloud',
+		env: ['OLLAMA_API_KEY'],
+		npm: 'ai-sdk-ollama',
+		api: 'https://ollama.com',
+		doc: 'https://docs.ollama.com/cloud',
+		models: [],
+	};
+}
+
+function buildOttoRouterEntry(data: SetuApiModel[]): ProviderCatalogEntry {
+	const models: ModelInfo[] = data
+		.map((m) => {
+			const ownedBy = m.owned_by as ModelOwner;
+			return {
+				id: m.id,
+				ownedBy,
+				...(m.name ? { label: m.name } : {}),
+				...(m.modalities ? { modalities: m.modalities } : {}),
+				toolCall: m.tool_call ?? m.capabilities?.tool_call ?? false,
+				reasoningText: m.reasoning ?? m.capabilities?.reasoning ?? false,
+				...(m.attachment !== undefined ? { attachment: m.attachment } : {}),
+				...(m.temperature !== undefined ? { temperature: m.temperature } : {}),
+				...(m.knowledge ? { knowledge: m.knowledge } : {}),
+				...(m.release_date ? { releaseDate: m.release_date } : {}),
+				...(m.last_updated ? { lastUpdated: m.last_updated } : {}),
+				...(m.open_weights !== undefined
+					? { openWeights: m.open_weights }
+					: {}),
+				cost: {
+					input: m.pricing.input,
+					output: m.pricing.output,
+					...(m.pricing.cache_read !== undefined
+						? { cacheRead: m.pricing.cache_read }
+						: {}),
+					...(m.pricing.cache_write !== undefined
+						? { cacheWrite: m.pricing.cache_write }
+						: {}),
+				},
+				limit: {
+					context: m.context_length,
+					output: m.max_output,
+				},
+				...(OWNER_NPM[ownedBy]
+					? { provider: { npm: OWNER_NPM[ownedBy] } }
+					: {}),
+			} satisfies ModelInfo;
+		})
+		.sort((a, b) => {
+			const ownerA = a.ownedBy ?? '';
+			const ownerB = b.ownedBy ?? '';
+			if (ownerA === ownerB) return a.id.localeCompare(b.id);
+			if (ownerA === 'openai') return -1;
+			if (ownerB === 'openai') return 1;
+			return ownerA.localeCompare(ownerB);
+		});
+
+	const defaultModelId = 'gpt-5-codex';
+	const defaultIdx = models.findIndex((m) => m.id === defaultModelId);
+	if (defaultIdx > 0) {
+		const [picked] = models.splice(defaultIdx, 1);
+		models.unshift(picked);
+	}
+
+	return {
+		id: 'ottorouter',
+		label: 'OttoRouter',
+		env: ['OTTOROUTER_PRIVATE_KEY'],
+		api: 'https://api.ottorouter.org/v1',
+		doc: 'https://ottorouter.org/docs',
+		models,
+	};
+}
+
+async function writeRemoteCatalogJson(
+	catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>>,
+	ottorouterEntry?: ProviderCatalogEntry,
+) {
+	const providers: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> = {
+		...catalog,
+		'ollama-cloud': buildOllamaCloudEntry(),
+	};
+	if (ottorouterEntry) providers.ottorouter = ottorouterEntry;
+
+	const payload = {
+		version: 1,
+		updatedAt: new Date().toISOString(),
+		providers,
+	};
+
+	await import('node:fs/promises').then((fs) =>
+		fs.mkdir('apps/landing/public/catalog', { recursive: true }),
+	);
+	await Bun.write(
+		REMOTE_CATALOG_TARGET,
+		`${JSON.stringify(payload, null, 2)}\n`,
+	);
+	console.log(`Wrote ${REMOTE_CATALOG_TARGET}`);
+}
+
 async function main() {
 	const args = process.argv.slice(2);
 	const setuOnly = args.includes('--setu');
 	const skipSetu = args.includes('--no-setu');
 	const fromIdx = args.indexOf('--from');
+	let picked:
+		| Partial<Record<BuiltInProviderId, ProviderCatalogEntry>>
+		| undefined;
+	let ottorouterEntry: ProviderCatalogEntry | undefined;
 
 	if (!setuOnly) {
 		let feed: ProviderFeed;
@@ -375,14 +493,18 @@ async function main() {
 				throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
 			feed = (await res.json()) as ProviderFeed;
 		}
-		const picked = pickProviders(feed);
+		picked = pickProviders(feed);
 		const ts = toTs(picked);
 		await Bun.write(TARGET, ts);
 		console.log(`Wrote ${TARGET}`);
 	}
 
 	if (!skipSetu) {
-		await updateSetuCatalog();
+		ottorouterEntry = await updateSetuCatalog();
+	}
+
+	if (picked) {
+		await writeRemoteCatalogJson(picked, ottorouterEntry);
 	}
 }
 
@@ -413,7 +535,7 @@ interface SetuApiModel {
 	capabilities?: { tool_call?: boolean; reasoning?: boolean };
 }
 
-async function updateSetuCatalog() {
+async function updateSetuCatalog(): Promise<ProviderCatalogEntry> {
 	console.log(`Fetching ${SETU_SOURCE} ...`);
 	const res = await fetch(SETU_SOURCE);
 	if (!res.ok)
@@ -469,6 +591,8 @@ async function updateSetuCatalog() {
 	console.log(
 		`Wrote ${SETU_TARGET} (${data.data.length} models, ${providers.length} providers)`,
 	);
+
+	return buildOttoRouterEntry(data.data);
 }
 
 main().catch((err) => {

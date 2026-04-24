@@ -133,7 +133,7 @@ export function getProviderDefinition(
 			source: 'built-in',
 			compatibility: BUILTIN_COMPATIBILITY[provider],
 			family: BUILTIN_FAMILY[provider],
-			baseURL: normalizeOptionalText(settings?.baseURL),
+			baseURL: normalizeOptionalText(settings?.baseURL) ?? entry.api,
 			apiKey: normalizeOptionalText(settings?.apiKey),
 			apiKeyEnv:
 				normalizeOptionalText(settings?.apiKeyEnv) ?? providerEnvVar(provider),

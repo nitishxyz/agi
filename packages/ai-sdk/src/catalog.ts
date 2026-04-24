@@ -1606,5 +1606,5 @@ export const ottorouterCatalog: OttoRouterCatalog = {
 		},
 	],
 	providers: ['anthropic', 'google', 'minimax', 'moonshot', 'openai', 'zai'],
-	lastUpdated: '2026-04-23',
+	lastUpdated: '2026-04-24',
 } as const satisfies OttoRouterCatalog;

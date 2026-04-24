@@ -1,5 +1,6 @@
 import type { Hono } from 'hono';
 import {
+	DEFAULT_REMOTE_MODEL_CATALOG_URL,
 	discoverOllamaModels,
 	loadConfig,
 	catalog,
@@ -12,6 +13,9 @@ import {
 	type ModelInfo,
 	type ProviderId,
 	filterModelsForAuthType,
+	mergeCachedModelCatalog,
+	normalizeModelCatalogPayload,
+	readCachedModelCatalog,
 } from '@ottocode/sdk';
 import type { EmbeddedAppConfig } from '../../index.ts';
 import { serializeError } from '../../runtime/errors/api-error.ts';
@@ -23,6 +27,121 @@ import {
 } from './utils.ts';
 
 const COPILOT_MODELS_URL = 'https://api.githubcopilot.com/models';
+const REMOTE_CATALOG_REFRESH_TTL_MS = 6 * 60 * 60 * 1000;
+const PROVIDER_MODEL_REFRESH_TTL_MS = 60 * 1000;
+
+type UiModel = {
+	id: string;
+	label: string;
+	toolCall?: boolean;
+	reasoningText?: boolean;
+	vision?: boolean;
+	attachment?: boolean;
+	free?: boolean;
+};
+
+type UiProviderModels = {
+	label: string;
+	authType?: 'api' | 'oauth' | 'wallet';
+	allowAnyModel?: boolean;
+	dynamicModels?: boolean;
+	models: UiModel[];
+};
+
+const remoteCatalogRefreshes = new Set<string>();
+const providerModelRefreshes = new Set<string>();
+const providerModelRefreshAt = new Map<string, number>();
+let remoteCatalogRefreshAt = 0;
+
+function toUiModel(model: ModelInfo): UiModel {
+	return {
+		id: model.id,
+		label: model.label || model.id,
+		toolCall: model.toolCall,
+		reasoningText: model.reasoningText,
+		vision: model.modalities?.input?.includes('image') ?? false,
+		attachment: model.attachment ?? false,
+		free: model.cost?.input === 0 && model.cost?.output === 0,
+	};
+}
+
+function getRemoteCatalogUrl(): string {
+	return (
+		process.env.OTTO_MODEL_CATALOG_URL?.trim() ||
+		DEFAULT_REMOTE_MODEL_CATALOG_URL
+	);
+}
+
+async function refreshRemoteCatalogInBackground(): Promise<void> {
+	const url = getRemoteCatalogUrl();
+	const now = Date.now();
+	if (now - remoteCatalogRefreshAt < REMOTE_CATALOG_REFRESH_TTL_MS) return;
+	const cachedCatalog = await readCachedModelCatalog();
+	const cachedAt = cachedCatalog ? Date.parse(cachedCatalog.updatedAt) : 0;
+	if (Number.isFinite(cachedAt)) {
+		remoteCatalogRefreshAt = Math.max(remoteCatalogRefreshAt, cachedAt);
+		if (now - remoteCatalogRefreshAt < REMOTE_CATALOG_REFRESH_TTL_MS) return;
+	}
+	if (remoteCatalogRefreshes.has(url)) return;
+	remoteCatalogRefreshes.add(url);
+	remoteCatalogRefreshAt = now;
+	try {
+		const response = await fetch(url);
+		if (!response.ok) {
+			throw new Error(`${response.status} ${response.statusText}`);
+		}
+		const providers = normalizeModelCatalogPayload(await response.json());
+		if (Object.keys(providers).length > 0) {
+			await mergeCachedModelCatalog(providers);
+		}
+	} catch (error) {
+		logger.debug('Failed to refresh remote model catalog', {
+			url,
+			error: error instanceof Error ? error.message : String(error),
+		});
+	} finally {
+		remoteCatalogRefreshes.delete(url);
+	}
+}
+
+async function refreshProviderModelsInBackground(args: {
+	provider: ProviderId;
+	providerDefinition: NonNullable<ReturnType<typeof getProviderDefinition>>;
+	projectRoot: string;
+}): Promise<void> {
+	const refreshKey = `${args.projectRoot}:${args.provider}`;
+	const now = Date.now();
+	const lastRefresh = providerModelRefreshAt.get(refreshKey) ?? 0;
+	if (now - lastRefresh < PROVIDER_MODEL_REFRESH_TTL_MS) return;
+	if (providerModelRefreshes.has(refreshKey)) return;
+	providerModelRefreshes.add(refreshKey);
+	providerModelRefreshAt.set(refreshKey, now);
+	try {
+		const { provider, providerDefinition, projectRoot } = args;
+		const discoveredModels = await discoverProviderModels({
+			provider,
+			providerDefinition,
+			projectRoot,
+		});
+		const models =
+			discoveredModels ??
+			getConfiguredProviderModels(await loadConfig(projectRoot), provider);
+		await mergeCachedModelCatalog({
+			[provider]: {
+				id: provider,
+				label: providerDefinition.label,
+				models,
+			},
+		});
+	} catch (error) {
+		logger.debug('Failed to refresh provider model cache', {
+			provider: args.provider,
+			error: error instanceof Error ? error.message : String(error),
+		});
+	} finally {
+		providerModelRefreshes.delete(refreshKey);
+	}
+}
 
 function filterCopilotAvailability<T extends { id: string }>(
 	provider: ProviderId,
@@ -127,6 +246,26 @@ function shouldLazyLoadProviderModels(
 	);
 }
 
+function getCachedOrConfiguredModels(args: {
+	models: ModelInfo[] | undefined;
+	cfg: Awaited<ReturnType<typeof loadConfig>>;
+	provider: ProviderId;
+}): ModelInfo[] {
+	const cachedModels = args.models;
+	return cachedModels && cachedModels.length > 0
+		? cachedModels
+		: getConfiguredProviderModels(args.cfg, args.provider);
+}
+
+function getUiProviderLabel(
+	providerDefinition: NonNullable<ReturnType<typeof getProviderDefinition>>,
+): string {
+	if (providerDefinition.source !== 'custom') return providerDefinition.label;
+	return providerDefinition.label.includes('(custom)')
+		? providerDefinition.label
+		: `${providerDefinition.label} (custom)`;
+}
+
 export function registerModelsRoutes(app: Hono) {
 	app.get('/v1/config/providers/:provider/models', async (c) => {
 		try {
@@ -151,26 +290,36 @@ export function registerModelsRoutes(app: Hono) {
 				return c.json({ error: 'Provider not authorized' }, 403);
 			}
 
-			const providerCatalog = catalog[provider as keyof typeof catalog];
+			const cachedCatalog = await readCachedModelCatalog();
+			const providerCatalog =
+				cachedCatalog?.providers[provider] ??
+				catalog[provider as keyof typeof catalog];
 			const providerDefinition = getProviderDefinition(cfg, provider);
 			if (!providerDefinition) {
 				logger.warn('Provider not found in catalog', { provider });
 				return c.json({ error: 'Provider not found' }, 404);
 			}
+			void refreshRemoteCatalogInBackground();
 
 			const authType = await getAuthTypeForProvider(
 				embeddedConfig,
 				provider,
 				projectRoot,
 			);
-			const discoveredModels = await discoverProviderModels({
-				provider,
-				providerDefinition,
-				projectRoot,
-			});
+			if (shouldLazyLoadProviderModels(providerDefinition)) {
+				void refreshProviderModelsInBackground({
+					provider,
+					providerDefinition,
+					projectRoot,
+				});
+			}
 			const filteredModels =
 				providerDefinition.compatibility === 'ollama'
-					? (discoveredModels ?? [])
+					? getCachedOrConfiguredModels({
+							models: providerCatalog?.models,
+							cfg,
+							provider,
+						})
 					: providerCatalog
 						? filterModelsForAuthType(
 								provider,
@@ -190,22 +339,14 @@ export function registerModelsRoutes(app: Hono) {
 			);
 
 			return c.json({
-				models: availableModels.map((m) => ({
-					id: m.id,
-					label: m.label || m.id,
-					toolCall: m.toolCall,
-					reasoningText: m.reasoningText,
-					vision: m.modalities?.input?.includes('image') ?? false,
-					attachment: m.attachment ?? false,
-					free: m.cost?.input === 0 && m.cost?.output === 0,
-				})),
+				models: availableModels.map(toUiModel),
 				default: getDefault(
 					embeddedConfig?.model,
 					embeddedConfig?.defaults?.model,
 					cfg.defaults.model,
 				),
 				allowAnyModel: providerAllowsAnyModel(cfg, provider),
-				label: providerDefinition.label,
+				label: getUiProviderLabel(providerDefinition),
 			});
 		} catch (error) {
 			logger.error('Failed to get provider models', error);
@@ -230,22 +371,16 @@ export function registerModelsRoutes(app: Hono) {
 				cfg,
 			);
 
-			const modelsMap: Record<
-				string,
-				{
-					label: string;
-					authType?: 'api' | 'oauth' | 'wallet';
-					models: Array<{
-						id: string;
-						label: string;
-						toolCall?: boolean;
-						reasoningText?: boolean;
-					}>;
-				}
-			> = {};
+			const cachedCatalog = await readCachedModelCatalog();
+			void refreshRemoteCatalogInBackground();
+
+			const modelsMap: Record<string, UiProviderModels> = {};
+			const cacheUpdates: Parameters<typeof mergeCachedModelCatalog>[0] = {};
 
 			for (const provider of authorizedProviders) {
-				const providerCatalog = catalog[provider as keyof typeof catalog];
+				const providerCatalog =
+					cachedCatalog?.providers[provider] ??
+					catalog[provider as keyof typeof catalog];
 				const providerDefinition = getProviderDefinition(cfg, provider);
 				if (providerDefinition) {
 					const dynamicModels =
@@ -255,8 +390,19 @@ export function registerModelsRoutes(app: Hono) {
 						provider,
 						projectRoot,
 					);
+					if (dynamicModels) {
+						void refreshProviderModelsInBackground({
+							provider,
+							providerDefinition,
+							projectRoot,
+						});
+					}
 					const filteredModels = dynamicModels
-						? getConfiguredProviderModels(cfg, provider)
+						? getCachedOrConfiguredModels({
+								models: providerCatalog?.models,
+								cfg,
+								provider,
+							})
 						: providerCatalog
 							? filterModelsForAuthType(
 									provider,
@@ -265,21 +411,22 @@ export function registerModelsRoutes(app: Hono) {
 								)
 							: getConfiguredProviderModels(cfg, provider);
 					modelsMap[provider] = {
-						label: providerDefinition.label,
+						label: getUiProviderLabel(providerDefinition),
 						authType,
 						allowAnyModel: providerDefinition.allowAnyModel,
 						dynamicModels,
-						models: filteredModels.map((m) => ({
-							id: m.id,
-							label: m.label || m.id,
-							toolCall: m.toolCall,
-							reasoningText: m.reasoningText,
-							vision: m.modalities?.input?.includes('image') ?? false,
-							attachment: m.attachment ?? false,
-							free: m.cost?.input === 0 && m.cost?.output === 0,
-						})),
+						models: filteredModels.map(toUiModel),
+					};
+					cacheUpdates[provider] = {
+						id: provider,
+						label: providerDefinition.label,
+						models: filteredModels,
 					};
 				}
+			}
+
+			if (Object.keys(cacheUpdates).length > 0) {
+				void mergeCachedModelCatalog(cacheUpdates);
 			}
 
 			return c.json(modelsMap);

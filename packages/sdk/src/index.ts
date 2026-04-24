@@ -41,6 +41,18 @@ export type {
 // =======================
 export { catalog } from './providers/src/index.ts';
 export {
+	DEFAULT_REMOTE_MODEL_CATALOG_URL,
+	getModelCatalogCachePath,
+	mergeCachedModelCatalog,
+	normalizeModelCatalogPayload,
+	readCachedModelCatalog,
+	writeCachedModelCatalog,
+} from './providers/src/index.ts';
+export type {
+	CachedModelCatalog,
+	CachedProviderCatalogEntry,
+} from './providers/src/index.ts';
+export {
 	isProviderId,
 	providerIds,
 	defaultModelFor,
