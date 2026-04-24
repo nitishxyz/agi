@@ -114,8 +114,14 @@ export function useAuthStatus() {
 			id: string;
 			label: string;
 			baseURL: string;
-			apiKey: string;
-			compatibility: 'openai-compatible' | 'ollama';
+			apiKey?: string;
+			compatibility:
+				| 'openai-compatible'
+				| 'openai'
+				| 'anthropic'
+				| 'google'
+				| 'openrouter'
+				| 'ollama';
 			models: string[];
 			allowAnyModel: boolean;
 		}) => {
@@ -127,7 +133,7 @@ export function useAuthStatus() {
 					custom: true,
 					label: data.label,
 					baseURL: data.baseURL,
-					apiKey: data.apiKey,
+					...(data.apiKey ? { apiKey: data.apiKey } : {}),
 					compatibility: data.compatibility,
 					models: data.models,
 					allowAnyModel: data.allowAnyModel,

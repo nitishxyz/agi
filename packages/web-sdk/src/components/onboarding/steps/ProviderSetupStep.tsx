@@ -18,6 +18,26 @@ import { useOttoRouterStore } from '../../../stores/ottorouterStore';
 import { useOttoRouterBalance } from '../../../hooks/useOttoRouterBalance';
 import { openUrl } from '../../../lib/open-url';
 
+type CustomProviderCompatibility =
+	| 'openai-compatible'
+	| 'openai'
+	| 'anthropic'
+	| 'google'
+	| 'openrouter'
+	| 'ollama';
+
+const CUSTOM_PROVIDER_COMPATIBILITY_OPTIONS: Array<{
+	value: CustomProviderCompatibility;
+	label: string;
+}> = [
+	{ value: 'openai-compatible', label: 'OpenAI-compatible' },
+	{ value: 'openai', label: 'OpenAI' },
+	{ value: 'anthropic', label: 'Anthropic' },
+	{ value: 'google', label: 'Google' },
+	{ value: 'openrouter', label: 'OpenRouter' },
+	{ value: 'ollama', label: 'Ollama' },
+];
+
 interface ProviderSetupStepProps {
 	authStatus: AuthStatus;
 	onSetupWallet: () => Promise<unknown>;
@@ -27,8 +47,8 @@ interface ProviderSetupStepProps {
 		id: string;
 		label: string;
 		baseURL: string;
-		apiKey: string;
-		compatibility: 'openai-compatible' | 'ollama';
+		apiKey?: string;
+		compatibility: CustomProviderCompatibility;
 		models: string[];
 		allowAnyModel: boolean;
 	}) => Promise<unknown>;
@@ -136,7 +156,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 	const [customProviderApiKey, setCustomProviderApiKey] = useState('');
 	const [customProviderModels, setCustomProviderModels] = useState('');
 	const [customProviderCompatibility, setCustomProviderCompatibility] =
-		useState<'openai-compatible' | 'ollama'>('openai-compatible');
+		useState<CustomProviderCompatibility>('openai-compatible');
 	const [customProviderAllowAnyModel, setCustomProviderAllowAnyModel] =
 		useState(true);
 	const [isAddingCustomProvider, setIsAddingCustomProvider] = useState(false);
@@ -330,10 +350,8 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 			.map((model) => model.trim())
 			.filter(Boolean);
 
-		if (!id || !baseURL || !apiKey) {
-			setCustomProviderError(
-				'Provider ID, base URL, and API key are required.',
-			);
+		if (!id || !baseURL) {
+			setCustomProviderError('Provider ID and base URL are required.');
 			return;
 		}
 
@@ -344,7 +362,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 				id,
 				label,
 				baseURL,
-				apiKey,
+				apiKey: apiKey || undefined,
 				compatibility: customProviderCompatibility,
 				models,
 				allowAnyModel: customProviderAllowAnyModel,
@@ -805,29 +823,6 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 									Add Providers
 								</h2>
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
-									<button
-										type="button"
-										onClick={() => setIsCustomProviderModalOpen(true)}
-										className="flex items-center justify-between p-3 bg-card border border-dashed border-border hover:border-border/80 rounded-xl transition-colors gap-2 text-left"
-									>
-										<div className="flex items-center gap-3 min-w-0">
-											<span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted text-muted-foreground">
-												<Plus className="w-3.5 h-3.5" />
-											</span>
-											<div className="min-w-0">
-												<div className="font-medium text-foreground truncate">
-													Custom Provider
-												</div>
-												<div className="text-xs text-muted-foreground">
-													OpenAI-compatible or Ollama endpoint
-												</div>
-											</div>
-										</div>
-										<span className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground">
-											<Key className="w-3.5 h-3.5" />
-											Add
-										</span>
-									</button>
 									{unconfiguredProviders.map(([id, info]) => (
 										<div key={id}>
 											{addingProvider === id ? (
@@ -917,6 +912,29 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 											)}
 										</div>
 									))}
+									<button
+										type="button"
+										onClick={() => setIsCustomProviderModalOpen(true)}
+										className="group flex items-center justify-between p-3 bg-card border border-dashed border-border hover:border-primary/60 hover:bg-primary/5 hover:shadow-sm rounded-xl transition-all gap-2 text-left cursor-pointer"
+									>
+										<div className="flex items-center gap-3 min-w-0">
+											<span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+												<Plus className="w-3.5 h-3.5" />
+											</span>
+											<div className="min-w-0">
+												<div className="font-medium text-foreground truncate">
+													Custom Provider
+												</div>
+												<div className="text-xs text-muted-foreground group-hover:text-foreground/70 transition-colors">
+													OpenAI-compatible or Ollama endpoint
+												</div>
+											</div>
+										</div>
+										<span className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 rounded-lg transition-colors">
+											<Key className="w-3.5 h-3.5" />
+											Add
+										</span>
+									</button>
 								</div>
 							</div>
 						</div>
@@ -1012,7 +1030,7 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 										type="password"
 										value={customProviderApiKey}
 										onChange={(e) => setCustomProviderApiKey(e.target.value)}
-										placeholder="sk-..."
+										placeholder="Optional"
 										className="w-full h-11 px-4 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 transition-colors font-mono text-sm"
 									/>
 								</label>
@@ -1024,13 +1042,16 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 										value={customProviderCompatibility}
 										onChange={(e) =>
 											setCustomProviderCompatibility(
-												e.target.value as 'openai-compatible' | 'ollama',
+												e.target.value as CustomProviderCompatibility,
 											)
 										}
 										className="w-full h-11 px-4 bg-muted/50 border border-border rounded-lg text-foreground outline-none focus:border-foreground/30 transition-colors text-sm"
 									>
-										<option value="openai-compatible">OpenAI-compatible</option>
-										<option value="ollama">Ollama</option>
+										{CUSTOM_PROVIDER_COMPATIBILITY_OPTIONS.map((option) => (
+											<option key={option.value} value={option.value}>
+												{option.label}
+											</option>
+										))}
 									</select>
 								</label>
 							</div>
@@ -1081,7 +1102,6 @@ export const ProviderSetupStep = memo(function ProviderSetupStep({
 									disabled={
 										!customProviderId.trim() ||
 										!customProviderBaseURL.trim() ||
-										!customProviderApiKey.trim() ||
 										isAddingCustomProvider
 									}
 									className="flex-1 h-11 px-4 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
