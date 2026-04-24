@@ -24,7 +24,7 @@ otto is a local-first coding platform built around a single runtime — `otto se
 You pick the surface. The runtime, agents, tools, sessions, and providers stay the same across all of them.
 
 - **Local-first.** Your code, your machine, your keys. Secrets live in OS-secure stores, not config files.
-- **Multi-provider.** Anthropic, OpenAI, Google, OpenRouter, OpenCode, Setu, Moonshot, Minimax, Z.AI — swap at runtime.
+- **Multi-provider.** Anthropic, OpenAI, Google, OpenRouter, OpenCode, OttoRouter, Moonshot, Minimax, Z.AI — swap at runtime.
 - **Extensible.** Custom tools, MCP servers, skills, and agent presets, per-project or global.
 - **Open.** MIT-licensed, Bun monorepo, OpenAPI spec, embeddable server.
 
@@ -270,7 +270,7 @@ The server exposes:
 
 - `/` — root text response
 - `/openapi.json` — generated OpenAPI document (source of truth for clients)
-- `/v1/*` — operational routes: `ask`, `auth`, `config`, `doctor`, `files`, `git`, `mcp`, `provider-usage`, `research`, `sessions`, `setu`, `shares`, `skills`, `terminals`, `tunnel`
+- `/v1/*` — operational routes: `ask`, `auth`, `config`, `doctor`, `files`, `git`, `mcp`, `provider-usage`, `research`, `sessions`, `ottorouter`, `shares`, `skills`, `terminals`, `tunnel`
 
 See [docs/api.md](docs/api.md).
 

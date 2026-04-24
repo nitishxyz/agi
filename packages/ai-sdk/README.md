@@ -1,10 +1,10 @@
 # @ottocode/ai-sdk
 
-A drop-in SDK for accessing AI models (OpenAI, Anthropic, Google, Moonshot, MiniMax, Z.AI) through the [Setu](https://github.com/slashforge/setu) proxy with automatic x402 payments via Solana USDC.
+A drop-in SDK for accessing AI models (OpenAI, Anthropic, Google, Moonshot, MiniMax, Z.AI) through the [OttoRouter](https://github.com/slashforge/ottorouter) proxy with automatic x402 payments via Solana USDC.
 
 All you need is a Solana wallet — the SDK handles authentication, payment negotiation, and provider routing automatically.
 
-Normal API requests use bearer auth. The SDK signs a wallet nonce once to exchange for a short-lived Setu token, reuses that token across requests, and refreshes it automatically when needed.
+Normal API requests use bearer auth. The SDK signs a wallet nonce once to exchange for a short-lived OttoRouter token, reuses that token across requests, and refreshes it automatically when needed.
 
 ## Install
 
@@ -20,12 +20,12 @@ npm install @ottocode/ai-sdk ai
 import { createOttoRouter } from '@ottocode/ai-sdk';
 import { generateText } from 'ai';
 
-const setu = createOttoRouter({
+const ottorouter = createOttoRouter({
   auth: { privateKey: process.env.SOLANA_PRIVATE_KEY! },
 });
 
 const { text } = await generateText({
-  model: setu.model('claude-sonnet-4-20250514'),
+  model: ottorouter.model('claude-sonnet-4-20250514'),
   prompt: 'Hello!',
 });
 
@@ -50,10 +50,10 @@ Models are resolved to providers by prefix:
 | `z1-` | Z.AI | OpenAI Chat |
 
 ```ts
-setu.model('claude-sonnet-4-20250514');   // → anthropic
-setu.model('gpt-4o');                      // → openai
-setu.model('gemini-2.5-pro');             // → google
-setu.model('kimi-k2');                    // → moonshot
+ottorouter.model('claude-sonnet-4-20250514');   // → anthropic
+ottorouter.model('gpt-4o');                      // → openai
+ottorouter.model('gemini-2.5-pro');             // → google
+ottorouter.model('kimi-k2');                    // → moonshot
 ```
 
 ## Explicit Provider
@@ -61,18 +61,18 @@ setu.model('kimi-k2');                    // → moonshot
 Override auto-resolution when needed:
 
 ```ts
-const model = setu.provider('openai').model('gpt-4o');
-const model = setu.provider('anthropic', 'anthropic-messages').model('claude-sonnet-4-20250514');
+const model = ottorouter.provider('openai').model('gpt-4o');
+const model = ottorouter.provider('anthropic', 'anthropic-messages').model('claude-sonnet-4-20250514');
 ```
 
 ## Configuration
 
 ```ts
-const setu = createOttoRouter({
+const ottorouter = createOttoRouter({
   // Required: Solana wallet private key (base58)
   auth: { privateKey: '...' },
 
-  // Optional: Setu API base URL (default: https://api.ottorouter.org)
+  // Optional: OttoRouter API base URL (default: https://api.ottorouter.org)
   baseURL: 'https://api.ottorouter.org',
 
   // Optional: Solana RPC URL (default: https://api.mainnet-beta.solana.com)
@@ -107,10 +107,10 @@ const setu = createOttoRouter({
 
 Monitor and control the payment lifecycle:
 
-Request authentication and payment signing are separate: bearer auth is used for normal Setu HTTP requests, while your wallet still signs the x402 payment transaction during topups.
+Request authentication and payment signing are separate: bearer auth is used for normal OttoRouter HTTP requests, while your wallet still signs the x402 payment transaction during topups.
 
 ```ts
-const setu = createOttoRouter({
+const ottorouter = createOttoRouter({
   auth: { privateKey: '...' },
   callbacks: {
     // Called when a 402 is received and payment is needed
@@ -150,7 +150,7 @@ const setu = createOttoRouter({
 ## Payment Options
 
 ```ts
-const setu = createOttoRouter({
+const ottorouter = createOttoRouter({
   auth: { privateKey: '...' },
   payment: {
     // 'auto' (default) — pay automatically
@@ -222,9 +222,9 @@ createOttoRouter({
 | `messagePlacement` | `'last'` | Which messages: `'first'`, `'last'`, `'all'` |
 | `cacheType` | `'ephemeral'` | The `cache_control.type` value |
 
-### Setu Server-Side Caching
+### OttoRouter Server-Side Caching
 
-Provider-agnostic caching at the Setu proxy layer:
+Provider-agnostic caching at the OttoRouter proxy layer:
 
 ```ts
 createOttoRouter({
@@ -244,16 +244,16 @@ createOttoRouter({
 ## Balance
 
 ```ts
-// Setu account balance
-const balance = await setu.balance();
+// OttoRouter account balance
+const balance = await ottorouter.balance();
 // { walletAddress, balance, totalSpent, totalTopups, requestCount }
 
 // On-chain USDC balance
-const wallet = await setu.walletBalance('mainnet');
+const wallet = await ottorouter.walletBalance('mainnet');
 // { walletAddress, usdcBalance, network }
 
 // Wallet address
-console.log(setu.walletAddress);
+console.log(ottorouter.walletAddress);
 ```
 
 ## Custom Providers
@@ -262,7 +262,7 @@ Register providers at init or runtime:
 
 ```ts
 // At init
-const setu = createOttoRouter({
+const ottorouter = createOttoRouter({
   auth,
   providers: [
     { id: 'my-provider', apiFormat: 'openai-chat', modelPrefix: 'myp-' },
@@ -270,14 +270,14 @@ const setu = createOttoRouter({
 });
 
 // At runtime
-setu.registry.register({
+ottorouter.registry.register({
   id: 'another-provider',
   apiFormat: 'anthropic-messages',
   models: ['specific-model-id'],
 });
 
 // Map a specific model to a provider
-setu.registry.mapModel('some-model', 'openai');
+ottorouter.registry.mapModel('some-model', 'openai');
 ```
 
 ### API Formats
@@ -293,10 +293,10 @@ setu.registry.mapModel('some-model', 'openai');
 
 Use the x402-aware fetch wrapper directly:
 
-`setu.fetch()` uses bearer auth for normal requests and automatically refreshes the Setu access token on `401` once before retrying.
+`ottorouter.fetch()` uses bearer auth for normal requests and automatically refreshes the OttoRouter access token on `401` once before retrying.
 
 ```ts
-const customFetch = setu.fetch();
+const customFetch = ottorouter.fetch();
 
 const response = await customFetch('https://api.ottorouter.org/v1/messages', {
   method: 'POST',
@@ -320,7 +320,7 @@ import {
 // Get wallet address from private key
 const address = getPublicKeyFromPrivate(privateKey);
 
-// Fetch balance without creating a full Setu instance
+// Fetch balance without creating a full OttoRouter instance
 const balance = await fetchBalance({ privateKey });
 
 // Fetch on-chain USDC
@@ -333,12 +333,12 @@ const ottorouterFetch = createOttoRouterFetch({
 });
 ```
 
-`createWalletContext()` remains available for advanced usage. Its wallet headers are now intended for token exchange only; regular API traffic should go through `createOttoRouter()`, `setu.fetch()`, `createOttoRouterFetch()`, or `fetchBalance()` so bearer auth refresh is handled automatically.
+`createWalletContext()` remains available for advanced usage. Its wallet headers are now intended for token exchange only; regular API traffic should go through `createOttoRouter()`, `ottorouter.fetch()`, `createOttoRouterFetch()`, or `fetchBalance()` so bearer auth refresh is handled automatically.
 
 ## How It Works
 
-1. You call `setu.model('claude-sonnet-4-20250514')` — the SDK resolves this to Anthropic
-2. It creates an ai-sdk provider (`@ai-sdk/anthropic`) pointed at the Setu proxy
+1. You call `ottorouter.model('claude-sonnet-4-20250514')` — the SDK resolves this to Anthropic
+2. It creates an ai-sdk provider (`@ai-sdk/anthropic`) pointed at the OttoRouter proxy
 3. A custom fetch wrapper intercepts all requests to:
    - Exchange signed wallet headers for a short-lived bearer token when needed
    - Inject `Authorization: Bearer <token>` into normal API requests
@@ -347,7 +347,7 @@ const ottorouterFetch = createOttoRouterFetch({
    - Handle 402 responses by signing USDC payments via x402
    - Sniff balance/cost info from SSE stream comments
 4. During topups, the wallet still signs the x402 transaction, but the `/v1/topup` HTTP request itself uses bearer auth
-5. The Setu proxy verifies the wallet/token, checks balance, forwards to the real provider, and tracks usage
+5. The OttoRouter proxy verifies the wallet/token, checks balance, forwards to the real provider, and tracks usage
 
 ## Requirements
 

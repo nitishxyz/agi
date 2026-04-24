@@ -741,7 +741,7 @@ function HeroMockup() {
 								:
 							</span>
 							<div>
-								<span className="text-otto-dim">setu</span>
+								<span className="text-otto-dim">ottorouter</span>
 								<span className="text-otto-text ml-1">
 									{
 										'{"cost":"$0.0041","balance":"$4.9918","tokens":{"in":24,"out":156}}'
@@ -782,7 +782,7 @@ function HeroMockup() {
 	);
 }
 
-export function Setu() {
+export function OttoRouter() {
 	return (
 		<main className="overflow-hidden">
 			<section className="relative min-h-[100dvh] flex flex-col items-center justify-center px-6 pt-20 pb-16">
@@ -795,7 +795,7 @@ export function Setu() {
 								by ottocode
 							</p>
 							<h1 className="text-5xl sm:text-7xl font-bold mb-6 tracking-tight">
-								setu
+								ottorouter
 							</h1>
 							<p className="text-otto-text text-lg sm:text-xl font-medium mb-3">
 								Your wallet is your API key.
@@ -807,13 +807,13 @@ export function Setu() {
 							</p>
 							<div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
 								<a
-									href="/docs/setu"
+									href="/docs/ottorouter"
 									className="px-5 py-2.5 bg-otto-text text-otto-bg text-sm font-medium rounded-sm hover:opacity-80 transition-colors"
 								>
 									Get Started
 								</a>
 								<a
-									href="/docs/setu/integration"
+									href="/docs/ottorouter/integration"
 									className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
 								>
 									Integration Guide
@@ -838,8 +838,8 @@ export function Setu() {
 							Pure passthrough proxy
 						</h2>
 						<p className="text-otto-muted text-sm mb-12 max-w-lg">
-							Setu forwards requests unchanged to native provider APIs. Full
-							feature parity — streaming, tool calling, caching, vision,
+							OttoRouter forwards requests unchanged to native provider APIs.
+							Full feature parity — streaming, tool calling, caching, vision,
 							extended thinking.
 						</p>
 					</Reveal>
@@ -852,7 +852,7 @@ export function Setu() {
 						<div className="mt-8">
 							<TerminalBlock
 								title="architecture"
-								copyText="Client → Setu Router → OpenAI / Anthropic / Google / Moonshot / Zai / MiniMax"
+								copyText="Client → OttoRouter Router → OpenAI / Anthropic / Google / Moonshot / Zai / MiniMax"
 							>
 								<div className="space-y-1">
 									<div>
@@ -869,7 +869,7 @@ export function Setu() {
 									</div>
 									<div>
 										<span className="text-purple-700 dark:text-purple-400">
-											Setu Router
+											OttoRouter Router
 										</span>
 										<span className="text-otto-dim">
 											{' '}
@@ -1199,12 +1199,12 @@ export function Setu() {
 							copyText={`import { createOttoRouter } from "@ottocode/ai-sdk";
 import { generateText } from "ai";
 
-const setu = createOttoRouter({
+const ottorouter = createOttoRouter({
 		auth: { privateKey: process.env.OTTOROUTER_PRIVATE_KEY! },
 });
 
 const { text } = await generateText({
-		model: setu.model("claude-sonnet-4-6"),
+		model: ottorouter.model("claude-sonnet-4-6"),
 		prompt: "Hello",
 });`}
 						>
@@ -1231,7 +1231,10 @@ const { text } = await generateText({
 							<span className="text-purple-700 dark:text-purple-400">
 								const
 							</span>
-							<span className="text-blue-700 dark:text-blue-400"> setu </span>
+							<span className="text-blue-700 dark:text-blue-400">
+								{' '}
+								ottorouter{' '}
+							</span>
 							<span className="text-otto-text">= </span>
 							<span className="text-yellow-700 dark:text-yellow-300">
 								createOttoRouter
@@ -1265,7 +1268,7 @@ const { text } = await generateText({
 							<span className="text-otto-text">(</span>
 							<span className="text-otto-text">{'{'}</span>
 							<br />
-							<span className="text-otto-text">{'  '}model: setu.</span>
+							<span className="text-otto-text">{'  '}model: ottorouter.</span>
 							<span className="text-yellow-700 dark:text-yellow-300">
 								model
 							</span>
@@ -1289,12 +1292,15 @@ const { text } = await generateText({
 						<div className="mt-8">
 							<TerminalBlock
 								title="otto cli"
-								copyText={`otto auth login setu
-		otto ask "hello" --provider setu --model claude-sonnet-4-6`}
+								copyText={`otto auth login ottorouter
+		otto ask "hello" --provider ottorouter --model claude-sonnet-4-6`}
 							>
 								<div>
 									<span className="text-otto-dim">$</span>
-									<span className="text-otto-text"> otto auth login setu</span>
+									<span className="text-otto-text">
+										{' '}
+										otto auth login ottorouter
+									</span>
 								</div>
 								<div className="mt-1">
 									<span className="text-otto-dim">$</span>
@@ -1303,7 +1309,9 @@ const { text } = await generateText({
 										"hello"
 									</span>
 									<span className="text-otto-text"> --provider </span>
-									<span className="text-blue-700 dark:text-blue-400">setu</span>
+									<span className="text-blue-700 dark:text-blue-400">
+										ottorouter
+									</span>
 									<span className="text-otto-text"> --model </span>
 									<span className="text-blue-700 dark:text-blue-400">
 										claude-sonnet-4-6
@@ -1361,7 +1369,7 @@ const { text } = await generateText({
 									Streaming
 								</div>
 								<div className="font-mono text-[11px] text-otto-muted break-all">
-									<span className="text-otto-dim">: setu </span>
+									<span className="text-otto-dim">: ottorouter </span>
 									<span className="text-otto-text">
 										{
 											'{"cost_usd":"0.0041","balance_remaining":"4.9959","input_tokens":20,"output_tokens":11}'
@@ -1476,7 +1484,7 @@ const { text } = await generateText({
 								</code>
 							</div>
 							<a
-								href="/docs/setu"
+								href="/docs/ottorouter"
 								className="shrink-0 px-5 py-2.5 text-sm font-medium bg-otto-text text-otto-bg rounded-sm hover:opacity-90 transition-opacity"
 							>
 								Full API docs →
@@ -1490,7 +1498,7 @@ const { text } = await generateText({
 				<div className="max-w-[600px] mx-auto text-center">
 					<Reveal>
 						<h2 className="text-2xl sm:text-3xl font-bold mb-4">
-							Start building with Setu
+							Start building with OttoRouter
 						</h2>
 						<p className="text-otto-muted text-sm mb-10 max-w-md mx-auto">
 							One Solana wallet. Every frontier model. Pay only for what you
@@ -1498,19 +1506,19 @@ const { text } = await generateText({
 						</p>
 						<div className="flex flex-wrap items-center justify-center gap-3">
 							<a
-								href="/docs/setu"
+								href="/docs/ottorouter"
 								className="px-5 py-2.5 bg-otto-text text-otto-bg text-sm font-medium rounded-sm hover:opacity-80 transition-colors"
 							>
 								Documentation
 							</a>
 							<a
-								href="/docs/setu/integration"
+								href="/docs/ottorouter/integration"
 								className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
 							>
 								Integration Guide
 							</a>
 							<a
-								href="/docs/setu/payments"
+								href="/docs/ottorouter/payments"
 								className="px-5 py-2.5 border border-otto-border text-otto-muted text-sm rounded-sm hover:border-otto-border-light hover:text-otto-text transition-colors"
 							>
 								Payment Details

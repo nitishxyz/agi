@@ -95,7 +95,7 @@ otto ask "explain generics" --provider openai --model gpt-4o`}</CodeBlock>
 						<td>OAuth</td>
 					</tr>
 					<tr>
-						<td>Setu</td>
+						<td>OttoRouter</td>
 						<td>Proxy with USDC payments</td>
 						<td>Solana wallet</td>
 					</tr>

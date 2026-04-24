@@ -50,7 +50,7 @@ export const providerLogos: Record<string, string> = {
 	openai: openaiLogo,
 	google: googleLogo,
 	openrouter: openrouterLogo,
-	setu: ottorouterLogo,
+	ottorouter: ottorouterLogo,
 	opencode: opencodeLogo,
 	copilot: copilotLogo,
 	zai: zaiLogo,

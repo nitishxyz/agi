@@ -1,21 +1,21 @@
 import { CodeBlock } from '../../components/CodeBlock';
 import { DocPage } from '../../components/DocPage';
-export function SetuOverview() {
+export function OttoRouterOverview() {
 	return (
 		<DocPage>
-			<h1 className="text-3xl font-bold mb-2">Setu</h1>
+			<h1 className="text-3xl font-bold mb-2">OttoRouter</h1>
 			<p className="text-otto-dim text-sm mb-8">
 				AI inference proxy powered by Solana USDC payments. No API keys — just a
 				wallet.
 			</p>
 
-			<h2>What is Setu?</h2>
+			<h2>What is OttoRouter?</h2>
 			<p>
-				Setu is an AI inference proxy that lets any developer access models from
-				OpenAI, Anthropic, Google, Moonshot, Zai, and MiniMax using a single
-				Solana wallet. Instead of managing separate API keys and billing
-				accounts with each provider, you top up a USDC balance and Setu routes
-				your requests to the right provider.
+				OttoRouter is an AI inference proxy that lets any developer access
+				models from OpenAI, Anthropic, Google, Moonshot, Zai, and MiniMax using
+				a single Solana wallet. Instead of managing separate API keys and
+				billing accounts with each provider, you top up a USDC balance and
+				OttoRouter routes your requests to the right provider.
 			</p>
 			<ul>
 				<li>
@@ -42,7 +42,7 @@ export function SetuOverview() {
   ├─ Signs request with wallet private key
   │
   ▼
-Setu Router (Cloudflare Worker)
+OttoRouter Router (Cloudflare Worker)
   │
   ├─ Verifies wallet signature (auth middleware)
   ├─ Checks USDC balance (balance-check middleware)
@@ -766,8 +766,8 @@ Setu Router (Cloudflare Worker)
 			</div>
 
 			<p className="text-otto-dim text-xs mt-2">
-				All prices are base rates. Setu applies a 0.5% markup. Live pricing
-				available at <code>GET /v1/models</code>.
+				All prices are base rates. OttoRouter applies a 0.5% markup. Live
+				pricing available at <code>GET /v1/models</code>.
 			</p>
 
 			<h2>Environments</h2>
@@ -818,14 +818,14 @@ Setu Router (Cloudflare Worker)
 			<h2>Client SDK</h2>
 			<p>
 				The <code>@ottocode/ai-sdk</code> package is the recommended way to
-				integrate with Setu. It handles wallet auth, MPP payments, provider
-				routing, and Anthropic prompt caching automatically.
+				integrate with OttoRouter. It handles wallet auth, MPP payments,
+				provider routing, and Anthropic prompt caching automatically.
 			</p>
 			<CodeBlock>{`bun add @ottocode/ai-sdk ai`}</CodeBlock>
 			<p>
 				See the <a href="/docs/ai-sdk">AI SDK docs</a> for full usage examples,
-				or the <a href="/docs/setu/integration">Integration Guide</a> for raw
-				HTTP usage.
+				or the <a href="/docs/ottorouter/integration">Integration Guide</a> for
+				raw HTTP usage.
 			</p>
 		</DocPage>
 	);

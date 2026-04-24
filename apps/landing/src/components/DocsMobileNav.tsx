@@ -12,10 +12,10 @@ const NAV_ITEMS = [
 	{ href: '/docs/ai-sdk', label: 'Overview', end: true },
 	{ href: '/docs/ai-sdk/configuration', label: 'Configuration' },
 	{ href: '/docs/ai-sdk/caching', label: 'Caching' },
-	{ href: '/docs/setu', label: 'Overview', end: true },
-	{ href: '/docs/setu/payments', label: 'Payments' },
-	{ href: '/docs/setu/integration', label: 'Integration Guide' },
-	{ href: '/docs/setu/openclaw', label: 'OpenClaw Plugin' },
+	{ href: '/docs/ottorouter', label: 'Overview', end: true },
+	{ href: '/docs/ottorouter/payments', label: 'Payments' },
+	{ href: '/docs/ottorouter/integration', label: 'Integration Guide' },
+	{ href: '/docs/ottorouter/openclaw', label: 'OpenClaw Plugin' },
 ];
 
 function isActive(pathname: string, href: string, end?: boolean): boolean {

@@ -1,11 +1,11 @@
 import { CodeBlock } from '../../components/CodeBlock';
 import { DocPage } from '../../components/DocPage';
-export function OpenClawSetu() {
+export function OpenClawOttoRouter() {
 	return (
 		<DocPage>
-			<h1 className="text-3xl font-bold mb-2">OpenClaw + Setu</h1>
+			<h1 className="text-3xl font-bold mb-2">OpenClaw + OttoRouter</h1>
 			<p className="text-otto-dim text-sm mb-8">
-				Use Setu as a provider in{' '}
+				Use OttoRouter as a provider in{' '}
 				<a
 					href="https://github.com/openclaw/openclaw"
 					target="_blank"
@@ -23,7 +23,7 @@ export function OpenClawSetu() {
 				handles Solana wallet signing transparently. OpenClaw talks to the proxy
 				like any other OpenAI-compatible provider.
 			</p>
-			<CodeBlock>{`OpenClaw → localhost:8403 (Setu proxy) → api.ottorouter.org → LLM provider`}</CodeBlock>
+			<CodeBlock>{`OpenClaw → localhost:8403 (OttoRouter proxy) → api.ottorouter.org → LLM provider`}</CodeBlock>
 			<ol>
 				<li>
 					The plugin auto-generates a Solana wallet (or you import your own)
@@ -51,11 +51,12 @@ bunx openclaw setup`}</CodeBlock>
 					Generate a new Solana wallet (or let you import an existing one)
 				</li>
 				<li>
-					Store the private key at <code>~/.openclaw/setu/wallet.key</code>{' '}
-					(mode 0600)
+					Store the private key at{' '}
+					<code>~/.openclaw/ottorouter/wallet.key</code> (mode 0600)
 				</li>
 				<li>
-					Inject the Setu provider into <code>~/.openclaw/openclaw.json</code>
+					Inject the OttoRouter provider into{' '}
+					<code>~/.openclaw/openclaw.json</code>
 				</li>
 				<li>Print your wallet address for funding</li>
 			</ul>
@@ -70,16 +71,18 @@ bunx openclaw start
 openclaw gateway restart`}</CodeBlock>
 
 			<p>
-				That's it. Your OpenClaw instance now has access to all Setu models.
-				Select any <code>setu/</code> model in your OpenClaw conversations.
+				That's it. Your OpenClaw instance now has access to all OttoRouter
+				models. Select any <code>ottorouter/</code> model in your OpenClaw
+				conversations.
 			</p>
 
 			<hr />
 
 			<h2>Available Models</h2>
 			<p>
-				During setup, the plugin fetches the full model catalog from Setu's API
-				(currently 49 models). Here are highlights from each provider:
+				During setup, the plugin fetches the full model catalog from
+				OttoRouter's API (currently 49 models). Here are highlights from each
+				provider:
 			</p>
 			<div className="overflow-x-auto">
 				<table>
@@ -239,7 +242,8 @@ openclaw gateway restart`}</CodeBlock>
 								<code>openclaw wallet info</code>
 							</td>
 							<td>
-								Show wallet address, Setu balance, and on-chain USDC balance
+								Show wallet address, OttoRouter balance, and on-chain USDC
+								balance
 							</td>
 						</tr>
 					</tbody>
@@ -261,7 +265,7 @@ openclaw gateway restart`}</CodeBlock>
 								<code>openclaw config inject</code>
 							</td>
 							<td>
-								Add Setu provider to <code>openclaw.json</code>
+								Add OttoRouter provider to <code>openclaw.json</code>
 							</td>
 						</tr>
 						<tr>
@@ -269,14 +273,14 @@ openclaw gateway restart`}</CodeBlock>
 								<code>openclaw config remove</code>
 							</td>
 							<td>
-								Remove Setu provider from <code>openclaw.json</code>
+								Remove OttoRouter provider from <code>openclaw.json</code>
 							</td>
 						</tr>
 						<tr>
 							<td>
 								<code>openclaw config status</code>
 							</td>
-							<td>Check if Setu is configured</td>
+							<td>Check if OttoRouter is configured</td>
 						</tr>
 					</tbody>
 				</table>
@@ -291,12 +295,12 @@ openclaw gateway restart`}</CodeBlock>
 			</p>
 			<ul>
 				<li>
-					<strong>Provider</strong> — <code>setu</code> appears in OpenClaw's
-					auth wizard with wallet setup
+					<strong>Provider</strong> — <code>ottorouter</code> appears in
+					OpenClaw's auth wizard with wallet setup
 				</li>
 				<li>
-					<strong>Service</strong> — <code>setu-proxy</code> auto-starts with
-					the gateway
+					<strong>Service</strong> — <code>ottorouter-proxy</code> auto-starts
+					with the gateway
 				</li>
 				<li>
 					<strong>Commands</strong>:
@@ -306,7 +310,8 @@ openclaw gateway restart`}</CodeBlock>
 							inline
 						</li>
 						<li>
-							<code>/setu-status</code> — Check plugin configuration status
+							<code>/ottorouter-status</code> — Check plugin configuration
+							status
 						</li>
 					</ul>
 				</li>
@@ -324,7 +329,7 @@ openclaw gateway restart`}</CodeBlock>
 					ClawRouter
 				</a>{' '}
 				is another payment plugin for OpenClaw that uses USDC on Base (EVM) via
-				the x402 protocol. Setu uses USDC on Solana via MPP (Micropayment
+				the x402 protocol. OttoRouter uses USDC on Solana via MPP (Micropayment
 				Protocol) instead.
 			</p>
 			<div className="overflow-x-auto">
@@ -332,7 +337,7 @@ openclaw gateway restart`}</CodeBlock>
 					<thead>
 						<tr>
 							<th></th>
-							<th>Setu</th>
+							<th>OttoRouter</th>
 							<th>ClawRouter</th>
 						</tr>
 					</thead>
@@ -377,7 +382,7 @@ openclaw gateway restart`}</CodeBlock>
 								<strong>Wallet Storage</strong>
 							</td>
 							<td>
-								<code>~/.openclaw/setu/wallet.key</code>
+								<code>~/.openclaw/ottorouter/wallet.key</code>
 							</td>
 							<td>
 								<code>~/.openclaw/blockrun/wallet.key</code>
@@ -395,9 +400,11 @@ openclaw gateway restart`}</CodeBlock>
 			<hr />
 
 			<h2>Importing an Existing Wallet</h2>
-			<p>If you already use otto with Setu, you can reuse the same wallet:</p>
+			<p>
+				If you already use otto with OttoRouter, you can reuse the same wallet:
+			</p>
 			<CodeBlock>{`# Export from otto
-otto auth login setu  # if not already set up
+otto auth login ottorouter  # if not already set up
 
 # Import into OpenClaw plugin
 openclaw wallet import
@@ -449,7 +456,9 @@ openclaw wallet import
 			</p>
 
 			<h3>402 Payment Required errors</h3>
-			<p>Your Setu balance is low. Fund your wallet with USDC on Solana:</p>
+			<p>
+				Your OttoRouter balance is low. Fund your wallet with USDC on Solana:
+			</p>
 			<CodeBlock>{`# Check your balance and wallet address
 openclaw wallet info
 

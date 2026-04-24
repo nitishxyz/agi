@@ -1,6 +1,6 @@
 import { CodeBlock } from '../../components/CodeBlock';
 import { DocPage } from '../../components/DocPage';
-export function SetuPayments() {
+export function OttoRouterPayments() {
 	return (
 		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Payments</h1>
@@ -11,9 +11,9 @@ export function SetuPayments() {
 
 			<h2>Wallet Authentication</h2>
 			<p>
-				Every protected Setu endpoint requires Solana wallet authentication.
-				Instead of API keys, you sign a timestamp nonce with your wallet's
-				Ed25519 private key and send three headers:
+				Every protected OttoRouter endpoint requires Solana wallet
+				authentication. Instead of API keys, you sign a timestamp nonce with
+				your wallet's Ed25519 private key and send three headers:
 			</p>
 			<div className="overflow-x-auto">
 				<table>
@@ -131,7 +131,7 @@ const imported = Keypair.fromSecretKey(bs58.decode(privateKey));`}</CodeBlock>
 
 			<h2>MPP Payment Protocol</h2>
 			<p>
-				Setu uses <strong>MPP (Micropayment Protocol)</strong> via{' '}
+				OttoRouter uses <strong>MPP (Micropayment Protocol)</strong> via{' '}
 				<code>mppx</code> and <code>mppx-solana</code> for on-chain USDC
 				payments. MPP extends HTTP 402 (Payment Required) into a
 				machine-readable payment flow with built-in transaction fee sponsorship.
@@ -255,7 +255,7 @@ const result = await response.json();
 
 			<h2>Polar Payments (Credit Card)</h2>
 			<p>
-				For users who prefer credit card payments, Setu integrates with{' '}
+				For users who prefer credit card payments, OttoRouter integrates with{' '}
 				<a href="https://polar.sh" target="_blank" rel="noopener noreferrer">
 					Polar
 				</a>{' '}
@@ -269,14 +269,14 @@ const result = await response.json();
 					amount and success URL
 				</li>
 				<li>
-					Setu creates a Polar checkout session with the charge amount (credit +
-					processing fees)
+					OttoRouter creates a Polar checkout session with the charge amount
+					(credit + processing fees)
 				</li>
 				<li>Client redirects user to the Polar checkout URL</li>
-				<li>After payment, Polar sends a webhook to Setu</li>
+				<li>After payment, Polar sends a webhook to OttoRouter</li>
 				<li>
-					Setu verifies the webhook signature, confirms the payment, and credits
-					the balance
+					OttoRouter verifies the webhook signature, confirms the payment, and
+					credits the balance
 				</li>
 			</ol>
 
@@ -381,8 +381,8 @@ Content-Type: application/json
 
 			<h2>Cost Tracking</h2>
 			<p>
-				Setu tracks per-request costs and returns them in two ways depending on
-				whether the response is streaming.
+				OttoRouter tracks per-request costs and returns them in two ways
+				depending on whether the response is streaming.
 			</p>
 
 			<h3>Non-Streaming</h3>
@@ -394,12 +394,13 @@ x-balance-remaining: 4.99998766`}</CodeBlock>
 			<p>
 				Cost metadata is injected as an SSE comment at the end of the stream:
 			</p>
-			<CodeBlock>{`: setu {"cost_usd":"0.00000904","balance_remaining":"4.99856275","input_tokens":20,"output_tokens":11}`}</CodeBlock>
+			<CodeBlock>{`: ottorouter {"cost_usd":"0.00000904","balance_remaining":"4.99856275","input_tokens":20,"output_tokens":11}`}</CodeBlock>
 			<p>
-				Parse it by looking for lines starting with <code>{': setu '}</code>:
+				Parse it by looking for lines starting with{' '}
+				<code>{': ottorouter '}</code>:
 			</p>
 			<CodeBlock>{`for (const line of chunk.split("\\n")) {
-  if (line.startsWith(": setu ")) {
+  if (line.startsWith(": ottorouter ")) {
     const data = JSON.parse(line.slice(7));
     console.log("Cost:", data.cost_usd, "Balance:", data.balance_remaining);
   }

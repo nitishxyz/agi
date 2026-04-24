@@ -186,7 +186,7 @@ Companion package/versioning surface for AI SDK-related integration.
 
 ### `@ottocode/openclaw`
 
-Setu integration package for OpenClaw workflows.
+OttoRouter integration package for OpenClaw workflows.
 
 ---
 
@@ -210,7 +210,7 @@ Major route groups include:
 - `provider-usage`
 - `research`
 - `sessions`
-- `setu`
+- `ottorouter`
 - `shares`
 - `skills`
 - `terminals`

@@ -36,7 +36,7 @@ The current OpenAPI spec exposes route groups including:
 - `provider-usage`
 - `research`
 - `sessions`
-- `setu`
+- `ottorouter`
 - `shares`
 - `skills`
 - `terminals`

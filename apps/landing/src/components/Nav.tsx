@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { OttoWordmark } from './OttoWordmark';
 import { useTheme } from '../hooks/useTheme';
 
-function SetuIcon() {
+function OttoRouterIcon() {
 	return (
 		<svg
 			aria-hidden="true"
@@ -131,8 +131,8 @@ export function Nav({ pathname }: { pathname: string }) {
 							href="https://ottorouter.org"
 							className="px-3.5 py-1.5 border border-blue-400/50 text-blue-400 text-xs font-medium rounded-sm hover:border-blue-400 transition-colors inline-flex items-center gap-1.5"
 						>
-							<SetuIcon />
-							Setu
+							<OttoRouterIcon />
+							OttoRouter
 						</a>
 						<button
 							type="button"
@@ -215,9 +215,9 @@ export function Nav({ pathname }: { pathname: string }) {
 						className="flex items-center gap-1.5 text-otto-muted hover:text-otto-text"
 					>
 						<span className="text-otto-muted">
-							<SetuIcon />
+							<OttoRouterIcon />
 						</span>
-						Setu
+						OttoRouter
 					</a>
 					<a
 						href="/docs"

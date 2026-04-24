@@ -45,7 +45,7 @@ export function ApiReference() {
 				<code>auth</code>, <code>config</code>, <code>doctor</code>,{' '}
 				<code>files</code>, <code>git</code>, <code>mcp</code>,{' '}
 				<code>provider-usage</code>, <code>research</code>,{' '}
-				<code>sessions</code>, <code>setu</code>, <code>shares</code>,{' '}
+				<code>sessions</code>, <code>ottorouter</code>, <code>shares</code>,{' '}
 				<code>skills</code>, <code>terminals</code>, and <code>tunnel</code>.
 			</p>
 

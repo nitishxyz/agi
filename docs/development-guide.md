@@ -157,7 +157,7 @@ packages/server/src/
 │   ├── session-messages.ts
 │   ├── session-stream.ts
 │   ├── sessions.ts
-│   ├── setu.ts
+│   ├── ottorouter.ts
 │   ├── skills.ts
 │   ├── terminals.ts
 │   └── tunnel.ts
@@ -226,7 +226,7 @@ Current CLI responsibilities include:
 - auth/setup
 - sessions/models/agents/tools/skills commands
 - MCP commands
-- scaffold/doctor/share/setu/web flows
+- scaffold/doctor/share/ottorouter/web flows
 
 Important areas:
 

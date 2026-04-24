@@ -72,7 +72,7 @@ import {
 } from '@ottocode/sdk';
 
 // Check available providers
-console.log(providerIds); // ['openai', 'anthropic', 'google', 'openrouter', 'opencode', 'setu']
+console.log(providerIds); // ['openai', 'anthropic', 'google', 'openrouter', 'opencode', 'ottorouter']
 
 // Get model information
 const models = catalog.anthropic.models;

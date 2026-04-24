@@ -44,7 +44,7 @@ export function Architecture() {
 │   ├── tui/              # Interactive terminal UI client (OpenTUI + React)
 │   ├── web/              # Web UI (React + Vite + TanStack)
 │   ├── desktop/          # Desktop app (Tauri v2)
-│   ├── setu/             # AI provider proxy (Solana payments)
+│   ├── ottorouter/             # AI provider proxy (Solana payments)
 │   ├── preview-api/      # Session sharing API
 │   └── preview-web/      # Public session viewer (Astro)
 ├── packages/
@@ -204,7 +204,7 @@ Level 5              cli (depends on sdk, server, database)`}</CodeBlock>
 				</thead>
 				<tbody>
 					<tr>
-						<td>Setu</td>
+						<td>OttoRouter</td>
 						<td>Cloudflare Worker</td>
 						<td>ottorouter.org</td>
 					</tr>

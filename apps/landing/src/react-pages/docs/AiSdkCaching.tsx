@@ -5,7 +5,7 @@ export function AiSdkCaching() {
 		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Caching</h1>
 			<p className="text-otto-dim text-sm mb-8">
-				Anthropic prompt caching and Setu server-side caching in{' '}
+				Anthropic prompt caching and OttoRouter server-side caching in{' '}
 				<code>@ottocode/ai-sdk</code>.
 			</p>
 
@@ -133,8 +133,8 @@ createOttoRouter({
 				</table>
 			</div>
 
-			<h2>Setu Server-Side Caching</h2>
-			<p>Provider-agnostic caching at the Setu proxy layer:</p>
+			<h2>OttoRouter Server-Side Caching</h2>
+			<p>Provider-agnostic caching at the OttoRouter proxy layer:</p>
 			<CodeBlock>{`createOttoRouter({
   auth,
   cache: {

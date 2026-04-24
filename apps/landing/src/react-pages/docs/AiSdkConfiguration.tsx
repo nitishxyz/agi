@@ -9,7 +9,7 @@ export function AiSdkConfiguration() {
 			</p>
 
 			<h2>createOttoRouter Options</h2>
-			<CodeBlock>{`const setu = createOttoRouter({
+			<CodeBlock>{`const ottorouter = createOttoRouter({
   // Auth: private key (default) or external signer
   auth: { privateKey: "..." },
   // OR use an external signer:
@@ -21,7 +21,7 @@ export function AiSdkConfiguration() {
   //   },
   // },
 
-  // Optional: Setu API base URL (default: https://api.ottorouter.org)
+  // Optional: OttoRouter API base URL (default: https://api.ottorouter.org)
   baseURL: "https://api.ottorouter.org",
 
   // Optional: Solana RPC URL (default: https://api.mainnet-beta.solana.com)
@@ -46,7 +46,7 @@ export function AiSdkConfiguration() {
 });`}</CodeBlock>
 
 			<h2>Payment Options</h2>
-			<CodeBlock>{`const setu = createOttoRouter({
+			<CodeBlock>{`const ottorouter = createOttoRouter({
   auth: { privateKey: "..." },
   payment: {
     // "auto" (default) — pay automatically
@@ -66,7 +66,7 @@ export function AiSdkConfiguration() {
 
 			<h2>Payment Callbacks</h2>
 			<p>Monitor and control the payment lifecycle:</p>
-			<CodeBlock>{`const setu = createOttoRouter({
+			<CodeBlock>{`const ottorouter = createOttoRouter({
   auth: { privateKey: "..." },
   callbacks: {
     onPaymentRequired: (amountUsd, currentBalance) => {
@@ -149,7 +149,7 @@ export function AiSdkConfiguration() {
 
 			<h2>Extended Thinking (Anthropic)</h2>
 			<CodeBlock>{`const { text } = await generateText({
-  model: setu.model("claude-sonnet-4-20250514"),
+  model: ottorouter.model("claude-sonnet-4-20250514"),
   prompt: "Solve this complex math problem...",
   providerOptions: {
     anthropic: {
@@ -204,18 +204,18 @@ export function AiSdkConfiguration() {
 			</div>
 
 			<h2>Using with otto</h2>
-			<p>otto has built-in Setu support via the AI SDK:</p>
-			<CodeBlock>{`# Login with Setu (generates or imports a Solana wallet)
-otto auth login setu
+			<p>otto has built-in OttoRouter support via the AI SDK:</p>
+			<CodeBlock>{`# Login with OttoRouter (generates or imports a Solana wallet)
+otto auth login ottorouter
 
 # Or set the private key directly
 export OTTOROUTER_PRIVATE_KEY="your-base58-private-key"
 
-# Use Setu as default provider
+# Use OttoRouter as default provider
 otto setup  # select "ottorouter"
 
 # Or per-request
-otto ask "hello" --provider setu --model claude-sonnet-4-20250514`}</CodeBlock>
+otto ask "hello" --provider ottorouter --model claude-sonnet-4-20250514`}</CodeBlock>
 		</DocPage>
 	);
 }

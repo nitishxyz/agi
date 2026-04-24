@@ -1,17 +1,17 @@
 import { CodeBlock } from '../../components/CodeBlock';
 import { DocPage } from '../../components/DocPage';
-export function SetuIntegration() {
+export function OttoRouterIntegration() {
 	return (
 		<DocPage>
 			<h1 className="text-3xl font-bold mb-2">Integration Guide</h1>
 			<p className="text-otto-dim text-sm mb-8">
-				Integrate Setu into your application using the{' '}
+				Integrate OttoRouter into your application using the{' '}
 				<code>@ottocode/ai-sdk</code> package or raw HTTP.
 			</p>
 
 			<h2>Using @ottocode/ai-sdk</h2>
 			<p>
-				The recommended way to integrate Setu. The SDK handles wallet
+				The recommended way to integrate OttoRouter. The SDK handles wallet
 				authentication, automatic 402 payment handling, provider routing, and
 				Anthropic prompt caching out of the box.
 			</p>
@@ -27,19 +27,19 @@ npm install @ottocode/ai-sdk ai`}</CodeBlock>
 
 			<h3>Quick Start</h3>
 			<p>
-				Create a Setu instance with <code>createOttoRouter()</code> and call{' '}
-				<code>setu.model()</code> to get an ai-sdk compatible model. The SDK
-				auto-resolves which provider to use based on the model name.
+				Create a OttoRouter instance with <code>createOttoRouter()</code> and
+				call <code>ottorouter.model()</code> to get an ai-sdk compatible model.
+				The SDK auto-resolves which provider to use based on the model name.
 			</p>
 			<CodeBlock>{`import { createOttoRouter } from "@ottocode/ai-sdk";
 import { generateText } from "ai";
 
-const setu = createOttoRouter({
+const ottorouter = createOttoRouter({
   auth: { privateKey: process.env.OTTOROUTER_PRIVATE_KEY! },
 });
 
 const { text } = await generateText({
-  model: setu.model("claude-sonnet-4-6"),
+  model: ottorouter.model("claude-sonnet-4-6"),
   prompt: "Hello!",
 });
 
@@ -117,21 +117,21 @@ console.log(text);`}</CodeBlock>
 				</table>
 			</div>
 
-			<CodeBlock>{`setu.model("claude-sonnet-4-6");      // → anthropic
-setu.model("gpt-5");                  // → openai
-setu.model("gemini-3-flash-preview"); // → google
-setu.model("kimi-k2.5");              // → moonshot`}</CodeBlock>
+			<CodeBlock>{`ottorouter.model("claude-sonnet-4-6");      // → anthropic
+ottorouter.model("gpt-5");                  // → openai
+ottorouter.model("gemini-3-flash-preview"); // → google
+ottorouter.model("kimi-k2.5");              // → moonshot`}</CodeBlock>
 
 			<h3>Explicit Provider</h3>
 			<p>Override auto-resolution when needed:</p>
-			<CodeBlock>{`const model = setu.provider("openai").model("gpt-5");
-const model = setu.provider("anthropic", "anthropic-messages").model("claude-sonnet-4-6");`}</CodeBlock>
+			<CodeBlock>{`const model = ottorouter.provider("openai").model("gpt-5");
+const model = ottorouter.provider("anthropic", "anthropic-messages").model("claude-sonnet-4-6");`}</CodeBlock>
 
 			<h3>Streaming</h3>
 			<CodeBlock>{`import { streamText } from "ai";
 
 const result = streamText({
-  model: setu.model("claude-sonnet-4-6"),
+  model: ottorouter.model("claude-sonnet-4-6"),
   prompt: "Write a short story about a robot.",
 });
 
@@ -144,7 +144,7 @@ for await (const chunk of result.textStream) {
 import { z } from "zod";
 
 const { text } = await generateText({
-  model: setu.model("claude-sonnet-4-6"),
+  model: ottorouter.model("claude-sonnet-4-6"),
   prompt: "What's the weather in Tokyo?",
   tools: {
     getWeather: tool({
@@ -188,7 +188,7 @@ createOttoRouter({
 
 			<h3>Extended Thinking (Anthropic)</h3>
 			<CodeBlock>{`const { text } = await generateText({
-  model: setu.model("claude-sonnet-4-6"),
+  model: ottorouter.model("claude-sonnet-4-6"),
   prompt: "Solve this complex math problem...",
   providerOptions: {
     anthropic: {
@@ -198,11 +198,11 @@ createOttoRouter({
 });`}</CodeBlock>
 
 			<h3>Configuration</h3>
-			<CodeBlock>{`const setu = createOttoRouter({
+			<CodeBlock>{`const ottorouter = createOttoRouter({
   // Required: Solana wallet private key (base58)
   auth: { privateKey: "..." },
 
-  // Optional: Setu API base URL (default: https://api.ottorouter.org)
+  // Optional: OttoRouter API base URL (default: https://api.ottorouter.org)
   baseURL: "https://api.ottorouter.org",
 
   // Optional: Solana RPC URL (default: https://api.mainnet-beta.solana.com)
@@ -240,7 +240,7 @@ createOttoRouter({
 			<CodeBlock>{`import { createOttoRouter } from "@ottocode/ai-sdk";
 import { generateText } from "ai";
 
-const setu = createOttoRouter({
+const ottorouter = createOttoRouter({
 	auth: {
 		signer: {
 			walletAddress: "YOUR_SOLANA_PUBLIC_KEY",
@@ -259,12 +259,12 @@ const setu = createOttoRouter({
 });
 
 const { text } = await generateText({
-	model: setu.model("claude-sonnet-4-6"),
+	model: ottorouter.model("claude-sonnet-4-6"),
 	prompt: "Hello!",
 });`}</CodeBlock>
 
 			<h4>With Phantom / Wallet Adapter</h4>
-			<CodeBlock>{`const setu = createOttoRouter({
+			<CodeBlock>{`const ottorouter = createOttoRouter({
 	auth: {
 		signer: {
 			walletAddress: wallet.publicKey.toBase58(),
@@ -288,7 +288,7 @@ const { text } = await generateText({
 				can omit <code>signTransaction</code>. Payments will throw a clear error
 				if attempted:
 			</p>
-			<CodeBlock>{`const setu = createOttoRouter({
+			<CodeBlock>{`const ottorouter = createOttoRouter({
 	auth: {
 		signer: {
 			walletAddress: "YOUR_SOLANA_PUBLIC_KEY",
@@ -300,7 +300,7 @@ const { text } = await generateText({
 });`}</CodeBlock>
 
 			<h3>Payment Callbacks</h3>
-			<CodeBlock>{`const setu = createOttoRouter({
+			<CodeBlock>{`const ottorouter = createOttoRouter({
   auth: { privateKey: "..." },
   callbacks: {
     onPaymentRequired: (amountUsd, currentBalance) => {
@@ -382,20 +382,20 @@ const { text } = await generateText({
 			</div>
 
 			<h3>Balance</h3>
-			<CodeBlock>{`// Setu account balance
-const balance = await setu.balance();
+			<CodeBlock>{`// OttoRouter account balance
+const balance = await ottorouter.balance();
 // { walletAddress, balance, totalSpent, totalTopups, requestCount }
 
 // On-chain USDC balance
-const wallet = await setu.walletBalance("mainnet");
+const wallet = await ottorouter.walletBalance("mainnet");
 // { walletAddress, usdcBalance, network }
 
 // Wallet address
-console.log(setu.walletAddress);`}</CodeBlock>
+console.log(ottorouter.walletAddress);`}</CodeBlock>
 
 			<h3>Low-Level: Custom Fetch</h3>
 			<p>Use the MPP-aware fetch wrapper directly for full control:</p>
-			<CodeBlock>{`const customFetch = setu.fetch();
+			<CodeBlock>{`const customFetch = ottorouter.fetch();
 
 const response = await customFetch(
   "https://api.ottorouter.org/v1/messages",
@@ -422,7 +422,7 @@ const response = await customFetch(
 // Get wallet address from private key
 const address = getPublicKeyFromPrivate(privateKey);
 
-// Fetch balance without creating a full Setu instance
+// Fetch balance without creating a full OttoRouter instance
 const balance = await fetchBalance({ privateKey });
 
 // Fetch on-chain USDC
@@ -432,7 +432,8 @@ const usdc = await fetchWalletUsdcBalance({ privateKey }, "mainnet");`}</CodeBlo
 
 			<h2>Raw HTTP Integration</h2>
 			<p>
-				You can integrate Setu without the SDK by making direct HTTP requests.
+				You can integrate OttoRouter without the SDK by making direct HTTP
+				requests.
 			</p>
 
 			<h3>Endpoint Reference</h3>
@@ -692,18 +693,18 @@ console.log(data.content[0].text);`}</CodeBlock>
 			<hr />
 
 			<h2>Using with otto</h2>
-			<p>otto has built-in Setu support. Set it as your provider:</p>
-			<CodeBlock>{`# Login with Setu (generates or imports a Solana wallet)
-otto auth login setu
+			<p>otto has built-in OttoRouter support. Set it as your provider:</p>
+			<CodeBlock>{`# Login with OttoRouter (generates or imports a Solana wallet)
+otto auth login ottorouter
 
 # Or set the private key directly
 export OTTOROUTER_PRIVATE_KEY="your-base58-private-key"
 
-# Use Setu as default provider
+# Use OttoRouter as default provider
 otto setup  # select "ottorouter"
 
 # Or per-request
-otto ask "hello" --provider setu --model claude-sonnet-4-6`}</CodeBlock>
+otto ask "hello" --provider ottorouter --model claude-sonnet-4-6`}</CodeBlock>
 			<p>
 				otto uses <code>@ottocode/ai-sdk</code> under the hood via{' '}
 				<code>createOttoRouter()</code>, handling all wallet auth and payment
