@@ -32,12 +32,6 @@ interface FlattenedModel {
 	unavailableReason?: string;
 }
 
-function formatTokenCount(tokens: number): string {
-	if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
-	if (tokens >= 1_000) return `${Math.round(tokens / 1_000)}K`;
-	return String(tokens);
-}
-
 export interface UnifiedModelSelectorRef {
 	openAndFocus: () => void;
 }
@@ -489,26 +483,8 @@ export const UnifiedModelSelector = forwardRef<
 															</span>
 															{(!isAvailable ||
 																modelItem.toolCall ||
-																modelItem.reasoningText ||
-																modelItem.contextWindow ||
-																modelItem.maxOutputTokens) && (
+																modelItem.reasoningText) && (
 																<div className="flex gap-1 ml-2 flex-shrink-0">
-																	{modelItem.contextWindow && (
-																		<span className="text-[10px] px-1.5 py-0.5 bg-blue-600/20 text-blue-400 rounded">
-																			{formatTokenCount(
-																				modelItem.contextWindow,
-																			)}{' '}
-																			ctx
-																		</span>
-																	)}
-																	{modelItem.maxOutputTokens && (
-																		<span className="text-[10px] px-1.5 py-0.5 bg-cyan-600/20 text-cyan-400 rounded">
-																			{formatTokenCount(
-																				modelItem.maxOutputTokens,
-																			)}{' '}
-																			out
-																		</span>
-																	)}
 																	{!isAvailable && (
 																		<span className="text-[10px] px-1.5 py-0.5 bg-red-600/20 text-red-400 rounded">
 																			Unavailable
