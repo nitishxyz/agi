@@ -1,10 +1,9 @@
 import type { Hono } from 'hono';
 import {
 	DEFAULT_REMOTE_MODEL_CATALOG_URL,
+	catalog,
 	discoverOllamaModels,
 	loadConfig,
-	catalog,
-	getConfiguredProviderModels,
 	getProviderDefinition,
 	providerAllowsAnyModel,
 	getAuth,
@@ -29,6 +28,7 @@ import {
 const COPILOT_MODELS_URL = 'https://api.githubcopilot.com/models';
 const REMOTE_CATALOG_REFRESH_TTL_MS = 5 * 60 * 1000;
 const PROVIDER_MODEL_REFRESH_TTL_MS = 60 * 1000;
+const USE_BUILTIN_MODEL_CATALOG = process.env.CI === 'true';
 
 type UiModel = {
 	id: string;
@@ -74,6 +74,12 @@ function getRemoteCatalogUrl(): string {
 		process.env.OTTO_MODEL_CATALOG_URL?.trim() ||
 		DEFAULT_REMOTE_MODEL_CATALOG_URL
 	);
+}
+
+function getModelCatalogProviders(
+	cachedCatalog: Awaited<ReturnType<typeof readCachedModelCatalog>>,
+) {
+	return cachedCatalog?.providers ?? (USE_BUILTIN_MODEL_CATALOG ? catalog : {});
 }
 
 async function refreshRemoteCatalogInBackground(): Promise<void> {
@@ -132,19 +138,11 @@ async function refreshProviderModelsInBackground(args: {
 			projectRoot,
 		});
 		if (!discoveredModels) return;
-		const configuredModels = getConfiguredProviderModels(
-			await loadConfig(projectRoot),
-			provider,
-		);
-		const models = mergeConfiguredAndCachedModels(
-			configuredModels,
-			discoveredModels,
-		);
 		await mergeCachedModelCatalog({
 			[provider]: {
 				id: provider,
 				label: providerDefinition.label,
-				models,
+				models: discoveredModels,
 			},
 		});
 	} catch (error) {
@@ -261,40 +259,13 @@ function shouldLazyLoadProviderModels(
 	);
 }
 
-function mergeConfiguredAndCachedModels(
-	configuredModels: ModelInfo[],
-	cachedModels: ModelInfo[],
-): ModelInfo[] {
-	const modelsById = new Map<string, ModelInfo>();
-	for (const model of configuredModels) {
-		modelsById.set(model.id, model);
-	}
-	for (const model of cachedModels) {
-		const configuredModel = modelsById.get(model.id);
-		modelsById.set(
-			model.id,
-			configuredModel ? { ...model, ...configuredModel } : model,
-		);
-	}
-	return Array.from(modelsById.values());
-}
-
 function getProviderModelsForUi(args: {
-	providerDefinition: NonNullable<ReturnType<typeof getProviderDefinition>>;
 	catalogModels: ModelInfo[] | undefined;
-	cfg: Awaited<ReturnType<typeof loadConfig>>;
 	provider: ProviderId;
 	authType: 'api' | 'oauth' | 'wallet' | undefined;
 }): ModelInfo[] {
-	const configuredModels = getConfiguredProviderModels(args.cfg, args.provider);
 	const catalogModels = args.catalogModels ?? [];
-	if (args.providerDefinition.source === 'custom') {
-		return mergeConfiguredAndCachedModels(configuredModels, catalogModels);
-	}
-	if (catalogModels.length > 0) {
-		return filterModelsForAuthType(args.provider, catalogModels, args.authType);
-	}
-	return configuredModels;
+	return filterModelsForAuthType(args.provider, catalogModels, args.authType);
 }
 
 function getUiProviderLabel(
@@ -318,6 +289,9 @@ export function registerModelsRoutes(app: Hono) {
 
 			const projectRoot = c.req.query('project') || process.cwd();
 			const cfg = await loadConfig(projectRoot);
+			const cachedCatalog = await readCachedModelCatalog();
+			const modelCatalogProviders = getModelCatalogProviders(cachedCatalog);
+			const providerCatalog = modelCatalogProviders[provider];
 
 			const authorized = await isProviderAuthorizedHybrid(
 				embeddedConfig,
@@ -325,17 +299,13 @@ export function registerModelsRoutes(app: Hono) {
 				provider,
 			);
 
-			if (!authorized) {
+			if (!authorized && !providerCatalog) {
 				logger.warn('Provider not authorized', { provider });
 				return c.json({ error: 'Provider not authorized' }, 403);
 			}
 
-			const cachedCatalog = await readCachedModelCatalog();
-			const providerCatalog =
-				cachedCatalog?.providers[provider] ??
-				catalog[provider as keyof typeof catalog];
 			const providerDefinition = getProviderDefinition(cfg, provider);
-			if (!providerDefinition) {
+			if (!providerDefinition && !providerCatalog) {
 				logger.warn('Provider not found in catalog', { provider });
 				return c.json({ error: 'Provider not found' }, 404);
 			}
@@ -346,7 +316,10 @@ export function registerModelsRoutes(app: Hono) {
 				provider,
 				projectRoot,
 			);
-			if (shouldLazyLoadProviderModels(providerDefinition)) {
+			if (
+				providerDefinition &&
+				shouldLazyLoadProviderModels(providerDefinition)
+			) {
 				void refreshProviderModelsInBackground({
 					provider,
 					providerDefinition,
@@ -354,9 +327,7 @@ export function registerModelsRoutes(app: Hono) {
 				});
 			}
 			const filteredModels = getProviderModelsForUi({
-				providerDefinition,
 				catalogModels: providerCatalog?.models,
-				cfg,
 				provider,
 				authType,
 			});
@@ -378,8 +349,12 @@ export function registerModelsRoutes(app: Hono) {
 					embeddedConfig?.defaults?.model,
 					cfg.defaults.model,
 				),
-				allowAnyModel: providerAllowsAnyModel(cfg, provider),
-				label: getUiProviderLabel(providerDefinition),
+				allowAnyModel: providerDefinition
+					? providerAllowsAnyModel(cfg, provider)
+					: undefined,
+				label: providerDefinition
+					? getUiProviderLabel(providerDefinition)
+					: (providerCatalog?.label ?? provider),
 			});
 		} catch (error) {
 			logger.error('Failed to get provider models', error);
@@ -405,24 +380,31 @@ export function registerModelsRoutes(app: Hono) {
 			);
 
 			const cachedCatalog = await readCachedModelCatalog();
+			const modelCatalogProviders = getModelCatalogProviders(cachedCatalog);
 			void refreshRemoteCatalogInBackground();
 
 			const modelsMap: Record<string, UiProviderModels> = {};
 
-			for (const provider of authorizedProviders) {
-				const providerCatalog =
-					cachedCatalog?.providers[provider] ??
-					catalog[provider as keyof typeof catalog];
+			const cachedProviderIds = Object.keys(
+				modelCatalogProviders,
+			) as ProviderId[];
+			const modelProviders = Array.from(
+				new Set<ProviderId>([...authorizedProviders, ...cachedProviderIds]),
+			);
+
+			for (const provider of modelProviders) {
+				const providerCatalog = modelCatalogProviders[provider];
 				const providerDefinition = getProviderDefinition(cfg, provider);
-				if (providerDefinition) {
+				if (providerCatalog) {
 					const dynamicModels =
+						providerDefinition &&
 						shouldLazyLoadProviderModels(providerDefinition);
 					const authType = await getAuthTypeForProvider(
 						embeddedConfig,
 						provider,
 						projectRoot,
 					);
-					if (dynamicModels) {
+					if (dynamicModels && providerDefinition) {
 						void refreshProviderModelsInBackground({
 							provider,
 							providerDefinition,
@@ -430,16 +412,16 @@ export function registerModelsRoutes(app: Hono) {
 						});
 					}
 					const filteredModels = getProviderModelsForUi({
-						providerDefinition,
 						catalogModels: providerCatalog?.models,
-						cfg,
 						provider,
 						authType,
 					});
 					modelsMap[provider] = {
-						label: getUiProviderLabel(providerDefinition),
+						label: providerDefinition
+							? getUiProviderLabel(providerDefinition)
+							: (providerCatalog.label ?? provider),
 						authType,
-						allowAnyModel: providerDefinition.allowAnyModel,
+						allowAnyModel: providerDefinition?.allowAnyModel,
 						dynamicModels,
 						models: filteredModels.map(toUiModel),
 					};

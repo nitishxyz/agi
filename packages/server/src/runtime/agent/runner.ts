@@ -61,6 +61,7 @@ const DEFAULT_TRACED_TOOL_INPUTS = new Set([
 	'write',
 	'edit',
 	'multiedit',
+	'copy_into',
 	'apply_patch',
 ]);
 

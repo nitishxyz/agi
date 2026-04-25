@@ -463,9 +463,13 @@ export class OttoAcpAgent implements Agent {
 	): ToolCallContent[] {
 		if (result === undefined || result === null) return [];
 
-		const isWriteTool = ['write', 'edit', 'multiedit', 'apply_patch'].includes(
-			name,
-		);
+		const isWriteTool = [
+			'write',
+			'edit',
+			'multiedit',
+			'copy_into',
+			'apply_patch',
+		].includes(name);
 		if (isWriteTool) {
 			return this.buildDiffContent(name, args, result, session);
 		}
@@ -631,9 +635,13 @@ export class OttoAcpAgent implements Agent {
 	): Promise<void> {
 		if (!this.clientCapabilities?.fs?.writeTextFile) return;
 
-		const isWriteTool = ['write', 'edit', 'multiedit', 'apply_patch'].includes(
-			name,
-		);
+		const isWriteTool = [
+			'write',
+			'edit',
+			'multiedit',
+			'copy_into',
+			'apply_patch',
+		].includes(name);
 		if (!isWriteTool) return;
 
 		const filePaths = this.getWrittenFilePaths(name, args, result);
@@ -668,6 +676,8 @@ export class OttoAcpAgent implements Agent {
 
 		if (args?.path && typeof args.path === 'string') {
 			paths.push(args.path);
+		} else if (args?.targetPath && typeof args.targetPath === 'string') {
+			paths.push(args.targetPath);
 		} else if (args?.filePath && typeof args.filePath === 'string') {
 			paths.push(args.filePath);
 		}
@@ -711,6 +721,8 @@ function formatToolTitle(
 			return `Edit ${args?.path || 'file'}`;
 		case 'multiedit':
 			return `Multi-edit ${args?.path || 'file'}`;
+		case 'copy_into':
+			return `Copy into ${args?.targetPath || 'file'}`;
 		case 'write':
 			return `Write ${args?.path || 'file'}`;
 		case 'apply_patch':
@@ -756,6 +768,7 @@ function getToolKind(name: string): ToolKind {
 			return 'read';
 		case 'edit':
 		case 'multiedit':
+		case 'copy_into':
 		case 'write':
 		case 'apply_patch':
 			return 'edit';
@@ -788,7 +801,10 @@ function getToolLocations(
 	const locations: ToolCallLocation[] = [];
 
 	const filePath =
-		(args.path as string) || (args.filePath as string) || (args.file as string);
+		(args.path as string) ||
+		(args.targetPath as string) ||
+		(args.filePath as string) ||
+		(args.file as string);
 
 	if (filePath && isFileTool(name)) {
 		const absPath = path.isAbsolute(filePath)
@@ -817,7 +833,15 @@ function getToolLocations(
 }
 
 function isFileTool(name: string): boolean {
-	return ['read', 'edit', 'multiedit', 'write', 'ls', 'tree'].includes(name);
+	return [
+		'read',
+		'edit',
+		'multiedit',
+		'copy_into',
+		'write',
+		'ls',
+		'tree',
+	].includes(name);
 }
 
 function extractPathsFromPatch(patch: string): string[] {

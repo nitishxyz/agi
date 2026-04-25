@@ -64,6 +64,7 @@ export const BUILTIN_TOOLS = [
 	'edit',
 	'multiedit',
 	'write',
+	'copy_into',
 	'ls',
 	'tree',
 	'pwd',

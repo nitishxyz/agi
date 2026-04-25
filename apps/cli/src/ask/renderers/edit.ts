@@ -76,3 +76,47 @@ export function renderMultiEditResult(ctx: RendererContext): string {
 
 	return lines.join('\n');
 }
+
+export function renderCopyIntoCall(ctx: RendererContext): string {
+	const args = (ctx.args ?? {}) as Record<string, unknown>;
+	const sourcePath = typeof args.sourcePath === 'string' ? args.sourcePath : '';
+	const targetPath = typeof args.targetPath === 'string' ? args.targetPath : '';
+	const startLine = typeof args.startLine === 'number' ? args.startLine : '?';
+	const endLine = typeof args.endLine === 'number' ? args.endLine : '?';
+	const label = `${sourcePath}:${startLine}-${endLine} → ${targetPath}`;
+	return `  ${c.fgDark(ICONS.arrow)} ${c.fgDark('copy_into')} ${c.fgDimmed(label)}`.trimEnd();
+}
+
+export function renderCopyIntoResult(ctx: RendererContext): string {
+	const result = (ctx.result ?? {}) as Record<string, unknown>;
+	const artifact = ctx.artifact as
+		| { kind?: string; patch?: string; summary?: Record<string, unknown> }
+		| undefined;
+	const targetPath =
+		typeof result.targetPath === 'string' ? result.targetPath : '';
+	const linesCopied =
+		typeof result.linesCopied === 'number' ? result.linesCopied : 0;
+	const time = formatMs(ctx.durationMs);
+
+	if (ctx.error) {
+		return `  ${c.red(ICONS.cross)} ${c.fgDark('copy_into')} ${c.red(ctx.error)} ${c.fgDimmed(time)}`;
+	}
+
+	if (result.ok === false && typeof result.error === 'string') {
+		return `  ${c.red(ICONS.cross)} ${c.fgDark('copy_into')} ${c.red(String(result.error))} ${c.fgDimmed(time)}`;
+	}
+
+	const lines: string[] = [];
+	const meta = [targetPath, linesCopied > 0 ? `${linesCopied} lines` : '', time]
+		.filter(Boolean)
+		.join(' ');
+	lines.push(
+		`  ${c.green(ICONS.check)} ${c.fgMuted('copy_into')} ${c.fgDimmed(meta)}`,
+	);
+
+	if (artifact?.kind === 'file_diff' && artifact.patch) {
+		lines.push(renderDiffPreview(artifact.patch));
+	}
+
+	return lines.join('\n');
+}

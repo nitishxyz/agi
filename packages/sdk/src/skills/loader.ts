@@ -12,15 +12,6 @@ import { getGlobalConfigDir, getHomeDir } from '../config/src/paths.ts';
 
 const skillCache = new Map<string, SkillDefinition>();
 
-const SKILL_DIRS = [
-	'.otto/skills',
-	'.agents/skills',
-	'.agenst/skills',
-	'.claude/skills',
-	'.opencode/skills',
-	'.codex/skills',
-];
-
 const ALLOWED_EXTENSIONS = new Set([
 	'.md',
 	'.txt',
@@ -47,8 +38,8 @@ const ALLOWED_EXTENSIONS = new Set([
 const MAX_FILE_SIZE = 256 * 1024;
 
 export async function discoverSkills(
-	cwd: string,
-	repoRoot?: string,
+	_cwd: string,
+	_repoRoot?: string,
 ): Promise<DiscoveredSkill[]> {
 	const skills = new Map<string, SkillDefinition>();
 	const home = getHomeDir();
@@ -63,27 +54,6 @@ export async function discoverSkills(
 	];
 	for (const dir of globalDirs) {
 		await loadSkillsFromDir(dir, 'user', skills);
-	}
-
-	if (repoRoot && repoRoot !== cwd) {
-		for (const skillDir of SKILL_DIRS) {
-			await loadSkillsFromDir(join(repoRoot, skillDir), 'repo', skills);
-		}
-	}
-
-	let current = cwd;
-	const visited = new Set<string>();
-	while (current && !visited.has(current)) {
-		if (repoRoot && !current.startsWith(repoRoot)) break;
-		visited.add(current);
-		const scope: SkillScope =
-			current === cwd ? 'cwd' : current === repoRoot ? 'repo' : 'parent';
-		for (const skillDir of SKILL_DIRS) {
-			await loadSkillsFromDir(join(current, skillDir), scope, skills);
-		}
-		const parent = dirname(current);
-		if (parent === current) break;
-		current = parent;
 	}
 
 	skillCache.clear();

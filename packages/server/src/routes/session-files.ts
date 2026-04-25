@@ -10,10 +10,12 @@ const FILE_EDIT_TOOLS = [
 	'Write',
 	'Edit',
 	'MultiEdit',
+	'CopyInto',
 	'ApplyPatch',
 	'write',
 	'edit',
 	'multiedit',
+	'copy_into',
 	'apply_patch',
 ];
 
@@ -42,6 +44,7 @@ interface SessionFile {
 
 interface ToolResultData {
 	path?: string;
+	targetPath?: string;
 	args?: Record<string, unknown>;
 	files?: Array<string | { path: string }>;
 	result?: {
@@ -74,6 +77,10 @@ function extractFilePathFromToolCall(
 	if (name === 'write' || name === 'edit' || name === 'multiedit') {
 		if (args && typeof args.path === 'string') return args.path;
 		if (typeof c.path === 'string') return c.path;
+	}
+	if (name === 'copyinto' || name === 'copy_into') {
+		if (args && typeof args.targetPath === 'string') return args.targetPath;
+		if (typeof c.targetPath === 'string') return c.targetPath;
 	}
 
 	if (name === 'applypatch' || name === 'apply_patch') {
@@ -146,6 +153,16 @@ function extractFilesFromToolResult(
 	if (args && typeof args.path === 'string' && !files.includes(args.path)) {
 		files.push(args.path);
 	}
+	if (
+		args &&
+		typeof args.targetPath === 'string' &&
+		!files.includes(args.targetPath)
+	) {
+		files.push(args.targetPath);
+	}
+	if (typeof c.targetPath === 'string' && !files.includes(c.targetPath)) {
+		files.push(c.targetPath);
+	}
 
 	if (Array.isArray(c.files)) {
 		for (const f of c.files) {
@@ -199,7 +216,7 @@ function extractDataFromToolResult(
 	}
 
 	if (
-		(name === 'edit' || name === 'multiedit') &&
+		(name === 'edit' || name === 'multiedit' || name === 'copy_into') &&
 		typeof c.result?.artifact?.patch === 'string'
 	) {
 		patch = c.result.artifact.patch;
@@ -229,7 +246,8 @@ function extractDataFromToolResult(
 function getOperationType(toolName: string): 'write' | 'patch' | 'create' {
 	const name = toolName.toLowerCase();
 	if (name === 'write') return 'write';
-	if (name === 'edit' || name === 'multiedit') return 'patch';
+	if (name === 'edit' || name === 'multiedit' || name === 'copy_into')
+		return 'patch';
 	if (name === 'applypatch' || name === 'apply_patch') return 'patch';
 	return 'write';
 }

@@ -31,7 +31,6 @@ type ProviderMutationBody = {
 	apiKeyEnv?: string | null;
 	models?: string[];
 	allowAnyModel?: boolean;
-	scope?: 'global' | 'local';
 };
 
 type ProviderDiscoveryBody = {
@@ -165,7 +164,6 @@ export function registerProvidersRoute(app: Hono) {
 			const projectRoot = c.req.query('project') || process.cwd();
 			const provider = c.req.param('provider').trim();
 			const body = await c.req.json<ProviderMutationBody>();
-			const scope = body.scope || 'local';
 			if (!provider) return c.json({ error: 'Provider is required' }, 400);
 
 			const updates: ProviderSettingsEntry = {
@@ -202,7 +200,7 @@ export function registerProvidersRoute(app: Hono) {
 				return c.json({ error: 'Custom providers require compatibility' }, 400);
 			}
 
-			await writeProviderSettings(scope, provider, updates, projectRoot);
+			await writeProviderSettings('global', provider, updates, projectRoot);
 			const cfg = await loadConfig(projectRoot);
 			const details = await getProviderDetails(undefined, cfg);
 			return c.json({
@@ -230,11 +228,9 @@ export function registerProvidersRoute(app: Hono) {
 
 			const projectRoot = c.req.query('project') || process.cwd();
 			const provider = c.req.param('provider').trim();
-			const scope =
-				(c.req.query('scope') as 'global' | 'local' | undefined) || 'local';
 			if (!provider) return c.json({ error: 'Provider is required' }, 400);
 
-			await removeProviderSettings(scope, provider, projectRoot);
+			await removeProviderSettings('global', provider, projectRoot);
 			const cfg = await loadConfig(projectRoot);
 			const details = await getProviderDetails(undefined, cfg);
 			return c.json({ success: true, provider, details });

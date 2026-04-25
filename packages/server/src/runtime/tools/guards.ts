@@ -25,6 +25,7 @@ export function guardToolCall(
 		case 'read':
 			return guardReadPath(String(a.path ?? ''), context.projectRoot);
 		case 'write':
+		case 'copy_into':
 			return guardWritePath(toolName, a);
 		default:
 			return { type: 'allow' };
@@ -193,9 +194,11 @@ function guardWritePath(
 	const path =
 		typeof args.path === 'string'
 			? args.path
-			: typeof args.filePath === 'string'
-				? args.filePath
-				: '';
+			: typeof args.targetPath === 'string'
+				? args.targetPath
+				: typeof args.filePath === 'string'
+					? args.filePath
+					: '';
 	if (!path) return { type: 'allow' };
 	const p = path.trim();
 

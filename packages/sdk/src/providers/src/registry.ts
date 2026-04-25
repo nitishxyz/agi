@@ -56,25 +56,7 @@ const BUILTIN_FAMILY: Record<BuiltInProviderId, ProviderPromptFamily> = {
 	minimax: 'minimax',
 };
 
-function normalizeCustomModels(
-	models: Array<string | ModelInfo> | undefined,
-): ModelInfo[] {
-	return (models ?? [])
-		.map((model) => {
-			if (typeof model === 'string') {
-				const id = String(model).trim();
-				return id ? ({ id, label: id } satisfies ModelInfo) : null;
-			}
-			const id = String(model.id ?? '').trim();
-			if (!id) return null;
-			return {
-				...model,
-				id,
-				label: model.label?.trim() || id,
-			} satisfies ModelInfo;
-		})
-		.filter((model): model is ModelInfo => Boolean(model));
-}
+const USE_BUILTIN_MODEL_CATALOG = process.env.CI === 'true';
 
 function normalizeOptionalText(value: string | undefined): string | undefined {
 	if (!value) return undefined;
@@ -95,13 +77,6 @@ function resolveCustomFamily(
 	settings: ProviderSettingsEntry,
 ): ProviderPromptFamily {
 	return settings.family ?? 'default';
-}
-
-function resolveCustomProviderLabel(
-	id: string,
-	settings: ProviderSettingsEntry,
-): string {
-	return settings.label ?? id;
 }
 
 export function isBuiltInProviderId(
@@ -129,9 +104,8 @@ export function getProviderDefinition(
 		const entry = catalog[provider];
 		if (!entry) return undefined;
 		const cachedEntry = getCachedProviderCatalogEntry(provider);
-		const models = cachedEntry?.models.length
-			? cachedEntry.models
-			: entry.models;
+		const models =
+			cachedEntry?.models ?? (USE_BUILTIN_MODEL_CATALOG ? entry.models : []);
 		return {
 			id: provider,
 			label: settings?.label ?? cachedEntry?.label ?? entry.label ?? provider,
@@ -148,10 +122,11 @@ export function getProviderDefinition(
 	}
 
 	if (!settings?.custom) return undefined;
-	const models = normalizeCustomModels(settings.models);
+	const cachedEntry = getCachedProviderCatalogEntry(provider);
+	const models = cachedEntry?.models ?? [];
 	return {
 		id: provider,
-		label: resolveCustomProviderLabel(provider, settings),
+		label: settings.label ?? cachedEntry?.label ?? provider,
 		source: 'custom',
 		compatibility: resolveCustomCompatibility(settings),
 		family: resolveCustomFamily(settings),

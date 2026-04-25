@@ -104,12 +104,12 @@ export async function writeDefaults(
  * Persist provider settings for a built-in or custom provider entry.
  */
 export async function writeProviderSettings(
-	scope: Scope,
+	_scope: Scope,
 	provider: string,
 	updates: ProviderSettingsEntry,
-	projectRoot?: string,
+	_projectRoot?: string,
 ) {
-	const filePath = getConfigFilePath(scope, projectRoot);
+	const filePath = getConfigFilePath('global');
 	const existing = await readJsonFile(filePath);
 	const prevProviders =
 		existing && typeof existing.providers === 'object'
@@ -133,11 +133,11 @@ export async function writeProviderSettings(
  * Remove a provider override or custom provider entry from config.
  */
 export async function removeProviderSettings(
-	scope: Scope,
+	_scope: Scope,
 	provider: string,
-	projectRoot?: string,
+	_projectRoot?: string,
 ) {
-	const filePath = getConfigFilePath(scope, projectRoot);
+	const filePath = getConfigFilePath('global');
 	const existing = await readJsonFile(filePath);
 	if (!existing || typeof existing.providers !== 'object') return;
 	const providers = { ...(existing.providers as Record<string, unknown>) };
@@ -147,11 +147,11 @@ export async function removeProviderSettings(
 }
 
 export async function writeSkillSettings(
-	scope: Scope,
+	_scope: Scope,
 	updates: SkillSettings,
-	projectRoot?: string,
+	_projectRoot?: string,
 ) {
-	const filePath = getConfigFilePath(scope, projectRoot);
+	const filePath = getConfigFilePath('global');
 	const existing = await readJsonFile(filePath);
 	const prevSkills =
 		existing && typeof existing.skills === 'object'

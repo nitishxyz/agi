@@ -123,7 +123,6 @@ export const configMixin = {
 			apiKey?: string | null;
 			models?: string[];
 			allowAnyModel?: boolean;
-			scope?: 'global' | 'local';
 		},
 	): Promise<{ success: boolean; provider: string }> {
 		const response = await apiUpdateProviderSettings({
@@ -143,7 +142,6 @@ export const configMixin = {
 		const response = await apiDeleteProviderSettings({
 			// biome-ignore lint/suspicious/noExplicitAny: API type mismatch
 			path: { provider: provider as any },
-			query: { scope: 'local' },
 		});
 		if (response.error) throw new Error(extractErrorMessage(response.error));
 		// biome-ignore lint/suspicious/noExplicitAny: API response structure

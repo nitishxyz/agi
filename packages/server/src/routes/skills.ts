@@ -97,10 +97,9 @@ export function registerSkillsRoutes(app: Hono) {
 			const body = await c.req.json<{
 				enabled?: boolean;
 				items?: Record<string, { enabled?: boolean }>;
-				scope?: 'global' | 'local';
 			}>();
 			await writeSkillSettings(
-				body.scope || 'local',
+				'global',
 				{
 					...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
 					...(body.items ? { items: body.items } : {}),

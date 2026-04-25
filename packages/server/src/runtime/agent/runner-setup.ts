@@ -115,7 +115,13 @@ export function mergeProviderOptions(
 	return base;
 }
 
-const EDITING_TOOL_NAMES = ['edit', 'multiedit', 'write', 'apply_patch'];
+const EDITING_TOOL_NAMES = [
+	'edit',
+	'multiedit',
+	'write',
+	'copy_into',
+	'apply_patch',
+];
 const MODEL_FAMILY_EDIT_TOOL_POLICY_AGENTS = new Set([
 	'build',
 	'general',
@@ -148,8 +154,8 @@ export function applyModelFamilyEditToolPolicy(
 	);
 	const preferredEditingTools =
 		family === 'anthropic' || family === 'openai'
-			? ['write', 'apply_patch']
-			: ['write', 'edit', 'multiedit'];
+			? ['write', 'copy_into', 'apply_patch']
+			: ['write', 'edit', 'multiedit', 'copy_into'];
 
 	return Array.from(new Set([...next, ...preferredEditingTools]));
 }

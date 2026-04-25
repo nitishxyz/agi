@@ -217,16 +217,6 @@ export async function runProvidersAdd(projectRoot?: string) {
 	const cfg = await loadConfig(projectRoot);
 	intro('Add custom provider');
 
-	const scope = (await select({
-		message: 'Where should this provider be stored?',
-		initialValue: 'local',
-		options: [
-			{ value: 'local', label: 'Local project (.otto/config.json)' },
-			{ value: 'global', label: 'Global (~/.config/otto/config.json)' },
-		],
-	})) as 'local' | 'global' | symbol;
-	if (isCancel(scope)) return cancel('Cancelled');
-
 	const id = await text({
 		message: 'Provider id',
 		placeholder: 'e.g. my-ollama, gpu-box, internal-gateway',
@@ -318,7 +308,7 @@ export async function runProvidersAdd(projectRoot?: string) {
 	if (isCancel(allowAnyModel)) return cancel('Cancelled');
 
 	await writeProviderSettings(
-		scope,
+		'global',
 		providerId,
 		{
 			enabled: true,
@@ -350,7 +340,7 @@ export async function runProvidersAdd(projectRoot?: string) {
 			}));
 		if (isCancel(defaultModel)) return cancel('Cancelled');
 		await setConfig(
-			scope,
+			'global',
 			{
 				provider: providerId,
 				model: String(defaultModel).trim(),
@@ -365,7 +355,7 @@ export async function runProvidersAdd(projectRoot?: string) {
 export async function runProvidersRemove(
 	provider: string,
 	projectRoot?: string,
-	scope?: 'local' | 'global',
+	_scope?: 'local' | 'global',
 ) {
 	const cfg = await loadConfig(projectRoot);
 	const definition = getProviderDefinition(cfg, provider);
@@ -373,22 +363,11 @@ export async function runProvidersRemove(
 		log.error(`Provider not found: ${provider}`);
 		return;
 	}
-	const selectedScope = scope
-		? scope
-		: ((await select({
-				message: `Remove ${provider} from which config?`,
-				initialValue: 'local',
-				options: [
-					{ value: 'local', label: 'Local project (.otto/config.json)' },
-					{ value: 'global', label: 'Global (~/.config/otto/config.json)' },
-				],
-			})) as 'local' | 'global' | symbol);
-	if (isCancel(selectedScope)) return cancel('Cancelled');
 	const confirmed = await confirm({
-		message: `Remove provider override for ${provider} from ${selectedScope} config?`,
+		message: `Remove provider override for ${provider} from global config?`,
 		initialValue: false,
 	});
 	if (isCancel(confirmed) || !confirmed) return cancel('Cancelled');
-	await removeProviderSettings(selectedScope, provider, projectRoot);
-	outro(`Removed provider ${provider} from ${selectedScope} config`);
+	await removeProviderSettings('global', provider, projectRoot);
+	outro(`Removed provider ${provider} from global config`);
 }

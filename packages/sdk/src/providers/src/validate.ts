@@ -3,7 +3,6 @@ import { getCachedProviderCatalogEntry } from './model-catalog-cache.ts';
 import type { OttoConfig, ProviderId } from '../../types/src/index.ts';
 import {
 	getProviderDefinition,
-	getConfiguredProviderModels,
 	hasConfiguredModel,
 	providerAllowsAnyModel,
 } from './registry.ts';
@@ -19,51 +18,76 @@ export function validateProviderModel(
 	cfgOrCap?: OttoConfig | CapabilityRequest,
 	cap?: CapabilityRequest,
 ) {
+	const providerId = provider.trim() as ProviderId;
+	const modelId = model.trim();
 	const cfg = isOttoConfigLike(cfgOrCap) ? cfgOrCap : undefined;
 	const effectiveCap = isOttoConfigLike(cfgOrCap) ? cap : cfgOrCap;
 
 	if (cfg) {
-		const definition = getProviderDefinition(cfg, provider);
+		const definition = getProviderDefinition(cfg, providerId);
+		const cachedModels =
+			getCachedProviderCatalogEntry(providerId)?.models ?? [];
 		if (!definition) {
-			throw new Error(`Provider not supported: ${provider}`);
+			if (!cachedModels.length) {
+				throw new Error(`Provider not supported: ${providerId}`);
+			}
+			const entry = cachedModels.find((m) => m.id === modelId);
+			if (!entry) {
+				throwModelNotFound(providerId, modelId, cachedModels);
+			}
+			applyCapabilityValidation(modelId, entry, effectiveCap, {
+				strict: false,
+			});
+			return;
 		}
-		if (!providerAllowsAnyModel(cfg, provider)) {
-			if (!hasConfiguredModel(cfg, provider, model)) {
-				const list = getConfiguredProviderModels(cfg, provider)
-					.slice(0, 10)
-					.map((m) => m.id)
-					.join(', ');
-				throw new Error(
-					`Model not found for provider ${provider}: ${model}. Example models: ${list}${getConfiguredProviderModels(cfg, provider).length > 10 ? ', ...' : ''}`,
-				);
+		if (!providerAllowsAnyModel(cfg, providerId)) {
+			const knownModels = definition.models.length
+				? definition.models
+				: cachedModels;
+			const hasModel =
+				hasConfiguredModel(cfg, providerId, modelId) ||
+				cachedModels.some((m) => m.id === modelId);
+			if (!hasModel) {
+				throwModelNotFound(providerId, modelId, knownModels);
 			}
 		}
 
-		const entry = definition.models.find((m) => m.id === model);
+		const entry =
+			definition.models.find((m) => m.id === modelId) ??
+			cachedModels.find((m) => m.id === modelId);
 		if (entry) {
-			applyCapabilityValidation(model, entry, effectiveCap, {
+			applyCapabilityValidation(modelId, entry, effectiveCap, {
 				strict: definition.source !== 'custom',
 			});
 		}
 		return;
 	}
 
-	const p = provider as ProviderId;
-	if (!catalog[p]) {
-		throw new Error(`Provider not supported: ${provider}`);
+	const p = providerId;
+	if (!catalog[p] && !getCachedProviderCatalogEntry(p)) {
+		throw new Error(`Provider not supported: ${providerId}`);
 	}
-	const models = getCachedProviderCatalogEntry(p)?.models ?? catalog[p].models;
-	const entry = models.find((m) => m.id === model);
+	const models =
+		getCachedProviderCatalogEntry(p)?.models ?? catalog[p]?.models ?? [];
+	const entry = models.find((m) => m.id === modelId);
 	if (!entry) {
-		const list = models
-			.slice(0, 10)
-			.map((m) => m.id)
-			.join(', ');
-		throw new Error(
-			`Model not found for provider ${provider}: ${model}. Example models: ${list}${models.length > 10 ? ', ...' : ''}`,
-		);
+		throwModelNotFound(providerId, modelId, models);
 	}
-	applyCapabilityValidation(model, entry, effectiveCap, { strict: true });
+	applyCapabilityValidation(modelId, entry, effectiveCap, { strict: true });
+}
+
+function throwModelNotFound(
+	provider: ProviderId,
+	model: string,
+	models: Array<{ id: string }>,
+): never {
+	const list = models
+		.slice(0, 10)
+		.map((m) => m.id)
+		.join(', ');
+	throw new Error(
+		`Model not found for provider ${provider}: ${model}. Example models: ${list}${models.length > 10 ? ', ...' : ''}`,
+	);
 }
 
 function applyCapabilityValidation(

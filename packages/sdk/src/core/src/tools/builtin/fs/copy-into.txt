@@ -1,0 +1,11 @@
+Copy a line range from one project file into another project file without reprinting the copied content.
+
+Use this when duplicating large existing content such as SVGs, licenses, generated blocks, examples, or repeated config snippets.
+
+Rules:
+- Source and target paths must be relative paths within the project.
+- You must read the target file first in the current session before modifying it.
+- Line numbers are 1-indexed and inclusive.
+- `insertAtLine` inserts before that line. Use `insertAtLine: totalLines + 1` to append.
+- Use `mode: "replace_range"` with `targetStartLine` and `targetEndLine` to replace target lines.
+- This tool does not use the system clipboard.

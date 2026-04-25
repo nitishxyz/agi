@@ -1,4 +1,4 @@
-import { intro, outro, select, isCancel, cancel, text } from '@clack/prompts';
+import { intro, outro, isCancel, cancel, text } from '@clack/prompts';
 import { join } from 'node:path';
 import { promises as fs } from 'node:fs';
 import { getGlobalConfigDir, validateSkillName } from '@ottocode/sdk';
@@ -122,7 +122,7 @@ export async function runSkillsShow(
 	console.log('');
 }
 
-export async function runSkillsCreate(opts: SkillsOptions): Promise<void> {
+export async function runSkillsCreate(_opts: SkillsOptions): Promise<void> {
 	intro('Create a new skill');
 
 	const nameInput = await text({
@@ -161,23 +161,7 @@ export async function runSkillsCreate(opts: SkillsOptions): Promise<void> {
 
 	const description = String(descInput).trim();
 
-	const locationChoice = await select({
-		message: 'Where to create the skill?',
-		options: [
-			{ value: 'project', label: 'Project (.otto/skills/)' },
-			{ value: 'global', label: 'Global (~/.config/otto/skills/)' },
-		],
-	});
-
-	if (isCancel(locationChoice)) {
-		cancel('Cancelled');
-		return;
-	}
-
-	const baseDir =
-		locationChoice === 'global'
-			? join(getGlobalConfigDir(), 'skills')
-			: join(opts.project, '.otto/skills');
+	const baseDir = join(getGlobalConfigDir(), 'skills');
 
 	const skillDir = join(baseDir, name);
 	const skillPath = join(skillDir, 'SKILL.md');

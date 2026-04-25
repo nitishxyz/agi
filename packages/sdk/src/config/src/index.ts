@@ -57,7 +57,11 @@ export async function loadConfig(
 	const projectCfg = await readJsonOptional(projectConfigPath);
 	const globalCfg = await readJsonOptional(globalConfigPath);
 
-	const merged = deepMerge(DEFAULTS, globalCfg, projectCfg);
+	const merged = deepMerge(
+		DEFAULTS,
+		globalCfg,
+		omitGlobalOnlySettings(projectCfg),
+	);
 
 	await ensureDir(dataDir);
 
@@ -80,6 +84,14 @@ export async function loadConfig(
 }
 
 type JsonObject = Record<string, unknown>;
+
+function omitGlobalOnlySettings(
+	config: JsonObject | undefined,
+): JsonObject | undefined {
+	if (!config) return undefined;
+	const { providers: _providers, skills: _skills, ...rest } = config;
+	return rest;
+}
 
 async function readJsonOptional(file: string): Promise<JsonObject | undefined> {
 	const f = Bun.file(file);

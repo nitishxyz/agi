@@ -273,7 +273,7 @@ export const MessagePartItem = memo(
 					return (
 						<FileText className="h-4 w-4 text-blue-600 dark:text-blue-300" />
 					);
-				if (toolName === 'write')
+				if (toolName === 'write' || toolName === 'copy_into')
 					return (
 						<FileEdit className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
 					);

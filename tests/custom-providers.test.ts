@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type { OttoConfig } from '@ottocode/sdk';
 import {
 	getProviderDefinition,
+	readCachedModelCatalog,
 	validateProviderModel,
 	writeCachedModelCatalog,
 } from '@ottocode/sdk';
@@ -69,28 +70,37 @@ describe('custom declarative providers', () => {
 			compatibility: 'ollama',
 			family: 'default',
 			baseURL: 'http://127.0.0.1:11434/api',
-			allowAnyModel: false,
+			allowAnyModel: true,
 		});
-		expect(definition?.models.map((model) => model.id)).toEqual([
-			'qwen2.5-coder:14b',
-			'deepseek-r1:32b',
-		]);
+		expect(definition?.models).toEqual([]);
 	});
 
-	test('validates configured custom provider models', () => {
-		const cfg = createConfig();
+	test('validates cached custom provider models', async () => {
+		const configHome = await mkdtemp(join(tmpdir(), 'otto-config-validate-'));
+		const previousConfigHome = process.env.XDG_CONFIG_HOME;
 
-		expect(() =>
-			validateProviderModel('my-ollama', 'qwen2.5-coder:14b', cfg),
-		).not.toThrow();
-		expect(() =>
-			validateProviderModel('my-ollama', 'qwen2.5-coder:14b', cfg, {
-				wantsToolCalls: true,
-			}),
-		).not.toThrow();
-		expect(() =>
-			validateProviderModel('my-ollama', 'missing-model', cfg),
-		).toThrow(/Model not found for provider my-ollama/);
+		try {
+			process.env.XDG_CONFIG_HOME = configHome;
+			await writeCachedModelCatalog({
+				'my-ollama': {
+					id: 'my-ollama',
+					label: 'Local Ollama',
+					models: [{ id: 'cached-model', label: 'cached-model' }],
+				},
+			});
+			const cfg = createConfig();
+
+			expect(() =>
+				validateProviderModel('my-ollama', 'cached-model', cfg),
+			).not.toThrow();
+			expect(() =>
+				validateProviderModel('my-ollama', 'qwen2.5-coder:14b', cfg),
+			).toThrow(/Model not found for provider my-ollama/);
+		} finally {
+			if (previousConfigHome === undefined) delete process.env.XDG_CONFIG_HOME;
+			else process.env.XDG_CONFIG_HOME = previousConfigHome;
+			await rm(configHome, { recursive: true, force: true });
+		}
 	});
 
 	test('selects configured custom provider defaults', async () => {
@@ -128,9 +138,12 @@ describe('custom declarative providers', () => {
 
 	test('persists custom providers through config routes', async () => {
 		const projectRoot = await mkdtemp(join(tmpdir(), 'otto-provider-route-'));
-		const app = createEmbeddedApp();
+		const configHome = await mkdtemp(join(tmpdir(), 'otto-config-route-'));
+		const previousConfigHome = process.env.XDG_CONFIG_HOME;
 
 		try {
+			process.env.XDG_CONFIG_HOME = configHome;
+			const app = createEmbeddedApp();
 			const putResponse = await app.request(
 				`http://localhost/v1/config/providers/my-ollama?project=${encodeURIComponent(projectRoot)}`,
 				{
@@ -176,16 +189,17 @@ describe('custom declarative providers', () => {
 				models: Array<{ id: string }>;
 				allowAnyModel: boolean;
 			};
-			expect(modelsPayload.allowAnyModel).toBe(false);
-			expect(modelsPayload.models).toEqual([
-				expect.objectContaining({ id: 'qwen2.5-coder:14b' }),
-			]);
+			expect(modelsPayload.allowAnyModel).toBe(true);
+			expect(modelsPayload.models).toEqual([]);
 		} finally {
+			if (previousConfigHome === undefined) delete process.env.XDG_CONFIG_HOME;
+			else process.env.XDG_CONFIG_HOME = previousConfigHome;
 			await rm(projectRoot, { recursive: true, force: true });
+			await rm(configHome, { recursive: true, force: true });
 		}
 	});
 
-	test('keeps configured custom models when a cached catalog entry exists', async () => {
+	test('uses cached catalog models instead of configured custom models', async () => {
 		const projectRoot = await mkdtemp(join(tmpdir(), 'otto-provider-cache-'));
 		const configHome = await mkdtemp(join(tmpdir(), 'otto-config-cache-'));
 		const previousConfigHome = process.env.XDG_CONFIG_HOME;
@@ -227,8 +241,6 @@ describe('custom declarative providers', () => {
 				models: Array<{ id: string }>;
 			};
 			expect(modelsPayload.models.map((model) => model.id)).toEqual([
-				'configured-one',
-				'configured-two',
 				'cached-only',
 			]);
 
@@ -242,11 +254,95 @@ describe('custom declarative providers', () => {
 			>;
 			expect(
 				allModelsPayload['my-ollama'].models.map((model) => model.id),
-			).toEqual(['configured-one', 'configured-two', 'cached-only']);
+			).toEqual(['cached-only']);
 		} finally {
 			if (previousConfigHome === undefined) delete process.env.XDG_CONFIG_HOME;
 			else process.env.XDG_CONFIG_HOME = previousConfigHome;
 			await rm(projectRoot, { recursive: true, force: true });
+			await rm(configHome, { recursive: true, force: true });
+		}
+	});
+
+	test('returns cached custom provider models without project provider config', async () => {
+		const projectRoot = await mkdtemp(
+			join(tmpdir(), 'otto-provider-cache-only-'),
+		);
+		const configHome = await mkdtemp(join(tmpdir(), 'otto-config-cache-only-'));
+		const previousConfigHome = process.env.XDG_CONFIG_HOME;
+
+		try {
+			process.env.XDG_CONFIG_HOME = configHome;
+			const app = createEmbeddedApp();
+			await writeCachedModelCatalog({
+				ollama: {
+					id: 'ollama',
+					label: 'Ollama',
+					models: [{ id: 'gemma4:latest', label: 'gemma4:latest' }],
+				},
+			});
+
+			const allModelsResponse = await app.request(
+				`http://localhost/v1/config/models?project=${encodeURIComponent(projectRoot)}`,
+			);
+			expect(allModelsResponse.status).toBe(200);
+			const allModelsPayload = (await allModelsResponse.json()) as Record<
+				string,
+				{ models: Array<{ id: string }> }
+			>;
+			expect(allModelsPayload.ollama.models.map((model) => model.id)).toEqual([
+				'gemma4:latest',
+			]);
+
+			const modelsResponse = await app.request(
+				`http://localhost/v1/config/providers/ollama/models?project=${encodeURIComponent(projectRoot)}`,
+			);
+			expect(modelsResponse.status).toBe(200);
+			const modelsPayload = (await modelsResponse.json()) as {
+				models: Array<{ id: string }>;
+			};
+			expect(modelsPayload.models.map((model) => model.id)).toEqual([
+				'gemma4:latest',
+			]);
+		} finally {
+			if (previousConfigHome === undefined) delete process.env.XDG_CONFIG_HOME;
+			else process.env.XDG_CONFIG_HOME = previousConfigHome;
+			await rm(projectRoot, { recursive: true, force: true });
+			await rm(configHome, { recursive: true, force: true });
+		}
+	});
+
+	test('reads catalog-models cache as model catalog source', async () => {
+		const configHome = await mkdtemp(
+			join(tmpdir(), 'otto-config-catalog-cache-'),
+		);
+		const previousConfigHome = process.env.XDG_CONFIG_HOME;
+
+		try {
+			process.env.XDG_CONFIG_HOME = configHome;
+			const configDir = join(configHome, 'otto');
+			await mkdir(configDir, { recursive: true });
+			await writeFile(
+				join(configDir, 'catalog-models.json'),
+				JSON.stringify({
+					version: 1,
+					updatedAt: new Date().toISOString(),
+					providers: {
+						'my-ollama': {
+							id: 'my-ollama',
+							label: 'Local Ollama',
+							models: [{ id: 'catalog-cached', label: 'catalog-cached' }],
+						},
+					},
+				}),
+			);
+
+			const catalog = await readCachedModelCatalog();
+			expect(catalog?.providers['my-ollama']?.models[0]?.id).toBe(
+				'catalog-cached',
+			);
+		} finally {
+			if (previousConfigHome === undefined) delete process.env.XDG_CONFIG_HOME;
+			else process.env.XDG_CONFIG_HOME = previousConfigHome;
 			await rm(configHome, { recursive: true, force: true });
 		}
 	});

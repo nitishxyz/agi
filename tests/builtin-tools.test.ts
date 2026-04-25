@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeAll, afterAll } from 'bun:test';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { discoverProjectTools } from '@ottocode/sdk';
@@ -61,6 +61,7 @@ describe('Built-in Tools', () => {
 		expect(names).toContain('edit');
 		expect(names).toContain('multiedit');
 		expect(names).toContain('write');
+		expect(names).toContain('copy_into');
 		expect(names).toContain('ls');
 		expect(names).toContain('tree');
 		expect(names).toContain('shell');
@@ -115,6 +116,57 @@ describe('Built-in Tools', () => {
 			});
 			expect(result).toHaveProperty('bytes');
 			expect((result as { bytes: number }).bytes).toBe(12);
+		});
+	});
+
+	describe('copy_into tool', () => {
+		it('should copy a source line range into a target file', async () => {
+			await writeFile(join(projectRoot, 'copy-source.txt'), 'A\nB\nC\n');
+			await writeFile(join(projectRoot, 'copy-target.txt'), 'one\ntwo\n');
+			const { tools } = await discoverProjectTools(projectRoot);
+			const readTool = tools.find((t) => t.name === 'read');
+			const copyIntoTool = tools.find((t) => t.name === 'copy_into');
+
+			await readTool?.tool.execute({ path: 'copy-target.txt' });
+			const result = await copyIntoTool?.tool.execute({
+				sourcePath: 'copy-source.txt',
+				startLine: 2,
+				endLine: 3,
+				targetPath: 'copy-target.txt',
+				insertAtLine: 2,
+			});
+
+			expect(result).toMatchObject({ ok: true, linesCopied: 2 });
+			expect(
+				await readFile(join(projectRoot, 'copy-target.txt'), 'utf-8'),
+			).toBe('one\nB\nC\ntwo\n');
+		});
+
+		it('should replace a target line range', async () => {
+			await writeFile(join(projectRoot, 'copy-replace-source.txt'), 'X\nY\n');
+			await writeFile(
+				join(projectRoot, 'copy-replace-target.txt'),
+				'a\nb\nc\n',
+			);
+			const { tools } = await discoverProjectTools(projectRoot);
+			const readTool = tools.find((t) => t.name === 'read');
+			const copyIntoTool = tools.find((t) => t.name === 'copy_into');
+
+			await readTool?.tool.execute({ path: 'copy-replace-target.txt' });
+			const result = await copyIntoTool?.tool.execute({
+				sourcePath: 'copy-replace-source.txt',
+				startLine: 1,
+				endLine: 2,
+				targetPath: 'copy-replace-target.txt',
+				mode: 'replace_range',
+				targetStartLine: 2,
+				targetEndLine: 2,
+			});
+
+			expect(result).toMatchObject({ ok: true, linesCopied: 2 });
+			expect(
+				await readFile(join(projectRoot, 'copy-replace-target.txt'), 'utf-8'),
+			).toBe('a\nX\nY\nc\n');
 		});
 	});
 

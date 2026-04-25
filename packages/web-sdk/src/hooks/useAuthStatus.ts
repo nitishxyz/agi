@@ -137,7 +137,6 @@ export function useAuthStatus() {
 					compatibility: data.compatibility,
 					models: data.models,
 					allowAnyModel: data.allowAnyModel,
-					scope: 'local',
 				});
 				await fetchAuthStatus();
 				return result;

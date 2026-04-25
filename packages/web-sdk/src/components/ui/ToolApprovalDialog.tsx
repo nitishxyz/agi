@@ -8,6 +8,7 @@ const TOOL_ICONS: Record<string, typeof Terminal> = {
 	edit: FileEdit,
 	multiedit: FileEdit,
 	write: FileEdit,
+	copy_into: FileEdit,
 	apply_patch: FileEdit,
 	terminal: Terminal,
 	git_commit: GitCommit,

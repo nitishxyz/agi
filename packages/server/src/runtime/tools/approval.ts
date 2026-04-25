@@ -8,6 +8,7 @@ export const DANGEROUS_TOOLS = new Set([
 	'edit',
 	'multiedit',
 	'write',
+	'copy_into',
 	'apply_patch',
 	'terminal',
 	'git_commit',

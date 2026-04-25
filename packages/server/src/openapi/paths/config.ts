@@ -139,10 +139,6 @@ export const configPaths = {
 									items: { type: 'string' },
 								},
 								allowAnyModel: { type: 'boolean' },
-								scope: {
-									type: 'string',
-									enum: ['global', 'local'],
-								},
 							},
 						},
 					},
@@ -176,15 +172,6 @@ export const configPaths = {
 			summary: 'Delete provider override or custom provider entry',
 			parameters: [
 				projectQueryParam(),
-				{
-					in: 'query',
-					name: 'scope',
-					required: false,
-					schema: {
-						type: 'string',
-						enum: ['global', 'local'],
-					},
-				},
 				{
 					in: 'path',
 					name: 'provider',

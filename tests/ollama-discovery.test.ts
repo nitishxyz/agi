@@ -1,8 +1,12 @@
 import { describe, expect, test } from 'bun:test';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import {
 	discoverOllamaModels,
 	normalizeOllamaBaseURL,
 	getProviderDefinition,
+	writeCachedModelCatalog,
 	type OttoConfig,
 } from '@ottocode/sdk';
 
@@ -100,27 +104,16 @@ describe('ollama discovery', () => {
 		);
 	});
 
-	test('normalizes custom model objects from config', () => {
-		const cfg: OttoConfig = {
-			projectRoot: process.cwd(),
-			defaults: {
-				agent: 'build',
-				provider: 'ollama',
-				model: 'gemma4:latest',
-				toolApproval: 'auto',
-				guidedMode: false,
-				reasoningText: true,
-				reasoningLevel: 'high',
-				fullWidthContent: true,
-				autoCompactThresholdTokens: null,
-			},
-			providers: {
+	test('normalizes custom model objects from cache', async () => {
+		const configHome = await mkdtemp(join(tmpdir(), 'otto-ollama-cache-'));
+		const previousConfigHome = process.env.XDG_CONFIG_HOME;
+
+		try {
+			process.env.XDG_CONFIG_HOME = configHome;
+			await writeCachedModelCatalog({
 				ollama: {
-					enabled: true,
-					custom: true,
-					compatibility: 'ollama',
-					family: 'default',
-					baseURL: 'https://example.com/ollama',
+					id: 'ollama',
+					label: 'Ollama',
 					models: [
 						{
 							id: 'gemma4:latest',
@@ -131,23 +124,51 @@ describe('ollama discovery', () => {
 						},
 					],
 				},
-			},
-			paths: {
-				dataDir: '.otto',
-				dbPath: '.otto/otto.sqlite',
-				projectConfigPath: '.otto/config.json',
-				globalConfigPath: null,
-			},
-		};
+			});
 
-		const definition = getProviderDefinition(cfg, 'ollama');
-		expect(definition?.models).toEqual([
-			expect.objectContaining({
-				id: 'gemma4:latest',
-				label: 'Gemma 4',
-				toolCall: true,
-				reasoningText: true,
-			}),
-		]);
+			const cfg: OttoConfig = {
+				projectRoot: process.cwd(),
+				defaults: {
+					agent: 'build',
+					provider: 'ollama',
+					model: 'gemma4:latest',
+					toolApproval: 'auto',
+					guidedMode: false,
+					reasoningText: true,
+					reasoningLevel: 'high',
+					fullWidthContent: true,
+					autoCompactThresholdTokens: null,
+				},
+				providers: {
+					ollama: {
+						enabled: true,
+						custom: true,
+						compatibility: 'ollama',
+						family: 'default',
+						baseURL: 'https://example.com/ollama',
+					},
+				},
+				paths: {
+					dataDir: '.otto',
+					dbPath: '.otto/otto.sqlite',
+					projectConfigPath: '.otto/config.json',
+					globalConfigPath: null,
+				},
+			};
+
+			const definition = getProviderDefinition(cfg, 'ollama');
+			expect(definition?.models).toEqual([
+				expect.objectContaining({
+					id: 'gemma4:latest',
+					label: 'Gemma 4',
+					toolCall: true,
+					reasoningText: true,
+				}),
+			]);
+		} finally {
+			if (previousConfigHome === undefined) delete process.env.XDG_CONFIG_HOME;
+			else process.env.XDG_CONFIG_HOME = previousConfigHome;
+			await rm(configHome, { recursive: true, force: true });
+		}
 	});
 });

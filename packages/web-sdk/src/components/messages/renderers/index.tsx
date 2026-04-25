@@ -44,6 +44,7 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
 	Edit: 'edit',
 	MultiEdit: 'multiedit',
 	Write: 'write',
+	CopyInto: 'copy_into',
 	Ls: 'ls',
 	Tree: 'tree',
 	Cd: 'cd',
@@ -84,6 +85,7 @@ const COMPACT_DETAIL_TOOL_NAMES = new Set([
 	'edit',
 	'multiedit',
 	'write',
+	'copy_into',
 	'apply_patch',
 	'terminal',
 ]);
@@ -123,6 +125,7 @@ export function ToolResultRenderer({
 			return <ReadRenderer {...props} />;
 		case 'edit':
 		case 'multiedit':
+		case 'copy_into':
 			return <ApplyPatchRenderer {...props} toolName={normalizedName} />;
 		case 'write':
 			return <WriteRenderer {...props} />;

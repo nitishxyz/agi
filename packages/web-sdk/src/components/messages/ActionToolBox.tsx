@@ -84,6 +84,11 @@ const TOOL_CONFIG: Record<
 		color: 'text-purple-600 dark:text-purple-300',
 		label: 'Editing',
 	},
+	copy_into: {
+		Icon: FileEdit,
+		color: 'text-purple-600 dark:text-purple-300',
+		label: 'Copying',
+	},
 	terminal: {
 		Icon: Terminal,
 		color: 'text-amber-600 dark:text-amber-300',
@@ -111,6 +116,7 @@ function getTargetFromArgs(
 	if (toolName === 'write') return String(args.path || '');
 	if (toolName === 'edit' || toolName === 'multiedit')
 		return String(args.path || '');
+	if (toolName === 'copy_into') return String(args.targetPath || '');
 	if (toolName === 'apply_patch') {
 		const patch = String(args.patch || '');
 		return getPatchTarget(patch) || '';
@@ -133,6 +139,9 @@ function getTargetFromStream(toolName: string, raw: string): string {
 	}
 	if (toolName === 'edit' || toolName === 'multiedit') {
 		return extractJsonStringField(raw, 'path');
+	}
+	if (toolName === 'copy_into') {
+		return extractJsonStringField(raw, 'targetPath');
 	}
 	if (toolName === 'apply_patch') {
 		const m = raw.match(
@@ -423,6 +432,7 @@ function getContentFromArgs(
 	if (toolName === 'apply_patch') return String(args.patch || '');
 	if (toolName === 'edit') return String(args.oldString || '');
 	if (toolName === 'multiedit') return '';
+	if (toolName === 'copy_into') return '';
 	return '';
 }
 
@@ -459,5 +469,6 @@ function getContentFromStream(toolName: string, raw: string): string {
 	if (toolName === 'apply_patch') return extractJsonStringField(raw, 'patch');
 	if (toolName === 'edit') return extractJsonStringField(raw, 'oldString');
 	if (toolName === 'multiedit') return '';
+	if (toolName === 'copy_into') return '';
 	return '';
 }

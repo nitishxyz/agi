@@ -3,7 +3,13 @@ import { useTheme } from '../theme.ts';
 import { DiffView } from './DiffView.tsx';
 import type { MessagePart } from '../types.ts';
 
-const DIFF_TOOLS = new Set(['write', 'edit', 'multiedit', 'apply_patch']);
+const DIFF_TOOLS = new Set([
+	'write',
+	'edit',
+	'multiedit',
+	'copy_into',
+	'apply_patch',
+]);
 
 function isShellTool(toolName?: string | null): boolean {
 	return toolName === 'shell' || toolName === 'bash';
@@ -30,7 +36,15 @@ function getTarget(part: MessagePart): string | null {
 		}
 	}
 
-	for (const key of ['path', 'filePath', 'file', 'pattern', 'query', 'url']) {
+	for (const key of [
+		'path',
+		'targetPath',
+		'filePath',
+		'file',
+		'pattern',
+		'query',
+		'url',
+	]) {
 		const val = source[key];
 		if (typeof val === 'string' && val.trim()) {
 			const trimmed = val.trim();

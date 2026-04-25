@@ -70,6 +70,7 @@ function normalizeToolTarget(
 		edit: ['path'],
 		multiedit: ['path'],
 		write: ['path'],
+		copy_into: ['targetPath', 'sourcePath'],
 		apply_patch: ['path'],
 		glob: ['pattern'],
 		grep: ['query', 'pattern'],
@@ -192,15 +193,19 @@ export const ToolApprovalCard = memo(function ToolApprovalCard({
 		}
 
 		if (
-			(toolName === 'edit' || toolName === 'multiedit') &&
+			(toolName === 'edit' ||
+				toolName === 'multiedit' ||
+				toolName === 'copy_into') &&
 			(primary?.value || filePath)
 		) {
-			return (
-				<div className="ml-6 text-xs text-muted-foreground">
-					{toolName === 'multiedit'
+			const message =
+				toolName === 'copy_into'
+					? `Lines ${String(args?.startLine ?? '?')}-${String(args?.endLine ?? '?')} from ${String(args?.sourcePath ?? 'source')} will be copied into this file.`
+					: toolName === 'multiedit'
 						? 'Multiple exact replacements will be applied atomically.'
-						: 'An exact text replacement will be applied to this file.'}
-				</div>
+						: 'An exact text replacement will be applied to this file.';
+			return (
+				<div className="ml-6 text-xs text-muted-foreground">{message}</div>
 			);
 		}
 

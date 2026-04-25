@@ -16,8 +16,10 @@ export type CachedModelCatalog = {
 export const DEFAULT_REMOTE_MODEL_CATALOG_URL =
 	'https://ottocode.io/catalog/models.json';
 
+const MODEL_CATALOG_CACHE_FILENAME = 'catalog-models.json';
+
 export function getModelCatalogCachePath(): string {
-	return joinPath(getGlobalConfigDir(), 'models-catalog.json');
+	return joinPath(getGlobalConfigDir(), MODEL_CATALOG_CACHE_FILENAME);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -30,10 +32,10 @@ async function loadFsPromises(): Promise<typeof import('node:fs/promises')> {
 
 function readFileSyncCompat(path: string): string | null {
 	try {
-		const req = Function(
-			'return typeof require === "function" ? require : null',
-		)() as ((specifier: string) => typeof import('node:fs')) | null;
-		return req?.('node:fs').readFileSync(path, 'utf8') ?? null;
+		const fs = globalThis.process?.getBuiltinModule?.('node:fs') as
+			| { readFileSync: (filePath: string, encoding: 'utf8') => string }
+			| undefined;
+		return fs?.readFileSync(path, 'utf8') ?? null;
 	} catch {
 		return null;
 	}
@@ -70,21 +72,27 @@ export function normalizeModelCatalogPayload(
 	return providers;
 }
 
+function normalizeCachedModelCatalogPayload(
+	payload: unknown,
+): CachedModelCatalog {
+	const updatedAt =
+		isRecord(payload) && typeof payload.updatedAt === 'string'
+			? payload.updatedAt
+			: new Date(0).toISOString();
+	return {
+		version: 1,
+		updatedAt,
+		providers: normalizeModelCatalogPayload(payload),
+	};
+}
+
 export async function readCachedModelCatalog(): Promise<CachedModelCatalog | null> {
 	try {
 		const { readFile } = await loadFsPromises();
 		const payload = JSON.parse(
 			await readFile(getModelCatalogCachePath(), 'utf8'),
 		);
-		const providers = normalizeModelCatalogPayload(payload);
-		return {
-			version: 1,
-			updatedAt:
-				isRecord(payload) && typeof payload.updatedAt === 'string'
-					? payload.updatedAt
-					: new Date(0).toISOString(),
-			providers,
-		};
+		return normalizeCachedModelCatalogPayload(payload);
 	} catch {
 		return null;
 	}
@@ -95,15 +103,7 @@ export function readCachedModelCatalogSync(): CachedModelCatalog | null {
 		const text = readFileSyncCompat(getModelCatalogCachePath());
 		if (!text) return null;
 		const payload = JSON.parse(text);
-		const providers = normalizeModelCatalogPayload(payload);
-		return {
-			version: 1,
-			updatedAt:
-				isRecord(payload) && typeof payload.updatedAt === 'string'
-					? payload.updatedAt
-					: new Date(0).toISOString(),
-			providers,
-		};
+		return normalizeCachedModelCatalogPayload(payload);
 	} catch {
 		return null;
 	}

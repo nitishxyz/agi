@@ -60,7 +60,6 @@ export const skillsPaths = {
 							type: 'object',
 							properties: {
 								enabled: { type: 'boolean' },
-								scope: { type: 'string', enum: ['global', 'local'] },
 								items: {
 									type: 'object',
 									additionalProperties: {

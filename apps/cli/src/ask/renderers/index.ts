@@ -3,6 +3,8 @@ import { renderReadCall, renderReadResult } from './read.ts';
 import { renderWriteCall, renderWriteResult } from './write.ts';
 import { renderPatchCall, renderPatchResult } from './patch.ts';
 import {
+	renderCopyIntoCall,
+	renderCopyIntoResult,
 	renderEditCall,
 	renderEditResult,
 	renderMultiEditCall,
@@ -47,6 +49,7 @@ const callRenderers: Record<string, CallRenderer> = {
 	apply_patch: renderPatchCall,
 	edit: renderEditCall,
 	multiedit: renderMultiEditCall,
+	copy_into: renderCopyIntoCall,
 	shell: renderBashCall,
 	bash: renderBashCall,
 	terminal: renderTerminalCall,
@@ -71,6 +74,7 @@ const resultRenderers: Record<string, ResultRenderer> = {
 	apply_patch: renderPatchResult,
 	edit: renderEditResult,
 	multiedit: renderMultiEditResult,
+	copy_into: renderCopyIntoResult,
 	shell: renderBashResult,
 	bash: renderBashResult,
 	terminal: renderTerminalResult,

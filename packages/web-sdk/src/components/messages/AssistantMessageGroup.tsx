@@ -169,6 +169,7 @@ export const AssistantMessageGroup = memo(
 							'edit',
 							'multiedit',
 							'write',
+							'copy_into',
 							'apply_patch',
 							'terminal',
 						].includes(part.toolName || ''),
@@ -410,6 +411,7 @@ export const AssistantMessageGroup = memo(
 								'edit',
 								'multiedit',
 								'write',
+								'copy_into',
 								'apply_patch',
 								'terminal',
 							].includes(part.toolName || '');
