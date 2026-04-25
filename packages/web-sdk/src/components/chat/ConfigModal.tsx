@@ -226,6 +226,7 @@ export function ConfigModal({
 							provider={provider}
 							model={model}
 							onChange={handleModelChange}
+							dropdownMode="inline"
 						/>
 					</div>
 				</div>

@@ -3,7 +3,11 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type { OttoConfig } from '@ottocode/sdk';
-import { getProviderDefinition, validateProviderModel } from '@ottocode/sdk';
+import {
+	getProviderDefinition,
+	validateProviderModel,
+	writeCachedModelCatalog,
+} from '@ottocode/sdk';
 import { createEmbeddedApp } from '../packages/server/src/index.js';
 import { selectProviderAndModel } from '../packages/server/src/runtime/provider/selection.ts';
 import { buildReasoningConfig } from '../packages/server/src/runtime/provider/reasoning.ts';
@@ -178,6 +182,72 @@ describe('custom declarative providers', () => {
 			]);
 		} finally {
 			await rm(projectRoot, { recursive: true, force: true });
+		}
+	});
+
+	test('keeps configured custom models when a cached catalog entry exists', async () => {
+		const projectRoot = await mkdtemp(join(tmpdir(), 'otto-provider-cache-'));
+		const configHome = await mkdtemp(join(tmpdir(), 'otto-config-cache-'));
+		const previousConfigHome = process.env.XDG_CONFIG_HOME;
+
+		try {
+			process.env.XDG_CONFIG_HOME = configHome;
+			const app = createEmbeddedApp();
+			await writeCachedModelCatalog({
+				'my-ollama': {
+					id: 'my-ollama',
+					label: 'Local Ollama',
+					models: [{ id: 'cached-only', label: 'cached-only' }],
+				},
+			});
+
+			const putResponse = await app.request(
+				`http://localhost/v1/config/providers/my-ollama?project=${encodeURIComponent(projectRoot)}`,
+				{
+					method: 'PUT',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						scope: 'local',
+						custom: true,
+						compatibility: 'ollama',
+						family: 'default',
+						label: 'Local Ollama',
+						baseURL: 'http://127.0.0.1:11434/api',
+						models: ['configured-one', 'configured-two'],
+					}),
+				},
+			);
+			expect(putResponse.status).toBe(200);
+
+			const modelsResponse = await app.request(
+				`http://localhost/v1/config/providers/my-ollama/models?project=${encodeURIComponent(projectRoot)}`,
+			);
+			expect(modelsResponse.status).toBe(200);
+			const modelsPayload = (await modelsResponse.json()) as {
+				models: Array<{ id: string }>;
+			};
+			expect(modelsPayload.models.map((model) => model.id)).toEqual([
+				'configured-one',
+				'configured-two',
+				'cached-only',
+			]);
+
+			const allModelsResponse = await app.request(
+				`http://localhost/v1/config/models?project=${encodeURIComponent(projectRoot)}`,
+			);
+			expect(allModelsResponse.status).toBe(200);
+			const allModelsPayload = (await allModelsResponse.json()) as Record<
+				string,
+				{ models: Array<{ id: string }> }
+			>;
+			expect(
+				allModelsPayload['my-ollama'].models.map((model) => model.id),
+			).toEqual(['configured-one', 'configured-two', 'cached-only']);
+		} finally {
+			if (previousConfigHome === undefined) delete process.env.XDG_CONFIG_HOME;
+			else process.env.XDG_CONFIG_HOME = previousConfigHome;
+			await rm(projectRoot, { recursive: true, force: true });
+			await rm(configHome, { recursive: true, force: true });
 		}
 	});
 

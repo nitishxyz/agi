@@ -17,6 +17,7 @@ interface UnifiedModelSelectorProps {
 	model: string;
 	onChange: (provider: string, model: string) => void;
 	disabled?: boolean;
+	dropdownMode?: 'absolute' | 'inline';
 }
 
 interface FlattenedModel {
@@ -40,7 +41,7 @@ export const UnifiedModelSelector = forwardRef<
 	UnifiedModelSelectorRef,
 	UnifiedModelSelectorProps
 >(function UnifiedModelSelector(
-	{ provider, model, onChange, disabled = false },
+	{ provider, model, onChange, disabled = false, dropdownMode = 'absolute' },
 	ref,
 ) {
 	const { data: allModels } = useAllModels();
@@ -363,6 +364,8 @@ export const UnifiedModelSelector = forwardRef<
 	const displayedProviderKeys = searchQuery.trim()
 		? Object.keys(filteredModels)
 		: configuredProviders;
+	const dropdownPositionClass =
+		dropdownMode === 'inline' ? 'relative' : 'absolute z-50';
 
 	return (
 		<div ref={dropdownRef} className="relative w-full">
@@ -386,7 +389,9 @@ export const UnifiedModelSelector = forwardRef<
 				/>
 			</button>
 			{isOpen && (
-				<div className="absolute z-50 mt-1 w-full bg-[hsl(var(--popover))] border border-[hsl(var(--border))] rounded-md shadow-lg max-h-80 overflow-hidden flex flex-col">
+				<div
+					className={`${dropdownPositionClass} mt-1 w-full bg-[hsl(var(--popover))] border border-[hsl(var(--border))] rounded-md shadow-lg max-h-80 overflow-hidden flex flex-col`}
+				>
 					<div className="p-2 border-b border-[hsl(var(--border))]">
 						<div className="relative">
 							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />

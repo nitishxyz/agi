@@ -93,12 +93,12 @@ export function Modal({
 			{/* Modal Container */}
 			<div
 				data-native-overlay-root="true"
-				className={`${overlayPositionClass} top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full ${maxWidthClasses[maxWidth]} px-4`}
+				className={`${overlayPositionClass} top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full ${maxWidthClasses[maxWidth]} max-h-[calc(100dvh-2rem)] px-4 flex`}
 			>
-				<div className="bg-background border border-border rounded-lg shadow-lg">
+				<div className="bg-background border border-border rounded-lg shadow-lg max-h-full w-full flex flex-col overflow-hidden">
 					{/* Header */}
 					{(title || showCloseButton) && (
-						<div className="flex items-center justify-between p-4 border-b border-border">
+						<div className="flex flex-shrink-0 items-center justify-between p-4 border-b border-border">
 							{title && (
 								<div className="text-lg font-semibold text-foreground">
 									{title}
@@ -118,7 +118,7 @@ export function Modal({
 					)}
 
 					{/* Content */}
-					<div className="p-6">{children}</div>
+					<div className="p-6 overflow-y-auto">{children}</div>
 				</div>
 			</div>
 		</>

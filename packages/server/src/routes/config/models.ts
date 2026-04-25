@@ -131,9 +131,15 @@ async function refreshProviderModelsInBackground(args: {
 			providerDefinition,
 			projectRoot,
 		});
-		const models =
-			discoveredModels ??
-			getConfiguredProviderModels(await loadConfig(projectRoot), provider);
+		if (!discoveredModels) return;
+		const configuredModels = getConfiguredProviderModels(
+			await loadConfig(projectRoot),
+			provider,
+		);
+		const models = mergeConfiguredAndCachedModels(
+			configuredModels,
+			discoveredModels,
+		);
 		await mergeCachedModelCatalog({
 			[provider]: {
 				id: provider,
@@ -242,7 +248,7 @@ async function discoverProviderModels(args: {
 			provider,
 			error: error instanceof Error ? error.message : String(error),
 		});
-		return [];
+		return undefined;
 	}
 }
 
@@ -255,15 +261,40 @@ function shouldLazyLoadProviderModels(
 	);
 }
 
-function getCachedOrConfiguredModels(args: {
-	models: ModelInfo[] | undefined;
+function mergeConfiguredAndCachedModels(
+	configuredModels: ModelInfo[],
+	cachedModels: ModelInfo[],
+): ModelInfo[] {
+	const modelsById = new Map<string, ModelInfo>();
+	for (const model of configuredModels) {
+		modelsById.set(model.id, model);
+	}
+	for (const model of cachedModels) {
+		const configuredModel = modelsById.get(model.id);
+		modelsById.set(
+			model.id,
+			configuredModel ? { ...model, ...configuredModel } : model,
+		);
+	}
+	return Array.from(modelsById.values());
+}
+
+function getProviderModelsForUi(args: {
+	providerDefinition: NonNullable<ReturnType<typeof getProviderDefinition>>;
+	catalogModels: ModelInfo[] | undefined;
 	cfg: Awaited<ReturnType<typeof loadConfig>>;
 	provider: ProviderId;
+	authType: 'api' | 'oauth' | 'wallet' | undefined;
 }): ModelInfo[] {
-	const cachedModels = args.models;
-	return cachedModels && cachedModels.length > 0
-		? cachedModels
-		: getConfiguredProviderModels(args.cfg, args.provider);
+	const configuredModels = getConfiguredProviderModels(args.cfg, args.provider);
+	const catalogModels = args.catalogModels ?? [];
+	if (args.providerDefinition.source === 'custom') {
+		return mergeConfiguredAndCachedModels(configuredModels, catalogModels);
+	}
+	if (catalogModels.length > 0) {
+		return filterModelsForAuthType(args.provider, catalogModels, args.authType);
+	}
+	return configuredModels;
 }
 
 function getUiProviderLabel(
@@ -322,15 +353,13 @@ export function registerModelsRoutes(app: Hono) {
 					projectRoot,
 				});
 			}
-			const filteredModels = shouldLazyLoadProviderModels(providerDefinition)
-				? getCachedOrConfiguredModels({
-						models: providerCatalog?.models,
-						cfg,
-						provider,
-					})
-				: providerCatalog
-					? filterModelsForAuthType(provider, providerCatalog.models, authType)
-					: getConfiguredProviderModels(cfg, provider);
+			const filteredModels = getProviderModelsForUi({
+				providerDefinition,
+				catalogModels: providerCatalog?.models,
+				cfg,
+				provider,
+				authType,
+			});
 			const copilotAllowedModels =
 				provider === 'copilot'
 					? await getAuthorizedCopilotModels(projectRoot)
@@ -400,19 +429,13 @@ export function registerModelsRoutes(app: Hono) {
 							projectRoot,
 						});
 					}
-					const filteredModels = dynamicModels
-						? getCachedOrConfiguredModels({
-								models: providerCatalog?.models,
-								cfg,
-								provider,
-							})
-						: providerCatalog
-							? filterModelsForAuthType(
-									provider,
-									providerCatalog.models,
-									authType,
-								)
-							: getConfiguredProviderModels(cfg, provider);
+					const filteredModels = getProviderModelsForUi({
+						providerDefinition,
+						catalogModels: providerCatalog?.models,
+						cfg,
+						provider,
+						authType,
+					});
 					modelsMap[provider] = {
 						label: getUiProviderLabel(providerDefinition),
 						authType,
