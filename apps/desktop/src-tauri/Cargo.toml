@@ -44,6 +44,7 @@ chrono = { version = "0.4", features = ["serde"] }
 url = "2"
 semver = "1"
 urlencoding = "2"
+fontdb = "0.23"
 
 # Onboarding / wallet generation
 ed25519-dalek = { version = "2", features = ["rand_core"] }

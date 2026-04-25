@@ -99,6 +99,56 @@ export function Workspace({
 					console.error('[otto] Failed to open URL:', err);
 				});
 			}
+
+			if (
+				e.data?.type === 'otto-font-family-changed' &&
+				typeof e.data.fontFamily === 'string' &&
+				e.source === iframeRef.current?.contentWindow
+			) {
+				document.documentElement.style.setProperty(
+					'--otto-font-family',
+					`"${e.data.fontFamily.replace(/"/g, '\\"')}", "IBM Plex Mono", monospace`,
+				);
+				window.localStorage.setItem(
+					'otto-desktop-font-family',
+					e.data.fontFamily,
+				);
+			}
+
+			if (
+				e.data?.type === 'otto-list-system-fonts' &&
+				typeof e.data.requestId === 'string' &&
+				e.source === iframeRef.current?.contentWindow
+			) {
+				const source = iframeRef.current?.contentWindow;
+				if (!source) return;
+
+				tauriBridge
+					.listSystemFonts()
+					.then((fonts) => {
+						source.postMessage(
+							{
+								type: 'otto-system-fonts-result',
+								requestId: e.data.requestId,
+								fonts,
+							},
+							{ targetOrigin: e.origin },
+						);
+					})
+					.catch((error: unknown) => {
+						source.postMessage(
+							{
+								type: 'otto-system-fonts-result',
+								requestId: e.data.requestId,
+								error:
+									error instanceof Error
+										? error.message
+										: 'Failed to list system fonts',
+							},
+							{ targetOrigin: e.origin },
+						);
+					});
+			}
 		};
 		window.addEventListener('message', handler);
 		return () => window.removeEventListener('message', handler);

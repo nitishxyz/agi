@@ -10,6 +10,16 @@ import type { Theme } from '@ottocode/web-sdk/hooks';
 import './index.css';
 
 type View = 'loading' | 'onboarding' | 'picker' | 'workspace';
+const DEFAULT_FONT_FAMILY = 'IBM Plex Mono';
+const DESKTOP_FONT_STORAGE_KEY = 'otto-desktop-font-family';
+
+function applyDesktopFontFamily(fontFamily: string) {
+	const trimmed = fontFamily.trim() || DEFAULT_FONT_FAMILY;
+	document.documentElement.style.setProperty(
+		'--otto-font-family',
+		`"${trimmed.replace(/"/g, '\\"')}", "${DEFAULT_FONT_FAMILY}", monospace`,
+	);
+}
 
 interface ThemeContextValue {
 	theme: Theme;
@@ -31,6 +41,13 @@ function App() {
 	const { theme, setTheme, toggleTheme } = useTheme();
 
 	useEffect(() => {
+		const storedFontFamily = window.localStorage.getItem(
+			DESKTOP_FONT_STORAGE_KEY,
+		);
+		if (storedFontFamily) {
+			applyDesktopFontFamily(storedFontFamily);
+		}
+
 		const init = async () => {
 			const initialPath = await tauriBridge.getInitialProject();
 			const initialRemote = await tauriBridge.getInitialRemote();

@@ -49,8 +49,8 @@ export default {
 				sm: 'calc(var(--radius) - 4px)',
 			},
 			fontFamily: {
-				sans: ['IBM Plex Mono', 'monospace'],
-				mono: ['IBM Plex Mono', 'monospace'],
+				sans: ['var(--otto-font-family)'],
+				mono: ['var(--otto-font-family)'],
 			},
 		},
 	},

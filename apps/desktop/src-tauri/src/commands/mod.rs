@@ -1,3 +1,4 @@
+pub mod fonts;
 pub mod git;
 pub mod github;
 pub mod onboarding;

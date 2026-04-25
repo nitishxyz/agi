@@ -215,6 +215,7 @@ pub fn run() {
             commands::git::git_push,
             commands::git::git_pull,
             commands::git::git_is_repo,
+            commands::fonts::list_system_fonts,
             commands::window::create_new_window,
             get_initial_project,
             get_initial_remote,

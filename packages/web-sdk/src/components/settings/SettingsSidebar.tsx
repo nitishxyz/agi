@@ -71,6 +71,52 @@ interface LocalFontWindow extends Window {
 	queryLocalFonts?: () => Promise<LocalFontData[]>;
 }
 
+interface SystemFontsResultMessage {
+	type: 'otto-system-fonts-result';
+	requestId: string;
+	fonts?: string[];
+	error?: string;
+}
+
+function requestDesktopSystemFonts(): Promise<string[] | null> {
+	if (typeof window === 'undefined' || window.self === window.top) {
+		return Promise.resolve(null);
+	}
+
+	return new Promise((resolve, reject) => {
+		const requestId = crypto.randomUUID();
+		const timeout = window.setTimeout(() => {
+			window.removeEventListener('message', handleMessage);
+			resolve(null);
+		}, 3000);
+
+		function handleMessage(event: MessageEvent<SystemFontsResultMessage>) {
+			if (
+				event.data?.type !== 'otto-system-fonts-result' ||
+				event.data.requestId !== requestId
+			) {
+				return;
+			}
+
+			window.clearTimeout(timeout);
+			window.removeEventListener('message', handleMessage);
+
+			if (event.data.error) {
+				reject(new Error(event.data.error));
+				return;
+			}
+
+			resolve(event.data.fonts ?? null);
+		}
+
+		window.addEventListener('message', handleMessage);
+		window.parent.postMessage(
+			{ type: 'otto-list-system-fonts', requestId },
+			'*',
+		);
+	});
+}
+
 interface SettingsSectionProps {
 	title: string;
 	icon: React.ReactNode;
@@ -266,6 +312,8 @@ const FontPickerRow = memo(function FontPickerRow({
 	const canQueryLocalFonts =
 		typeof window !== 'undefined' &&
 		typeof (window as LocalFontWindow).queryLocalFonts === 'function';
+	const canRequestDesktopFonts =
+		typeof window !== 'undefined' && window.self !== window.top;
 
 	const fontOptions = useMemo(() => {
 		return Array.from(
@@ -282,18 +330,25 @@ const FontPickerRow = memo(function FontPickerRow({
 	const loadLocalFonts = useCallback(async () => {
 		if (isLoadingFonts || localFonts.length > 0) return;
 		const queryLocalFonts = (window as LocalFontWindow).queryLocalFonts;
-		if (!queryLocalFonts) {
-			setFontError('Local font access is not supported in this browser');
-			return;
-		}
 
 		setIsLoadingFonts(true);
 		setFontError(null);
 		try {
-			const fonts = await queryLocalFonts();
-			setLocalFonts(
-				Array.from(new Set(fonts.map((font) => font.family).filter(Boolean))),
-			);
+			if (queryLocalFonts) {
+				const fonts = await queryLocalFonts();
+				setLocalFonts(
+					Array.from(new Set(fonts.map((font) => font.family).filter(Boolean))),
+				);
+				return;
+			}
+
+			const desktopFonts = await requestDesktopSystemFonts();
+			if (desktopFonts?.length) {
+				setLocalFonts(desktopFonts);
+				return;
+			}
+
+			setFontError('Local font access is not supported in this browser');
 		} catch (error) {
 			setFontError(
 				error instanceof Error ? error.message : 'Unable to load local fonts',
@@ -374,7 +429,9 @@ const FontPickerRow = memo(function FontPickerRow({
 												? `${localFonts.length} local fonts found`
 												: canQueryLocalFonts
 													? 'Choose a font or allow local font access if prompted'
-													: 'Showing common system fonts'}
+													: canRequestDesktopFonts
+														? 'Loading desktop system fonts if available'
+														: 'Showing common system fonts'}
 								</div>
 							</div>
 						</>

@@ -78,6 +78,7 @@ export const tauriBridge = {
 	stopServer: (pid: number) => invoke('stop_server', { pid }),
 	stopAllServers: () => invoke('stop_all_servers'),
 	listServers: () => invoke<ServerInfo[]>('list_servers'),
+	listSystemFonts: () => invoke<string[]>('list_system_fonts'),
 
 	createNewWindow: () => invoke('create_new_window'),
 
