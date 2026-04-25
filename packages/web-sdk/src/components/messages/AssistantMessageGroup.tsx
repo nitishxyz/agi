@@ -575,7 +575,6 @@ export const AssistantMessageGroup = memo(
 				prevPart.stepIndex !== nextPart.stepIndex ||
 				prevPart.type !== nextPart.type ||
 				prevPart.content !== nextPart.content ||
-				prevPart.contentJson !== nextPart.contentJson ||
 				prevPart.toolName !== nextPart.toolName ||
 				prevPart.toolCallId !== nextPart.toolCallId ||
 				prevPart.ephemeral !== nextPart.ephemeral ||

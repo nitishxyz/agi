@@ -1,11 +1,11 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 import path from 'node:path';
 
 // https://vite.dev/config/
 export default defineConfig({
-	plugins: [TanStackRouterVite(), react()],
+	plugins: [TanStackRouterVite() as PluginOption, react()],
 	server: {
 		watch: {
 			// Watch the web-sdk source directory

@@ -639,7 +639,6 @@ export const MessagePartItem = memo(
 		return (
 			prevProps.part.id === nextProps.part.id &&
 			prevProps.part.content === nextProps.part.content &&
-			prevProps.part.contentJson === nextProps.part.contentJson &&
 			prevProps.part.ephemeral === nextProps.part.ephemeral &&
 			prevProps.part.completedAt === nextProps.part.completedAt &&
 			prevProps.showLine === nextProps.showLine &&
