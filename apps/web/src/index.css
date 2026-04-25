@@ -32,6 +32,7 @@
 
 @layer base {
 	:root {
+		--otto-font-family: "IBM Plex Mono", monospace;
 		--background: 220 25% 95%;
 		--foreground: 220 10% 15%;
 		--card: 220 25% 98%;
@@ -128,7 +129,7 @@
 
 body {
 	margin: 0;
-	font-family: "IBM Plex Mono", monospace;
+	font-family: var(--otto-font-family);
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	background-color: hsl(var(--background));
@@ -148,7 +149,7 @@ html {
 }
 
 code {
-	font-family: "IBM Plex Mono", monospace;
+	font-family: var(--otto-font-family);
 	color: var(--code-foreground);
 }
 

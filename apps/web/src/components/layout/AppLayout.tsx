@@ -118,10 +118,10 @@ export const AppLayout = memo(function AppLayout({
 							<SessionFilesSidebarToggle sessionId={sessionId} />
 							<ResearchSidebarToggle parentSessionId={sessionId} />
 							<FileBrowserSidebarToggle />
-							<SettingsSidebarToggle />
 							<TunnelSidebarToggle />
 							<MCPSidebarToggle />
 							<SkillsSidebarToggle />
+							<SettingsSidebarToggle />
 							<div className="flex-1" />
 							<TerminalPanelToggle />
 							<div className="h-12 border-t border-border flex items-center justify-center">

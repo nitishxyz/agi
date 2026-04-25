@@ -1,4 +1,5 @@
-import { memo, useState, useMemo, useCallback, useEffect } from 'react';
+import { memo, useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
 	Settings,
 	ChevronRight,
@@ -14,9 +15,12 @@ import {
 	Check,
 	Key,
 	Loader2,
+	Type,
+	Sparkles,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useOnboardingStore } from '../../stores/onboardingStore';
 import { useAuthStatus } from '../../hooks/useAuthStatus';
@@ -38,6 +42,34 @@ const SETTINGS_PANEL_KEY = 'settings';
 const SETTINGS_DEFAULT_WIDTH = 320;
 const SETTINGS_MIN_WIDTH = 320;
 const SETTINGS_MAX_WIDTH = 500;
+const DEFAULT_FONT_FAMILY = 'IBM Plex Mono';
+const COMMON_SYSTEM_FONTS = [
+	DEFAULT_FONT_FAMILY,
+	'System UI',
+	'Arial',
+	'Avenir',
+	'BlinkMacSystemFont',
+	'Courier New',
+	'Fira Code',
+	'Georgia',
+	'Helvetica',
+	'Inter',
+	'Menlo',
+	'Monaco',
+	'SF Mono',
+	'Segoe UI',
+	'Times New Roman',
+	'Ubuntu',
+	'Verdana',
+];
+
+interface LocalFontData {
+	family: string;
+}
+
+interface LocalFontWindow extends Window {
+	queryLocalFonts?: () => Promise<LocalFontData[]>;
+}
 
 interface SettingsSectionProps {
 	title: string;
@@ -90,14 +122,16 @@ const ToggleRow = memo(function ToggleRow({
 	onChange,
 }: ToggleRowProps) {
 	return (
-		<div className="flex items-center justify-between text-sm">
-			<span className="text-muted-foreground">{label}</span>
+		<div className="flex min-w-0 items-center justify-between gap-3 text-sm">
+			<span className="min-w-0 flex-1 truncate text-muted-foreground">
+				{label}
+			</span>
 			<button
 				type="button"
 				role="switch"
 				aria-checked={checked}
 				onClick={() => onChange(!checked)}
-				className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+				className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
 					checked ? 'bg-primary' : 'bg-muted'
 				}`}
 			>
@@ -127,13 +161,41 @@ const SelectRow = memo(function SelectRow({
 	disabled,
 }: SelectRowProps) {
 	const [isOpen, setIsOpen] = useState(false);
+	const [menuStyle, setMenuStyle] = useState<{
+		top: number;
+		left: number;
+		width: number;
+	} | null>(null);
+	const buttonRef = useRef<HTMLButtonElement | null>(null);
 	const selectedOption = options.find((o) => o.id === value);
+
+	useEffect(() => {
+		if (!isOpen || !buttonRef.current) return;
+		const update = () => {
+			const rect = buttonRef.current?.getBoundingClientRect();
+			if (!rect) return;
+			const width = Math.max(rect.width, 160);
+			setMenuStyle({
+				top: rect.bottom + 4,
+				left: rect.right - width,
+				width,
+			});
+		};
+		update();
+		window.addEventListener('scroll', update, true);
+		window.addEventListener('resize', update);
+		return () => {
+			window.removeEventListener('scroll', update, true);
+			window.removeEventListener('resize', update);
+		};
+	}, [isOpen]);
 
 	return (
 		<div className="flex items-center justify-between text-sm">
 			<span className="text-muted-foreground">{label}</span>
 			<div className="relative">
 				<button
+					ref={buttonRef}
 					type="button"
 					onClick={() => !disabled && setIsOpen(!isOpen)}
 					disabled={disabled}
@@ -144,33 +206,180 @@ const SelectRow = memo(function SelectRow({
 					</span>
 					<ChevronDown className="w-3 h-3" />
 				</button>
-				{isOpen && (
-					<>
-						{/* biome-ignore lint/a11y/noStaticElementInteractions: click-away backdrop pattern */}
-						<div
-							className="fixed inset-0 z-40"
-							onClick={() => setIsOpen(false)}
-							role="presentation"
-						/>
-						<div className="absolute right-0 top-full mt-1 z-50 min-w-[160px] max-h-[200px] overflow-y-auto bg-popover border border-border rounded-md shadow-lg">
-							{options.map((option) => (
-								<button
-									key={option.id}
-									type="button"
-									onClick={() => {
-										onChange(option.id);
-										setIsOpen(false);
-									}}
-									className={`w-full px-3 py-2 text-left text-xs font-mono hover:bg-muted truncate ${
-										option.id === value ? 'bg-muted/50' : ''
-									}`}
-								>
-									{option.label}
-								</button>
-							))}
-						</div>
-					</>
-				)}
+				{isOpen &&
+					menuStyle &&
+					typeof document !== 'undefined' &&
+					createPortal(
+						<>
+							{/* biome-ignore lint/a11y/noStaticElementInteractions: click-away backdrop pattern */}
+							<div
+								className="fixed inset-0 z-[10000]"
+								onClick={() => setIsOpen(false)}
+								role="presentation"
+							/>
+							<div
+								className="fixed z-[10001] max-h-[240px] overflow-y-auto bg-popover border border-border rounded-md shadow-lg"
+								style={{
+									top: menuStyle.top,
+									left: menuStyle.left,
+									minWidth: menuStyle.width,
+								}}
+							>
+								{options.map((option) => (
+									<button
+										key={option.id}
+										type="button"
+										onClick={() => {
+											onChange(option.id);
+											setIsOpen(false);
+										}}
+										className={`w-full px-3 py-2 text-left text-xs font-mono hover:bg-muted truncate ${
+											option.id === value ? 'bg-muted/50' : ''
+										}`}
+									>
+										{option.label}
+									</button>
+								))}
+							</div>
+						</>,
+						document.body,
+					)}
+			</div>
+		</div>
+	);
+});
+
+interface FontPickerRowProps {
+	value: string;
+	onChange: (value: string) => void;
+}
+
+const FontPickerRow = memo(function FontPickerRow({
+	value,
+	onChange,
+}: FontPickerRowProps) {
+	const [isOpen, setIsOpen] = useState(false);
+	const [search, setSearch] = useState('');
+	const [localFonts, setLocalFonts] = useState<string[]>([]);
+	const [isLoadingFonts, setIsLoadingFonts] = useState(false);
+	const [fontError, setFontError] = useState<string | null>(null);
+	const canQueryLocalFonts =
+		typeof window !== 'undefined' &&
+		typeof (window as LocalFontWindow).queryLocalFonts === 'function';
+
+	const fontOptions = useMemo(() => {
+		return Array.from(
+			new Set([value, ...localFonts, ...COMMON_SYSTEM_FONTS].filter(Boolean)),
+		).sort((a, b) => a.localeCompare(b));
+	}, [localFonts, value]);
+
+	const filteredFonts = useMemo(() => {
+		const query = search.trim().toLowerCase();
+		if (!query) return fontOptions;
+		return fontOptions.filter((font) => font.toLowerCase().includes(query));
+	}, [fontOptions, search]);
+
+	const loadLocalFonts = useCallback(async () => {
+		if (isLoadingFonts || localFonts.length > 0) return;
+		const queryLocalFonts = (window as LocalFontWindow).queryLocalFonts;
+		if (!queryLocalFonts) {
+			setFontError('Local font access is not supported in this browser');
+			return;
+		}
+
+		setIsLoadingFonts(true);
+		setFontError(null);
+		try {
+			const fonts = await queryLocalFonts();
+			setLocalFonts(
+				Array.from(new Set(fonts.map((font) => font.family).filter(Boolean))),
+			);
+		} catch (error) {
+			setFontError(
+				error instanceof Error ? error.message : 'Unable to load local fonts',
+			);
+		} finally {
+			setIsLoadingFonts(false);
+		}
+	}, [isLoadingFonts, localFonts.length]);
+
+	const openPicker = () => {
+		setIsOpen(true);
+		void loadLocalFonts();
+	};
+
+	return (
+		<div className="space-y-2 text-sm">
+			<div className="flex items-center justify-between gap-3">
+				<span className="text-muted-foreground">UI Font</span>
+				<div className="relative min-w-0">
+					<button
+						type="button"
+						onClick={() => (isOpen ? setIsOpen(false) : openPicker())}
+						className="flex max-w-[170px] items-center gap-1 rounded border border-border bg-muted px-2 py-1 text-xs hover:bg-muted/80"
+					>
+						<span className="truncate" style={{ fontFamily: value }}>
+							{value || DEFAULT_FONT_FAMILY}
+						</span>
+						<ChevronDown className="h-3 w-3 shrink-0" />
+					</button>
+					{isOpen && (
+						<>
+							{/* biome-ignore lint/a11y/noStaticElementInteractions: click-away backdrop pattern */}
+							<div
+								className="fixed inset-0 z-40"
+								onClick={() => setIsOpen(false)}
+								role="presentation"
+							/>
+							<div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-md border border-border bg-popover shadow-lg">
+								<div className="border-b border-border p-2">
+									<input
+										type="search"
+										value={search}
+										onChange={(event) => setSearch(event.target.value)}
+										placeholder="Search system fonts..."
+										className="w-full rounded border border-border bg-background px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/70 focus:border-primary"
+									/>
+								</div>
+								<div className="max-h-64 overflow-y-auto py-1">
+									{filteredFonts.map((font) => (
+										<button
+											key={font}
+											type="button"
+											onClick={() => {
+												onChange(font);
+												setIsOpen(false);
+												setSearch('');
+											}}
+											className={`w-full px-3 py-2 text-left text-xs hover:bg-muted ${
+												font === value ? 'bg-muted/50' : ''
+											}`}
+											style={{ fontFamily: font }}
+										>
+											{font}
+										</button>
+									))}
+									{filteredFonts.length === 0 && (
+										<div className="px-3 py-2 text-xs text-muted-foreground">
+											No fonts found
+										</div>
+									)}
+								</div>
+								<div className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+									{isLoadingFonts
+										? 'Loading local fonts...'
+										: fontError
+											? fontError
+											: localFonts.length > 0
+												? `${localFonts.length} local fonts found`
+												: canQueryLocalFonts
+													? 'Choose a font or allow local font access if prompted'
+													: 'Showing common system fonts'}
+								</div>
+							</div>
+						</>
+					)}
+				</div>
 			</div>
 		</div>
 	);
@@ -267,16 +476,148 @@ const NumberInputRow = memo(function NumberInputRow({
 	);
 });
 
+interface PreferencesModalProps {
+	isOpen: boolean;
+	onClose: () => void;
+}
+
+function PreferencesModal({ isOpen, onClose }: PreferencesModalProps) {
+	const { data: config } = useConfig();
+	const { preferences, updatePreferences } = usePreferences();
+	const updateDefaults = useUpdateDefaults();
+
+	return (
+		<Modal isOpen={isOpen} onClose={onClose} title="Preferences" maxWidth="lg">
+			<div className="-m-6">
+				<SettingsSection
+					title="Editor"
+					icon={<Type className="w-4 h-4 text-muted-foreground" />}
+				>
+					<ToggleRow
+						label="Vim Mode"
+						checked={preferences.vimMode}
+						onChange={(checked) => updatePreferences({ vimMode: checked })}
+					/>
+					<ToggleRow
+						label="Compact Thread"
+						checked={preferences.compactThread}
+						onChange={(checked) =>
+							updatePreferences({ compactThread: checked })
+						}
+					/>
+					<ToggleRow
+						label="Full Width Content"
+						checked={preferences.fullWidthContent}
+						onChange={(checked) =>
+							updatePreferences({ fullWidthContent: checked })
+						}
+					/>
+					<FontPickerRow
+						value={preferences.fontFamily}
+						onChange={(fontFamily) => updatePreferences({ fontFamily })}
+					/>
+				</SettingsSection>
+
+				<SettingsSection
+					title="Automation"
+					icon={<Zap className="w-4 h-4 text-muted-foreground" />}
+				>
+					<NumberInputRow
+						label="Auto Compact"
+						value={config?.defaults?.autoCompactThresholdTokens}
+						onCommit={(value) =>
+							updateDefaults.mutate({
+								autoCompactThresholdTokens: value,
+								scope: 'global',
+							})
+						}
+						placeholder="Tokens"
+						disabled={updateDefaults.isPending}
+					/>
+					<SelectRow
+						label="Tool Approval"
+						value={config?.defaults?.toolApproval ?? 'dangerous'}
+						options={[
+							{ id: 'auto', label: 'Auto (no approval)' },
+							{ id: 'dangerous', label: 'Dangerous only' },
+							{ id: 'yolo', label: 'YOLO (hard blocks only)' },
+							{ id: 'all', label: 'All tools' },
+						]}
+						onChange={(value) =>
+							updateDefaults.mutate({
+								toolApproval: value as 'auto' | 'dangerous' | 'all' | 'yolo',
+								scope: 'global',
+							})
+						}
+						disabled={updateDefaults.isPending}
+					/>
+					<ToggleRow
+						label="Guided Mode"
+						checked={config?.defaults?.guidedMode ?? false}
+						onChange={(checked) =>
+							updateDefaults.mutate({
+								guidedMode: checked,
+								scope: 'global',
+							})
+						}
+					/>
+				</SettingsSection>
+
+				<SettingsSection
+					title="Reasoning"
+					icon={<Sparkles className="w-4 h-4 text-muted-foreground" />}
+				>
+					<ToggleRow
+						label="Show Reasoning"
+						checked={config?.defaults?.reasoningText ?? true}
+						onChange={(checked) =>
+							updateDefaults.mutate({
+								reasoningText: checked,
+								scope: 'global',
+							})
+						}
+					/>
+					<SelectRow
+						label="Reasoning Level"
+						value={config?.defaults?.reasoningLevel ?? 'high'}
+						options={[
+							{ id: 'minimal', label: 'Minimal' },
+							{ id: 'low', label: 'Low' },
+							{ id: 'medium', label: 'Medium' },
+							{ id: 'high', label: 'High' },
+							{ id: 'max', label: 'Max' },
+							{ id: 'xhigh', label: 'Extra High' },
+						]}
+						onChange={(value) =>
+							updateDefaults.mutate({
+								reasoningLevel: value as
+									| 'minimal'
+									| 'low'
+									| 'medium'
+									| 'high'
+									| 'max'
+									| 'xhigh',
+								scope: 'global',
+							})
+						}
+						disabled={updateDefaults.isPending}
+					/>
+				</SettingsSection>
+			</div>
+		</Modal>
+	);
+}
+
 export const SettingsSidebar = memo(function SettingsSidebar() {
 	const isExpanded = useSettingsStore((state) => state.isExpanded);
 	const collapseSidebar = useSettingsStore((state) => state.collapseSidebar);
+	const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
 	const panelWidth = usePanelWidthStore(
 		(s) => s.widths[SETTINGS_PANEL_KEY] ?? SETTINGS_DEFAULT_WIDTH,
 	);
 
 	const { data: config } = useConfig();
 	const { data: allModels } = useAllModels();
-	const { preferences, updatePreferences } = usePreferences();
 	const updateDefaults = useUpdateDefaults();
 	const ottorouterBalance = useOttoRouterStore((s) => s.balance);
 	const ottorouterWallet = useOttoRouterStore((s) => s.walletAddress);
@@ -396,105 +737,6 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 					</SettingsSection>
 
 					<SettingsSection
-						title="Preferences"
-						icon={<User className="w-4 h-4 text-muted-foreground" />}
-					>
-						<ToggleRow
-							label="Vim Mode"
-							checked={preferences.vimMode}
-							onChange={(checked) => updatePreferences({ vimMode: checked })}
-						/>
-						<ToggleRow
-							label="Compact Thread"
-							checked={preferences.compactThread}
-							onChange={(checked) =>
-								updatePreferences({ compactThread: checked })
-							}
-						/>
-						<ToggleRow
-							label="Full Width Content"
-							checked={preferences.fullWidthContent}
-							onChange={(checked) =>
-								updatePreferences({ fullWidthContent: checked })
-							}
-						/>
-						<NumberInputRow
-							label="Auto Compact"
-							value={config?.defaults?.autoCompactThresholdTokens}
-							onCommit={(value) =>
-								updateDefaults.mutate({
-									autoCompactThresholdTokens: value,
-									scope: 'global',
-								})
-							}
-							placeholder="Tokens"
-							disabled={updateDefaults.isPending}
-						/>
-						<ToggleRow
-							label="Show Reasoning"
-							checked={config?.defaults?.reasoningText ?? true}
-							onChange={(checked) =>
-								updateDefaults.mutate({
-									reasoningText: checked,
-									scope: 'global',
-								})
-							}
-						/>
-						<SelectRow
-							label="Reasoning Level"
-							value={config?.defaults?.reasoningLevel ?? 'high'}
-							options={[
-								{ id: 'minimal', label: 'Minimal' },
-								{ id: 'low', label: 'Low' },
-								{ id: 'medium', label: 'Medium' },
-								{ id: 'high', label: 'High' },
-								{ id: 'max', label: 'Max' },
-								{ id: 'xhigh', label: 'Extra High' },
-							]}
-							onChange={(value) =>
-								updateDefaults.mutate({
-									reasoningLevel: value as
-										| 'minimal'
-										| 'low'
-										| 'medium'
-										| 'high'
-										| 'max'
-										| 'xhigh',
-									scope: 'global',
-								})
-							}
-							disabled={updateDefaults.isPending}
-						/>
-						<SelectRow
-							label="Tool Approval"
-							value={config?.defaults?.toolApproval ?? 'dangerous'}
-							options={[
-								{ id: 'auto', label: 'Auto (no approval)' },
-								{ id: 'dangerous', label: 'Dangerous only' },
-								{ id: 'yolo', label: 'YOLO (hard blocks only)' },
-								{ id: 'all', label: 'All tools' },
-							]}
-							onChange={(value) =>
-								updateDefaults.mutate({
-									toolApproval: value as 'auto' | 'dangerous' | 'all' | 'yolo',
-									scope: 'global',
-								})
-							}
-							disabled={updateDefaults.isPending}
-						/>
-						<ToggleRow
-							label="Guided Mode"
-							checked={config?.defaults?.guidedMode ?? false}
-							onChange={(checked) =>
-								updateDefaults.mutate({
-									guidedMode: checked,
-									scope: 'global',
-								})
-							}
-						/>
-					</SettingsSection>
-
-					<SettingsSection
 						title="Providers"
 						icon={<Zap className="w-4 h-4 text-muted-foreground" />}
 						action={
@@ -540,6 +782,24 @@ export const SettingsSidebar = memo(function SettingsSidebar() {
 
 					<OttoRouterTopupModal />
 				</div>
+
+				<button
+					type="button"
+					onClick={() => setIsPreferencesOpen(true)}
+					title="Open preferences"
+					className="group shrink-0 w-full h-12 px-4 flex items-center gap-2 bg-muted/20 hover:bg-muted/60 border-t border-border transition-colors text-left cursor-pointer"
+				>
+					<User className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+					<span className="text-sm flex-1 text-muted-foreground group-hover:text-foreground transition-colors">
+						Preferences
+					</span>
+					<ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+				</button>
+
+				<PreferencesModal
+					isOpen={isPreferencesOpen}
+					onClose={() => setIsPreferencesOpen(false)}
+				/>
 			</div>
 		</div>
 	);

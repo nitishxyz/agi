@@ -4,6 +4,7 @@ import { useConfig, useUpdateDefaults } from './useConfig';
 interface StoredPreferences {
 	vimMode: boolean;
 	compactThread: boolean;
+	fontFamily: string;
 }
 
 interface Preferences extends StoredPreferences {
@@ -11,10 +12,31 @@ interface Preferences extends StoredPreferences {
 }
 
 const STORAGE_KEY = 'otto-preferences';
+const DEFAULT_FONT_FAMILY = 'IBM Plex Mono';
 const DEFAULT_STORED_PREFERENCES: StoredPreferences = {
 	vimMode: false,
 	compactThread: true,
+	fontFamily: DEFAULT_FONT_FAMILY,
 };
+
+function cssFontFamily(fontFamily: string): string {
+	const trimmed = fontFamily.trim();
+	if (!trimmed || trimmed === DEFAULT_FONT_FAMILY) {
+		return `"${DEFAULT_FONT_FAMILY}", monospace`;
+	}
+	return `"${trimmed.replaceAll('"', '\\"')}", "${DEFAULT_FONT_FAMILY}", monospace`;
+}
+
+function applyFontFamily(fontFamily: string) {
+	if (typeof document === 'undefined') {
+		return;
+	}
+	document.documentElement.style.setProperty(
+		'--otto-font-family',
+		cssFontFamily(fontFamily),
+	);
+	document.documentElement.dataset.ottoFontFamily = fontFamily;
+}
 
 function resolveInitialPreferences(): StoredPreferences {
 	if (typeof window === 'undefined') {
@@ -33,6 +55,10 @@ function resolveInitialPreferences(): StoredPreferences {
 					typeof parsed.compactThread === 'boolean'
 						? parsed.compactThread
 						: DEFAULT_STORED_PREFERENCES.compactThread,
+				fontFamily:
+					typeof parsed.fontFamily === 'string' && parsed.fontFamily.trim()
+						? parsed.fontFamily.trim()
+						: DEFAULT_STORED_PREFERENCES.fontFamily,
 			};
 		}
 	} catch (error) {
@@ -42,6 +68,7 @@ function resolveInitialPreferences(): StoredPreferences {
 }
 
 let preferences: StoredPreferences = resolveInitialPreferences();
+applyFontFamily(preferences.fontFamily);
 const listeners = new Set<() => void>();
 
 function getSnapshot(): StoredPreferences {
@@ -65,6 +92,9 @@ function notifyListeners() {
 
 function updateStore(updates: Partial<StoredPreferences>) {
 	preferences = { ...preferences, ...updates };
+	if (updates.fontFamily !== undefined) {
+		applyFontFamily(preferences.fontFamily);
+	}
 	if (typeof window !== 'undefined') {
 		try {
 			window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
@@ -93,6 +123,10 @@ export function usePreferences() {
 			}
 			if (updates.compactThread !== undefined) {
 				localUpdates.compactThread = updates.compactThread;
+			}
+			if (updates.fontFamily !== undefined) {
+				localUpdates.fontFamily =
+					updates.fontFamily.trim() || DEFAULT_FONT_FAMILY;
 			}
 
 			if (Object.keys(localUpdates).length > 0) {
