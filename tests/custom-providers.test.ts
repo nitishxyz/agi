@@ -263,7 +263,7 @@ describe('custom declarative providers', () => {
 		}
 	});
 
-	test('returns cached custom provider models without project provider config', async () => {
+	test('does not expose cached provider models without provider auth', async () => {
 		const projectRoot = await mkdtemp(
 			join(tmpdir(), 'otto-provider-cache-only-'),
 		);
@@ -289,20 +289,12 @@ describe('custom declarative providers', () => {
 				string,
 				{ models: Array<{ id: string }> }
 			>;
-			expect(allModelsPayload.ollama.models.map((model) => model.id)).toEqual([
-				'gemma4:latest',
-			]);
+			expect(allModelsPayload.ollama).toBeUndefined();
 
 			const modelsResponse = await app.request(
 				`http://localhost/v1/config/providers/ollama/models?project=${encodeURIComponent(projectRoot)}`,
 			);
-			expect(modelsResponse.status).toBe(200);
-			const modelsPayload = (await modelsResponse.json()) as {
-				models: Array<{ id: string }>;
-			};
-			expect(modelsPayload.models.map((model) => model.id)).toEqual([
-				'gemma4:latest',
-			]);
+			expect(modelsResponse.status).toBe(403);
 		} finally {
 			if (previousConfigHome === undefined) delete process.env.XDG_CONFIG_HOME;
 			else process.env.XDG_CONFIG_HOME = previousConfigHome;

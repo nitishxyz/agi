@@ -299,7 +299,7 @@ export function registerModelsRoutes(app: Hono) {
 				provider,
 			);
 
-			if (!authorized && !providerCatalog) {
+			if (!authorized) {
 				logger.warn('Provider not authorized', { provider });
 				return c.json({ error: 'Provider not authorized' }, 403);
 			}
@@ -385,14 +385,7 @@ export function registerModelsRoutes(app: Hono) {
 
 			const modelsMap: Record<string, UiProviderModels> = {};
 
-			const cachedProviderIds = Object.keys(
-				modelCatalogProviders,
-			) as ProviderId[];
-			const modelProviders = Array.from(
-				new Set<ProviderId>([...authorizedProviders, ...cachedProviderIds]),
-			);
-
-			for (const provider of modelProviders) {
+			for (const provider of authorizedProviders) {
 				const providerCatalog = modelCatalogProviders[provider];
 				const providerDefinition = getProviderDefinition(cfg, provider);
 				if (providerCatalog) {
