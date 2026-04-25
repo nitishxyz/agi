@@ -127,8 +127,15 @@ export function useSessionStream(
 			parts: MessagePart[],
 			stepIndex: number | null,
 		): number => {
+			const appendIndex = (() => {
+				const indexes = parts
+					.map((part) => part.index)
+					.filter((index): index is number => Number.isFinite(index));
+				return indexes.length > 0 ? Math.max(...indexes) + 0.001 : 0;
+			})();
+
 			if (typeof stepIndex !== 'number') {
-				return parts.length;
+				return appendIndex;
 			}
 
 			const sameStepIndexes = parts
@@ -140,40 +147,7 @@ export function useSessionStream(
 				return Math.max(...sameStepIndexes) + 0.001;
 			}
 
-			const previousStepIndexes = parts
-				.filter(
-					(part) =>
-						typeof part.stepIndex === 'number' && part.stepIndex < stepIndex,
-				)
-				.map((part) => part.index)
-				.filter((index): index is number => Number.isFinite(index));
-
-			const nextStepIndexes = parts
-				.filter(
-					(part) =>
-						typeof part.stepIndex === 'number' && part.stepIndex > stepIndex,
-				)
-				.map((part) => part.index)
-				.filter((index): index is number => Number.isFinite(index));
-
-			const lowerBound =
-				previousStepIndexes.length > 0
-					? Math.max(...previousStepIndexes)
-					: null;
-			const upperBound =
-				nextStepIndexes.length > 0 ? Math.min(...nextStepIndexes) : null;
-
-			if (lowerBound !== null && upperBound !== null) {
-				return (lowerBound + upperBound) / 2;
-			}
-			if (lowerBound !== null) {
-				return lowerBound + 1;
-			}
-			if (upperBound !== null) {
-				return upperBound - 1;
-			}
-
-			return parts.length;
+			return appendIndex;
 		};
 
 		const applyReasoningDelta = (
