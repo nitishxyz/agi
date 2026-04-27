@@ -52,12 +52,16 @@ async function ensureProjectStorage(projectRoot: string) {
 	return cfg;
 }
 
+async function activateProject(projectRoot: string): Promise<void> {
+	process.chdir(projectRoot);
+	await ensureProjectStorage(process.cwd());
+}
+
 export async function startApiServer(opts: {
 	project: string;
 	port?: number;
 }): Promise<StartServerResult> {
-	const projectRoot = opts.project;
-	await ensureProjectStorage(projectRoot);
+	await activateProject(opts.project);
 
 	const app = createServer();
 	const portEnv = process.env.PORT ? Number(process.env.PORT) : undefined;
@@ -111,9 +115,7 @@ export interface ServeOptions {
 }
 
 export async function handleServe(opts: ServeOptions, version: string) {
-	const projectRoot = opts.project;
-
-	await ensureProjectStorage(projectRoot);
+	await activateProject(opts.project);
 
 	const app = createServer();
 	const portEnv = process.env.PORT ? Number(process.env.PORT) : undefined;
