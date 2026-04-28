@@ -1,6 +1,7 @@
 import type { Hono } from 'hono';
 import { readdir, readFile } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { homedir } from 'node:os';
+import { join, relative, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -11,6 +12,12 @@ import { resolveBinary } from '@ottocode/sdk/tools/bin-manager';
 const execAsync = promisify(exec);
 
 const EXCLUDED_FILES = new Set(['.DS_Store', 'bun.lockb']);
+
+const HOME_SEARCH_MAX_DEPTH = 3;
+const HOME_SEARCH_LIMIT = 500;
+const DEFAULT_SEARCH_MAX_DEPTH = 12;
+const DEFAULT_SEARCH_LIMIT = 10_000;
+const TREE_ENTRY_LIMIT = 1000;
 
 const EXCLUDED_DIRS = new Set([
 	'node_modules',
@@ -37,6 +44,36 @@ const EXCLUDED_DIRS = new Set([
 	'.vscode',
 ]);
 
+type SearchPolicy = {
+	maxDepth: number;
+	limit: number;
+	includeIgnored: boolean;
+};
+
+function isHomeDirectory(projectRoot: string): boolean {
+	return resolve(projectRoot) === resolve(homedir());
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+	if (!Number.isFinite(value)) return max;
+	return Math.min(Math.max(value, min), max);
+}
+
+function getSearchPolicy(projectRoot: string): SearchPolicy {
+	if (isHomeDirectory(projectRoot)) {
+		return {
+			maxDepth: HOME_SEARCH_MAX_DEPTH,
+			limit: HOME_SEARCH_LIMIT,
+			includeIgnored: false,
+		};
+	}
+	return {
+		maxDepth: DEFAULT_SEARCH_MAX_DEPTH,
+		limit: DEFAULT_SEARCH_LIMIT,
+		includeIgnored: false,
+	};
+}
+
 function shouldExcludeFile(name: string): boolean {
 	return EXCLUDED_FILES.has(name);
 }
@@ -45,20 +82,26 @@ function shouldExcludeDir(name: string): boolean {
 	return EXCLUDED_DIRS.has(name);
 }
 
+function shouldExcludeSearchDir(name: string): boolean {
+	return shouldExcludeDir(name) || name.startsWith('.');
+}
+
 async function listFilesWithRg(
 	projectRoot: string,
+	maxDepth: number,
 	limit: number,
 	includeIgnored = false,
+	query = '',
 ): Promise<{ files: string[]; truncated: boolean }> {
 	const rgBin = await resolveBinary('rg');
 
 	return new Promise((resolve) => {
-		const args = ['--files', '--hidden', '--glob', '!.*/', '--sort', 'path'];
+		const args = ['--files', '--sort', 'path', '--max-depth', String(maxDepth)];
 		if (includeIgnored) {
 			args.push('--no-ignore');
 		}
 		for (const dir of EXCLUDED_DIRS) {
-			args.push('--glob', `!**/${dir}/`);
+			args.push('--glob', `!**/${dir}/**`);
 		}
 
 		const proc = spawn(rgBin, args, { cwd: projectRoot });
@@ -85,9 +128,12 @@ async function listFilesWithRg(
 
 			const allFiles = stdout.split('\n').filter(Boolean);
 
+			const normalizedQuery = query.trim().toLowerCase();
 			const filtered = allFiles.filter((f) => {
 				const filename = f.split(/[\\/]/).pop() || f;
-				return !shouldExcludeFile(filename);
+				if (shouldExcludeFile(filename)) return false;
+				if (!normalizedQuery) return true;
+				return f.toLowerCase().includes(normalizedQuery);
 			});
 
 			const truncated = filtered.length > limit;
@@ -170,7 +216,7 @@ async function traverseDirectory(
 			const relativePath = relative(projectRoot, fullPath);
 
 			if (entry.isDirectory()) {
-				if (shouldExcludeDir(entry.name)) continue;
+				if (shouldExcludeSearchDir(entry.name)) continue;
 				if (
 					gitignorePatterns &&
 					matchesGitignorePattern(relativePath, gitignorePatterns)
@@ -271,10 +317,24 @@ export function registerFilesRoutes(app: Hono) {
 	app.get('/v1/files', async (c) => {
 		try {
 			const projectRoot = c.req.query('project') || process.cwd();
-			const maxDepth = Number.parseInt(c.req.query('maxDepth') || '10', 10);
-			const limit = Number.parseInt(c.req.query('limit') || '10000', 10);
+			const policy = getSearchPolicy(projectRoot);
+			const maxDepth = clampNumber(
+				Number.parseInt(c.req.query('maxDepth') || String(policy.maxDepth), 10),
+				1,
+				policy.maxDepth,
+			);
+			const limit = clampNumber(
+				Number.parseInt(c.req.query('limit') || String(policy.limit), 10),
+				1,
+				policy.limit,
+			);
 
-			let result = await listFilesWithRg(projectRoot, limit, true);
+			let result = await listFilesWithRg(
+				projectRoot,
+				maxDepth,
+				limit,
+				policy.includeIgnored,
+			);
 
 			if (result.files.length === 0) {
 				const gitignorePatterns = await parseGitignore(projectRoot);
@@ -315,9 +375,99 @@ export function registerFilesRoutes(app: Hono) {
 					}),
 				),
 				truncated: result.truncated,
+				policy: {
+					maxDepth,
+					limit,
+					home: isHomeDirectory(projectRoot),
+				},
 			});
 		} catch (err) {
 			logger.error('Files route error:', err);
+			return c.json({ error: serializeError(err) }, 500);
+		}
+	});
+
+	app.get('/v1/files/search', async (c) => {
+		try {
+			const projectRoot = c.req.query('project') || process.cwd();
+			const query = c.req.query('q') || '';
+			const policy = getSearchPolicy(projectRoot);
+			const maxDepth = clampNumber(
+				Number.parseInt(c.req.query('maxDepth') || String(policy.maxDepth), 10),
+				1,
+				policy.maxDepth,
+			);
+			const limit = clampNumber(
+				Number.parseInt(c.req.query('limit') || String(policy.limit), 10),
+				1,
+				policy.limit,
+			);
+
+			let result = await listFilesWithRg(
+				projectRoot,
+				maxDepth,
+				limit,
+				policy.includeIgnored,
+				query,
+			);
+
+			if (result.files.length === 0) {
+				const gitignorePatterns = await parseGitignore(projectRoot);
+				result = await traverseDirectory(
+					projectRoot,
+					projectRoot,
+					maxDepth,
+					0,
+					limit,
+					[],
+					gitignorePatterns,
+				);
+				const normalizedQuery = query.trim().toLowerCase();
+				if (normalizedQuery) {
+					const files = result.files.filter((file) =>
+						file.toLowerCase().includes(normalizedQuery),
+					);
+					result = {
+						files: files.slice(0, limit),
+						truncated: files.length > limit,
+					};
+				}
+			}
+
+			const [changedFiles, ignoredFiles] = await Promise.all([
+				getChangedFiles(projectRoot),
+				getGitIgnoredFiles(projectRoot, result.files),
+			]);
+
+			result.files.sort((a, b) => {
+				const aIgnored = ignoredFiles.has(a);
+				const bIgnored = ignoredFiles.has(b);
+				if (aIgnored !== bIgnored) return aIgnored ? 1 : -1;
+				const aChanged = changedFiles.has(a);
+				const bChanged = changedFiles.has(b);
+				if (aChanged && !bChanged) return -1;
+				if (!aChanged && bChanged) return 1;
+				return a.localeCompare(b);
+			});
+
+			return c.json({
+				files: result.files,
+				ignoredFiles: Array.from(ignoredFiles),
+				changedFiles: Array.from(changedFiles.entries()).map(
+					([path, status]) => ({
+						path,
+						status,
+					}),
+				),
+				truncated: result.truncated,
+				policy: {
+					maxDepth,
+					limit,
+					home: isHomeDirectory(projectRoot),
+				},
+			});
+		} catch (err) {
+			logger.error('Files search route error:', err);
 			return c.json({ error: serializeError(err) }, 500);
 		}
 	});
@@ -326,28 +476,37 @@ export function registerFilesRoutes(app: Hono) {
 		try {
 			const projectRoot = c.req.query('project') || process.cwd();
 			const dirPath = c.req.query('path') || '.';
-			const targetDir = join(projectRoot, dirPath);
+			const targetDir = resolve(projectRoot, dirPath);
+			if (!targetDir.startsWith(resolve(projectRoot))) {
+				return c.json({ error: 'Path traversal not allowed' }, 403);
+			}
 
 			const gitignorePatterns = await parseGitignore(projectRoot);
 			const entries = await readdir(targetDir, { withFileTypes: true });
+			const truncated = entries.length > TREE_ENTRY_LIMIT;
 
 			const items: Array<{
 				name: string;
 				path: string;
 				type: 'file' | 'directory';
 				gitignored?: boolean;
+				vendor?: boolean;
+				searchable?: boolean;
 			}> = [];
 
-			for (const entry of entries) {
+			for (const entry of entries.slice(0, TREE_ENTRY_LIMIT)) {
 				const relPath = relative(projectRoot, join(targetDir, entry.name));
 
 				if (entry.isDirectory()) {
 					const ignored = matchesGitignorePattern(relPath, gitignorePatterns);
+					const vendor = shouldExcludeDir(entry.name);
 					items.push({
 						name: entry.name,
 						path: relPath,
 						type: 'directory',
 						gitignored: ignored || undefined,
+						vendor: vendor || undefined,
+						searchable: vendor || ignored ? false : undefined,
 					});
 				} else if (entry.isFile()) {
 					if (shouldExcludeFile(entry.name)) continue;
@@ -357,6 +516,7 @@ export function registerFilesRoutes(app: Hono) {
 						path: relPath,
 						type: 'file',
 						gitignored: ignored || undefined,
+						searchable: ignored ? false : undefined,
 					});
 				}
 			}
@@ -369,7 +529,7 @@ export function registerFilesRoutes(app: Hono) {
 				return a.name.localeCompare(b.name);
 			});
 
-			return c.json({ items, path: dirPath });
+			return c.json({ items, path: dirPath, truncated });
 		} catch (err) {
 			logger.error('Files tree route error:', err);
 			return c.json({ error: serializeError(err) }, 500);

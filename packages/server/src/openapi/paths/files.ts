@@ -69,6 +69,70 @@ export const filesPaths = {
 			},
 		},
 	},
+	'/v1/files/search': {
+		get: {
+			tags: ['files'],
+			operationId: 'searchFiles',
+			summary: 'Search project files',
+			description:
+				'Searches files for mentions and quick-open. Excludes dependencies, build artifacts, and gitignored files by default.',
+			parameters: [
+				projectQueryParam(),
+				{
+					in: 'query',
+					name: 'q',
+					required: false,
+					schema: { type: 'string', default: '' },
+					description: 'Search query',
+				},
+				{
+					in: 'query',
+					name: 'maxDepth',
+					required: false,
+					schema: { type: 'integer' },
+					description: 'Maximum directory depth to traverse',
+				},
+				{
+					in: 'query',
+					name: 'limit',
+					required: false,
+					schema: { type: 'integer' },
+					description: 'Maximum number of files to return',
+				},
+			],
+			responses: {
+				200: {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									files: {
+										type: 'array',
+										items: { type: 'string' },
+									},
+									changedFiles: {
+										type: 'array',
+										items: {
+											type: 'object',
+											properties: {
+												path: { type: 'string' },
+												status: { type: 'string' },
+											},
+											required: ['path', 'status'],
+										},
+									},
+									truncated: { type: 'boolean' },
+								},
+								required: ['files', 'changedFiles', 'truncated'],
+							},
+						},
+					},
+				},
+			},
+		},
+	},
 	'/v1/files/tree': {
 		get: {
 			tags: ['files'],
@@ -104,13 +168,16 @@ export const filesPaths = {
 													enum: ['file', 'directory'],
 												},
 												gitignored: { type: 'boolean' },
+												vendor: { type: 'boolean' },
+												searchable: { type: 'boolean' },
 											},
 											required: ['name', 'path', 'type'],
 										},
 									},
 									path: { type: 'string' },
+									truncated: { type: 'boolean' },
 								},
-								required: ['items', 'path'],
+								required: ['items', 'path', 'truncated'],
 							},
 						},
 					},

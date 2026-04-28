@@ -42,7 +42,7 @@ export const QuickFilePicker = memo(function QuickFilePicker() {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const listRef = useRef<HTMLDivElement>(null);
 
-	const { data: filesData } = useFiles();
+	const { data: filesData } = useFiles({ enabled: isOpen, query });
 
 	const ignoredSet = useMemo(
 		() => new Set(filesData?.ignoredFiles ?? []),

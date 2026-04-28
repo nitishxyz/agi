@@ -51,6 +51,7 @@ class ApiClient {
 	updateDefaults = configMixin.updateDefaults;
 
 	listFiles = filesMixin.listFiles;
+	searchFiles = filesMixin.searchFiles;
 	getFileTree = filesMixin.getFileTree;
 	readFileContent = filesMixin.readFileContent;
 	getSessionFiles = filesMixin.getSessionFiles;

@@ -1,5 +1,6 @@
 import {
 	listFiles as apiListFiles,
+	searchFiles as apiSearchFiles,
 	getFileTree as apiGetFileTree,
 	readFile as apiReadFile,
 	getSessionFiles as apiGetSessionFiles,
@@ -19,14 +20,28 @@ export const filesMixin = {
 		};
 	},
 
+	async searchFiles(query = '') {
+		const response = await apiSearchFiles({ query: { q: query } });
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		return response.data as {
+			files: string[];
+			ignoredFiles?: string[];
+			changedFiles: Array<{ path: string; status: string }>;
+			truncated: boolean;
+		};
+	},
+
 	async getFileTree(dirPath = '.'): Promise<{
 		items: Array<{
 			name: string;
 			path: string;
 			type: 'file' | 'directory';
 			gitignored?: boolean;
+			vendor?: boolean;
+			searchable?: boolean;
 		}>;
 		path: string;
+		truncated: boolean;
 	}> {
 		const response = await apiGetFileTree({
 			query: { path: dirPath },

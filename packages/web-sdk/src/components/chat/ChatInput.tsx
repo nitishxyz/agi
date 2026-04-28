@@ -112,12 +112,9 @@ export const ChatInput = memo(
 		const textareaRef = useRef<HTMLTextAreaElement>(null);
 		const agentDropdownRef = useRef<HTMLDivElement>(null);
 
-		const { data: filesData, isLoading: filesLoading } = useFiles();
 		const { preferences, updatePreferences } = usePreferences();
 		const { data: configData } = useConfig();
 		const updateDefaultsMutation = useUpdateDefaults();
-		const files = filesData?.files || [];
-		const changedFiles = filesData?.changedFiles || [];
 
 		const setuSubscription = useOttoRouterStore((s) => s.subscription);
 		const isSetu = providerName === 'ottorouter';
@@ -158,6 +155,13 @@ export const ChatInput = memo(
 			handleEnterSelect: handleMentionEnterSelect,
 			checkForMention,
 		} = useFileMention();
+
+		const { data: filesData, isLoading: filesLoading } = useFiles({
+			enabled: showFileMention,
+			query: mentionQuery,
+		});
+		const files = filesData?.files || [];
+		const changedFiles = filesData?.changedFiles || [];
 
 		const {
 			showCommandSuggestions,

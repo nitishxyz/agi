@@ -2,7 +2,7 @@ import { useRenderer, useKeyboard } from '@opentui/react';
 import { TextareaRenderable } from '@opentui/core';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Fuse from 'fuse.js';
-import { listFiles } from '@ottocode/api';
+import { searchFiles } from '@ottocode/api';
 import { useTheme } from '../theme.ts';
 import { TinySpinner } from './TinySpinner.tsx';
 import { COMMANDS } from '../commands.ts';
@@ -142,12 +142,13 @@ export function ChatInput({
 	filteredFilesRef.current = filteredFiles;
 
 	useEffect(() => {
-		listFiles().then((res) => {
+		if (!showFileMention) return;
+		searchFiles({ query: { q: mentionQuery } }).then((res) => {
 			if (res.data) {
 				setFiles(res.data.files);
 			}
 		});
-	}, []);
+	}, [showFileMention, mentionQuery]);
 
 	const checkForMention = useCallback((text: string, cursorOffset: number) => {
 		const textBeforeCursor = text.slice(0, cursorOffset);
