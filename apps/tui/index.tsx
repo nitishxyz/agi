@@ -12,26 +12,39 @@ const renderer = await createCliRenderer({
 	useAlternateScreen: true,
 	targetFps: 30,
 });
+const root = createRoot(renderer);
 
 let exiting = false;
+
+function destroyRenderer() {
+	const originalTerminate = Worker.prototype.terminate;
+	try {
+		// Bun 1.3.6 can segfault when terminating OpenTUI's tree-sitter worker
+		// during process shutdown. The process exits immediately after cleanup, so
+		// let the OS reap the worker instead of calling Worker.terminate().
+		Worker.prototype.terminate = () => {};
+		root.unmount();
+		renderer.destroy();
+	} finally {
+		Worker.prototype.terminate = originalTerminate;
+	}
+}
 
 function gracefulExit(code: number) {
 	if (exiting) return;
 	exiting = true;
 	try {
-		renderer.destroy();
+		destroyRenderer();
 	} catch {}
 	setTimeout(() => process.exit(code), 100);
 }
 
 process.on('uncaughtException', (error) => {
-	renderer.destroy();
 	console.error('Uncaught exception:', error);
 	gracefulExit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
-	renderer.destroy();
 	console.error('Unhandled rejection:', reason);
 	gracefulExit(1);
 });
@@ -43,7 +56,7 @@ function handleQuit() {
 	gracefulExit(0);
 }
 
-createRoot(renderer).render(
+root.render(
 	<ThemeProvider>
 		<App onQuit={handleQuit} />
 	</ThemeProvider>,
