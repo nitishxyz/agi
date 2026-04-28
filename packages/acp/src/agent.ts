@@ -51,10 +51,15 @@ import { listAvailableSlashCommands } from '@ottocode/server/runtime/commands/av
 import { shareSession } from '@ottocode/server/runtime/share/service';
 import { getDb } from '@ottocode/database';
 import {
+	getGlobalConfigDir,
+	getMCPManager,
 	getConfiguredProviderIds,
 	getConfiguredProviderModels,
+	initializeMCP,
 	isProviderAuthorized,
+	loadMCPConfig,
 	loadConfig,
+	type MCPServerConfig,
 	type ProviderId,
 } from '@ottocode/sdk';
 import { randomUUID } from 'node:crypto';
@@ -312,8 +317,12 @@ export class OttoAcpAgent implements Agent {
 			}
 		}
 		const prompt = textParts.join('\n');
-		if (prompt.trim() === '/share') {
+		const trimmedPrompt = prompt.trim();
+		if (trimmedPrompt === '/share') {
 			return this.handleShareCommand(params.sessionId, session);
+		}
+		if (trimmedPrompt === '/mcp' || trimmedPrompt.startsWith('/mcp ')) {
+			return this.handleMcpCommand(params.sessionId, session, trimmedPrompt);
 		}
 
 		let response: Awaited<ReturnType<typeof handleAskRequest>>;
@@ -967,12 +976,18 @@ export class OttoAcpAgent implements Agent {
 	}
 
 	private async sendAvailableCommands(sessionId: string): Promise<void> {
-		const availableCommands: AvailableCommand[] =
-			listAvailableSlashCommands().map((command) => ({
+		const availableCommands: AvailableCommand[] = [
+			...listAvailableSlashCommands().map((command) => ({
 				name: command.name,
 				description: command.description,
 				...(command.input ? { input: command.input } : {}),
-			}));
+			})),
+			{
+				name: 'mcp',
+				description: 'List, start, stop, and inspect MCP servers',
+				input: { hint: 'list | status | start <name> | stop <name>' },
+			},
+		];
 
 		await this.client.sessionUpdate({
 			sessionId,
@@ -1031,6 +1046,176 @@ export class OttoAcpAgent implements Agent {
 		}
 
 		return { stopReason: 'end_turn' };
+	}
+
+	private async handleMcpCommand(
+		acpSessionId: string,
+		session: AcpSession,
+		command: string,
+	): Promise<PromptResponse> {
+		const parts = command.split(/\s+/).filter(Boolean);
+		const action = parts[1] ?? 'list';
+		const name = parts[2];
+
+		try {
+			switch (action) {
+				case 'list':
+				case 'status': {
+					const message = await this.formatMcpStatus(session);
+					await this.sendAgentText(acpSessionId, message);
+					break;
+				}
+
+				case 'start': {
+					if (!name) {
+						await this.sendAgentText(
+							acpSessionId,
+							'Usage: /mcp start <server-name>',
+						);
+						break;
+					}
+					const server = await this.findMcpServer(session, name);
+					if (!server) {
+						await this.sendAgentText(
+							acpSessionId,
+							`MCP server "${name}" is not configured.`,
+						);
+						break;
+					}
+					const manager = await this.getOrCreateMcpManager(session.cwd);
+					await manager.restartServer(server);
+					const status = (await manager.getStatusAsync()).find(
+						(item) => item.name === server.name,
+					);
+					const authUrl = manager.getAuthUrl(server.name);
+					await this.sendAgentText(
+						acpSessionId,
+						status?.connected
+							? `Started MCP server "${server.name}" with ${status.tools.length} tool${status.tools.length === 1 ? '' : 's'}.`
+							: authUrl
+								? `MCP server "${server.name}" requires authentication: ${authUrl}`
+								: `Started MCP server "${server.name}", but it is not connected yet. Check /mcp status.`,
+					);
+					break;
+				}
+
+				case 'stop': {
+					if (!name) {
+						await this.sendAgentText(
+							acpSessionId,
+							'Usage: /mcp stop <server-name>',
+						);
+						break;
+					}
+					const manager = getMCPManager();
+					if (!manager) {
+						await this.sendAgentText(
+							acpSessionId,
+							'No MCP servers are running.',
+						);
+						break;
+					}
+					await manager.stopServer(name);
+					await this.sendAgentText(
+						acpSessionId,
+						`Stopped MCP server "${name}".`,
+					);
+					break;
+				}
+
+				case 'help': {
+					await this.sendAgentText(
+						acpSessionId,
+						'MCP commands:\n- /mcp list\n- /mcp status\n- /mcp start <server-name>\n- /mcp stop <server-name>',
+					);
+					break;
+				}
+
+				default: {
+					await this.sendAgentText(
+						acpSessionId,
+						`Unknown MCP command "${action}". Try /mcp help.`,
+					);
+				}
+			}
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			await this.sendAgentText(acpSessionId, `MCP command failed: ${message}`);
+		}
+
+		return { stopReason: 'end_turn' };
+	}
+
+	private async formatMcpStatus(session: AcpSession): Promise<string> {
+		const configured = await this.getMcpServerConfigs(session);
+		const manager = getMCPManager();
+		const statuses = manager ? await manager.getStatusAsync() : [];
+
+		if (configured.length === 0 && statuses.length === 0) {
+			return 'No MCP servers configured. Add servers in otto config or through your ACP client.';
+		}
+
+		const lines = ['MCP servers:'];
+		for (const server of configured) {
+			const status = statuses.find((item) => item.name === server.name);
+			const connected = status?.connected ? 'started' : 'stopped';
+			const transport = server.transport ?? 'stdio';
+			const toolCount = status?.tools.length ?? 0;
+			lines.push(
+				`- ${server.name} (${transport}): ${connected}${toolCount > 0 ? `, ${toolCount} tool${toolCount === 1 ? '' : 's'}` : ''}`,
+			);
+		}
+
+		for (const status of statuses) {
+			if (configured.some((server) => server.name === status.name)) continue;
+			lines.push(
+				`- ${status.name} (${status.transport ?? 'stdio'}): ${status.connected ? 'started' : 'stopped'}, ${status.tools.length} tool${status.tools.length === 1 ? '' : 's'}`,
+			);
+		}
+
+		lines.push('', 'Use /mcp start <name> or /mcp stop <name>.');
+		return lines.join('\n');
+	}
+
+	private async findMcpServer(
+		session: AcpSession,
+		name: string,
+	): Promise<MCPServerConfig | undefined> {
+		const configs = await this.getMcpServerConfigs(session);
+		return configs.find((server) => server.name === name);
+	}
+
+	private async getMcpServerConfigs(
+		session: AcpSession,
+	): Promise<MCPServerConfig[]> {
+		const config = await loadMCPConfig(session.cwd, getGlobalConfigDir());
+		const servers = new Map<string, MCPServerConfig>();
+		for (const server of config.servers) {
+			servers.set(server.name, server);
+		}
+		for (const server of acpMcpServersToOttoConfig(session.mcpServers ?? [])) {
+			servers.set(server.name, server);
+		}
+		return Array.from(servers.values());
+	}
+
+	private async getOrCreateMcpManager(cwd: string) {
+		let manager = getMCPManager();
+		if (!manager) {
+			manager = await initializeMCP({ servers: [] }, cwd);
+		}
+		manager.setProjectRoot(cwd);
+		return manager;
+	}
+
+	private async sendAgentText(sessionId: string, text: string): Promise<void> {
+		await this.client.sessionUpdate({
+			sessionId,
+			update: {
+				sessionUpdate: 'agent_message_chunk',
+				content: { type: 'text', text },
+			},
+		});
 	}
 
 	private async buildSessionState(session: AcpSession): Promise<{
@@ -1414,4 +1599,31 @@ function mapPlanStatus(
 function truncate(text: string, max: number): string {
 	if (text.length <= max) return text;
 	return `${text.slice(0, max - 3)}...`;
+}
+
+function acpMcpServersToOttoConfig(
+	servers: NonNullable<NewSessionRequest['mcpServers']>,
+): MCPServerConfig[] {
+	return servers.map((server) => {
+		if ('type' in server && (server.type === 'http' || server.type === 'sse')) {
+			return {
+				name: server.name,
+				transport: server.type,
+				url: server.url,
+				headers: Object.fromEntries(
+					server.headers.map((header) => [header.name, header.value]),
+				),
+				scope: 'project',
+			};
+		}
+
+		return {
+			name: server.name,
+			transport: 'stdio',
+			command: server.command,
+			args: server.args,
+			env: Object.fromEntries(server.env.map((env) => [env.name, env.value])),
+			scope: 'project',
+		};
+	});
 }
