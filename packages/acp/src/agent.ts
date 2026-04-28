@@ -29,9 +29,6 @@ import type {
 	SessionConfigOption,
 	SessionModeState,
 	SessionModelState,
-	ToolKind,
-	ToolCallLocation,
-	ToolCallContent,
 	AvailableCommand,
 } from '@agentclientprotocol/sdk';
 import { handleAskRequest } from '@ottocode/server/runtime/ask/service';
@@ -68,35 +65,33 @@ import { promisify } from 'node:util';
 import type { OttoEvent } from '@ottocode/server/events/types';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+import { splitCommandArgs } from './commands';
+import { acpMcpServersToOttoConfig } from './mcp';
+import { parseModelId, toModelId } from './model';
+import {
+	extractReplayText,
+	parseReplayImage,
+	parseReplayToolCall,
+	parseReplayToolResult,
+} from './replay';
+import {
+	buildToolResultContent,
+	formatToolTitle,
+	getToolKind,
+	getToolLocations,
+	getWrittenFilePaths,
+	isShellTool,
+	isWriteTool,
+	mapPlanStatus,
+} from './tools';
+import {
+	ACP_VERSION,
+	DEFAULT_MODE,
+	MODE_OPTIONS,
+	type AcpSession,
+} from './types';
 
 const execFileAsync = promisify(execFile);
-const ACP_VERSION = '0.1.196';
-const DEFAULT_MODE = 'general';
-const MODE_OPTIONS = [
-	{ id: 'general', name: 'General', description: 'Default coding agent' },
-	{ id: 'build', name: 'Build', description: 'Implementation-focused agent' },
-	{ id: 'plan', name: 'Plan', description: 'Planning and analysis mode' },
-	{ id: 'init', name: 'Init', description: 'Project initialization mode' },
-];
-
-type AcpSession = {
-	sessionId: string;
-	ottoSessionId: string;
-	cwd: string;
-	cancelled: boolean;
-	assistantMessageId: string | null;
-	resolvePrompt: ((response: PromptResponse) => void) | null;
-	unsubscribe: (() => void) | null;
-	activeTerminals: Map<
-		string,
-		{ terminalId: string; release: () => Promise<void> }
-	>;
-	mode: string;
-	provider?: string;
-	model?: string;
-	mcpServers: NewSessionRequest['mcpServers'];
-	additionalDirectories: string[];
-};
 
 export class OttoAcpAgent implements Agent {
 	private client: AgentSideConnection;
@@ -645,7 +640,7 @@ export class OttoAcpAgent implements Agent {
 				'ok' in result &&
 				result.ok === false);
 
-		const content = this.buildToolResultContent(name, args, result, session);
+		const content = buildToolResultContent(name, args, result);
 		const locations = getToolLocations(name, args, session.cwd);
 
 		await this.client.sessionUpdate({
@@ -670,177 +665,6 @@ export class OttoAcpAgent implements Agent {
 		}
 	}
 
-	private buildToolResultContent(
-		name: string,
-		args: Record<string, unknown> | undefined,
-		result: Record<string, unknown> | string | undefined,
-		session: AcpSession,
-	): ToolCallContent[] {
-		if (result === undefined || result === null) return [];
-
-		const isWriteTool = [
-			'write',
-			'edit',
-			'multiedit',
-			'copy_into',
-			'apply_patch',
-		].includes(name);
-		if (isWriteTool) {
-			return this.buildDiffContent(name, args, result, session);
-		}
-
-		if (isShellTool(name)) {
-			return this.buildBashContent(result);
-		}
-
-		if (name === 'read') {
-			return this.buildReadContent(args, result, session);
-		}
-
-		let text: string;
-		if (typeof result === 'string') {
-			text = result;
-		} else {
-			try {
-				text = JSON.stringify(result, null, 2);
-			} catch {
-				text = String(result);
-			}
-		}
-
-		if (!text || text.length === 0) return [];
-
-		return [
-			{
-				type: 'content',
-				content: { type: 'text', text: truncate(text, 5000) },
-			},
-		];
-	}
-
-	private buildDiffContent(
-		name: string,
-		args: Record<string, unknown> | undefined,
-		result: Record<string, unknown> | string | undefined,
-		_session: AcpSession,
-	): ToolCallContent[] {
-		const content: ToolCallContent[] = [];
-
-		if (typeof result === 'object' && result !== null) {
-			const artifact = result.artifact as Record<string, unknown> | undefined;
-			const patch = artifact?.patch as string | undefined;
-
-			if (artifact?.kind === 'file_diff' && patch) {
-				const filePath = extractFilePath(name, args, patch);
-				if (filePath) {
-					const summary = artifact.summary as
-						| Record<string, unknown>
-						| undefined;
-					const _additions = summary?.additions ?? 0;
-					const _deletions = summary?.deletions ?? 0;
-					content.push({
-						type: 'diff',
-						path: filePath,
-						newText: patch,
-						oldText: null,
-					} as ToolCallContent);
-					return content;
-				}
-			}
-
-			const ok = result.ok;
-			const output = result.output as string | undefined;
-			if (ok !== undefined && output) {
-				content.push({
-					type: 'content',
-					content: { type: 'text', text: truncate(output, 3000) },
-				});
-				return content;
-			}
-		}
-
-		let text: string;
-		if (typeof result === 'string') {
-			text = result;
-		} else {
-			try {
-				text = JSON.stringify(result, null, 2);
-			} catch {
-				text = String(result);
-			}
-		}
-		if (text) {
-			content.push({
-				type: 'content',
-				content: { type: 'text', text: truncate(text, 3000) },
-			});
-		}
-
-		return content;
-	}
-
-	private buildBashContent(
-		result: Record<string, unknown> | string | undefined,
-	): ToolCallContent[] {
-		if (typeof result === 'object' && result !== null) {
-			const stdout = result.stdout as string | undefined;
-			const stderr = result.stderr as string | undefined;
-			const exitCode = result.exitCode as number | undefined;
-
-			const parts: string[] = [];
-			if (stdout) parts.push(stdout);
-			if (stderr) parts.push(`stderr: ${stderr}`);
-			if (exitCode !== undefined && exitCode !== 0) {
-				parts.push(`exit code: ${exitCode}`);
-			}
-
-			const text = parts.join('\n');
-			if (text) {
-				return [
-					{
-						type: 'content',
-						content: { type: 'text', text: truncate(text, 5000) },
-					},
-				];
-			}
-		}
-
-		return [];
-	}
-
-	private buildReadContent(
-		args: Record<string, unknown> | undefined,
-		result: Record<string, unknown> | string | undefined,
-		_session: AcpSession,
-	): ToolCallContent[] {
-		if (typeof result === 'object' && result !== null) {
-			const fileContent = (result as Record<string, unknown>).content as
-				| string
-				| undefined;
-			const filePath = (result as Record<string, unknown>).path as
-				| string
-				| undefined;
-			const _totalLines = (result as Record<string, unknown>).totalLines as
-				| number
-				| undefined;
-
-			if (fileContent) {
-				const _displayPath = filePath || (args?.path as string) || 'file';
-				return [
-					{
-						type: 'content',
-						content: {
-							type: 'text',
-							text: truncate(fileContent, 5000),
-						},
-					},
-				];
-			}
-		}
-
-		return [];
-	}
-
 	private async notifyEditorOfFileChanges(
 		name: string,
 		args: Record<string, unknown> | undefined,
@@ -849,17 +673,9 @@ export class OttoAcpAgent implements Agent {
 		session: AcpSession,
 	): Promise<void> {
 		if (!this.clientCapabilities?.fs?.writeTextFile) return;
+		if (!isWriteTool(name)) return;
 
-		const isWriteTool = [
-			'write',
-			'edit',
-			'multiedit',
-			'copy_into',
-			'apply_patch',
-		].includes(name);
-		if (!isWriteTool) return;
-
-		const filePaths = this.getWrittenFilePaths(name, args, result);
+		const filePaths = getWrittenFilePaths(name, args, result);
 
 		for (const filePath of filePaths) {
 			try {
@@ -880,44 +696,6 @@ export class OttoAcpAgent implements Agent {
 				);
 			}
 		}
-	}
-
-	private getWrittenFilePaths(
-		name: string,
-		args: Record<string, unknown> | undefined,
-		result: Record<string, unknown> | string | undefined,
-	): string[] {
-		const paths: string[] = [];
-
-		if (args?.path && typeof args.path === 'string') {
-			paths.push(args.path);
-		} else if (args?.targetPath && typeof args.targetPath === 'string') {
-			paths.push(args.targetPath);
-		} else if (args?.filePath && typeof args.filePath === 'string') {
-			paths.push(args.filePath);
-		}
-
-		if (name === 'apply_patch' && typeof args?.patch === 'string') {
-			paths.push(...extractPathsFromPatch(args.patch));
-		}
-
-		if (typeof result === 'object' && result !== null) {
-			const artifact = result.artifact as Record<string, unknown> | undefined;
-			const patchStr = artifact?.patch as string | undefined;
-			if (patchStr) {
-				paths.push(...extractPathsFromPatch(patchStr));
-			}
-			const changes = result.changes as
-				| Array<Record<string, unknown>>
-				| undefined;
-			if (Array.isArray(changes)) {
-				for (const c of changes) {
-					if (typeof c.filePath === 'string') paths.push(c.filePath);
-				}
-			}
-		}
-
-		return [...new Set(paths)];
 	}
 
 	private async resumeExistingSession(
@@ -1095,12 +873,7 @@ export class OttoAcpAgent implements Agent {
 			output !== null &&
 			'ok' in output &&
 			output.ok === false;
-		const content = this.buildToolResultContent(
-			result.name,
-			args,
-			output,
-			session,
-		);
+		const content = buildToolResultContent(result.name, args, output);
 
 		await this.client.sessionUpdate({
 			sessionId,
@@ -1556,107 +1329,6 @@ function normalizeAdditionalDirectories(
 		: [];
 }
 
-function extractReplayText(
-	parts: Array<{ type: string; content: string }>,
-): string {
-	const chunks: string[] = [];
-	for (const part of parts) {
-		if (part.type !== 'text') continue;
-		try {
-			const parsed = JSON.parse(part.content) as { text?: unknown };
-			const text = typeof parsed.text === 'string' ? parsed.text : '';
-			if (text) chunks.push(text);
-		} catch {
-			if (part.content) chunks.push(part.content);
-		}
-	}
-	return chunks.join('\n');
-}
-
-function parseReplayImage(
-	content: string,
-): { data: string; mediaType: string } | null {
-	try {
-		const parsed = JSON.parse(content) as {
-			data?: unknown;
-			mediaType?: unknown;
-		};
-		if (typeof parsed.data !== 'string') return null;
-		if (typeof parsed.mediaType !== 'string') return null;
-		return { data: parsed.data, mediaType: parsed.mediaType };
-	} catch {
-		return null;
-	}
-}
-
-function parseReplayToolCall(part: {
-	content: string;
-	toolName?: string | null;
-	toolCallId?: string | null;
-}): {
-	name: string;
-	callId: string;
-	args: Record<string, unknown> | undefined;
-} | null {
-	try {
-		const parsed = JSON.parse(part.content) as {
-			name?: unknown;
-			callId?: unknown;
-			args?: unknown;
-		};
-		const name =
-			typeof parsed.name === 'string'
-				? parsed.name
-				: typeof part.toolName === 'string'
-					? part.toolName
-					: undefined;
-		const callId =
-			typeof parsed.callId === 'string'
-				? parsed.callId
-				: typeof part.toolCallId === 'string'
-					? part.toolCallId
-					: undefined;
-		if (!name || !callId) return null;
-		const args =
-			parsed.args && typeof parsed.args === 'object'
-				? (parsed.args as Record<string, unknown>)
-				: undefined;
-		return { name, callId, args };
-	} catch {
-		return null;
-	}
-}
-
-function parseReplayToolResult(part: {
-	content: string;
-	toolName?: string | null;
-	toolCallId?: string | null;
-}): { name: string; callId: string; result: unknown } | null {
-	try {
-		const parsed = JSON.parse(part.content) as {
-			name?: unknown;
-			callId?: unknown;
-			result?: unknown;
-		};
-		const name =
-			typeof parsed.name === 'string'
-				? parsed.name
-				: typeof part.toolName === 'string'
-					? part.toolName
-					: undefined;
-		const callId =
-			typeof parsed.callId === 'string'
-				? parsed.callId
-				: typeof part.toolCallId === 'string'
-					? part.toolCallId
-					: undefined;
-		if (!name || !callId) return null;
-		return { name, callId, result: parsed.result };
-	} catch {
-		return null;
-	}
-}
-
 function ensureModeOption(modeId: string): typeof MODE_OPTIONS {
 	if (MODE_OPTIONS.some((mode) => mode.id === modeId)) return MODE_OPTIONS;
 	return [
@@ -1667,241 +1339,4 @@ function ensureModeOption(modeId: string): typeof MODE_OPTIONS {
 			description: 'Configured otto default agent',
 		},
 	];
-}
-
-function toModelId(provider: string, model: string): string {
-	return `${provider}:${model}`;
-}
-
-function parseModelId(modelId: string): { provider: string; model: string } {
-	const index = modelId.indexOf(':');
-	if (index === -1) return { provider: '', model: modelId };
-	return {
-		provider: modelId.slice(0, index),
-		model: modelId.slice(index + 1),
-	};
-}
-
-function isShellTool(name: string): boolean {
-	return name === 'shell' || name === 'bash';
-}
-
-function formatToolTitle(
-	name: string,
-	args: Record<string, unknown> | undefined,
-): string {
-	switch (name) {
-		case 'read':
-			return `Read ${args?.path || 'file'}`;
-		case 'edit':
-			return `Edit ${args?.path || 'file'}`;
-		case 'multiedit':
-			return `Multi-edit ${args?.path || 'file'}`;
-		case 'copy_into':
-			return `Copy into ${args?.targetPath || 'file'}`;
-		case 'write':
-			return `Write ${args?.path || 'file'}`;
-		case 'apply_patch':
-			return 'Apply patch';
-		case 'shell':
-		case 'bash':
-			return `Run: ${truncate(String(args?.cmd || 'command'), 60)}`;
-		case 'ripgrep':
-			return `Search: ${args?.query || ''}`;
-		case 'glob':
-			return `Find files: ${args?.pattern || ''}`;
-		case 'ls':
-			return `List ${args?.path || '.'}`;
-		case 'tree':
-			return `Tree ${args?.path || '.'}`;
-		case 'git_status':
-			return 'Git status';
-		case 'git_diff':
-			return 'Git diff';
-		case 'web_search':
-		case 'websearch':
-			return `Search web: ${args?.query || ''}`;
-		case 'web_fetch':
-			return `Fetch: ${truncate(String(args?.url || ''), 60)}`;
-		case 'terminal':
-			return `Terminal: ${args?.operation || ''}`;
-		case 'update_todos':
-			return 'Update plan';
-		case 'progress_update':
-			return `Progress: ${args?.message || ''}`;
-		case 'finish':
-			return 'Done';
-		default:
-			return name;
-	}
-}
-
-function getToolKind(name: string): ToolKind {
-	switch (name) {
-		case 'read':
-		case 'ls':
-		case 'tree':
-			return 'read';
-		case 'edit':
-		case 'multiedit':
-		case 'copy_into':
-		case 'write':
-		case 'apply_patch':
-			return 'edit';
-		case 'shell':
-		case 'bash':
-		case 'terminal':
-			return 'execute';
-		case 'ripgrep':
-		case 'glob':
-		case 'web_search':
-		case 'websearch':
-			return 'search';
-		case 'web_fetch':
-			return 'fetch';
-		case 'progress_update':
-		case 'update_todos':
-			return 'think';
-		default:
-			return 'other';
-	}
-}
-
-function getToolLocations(
-	name: string,
-	args: Record<string, unknown> | undefined,
-	cwd: string,
-): ToolCallLocation[] {
-	if (!args) return [];
-
-	const locations: ToolCallLocation[] = [];
-
-	const filePath =
-		(args.path as string) ||
-		(args.targetPath as string) ||
-		(args.filePath as string) ||
-		(args.file as string);
-
-	if (filePath && isFileTool(name)) {
-		const absPath = path.isAbsolute(filePath)
-			? filePath
-			: path.join(cwd, filePath);
-
-		const location: ToolCallLocation = { path: absPath };
-
-		const startLine = args.startLine as number | undefined;
-		if (startLine) {
-			location.line = startLine;
-		}
-
-		locations.push(location);
-	}
-
-	if (name === 'apply_patch' && typeof args.patch === 'string') {
-		const patchPaths = extractPathsFromPatch(args.patch as string);
-		for (const p of patchPaths) {
-			const absPath = path.isAbsolute(p) ? p : path.join(cwd, p);
-			locations.push({ path: absPath });
-		}
-	}
-
-	return locations;
-}
-
-function isFileTool(name: string): boolean {
-	return [
-		'read',
-		'edit',
-		'multiedit',
-		'copy_into',
-		'write',
-		'ls',
-		'tree',
-	].includes(name);
-}
-
-function extractPathsFromPatch(patch: string): string[] {
-	const paths: string[] = [];
-	const regex = /\*\*\* (?:Update|Add|Delete) File: (.+)/g;
-	let match: RegExpExecArray | null = regex.exec(patch);
-	while (match !== null) {
-		paths.push(match[1].trim());
-		match = regex.exec(patch);
-	}
-	return paths;
-}
-
-function extractFilePath(
-	_name: string,
-	args: Record<string, unknown> | undefined,
-	patch?: string,
-): string | null {
-	if (args?.path) return String(args.path);
-	if (args?.filePath) return String(args.filePath);
-
-	if (patch) {
-		const match = patch.match(/\*\*\* (?:Update|Add) File: (.+)/);
-		if (match) return match[1].trim();
-
-		const diffMatch = patch.match(/^(?:---|\+\+\+) [ab]\/(.+)$/m);
-		if (diffMatch) return diffMatch[1].trim();
-	}
-
-	return null;
-}
-
-function mapPlanStatus(
-	status?: string,
-): 'pending' | 'in_progress' | 'completed' {
-	switch (status) {
-		case 'in_progress':
-			return 'in_progress';
-		case 'completed':
-			return 'completed';
-		default:
-			return 'pending';
-	}
-}
-
-function truncate(text: string, max: number): string {
-	if (text.length <= max) return text;
-	return `${text.slice(0, max - 3)}...`;
-}
-
-function splitCommandArgs(input: string): string[] {
-	const args: string[] = [];
-	const regex = /"([^"]*)"|'([^']*)'|\S+/g;
-	let match: RegExpExecArray | null = regex.exec(input);
-	while (match !== null) {
-		args.push(match[1] ?? match[2] ?? match[0]);
-		match = regex.exec(input);
-	}
-	return args;
-}
-
-function acpMcpServersToOttoConfig(
-	servers: NonNullable<NewSessionRequest['mcpServers']>,
-): MCPServerConfig[] {
-	return servers.map((server) => {
-		if ('type' in server && (server.type === 'http' || server.type === 'sse')) {
-			return {
-				name: server.name,
-				transport: server.type,
-				url: server.url,
-				headers: Object.fromEntries(
-					server.headers.map((header) => [header.name, header.value]),
-				),
-				scope: 'project',
-			};
-		}
-
-		return {
-			name: server.name,
-			transport: 'stdio',
-			command: server.command,
-			args: server.args,
-			env: Object.fromEntries(server.env.map((env) => [env.name, env.value])),
-			scope: 'project',
-		};
-	});
 }
