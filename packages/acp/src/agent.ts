@@ -32,6 +32,7 @@ import type {
 	ToolKind,
 	ToolCallLocation,
 	ToolCallContent,
+	AvailableCommand,
 } from '@agentclientprotocol/sdk';
 import { handleAskRequest } from '@ottocode/server/runtime/ask/service';
 import { subscribe } from '@ottocode/server/events/bus';
@@ -46,6 +47,8 @@ import {
 	getSessionById,
 	listSessions,
 } from '@ottocode/server/runtime/session/manager';
+import { listAvailableSlashCommands } from '@ottocode/server/runtime/commands/available';
+import { shareSession } from '@ottocode/server/runtime/share/service';
 import { getDb } from '@ottocode/database';
 import {
 	getConfiguredProviderIds,
@@ -172,10 +175,12 @@ export class OttoAcpAgent implements Agent {
 		};
 
 		this.sessions.set(sessionId, session);
+		const state = await this.buildSessionState(session);
+		this.queueAvailableCommands(sessionId);
 
 		return {
 			sessionId,
-			...(await this.buildSessionState(session)),
+			...state,
 		};
 	}
 
@@ -186,6 +191,7 @@ export class OttoAcpAgent implements Agent {
 			params.mcpServers,
 		);
 		await this.replaySessionHistory(params.sessionId);
+		this.queueAvailableCommands(params.sessionId);
 		return response;
 	}
 
@@ -213,11 +219,13 @@ export class OttoAcpAgent implements Agent {
 	async resumeSession(
 		params: ResumeSessionRequest,
 	): Promise<ResumeSessionResponse> {
-		return this.resumeExistingSession(
+		const response = await this.resumeExistingSession(
 			params.sessionId,
 			params.cwd,
 			params.mcpServers ?? [],
 		);
+		this.queueAvailableCommands(params.sessionId);
+		return response;
 	}
 
 	async closeSession(
@@ -296,11 +304,17 @@ export class OttoAcpAgent implements Agent {
 					`<context uri="${chunk.resource.uri}">\n${chunk.resource.text}\n</context>`,
 				);
 			} else if (chunk.type === 'resource_link') {
-				const context = await this.resolveResourceLink(chunk.uri, params.sessionId);
+				const context = await this.resolveResourceLink(
+					chunk.uri,
+					params.sessionId,
+				);
 				textParts.push(context ?? `@${chunk.uri}`);
 			}
 		}
 		const prompt = textParts.join('\n');
+		if (prompt.trim() === '/share') {
+			return this.handleShareCommand(params.sessionId, session);
+		}
 
 		let response: Awaited<ReturnType<typeof handleAskRequest>>;
 		try {
@@ -942,9 +956,84 @@ export class OttoAcpAgent implements Agent {
 		}
 	}
 
-	private async buildSessionState(
+	private queueAvailableCommands(sessionId: string): void {
+		for (const delayMs of [0, 250]) {
+			setTimeout(() => {
+				void this.sendAvailableCommands(sessionId).catch((err) => {
+					console.error('[acp] Failed to send available commands:', err);
+				});
+			}, delayMs);
+		}
+	}
+
+	private async sendAvailableCommands(sessionId: string): Promise<void> {
+		const availableCommands: AvailableCommand[] =
+			listAvailableSlashCommands().map((command) => ({
+				name: command.name,
+				description: command.description,
+				...(command.input ? { input: command.input } : {}),
+			}));
+
+		await this.client.sessionUpdate({
+			sessionId,
+			update: {
+				sessionUpdate: 'available_commands_update',
+				availableCommands,
+			},
+		});
+	}
+
+	private async handleShareCommand(
+		acpSessionId: string,
 		session: AcpSession,
-	): Promise<{
+	): Promise<PromptResponse> {
+		if (!session.ottoSessionId) {
+			await this.client.sessionUpdate({
+				sessionId: acpSessionId,
+				update: {
+					sessionUpdate: 'agent_message_chunk',
+					content: {
+						type: 'text',
+						text: 'Cannot share this session yet because it has not been persisted.',
+					},
+				},
+			});
+			return { stopReason: 'end_turn' };
+		}
+
+		try {
+			const result = await shareSession({
+				sessionId: session.ottoSessionId,
+				projectRoot: session.cwd,
+			});
+			await this.client.sessionUpdate({
+				sessionId: acpSessionId,
+				update: {
+					sessionUpdate: 'agent_message_chunk',
+					content: {
+						type: 'text',
+						text: `${result.message ?? 'Shared session'}: ${result.url}`,
+					},
+				},
+			});
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			await this.client.sessionUpdate({
+				sessionId: acpSessionId,
+				update: {
+					sessionUpdate: 'agent_message_chunk',
+					content: {
+						type: 'text',
+						text: `Failed to share session: ${message}`,
+					},
+				},
+			});
+		}
+
+		return { stopReason: 'end_turn' };
+	}
+
+	private async buildSessionState(session: AcpSession): Promise<{
 		configOptions: SessionConfigOption[];
 		modes: SessionModeState;
 		models: SessionModelState | null;
@@ -1025,7 +1114,11 @@ export class OttoAcpAgent implements Agent {
 		try {
 			const cfg = await loadConfig(session.cwd);
 			const providers = getConfiguredProviderIds(cfg);
-			const options: Array<{ value: string; name: string; description: string }> = [];
+			const options: Array<{
+				value: string;
+				name: string;
+				description: string;
+			}> = [];
 
 			for (const provider of providers) {
 				if (!(await isProviderAuthorized(cfg, provider))) continue;
@@ -1088,11 +1181,16 @@ export class OttoAcpAgent implements Agent {
 function normalizeAdditionalDirectories(
 	params: NewSessionRequest | ResumeSessionRequest | LoadSessionRequest,
 ): string[] {
-	const dirs = 'additionalDirectories' in params ? params.additionalDirectories : [];
-	return Array.isArray(dirs) ? dirs.filter((dir) => typeof dir === 'string') : [];
+	const dirs =
+		'additionalDirectories' in params ? params.additionalDirectories : [];
+	return Array.isArray(dirs)
+		? dirs.filter((dir) => typeof dir === 'string')
+		: [];
 }
 
-function extractReplayText(parts: Array<{ type: string; content: string }>): string {
+function extractReplayText(
+	parts: Array<{ type: string; content: string }>,
+): string {
 	const chunks: string[] = [];
 	for (const part of parts) {
 		if (part.type !== 'text') continue;

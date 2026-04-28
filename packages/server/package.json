@@ -26,6 +26,14 @@
 			"import": "./src/runtime/session/manager.ts",
 			"types": "./src/runtime/session/manager.ts"
 		},
+		"./runtime/commands/available": {
+			"import": "./src/runtime/commands/available.ts",
+			"types": "./src/runtime/commands/available.ts"
+		},
+		"./runtime/share/service": {
+			"import": "./src/runtime/share/service.ts",
+			"types": "./src/runtime/share/service.ts"
+		},
 		"./events/bus": {
 			"import": "./src/events/bus.ts",
 			"types": "./src/events/bus.ts"
