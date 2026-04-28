@@ -6,13 +6,6 @@ import type {
 export const ACP_VERSION = '0.1.196';
 export const DEFAULT_MODE = 'general';
 
-export const MODE_OPTIONS = [
-	{ id: 'general', name: 'General', description: 'Default coding agent' },
-	{ id: 'build', name: 'Build', description: 'Implementation-focused agent' },
-	{ id: 'plan', name: 'Plan', description: 'Planning and analysis mode' },
-	{ id: 'init', name: 'Init', description: 'Project initialization mode' },
-];
-
 export type AcpSession = {
 	sessionId: string;
 	ottoSessionId: string;

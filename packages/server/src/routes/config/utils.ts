@@ -6,14 +6,11 @@ import {
 	getProviderSettings,
 	type ProviderId,
 	isProviderAuthorized,
-	getGlobalAgentsDir,
 	getAuth,
 } from '@ottocode/sdk';
-import { readdir } from 'node:fs/promises';
-import { join } from 'node:path';
 import type { EmbeddedAppConfig } from '../../index.ts';
 import type { OttoConfig } from '@ottocode/sdk';
-import { loadAgentsConfig } from '../../runtime/agent/registry.ts';
+export { discoverAllAgents } from '../../runtime/agent/registry.ts';
 
 export type ProviderDetail = {
 	id: string;
@@ -137,48 +134,4 @@ export async function getAuthTypeForProvider(
 	}
 	const auth = await getAuth(provider, projectRoot);
 	return auth?.type as 'api' | 'oauth' | 'wallet' | undefined;
-}
-
-export async function discoverAllAgents(
-	projectRoot: string,
-): Promise<string[]> {
-	const builtInAgents = ['general', 'build', 'plan', 'init'];
-	const agentSet = new Set<string>(builtInAgents);
-
-	try {
-		const agentsJson = await loadAgentsConfig(projectRoot);
-		for (const agentName of Object.keys(agentsJson)) {
-			if (agentName.trim()) {
-				agentSet.add(agentName);
-			}
-		}
-	} catch {}
-
-	try {
-		const localAgentsPath = join(projectRoot, '.otto', 'agents');
-		const localFiles = await readdir(localAgentsPath).catch(() => []);
-		for (const file of localFiles) {
-			if (file.endsWith('.txt') || file.endsWith('.md')) {
-				const agentName = file.replace(/\.(txt|md)$/, '');
-				if (agentName.trim()) {
-					agentSet.add(agentName);
-				}
-			}
-		}
-	} catch {}
-
-	try {
-		const globalAgentsPath = getGlobalAgentsDir();
-		const globalFiles = await readdir(globalAgentsPath).catch(() => []);
-		for (const file of globalFiles) {
-			if (file.endsWith('.txt') || file.endsWith('.md')) {
-				const agentName = file.replace(/\.(txt|md)$/, '');
-				if (agentName.trim()) {
-					agentSet.add(agentName);
-				}
-			}
-		}
-	} catch {}
-
-	return Array.from(agentSet).sort();
 }

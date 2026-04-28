@@ -1,6 +1,8 @@
 import { getGlobalAgentsJsonPath, getGlobalAgentsDir } from '@ottocode/sdk';
 import type { ProviderName } from '@ottocode/sdk';
 import { catalog } from '@ottocode/sdk';
+import { readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 // Embed default agent prompts; only user overrides read from disk.
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import AGENT_BUILD from '@ottocode/sdk/prompts/agents/build.txt' with {
@@ -39,6 +41,8 @@ export type AgentConfigEntry = {
 };
 
 type AgentsJson = Record<string, AgentConfigEntry>;
+
+const BUILTIN_AGENT_NAMES = ['build', 'plan', 'general', 'init', 'research'];
 
 function normalizeStringList(value: unknown): string[] {
 	if (!Array.isArray(value)) return [];
@@ -219,6 +223,49 @@ export async function loadAgentsConfig(
 		merged[name] = mergeAgentEntries(base, entry ?? {});
 	}
 	return merged;
+}
+
+export async function discoverAllAgents(
+	projectRoot: string,
+): Promise<string[]> {
+	const agentSet = new Set<string>(BUILTIN_AGENT_NAMES);
+
+	try {
+		const agentsJson = await loadAgentsConfig(projectRoot);
+		for (const agentName of Object.keys(agentsJson)) {
+			if (agentName.trim()) {
+				agentSet.add(agentName);
+			}
+		}
+	} catch {}
+
+	try {
+		const localAgentsPath = join(projectRoot, '.otto', 'agents');
+		const localFiles = await readdir(localAgentsPath).catch(() => []);
+		for (const file of localFiles) {
+			if (file.endsWith('.txt') || file.endsWith('.md')) {
+				const agentName = file.replace(/\.(txt|md)$/, '');
+				if (agentName.trim()) {
+					agentSet.add(agentName);
+				}
+			}
+		}
+	} catch {}
+
+	try {
+		const globalAgentsPath = getGlobalAgentsDir();
+		const globalFiles = await readdir(globalAgentsPath).catch(() => []);
+		for (const file of globalFiles) {
+			if (file.endsWith('.txt') || file.endsWith('.md')) {
+				const agentName = file.replace(/\.(txt|md)$/, '');
+				if (agentName.trim()) {
+					agentSet.add(agentName);
+				}
+			}
+		}
+	} catch {}
+
+	return Array.from(agentSet).sort();
 }
 
 export async function resolveAgentConfig(

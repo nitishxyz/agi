@@ -46,6 +46,7 @@ import {
 } from '@ottocode/server/runtime/session/manager';
 import { listAvailableSlashCommands } from '@ottocode/server/runtime/commands/available';
 import { shareSession } from '@ottocode/server/runtime/share/service';
+import { discoverAllAgents } from '@ottocode/server/runtime/agent-registry';
 import { getDb } from '@ottocode/database';
 import {
 	getGlobalConfigDir,
@@ -84,12 +85,7 @@ import {
 	isWriteTool,
 	mapPlanStatus,
 } from './tools';
-import {
-	ACP_VERSION,
-	DEFAULT_MODE,
-	MODE_OPTIONS,
-	type AcpSession,
-} from './types';
+import { ACP_VERSION, DEFAULT_MODE, type AcpSession } from './types';
 
 const execFileAsync = promisify(execFile);
 
@@ -1201,7 +1197,7 @@ export class OttoAcpAgent implements Agent {
 				description: 'Configured otto default model',
 			});
 		}
-		const modeOptions = ensureModeOption(session.mode);
+		const modeOptions = await this.buildModeOptions(session);
 
 		const configOptions: SessionConfigOption[] = [
 			{
@@ -1247,6 +1243,19 @@ export class OttoAcpAgent implements Agent {
 						}
 					: null,
 		};
+	}
+
+	private async buildModeOptions(
+		session: AcpSession,
+	): Promise<SessionModeState['availableModes']> {
+		try {
+			const cfg = await loadConfig(session.cwd);
+			const agents = await discoverAllAgents(cfg.projectRoot);
+			return ensureModeOption(session.mode, agents);
+		} catch (err) {
+			console.error('[acp] Failed to build agent mode list:', err);
+			return ensureModeOption(session.mode, [session.mode || DEFAULT_MODE]);
+		}
 	}
 
 	private async buildModelOptions(
@@ -1329,14 +1338,25 @@ function normalizeAdditionalDirectories(
 		: [];
 }
 
-function ensureModeOption(modeId: string): typeof MODE_OPTIONS {
-	if (MODE_OPTIONS.some((mode) => mode.id === modeId)) return MODE_OPTIONS;
-	return [
-		...MODE_OPTIONS,
-		{
-			id: modeId,
-			name: modeId,
-			description: 'Configured otto default agent',
-		},
-	];
+function ensureModeOption(
+	modeId: string,
+	agentIds: string[],
+): SessionModeState['availableModes'] {
+	const ids = new Set(agentIds.filter((agentId) => agentId.trim()));
+	if (modeId.trim()) ids.add(modeId);
+	return Array.from(ids)
+		.sort()
+		.map((id) => ({
+			id,
+			name: formatAgentName(id),
+			description: `Use the ${id} otto agent`,
+		}));
+}
+
+function formatAgentName(agentId: string): string {
+	return agentId
+		.split(/[-_\s]+/)
+		.filter(Boolean)
+		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+		.join(' ');
 }
