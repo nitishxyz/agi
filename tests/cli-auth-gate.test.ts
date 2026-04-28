@@ -10,7 +10,7 @@ const setOnboardingCompleteMock = mock(async () => {});
 const isProviderAuthorizedMock = mock(async () => false);
 const runAuthMock = mock(async () => true);
 
-mock.module('@ottocode/sdk', () => ({
+mock.module('@ottocode/cli/src/middleware/auth-deps.ts', () => ({
 	loadConfig: loadConfigMock,
 	getAllAuth: getAllAuthMock,
 	getOnboardingComplete: getOnboardingCompleteMock,

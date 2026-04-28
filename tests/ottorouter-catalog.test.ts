@@ -22,16 +22,14 @@ describe('ottorouter catalog entry', () => {
 				'@ai-sdk/anthropic',
 				'@ai-sdk/google',
 				'@ai-sdk/openai-compatible',
-				'@openrouter/ai-sdk-provider',
 			]),
 		);
 	});
 
-	it('assigns the OpenRouter SDK binding to OpenRouter-backed OttoRouter models', () => {
+	it('tracks DeepSeek-owned OttoRouter models from the catalog', () => {
 		const entry = catalog.ottorouter;
-		const model = entry?.models.find((m) => m.id === 'healer-alpha');
-		expect(model?.ownedBy).toBe('openrouter');
-		expect(model?.provider?.npm).toBe('@openrouter/ai-sdk-provider');
+		const model = entry?.models.find((m) => m.id === 'deepseek-chat');
+		expect(model?.ownedBy).toBe('deepseek');
 	});
 
 	it('has cost and limit from ottorouter API', () => {

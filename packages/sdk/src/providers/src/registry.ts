@@ -55,9 +55,6 @@ const BUILTIN_FAMILY: Record<BuiltInProviderId, ProviderPromptFamily> = {
 	moonshot: 'moonshot',
 	minimax: 'minimax',
 };
-
-const USE_BUILTIN_MODEL_CATALOG = process.env.CI === 'true';
-
 function normalizeOptionalText(value: string | undefined): string | undefined {
 	if (!value) return undefined;
 	const trimmed = value.trim();
@@ -104,8 +101,7 @@ export function getProviderDefinition(
 		const entry = catalog[provider];
 		if (!entry) return undefined;
 		const cachedEntry = getCachedProviderCatalogEntry(provider);
-		const models =
-			cachedEntry?.models ?? (USE_BUILTIN_MODEL_CATALOG ? entry.models : []);
+		const models = cachedEntry?.models ?? entry.models;
 		return {
 			id: provider,
 			label: settings?.label ?? cachedEntry?.label ?? entry.label ?? provider,

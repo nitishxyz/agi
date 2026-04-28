@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { logger, setDebugEnabled, setTraceEnabled } from '@ottocode/sdk';
+import { logger, setDebugEnabled, setTraceEnabled } from './cli-deps.ts';
 import {
 	registerServeCommand,
 	registerAskCommand,

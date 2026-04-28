@@ -14,7 +14,7 @@ const loggerErrorMock = mock(() => {});
 const setDebugEnabledMock = mock(() => {});
 const setTraceEnabledMock = mock(() => {});
 
-mock.module('@ottocode/sdk', () => ({
+mock.module('@ottocode/cli/src/cli-deps.ts', () => ({
 	logger: { error: loggerErrorMock },
 	setDebugEnabled: setDebugEnabledMock,
 	setTraceEnabled: setTraceEnabledMock,
@@ -26,6 +26,7 @@ mock.module('@ottocode/cli/src/commands/index.ts', () => ({
 	registerSessionsCommand: () => {},
 	registerAuthCommand: () => {},
 	registerModelsCommand: () => {},
+	registerProvidersCommand: () => {},
 	registerAgentsCommand: () => {},
 	registerToolsCommand: () => {},
 	registerSkillsCommand: () => {},

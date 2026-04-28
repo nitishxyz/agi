@@ -38,8 +38,8 @@ const ALLOWED_EXTENSIONS = new Set([
 const MAX_FILE_SIZE = 256 * 1024;
 
 export async function discoverSkills(
-	_cwd: string,
-	_repoRoot?: string,
+	cwd: string,
+	repoRoot?: string,
 ): Promise<DiscoveredSkill[]> {
 	const skills = new Map<string, SkillDefinition>();
 	const home = getHomeDir();
@@ -54,6 +54,32 @@ export async function discoverSkills(
 	];
 	for (const dir of globalDirs) {
 		await loadSkillsFromDir(dir, 'user', skills);
+	}
+
+	const projectDirs = [
+		join(cwd, '.otto/skills'),
+		join(cwd, '.agents/skills'),
+		join(cwd, '.agenst/skills'),
+		join(cwd, '.claude/skills'),
+		join(cwd, '.config/opencode/skills'),
+		join(cwd, '.codex/skills'),
+	];
+	for (const dir of projectDirs) {
+		await loadSkillsFromDir(dir, 'cwd', skills);
+	}
+
+	if (repoRoot && repoRoot !== cwd) {
+		const repoDirs = [
+			join(repoRoot, '.otto/skills'),
+			join(repoRoot, '.agents/skills'),
+			join(repoRoot, '.agenst/skills'),
+			join(repoRoot, '.claude/skills'),
+			join(repoRoot, '.config/opencode/skills'),
+			join(repoRoot, '.codex/skills'),
+		];
+		for (const dir of repoDirs) {
+			await loadSkillsFromDir(dir, 'repo', skills);
+		}
 	}
 
 	skillCache.clear();

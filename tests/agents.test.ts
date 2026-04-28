@@ -13,6 +13,7 @@ describe('agent config merging', () => {
 		await mkdir(homeDir, { recursive: true });
 		const prevHome = process.env.HOME;
 		const prevProfile = process.env.USERPROFILE;
+		const prevXdg = process.env.XDG_CONFIG_HOME;
 		process.env.HOME = homeDir;
 		process.env.USERPROFILE = homeDir;
 		process.env.XDG_CONFIG_HOME = join(homeDir, '.config');
@@ -41,6 +42,8 @@ describe('agent config merging', () => {
 			else process.env.HOME = prevHome;
 			if (prevProfile === undefined) delete process.env.USERPROFILE;
 			else process.env.USERPROFILE = prevProfile;
+			if (prevXdg === undefined) delete process.env.XDG_CONFIG_HOME;
+			else process.env.XDG_CONFIG_HOME = prevXdg;
 			await rm(workspaceRoot, { recursive: true, force: true });
 		}
 	});

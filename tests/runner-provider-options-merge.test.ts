@@ -90,7 +90,13 @@ describe('applyModelFamilyEditToolPolicy', () => {
 			'claude-sonnet-4-20250514',
 		);
 
-		expect(result).toEqual(['read', 'shell', 'write', 'apply_patch']);
+		expect(result).toEqual([
+			'read',
+			'shell',
+			'write',
+			'copy_into',
+			'apply_patch',
+		]);
 	});
 
 	test('keeps only write and apply_patch for OpenAI-family general models', () => {
@@ -101,7 +107,13 @@ describe('applyModelFamilyEditToolPolicy', () => {
 			'openai/gpt-4.1',
 		);
 
-		expect(result).toEqual(['read', 'shell', 'write', 'apply_patch']);
+		expect(result).toEqual([
+			'read',
+			'shell',
+			'write',
+			'copy_into',
+			'apply_patch',
+		]);
 	});
 
 	test('keeps write, edit, and multiedit for non-Anthropic/OpenAI init models', () => {
@@ -112,7 +124,14 @@ describe('applyModelFamilyEditToolPolicy', () => {
 			'gemini-2.5-flash',
 		);
 
-		expect(result).toEqual(['read', 'shell', 'write', 'edit', 'multiedit']);
+		expect(result).toEqual([
+			'read',
+			'shell',
+			'write',
+			'edit',
+			'multiedit',
+			'copy_into',
+		]);
 	});
 
 	test('normalizes legacy bash tool choices to shell', () => {
@@ -123,7 +142,13 @@ describe('applyModelFamilyEditToolPolicy', () => {
 			'claude-sonnet-4-20250514',
 		);
 
-		expect(result).toEqual(['read', 'shell', 'write', 'apply_patch']);
+		expect(result).toEqual([
+			'read',
+			'shell',
+			'write',
+			'copy_into',
+			'apply_patch',
+		]);
 	});
 
 	test('does not rewrite tool choices for agents outside the policy set', () => {

@@ -5,7 +5,7 @@ import {
 	isProviderAuthorized,
 	setOnboardingComplete,
 	type ProviderId,
-} from '@ottocode/sdk';
+} from './auth-deps.ts';
 import { runAuth } from '../auth.ts';
 
 export type WithAuthOptions = {

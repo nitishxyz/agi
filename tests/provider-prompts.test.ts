@@ -295,7 +295,7 @@ describe('provider base prompts', () => {
 				expect([
 					'openai',
 					'anthropic',
-					'openrouter',
+					'deepseek',
 					'moonshot',
 					'google',
 					'minimax',

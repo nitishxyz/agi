@@ -1,5 +1,9 @@
-import { describe, it, expect, beforeEach, afterAll } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { createEmbeddedApp } from '../packages/server/src/index.js';
+import {
+	abortSession,
+	getRunnerState,
+} from '../packages/server/src/runtime/session/queue.js';
 import type { Hono } from 'hono';
 import type {
 	Message,
@@ -20,7 +24,15 @@ describe('User Context Feature', () => {
 	let app: Hono;
 	let sessionId: string;
 
-	afterAll(async () => {
+	afterEach(async () => {
+		if (sessionId) {
+			abortSession(sessionId, true);
+			for (let i = 0; i < 50; i++) {
+				const state = getRunnerState(sessionId);
+				if (!state?.running) break;
+				await new Promise((resolve) => setTimeout(resolve, 10));
+			}
+		}
 		if (tempDir) await rm(tempDir, { recursive: true, force: true });
 	});
 
