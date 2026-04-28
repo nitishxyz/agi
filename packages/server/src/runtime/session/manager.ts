@@ -1,7 +1,7 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
 import type { OttoConfig } from '@ottocode/sdk';
 import type { DB } from '@ottocode/database';
-import { sessions } from '@ottocode/database/schema';
+import { messageParts, messages, sessions } from '@ottocode/database/schema';
 import {
 	validateProviderModel,
 	isProviderAuthorized,
@@ -11,6 +11,8 @@ import {
 import { publish } from '../../events/bus.ts';
 
 type SessionRow = typeof sessions.$inferSelect;
+type MessageRow = typeof messages.$inferSelect;
+type MessagePartRow = typeof messageParts.$inferSelect;
 
 type CreateSessionInput = {
 	db: DB;
@@ -69,7 +71,7 @@ export async function createSession({
 
 type GetSessionInput = {
 	db: DB;
-	projectPath: string;
+	projectPath?: string;
 	sessionId: string;
 };
 
@@ -84,7 +86,7 @@ export async function getSessionById({
 		.where(eq(sessions.id, sessionId));
 	if (!rows.length) return undefined;
 	const row = rows[0];
-	if (row.projectPath !== projectPath) return undefined;
+	if (projectPath && row.projectPath !== projectPath) return undefined;
 	return row;
 }
 
@@ -101,4 +103,65 @@ export async function getLastSession({
 		.orderBy(desc(sessions.lastActiveAt), desc(sessions.createdAt))
 		.limit(1);
 	return rows[0];
+}
+
+type ListSessionsInput = {
+	db: DB;
+	projectPath?: string;
+	limit?: number;
+};
+
+export async function listSessions({
+	db,
+	projectPath,
+	limit = 100,
+}: ListSessionsInput): Promise<SessionRow[]> {
+	return await db
+		.select()
+		.from(sessions)
+		.where(
+			projectPath
+				? and(
+						eq(sessions.projectPath, projectPath),
+						ne(sessions.sessionType, 'research'),
+					)
+				: ne(sessions.sessionType, 'research'),
+		)
+		.orderBy(desc(sessions.lastActiveAt), desc(sessions.createdAt))
+		.limit(limit);
+}
+
+export type SessionHistoryMessage = MessageRow & {
+	parts: MessagePartRow[];
+};
+
+export async function getSessionHistoryMessages(
+	db: DB,
+	sessionId: string,
+): Promise<SessionHistoryMessage[]> {
+	const rows = await db
+		.select()
+		.from(messages)
+		.where(eq(messages.sessionId, sessionId))
+		.orderBy(asc(messages.createdAt));
+	const messageIds = rows.map((message) => message.id);
+	const parts = messageIds.length
+		? await db
+				.select()
+				.from(messageParts)
+				.where(inArray(messageParts.messageId, messageIds))
+				.orderBy(asc(messageParts.messageId), asc(messageParts.index))
+		: [];
+	const partsByMessageId = new Map<string, MessagePartRow[]>();
+	for (const part of parts) {
+		const existing = partsByMessageId.get(part.messageId);
+		if (existing) existing.push(part);
+		else partsByMessageId.set(part.messageId, [part]);
+	}
+	return rows.map((message) => ({
+		...message,
+		parts: (partsByMessageId.get(message.id) ?? []).sort(
+			(a, b) => a.index - b.index,
+		),
+	}));
 }

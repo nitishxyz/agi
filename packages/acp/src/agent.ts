@@ -12,12 +12,27 @@ import type {
 	AuthenticateResponse,
 	ClientCapabilities,
 	SessionNotification,
-} from '@agentclientprotocol/sdk';
-import type {
+	LoadSessionRequest,
+	LoadSessionResponse,
+	ListSessionsRequest,
+	ListSessionsResponse,
+	ResumeSessionRequest,
+	ResumeSessionResponse,
+	CloseSessionRequest,
+	CloseSessionResponse,
+	SetSessionModeRequest,
+	SetSessionModeResponse,
+	SetSessionModelRequest,
+	SetSessionModelResponse,
+	SetSessionConfigOptionRequest,
+	SetSessionConfigOptionResponse,
+	SessionConfigOption,
+	SessionModeState,
+	SessionModelState,
 	ToolKind,
 	ToolCallLocation,
 	ToolCallContent,
-} from '@agentclientprotocol/sdk/dist/schema';
+} from '@agentclientprotocol/sdk';
 import { handleAskRequest } from '@ottocode/server/runtime/ask/service';
 import { subscribe } from '@ottocode/server/events/bus';
 import {
@@ -25,11 +40,33 @@ import {
 	getRunnerState,
 } from '@ottocode/server/runtime/agent/runner';
 import { resolveApproval } from '@ottocode/server/runtime/tools/approval';
+import {
+	createSession,
+	getSessionHistoryMessages,
+	getSessionById,
+	listSessions,
+} from '@ottocode/server/runtime/session/manager';
 import { getDb } from '@ottocode/database';
+import {
+	getConfiguredProviderIds,
+	getConfiguredProviderModels,
+	isProviderAuthorized,
+	loadConfig,
+	type ProviderId,
+} from '@ottocode/sdk';
 import { randomUUID } from 'node:crypto';
 import type { OttoEvent } from '@ottocode/server/events/types';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+
+const ACP_VERSION = '0.1.196';
+const DEFAULT_MODE = 'general';
+const MODE_OPTIONS = [
+	{ id: 'general', name: 'General', description: 'Default coding agent' },
+	{ id: 'build', name: 'Build', description: 'Implementation-focused agent' },
+	{ id: 'plan', name: 'Plan', description: 'Planning and analysis mode' },
+	{ id: 'init', name: 'Init', description: 'Project initialization mode' },
+];
 
 type AcpSession = {
 	sessionId: string;
@@ -43,6 +80,11 @@ type AcpSession = {
 		string,
 		{ terminalId: string; release: () => Promise<void> }
 	>;
+	mode: string;
+	provider?: string;
+	model?: string;
+	mcpServers: NewSessionRequest['mcpServers'];
+	additionalDirectories: string[];
 };
 
 export class OttoAcpAgent implements Agent {
@@ -60,6 +102,17 @@ export class OttoAcpAgent implements Agent {
 		return {
 			protocolVersion: 1,
 			agentCapabilities: {
+				loadSession: true,
+				sessionCapabilities: {
+					list: {},
+					resume: {},
+					close: {},
+					additionalDirectories: {},
+				},
+				mcpCapabilities: {
+					http: true,
+					sse: true,
+				},
 				promptCapabilities: {
 					image: false,
 					embeddedContext: true,
@@ -68,7 +121,7 @@ export class OttoAcpAgent implements Agent {
 			agentInfo: {
 				name: 'otto',
 				title: 'Otto',
-				version: '0.1.196',
+				version: ACP_VERSION,
 			},
 			authMethods: [],
 		};
@@ -82,30 +135,148 @@ export class OttoAcpAgent implements Agent {
 
 	async newSession(params: NewSessionRequest): Promise<NewSessionResponse> {
 		const cwd = params.cwd || process.cwd();
+		const defaults = await this.loadSessionDefaults(cwd);
+		let sessionId: string = randomUUID();
+		let ottoSessionId = '';
 
 		try {
-			await getDb(cwd);
+			const cfg = await loadConfig(cwd);
+			const db = await getDb(cfg.projectRoot);
+			const row = await createSession({
+				db,
+				cfg,
+				agent: defaults.agent,
+				provider: defaults.provider,
+				model: defaults.model,
+			});
+			sessionId = row.id;
+			ottoSessionId = row.id;
 		} catch (err) {
-			console.error('[acp] Failed to initialize database:', err);
+			console.error('[acp] Failed to create resumable session:', err);
 		}
 
-		const sessionId = randomUUID();
 		const session: AcpSession = {
 			sessionId,
-			ottoSessionId: '',
+			ottoSessionId,
 			cwd,
 			cancelled: false,
 			assistantMessageId: null,
 			resolvePrompt: null,
 			unsubscribe: null,
 			activeTerminals: new Map(),
+			mode: defaults.agent,
+			provider: defaults.provider,
+			model: defaults.model,
+			mcpServers: params.mcpServers ?? [],
+			additionalDirectories: normalizeAdditionalDirectories(params),
 		};
 
 		this.sessions.set(sessionId, session);
 
 		return {
 			sessionId,
+			...(await this.buildSessionState(session)),
 		};
+	}
+
+	async loadSession(params: LoadSessionRequest): Promise<LoadSessionResponse> {
+		const response = await this.resumeExistingSession(
+			params.sessionId,
+			params.cwd,
+			params.mcpServers,
+		);
+		await this.replaySessionHistory(params.sessionId);
+		return response;
+	}
+
+	async listSessions(
+		params: ListSessionsRequest,
+	): Promise<ListSessionsResponse> {
+		const cwd = params.cwd || process.cwd();
+		const db = await getDb(cwd);
+		const rows = await listSessions({
+			db,
+			projectPath: params.cwd ?? undefined,
+			limit: 100,
+		});
+
+		return {
+			sessions: rows.map((row) => ({
+				sessionId: row.id,
+				cwd: row.projectPath,
+				title: row.title ?? `${row.agent} · ${row.model}`,
+				updatedAt: new Date(row.lastActiveAt ?? row.createdAt).toISOString(),
+			})),
+		};
+	}
+
+	async resumeSession(
+		params: ResumeSessionRequest,
+	): Promise<ResumeSessionResponse> {
+		return this.resumeExistingSession(
+			params.sessionId,
+			params.cwd,
+			params.mcpServers ?? [],
+		);
+	}
+
+	async closeSession(
+		params: CloseSessionRequest,
+	): Promise<CloseSessionResponse | undefined> {
+		const session = this.sessions.get(params.sessionId);
+		if (!session) return undefined;
+		await this.cancel({ sessionId: params.sessionId });
+		session.unsubscribe?.();
+		for (const terminal of session.activeTerminals.values()) {
+			await terminal.release().catch(() => undefined);
+		}
+		this.sessions.delete(params.sessionId);
+		return undefined;
+	}
+
+	async setSessionMode(
+		params: SetSessionModeRequest,
+	): Promise<SetSessionModeResponse | undefined> {
+		const session = this.sessions.get(params.sessionId);
+		if (!session) throw new Error('Session not found');
+		session.mode = params.modeId;
+		await this.client.sessionUpdate({
+			sessionId: params.sessionId,
+			update: {
+				sessionUpdate: 'current_mode_update',
+				currentModeId: params.modeId,
+			},
+		});
+		return undefined;
+	}
+
+	async unstable_setSessionModel(
+		params: SetSessionModelRequest,
+	): Promise<SetSessionModelResponse | undefined> {
+		const session = this.sessions.get(params.sessionId);
+		if (!session) throw new Error('Session not found');
+		const parsed = parseModelId(params.modelId);
+		session.provider = parsed.provider;
+		session.model = parsed.model;
+		return undefined;
+	}
+
+	async setSessionConfigOption(
+		params: SetSessionConfigOptionRequest,
+	): Promise<SetSessionConfigOptionResponse> {
+		const session = this.sessions.get(params.sessionId);
+		if (!session) throw new Error('Session not found');
+
+		if (params.configId === 'agent' && 'value' in params) {
+			session.mode = String(params.value);
+		} else if (params.configId === 'model' && 'value' in params) {
+			const parsed = parseModelId(String(params.value));
+			session.provider = parsed.provider;
+			session.model = parsed.model;
+		}
+
+		const state = await this.buildSessionState(session);
+		return { configOptions: state.configOptions ?? [] };
 	}
 
 	async prompt(params: PromptRequest): Promise<PromptResponse> {
@@ -125,7 +296,8 @@ export class OttoAcpAgent implements Agent {
 					`<context uri="${chunk.resource.uri}">\n${chunk.resource.text}\n</context>`,
 				);
 			} else if (chunk.type === 'resource_link') {
-				textParts.push(`@${chunk.uri}`);
+				const context = await this.resolveResourceLink(chunk.uri, params.sessionId);
+				textParts.push(context ?? `@${chunk.uri}`);
 			}
 		}
 		const prompt = textParts.join('\n');
@@ -136,6 +308,9 @@ export class OttoAcpAgent implements Agent {
 				projectRoot: session.cwd,
 				prompt,
 				sessionId: session.ottoSessionId || undefined,
+				agent: session.mode,
+				provider: session.provider,
+				model: session.model,
 			});
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
@@ -155,6 +330,8 @@ export class OttoAcpAgent implements Agent {
 
 		session.ottoSessionId = response.sessionId;
 		session.assistantMessageId = response.assistantMessageId;
+		session.provider = response.provider;
+		session.model = response.model;
 
 		const unsub = subscribe(response.sessionId, (event: OttoEvent) => {
 			void this.handleOttoEvent(event, params.sessionId);
@@ -704,6 +881,255 @@ export class OttoAcpAgent implements Agent {
 
 		return [...new Set(paths)];
 	}
+
+	private async resumeExistingSession(
+		sessionId: string,
+		cwd: string,
+		mcpServers: NewSessionRequest['mcpServers'] = [],
+	): Promise<ResumeSessionResponse> {
+		const db = await getDb(cwd);
+		const row = await getSessionById({
+			db,
+			sessionId,
+		});
+		if (!row) {
+			console.error('[acp] Session not found while resuming:', sessionId);
+			throw new Error('Session not found');
+		}
+
+		const session: AcpSession = {
+			sessionId,
+			ottoSessionId: sessionId,
+			cwd: row.projectPath || cwd,
+			cancelled: false,
+			assistantMessageId: null,
+			resolvePrompt: null,
+			unsubscribe: null,
+			activeTerminals: new Map(),
+			mode: row.agent || DEFAULT_MODE,
+			provider: row.provider,
+			model: row.model,
+			mcpServers,
+			additionalDirectories: [],
+		};
+		this.sessions.set(sessionId, session);
+
+		return this.buildSessionState(session);
+	}
+
+	private async replaySessionHistory(sessionId: string): Promise<void> {
+		const session = this.sessions.get(sessionId);
+		if (!session) throw new Error('Session not found');
+
+		const db = await getDb(session.cwd);
+		const history = await getSessionHistoryMessages(db, session.ottoSessionId);
+		for (const message of history) {
+			if (message.role !== 'user' && message.role !== 'assistant') continue;
+
+			const text = extractReplayText(message.parts);
+			if (!text) continue;
+
+			await this.client.sessionUpdate({
+				sessionId,
+				update: {
+					sessionUpdate:
+						message.role === 'user'
+							? 'user_message_chunk'
+							: 'agent_message_chunk',
+					content: { type: 'text', text },
+				},
+			});
+		}
+	}
+
+	private async buildSessionState(
+		session: AcpSession,
+	): Promise<{
+		configOptions: SessionConfigOption[];
+		modes: SessionModeState;
+		models: SessionModelState | null;
+	}> {
+		const defaults = await this.loadSessionDefaults(session.cwd);
+		session.mode ||= defaults.agent;
+		session.provider ||= defaults.provider;
+		session.model ||= defaults.model;
+
+		const modelOptions = await this.buildModelOptions(session);
+		const currentModel =
+			session.provider && session.model
+				? toModelId(session.provider, session.model)
+				: modelOptions[0]?.value;
+		if (
+			currentModel &&
+			session.provider &&
+			session.model &&
+			!modelOptions.some((model) => model.value === currentModel)
+		) {
+			modelOptions.unshift({
+				value: currentModel,
+				name: `${session.provider}: ${session.model}`,
+				description: 'Configured otto default model',
+			});
+		}
+		const modeOptions = ensureModeOption(session.mode);
+
+		const configOptions: SessionConfigOption[] = [
+			{
+				id: 'agent',
+				name: 'Agent',
+				type: 'select',
+				category: 'mode',
+				currentValue: session.mode,
+				options: modeOptions.map((mode) => ({
+					value: mode.id,
+					name: mode.name,
+					description: mode.description,
+				})),
+			},
+		];
+
+		if (currentModel && modelOptions.length > 0) {
+			configOptions.push({
+				id: 'model',
+				name: 'Model',
+				type: 'select',
+				category: 'model',
+				currentValue: currentModel,
+				options: modelOptions,
+			});
+		}
+
+		return {
+			configOptions,
+			modes: {
+				currentModeId: session.mode,
+				availableModes: modeOptions,
+			},
+			models:
+				currentModel && modelOptions.length > 0
+					? {
+							currentModelId: currentModel,
+							availableModels: modelOptions.map((model) => ({
+								modelId: model.value,
+								name: model.name,
+								description: model.description,
+							})),
+						}
+					: null,
+		};
+	}
+
+	private async buildModelOptions(
+		session: AcpSession,
+	): Promise<Array<{ value: string; name: string; description: string }>> {
+		try {
+			const cfg = await loadConfig(session.cwd);
+			const providers = getConfiguredProviderIds(cfg);
+			const options: Array<{ value: string; name: string; description: string }> = [];
+
+			for (const provider of providers) {
+				if (!(await isProviderAuthorized(cfg, provider))) continue;
+				for (const model of getConfiguredProviderModels(cfg, provider)) {
+					const modelId = model.id;
+					options.push({
+						value: toModelId(provider, modelId),
+						name: `${provider}: ${model.label ?? modelId}`,
+						description: `Use ${modelId} via ${provider}`,
+					});
+				}
+			}
+
+			return options;
+		} catch (err) {
+			console.error('[acp] Failed to build model list:', err);
+			return [];
+		}
+	}
+
+	private async loadSessionDefaults(cwd: string): Promise<{
+		agent: string;
+		provider: ProviderId;
+		model: string;
+	}> {
+		try {
+			const cfg = await loadConfig(cwd);
+			return {
+				agent: cfg.defaults.agent || DEFAULT_MODE,
+				provider: cfg.defaults.provider,
+				model: cfg.defaults.model,
+			};
+		} catch (err) {
+			console.error('[acp] Failed to load defaults:', err);
+			return { agent: DEFAULT_MODE, provider: '' as ProviderId, model: '' };
+		}
+	}
+
+	private async resolveResourceLink(
+		uri: string,
+		sessionId: string,
+	): Promise<string | undefined> {
+		if (!this.clientCapabilities?.fs?.readTextFile) return undefined;
+		if (!uri.startsWith('file://')) return undefined;
+
+		try {
+			const filePath = decodeURIComponent(new URL(uri).pathname);
+			const response = await this.client.readTextFile({
+				sessionId,
+				path: filePath,
+			});
+			return `<context uri="${uri}">\n${response.content}\n</context>`;
+		} catch (err) {
+			console.error('[acp] Failed to read resource link:', uri, err);
+			return undefined;
+		}
+	}
+}
+
+function normalizeAdditionalDirectories(
+	params: NewSessionRequest | ResumeSessionRequest | LoadSessionRequest,
+): string[] {
+	const dirs = 'additionalDirectories' in params ? params.additionalDirectories : [];
+	return Array.isArray(dirs) ? dirs.filter((dir) => typeof dir === 'string') : [];
+}
+
+function extractReplayText(parts: Array<{ type: string; content: string }>): string {
+	const chunks: string[] = [];
+	for (const part of parts) {
+		if (part.type !== 'text') continue;
+		try {
+			const parsed = JSON.parse(part.content) as { text?: unknown };
+			const text = typeof parsed.text === 'string' ? parsed.text : '';
+			if (text) chunks.push(text);
+		} catch {
+			if (part.content) chunks.push(part.content);
+		}
+	}
+	return chunks.join('\n');
+}
+
+function ensureModeOption(modeId: string): typeof MODE_OPTIONS {
+	if (MODE_OPTIONS.some((mode) => mode.id === modeId)) return MODE_OPTIONS;
+	return [
+		...MODE_OPTIONS,
+		{
+			id: modeId,
+			name: modeId,
+			description: 'Configured otto default agent',
+		},
+	];
+}
+
+function toModelId(provider: string, model: string): string {
+	return `${provider}:${model}`;
+}
+
+function parseModelId(modelId: string): { provider: string; model: string } {
+	const index = modelId.indexOf(':');
+	if (index === -1) return { provider: '', model: modelId };
+	return {
+		provider: modelId.slice(0, index),
+		model: modelId.slice(index + 1),
+	};
 }
 
 function isShellTool(name: string): boolean {

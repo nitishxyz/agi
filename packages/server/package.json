@@ -22,6 +22,10 @@
 			"import": "./src/runtime/agent/runner.ts",
 			"types": "./src/runtime/agent/runner.ts"
 		},
+		"./runtime/session/manager": {
+			"import": "./src/runtime/session/manager.ts",
+			"types": "./src/runtime/session/manager.ts"
+		},
 		"./events/bus": {
 			"import": "./src/events/bus.ts",
 			"types": "./src/events/bus.ts"
