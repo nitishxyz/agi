@@ -3,6 +3,7 @@ import type {
 	ToolCallLocation,
 	ToolKind,
 } from '@agentclientprotocol/sdk';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 const WRITE_TOOLS = ['write', 'edit', 'multiedit', 'copy_into', 'apply_patch'];
@@ -11,11 +12,12 @@ export function buildToolResultContent(
 	name: string,
 	args: Record<string, unknown> | undefined,
 	result: Record<string, unknown> | string | undefined,
+	cwd?: string,
 ): ToolCallContent[] {
 	if (result === undefined || result === null) return [];
 
 	if (isWriteTool(name)) {
-		return buildDiffContent(name, args, result);
+		return buildDiffContent(name, args, result, cwd);
 	}
 
 	if (isShellTool(name)) {
@@ -51,6 +53,7 @@ export function buildDiffContent(
 	name: string,
 	args: Record<string, unknown> | undefined,
 	result: Record<string, unknown> | string | undefined,
+	cwd?: string,
 ): ToolCallContent[] {
 	const content: ToolCallContent[] = [];
 
@@ -59,17 +62,9 @@ export function buildDiffContent(
 		const patch = artifact?.patch as string | undefined;
 
 		if (artifact?.kind === 'file_diff' && patch) {
-			const filePath = extractFilePath(name, args, patch);
-			if (filePath) {
-				const summary = artifact.summary as Record<string, unknown> | undefined;
-				const _additions = summary?.additions ?? 0;
-				const _deletions = summary?.deletions ?? 0;
-				content.push({
-					type: 'diff',
-					path: filePath,
-					newText: patch,
-					oldText: null,
-				} as ToolCallContent);
+			const diffs = buildFileDiffContents(name, args, result, patch, cwd);
+			if (diffs.length > 0) {
+				content.push(...diffs);
 				return content;
 			}
 		}
@@ -103,6 +98,185 @@ export function buildDiffContent(
 	}
 
 	return content;
+}
+
+function buildFileDiffContents(
+	name: string,
+	args: Record<string, unknown> | undefined,
+	result: Record<string, unknown>,
+	patch: string,
+	cwd?: string,
+): ToolCallContent[] {
+	if (!cwd) return [];
+
+	const fileChanges = getFileChanges(name, args, result, patch);
+	const contents: ToolCallContent[] = [];
+
+	for (const change of fileChanges) {
+		const absPath = path.isAbsolute(change.filePath)
+			? change.filePath
+			: path.join(cwd, change.filePath);
+		const newText =
+			change.kind === 'delete' ? '' : readTextFileIfExists(absPath);
+		if (newText === undefined) continue;
+
+		const oldText =
+			change.kind === 'add'
+				? null
+				: reversePatchForFile(patch, change.filePath, newText);
+
+		contents.push({
+			type: 'diff',
+			path: absPath,
+			newText,
+			oldText,
+		} as ToolCallContent);
+	}
+
+	return contents;
+}
+
+function getFileChanges(
+	name: string,
+	args: Record<string, unknown> | undefined,
+	result: Record<string, unknown>,
+	patch: string,
+): Array<{ filePath: string; kind: 'add' | 'update' | 'delete' }> {
+	const changes = result.changes as Array<Record<string, unknown>> | undefined;
+	if (Array.isArray(changes)) {
+		return changes.flatMap((change) => {
+			if (typeof change.filePath !== 'string') return [];
+			return [
+				{
+					filePath: change.filePath,
+					kind: parseChangeKind(change.kind),
+				},
+			];
+		});
+	}
+
+	const filePath = extractFilePath(name, args, patch);
+	if (!filePath) return [];
+	return [
+		{
+			filePath,
+			kind: patch.includes(`*** Add File: ${filePath}`) ? 'add' : 'update',
+		},
+	];
+}
+
+function parseChangeKind(value: unknown): 'add' | 'update' | 'delete' {
+	if (value === 'add' || value === 'delete') return value;
+	return 'update';
+}
+
+function readTextFileIfExists(filePath: string): string | undefined {
+	try {
+		return fs.readFileSync(filePath, 'utf-8');
+	} catch {
+		return undefined;
+	}
+}
+
+function reversePatchForFile(
+	patch: string,
+	filePath: string,
+	newText: string,
+): string | null {
+	const hunks = extractHunksForFile(patch, filePath);
+	if (hunks.length === 0) return null;
+
+	const oldLines = splitLines(newText);
+	for (const hunk of hunks.reverse()) {
+		const index = Math.max(0, hunk.newStart - 1);
+		oldLines.splice(index, hunk.newLines.length, ...hunk.oldLines);
+	}
+	return oldLines.join('\n');
+}
+
+function extractHunksForFile(
+	patch: string,
+	filePath: string,
+): Array<{ newStart: number; newLines: string[]; oldLines: string[] }> {
+	const normalizedPath = normalizePatchPath(filePath);
+	const hunks: Array<{
+		newStart: number;
+		newLines: string[];
+		oldLines: string[];
+	}> = [];
+	let inTargetFile = false;
+	let currentHunk:
+		| { newStart: number; newLines: string[]; oldLines: string[] }
+		| undefined;
+
+	for (const line of patch.split('\n')) {
+		const directivePath = parsePatchFileDirective(line);
+		if (directivePath) {
+			inTargetFile = normalizePatchPath(directivePath) === normalizedPath;
+			currentHunk = undefined;
+			continue;
+		}
+
+		const unifiedPath = parseUnifiedFileHeader(line);
+		if (unifiedPath) {
+			inTargetFile = normalizePatchPath(unifiedPath) === normalizedPath;
+			currentHunk = undefined;
+			continue;
+		}
+
+		if (!inTargetFile) continue;
+
+		const hunkMatch = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+		if (hunkMatch) {
+			currentHunk = {
+				newStart: Number(hunkMatch[2]),
+				newLines: [],
+				oldLines: [],
+			};
+			hunks.push(currentHunk);
+			continue;
+		}
+
+		if (!currentHunk) continue;
+		if (line.startsWith('+++ ') || line.startsWith('--- ')) continue;
+		if (line.startsWith('*** ')) {
+			currentHunk = undefined;
+			continue;
+		}
+
+		const prefix = line[0];
+		const value = line.slice(1);
+		if (prefix === ' ') {
+			currentHunk.oldLines.push(value);
+			currentHunk.newLines.push(value);
+		} else if (prefix === '-') {
+			currentHunk.oldLines.push(value);
+		} else if (prefix === '+') {
+			currentHunk.newLines.push(value);
+		}
+	}
+
+	return hunks;
+}
+
+function parsePatchFileDirective(line: string): string | undefined {
+	const match = line.match(/^\*\*\* (?:Update|Add|Delete) File: (.+)$/);
+	return match?.[1]?.trim();
+}
+
+function parseUnifiedFileHeader(line: string): string | undefined {
+	const match = line.match(/^(?:---|\+\+\+) (?:[ab]\/)?(.+)$/);
+	const filePath = match?.[1]?.trim();
+	if (!filePath || filePath === '/dev/null') return undefined;
+	return filePath;
+}
+
+function normalizePatchPath(filePath: string): string {
+	return filePath.replace(/\\/g, '/').replace(/^[ab]\//, '');
+}
+
+function splitLines(text: string): string[] {
+	return text.length > 0 ? text.split('\n') : [];
 }
 
 export function buildBashContent(

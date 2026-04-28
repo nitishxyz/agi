@@ -636,7 +636,7 @@ export class OttoAcpAgent implements Agent {
 				'ok' in result &&
 				result.ok === false);
 
-		const content = buildToolResultContent(name, args, result);
+		const content = buildToolResultContent(name, args, result, session.cwd);
 		const locations = getToolLocations(name, args, session.cwd);
 
 		await this.client.sessionUpdate({
@@ -869,7 +869,12 @@ export class OttoAcpAgent implements Agent {
 			output !== null &&
 			'ok' in output &&
 			output.ok === false;
-		const content = buildToolResultContent(result.name, args, output);
+		const content = buildToolResultContent(
+			result.name,
+			args,
+			output,
+			session.cwd,
+		);
 
 		await this.client.sessionUpdate({
 			sessionId,
