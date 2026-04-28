@@ -2,6 +2,7 @@ import { useKeyboard, useRenderer } from '@opentui/react';
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../theme.ts';
 import type { Session } from '../types.ts';
+import { ModalFrame, SelectRow } from './ModalFrame.tsx';
 
 interface SessionsOverlayProps {
 	sessions: Session[];
@@ -24,7 +25,7 @@ function timeAgo(ts: number | null): string {
 	return `${days}d ago`;
 }
 
-const ITEM_HEIGHT = 2;
+const ITEM_HEIGHT = 1;
 const LOAD_MORE_THRESHOLD = 5;
 
 export function SessionsOverlay({
@@ -78,24 +79,14 @@ export function SessionsOverlay({
 	}, [selectedIdx, renderer]);
 
 	return (
-		<box
-			style={{
-				position: 'absolute',
-				top: Math.floor((process.stdout.rows ?? 40) * 0.1),
-				left: Math.floor((process.stdout.columns ?? 120) * 0.15),
-				right: Math.floor((process.stdout.columns ?? 120) * 0.15),
-				bottom: Math.floor((process.stdout.rows ?? 40) * 0.1),
-				border: true,
-				borderStyle: 'rounded',
-				borderColor: colors.border,
-				backgroundColor: colors.bg,
-				zIndex: 100,
-				flexDirection: 'column',
-			}}
-			title=" Sessions "
+		<ModalFrame
+			title="Sessions"
+			padding={0}
+			gap={0}
+			footer="↑↓ nav · ↵ select · esc close"
 		>
 			{sessions.length === 0 ? (
-				<box style={{ padding: 1, flexGrow: 1 }}>
+				<box style={{ padding: 1, flexGrow: 1, alignItems: 'center' }}>
 					<text fg={colors.fgDark}>
 						No sessions yet. Type /new to create one.
 					</text>
@@ -117,26 +108,12 @@ export function SessionsOverlay({
 							const title = s.title || 'untitled';
 							const meta = `${s.provider || 'unknown'}/${s.model || ''} · ${timeAgo(s.lastActiveAt)}`;
 							return (
-								<box
+								<SelectRow
 									key={s.id}
-									style={{
-										flexDirection: 'column',
-										width: '100%',
-										backgroundColor: isSelected
-											? colors.bgHighlight
-											: undefined,
-										paddingLeft: 1,
-										paddingRight: 1,
-										height: ITEM_HEIGHT,
-									}}
-								>
-									<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
-										{title}
-									</text>
-									<text fg={isSelected ? colors.fgDimmed : colors.fgDark}>
-										{meta}
-									</text>
-								</box>
+									active={isSelected}
+									title={title}
+									footer={meta}
+								/>
 							);
 						})}
 						{loadingMore && (
@@ -152,9 +129,6 @@ export function SessionsOverlay({
 					</scrollbox>
 				</box>
 			)}
-			<box style={{ height: 1, flexShrink: 0, paddingLeft: 1 }}>
-				<text fg={colors.fgDimmed}>↑↓ nav · ↵ select · esc close</text>
-			</box>
-		</box>
+		</ModalFrame>
 	);
 }

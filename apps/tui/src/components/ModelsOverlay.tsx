@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Fuse from 'fuse.js';
 import { getAllModels } from '@ottocode/api';
 import { useTheme } from '../theme.ts';
+import { ModalFrame, SelectRow } from './ModalFrame.tsx';
 
 interface ModelItem {
 	id: string;
@@ -292,22 +293,10 @@ export function ModelsOverlay({
 	}, [displayRows, scrollOffset]);
 
 	return (
-		<box
-			style={{
-				position: 'absolute',
-				top: Math.floor((process.stdout.rows ?? 40) * 0.1),
-				left: Math.floor((process.stdout.columns ?? 120) * 0.15),
-				right: Math.floor((process.stdout.columns ?? 120) * 0.15),
-				bottom: Math.floor((process.stdout.rows ?? 40) * 0.1),
-				border: true,
-				borderStyle: 'rounded',
-				borderColor: colors.border,
-				backgroundColor: colors.bg,
-				zIndex: 100,
-				flexDirection: 'column',
-				padding: 1,
-			}}
-			title=" Models "
+		<ModalFrame
+			title="Models"
+			padding={1}
+			footer="↑↓ nav · ↵ select · esc close"
 		>
 			<box
 				style={{
@@ -315,9 +304,10 @@ export function ModelsOverlay({
 					height: 3,
 					flexShrink: 0,
 					border: true,
-					borderStyle: 'rounded',
 					borderColor: colors.border,
 					marginBottom: 1,
+					paddingLeft: 1,
+					paddingRight: 1,
 				}}
 			>
 				<box style={{ flexDirection: 'row', width: '100%', height: 1 }}>
@@ -343,7 +333,7 @@ export function ModelsOverlay({
 									key={`h-${row.providerKey}`}
 									style={{ height: 1, width: '100%' }}
 								>
-									<text fg={colors.fgDark}>
+									<text fg={colors.fgDimmed}>
 										<b>{row.label.toUpperCase()}</b>
 									</text>
 								</box>
@@ -358,31 +348,17 @@ export function ModelsOverlay({
 						if (row.item.toolCall) badges.push('tools');
 						if (row.item.reasoningText) badges.push('reasoning');
 						return (
-							<box
+							<SelectRow
 								key={`m-${row.item.providerKey}-${row.item.modelId}`}
-								style={{
-									flexDirection: 'row',
-									gap: 1,
-									height: 1,
-									width: '100%',
-									backgroundColor: isSelected ? colors.bgHighlight : undefined,
-									paddingLeft: 1,
-								}}
-							>
-								<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
-									{row.item.modelLabel}
-								</text>
-								{isCurrent && <text fg={colors.blue}>●</text>}
-								{badges.length > 0 && (
-									<text fg={colors.fgDark}>{badges.join(' ')}</text>
-								)}
-							</box>
+								active={isSelected}
+								current={isCurrent}
+								title={row.item.modelLabel}
+								footer={badges.length > 0 ? badges.join(' ') : undefined}
+							/>
 						);
 					})}
 				</box>
 			)}
-
-			<text fg={colors.fgDimmed}>↑↓ nav · ↵ select · esc close</text>
-		</box>
+		</ModalFrame>
 	);
 }

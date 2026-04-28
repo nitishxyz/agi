@@ -1,30 +1,21 @@
+import { useKeyboard } from '@opentui/react';
 import { useTheme } from '../theme.ts';
 import { COMMANDS } from '../commands.ts';
+import { ModalFrame } from './ModalFrame.tsx';
 
 interface HelpOverlayProps {
 	onClose: () => void;
 }
 
-export function HelpOverlay({ onClose: _onClose }: HelpOverlayProps) {
+export function HelpOverlay({ onClose }: HelpOverlayProps) {
 	const { colors } = useTheme();
 
+	useKeyboard((key) => {
+		if (key.name === 'escape') onClose();
+	});
+
 	return (
-		<box
-			style={{
-				position: 'absolute',
-				top: Math.floor((process.stdout.rows ?? 40) * 0.1),
-				left: Math.floor((process.stdout.columns ?? 120) * 0.15),
-				right: Math.floor((process.stdout.columns ?? 120) * 0.15),
-				border: true,
-				borderStyle: 'rounded',
-				borderColor: colors.border,
-				backgroundColor: colors.bg,
-				zIndex: 100,
-				flexDirection: 'column',
-				padding: 1,
-			}}
-			title=" Help "
-		>
+		<ModalFrame title="Help" footer="esc close">
 			<text fg={colors.blue}>
 				<b>Commands</b>
 			</text>
@@ -80,7 +71,6 @@ export function HelpOverlay({ onClose: _onClose }: HelpOverlayProps) {
 					<text fg={colors.fgDark}>Close overlay</text>
 				</box>
 			</box>
-			<text fg={colors.fgDimmed}>esc close</text>
-		</box>
+		</ModalFrame>
 	);
 }

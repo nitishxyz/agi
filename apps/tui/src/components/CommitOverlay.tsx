@@ -8,6 +8,7 @@ import {
 	commitChanges,
 } from '@ottocode/api';
 import { useTheme } from '../theme.ts';
+import { ModalFrame } from './ModalFrame.tsx';
 
 interface GitFileInfo {
 	path: string;
@@ -226,22 +227,7 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 	};
 
 	return (
-		<box
-			style={{
-				position: 'absolute',
-				top: Math.floor((process.stdout.rows ?? 40) * 0.1),
-				left: Math.floor((process.stdout.columns ?? 120) * 0.15),
-				right: Math.floor((process.stdout.columns ?? 120) * 0.15),
-				border: true,
-				borderStyle: 'rounded',
-				borderColor: colors.border,
-				backgroundColor: colors.bg,
-				zIndex: 100,
-				flexDirection: 'column',
-				padding: 1,
-			}}
-			title=" Commit "
-		>
+		<ModalFrame title="Commit" footer="⌃G generate · ⌃↵ commit · esc close">
 			{phase === 'loading' && (
 				<box style={{ flexDirection: 'row', gap: 1 }}>
 					<spinner name="dots" color={colors.blue} />
@@ -353,10 +339,6 @@ export function CommitOverlay({ onClose, onCommitted }: CommitOverlayProps) {
 					{errorText && <text fg={colors.red}>{errorText}</text>}
 				</box>
 			)}
-
-			{phase !== 'loading' && phase !== 'done' && (
-				<text fg={colors.fgDimmed}>⌃G generate · ⌃↵ commit · esc close</text>
-			)}
-		</box>
+		</ModalFrame>
 	);
 }

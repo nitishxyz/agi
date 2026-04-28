@@ -2,6 +2,9 @@ import { useKeyboard } from '@opentui/react';
 import { useCallback, useEffect, useState } from 'react';
 import { getAgents } from '@ottocode/api';
 import { useTheme } from '../theme.ts';
+import { getVisibleWindow, ModalFrame, SelectRow } from './ModalFrame.tsx';
+
+const MAX_VISIBLE_AGENTS = 12;
 
 interface AgentsOverlayProps {
 	currentAgent: string;
@@ -62,54 +65,45 @@ export function AgentsOverlay({
 		}
 	});
 
+	const visibleWindow = getVisibleWindow(
+		agents.length,
+		selectedIdx,
+		MAX_VISIBLE_AGENTS,
+	);
+	const visibleAgents = agents.slice(visibleWindow.start, visibleWindow.end);
+	const needsWindow = agents.length > visibleAgents.length;
+
 	return (
-		<box
-			style={{
-				position: 'absolute',
-				top: Math.floor((process.stdout.rows ?? 40) * 0.2),
-				left: Math.floor((process.stdout.columns ?? 120) * 0.3),
-				right: Math.floor((process.stdout.columns ?? 120) * 0.3),
-				border: true,
-				borderStyle: 'rounded',
-				borderColor: colors.border,
-				backgroundColor: colors.bg,
-				zIndex: 100,
-				flexDirection: 'column',
-				padding: 1,
-			}}
-			title=" Agents "
-		>
+		<ModalFrame title="Agents" footer="↑↓ move · ↵ select · esc close">
 			{loading && <text fg={colors.fgDimmed}>loading…</text>}
 			{error && <text fg={colors.red}>{error}</text>}
 			{!loading && !error && agents.length === 0 && (
 				<text fg={colors.fgDimmed}>no agents available</text>
 			)}
-			<box style={{ flexDirection: 'column' }}>
-				{agents.map((agent, index) => {
+			{needsWindow && visibleWindow.start > 0 && (
+				<text fg={colors.fgDark}>↑ {visibleWindow.start} more</text>
+			)}
+			<box style={{ flexDirection: 'column', gap: 0 }}>
+				{visibleAgents.map((agent, offset) => {
+					const index = visibleWindow.start + offset;
 					const isSelected = index === selectedIdx;
 					const isCurrent = agent === currentAgent;
 					return (
-						<box
+						<SelectRow
 							key={agent}
-							style={{
-								flexDirection: 'row',
-								gap: 1,
-								backgroundColor: isSelected ? colors.bgHighlight : undefined,
-								paddingLeft: 1,
-								paddingRight: 1,
-							}}
-						>
-							<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
-								{agent}
-							</text>
-							{isCurrent && <text fg={colors.green}>•</text>}
-						</box>
+							active={isSelected}
+							current={isCurrent}
+							title={agent}
+							description={isCurrent ? 'current' : undefined}
+						/>
 					);
 				})}
 			</box>
-			<box style={{ marginTop: 1 }}>
-				<text fg={colors.fgDimmed}>↑↓ ↵ esc</text>
-			</box>
-		</box>
+			{needsWindow && visibleWindow.end < agents.length && (
+				<text fg={colors.fgDark}>
+					↓ {agents.length - visibleWindow.end} more
+				</text>
+			)}
+		</ModalFrame>
 	);
 }

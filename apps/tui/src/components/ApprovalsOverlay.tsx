@@ -1,6 +1,7 @@
 import { useKeyboard } from '@opentui/react';
 import { useCallback, useState } from 'react';
 import { useTheme } from '../theme.ts';
+import { ModalFrame, SelectRow } from './ModalFrame.tsx';
 
 const APPROVAL_OPTIONS = [
 	{
@@ -69,26 +70,7 @@ export function ApprovalsOverlay({
 	});
 
 	return (
-		<box
-			style={{
-				position: 'absolute',
-				top: Math.floor((process.stdout.rows ?? 40) * 0.16),
-				left: Math.floor((process.stdout.columns ?? 120) * 0.18),
-				right: Math.floor((process.stdout.columns ?? 120) * 0.18),
-				border: true,
-				borderStyle: 'rounded',
-				borderColor: colors.border,
-				backgroundColor: colors.bg,
-				zIndex: 100,
-				flexDirection: 'column',
-				padding: 1,
-				gap: 1,
-			}}
-			title=" Tool approvals "
-		>
-			<text fg={colors.blue}>
-				<b>Select approval mode</b>
-			</text>
+		<ModalFrame title="Tool approvals" footer="↑↓ move · ↵ save · esc close">
 			<text fg={colors.fgMuted}>
 				YOLO skips prompts but still blocks catastrophic commands like rm -rf /
 			</text>
@@ -97,32 +79,17 @@ export function ApprovalsOverlay({
 					const isSelected = index === selectedIdx;
 					const isCurrent = option.id === currentMode;
 					return (
-						<box
+						<SelectRow
 							key={option.id}
-							style={{
-								flexDirection: 'column',
-								backgroundColor: isSelected ? colors.bgHighlight : undefined,
-								paddingLeft: 1,
-								paddingRight: 1,
-								paddingTop: 0,
-								paddingBottom: 0,
-							}}
-						>
-							<box style={{ flexDirection: 'row', gap: 1 }}>
-								<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
-									{option.label}
-								</text>
-								<text fg={colors.fgDark}>({option.id})</text>
-								{isCurrent && <text fg={colors.green}>current</text>}
-							</box>
-							<text fg={isSelected ? colors.fg : colors.fgDimmed}>
-								{option.description}
-							</text>
-						</box>
+							active={isSelected}
+							current={isCurrent}
+							title={option.label}
+							description={option.description}
+							footer={option.id}
+						/>
 					);
 				})}
 			</box>
-			<text fg={colors.fgDimmed}>↑↓ move · ↵ save · esc close</text>
-		</box>
+		</ModalFrame>
 	);
 }

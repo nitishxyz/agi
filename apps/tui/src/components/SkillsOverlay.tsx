@@ -7,6 +7,7 @@ import {
 } from '@ottocode/api';
 import { getBaseUrl } from '../api.ts';
 import { useTheme } from '../theme.ts';
+import { getVisibleWindow, ModalFrame, SelectRow } from './ModalFrame.tsx';
 
 type SkillSummary = {
 	name: string;
@@ -210,43 +211,52 @@ export function SkillsOverlay({ onClose }: SkillsOverlayProps) {
 		}
 	});
 
-	let absoluteRow = 0;
+	const footerText =
+		error ?? status ?? '↑↓ nav · space toggle · r refresh · esc close';
+
+	type DisplayRow =
+		| { type: 'global'; rowIndex: 0 }
+		| { type: 'header'; scope: string; label: string }
+		| { type: 'skill'; rowIndex: number; skill: SkillSummary };
+
+	const displayRows = useMemo(() => {
+		const out: DisplayRow[] = [{ type: 'global', rowIndex: 0 }];
+		let rowIndex = 1;
+		for (const scope of SCOPE_ORDER) {
+			const scopeSkills = grouped.get(scope);
+			if (!scopeSkills?.length) continue;
+			out.push({
+				type: 'header',
+				scope,
+				label: SCOPE_LABELS[scope] ?? scope,
+			});
+			for (const skill of scopeSkills) {
+				out.push({ type: 'skill', rowIndex, skill });
+				rowIndex += 1;
+			}
+		}
+		return out;
+	}, [grouped]);
+
+	const selectedDisplayIndex = Math.max(
+		0,
+		displayRows.findIndex(
+			(row) => row.type !== 'header' && row.rowIndex === selectedIdx,
+		),
+	);
+	const visibleWindow = getVisibleWindow(
+		displayRows.length,
+		selectedDisplayIndex,
+		20,
+	);
+	const visibleRows = displayRows.slice(visibleWindow.start, visibleWindow.end);
 
 	return (
-		<box
-			position="absolute"
-			top={3}
-			left="20%"
-			width="60%"
-			height="80%"
-			border
-			borderColor={colors.border}
-			backgroundColor={colors.panel}
-			flexDirection="column"
+		<ModalFrame
+			title={`Skills ${enabledCount}/${totalCount}`}
+			footer={footerText}
 		>
-			<box
-				height={3}
-				paddingX={2}
-				borderBottom
-				borderColor={colors.border}
-				alignItems="center"
-				justifyContent="space-between"
-			>
-				<text fg={colors.text} bold>
-					Skills
-				</text>
-				<text fg={colors.textMuted}>
-					{enabledCount}/{totalCount}
-				</text>
-			</box>
-
-			<box
-				flexDirection="column"
-				flexGrow={1}
-				paddingX={2}
-				paddingY={1}
-				overflow="hidden"
-			>
+			<box flexDirection="column" flexGrow={1} overflow="hidden">
 				{loading ? (
 					<box flexGrow={1} alignItems="center" justifyContent="center">
 						<text fg={colors.textMuted}>Loading skills…</text>
@@ -274,82 +284,56 @@ export function SkillsOverlay({ onClose }: SkillsOverlayProps) {
 					</box>
 				) : (
 					<box flexDirection="column" flexGrow={1}>
-						<box
-							paddingY={1}
-							justifyContent="space-between"
-							backgroundColor={selectedIdx === 0 ? colors.selection : undefined}
-						>
-							<text fg={colors.text}>All skills</text>
-							<text fg={globalEnabled ? colors.success : colors.textMuted}>
-								{saving && selectedIdx === 0
-									? '…'
-									: globalEnabled
-										? 'ON'
-										: 'OFF'}
-							</text>
-						</box>
+						{visibleWindow.start > 0 && (
+							<text fg={colors.textMuted}>↑ {visibleWindow.start} more</text>
+						)}
+						{visibleRows.map((row) => {
+							if (row.type === 'header') {
+								return (
+									<box key={`h-${row.scope}`} height={1} paddingLeft={3}>
+										<text fg={colors.textMuted}>
+											<b>{row.label}</b>
+										</text>
+									</box>
+								);
+							}
+							if (row.type === 'global') {
+								const isSelected = selectedIdx === 0;
+								return (
+									<SelectRow
+										key="global"
+										active={isSelected}
+										title="All skills"
+										footer={
+											saving && isSelected ? '…' : globalEnabled ? 'ON' : 'OFF'
+										}
+									/>
+								);
+							}
 
-						{SCOPE_ORDER.map((scope) => {
-							const scopeSkills = grouped.get(scope);
-							if (!scopeSkills?.length) return null;
+							const isSelected = selectedIdx === row.rowIndex;
+							const enabled = row.skill.enabled !== false;
+							const description = row.skill.description
+								? row.skill.description.slice(0, 72)
+								: undefined;
 							return (
-								<box key={scope} flexDirection="column" marginTop={1}>
-									<text fg={colors.textMuted}>
-										{SCOPE_LABELS[scope] ?? scope}
-									</text>
-									{scopeSkills.map((skill) => {
-										absoluteRow += 1;
-										const isSelected = selectedIdx === absoluteRow;
-										return (
-											<box
-												key={`${skill.scope}-${skill.name}`}
-												paddingY={1}
-												justifyContent="space-between"
-												backgroundColor={
-													isSelected ? colors.selection : undefined
-												}
-											>
-												<box flexDirection="column" width="80%">
-													<text fg={colors.text}>{skill.name}</text>
-													<text fg={colors.textMuted}>{skill.description}</text>
-												</box>
-												<text
-													fg={
-														skill.enabled === false
-															? colors.textMuted
-															: colors.success
-													}
-												>
-													{saving && isSelected
-														? '…'
-														: skill.enabled === false
-															? 'OFF'
-															: 'ON'}
-												</text>
-											</box>
-										);
-									})}
-								</box>
+								<SelectRow
+									key={`${row.skill.scope}-${row.skill.name}`}
+									active={isSelected}
+									title={row.skill.name}
+									description={description}
+									footer={saving && isSelected ? '…' : enabled ? 'ON' : 'OFF'}
+								/>
 							);
 						})}
+						{visibleWindow.end < displayRows.length && (
+							<text fg={colors.textMuted}>
+								↓ {displayRows.length - visibleWindow.end} more
+							</text>
+						)}
 					</box>
 				)}
 			</box>
-
-			<box
-				height={2}
-				paddingX={2}
-				borderTop
-				borderColor={colors.border}
-				alignItems="center"
-				justifyContent="space-between"
-			>
-				<text
-					fg={error ? colors.error : status ? colors.success : colors.textMuted}
-				>
-					{error ?? status ?? '↑↓ nav · space toggle · r refresh · esc close'}
-				</text>
-			</box>
-		</box>
+		</ModalFrame>
 	);
 }

@@ -1,6 +1,8 @@
+import { useKeyboard } from '@opentui/react';
 import { useState, useEffect } from 'react';
 import { getAllModels, getProviderUsage } from '@ottocode/api';
 import { useTheme } from '../theme.ts';
+import { ModalFrame } from './ModalFrame.tsx';
 
 interface UsageWindow {
 	usedPercent?: number;
@@ -58,10 +60,7 @@ function barColor(
 	return colors.blue;
 }
 
-export function UsageOverlay({
-	currentProvider,
-	onClose: _onClose,
-}: UsageOverlayProps) {
+export function UsageOverlay({ currentProvider, onClose }: UsageOverlayProps) {
 	const { colors } = useTheme();
 	const [usage, setUsage] = useState<UsageData | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -129,23 +128,12 @@ export function UsageOverlay({
 
 	const BAR_WIDTH = 30;
 
+	useKeyboard((key) => {
+		if (key.name === 'escape') onClose();
+	});
+
 	return (
-		<box
-			style={{
-				position: 'absolute',
-				top: Math.floor((process.stdout.rows ?? 40) * 0.25),
-				left: Math.floor((process.stdout.columns ?? 120) * 0.2),
-				right: Math.floor((process.stdout.columns ?? 120) * 0.2),
-				border: true,
-				borderStyle: 'rounded',
-				borderColor: colors.border,
-				backgroundColor: colors.bg,
-				zIndex: 100,
-				flexDirection: 'column',
-				padding: 1,
-			}}
-			title=" Usage & Limits "
-		>
+		<ModalFrame title="Usage & Limits" footer="esc close">
 			<box style={{ flexDirection: 'row', gap: 1 }}>
 				<text fg={colors.blue}>
 					<b>Provider:</b>
@@ -236,8 +224,6 @@ export function UsageOverlay({
 						)}
 				</box>
 			)}
-
-			<text fg={colors.fgDimmed}>esc close</text>
-		</box>
+		</ModalFrame>
 	);
 }

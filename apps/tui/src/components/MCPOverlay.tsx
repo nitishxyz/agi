@@ -10,6 +10,7 @@ import {
 	completeMcpAuth,
 } from '@ottocode/api';
 import { useTheme } from '../theme.ts';
+import { ModalFrame, SelectRow } from './ModalFrame.tsx';
 
 interface MCPServerInfo {
 	name: string;
@@ -491,26 +492,11 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 		scrollOffset + VISIBLE_ROWS,
 	);
 
-	const rows = process.stdout.rows ?? 40;
-	const cols = process.stdout.columns ?? 120;
-
 	if (view === 'add') {
 		return (
-			<box
-				style={{
-					position: 'absolute',
-					top: Math.floor(rows * 0.1),
-					left: Math.floor(cols * 0.15),
-					right: Math.floor(cols * 0.15),
-					border: true,
-					borderStyle: 'rounded',
-					borderColor: colors.border,
-					backgroundColor: colors.bg,
-					zIndex: 100,
-					flexDirection: 'column',
-					padding: 1,
-				}}
-				title=" Add MCP Server "
+			<ModalFrame
+				title="Add MCP Server"
+				footer="tab/↑↓ fields · ↵ submit · esc cancel"
 			>
 				<box style={{ flexDirection: 'column', gap: 1 }}>
 					<box style={{ flexDirection: 'column' }}>
@@ -586,62 +572,29 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 						<text fg={colors.red}>{error}</text>
 					</box>
 				)}
-
-				<text fg={colors.fgDimmed}>tab/↑↓ fields · ↵ submit · esc cancel</text>
-			</box>
+			</ModalFrame>
 		);
 	}
 
 	if (view === 'confirm-delete') {
 		const target = sortedServers[selectedIdx];
 		return (
-			<box
-				style={{
-					position: 'absolute',
-					top: Math.floor(rows * 0.4),
-					left: Math.floor(cols * 0.25),
-					right: Math.floor(cols * 0.25),
-					border: true,
-					borderStyle: 'rounded',
-					borderColor: colors.border,
-					backgroundColor: colors.bg,
-					zIndex: 101,
-					flexDirection: 'column',
-					padding: 1,
-				}}
-				title=" Remove Server "
-			>
+			<ModalFrame title="Remove Server" footer="y/↵ confirm · any key cancel">
 				<text fg={colors.fgMuted}>
 					Remove <b>{target?.name}</b>?
 				</text>
 				<text fg={colors.fgDark}>
 					This will stop and remove the configuration.
 				</text>
-				<box style={{ marginTop: 1, flexDirection: 'row', gap: 2 }}>
-					<text fg={colors.red}>y/↵ confirm</text>
-					<text fg={colors.fgDimmed}>any key cancel</text>
-				</box>
-			</box>
+			</ModalFrame>
 		);
 	}
 
 	if (view === 'tools' && toolsServer) {
 		return (
-			<box
-				style={{
-					position: 'absolute',
-					top: Math.floor(rows * 0.15),
-					left: Math.floor(cols * 0.15),
-					right: Math.floor(cols * 0.15),
-					border: true,
-					borderStyle: 'rounded',
-					borderColor: colors.border,
-					backgroundColor: colors.bg,
-					zIndex: 100,
-					flexDirection: 'column',
-					padding: 1,
-				}}
-				title={` ${toolsServer.name} — Tools (${toolsServer.tools.length}) `}
+			<ModalFrame
+				title={`${toolsServer.name} — Tools (${toolsServer.tools.length})`}
+				footer="esc/↵ back"
 			>
 				<box
 					style={{ flexDirection: 'column', overflow: 'hidden', flexGrow: 1 }}
@@ -654,28 +607,14 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 						</box>
 					))}
 				</box>
-				<text fg={colors.fgDimmed}>esc/↵ back</text>
-			</box>
+			</ModalFrame>
 		);
 	}
 
 	return (
-		<box
-			style={{
-				position: 'absolute',
-				top: Math.floor(rows * 0.1),
-				left: Math.floor(cols * 0.15),
-				right: Math.floor(cols * 0.15),
-				bottom: Math.floor(rows * 0.1),
-				border: true,
-				borderStyle: 'rounded',
-				borderColor: colors.border,
-				backgroundColor: colors.bg,
-				zIndex: 100,
-				flexDirection: 'column',
-				padding: 1,
-			}}
-			title=" MCP Servers "
+		<ModalFrame
+			title="MCP Servers"
+			footer="↑↓ nav · ↵ toggle · a add · d del · t tools · esc close"
 		>
 			<box style={{ flexDirection: 'row', gap: 2, marginBottom: 1 }}>
 				<text fg={colors.fgMuted}>
@@ -745,61 +684,38 @@ export function MCPOverlay({ onClose }: MCPOverlayProps) {
 							server.transport === 'http' || server.transport === 'sse';
 						const toolCount = server.tools.length;
 
+						const state = server.connected
+							? 'connected'
+							: server.authRequired && !server.authenticated
+								? 'auth required'
+								: 'disconnected';
+						const footer = `${isRemote ? server.transport : 'stdio'}${
+							server.scope === 'project' ? ' project' : ''
+						}${server.connected && toolCount > 0 ? ` ${toolCount} tools` : ''}`;
+
 						return (
-							<box
+							<SelectRow
 								key={server.name}
-								style={{
-									flexDirection: 'row',
-									height: 1,
-									width: '100%',
-									backgroundColor: isSelected ? colors.bgHighlight : undefined,
-									paddingLeft: 1,
-								}}
-							>
-								{isBusy ? (
-									<box style={{ flexDirection: 'row' }}>
+								active={isSelected}
+								title={server.name}
+								description={isBusy ? 'working…' : state}
+								footer={footer}
+								gutter={
+									isBusy ? (
 										<spinner name="dots" color={colors.yellow} />
-										<text> </text>
-									</box>
-								) : server.connected ? (
-									<text fg={colors.green}>● </text>
-								) : server.authRequired && !server.authenticated ? (
-									<text fg={colors.yellow}>◎ </text>
-								) : (
-									<text fg={colors.fgDark}>○ </text>
-								)}
-
-								<text fg={isSelected ? colors.fgBright : colors.fgMuted}>
-									{server.name}
-								</text>
-
-								<text fg={colors.fgDark}>
-									{' '}
-									{isRemote ? `(${server.transport})` : '(stdio)'}
-								</text>
-
-								{server.scope === 'project' && (
-									<text fg={colors.fgDark}> [project]</text>
-								)}
-
-								{server.connected && toolCount > 0 && (
-									<text fg={colors.fgDark}> {toolCount} tools</text>
-								)}
-
-								{server.authRequired &&
-									!server.authenticated &&
-									!server.connected && (
-										<text fg={colors.yellow}> (auth required)</text>
-									)}
-							</box>
+									) : server.connected ? (
+										<text fg={colors.green}>●</text>
+									) : server.authRequired && !server.authenticated ? (
+										<text fg={colors.yellow}>◎</text>
+									) : (
+										<text fg={colors.fgDark}>○</text>
+									)
+								}
+							/>
 						);
 					})}
 				</box>
 			)}
-
-			<text fg={colors.fgDimmed}>
-				↑↓ nav · ↵ toggle · a add · d del · t tools · esc close
-			</text>
-		</box>
+		</ModalFrame>
 	);
 }
