@@ -63,10 +63,13 @@ import {
 	type ProviderId,
 } from '@ottocode/sdk';
 import { randomUUID } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import type { OttoEvent } from '@ottocode/server/events/types';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 
+const execFileAsync = promisify(execFile);
 const ACP_VERSION = '0.1.196';
 const DEFAULT_MODE = 'general';
 const MODE_OPTIONS = [
@@ -122,7 +125,7 @@ export class OttoAcpAgent implements Agent {
 					sse: true,
 				},
 				promptCapabilities: {
-					image: false,
+					image: true,
 					embeddedContext: true,
 				},
 			},
@@ -301,9 +304,17 @@ export class OttoAcpAgent implements Agent {
 		session.cancelled = false;
 
 		const textParts: string[] = [];
+		const images: Array<{ data: string; mediaType: string }> = [];
 		for (const chunk of params.prompt) {
 			if (chunk.type === 'text') {
 				textParts.push(chunk.text);
+			} else if (chunk.type === 'image') {
+				images.push({ data: chunk.data, mediaType: chunk.mimeType });
+				if (chunk.uri) {
+					textParts.push(
+						`<image uri="${chunk.uri}" mimeType="${chunk.mimeType}" />`,
+					);
+				}
 			} else if (chunk.type === 'resource' && 'text' in chunk.resource) {
 				textParts.push(
 					`<context uri="${chunk.resource.uri}">\n${chunk.resource.text}\n</context>`,
@@ -321,6 +332,9 @@ export class OttoAcpAgent implements Agent {
 		if (trimmedPrompt === '/share') {
 			return this.handleShareCommand(params.sessionId, session);
 		}
+		if (trimmedPrompt === '/stage' || trimmedPrompt.startsWith('/stage ')) {
+			return this.handleStageCommand(params.sessionId, session, trimmedPrompt);
+		}
 		if (trimmedPrompt === '/mcp' || trimmedPrompt.startsWith('/mcp ')) {
 			return this.handleMcpCommand(params.sessionId, session, trimmedPrompt);
 		}
@@ -334,6 +348,7 @@ export class OttoAcpAgent implements Agent {
 				agent: session.mode,
 				provider: session.provider,
 				model: session.model,
+				images,
 			});
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
@@ -949,20 +964,155 @@ export class OttoAcpAgent implements Agent {
 		for (const message of history) {
 			if (message.role !== 'user' && message.role !== 'assistant') continue;
 
-			const text = extractReplayText(message.parts);
-			if (!text) continue;
-
-			await this.client.sessionUpdate({
-				sessionId,
-				update: {
-					sessionUpdate:
-						message.role === 'user'
-							? 'user_message_chunk'
-							: 'agent_message_chunk',
-					content: { type: 'text', text },
-				},
-			});
+			if (message.role === 'user') {
+				await this.replayUserMessageParts(sessionId, message.parts);
+			} else {
+				await this.replayAssistantMessageParts(
+					sessionId,
+					message.parts,
+					session,
+				);
+			}
 		}
+	}
+
+	private async replayUserMessageParts(
+		sessionId: string,
+		parts: Array<{ type: string; content: string }>,
+	): Promise<void> {
+		for (const part of parts) {
+			if (part.type === 'text') {
+				const text = extractReplayText([part]);
+				if (!text) continue;
+				await this.client.sessionUpdate({
+					sessionId,
+					update: {
+						sessionUpdate: 'user_message_chunk',
+						content: { type: 'text', text },
+					},
+				});
+			} else if (part.type === 'image') {
+				const image = parseReplayImage(part.content);
+				if (!image) continue;
+				await this.client.sessionUpdate({
+					sessionId,
+					update: {
+						sessionUpdate: 'user_message_chunk',
+						content: {
+							type: 'image',
+							data: image.data,
+							mimeType: image.mediaType,
+						},
+					},
+				});
+			}
+		}
+	}
+
+	private async replayAssistantMessageParts(
+		sessionId: string,
+		parts: Array<{
+			type: string;
+			content: string;
+			toolName?: string | null;
+			toolCallId?: string | null;
+			compactedAt?: number | null;
+		}>,
+		session: AcpSession,
+	): Promise<void> {
+		const toolCalls = new Map<
+			string,
+			{ name: string; args: Record<string, unknown> | undefined }
+		>();
+
+		for (const part of parts) {
+			if (part.type === 'text') {
+				const text = extractReplayText([part]);
+				if (!text) continue;
+				await this.client.sessionUpdate({
+					sessionId,
+					update: {
+						sessionUpdate: 'agent_message_chunk',
+						content: { type: 'text', text },
+					},
+				});
+				continue;
+			}
+
+			if (part.type === 'tool_call') {
+				if (part.compactedAt) continue;
+				const call = parseReplayToolCall(part);
+				if (!call || call.name === 'finish') continue;
+				toolCalls.set(call.callId, { name: call.name, args: call.args });
+				await this.replayToolCall(sessionId, session, call);
+				continue;
+			}
+
+			if (part.type === 'tool_result') {
+				const result = parseReplayToolResult(part);
+				if (!result || result.name === 'finish') continue;
+				const call = toolCalls.get(result.callId);
+				await this.replayToolResult(sessionId, session, result, call?.args);
+			}
+		}
+	}
+
+	private async replayToolCall(
+		sessionId: string,
+		session: AcpSession,
+		call: {
+			name: string;
+			callId: string;
+			args: Record<string, unknown> | undefined;
+		},
+	): Promise<void> {
+		await this.client.sessionUpdate({
+			sessionId,
+			update: {
+				toolCallId: call.callId,
+				sessionUpdate: 'tool_call',
+				title: formatToolTitle(call.name, call.args),
+				kind: getToolKind(call.name),
+				status: 'in_progress',
+				rawInput: call.args,
+				locations: getToolLocations(call.name, call.args, session.cwd),
+			} as SessionNotification['update'],
+		});
+	}
+
+	private async replayToolResult(
+		sessionId: string,
+		session: AcpSession,
+		result: { name: string; callId: string; result: unknown },
+		args: Record<string, unknown> | undefined,
+	): Promise<void> {
+		const output = result.result as
+			| Record<string, unknown>
+			| string
+			| undefined;
+		const hasError =
+			typeof output === 'object' &&
+			output !== null &&
+			'ok' in output &&
+			output.ok === false;
+		const content = this.buildToolResultContent(
+			result.name,
+			args,
+			output,
+			session,
+		);
+
+		await this.client.sessionUpdate({
+			sessionId,
+			update: {
+				toolCallId: result.callId,
+				sessionUpdate: 'tool_call_update',
+				status: hasError ? 'failed' : 'completed',
+				rawOutput: result.result,
+				...(content.length > 0 ? { content } : {}),
+				locations: getToolLocations(result.name, args, session.cwd),
+			} as SessionNotification['update'],
+		});
 	}
 
 	private queueAvailableCommands(sessionId: string): void {
@@ -986,6 +1136,11 @@ export class OttoAcpAgent implements Agent {
 				name: 'mcp',
 				description: 'List, start, stop, and inspect MCP servers',
 				input: { hint: 'list | status | start <name> | stop <name>' },
+			},
+			{
+				name: 'stage',
+				description: 'Stage all changes or specific paths',
+				input: { hint: '[path ...]' },
 			},
 		];
 
@@ -1043,6 +1198,34 @@ export class OttoAcpAgent implements Agent {
 					},
 				},
 			});
+		}
+
+		return { stopReason: 'end_turn' };
+	}
+
+	private async handleStageCommand(
+		acpSessionId: string,
+		session: AcpSession,
+		command: string,
+	): Promise<PromptResponse> {
+		const files = splitCommandArgs(command).slice(1);
+		const targets = files.length > 0 ? files : ['.'];
+
+		try {
+			await execFileAsync('git', ['add', '--', ...targets], {
+				cwd: session.cwd,
+			});
+			const stagedLabel =
+				targets.length === 1 && targets[0] === '.'
+					? 'all changes'
+					: targets.join(', ');
+			await this.sendAgentText(acpSessionId, `Staged ${stagedLabel}.`);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			await this.sendAgentText(
+				acpSessionId,
+				`Failed to stage changes: ${message}`,
+			);
 		}
 
 		return { stopReason: 'end_turn' };
@@ -1390,6 +1573,90 @@ function extractReplayText(
 	return chunks.join('\n');
 }
 
+function parseReplayImage(
+	content: string,
+): { data: string; mediaType: string } | null {
+	try {
+		const parsed = JSON.parse(content) as {
+			data?: unknown;
+			mediaType?: unknown;
+		};
+		if (typeof parsed.data !== 'string') return null;
+		if (typeof parsed.mediaType !== 'string') return null;
+		return { data: parsed.data, mediaType: parsed.mediaType };
+	} catch {
+		return null;
+	}
+}
+
+function parseReplayToolCall(part: {
+	content: string;
+	toolName?: string | null;
+	toolCallId?: string | null;
+}): {
+	name: string;
+	callId: string;
+	args: Record<string, unknown> | undefined;
+} | null {
+	try {
+		const parsed = JSON.parse(part.content) as {
+			name?: unknown;
+			callId?: unknown;
+			args?: unknown;
+		};
+		const name =
+			typeof parsed.name === 'string'
+				? parsed.name
+				: typeof part.toolName === 'string'
+					? part.toolName
+					: undefined;
+		const callId =
+			typeof parsed.callId === 'string'
+				? parsed.callId
+				: typeof part.toolCallId === 'string'
+					? part.toolCallId
+					: undefined;
+		if (!name || !callId) return null;
+		const args =
+			parsed.args && typeof parsed.args === 'object'
+				? (parsed.args as Record<string, unknown>)
+				: undefined;
+		return { name, callId, args };
+	} catch {
+		return null;
+	}
+}
+
+function parseReplayToolResult(part: {
+	content: string;
+	toolName?: string | null;
+	toolCallId?: string | null;
+}): { name: string; callId: string; result: unknown } | null {
+	try {
+		const parsed = JSON.parse(part.content) as {
+			name?: unknown;
+			callId?: unknown;
+			result?: unknown;
+		};
+		const name =
+			typeof parsed.name === 'string'
+				? parsed.name
+				: typeof part.toolName === 'string'
+					? part.toolName
+					: undefined;
+		const callId =
+			typeof parsed.callId === 'string'
+				? parsed.callId
+				: typeof part.toolCallId === 'string'
+					? part.toolCallId
+					: undefined;
+		if (!name || !callId) return null;
+		return { name, callId, result: parsed.result };
+	} catch {
+		return null;
+	}
+}
+
 function ensureModeOption(modeId: string): typeof MODE_OPTIONS {
 	if (MODE_OPTIONS.some((mode) => mode.id === modeId)) return MODE_OPTIONS;
 	return [
@@ -1599,6 +1866,17 @@ function mapPlanStatus(
 function truncate(text: string, max: number): string {
 	if (text.length <= max) return text;
 	return `${text.slice(0, max - 3)}...`;
+}
+
+function splitCommandArgs(input: string): string[] {
+	const args: string[] = [];
+	const regex = /"([^"]*)"|'([^']*)'|\S+/g;
+	let match: RegExpExecArray | null = regex.exec(input);
+	while (match !== null) {
+		args.push(match[1] ?? match[2] ?? match[0]);
+		match = regex.exec(input);
+	}
+	return args;
 }
 
 function acpMcpServersToOttoConfig(

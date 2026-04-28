@@ -73,6 +73,7 @@ export type AskServerRequest = {
 	credentials?: InjectableCredentials;
 	agentPrompt?: string;
 	tools?: string[];
+	images?: Array<{ data: string; mediaType: string }>;
 };
 
 export type AskServerResponse = {
@@ -305,7 +306,9 @@ async function processAskRequest(
 		} as SessionRow;
 	}
 
-	validateProviderModel(providerForMessage, modelForMessage, cfg);
+	validateProviderModel(providerForMessage, modelForMessage, cfg, {
+		wantsVision: Boolean(request.images?.length),
+	});
 
 	if (!request.skipFileConfig && !request.config && !request.credentials) {
 		await ensureProviderEnv(cfg, providerForMessage);
@@ -327,6 +330,7 @@ async function processAskRequest(
 		oneShot: !request.sessionId && !request.last,
 		reasoningText,
 		reasoningLevel,
+		images: request.images,
 	});
 
 	const headerAgent = session.agent ?? agentName;
