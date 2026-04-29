@@ -7,8 +7,11 @@ import {
 	getGlobalConfigDir,
 	getMCPManager,
 	initializeMCP,
+	loadConfig,
 	loadMCPConfig,
+	setConfig,
 	type MCPServerConfig,
+	type ReasoningLevel,
 } from '@ottocode/sdk';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -52,6 +55,86 @@ export async function handleShareCommand(
 	}
 
 	return { stopReason: 'end_turn' };
+}
+
+export async function handleReasoningCommand(
+	client: AgentSideConnection,
+	acpSessionId: string,
+	session: AcpSession,
+	command: string,
+): Promise<PromptResponse> {
+	try {
+		const parts = splitCommandArgs(command);
+		const action = parts[1]?.toLowerCase();
+		const value = parts[2]?.toLowerCase();
+
+		if (action && action !== 'status') {
+			const updates = parseReasoningUpdates(action, value);
+			if (!updates) {
+				await sendAgentText(
+					client,
+					acpSessionId,
+					'Reasoning usage:\n- /reasoning\n- /reasoning on\n- /reasoning off\n- /reasoning set <minimal|low|medium|high|max|xhigh>',
+				);
+				return { stopReason: 'end_turn' };
+			}
+
+			await setConfig('local', updates, session.cwd);
+		}
+
+		const cfg = await loadConfig(session.cwd);
+		const enabled = cfg.defaults.reasoningText ?? false;
+		const effort = cfg.defaults.reasoningLevel ?? 'high';
+		const heading =
+			action && action !== 'status'
+				? 'Updated reasoning settings:'
+				: 'Reasoning settings:';
+		await sendAgentText(
+			client,
+			acpSessionId,
+			[
+				heading,
+				`- Reasoning: ${enabled ? 'enabled' : 'disabled'}`,
+				`- Effort: ${effort}`,
+				`- Model: ${session.provider ?? cfg.defaults.provider}:${session.model ?? cfg.defaults.model}`,
+			].join('\n'),
+		);
+	} catch (err) {
+		const message = err instanceof Error ? err.message : String(err);
+		await sendAgentText(
+			client,
+			acpSessionId,
+			`Failed to read reasoning settings: ${message}`,
+		);
+	}
+
+	return { stopReason: 'end_turn' };
+}
+
+const REASONING_LEVELS = new Set<ReasoningLevel>([
+	'minimal',
+	'low',
+	'medium',
+	'high',
+	'max',
+	'xhigh',
+]);
+
+function parseReasoningUpdates(
+	action: string,
+	value: string | undefined,
+): Partial<{ reasoningText: boolean; reasoningLevel: ReasoningLevel }> | null {
+	if (action === 'on' || action === 'enable' || action === 'enabled') {
+		return { reasoningText: true };
+	}
+	if (action === 'off' || action === 'disable' || action === 'disabled') {
+		return { reasoningText: false };
+	}
+	const level = action === 'set' || action === 'effort' ? value : action;
+	if (level && REASONING_LEVELS.has(level as ReasoningLevel)) {
+		return { reasoningText: true, reasoningLevel: level as ReasoningLevel };
+	}
+	return null;
 }
 
 export async function handleStageCommand(

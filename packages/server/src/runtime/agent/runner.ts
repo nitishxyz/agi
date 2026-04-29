@@ -680,6 +680,7 @@ async function runAssistant(opts: RunOpts) {
 					part.providerMetadata,
 					opts,
 					db,
+					sharedCtx,
 					getStepIndex,
 					reasoningStates,
 				);

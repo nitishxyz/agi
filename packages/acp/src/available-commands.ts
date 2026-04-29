@@ -37,6 +37,11 @@ async function sendAvailableCommands(
 			description: 'Stage all changes or specific paths',
 			input: { hint: '[path ...]' },
 		},
+		{
+			name: 'reasoning',
+			description: 'Show or set reasoning and effort level',
+			input: { hint: 'on | off | set <effort>' },
+		},
 	];
 
 	await client.sessionUpdate({

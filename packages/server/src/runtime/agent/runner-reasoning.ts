@@ -27,7 +27,7 @@ export async function handleReasoningStart(
 	reasoningId: string,
 	providerMetadata: unknown,
 	opts: RunOpts,
-	_db: Awaited<ReturnType<typeof getDb>>,
+	db: Awaited<ReturnType<typeof getDb>>,
 	sharedCtx: ToolAdapterContext,
 	getStepIndex: () => number,
 	reasoningStates: Map<string, ReasoningState>,
@@ -43,6 +43,22 @@ export async function handleReasoningStart(
 		getStepIndex,
 	};
 	reasoningStates.set(reasoningId, state);
+
+	if (hasAnthropicRedactedReasoning(providerMetadata)) {
+		const delta = '[Reasoning redacted by Anthropic]\n';
+		state.text = delta;
+		await persistReasoningPart(state, db);
+		publish({
+			type: 'reasoning.delta',
+			sessionId: opts.sessionId,
+			payload: {
+				messageId: opts.assistantMessageId,
+				partId: state.partId,
+				stepIndex: getStepIndex(),
+				delta,
+			},
+		});
+	}
 }
 
 async function persistReasoningPart(
@@ -73,11 +89,23 @@ export async function handleReasoningDelta(
 	providerMetadata: unknown,
 	opts: RunOpts,
 	db: Awaited<ReturnType<typeof getDb>>,
+	sharedCtx: ToolAdapterContext,
 	getStepIndex: () => number,
 	reasoningStates: Map<string, ReasoningState>,
 ): Promise<void> {
-	const state = reasoningStates.get(reasoningId);
-	if (!state) return;
+	let state = reasoningStates.get(reasoningId);
+	if (!state) {
+		state = {
+			partId: crypto.randomUUID(),
+			text: '',
+			providerMetadata,
+			persisted: false,
+			opts,
+			sharedCtx,
+			getStepIndex,
+		};
+		reasoningStates.set(reasoningId, state);
+	}
 	state.text += text;
 	if (providerMetadata != null) {
 		state.providerMetadata = providerMetadata;
@@ -106,6 +134,13 @@ export async function handleReasoningDelta(
 			.set({ content: serializeReasoningContent(state) })
 			.where(eq(messageParts.id, state.partId));
 	} catch {}
+}
+
+function hasAnthropicRedactedReasoning(providerMetadata: unknown): boolean {
+	if (!providerMetadata || typeof providerMetadata !== 'object') return false;
+	const anthropic = (providerMetadata as Record<string, unknown>).anthropic;
+	if (!anthropic || typeof anthropic !== 'object') return false;
+	return 'redactedData' in anthropic;
 }
 
 export async function handleReasoningEnd(

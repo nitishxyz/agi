@@ -57,11 +57,16 @@ export async function handleOttoEvent(
 
 			case 'reasoning.delta': {
 				const delta = typeof payload?.delta === 'string' ? payload.delta : '';
+				const messageId =
+					typeof payload?.messageId === 'string'
+						? payload.messageId
+						: session.assistantMessageId;
 				if (delta) {
 					await client.sessionUpdate({
 						sessionId: acpSessionId,
 						update: {
 							sessionUpdate: 'agent_thought_chunk',
+							...(messageId ? { messageId } : {}),
 							content: { type: 'text', text: delta },
 						},
 					});

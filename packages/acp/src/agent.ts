@@ -47,6 +47,7 @@ import { replaySessionHistory } from './history';
 import { buildSessionState, loadSessionDefaults } from './session-state';
 import {
 	handleMcpCommand,
+	handleReasoningCommand,
 	handleShareCommand,
 	handleStageCommand,
 } from './slash-commands';
@@ -165,10 +166,11 @@ export class OttoAcpAgent implements Agent {
 		params: ListSessionsRequest,
 	): Promise<ListSessionsResponse> {
 		const cwd = params.cwd || process.cwd();
-		const db = await getDb(cwd);
+		const cfg = await loadConfig(cwd);
+		const db = await getDb(cfg.projectRoot);
 		const rows = await listSessions({
 			db,
-			projectPath: params.cwd ?? undefined,
+			projectPath: cfg.projectRoot,
 			limit: 100,
 		});
 
@@ -291,6 +293,17 @@ export class OttoAcpAgent implements Agent {
 		if (trimmedPrompt === '/share') {
 			return handleShareCommand(this.client, params.sessionId, session);
 		}
+		if (
+			trimmedPrompt === '/reasoning' ||
+			trimmedPrompt.startsWith('/reasoning ')
+		) {
+			return handleReasoningCommand(
+				this.client,
+				params.sessionId,
+				session,
+				trimmedPrompt,
+			);
+		}
 		if (trimmedPrompt === '/stage' || trimmedPrompt.startsWith('/stage ')) {
 			return handleStageCommand(
 				this.client,
@@ -308,6 +321,28 @@ export class OttoAcpAgent implements Agent {
 			);
 		}
 
+		let unsub: (() => void) | null = null;
+		const subscribeToPromptEvents = (ottoSessionId: string) => {
+			if (unsub) return;
+			unsub = subscribe(ottoSessionId, (event) => {
+				if (event.type === 'session.updated') return;
+				const currentSession = this.sessions.get(params.sessionId);
+				if (!currentSession) return;
+				void handleOttoEvent(
+					this.client,
+					this.clientCapabilities,
+					event,
+					params.sessionId,
+					currentSession,
+				);
+			});
+			session.unsubscribe = unsub;
+		};
+
+		if (session.ottoSessionId) {
+			subscribeToPromptEvents(session.ottoSessionId);
+		}
+
 		let response: Awaited<ReturnType<typeof handleAskRequest>>;
 		try {
 			response = await handleAskRequest({
@@ -320,6 +355,8 @@ export class OttoAcpAgent implements Agent {
 				images,
 			});
 		} catch (err) {
+			session.unsubscribe?.();
+			session.unsubscribe = null;
 			const msg = err instanceof Error ? err.message : String(err);
 			console.error('[acp] handleAskRequest failed:', msg);
 			await this.client.sessionUpdate({
@@ -340,20 +377,7 @@ export class OttoAcpAgent implements Agent {
 		session.provider = response.provider;
 		session.model = response.model;
 		this.subscribeSessionInfoUpdates(params.sessionId, session);
-
-		const unsub = subscribe(response.sessionId, (event) => {
-			if (event.type === 'session.updated') return;
-			const currentSession = this.sessions.get(params.sessionId);
-			if (!currentSession) return;
-			void handleOttoEvent(
-				this.client,
-				this.clientCapabilities,
-				event,
-				params.sessionId,
-				currentSession,
-			);
-		});
-		session.unsubscribe = unsub;
+		subscribeToPromptEvents(response.sessionId);
 
 		return new Promise<PromptResponse>((resolve) => {
 			session.resolvePrompt = resolve;
@@ -361,7 +385,7 @@ export class OttoAcpAgent implements Agent {
 			const checkInterval = setInterval(() => {
 				if (session.cancelled) {
 					clearInterval(checkInterval);
-					unsub();
+					session.unsubscribe?.();
 					session.unsubscribe = null;
 					resolve({ stopReason: 'cancelled' });
 					return;
@@ -375,7 +399,7 @@ export class OttoAcpAgent implements Agent {
 
 				if (!isRunning && !hasQueued && session.assistantMessageId) {
 					clearInterval(checkInterval);
-					unsub();
+					session.unsubscribe?.();
 					session.unsubscribe = null;
 					resolve({ stopReason: 'end_turn' });
 				}
