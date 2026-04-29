@@ -25,6 +25,22 @@ export async function handleOttoEvent(
 
 	try {
 		switch (event.type) {
+			case 'session.updated': {
+				const title =
+					typeof payload?.title === 'string' ? payload.title : undefined;
+				if (title) {
+					await client.sessionUpdate({
+						sessionId: acpSessionId,
+						update: {
+							sessionUpdate: 'session_info_update',
+							title,
+							updatedAt: new Date().toISOString(),
+						},
+					});
+				}
+				break;
+			}
+
 			case 'message.part.delta': {
 				const delta = typeof payload?.delta === 'string' ? payload.delta : '';
 				if (delta && payload?.messageId === session.assistantMessageId) {

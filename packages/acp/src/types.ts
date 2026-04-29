@@ -14,6 +14,7 @@ export type AcpSession = {
 	assistantMessageId: string | null;
 	resolvePrompt: ((response: PromptResponse) => void) | null;
 	unsubscribe: (() => void) | null;
+	sessionInfoUnsubscribe: (() => void) | null;
 	activeTerminals: Map<
 		string,
 		{ terminalId: string; release: () => Promise<void> }

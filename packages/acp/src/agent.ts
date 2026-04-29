@@ -128,6 +128,7 @@ export class OttoAcpAgent implements Agent {
 			assistantMessageId: null,
 			resolvePrompt: null,
 			unsubscribe: null,
+			sessionInfoUnsubscribe: null,
 			activeTerminals: new Map(),
 			mode: defaults.agent,
 			provider: defaults.provider,
@@ -137,6 +138,7 @@ export class OttoAcpAgent implements Agent {
 		};
 
 		this.sessions.set(sessionId, session);
+		this.subscribeSessionInfoUpdates(sessionId, session);
 		const state = await buildSessionState(session);
 		queueAvailableCommands(this.client, sessionId);
 
@@ -199,6 +201,7 @@ export class OttoAcpAgent implements Agent {
 		if (!session) return undefined;
 		await this.cancel({ sessionId: params.sessionId });
 		session.unsubscribe?.();
+		session.sessionInfoUnsubscribe?.();
 		for (const terminal of session.activeTerminals.values()) {
 			await terminal.release().catch(() => undefined);
 		}
@@ -336,8 +339,10 @@ export class OttoAcpAgent implements Agent {
 		session.assistantMessageId = response.assistantMessageId;
 		session.provider = response.provider;
 		session.model = response.model;
+		this.subscribeSessionInfoUpdates(params.sessionId, session);
 
 		const unsub = subscribe(response.sessionId, (event) => {
+			if (event.type === 'session.updated') return;
 			const currentSession = this.sessions.get(params.sessionId);
 			if (!currentSession) return;
 			void handleOttoEvent(
@@ -412,6 +417,7 @@ export class OttoAcpAgent implements Agent {
 			assistantMessageId: null,
 			resolvePrompt: null,
 			unsubscribe: null,
+			sessionInfoUnsubscribe: null,
 			activeTerminals: new Map(),
 			mode: row.agent || DEFAULT_MODE,
 			provider: row.provider,
@@ -420,8 +426,32 @@ export class OttoAcpAgent implements Agent {
 			additionalDirectories: [],
 		};
 		this.sessions.set(sessionId, session);
+		this.subscribeSessionInfoUpdates(sessionId, session);
 
 		return buildSessionState(session);
+	}
+
+	private subscribeSessionInfoUpdates(
+		acpSessionId: string,
+		session: AcpSession,
+	) {
+		if (!session.ottoSessionId || session.sessionInfoUnsubscribe) return;
+
+		session.sessionInfoUnsubscribe = subscribe(
+			session.ottoSessionId,
+			(event) => {
+				if (event.type !== 'session.updated') return;
+				const currentSession = this.sessions.get(acpSessionId);
+				if (!currentSession) return;
+				void handleOttoEvent(
+					this.client,
+					this.clientCapabilities,
+					event,
+					acpSessionId,
+					currentSession,
+				);
+			},
+		);
 	}
 
 	private async resolveResourceLink(
