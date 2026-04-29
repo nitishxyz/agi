@@ -176,7 +176,7 @@ async function replayToolResult(
 			status: hasError ? 'failed' : 'completed',
 			rawOutput: result.result,
 			...(content.length > 0 ? { content } : {}),
-			locations: getToolLocations(result.name, args, session.cwd),
+			locations: getToolLocations(result.name, args, session.cwd, output),
 		} as SessionNotification['update'],
 	});
 }

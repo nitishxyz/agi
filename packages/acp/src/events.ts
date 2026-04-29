@@ -4,7 +4,7 @@ import type {
 } from '@agentclientprotocol/sdk';
 import { resolveApproval } from '@ottocode/server/runtime/tools/approval';
 import type { OttoEvent } from '@ottocode/server/events/types';
-import { mapPlanStatus } from './tools';
+import { getToolLocations, mapPlanStatus } from './tools';
 import {
 	handleToolCall,
 	handleToolDelta,
@@ -99,6 +99,7 @@ export async function handleOttoEvent(
 					typeof payload?.callId === 'string' ? payload.callId : undefined;
 				const toolName =
 					typeof payload?.toolName === 'string' ? payload.toolName : 'tool';
+				const args = payload?.args as Record<string, unknown> | undefined;
 
 				if (!callId) break;
 
@@ -119,7 +120,8 @@ export async function handleOttoEvent(
 					toolCall: {
 						toolCallId: callId,
 						title: toolName,
-						rawInput: payload?.args,
+						rawInput: args,
+						locations: getToolLocations(toolName, args, session.cwd),
 					},
 				});
 

@@ -100,7 +100,7 @@ export async function handleToolResult(
 			result.ok === false);
 
 	const content = buildToolResultContent(name, args, result, session.cwd);
-	const locations = getToolLocations(name, args, session.cwd);
+	const locations = getToolLocations(name, args, session.cwd, result);
 
 	await client.sessionUpdate({
 		sessionId: acpSessionId,

@@ -471,6 +471,7 @@ export function getToolLocations(
 	name: string,
 	args: Record<string, unknown> | undefined,
 	cwd: string,
+	result?: Record<string, unknown> | string | undefined,
 ): ToolCallLocation[] {
 	if (!args) return [];
 
@@ -489,7 +490,7 @@ export function getToolLocations(
 
 		const location: ToolCallLocation = { path: absPath };
 
-		const startLine = args.startLine as number | undefined;
+		const startLine = getToolLine(name, args, result, filePath);
 		if (startLine) {
 			location.line = startLine;
 		}
@@ -498,14 +499,127 @@ export function getToolLocations(
 	}
 
 	if (name === 'apply_patch' && typeof args.patch === 'string') {
-		const patchPaths = extractPathsFromPatch(args.patch as string);
+		const patchPaths = new Set([
+			...extractPathsFromPatch(args.patch as string),
+			...getResultChangePaths(result),
+		]);
 		for (const p of patchPaths) {
 			const absPath = path.isAbsolute(p) ? p : path.join(cwd, p);
-			locations.push({ path: absPath });
+			const line = getPatchLine(args.patch as string, p, result);
+			locations.push(line ? { path: absPath, line } : { path: absPath });
 		}
 	}
 
 	return locations;
+}
+
+function getToolLine(
+	name: string,
+	args: Record<string, unknown>,
+	result: Record<string, unknown> | string | undefined,
+	filePath: string,
+): number | undefined {
+	const explicitLine = firstNumber(
+		args.startLine,
+		args.targetStartLine,
+		args.insertAtLine,
+	);
+	if (explicitLine) return explicitLine;
+
+	if (name === 'copy_into') return firstNumber(args.targetEndLine);
+
+	if (typeof result === 'object' && result !== null) {
+		const artifact = result.artifact as Record<string, unknown> | undefined;
+		const patch = artifact?.patch as string | undefined;
+		if (patch) return getPatchLine(patch, filePath, result);
+	}
+
+	return undefined;
+}
+
+function firstNumber(...values: unknown[]): number | undefined {
+	for (const value of values) {
+		if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+			return value;
+		}
+	}
+	return undefined;
+}
+
+function getPatchLine(
+	patch: string,
+	filePath: string,
+	result?: Record<string, unknown> | string | undefined,
+): number | undefined {
+	const fromChanges = getResultChangeLine(result, filePath);
+	if (fromChanges) return fromChanges;
+
+	const normalizedPath = normalizePatchPath(filePath);
+	let inTargetFile = false;
+
+	for (const line of patch.split('\n')) {
+		const directivePath = parsePatchFileDirective(line);
+		if (directivePath) {
+			inTargetFile = normalizePatchPath(directivePath) === normalizedPath;
+			continue;
+		}
+
+		const unifiedPath = parseUnifiedFileHeader(line);
+		if (unifiedPath) {
+			inTargetFile = normalizePatchPath(unifiedPath) === normalizedPath;
+			continue;
+		}
+
+		if (!inTargetFile) continue;
+
+		const hunkMatch = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+		if (hunkMatch) return Number(hunkMatch[2]);
+
+		if (line === '@@') return 1;
+	}
+
+	return undefined;
+}
+
+function getResultChangeLine(
+	result: Record<string, unknown> | string | undefined,
+	filePath: string,
+): number | undefined {
+	if (typeof result !== 'object' || result === null) return undefined;
+
+	const changes = result.changes as Array<Record<string, unknown>> | undefined;
+	if (!Array.isArray(changes)) return undefined;
+
+	const normalizedPath = normalizePatchPath(filePath);
+	for (const change of changes) {
+		if (typeof change.filePath !== 'string') continue;
+		if (normalizePatchPath(change.filePath) !== normalizedPath) continue;
+
+		const hunks = change.hunks as Array<Record<string, unknown>> | undefined;
+		if (!Array.isArray(hunks)) continue;
+
+		for (const hunk of hunks) {
+			const newStart = firstNumber(hunk.newStart);
+			if (newStart) return newStart;
+			const oldStart = firstNumber(hunk.oldStart);
+			if (oldStart) return oldStart;
+		}
+	}
+
+	return undefined;
+}
+
+function getResultChangePaths(
+	result: Record<string, unknown> | string | undefined,
+): string[] {
+	if (typeof result !== 'object' || result === null) return [];
+
+	const changes = result.changes as Array<Record<string, unknown>> | undefined;
+	if (!Array.isArray(changes)) return [];
+
+	return changes.flatMap((change) =>
+		typeof change.filePath === 'string' ? [change.filePath] : [],
+	);
 }
 
 export function extractPathsFromPatch(patch: string): string[] {
@@ -516,7 +630,13 @@ export function extractPathsFromPatch(patch: string): string[] {
 		paths.push(match[1].trim());
 		match = regex.exec(patch);
 	}
-	return paths;
+
+	for (const line of patch.split('\n')) {
+		const unifiedPath = parseUnifiedFileHeader(line);
+		if (unifiedPath) paths.push(unifiedPath);
+	}
+
+	return [...new Set(paths)];
 }
 
 export function mapPlanStatus(
