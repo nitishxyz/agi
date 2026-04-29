@@ -27,8 +27,9 @@ function normalizeReasoningLevel(
 }
 
 function toAnthropicEffort(
+	model: string,
 	level: ReasoningLevel | undefined,
-): 'low' | 'medium' | 'high' | 'max' {
+): 'low' | 'medium' | 'high' | 'xhigh' | 'max' {
 	switch (level) {
 		case 'minimal':
 		case 'low':
@@ -36,8 +37,9 @@ function toAnthropicEffort(
 		case 'medium':
 			return 'medium';
 		case 'max':
-		case 'xhigh':
 			return 'max';
+		case 'xhigh':
+			return isClaudeOpus47(model) ? 'xhigh' : 'max';
 		default:
 			return 'high';
 	}
@@ -134,11 +136,15 @@ function buildSharedProviderOptions(
 	return Object.fromEntries(keys.map((key) => [key, options]));
 }
 
+function isClaudeOpus47(model: string): boolean {
+	const lower = model.toLowerCase();
+	return lower.includes('claude-opus-4-7') || lower.includes('claude-opus-4.7');
+}
+
 function usesAdaptiveAnthropicThinking(model: string): boolean {
 	const lower = model.toLowerCase();
 	return (
-		lower.includes('claude-opus-4-7') ||
-		lower.includes('claude-opus-4.7') ||
+		isClaudeOpus47(model) ||
 		lower.includes('claude-opus-4-6') ||
 		lower.includes('claude-opus-4.6') ||
 		lower.includes('claude-sonnet-4-6') ||
@@ -238,11 +244,15 @@ export function buildReasoningConfig(args: {
 	const reasoningTarget = getReasoningProviderTarget(provider, model, cfg);
 	if (reasoningTarget === 'anthropic') {
 		if (usesAdaptiveAnthropicThinking(model)) {
+			const thinking = isClaudeOpus47(model)
+				? { type: 'adaptive', display: 'summarized' }
+				: { type: 'adaptive' };
+
 			return {
 				providerOptions: {
 					anthropic: {
-						thinking: { type: 'adaptive' },
-						effort: toAnthropicEffort(reasoningLevel),
+						thinking,
+						effort: toAnthropicEffort(model, reasoningLevel),
 					},
 				},
 				effectiveMaxOutputTokens: maxOutputTokens,

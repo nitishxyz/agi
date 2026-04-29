@@ -40,15 +40,15 @@ describe('buildReasoningConfig', () => {
 			provider: 'anthropic',
 			model: 'claude-opus-4-7',
 			reasoningText: true,
-			reasoningLevel: 'max',
+			reasoningLevel: 'xhigh',
 			maxOutputTokens: 4000,
 		});
 
 		expect(result.enabled).toBe(true);
 		expect(result.providerOptions).toEqual({
 			anthropic: {
-				thinking: { type: 'adaptive' },
-				effort: 'max',
+				thinking: { type: 'adaptive', display: 'summarized' },
+				effort: 'xhigh',
 			},
 		});
 		expect(result.effectiveMaxOutputTokens).toBe(4000);

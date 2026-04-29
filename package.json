@@ -72,7 +72,7 @@
 		"version:bump": "bun run scripts/bump-version.ts"
 	},
 	"dependencies": {
-		"@ai-sdk/anthropic": "^3.0.0",
+		"@ai-sdk/anthropic": "^3.0.72",
 		"@ai-sdk/devtools": "^0.0.12",
 		"@ai-sdk/google": "^3.0.0",
 		"@ai-sdk/openai": "^3.0.0",
@@ -84,7 +84,7 @@
 		"@openrouter/ai-sdk-provider": "^1.2.0",
 		"@resvg/resvg-js": "^2.6.2",
 		"@solana/web3.js": "^1.98.0",
-		"ai": "^6.0.0",
+		"ai": "^6.0.170",
 		"bs58": "^6.0.0",
 		"diff": "^8.0.2",
 		"hono": "^4.9.9",
