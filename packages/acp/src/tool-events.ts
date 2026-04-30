@@ -30,18 +30,30 @@ export async function handleToolCall(
 
 	const kind = getToolKind(name);
 	const locations = getToolLocations(name, args, session.cwd);
+	const update = session.streamedToolCalls.has(callId)
+		? {
+				toolCallId: callId,
+				sessionUpdate: 'tool_call_update',
+				title: formatToolTitle(name, args),
+				kind,
+				status: 'in_progress',
+				rawInput: args,
+				locations,
+			}
+		: {
+				toolCallId: callId,
+				sessionUpdate: 'tool_call',
+				title: formatToolTitle(name, args),
+				kind,
+				status: 'in_progress',
+				rawInput: args,
+				locations,
+			};
+	session.streamedToolCalls.add(callId);
 
 	await client.sessionUpdate({
 		sessionId: acpSessionId,
-		update: {
-			toolCallId: callId,
-			sessionUpdate: 'tool_call',
-			title: formatToolTitle(name, args),
-			kind,
-			status: 'in_progress',
-			rawInput: args,
-			locations,
-		} as SessionNotification['update'],
+		update: update as SessionNotification['update'],
 	});
 }
 
@@ -49,13 +61,31 @@ export async function handleToolDelta(
 	client: AgentSideConnection,
 	payload: Record<string, unknown> | undefined,
 	acpSessionId: string,
+	session: AcpSession,
 ): Promise<void> {
 	const callId =
 		typeof payload?.callId === 'string' ? payload.callId : undefined;
 	if (!callId) return;
 
 	const name = typeof payload?.name === 'string' ? payload.name : '';
+	const channel = typeof payload?.channel === 'string' ? payload.channel : '';
 	const delta = payload?.delta;
+
+	if (!session.streamedToolCalls.has(callId)) {
+		session.streamedToolCalls.add(callId);
+		await client.sessionUpdate({
+			sessionId: acpSessionId,
+			update: {
+				toolCallId: callId,
+				sessionUpdate: 'tool_call',
+				title: formatToolTitle(name, undefined),
+				kind: getToolKind(name),
+				status: channel === 'input' ? 'pending' : 'in_progress',
+			} as SessionNotification['update'],
+		});
+	}
+
+	if (channel === 'input') return;
 
 	if (isShellTool(name) && typeof delta === 'string' && delta) {
 		await client.sessionUpdate({
@@ -101,6 +131,7 @@ export async function handleToolResult(
 
 	const content = buildToolResultContent(name, args, result, session.cwd);
 	const locations = getToolLocations(name, args, session.cwd, result);
+	session.streamedToolCalls.delete(callId);
 
 	await client.sessionUpdate({
 		sessionId: acpSessionId,

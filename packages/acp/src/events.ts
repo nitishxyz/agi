@@ -75,16 +75,26 @@ export async function handleOttoEvent(
 			}
 
 			case 'tool.call': {
+				if (payload?.name === 'progress_update') {
+					await handleProgressUpdate(client, payload, acpSessionId, session);
+					break;
+				}
 				await handleToolCall(client, payload, acpSessionId, session);
 				break;
 			}
 
 			case 'tool.delta': {
-				await handleToolDelta(client, payload, acpSessionId);
+				if (payload?.name === 'progress_update') {
+					break;
+				}
+				await handleToolDelta(client, payload, acpSessionId, session);
 				break;
 			}
 
 			case 'tool.result': {
+				if (payload?.name === 'progress_update') {
+					break;
+				}
 				await handleToolResult(
 					client,
 					clientCapabilities,
@@ -192,4 +202,26 @@ export async function handleOttoEvent(
 	} catch (err) {
 		console.error('[acp] Error handling event:', event.type, err);
 	}
+}
+
+async function handleProgressUpdate(
+	client: AgentSideConnection,
+	payload: Record<string, unknown> | undefined,
+	acpSessionId: string,
+	session: AcpSession,
+): Promise<void> {
+	const args = payload?.args as Record<string, unknown> | undefined;
+	const message = typeof args?.message === 'string' ? args.message.trim() : '';
+	if (!message) return;
+
+	await client.sessionUpdate({
+		sessionId: acpSessionId,
+		update: {
+			sessionUpdate: 'agent_thought_chunk',
+			...(session.assistantMessageId
+				? { messageId: session.assistantMessageId }
+				: {}),
+			content: { type: 'text', text: `${message}\n` },
+		},
+	});
 }

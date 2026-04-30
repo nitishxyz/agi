@@ -19,6 +19,7 @@ export type AcpSession = {
 		string,
 		{ terminalId: string; release: () => Promise<void> }
 	>;
+	streamedToolCalls: Set<string>;
 	mode: string;
 	provider?: string;
 	model?: string;
