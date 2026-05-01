@@ -277,6 +277,9 @@ export type { ProviderName, ModelConfig } from './core/src/index.ts';
 export { discoverProjectTools } from './core/src/index.ts';
 export type { DiscoveredTool, DiscoverResult } from './core/src/index.ts';
 export { setTerminalManager, getTerminalManager } from './core/src/index.ts';
+export { shellExecutorContext } from './core/src/index.ts';
+export type { ShellExecutor } from './core/src/index.ts';
+export { createToolError } from './core/src/index.ts';
 export { buildFsTools } from './core/src/index.ts';
 export { buildGitTools } from './core/src/index.ts';
 export {

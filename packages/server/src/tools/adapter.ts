@@ -530,6 +530,27 @@ export function adaptTools(
 									streamedResult = (chunk as { result: unknown }).result;
 									continue;
 								}
+								if (
+									chunk &&
+									typeof chunk === 'object' &&
+									'terminalId' in chunk &&
+									typeof (chunk as { terminalId?: unknown }).terminalId ===
+										'string'
+								) {
+									publish({
+										type: 'tool.delta',
+										sessionId: ctx.sessionId,
+										payload: {
+											name,
+											channel: 'terminal',
+											delta: (chunk as { terminalId: string }).terminalId,
+											stepIndex: stepIndexForEvent,
+											callId: callIdFromQueue,
+											messageId: ctx.messageId,
+										},
+									});
+									continue;
+								}
 								const delta =
 									typeof chunk === 'string'
 										? chunk

@@ -38,7 +38,12 @@ import {
 	listSessions,
 } from '@ottocode/server/runtime/session/manager';
 import { getDb } from '@ottocode/database';
-import { loadConfig } from '@ottocode/sdk';
+import {
+	createToolError,
+	loadConfig,
+	shellExecutorContext,
+	type ShellExecutor,
+} from '@ottocode/sdk';
 import { randomUUID } from 'node:crypto';
 import { queueAvailableCommands } from './available-commands';
 import { parseModelId } from './model';
@@ -132,6 +137,7 @@ export class OttoAcpAgent implements Agent {
 			sessionInfoUnsubscribe: null,
 			activeTerminals: new Map(),
 			streamedToolCalls: new Set(),
+			streamedToolContent: new Map(),
 			mode: defaults.agent,
 			provider: defaults.provider,
 			model: defaults.model,
@@ -346,15 +352,22 @@ export class OttoAcpAgent implements Agent {
 
 		let response: Awaited<ReturnType<typeof handleAskRequest>>;
 		try {
-			response = await handleAskRequest({
-				projectRoot: session.cwd,
-				prompt,
-				sessionId: session.ottoSessionId || undefined,
-				agent: session.mode,
-				provider: session.provider,
-				model: session.model,
-				images,
-			});
+			const runAsk = () =>
+				handleAskRequest({
+					projectRoot: session.cwd,
+					prompt,
+					sessionId: session.ottoSessionId || undefined,
+					agent: session.mode,
+					provider: session.provider,
+					model: session.model,
+					images,
+				});
+			const shellExecutor = this.clientCapabilities?.terminal
+				? createAcpShellExecutor(this.client, params.sessionId)
+				: undefined;
+			response = shellExecutor
+				? await shellExecutorContext.run(shellExecutor, runAsk)
+				: await runAsk();
 		} catch (err) {
 			session.unsubscribe?.();
 			session.unsubscribe = null;
@@ -445,6 +458,7 @@ export class OttoAcpAgent implements Agent {
 			sessionInfoUnsubscribe: null,
 			activeTerminals: new Map(),
 			streamedToolCalls: new Set(),
+			streamedToolContent: new Map(),
 			mode: row.agent || DEFAULT_MODE,
 			provider: row.provider,
 			model: row.model,
@@ -499,6 +513,123 @@ export class OttoAcpAgent implements Agent {
 			return undefined;
 		}
 	}
+}
+
+function createAcpShellExecutor(
+	client: AgentSideConnection,
+	acpSessionId: string,
+): ShellExecutor {
+	return async function* acpShellExecutor(input, options) {
+		let terminal: Awaited<
+			ReturnType<AgentSideConnection['createTerminal']>
+		> | null = null;
+		let timeoutId: ReturnType<typeof setTimeout> | null = null;
+		let stopReason: 'abort' | 'timeout' | null = null;
+
+		try {
+			const command =
+				process.platform === 'win32'
+					? process.env.COMSPEC || 'cmd.exe'
+					: process.env.SHELL || '/bin/bash';
+			const args =
+				process.platform === 'win32'
+					? ['/d', '/s', '/c', input.cmd]
+					: ['-lc', input.cmd];
+
+			terminal = await client.createTerminal({
+				sessionId: acpSessionId,
+				command,
+				args,
+				cwd: input.cwd,
+				outputByteLimit: 1024 * 1024,
+			});
+			yield { channel: 'terminal', terminalId: terminal.id };
+
+			const abort = () => {
+				if (stopReason) return;
+				stopReason = 'abort';
+				void terminal?.kill().catch(() => undefined);
+			};
+			options?.abortSignal?.addEventListener('abort', abort, { once: true });
+
+			if (input.timeout > 0) {
+				timeoutId = setTimeout(() => {
+					if (stopReason) return;
+					stopReason = 'timeout';
+					void terminal?.kill().catch(() => undefined);
+				}, input.timeout);
+			}
+
+			const exit = await terminal.waitForExit();
+			const output = await terminal.currentOutput();
+			const stdout = output.output ?? '';
+			const exitCode = exit.exitCode ?? output.exitStatus?.exitCode ?? 0;
+
+			if (stopReason === 'abort') {
+				yield {
+					result: createToolError(
+						`Command aborted by user: ${input.cmd}`,
+						'abort',
+						{
+							cmd: input.cmd,
+							stdout,
+							stderr: '',
+						},
+					),
+				};
+				return;
+			}
+
+			if (stopReason === 'timeout') {
+				yield {
+					result: createToolError(
+						`Command timed out after ${input.timeout}ms: ${input.cmd}`,
+						'timeout',
+						{
+							parameter: 'timeout',
+							value: input.timeout,
+							stdout,
+							stderr: '',
+							suggestion: 'Increase timeout or optimize the command',
+						},
+					),
+				};
+				return;
+			}
+
+			if (exitCode !== 0 && !input.allowNonZeroExit) {
+				const errorDetail = stdout.trim();
+				const errorMsg = `Command failed with exit code ${exitCode}${errorDetail ? `\n\n${errorDetail}` : ''}`;
+				yield {
+					result: createToolError(errorMsg, 'execution', {
+						exitCode,
+						stdout,
+						stderr: '',
+						cmd: input.cmd,
+						suggestion: 'Check command syntax or use allowNonZeroExit: true',
+					}),
+				};
+				return;
+			}
+
+			yield { result: { ok: true, exitCode, stdout, stderr: '' } };
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			yield {
+				result: createToolError(
+					`Command execution failed: ${message}`,
+					'execution',
+					{
+						cmd: input.cmd,
+						originalError: message,
+					},
+				),
+			};
+		} finally {
+			if (timeoutId) clearTimeout(timeoutId);
+			await terminal?.release().catch(() => undefined);
+		}
+	};
 }
 
 function normalizeAdditionalDirectories(

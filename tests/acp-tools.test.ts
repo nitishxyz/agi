@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { getToolLocations } from '../packages/acp/src/tools.ts';
+import {
+	buildBashContent,
+	getToolLocations,
+} from '../packages/acp/src/tools.ts';
 
 describe('ACP tool locations', () => {
 	test('uses explicit edit start line', () => {
@@ -89,5 +92,27 @@ describe('ACP tool locations', () => {
 		const locations = getToolLocations('apply_patch', { patch }, '/workspace');
 
 		expect(locations).toEqual([{ path: '/workspace/src/file.ts', line: 9 }]);
+	});
+});
+
+describe('ACP shell content', () => {
+	test('includes stdout and stderr from failed shell details', () => {
+		const content = buildBashContent({
+			ok: false,
+			error: 'Command failed with exit code 1',
+			details: {
+				stdout: 'typecheck output',
+				stderr: 'typecheck error',
+			},
+		});
+
+		expect(content).toHaveLength(1);
+		expect(content[0]).toMatchObject({
+			type: 'content',
+			content: {
+				type: 'text',
+				text: 'typecheck output\nstderr: typecheck error',
+			},
+		});
 	});
 });

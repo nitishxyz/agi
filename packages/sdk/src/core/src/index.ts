@@ -32,6 +32,8 @@ export type { ProviderId, ModelInfo } from '../../types/src/index.ts';
 export { discoverProjectTools } from './tools/loader';
 export type { DiscoveredTool, DiscoverResult } from './tools/loader';
 export { setTerminalManager, getTerminalManager } from './tools/loader';
+export { shellExecutorContext } from './tools/builtin/shell';
+export type { ShellExecutor } from './tools/builtin/shell';
 
 // Tool error handling utilities
 export {

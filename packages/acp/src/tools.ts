@@ -283,13 +283,16 @@ export function buildBashContent(
 	result: Record<string, unknown> | string | undefined,
 ): ToolCallContent[] {
 	if (typeof result === 'object' && result !== null) {
-		const stdout = result.stdout as string | undefined;
-		const stderr = result.stderr as string | undefined;
+		const details = result.details as Record<string, unknown> | undefined;
+		const stdout = firstString(result.stdout, details?.stdout);
+		const stderr = firstString(result.stderr, details?.stderr);
 		const exitCode = result.exitCode as number | undefined;
+		const error = result.error as string | undefined;
 
 		const parts: string[] = [];
 		if (stdout) parts.push(stdout);
 		if (stderr) parts.push(`stderr: ${stderr}`);
+		if (error && !stdout && !stderr) parts.push(error);
 		if (exitCode !== undefined && exitCode !== 0) {
 			parts.push(`exit code: ${exitCode}`);
 		}
@@ -299,13 +302,20 @@ export function buildBashContent(
 			return [
 				{
 					type: 'content',
-					content: { type: 'text', text: truncate(text, 5000) },
+					content: { type: 'text', text: truncate(text, 20000) },
 				},
 			];
 		}
 	}
 
 	return [];
+}
+
+function firstString(...values: unknown[]): string | undefined {
+	for (const value of values) {
+		if (typeof value === 'string') return value;
+	}
+	return undefined;
 }
 
 export function buildReadContent(
@@ -405,7 +415,7 @@ export function formatToolTitle(
 			return 'Apply patch';
 		case 'shell':
 		case 'bash':
-			return `Run: ${truncate(String(args?.cmd || 'command'), 60)}`;
+			return `Run: ${truncate(String(args?.cmd || 'command'), 180)}`;
 		case 'ripgrep':
 			return `Search: ${args?.query || ''}`;
 		case 'glob':
