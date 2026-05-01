@@ -7,6 +7,7 @@ import type {
 	ModelOwner,
 } from '../../types/src/index.ts';
 import { filterModelsForAuthType } from './oauth-models.ts';
+import { isBuiltInProviderId } from './registry.ts';
 
 export const providerIds = Object.keys(catalog) as BuiltInProviderId[];
 
@@ -106,12 +107,12 @@ export function getModelNpmBinding(
 	provider: ProviderId,
 	model: string,
 ): string | undefined {
-	const entry = catalog[provider];
+	const entry = isBuiltInProviderId(provider) ? catalog[provider] : undefined;
 	const modelInfo = getProviderModels(provider).find((m) => m.id === model);
 	if (modelInfo?.provider?.npm) return modelInfo.provider.npm;
 	if (entry?.npm) return entry.npm;
 
-	for (const key of Object.keys(catalog) as ProviderId[]) {
+	for (const key of Object.keys(catalog) as BuiltInProviderId[]) {
 		const e = catalog[key];
 		const m = getProviderModels(key).find((x) => x.id === model);
 		if (m?.provider?.npm) return m.provider.npm;
@@ -233,7 +234,7 @@ export function getModelInfo(
 	provider: ProviderId,
 	model: string,
 ): ModelInfo | undefined {
-	const entry = catalog[provider];
+	const entry = isBuiltInProviderId(provider) ? catalog[provider] : undefined;
 	if (!entry) return undefined;
 	return getProviderModels(provider).find((m) => m.id === model);
 }
@@ -241,7 +242,7 @@ export function getModelInfo(
 function getProviderModels(provider: ProviderId): ModelInfo[] {
 	return (
 		getCachedProviderCatalogEntry(provider)?.models ??
-		catalog[provider]?.models ??
+		(isBuiltInProviderId(provider) ? catalog[provider]?.models : undefined) ??
 		[]
 	);
 }

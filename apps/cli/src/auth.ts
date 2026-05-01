@@ -32,6 +32,7 @@ import {
 	authorizeCopilot,
 	pollForCopilotToken,
 	openCopilotAuthUrl,
+	isBuiltInProviderId,
 } from '@ottocode/sdk';
 import { loadConfig } from '@ottocode/sdk';
 import { catalog } from '@ottocode/sdk';
@@ -944,7 +945,9 @@ async function ensureGlobalConfigDefaults(provider: ProviderId) {
 	// If a global config already exists, do not overwrite
 	const f = Bun.file(path);
 	if (await f.exists()) return;
-	const models = catalog[provider]?.models ?? [];
+	const models = isBuiltInProviderId(provider)
+		? (catalog[provider]?.models ?? [])
+		: [];
 	const defaultModel =
 		models[0]?.id ||
 		(provider === 'anthropic'

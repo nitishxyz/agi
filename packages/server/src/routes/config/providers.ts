@@ -166,8 +166,77 @@ export function registerProvidersRoute(app: Hono) {
 
 	openApiRoute(
 		app,
-		'post',
-		'/v1/config/providers/discover-models',
+		{
+			method: 'post',
+			path: '/v1/config/providers/discover-models',
+			tags: ['config'],
+			operationId: 'discoverProviderModels',
+			summary: 'Discover models for a provider',
+			description:
+				'Discovers available models from a provider base URL. Currently supports Ollama-compatible providers.',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								compatibility: {
+									type: 'string',
+									description:
+										'Provider compatibility mode. Model discovery currently supports ollama.',
+								},
+								baseURL: {
+									type: 'string',
+									description: 'Provider base URL to inspect.',
+								},
+								apiKey: {
+									type: 'string',
+									description: 'Optional API key for the provider.',
+								},
+							},
+							required: ['baseURL'],
+						},
+					},
+				},
+			},
+			responses: {
+				'200': {
+					description: 'Discovered provider models',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									baseURL: { type: 'string' },
+									models: {
+										type: 'array',
+										items: {
+											type: 'object',
+											properties: {
+												id: { type: 'string' },
+												label: { type: 'string' },
+												toolCall: { type: 'boolean' },
+												reasoningText: { type: 'boolean' },
+												vision: { type: 'boolean' },
+												attachment: { type: 'boolean' },
+												contextWindow: { type: 'number' },
+												maxOutputTokens: { type: 'number' },
+											},
+											required: ['id', 'label'],
+										},
+									},
+									unsupported: { type: 'boolean' },
+									message: { type: 'string' },
+								},
+								required: ['models'],
+							},
+						},
+					},
+				},
+				'400': { description: 'Invalid discovery request' },
+			},
+		},
 		async (c) => {
 			try {
 				const embeddedConfig = (

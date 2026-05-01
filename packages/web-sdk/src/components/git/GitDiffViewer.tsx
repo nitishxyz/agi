@@ -3,6 +3,7 @@ import {
 	prism,
 	vscDarkPlus,
 } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { client } from '@ottocode/api';
 import type { GitDiffResponse } from '../../types/api';
 import { getRuntimeApiBaseUrl } from '../../lib/config';
 
@@ -157,7 +158,11 @@ export function GitDiffViewer({ diff }: GitDiffViewerProps) {
 	if (diff.isBinary) {
 		const isImage = isImageFile(diff.file);
 		const imageUrl = isImage
-			? `${getRuntimeApiBaseUrl()}/v1/files/raw?path=${encodeURIComponent(diff.file)}`
+			? client.buildUrl({
+					baseURL: getRuntimeApiBaseUrl(),
+					url: '/v1/files/raw',
+					query: { path: diff.file },
+				})
 			: null;
 
 		return (

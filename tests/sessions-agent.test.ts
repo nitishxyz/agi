@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { Hono } from 'hono';
+import { OpenAPIHono } from '@hono/zod-openapi';
 import { registerSessionsRoutes } from '@ottocode/server';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -40,7 +40,7 @@ describe('session creation respects agent provider/model', () => {
 					},
 				}),
 			);
-			const app = new Hono();
+			const app = new OpenAPIHono();
 			registerSessionsRoutes(app);
 			const req = await createRequest(
 				`http://test/v1/sessions?project=${encodeURIComponent(projectRoot)}`,

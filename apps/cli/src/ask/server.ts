@@ -42,6 +42,6 @@ export async function stopEphemeralServer(): Promise<void> {
 
 function configureClient(baseURL: string) {
 	if (configured) return;
-	client.setConfig({ baseURL });
+	client.setConfig({ baseURL, adapter: 'fetch' });
 	configured = true;
 }

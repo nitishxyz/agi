@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { resolveApproval } from '@ottocode/api';
 import { useToolApprovalStore } from '../../stores/toolApprovalStore';
 import { Shield, Check, X, Terminal, FileEdit, GitCommit } from 'lucide-react';
 
@@ -31,15 +32,12 @@ export function ToolApprovalDialog({
 		async (callId: string, approved: boolean) => {
 			setProcessingId(callId);
 			try {
-				const response = await fetch(
-					`${baseUrl}/v1/sessions/${sessionId}/approval`,
-					{
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ callId, approved }),
-					},
-				);
-				if (response.ok) {
+				const response = await resolveApproval({
+					baseURL: baseUrl,
+					path: { id: sessionId },
+					body: { callId, approved },
+				});
+				if (!response.error) {
 					removePendingApproval(callId);
 				}
 			} catch (error) {

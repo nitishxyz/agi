@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useCallback, useRef } from 'react';
+import {
+	client,
+	getTunnelQr,
+	getTunnelStatus,
+	startTunnel as apiStartTunnel,
+	stopTunnel as apiStopTunnel,
+} from '@ottocode/api';
 import { useTunnelStore } from '../stores/tunnelStore';
 import { API_BASE_URL } from '../lib/config';
 
@@ -26,21 +33,18 @@ interface TunnelQrResponse {
 }
 
 async function fetchTunnelStatus(): Promise<TunnelStatusResponse> {
-	const response = await fetch(`${API_BASE_URL}/v1/tunnel/status`);
-	if (!response.ok) {
-		throw new Error('Failed to fetch tunnel status');
-	}
-	return response.json();
+	const response = await getTunnelStatus();
+	if (response.error) throw new Error(JSON.stringify(response.error));
+	return response.data as TunnelStatusResponse;
 }
 
 async function startTunnel(): Promise<TunnelStartResponse> {
 	// Server uses its own port automatically - no need to pass it
-	const response = await fetch(`${API_BASE_URL}/v1/tunnel/start`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({}),
+	const response = await apiStartTunnel({
+		body: {},
 	});
-	return response.json();
+	if (response.error) throw new Error(JSON.stringify(response.error));
+	return response.data as TunnelStartResponse;
 }
 
 async function stopTunnel(): Promise<{
@@ -48,15 +52,15 @@ async function stopTunnel(): Promise<{
 	message?: string;
 	error?: string;
 }> {
-	const response = await fetch(`${API_BASE_URL}/v1/tunnel/stop`, {
-		method: 'POST',
-	});
-	return response.json();
+	const response = await apiStopTunnel();
+	if (response.error) throw new Error(JSON.stringify(response.error));
+	return response.data as { ok: boolean; message?: string; error?: string };
 }
 
 async function fetchTunnelQr(): Promise<TunnelQrResponse> {
-	const response = await fetch(`${API_BASE_URL}/v1/tunnel/qr`);
-	return response.json();
+	const response = await getTunnelQr();
+	if (response.error) throw new Error(JSON.stringify(response.error));
+	return response.data as TunnelQrResponse;
 }
 
 export function useTunnelStatus() {
@@ -160,7 +164,9 @@ export function useTunnelStream() {
 			eventSourceRef.current.close();
 		}
 
-		const es = new EventSource(`${API_BASE_URL}/v1/tunnel/stream`);
+		const es = new EventSource(
+			client.buildUrl({ baseURL: API_BASE_URL, url: '/v1/tunnel/stream' }),
+		);
 		eventSourceRef.current = es;
 
 		es.onmessage = (event) => {

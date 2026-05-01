@@ -4,6 +4,7 @@ import {
 	getProviderDefinition,
 	getModelNpmBinding,
 	getUnderlyingProviderKey,
+	isBuiltInProviderId,
 	modelSupportsReasoning,
 	type OttoConfig,
 	type ProviderId,
@@ -118,7 +119,7 @@ function getOpenAICompatibleProviderOptionKeys(
 	cfg?: OttoConfig,
 ): string[] {
 	const definition = cfg ? getProviderDefinition(cfg, provider) : undefined;
-	const entry = catalog[provider];
+	const entry = isBuiltInProviderId(provider) ? catalog[provider] : undefined;
 	const keys = new Set<string>(['openaiCompatible', toCamelCaseKey(provider)]);
 	const label = definition?.label ?? entry?.label;
 	if (label) {

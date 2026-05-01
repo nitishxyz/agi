@@ -9,6 +9,7 @@ import {
 	importWallet,
 	loadConfig,
 	catalog,
+	isBuiltInProviderId,
 	readEnvKey,
 	getOnboardingComplete,
 	setOnboardingComplete,
@@ -700,7 +701,7 @@ export function registerAuthRoutes(app: Hono) {
 				const provider = c.req.param('provider') as ProviderId;
 				const { apiKey } = await c.req.json<{ apiKey: string }>();
 
-				if (!catalog[provider]) {
+				if (!isBuiltInProviderId(provider) || !catalog[provider]) {
 					return c.json({ error: 'Unknown provider' }, 400);
 				}
 
@@ -2066,7 +2067,7 @@ export function registerAuthRoutes(app: Hono) {
 			try {
 				const provider = c.req.param('provider') as ProviderId;
 
-				if (!catalog[provider]) {
+				if (!isBuiltInProviderId(provider) || !catalog[provider]) {
 					return c.json({ error: 'Unknown provider' }, 400);
 				}
 

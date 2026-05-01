@@ -5,6 +5,7 @@
  */
 
 import { createParser } from 'eventsource-parser';
+import { client } from './generated/client.gen';
 
 export interface SSEEvent {
 	id?: string;
@@ -50,6 +51,19 @@ export interface SSEStreamOptions {
 	onClose?: () => void;
 }
 
+export function buildSessionStreamUrl(options: {
+	baseUrl: string;
+	sessionId: string;
+	projectPath?: string;
+}) {
+	return client.buildUrl({
+		baseURL: options.baseUrl,
+		url: '/v1/sessions/{id}/stream',
+		path: { id: options.sessionId },
+		query: options.projectPath ? { project: options.projectPath } : undefined,
+	});
+}
+
 /**
  * Create an SSE stream connection to a session
  *
@@ -92,10 +106,11 @@ export async function createSSEStream(
 		onClose,
 	} = options;
 
-	const url = new URL(`${baseUrl}/v1/sessions/${sessionId}/stream`);
-	if (projectPath) {
-		url.searchParams.set('project', projectPath);
-	}
+	const url = buildSessionStreamUrl({
+		baseUrl,
+		sessionId,
+		projectPath,
+	});
 
 	const fetchImpl = customFetch || fetch;
 
@@ -103,7 +118,7 @@ export async function createSSEStream(
 		!baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1');
 
 	try {
-		const response = await fetchImpl(url.toString(), {
+		const response = await fetchImpl(url, {
 			method: isTunnel ? 'POST' : 'GET',
 			headers: {
 				Accept: 'text/event-stream',

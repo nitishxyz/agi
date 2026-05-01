@@ -12,6 +12,7 @@ import {
 	bunWebSocket,
 } from '@ottocode/server';
 import { getDb } from '@ottocode/database';
+import { startTunnel, stopTunnel } from '@ottocode/api';
 import { createWebServer } from '../web-server.ts';
 import { colors } from '../ui.ts';
 
@@ -159,17 +160,13 @@ export async function handleServe(opts: ServeOptions, version: string) {
 		try {
 			console.log(colors.dim('  Starting tunnel...'));
 
-			// Call server's tunnel endpoint - server handles everything
-			const response = await fetch(
-				`http://localhost:${serverPort}/v1/tunnel/start`,
-				{
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({}),
-				},
-			);
+			const response = await startTunnel({
+				baseURL: `http://localhost:${serverPort}`,
+				body: {},
+			});
+			if (response.error) throw new Error(JSON.stringify(response.error));
 
-			const result = (await response.json()) as {
+			const result = response.data as {
 				ok: boolean;
 				url?: string;
 				error?: string;
@@ -236,8 +233,8 @@ export async function handleServe(opts: ServeOptions, version: string) {
 
 		// Stop tunnel via server endpoint
 		try {
-			await fetch(`http://localhost:${serverPort}/v1/tunnel/stop`, {
-				method: 'POST',
+			await stopTunnel({
+				baseURL: `http://localhost:${serverPort}`,
 			});
 		} catch {
 			// Ignore - server may already be stopping

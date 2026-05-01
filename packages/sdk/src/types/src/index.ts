@@ -21,6 +21,7 @@ export type {
 	PathConfig,
 	ProviderSettingsEntry,
 	ProviderSettings,
+	SkillSettings,
 	OttoConfig,
 	ToolApprovalMode,
 	ReasoningLevel,

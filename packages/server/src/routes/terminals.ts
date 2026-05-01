@@ -216,8 +216,26 @@ export function registerTerminalsRoutes(
 
 	openApiRoute(
 		app,
-		'get',
-		'/v1/terminals/:id/ws',
+		{
+			method: 'get',
+			path: '/v1/terminals/{id}/ws',
+			operationId: 'connectTerminalWebSocket',
+			summary: 'Connect to terminal WebSocket',
+			description:
+				'Upgrade to a WebSocket for bidirectional terminal I/O. Generated HTTP clients cannot consume the upgraded connection directly.',
+			parameters: [
+				{
+					name: 'id',
+					in: 'path',
+					required: true,
+					schema: { type: 'string' },
+				},
+			],
+			responses: {
+				'101': { description: 'WebSocket upgrade accepted' },
+				'404': { description: 'Terminal not found' },
+			},
+		},
 		upgradeWebSocket((c) => {
 			const id = c.req.param('id');
 

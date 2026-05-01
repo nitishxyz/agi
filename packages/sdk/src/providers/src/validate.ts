@@ -4,6 +4,7 @@ import type { OttoConfig, ProviderId } from '../../types/src/index.ts';
 import {
 	getProviderDefinition,
 	hasConfiguredModel,
+	isBuiltInProviderId,
 	providerAllowsAnyModel,
 } from './registry.ts';
 
@@ -64,12 +65,13 @@ export function validateProviderModel(
 	}
 
 	const p = providerId;
-	if (!catalog[p] && !getCachedProviderCatalogEntry(p)) {
+	const builtInEntry = isBuiltInProviderId(p) ? catalog[p] : undefined;
+	if (!builtInEntry && !getCachedProviderCatalogEntry(p)) {
 		throw new Error(`Provider not supported: ${providerId}`);
 	}
 	const models =
-		getCachedProviderCatalogEntry(p)?.models ?? catalog[p]?.models ?? [];
-	const entry = models.find((m) => m.id === modelId);
+		getCachedProviderCatalogEntry(p)?.models ?? builtInEntry?.models ?? [];
+	const entry = models.find((m: { id: string }) => m.id === modelId);
 	if (!entry) {
 		throwModelNotFound(providerId, modelId, models);
 	}

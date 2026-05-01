@@ -43,7 +43,10 @@ describe('runAskStreamCapture', () => {
 							? input.toString()
 							: input.url;
 				if (url.includes('/v1/ask')) {
-					requestBody = String(init?.body ?? '');
+					requestBody =
+						input instanceof Request
+							? await input.clone().text()
+							: String(init?.body ?? '');
 					return new Response(JSON.stringify(handshake), {
 						headers: { 'Content-Type': 'application/json' },
 					});

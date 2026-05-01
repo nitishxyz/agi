@@ -79,7 +79,7 @@ function getRemoteCatalogUrl(): string {
 
 function getModelCatalogProviders(
 	cachedCatalog: Awaited<ReturnType<typeof readCachedModelCatalog>>,
-) {
+): Record<string, { models?: ModelInfo[]; label?: string }> {
 	return cachedCatalog?.providers ?? (USE_BUILTIN_MODEL_CATALOG ? catalog : {});
 }
 

@@ -2,12 +2,13 @@ import {
 	getConfig as apiGetConfig,
 	getProviderModels as apiGetProviderModels,
 	getAllModels as apiGetAllModels,
+	discoverProviderModels as apiDiscoverProviderModels,
 	updateDefaults as apiUpdateDefaults,
 	updateProviderSettings as apiUpdateProviderSettings,
 	deleteProviderSettings as apiDeleteProviderSettings,
 } from '@ottocode/api';
 import type { AllModelsResponse } from '../../types/api';
-import { extractErrorMessage, getBaseUrl } from './utils';
+import { extractErrorMessage } from './utils';
 
 type ProviderCompatibility =
 	| 'openai'
@@ -94,17 +95,11 @@ export const configMixin = {
 		unsupported?: boolean;
 		message?: string;
 	}> {
-		const response = await fetch(
-			`${getBaseUrl()}/v1/config/providers/discover-models`,
-			{
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify(data),
-			},
-		);
-		const payload = await response.json();
-		if (!response.ok) throw new Error(extractErrorMessage(payload));
-		return payload as {
+		const response = await apiDiscoverProviderModels({
+			body: data,
+		});
+		if (response.error) throw new Error(extractErrorMessage(response.error));
+		return response.data as {
 			baseURL?: string;
 			models: DiscoveredProviderModel[];
 			unsupported?: boolean;

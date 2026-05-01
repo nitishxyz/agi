@@ -1,7 +1,7 @@
 import type { getDb } from '@ottocode/database';
 import { messages, messageParts, sessions } from '@ottocode/database/schema';
 import { eq } from 'drizzle-orm';
-import { catalog, type ProviderId } from '@ottocode/sdk';
+import { catalog, isBuiltInProviderId, type ProviderId } from '@ottocode/sdk';
 import type { RunOpts } from './queue.ts';
 
 export type UsageData = {
@@ -77,10 +77,11 @@ export function resolveUsageProvider(
 	) {
 		return provider;
 	}
-	const entry = catalog[provider];
+	const entry = isBuiltInProviderId(provider) ? catalog[provider] : undefined;
 	const normalizedModel = model.includes('/') ? model.split('/').at(-1) : model;
 	const modelEntry = entry?.models.find(
-		(m) => m.id?.toLowerCase() === normalizedModel?.toLowerCase(),
+		(m: { id?: string }) =>
+			m.id?.toLowerCase() === normalizedModel?.toLowerCase(),
 	);
 	const npm = modelEntry?.provider?.npm ?? '';
 	if (npm.includes('openai')) return 'openai';

@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
-import { API_BASE_URL } from '../lib/config';
-
-interface WindowWithAgiServerUrl extends Window {
-	OTTO_SERVER_URL?: string;
-}
+import { getCwd } from '@ottocode/api';
+import { getBaseUrl } from '../lib/api-client/utils';
 
 interface WorkingDirectoryInfo {
 	cwd: string;
@@ -16,25 +13,12 @@ export function useWorkingDirectory() {
 	useEffect(() => {
 		const fetchWorkingDirectory = async () => {
 			try {
-				const win = window as WindowWithAgiServerUrl;
-				const baseUrl = win.OTTO_SERVER_URL || API_BASE_URL;
-				const url = `${baseUrl}/v1/config/cwd`;
-
-				console.log('[useWorkingDirectory] Fetching from:', url);
-
-				const response = await fetch(url);
-				if (!response.ok) {
-					console.error(
-						'[useWorkingDirectory] Failed:',
-						response.status,
-						response.statusText,
-					);
-					throw new Error(
-						`Failed to fetch working directory: ${response.status}`,
-					);
+				const response = await getCwd({ baseURL: getBaseUrl() });
+				if (response.error) {
+					throw new Error(JSON.stringify(response.error));
 				}
 
-				const data: WorkingDirectoryInfo = await response.json();
+				const data = response.data as WorkingDirectoryInfo;
 				console.log('[useWorkingDirectory] Success:', data);
 
 				if (data.dirName) {

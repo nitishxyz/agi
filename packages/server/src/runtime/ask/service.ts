@@ -155,6 +155,7 @@ async function processAskRequest(
 
 		if (request.credentials) {
 			for (const [provider, creds] of Object.entries(request.credentials)) {
+				if (!creds) continue;
 				const envKey =
 					providerEnvVar(provider as ProviderId) ??
 					`${provider.toUpperCase()}_API_KEY`;

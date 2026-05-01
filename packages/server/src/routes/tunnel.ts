@@ -456,7 +456,7 @@ export function registerTunnelRoutes(app: Hono) {
 				},
 			},
 		},
-	} as const;
+	};
 
 	openApiRoute(
 		app,
