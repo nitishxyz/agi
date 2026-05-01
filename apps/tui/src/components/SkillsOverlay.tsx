@@ -259,7 +259,7 @@ export function SkillsOverlay({ onClose }: SkillsOverlayProps) {
 			<box flexDirection="column" flexGrow={1} overflow="hidden">
 				{loading ? (
 					<box flexGrow={1} alignItems="center" justifyContent="center">
-						<text fg={colors.textMuted}>Loading skills…</text>
+						<text fg={colors.fgMuted}>Loading skills…</text>
 					</box>
 				) : error ? (
 					<box
@@ -268,7 +268,7 @@ export function SkillsOverlay({ onClose }: SkillsOverlayProps) {
 						justifyContent="center"
 						flexDirection="column"
 					>
-						<text fg={colors.error}>{error}</text>
+						<text fg={colors.red}>{error}</text>
 					</box>
 				) : totalCount === 0 ? (
 					<box
@@ -277,21 +277,21 @@ export function SkillsOverlay({ onClose }: SkillsOverlayProps) {
 						justifyContent="center"
 						flexDirection="column"
 					>
-						<text fg={colors.text}>No skills found</text>
-						<text fg={colors.textMuted}>
+						<text fg={colors.fgBright}>No skills found</text>
+						<text fg={colors.fgMuted}>
 							Create skills in .otto/skills or ~/.config/otto/skills
 						</text>
 					</box>
 				) : (
 					<box flexDirection="column" flexGrow={1}>
 						{visibleWindow.start > 0 && (
-							<text fg={colors.textMuted}>↑ {visibleWindow.start} more</text>
+							<text fg={colors.fgMuted}>↑ {visibleWindow.start} more</text>
 						)}
 						{visibleRows.map((row) => {
 							if (row.type === 'header') {
 								return (
 									<box key={`h-${row.scope}`} height={1} paddingLeft={3}>
-										<text fg={colors.textMuted}>
+										<text fg={colors.fgMuted}>
 											<b>{row.label}</b>
 										</text>
 									</box>
@@ -327,7 +327,7 @@ export function SkillsOverlay({ onClose }: SkillsOverlayProps) {
 							);
 						})}
 						{visibleWindow.end < displayRows.length && (
-							<text fg={colors.textMuted}>
+							<text fg={colors.fgMuted}>
 								↓ {displayRows.length - visibleWindow.end} more
 							</text>
 						)}

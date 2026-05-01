@@ -50,6 +50,9 @@ export async function handleToolCall(
 				locations,
 			};
 	session.streamedToolCalls.add(callId);
+	if (isShellTool(name)) {
+		session.streamedToolContent.set(callId, '');
+	}
 
 	await client.sessionUpdate({
 		sessionId: acpSessionId,
@@ -87,7 +90,28 @@ export async function handleToolDelta(
 
 	if (channel === 'input') return;
 
+	if (
+		isShellTool(name) &&
+		channel === 'terminal' &&
+		typeof delta === 'string'
+	) {
+		await client.sessionUpdate({
+			sessionId: acpSessionId,
+			update: {
+				toolCallId: callId,
+				sessionUpdate: 'tool_call_update',
+				content: [{ type: 'terminal', terminalId: delta }],
+			} as SessionNotification['update'],
+		});
+		return;
+	}
+
 	if (isShellTool(name) && typeof delta === 'string' && delta) {
+		const text = truncate(
+			`${session.streamedToolContent.get(callId) ?? ''}${delta}`,
+			20000,
+		);
+		session.streamedToolContent.set(callId, text);
 		await client.sessionUpdate({
 			sessionId: acpSessionId,
 			update: {
@@ -96,7 +120,7 @@ export async function handleToolDelta(
 				content: [
 					{
 						type: 'content',
-						content: { type: 'text', text: delta },
+						content: { type: 'text', text },
 					},
 				],
 			} as SessionNotification['update'],
@@ -132,6 +156,7 @@ export async function handleToolResult(
 	const content = buildToolResultContent(name, args, result, session.cwd);
 	const locations = getToolLocations(name, args, session.cwd, result);
 	session.streamedToolCalls.delete(callId);
+	session.streamedToolContent.delete(callId);
 
 	await client.sessionUpdate({
 		sessionId: acpSessionId,
@@ -139,6 +164,9 @@ export async function handleToolResult(
 			toolCallId: callId,
 			sessionUpdate: 'tool_call_update',
 			status: hasError ? 'failed' : 'completed',
+			...(typeof result === 'object' && result !== null
+				? { rawOutput: result }
+				: {}),
 			...(content.length > 0 ? { content } : {}),
 			...(locations.length > 0 ? { locations } : {}),
 		} as SessionNotification['update'],
@@ -155,6 +183,11 @@ export async function handleToolResult(
 			session,
 		);
 	}
+}
+
+function truncate(text: string, max: number): string {
+	if (text.length <= max) return text;
+	return `…${text.slice(text.length - max + 1)}`;
 }
 
 async function notifyEditorOfFileChanges(

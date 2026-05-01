@@ -1,4 +1,9 @@
 import { useEffect, useReducer, useRef, useState, useCallback } from 'react';
+import {
+	buildSessionStreamUrl,
+	createSSEStream,
+	listMessages,
+} from '@ottocode/api';
 import { getBaseUrl } from '../api.ts';
 import type {
 	Message,
@@ -446,58 +451,34 @@ function messageReducer(state: Message[], action: Action): Message[] {
 	}
 }
 
+async function loadSessionMessages(sessionId: string) {
+	const response = await listMessages({ path: { id: sessionId } });
+	if (response.error) throw new Error(JSON.stringify(response.error));
+	return (response.data ?? []) as Message[];
+}
+
 async function connectSSE(
 	url: string,
 	signal: AbortSignal,
 	onEvent: (event: SSEEvent) => void,
 ) {
-	try {
-		const response = await fetch(url, {
-			headers: { Accept: 'text/event-stream' },
-			signal,
-		});
-		if (!response.ok || !response.body) return;
-
-		const reader = response.body.getReader();
-		const decoder = new TextDecoder();
-		let buffer = '';
-
-		while (true) {
-			const { done, value } = await reader.read();
-			if (done) break;
-
-			buffer += decoder.decode(value, { stream: true });
-			let idx = buffer.indexOf('\n\n');
-
-			while (idx !== -1) {
-				const raw = buffer.slice(0, idx);
-				buffer = buffer.slice(idx + 2);
-				const lines = raw.split('\n');
-
-				let eventType = 'message';
-				let data = '';
-
-				for (const line of lines) {
-					if (line.startsWith('event: ')) {
-						eventType = line.slice(7).trim();
-					} else if (line.startsWith('data: ')) {
-						data += (data ? '\n' : '') + line.slice(6);
-					}
-				}
-
-				if (data) {
-					try {
-						const payload = JSON.parse(data);
-						onEvent({ type: eventType, payload });
-					} catch {}
-				}
-
-				idx = buffer.indexOf('\n\n');
-			}
-		}
-	} catch (err) {
-		if (err instanceof Error && err.name === 'AbortError') return;
-	}
+	const parsedUrl = new URL(url);
+	await createSSEStream(
+		{
+			baseUrl: parsedUrl.origin,
+			sessionId: parsedUrl.pathname.split('/').at(-2) ?? '',
+			projectPath: parsedUrl.searchParams.get('project') ?? undefined,
+			onEvent: (event) => {
+				try {
+					onEvent({
+						type: event.event ?? 'message',
+						payload: JSON.parse(event.data),
+					});
+				} catch {}
+			},
+		},
+		signal,
+	);
 }
 
 export function useStream(
@@ -543,17 +524,11 @@ export function useStream(
 		abortRef.current = controller;
 		const baseUrl = getBaseUrl();
 
-		fetch(`${baseUrl}/v1/sessions/${sessionId}/messages`)
-			.then((r) => r.json())
-			.then((data) => {
-				const msgs = Array.isArray(data)
-					? data
-					: (data as { items?: Message[] }).items || [];
-				dispatch({ type: 'LOAD', messages: msgs });
-			})
+		loadSessionMessages(sessionId)
+			.then((messages) => dispatch({ type: 'LOAD', messages }))
 			.catch(() => {});
 
-		const streamUrl = `${baseUrl}/v1/sessions/${sessionId}/stream`;
+		const streamUrl = buildSessionStreamUrl({ baseUrl, sessionId });
 		connectSSE(streamUrl, controller.signal, (event) => {
 			const payload = event.payload as Record<string, unknown>;
 
@@ -615,14 +590,8 @@ export function useStream(
 					setStreamingMessageId(null);
 					onMessageCompletedRef.current?.();
 					setTimeout(() => {
-						fetch(`${baseUrl}/v1/sessions/${sessionId}/messages`)
-							.then((r) => r.json())
-							.then((data) => {
-								const reloaded = Array.isArray(data)
-									? data
-									: (data as { items?: Message[] }).items || [];
-								dispatch({ type: 'LOAD', messages: reloaded });
-							})
+						loadSessionMessages(sessionId)
+							.then((messages) => dispatch({ type: 'LOAD', messages }))
 							.catch(() => {});
 					}, 300);
 					break;
@@ -678,15 +647,8 @@ export function useStream(
 
 	const reload = () => {
 		if (!sessionId) return;
-		const baseUrl = getBaseUrl();
-		fetch(`${baseUrl}/v1/sessions/${sessionId}/messages`)
-			.then((r) => r.json())
-			.then((data) => {
-				const msgs = Array.isArray(data)
-					? data
-					: (data as { items?: Message[] }).items || [];
-				dispatch({ type: 'LOAD', messages: msgs });
-			})
+		loadSessionMessages(sessionId)
+			.then((messages) => dispatch({ type: 'LOAD', messages }))
 			.catch(() => {});
 	};
 

@@ -1,5 +1,5 @@
 import { catalog, getModelInfo } from '@ottocode/sdk';
-import type { ProviderId } from '@ottocode/sdk';
+import type { BuiltInProviderId, ProviderId } from '@ottocode/sdk';
 
 export const PRUNE_PROTECT = 40_000;
 
@@ -60,9 +60,9 @@ export function getModelLimits(
 	if (info?.limit?.context && info?.limit?.output) {
 		return { context: info.limit.context, output: info.limit.output };
 	}
-	for (const key of Object.keys(catalog) as ProviderId[]) {
+	for (const key of Object.keys(catalog) as BuiltInProviderId[]) {
 		const entry = catalog[key];
-		const m = entry?.models?.find((x) => x.id === model);
+		const m = entry?.models?.find((x: { id: string }) => x.id === model);
 		if (m?.limit?.context && m?.limit?.output) {
 			return { context: m.limit.context, output: m.limit.output };
 		}

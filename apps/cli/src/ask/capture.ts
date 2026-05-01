@@ -1,6 +1,7 @@
+import { ask, buildSessionStreamUrl } from '@ottocode/api';
 import type { AskHandshake, AskOptions } from './types.ts';
 import { getOrStartServerUrl } from './server.ts';
-import { httpJson, safeJson, connectSSE } from './http.ts';
+import { safeJson, connectSSE } from './http.ts';
 import { printToolCall, printToolResult, dim, logToolError } from './render.ts';
 import { extractToolError, isToolError } from '@ottocode/sdk/tools/error';
 
@@ -27,10 +28,9 @@ export async function runAskStreamCapture(
 ) {
 	const projectRoot = opts.project ?? process.cwd();
 	const baseUrl = await getOrStartServerUrl();
-	const handshake = await httpJson<AskHandshake>(
-		'POST',
-		`${baseUrl}/v1/ask?project=${encodeURIComponent(projectRoot)}`,
-		{
+	const handshakeResponse = await ask({
+		query: { project: projectRoot },
+		body: {
 			prompt,
 			agent: opts.agent,
 			provider: opts.provider,
@@ -38,10 +38,18 @@ export async function runAskStreamCapture(
 			sessionId: opts.sessionId,
 			last: opts.last,
 		},
-	);
+	});
+	if (handshakeResponse.error) {
+		throw new Error(JSON.stringify(handshakeResponse.error));
+	}
+	const handshake = handshakeResponse.data as AskHandshake;
 
 	const sse = await connectSSE(
-		`${baseUrl}/v1/sessions/${encodeURIComponent(handshake.sessionId)}/stream?project=${encodeURIComponent(projectRoot)}`,
+		buildSessionStreamUrl({
+			baseUrl,
+			sessionId: handshake.sessionId,
+			projectPath: projectRoot,
+		}),
 	);
 	const assistantMessageId = handshake.assistantMessageId;
 

@@ -24,6 +24,7 @@ import {
 	getDefault,
 	getAuthTypeForProvider,
 } from './utils.ts';
+import { openApiRoute } from '../../openapi/route.ts';
 
 const COPILOT_MODELS_URL = 'https://api.githubcopilot.com/models';
 const REMOTE_CATALOG_REFRESH_TTL_MS = 5 * 60 * 1000;
@@ -78,7 +79,7 @@ function getRemoteCatalogUrl(): string {
 
 function getModelCatalogProviders(
 	cachedCatalog: Awaited<ReturnType<typeof readCachedModelCatalog>>,
-) {
+): Record<string, { models?: ModelInfo[]; label?: string }> {
 	return cachedCatalog?.providers ?? (USE_BUILTIN_MODEL_CATALOG ? catalog : {});
 }
 
@@ -278,154 +279,320 @@ function getUiProviderLabel(
 }
 
 export function registerModelsRoutes(app: Hono) {
-	app.get('/v1/config/providers/:provider/models', async (c) => {
-		try {
-			const embeddedConfig = (
-				c as unknown as {
-					get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
-				}
-			).get('embeddedConfig');
-			const provider = c.req.param('provider') as ProviderId;
-
-			const projectRoot = c.req.query('project') || process.cwd();
-			const cfg = await loadConfig(projectRoot);
-			const cachedCatalog = await readCachedModelCatalog();
-			const modelCatalogProviders = getModelCatalogProviders(cachedCatalog);
-			const providerCatalog = modelCatalogProviders[provider];
-
-			const authorized = await isProviderAuthorizedHybrid(
-				embeddedConfig,
-				cfg,
-				provider,
-			);
-
-			if (!authorized) {
-				logger.warn('Provider not authorized', { provider });
-				return c.json({ error: 'Provider not authorized' }, 403);
-			}
-
-			const providerDefinition = getProviderDefinition(cfg, provider);
-			if (!providerDefinition && !providerCatalog) {
-				logger.warn('Provider not found in catalog', { provider });
-				return c.json({ error: 'Provider not found' }, 404);
-			}
-			void refreshRemoteCatalogInBackground();
-
-			const authType = await getAuthTypeForProvider(
-				embeddedConfig,
-				provider,
-				projectRoot,
-			);
-			if (
-				providerDefinition &&
-				shouldLazyLoadProviderModels(providerDefinition)
-			) {
-				void refreshProviderModelsInBackground({
-					provider,
-					providerDefinition,
-					projectRoot,
-				});
-			}
-			const filteredModels = getProviderModelsForUi({
-				catalogModels: providerCatalog?.models,
-				provider,
-				authType,
-			});
-			const copilotAllowedModels =
-				provider === 'copilot'
-					? await getAuthorizedCopilotModels(projectRoot)
-					: null;
-
-			const availableModels = filterCopilotAvailability(
-				provider,
-				filteredModels,
-				copilotAllowedModels,
-			);
-
-			return c.json({
-				models: availableModels.map(toUiModel),
-				default: getDefault(
-					embeddedConfig?.model,
-					embeddedConfig?.defaults?.model,
-					cfg.defaults.model,
-				),
-				allowAnyModel: providerDefinition
-					? providerAllowsAnyModel(cfg, provider)
-					: undefined,
-				label: providerDefinition
-					? getUiProviderLabel(providerDefinition)
-					: (providerCatalog?.label ?? provider),
-			});
-		} catch (error) {
-			logger.error('Failed to get provider models', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, errorResponse.error.status || 500);
-		}
-	});
-
-	app.get('/v1/config/models', async (c) => {
-		try {
-			const embeddedConfig = (
-				c as unknown as {
-					get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
-				}
-			).get('embeddedConfig');
-
-			const projectRoot = c.req.query('project') || process.cwd();
-			const cfg = await loadConfig(projectRoot);
-
-			const authorizedProviders = await getAuthorizedProviders(
-				embeddedConfig,
-				cfg,
-			);
-
-			const cachedCatalog = await readCachedModelCatalog();
-			const modelCatalogProviders = getModelCatalogProviders(cachedCatalog);
-			void refreshRemoteCatalogInBackground();
-
-			const modelsMap: Record<string, UiProviderModels> = {};
-
-			for (const provider of authorizedProviders) {
-				const providerCatalog = modelCatalogProviders[provider];
-				const providerDefinition = getProviderDefinition(cfg, provider);
-				if (providerCatalog) {
-					const dynamicModels =
-						providerDefinition &&
-						shouldLazyLoadProviderModels(providerDefinition);
-					const authType = await getAuthTypeForProvider(
-						embeddedConfig,
-						provider,
-						projectRoot,
-					);
-					if (dynamicModels && providerDefinition) {
-						void refreshProviderModelsInBackground({
-							provider,
-							providerDefinition,
-							projectRoot,
-						});
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/config/providers/{provider}/models',
+			tags: ['config'],
+			operationId: 'getProviderModels',
+			summary: 'Get available models for a provider',
+			parameters: [
+				{
+					in: 'query',
+					name: 'project',
+					required: false,
+					schema: {
+						type: 'string',
+					},
+					description:
+						'Project root override (defaults to current working directory).',
+				},
+				{
+					in: 'path',
+					name: 'provider',
+					required: true,
+					schema: {
+						$ref: '#/components/schemas/Provider',
+					},
+				},
+			],
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									models: {
+										type: 'array',
+										items: {
+											$ref: '#/components/schemas/Model',
+										},
+									},
+									default: {
+										type: 'string',
+										nullable: true,
+									},
+									allowAnyModel: {
+										type: 'boolean',
+									},
+									label: {
+										type: 'string',
+									},
+								},
+								required: ['models', 'allowAnyModel', 'label'],
+							},
+						},
+					},
+				},
+				'403': {
+					description: 'Provider not authorized',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+				'404': {
+					description: 'Provider not found',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const embeddedConfig = (
+					c as unknown as {
+						get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
 					}
-					const filteredModels = getProviderModelsForUi({
-						catalogModels: providerCatalog?.models,
-						provider,
-						authType,
-					});
-					modelsMap[provider] = {
-						label: providerDefinition
-							? getUiProviderLabel(providerDefinition)
-							: (providerCatalog.label ?? provider),
-						authType,
-						allowAnyModel: providerDefinition?.allowAnyModel,
-						dynamicModels,
-						models: filteredModels.map(toUiModel),
-					};
-				}
-			}
+				).get('embeddedConfig');
+				const provider = c.req.param('provider') as ProviderId;
 
-			return c.json(modelsMap);
-		} catch (error) {
-			logger.error('Failed to get all models', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, errorResponse.error.status || 500);
-		}
-	});
+				const projectRoot = c.req.query('project') || process.cwd();
+				const cfg = await loadConfig(projectRoot);
+				const cachedCatalog = await readCachedModelCatalog();
+				const modelCatalogProviders = getModelCatalogProviders(cachedCatalog);
+				const providerCatalog = modelCatalogProviders[provider];
+
+				const authorized = await isProviderAuthorizedHybrid(
+					embeddedConfig,
+					cfg,
+					provider,
+				);
+
+				if (!authorized) {
+					logger.warn('Provider not authorized', { provider });
+					return c.json({ error: 'Provider not authorized' }, 403);
+				}
+
+				const providerDefinition = getProviderDefinition(cfg, provider);
+				if (!providerDefinition && !providerCatalog) {
+					logger.warn('Provider not found in catalog', { provider });
+					return c.json({ error: 'Provider not found' }, 404);
+				}
+				void refreshRemoteCatalogInBackground();
+
+				const authType = await getAuthTypeForProvider(
+					embeddedConfig,
+					provider,
+					projectRoot,
+				);
+				if (
+					providerDefinition &&
+					shouldLazyLoadProviderModels(providerDefinition)
+				) {
+					void refreshProviderModelsInBackground({
+						provider,
+						providerDefinition,
+						projectRoot,
+					});
+				}
+				const filteredModels = getProviderModelsForUi({
+					catalogModels: providerCatalog?.models,
+					provider,
+					authType,
+				});
+				const copilotAllowedModels =
+					provider === 'copilot'
+						? await getAuthorizedCopilotModels(projectRoot)
+						: null;
+
+				const availableModels = filterCopilotAvailability(
+					provider,
+					filteredModels,
+					copilotAllowedModels,
+				);
+
+				return c.json({
+					models: availableModels.map(toUiModel),
+					default: getDefault(
+						embeddedConfig?.model,
+						embeddedConfig?.defaults?.model,
+						cfg.defaults.model,
+					),
+					allowAnyModel: providerDefinition
+						? providerAllowsAnyModel(cfg, provider)
+						: undefined,
+					label: providerDefinition
+						? getUiProviderLabel(providerDefinition)
+						: (providerCatalog?.label ?? provider),
+				});
+			} catch (error) {
+				logger.error('Failed to get provider models', error);
+				const errorResponse = serializeError(error);
+				return c.json(errorResponse, errorResponse.error.status || 500);
+			}
+		},
+	);
+
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/config/models',
+			tags: ['config'],
+			operationId: 'getAllModels',
+			summary: 'Get all models across authorized providers',
+			parameters: [
+				{
+					in: 'query',
+					name: 'project',
+					required: false,
+					schema: {
+						type: 'string',
+					},
+					description:
+						'Project root override (defaults to current working directory).',
+				},
+			],
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								additionalProperties: {
+									type: 'object',
+									properties: {
+										label: {
+											type: 'string',
+										},
+										authType: {
+											type: 'string',
+										},
+										models: {
+											type: 'array',
+											items: {
+												type: 'object',
+												properties: {
+													id: {
+														type: 'string',
+													},
+													label: {
+														type: 'string',
+													},
+													toolCall: {
+														type: 'boolean',
+													},
+													reasoningText: {
+														type: 'boolean',
+													},
+													vision: {
+														type: 'boolean',
+													},
+													attachment: {
+														type: 'boolean',
+													},
+												},
+												required: ['id', 'label'],
+											},
+										},
+									},
+									required: ['label', 'models'],
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const embeddedConfig = (
+					c as unknown as {
+						get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
+					}
+				).get('embeddedConfig');
+
+				const projectRoot = c.req.query('project') || process.cwd();
+				const cfg = await loadConfig(projectRoot);
+
+				const authorizedProviders = await getAuthorizedProviders(
+					embeddedConfig,
+					cfg,
+				);
+
+				const cachedCatalog = await readCachedModelCatalog();
+				const modelCatalogProviders = getModelCatalogProviders(cachedCatalog);
+				void refreshRemoteCatalogInBackground();
+
+				const modelsMap: Record<string, UiProviderModels> = {};
+
+				for (const provider of authorizedProviders) {
+					const providerCatalog = modelCatalogProviders[provider];
+					const providerDefinition = getProviderDefinition(cfg, provider);
+					if (providerCatalog) {
+						const dynamicModels =
+							providerDefinition &&
+							shouldLazyLoadProviderModels(providerDefinition);
+						const authType = await getAuthTypeForProvider(
+							embeddedConfig,
+							provider,
+							projectRoot,
+						);
+						if (dynamicModels && providerDefinition) {
+							void refreshProviderModelsInBackground({
+								provider,
+								providerDefinition,
+								projectRoot,
+							});
+						}
+						const filteredModels = getProviderModelsForUi({
+							catalogModels: providerCatalog?.models,
+							provider,
+							authType,
+						});
+						modelsMap[provider] = {
+							label: providerDefinition
+								? getUiProviderLabel(providerDefinition)
+								: (providerCatalog.label ?? provider),
+							authType,
+							allowAnyModel: providerDefinition?.allowAnyModel,
+							dynamicModels,
+							models: filteredModels.map(toUiModel),
+						};
+					}
+				}
+
+				return c.json(modelsMap);
+			} catch (error) {
+				logger.error('Failed to get all models', error);
+				const errorResponse = serializeError(error);
+				return c.json(errorResponse, errorResponse.error.status || 500);
+			}
+		},
+	);
 }

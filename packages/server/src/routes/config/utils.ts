@@ -80,7 +80,7 @@ export async function getProviderDetails(
 		]),
 	);
 	const details = await Promise.all(
-		providers.map(async (provider) => {
+		providers.map(async (provider): Promise<ProviderDetail | null> => {
 			const definition = getProviderDefinition(fileConfig, provider);
 			if (!definition) return null;
 			const settings = getProviderSettings(fileConfig, provider);
@@ -112,7 +112,7 @@ export async function getProviderDetails(
 			} satisfies ProviderDetail;
 		}),
 	);
-	return details.filter((detail): detail is ProviderDetail => Boolean(detail));
+	return details.filter((detail) => detail !== null);
 }
 
 export function getDefault<T>(

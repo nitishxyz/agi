@@ -9,86 +9,122 @@ import {
 	getDefault,
 	getProviderDetails,
 } from './utils.ts';
+import { openApiRoute } from '../../openapi/route.ts';
 
 export function registerMainConfigRoute(app: Hono) {
-	app.get('/v1/config', async (c) => {
-		try {
-			const projectRoot = c.req.query('project') || process.cwd();
-			const embeddedConfig = (
-				c as unknown as {
-					get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/config',
+			tags: ['config'],
+			operationId: 'getConfig',
+			summary: 'Get full configuration',
+			description: 'Returns agents, authorized providers, models, and defaults',
+			parameters: [
+				{
+					in: 'query',
+					name: 'project',
+					required: false,
+					schema: {
+						type: 'string',
+					},
+					description:
+						'Project root override (defaults to current working directory).',
+				},
+			],
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								$ref: '#/components/schemas/Config',
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const projectRoot = c.req.query('project') || process.cwd();
+				const embeddedConfig = (
+					c as unknown as {
+						get: (key: 'embeddedConfig') => EmbeddedAppConfig | undefined;
+					}
+				).get('embeddedConfig');
+
+				const cfg = await loadConfig(projectRoot);
+
+				let allAgents: string[];
+
+				if (embeddedConfig?.agents) {
+					const embeddedAgents = Object.keys(embeddedConfig.agents);
+					const fileAgents = await discoverAllAgents(cfg.projectRoot);
+					allAgents = Array.from(
+						new Set([...embeddedAgents, ...fileAgents]),
+					).sort();
+				} else {
+					allAgents = await discoverAllAgents(cfg.projectRoot);
 				}
-			).get('embeddedConfig');
 
-			const cfg = await loadConfig(projectRoot);
+				const authorizedProviders = await getAuthorizedProviders(
+					embeddedConfig,
+					cfg,
+				);
+				const providerDetails = await getProviderDetails(embeddedConfig, cfg);
 
-			let allAgents: string[];
+				const defaults = {
+					agent: getDefault(
+						embeddedConfig?.agent,
+						embeddedConfig?.defaults?.agent,
+						cfg.defaults.agent,
+					),
+					provider: getDefault(
+						embeddedConfig?.provider,
+						embeddedConfig?.defaults?.provider,
+						cfg.defaults.provider,
+					),
+					model: getDefault(
+						embeddedConfig?.model,
+						embeddedConfig?.defaults?.model,
+						cfg.defaults.model,
+					),
+					toolApproval: getDefault(
+						undefined,
+						embeddedConfig?.defaults?.toolApproval,
+						cfg.defaults.toolApproval,
+					) as 'auto' | 'dangerous' | 'all' | 'yolo',
+					guidedMode: cfg.defaults.guidedMode ?? false,
+					reasoningText: cfg.defaults.reasoningText ?? true,
+					reasoningLevel: cfg.defaults.reasoningLevel ?? 'high',
+					theme: cfg.defaults.theme,
+					fullWidthContent:
+						getDefault(
+							undefined,
+							embeddedConfig?.defaults?.fullWidthContent,
+							cfg.defaults.fullWidthContent,
+						) ?? false,
+					autoCompactThresholdTokens:
+						getDefault(
+							undefined,
+							embeddedConfig?.defaults?.autoCompactThresholdTokens,
+							cfg.defaults.autoCompactThresholdTokens,
+						) ?? null,
+				};
 
-			if (embeddedConfig?.agents) {
-				const embeddedAgents = Object.keys(embeddedConfig.agents);
-				const fileAgents = await discoverAllAgents(cfg.projectRoot);
-				allAgents = Array.from(
-					new Set([...embeddedAgents, ...fileAgents]),
-				).sort();
-			} else {
-				allAgents = await discoverAllAgents(cfg.projectRoot);
+				return c.json({
+					agents: allAgents,
+					providers: authorizedProviders,
+					providerDetails,
+					defaults,
+				});
+			} catch (error) {
+				logger.error('Failed to load config', error);
+				const errorResponse = serializeError(error);
+				return c.json(errorResponse, errorResponse.error.status || 500);
 			}
-
-			const authorizedProviders = await getAuthorizedProviders(
-				embeddedConfig,
-				cfg,
-			);
-			const providerDetails = await getProviderDetails(embeddedConfig, cfg);
-
-			const defaults = {
-				agent: getDefault(
-					embeddedConfig?.agent,
-					embeddedConfig?.defaults?.agent,
-					cfg.defaults.agent,
-				),
-				provider: getDefault(
-					embeddedConfig?.provider,
-					embeddedConfig?.defaults?.provider,
-					cfg.defaults.provider,
-				),
-				model: getDefault(
-					embeddedConfig?.model,
-					embeddedConfig?.defaults?.model,
-					cfg.defaults.model,
-				),
-				toolApproval: getDefault(
-					undefined,
-					embeddedConfig?.defaults?.toolApproval,
-					cfg.defaults.toolApproval,
-				) as 'auto' | 'dangerous' | 'all' | 'yolo',
-				guidedMode: cfg.defaults.guidedMode ?? false,
-				reasoningText: cfg.defaults.reasoningText ?? true,
-				reasoningLevel: cfg.defaults.reasoningLevel ?? 'high',
-				theme: cfg.defaults.theme,
-				fullWidthContent:
-					getDefault(
-						undefined,
-						embeddedConfig?.defaults?.fullWidthContent,
-						cfg.defaults.fullWidthContent,
-					) ?? false,
-				autoCompactThresholdTokens:
-					getDefault(
-						undefined,
-						embeddedConfig?.defaults?.autoCompactThresholdTokens,
-						cfg.defaults.autoCompactThresholdTokens,
-					) ?? null,
-			};
-
-			return c.json({
-				agents: allAgents,
-				providers: authorizedProviders,
-				providerDetails,
-				defaults,
-			});
-		} catch (error) {
-			logger.error('Failed to load config', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, errorResponse.error.status || 500);
-		}
-	});
+		},
+	);
 }

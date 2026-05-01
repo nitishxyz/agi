@@ -1,4 +1,5 @@
 import type { Artifact } from '@ottocode/sdk';
+import { ask, buildSessionStreamUrl, resolveApproval } from '@ottocode/api';
 import { renderMarkdown } from '../ui.ts';
 import {
 	renderToolCall,
@@ -34,7 +35,7 @@ import type {
 	TokenUsageSummary,
 	Transcript,
 } from './types.ts';
-import { connectSSE, httpJson, safeJson } from './http.ts';
+import { connectSSE, safeJson } from './http.ts';
 import { getOrStartServerUrl } from './server.ts';
 import { extractToolError, isToolError } from '@ottocode/sdk/tools/error';
 
@@ -50,20 +51,25 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 
 	let sse: SSEConnection | null = null;
 	try {
-		const handshake = await httpJson<AskHandshake>(
-			'POST',
-			`${baseUrl}/v1/ask?project=${encodeURIComponent(projectRoot)}`,
-			{
-				prompt,
-				agent: opts.agent,
-				provider: opts.provider,
-				model: opts.model,
-				sessionId: opts.sessionId,
-				last: opts.last,
-				jsonMode,
-				toolApproval: flags.autoApprove ? 'auto' : undefined,
-			},
-		);
+		const askBody = {
+			prompt,
+			agent: opts.agent,
+			provider: opts.provider,
+			model: opts.model,
+			sessionId: opts.sessionId,
+			last: opts.last,
+			jsonMode,
+			toolApproval: flags.autoApprove ? 'auto' : undefined,
+		};
+
+		const handshakeResponse = await ask({
+			query: { project: projectRoot },
+			body: askBody,
+		});
+		if (handshakeResponse.error) {
+			throw new Error(JSON.stringify(handshakeResponse.error));
+		}
+		const handshake = handshakeResponse.data as AskHandshake;
 
 		if (!jsonMode) {
 			const agent = opts.agent ?? handshake.agent;
@@ -82,7 +88,11 @@ export async function runAsk(prompt: string, opts: AskOptions = {}) {
 			);
 		}
 
-		const sseUrl = `${baseUrl}/v1/sessions/${encodeURIComponent(handshake.sessionId)}/stream?project=${encodeURIComponent(projectRoot)}`;
+		const sseUrl = buildSessionStreamUrl({
+			baseUrl,
+			sessionId: handshake.sessionId,
+			projectPath: projectRoot,
+		});
 		sse = await connectSSE(sseUrl);
 
 		const streamResult = await consumeAskStream({
@@ -615,11 +625,12 @@ async function resolveApprovalHttp(
 	approved: boolean,
 ): Promise<void> {
 	try {
-		await httpJson(
-			'POST',
-			`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/approval`,
-			{ callId, approved },
-		);
+		const response = await resolveApproval({
+			baseURL: baseUrl,
+			path: { id: sessionId },
+			body: { callId, approved },
+		});
+		if (response.error) throw new Error(JSON.stringify(response.error));
 	} catch {}
 }
 

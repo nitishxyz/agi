@@ -4,72 +4,238 @@ import { streamSSE } from 'hono/streaming';
 import type { TerminalManager } from '@ottocode/sdk';
 import { logger } from '@ottocode/sdk';
 import { upgradeWebSocket } from '../ws.ts';
+import { openApiRoute } from '../openapi/route.ts';
 
 export function registerTerminalsRoutes(
 	app: Hono,
 	terminalManager: TerminalManager,
 ) {
-	app.get('/v1/terminals', async (c) => {
-		const terminals = terminalManager.list();
-		return c.json({
-			terminals: terminals.map((t) => t.toJSON()),
-			count: terminals.length,
-		});
-	});
-
-	app.post('/v1/terminals', async (c) => {
-		try {
-			const body = await c.req.json();
-			const { command, args, purpose, cwd, title } = body;
-
-			if (!command || !purpose) {
-				return c.json({ error: 'command and purpose are required' }, 400);
-			}
-
-			let resolvedCommand = command;
-			if (command === 'bash' || command === 'sh' || command === 'shell') {
-				resolvedCommand =
-					process.platform === 'win32'
-						? process.env.COMSPEC || 'cmd.exe'
-						: process.env.SHELL || '/bin/bash';
-			}
-			const resolvedCwd = cwd || process.cwd();
-
-			const terminal = terminalManager.create({
-				command: resolvedCommand,
-				args: args || [],
-				purpose,
-				cwd: resolvedCwd,
-				createdBy: 'user',
-				title,
-			});
-
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/terminals',
+			operationId: 'getTerminals',
+			summary: 'List all terminals',
+			description: 'Get a list of all active terminal sessions',
+			responses: {
+				'200': {
+					description: 'List of terminals',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									terminals: {
+										type: 'array',
+										items: {
+											$ref: '#/components/schemas/Terminal',
+										},
+									},
+									count: {
+										type: 'integer',
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			const terminals = terminalManager.list();
 			return c.json({
-				terminalId: terminal.id,
-				pid: terminal.pid,
-				purpose: terminal.purpose,
-				command: terminal.command,
+				terminals: terminals.map((t) => t.toJSON()),
+				count: terminals.length,
 			});
-		} catch (error) {
-			logger.error('Error creating terminal', error);
-			const message = error instanceof Error ? error.message : String(error);
-			return c.json({ error: message }, 500);
-		}
-	});
+		},
+	);
 
-	app.get('/v1/terminals/:id', async (c) => {
-		const id = c.req.param('id');
-		const terminal = terminalManager.get(id);
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/terminals',
+			operationId: 'postTerminals',
+			summary: 'Create a new terminal',
+			description: 'Spawn a new terminal process',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							required: ['command', 'purpose'],
+							properties: {
+								command: {
+									type: 'string',
+									description: 'Command to execute',
+								},
+								args: {
+									type: 'array',
+									items: {
+										type: 'string',
+									},
+									description: 'Command arguments',
+								},
+								purpose: {
+									type: 'string',
+									description: 'Description of terminal purpose',
+								},
+								cwd: {
+									type: 'string',
+									description: 'Working directory',
+								},
+								title: {
+									type: 'string',
+									description: 'Terminal title',
+								},
+							},
+						},
+					},
+				},
+			},
+			responses: {
+				'200': {
+					description: 'Terminal created',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									terminalId: {
+										type: 'string',
+									},
+									pid: {
+										type: 'integer',
+									},
+									purpose: {
+										type: 'string',
+									},
+									command: {
+										type: 'string',
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const body = await c.req.json();
+				const { command, args, purpose, cwd, title } = body;
 
-		if (!terminal) {
-			return c.json({ error: 'Terminal not found' }, 404);
-		}
+				if (!command || !purpose) {
+					return c.json({ error: 'command and purpose are required' }, 400);
+				}
 
-		return c.json({ terminal: terminal.toJSON() });
-	});
+				let resolvedCommand = command;
+				if (command === 'bash' || command === 'sh' || command === 'shell') {
+					resolvedCommand =
+						process.platform === 'win32'
+							? process.env.COMSPEC || 'cmd.exe'
+							: process.env.SHELL || '/bin/bash';
+				}
+				const resolvedCwd = cwd || process.cwd();
 
-	app.get(
-		'/v1/terminals/:id/ws',
+				const terminal = terminalManager.create({
+					command: resolvedCommand,
+					args: args || [],
+					purpose,
+					cwd: resolvedCwd,
+					createdBy: 'user',
+					title,
+				});
+
+				return c.json({
+					terminalId: terminal.id,
+					pid: terminal.pid,
+					purpose: terminal.purpose,
+					command: terminal.command,
+				});
+			} catch (error) {
+				logger.error('Error creating terminal', error);
+				const message = error instanceof Error ? error.message : String(error);
+				return c.json({ error: message }, 500);
+			}
+		},
+	);
+
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/terminals/{id}',
+			operationId: 'getTerminalsById',
+			summary: 'Get terminal details',
+			description: 'Get information about a specific terminal',
+			parameters: [
+				{
+					name: 'id',
+					in: 'path',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+				},
+			],
+			responses: {
+				'200': {
+					description: 'Terminal details',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									terminal: {
+										$ref: '#/components/schemas/Terminal',
+									},
+								},
+							},
+						},
+					},
+				},
+				'404': {
+					description: 'Terminal not found',
+				},
+			},
+		},
+		async (c) => {
+			const id = c.req.param('id');
+			const terminal = terminalManager.get(id);
+
+			if (!terminal) {
+				return c.json({ error: 'Terminal not found' }, 404);
+			}
+
+			return c.json({ terminal: terminal.toJSON() });
+		},
+	);
+
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/terminals/{id}/ws',
+			operationId: 'connectTerminalWebSocket',
+			summary: 'Connect to terminal WebSocket',
+			description:
+				'Upgrade to a WebSocket for bidirectional terminal I/O. Generated HTTP clients cannot consume the upgraded connection directly.',
+			parameters: [
+				{
+					name: 'id',
+					in: 'path',
+					required: true,
+					schema: { type: 'string' },
+				},
+			],
+			responses: {
+				'101': { description: 'WebSocket upgrade accepted' },
+				'404': { description: 'Terminal not found' },
+			},
+		},
 		upgradeWebSocket((c) => {
 			const id = c.req.param('id');
 
@@ -252,66 +418,266 @@ export function registerTerminalsRoutes(
 		});
 	};
 
-	app.get('/v1/terminals/:id/output', handleTerminalOutput);
-	app.post('/v1/terminals/:id/output', handleTerminalOutput);
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/terminals/{id}/output',
+			operationId: 'getTerminalsByIdOutput',
+			summary: 'Stream terminal output',
+			description: 'Get real-time terminal output via SSE',
+			parameters: [
+				{
+					name: 'id',
+					in: 'path',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+				},
+			],
+			responses: {
+				'200': {
+					description: 'SSE stream of terminal output',
+					content: {
+						'text/event-stream': {
+							schema: {
+								type: 'string',
+							},
+						},
+					},
+				},
+			},
+		},
+		handleTerminalOutput,
+	);
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/terminals/{id}/output',
+			operationId: 'postTerminalsByIdOutput',
+			summary: 'Stream terminal output using POST',
+			description: 'Compatibility alias for terminal output SSE',
+			parameters: [
+				{
+					name: 'id',
+					in: 'path',
+					required: true,
+					schema: { type: 'string' },
+				},
+			],
+			responses: {
+				'200': {
+					description: 'SSE stream of terminal output',
+					content: {
+						'text/event-stream': {
+							schema: { type: 'string' },
+						},
+					},
+				},
+			},
+		},
+		handleTerminalOutput,
+	);
 
-	app.post('/v1/terminals/:id/input', async (c) => {
-		const id = c.req.param('id');
-		const terminal = terminalManager.get(id);
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/terminals/{id}/input',
+			operationId: 'postTerminalsByIdInput',
+			summary: 'Send input to terminal',
+			description: 'Write data to terminal stdin',
+			parameters: [
+				{
+					name: 'id',
+					in: 'path',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+				},
+			],
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							required: ['input'],
+							properties: {
+								input: {
+									type: 'string',
+									description: 'Input to send to terminal',
+								},
+							},
+						},
+					},
+				},
+			},
+			responses: {
+				'200': {
+					description: 'Input sent',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			const id = c.req.param('id');
+			const terminal = terminalManager.get(id);
 
-		if (!terminal) {
-			return c.json({ error: 'Terminal not found' }, 404);
-		}
-
-		try {
-			const body = await c.req.json();
-			const { input } = body;
-
-			if (!input) {
-				return c.json({ error: 'input is required' }, 400);
+			if (!terminal) {
+				return c.json({ error: 'Terminal not found' }, 404);
 			}
 
-			terminal.write(input);
-			return c.json({ success: true });
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			return c.json({ error: message }, 500);
-		}
-	});
+			try {
+				const body = await c.req.json();
+				const { input } = body;
 
-	app.delete('/v1/terminals/:id', async (c) => {
-		const id = c.req.param('id');
+				if (!input) {
+					return c.json({ error: 'input is required' }, 400);
+				}
 
-		try {
-			await terminalManager.kill(id);
-			return c.json({ success: true });
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			return c.json({ error: message }, 500);
-		}
-	});
+				terminal.write(input);
+				return c.json({ success: true });
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				return c.json({ error: message }, 500);
+			}
+		},
+	);
 
-	app.post('/v1/terminals/:id/resize', async (c) => {
-		const id = c.req.param('id');
-		const terminal = terminalManager.get(id);
+	openApiRoute(
+		app,
+		{
+			method: 'delete',
+			path: '/v1/terminals/{id}',
+			operationId: 'deleteTerminalsById',
+			summary: 'Kill terminal',
+			description: 'Terminate a running terminal process',
+			parameters: [
+				{
+					name: 'id',
+					in: 'path',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+				},
+			],
+			responses: {
+				'200': {
+					description: 'Terminal killed',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			const id = c.req.param('id');
 
-		if (!terminal) {
-			return c.json({ error: 'Terminal not found' }, 404);
-		}
+			try {
+				await terminalManager.kill(id);
+				return c.json({ success: true });
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				return c.json({ error: message }, 500);
+			}
+		},
+	);
 
-		try {
-			const body = await c.req.json();
-			const { cols, rows } = body;
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/terminals/{id}/resize',
+			operationId: 'resizeTerminal',
+			summary: 'Resize terminal',
+			description: 'Resize the pseudo-terminal dimensions.',
+			parameters: [
+				{
+					name: 'id',
+					in: 'path',
+					required: true,
+					schema: { type: 'string' },
+				},
+			],
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							required: ['cols', 'rows'],
+							properties: {
+								cols: { type: 'integer', minimum: 1 },
+								rows: { type: 'integer', minimum: 1 },
+							},
+						},
+					},
+				},
+			},
+			responses: {
+				'200': {
+					description: 'Terminal resized',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								required: ['success'],
+								properties: { success: { type: 'boolean' } },
+							},
+						},
+					},
+				},
+				'400': { description: 'Invalid terminal size' },
+				'404': { description: 'Terminal not found' },
+			},
+		},
+		async (c) => {
+			const id = c.req.param('id');
+			const terminal = terminalManager.get(id);
 
-			if (!cols || !rows || cols < 1 || rows < 1) {
-				return c.json({ error: 'valid cols and rows are required' }, 400);
+			if (!terminal) {
+				return c.json({ error: 'Terminal not found' }, 404);
 			}
 
-			terminal.resize(cols, rows);
-			return c.json({ success: true });
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			return c.json({ error: message }, 500);
-		}
-	});
+			try {
+				const body = await c.req.json();
+				const { cols, rows } = body;
+
+				if (!cols || !rows || cols < 1 || rows < 1) {
+					return c.json({ error: 'valid cols and rows are required' }, 400);
+				}
+
+				terminal.resize(cols, rows);
+				return c.json({ success: true });
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				return c.json({ error: message }, 500);
+			}
+		},
+	);
 }

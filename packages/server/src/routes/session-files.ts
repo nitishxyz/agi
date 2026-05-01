@@ -5,6 +5,7 @@ import { messages, messageParts, sessions } from '@ottocode/database/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { serializeError } from '../runtime/errors/api-error.ts';
 import { logger } from '@ottocode/sdk';
+import { openApiRoute } from '../openapi/route.ts';
 
 const FILE_EDIT_TOOLS = [
 	'Write',
@@ -253,160 +254,290 @@ function getOperationType(toolName: string): 'write' | 'patch' | 'create' {
 }
 
 export function registerSessionFilesRoutes(app: Hono) {
-	app.get('/v1/sessions/:sessionId/files', async (c) => {
-		try {
-			const sessionId = c.req.param('sessionId');
-			const projectRoot = c.req.query('project') || process.cwd();
-			const cfg = await loadConfig(projectRoot);
-			const db = await getDb(cfg.projectRoot);
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/sessions/{sessionId}/files',
+			tags: ['sessions'],
+			operationId: 'getSessionFiles',
+			summary: 'Get files modified in a session',
+			parameters: [
+				{
+					in: 'path',
+					name: 'sessionId',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+				},
+				{
+					in: 'query',
+					name: 'project',
+					required: false,
+					schema: {
+						type: 'string',
+					},
+					description:
+						'Project root override (defaults to current working directory).',
+				},
+			],
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									files: {
+										type: 'array',
+										items: {
+											type: 'object',
+											properties: {
+												path: {
+													type: 'string',
+												},
+												operationCount: {
+													type: 'integer',
+												},
+												firstModified: {
+													type: 'integer',
+												},
+												lastModified: {
+													type: 'integer',
+												},
+												operations: {
+													type: 'array',
+													items: {
+														type: 'object',
+														properties: {
+															path: {
+																type: 'string',
+															},
+															operation: {
+																type: 'string',
+																enum: ['write', 'patch', 'create'],
+															},
+															timestamp: {
+																type: 'integer',
+															},
+															toolCallId: {
+																type: 'string',
+															},
+															toolName: {
+																type: 'string',
+															},
+														},
+														required: [
+															'path',
+															'operation',
+															'timestamp',
+															'toolCallId',
+															'toolName',
+														],
+													},
+												},
+											},
+											required: [
+												'path',
+												'operationCount',
+												'firstModified',
+												'lastModified',
+												'operations',
+											],
+										},
+									},
+									totalFiles: {
+										type: 'integer',
+									},
+									totalOperations: {
+										type: 'integer',
+									},
+								},
+								required: ['files', 'totalFiles', 'totalOperations'],
+							},
+						},
+					},
+				},
+				'404': {
+					description: 'Session not found',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const sessionId = c.req.param('sessionId');
+				const projectRoot = c.req.query('project') || process.cwd();
+				const cfg = await loadConfig(projectRoot);
+				const db = await getDb(cfg.projectRoot);
 
-			const sessionRows = await db
-				.select()
-				.from(sessions)
-				.where(eq(sessions.id, sessionId))
-				.limit(1);
+				const sessionRows = await db
+					.select()
+					.from(sessions)
+					.where(eq(sessions.id, sessionId))
+					.limit(1);
 
-			if (!sessionRows.length) {
-				return c.json({ error: 'Session not found' }, 404);
-			}
-
-			const messageRows = await db
-				.select({ id: messages.id })
-				.from(messages)
-				.where(eq(messages.sessionId, sessionId));
-
-			const messageIds = messageRows.map((m) => m.id);
-
-			if (!messageIds.length) {
-				return c.json({
-					files: [],
-					totalFiles: 0,
-					totalOperations: 0,
-				});
-			}
-
-			const parts = await db
-				.select()
-				.from(messageParts)
-				.where(
-					and(
-						inArray(messageParts.messageId, messageIds),
-						inArray(messageParts.toolName, FILE_EDIT_TOOLS),
-					),
-				);
-
-			const fileOperationsMap = new Map<string, FileOperation[]>();
-			const toolCallDataMap = new Map<
-				string,
-				{ patch?: string; content?: string }
-			>();
-
-			for (const part of parts) {
-				if (!part.toolName) continue;
-
-				let content: unknown;
-				try {
-					content = JSON.parse(part.content);
-				} catch {
-					continue;
+				if (!sessionRows.length) {
+					return c.json({ error: 'Session not found' }, 404);
 				}
 
-				if (part.type === 'tool_call') {
-					const callId = part.toolCallId || part.id;
-					const patch = extractPatchFromToolCall(part.toolName, content);
-					const writeContent = extractContentFromToolCall(
-						part.toolName,
-						content,
+				const messageRows = await db
+					.select({ id: messages.id })
+					.from(messages)
+					.where(eq(messages.sessionId, sessionId));
+
+				const messageIds = messageRows.map((m) => m.id);
+
+				if (!messageIds.length) {
+					return c.json({
+						files: [],
+						totalFiles: 0,
+						totalOperations: 0,
+					});
+				}
+
+				const parts = await db
+					.select()
+					.from(messageParts)
+					.where(
+						and(
+							inArray(messageParts.messageId, messageIds),
+							inArray(messageParts.toolName, FILE_EDIT_TOOLS),
+						),
 					);
 
-					toolCallDataMap.set(callId, { patch, content: writeContent });
+				const fileOperationsMap = new Map<string, FileOperation[]>();
+				const toolCallDataMap = new Map<
+					string,
+					{ patch?: string; content?: string }
+				>();
 
-					const path = extractFilePathFromToolCall(part.toolName, content);
-					if (path) {
-						const operation: FileOperation = {
-							path,
-							operation: getOperationType(part.toolName),
-							timestamp: part.startedAt || Date.now(),
-							toolCallId: callId,
-							toolName: part.toolName,
-							patch,
-							content: writeContent,
-						};
+				for (const part of parts) {
+					if (!part.toolName) continue;
 
-						const existing = fileOperationsMap.get(path) || [];
-						const isDuplicate = existing.some(
-							(op) => op.toolCallId === operation.toolCallId,
-						);
-						if (!isDuplicate) {
-							existing.push(operation);
-							fileOperationsMap.set(path, existing);
-						}
+					let content: unknown;
+					try {
+						content = JSON.parse(part.content);
+					} catch {
+						continue;
 					}
-				} else if (part.type === 'tool_result') {
-					const filePaths = extractFilesFromToolResult(part.toolName, content);
-					const { patch, writeContent, artifact } = extractDataFromToolResult(
-						part.toolName,
-						content,
-					);
-					const callId = part.toolCallId || part.id;
-					const callData = toolCallDataMap.get(callId);
 
-					for (const filePath of filePaths) {
-						if (!filePath) continue;
+					if (part.type === 'tool_call') {
+						const callId = part.toolCallId || part.id;
+						const patch = extractPatchFromToolCall(part.toolName, content);
+						const writeContent = extractContentFromToolCall(
+							part.toolName,
+							content,
+						);
 
-						const existing = fileOperationsMap.get(filePath) || [];
-						const existingOp = existing.find((op) => op.toolCallId === callId);
+						toolCallDataMap.set(callId, { patch, content: writeContent });
 
-						if (existingOp) {
-							existingOp.artifact = artifact;
-							existingOp.timestamp = part.completedAt || existingOp.timestamp;
-							if (!existingOp.patch && patch) {
-								existingOp.patch = patch;
-							}
-							if (!existingOp.content && writeContent) {
-								existingOp.content = writeContent;
-							}
-						} else {
+						const path = extractFilePathFromToolCall(part.toolName, content);
+						if (path) {
 							const operation: FileOperation = {
-								path: filePath,
+								path,
 								operation: getOperationType(part.toolName),
-								timestamp: part.completedAt || part.startedAt || Date.now(),
+								timestamp: part.startedAt || Date.now(),
 								toolCallId: callId,
 								toolName: part.toolName,
-								patch: callData?.patch ?? patch,
-								content: callData?.content ?? writeContent,
-								artifact,
+								patch,
+								content: writeContent,
 							};
-							existing.push(operation);
-							fileOperationsMap.set(filePath, existing);
+
+							const existing = fileOperationsMap.get(path) || [];
+							const isDuplicate = existing.some(
+								(op) => op.toolCallId === operation.toolCallId,
+							);
+							if (!isDuplicate) {
+								existing.push(operation);
+								fileOperationsMap.set(path, existing);
+							}
+						}
+					} else if (part.type === 'tool_result') {
+						const filePaths = extractFilesFromToolResult(
+							part.toolName,
+							content,
+						);
+						const { patch, writeContent, artifact } = extractDataFromToolResult(
+							part.toolName,
+							content,
+						);
+						const callId = part.toolCallId || part.id;
+						const callData = toolCallDataMap.get(callId);
+
+						for (const filePath of filePaths) {
+							if (!filePath) continue;
+
+							const existing = fileOperationsMap.get(filePath) || [];
+							const existingOp = existing.find(
+								(op) => op.toolCallId === callId,
+							);
+
+							if (existingOp) {
+								existingOp.artifact = artifact;
+								existingOp.timestamp = part.completedAt || existingOp.timestamp;
+								if (!existingOp.patch && patch) {
+									existingOp.patch = patch;
+								}
+								if (!existingOp.content && writeContent) {
+									existingOp.content = writeContent;
+								}
+							} else {
+								const operation: FileOperation = {
+									path: filePath,
+									operation: getOperationType(part.toolName),
+									timestamp: part.completedAt || part.startedAt || Date.now(),
+									toolCallId: callId,
+									toolName: part.toolName,
+									patch: callData?.patch ?? patch,
+									content: callData?.content ?? writeContent,
+									artifact,
+								};
+								existing.push(operation);
+								fileOperationsMap.set(filePath, existing);
+							}
 						}
 					}
 				}
-			}
 
-			const files: SessionFile[] = [];
-			for (const [path, operations] of fileOperationsMap) {
-				operations.sort((a, b) => a.timestamp - b.timestamp);
-				files.push({
-					path,
-					operations,
-					operationCount: operations.length,
-					firstModified: operations[0]?.timestamp || 0,
-					lastModified: operations[operations.length - 1]?.timestamp || 0,
+				const files: SessionFile[] = [];
+				for (const [path, operations] of fileOperationsMap) {
+					operations.sort((a, b) => a.timestamp - b.timestamp);
+					files.push({
+						path,
+						operations,
+						operationCount: operations.length,
+						firstModified: operations[0]?.timestamp || 0,
+						lastModified: operations[operations.length - 1]?.timestamp || 0,
+					});
+				}
+
+				files.sort((a, b) => b.lastModified - a.lastModified);
+
+				return c.json({
+					files,
+					totalFiles: files.length,
+					totalOperations: parts.length,
 				});
+			} catch (error) {
+				logger.error('Failed to get session files', error);
+				const errorResponse = serializeError(error);
+				return c.json(errorResponse, errorResponse.error.status || 500);
 			}
-
-			files.sort((a, b) => b.lastModified - a.lastModified);
-
-			return c.json({
-				files,
-				totalFiles: files.length,
-				totalOperations: parts.length,
-			});
-		} catch (error) {
-			logger.error('Failed to get session files', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, errorResponse.error.status || 500);
-		}
-	});
+		},
+	);
 }

@@ -1,4 +1,5 @@
 import { tool, type Tool } from 'ai';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { spawn } from 'node:child_process';
 import { z } from 'zod/v3';
 import DESCRIPTION from './shell.txt' with { type: 'text' };
@@ -53,8 +54,21 @@ type ShellStreamChunk =
 			delta: string;
 	  }
 	| {
+			channel: 'terminal';
+			terminalId: string;
+	  }
+	| {
 			result: ShellResult;
 	  };
+
+export type ShellExecutorInput = ShellInput & { cwd: string };
+
+export type ShellExecutor = (
+	input: ShellExecutorInput,
+	options?: { abortSignal?: AbortSignal },
+) => AsyncIterable<ShellStreamChunk> | ShellResult | Promise<ShellResult>;
+
+export const shellExecutorContext = new AsyncLocalStorage<ShellExecutor>();
 
 const shellInputSchema = z
 	.object({
@@ -111,6 +125,13 @@ export function buildShellTool(projectRoot: string): {
 
 			const absCwd = resolveSafePath(projectRoot, cwd || '.');
 			const finalCmd = injectCoAuthorIntoGitCommit(cmd);
+			const shellExecutor = shellExecutorContext.getStore();
+			if (shellExecutor) {
+				return shellExecutor(
+					{ cmd: finalCmd, cwd: absCwd, allowNonZeroExit, timeout },
+					options,
+				) as AsyncIterable<ShellStreamChunk> | ShellResult;
+			}
 
 			const proc = spawn(finalCmd, {
 				cwd: absCwd,

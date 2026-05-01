@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import type { Hono } from 'hono';
 import { subscribe } from '../events/bus.ts';
 import type { OttoEvent } from '../events/types.ts';
+import { openApiRoute } from '../openapi/route.ts';
 
 function safeStringify(obj: unknown): string {
 	return JSON.stringify(obj, (_key, value) =>
@@ -57,6 +58,86 @@ function handleSessionStream(c: Context) {
 }
 
 export function registerSessionStreamRoute(app: Hono) {
-	app.get('/v1/sessions/:id/stream', handleSessionStream);
-	app.post('/v1/sessions/:id/stream', handleSessionStream);
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/sessions/{id}/stream',
+			tags: ['stream'],
+			operationId: 'subscribeSessionStream',
+			summary: 'Subscribe to session event stream (SSE)',
+			parameters: [
+				{
+					in: 'query',
+					name: 'project',
+					required: false,
+					schema: {
+						type: 'string',
+					},
+					description:
+						'Project root override (defaults to current working directory).',
+				},
+				{
+					in: 'path',
+					name: 'id',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+				},
+			],
+			responses: {
+				'200': {
+					description: 'text/event-stream',
+					content: {
+						'text/event-stream': {
+							schema: {
+								type: 'string',
+								description:
+									'SSE event stream. Events include session.created, message.created, message.part.delta, tool.call, tool.delta, tool.result, message.completed, error.',
+							},
+						},
+					},
+				},
+			},
+		},
+		handleSessionStream,
+	);
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/sessions/{id}/stream',
+			tags: ['stream'],
+			operationId: 'subscribeSessionStreamPost',
+			summary: 'Subscribe to session event stream (SSE) using POST',
+			parameters: [
+				{
+					in: 'query',
+					name: 'project',
+					required: false,
+					schema: { type: 'string' },
+					description:
+						'Project root override (defaults to current working directory).',
+				},
+				{
+					in: 'path',
+					name: 'id',
+					required: true,
+					schema: { type: 'string' },
+				},
+			],
+			responses: {
+				'200': {
+					description: 'text/event-stream',
+					content: {
+						'text/event-stream': {
+							schema: { type: 'string' },
+						},
+					},
+				},
+			},
+		},
+		handleSessionStream,
+	);
 }

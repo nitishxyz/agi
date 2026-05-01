@@ -9,6 +9,7 @@ import { logger } from '@ottocode/sdk';
 import { setAuth } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
 import type { OAuth } from '@ottocode/sdk';
+import { openApiRoute } from '../openapi/route.ts';
 
 async function ensureValidOAuth(
 	provider: ProviderId,
@@ -157,43 +158,159 @@ async function fetchOpenAIUsage(access: string, accountId?: string) {
 }
 
 export function registerProviderUsageRoutes(app: Hono) {
-	app.get('/v1/provider-usage/:provider', async (c) => {
-		try {
-			const provider = c.req.param('provider') as ProviderId;
-
-			if (provider !== 'anthropic' && provider !== 'openai') {
-				return c.json(
-					{ error: { message: 'Usage not supported for this provider' } },
-					400,
-				);
-			}
-
-			const tokenResult = await ensureValidOAuth(provider);
-			if (!tokenResult) {
-				return c.json(
-					{
-						error: {
-							message: `No OAuth credentials for ${provider}. Usage is only available for OAuth-authenticated providers.`,
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/provider-usage/{provider}',
+			tags: ['config'],
+			operationId: 'getProviderUsage',
+			summary: 'Get usage information for an OAuth provider',
+			parameters: [
+				{
+					in: 'path',
+					name: 'provider',
+					required: true,
+					schema: {
+						type: 'string',
+						enum: ['anthropic', 'openai'],
+					},
+				},
+			],
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									provider: {
+										type: 'string',
+									},
+									primaryWindow: {
+										type: 'object',
+										nullable: true,
+										properties: {
+											usedPercent: {
+												type: 'number',
+											},
+											windowSeconds: {
+												type: 'integer',
+											},
+											resetsAt: {
+												type: 'string',
+												nullable: true,
+											},
+											resetAfterSeconds: {
+												type: 'integer',
+											},
+										},
+									},
+									secondaryWindow: {
+										type: 'object',
+										nullable: true,
+										properties: {
+											usedPercent: {
+												type: 'number',
+											},
+											windowSeconds: {
+												type: 'integer',
+											},
+											resetsAt: {
+												type: 'string',
+												nullable: true,
+											},
+											resetAfterSeconds: {
+												type: 'integer',
+											},
+										},
+									},
+									limitReached: {
+										type: 'boolean',
+									},
+									planType: {
+										type: 'string',
+										nullable: true,
+									},
+								},
+								required: ['provider', 'limitReached'],
+							},
 						},
 					},
-					404,
-				);
+				},
+				'400': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+				'404': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const provider = c.req.param('provider') as ProviderId;
+
+				if (provider !== 'anthropic' && provider !== 'openai') {
+					return c.json(
+						{ error: { message: 'Usage not supported for this provider' } },
+						400,
+					);
+				}
+
+				const tokenResult = await ensureValidOAuth(provider);
+				if (!tokenResult) {
+					return c.json(
+						{
+							error: {
+								message: `No OAuth credentials for ${provider}. Usage is only available for OAuth-authenticated providers.`,
+							},
+						},
+						404,
+					);
+				}
+
+				const usage =
+					provider === 'anthropic'
+						? await fetchAnthropicUsage(tokenResult.access)
+						: await fetchOpenAIUsage(
+								tokenResult.access,
+								tokenResult.oauth.accountId,
+							);
+
+				return c.json(usage);
+			} catch (error) {
+				logger.error('Failed to fetch provider usage', error);
+				const errorResponse = serializeError(error);
+				const status = (errorResponse.error.status || 500) as 500;
+				return c.json(errorResponse, status);
 			}
-
-			const usage =
-				provider === 'anthropic'
-					? await fetchAnthropicUsage(tokenResult.access)
-					: await fetchOpenAIUsage(
-							tokenResult.access,
-							tokenResult.oauth.accountId,
-						);
-
-			return c.json(usage);
-		} catch (error) {
-			logger.error('Failed to fetch provider usage', error);
-			const errorResponse = serializeError(error);
-			const status = (errorResponse.error.status || 500) as 500;
-			return c.json(errorResponse, status);
-		}
-	});
+		},
+	);
 }

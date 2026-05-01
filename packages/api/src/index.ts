@@ -26,7 +26,11 @@ export * from './generated/sdk.gen';
 export * from './generated/schemas.gen';
 
 // Export SSE utilities
-export { createSSEStream, parseSSEEvent } from './streaming';
+export {
+	buildSessionStreamUrl,
+	createSSEStream,
+	parseSSEEvent,
+} from './streaming';
 export type { SSEEvent, SSEStreamOptions } from './streaming';
 
 // Export helpers

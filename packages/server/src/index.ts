@@ -1,4 +1,5 @@
-import { Hono } from 'hono';
+import { OpenAPIHono } from '@hono/zod-openapi';
+import type { BlankEnv } from 'hono/types';
 import { cors } from 'hono/cors';
 import type { ProviderId, AuthInfo } from '@ottocode/sdk';
 import { TerminalManager } from '@ottocode/sdk';
@@ -34,7 +35,7 @@ setTerminalManager(globalTerminalManager);
 installAiSdkWarningHandler();
 
 function initApp() {
-	const app = new Hono();
+	const app = new OpenAPIHono<BlankEnv>();
 
 	// Enable CORS for localhost and local network access
 	app.use(
@@ -110,7 +111,7 @@ export type StandaloneAppConfig = {
 };
 
 export function createStandaloneApp(_config?: StandaloneAppConfig) {
-	const honoApp = new Hono();
+	const honoApp = new OpenAPIHono<BlankEnv>();
 
 	honoApp.use(
 		'*',
@@ -203,7 +204,7 @@ export type EmbeddedAppConfig = {
 };
 
 export function createEmbeddedApp(config: EmbeddedAppConfig = {}) {
-	const honoApp = new Hono();
+	const honoApp = new OpenAPIHono<BlankEnv>();
 
 	// Store injected config in Hono context for routes to access
 	// Config can be empty - routes will fall back to files/env

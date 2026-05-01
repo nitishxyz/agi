@@ -20,9 +20,9 @@ import {
 	joinPath,
 } from './paths.ts';
 import {
-	providerIds,
 	readEnvKey,
 	setEnvKey,
+	isBuiltInProviderId,
 } from '../../providers/src/index.ts';
 
 export type Scope = 'global' | 'local';
@@ -45,7 +45,7 @@ export async function isAuthorized(
 	provider: ProviderId,
 	projectRoot?: string,
 ): Promise<boolean> {
-	if (!providerIds.includes(provider)) return false;
+	if (!isBuiltInProviderId(provider)) return false;
 	if (readEnvKey(provider)) return true;
 	const { auth } = await read(projectRoot);
 	const info = auth[provider];
@@ -59,7 +59,7 @@ export async function ensureEnv(
 	provider: ProviderId,
 	projectRoot?: string,
 ): Promise<void> {
-	if (!providerIds.includes(provider)) return;
+	if (!isBuiltInProviderId(provider)) return;
 	if (readEnvKey(provider)) return;
 	const { auth } = await read(projectRoot);
 	const stored = auth[provider];

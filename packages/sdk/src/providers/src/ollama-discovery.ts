@@ -1,5 +1,9 @@
 import type { ModelInfo } from '../../types/src/index.ts';
 
+type FetchHeaders = NonNullable<
+	Parameters<typeof globalThis.fetch>[1]
+>['headers'];
+
 export type DiscoverOllamaOptions = {
 	baseURL: string;
 	apiKey?: string;
@@ -80,7 +84,7 @@ export async function discoverOllamaModels(
 async function discoverSingleOllamaModel(
 	fetchImpl: typeof globalThis.fetch,
 	baseURL: string,
-	headers: HeadersInit | undefined,
+	headers: FetchHeaders | undefined,
 	id: string,
 ): Promise<ModelInfo> {
 	try {
@@ -143,7 +147,7 @@ function extractContextLength(
 	return undefined;
 }
 
-function buildHeaders(apiKey?: string): HeadersInit | undefined {
+function buildHeaders(apiKey?: string): FetchHeaders | undefined {
 	if (!apiKey) return undefined;
 	return { Authorization: `Bearer ${apiKey}` };
 }

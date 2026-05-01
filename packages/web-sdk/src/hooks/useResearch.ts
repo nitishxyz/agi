@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '../lib/config';
+import {
+	createResearchSession as apiCreateResearchSession,
+	deleteResearchSession as apiDeleteResearchSession,
+	exportResearchSession as apiExportResearchSession,
+	injectResearchContext as apiInjectResearchContext,
+	listResearchSessions as apiListResearchSessions,
+} from '@ottocode/api';
 import { usePendingResearchStore } from '../stores/pendingResearchStore';
 import { sessionsQueryKey } from './useSessions';
 
@@ -42,79 +48,36 @@ export interface ExportToSessionResponse {
 }
 
 class ResearchApiClient {
-	private get baseUrl(): string {
-		// Check for runtime injected URL first
-		const win = window as Window & { OTTO_SERVER_URL?: string };
-		if (win.OTTO_SERVER_URL) {
-			return win.OTTO_SERVER_URL;
-		}
-		// Check for Vite env var
-		if (import.meta.env?.VITE_API_BASE_URL) {
-			return import.meta.env.VITE_API_BASE_URL;
-		}
-		return API_BASE_URL;
-	}
-
 	async listResearchSessions(
 		parentSessionId: string,
 	): Promise<ResearchSessionsResponse> {
-		const response = await fetch(
-			`${this.baseUrl}/v1/sessions/${parentSessionId}/research`,
-			{
-				method: 'GET',
-				headers: { 'Content-Type': 'application/json' },
-			},
-		);
-
-		if (!response.ok) {
-			const error = await response
-				.json()
-				.catch(() => ({ error: 'Failed to fetch research sessions' }));
-			throw new Error(error.error || 'Failed to fetch research sessions');
-		}
-
-		return response.json();
+		const response = await apiListResearchSessions({
+			path: { parentId: parentSessionId },
+		});
+		if (response.error) throw new Error(JSON.stringify(response.error));
+		return response.data as unknown as ResearchSessionsResponse;
 	}
 
 	async createResearchSession(
 		parentSessionId: string,
 		data: { provider?: string; model?: string; title?: string },
 	): Promise<CreateResearchResponse> {
-		const response = await fetch(
-			`${this.baseUrl}/v1/sessions/${parentSessionId}/research`,
-			{
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(data),
-			},
-		);
-
-		if (!response.ok) {
-			const error = await response
-				.json()
-				.catch(() => ({ error: 'Failed to create research session' }));
-			throw new Error(error.error || 'Failed to create research session');
-		}
-
-		return response.json();
+		const response = await apiCreateResearchSession({
+			path: { parentId: parentSessionId },
+			body: data,
+		});
+		if (response.error) throw new Error(JSON.stringify(response.error));
+		return response.data as unknown as CreateResearchResponse;
 	}
 
 	async deleteResearchSession(
 		researchId: string,
 	): Promise<{ success: boolean }> {
-		const response = await fetch(`${this.baseUrl}/v1/research/${researchId}`, {
-			method: 'DELETE',
-			headers: { 'Content-Type': 'application/json' },
+		const response = await apiDeleteResearchSession({
+			path: { researchId },
 		});
-
-		if (!response.ok) {
-			const error = await response
-				.json()
-				.catch(() => ({ error: 'Failed to delete research session' }));
-			throw new Error(error.error || 'Failed to delete research session');
-		}
-
-		return response.json();
+		if (response.error) throw new Error(JSON.stringify(response.error));
+		return response.data as { success: boolean };
 	}
 
 	async injectContext(
@@ -122,46 +85,24 @@ class ResearchApiClient {
 		researchSessionId: string,
 		label?: string,
 	): Promise<InjectContextResponse> {
-		const response = await fetch(
-			`${this.baseUrl}/v1/sessions/${parentSessionId}/inject`,
-			{
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ researchSessionId, label }),
-			},
-		);
-
-		if (!response.ok) {
-			const error = await response
-				.json()
-				.catch(() => ({ error: 'Failed to inject context' }));
-			throw new Error(error.error || 'Failed to inject context');
-		}
-
-		return response.json();
+		const response = await apiInjectResearchContext({
+			path: { parentId: parentSessionId },
+			body: { researchSessionId, label },
+		});
+		if (response.error) throw new Error(JSON.stringify(response.error));
+		return response.data as InjectContextResponse;
 	}
 
 	async exportToNewSession(
 		researchId: string,
 		data?: { provider?: string; model?: string; agent?: string },
 	): Promise<ExportToSessionResponse> {
-		const response = await fetch(
-			`${this.baseUrl}/v1/research/${researchId}/export`,
-			{
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(data ?? {}),
-			},
-		);
-
-		if (!response.ok) {
-			const error = await response
-				.json()
-				.catch(() => ({ error: 'Failed to export to session' }));
-			throw new Error(error.error || 'Failed to export to session');
-		}
-
-		return response.json();
+		const response = await apiExportResearchSession({
+			path: { researchId },
+			body: data ?? {},
+		});
+		if (response.error) throw new Error(JSON.stringify(response.error));
+		return response.data as ExportToSessionResponse;
 	}
 }
 

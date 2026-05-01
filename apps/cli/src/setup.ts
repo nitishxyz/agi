@@ -8,7 +8,12 @@ import {
 	cancel,
 } from '@clack/prompts';
 import { loadConfig } from '@ottocode/sdk';
-import { catalog, type ProviderId } from '@ottocode/sdk';
+import {
+	catalog,
+	isBuiltInProviderId,
+	type ModelInfo,
+	type ProviderId,
+} from '@ottocode/sdk';
 
 export async function runSetup(projectRoot?: string) {
 	const cfg = await loadConfig(projectRoot);
@@ -96,12 +101,15 @@ export async function runSetup(projectRoot?: string) {
 	if (isCancel(defaultProvider)) return cancel('Setup cancelled');
 
 	// Choose default model from catalog for that provider
-	const models = catalog[defaultProvider as ProviderId]?.models ?? [];
+	const selectedProvider = defaultProvider as ProviderId;
+	const models = isBuiltInProviderId(selectedProvider)
+		? (catalog[selectedProvider]?.models ?? [])
+		: [];
 	const defaultModel =
 		models.length > 0
 			? ((await select({
 					message: `Default model for ${String(defaultProvider)}:`,
-					options: models.map((m) => ({
+					options: models.map((m: ModelInfo) => ({
 						value: m.id,
 						label: m.label ? `${m.label} (${m.id})` : m.id,
 					})),

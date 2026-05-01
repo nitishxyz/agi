@@ -10,135 +10,258 @@ import {
 	inferLanguage,
 	summarizeDiff,
 } from './utils.ts';
+import { openApiRoute } from '../../openapi/route.ts';
 
 const execFileAsync = promisify(execFile);
 
 export function registerDiffRoute(app: Hono) {
-	app.get('/v1/git/diff', async (c) => {
-		try {
-			const query = gitDiffSchema.parse({
-				project: c.req.query('project'),
-				file: c.req.query('file'),
-				staged: c.req.query('staged'),
-			});
-
-			const requestedPath = query.project || process.cwd();
-
-			const validation = await validateAndGetGitRoot(requestedPath);
-			if ('error' in validation) {
-				return c.json(
-					{ status: 'error', error: validation.error, code: validation.code },
-					400,
-				);
-			}
-
-			const { gitRoot } = validation;
-			const absPath = join(gitRoot, query.file);
-
-			const isNewFile = await checkIfNewFile(gitRoot, query.file);
-
-			if (isNewFile) {
-				try {
-					const content = await readFile(absPath, 'utf-8');
-					const lineCount = content.split('\n').length;
-					const language = inferLanguage(query.file);
-
-					return c.json({
-						status: 'ok',
-						data: {
-							file: query.file,
-							absPath,
-							diff: '',
-							content,
-							isNewFile: true,
-							isBinary: false,
-							insertions: lineCount,
-							deletions: 0,
-							language,
-							staged: !!query.staged,
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/git/diff',
+			tags: ['git'],
+			operationId: 'getGitDiff',
+			summary: 'Get git diff for a file',
+			parameters: [
+				{
+					in: 'query',
+					name: 'project',
+					required: false,
+					schema: {
+						type: 'string',
+					},
+					description:
+						'Project root override (defaults to current working directory).',
+				},
+				{
+					in: 'query',
+					name: 'file',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+					description: 'File path to get diff for',
+				},
+				{
+					in: 'query',
+					name: 'staged',
+					required: false,
+					schema: {
+						type: 'string',
+						enum: ['true', 'false'],
+					},
+					description: 'Show staged diff (default: unstaged)',
+				},
+				{
+					in: 'query',
+					name: 'fullFile',
+					required: false,
+					schema: {
+						type: 'string',
+						enum: ['true', 'false'],
+					},
+					description: 'Include full file content in diff',
+				},
+			],
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: {
+										type: 'string',
+										enum: ['ok'],
+									},
+									data: {
+										$ref: '#/components/schemas/GitDiff',
+									},
+								},
+								required: ['status', 'data'],
+							},
 						},
-					});
-				} catch (error) {
+					},
+				},
+				'400': {
+					description: 'Error',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: {
+										type: 'string',
+										enum: ['error'],
+									},
+									error: {
+										type: 'string',
+									},
+									code: {
+										type: 'string',
+									},
+								},
+								required: ['status', 'error'],
+							},
+						},
+					},
+				},
+				'500': {
+					description: 'Error',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: {
+										type: 'string',
+										enum: ['error'],
+									},
+									error: {
+										type: 'string',
+									},
+									code: {
+										type: 'string',
+									},
+								},
+								required: ['status', 'error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const query = gitDiffSchema.parse({
+					project: c.req.query('project'),
+					file: c.req.query('file'),
+					staged: c.req.query('staged'),
+				});
+
+				const requestedPath = query.project || process.cwd();
+
+				const validation = await validateAndGetGitRoot(requestedPath);
+				if ('error' in validation) {
 					return c.json(
-						{
-							status: 'error',
-							error:
-								error instanceof Error ? error.message : 'Failed to read file',
-						},
-						500,
+						{ status: 'error', error: validation.error, code: validation.code },
+						400,
 					);
 				}
-			}
 
-			const diffArgs = query.staged
-				? ['diff', '--cached', '--', query.file]
-				: ['diff', '--', query.file];
+				const { gitRoot } = validation;
+				const absPath = join(gitRoot, query.file);
 
-			const fullFile = c.req.query('fullFile') === 'true';
-			if (fullFile) {
-				diffArgs.splice(1, 0, '-U99999');
-			}
+				const isNewFile = await checkIfNewFile(gitRoot, query.file);
 
-			const numstatArgs = query.staged
-				? ['diff', '--cached', '--numstat', '--', query.file]
-				: ['diff', '--numstat', '--', query.file];
+				if (isNewFile) {
+					try {
+						const content = await readFile(absPath, 'utf-8');
+						const lineCount = content.split('\n').length;
+						const language = inferLanguage(query.file);
 
-			const [{ stdout: diffOutput }, { stdout: numstatOutput }] =
-				await Promise.all([
-					execFileAsync('git', diffArgs, { cwd: gitRoot }),
-					execFileAsync('git', numstatArgs, { cwd: gitRoot }),
-				]);
-
-			let insertions = 0;
-			let deletions = 0;
-			let binary = false;
-
-			const numstatLine = numstatOutput.trim().split('\n').find(Boolean);
-			if (numstatLine) {
-				const [rawInsertions, rawDeletions] = numstatLine.split('\t');
-				if (rawInsertions === '-' || rawDeletions === '-') {
-					binary = true;
-				} else {
-					insertions = Number.parseInt(rawInsertions, 10) || 0;
-					deletions = Number.parseInt(rawDeletions, 10) || 0;
+						return c.json({
+							status: 'ok',
+							data: {
+								file: query.file,
+								absPath,
+								diff: '',
+								content,
+								isNewFile: true,
+								isBinary: false,
+								insertions: lineCount,
+								deletions: 0,
+								language,
+								staged: !!query.staged,
+							},
+						});
+					} catch (error) {
+						return c.json(
+							{
+								status: 'error',
+								error:
+									error instanceof Error
+										? error.message
+										: 'Failed to read file',
+							},
+							500,
+						);
+					}
 				}
-			}
 
-			const diffText = diffOutput ?? '';
-			if (!binary) {
-				const summary = summarizeDiff(diffText);
-				binary = summary.binary;
-				if (insertions === 0 && deletions === 0) {
-					insertions = summary.insertions;
-					deletions = summary.deletions;
+				const diffArgs = query.staged
+					? ['diff', '--cached', '--', query.file]
+					: ['diff', '--', query.file];
+
+				const fullFile = c.req.query('fullFile') === 'true';
+				if (fullFile) {
+					diffArgs.splice(1, 0, '-U99999');
 				}
+
+				const numstatArgs = query.staged
+					? ['diff', '--cached', '--numstat', '--', query.file]
+					: ['diff', '--numstat', '--', query.file];
+
+				const [{ stdout: diffOutput }, { stdout: numstatOutput }] =
+					await Promise.all([
+						execFileAsync('git', diffArgs, { cwd: gitRoot }),
+						execFileAsync('git', numstatArgs, { cwd: gitRoot }),
+					]);
+
+				let insertions = 0;
+				let deletions = 0;
+				let binary = false;
+
+				const numstatLine = numstatOutput.trim().split('\n').find(Boolean);
+				if (numstatLine) {
+					const [rawInsertions, rawDeletions] = numstatLine.split('\t');
+					if (rawInsertions === '-' || rawDeletions === '-') {
+						binary = true;
+					} else {
+						insertions = Number.parseInt(rawInsertions, 10) || 0;
+						deletions = Number.parseInt(rawDeletions, 10) || 0;
+					}
+				}
+
+				const diffText = diffOutput ?? '';
+				if (!binary) {
+					const summary = summarizeDiff(diffText);
+					binary = summary.binary;
+					if (insertions === 0 && deletions === 0) {
+						insertions = summary.insertions;
+						deletions = summary.deletions;
+					}
+				}
+
+				const language = inferLanguage(query.file);
+
+				return c.json({
+					status: 'ok',
+					data: {
+						file: query.file,
+						absPath,
+						diff: diffText,
+						fullFile,
+						isNewFile: false,
+						isBinary: binary,
+						insertions,
+						deletions,
+						language,
+						staged: !!query.staged,
+					},
+				});
+			} catch (error) {
+				return c.json(
+					{
+						status: 'error',
+						error:
+							error instanceof Error ? error.message : 'Failed to get diff',
+					},
+					500,
+				);
 			}
-
-			const language = inferLanguage(query.file);
-
-			return c.json({
-				status: 'ok',
-				data: {
-					file: query.file,
-					absPath,
-					diff: diffText,
-					fullFile,
-					isNewFile: false,
-					isBinary: binary,
-					insertions,
-					deletions,
-					language,
-					staged: !!query.staged,
-				},
-			});
-		} catch (error) {
-			return c.json(
-				{
-					status: 'error',
-					error: error instanceof Error ? error.message : 'Failed to get diff',
-				},
-				500,
-			);
-		}
-	});
+		},
+	);
 }

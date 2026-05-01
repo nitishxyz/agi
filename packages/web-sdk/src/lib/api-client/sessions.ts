@@ -9,6 +9,7 @@ import {
 	getSessionQueue as apiGetSessionQueue,
 	removeFromQueue as apiRemoveFromQueue,
 	retryMessage as apiRetryMessage,
+	buildSessionStreamUrl,
 	type Session as ApiSession,
 	type CreateSessionData,
 	type CreateMessageData,
@@ -147,7 +148,7 @@ export const sessionsMixin = {
 	},
 
 	getStreamUrl(sessionId: string): string {
-		return `${getBaseUrl()}/v1/sessions/${sessionId}/stream`;
+		return buildSessionStreamUrl({ baseUrl: getBaseUrl(), sessionId });
 	},
 
 	async retryMessage(

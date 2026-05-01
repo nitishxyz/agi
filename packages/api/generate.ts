@@ -4,10 +4,17 @@ import { join } from 'node:path';
 
 console.log('🔧 Generating OpenAPI spec from server...\\n');
 
-// Import the spec generator from the server package
-const { getOpenAPISpec } = await import('../server/src/openapi/spec.ts');
+// Ask the server app for its OpenAPI document so SDK generation follows the
+// runtime API surface instead of importing spec internals directly.
+const { createApp } = await import('../server/src/index.ts');
 
-const spec = getOpenAPISpec();
+const response = await createApp().request('/openapi.json');
+if (!response.ok) {
+	console.error(`❌ Failed to load OpenAPI spec: ${response.status}`);
+	process.exit(1);
+}
+
+const spec = await response.json();
 
 // Write spec to file for @hey-api/openapi-ts
 const specPath = join(import.meta.dir, 'openapi.json');
@@ -43,3 +50,7 @@ console.log(
 );
 console.log('   import { client } from "@ottocode/api";');
 console.log('   client.setConfig({ baseURL: "http://localhost:3000" });');
+
+// Importing the server app can initialize long-lived runtime resources. Codegen
+// is a one-shot command, so terminate explicitly once files are written.
+process.exit(0);

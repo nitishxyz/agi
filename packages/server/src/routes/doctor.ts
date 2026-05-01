@@ -15,6 +15,7 @@ import {
 	logger,
 } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
+import { openApiRoute } from '../openapi/route.ts';
 
 async function fileExists(path: string | null): Promise<boolean> {
 	if (!path) return false;
@@ -46,172 +47,405 @@ async function listDir(dir: string | null): Promise<string[]> {
 }
 
 export function registerDoctorRoutes(app: Hono) {
-	app.get('/v1/doctor', async (c) => {
-		try {
-			const projectRoot = c.req.query('project') || process.cwd();
-			const { cfg, auth } = await readConfig(projectRoot);
-			const configuredProviders = getConfiguredProviderIds(cfg, {
-				includeDisabled: true,
-			});
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/doctor',
+			tags: ['config'],
+			operationId: 'runDoctor',
+			summary: 'Run diagnostics on the current configuration',
+			parameters: [
+				{
+					in: 'query',
+					name: 'project',
+					required: false,
+					schema: {
+						type: 'string',
+					},
+					description:
+						'Project root override (defaults to current working directory).',
+				},
+			],
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									providers: {
+										type: 'array',
+										items: {
+											type: 'object',
+											properties: {
+												id: {
+													type: 'string',
+												},
+												ok: {
+													type: 'boolean',
+												},
+												configured: {
+													type: 'boolean',
+												},
+												sources: {
+													type: 'array',
+													items: {
+														type: 'string',
+													},
+												},
+											},
+											required: ['id', 'ok', 'configured', 'sources'],
+										},
+									},
+									defaults: {
+										type: 'object',
+										properties: {
+											agent: {
+												type: 'string',
+											},
+											provider: {
+												type: 'string',
+											},
+											model: {
+												type: 'string',
+											},
+											providerAuthorized: {
+												type: 'boolean',
+											},
+										},
+										required: [
+											'agent',
+											'provider',
+											'model',
+											'providerAuthorized',
+										],
+									},
+									agents: {
+										type: 'object',
+										properties: {
+											globalPath: {
+												type: 'string',
+												nullable: true,
+											},
+											localPath: {
+												type: 'string',
+												nullable: true,
+											},
+											globalNames: {
+												type: 'array',
+												items: {
+													type: 'string',
+												},
+											},
+											localNames: {
+												type: 'array',
+												items: {
+													type: 'string',
+												},
+											},
+										},
+										required: [
+											'globalPath',
+											'localPath',
+											'globalNames',
+											'localNames',
+										],
+									},
+									tools: {
+										type: 'object',
+										properties: {
+											defaultNames: {
+												type: 'array',
+												items: {
+													type: 'string',
+												},
+											},
+											globalPath: {
+												type: 'string',
+												nullable: true,
+											},
+											globalNames: {
+												type: 'array',
+												items: {
+													type: 'string',
+												},
+											},
+											localPath: {
+												type: 'string',
+												nullable: true,
+											},
+											localNames: {
+												type: 'array',
+												items: {
+													type: 'string',
+												},
+											},
+											effectiveNames: {
+												type: 'array',
+												items: {
+													type: 'string',
+												},
+											},
+										},
+										required: [
+											'defaultNames',
+											'globalNames',
+											'localNames',
+											'effectiveNames',
+										],
+									},
+									commands: {
+										type: 'object',
+										properties: {
+											globalPath: {
+												type: 'string',
+												nullable: true,
+											},
+											globalNames: {
+												type: 'array',
+												items: {
+													type: 'string',
+												},
+											},
+											localPath: {
+												type: 'string',
+												nullable: true,
+											},
+											localNames: {
+												type: 'array',
+												items: {
+													type: 'string',
+												},
+											},
+										},
+										required: ['globalNames', 'localNames'],
+									},
+									issues: {
+										type: 'array',
+										items: {
+											type: 'string',
+										},
+									},
+									suggestions: {
+										type: 'array',
+										items: {
+											type: 'string',
+										},
+									},
+									globalAuthPath: {
+										type: 'string',
+										nullable: true,
+									},
+								},
+								required: [
+									'providers',
+									'defaults',
+									'agents',
+									'tools',
+									'commands',
+									'issues',
+									'suggestions',
+								],
+							},
+						},
+					},
+				},
+				'500': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const projectRoot = c.req.query('project') || process.cwd();
+				const { cfg, auth } = await readConfig(projectRoot);
+				const configuredProviders = getConfiguredProviderIds(cfg, {
+					includeDisabled: true,
+				});
 
-			const providers = await Promise.all(
-				configuredProviders.map(async (id) => {
-					const ok = await isProviderAuthorized(cfg, id);
-					const envVar = getConfiguredProviderEnvVar(cfg, id) ?? null;
-					const envConfigured = envVar ? !!process.env[envVar] : false;
+				const providers = await Promise.all(
+					configuredProviders.map(async (id) => {
+						const ok = await isProviderAuthorized(cfg, id);
+						const envVar = getConfiguredProviderEnvVar(cfg, id) ?? null;
+						const envConfigured = envVar ? !!process.env[envVar] : false;
 
-					const globalAuthPath = getSecureAuthPath();
-					let hasGlobalAuth = false;
-					if (globalAuthPath) {
-						const contents =
-							await readJsonSafe<Record<string, unknown>>(globalAuthPath);
-						hasGlobalAuth = Boolean(contents?.[id]);
-					}
+						const globalAuthPath = getSecureAuthPath();
+						let hasGlobalAuth = false;
+						if (globalAuthPath) {
+							const contents =
+								await readJsonSafe<Record<string, unknown>>(globalAuthPath);
+							hasGlobalAuth = Boolean(contents?.[id]);
+						}
 
-					const authInfo = auth?.[id];
-					const hasStoredSecret = (() => {
-						if (!authInfo) return false;
-						if (authInfo.type === 'api')
-							return Boolean((authInfo as { key?: string }).key);
-						if (authInfo.type === 'wallet')
-							return Boolean((authInfo as { secret?: string }).secret);
-						if (authInfo.type === 'oauth')
-							return Boolean(
-								(authInfo as { access?: string; refresh?: string }).access ||
-									(authInfo as { access?: string; refresh?: string }).refresh,
-							);
-						return false;
-					})();
+						const authInfo = auth?.[id];
+						const hasStoredSecret = (() => {
+							if (!authInfo) return false;
+							if (authInfo.type === 'api')
+								return Boolean((authInfo as { key?: string }).key);
+							if (authInfo.type === 'wallet')
+								return Boolean((authInfo as { secret?: string }).secret);
+							if (authInfo.type === 'oauth')
+								return Boolean(
+									(authInfo as { access?: string; refresh?: string }).access ||
+										(authInfo as { access?: string; refresh?: string }).refresh,
+								);
+							return false;
+						})();
 
-					const sources: string[] = [];
-					if (envConfigured && envVar) sources.push(`env:${envVar}`);
-					if (hasGlobalAuth) sources.push('auth.json');
+						const sources: string[] = [];
+						if (envConfigured && envVar) sources.push(`env:${envVar}`);
+						if (hasGlobalAuth) sources.push('auth.json');
 
-					const configured =
-						envConfigured ||
-						hasGlobalAuth ||
-						cfg.defaults.provider === id ||
-						hasStoredSecret ||
-						Boolean(getConfiguredProviderApiKey(cfg, id));
+						const configured =
+							envConfigured ||
+							hasGlobalAuth ||
+							cfg.defaults.provider === id ||
+							hasStoredSecret ||
+							Boolean(getConfiguredProviderApiKey(cfg, id));
 
-					return { id, ok, configured, sources };
-				}),
-			);
-
-			const defaults = {
-				agent: cfg.defaults.agent,
-				provider: cfg.defaults.provider,
-				model: cfg.defaults.model,
-				providerAuthorized: await isProviderAuthorized(
-					cfg,
-					cfg.defaults.provider,
-				),
-			};
-
-			const globalAgentsPath = getGlobalAgentsJsonPath();
-			const localAgentsPath = `${projectRoot}/.otto/agents.json`;
-			const globalAgents =
-				(await readJsonSafe<Record<string, unknown>>(globalAgentsPath)) ?? {};
-			const localAgents =
-				(await readJsonSafe<Record<string, unknown>>(localAgentsPath)) ?? {};
-
-			const agents = {
-				globalPath: (await fileExists(globalAgentsPath))
-					? globalAgentsPath
-					: null,
-				localPath: (await fileExists(localAgentsPath)) ? localAgentsPath : null,
-				globalNames: Object.keys(globalAgents).sort(),
-				localNames: Object.keys(localAgents).sort(),
-			};
-
-			const defaultToolNames = Array.from(
-				new Set([
-					...buildFsTools(projectRoot).map((t) => t.name),
-					...buildGitTools(projectRoot).map((t) => t.name),
-					'finish',
-				]),
-			).sort();
-
-			const globalToolsDir = getGlobalToolsDir();
-			const localToolsDir = `${projectRoot}/.otto/tools`;
-			const globalToolNames = await listDir(globalToolsDir);
-			const localToolNames = await listDir(localToolsDir);
-
-			const tools = {
-				defaultNames: defaultToolNames,
-				globalPath: globalToolNames.length ? globalToolsDir : null,
-				globalNames: globalToolNames.sort(),
-				localPath: localToolNames.length ? localToolsDir : null,
-				localNames: localToolNames.sort(),
-				effectiveNames: Array.from(
-					new Set([...defaultToolNames, ...globalToolNames, ...localToolNames]),
-				).sort(),
-			};
-
-			const globalCommandsDir = getGlobalCommandsDir();
-			const localCommandsDir = `${projectRoot}/.otto/commands`;
-			const globalCommandFiles = await listDir(globalCommandsDir);
-			const localCommandFiles = await listDir(localCommandsDir);
-
-			const commands = {
-				globalPath: globalCommandFiles.length ? globalCommandsDir : null,
-				globalNames: globalCommandFiles
-					.filter((f) => f.endsWith('.json'))
-					.map((f) => f.replace(/\.json$/, ''))
-					.sort(),
-				localPath: localCommandFiles.length ? localCommandsDir : null,
-				localNames: localCommandFiles
-					.filter((f) => f.endsWith('.json'))
-					.map((f) => f.replace(/\.json$/, ''))
-					.sort(),
-			};
-
-			const issues: string[] = [];
-			if (!defaults.providerAuthorized) {
-				issues.push(
-					`Default provider '${defaults.provider}' is not authorized`,
+						return { id, ok, configured, sources };
+					}),
 				);
-			}
-			for (const [scope, entries] of [
-				['global', globalAgents],
-				['local', localAgents],
-			] as const) {
-				for (const [name, entry] of Object.entries(entries)) {
-					if (
-						entry &&
-						typeof entry === 'object' &&
-						Object.hasOwn(entry, 'tools') &&
-						!Array.isArray((entry as { tools?: unknown }).tools)
-					) {
-						issues.push(`${scope}:${name} tools field must be an array`);
+
+				const defaults = {
+					agent: cfg.defaults.agent,
+					provider: cfg.defaults.provider,
+					model: cfg.defaults.model,
+					providerAuthorized: await isProviderAuthorized(
+						cfg,
+						cfg.defaults.provider,
+					),
+				};
+
+				const globalAgentsPath = getGlobalAgentsJsonPath();
+				const localAgentsPath = `${projectRoot}/.otto/agents.json`;
+				const globalAgents =
+					(await readJsonSafe<Record<string, unknown>>(globalAgentsPath)) ?? {};
+				const localAgents =
+					(await readJsonSafe<Record<string, unknown>>(localAgentsPath)) ?? {};
+
+				const agents = {
+					globalPath: (await fileExists(globalAgentsPath))
+						? globalAgentsPath
+						: null,
+					localPath: (await fileExists(localAgentsPath))
+						? localAgentsPath
+						: null,
+					globalNames: Object.keys(globalAgents).sort(),
+					localNames: Object.keys(localAgents).sort(),
+				};
+
+				const defaultToolNames = Array.from(
+					new Set([
+						...buildFsTools(projectRoot).map((t) => t.name),
+						...buildGitTools(projectRoot).map((t) => t.name),
+						'finish',
+					]),
+				).sort();
+
+				const globalToolsDir = getGlobalToolsDir();
+				const localToolsDir = `${projectRoot}/.otto/tools`;
+				const globalToolNames = await listDir(globalToolsDir);
+				const localToolNames = await listDir(localToolsDir);
+
+				const tools = {
+					defaultNames: defaultToolNames,
+					globalPath: globalToolNames.length ? globalToolsDir : null,
+					globalNames: globalToolNames.sort(),
+					localPath: localToolNames.length ? localToolsDir : null,
+					localNames: localToolNames.sort(),
+					effectiveNames: Array.from(
+						new Set([
+							...defaultToolNames,
+							...globalToolNames,
+							...localToolNames,
+						]),
+					).sort(),
+				};
+
+				const globalCommandsDir = getGlobalCommandsDir();
+				const localCommandsDir = `${projectRoot}/.otto/commands`;
+				const globalCommandFiles = await listDir(globalCommandsDir);
+				const localCommandFiles = await listDir(localCommandsDir);
+
+				const commands = {
+					globalPath: globalCommandFiles.length ? globalCommandsDir : null,
+					globalNames: globalCommandFiles
+						.filter((f) => f.endsWith('.json'))
+						.map((f) => f.replace(/\.json$/, ''))
+						.sort(),
+					localPath: localCommandFiles.length ? localCommandsDir : null,
+					localNames: localCommandFiles
+						.filter((f) => f.endsWith('.json'))
+						.map((f) => f.replace(/\.json$/, ''))
+						.sort(),
+				};
+
+				const issues: string[] = [];
+				if (!defaults.providerAuthorized) {
+					issues.push(
+						`Default provider '${defaults.provider}' is not authorized`,
+					);
+				}
+				for (const [scope, entries] of [
+					['global', globalAgents],
+					['local', localAgents],
+				] as const) {
+					for (const [name, entry] of Object.entries(entries)) {
+						if (
+							entry &&
+							typeof entry === 'object' &&
+							Object.hasOwn(entry, 'tools') &&
+							!Array.isArray((entry as { tools?: unknown }).tools)
+						) {
+							issues.push(`${scope}:${name} tools field must be an array`);
+						}
 					}
 				}
-			}
 
-			const suggestions: string[] = [];
-			if (!defaults.providerAuthorized) {
-				suggestions.push(
-					`Run: otto auth login ${defaults.provider} — or switch defaults with: otto models`,
+				const suggestions: string[] = [];
+				if (!defaults.providerAuthorized) {
+					suggestions.push(
+						`Run: otto auth login ${defaults.provider} — or switch defaults with: otto models`,
+					);
+				}
+				if (issues.length) {
+					suggestions.push('Review agents.json fields.');
+				}
+
+				return c.json({
+					providers,
+					defaults,
+					agents,
+					tools,
+					commands,
+					issues,
+					suggestions,
+					globalAuthPath: getSecureAuthPath(),
+				});
+			} catch (error) {
+				logger.error('Failed to run doctor', error);
+				const errorResponse = serializeError(error);
+				return c.json(
+					errorResponse,
+					(errorResponse.error.status || 500) as 500,
 				);
 			}
-			if (issues.length) {
-				suggestions.push('Review agents.json fields.');
-			}
-
-			return c.json({
-				providers,
-				defaults,
-				agents,
-				tools,
-				commands,
-				issues,
-				suggestions,
-				globalAuthPath: getSecureAuthPath(),
-			});
-		} catch (error) {
-			logger.error('Failed to run doctor', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, (errorResponse.error.status || 500) as 500);
-		}
-	});
+		},
+	);
 }

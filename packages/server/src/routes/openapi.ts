@@ -1,6 +1,29 @@
-import type { Hono } from 'hono';
-import { getOpenAPISpec } from '../openapi/spec.ts';
+import type { OpenAPIHono } from '@hono/zod-openapi';
+import { registerOpenApiComponents } from '../openapi/register.ts';
 
-export function registerOpenApiRoute(app: Hono) {
-	app.get('/openapi.json', (c) => c.json(getOpenAPISpec()));
+export function registerOpenApiRoute(app: OpenAPIHono) {
+	registerOpenApiComponents(app);
+	app.doc('/openapi.json', {
+		openapi: '3.0.3',
+		info: {
+			title: 'otto server API',
+			version: '0.1.0',
+			description:
+				'Server-side API for otto sessions, messages, and streaming events. All AI work runs on the server. Streaming uses SSE.',
+		},
+		tags: [
+			{ name: 'sessions' },
+			{ name: 'messages' },
+			{ name: 'stream' },
+			{ name: 'ask' },
+			{ name: 'config' },
+			{ name: 'files' },
+			{ name: 'git' },
+			{ name: 'terminals' },
+			{ name: 'ottorouter' },
+			{ name: 'auth' },
+			{ name: 'mcp' },
+			{ name: 'tunnel' },
+		],
+	});
 }

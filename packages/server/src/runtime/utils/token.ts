@@ -1,4 +1,4 @@
-import { catalog } from '@ottocode/sdk';
+import { catalog, isBuiltInProviderId } from '@ottocode/sdk';
 import type { ProviderName } from '../provider/index.ts';
 
 /**
@@ -13,11 +13,16 @@ export function getMaxOutputTokens(
 		return undefined;
 	}
 	try {
+		if (!isBuiltInProviderId(provider)) {
+			return undefined;
+		}
 		const providerCatalog = catalog[provider];
 		if (!providerCatalog) {
 			return undefined;
 		}
-		const modelInfo = providerCatalog.models.find((m) => m.id === modelId);
+		const modelInfo = providerCatalog.models.find(
+			(m: { id: string }) => m.id === modelId,
+		);
 		if (!modelInfo) {
 			return undefined;
 		}
