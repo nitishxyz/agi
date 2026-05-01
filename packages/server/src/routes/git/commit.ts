@@ -20,127 +20,332 @@ import {
 	adaptSimpleCall,
 } from '../../runtime/provider/oauth-adapter.ts';
 import { appendCoAuthorTrailer } from '@ottocode/sdk';
+import { openApiRoute } from '../../openapi/route.ts';
 
 const execFileAsync = promisify(execFile);
 
 export function registerCommitRoutes(app: Hono) {
-	app.post('/v1/git/commit', async (c) => {
-		try {
-			const body = await c.req.json();
-			const { message, project } = gitCommitSchema.parse(body);
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/git/commit',
+			tags: ['git'],
+			operationId: 'commitChanges',
+			summary: 'Commit staged changes',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								project: {
+									type: 'string',
+								},
+								message: {
+									type: 'string',
+									minLength: 1,
+								},
+							},
+							required: ['message'],
+						},
+					},
+				},
+			},
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: {
+										type: 'string',
+										enum: ['ok'],
+									},
+									data: {
+										$ref: '#/components/schemas/GitCommit',
+									},
+								},
+								required: ['status', 'data'],
+							},
+						},
+					},
+				},
+				'400': {
+					description: 'Error',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: {
+										type: 'string',
+										enum: ['error'],
+									},
+									error: {
+										type: 'string',
+									},
+									code: {
+										type: 'string',
+									},
+								},
+								required: ['status', 'error'],
+							},
+						},
+					},
+				},
+				'500': {
+					description: 'Error',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: {
+										type: 'string',
+										enum: ['error'],
+									},
+									error: {
+										type: 'string',
+									},
+									code: {
+										type: 'string',
+									},
+								},
+								required: ['status', 'error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const body = await c.req.json();
+				const { message, project } = gitCommitSchema.parse(body);
 
-			const requestedPath = project || process.cwd();
+				const requestedPath = project || process.cwd();
 
-			const validation = await validateAndGetGitRoot(requestedPath);
-			if ('error' in validation) {
-				return c.json(
-					{ status: 'error', error: validation.error, code: validation.code },
-					400,
+				const validation = await validateAndGetGitRoot(requestedPath);
+				if ('error' in validation) {
+					return c.json(
+						{ status: 'error', error: validation.error, code: validation.code },
+						400,
+					);
+				}
+
+				const { gitRoot } = validation;
+
+				const fullMessage = appendCoAuthorTrailer(message);
+				const { stdout } = await execFileAsync(
+					'git',
+					['commit', '-m', fullMessage],
+					{
+						cwd: gitRoot,
+					},
 				);
-			}
 
-			const { gitRoot } = validation;
-
-			const fullMessage = appendCoAuthorTrailer(message);
-			const { stdout } = await execFileAsync(
-				'git',
-				['commit', '-m', fullMessage],
-				{
-					cwd: gitRoot,
-				},
-			);
-
-			return c.json({
-				status: 'ok',
-				data: {
-					message: stdout.trim(),
-				},
-			});
-		} catch (error) {
-			return c.json(
-				{
-					status: 'error',
-					error: error instanceof Error ? error.message : 'Failed to commit',
-				},
-				500,
-			);
-		}
-	});
-
-	app.post('/v1/git/generate-commit-message', async (c) => {
-		try {
-			const body = await c.req.json();
-			const { project, sessionId } = gitGenerateCommitMessageSchema.parse(body);
-
-			const requestedPath = project || process.cwd();
-
-			const validation = await validateAndGetGitRoot(requestedPath);
-			if ('error' in validation) {
-				return c.json(
-					{ status: 'error', error: validation.error, code: validation.code },
-					400,
-				);
-			}
-
-			const { gitRoot } = validation;
-
-			const { stdout: diff } = await execFileAsync(
-				'git',
-				['diff', '--cached'],
-				{
-					cwd: gitRoot,
-				},
-			);
-
-			if (!diff.trim()) {
+				return c.json({
+					status: 'ok',
+					data: {
+						message: stdout.trim(),
+					},
+				});
+			} catch (error) {
 				return c.json(
 					{
 						status: 'error',
-						error: 'No staged changes to generate message from',
+						error: error instanceof Error ? error.message : 'Failed to commit',
 					},
-					400,
+					500,
 				);
 			}
+		},
+	);
 
-			const { stdout: statusOutput } = await execFileAsync(
-				'git',
-				['status', '--porcelain=v2'],
-				{ cwd: gitRoot },
-			);
-			const { staged } = parseGitStatus(statusOutput, gitRoot);
-			const fileList = staged.map((f) => `${f.status}: ${f.path}`).join('\n');
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/git/generate-commit-message',
+			tags: ['git'],
+			operationId: 'generateCommitMessage',
+			summary: 'Generate AI-powered commit message',
+			description:
+				'Uses AI to generate a commit message based on staged changes',
+			requestBody: {
+				required: false,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								project: {
+									type: 'string',
+								},
+								sessionId: {
+									type: 'string',
+									description: 'Session ID to use session provider',
+								},
+							},
+						},
+					},
+				},
+			},
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: {
+										type: 'string',
+										enum: ['ok'],
+									},
+									data: {
+										type: 'object',
+										properties: {
+											message: {
+												type: 'string',
+											},
+										},
+										required: ['message'],
+									},
+								},
+								required: ['status', 'data'],
+							},
+						},
+					},
+				},
+				'400': {
+					description: 'Error',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: {
+										type: 'string',
+										enum: ['error'],
+									},
+									error: {
+										type: 'string',
+									},
+									code: {
+										type: 'string',
+									},
+								},
+								required: ['status', 'error'],
+							},
+						},
+					},
+				},
+				'500': {
+					description: 'Error',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: {
+										type: 'string',
+										enum: ['error'],
+									},
+									error: {
+										type: 'string',
+									},
+									code: {
+										type: 'string',
+									},
+								},
+								required: ['status', 'error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const body = await c.req.json();
+				const { project, sessionId } =
+					gitGenerateCommitMessageSchema.parse(body);
 
-			const config = await loadConfig();
+				const requestedPath = project || process.cwd();
 
-			let provider = (config.defaults?.provider || 'anthropic') as ProviderId;
-			let currentModel = config.defaults?.model ?? 'claude-3-5-sonnet-20241022';
-
-			if (sessionId) {
-				const db = await getDb();
-				const [session] = await db
-					.select({ provider: sessions.provider, model: sessions.model })
-					.from(sessions)
-					.where(eq(sessions.id, sessionId));
-				if (session?.provider) {
-					provider = session.provider as ProviderId;
+				const validation = await validateAndGetGitRoot(requestedPath);
+				if ('error' in validation) {
+					return c.json(
+						{ status: 'error', error: validation.error, code: validation.code },
+						400,
+					);
 				}
-				if (session?.model) {
-					currentModel = session.model;
+
+				const { gitRoot } = validation;
+
+				const { stdout: diff } = await execFileAsync(
+					'git',
+					['diff', '--cached'],
+					{
+						cwd: gitRoot,
+					},
+				);
+
+				if (!diff.trim()) {
+					return c.json(
+						{
+							status: 'error',
+							error: 'No staged changes to generate message from',
+						},
+						400,
+					);
 				}
-			}
 
-			const auth = await getAuth(provider, config.projectRoot);
-			const oauth = detectOAuth(provider, auth);
-			const providerDefinition = getProviderDefinition(config, provider);
+				const { stdout: statusOutput } = await execFileAsync(
+					'git',
+					['status', '--porcelain=v2'],
+					{ cwd: gitRoot },
+				);
+				const { staged } = parseGitStatus(statusOutput, gitRoot);
+				const fileList = staged.map((f) => `${f.status}: ${f.path}`).join('\n');
 
-			const modelId =
-				providerDefinition?.source === 'custom' ||
-				providerDefinition?.compatibility === 'ollama'
-					? currentModel
-					: (getFastModelForAuth(provider, auth?.type) ?? currentModel);
-			const model = await resolveModel(provider, modelId, config);
+				const config = await loadConfig();
 
-			const userPrompt = `Generate a commit message for these git changes.
+				let provider = (config.defaults?.provider || 'anthropic') as ProviderId;
+				let currentModel =
+					config.defaults?.model ?? 'claude-3-5-sonnet-20241022';
+
+				if (sessionId) {
+					const db = await getDb();
+					const [session] = await db
+						.select({ provider: sessions.provider, model: sessions.model })
+						.from(sessions)
+						.where(eq(sessions.id, sessionId));
+					if (session?.provider) {
+						provider = session.provider as ProviderId;
+					}
+					if (session?.model) {
+						currentModel = session.model;
+					}
+				}
+
+				const auth = await getAuth(provider, config.projectRoot);
+				const oauth = detectOAuth(provider, auth);
+				const providerDefinition = getProviderDefinition(config, provider);
+
+				const modelId =
+					providerDefinition?.source === 'custom' ||
+					providerDefinition?.compatibility === 'ollama'
+						? currentModel
+						: (getFastModelForAuth(provider, auth?.type) ?? currentModel);
+				const model = await resolveModel(provider, modelId, config);
+
+				const userPrompt = `Generate a commit message for these git changes.
 
 Staged files:
 ${fileList}
@@ -168,56 +373,57 @@ refactor(auth): return success status from login functions
 
 Commit message:`;
 
-			const commitInstructions =
-				'You are a helpful assistant that generates accurate git commit messages based on the actual diff content.';
+				const commitInstructions =
+					'You are a helpful assistant that generates accurate git commit messages based on the actual diff content.';
 
-			const adapted = adaptSimpleCall(oauth, {
-				instructions: commitInstructions,
-				userContent: userPrompt,
-				maxOutputTokens: 500,
-			});
+				const adapted = adaptSimpleCall(oauth, {
+					instructions: commitInstructions,
+					userContent: userPrompt,
+					maxOutputTokens: 500,
+				});
 
-			if (adapted.forceStream) {
-				const result = streamText({
+				if (adapted.forceStream) {
+					const result = streamText({
+						model,
+						system: adapted.system,
+						messages: adapted.messages,
+						providerOptions: adapted.providerOptions,
+					});
+					let text = '';
+					for await (const chunk of result.textStream) {
+						text += chunk;
+					}
+					const message = text.trim();
+					return c.json({ status: 'ok', data: { message } });
+				}
+
+				const { text } = await generateText({
 					model,
 					system: adapted.system,
 					messages: adapted.messages,
-					providerOptions: adapted.providerOptions,
+					maxOutputTokens: adapted.maxOutputTokens,
 				});
-				let text = '';
-				for await (const chunk of result.textStream) {
-					text += chunk;
-				}
+
 				const message = text.trim();
-				return c.json({ status: 'ok', data: { message } });
+
+				return c.json({
+					status: 'ok',
+					data: {
+						message,
+					},
+				});
+			} catch (error) {
+				return c.json(
+					{
+						status: 'error',
+						error:
+							error instanceof Error
+								? error.message
+								: 'Failed to generate commit message',
+					},
+					500,
+				);
 			}
-
-			const { text } = await generateText({
-				model,
-				system: adapted.system,
-				messages: adapted.messages,
-				maxOutputTokens: adapted.maxOutputTokens,
-			});
-
-			const message = text.trim();
-
-			return c.json({
-				status: 'ok',
-				data: {
-					message,
-				},
-			});
-		} catch (error) {
-			return c.json(
-				{
-					status: 'error',
-					error:
-						error instanceof Error
-							? error.message
-							: 'Failed to generate commit message',
-				},
-				500,
-			);
-		}
-	});
+		},
+	);
 }

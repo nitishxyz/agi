@@ -26,6 +26,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { logger } from '@ottocode/sdk';
 import { serializeError } from '../runtime/errors/api-error.ts';
 import { getProviderDetails } from './config/utils.ts';
+import { openApiRoute } from '../openapi/route.ts';
 
 const oauthVerifiers = new Map<
 	string,
@@ -218,397 +219,980 @@ setInterval(() => {
 }, 60 * 1000);
 
 export function registerAuthRoutes(app: Hono) {
-	app.get('/v1/auth/status', async (c) => {
-		try {
-			const projectRoot = process.cwd();
-			const auth = await getAllAuth(projectRoot);
-			const cfg = await loadConfig(projectRoot);
-			const onboardingComplete = await getOnboardingComplete(projectRoot);
-			const ottorouterWallet = await getOttoRouterWallet(projectRoot);
-			const ghImportCapability = getGhImportCapability();
-
-			const providers: Record<
-				string,
-				{
-					configured: boolean;
-					type?: 'api' | 'oauth' | 'wallet';
-					label: string;
-					supportsOAuth: boolean;
-					supportsToken?: boolean;
-					supportsGhImport?: boolean;
-					custom?: boolean;
-					modelCount: number;
-					costRange?: { min: number; max: number };
-				}
-			> = {};
-
-			for (const [id, entry] of Object.entries(catalog)) {
-				const providerAuth = auth[id as ProviderId];
-				const models = entry.models || [];
-				const costs = models
-					.map((m) => m.cost?.input)
-					.filter((c): c is number => c !== undefined);
-
-				providers[id] = {
-					configured: !!providerAuth,
-					type: providerAuth?.type,
-					label: entry.label || id,
-					supportsOAuth:
-						id === 'anthropic' || id === 'openai' || id === 'copilot',
-					supportsToken: id === 'copilot',
-					supportsGhImport:
-						id === 'copilot' ? ghImportCapability.available : false,
-					modelCount: models.length,
-					costRange:
-						costs.length > 0
-							? {
-									min: Math.min(...costs),
-									max: Math.max(...costs),
-								}
-							: undefined,
-				};
-			}
-
-			const providerDetails = await getProviderDetails(undefined, cfg);
-			for (const detail of providerDetails) {
-				if (!detail.custom || providers[detail.id]) continue;
-				providers[detail.id] = {
-					configured: detail.authorized,
-					type: detail.authType,
-					label: detail.label,
-					supportsOAuth: false,
-					custom: true,
-					modelCount: detail.modelCount,
-				};
-			}
-
-			return c.json({
-				onboardingComplete,
-				ottorouter: ottorouterWallet
-					? {
-							configured: true,
-							publicKey: ottorouterWallet.publicKey,
-						}
-					: {
-							configured: false,
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/auth/status',
+			tags: ['auth'],
+			operationId: 'getAuthStatus',
+			summary: 'Get auth status for all providers',
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									onboardingComplete: {
+										type: 'boolean',
+									},
+									ottorouter: {
+										type: 'object',
+										properties: {
+											configured: {
+												type: 'boolean',
+											},
+											publicKey: {
+												type: 'string',
+											},
+										},
+										required: ['configured'],
+									},
+									providers: {
+										type: 'object',
+										additionalProperties: {
+											type: 'object',
+											properties: {
+												configured: {
+													type: 'boolean',
+												},
+												type: {
+													type: 'string',
+													enum: ['api', 'oauth', 'wallet'],
+												},
+												label: {
+													type: 'string',
+												},
+												supportsOAuth: {
+													type: 'boolean',
+												},
+												supportsToken: {
+													type: 'boolean',
+												},
+												supportsGhImport: {
+													type: 'boolean',
+												},
+												modelCount: {
+													type: 'integer',
+												},
+												costRange: {
+													type: 'object',
+													nullable: true,
+													properties: {
+														min: {
+															type: 'number',
+														},
+														max: {
+															type: 'number',
+														},
+													},
+													required: ['min', 'max'],
+												},
+											},
+											required: [
+												'configured',
+												'label',
+												'supportsOAuth',
+												'modelCount',
+											],
+										},
+									},
+									defaults: {
+										type: 'object',
+										properties: {
+											agent: {
+												type: 'string',
+											},
+											provider: {
+												type: 'string',
+											},
+											model: {
+												type: 'string',
+											},
+										},
+									},
+								},
+								required: ['onboardingComplete', 'ottorouter', 'providers'],
+							},
 						},
-				providers,
-				defaults: cfg.defaults,
-			});
-		} catch (error) {
-			logger.error('Failed to get auth status', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, errorResponse.error.status || 500);
-		}
-	});
-
-	app.post('/v1/auth/ottorouter/setup', async (c) => {
-		try {
-			const projectRoot = process.cwd();
-			const existing = await getOttoRouterWallet(projectRoot);
-			const wallet = await ensureOttoRouterWallet(projectRoot);
-
-			return c.json({
-				success: true,
-				publicKey: wallet.publicKey,
-				isNew: !existing,
-			});
-		} catch (error) {
-			logger.error('Failed to setup OttoRouter wallet', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, errorResponse.error.status || 500);
-		}
-	});
-
-	app.post('/v1/auth/ottorouter/import', async (c) => {
-		try {
-			const { privateKey } = await c.req.json<{ privateKey: string }>();
-
-			if (!privateKey) {
-				return c.json({ error: 'Private key required' }, 400);
-			}
-
+					},
+				},
+			},
+		},
+		async (c) => {
 			try {
-				const wallet = importWallet(privateKey);
-				await setAuth(
-					'ottorouter',
-					{ type: 'wallet', secret: privateKey },
-					undefined,
-					'global',
-				);
+				const projectRoot = process.cwd();
+				const auth = await getAllAuth(projectRoot);
+				const cfg = await loadConfig(projectRoot);
+				const onboardingComplete = await getOnboardingComplete(projectRoot);
+				const ottorouterWallet = await getOttoRouterWallet(projectRoot);
+				const ghImportCapability = getGhImportCapability();
+
+				const providers: Record<
+					string,
+					{
+						configured: boolean;
+						type?: 'api' | 'oauth' | 'wallet';
+						label: string;
+						supportsOAuth: boolean;
+						supportsToken?: boolean;
+						supportsGhImport?: boolean;
+						custom?: boolean;
+						modelCount: number;
+						costRange?: { min: number; max: number };
+					}
+				> = {};
+
+				for (const [id, entry] of Object.entries(catalog)) {
+					const providerAuth = auth[id as ProviderId];
+					const models = entry.models || [];
+					const costs = models
+						.map((m) => m.cost?.input)
+						.filter((c): c is number => c !== undefined);
+
+					providers[id] = {
+						configured: !!providerAuth,
+						type: providerAuth?.type,
+						label: entry.label || id,
+						supportsOAuth:
+							id === 'anthropic' || id === 'openai' || id === 'copilot',
+						supportsToken: id === 'copilot',
+						supportsGhImport:
+							id === 'copilot' ? ghImportCapability.available : false,
+						modelCount: models.length,
+						costRange:
+							costs.length > 0
+								? {
+										min: Math.min(...costs),
+										max: Math.max(...costs),
+									}
+								: undefined,
+					};
+				}
+
+				const providerDetails = await getProviderDetails(undefined, cfg);
+				for (const detail of providerDetails) {
+					if (!detail.custom || providers[detail.id]) continue;
+					providers[detail.id] = {
+						configured: detail.authorized,
+						type: detail.authType,
+						label: detail.label,
+						supportsOAuth: false,
+						custom: true,
+						modelCount: detail.modelCount,
+					};
+				}
+
+				return c.json({
+					onboardingComplete,
+					ottorouter: ottorouterWallet
+						? {
+								configured: true,
+								publicKey: ottorouterWallet.publicKey,
+							}
+						: {
+								configured: false,
+							},
+					providers,
+					defaults: cfg.defaults,
+				});
+			} catch (error) {
+				logger.error('Failed to get auth status', error);
+				const errorResponse = serializeError(error);
+				return c.json(errorResponse, errorResponse.error.status || 500);
+			}
+		},
+	);
+
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/auth/ottorouter/setup',
+			tags: ['auth'],
+			operationId: 'setupOttoRouterWallet',
+			summary: 'Setup or ensure OttoRouter wallet',
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+									},
+									publicKey: {
+										type: 'string',
+									},
+									isNew: {
+										type: 'boolean',
+									},
+								},
+								required: ['success', 'publicKey', 'isNew'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const projectRoot = process.cwd();
+				const existing = await getOttoRouterWallet(projectRoot);
+				const wallet = await ensureOttoRouterWallet(projectRoot);
 
 				return c.json({
 					success: true,
 					publicKey: wallet.publicKey,
+					isNew: !existing,
 				});
-			} catch {
-				return c.json({ error: 'Invalid private key format' }, 400);
+			} catch (error) {
+				logger.error('Failed to setup OttoRouter wallet', error);
+				const errorResponse = serializeError(error);
+				return c.json(errorResponse, errorResponse.error.status || 500);
 			}
-		} catch (error) {
-			logger.error('Failed to import OttoRouter wallet', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, errorResponse.error.status || 500);
-		}
-	});
+		},
+	);
 
-	app.get('/v1/auth/ottorouter/export', async (c) => {
-		try {
-			const projectRoot = process.cwd();
-			const wallet = await getOttoRouterWallet(projectRoot);
-
-			if (!wallet) {
-				return c.json({ error: 'OttoRouter wallet not configured' }, 404);
-			}
-
-			return c.json({
-				success: true,
-				publicKey: wallet.publicKey,
-				privateKey: wallet.privateKey,
-			});
-		} catch (error) {
-			logger.error('Failed to export OttoRouter wallet', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, errorResponse.error.status || 500);
-		}
-	});
-
-	app.post('/v1/auth/:provider', async (c) => {
-		try {
-			const provider = c.req.param('provider') as ProviderId;
-			const { apiKey } = await c.req.json<{ apiKey: string }>();
-
-			if (!catalog[provider]) {
-				return c.json({ error: 'Unknown provider' }, 400);
-			}
-
-			if (!apiKey) {
-				return c.json({ error: 'API key required' }, 400);
-			}
-
-			await setAuth(
-				provider,
-				{ type: 'api', key: apiKey },
-				undefined,
-				'global',
-			);
-
-			return c.json({ success: true, provider });
-		} catch (error) {
-			logger.error('Failed to add provider', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, errorResponse.error.status || 500);
-		}
-	});
-
-	app.post('/v1/auth/:provider/oauth/url', async (c) => {
-		try {
-			const provider = c.req.param('provider');
-			const body = await c.req.json<{ mode?: string }>().catch(() => undefined);
-			const mode: 'max' | 'console' =
-				body?.mode === 'console' ? 'console' : 'max';
-
-			let url: string;
-			let verifier: string;
-
-			if (provider === 'anthropic') {
-				const result = await authorize(mode);
-				url = result.url;
-				verifier = result.verifier;
-			} else if (provider === 'openai') {
-				return c.json(
-					{
-						error:
-							'OpenAI OAuth requires localhost callback. Use the redirect flow instead.',
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/auth/ottorouter/import',
+			tags: ['auth'],
+			operationId: 'importOttoRouterWallet',
+			summary: 'Import OttoRouter wallet from private key',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								privateKey: {
+									type: 'string',
+								},
+							},
+							required: ['privateKey'],
+						},
 					},
-					400,
-				);
-			} else {
-				return c.json(
-					{
-						error: `OAuth not supported for provider: ${provider}. Copilot uses device flow — use /v1/auth/copilot/device/start instead.`,
+				},
+			},
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+									},
+									publicKey: {
+										type: 'string',
+									},
+								},
+								required: ['success', 'publicKey'],
+							},
+						},
 					},
-					400,
-				);
+				},
+				'400': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const { privateKey } = await c.req.json<{ privateKey: string }>();
+
+				if (!privateKey) {
+					return c.json({ error: 'Private key required' }, 400);
+				}
+
+				try {
+					const wallet = importWallet(privateKey);
+					await setAuth(
+						'ottorouter',
+						{ type: 'wallet', secret: privateKey },
+						undefined,
+						'global',
+					);
+
+					return c.json({
+						success: true,
+						publicKey: wallet.publicKey,
+					});
+				} catch {
+					return c.json({ error: 'Invalid private key format' }, 400);
+				}
+			} catch (error) {
+				logger.error('Failed to import OttoRouter wallet', error);
+				const errorResponse = serializeError(error);
+				return c.json(errorResponse, errorResponse.error.status || 500);
 			}
+		},
+	);
 
-			const sessionId = crypto.randomUUID();
-			oauthVerifiers.set(sessionId, {
-				verifier,
-				provider,
-				createdAt: Date.now(),
-				callbackUrl: '',
-			});
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/auth/ottorouter/export',
+			tags: ['auth'],
+			operationId: 'exportOttoRouterWallet',
+			summary: 'Export OttoRouter wallet private key',
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+									},
+									publicKey: {
+										type: 'string',
+									},
+									privateKey: {
+										type: 'string',
+									},
+								},
+								required: ['success', 'publicKey', 'privateKey'],
+							},
+						},
+					},
+				},
+				'404': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const projectRoot = process.cwd();
+				const wallet = await getOttoRouterWallet(projectRoot);
 
-			return c.json({ url, sessionId, provider });
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : 'OAuth initialization failed';
-			logger.error('OAuth URL generation failed', error);
-			return c.json({ error: message }, 500);
-		}
-	});
+				if (!wallet) {
+					return c.json({ error: 'OttoRouter wallet not configured' }, 404);
+				}
 
-	app.post('/v1/auth/:provider/oauth/exchange', async (c) => {
-		try {
-			const provider = c.req.param('provider');
-			const { code, sessionId } = await c.req.json<{
-				code: string;
-				sessionId: string;
-			}>();
-
-			if (!code || !sessionId) {
-				return c.json({ error: 'Code and sessionId required' }, 400);
+				return c.json({
+					success: true,
+					publicKey: wallet.publicKey,
+					privateKey: wallet.privateKey,
+				});
+			} catch (error) {
+				logger.error('Failed to export OttoRouter wallet', error);
+				const errorResponse = serializeError(error);
+				return c.json(errorResponse, errorResponse.error.status || 500);
 			}
+		},
+	);
 
-			if (!oauthVerifiers.has(sessionId)) {
-				return c.json({ error: 'Session expired or invalid' }, 400);
-			}
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/auth/{provider}',
+			tags: ['auth'],
+			operationId: 'addProviderApiKey',
+			summary: 'Add API key for a provider',
+			parameters: [
+				{
+					in: 'path',
+					name: 'provider',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+				},
+			],
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								apiKey: {
+									type: 'string',
+								},
+							},
+							required: ['apiKey'],
+						},
+					},
+				},
+			},
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+									},
+									provider: {
+										type: 'string',
+									},
+								},
+								required: ['success', 'provider'],
+							},
+						},
+					},
+				},
+				'400': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const provider = c.req.param('provider') as ProviderId;
+				const { apiKey } = await c.req.json<{ apiKey: string }>();
 
-			const verifierEntry = oauthVerifiers.get(sessionId);
-			if (!verifierEntry) {
-				return c.json({ error: 'Session expired or invalid' }, 400);
-			}
-			const { verifier } = verifierEntry;
-			oauthVerifiers.delete(sessionId);
+				if (!catalog[provider]) {
+					return c.json({ error: 'Unknown provider' }, 400);
+				}
 
-			if (provider === 'anthropic') {
-				const tokens = await exchange(code, verifier);
+				if (!apiKey) {
+					return c.json({ error: 'API key required' }, 400);
+				}
+
 				await setAuth(
-					'anthropic',
-					{
-						type: 'oauth',
-						refresh: tokens.refresh,
-						access: tokens.access,
-						expires: tokens.expires,
-					},
+					provider,
+					{ type: 'api', key: apiKey },
 					undefined,
 					'global',
 				);
-			} else if (provider === 'openai') {
-				return c.json({ error: 'Use redirect flow for OpenAI' }, 400);
-			} else {
-				return c.json({ error: 'Unknown provider' }, 400);
+
+				return c.json({ success: true, provider });
+			} catch (error) {
+				logger.error('Failed to add provider', error);
+				const errorResponse = serializeError(error);
+				return c.json(errorResponse, errorResponse.error.status || 500);
 			}
+		},
+	);
 
-			return c.json({ success: true, provider });
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : 'Token exchange failed';
-			logger.error('OAuth exchange failed', error);
-			return c.json({ error: message }, 500);
-		}
-	});
-
-	app.get('/v1/auth/:provider/oauth/start', async (c) => {
-		try {
-			const provider = c.req.param('provider');
-			const mode = c.req.query('mode') || 'max';
-			const host = c.req.header('host') || 'localhost:3000';
-			const protocol = c.req.header('x-forwarded-proto') || 'http';
-
-			let url: string;
-			let verifier: string;
-			let callbackUrl = '';
-
-			if (provider === 'anthropic') {
-				callbackUrl = `${protocol}://${host}/v1/auth/${provider}/oauth/callback`;
-				const result = authorizeWeb(mode as 'max' | 'console', callbackUrl);
-				url = result.url;
-				verifier = result.verifier;
-			} else if (provider === 'openai') {
-				callbackUrl = `${protocol}://${host}/v1/auth/${provider}/oauth/callback`;
-				const result = authorizeOpenAIWeb(callbackUrl);
-				url = result.url;
-				verifier = result.verifier;
-			} else {
-				return c.json({ error: 'OAuth not supported for this provider' }, 400);
-			}
-
-			const sessionId = crypto.randomUUID();
-			oauthVerifiers.set(sessionId, {
-				verifier,
-				provider,
-				createdAt: Date.now(),
-				callbackUrl,
-			});
-
-			c.header(
-				'Set-Cookie',
-				`oauth_session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
-			);
-
-			return c.redirect(url);
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : 'OAuth initialization failed';
-			logger.error('OAuth start failed', error);
-			return c.json({ error: message }, 500);
-		}
-	});
-
-	app.get('/v1/auth/:provider/oauth/callback', async (c) => {
-		try {
-			const provider = c.req.param('provider');
-			const code = c.req.query('code');
-			const fragment = c.req.query('fragment');
-
-			const cookies = c.req.header('Cookie') || '';
-			const sessionMatch = cookies.match(/oauth_session=([^;]+)/);
-			const sessionId = sessionMatch?.[1];
-
-			if (!sessionId || !oauthVerifiers.has(sessionId)) {
-				return c.html(
-					'<html><body><h1>Session expired</h1><p>Please close this window and try again.</p><script>setTimeout(() => window.close(), 3000);</script></body></html>',
-				);
-			}
-
-			const callbackEntry = oauthVerifiers.get(sessionId);
-			if (!callbackEntry) {
-				return c.html(
-					'<html><body><h1>Session expired</h1><p>Please close this window and try again.</p><script>setTimeout(() => window.close(), 3000);</script></body></html>',
-				);
-			}
-			const { verifier, callbackUrl } = callbackEntry;
-			oauthVerifiers.delete(sessionId);
-
-			if (provider === 'anthropic') {
-				const fullCode = fragment ? `${code}#${fragment}` : (code ?? '');
-				const tokens = await exchangeWeb(fullCode, verifier, callbackUrl);
-
-				await setAuth(
-					'anthropic',
-					{
-						type: 'oauth',
-						refresh: tokens.refresh,
-						access: tokens.access,
-						expires: tokens.expires,
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/auth/{provider}/oauth/url',
+			tags: ['auth'],
+			operationId: 'getOAuthUrl',
+			summary: 'Get OAuth authorization URL',
+			parameters: [
+				{
+					in: 'path',
+					name: 'provider',
+					required: true,
+					schema: {
+						type: 'string',
 					},
-					undefined,
-					'global',
-				);
-			} else if (provider === 'openai') {
-				const tokens = await exchangeOpenAIWeb(
-					code ?? '',
+				},
+			],
+			requestBody: {
+				required: false,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								mode: {
+									type: 'string',
+									enum: ['max', 'console'],
+									default: 'max',
+								},
+							},
+						},
+					},
+				},
+			},
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									url: {
+										type: 'string',
+									},
+									sessionId: {
+										type: 'string',
+									},
+									provider: {
+										type: 'string',
+									},
+								},
+								required: ['url', 'sessionId', 'provider'],
+							},
+						},
+					},
+				},
+				'400': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const provider = c.req.param('provider');
+				const body = await c.req
+					.json<{ mode?: string }>()
+					.catch(() => undefined);
+				const mode: 'max' | 'console' =
+					body?.mode === 'console' ? 'console' : 'max';
+
+				let url: string;
+				let verifier: string;
+
+				if (provider === 'anthropic') {
+					const result = await authorize(mode);
+					url = result.url;
+					verifier = result.verifier;
+				} else if (provider === 'openai') {
+					return c.json(
+						{
+							error:
+								'OpenAI OAuth requires localhost callback. Use the redirect flow instead.',
+						},
+						400,
+					);
+				} else {
+					return c.json(
+						{
+							error: `OAuth not supported for provider: ${provider}. Copilot uses device flow — use /v1/auth/copilot/device/start instead.`,
+						},
+						400,
+					);
+				}
+
+				const sessionId = crypto.randomUUID();
+				oauthVerifiers.set(sessionId, {
 					verifier,
-					callbackUrl,
-				);
+					provider,
+					createdAt: Date.now(),
+					callbackUrl: '',
+				});
 
-				await setAuth(
-					'openai',
-					{
-						type: 'oauth',
-						refresh: tokens.refresh,
-						access: tokens.access,
-						expires: tokens.expires,
-						accountId: tokens.accountId,
-						idToken: tokens.idToken,
-					},
-					undefined,
-					'global',
-				);
+				return c.json({ url, sessionId, provider });
+			} catch (error) {
+				const message =
+					error instanceof Error
+						? error.message
+						: 'OAuth initialization failed';
+				logger.error('OAuth URL generation failed', error);
+				return c.json({ error: message }, 500);
 			}
+		},
+	);
 
-			return c.html(`
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/auth/{provider}/oauth/exchange',
+			tags: ['auth'],
+			operationId: 'exchangeOAuthCode',
+			summary: 'Exchange OAuth code for tokens',
+			parameters: [
+				{
+					in: 'path',
+					name: 'provider',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+				},
+			],
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								code: {
+									type: 'string',
+								},
+								sessionId: {
+									type: 'string',
+								},
+							},
+							required: ['code', 'sessionId'],
+						},
+					},
+				},
+			},
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+									},
+									provider: {
+										type: 'string',
+									},
+								},
+								required: ['success', 'provider'],
+							},
+						},
+					},
+				},
+				'400': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const provider = c.req.param('provider');
+				const { code, sessionId } = await c.req.json<{
+					code: string;
+					sessionId: string;
+				}>();
+
+				if (!code || !sessionId) {
+					return c.json({ error: 'Code and sessionId required' }, 400);
+				}
+
+				if (!oauthVerifiers.has(sessionId)) {
+					return c.json({ error: 'Session expired or invalid' }, 400);
+				}
+
+				const verifierEntry = oauthVerifiers.get(sessionId);
+				if (!verifierEntry) {
+					return c.json({ error: 'Session expired or invalid' }, 400);
+				}
+				const { verifier } = verifierEntry;
+				oauthVerifiers.delete(sessionId);
+
+				if (provider === 'anthropic') {
+					const tokens = await exchange(code, verifier);
+					await setAuth(
+						'anthropic',
+						{
+							type: 'oauth',
+							refresh: tokens.refresh,
+							access: tokens.access,
+							expires: tokens.expires,
+						},
+						undefined,
+						'global',
+					);
+				} else if (provider === 'openai') {
+					return c.json({ error: 'Use redirect flow for OpenAI' }, 400);
+				} else {
+					return c.json({ error: 'Unknown provider' }, 400);
+				}
+
+				return c.json({ success: true, provider });
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : 'Token exchange failed';
+				logger.error('OAuth exchange failed', error);
+				return c.json({ error: message }, 500);
+			}
+		},
+	);
+
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/auth/{provider}/oauth/start',
+			tags: ['auth'],
+			operationId: 'startOAuth',
+			summary: 'Start OAuth flow with redirect',
+			parameters: [
+				{
+					in: 'path',
+					name: 'provider',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+				},
+				{
+					in: 'query',
+					name: 'mode',
+					required: false,
+					schema: {
+						type: 'string',
+						enum: ['max', 'console'],
+						default: 'max',
+					},
+				},
+			],
+			responses: {
+				'302': {
+					description: 'Redirect to OAuth provider',
+				},
+				'400': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const provider = c.req.param('provider');
+				const mode = c.req.query('mode') || 'max';
+				const host = c.req.header('host') || 'localhost:3000';
+				const protocol = c.req.header('x-forwarded-proto') || 'http';
+
+				let url: string;
+				let verifier: string;
+				let callbackUrl = '';
+
+				if (provider === 'anthropic') {
+					callbackUrl = `${protocol}://${host}/v1/auth/${provider}/oauth/callback`;
+					const result = authorizeWeb(mode as 'max' | 'console', callbackUrl);
+					url = result.url;
+					verifier = result.verifier;
+				} else if (provider === 'openai') {
+					callbackUrl = `${protocol}://${host}/v1/auth/${provider}/oauth/callback`;
+					const result = authorizeOpenAIWeb(callbackUrl);
+					url = result.url;
+					verifier = result.verifier;
+				} else {
+					return c.json(
+						{ error: 'OAuth not supported for this provider' },
+						400,
+					);
+				}
+
+				const sessionId = crypto.randomUUID();
+				oauthVerifiers.set(sessionId, {
+					verifier,
+					provider,
+					createdAt: Date.now(),
+					callbackUrl,
+				});
+
+				c.header(
+					'Set-Cookie',
+					`oauth_session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
+				);
+
+				return c.redirect(url);
+			} catch (error) {
+				const message =
+					error instanceof Error
+						? error.message
+						: 'OAuth initialization failed';
+				logger.error('OAuth start failed', error);
+				return c.json({ error: message }, 500);
+			}
+		},
+	);
+
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/auth/{provider}/oauth/callback',
+			tags: ['auth'],
+			operationId: 'oauthCallback',
+			summary: 'OAuth callback handler',
+			parameters: [
+				{
+					in: 'path',
+					name: 'provider',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+				},
+				{
+					in: 'query',
+					name: 'code',
+					required: false,
+					schema: {
+						type: 'string',
+					},
+				},
+				{
+					in: 'query',
+					name: 'fragment',
+					required: false,
+					schema: {
+						type: 'string',
+					},
+				},
+			],
+			responses: {
+				'200': {
+					description: 'HTML response',
+					content: {
+						'text/html': {
+							schema: {
+								type: 'string',
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const provider = c.req.param('provider');
+				const code = c.req.query('code');
+				const fragment = c.req.query('fragment');
+
+				const cookies = c.req.header('Cookie') || '';
+				const sessionMatch = cookies.match(/oauth_session=([^;]+)/);
+				const sessionId = sessionMatch?.[1];
+
+				if (!sessionId || !oauthVerifiers.has(sessionId)) {
+					return c.html(
+						'<html><body><h1>Session expired</h1><p>Please close this window and try again.</p><script>setTimeout(() => window.close(), 3000);</script></body></html>',
+					);
+				}
+
+				const callbackEntry = oauthVerifiers.get(sessionId);
+				if (!callbackEntry) {
+					return c.html(
+						'<html><body><h1>Session expired</h1><p>Please close this window and try again.</p><script>setTimeout(() => window.close(), 3000);</script></body></html>',
+					);
+				}
+				const { verifier, callbackUrl } = callbackEntry;
+				oauthVerifiers.delete(sessionId);
+
+				if (provider === 'anthropic') {
+					const fullCode = fragment ? `${code}#${fragment}` : (code ?? '');
+					const tokens = await exchangeWeb(fullCode, verifier, callbackUrl);
+
+					await setAuth(
+						'anthropic',
+						{
+							type: 'oauth',
+							refresh: tokens.refresh,
+							access: tokens.access,
+							expires: tokens.expires,
+						},
+						undefined,
+						'global',
+					);
+				} else if (provider === 'openai') {
+					const tokens = await exchangeOpenAIWeb(
+						code ?? '',
+						verifier,
+						callbackUrl,
+					);
+
+					await setAuth(
+						'openai',
+						{
+							type: 'oauth',
+							refresh: tokens.refresh,
+							access: tokens.access,
+							expires: tokens.expires,
+							accountId: tokens.accountId,
+							idToken: tokens.idToken,
+						},
+						undefined,
+						'global',
+					);
+				}
+
+				return c.html(`
 				<html>
 					<head>
 						<title>Connected!</title>
@@ -653,11 +1237,11 @@ export function registerAuthRoutes(app: Hono) {
 					</body>
 				</html>
 			`);
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : 'Authentication failed';
-			logger.error('OAuth callback failed', error);
-			return c.html(`
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : 'Authentication failed';
+				logger.error('OAuth callback failed', error);
+				return c.html(`
 				<html>
 					<head>
 						<title>Error</title>
@@ -699,311 +1283,801 @@ export function registerAuthRoutes(app: Hono) {
 					</body>
 				</html>
 			`);
-		}
-	});
+			}
+		},
+	);
 
-	app.post('/v1/auth/copilot/device/start', async (c) => {
-		try {
-			const deviceData = await authorizeCopilot();
-			const sessionId = crypto.randomUUID();
-			copilotDeviceSessions.set(sessionId, {
-				deviceCode: deviceData.deviceCode,
-				interval: deviceData.interval,
-				provider: 'copilot',
-				createdAt: Date.now(),
-			});
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/auth/copilot/device/start',
+			tags: ['auth'],
+			operationId: 'startCopilotDeviceFlow',
+			summary: 'Start Copilot device flow authentication',
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									sessionId: {
+										type: 'string',
+									},
+									userCode: {
+										type: 'string',
+									},
+									verificationUri: {
+										type: 'string',
+									},
+									interval: {
+										type: 'integer',
+									},
+								},
+								required: [
+									'sessionId',
+									'userCode',
+									'verificationUri',
+									'interval',
+								],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const deviceData = await authorizeCopilot();
+				const sessionId = crypto.randomUUID();
+				copilotDeviceSessions.set(sessionId, {
+					deviceCode: deviceData.deviceCode,
+					interval: deviceData.interval,
+					provider: 'copilot',
+					createdAt: Date.now(),
+				});
+				return c.json({
+					sessionId,
+					userCode: deviceData.userCode,
+					verificationUri: deviceData.verificationUri,
+					interval: deviceData.interval,
+				});
+			} catch (error) {
+				const message =
+					error instanceof Error
+						? error.message
+						: 'Failed to start Copilot device flow';
+				logger.error('Copilot device flow start failed', error);
+				return c.json({ error: message }, 500);
+			}
+		},
+	);
+
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/auth/copilot/device/poll',
+			tags: ['auth'],
+			operationId: 'pollCopilotDeviceFlow',
+			summary: 'Poll Copilot device flow for completion',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								sessionId: {
+									type: 'string',
+								},
+							},
+							required: ['sessionId'],
+						},
+					},
+				},
+			},
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									status: {
+										type: 'string',
+										enum: ['complete', 'pending', 'error'],
+									},
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['status'],
+							},
+						},
+					},
+				},
+				'400': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const { sessionId } = await c.req.json<{ sessionId: string }>();
+				if (!sessionId || !copilotDeviceSessions.has(sessionId)) {
+					return c.json({ error: 'Session expired or invalid' }, 400);
+				}
+				const session = copilotDeviceSessions.get(sessionId);
+				if (!session) {
+					return c.json({ error: 'Session expired or invalid' }, 400);
+				}
+				const result = await pollForCopilotTokenOnce(session.deviceCode);
+				if (result.status === 'complete') {
+					copilotDeviceSessions.delete(sessionId);
+					await setAuth(
+						'copilot',
+						{
+							type: 'oauth',
+							refresh: result.accessToken,
+							access: result.accessToken,
+							expires: 0,
+						},
+						undefined,
+						'global',
+					);
+					return c.json({ status: 'complete' });
+				}
+				if (result.status === 'pending') {
+					return c.json({ status: 'pending' });
+				}
+				if (result.status === 'error') {
+					copilotDeviceSessions.delete(sessionId);
+					return c.json({ status: 'error', error: result.error });
+				}
+				return c.json({ status: 'pending' });
+			} catch (error) {
+				const message = error instanceof Error ? error.message : 'Poll failed';
+				logger.error('Copilot device poll failed', error);
+				return c.json({ error: message }, 500);
+			}
+		},
+	);
+
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/auth/copilot/methods',
+			tags: ['auth'],
+			operationId: 'getCopilotAuthMethods',
+			summary: 'Get available Copilot auth methods',
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									oauth: {
+										type: 'boolean',
+									},
+									token: {
+										type: 'boolean',
+									},
+									ghImport: {
+										type: 'object',
+										properties: {
+											available: {
+												type: 'boolean',
+											},
+											authenticated: {
+												type: 'boolean',
+											},
+											reason: {
+												type: 'string',
+											},
+										},
+										required: ['available', 'authenticated'],
+									},
+								},
+								required: ['oauth', 'token', 'ghImport'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			const ghImport = getGhImportCapability();
 			return c.json({
-				sessionId,
-				userCode: deviceData.userCode,
-				verificationUri: deviceData.verificationUri,
-				interval: deviceData.interval,
+				oauth: true,
+				token: true,
+				ghImport,
 			});
-		} catch (error) {
-			const message =
-				error instanceof Error
-					? error.message
-					: 'Failed to start Copilot device flow';
-			logger.error('Copilot device flow start failed', error);
-			return c.json({ error: message }, 500);
-		}
-	});
+		},
+	);
 
-	app.post('/v1/auth/copilot/device/poll', async (c) => {
-		try {
-			const { sessionId } = await c.req.json<{ sessionId: string }>();
-			if (!sessionId || !copilotDeviceSessions.has(sessionId)) {
-				return c.json({ error: 'Session expired or invalid' }, 400);
-			}
-			const session = copilotDeviceSessions.get(sessionId);
-			if (!session) {
-				return c.json({ error: 'Session expired or invalid' }, 400);
-			}
-			const result = await pollForCopilotTokenOnce(session.deviceCode);
-			if (result.status === 'complete') {
-				copilotDeviceSessions.delete(sessionId);
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/auth/copilot/token',
+			tags: ['auth'],
+			operationId: 'saveCopilotToken',
+			summary: 'Save Copilot token after validating model access',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								token: {
+									type: 'string',
+								},
+							},
+							required: ['token'],
+						},
+					},
+				},
+			},
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+									},
+									provider: {
+										type: 'string',
+									},
+									source: {
+										type: 'string',
+										enum: ['token'],
+									},
+									modelCount: {
+										type: 'integer',
+									},
+									hasGpt52Codex: {
+										type: 'boolean',
+									},
+									sampleModels: {
+										type: 'array',
+										items: {
+											type: 'string',
+										},
+									},
+								},
+								required: [
+									'success',
+									'provider',
+									'source',
+									'modelCount',
+									'hasGpt52Codex',
+									'sampleModels',
+								],
+							},
+						},
+					},
+				},
+				'400': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const { token } = await c.req.json<{ token: string }>();
+				const sanitized = token?.trim();
+				if (!sanitized) {
+					return c.json({ error: 'Copilot token is required' }, 400);
+				}
+
+				const modelsResult = await fetchCopilotModels(sanitized);
+				if (!modelsResult.ok) {
+					return c.json(
+						{
+							error: `Invalid Copilot token: ${modelsResult.message}`,
+						},
+						400,
+					);
+				}
+
 				await setAuth(
 					'copilot',
 					{
 						type: 'oauth',
-						refresh: result.accessToken,
-						access: result.accessToken,
+						refresh: sanitized,
+						access: sanitized,
 						expires: 0,
 					},
 					undefined,
 					'global',
 				);
-				return c.json({ status: 'complete' });
-			}
-			if (result.status === 'pending') {
-				return c.json({ status: 'pending' });
-			}
-			if (result.status === 'error') {
-				copilotDeviceSessions.delete(sessionId);
-				return c.json({ status: 'error', error: result.error });
-			}
-			return c.json({ status: 'pending' });
-		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Poll failed';
-			logger.error('Copilot device poll failed', error);
-			return c.json({ error: message }, 500);
-		}
-	});
 
-	app.get('/v1/auth/copilot/methods', async (c) => {
-		const ghImport = getGhImportCapability();
-		return c.json({
-			oauth: true,
-			token: true,
-			ghImport,
-		});
-	});
-
-	app.post('/v1/auth/copilot/token', async (c) => {
-		try {
-			const { token } = await c.req.json<{ token: string }>();
-			const sanitized = token?.trim();
-			if (!sanitized) {
-				return c.json({ error: 'Copilot token is required' }, 400);
+				const models = Array.from(modelsResult.models).sort();
+				return c.json({
+					success: true,
+					provider: 'copilot',
+					source: 'token',
+					modelCount: models.length,
+					hasGpt52Codex: modelsResult.models.has('gpt-5.2-codex'),
+					sampleModels: models.slice(0, 25),
+				});
+			} catch (error) {
+				const message =
+					error instanceof Error
+						? error.message
+						: 'Failed to save Copilot token';
+				logger.error('Failed to save Copilot token', error);
+				return c.json({ error: message }, 500);
 			}
+		},
+	);
 
-			const modelsResult = await fetchCopilotModels(sanitized);
-			if (!modelsResult.ok) {
-				return c.json(
-					{
-						error: `Invalid Copilot token: ${modelsResult.message}`,
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/auth/copilot/gh/import',
+			tags: ['auth'],
+			operationId: 'importCopilotTokenFromGh',
+			summary: 'Import Copilot token from GitHub CLI (gh)',
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+									},
+									provider: {
+										type: 'string',
+									},
+									source: {
+										type: 'string',
+										enum: ['gh'],
+									},
+									modelCount: {
+										type: 'integer',
+									},
+									hasGpt52Codex: {
+										type: 'boolean',
+									},
+									sampleModels: {
+										type: 'array',
+										items: {
+											type: 'string',
+										},
+									},
+								},
+								required: [
+									'success',
+									'provider',
+									'source',
+									'modelCount',
+									'hasGpt52Codex',
+									'sampleModels',
+								],
+							},
+						},
 					},
-					400,
-				);
-			}
-
-			await setAuth(
-				'copilot',
-				{
-					type: 'oauth',
-					refresh: sanitized,
-					access: sanitized,
-					expires: 0,
 				},
-				undefined,
-				'global',
-			);
-
-			const models = Array.from(modelsResult.models).sort();
-			return c.json({
-				success: true,
-				provider: 'copilot',
-				source: 'token',
-				modelCount: models.length,
-				hasGpt52Codex: modelsResult.models.has('gpt-5.2-codex'),
-				sampleModels: models.slice(0, 25),
-			});
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : 'Failed to save Copilot token';
-			logger.error('Failed to save Copilot token', error);
-			return c.json({ error: message }, 500);
-		}
-	});
-
-	app.post('/v1/auth/copilot/gh/import', async (c) => {
-		try {
-			const ghImport = getGhImportCapability();
-			if (!ghImport.available) {
-				return c.json(
-					{
-						error: ghImport.reason || 'GitHub CLI is not available',
+				'400': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
 					},
-					400,
-				);
-			}
-			if (!ghImport.authenticated) {
-				return c.json(
-					{
-						error: ghImport.reason || 'GitHub CLI is not authenticated',
-					},
-					400,
-				);
-			}
-
-			const ghToken = execFileSync('gh', ['auth', 'token'], {
-				encoding: 'utf8',
-				stdio: ['ignore', 'pipe', 'pipe'],
-			}).trim();
-			if (!ghToken) {
-				return c.json({ error: 'GitHub CLI returned an empty token' }, 400);
-			}
-
-			const modelsResult = await fetchCopilotModels(ghToken);
-			if (!modelsResult.ok) {
-				return c.json(
-					{
-						error: `Imported gh token is not valid for Copilot: ${modelsResult.message}`,
-					},
-					400,
-				);
-			}
-
-			await setAuth(
-				'copilot',
-				{
-					type: 'oauth',
-					refresh: ghToken,
-					access: ghToken,
-					expires: 0,
 				},
-				undefined,
-				'global',
-			);
-
-			const models = Array.from(modelsResult.models).sort();
-			return c.json({
-				success: true,
-				provider: 'copilot',
-				source: 'gh',
-				modelCount: models.length,
-				hasGpt52Codex: modelsResult.models.has('gpt-5.2-codex'),
-				sampleModels: models.slice(0, 25),
-			});
-		} catch (error) {
-			const message =
-				error instanceof Error
-					? error.message
-					: 'Failed to import GitHub CLI token';
-			logger.error('Failed to import Copilot token from GitHub CLI', error);
-			return c.json({ error: message }, 500);
-		}
-	});
-
-	app.get('/v1/auth/copilot/diagnostics', async (c) => {
-		try {
-			const projectRoot = process.cwd();
-			const entries: Array<{
-				source: 'env' | 'stored';
-				configured: boolean;
-				modelCount?: number;
-				hasGpt52Codex?: boolean;
-				sampleModels?: string[];
-				restrictedByOrgPolicy?: boolean;
-				restrictedOrg?: string;
-				restrictionMessage?: string;
-				error?: string;
-			}> = [];
-
-			const envToken = readEnvKey('copilot');
-			if (envToken) {
-				const modelsResult = await fetchCopilotModels(envToken);
-				if (modelsResult.ok) {
-					const models = Array.from(modelsResult.models).sort();
-					entries.push({
-						source: 'env',
-						configured: true,
-						modelCount: models.length,
-						hasGpt52Codex: modelsResult.models.has('gpt-5.2-codex'),
-						sampleModels: models.slice(0, 25),
-					});
-				} else {
-					entries.push({
-						source: 'env',
-						configured: true,
-						error: modelsResult.message,
-					});
+			},
+		},
+		async (c) => {
+			try {
+				const ghImport = getGhImportCapability();
+				if (!ghImport.available) {
+					return c.json(
+						{
+							error: ghImport.reason || 'GitHub CLI is not available',
+						},
+						400,
+					);
 				}
-			} else {
-				entries.push({ source: 'env', configured: false });
-			}
-
-			const storedAuth = await getAuth('copilot', projectRoot);
-			if (storedAuth?.type === 'oauth') {
-				const modelsResult = await fetchCopilotModels(storedAuth.refresh);
-				const restriction = await detectOAuthOrgRestriction(storedAuth.refresh);
-				if (modelsResult.ok) {
-					const models = Array.from(modelsResult.models).sort();
-					entries.push({
-						source: 'stored',
-						configured: true,
-						modelCount: models.length,
-						hasGpt52Codex: modelsResult.models.has('gpt-5.2-codex'),
-						sampleModels: models.slice(0, 25),
-						restrictedByOrgPolicy: restriction.restricted,
-						restrictedOrg: restriction.org,
-						restrictionMessage: restriction.message,
-					});
-				} else {
-					entries.push({
-						source: 'stored',
-						configured: true,
-						error: modelsResult.message,
-						restrictedByOrgPolicy: restriction.restricted,
-						restrictedOrg: restriction.org,
-						restrictionMessage: restriction.message,
-					});
+				if (!ghImport.authenticated) {
+					return c.json(
+						{
+							error: ghImport.reason || 'GitHub CLI is not authenticated',
+						},
+						400,
+					);
 				}
-			} else {
-				entries.push({ source: 'stored', configured: false });
-			}
 
-			return c.json({
-				tokenSources: entries,
-				methods: {
-					oauth: true,
-					token: true,
-					ghImport: getGhImportCapability(),
+				const ghToken = execFileSync('gh', ['auth', 'token'], {
+					encoding: 'utf8',
+					stdio: ['ignore', 'pipe', 'pipe'],
+				}).trim();
+				if (!ghToken) {
+					return c.json({ error: 'GitHub CLI returned an empty token' }, 400);
+				}
+
+				const modelsResult = await fetchCopilotModels(ghToken);
+				if (!modelsResult.ok) {
+					return c.json(
+						{
+							error: `Imported gh token is not valid for Copilot: ${modelsResult.message}`,
+						},
+						400,
+					);
+				}
+
+				await setAuth(
+					'copilot',
+					{
+						type: 'oauth',
+						refresh: ghToken,
+						access: ghToken,
+						expires: 0,
+					},
+					undefined,
+					'global',
+				);
+
+				const models = Array.from(modelsResult.models).sort();
+				return c.json({
+					success: true,
+					provider: 'copilot',
+					source: 'gh',
+					modelCount: models.length,
+					hasGpt52Codex: modelsResult.models.has('gpt-5.2-codex'),
+					sampleModels: models.slice(0, 25),
+				});
+			} catch (error) {
+				const message =
+					error instanceof Error
+						? error.message
+						: 'Failed to import GitHub CLI token';
+				logger.error('Failed to import Copilot token from GitHub CLI', error);
+				return c.json({ error: message }, 500);
+			}
+		},
+	);
+
+	openApiRoute(
+		app,
+		{
+			method: 'get',
+			path: '/v1/auth/copilot/diagnostics',
+			tags: ['auth'],
+			operationId: 'getCopilotDiagnostics',
+			summary: 'Get Copilot token diagnostics and model visibility',
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									tokenSources: {
+										type: 'array',
+										items: {
+											type: 'object',
+											properties: {
+												source: {
+													type: 'string',
+													enum: ['env', 'stored'],
+												},
+												configured: {
+													type: 'boolean',
+												},
+												modelCount: {
+													type: 'integer',
+												},
+												hasGpt52Codex: {
+													type: 'boolean',
+												},
+												sampleModels: {
+													type: 'array',
+													items: {
+														type: 'string',
+													},
+												},
+												restrictedByOrgPolicy: {
+													type: 'boolean',
+												},
+												restrictedOrg: {
+													type: 'string',
+												},
+												restrictionMessage: {
+													type: 'string',
+												},
+												error: {
+													type: 'string',
+												},
+											},
+											required: ['source', 'configured'],
+										},
+									},
+									methods: {
+										type: 'object',
+										properties: {
+											oauth: {
+												type: 'boolean',
+											},
+											token: {
+												type: 'boolean',
+											},
+											ghImport: {
+												type: 'object',
+												properties: {
+													available: {
+														type: 'boolean',
+													},
+													authenticated: {
+														type: 'boolean',
+													},
+													reason: {
+														type: 'string',
+													},
+												},
+												required: ['available', 'authenticated'],
+											},
+										},
+										required: ['oauth', 'token', 'ghImport'],
+									},
+								},
+								required: ['tokenSources', 'methods'],
+							},
+						},
+					},
 				},
-			});
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : 'Failed to inspect Copilot';
-			logger.error('Failed to build Copilot diagnostics', error);
-			return c.json({ error: message }, 500);
-		}
-	});
+			},
+		},
+		async (c) => {
+			try {
+				const projectRoot = process.cwd();
+				const entries: Array<{
+					source: 'env' | 'stored';
+					configured: boolean;
+					modelCount?: number;
+					hasGpt52Codex?: boolean;
+					sampleModels?: string[];
+					restrictedByOrgPolicy?: boolean;
+					restrictedOrg?: string;
+					restrictionMessage?: string;
+					error?: string;
+				}> = [];
 
-	app.post('/v1/auth/onboarding/complete', async (c) => {
-		try {
-			await setOnboardingComplete();
-			return c.json({ success: true });
-		} catch (error) {
-			logger.error('Failed to complete onboarding', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, errorResponse.error.status || 500);
-		}
-	});
+				const envToken = readEnvKey('copilot');
+				if (envToken) {
+					const modelsResult = await fetchCopilotModels(envToken);
+					if (modelsResult.ok) {
+						const models = Array.from(modelsResult.models).sort();
+						entries.push({
+							source: 'env',
+							configured: true,
+							modelCount: models.length,
+							hasGpt52Codex: modelsResult.models.has('gpt-5.2-codex'),
+							sampleModels: models.slice(0, 25),
+						});
+					} else {
+						entries.push({
+							source: 'env',
+							configured: true,
+							error: modelsResult.message,
+						});
+					}
+				} else {
+					entries.push({ source: 'env', configured: false });
+				}
 
-	app.delete('/v1/auth/:provider', async (c) => {
-		try {
-			const provider = c.req.param('provider') as ProviderId;
+				const storedAuth = await getAuth('copilot', projectRoot);
+				if (storedAuth?.type === 'oauth') {
+					const modelsResult = await fetchCopilotModels(storedAuth.refresh);
+					const restriction = await detectOAuthOrgRestriction(
+						storedAuth.refresh,
+					);
+					if (modelsResult.ok) {
+						const models = Array.from(modelsResult.models).sort();
+						entries.push({
+							source: 'stored',
+							configured: true,
+							modelCount: models.length,
+							hasGpt52Codex: modelsResult.models.has('gpt-5.2-codex'),
+							sampleModels: models.slice(0, 25),
+							restrictedByOrgPolicy: restriction.restricted,
+							restrictedOrg: restriction.org,
+							restrictionMessage: restriction.message,
+						});
+					} else {
+						entries.push({
+							source: 'stored',
+							configured: true,
+							error: modelsResult.message,
+							restrictedByOrgPolicy: restriction.restricted,
+							restrictedOrg: restriction.org,
+							restrictionMessage: restriction.message,
+						});
+					}
+				} else {
+					entries.push({ source: 'stored', configured: false });
+				}
 
-			if (!catalog[provider]) {
-				return c.json({ error: 'Unknown provider' }, 400);
+				return c.json({
+					tokenSources: entries,
+					methods: {
+						oauth: true,
+						token: true,
+						ghImport: getGhImportCapability(),
+					},
+				});
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : 'Failed to inspect Copilot';
+				logger.error('Failed to build Copilot diagnostics', error);
+				return c.json({ error: message }, 500);
 			}
+		},
+	);
 
-			await removeAuth(provider, undefined, 'global');
+	openApiRoute(
+		app,
+		{
+			method: 'post',
+			path: '/v1/auth/onboarding/complete',
+			tags: ['auth'],
+			operationId: 'completeOnboarding',
+			summary: 'Mark onboarding as complete',
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+									},
+								},
+								required: ['success'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				await setOnboardingComplete();
+				return c.json({ success: true });
+			} catch (error) {
+				logger.error('Failed to complete onboarding', error);
+				const errorResponse = serializeError(error);
+				return c.json(errorResponse, errorResponse.error.status || 500);
+			}
+		},
+	);
 
-			return c.json({ success: true, provider });
-		} catch (error) {
-			logger.error('Failed to remove provider', error);
-			const errorResponse = serializeError(error);
-			return c.json(errorResponse, errorResponse.error.status || 500);
-		}
-	});
+	openApiRoute(
+		app,
+		{
+			method: 'delete',
+			path: '/v1/auth/{provider}',
+			tags: ['auth'],
+			operationId: 'removeProvider',
+			summary: 'Remove auth for a provider',
+			parameters: [
+				{
+					in: 'path',
+					name: 'provider',
+					required: true,
+					schema: {
+						type: 'string',
+					},
+				},
+			],
+			responses: {
+				'200': {
+					description: 'OK',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+									},
+									provider: {
+										type: 'string',
+									},
+								},
+								required: ['success', 'provider'],
+							},
+						},
+					},
+				},
+				'400': {
+					description: 'Bad Request',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									error: {
+										type: 'string',
+									},
+								},
+								required: ['error'],
+							},
+						},
+					},
+				},
+			},
+		},
+		async (c) => {
+			try {
+				const provider = c.req.param('provider') as ProviderId;
+
+				if (!catalog[provider]) {
+					return c.json({ error: 'Unknown provider' }, 400);
+				}
+
+				await removeAuth(provider, undefined, 'global');
+
+				return c.json({ success: true, provider });
+			} catch (error) {
+				logger.error('Failed to remove provider', error);
+				const errorResponse = serializeError(error);
+				return c.json(errorResponse, errorResponse.error.status || 500);
+			}
+		},
+	);
 }
