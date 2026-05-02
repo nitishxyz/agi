@@ -12,6 +12,7 @@ import { setPort, configureApi } from './src/api.ts';
 export async function startTui(
 	port: number,
 	stopServer?: () => Promise<void>,
+	webUrl?: string,
 ): Promise<void> {
 	setPort(port);
 	configureApi();
@@ -73,7 +74,7 @@ export async function startTui(
 
 	root.render(
 		<ThemeProvider>
-			<App onQuit={handleQuit} />
+			<App onQuit={handleQuit} webUrl={webUrl} />
 		</ThemeProvider>,
 	);
 

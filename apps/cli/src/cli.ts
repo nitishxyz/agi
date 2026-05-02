@@ -143,7 +143,7 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 
 			if (!(await ensureAuth(projectRoot))) return;
 			const server = await startApiServer({ project: projectRoot, port });
-			await startTui(server.port, server.stop);
+			await startTui(server.port, server.stop, server.webUrl);
 			return;
 		}
 

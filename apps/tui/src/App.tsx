@@ -9,6 +9,7 @@ import {
 import {
 	estimateModelCostUsd,
 	getModelInfo,
+	openAuthUrl,
 	type ProviderId,
 } from '@ottocode/sdk';
 import { StatusBar } from './components/StatusBar.tsx';
@@ -20,6 +21,7 @@ import { useSession } from './hooks/useSession.ts';
 import { useStream } from './hooks/useStream.ts';
 import { useConfig } from './hooks/useConfig.ts';
 import { parseCommand, resolveCommand } from './commands.ts';
+import { getBaseUrl } from './api.ts';
 import { useTheme } from './theme.ts';
 import { useOverlayStore } from './stores/overlay.ts';
 import type { Session } from './types.ts';
@@ -39,7 +41,30 @@ async function copyToClipboard(text: string): Promise<void> {
 	await proc.exited;
 }
 
-export function App({ onQuit }: { onQuit: () => void }) {
+function buildWebSessionUrl(
+	webUrl: string | undefined,
+	sessionId?: string,
+): string {
+	const url = new URL(webUrl ?? getBaseUrl());
+	if (!webUrl) {
+		const apiPort = Number(url.port);
+		if (apiPort) url.port = String(apiPort + 1);
+	}
+	url.pathname = sessionId
+		? `/sessions/${encodeURIComponent(sessionId)}`
+		: '/sessions';
+	url.search = '';
+	url.hash = '';
+	return url.toString();
+}
+
+export function App({
+	onQuit,
+	webUrl,
+}: {
+	onQuit: () => void;
+	webUrl?: string;
+}) {
 	const renderer = useRenderer();
 	const { colors, setTheme } = useTheme();
 
@@ -223,6 +248,25 @@ export function App({ onQuit }: { onQuit: () => void }) {
 						showStatus({ type: 'error', label: 'push failed' }, 3000);
 					}
 					break;
+				case 'web': {
+					const sessionWebUrl = buildWebSessionUrl(webUrl, activeSession?.id);
+					let copied = false;
+					try {
+						await copyToClipboard(sessionWebUrl);
+						copied = true;
+					} catch {}
+					const opened = await openAuthUrl(sessionWebUrl);
+					if (opened && copied) {
+						showStatus({ type: 'success', label: 'web opened & copied' }, 3000);
+					} else if (opened) {
+						showStatus({ type: 'success', label: 'web opened' }, 3000);
+					} else if (copied) {
+						showStatus({ type: 'success', label: 'web url copied' }, 3000);
+					} else {
+						showStatus({ type: 'error', label: 'could not open web' }, 3000);
+					}
+					break;
+				}
 				case 'stage':
 					try {
 						// biome-ignore lint/suspicious/noExplicitAny: SDK body type mismatch
@@ -329,6 +373,7 @@ export function App({ onQuit }: { onQuit: () => void }) {
 			loadSessions,
 			onQuit,
 			reload,
+			webUrl,
 			updateDefaults,
 			sendMessage,
 			abortSession,

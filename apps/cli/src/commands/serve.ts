@@ -18,6 +18,7 @@ import { colors } from '../ui.ts';
 
 export interface StartServerResult {
 	port: number;
+	webUrl?: string;
 	stop: () => Promise<void>;
 }
 
@@ -79,17 +80,34 @@ export async function startApiServer(opts: {
 	const serverPort = agiServer.port ?? requestedPort;
 	setServerPort(serverPort);
 
+	let webServer: ReturnType<typeof createWebServer>['server'] | null = null;
+	let webUrl: string | undefined;
+	try {
+		const { port: actualWebPort, server } = createWebServer(
+			serverPort + 1,
+			serverPort,
+			false,
+		);
+		webServer = server;
+		webUrl = `http://localhost:${actualWebPort}`;
+	} catch (error) {
+		logger.error('Failed to start Web UI server', error);
+	}
+
 	const stop = async () => {
 		try {
 			const terminalManager = getTerminalManager();
 			if (terminalManager) await terminalManager.killAll();
 		} catch {}
 		try {
+			webServer?.stop(true);
+		} catch {}
+		try {
 			agiServer.stop(true);
 		} catch {}
 	};
 
-	return { port: serverPort, stop };
+	return { port: serverPort, webUrl, stop };
 }
 
 function getLocalIP(): string {

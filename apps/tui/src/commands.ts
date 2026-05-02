@@ -29,6 +29,7 @@ export const COMMAND_ALIASES: Record<string, string> = {
 	u: 'usage',
 	a: 'approvals',
 	g: 'agents',
+	w: 'web',
 	agent: 'agents',
 };
 
@@ -52,6 +53,7 @@ export const COMMANDS = [
 	{ name: 'stage', alias: '', description: 'Stage all changes (git add -A)' },
 	{ name: 'commit', alias: '', description: 'Open commit overlay' },
 	{ name: 'push', alias: '', description: 'Push commits to remote' },
+	{ name: 'web', alias: '/w', description: 'Open current session in Web UI' },
 	{ name: 'compact', alias: '', description: 'Compact conversation history' },
 	{
 		name: 'init',
