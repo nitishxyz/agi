@@ -3,7 +3,11 @@ import type {
 	AvailableCommand,
 } from '@agentclientprotocol/sdk';
 import { listAvailableSlashCommands } from '@ottocode/server/runtime/commands/available';
-import { discoverSkills, filterDiscoveredSkills, loadConfig } from '@ottocode/sdk';
+import {
+	discoverSkills,
+	filterDiscoveredSkills,
+	loadConfig,
+} from '@ottocode/sdk';
 
 export function queueAvailableCommands(
 	client: AgentSideConnection,

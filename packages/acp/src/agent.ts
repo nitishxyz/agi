@@ -200,7 +200,11 @@ export class OttoAcpAgent implements Agent {
 			params.mcpServers ?? [],
 		);
 		const session = this.sessions.get(params.sessionId);
-		queueAvailableCommands(this.client, params.sessionId, session?.cwd ?? params.cwd);
+		queueAvailableCommands(
+			this.client,
+			params.sessionId,
+			session?.cwd ?? params.cwd,
+		);
 		return response;
 	}
 
