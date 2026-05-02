@@ -148,7 +148,7 @@ export class OttoAcpAgent implements Agent {
 		this.sessions.set(sessionId, session);
 		this.subscribeSessionInfoUpdates(sessionId, session);
 		const state = await buildSessionState(session);
-		queueAvailableCommands(this.client, sessionId);
+		queueAvailableCommands(this.client, sessionId, cwd);
 
 		return {
 			sessionId,
@@ -165,7 +165,7 @@ export class OttoAcpAgent implements Agent {
 		const session = this.sessions.get(params.sessionId);
 		if (!session) throw new Error('Session not found');
 		await replaySessionHistory(this.client, params.sessionId, session);
-		queueAvailableCommands(this.client, params.sessionId);
+		queueAvailableCommands(this.client, params.sessionId, session.cwd);
 		return response;
 	}
 
@@ -199,7 +199,8 @@ export class OttoAcpAgent implements Agent {
 			params.cwd,
 			params.mcpServers ?? [],
 		);
-		queueAvailableCommands(this.client, params.sessionId);
+		const session = this.sessions.get(params.sessionId);
+		queueAvailableCommands(this.client, params.sessionId, session?.cwd ?? params.cwd);
 		return response;
 	}
 

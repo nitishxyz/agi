@@ -3,14 +3,16 @@ import type {
 	AvailableCommand,
 } from '@agentclientprotocol/sdk';
 import { listAvailableSlashCommands } from '@ottocode/server/runtime/commands/available';
+import { discoverSkills, filterDiscoveredSkills, loadConfig } from '@ottocode/sdk';
 
 export function queueAvailableCommands(
 	client: AgentSideConnection,
 	sessionId: string,
+	cwd?: string,
 ): void {
 	for (const delayMs of [0, 250]) {
 		setTimeout(() => {
-			void sendAvailableCommands(client, sessionId).catch((err) => {
+			void sendAvailableCommands(client, sessionId, cwd).catch((err) => {
 				console.error('[acp] Failed to send available commands:', err);
 			});
 		}, delayMs);
@@ -20,13 +22,16 @@ export function queueAvailableCommands(
 async function sendAvailableCommands(
 	client: AgentSideConnection,
 	sessionId: string,
+	cwd?: string,
 ): Promise<void> {
+	const skillCommands = await listSkillCommands(cwd);
 	const availableCommands: AvailableCommand[] = [
 		...listAvailableSlashCommands().map((command) => ({
 			name: command.name,
 			description: command.description,
 			...(command.input ? { input: command.input } : {}),
 		})),
+		...skillCommands,
 		{
 			name: 'mcp',
 			description: 'List, start, stop, and inspect MCP servers',
@@ -51,4 +56,22 @@ async function sendAvailableCommands(
 			availableCommands,
 		},
 	});
+}
+
+async function listSkillCommands(cwd?: string): Promise<AvailableCommand[]> {
+	if (!cwd) return [];
+	try {
+		const cfg = await loadConfig(cwd);
+		const skills = filterDiscoveredSkills(
+			await discoverSkills(cwd, cfg.projectRoot),
+			cfg.skills,
+		);
+		return skills.map((skill) => ({
+			name: skill.name,
+			description: skill.description,
+		}));
+	} catch (err) {
+		console.error('[acp] Failed to discover skills:', err);
+		return [];
+	}
 }
