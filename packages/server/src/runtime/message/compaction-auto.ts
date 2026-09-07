@@ -68,7 +68,7 @@ export async function performAutoCompaction(
 		const adapted = adaptSimpleCall(oauth, {
 			instructions: compactionPrompt,
 			userContent,
-			maxOutputTokens: 1200,
+			maxOutputTokens: 2400,
 		});
 
 		const compactPartId = crypto.randomUUID();
@@ -110,6 +110,13 @@ export async function performAutoCompaction(
 					delta: chunk,
 				},
 			});
+		}
+
+		if ((await result.finishReason) === 'length') {
+			return {
+				success: false,
+				error: 'Compaction summary exceeded the output limit',
+			};
 		}
 
 		await db

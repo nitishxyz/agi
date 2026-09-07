@@ -62,6 +62,100 @@ async function insertTextMessage(args: {
 }
 
 describe('canonical compaction checkpoints', () => {
+	test('preserves intent across a long session and the end of a long tool loop', async () => {
+		const { db, now, sessionId } = await createSessionFixture();
+		for (let i = 0; i < 12; i++) {
+			await insertTextMessage({
+				db,
+				sessionId,
+				id: `user-${i}`,
+				role: 'user',
+				text: `REQUEST ${i}: ${'instruction '.repeat(400)} END REQUEST ${i}`,
+				createdAt: now + i * 2,
+			});
+			await insertTextMessage({
+				db,
+				sessionId,
+				id: `assistant-${i}`,
+				role: 'assistant',
+				text: `DECISION ${i}: ${'Exploration '.repeat(1_000)} PENDING ${i}`,
+				createdAt: now + i * 2 + 1,
+			});
+		}
+		for (let i = 1; i <= 40; i++) {
+			await db.insert(messageParts).values({
+				id: `tool-${i}`,
+				messageId: 'assistant-11',
+				index: i,
+				agent: 'build',
+				provider: 'openai',
+				model: 'gpt-5.3-codex',
+				type: i % 2 ? 'tool_call' : 'tool_result',
+				content: JSON.stringify(
+					i % 2
+						? { name: 'shell', args: { cmd: `command-${i}` } }
+						: { result: `${'log '.repeat(2_000)} RESULT END ${i}` },
+				),
+			});
+		}
+		const context = await buildCompactionContext(
+			db,
+			sessionId,
+			4_000,
+			'assistant-11',
+		);
+		expect(context.length).toBeLessThanOrEqual(16_000);
+		for (let i = 0; i < 12; i++) {
+			expect(context).toContain(`REQUEST ${i}:`);
+			expect(context).toContain(`END REQUEST ${i}`);
+			expect(context).toContain(`DECISION ${i}:`);
+			expect(context).toContain(`PENDING ${i}`);
+		}
+		expect(context).toContain('command-39');
+		expect(context).toContain('RESULT END 40');
+		expect(context.indexOf('command-39')).toBeLessThan(
+			context.indexOf('RESULT END 40'),
+		);
+	});
+
+	test('includes checkpoint and separators in the evidence budget and honors the cutoff', async () => {
+		const { db, now, sessionId } = await createSessionFixture();
+		await saveCompactionCheckpoint({
+			db,
+			sessionId,
+			compactionMessageId: 'previous',
+			summary: 'checkpoint '.repeat(500),
+		});
+		await insertTextMessage({
+			db,
+			sessionId,
+			id: 'boundary',
+			role: 'user',
+			text: 'INCLUDED REQUEST',
+			createdAt: now,
+		});
+		await insertTextMessage({
+			db,
+			sessionId,
+			id: 'later',
+			role: 'user',
+			text: 'EXCLUDED FUTURE REQUEST',
+			createdAt: now + 1,
+		});
+		const context = await buildCompactionContext(
+			db,
+			sessionId,
+			2_000,
+			'boundary',
+		);
+		expect(context.length).toBeLessThanOrEqual(8_000);
+		expect(context).toContain('INCLUDED REQUEST');
+		expect(context).not.toContain('EXCLUDED FUTURE REQUEST');
+		await expect(
+			buildCompactionContext(db, sessionId, 2_000, 'missing'),
+		).rejects.toThrow('boundary message not found');
+	});
+
 	test('replaces pre-checkpoint model history with the canonical summary', async () => {
 		const { db, now, sessionId } = await createSessionFixture();
 		await insertTextMessage({

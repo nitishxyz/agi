@@ -4,6 +4,15 @@ import { eq, asc, desc } from 'drizzle-orm';
 
 const PREVIOUS_CHECKPOINT_MAX_CHARS = 6_000;
 
+function boundEvidence(text: string, maxChars: number): string {
+	if (text.length <= maxChars) return text;
+	const marker = '\n[...omitted...]\n';
+	if (maxChars <= marker.length) return text.slice(0, maxChars);
+	const head = Math.ceil((maxChars - marker.length) / 2);
+	return `${text.slice(0, head)}${marker}${text.slice(-(maxChars - marker.length - head))}`;
+}
+
+/** Builds bounded evidence in chronological order, reserving space for user intent. */
 export async function buildCompactionContext(
 	db: Awaited<ReturnType<typeof getDb>>,
 	sessionId: string,
@@ -28,6 +37,9 @@ export async function buildCompactionContext(
 	const cutoffIndex = throughMessageId
 		? sessionMessages.findIndex((msg) => msg.id === throughMessageId)
 		: -1;
+	if (throughMessageId && cutoffIndex < 0) {
+		throw new Error('Compaction boundary message not found');
+	}
 	let allMessages =
 		cutoffIndex >= 0 ? sessionMessages.slice(cutoffIndex) : sessionMessages;
 	const checkpointIndex = compactionMessageId
@@ -37,95 +49,104 @@ export async function buildCompactionContext(
 		allMessages = allMessages.slice(0, checkpointIndex);
 	}
 
-	const maxChars = contextTokenLimit ? contextTokenLimit * 4 : 60000;
-	const recentBudget = Math.floor(maxChars * 0.65);
-	const olderBudget = maxChars - recentBudget;
+	const maxChars = Math.max(0, Math.floor((contextTokenLimit ?? 15_000) * 4));
+	const result: string[] = [];
+	let remaining = maxChars;
+	const append = (text: string) => {
+		const separator = result.length ? 1 : 0;
+		const budget = remaining - separator;
+		if (budget <= 0) return;
+		const bounded = boundEvidence(text, budget);
+		result.push(bounded);
+		remaining -= bounded.length + separator;
+	};
+	if (previousCheckpoint) {
+		append('[--- PREVIOUS CHECKPOINT (merge and replace) ---]');
+		append(boundEvidence(previousCheckpoint, PREVIOUS_CHECKPOINT_MAX_CHARS));
+	}
+	append(
+		'[--- POST-CHECKPOINT CONVERSATION (bounded; omissions are not completion) ---]',
+	);
 
-	const recentLines: string[] = [];
-	const olderLines: string[] = [];
-	let recentChars = 0;
-	let olderChars = 0;
-	let userTurns = 0;
-	let inRecent = true;
-
-	for (const msg of allMessages) {
-		if (msg.role === 'user') userTurns++;
-		if (userTurns > 1 && inRecent) inRecent = false;
-
+	const evidence: {
+		order: number;
+		text: string;
+		user: boolean;
+		narrative: boolean;
+	}[] = [];
+	for (const msg of allMessages.toReversed()) {
 		const parts = await db
 			.select()
 			.from(messageParts)
 			.where(eq(messageParts.messageId, msg.id))
 			.orderBy(asc(messageParts.index));
-
 		for (const part of parts) {
 			if (part.compactedAt) continue;
-
 			try {
 				const content = JSON.parse(part.content ?? '{}');
-
-				if (part.type === 'text' && content.text) {
-					const text = `[${msg.role.toUpperCase()}]: ${content.text}`;
-					const limit = inRecent ? 3000 : 1000;
-					const line = text.slice(0, limit);
-
-					if (inRecent && recentChars < recentBudget) {
-						recentLines.unshift(line);
-						recentChars += line.length;
-					} else if (olderChars < olderBudget) {
-						olderLines.unshift(line);
-						olderChars += line.length;
-					}
+				let text = '';
+				if (part.type === 'text' && typeof content.text === 'string') {
+					if (content.text.trim() === '/compact') continue;
+					text = `[${msg.role.toUpperCase()}]: ${content.text}`;
 				} else if (part.type === 'tool_call' && content.name) {
-					if (inRecent && recentChars < recentBudget) {
-						const argsStr =
-							typeof content.args === 'object'
-								? JSON.stringify(content.args).slice(0, 1000)
-								: '';
-						const line = `[TOOL ${content.name}]: ${argsStr}`;
-						recentLines.unshift(line);
-						recentChars += line.length;
-					} else if (olderChars < olderBudget) {
-						const line = `[TOOL ${content.name}]`;
-						olderLines.unshift(line);
-						olderChars += line.length;
-					}
-				} else if (part.type === 'tool_result' && content.result !== null) {
-					const resultStr =
+					text = `[TOOL ${content.name}]: ${JSON.stringify(content.args ?? {})}`;
+				} else if (part.type === 'tool_result' && content.result != null) {
+					const value =
 						typeof content.result === 'string'
 							? content.result
-							: JSON.stringify(content.result ?? '');
-
-					if (inRecent && recentChars < recentBudget) {
-						const line = `[RESULT]: ${resultStr.slice(0, 2000)}`;
-						recentLines.unshift(line);
-						recentChars += line.length;
-					} else if (olderChars < olderBudget) {
-						const line = `[RESULT]: ${resultStr.slice(0, 150)}...`;
-						olderLines.unshift(line);
-						olderChars += line.length;
-					}
+							: JSON.stringify(content.result);
+					text = `[RESULT]: ${value}`;
 				}
+				if (text)
+					evidence.push({
+						order: evidence.length,
+						text,
+						user: msg.role === 'user',
+						narrative: part.type === 'text',
+					});
 			} catch {}
 		}
-
-		if (olderChars >= olderBudget) break;
 	}
 
-	const result: string[] = [];
-	if (previousCheckpoint) {
-		result.push('[--- PREVIOUS CHECKPOINT (merge and replace) ---]');
-		result.push(previousCheckpoint.slice(0, PREVIOUS_CHECKPOINT_MAX_CHARS));
-		result.push('');
-		result.push('[--- POST-CHECKPOINT CONVERSATION ---]');
+	// Keep instructions from across the session even when tool output dominates.
+	const instructions = evidence.filter((line) => line.user);
+	const selected = new Map<number, string>();
+	const narrativeBudget = Math.floor(remaining * 0.15);
+	const instructionBudget = Math.floor(remaining * 0.4);
+	const perInstruction = Math.min(
+		8_000,
+		Math.floor(instructionBudget / Math.max(1, instructions.length)),
+	);
+	for (const line of instructions) {
+		if (perInstruction < 2) break;
+		const text = boundEvidence(line.text, perInstruction - 1);
+		selected.set(line.order, text);
+		remaining -= text.length + 1;
 	}
-	if (olderLines.length > 0) {
-		result.push('[...older conversation (tool data truncated)...]');
-		result.push(...olderLines);
-		result.push('');
-		result.push('[--- Latest turn evidence (bounded) ---]');
-	}
-	result.push(...recentLines);
 
+	// Retain intermediate decisions and progress, not just requests and final logs.
+	const narratives = evidence.filter((line) => line.narrative && !line.user);
+	const perNarrative = Math.min(
+		2_000,
+		Math.floor(narrativeBudget / Math.max(1, narratives.length)),
+	);
+	for (const line of narratives) {
+		if (perNarrative < 2) break;
+		const text = boundEvidence(line.text, perNarrative - 1);
+		selected.set(line.order, text);
+		remaining -= text.length + 1;
+	}
+
+	// Work backwards so the last operation and its result survive long tool loops.
+	for (const line of evidence.toReversed()) {
+		if (selected.has(line.order)) continue;
+		if (remaining < 100) break;
+		const text = boundEvidence(line.text, Math.min(4_000, remaining - 1));
+		selected.set(line.order, text);
+		remaining -= text.length + 1;
+	}
+	for (const [, text] of [...selected].sort(([a], [b]) => a - b)) {
+		result.push(text);
+	}
 	return result.join('\n');
 }

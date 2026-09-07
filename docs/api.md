@@ -118,6 +118,21 @@ identical preloaded range.
 - `GET /v1/config/models`
 - `GET /v1/config/agents`
 
+Set `defaults.autoCompactThresholdTokens` in global configuration (or save
+**Settings > Sessions > Auto Compact**) to a positive token count. The custom
+threshold applies when it is below the model's context window, or when that
+window is unknown. A blank setting / `null` disables this proactive threshold;
+normal model context-overflow recovery remains enabled.
+
+The threshold measures the latest model step's input plus output tokens, not
+cumulative billed usage across the session. Otto checks before a new run using
+the last known context and estimated new input, during tool loops, and after
+the final reply, including replies with no tool calls. Compaction runs at these
+boundaries, so this is a trigger rather than a strict maximum request size.
+Interrupted tool loops resume after successful compaction; finished replies
+do not create an extra continuation. Manual compaction and compaction retries
+skip the proactive threshold to prevent repeated compaction of the same run.
+
 ### Files
 
 - `GET /v1/files`

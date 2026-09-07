@@ -12,6 +12,15 @@ export interface ModelLimits {
 	output: number;
 }
 
+type CompactionStepUsage = {
+	inputTokens?: number | null;
+	outputTokens?: number | null;
+};
+
+function normalizeTokenCount(value?: number | null): number {
+	return Number.isFinite(value) ? Math.max(0, Math.floor(value ?? 0)) : 0;
+}
+
 export function resolveAutoCompactThresholdTokens(args: {
 	configuredThresholdTokens?: number | null;
 	modelContextWindow?: number | null;
@@ -53,18 +62,12 @@ export function shouldAutoCompactBeforeOverflow(args: {
 		return false;
 	}
 
-	const currentContextTokens = Math.max(
-		0,
-		Math.floor(Number(args.currentContextTokens ?? 0)),
-	);
+	const currentContextTokens = normalizeTokenCount(args.currentContextTokens);
 	if (currentContextTokens <= 0) {
 		return false;
 	}
 
-	const estimatedInputTokens = Math.max(
-		0,
-		Math.floor(Number(args.estimatedInputTokens ?? 0)),
-	);
+	const estimatedInputTokens = normalizeTokenCount(args.estimatedInputTokens);
 
 	return currentContextTokens + estimatedInputTokens >= threshold;
 }
@@ -73,10 +76,7 @@ export function shouldStopTurnForAutoCompact(args: {
 	autoCompactThresholdTokens?: number | null;
 	isCompactCommand?: boolean;
 	compactionRetries?: number;
-	lastStepUsage?: {
-		inputTokens?: number | null;
-		outputTokens?: number | null;
-	} | null;
+	lastStepUsage?: CompactionStepUsage | null;
 }): boolean {
 	const threshold = Number(args.autoCompactThresholdTokens ?? 0);
 	if (!Number.isFinite(threshold) || threshold <= 0) {
@@ -89,17 +89,11 @@ export function shouldStopTurnForAutoCompact(args: {
 		return false;
 	}
 
-	const inputTokens = Math.max(
-		0,
-		Math.floor(Number(args.lastStepUsage?.inputTokens ?? 0)),
-	);
+	const inputTokens = normalizeTokenCount(args.lastStepUsage?.inputTokens);
 	if (inputTokens <= 0) {
 		return false;
 	}
-	const outputTokens = Math.max(
-		0,
-		Math.floor(Number(args.lastStepUsage?.outputTokens ?? 0)),
-	);
+	const outputTokens = normalizeTokenCount(args.lastStepUsage?.outputTokens);
 
 	return inputTokens + outputTokens >= threshold;
 }
@@ -110,6 +104,7 @@ export function shouldAutoCompactAfterTurn(args: {
 	isCompactCommand?: boolean;
 	compactionRetries?: number;
 	turnStoppedForCompaction?: boolean;
+	lastStepUsage?: CompactionStepUsage | null;
 }): boolean {
 	if (args.isCompactCommand || (args.compactionRetries ?? 0) > 0) {
 		return false;
@@ -122,6 +117,10 @@ export function shouldAutoCompactAfterTurn(args: {
 
 	if (args.turnStoppedForCompaction) {
 		return true;
+	}
+
+	if (normalizeTokenCount(args.lastStepUsage?.inputTokens) > 0) {
+		return shouldStopTurnForAutoCompact(args);
 	}
 
 	return shouldAutoCompactBeforeOverflow({

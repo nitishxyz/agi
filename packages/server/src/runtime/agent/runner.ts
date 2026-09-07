@@ -328,6 +328,7 @@ async function runAssistant(opts: RunOpts) {
 			opts,
 			threshold: autoCompactThresholdTokens,
 			turnStoppedForCompaction: turnStoppedForAutoCompact,
+			lastStepUsage: await result.usage,
 			runSessionLoop,
 		});
 	} catch (err) {

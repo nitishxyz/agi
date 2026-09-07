@@ -83,6 +83,7 @@ export async function autoCompactSessionAfterTurn(args: {
 	opts: RunOpts;
 	threshold: number | null | undefined;
 	turnStoppedForCompaction: boolean;
+	lastStepUsage?: StepUsageLike['usage'];
 	runSessionLoop: (sessionId: string) => Promise<void>;
 }): Promise<boolean> {
 	const { db, opts } = args;
@@ -100,6 +101,7 @@ export async function autoCompactSessionAfterTurn(args: {
 		isCompactCommand: opts.isCompactCommand,
 		compactionRetries: opts.compactionRetries,
 		turnStoppedForCompaction: args.turnStoppedForCompaction,
+		lastStepUsage: args.lastStepUsage,
 	});
 	if (!shouldCompact) return false;
 

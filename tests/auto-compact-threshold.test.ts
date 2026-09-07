@@ -150,6 +150,75 @@ describe('shouldStopTurnForAutoCompact', () => {
 });
 
 describe('shouldAutoCompactAfterTurn', () => {
+	test('counts final reply output even when the tool-loop stop was not called', () => {
+		for (const outputTokens of [2_000, 3_000]) {
+			expect(
+				shouldAutoCompactAfterTurn({
+					autoCompactThresholdTokens: 200_000,
+					currentContextTokens: 198_000,
+					turnStoppedForCompaction: false,
+					lastStepUsage: { inputTokens: 198_000, outputTokens },
+				}),
+			).toBe(true);
+		}
+	});
+
+	test('uses the last step context rather than stale session or cumulative usage', () => {
+		expect(
+			shouldAutoCompactAfterTurn({
+				autoCompactThresholdTokens: 200_000,
+				currentContextTokens: 250_000,
+				lastStepUsage: { inputTokens: 100_000, outputTokens: 1_000 },
+			}),
+		).toBe(false);
+	});
+
+	test('falls back to session context when final input usage is unavailable', () => {
+		for (const inputTokens of [undefined, null, 0, Number.NaN, Infinity]) {
+			expect(
+				shouldAutoCompactAfterTurn({
+					autoCompactThresholdTokens: 200_000,
+					currentContextTokens: 200_000,
+					lastStepUsage: { inputTokens, outputTokens: 1_000 },
+				}),
+			).toBe(true);
+		}
+	});
+
+	test('ignores invalid output counts without losing valid input usage', () => {
+		for (const outputTokens of [Number.NaN, Infinity, -1]) {
+			expect(
+				shouldAutoCompactAfterTurn({
+					autoCompactThresholdTokens: 200_000,
+					lastStepUsage: { inputTokens: 200_000, outputTokens },
+				}),
+			).toBe(true);
+			expect(
+				shouldStopTurnForAutoCompact({
+					autoCompactThresholdTokens: 200_000,
+					lastStepUsage: { inputTokens: 100_000, outputTokens },
+				}),
+			).toBe(false);
+		}
+	});
+
+	test('preserves manual, retry, and disabled threshold guards with final usage', () => {
+		for (const guard of [
+			{ isCompactCommand: true },
+			{ compactionRetries: 1 },
+			{ autoCompactThresholdTokens: null },
+			{ autoCompactThresholdTokens: 0 },
+		]) {
+			expect(
+				shouldAutoCompactAfterTurn({
+					autoCompactThresholdTokens: 200_000,
+					lastStepUsage: { inputTokens: 198_000, outputTokens: 3_000 },
+					...guard,
+				}),
+			).toBe(false);
+		}
+	});
+
 	test('compacts when output tokens triggered the mid-turn stop', () => {
 		const lastStepUsage = { inputTokens: 198_000, outputTokens: 3_000 };
 		expect(
