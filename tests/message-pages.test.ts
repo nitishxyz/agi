@@ -666,6 +666,71 @@ describe('older page cursor', () => {
 });
 
 describe('newest page refetch reconciliation', () => {
+	for (const placeholderType of ['tool_call', 'tool_result'] as const) {
+		it(`replaces a live ${placeholderType} with the persisted git status result`, () => {
+			const placeholder = part('ephemeral-tool-call-status-1', 0, {
+				type: placeholderType,
+				toolName: 'git_status',
+				toolCallId: 'status-1',
+				ephemeral: true,
+				toolDurationMs: 255,
+			});
+			const result = part('persisted-status-1', 1, {
+				type: 'tool_result',
+				toolName: 'git_status',
+				toolCallId: 'status-1',
+				toolDurationMs: 227,
+				content: JSON.stringify({
+					result: { ok: true, staged: 0, unstaged: 0 },
+				}),
+			});
+			const otherCall = part('ephemeral-tool-call-status-2', 2, {
+				...placeholder,
+				id: 'ephemeral-tool-call-status-2',
+				index: 2,
+				toolCallId: 'status-2',
+			});
+			const cached = page([
+				message('assistant-1', 10, {
+					role: 'assistant',
+					parts: [placeholder, otherCall],
+				}),
+			]);
+			const fresh = page([
+				message('assistant-1', 10, { role: 'assistant', parts: [result] }),
+			]);
+			const reconciled = reconcileRefetchedPage(cached, fresh);
+			expect(reconciled.items[0].parts).toEqual([result, otherCall]);
+			expect(reconciled.partCount).toBe(2);
+			const merged = flattenMessagePages({
+				pages: [fresh, cached],
+				pageParams: [null, 'older'],
+			});
+			expect(merged[0].parts).toEqual([result, otherCall]);
+			expect(cached.items[0].parts).toEqual([placeholder, otherCall]);
+		});
+	}
+
+	it('keeps a live placeholder until a persisted result, not just a call, arrives', () => {
+		const placeholder = part('ephemeral-status', 0, {
+			type: 'tool_result',
+			toolName: 'git_status',
+			toolCallId: 'status-1',
+			ephemeral: true,
+		});
+		const call = part('persisted-call', 0, {
+			type: 'tool_call',
+			toolName: 'git_status',
+			toolCallId: 'status-1',
+		});
+		const cached = page([message('assistant-1', 10, { parts: [placeholder] })]);
+		const fresh = page([message('assistant-1', 10, { parts: [call] })]);
+		expect(reconcileRefetchedPage(cached, fresh).items[0].parts).toEqual([
+			placeholder,
+			call,
+		]);
+	});
+
 	it('keeps already-loaded parts the capped refetch window no longer covers', () => {
 		const cached = page([
 			message('assistant-1', 10, {

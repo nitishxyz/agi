@@ -56,5 +56,10 @@ seamless, especially against a remote daemon.
 - Messages queries keep a 30-minute `gcTime`, so returning to a recently
   viewed session renders instantly from cache while a background refetch
   reconciles.
+- Page reconciliation retains loaded persisted parts outside the refetch
+  window, but removes ephemeral tool calls/results once a persisted result
+  with the same `toolCallId` arrives. The server result supplies the final
+  duration; the live placeholder must not become a second activity row.
+  Unresolved calls and separate invocations of the same tool remain visible.
 - `SessionItem` prefetches messages and queue state on hover/focus
   (`prefetchSessionMessages`), making session switches feel immediate.

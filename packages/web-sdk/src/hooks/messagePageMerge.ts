@@ -70,6 +70,24 @@ function sameSources(left: readonly Message[], right: readonly Message[]) {
 	return true;
 }
 
+function removeResolvedToolPlaceholders(partsById: Map<string, MessagePart>) {
+	const resolvedCallIds = new Set<string>();
+	for (const part of partsById.values()) {
+		if (!part.ephemeral && part.type === 'tool_result' && part.toolCallId) {
+			resolvedCallIds.add(part.toolCallId);
+		}
+	}
+	for (const [id, part] of partsById) {
+		if (
+			part.ephemeral &&
+			part.toolCallId &&
+			resolvedCallIds.has(part.toolCallId)
+		) {
+			partsById.delete(id);
+		}
+	}
+}
+
 /**
  * Collapses every page copy of one parent message. `sources` are ordered oldest
  * page first, so the newest copy supplies metadata/status and the newest
@@ -86,6 +104,7 @@ function mergeMessageCopies(sources: Message[]): Message {
 	for (const source of sources) {
 		for (const part of source.parts ?? []) partsById.set(part.id, part);
 	}
+	removeResolvedToolPlaceholders(partsById);
 	const parts = [...partsById.values()].sort(comparePartsByIndex);
 	const merged: Message = { ...newest, parts };
 	mergedMessageCache.set(newest, { sources: [...sources], merged });
@@ -133,7 +152,8 @@ export function mergeMessagePages(
  * otherwise drop parts (or whole messages) that are still loaded and still
  * persisted. Fresh parts win; anything the server no longer returns but the
  * cache still holds is kept, oldest first, so nothing already rendered
- * disappears. Optimistic entries are excluded here and re-appended separately.
+ * disappears. Persisted tool results replace their client-only placeholders
+ * by call id. Optimistic messages are re-appended separately.
  */
 export function reconcileRefetchedPage(
 	cached: MessagesPage | undefined,
@@ -159,6 +179,7 @@ export function reconcileRefetchedPage(
 		const partsById = new Map<string, MessagePart>();
 		for (const part of previous.parts) partsById.set(part.id, part);
 		for (const part of message.parts ?? []) partsById.set(part.id, part);
+		removeResolvedToolPlaceholders(partsById);
 		if (partsById.size === (message.parts?.length ?? 0)) return message;
 		changed = true;
 		return {
