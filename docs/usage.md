@@ -38,6 +38,12 @@ CLI proxy. If xAI accepts the login but model calls return `403`, your
 subscription tier may not be allowlisted for OAuth API access; use an
 `XAI_API_KEY` fallback for normal xAI API models.
 
+For xAI OAuth, the usage indicator reads Grok's credits billing endpoint
+(`/v1/billing?format=credits`) and displays `creditUsagePercent` for the current
+usage period, which can be weekly rather than monthly. The legacy billing
+endpoint can return zero monthly limits and usage even when credits have been
+consumed. Missing credit usage is reported as an error instead of a misleading 0%.
+
 `otto auth login openai` offers both OpenAI browser-callback OAuth and
 device-code OAuth for ChatGPT Plus/Pro accounts. Device-code OAuth works from SSH
 sessions, headless machines, and the web UI over a tunnel because it does not

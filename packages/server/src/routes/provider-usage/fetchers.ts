@@ -120,13 +120,16 @@ export async function fetchOpenAIUsage(access: string, accountId?: string) {
 }
 
 export async function fetchXaiGrokUsage(access: string) {
-	const response = await fetch('https://cli-chat-proxy.grok.com/v1/billing', {
-		headers: {
-			Authorization: `Bearer ${access}`,
-			Accept: 'application/json',
-			...getGrokCliHeaders('grok-build'),
+	const response = await fetch(
+		'https://cli-chat-proxy.grok.com/v1/billing?format=credits',
+		{
+			headers: {
+				Authorization: `Bearer ${access}`,
+				Accept: 'application/json',
+				...getGrokCliHeaders('grok-build'),
+			},
 		},
-	});
+	);
 
 	if (!response.ok) {
 		throw new Error(`xAI Grok billing API returned ${response.status}`);
@@ -134,34 +137,30 @@ export async function fetchXaiGrokUsage(access: string) {
 
 	const data = (await response.json()) as {
 		config?: {
-			monthlyLimit?: { val?: number };
-			used?: { val?: number };
+			creditUsagePercent?: number;
+			currentPeriod?: { start?: string; end?: string };
 			onDemandCap?: { val?: number };
+			prepaidBalance?: { val?: number };
 			billingPeriodStart?: string;
 			billingPeriodEnd?: string;
-			history?: Array<{
-				billingCycle?: string;
-				includedUsed?: number;
-				onDemandUsed?: number;
-				totalUsed?: number;
-			}>;
 		};
 	};
 
 	const config = data.config ?? {};
-	const monthlyLimit = config.monthlyLimit?.val ?? 0;
-	const used = config.used?.val ?? 0;
+	const rawPercent = config.creditUsagePercent;
+	if (typeof rawPercent !== 'number' || !Number.isFinite(rawPercent)) {
+		throw new Error('xAI Grok billing API returned invalid credit usage');
+	}
 	const onDemandCap = config.onDemandCap?.val ?? 0;
-	const rawPercent = monthlyLimit > 0 ? (used / monthlyLimit) * 100 : 0;
 	const usedPercent = Math.max(0, Math.min(rawPercent, 100));
-	const start = config.billingPeriodStart
-		? new Date(config.billingPeriodStart).getTime()
-		: null;
-	const end = config.billingPeriodEnd
-		? new Date(config.billingPeriodEnd).getTime()
-		: null;
+	const periodStart = config.currentPeriod?.start ?? config.billingPeriodStart;
+	const periodEnd = config.currentPeriod?.end ?? config.billingPeriodEnd;
+	const start = periodStart ? new Date(periodStart).getTime() : Number.NaN;
+	const end = periodEnd ? new Date(periodEnd).getTime() : Number.NaN;
 	const windowSeconds =
-		start && end && end > start ? Math.round((end - start) / 1000) : 2592000;
+		Number.isFinite(start) && Number.isFinite(end) && end > start
+			? Math.round((end - start) / 1000)
+			: 2592000;
 
 	return {
 		provider: 'xai' as const,
@@ -169,10 +168,13 @@ export async function fetchXaiGrokUsage(access: string) {
 		primaryWindow: {
 			usedPercent,
 			windowSeconds,
-			resetsAt: config.billingPeriodEnd ?? null,
+			resetsAt: Number.isFinite(end) ? (periodEnd ?? null) : null,
 		},
 		secondaryWindow: null,
-		limitReached: monthlyLimit > 0 && used >= monthlyLimit && onDemandCap <= 0,
+		limitReached:
+			rawPercent >= 100 &&
+			onDemandCap <= 0 &&
+			(config.prepaidBalance?.val ?? 0) <= 0,
 		raw: data,
 	};
 }
