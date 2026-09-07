@@ -4,6 +4,7 @@ import {
 	syncInlineTerminalActivation,
 } from '../../lib/inline-ghostty-terminal';
 import { loadGhosttyVt } from '../../lib/ghostty-vt';
+import { resolveTerminalTheme } from '../../lib/terminal-theme';
 import { getRuntimeApiBaseUrl } from '../../lib/config';
 import {
 	authenticatedFetch,
@@ -18,21 +19,7 @@ const WS_MAX_RETRIES = 5;
 const RESIZE_SETTLE_DELAY = 120;
 
 export function resolveTerminalBackgroundColor(): string {
-	if (typeof document === 'undefined') return '#121216';
-	const el = document.createElement('div');
-	el.style.display = 'none';
-	el.className = 'bg-background';
-	document.body.appendChild(el);
-	const computed = getComputedStyle(el).backgroundColor;
-	document.body.removeChild(el);
-	const match = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-	if (match) {
-		const r = Number(match[1]);
-		const g = Number(match[2]);
-		const b = Number(match[3]);
-		return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
-	}
-	return '#121216';
+	return resolveTerminalTheme().background;
 }
 
 let fontsLoaded = false;

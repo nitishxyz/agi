@@ -2,6 +2,11 @@ import { CanvasRenderer, Ghostty, InputHandler } from 'ghostty-web';
 import type { GhosttyVtModule } from './ghostty-vt';
 import { GhosttyVtTerminal } from './ghostty-vt';
 import {
+	observeTerminalTheme,
+	resolveTerminalTheme,
+	type TerminalTheme,
+} from './terminal-theme';
+import {
 	drawTerminalCursor,
 	resolveTerminalCursorDisplay,
 	resolveTerminalCursorShape,
@@ -19,7 +24,6 @@ interface ResizeEvent {
 type Listener<T> = (value: T) => void;
 
 const CURSOR_BLINK_MS = 530;
-const DEFAULT_CURSOR_COLOR = '#ffffff';
 
 export function calculateTerminalGridSize(
 	width: number,
@@ -73,7 +77,8 @@ export class InlineGhosttyTerminal {
 	private focused = false;
 	private blinkPhaseVisible = true;
 	private blinkTimer: ReturnType<typeof setInterval> | null = null;
-	private cursorColor = DEFAULT_CURSOR_COLOR;
+	private cursorColor: string;
+	private stopObservingTheme?: () => void;
 
 	constructor(
 		module: GhosttyVtModule,
@@ -87,6 +92,9 @@ export class InlineGhosttyTerminal {
 		this.cols = options.cols ?? 80;
 		this.rows = options.rows ?? 24;
 		this.model = new GhosttyVtTerminal(module, this.cols, this.rows);
+		const theme = resolveTerminalTheme();
+		this.model.setTheme(theme);
+		this.cursorColor = theme.cursor;
 		this.ghostty = new Ghostty(module.instance);
 		const canvas = document.createElement('canvas');
 		canvas.className = 'absolute inset-0';
@@ -96,17 +104,16 @@ export class InlineGhosttyTerminal {
 			fontSize: options.fontSize ?? 13,
 			fontFamily: options.fontFamily,
 			cursorBlink: false,
-			theme: {
-				background: '#121216',
-				foreground: '#d4d4d4',
-				cursor: DEFAULT_CURSOR_COLOR,
-				selectionBackground: '#264f78',
-			},
+			theme,
 		});
 	}
 
 	open(container: HTMLDivElement): void {
 		this.element = container;
+		this.setTheme(resolveTerminalTheme());
+		this.stopObservingTheme = observeTerminalTheme((theme) =>
+			this.setTheme(theme),
+		);
 		container.tabIndex = 0;
 		container.setAttribute('role', 'textbox');
 		container.setAttribute('aria-label', 'Terminal');
@@ -148,6 +155,13 @@ export class InlineGhosttyTerminal {
 		container.addEventListener('wheel', this.wheelListener, { passive: false });
 		// Start unfocused so inactive tabs show the hollow outline.
 		this.setFocused(false);
+	}
+
+	setTheme(theme: TerminalTheme): void {
+		this.model.setTheme(theme);
+		this.renderer.setTheme(theme);
+		this.cursorColor = theme.cursor;
+		this.scheduleRender(true);
 	}
 
 	write(data: string | Uint8Array): void {
@@ -314,6 +328,7 @@ export class InlineGhosttyTerminal {
 		this.element?.blur();
 	}
 	dispose(): void {
+		this.stopObservingTheme?.();
 		this.stopBlinkTimer();
 		if (this.frame) cancelAnimationFrame(this.frame);
 		if (this.element && this.wheelListener)

@@ -44,6 +44,8 @@ Review both the metadata and binary diff, and include them in the same commit. `
 
 Desktop uses the shared official-Wasm `TerminalViewer` by default. If that viewer reports an initialization failure, `DesktopTerminalViewer` replaces it with the existing Rust `NativeTerminalViewer`. Web has no equivalent native backend and displays an explicit initialization error instead.
 
+The inline terminal resolves its background, foreground, cursor, and selection colors from the active application CSS, and its 16 ANSI colors from the same theme palette as the native fallback. Changes to the document theme update the canvas and Wasm defaults in place, repainting existing output without reconnecting the PTY or resetting scrollback. Explicit truecolor output, the extended 256-color cube, and program-set OSC palette overrides remain intact. Selection colors are configured for the renderer; the text-selection bridge is still subject to the limitation below.
+
 ## Current upstream ABI limitations
 
 The official freestanding module has no imports. Terminal-generated replies (for example DA/DSR) are exposed only through `GHOSTTY_TERMINAL_OPT_WRITE_PTY`, which accepts a native Wasm function pointer. The current browser WebAssembly API cannot install a JavaScript callback into that table, and the official module does not expose a pull-based response queue. These replies therefore cannot yet be forwarded by the official path. The desktop native implementation remains available as the initialization fallback until upstream exposes a browser-callable reply mechanism.

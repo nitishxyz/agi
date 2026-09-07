@@ -1,4 +1,5 @@
 import type { GhosttyCell, IRenderable } from 'ghostty-web';
+import { TERMINAL_ANSI_COLORS, type TerminalTheme } from './terminal-theme';
 import ghosttyVtMetadata from '../assets/ghostty/ghostty-vt.json';
 
 const ghosttyVtUrl = new URL(
@@ -121,7 +122,9 @@ export class GhosttyVtTerminal implements IRenderable {
 	private terminal: number;
 	private renderState: number;
 	private scratch: number;
-	private readonly scratchLength = 512;
+	private readonly scratchLength = 768;
+	private foreground = DEFAULT_FG;
+	private background = DEFAULT_BG;
 	private lines: GhosttyCell[][] = [];
 	private graphemes: string[][] = [];
 	private cursor: {
@@ -261,6 +264,49 @@ export class GhosttyVtTerminal implements IRenderable {
 		if (value('blink')) flags |= 64;
 		if (value('faint')) flags |= 128;
 		return flags;
+	}
+
+	/** Updates defaults in place, preserving screen contents and OSC overrides. */
+	setTheme(theme: TerminalTheme): void {
+		const rgb = (hex: string) => ({
+			r: Number.parseInt(hex.slice(1, 3), 16),
+			g: Number.parseInt(hex.slice(3, 5), 16),
+			b: Number.parseInt(hex.slice(5, 7), 16),
+		});
+		const setOption = (option: number) => {
+			const result = this.exports.ghostty_terminal_set(
+				this.terminal,
+				option,
+				this.scratch,
+			);
+			if (result !== 0)
+				throw new Error(`ghostty-vt color option ${option} failed (${result})`);
+		};
+		for (const [index, color] of [
+			theme.foreground,
+			theme.background,
+			theme.cursor,
+		].entries()) {
+			const { r, g, b } = rgb(color);
+			this.bytes().set([r, g, b]);
+			setOption(11 + index);
+		}
+		// Preserve the upstream 256-color cube; replace only the 16 ANSI defaults.
+		const result = this.exports.ghostty_terminal_get(
+			this.terminal,
+			25,
+			this.scratch,
+		);
+		if (result !== 0)
+			throw new Error(`ghostty-vt palette query failed (${result})`);
+		for (const [index, key] of TERMINAL_ANSI_COLORS.entries()) {
+			const { r, g, b } = rgb(theme[key]);
+			this.bytes().set([r, g, b], index * 3);
+		}
+		setOption(14);
+		this.foreground = rgb(theme.foreground);
+		this.background = rgb(theme.background);
+		this.refresh();
 	}
 
 	write(data: string | Uint8Array): void {
@@ -431,8 +477,8 @@ export class GhosttyVtTerminal implements IRenderable {
 					);
 					text = String.fromCodePoint(...points);
 				}
-				const fg = this.resolvedColor(cells, 6, DEFAULT_FG);
-				const bg = this.resolvedColor(cells, 5, DEFAULT_BG);
+				const fg = this.resolvedColor(cells, 6, this.foreground);
+				const bg = this.resolvedColor(cells, 5, this.background);
 				line.push({
 					codepoint,
 					fg_r: fg.r,
