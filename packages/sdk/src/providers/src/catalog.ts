@@ -844,6 +844,33 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					},
 					auth: ['api', 'oauth'],
 				},
+				'gpt-6-astra': {
+					id: 'gpt-6-astra',
+					ownedBy: 'openai',
+					label: 'GPT-6 Astra',
+					modalities: {
+						input: ['text', 'image', 'pdf'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: true,
+					temperature: false,
+					releaseDate: '2026-09-04',
+					lastUpdated: '2026-09-04',
+					openWeights: false,
+					cost: {
+						input: 10,
+						output: 50,
+						cacheRead: 1,
+						cacheWrite: 12.5,
+					},
+					limit: {
+						context: 1050000,
+						output: 128000,
+					},
+					auth: ['api', 'oauth'],
+				},
 				'gpt-realtime-2.1': {
 					id: 'gpt-realtime-2.1',
 					ownedBy: 'openai',
@@ -4650,9 +4677,9 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					lastUpdated: '2026-04-27',
 					openWeights: false,
 					cost: {
-						input: 2.5,
-						output: 14,
-						cacheRead: 0.29,
+						input: 2.55,
+						output: 12.75,
+						cacheRead: 0.256,
 					},
 					limit: {
 						context: 1048576,
@@ -4778,9 +4805,9 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					lastUpdated: '2026-08-19',
 					openWeights: false,
 					cost: {
-						input: 1.15,
-						output: 3.5,
-						cacheRead: 0.1,
+						input: 1.17,
+						output: 3.96,
+						cacheRead: 0.234,
 					},
 					limit: {
 						context: 1310720,
@@ -5837,9 +5864,9 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					lastUpdated: '2026-04-24',
 					openWeights: true,
 					cost: {
-						input: 0.08778,
-						output: 0.17556,
-						cacheRead: 0.017556,
+						input: 0.0819,
+						output: 0.1638,
+						cacheRead: 0.01638,
 					},
 					limit: {
 						context: 1048576,
@@ -5914,9 +5941,9 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					lastUpdated: '2026-04-24',
 					openWeights: true,
 					cost: {
-						input: 1.001892,
-						output: 2.003784,
-						cacheRead: 0.083491,
+						input: 0.748374,
+						output: 1.496748,
+						cacheRead: 0.062365,
 					},
 					limit: {
 						context: 1048576,
@@ -5939,9 +5966,9 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					lastUpdated: '2026-08-22',
 					openWeights: true,
 					cost: {
-						input: 0.57948,
-						output: 1.73844,
-						cacheRead: 0.019316,
+						input: 1.12068,
+						output: 3.36204,
+						cacheRead: 0.037356,
 					},
 					limit: {
 						context: 1048576,
@@ -9156,7 +9183,7 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					ownedBy: 'openai',
 					label: 'GPT-6 Astra',
 					modalities: {
-						input: ['pdf', 'image', 'text'],
+						input: ['text', 'image', 'pdf'],
 						output: ['text'],
 					},
 					toolCall: true,
@@ -9836,13 +9863,12 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					lastUpdated: '2025-07-21',
 					openWeights: true,
 					cost: {
-						input: 0.0875,
-						output: 0.35,
-						cacheRead: 0.0175,
+						input: 0.09,
+						output: 0.55,
 					},
 					limit: {
 						context: 262144,
-						output: 235929,
+						output: 16384,
 					},
 				},
 				'qwen/qwen3-235b-a22b-thinking-2507': {
@@ -10464,8 +10490,9 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					lastUpdated: '2026-02-23',
 					openWeights: true,
 					cost: {
-						input: 0.08,
-						output: 0.75,
+						input: 0.3125,
+						output: 1.25,
+						cacheRead: 0.15625,
 					},
 					limit: {
 						context: 262144,
@@ -10877,10 +10904,10 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 						output: 131072,
 					},
 				},
-				'qwen/qwen3.8-max': {
-					id: 'qwen/qwen3.8-max',
+				'qwen/qwen3.8-max-0902': {
+					id: 'qwen/qwen3.8-max-0902',
 					ownedBy: 'qwen',
-					label: 'Qwen3.8 Max',
+					label: 'Qwen3.8 Max 0902',
 					modalities: {
 						input: ['text', 'image', 'video'],
 						output: ['text'],
@@ -10889,8 +10916,8 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					reasoningText: true,
 					attachment: true,
 					temperature: true,
-					releaseDate: '2026-08-03',
-					lastUpdated: '2026-08-03',
+					releaseDate: '2026-09-02',
+					lastUpdated: '2026-09-02',
 					openWeights: false,
 					cost: {
 						input: 2,
@@ -11086,9 +11113,9 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					lastUpdated: '2026-07-06',
 					openWeights: true,
 					cost: {
-						input: 0.0825,
-						output: 0.33,
-						cacheRead: 0.020625,
+						input: 0.132,
+						output: 0.528,
+						cacheRead: 0.033,
 					},
 					limit: {
 						context: 262144,
@@ -11164,7 +11191,7 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					},
 					limit: {
 						context: 1024000,
-						output: 26214,
+						output: 819200,
 					},
 				},
 				'thinkingmachines/inkling': {
@@ -11581,9 +11608,9 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 					lastUpdated: '2025-09-30',
 					openWeights: true,
 					cost: {
-						input: 0.55,
-						output: 2.2,
-						cacheRead: 0.11,
+						input: 0.5,
+						output: 2,
+						cacheRead: 0.1,
 					},
 					limit: {
 						context: 204800,
@@ -12375,6 +12402,31 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 						output: 128000,
 					},
 				},
+				'deepseek-v4-flash-vision-exp': {
+					id: 'deepseek-v4-flash-vision-exp',
+					ownedBy: 'deepseek',
+					label: 'DeepSeek V4 Flash Vision Exp',
+					modalities: {
+						input: ['text', 'image'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: true,
+					temperature: true,
+					releaseDate: '2026-08-21',
+					lastUpdated: '2026-08-21',
+					openWeights: false,
+					cost: {
+						input: 0.14,
+						output: 0.28,
+						cacheRead: 0.028,
+					},
+					limit: {
+						context: 1000000,
+						output: 384000,
+					},
+				},
 				'deepseek-v4-pro': {
 					id: 'deepseek-v4-pro',
 					ownedBy: 'deepseek',
@@ -12807,6 +12859,56 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 						input: 1.4,
 						output: 4.4,
 						cacheRead: 0.26,
+					},
+					limit: {
+						context: 1000000,
+						output: 131072,
+					},
+				},
+				'glm-5.3': {
+					id: 'glm-5.3',
+					ownedBy: 'zai',
+					label: 'GLM-5.3',
+					modalities: {
+						input: ['text'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: false,
+					temperature: true,
+					releaseDate: '2026-08-14',
+					lastUpdated: '2026-08-14',
+					openWeights: true,
+					cost: {
+						input: 1.4,
+						output: 4.4,
+						cacheRead: 0.26,
+					},
+					limit: {
+						context: 1000000,
+						output: 131072,
+					},
+				},
+				'glm-5.3-flash': {
+					id: 'glm-5.3-flash',
+					ownedBy: 'zai',
+					label: 'GLM-5.3-Flash',
+					modalities: {
+						input: ['text', 'image', 'video', 'pdf'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: true,
+					temperature: true,
+					releaseDate: '2026-08-26',
+					lastUpdated: '2026-08-26',
+					openWeights: false,
+					cost: {
+						input: 0.15,
+						output: 0.5,
+						cacheRead: 0.03,
 					},
 					limit: {
 						context: 1000000,
@@ -13387,6 +13489,35 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 						output: 15,
 						cacheRead: 0.25,
 						cacheWrite: 3.125,
+					},
+					limit: {
+						context: 1050000,
+						output: 128000,
+					},
+					provider: {
+						npm: '@ai-sdk/openai',
+					},
+				},
+				'gpt-6-astra': {
+					id: 'gpt-6-astra',
+					ownedBy: 'openai',
+					label: 'GPT-6 Astra',
+					modalities: {
+						input: ['text', 'image', 'pdf'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: true,
+					temperature: false,
+					releaseDate: '2026-09-04',
+					lastUpdated: '2026-09-04',
+					openWeights: false,
+					cost: {
+						input: 10,
+						output: 50,
+						cacheRead: 1,
+						cacheWrite: 12.5,
 					},
 					limit: {
 						context: 1050000,
@@ -14217,6 +14348,34 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 						input: 0,
 						output: 0,
 						cacheRead: 0,
+					},
+					limit: {
+						context: 1048576,
+						output: 131072,
+					},
+					provider: {
+						npm: '@ai-sdk/openai',
+					},
+				},
+				'muse-spark-1.3': {
+					id: 'muse-spark-1.3',
+					ownedBy: 'meta',
+					label: 'Muse Spark 1.3',
+					modalities: {
+						input: ['text', 'image', 'video', 'pdf', 'audio'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: true,
+					temperature: true,
+					releaseDate: '2026-09-02',
+					lastUpdated: '2026-09-02',
+					openWeights: false,
+					cost: {
+						input: 1.25,
+						output: 4.25,
+						cacheRead: 0.15,
 					},
 					limit: {
 						context: 1048576,
@@ -16432,6 +16591,32 @@ export const catalog: Partial<Record<BuiltInProviderId, ProviderCatalogEntry>> =
 						output: 12,
 						cacheRead: 0.2,
 						cacheWrite: 2.5,
+					},
+					limit: {
+						context: 1050000,
+						output: 128000,
+					},
+				},
+				'gpt-6-astra': {
+					id: 'gpt-6-astra',
+					ownedBy: 'openai',
+					label: 'GPT-6 Astra',
+					modalities: {
+						input: ['text', 'image', 'pdf'],
+						output: ['text'],
+					},
+					toolCall: true,
+					reasoningText: true,
+					attachment: true,
+					temperature: false,
+					releaseDate: '2026-09-04',
+					lastUpdated: '2026-09-04',
+					openWeights: false,
+					cost: {
+						input: 10,
+						output: 50,
+						cacheRead: 1,
+						cacheWrite: 12.5,
 					},
 					limit: {
 						context: 1050000,

@@ -45,7 +45,16 @@ describe('oauth model filtering', () => {
 		expect(filteredIds).not.toContain('gpt-5.2-pro');
 		expect(filteredIds).not.toContain('gpt-5.3-codex-spark');
 		expect(filteredIds).not.toContain('gpt-5.4-pro');
-		expect(catalog.openai.models['gpt-6-astra']?.auth).toEqual(['oauth']);
+		expect(catalog.openai.models['gpt-6-astra']?.auth).toEqual([
+			'api',
+			'oauth',
+		]);
+		expect(catalog.openai.models['gpt-6-astra']?.cost).toEqual({
+			input: 10,
+			output: 50,
+			cacheRead: 1,
+			cacheWrite: 12.5,
+		});
 	});
 
 	test('overrides gpt-5.5 context limit to 264k only for OAuth', () => {
@@ -63,14 +72,14 @@ describe('oauth model filtering', () => {
 		expect(api['gpt-5.5']?.limit?.context).not.toBe(264_000);
 	});
 
-	test('filters OAuth-only OpenAI models from API auth', () => {
+	test('keeps Astra available for OpenAI API auth', () => {
 		const filtered = filterModelsForAuthType(
 			'openai',
 			catalog.openai.models,
 			'api',
 		);
 
-		expect(filtered['gpt-6-astra']).toBeUndefined();
+		expect(filtered['gpt-6-astra']).toBeDefined();
 	});
 
 	test('shows Grok CLI models only for xAI OAuth', () => {

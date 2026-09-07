@@ -34,6 +34,7 @@ const OAUTH_MODEL_IDS: Partial<Record<BuiltInProviderId, ReadonlySet<string>>> =
 			'gpt-5.6-luna',
 			'gpt-5.6-sol',
 			'gpt-5.6-terra',
+			'gpt-6-astra',
 		]),
 		xai: new Set(['grok-4.5', 'grok-4.6']),
 	};
